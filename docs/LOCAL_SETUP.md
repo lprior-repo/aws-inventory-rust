@@ -103,7 +103,7 @@ with compiler wrappers, explicitly clear them for the mutation helper tests:
 
 ```bash
 env -u RUSTC_WRAPPER -u RUSTC_WORKSPACE_WRAPPER \
-  INVENTORY_PYTHON="$(realpath .local/checks)/bin/python" bash scripts/verify.sh
+  bash scripts/verify.sh
 ```
 
 Operational local integration and strict Rust assurance have separate results.

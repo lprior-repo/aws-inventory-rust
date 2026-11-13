@@ -184,13 +184,10 @@ Normal builds do not enable all 437 SDK features. Full-catalog compilation is
 an explicit, separate operation with a substantial resource cost. Selected
 collectors compile the SDK crates they use.
 
-The full maintainer checks also exercise the Python schema and fixture tools.
-Their dependencies are separate from the deployed Rust application:
+The maintainer gate is Rust and shell only and needs no Python:
 
 ```bash
-python3 -m venv /tmp/aws-inventory-checks
-/tmp/aws-inventory-checks/bin/python -m pip install -r scripts/requirements.txt
-INVENTORY_PYTHON=/tmp/aws-inventory-checks/bin/python bash scripts/verify.sh
+bash scripts/verify.sh
 ```
 
 Live emulator/FalkorDB tests require the explicit local fixture setup described

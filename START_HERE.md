@@ -94,9 +94,8 @@ parent execution evidence is a separate artifact referenced by
 `docs/VERIFICATION.md`. A recorded `not_run` in that historical matrix is not
 rewritten as a current pass merely because a descriptor is now selected.
 
-For maintainer checks, install `scripts/requirements.txt` into a Python virtual
-environment and set `INVENTORY_PYTHON` before running `scripts/verify.sh`. Python
-is development/fixture tooling; the deployed collector is Rust. Ordinary tests
+The maintainer gate is `scripts/verify.sh`. It needs no Python; the Python
+scripts in the tree are frozen legacy tooling. Ordinary tests
 leave 15 integration cases ignored until their local servers are prepared.
 
 ## Collect, export and project

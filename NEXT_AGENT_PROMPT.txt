@@ -10,8 +10,8 @@ The owner's hard rules:
 - All product code is Rust. The Python scripts under scripts/ and catalog/upstream/ are frozen legacy tooling: do not extend, port or plan around them.
 - Performance claims come only from measurements, and "fastest" only from head-to-head runs.
 
-State of the tree at commit 78d3ac2:
-- `cargo check --workspace` passes. `cargo check --workspace --all-targets` fails with 9 errors in two Cloud Control parent test files (ROADMAP M0.2).
+State of the tree at commit b5332e8:
+- `cargo check --workspace --all-targets` passes. The full test suites have not been re-run since the baseline was committed.
 - 39 resource kinds come from hand-written typed adapters and 421 types from Cloud Control, into SQLite schema 13 in WAL mode. 968 reviewed relationship rules. The collector calls 89 AWS operations in 19 services.
 - crates/engine has the rate limiter (ApiExecutor, the only retry owner), the SQLx store, fenced jobs and the FalkorDB projection. These are kept and extended.
 - crates/harness owns the pinned AWS Emulator (1.0.336, commit f5155815). Live gate: `cargo build --bin aws-inventory --features aws`, then `cargo test -p inventory-harness --test emulator_live -- --ignored --test-threads=1`.
