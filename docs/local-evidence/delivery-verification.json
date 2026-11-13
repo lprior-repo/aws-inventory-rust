@@ -1,0 +1,359 @@
+{
+  "cases": [
+    {
+      "artifact": {
+        "bytes": 435787,
+        "counts": {
+          "edges": 340,
+          "failures": 0,
+          "records": 621,
+          "resources": 150,
+          "scopes": 131
+        },
+        "exact_sql_payload_and_provenance_match": true,
+        "sha256": "2127b1f7f74addc95f63ee7fedd31db4d7af3d15a250817336e5a5b4f6adf290"
+      },
+      "cleanup_complete": true,
+      "expected": {
+        "edges": 340,
+        "nodes": 193,
+        "resources": 150,
+        "unresolved": 43
+      },
+      "first_push": {
+        "applied_batches": 6,
+        "attempts": 6,
+        "reconnects": 0,
+        "retries": 0,
+        "skipped_batches": 0
+      },
+      "first_receipt": {
+        "bytes": 1523,
+        "sha256": "b5c07436771bb1697685dca76542e367a8a92a7415fdc69c65579e9b05d3c29d"
+      },
+      "graph": {
+        "edge_rows_sha256": "67dd7f8cbcaab48fe8962dc776c6c1c62b3de97971fbb69f65d9f8ad7d4b7ba8",
+        "edges": 340,
+        "exact_property_and_label_cardinality_match": true,
+        "exact_sql_identity_and_provenance_match": true,
+        "exact_sql_projected_properties_match": true,
+        "node_rows_sha256": "3d9d2d19a880202cff3371e8abc0c73e9004d0bef258490c1ad864937f9275bc",
+        "nodes": 193,
+        "resources": 150,
+        "state": "complete",
+        "unresolved": 43
+      },
+      "observations": {
+        "edge": 340,
+        "failure": 0,
+        "resource": 150,
+        "scope": 131
+      },
+      "passed": true,
+      "resume_push": {
+        "applied_batches": 0,
+        "attempts": 0,
+        "reconnects": 0,
+        "retries": 0,
+        "skipped_batches": 6
+      },
+      "resume_receipt": {
+        "bytes": 1523,
+        "sha256": "a026fbb3e373f73b5ebbd9386e8e56229889f8e70e92fe9868600b95efba11d6"
+      },
+      "scan_id": "f66f6503-5e2b-48fc-9838-3bf55e8a595f",
+      "status": "complete"
+    },
+    {
+      "artifact": {
+        "bytes": 13183,
+        "counts": {
+          "edges": 0,
+          "failures": 2,
+          "records": 16,
+          "resources": 11,
+          "scopes": 3
+        },
+        "exact_sql_payload_and_provenance_match": true,
+        "sha256": "1fb595033a66ef810ced3842897c7b0ffbe12a74a428a614ce970f4b7765558f"
+      },
+      "cleanup_complete": true,
+      "expected": {
+        "edges": 0,
+        "nodes": 11,
+        "resources": 11,
+        "unresolved": 0
+      },
+      "first_push": {
+        "applied_batches": 4,
+        "attempts": 4,
+        "reconnects": 0,
+        "retries": 0,
+        "skipped_batches": 0
+      },
+      "first_receipt": {
+        "bytes": 1510,
+        "sha256": "910cc014c3e5e0c85608343f6f8bddde64bd16370bc5b013522165bde363f062"
+      },
+      "graph": {
+        "edge_rows_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "edges": 0,
+        "exact_property_and_label_cardinality_match": true,
+        "exact_sql_identity_and_provenance_match": true,
+        "exact_sql_projected_properties_match": true,
+        "node_rows_sha256": "778b576bc296dc165502aa3a142e1b5a1514b4008ffa034cdf668e824327b9fe",
+        "nodes": 11,
+        "resources": 11,
+        "state": "partial",
+        "unresolved": 0
+      },
+      "observations": {
+        "edge": 0,
+        "failure": 2,
+        "resource": 11,
+        "scope": 3
+      },
+      "passed": true,
+      "resume_push": {
+        "applied_batches": 0,
+        "attempts": 0,
+        "reconnects": 0,
+        "retries": 0,
+        "skipped_batches": 4
+      },
+      "resume_receipt": {
+        "bytes": 1510,
+        "sha256": "b7ea9ebba5ca0be5c297142591067d65360aa3cec47361919f4bd050c97c5fef"
+      },
+      "scan_id": "aadc29b6-104e-4d20-9c26-7d6c88751727",
+      "status": "partial"
+    },
+    {
+      "artifact": {
+        "bytes": 692013,
+        "counts": {
+          "edges": 32,
+          "failures": 11,
+          "records": 1242,
+          "resources": 401,
+          "scopes": 798
+        },
+        "exact_sql_payload_and_provenance_match": true,
+        "sha256": "923f23ec0623edfc987e9b9693892c19e261d99571260d7e9c687e0f039119d8"
+      },
+      "cleanup_complete": true,
+      "expected": {
+        "edges": 32,
+        "nodes": 426,
+        "resources": 401,
+        "unresolved": 25
+      },
+      "first_push": {
+        "applied_batches": 6,
+        "attempts": 6,
+        "reconnects": 0,
+        "retries": 0,
+        "skipped_batches": 0
+      },
+      "first_receipt": {
+        "bytes": 1520,
+        "sha256": "dd3b679088fade016c3d87a9fb1d7038e4a9e927560fb1fdb2195f89ccd3f783"
+      },
+      "graph": {
+        "edge_rows_sha256": "e57e056676c43b5b6850a6cce79254af931c355f1d648849805c3d96f2bd33e2",
+        "edges": 32,
+        "exact_property_and_label_cardinality_match": true,
+        "exact_sql_identity_and_provenance_match": true,
+        "exact_sql_projected_properties_match": true,
+        "node_rows_sha256": "2f9597a2c5e2b978e8883e81afac40c881942a8a8fc5e4a3351d46a86dd4eb9e",
+        "nodes": 426,
+        "resources": 401,
+        "state": "partial",
+        "unresolved": 25
+      },
+      "observations": {
+        "edge": 32,
+        "failure": 11,
+        "resource": 401,
+        "scope": 798
+      },
+      "passed": true,
+      "resume_push": {
+        "applied_batches": 0,
+        "attempts": 0,
+        "reconnects": 0,
+        "retries": 0,
+        "skipped_batches": 6
+      },
+      "resume_receipt": {
+        "bytes": 1520,
+        "sha256": "41ca36b307bf4da015abc07df9ca259f961aa71fe6944cd837daae838916d123"
+      },
+      "scan_id": "16981f1e-62e8-40d7-ace8-9b60d9301b5a",
+      "status": "partial"
+    },
+    {
+      "artifact": {
+        "bytes": 522765,
+        "counts": {
+          "edges": 185,
+          "failures": 0,
+          "records": 633,
+          "resources": 179,
+          "scopes": 269
+        },
+        "exact_sql_payload_and_provenance_match": true,
+        "sha256": "4d3026f6c0c09e53820c296820b5a1bea33107efc2b177aaf2a4915decf95046"
+      },
+      "cleanup_complete": true,
+      "expected": {
+        "edges": 185,
+        "nodes": 185,
+        "resources": 179,
+        "unresolved": 6
+      },
+      "first_push": {
+        "applied_batches": 5,
+        "attempts": 5,
+        "reconnects": 0,
+        "retries": 0,
+        "skipped_batches": 0
+      },
+      "first_receipt": {
+        "bytes": 1523,
+        "sha256": "99c0ef3edf08108cd980c0ef98047883e930004c011e3ebedc0714eb8aa48355"
+      },
+      "graph": {
+        "edge_rows_sha256": "f5804ec49765cc230940f14dc3e69b8df4812127672629e2ebd86e06ae5a7db0",
+        "edges": 185,
+        "exact_property_and_label_cardinality_match": true,
+        "exact_sql_identity_and_provenance_match": true,
+        "exact_sql_projected_properties_match": true,
+        "node_rows_sha256": "9cc2a552b4299f8f52c19dca7e9372d8a106cc794ff837d1af44091a1ddc1192",
+        "nodes": 185,
+        "resources": 179,
+        "state": "complete",
+        "unresolved": 6
+      },
+      "observations": {
+        "edge": 185,
+        "failure": 0,
+        "resource": 179,
+        "scope": 269
+      },
+      "passed": true,
+      "resume_push": {
+        "applied_batches": 0,
+        "attempts": 0,
+        "reconnects": 0,
+        "retries": 0,
+        "skipped_batches": 5
+      },
+      "resume_receipt": {
+        "bytes": 1523,
+        "sha256": "7315dde05dd8cfb43d975ec9a50d7cad3e8d5973111b0648c4a2c3091d2f21f7"
+      },
+      "scan_id": "29f8ded8-0d77-43f2-9d0f-b012ba223894",
+      "status": "complete"
+    },
+    {
+      "artifact": {
+        "bytes": 34873,
+        "counts": {
+          "edges": 22,
+          "failures": 0,
+          "records": 59,
+          "resources": 13,
+          "scopes": 24
+        },
+        "exact_sql_payload_and_provenance_match": true,
+        "sha256": "04523f11409e3632574d67479fef892ccaeebb56cb58646b709295f01217e25d"
+      },
+      "cleanup_complete": true,
+      "expected": {
+        "edges": 22,
+        "nodes": 25,
+        "resources": 13,
+        "unresolved": 12
+      },
+      "first_push": {
+        "applied_batches": 5,
+        "attempts": 5,
+        "reconnects": 0,
+        "retries": 0,
+        "skipped_batches": 0
+      },
+      "first_receipt": {
+        "bytes": 1516,
+        "sha256": "b865e18ea992003be086cc6ddf9904e8807dc4f52329595e8c9b138954fd0a1c"
+      },
+      "graph": {
+        "edge_rows_sha256": "83676631de7611106129bee9b90c0b15857aa3a3f6405c664da60a86f88f378a",
+        "edges": 22,
+        "exact_property_and_label_cardinality_match": true,
+        "exact_sql_identity_and_provenance_match": true,
+        "exact_sql_projected_properties_match": true,
+        "node_rows_sha256": "2a4f9d1a67ea20dc68171b2d4cc58207525670faf3a111f2945e35e19e401dcf",
+        "nodes": 25,
+        "resources": 13,
+        "state": "complete",
+        "unresolved": 12
+      },
+      "observations": {
+        "edge": 22,
+        "failure": 0,
+        "resource": 13,
+        "scope": 24
+      },
+      "passed": true,
+      "resume_push": {
+        "applied_batches": 0,
+        "attempts": 0,
+        "reconnects": 0,
+        "retries": 0,
+        "skipped_batches": 5
+      },
+      "resume_receipt": {
+        "bytes": 1516,
+        "sha256": "92341197e4565ce071ae7bc3e598f1ecfd5ed81f2bd2c8ec725c0f352baea27a"
+      },
+      "scan_id": "1c447a1e-67b8-4ac0-a7b9-ecffc6b76288",
+      "status": "complete"
+    }
+  ],
+  "passed": true,
+  "semantics": "seeded local emulator snapshots and real local FalkorDB; no live AWS account or throughput claim",
+  "tests": {
+    "argv": [
+      "cargo",
+      "test",
+      "--workspace",
+      "--exclude",
+      "inventory-sdk-catalog",
+      "--all-features",
+      "--locked",
+      "--offline",
+      "-j1",
+      "--",
+      "--include-ignored",
+      "--test-threads=1"
+    ],
+    "child_cleanup_budget_seconds": 0,
+    "child_exit_code": 0,
+    "cleanup": {
+      "drained": true,
+      "forced": false
+    },
+    "cleanup_budget_seconds": 8,
+    "deadline_seconds": 900,
+    "elapsed_seconds": 62.153,
+    "exit_code": 0,
+    "fixture_health_checks": 14,
+    "log": "/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/.local/verification/20261113T031335-2286289/workspace-live.log",
+    "log_sha256": "d71d3f348b1c8c009c04d3968b208a0cf48c04179eb3728c253b8d82d0846455",
+    "pid": 2308241,
+    "process_group": 2308241,
+    "status": "completed",
+    "workspace": "/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs"
+  }
+}

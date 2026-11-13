@@ -1,0 +1,67 @@
+{
+  "executor": "active Codex execution context",
+  "workdir": "/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs",
+  "commands": [
+    {
+      "command": "env -u RUSTC_WRAPPER -u RUSTC_WORKSPACE_WRAPPER INVENTORY_PYTHON=/home/lewis/Documents/Codex/2026-11-12/let/work/checks/bin/python bash scripts/verify.sh",
+      "exit_code": 0,
+      "log": "canonical.log"
+    },
+    {
+      "command": "cargo build --workspace --exclude inventory-sdk-catalog --all-features --bins --examples --locked -j1",
+      "exit_code": 0,
+      "log": "build-final.log"
+    },
+    {
+      "command": "scripts/local-stack.sh verify",
+      "exit_code": 0,
+      "log": "local-integration.log"
+    },
+    {
+      "command": "cargo audit --json",
+      "exit_code": 1,
+      "log": "audit.json"
+    },
+    {
+      "command": "cargo machete",
+      "exit_code": 1,
+      "log": "machete.log"
+    },
+    {
+      "command": "cargo clippy --workspace --exclude inventory-sdk-catalog --lib --bins --examples --all-features --locked -j1 -- -D warnings -D unsafe_code -D clippy::unwrap_used -D clippy::expect_used -D clippy::panic -D clippy::panic_in_result_fn -D clippy::todo -D clippy::unimplemented -D clippy::dbg_macro -D clippy::indexing_slicing -D clippy::string_slice -D clippy::get_unwrap -D clippy::arithmetic_side_effects -D clippy::as_conversions -D clippy::let_underscore_must_use -D clippy::unused_async -D clippy::await_holding_lock -D clippy::await_holding_refcell_ref -D clippy::large_futures",
+      "exit_code": 101,
+      "log": "strict-clippy.log"
+    },
+    {
+      "command": "scripts/local-stack.sh status",
+      "exit_code": 0,
+      "log": "local-status.log"
+    },
+    {
+      "command": "scripts/local-stack.sh bogus",
+      "exit_code": 2,
+      "log": "invalid-command.log"
+    },
+    {
+      "command": "scripts/local-stack.sh cli query --db .local/my-inventory.sqlite 'DELETE FROM scans'",
+      "exit_code": 1,
+      "log": "query-rejected.log"
+    },
+    {
+      "command": "scripts/local-stack.sh cli",
+      "exit_code": 2,
+      "log": "no-args.log"
+    },
+    {
+      "command": "scripts/local-stack.sh stop",
+      "exit_code": 0,
+      "log": "stop.log"
+    },
+    {
+      "command": "target/debug/examples/benchmark 1000",
+      "exit_code": 0,
+      "log": "benchmark-debug.json",
+      "scope": "unoptimized synthetic stage exercise, not release performance"
+    }
+  ]
+}

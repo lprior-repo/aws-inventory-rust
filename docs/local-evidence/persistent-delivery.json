@@ -1,0 +1,44 @@
+{
+  "collection_status": "complete",
+  "delivery_status": "complete",
+  "directory": ".local/interactive-exports/e3721bef-c091-4e54-ad75-c0302fb5356b/91e926cf-99bd-4623-88e0-c5e297392be8",
+  "outputs": {
+    "falkor": {
+      "checkpoint": ".local/interactive-exports/projection.sqlite",
+      "export": {
+        "batches": 6,
+        "edges": 340,
+        "graph": "aws_inventory",
+        "resources": 150,
+        "scan_id": "e3721bef-c091-4e54-ad75-c0302fb5356b"
+      },
+      "plan": ".local/interactive-exports/e3721bef-c091-4e54-ad75-c0302fb5356b/91e926cf-99bd-4623-88e0-c5e297392be8/graph.jsonl",
+      "push": {
+        "applied_batches": 6,
+        "attempts": 6,
+        "reconnects": 0,
+        "retries": 0,
+        "skipped_batches": 0
+      }
+    },
+    "inventory": {
+      "path": ".local/interactive-exports/e3721bef-c091-4e54-ad75-c0302fb5356b/91e926cf-99bd-4623-88e0-c5e297392be8/inventory.jsonl",
+      "summary": {
+        "bytes": 435774,
+        "edges": 340,
+        "failures": 0,
+        "format": "jsonl",
+        "provenance": "all_observations",
+        "records": 621,
+        "resources": 150,
+        "scan_id": "e3721bef-c091-4e54-ad75-c0302fb5356b",
+        "scopes": 131,
+        "sha256": "7fc620b3d19ef6eafbdd2bbffd38ad9afff8604d510f50f39454df5da36f7742",
+        "status": "complete"
+      }
+    }
+  },
+  "scan_id": "e3721bef-c091-4e54-ad75-c0302fb5356b",
+  "status": "complete",
+  "version": 1
+}

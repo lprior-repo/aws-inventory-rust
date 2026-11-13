@@ -1,0 +1,1144 @@
+{"service_count": 437, "release": "release-2026-11-11", "newer_registry_versions": [], "mode": "checked"}
+21 reviewed parent-dependent Cloud Control types verified
+...................
+----------------------------------------------------------------------
+Ran 19 tests in 0.396s
+
+OK
+......................................
+----------------------------------------------------------------------
+Ran 38 tests in 0.014s
+
+OK
+...................................{"phase": "bad-budget-0", "status": "supervisor_error", "exit_code": 124, "elapsed_seconds": 0.0}
+{"phase": "bad-budget-1", "status": "supervisor_error", "exit_code": 124, "elapsed_seconds": 0.0}
+{"phase": "bad-budget-2", "status": "supervisor_error", "exit_code": 124, "elapsed_seconds": 0.0}
+{"phase": "bad-budget-3", "status": "supervisor_error", "exit_code": 124, "elapsed_seconds": 0.003}
+.{"phase": "command", "status": "fixture_unavailable", "exit_code": 124, "elapsed_seconds": 0.266}
+.{"phase": "command", "status": "log_budget_exceeded", "exit_code": 124, "elapsed_seconds": 0.252}
+...{"phase": "outer", "status": "fixture_unavailable", "exit_code": 124, "elapsed_seconds": 0.212}
+{"phase": "outer", "status": "fixture_unavailable", "exit_code": 124, "elapsed_seconds": 3.191}
+.{"phase": "command", "status": "interrupted", "exit_code": 130, "elapsed_seconds": 0.061}
+...{"phase": "spawn", "status": "supervisor_error", "exit_code": 124, "elapsed_seconds": 0.0}
+......................../home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe10859d210>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe10859d300>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe10859d5d0>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe10859d990>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe10859d8a0>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe10859db70>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe10859da80>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe10859dd50>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe10859de40>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe10859df30>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe10859dc60>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe10859e110>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe10859e020>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe1084b2c50>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe1084b2d40>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe1084b2e30>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe10859e3e0>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe1084b2f20>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe1084b3010>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe1084b3100>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+/home/lewis/.local/share/uv/python/cpython-3.14.2-linux-x86_64-gnu/lib/python3.14/json/decoder.py:361: ResourceWarning: unclosed database in <sqlite3.Connection object at 0x7fe1084b31f0>
+  obj, end = self.scan_once(s, idx)
+ResourceWarning: Enable tracemalloc to get the object allocation traceback
+.........................................................
+----------------------------------------------------------------------
+Ran 125 tests in 5.909s
+
+OK
+..............................................................................................................................
+----------------------------------------------------------------------
+Ran 126 tests in 4.687s
+
+OK
+    Blocking waiting for file lock on build directory
+   Compiling smallvec v1.16.5
+   Compiling tokio v1.54.1
+   Compiling slab v0.4.12
+   Compiling typenum v1.20.1
+   Compiling futures-util v0.3.34
+   Compiling generic-array v0.14.7
+   Compiling icu_normalizer v2.4.0
+   Compiling idna_adapter v1.2.2
+   Compiling cc v1.11.1
+   Compiling idna v1.1.0
+   Compiling parking_lot_core v0.9.12
+   Compiling crypto-common v0.1.7
+   Compiling block-buffer v0.10.4
+   Compiling syn v2.0.119
+   Compiling libsqlite3-sys v0.37.0
+   Compiling digest v0.10.7
+   Compiling parking_lot v0.12.5
+   Compiling url v2.5.8
+   Compiling tracing-core v0.1.36
+   Compiling hashbrown v0.17.1
+   Compiling rustls v0.23.46
+   Compiling log v0.4.35
+   Compiling rustls-webpki v0.103.16
+   Compiling sha2 v0.10.9
+   Compiling indexmap v2.14.2
+   Compiling tracing-attributes v0.1.31
+   Compiling futures-intrusive v0.5.0
+   Compiling tracing v0.1.44
+   Compiling tokio-stream v0.1.19
+   Compiling subtle v2.6.1
+   Compiling sqlx-core v0.9.0
+   Compiling tokio-util v0.7.20
+   Compiling futures-executor v0.3.34
+   Compiling futures-channel v0.3.34
+   Compiling getrandom v0.4.3
+   Compiling sqlx-sqlite v0.9.0
+   Compiling combine v4.6.9
+   Compiling tokio-rustls v0.26.6
+   Compiling sqlx v0.9.0
+   Compiling tempfile v3.27.0
+   Compiling redis v1.8.1
+   Compiling inventory-engine v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/crates/engine)
+    Finished `dev` profile [unoptimized] target(s) in 46.41s
+     Running `target/debug/examples/resource_views --check`
+Cloud Control SQL views verified
+    Checking libc v0.2.191
+    Checking cfg-if v1.0.5
+    Checking pin-project-lite v0.2.17
+    Checking zeroize v1.9.1
+    Checking bytes v1.12.1
+    Checking memchr v2.8.3
+    Checking futures-core v0.3.34
+    Checking errno v0.3.15
+    Checking itoa v1.0.19
+    Checking signal-hook-registry v1.4.8
+    Checking socket2 v0.6.5
+    Checking mio v1.2.4
+    Checking futures-sink v0.3.34
+    Checking tokio v1.54.1
+    Checking once_cell v1.21.4
+    Checking futures-task v0.3.34
+    Checking futures-io v0.3.34
+    Checking slab v0.4.12
+    Checking futures-util v0.3.34
+    Checking typenum v1.20.1
+    Checking subtle v2.6.1
+    Checking log v0.4.35
+    Checking tracing-core v0.1.36
+    Checking tracing v0.1.44
+    Checking tokio-util v0.7.20
+    Checking rand_core v0.10.1
+    Checking num-traits v0.2.19
+    Checking either v1.19.0
+    Checking getrandom v0.4.3
+    Checking foldhash v0.2.0
+    Checking smallvec v1.16.5
+    Checking ryu v1.0.23
+    Checking equivalent v1.0.3
+    Checking hashbrown v0.17.1
+    Checking percent-encoding v2.3.2
+    Checking untrusted v0.9.0
+    Checking indexmap v2.14.2
+    Checking futures-channel v0.3.34
+    Checking aws-lc-sys v0.47.0
+    Checking rustls-pki-types v1.16.0
+    Checking aws-lc-rs v1.19.0
+    Checking rustls-webpki v0.103.16
+    Checking form_urlencoded v1.2.2
+    Checking rustls v0.23.46
+    Checking openssl-probe v0.2.2
+    Checking rustls-native-certs v0.8.5
+    Checking tokio-rustls v0.26.6
+    Checking fnv v1.0.7
+    Checking zerofrom v0.1.8
+    Checking http v1.5.0
+    Checking fastrand v2.5.0
+    Checking stable_deref_trait v1.2.1
+    Checking yoke v0.8.4
+    Checking http-body v1.1.0
+    Checking http v0.2.12
+    Checking hybrid-array v0.4.15
+    Checking zerovec v0.11.9
+    Checking cmov v0.5.4
+    Checking ctutils v0.4.8
+    Checking http-body v0.4.6
+    Checking const-oid v0.10.3
+    Checking time-core v0.1.9
+    Checking deranged v0.5.9
+    Checking outref v0.5.2
+    Checking num-conv v0.2.2
+    Checking vsimd v0.8.0
+    Checking powerfmt v0.2.1
+    Checking time v0.3.55
+    Checking base64-simd v0.8.0
+    Checking tinystr v0.8.5
+    Checking crypto-common v0.2.2
+    Checking http-body-util v0.1.5
+    Checking bytes-utils v0.1.4
+    Checking utf_types v1.0.0
+    Checking litemap v0.8.3
+    Checking writeable v0.6.4
+    Checking icu_locale_core v2.4.0
+    Checking utf8_iter v1.1.0
+    Checking aws-smithy-types v1.9.4
+    Checking zerotrie v0.2.5
+    Checking potential_utf v0.1.6
+    Checking icu_collections v2.4.0
+    Checking icu_provider v2.4.0
+    Checking generic-array v0.14.7
+    Checking block-buffer v0.12.1
+    Checking aws-smithy-async v1.3.1
+    Checking aws-smithy-runtime-api v1.21.0
+    Checking digest v0.11.3
+    Checking icu_normalizer_data v2.4.0
+    Checking icu_properties_data v2.4.0
+    Checking icu_properties v2.4.0
+    Checking icu_normalizer v2.4.0
+    Checking crypto-common v0.1.7
+    Checking block-buffer v0.10.4
+    Checking digest v0.10.7
+    Checking idna_adapter v1.2.2
+    Checking base64ct v1.8.3
+    Checking pem-rfc7468 v1.0.0
+    Checking idna v1.1.0
+    Checking serde_core v1.0.229
+    Checking scopeguard v1.2.0
+    Checking cpubits v0.1.1
+    Checking crypto-bigint v0.7.11
+    Checking lock_api v0.4.14
+    Checking thiserror v2.0.21
+    Checking url v2.5.8
+    Checking der v0.8.3
+    Checking ff v0.14.0
+    Checking getrandom v0.2.17
+    Checking parking v2.2.1
+    Checking try-lock v0.2.5
+    Checking want v0.3.2
+    Checking event-listener v5.4.2
+    Checking serde v1.0.229
+    Checking ring v0.17.14
+    Checking zmij v1.0.23
+    Checking httparse v1.10.1
+    Checking tower-service v0.3.3
+    Checking cpufeatures v0.2.17
+    Checking serde_json v1.0.154
+    Checking getrandom v0.3.4
+    Checking parking_lot_core v0.9.12
+    Checking group v0.14.0
+    Checking spki v0.8.1
+    Checking atomic-waker v1.1.2
+    Checking allocator-api2 v0.2.21
+    Checking regex-syntax v0.8.11
+    Checking base16ct v1.0.0
+    Checking sec1 v0.8.1
+    Checking hashbrown v0.16.1
+    Checking h2 v0.4.20
+    Checking pkcs8 v0.11.0
+    Checking parking_lot v0.12.5
+    Checking rand_core v0.9.5
+    Checking crossbeam-utils v0.8.23
+    Checking crc32fast v1.5.5
+    Checking rustls-webpki v0.101.7
+    Checking sct v0.7.1
+    Checking aws-smithy-schema v1.2.0
+    Checking crc-catalog v2.5.0
+    Checking cpufeatures v0.3.1
+    Checking crc v3.4.0
+    Checking rustls v0.21.12
+    Checking aws-smithy-eventstream v0.61.6
+    Checking crossbeam-queue v0.3.14
+    Checking futures-intrusive v0.5.0
+    Checking elliptic-curve v0.14.3
+    Checking hyper v1.12.0
+    Checking hashlink v0.11.1
+    Checking zerocopy v0.8.63
+    Checking sha2 v0.10.9
+    Checking primefield v0.14.0
+    Checking spin v0.9.9
+    Checking hmac v0.13.0
+    Checking h2 v0.3.27
+    Checking tokio-stream v0.1.19
+    Checking socket2 v0.5.10
+    Checking httpdate v1.0.3
+    Checking base64 v0.22.1
+    Checking bitflags v2.13.2
+    Checking base64 v0.23.1
+    Checking ipnet v2.12.2
+    Checking hyper-util v0.1.21
+    Checking sqlx-core v0.9.0
+    Checking hyper v0.14.32
+    Checking rfc6979 v0.6.0
+    Checking flume v0.12.0
+    Checking wnaf v0.14.1
+    Checking ppv-lite86 v0.2.21
+    Checking libsqlite3-sys v0.37.0
+    Checking aws-smithy-http v0.64.3
+    Checking tokio-rustls v0.24.1
+    Checking sha2 v0.11.1
+    Checking inventory-core v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/crates/core)
+    Checking event-listener-strategy v0.5.4
+    Checking signature v3.0.0
+    Checking num-integer v0.1.47
+    Checking atoi v2.0.0
+    Checking futures-executor v0.3.34
+    Checking tower-layer v0.3.3
+    Checking tower v0.5.3
+    Checking sqlx-sqlite v0.9.0
+    Checking num-bigint v0.5.1
+    Checking ecdsa v0.17.0
+    Checking async-lock v3.5.0
+    Checking hyper-rustls v0.24.2
+    Checking rand_chacha v0.9.0
+    Checking primeorder v0.14.0
+    Checking hyper-rustls v0.27.10
+    Checking rand v0.9.5
+    Checking rand_xorshift v0.4.0
+    Checking aws-credential-types v1.3.1
+    Checking combine v4.6.9
+    Checking arcstr v1.2.0
+    Checking unarray v0.1.4
+    Checking sha1_smol v1.0.1
+    Checking xxhash-rust v0.8.19
+    Checking hex v0.4.3
+    Checking redis v1.8.1
+    Checking proptest v1.11.0
+    Checking aws-smithy-http-client v1.5.2
+    Checking p256 v0.14.0
+    Checking sqlx v0.9.0
+    Checking aws-smithy-observability v0.3.1
+    Checking aws-smithy-runtime v1.16.3
+    Checking aws-sigv4 v1.6.5
+    Checking aws-types v1.7.0
+    Checking uuid v1.29.2
+    Checking aws-runtime v1.10.4
+    Checking arc-swap v1.9.5
+    Checking inventory-engine v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/crates/engine)
+    Checking aws-smithy-json v0.65.1
+    Checking regex-lite v0.1.9
+    Checking linux-raw-sys v0.12.1
+    Checking rustix v1.1.6
+    Checking tempfile v3.27.0
+    Checking xmlparser v0.13.6
+    Checking aws-smithy-xml v0.64.1
+    Checking urlencoding v2.1.3
+    Checking aws-smithy-query v0.64.0
+    Checking spin v0.10.1
+    Checking crc-fast v1.10.0
+    Checking sha1 v0.11.0
+    Checking md-5 v0.11.0
+    Checking aws-smithy-checksums v0.65.1
+    Checking aws-sdk-sts v1.126.0
+    Checking aws-sdk-sso v1.121.0
+    Checking aws-sdk-ssooidc v1.123.0
+    Checking sha1 v0.10.7
+    Checking lru v0.18.5
+    Checking aws-sdk-s3 v1.159.0
+    Checking aws-config v1.13.2
+    Checking aws-sdk-elasticloadbalancingv2 v1.136.0
+    Checking aws-sdk-iam v1.135.0
+    Checking aws-sdk-ec2 v1.278.0
+    Checking aws-sdk-route53 v1.134.0
+    Checking aws-sdk-cloudfront v1.143.0
+    Checking aws-sdk-organizations v1.139.0
+    Checking aws-sdk-lambda v1.158.0
+    Checking aws-sdk-eks v1.162.0
+    Checking aws-sdk-cloudcontrol v1.122.0
+    Checking aws-sdk-ecs v1.159.0
+    Checking aws-sdk-resourceexplorer2 v1.126.0
+    Checking aws-sdk-dynamodb v1.139.0
+    Checking aws-sdk-config v1.134.0
+    Checking utf8parse v0.2.2
+    Checking anstyle-parse v1.0.0
+    Checking colorchoice v1.0.5
+    Checking is_terminal_polyfill v1.70.2
+    Checking anstyle v1.0.14
+    Checking anstyle-query v1.1.5
+    Checking anstream v1.0.0
+    Checking inventory-aws v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/crates/aws)
+    Checking regex-automata v0.4.18
+    Checking clap_lex v1.1.1
+    Checking strsim v0.11.1
+    Checking lazy_static v1.5.1
+    Checking sharded-slab v0.1.7
+    Checking clap_builder v4.6.7
+    Checking matchers v0.2.0
+    Checking tracing-serde v0.2.0
+    Checking tracing-log v0.2.0
+    Checking thread_local v1.1.10
+    Checking nu-ansi-term v0.50.3
+    Checking tracing-subscriber v0.3.23
+    Checking clap v4.6.7
+    Checking anyhow v1.0.104
+    Checking inventory-sdk-catalog v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/crates/sdk-catalog)
+    Checking aws-inventory v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs)
+    Finished `dev` profile [unoptimized] target(s) in 2m 38s
+    Blocking waiting for file lock on build directory
+    Finished `dev` profile [unoptimized] target(s) in 4.62s
+    Checking inventory-core v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/crates/core)
+    Checking inventory-engine v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/crates/engine)
+    Checking inventory-aws v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/crates/aws)
+    Checking inventory-sdk-catalog v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/crates/sdk-catalog)
+    Checking aws-inventory v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs)
+    Finished `dev` profile [unoptimized] target(s) in 17.52s
+    Blocking waiting for file lock on build directory
+   Compiling serde_core v1.0.229
+    Checking typenum v1.20.1
+    Checking generic-array v0.14.7
+    Checking block-buffer v0.10.4
+    Checking crypto-common v0.1.7
+    Checking winnow v1.0.5
+    Checking toml_parser v1.1.5+spec-1.1.0
+    Checking digest v0.10.7
+    Checking toml_datetime v1.1.3+spec-1.1.0
+    Checking serde_spanned v1.1.3
+    Checking memchr v2.8.3
+    Checking toml_writer v1.2.0+spec-1.1.0
+    Checking toml v1.2.1+spec-1.1.0
+    Checking sha2 v0.10.9
+    Checking serde_json v1.0.154
+    Checking inventory-sdk-catalog v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/crates/sdk-catalog)
+    Finished `dev` profile [unoptimized] target(s) in 12.52s
+   Compiling regex-automata v0.4.18
+   Compiling matchers v0.2.0
+   Compiling tracing-subscriber v0.3.23
+   Compiling aws-inventory v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs)
+   Compiling inventory-aws v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/crates/aws)
+   Compiling inventory-engine v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/crates/engine)
+   Compiling inventory-core v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/crates/core)
+    Finished `test` profile [unoptimized] target(s) in 43.60s
+     Running unittests src/main.rs (target/debug/build/aws-inventory/2c2525128f5f31c1/out/aws_inventory-2c2525128f5f31c1)
+
+running 68 tests
+test analysis::tests::direction_display_matches_cli_value_names ... ok
+test catalog::tests::catalog_kinds_and_derived_views_match_the_sqlite_schema ... ok
+test delivery::tests::cli_requires_output_directory_before_admitting_falkor_delivery ... ok
+test delivery::tests::delivery_deadline_cancels_drains_and_reports_timeout_distinctly ... ok
+test delivery::tests::cancellation_stops_delivery_admission_without_creating_database_or_outputs ... ok
+test delivery::tests::collection_and_delivery_outcomes_never_erase_partial_or_cancelled_evidence ... ok
+test delivery::tests::receipt_publication_keeps_existing_receipts_and_foreign_partials ... ok
+test delivery::tests::persisted_v04_scan_jobs_deserialize_without_delivery_side_effects ... ok
+test delivery::tests::timeout_distinguishes_drained_work_from_failed_cleanup_and_keeps_completed_outputs ... ok
+test coverage::tests::parent_capability_retains_source_and_verification_boundaries ... ok
+test jobs::worker::tests::cancellation_wins_a_success_shaped_completion ... ok
+test jobs::worker::tests::completed_scan_does_not_wait_for_heartbeat_or_deadline ... ok
+test jobs::worker::tests::heartbeat_future_keeps_running_while_cancelled_work_drains ... ok
+test jobs::worker::tests::lease_loss_preserves_error_and_bounds_scan_drain ... ok
+test coverage::tests::full_matrix_and_selected_execution_scope_are_distinct ... ok
+test coverage::tests::coverage_filtering_retains_exclusion_and_truncation_evidence ... ok
+test jobs::worker::tests::summaries_omit_full_results_bound_error_text_and_stop_on_cancellation ... ok
+test jobs::worker::tests::timeout_cancels_and_allows_a_cooperative_scan_to_finalize ... ok
+test jobs::worker::tests::worker_shutdown_bounds_an_unresponsive_scan_and_drops_it ... ok
+test jobs::worker::tests::oversized_results_retain_bounded_scan_summaries_and_explicit_counts ... ok
+test jobs::tests::queue_submission_is_offline_and_persists_paths_without_external_id_value ... ok
+test jobs::worker::tests::stopped_worker_does_not_claim_queued_jobs_or_load_aws_configuration ... ok
+test plan::tests::root_only_request_count_keeps_the_old_exact_contract ... ok
+test plan::tests::full_plan_has_schema_backed_breadth_and_explicit_cost_uncertainty ... ok
+test plan::tests::selected_children_share_one_explicit_parent_prerequisite ... ok
+test plan::tests::global_and_organization_plans_keep_account_count_unknown_until_discovery ... ok
+test scan::tests::account_ceiling_applies_after_explicit_filtering ... ok
+test scan::tests::explicit_inactive_missing_and_empty_selections_fail_before_job_creation ... ok
+test plan::tests::source_discovery_allows_source_selectors_without_loading_credentials ... ok
+test scan::tests::only_active_observations_become_ordered_unique_targets ... ok
+test scan::tests::partial_organization_listing_never_becomes_an_implicit_subset_scan ... ok
+test scan::tests::precancelled_queued_roles_drain_without_loading_credentials ... ok
+test scan::tests::precancelled_run_creates_no_database_and_performs_no_api_attempt ... ok
+test scan::tests::role_targets_share_a_source_profile_but_keep_separate_scan_identities ... ok
+test scan::tests::startup_failure_attributes_the_requested_account_without_inventing_identity ... ok
+test plan::tests::supplemental_only_and_unknown_region_count_remain_explicit ... ok
+test targets::tests::rejects_invalid_accounts_roles_and_secret_environment_names ... ok
+test targets::tests::role_targets_validate_without_environment_or_credentials ... ok
+test plan::tests::selectors_deduplicate_and_unknown_types_are_errors ... ok
+test architecture::tests::refuses_mutable_snapshots ... ok
+test analysis::tests::zero_depth_and_zero_hop_paths_have_explicit_radius_semantics ... ok
+test analysis::tests::traversal_deduplicates_observations_and_preserves_source_precedence ... ok
+test analysis::tests::path_uses_shortest_hops_with_deterministic_tie_breaking ... ok
+test analysis::tests::findings_preserve_collection_gaps_and_real_row_truncation ... ok
+test architecture::tests::retains_ipv6_and_newer_route_target_evidence ... ok
+test analysis::tests::traversal_directions_change_distances_and_path_orientation ... ok
+test analysis::tests::node_and_edge_caps_report_partial_work_without_dangling_graph_rows ... ok
+test analysis::tests::references_can_be_start_nodes_but_unknown_identifiers_cannot ... ok
+test analysis::tests::findings_use_declared_facts_and_do_not_treat_missing_reads_as_false ... ok
+test architecture::tests::reports_partiality_missing_targets_and_real_truncation ... ok
+test analysis::tests::traversal_handles_cycles_and_unresolved_endpoints_deterministically ... ok
+test analysis::tests::graph_rejects_bad_caps_running_scans_and_handles_quoted_ids ... ok
+test analysis::tests::graph_keeps_endpoint_metadata_inside_the_selected_scan ... ok
+test scan::tests::known_target_failure_remains_attributed_and_partial_in_sqlite ... ok
+test analysis::tests::exact_edge_budget_does_not_report_false_truncation_on_reverse_duplicates ... ok
+test analysis::tests::findings_never_join_a_listener_from_a_different_scan ... ok
+test analysis::tests::diff_absence_is_not_deletion_even_for_complete_scans ... ok
+test analysis::tests::diff_rejects_running_snapshots_and_invalid_limits ... ok
+test analysis::tests::diff_keeps_partial_inputs_and_source_changes_explicit ... ok
+test analysis::tests::diff_ignores_observation_time_and_object_key_order ... ok
+test analysis::tests::diff_detail_cap_does_not_clip_comparison_counts ... ok
+test analysis::tests::diff_reports_tags_arrays_and_provider_timestamps_as_data ... ok
+test analysis::tests::diff_comparison_cap_has_real_probe_and_partial_status ... ok
+test delivery::tests::delivery_failure_does_not_relabel_or_mutate_collected_snapshot ... ok
+test analysis::tests::public_diff_uses_two_readers_without_one_pool_deadlock ... ok
+test delivery::tests::missing_falkor_environment_retains_completed_inventory_and_graph_plan_receipts ... ok
+test delivery::tests::repeated_offline_delivery_publishes_separate_complete_artifacts ... ok
+test delivery::tests::partial_delivery_requires_explicit_opt_in_and_retains_scan_status ... ok
+
+test result: ok. 68 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.58s
+
+     Running tests/cli_properties.rs (target/debug/build/aws-inventory/3aefd1dc7caf5d8d/out/cli_properties-3aefd1dc7caf5d8d)
+
+running 7 tests
+test entrypoint_version_catalog_and_error_exit_are_real ... ok
+test partial_and_cancelled_snapshots_preserve_exit_status_and_evidence ... ok
+test inventory_export_and_existing_scan_delivery_work_through_actual_cli ... ok
+test durable_cli_routes_preserve_idempotency_cancellation_and_explicit_retry ... ok
+test planning_deduplicates_targets_and_reports_a_cartesian_product ... ok
+test query_row_limit_bounds_a_persisted_complete_fixture ... ok
+test query_literals_round_trip_without_becoming_sql_statements ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.62s
+
+     Running tests/emulator_cli.rs (target/debug/build/aws-inventory/f9c126a141a91c64/out/emulator_cli-f9c126a141a91c64)
+
+running 2 tests
+test emulator_cli_durable_worker_persists_an_assumed_role_scan ... ignored, requires the explicitly prepared local AWS Emulator fixture
+test emulator_cli_native_snapshot_reports_and_graph_delivery ... ignored, requires the explicitly prepared local AWS Emulator and FalkorDB fixtures
+
+test result: ok. 0 passed; 0 failed; 2 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/build/inventory-aws/6f66bcc1d656e35d/out/inventory_aws-6f66bcc1d656e35d)
+
+running 263 tests
+test cloud_control::architecture_tests::template_references_require_single_identifiers_with_the_reviewed_prefix ... ok
+test cloud_control::architecture_tests::general_arn_rules_preserve_accountless_resources_and_concrete_log_group_suffixes ... ok
+test cloud_control::architecture_tests::returned_role_arns_require_the_declared_service_and_resource_kind ... ok
+test cloud_control::architecture_tests::new_types_remove_sensitive_values_before_identity_edges_or_serialization ... ok
+test cloud_control::parents::tests::denied_parent_discovery_is_incomplete_and_never_claims_empty_success ... ok
+test cloud_control::parents::tests::mismatched_parent_is_rejected_and_thin_fallback_never_adds_parent_edges ... ok
+test cloud_control::parents::tests::partial_parent_pagination_still_collects_visible_children_and_records_gap ... ok
+test cloud_control::parents::tests::invalid_binding_cannot_reference_redacted_or_non_string_properties ... ok
+test cloud_control::tests::absent_list_properties_still_enriches_with_the_exact_composite_identifier ... ok
+test cloud_control::parents::tests::cancellation_after_child_admission_stops_child_reads_and_discovery_completion ... ok
+test cloud_control::parents::tests::model_and_child_budgets_fail_before_enrichment_and_cross_parent_duplicates_are_rejected ... ok
+test cloud_control::parents::tests::successful_empty_parent_discovery_marks_children_complete_without_child_calls ... ok
+test cloud_control::tests::empty_page_with_token_continues_and_page_cap_remains_incomplete ... ok
+test cloud_control::parents::tests::different_parents_cannot_restart_the_same_child_model_scope ... ok
+test cloud_control::tests::composite_eip_identity_uses_allocation_property_and_exact_identifier_is_retained ... ok
+test cloud_control::parents::tests::child_models_paginate_independently_and_parent_is_enumerated_once ... ok
+test cloud_control::tests::denied_and_malformed_children_do_not_erase_valid_siblings ... ok
+test cloud_control::parents::tests::every_reviewed_binding_builds_the_literal_expected_model ... ok
+test cloud_control::parents::tests::parent_context_rejects_missing_wrong_type_empty_control_and_oversized_values ... ok
+test common::property_tests::authentication_error_codes_are_ascii_case_insensitive ... ok
+test common::property_tests::aws_millisecond_header_is_not_interpreted_as_seconds ... ok
+test common::property_tests::child_budget_rejects_both_scope_and_single_page_overflow ... ok
+test common::property_tests::continuation_limit_counts_utf8_bytes ... ok
+test common::property_tests::header_count_and_encoding_limits_are_fail_closed ... ok
+test cloud_control::parents::tests::cancellation_prevents_parent_and_child_calls ... ok
+test common::property_tests::combining_hints_is_commutative_associative_and_idempotent ... ok
+test cloud_control::tests::empty_terminal_list_is_complete_and_get_is_not_called ... ok
+test common::property_tests::integer_seconds_cannot_overflow_or_cross_the_delay_ceiling ... ok
+test common::property_tests::http_dates_preserve_fractional_waits_and_clamp_past_deadlines ... ok
+test common::property_tests::invalid_and_excessive_directives_cannot_be_hidden_by_a_shorter_valid_hint ... ok
+test common::property_tests::continuation_history_rejects_growth_after_its_exact_byte_budget ... ok
+test common::property_tests::modeled_retry_traits_apply_without_matching_error_names ... ok
+test common::property_tests::non_decimal_suffixes_are_never_partial_numbers ... ok
+test common::property_tests::oversized_decimal_hints_remain_invalid_even_when_the_value_is_small ... ok
+test cloud_control::architecture_tests::independently_authored_architecture_fixtures_preserve_exact_targets_and_evidence ... ok
+test common::property_tests::fetch_failure_preserves_all_preceding_nonterminal_pages ... ok
+test common::property_tests::seconds_are_exact_with_bounded_optional_whitespace ... ok
+test common::property_tests::hints_cannot_make_terminal_failures_retryable ... ok
+test common::property_tests::page_cap_preserves_a_nonterminal_checkpoint ... ok
+test common::property_tests::repeated_valid_headers_select_the_longest_delay ... ok
+test common::property_tests::throttling_error_codes_are_ascii_case_insensitive ... ok
+test common::property_tests::retryable_classes_keep_their_kind_when_a_directive_is_attached ... ok
+test common::tests::capped_page_keeps_nonterminal_token ... ok
+test common::tests::child_budget_is_checked_before_enrichment ... ok
+test common::property_tests::ordinary_server_statuses_retry_but_unknown_client_errors_do_not ... ok
+test common::property_tests::timeout_and_server_codes_retain_distinct_retry_classes ... ok
+test common::property_tests::unsupported_operations_stay_terminal_despite_retry_metadata ... ok
+test common::tests::detects_non_adjacent_cursor_cycle ... ok
+test common::tests::empty_page_with_token_remains_open ... ok
+test common::tests::driver_records_cap_without_terminal_page ... ok
+test common::tests::driver_preserves_partial_page_before_permission_failure ... ok
+test common::tests::driver_follows_empty_page_and_commits_terminal_empty_page ... ok
+test common::tests::generic_sdk_classifier_keeps_the_longest_header_and_original_retry_class ... ok
+test common::tests::retry_headers_do_not_make_denied_or_permanent_errors_retryable ... ok
+test common::tests::retry_hint_http_date_uses_an_injected_wall_clock_and_retains_subseconds ... ok
+test common::tests::retry_hint_seconds_and_milliseconds_have_distinct_exact_units ... ok
+test common::tests::unmodeled_http_denial_with_retry_header_remains_terminal ... ok
+test common::tests::unsupported_endpoint_does_not_retry_and_decode_failure_does_not_expose_body ... ok
+test discovery::organizations::tests::account_state_controls_eligibility_and_missing_state_fails_closed ... ok
+test discovery::organizations::tests::empty_roots_and_depth_limit_are_explicit_partial_coverage ... ok
+test discovery::organizations::tests::malformed_account_id_is_rejected_and_email_is_not_retained ... ok
+test discovery::organizations::tests::hierarchy_rejects_cycles_multiple_parents_and_duplicate_memberships ... ok
+test discovery::organizations::tests::root_unit_and_membership_id_types_are_checked ... ok
+test common::property_tests::success_status_decode_failure_is_terminal_and_does_not_disclose_the_error_body ... ok
+test common::tests::retry_header_values_are_bounded_and_invalid_bytes_cannot_disappear ... ok
+test common::property_tests::any_previously_seen_cursor_is_a_cycle ... ok
+test cloud_control::parents::tests::literal_emulator_parent_fixtures_preserve_all_sanitized_properties_and_exact_architecture_edges ... ok
+test cloud_control::tests::list_identity_ledger_rejects_replays_before_enrichment_and_does_not_consume_failed_budget ... ok
+test discovery::pages::property_tests::empty_cursor_is_failure_even_when_all_rows_are_valid ... ok
+test cloud_control::tests::pre_cancelled_collection_admits_no_types_or_children ... ok
+test discovery::pages::property_tests::exact_identity_byte_limit_accepts_unicode_without_truncation ... ok
+test cloud_control::tests::malformed_get_responses_do_not_become_empty_successes ... ok
+test cloud_control::tests::mid_page_cancellation_stops_queued_children_without_list_fallbacks ... ok
+test cloud_control::tests::repeated_identifier_across_pages_fails_the_scope_without_replaying_child ... ok
+test discovery::pages::property_tests::a_page_over_the_raw_item_budget_is_rejected_atomically ... ok
+test discovery::pages::property_tests::actual_driver_continues_empty_pages_until_a_terminal_response ... ok
+test cloud_control::tests::unsupported_list_and_closed_consumer_never_claim_empty_success ... ok
+test discovery::property_tests::credential_deadlines_preserve_stricter_limits_and_bound_missing_limits ... ok
+test common::property_tests::terminal_empty_page_completes_at_the_exact_page_limit ... ok
+test discovery::pages::property_tests::continuation_at_the_item_cap_reports_incomplete_work ... ok
+test cloud_control::parents::tests::child_denial_and_child_read_fallback_remain_failed_without_parent_edges ... ok
+test discovery::pages::property_tests::malformed_identities_do_not_discard_valid_siblings ... ok
+test discovery::pages::property_tests::cancellation_retains_a_generated_prefix_and_prevents_the_next_fetch ... ok
+test discovery::property_tests::generated_account_ids_preserve_leading_zeroes_and_reject_non_ascii_digits ... ok
+test discovery::pages::property_tests::mapper_runs_once_per_admitted_row_and_never_for_an_oversized_page ... ok
+test discovery::property_tests::role_path_prefix_and_role_name_have_independent_length_bounds ... ok
+test cloud_control::parents::tests::missing_parent_property_and_failed_parent_read_block_child_work ... ok
+test discovery::sources::tests::config_aggregator_metadata_retains_declared_scope_and_filter_presence ... ok
+test discovery::sources::tests::regional_default_is_selected_only_when_observed_in_complete_listing ... ok
+test discovery::sources::tests::sources_are_account_and_region_scoped ... ok
+test discovery::sources::tests::unique_source_selection_never_uses_partial_or_ambiguous_evidence ... ok
+test discovery::sources::tests::view_filter_values_are_never_persisted ... ok
+test cloud_control::tests::input_node_depth_and_pointer_expansion_caps_fail_explicitly ... ok
+test discovery::property_tests::role_sessions_have_explicit_chained_session_bounds ... ok
+test discovery::sources::tests::view_metadata_must_match_the_selected_identity ... ok
+test discovery::tests::cancellation_between_pages_preserves_completed_results ... ok
+test discovery::tests::continuation_cycles_and_page_limits_are_explicit_failures ... ok
+test discovery::tests::credential_provider_timeouts_preserve_stricter_caller_bounds ... ok
+test discovery::tests::discovery_options_reject_unbounded_or_meaningless_requests ... ok
+test discovery::tests::external_id_is_redacted_from_debug_output ... ok
+test discovery::tests::denied_followup_retains_preceding_accounts_and_partial_evidence ... ok
+test discovery::tests::item_limit_and_invalid_token_never_claim_complete ... ok
+test discovery::tests::malformed_and_duplicate_items_do_not_discard_valid_siblings ... ok
+test discovery::tests::oversized_sdk_page_is_rejected_before_mapping ... ok
+test discovery::tests::organizations_empty_page_with_token_is_not_terminal ... ok
+test discovery::tests::precancelled_discovery_stops_before_configuration_loading ... ok
+test discovery::tests::role_arn_construction_preserves_partition_and_nested_role_path ... ok
+test discovery::tests::failure_diagnostic_caps_preserve_suppressed_count_and_partial_status ... ok
+test discovery::tests::precancelled_pagination_makes_no_fetch_call ... ok
+test discovery::tests::role_configuration_honors_precancellation_and_requires_loaded_base ... ok
+test discovery::pages::property_tests::every_prior_token_is_checked_for_a_cycle ... ok
+test discovery::property_tests::iam_role_arns_cannot_redirect_to_another_service_region_or_resource ... ok
+test discovery::tests::role_configuration_is_lazy_and_keeps_sdk_attempts_at_one ... ok
+test discovery::tests::role_options_reject_wrong_service_region_and_session_bounds ... ok
+test ec2::tests::shared_subnet_uses_reported_owner_and_vpc_owner ... ok
+test ecs::tests::classic_name_is_a_distinct_unobserved_reference_with_owner_assumption ... ok
+test ecs::tests::service_reference_bound_precedes_mapping ... ok
+test ecs::tests::malformed_service_load_balancer_references_do_not_emit_resources ... ok
+test global_inventory::cloudfront::tests::duplicate_origins_and_cross_account_source_arns_fail ... ok
+test ecs::tests::service_groups_aggregate_primary_alternate_and_container_evidence ... ok
+test global_inventory::cloudfront::tests::s3_origin_patterns_are_explicit_and_do_not_accept_lookalikes ... ok
+test discovery::property_tests::external_id_validation_never_puts_the_id_into_debug_or_error_messages ... ok
+test global_inventory::cloudfront::tests::custom_header_values_and_origin_paths_never_enter_inventory ... ok
+test global_inventory::cloudfront::tests::distribution_uses_actual_certificate_arn_and_preserves_behavior_routing ... ok
+test global_inventory::iam::tests::deny_and_not_principal_never_become_allow_edges ... ok
+test global_inventory::iam::tests::own_iam_identities_cannot_silently_change_account ... ok
+test global_inventory::iam::tests::profile_links_exact_role_arn_and_policy_metadata_omits_document ... ok
+test global_inventory::iam::tests::list_only_roles_do_not_claim_detail_fields_or_trust_edges ... ok
+test discovery::property_tests::role_paths_reject_interpretive_or_control_characters ... ok
+test global_inventory::iam::tests::trust_parser_decodes_rfc3986_and_does_not_treat_plus_as_space ... ok
+test global_inventory::cloudfront::tests::unreviewed_cloudfront_partition_is_explicit_failure_without_api_calls ... ok
+test global_inventory::iam::tests::role_maps_identity_and_boundary_without_policy_payload ... ok
+test global_inventory::route53::tests::aliases_stay_dns_references_without_fabricated_load_balancer_identity ... ok
+test ecs::tests::service_network_duplicates_do_not_duplicate_edges_and_revision_is_retained ... ok
+test global_inventory::route53::tests::bad_address_family_is_rejected_and_zone_prefix_normalizes ... ok
+test global_inventory::route53::tests::truncated_record_page_without_name_or_type_is_failure ... ok
+test global_inventory::route53::tests::record_cursor_round_trip_keeps_routing_identifier ... ok
+test global_inventory::route53::tests::null_mx_retains_rdata_without_inventing_a_dns_destination ... ok
+test global_inventory::route53::tests::malformed_record_is_scoped_and_valid_sibling_survives ... ok
+test global_inventory::route53::tests::txt_values_are_omitted_with_explicit_count ... ok
+test global_inventory::route53::tests::weighted_records_have_distinct_stable_identities ... ok
+test global_inventory::s3::tests::absent_and_denied_policy_sections_remain_distinct ... ok
+test global_inventory::s3::tests::conflicting_s3_arn_is_not_silently_accepted ... ok
+test global_inventory::s3::tests::legacy_s3_locations_are_normalized_and_partition_checked ... ok
+test global_inventory::s3::tests::bucket_location_is_real_region_while_arn_stays_global ... ok
+test global_inventory::s3::tests::bucket_architecture_edges_keep_explicit_arns_and_deduplicate ... ok
+test global_inventory::tests::compound_identity_is_unambiguous ... ok
+test global_inventory::tests::cancellation_and_closed_consumers_never_become_fallback_success ... ok
+test global_inventory::s3::tests::missing_tags_and_sections_cannot_be_reported_complete ... ok
+test global_inventory::tests::detail_failure_precedes_fallback_and_keeps_scope_incomplete ... ok
+test global_inventory::tests::global_scope_does_not_become_sdk_endpoint_region ... ok
+test global_inventory::tests::marker_requires_evidence_of_more_pages ... ok
+test global_inventory::tests::identity_ledger_rejects_duplicates_and_budget_before_commit ... ok
+test cloud_control::tests::fallback_identity_namespaces_identical_provider_ids_by_type ... ok
+test lambda::tests::lambda_typed_and_header_hints_use_the_longer_delay ... ok
+test global_inventory::tests::pre_cancelled_global_scan_never_constructs_service_work ... ok
+test lambda::tests::typed_lambda_retry_delay_survives_error_classification ... ok
+test global_inventory::tests::invalid_child_metadata_does_not_drop_valid_siblings ... ok
+test global_inventory::tests::unavailable_section_is_distinct_from_successful_absence ... ok
+test load_balancing::tests::authentication_action_exposes_presence_without_copying_client_secret ... ok
+test load_balancing::tests::all_three_load_balancer_types_keep_network_topology_without_duplicate_edges ... ok
+test discovery::pages::property_tests::continuation_at_the_page_cap_reports_incomplete_work ... ok
+test load_balancing::tests::instance_target_is_an_explicit_account_assumption_and_keeps_unhealthy_state ... ok
+test load_balancing::tests::deleted_target_group_is_failure_while_successful_empty_group_has_terminal_page ... ok
+test load_balancing::tests::health_membership_identity_includes_group_port_zone_and_quic_id ... ok
+test load_balancing::tests::listener_preserves_weighted_actions_and_deduplicates_forward_edges ... ok
+test load_balancing::tests::oversized_unpaginated_health_response_is_rejected_before_mapping ... ok
+test load_balancing::tests::ip_target_reference_has_unknown_owner_and_is_scoped_to_target_group ... ok
+test load_balancing::tests::listener_rejects_contradictory_parent_in_response ... ok
+test load_balancing::tests::denied_health_child_does_not_discard_parent_or_claim_empty_success ... ok
+test load_balancing::tests::returned_lambda_and_alb_arns_are_preserved_including_lambda_qualifier ... ok
+test load_balancing::tests::repeated_health_identity_fails_before_storage ... ok
+test discovery::pages::property_tests::fetch_failure_preserves_the_prefix_and_is_not_counted_as_a_received_page ... ok
+test load_balancing::tests::malformed_identity_and_nested_overflow_are_explicit_errors ... ok
+test load_balancing::tests::unattached_target_group_remains_a_resource_with_health_configuration ... ok
+test network::tests::absent_identifier_is_an_error_and_empty_token_is_terminal ... ok
+test load_balancing::tests::unknown_future_target_type_remains_explicit_unresolved_evidence ... ok
+test network::tests::internet_gateway_uses_reported_owner_and_attachment_state ... ok
+test network::tests::acl_keeps_order_direction_protocol_and_deny_without_access_edges ... ok
+test network::tests::peering_uses_both_reported_owners_and_regions_without_reversing_roles ... ok
+test network::tests::network_scope_retains_nonterminal_page_then_records_denial ... ok
+test network::tests::endpoint_shared_network_refs_stay_uncertain_and_duplicate_refs_share_edges ... ok
+test network::tests::network_scope_page_cap_emits_failure_without_terminal_success ... ok
+test load_balancing::tests::missing_child_target_is_invalid_response_and_sibling_still_collects ... ok
+test network::tests::main_association_does_not_fabricate_subnets_and_explicit_refs_deduplicate ... ok
+test network::tests::repeated_resource_identity_fails_before_storage ... ok
+test network::tests::regional_nat_allows_absent_subnet_and_maps_address_targets ... ok
+test options_property_tests::each_named_selector_and_alias_has_its_documented_collector_set ... ok
+test network::tests::route_target_owner_arn_and_unrecognized_gateway_are_preserved ... ok
+test network::tests::routes_keep_destinations_states_and_one_edge_per_target ... ok
+test load_balancing::tests::rule_retains_conditions_rewrites_and_forwarding_weights ... ok
+test load_balancing::tests::target_group_relations_are_deduplicated ... ok
+test options_property_tests::page_bounds_are_inclusive_and_independent ... ok
+test cloud_control::parents::wire_tests::production_sdk_serializes_parent_models_keeps_cursors_isolated_and_executor_owns_retry ... ok
+test network::tests::nested_capacity_is_checked_before_resource_mapping ... ok
+test cloud_control::tests::canonical_identity_matches_native_and_returned_owner_is_preserved ... ok
+test discovery::pages::property_tests::terminal_response_at_the_exact_page_and_item_caps_is_complete ... ok
+test discovery::property_tests::account_role_construction_round_trips_without_changing_the_identity ... ok
+test options_property_tests::supplemental_selectors_require_their_own_explicit_or_discovered_source ... ok
+test source_discovery::tests::absence_is_successful_discovery_but_ambiguity_is_incomplete ... ok
+test cloud_control::tests::catalog_has_397_reviewed_regional_read_list_types_and_safe_columns ... ok
+test discovery::property_tests::only_explicitly_selected_sources_produce_an_identifier ... ok
+test cloud_control::tests::relationships_deduplicate_paths_and_preserve_returned_arn_ownership ... ok
+test cloud_control::tests::wildcard_write_only_fields_and_common_nested_credentials_are_removed ... ok
+test options_property_tests::all_never_hides_an_unknown_selector ... ok
+test options_property_tests::optional_text_uses_exact_byte_limits_without_truncating_unicode ... ok
+test cloud_control::tests::self_arn_is_used_instead_of_a_borrowed_role_or_secret_arn ... ok
+test supplemental::tests::accepts_config_string_configuration_and_rejects_malformed_rows ... ok
+test supplemental::tests::config_keeps_nested_network_evidence_raw_and_projects_present_fields ... ok
+test supplemental::tests::config_maps_all_six_network_kinds ... ok
+test supplemental::tests::config_maps_only_real_elbv2_kinds_and_preserves_classic ... ok
+test supplemental::tests::config_uses_resource_owner_not_aggregator_account ... ok
+test supplemental::tests::config_projects_recorded_elbv2_scalars_without_native_enrichment ... ok
+test supplemental::tests::explorer_maps_verified_v2_arns_including_ambiguous_type ... ok
+test supplemental::tests::explorer_maps_network_kinds_without_synthesizing_details ... ok
+test supplemental::tests::explorer_never_promotes_classic_or_mismatched_arns_to_v2 ... ok
+test supplemental::tests::explorer_keeps_owner_region_and_source_freshness ... ok
+test options_property_tests::selector_unions_are_order_and_duplicate_independent ... ok
+test task_definitions::tests::denied_description_is_separate_from_successful_sibling_and_list_coverage ... ok
+test task_definitions::tests::denied_list_does_not_describe_or_claim_empty_success ... ok
+test task_definitions::tests::description_requires_exact_family_and_revision_identity ... ok
+test task_definitions::tests::identity_ledger_rejects_duplicates_api_overflow_and_child_budget_before_work ... ok
+test task_definitions::tests::environment_and_unstructured_option_values_are_not_retained ... ok
+test task_definitions::tests::empty_list_page_with_token_continues_to_a_revision_and_terminal_page ... ok
+test task_definitions::tests::malformed_reference_arns_and_timestamp_overflow_are_rejected ... ok
+test task_definitions::tests::page_cap_retains_token_and_explicit_incomplete_scope ... ok
+test task_definitions::tests::malformed_description_is_contained_to_its_revision_scope ... ok
+test task_definitions::tests::repeated_revision_across_pages_does_not_replay_description_scope ... ok
+test options_property_tests::selector_count_limit_is_inclusive_before_deduplication ... ok
+test tests::rejects_unbounded_options ... ok
+test tests::pre_cancelled_scan_returns_before_sdk_setup ... ok
+test tests::supplemental_only_selection_does_not_enable_native_collectors ... ok
+test options_property_tests::region_length_and_ascii_alphabet_are_independent_contracts ... ok
+test task_definitions::tests::revision_identity_and_architecture_fields_use_returned_arn ... ok
+test task_definitions::tests::malformed_continuation_is_not_silently_declared_complete ... ok
+test tests::selectors_include_new_groups_without_duplicate_collectors ... ok
+test task_definitions::tests::volume_references_aggregate_and_preserve_authoritative_or_assumed_owners ... ok
+test supplemental::property_tests::explorer_type_cannot_contradict_its_arn_family_or_variant ... ok
+test options_property_tests::nul_in_any_optional_text_is_rejected_without_masking_by_other_limits ... ok
+test task_definitions::tests::mapped_component_cap_prevents_unbounded_response_expansion ... ok
+test options_property_tests::valid_region_and_selector_caps_can_be_used_together ... ok
+test supplemental::property_tests::all_known_native_type_names_keep_their_kind_under_ascii_case_changes ... ok
+test supplemental::property_tests::classic_load_balancer_arns_never_acquire_v2_kinds ... ok
+test options_property_tests::region_count_limit_is_inclusive_before_deduplication ... ok
+test supplemental::property_tests::well_formed_config_types_and_explorer_types_normalize_to_the_same_identity ... ok
+test cloud_control::parents::tests::child_only_selection_adds_each_prerequisite_once_and_retains_explicit_roots ... ok
+test supplemental::property_tests::complete_v2_arn_shapes_are_recognized_in_both_resource_explorer_namespaces ... ok
+test supplemental::property_tests::v2_arn_inference_requires_every_component_and_exact_arity ... ok
+test discovery::pages::property_tests::discovery_keeps_the_first_observation_of_every_identity ... ok
+test options_property_tests::cloud_control_selector_requires_its_flag_even_when_other_sources_exist ... ok
+test supplemental::property_tests::fallback_identifiers_are_bounded_ascii_and_do_not_split_unicode ... ok
+test discovery::property_tests::every_compiled_inventory_sdk_inherits_single_attempt_configuration ... ok
+test cloud_control::parents::tests::combined_catalog_adds_exactly_twenty_one_reviewed_children ... ok
+test cloud_control::tests::selection_rejects_unknown_types_and_deduplicates_exact_names ... ok
+test discovery::pages::property_tests::continuation_limit_counts_utf8_bytes ... ok
+test common::property_tests::service_diagnostics_are_bounded_by_characters_without_splitting_utf8 ... ok
+test discovery::property_tests::merging_partial_coverage_preserves_totals_diagnostics_and_cancellation ... ok
+test discovery::property_tests::diagnostic_capacity_does_not_hide_failure_or_cancellation ... ok
+test cloud_control::tests::read_visible_environment_commands_parameter_values_and_firehose_tokens_are_redacted ... ok
+test cloud_control::parents::tests::aggregate_child_capacity_accepts_the_last_slot_then_rejects_without_mutation ... ok
+test cloud_control::parents::tests::property_parent_models_are_escaped_exactly_and_scope_identity_is_value_sensitive ... ok
+test options_property_tests::resource_type_selection_requires_explicit_cloud_control ... ok
+test cloud_control::parents::tests::property_selection_is_idempotent_and_closed_under_prerequisites ... ok
+
+test result: ok. 263 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.96s
+
+     Running tests/emulator_snapshot.rs (target/debug/build/inventory-aws/3318a7f892a12bed/out/emulator_snapshot-3318a7f892a12bed)
+
+running 5 tests
+test emulator_snapshot_assumedrole ... ignored, requires explicitly prepared local emulator and verified frozen snapshot
+test emulator_snapshot_cloudcontrol ... ignored, requires explicitly prepared local emulator and verified frozen snapshot
+test emulator_snapshot_native ... ignored, requires explicitly prepared local emulator and verified frozen snapshot
+test emulator_snapshot_parents ... ignored, requires explicitly prepared local emulator and verified frozen snapshot
+test emulator_snapshot_sources ... ignored, requires explicitly prepared local emulator and verified frozen snapshot
+
+test result: ok. 0 passed; 0 failed; 5 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/build/inventory-core/b8a802dcf933ef8d/out/inventory_core-b8a802dcf933ef8d)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/bounds.rs (target/debug/build/inventory-core/fcfdd357bae176ec/out/bounds-fcfdd357bae176ec)
+
+running 5 tests
+test negative_relationship_time_is_rejected ... ok
+test pages_cannot_use_zero_or_empty_continuation ... ok
+test tag_values_can_be_empty_but_cannot_be_unbounded ... ok
+test serialized_payload_bounds_include_json_escaping ... ok
+test aggregate_page_bound_applies_to_many_valid_records ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.41s
+
+     Running tests/properties.rs (target/debug/build/inventory-core/132ae013a66864ba/out/properties-132ae013a66864ba)
+
+running 18 tests
+test serialization_failure_is_not_mislabeled_as_a_size_limit ... ok
+test source_order_and_status_names_match_the_wire_contract ... ok
+test observation_times_accept_zero_and_all_positive_i64_values ... ok
+test page_numbers_use_inclusive_nonzero_bounds ... ok
+test tag_cardinality_is_independent_of_contents ... ok
+test invalid_tag_keys_are_rejected ... ok
+test all_required_resource_identifiers_are_checked ... ok
+test all_scope_fields_are_validated_before_key_creation ... ok
+test page_validation_reaches_invalid_nested_records ... ok
+test continuation_tokens_use_byte_bounds_and_reject_nul ... ok
+test all_required_edge_identifiers_are_checked ... ok
+test arbitrary_unicode_identifiers_obey_the_byte_contract ... ok
+test names_and_tag_values_allow_empty_text_but_reject_nul ... ok
+test bounded_serialization_matches_independent_output_length ... ok
+test valid_events_preserve_unicode_properties_through_serde ... ok
+test scope_keys_round_trip_and_include_all_identity_fields ... ok
+test exact_json_size_and_zero_timestamp_boundaries ... ok
+test exact_identifier_text_token_and_record_boundaries ... ok
+
+test result: ok. 18 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.39s
+
+     Running unittests src/lib.rs (target/debug/build/inventory-engine/9d0ae1104c80d501/out/inventory_engine-9d0ae1104c80d501)
+
+running 9 tests
+test export::tests::drain_failure_preserves_original_failure_instead_of_claiming_success ... ok
+test export::tests::cancellation_during_a_record_drains_framing_then_stops_intake ... ok
+test export::tests::read_wait_is_cancelled_while_the_future_is_pending ... ok
+test export::tests::cancelled_after_writing_before_publication_removes_its_partial ... ok
+test export::tests::publication_race_preserves_the_winner_and_discards_only_our_partial ... ok
+test graph::tests::cancelled_export_removes_owned_partial_and_reports_removal_failure ... ok
+test graph::tests::acknowledged_batches_are_immutable_and_destination_scoped ... ok
+test limiter::tests::fractional_policy_recovery_keeps_sub_nanosecond_rate_credits ... ok
+test store::cancellation_tests::cancelling_after_first_sqlite_observation_rolls_back_whole_page ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.12s
+
+     Running tests/catalog_upgrade.rs (target/debug/build/inventory-engine/5041e66ec3ed24a9/out/catalog_upgrade-5041e66ec3ed24a9)
+
+running 2 tests
+test view_name_conflict_rolls_back_added_views_and_schema_version ... ok
+test upgrades_existing_v04_inventory_without_recollecting_or_replacing_user_objects ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.54s
+
+     Running tests/export.rs (target/debug/build/inventory-engine/b9976b3aacd610e2/out/export-b9976b3aacd610e2)
+
+running 12 tests
+test exact_record_and_byte_budgets_succeed_and_overflow_cleans_owned_partial ... ok
+test failures_and_empty_scopes_survive_export_without_inventing_resources ... ok
+test both_formats_round_trip_preferred_resources_edges_and_coverage ... ok
+test running_and_unknown_scans_never_create_an_output_even_with_opt_in ... ok
+test existing_outputs_and_partials_are_never_clobbered_or_removed ... ok
+test invalid_budget_bounds_are_rejected_before_any_file_is_created ... ok
+test all_observations_retain_every_source_page_and_original_value ... ok
+test ordering_and_content_hash_are_deterministic_for_both_modes_and_formats ... ok
+test cancellation_before_and_during_a_pending_read_does_not_publish ... ok
+test concurrent_exports_publish_exactly_one_complete_file ... ok
+test finalized_partial_and_cancelled_require_opt_in_and_keep_their_status ... ok
+test snapshot_export_can_exceed_the_read_only_query_row_cap ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.48s
+
+     Running tests/export_properties.rs (target/debug/build/inventory-engine/69af7a6efdfa9dd7/out/export_properties-69af7a6efdfa9dd7)
+
+running 1 test
+test generated_values_keep_exact_domain_records ... ok
+
+test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.26s
+
+     Running tests/global_views.rs (target/debug/build/inventory-engine/b98ce705696ebca0/out/global_views-b98ce705696ebca0)
+
+running 3 tests
+test global_views_expose_metadata_without_inventing_unknown_values ... ok
+test schema_four_name_conflict_rolls_back_all_new_views ... ok
+test schema_four_upgrades_existing_snapshots_and_preserves_owner_objects ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.25s
+
+     Running tests/graph.rs (target/debug/build/inventory-engine/98fbebc04c1efbde/out/graph-98fbebc04c1efbde)
+
+running 6 tests
+test live_falkordb_replay_and_parameter_round_trip ... ignored, requires explicit FALKORDB_TEST_URL; creates and removes an isolated test graph
+test invalid_graph_name_never_creates_an_output_file ... ok
+test running_scan_is_rejected_and_partial_scan_is_labeled ... ok
+test graph_export_cannot_replace_the_inventory_database ... ok
+test truncated_plan_fails_validation_before_network_connection ... ok
+test export_is_bounded_deterministic_and_preserves_special_characters ... ok
+
+test result: ok. 5 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.55s
+
+     Running tests/graph_contracts.rs (target/debug/build/inventory-engine/f21c523dc246be90/out/graph_contracts-f21c523dc246be90)
+
+running 5 tests
+test live_falkordb_rejected_batch_is_never_acknowledged_or_finalized ... ignored, requires explicit FALKORDB_TEST_URL; creates and removes an isolated test graph
+test public_projection_schema_preserves_its_version_and_bounds ... ok
+test graph_names_are_validated_against_an_existing_frozen_scan ... ok
+test malformed_envelopes_fail_before_connecting_or_creating_acknowledgements ... ok
+test metadata_heavy_resources_split_by_bytes_without_losing_rows ... ok
+
+test result: ok. 4 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 0.68s
+
+     Running tests/graph_retry.rs (target/debug/build/inventory-engine/6f688ee1f1285cd6/out/graph_retry-6f688ee1f1285cd6)
+
+running 8 tests
+test live_falkordb_ambiguous_write_replay_preserves_nodes_edges_and_checkpoint ... ignored, requires native FALKORDB_TEST_URL; proxy drops a confirmed server write response
+test pre_cancelled_and_invalid_options_do_not_open_input_or_checkpoint ... ok
+test custom_non_idempotent_query_gets_no_ambiguous_replay ... ok
+test retry_budget_is_exact_and_no_failed_write_is_acknowledged ... ok
+test changed_unacknowledged_tail_is_rejected_before_any_reconnect ... ok
+test cancellation_and_overall_deadline_interrupt_pending_network_without_ack ... ok
+test retryable_server_error_reconnects_but_permanent_errors_do_not_retry_or_ack ... ok
+test lost_reply_at_each_stage_reconnects_and_retries_identical_validated_bytes ... ok
+
+test result: ok. 7 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.47s
+
+     Running tests/job_properties.rs (target/debug/build/inventory-engine/f0c0c1f75f387991/out/job_properties-f0c0c1f75f387991)
+
+running 3 tests
+test generated_heartbeat_sequences_preserve_fencing_across_reopen ... ok
+test concurrent_claims_never_duplicate_or_run_future_work ... ok
+test generated_terminal_commands_preserve_retry_and_append_only_history ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.15s
+
+     Running tests/job_validation_properties.rs (target/debug/build/inventory-engine/cd2e86ad74fdb12a/out/job_validation_properties-cd2e86ad74fdb12a)
+
+running 4 tests
+test invalid_worker_capabilities_do_not_claim_or_consume_attempts ... ok
+test valid_json_that_is_not_object_intent_never_enters_the_queue ... ok
+test job_identifiers_and_kinds_obey_utf8_byte_boundaries ... ok
+test epoch_zero_is_valid_and_negative_lifecycle_times_never_change_state ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests/jobs.rs (target/debug/build/inventory-engine/b38403b6c80b0a82/out/jobs-b38403b6c80b0a82)
+
+running 16 tests
+test submission_is_idempotent_but_different_work_conflicts ... ok
+test invalid_and_oversized_inputs_do_not_mutate_queue ... ok
+test schedule_and_deterministic_claim_order ... ok
+test expired_cancelled_work_is_not_requeued ... ok
+test successful_jobs_cannot_accidentally_be_reexecuted ... ok
+test expired_attempt_is_recovered_and_old_owner_is_fenced ... ok
+test heartbeat_prevents_early_reclaim_and_never_shortens_lease ... ok
+test explicit_retry_retains_attempt_history_and_has_a_total_cap ... ok
+test lease_expiration_is_a_hard_commit_boundary ... ok
+test errors_are_utf8_bounded_and_terminal_failures_are_explicit ... ok
+test listing_excludes_large_payloads_and_results ... ok
+test queued_cancellation_never_runs_and_running_cancellation_wins_completion ... ok
+test restart_preserves_claim_and_recovers_only_after_expiration ... ok
+test competing_database_connections_claim_only_once ... ok
+test rejected_completion_preserves_live_lease ... ok
+test queue_and_inventory_database_paths_are_not_interchangeable ... ok
+
+test result: ok. 16 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.40s
+
+     Running tests/limiter.rs (target/debug/build/inventory-engine/36ca57476a5b7702/out/limiter-36ca57476a5b7702)
+
+running 43 tests
+test adaptive_recovery_stops_at_the_bucket_policy_ceiling ... ok
+test cancellation_wakes_backoff_before_another_attempt ... ok
+test backoff_holds_no_global_permit ... ok
+test cancellation_wakes_rate_and_local_reservation_waiters ... ok
+test fractional_rates_round_up_instead_of_exceeding_budget ... ok
+test policies_match_exactly_and_preserve_default_rates ... ok
+test final_attempt_retry_hint_delays_queued_peers ... ok
+test pre_cancelled_executor_never_invokes_the_operation ... ok
+test fractional_throttle_recovery_never_exceeds_the_original_ceiling ... ok
+test bucket_policies_validate_limits_and_exact_key_bounds ... ok
+test invalid_and_excessive_hints_close_only_the_affected_bucket ... ok
+test rational_policy_json_preserves_integer_shape_and_rejects_mixed_or_unknown_fields ... ok
+test rational_policy_validates_fractional_floor_ceiling_and_payload_bounds ... ok
+test rejected_hint_wakes_a_peer_already_queued_for_global_capacity ... ok
+test accepted_hint_boundary_and_retry_exhaustion_remain_bounded ... ok
+test rejected_hint_wakes_existing_cooldown_and_local_capacity_waiters ... ok
+test global_contention_cannot_release_accumulated_rate_tickets_as_a_burst ... ok
+test every_concurrent_start_obeys_bucket_rate ... ok
+test independent_buckets_reach_but_never_exceed_global_concurrency ... ok
+test pacing_one_bucket_does_not_occupy_global_capacity ... ok
+test rejected_hint_cancels_already_active_same_bucket_operations ... ok
+test local_concurrency_is_independent_of_the_larger_global_limit ... ok
+test cancellation_is_observable_before_and_after_the_signal ... ok
+test policies_can_raise_or_lower_local_concurrency_within_global_capacity ... ok
+test cancellation_wakes_active_calls_and_global_waiters ... ok
+test retries_consume_the_same_rate_budget_as_initial_calls ... ok
+test bucket_policy_json_rejects_unknown_fields ... ok
+test bucket_keys_have_a_hard_byte_bound ... ok
+test dropping_a_call_releases_capacity_and_records_cancellation ... ok
+test cancelling_a_server_cooldown_wakes_all_bucket_waiters ... ok
+test validates_every_configuration_bound ... ok
+test terminal_errors_are_not_retried ... ok
+test retry_jitter_is_reproducible_and_bounded ... ok
+test server_hint_during_global_wait_is_rechecked_without_holding_a_global_slot ... ok
+test throttle_feedback_during_global_wait_rechecks_pacing_without_a_held_permit ... ok
+test retry_exhaustion_stops_at_the_configured_attempt_count ... ok
+test timed_out_attempts_are_cancelled_retried_and_bounded ... ok
+test throttling_halves_rate_and_success_recovers_additively ... ok
+test shared_cooldown_releases_global_capacity_and_retries_keep_their_budget ... ok
+test successive_server_hints_extend_but_never_shorten_shared_cooldowns ... ok
+test fractional_and_sub_one_rps_policies_pace_every_concurrent_start ... ok
+test bucket_policy_map_has_a_hard_entry_bound ... ok
+test rational_policy_maps_accept_the_boundary_and_never_truncate_overflow ... ok
+
+test result: ok. 43 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.06s
+
+     Running tests/migrations.rs (target/debug/build/inventory-engine/09920ad4af7ed287/out/migrations-09920ad4af7ed287)
+
+running 12 tests
+test rejects_future_schema_without_mutating_it ... ok
+test failed_migration_rolls_back_views_and_version_together ... ok
+test unsupported_managed_table_extensions_are_rejected_without_losing_values ... ok
+test source_migration_conflicts_rollback_rebuilt_tables_objects_and_version ... ok
+test foreign_key_check_failure_rolls_back_source_migration ... ok
+test schema_object_bound_rejects_before_losing_existing_objects ... ok
+test architecture_edges_and_routes_do_not_mix_snapshots ... ok
+test load_balancer_aliases_preserve_type_and_target_identity_fields ... ok
+test four_sources_preserve_provenance_and_order_in_latest_and_snapshot_views ... ok
+test rebuild_preserves_custom_schema_data_and_restores_writer_foreign_keys ... ok
+test upgrades_version_one_without_changing_inventory_or_checkpoints ... ok
+test populated_v1_and_v2_upgrade_preserves_raw_rows_json_fingerprints_and_replay ... ok
+
+test result: ok. 12 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.01s
+
+     Running tests/parent_catalog_upgrade.rs (target/debug/build/inventory-engine/f24b9a9ed0753bf1/out/parent_catalog_upgrade-f24b9a9ed0753bf1)
+
+running 2 tests
+test parent_view_conflict_rolls_back_the_entire_upgrade ... ok
+test schema_six_preserves_every_old_view_and_immutable_payload ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.64s
+
+     Running tests/retry_properties.rs (target/debug/build/inventory-engine/b968d48dede2265d/out/retry_properties-b968d48dede2265d)
+
+running 7 tests
+test accepted_server_delays_are_lower_bounds_without_occupying_other_buckets ... ok
+test every_generated_rational_rate_bounds_concurrent_dispatch ... ok
+test cancellation_drains_generated_waiters_and_stops_admission ... ok
+test rejected_server_hints_close_only_the_affected_bucket ... ok
+test dropping_generated_waiters_releases_all_local_and_global_capacity ... ok
+test arbitrary_outcome_tapes_stop_at_the_first_terminal_result ... ok
+test retryable_tapes_exhaust_exactly_the_configured_budget ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.04s
+
+     Running tests/store.rs (target/debug/build/inventory-engine/2727b23216f28365/out/store-2727b23216f28365)
+
+running 27 tests
+test observation_failure_rolls_back_page_checkpoint_edges_and_other_observations ... ok
+test failed_scopes_are_durable_idempotent_and_prevent_complete_status ... ok
+test quoted_identifiers_and_values_are_bound_in_ingestion_paths ... ok
+test graph_checkpoints_are_monotonic_and_require_a_frozen_scan ... ok
+test empty_resource_name_preserves_valid_aws_tag_value ... ok
+test changed_replay_cannot_overwrite_committed_observation ... ok
+test empty_terminal_page_proves_empty_scope_but_unfinished_page_does_not ... ok
+test invalid_scan_lifecycle_does_not_reopen_terminal_scans ... ok
+test partial_snapshot_never_erases_previous_resources_or_edges ... ok
+test pages_require_contiguous_order_and_reject_continuation_cycles ... ok
+test duplicate_edge_after_first_sql_batch_rolls_back_resources_too ... ok
+test sql_views_expose_selected_configuration_and_provenance ... ok
+test preferred_source_and_latest_observation_within_source_are_deterministic ... ok
+test streaming_exports_propagate_consumer_failure ... ok
+test exact_page_replay_is_idempotent_even_after_finalization ... ok
+test edge_failure_also_rolls_back_resources_and_checkpoint ... ok
+test query_denies_writes_pragma_transactions_and_external_side_effects ... ok
+test query_single_statement_check_understands_quotes_and_comments ... ok
+test file_reader_denies_cte_writes_and_preserves_bound_values ... ok
+test duplicate_resource_after_first_sql_batch_rolls_back_entire_page ... ok
+test successful_page_roundtrips_all_rows_across_multiple_sql_batches ... ok
+test reopen_preserves_atomic_page_and_resume_token ... ok
+test equal_timestamp_source_ties_ignore_page_arrival_order ... ok
+test separate_memory_stores_do_not_share_data ... ok
+test query_bounds_native_columns_and_decoded_cells ... ok
+test query_caps_rows_columns_output_and_instruction_work ... ok
+test cancelled_query_keeps_runtime_responsive_and_reader_reusable ... ok
+
+test result: ok. 27 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.45s
+
+     Running tests/store_properties.rs (target/debug/build/inventory-engine/73a3e70431b5e03e/out/store_properties-73a3e70431b5e03e)
+
+running 2 tests
+test generated_resource_and_edge_constraint_failures_roll_back_the_whole_page ... ok
+test generated_page_replay_failure_and_finalization_commands_match_the_ledger ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.39s
+
+   Doc-tests inventory_aws
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests inventory_core
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+   Doc-tests inventory_engine
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+    Finished `dev` profile [unoptimized] target(s) in 0.17s

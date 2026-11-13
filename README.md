@@ -1,5 +1,9 @@
 # AWS Inventory in Rust
 
+**Local stack:** [setup and commands](docs/LOCAL_SETUP.md) ·
+[current results](docs/LOCAL_RESULTS.md) ·
+[black-hat and Rust review](docs/LOCAL_REVIEW.md).
+
 **Continuing development elsewhere? Start with [START_HERE.md](START_HERE.md)**
 for build commands, measured results, remaining work and the
 portable handoff boundaries.

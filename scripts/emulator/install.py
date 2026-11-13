@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fetch the pinned full source clone and verify/extract its official Linux binary.
 
-No system install or service changes. Requires git, curl, gpg, dpkg-deb, Linux
+No system install or service changes. Requires git, curl, gpg, dpkg-deb or bsdtar, Linux
 x86_64. The source clone retains full upstream history. This script is opt-in.
 """
 
@@ -9,7 +9,9 @@ import argparse
 import hashlib
 import json
 import platform
+import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 
@@ -19,6 +21,21 @@ def run(arguments):
 
 def fetch(url, path):
     run(["curl", "--fail", "--location", "--silent", "--show-error", "--max-time", "300", "--output", str(path), url])
+
+
+def extract_verified_package(package, destination):
+    """Extract only after the package hash and pinned signature have passed."""
+    if shutil.which("dpkg-deb"):
+        run(["dpkg-deb", "--extract", str(package), str(destination)])
+        return
+    if not shutil.which("bsdtar"):
+        raise SystemExit("Install dpkg-deb or bsdtar to extract the verified emulator package")
+    destination.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="emulator-extract-", dir=destination.parent) as temporary:
+        payload = Path(temporary) / "data.tar.xz"
+        with payload.open("wb") as output:
+            subprocess.run(["bsdtar", "-xOf", str(package), "data.tar.xz"], stdout=output, check=True)
+        run(["bsdtar", "-xf", str(payload), "-C", str(destination)])
 
 
 def main(destination):
@@ -61,7 +78,7 @@ def main(destination):
     expected_signer = metadata["package_signing_key_fingerprint"]
     if not any(parts[2] == expected_signer or parts[-1] == expected_signer for parts in valid_signatures):
         raise SystemExit("Package was not signed by the pinned AWS primary key")
-    run(["dpkg-deb", "--extract", str(package), str(destination / "unpacked")])
+    extract_verified_package(package, destination / "unpacked")
     binary = destination / "unpacked/opt/aws-emulator/bin/aws-emulator"
     run([str(binary), "--version"])
     print(json.dumps({"source": str(source), "binary": str(binary), "verified_sha256": metadata["package_sha256"]}))

@@ -1,0 +1,21 @@
+{
+  "name": "inventory-core",
+  "dependencies": [
+    {
+      "name": "serde",
+      "kind": null
+    },
+    {
+      "name": "serde_json",
+      "kind": null
+    },
+    {
+      "name": "thiserror",
+      "kind": null
+    },
+    {
+      "name": "proptest",
+      "kind": "dev"
+    }
+  ]
+}

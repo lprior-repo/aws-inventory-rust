@@ -1,0 +1,32 @@
+{
+  "argv": [
+    "/home/lewis/Documents/Codex/2026-11-12/let/work/checks/bin/python",
+    "scripts/emulator/verify_delivery.py",
+    "--binary",
+    "/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/target/debug/aws-inventory",
+    "--redis-cli",
+    "/home/lewis/Documents/Codex/2026-11-12/let/work/runtime/graph/redis-8.10.3/src/redis-cli",
+    "--database",
+    "/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/.local/verification/20261113T031335-2286289/inventory.sqlite",
+    "--output",
+    "/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/.local/verification/20261113T031335-2286289/delivery-verification.json",
+    "--run-workspace-tests"
+  ],
+  "child_cleanup_budget_seconds": 8,
+  "child_exit_code": 0,
+  "cleanup": {
+    "drained": true,
+    "forced": false
+  },
+  "cleanup_budget_seconds": 35,
+  "deadline_seconds": 604800,
+  "elapsed_seconds": 63.878,
+  "exit_code": 0,
+  "fixture_health_checks": 14,
+  "log": "/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/.local/verification/20261113T031335-2286289/mutation-command.log",
+  "log_sha256": "aa08c7a10a512cf11ea3e1903e1ef52152a846accef858bd96691047143914df",
+  "pid": 2308237,
+  "process_group": 2308237,
+  "status": "completed",
+  "workspace": "/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs"
+}
