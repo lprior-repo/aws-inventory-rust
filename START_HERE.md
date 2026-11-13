@@ -23,8 +23,8 @@ This bundle contains the Rust application, design documents, pinned dependency
 manifests, synthetic fixtures and verification receipts. The current development
 tree adds universal listable collection, opt-in runtime reference edges, a Rust
 evidence harness, native SQS/SNS adapters, and the first continuous-CMDB slice:
-freshness/coverage state, a deterministic workload oracle, a bounded read model,
-a loopback query API, and a Makepad table/DAG viewer. **Full universal AWS
+freshness/coverage state, a deterministic workload oracle, a bounded JSON-export
+read model, and a Makepad table/DAG viewer over a synthetic fixture. **Full universal AWS
 coverage (parent workflows and native breadth) and the whole-project 95% mutation
 target remain open.**
 
@@ -64,7 +64,7 @@ not execute mutations or establish a score.
 | Architecture | 968 property relationship rules across 255 types plus 24 parent workflows; 268 types have at least one rule; a configured rule is distinct from an observed edge |
 | Delivery | Streaming JSON/JSONL; bounded, replayable FalkorDB projection with transactional local acknowledgements and separate delivery retry |
 | Execution | Shared request admission, configured/adaptive quota buckets, bounded retry/backoff/deadlines, cancellation and a fenced SQLx job queue |
-| CMDB | Freshness/source-priority views, account/region/collector coverage registry, deterministic `cmdb-bench` generator+oracle, bounded `cmdb-view` read model, read-only loopback `cmdb-api`, and Makepad `cmdb-ui` table + DAG |
+| CMDB | Freshness/source-priority views, account/region/collector coverage registry, deterministic `cmdb-bench` generator+oracle, bounded JSON-export `cmdb-view` read model, and Makepad `cmdb-ui` table + DAG over a synthetic fixture |
 | SDK availability | 437 official service SDK crates pinned to the November 12, 2026 release; archives verified; only implemented clients compiled by normal application builds |
 | Verification | Five local snapshot scenarios; exact property checks in SQLite, JSONL and real FalkorDB; 781 Rust tests; ignored live emulator gates (native, reviewed gaps, universal partition, combined, multi-page Cloud Control, exported bucket); Rust `inventory-harness` for snapshots/seeding/assertions; strict mutation acceptance accounting |
 
@@ -97,14 +97,16 @@ cargo run --locked -- plan --service cloud-control --cloud-control \
   --resource-type AWS::EKS::Addon --region us-east-1
 cargo run --locked -- coverage --service EKS --limit 100
 
-# CMDB slice: synthetic DAG viewer, deterministic workload oracle, loopback API.
+# CMDB slice: synthetic DAG viewer and deterministic workload oracle.
 cargo run -p cmdb-ui
 cargo run -p cmdb-bench -- workload --accounts 1000 --assets-total 1000000 \
   --output target/cmdb-smoke
 cargo run -p cmdb-bench -- verify --input target/cmdb-smoke
-# cmdb-api is deleted in ROADMAP M6.5; the UI will read the store in process.
-cargo run -p cmdb-api -- --export inventory.json --bind 127.0.0.1:8787
 ```
+
+The obsolete `cmdb-api` HTTP server has been removed (V32, ROADMAP M6.5).
+`cmdb-view` still reads one JSON export; the UI still uses a synthetic fixture.
+In-process SQLite/FalkorDB reads and UI integration are planned in M6.2/M6.3.
 
 The SDK catalog's `all-services` feature is a separate, expensive build of all
 437 clients. It does not implement new collectors. The embedded `coverage`

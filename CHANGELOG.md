@@ -34,6 +34,13 @@
   `NEXT_AGENT_PROMPT.txt`, `docs/CMDB_ARCHITECTURE.md`, `docs/VERIFICATION.md`
   and `docs/UNIVERSAL_COVERAGE.md`. Removed the duplicate
   `docs/PERFORMANCE_CONTRACT.md`.
+- M6.5 / V32: removed the obsolete `cmdb-api` crate, binary and HTTP endpoint
+  tests, its workspace member, the direct `axum`/`tower`/`tower-http` workspace
+  declarations, and its function-size gate path. Removed the launch command
+  and updated current documentation; earlier API additions below are historical.
+  `cmdb-view` still parses one JSON export and `cmdb-ui` still renders a
+  synthetic fixture. In-process SQLite/FalkorDB reads and UI integration remain
+  planned in M6.2/M6.3; unrelated transitive HTTP dependencies are retained.
 
 ## Unreleased — Universal listable coverage, reference graph and Rust evidence harness
 

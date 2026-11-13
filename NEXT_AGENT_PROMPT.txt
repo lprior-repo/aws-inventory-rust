@@ -15,7 +15,7 @@ State of the tree (check `git log --oneline -5` and docs/ROADMAP.md for what has
 - 39 resource kinds come from hand-written typed adapters and 421 types from Cloud Control, into SQLite schema 13 in WAL mode. 968 reviewed relationship rules. The collector calls 89 AWS operations in 19 services.
 - crates/engine has the rate limiter (ApiExecutor, the only retry owner), the SQLx store, fenced jobs and the FalkorDB projection. These are kept and extended.
 - crates/harness owns the pinned AWS Emulator (1.0.336, commit f5155815). Live gate: `cargo build --bin aws-inventory --features aws`, then `cargo test -p inventory-harness --test emulator_live -- --ignored --test-threads=1`.
-- cmdb-api, cmdb-view, cmdb-ui (Makepad 2.0) and cmdb-bench exist. The UI renders a synthetic fixture.
+- cmdb-view, cmdb-ui (Makepad 2.0) and cmdb-bench exist. cmdb-view parses one JSON export and the UI renders a synthetic fixture. The obsolete cmdb-api HTTP read server has been removed (V32, M6.5); in-process SQLite/FalkorDB reads and UI integration remain planned in M6.2/M6.3.
 - There is no wire engine, no continuous mode and no collection benchmark yet. The AWS API models are pinned as a git submodule at `.local/aws-models` (fetch with `git submodule update --init --depth 1 .local/aws-models`, check with `scripts/check-models.sh`; decision V23, ROADMAP M1.1). The binary record module (`inventory-core::record`, CBOR through the `minicbor` library, decision V34, ROADMAP M3.1a) is the first code of the new architecture; ROADMAP says whether it has landed.
 - MANIFEST.sha256 is modified and uncommitted on purpose (ROADMAP M0.5).
 

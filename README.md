@@ -24,8 +24,8 @@ kinds collected by hand-written typed SDK adapters behind 16 service selectors,
 property relationship rules, and SQLite schema 13. The baseline also has a
 FalkorDB snapshot projection, a rate limiter that is the single retry owner,
 fenced durable scan jobs, an emulator harness (`inventory-harness`), a workload
-generator (`cmdb-bench`), a loopback read API (`cmdb-api`, to be deleted) and a
-Makepad viewer that renders a synthetic fixture. Of the new architecture only
+generator (`cmdb-bench`), a bounded export read model (`cmdb-view`) and a
+Makepad viewer (`cmdb-ui`) that renders a synthetic fixture. Of the new architecture only
 groundwork has landed; there is no wire engine, binary record store or sweep
 yet. Cloud Control collection is not the way forward: it gets no new work and
 is deleted in ROADMAP M9.5 (decisions V01, V04).
@@ -572,18 +572,18 @@ The current tool is a local inventory CLI with SQLite, a process-local scheduler
 persistent jobs and a replayable FalkorDB projection. The development tree now
 also contains the first continuous-CMDB slice: freshness views and an
 account/region/collector coverage registry, a deterministic workload generator
-with an independent oracle (`cmdb-bench`), a bounded read model (`cmdb-view`), a
-read-only loopback query API (`cmdb-api`), and a Makepad viewer (`cmdb-ui`) with
-a filterable table and an account→region→kind→resource DAG over a synthetic
-fixture.
+with an independent oracle (`cmdb-bench`), a bounded read model (`cmdb-view`)
+over one JSON export, and a Makepad viewer (`cmdb-ui`) with a filterable table
+and an account→region→kind→resource DAG over a synthetic fixture.
 
 That slice was built against an earlier draft: the
 [performance contract](docs/CMDB_PERFORMANCE_CONTRACT.md) and the
 [CMDB architecture](docs/CMDB_ARCHITECTURE.md). [The vision](docs/VISION.md)
-supersedes both. Under it the first version has no HTTP API (`cmdb-api` is
-deleted in ROADMAP M6.5 and the UI reads SQLite and FalkorDB in process), no
-history, tombstones or retention, no event ingestion, no PostgreSQL and no
-multi-machine quota coordination. The
+supersedes both. The obsolete HTTP read API (`cmdb-api`) has been removed
+under V32 (ROADMAP M6.5). In-process SQLite and FalkorDB reads for the UI are
+planned in M6.2/M6.3, not implemented by the export read model or synthetic
+viewer. The first version also has no history, tombstones or retention, no
+event ingestion, no PostgreSQL and no multi-machine quota coordination. The
 [release baseline](docs/CMDB_BASELINE_2026-11-13.md) records preliminary local
 storage and mock-scheduler measurements only. It does not establish fleet
 capacity or competitive superiority.

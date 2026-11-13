@@ -169,7 +169,7 @@ flowchart LR
 | Executor, work queue, store, reconciler, edges, graph projection | `inventory-engine` | Limiter with adaptive pacing, store, fenced jobs and snapshot projection exist; learned rates, work queue, reconciler, edge extraction and delta projection are new |
 | Planner, profile credentials | `inventory-aws` | Profile loading exists; the planner is new; the crate shrinks to these two once adapters are deleted |
 | In-process query layer | `cmdb-view` | Exists; parses one JSON export today; becomes the layer that reads SQLite and FalkorDB for the UI (V32) |
-| HTTP read API | `cmdb-api` | Exists; deleted in M6.5 with its `axum`, `tower` and `tower-http` dependencies |
+| HTTP read API | Removed (`cmdb-api`) | Removed under V32 (M6.5), including its workspace member and direct `axum`, `tower` and `tower-http` declarations; unrelated transitive dependencies remain |
 | UI | `cmdb-ui` | Exists; renders a synthetic fixture |
 | Emulator harness, benchmark | `inventory-harness`, `cmdb-bench` | Exist; the harness seeds through Cloud Control and Python today |
 | Typed-SDK inventories | `inventory-sdk-catalog`, `sdk-operations` | Redundant once the model catalog exists; deleted in M1.7 |

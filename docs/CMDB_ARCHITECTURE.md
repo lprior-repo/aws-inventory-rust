@@ -18,8 +18,9 @@ Evidence labels used throughout:
 - **In flight** — staged or being changed in the working tree on 2026-11-13, not
   in the baseline commit. The current tree contains additive schema migrations
   through `013_cloudcontrol_parent_additions.sql`, the account/coverage registry, freshness
-  views, `cmdb-bench`, `cmdb-view`, the loopback `cmdb-api`, and the Makepad
-  `cmdb-ui` table/DAG. Treat the checkout as moving until these are committed and
+  views, `cmdb-bench`, `cmdb-view`, and the Makepad `cmdb-ui` table/DAG.
+  The obsolete loopback `cmdb-api` has since been removed (V32, M6.5).
+  Treat the checkout as moving until these are committed and
   verified.
 - **Proposed** — a contract or design with no accepted implementation evidence.
 
@@ -48,8 +49,8 @@ replaces the stage sequence in section 8).
 > separate control plane and no multi-tenant service (V08, V09). Collection
 > uses the service endpoint APIs through the wire engine, not Cloud Control
 > (V01, V04). There is no versioned change log (V22), no query and delta API
-> (V32: the Makepad app reads SQLite and FalkorDB in process through
-> `cmdb-view`, and `cmdb-api` is deleted in ROADMAP M6.5), and no event
+> (V32: the Makepad app is planned to read SQLite and FalkorDB in process through
+> `cmdb-view`; the obsolete `cmdb-api` has been removed under M6.5), and no event
 > consumer (V10). The current architecture diagram is VISION section 5. The
 > "current anchor" column below still describes the tree.
 
@@ -134,10 +135,10 @@ current lease epoch; the projection is rebuildable and never authoritative.
 | Event consumer | Proposed | No event-bus dependency or consumer exists in this tree | Deduplicate `(source, event_id)`, map to identity/scope, coalesce, and enqueue targeted refresh through the scheduler. Never writes evidence or completes coverage. |
 | Ingestion and evidence writer | Implemented | `crates/engine/src/store.rs`, `crates/engine/src/store/*.rs`, `crates/engine/sql/001_inventory.sql` through `013_cloudcontrol_parent_additions.sql` | Page-atomic observation/edge/checkpoint commits, SHA-256 page fingerprints, source provenance. Missing current-state materialization, change log, tombstones and retention. |
 | Reconciler | Proposed; selection views exist | `latest_resources`/`latest_edges`; `Source::priority`; staged `crates/engine/sql/007_freshness.sql` | Cross-source selection and staged freshness-first latest views. Missing field-level provenance, staleness planner, absence evaluation and tombstones. |
-| Read models and query API | Read models implemented as SQL views; read-only loopback API implemented | `crates/engine/sql/001_inventory.sql` views; `src/cli.rs` local `query`, `neighbors`, `path`; `crates/cmdb-api` | Typed GET endpoints over one exported snapshot, bound to loopback. Missing a store-backed read path, authentication, authorization, a delta feed and server-enforced query budgets. |
+| Read models and local queries | Read models implemented as SQL views; HTTP read API removed (V32, M6.5) | `crates/engine/sql/001_inventory.sql` views; `src/cli.rs` local `query`, `neighbors`, `path` | Store-backed `cmdb-view` reads are planned in M6.2; HTTP endpoints, authentication, authorization and delta feeds from the earlier draft are not first-version requirements. |
 | Graph projection | Implemented as a replayable snapshot projection | `crates/engine/src/graph.rs`, `crates/engine/src/graph/projection.rs`, `crates/engine/src/store/graph_checkpoint.rs` | Idempotent Cypher `MERGE` batches, per-batch ACK log, retry classification. Missing incremental/versioned projection, stale-writer fencing and a rebuild marker tied to current-state versions. |
-| Offline view model | Prototype | `crates/cmdb-view` parses one versioned JSON export into sorted resource pages, an adjacency index, LOD summaries and bounded neighborhoods; no network, database or clock I/O | Served by `cmdb-api`; not connected to the store or to the UI. Its limits are depth 2, 10,000 nodes, 20,000 edges, 2,000,000 resources and 5,000,000 edges parsed. |
-| GPU UI | Table and DAG over a synthetic fixture | `crates/cmdb-ui` (`app`, `table`, `dag`, `graph_view`), Makepad 2.0 pinned in its `Cargo.toml` | Filter rail, virtualized table, detail rail and a hierarchical DAG with overlay edges. Missing an API data client, level of detail, versioned deltas and a frame-time trace. |
+| Offline view model | Prototype | `crates/cmdb-view` parses one versioned JSON export into sorted resource pages, an adjacency index, LOD summaries and bounded neighborhoods; no network, database or clock I/O | Not connected to the store or to the UI; the former HTTP wrapper has been removed (V32, M6.5). Its limits are depth 2, 10,000 nodes, 20,000 edges, 2,000,000 resources and 5,000,000 edges parsed. |
+| GPU UI | Table and DAG over a synthetic fixture | `crates/cmdb-ui` (`app`, `table`, `dag`, `graph_view`), Makepad 2.0 pinned in its `Cargo.toml` | Filter rail, virtualized table, detail rail and a hierarchical DAG with overlay edges. Missing in-process `cmdb-view` integration (M6.3), level of detail and a frame-time trace; the earlier draft's API client and versioned deltas are superseded by V32/V22. |
 | Observability | Partial | `tracing_subscriber` in `src/main.rs`; per-scan summaries in `crates/engine/src/store/scan_state.rs` | Structured logs and scan outcomes only. Missing metrics/trace export, queue age, coverage lag, projection lag and API latency histograms. |
 | Synthetic workload and oracle | Prototype | `crates/cmdb-bench` `workload` and `verify` | Deterministic per-account event generation and an independent digest/count oracle over JSONL, verified at 1M and 10M resources. Not yet wired into ingestion, CI or failure injection; see section 7. |
 
@@ -592,10 +593,11 @@ known divergence to resolve before the graph is used as a relationship read mode
 ## 4. Query API contract
 
 Status: **superseded by V32**. There is no HTTP read API in the first version.
-The Makepad app reads SQLite and FalkorDB in process through `cmdb-view`
-(ROADMAP M6.2, M6.3). A read-only loopback API over one exported snapshot
-exists today in `crates/cmdb-api` and is deleted in M6.5 with its `axum`,
-`tower` and `tower-http` dependencies. The tenant, authentication and
+The Makepad app is planned to read SQLite and FalkorDB in process through
+`cmdb-view` (ROADMAP M6.2, M6.3). Today `cmdb-view` parses one JSON export and
+the UI renders a synthetic fixture. The former loopback `cmdb-api` has been
+removed under M6.5, including its direct `axum`, `tower` and `tower-http`
+workspace declarations; unrelated transitive dependencies remain. The tenant, authentication and
 authorization rules in 4.4 belong to a multi-tenant deployment that is not
 planned (V08), and the delta feed to a change log that is not kept (V22). The
 contract below is kept as a record of the earlier draft; an HTTP read API is
@@ -919,10 +921,10 @@ numbers remain targets until measured on a declared workload.
 | **C0 — Contracts and oracle** | Accept identity, ordering, freshness, absence and failure contracts; finish the deterministic workload/oracle; freeze query and workload manifests | `cmdb-bench` wired into a repeatable test path; oracle verifies identity/edge/field/count invariants on generated populations; contract documents reviewed against code | Oracle exists and verifies 1M/10M generated workloads; integration with ingestion/CI and fault injection remain |
 | **C1 — Single-host vertical slice** | Accounts registry, frozen population, task-level durable scheduler, in-process quota coordinator, one complete collector path, evidence store, coverage/freshness read model | One account/region slice produces explicit complete/partial/denied/unsupported per unit; crash and replay preserve evidence; oracle matches; no fabricated absence | Registry, coverage/freshness read models and collector path exist; population manifest, per-unit epoch and crash/oracle integration remain; live AWS is not required |
 | **C2 — Recovery and deletion proof** | Epoch-fenced writes, expired leases, duplicate delivery, tombstones, retention policy | Failure matrix rows for crash/duplicate/expired lease/partial scope pass deterministically; no false tombstone under denial or partial; retention cost measured | Requires C1 schema and oracle |
-| **C3 — Read models and query API** | Bounded resource/detail/neighborhood/coverage/freshness/delta endpoints over indexed read models, monotonic change log, authn/authz, server-side cost budgets; materialization decision deferred to C5 | Frozen query suite at 1M and 10M assets reports p50/p95/p99 with rows examined; unauthorized scopes filtered; no request can trigger collection; cursor and as-of boundaries tested | Loopback read-only API and bounded read model exist; authn/authz, delta/as-of feed, query suite and declared hardware remain |
+| **C3 — Read models and query API** | Bounded resource/detail/neighborhood/coverage/freshness/delta endpoints over indexed read models, monotonic change log, authn/authz, server-side cost budgets; materialization decision deferred to C5 | Frozen query suite at 1M and 10M assets reports p50/p95/p99 with rows examined; unauthorized scopes filtered; no request can trigger collection; cursor and as-of boundaries tested | Historical stage, superseded by V32/V08: the HTTP API has been removed (M6.5); the bounded export read model remains, with in-process store queries planned in M6.2. |
 | **C4 — Reconciliation and events** | Config/Explorer feeds, EventBridge/CloudTrail consumer, dedupe/coalesce, staleness planner, tombstone evaluation | Duplicate/out-of-order event tests; event storm bounded; periodic sweep proves no false deletion; freshness clocks reported separately; Config scope prerequisites documented and tested | No event infrastructure or authorized event bus; Config aggregator live access |
 | **C5 — Storage scale decision** | PostgreSQL evaluation against SQLite with the same store contract and workload; materialized current-state decision based on measured query and write costs | Written decision record with measured write/read/recovery results; migration and rollback exercised; no second database or materialized table added without the record | Hardware, dataset generation, operational ownership; C2 semantics stable |
-| **C6 — GPU UI** | Makepad 2.0 table + bounded graph, LOD, typed buffers, off-main-thread layout, deltas, fallback | Actual frame-time traces for the scripted 5,000/20,000 view; first-useful-view trace on declared client; table parity for every graph view; accessibility limitation stated and tested fallback | Table + bounded DAG exist over the synthetic fixture; API wiring, LOD/deltas, frame-time trace and declared client remain |
+| **C6 — GPU UI** | Makepad 2.0 table + bounded graph, LOD, typed buffers, off-main-thread layout, deltas, fallback | Actual frame-time traces for the scripted 5,000/20,000 view; first-useful-view trace on declared client; table parity for every graph view; accessibility limitation stated and tested fallback | Table + bounded DAG exist over the synthetic fixture; in-process data wiring (M6.3), LOD, frame-time trace and declared client remain; the earlier API/delta wiring is superseded by V32/V22. |
 | **C7 — Authorized AWS calibration and guarded rollout** | Two-account/two-region live slice with deliberately different roles; IAM policy examples; quota calibration; then 100→1,000 accounts | Coverage compared to authoritative APIs; no extra/missing identities; denial/unsupported/empty distinguished; request-rate and throttle behavior within declared quotas; multi-day soak | Explicit authorization for accounts, roles and quotas; Service Quotas evidence |
 | **C8 — Competitive and fleet campaigns** | Interleaved cold/steady/query campaigns at equal coverage; 1k/10k-account and 1M/10M-asset workloads; continuous soak | Published workload/hardware/durability manifest; raw results and confidence intervals; competitor results reproduced; no market-wide claim beyond evidence | C5–C7; campaign budget and legal review of competitor use |
 
@@ -971,11 +973,11 @@ column is implemented unless the status column says so.
 | Source conflict | `Source::priority`; view ordering; `007_freshness.sql` | Field-level provenance and materialized selection reason | Latest views now select newest observation first with source-priority tie-break; snapshot views remain priority-first; materialized state absent |
 | Tombstones | None | Absence eligibility from complete population, tombstone evidence, lifecycle state | Absent |
 | Retention | None | Evidence/current/delta/tombstone retention and measured cost | Absent |
-| Query API | `crates/cmdb-api`; `crates/cmdb-view`; CLI `query`/`neighbors`/`path` | Authn/authz, delta/as-of feed, server-enforced cost budgets, query benchmark | Read-only loopback API implemented; auth/delta/benchmark absent |
+| Local queries / former HTTP API | `crates/cmdb-view`; CLI `query`/`neighbors`/`path` | In-process SQLite/FalkorDB reads (M6.2); HTTP authn/authz and delta/as-of feed belong to the superseded draft (V32/V22) | HTTP read API removed (M6.5); bounded JSON-export read model remains; store-backed view queries and query benchmark absent |
 | Read-model indexes | `resource_observation_identity`; `cmdb-view` indexes | Current-state indexes for account/region/kind/tag/delta/coverage/edges at scale | Read-model prototype indexes exist; 1M/10M query evidence absent |
 | Delta/version feed | None | Monotonic change log, retained cursor window, resync contract | Absent |
 | Graph projection | `crates/engine/src/graph.rs`; `graph/projection.rs`; `store/graph_checkpoint.rs` | Incremental/versioned projection, stale-writer fence, rebuild marker, edge identity without source duplication | Snapshot replay implemented; incrementality absent |
-| UI | `crates/cmdb-ui` (`app`, `table`, `dag`); `crates/cmdb-view` | API data client, typed buffers, worker layout, versioned deltas, accessibility fallback, frame trace | Makepad table + deterministic DAG implemented over synthetic fixture; service wiring and LOD/deltas absent |
+| UI | `crates/cmdb-ui` (`app`, `table`, `dag`); `crates/cmdb-view` | In-process data integration (M6.3), typed buffers, worker layout, accessibility fallback, frame trace; API client and versioned deltas superseded (V32/V22) | Makepad table + deterministic DAG implemented over synthetic fixture; in-process store wiring and LOD absent |
 | Observability | `tracing` in `src/main.rs`; scan summary | Metrics/traces, queue age, coverage lag, projection lag, API latency histograms | Logs and summaries only |
 | Workload/oracle | `crates/cmdb-bench` `workload`/`verify` | Integration with ingestion, fault injection, CI gate, independent comparison of current-state/tombstones | Streaming generator/oracle measured at 1M/10M; ingestion/CI wiring absent |
 | Shared store | SQLite (`crates/engine/src/store.rs`) | PostgreSQL evaluation with measured evidence and migration/rollback | Absent |

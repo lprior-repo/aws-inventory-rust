@@ -59,7 +59,6 @@ paths=(
     crates/cmdb-bench/src
     crates/cmdb-ui/src
     crates/cmdb-view/src
-    crates/cmdb-api/src
     crates/catalog-tool/src
 )
 for path in "${paths[@]}"; do

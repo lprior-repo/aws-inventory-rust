@@ -26,7 +26,7 @@ unchecked indexing, lossy as casts, or silently ignored fallible results.
   never linked into the collector.
 - `catalog-tool`: catalog maintenance and source packaging.
 - `cmdb-bench`, `cmdb-view`, `cmdb-ui`: workload generator and oracle, read
-  model, Makepad viewer. `cmdb-api`: loopback read API, deleted in ROADMAP M6.5.
+  model over one JSON export, Makepad viewer over a synthetic fixture.
 - root binary `aws-inventory`: CLI, fixtures, reports and composition.
 
 ## Shared model (`inventory_core`)

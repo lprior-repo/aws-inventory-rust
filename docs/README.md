@@ -87,9 +87,11 @@ machine that kept the files.
 | [LOCAL_WALKTHROUGH.md](LOCAL_WALKTHROUGH.md) | Walkthrough of a baseline scan on one machine's local emulator. | M6.4. |
 | [MUTATION_TESTING.md](MUTATION_TESTING.md) | The Python mutation gate and its 95% target. | M2.10 replaces it in Rust or drops it with a recorded reason. |
 
-The HTTP read API has no document of its own. It is described in section 4 of
-[CMDB_ARCHITECTURE.md](CMDB_ARCHITECTURE.md) and in the README, and
-`crates/cmdb-api` is deleted in M6.5 (V32).
+The obsolete HTTP read API (`crates/cmdb-api`) has been removed (M6.5, V32).
+Section 4 of [CMDB_ARCHITECTURE.md](CMDB_ARCHITECTURE.md) retains its superseded
+draft contract as history. `cmdb-view` still parses one JSON export and `cmdb-ui`
+still renders a synthetic fixture; in-process SQLite/FalkorDB reads and UI
+integration remain planned in M6.2/M6.3.
 
 ## Historical evidence
 
