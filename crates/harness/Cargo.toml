@@ -18,16 +18,16 @@ tokio.workspace = true
 sha2.workspace = true
 base16ct.workspace = true
 sqlx.workspace = true
-aws-config = "1"
-aws-sdk-s3 = { version = "1", default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-cloudcontrol = { version = "1", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-config = "1.13.2"
+aws-sdk-s3 = { version = "1.159.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-cloudcontrol = { version = "1.122.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
 regex.workspace = true
 toml.workspace = true
 zip.workspace = true
 
 [dev-dependencies]
 catalog-tool = { path = "../catalog-tool" }
-tempfile = "3"
+tempfile = "3.27.0"
 
 [lints]
 workspace = true

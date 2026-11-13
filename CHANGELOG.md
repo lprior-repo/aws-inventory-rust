@@ -41,6 +41,23 @@
   `cmdb-view` still parses one JSON export and `cmdb-ui` still renders a
   synthetic fixture. In-process SQLite/FalkorDB reads and UI integration remain
   planned in M6.2/M6.3; unrelated transitive HTTP dependencies are retained.
+- Refresh external Rust dependencies to the latest non-yanked stable registry
+  releases, including all 437 existing exact-pinned AWS SDK crates; add
+  `minicbor` 2.3.1 with `std` for `inventory-core` and regenerate all three Cargo
+  lockfiles. Preserve optional/client features and migrate ZIP filename handling
+  for ZIP 9.5.1 rather than retaining the older API.
+- Refresh the existing SDK catalog's version/checksum/source provenance from
+  upstream `release-2026-11-13` (`c88e7f9c26a66d0500bc1cc820ce73b76fa22136`),
+  without adding typed service dependencies. Keep SQLx at reviewed revision
+  `10462fa4414c6c7f1ed1d39bb31678e3b726878c` for SQLite 0.39 compatibility
+  (published 0.9.0 excludes it), and Makepad 2.0 at
+  `506ec05105b9adb08d1d21f9879df181b5244ea7` rather than downgrading to the
+  registry's latest 1.0.0.
+- Pair embedded and standalone AWS Emulator pins at stable `v1.0.348`, commit
+  `7461ab1bbe540afe8063ce03ee5477ebb649df48`. Verify the downloaded package's
+  detached AWS signature and SHA-256; runtime gates remain pending. Preserve the
+  recorded 1.0.336 fixture and evidence as historical baselines, not proof of the
+  upgraded emulator, until a real owned capture refreshes them.
 
 ## Unreleased — Universal listable coverage, reference graph and Rust evidence harness
 

@@ -14,9 +14,9 @@ use serde_json::Value;
 use crate::HarnessError;
 
 /// Pinned emulator release string.
-pub const PINNED_VERSION: &str = "1.0.336";
+pub const PINNED_VERSION: &str = "1.0.348";
 /// Pinned emulator source commit.
-pub const PINNED_COMMIT: &str = "f515581569b98a9dcbd2e686c12f912fdce51bba";
+pub const PINNED_COMMIT: &str = "7461ab1bbe540afe8063ce03ee5477ebb649df48";
 /// Readiness budget for a fresh process.
 const READY_TIMEOUT: Duration = Duration::from_secs(30);
 /// Poll interval while waiting for the endpoint announcement.

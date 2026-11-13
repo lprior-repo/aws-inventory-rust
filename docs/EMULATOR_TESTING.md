@@ -26,20 +26,31 @@ The resource types exercise different providers through the same two Cloud Contr
 
 ## Pinned upstream source and binary
 
-The full upstream Git history was cloned, and the source checkout and official binary were verified against this pin:
+The current source and binary pin is the latest stable upstream release,
+v1.0.348. Its downloaded package checksum and detached AWS signature were
+verified during the dependency upgrade; runtime integration is not yet verified.
 
 | Item | Value |
 | --- | --- |
 | Repository | `https://github.com/aws/aws-emulator.git` |
-| Commit | `f515581569b98a9dcbd2e686c12f912fdce51bba` |
-| Release | `1.0.336`, released `2026-11-12` |
-| Package | `aws-emulator_1.0.336-1_amd64.deb` |
-| Package SHA-256 | `e2c621ec12c8a4bb46c884792d72f189378ea83ffcce180dc837b4c5e6b97f1c` |
+| Commit | `7461ab1bbe540afe8063ce03ee5477ebb649df48` |
+| Release | `1.0.348`, released `2026-11-13` |
+| Package | `aws-emulator_1.0.348-1_amd64.deb` |
+| Package SHA-256 | `279a243ac342922d0d0741e31e2912ddb9a78f6efac34ec25c94086df029d4a8` |
 | AWS publishing primary-key fingerprint | `98BCF336A3BE53B734E967C52E5BF49BD940F624` |
 
-[scripts/emulator/upstream.json](../scripts/emulator/upstream.json) records the exact download URL, signing-key URL, commit and hash. [install.py](../scripts/emulator/install.py) makes a full clone, checks out the pinned commit, refuses an existing mismatched or shallow clone, verifies the package hash and detached GPG signature, checks the signing primary-key fingerprint, and extracts the package without installing a system service. The runner independently checks the binary's reported version and commit before starting it.
+[scripts/emulator/upstream.json](../scripts/emulator/upstream.json) records the
+exact download URL, signing-key URL, commit and hash. The current installer is
+`cargo run -p inventory-harness -- install <destination>`; it verifies the
+source pin, package hash, detached GPG signature and publishing-key fingerprint.
+The Rust runner checks the binary's reported version and commit before startup.
 
-The retained [package verification](../artifacts/emulator-package-verification-v04.json) records a matching SHA-256, successful detached-signature verification and the exact expected signer. The [checkout verification](../artifacts/emulator-upstream-checkout-v04.json) records a clean, non-shallow checkout with 30,585 history commits and the matching executable version. The installer parses GPG's ASCII `VALIDSIG` status records from captured bytes, so locale-dependent diagnostic text cannot weaken or bypass the signer check.
+The retained [package verification](../artifacts/emulator-package-verification-v04.json)
+and [checkout verification](../artifacts/emulator-upstream-checkout-v04.json) are
+historical 1.0.336 evidence, not proof for the current pin. Legacy Python runner
+and snapshot commands below retain that older pin and must not be used to claim
+1.0.348 coverage. The universal unsupported-type fixture likewise remains an
+unmodified historical baseline pending a real capture; see [HARNESS.md](HARNESS.md).
 
 The reproducible commands below use `/tmp/aws-inventory-emulator`. Choose a filesystem with sufficient free space for the clone, downloaded package and extracted executable; these paths are examples, not required workspace locations.
 

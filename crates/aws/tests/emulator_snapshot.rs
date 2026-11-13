@@ -25,8 +25,8 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 const ACCOUNT: &str = "000000000000";
 const REGION: &str = "us-east-1";
-const COMMIT: &str = "f515581569b98a9dcbd2e686c12f912fdce51bba";
-const VERSION: &str = "1.0.336";
+const COMMIT: &str = "7461ab1bbe540afe8063ce03ee5477ebb649df48";
+const VERSION: &str = "1.0.348";
 const SCAN_ID: &str = "emulator_snapshot";
 const MAX_SNAPSHOT_BYTES: u64 = 16 * 1024 * 1024;
 const MAX_ROWS: usize = 4_096;

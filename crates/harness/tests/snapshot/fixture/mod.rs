@@ -129,8 +129,8 @@ pub async fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
     let summary = json!({
         "failed_checks": 0, "passed_checks": checks.len(), "checks": checks, "execution": execution,
         "emulator": {"account": "000000000000", "region": "us-east-1",
-            "source_commit": "f515581569b98a9dcbd2e686c12f912fdce51bba",
-            "version_output": "aws-emulator 1.0.336"}});
+            "source_commit": inventory_harness::emulator::PINNED_COMMIT,
+            "version_output": format!("aws-emulator {}", inventory_harness::emulator::PINNED_VERSION)}});
     write_json(&evidence.join("summary.json"), &summary)?;
     Ok(Fixture {
         _directory: directory,

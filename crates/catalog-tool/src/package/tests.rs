@@ -72,7 +72,7 @@ fn entry_names(path: &Path) -> TestResult<Vec<String>> {
     let mut archive = ZipArchive::new(File::open(path)?)?;
     let mut names = Vec::new();
     for index in 0..archive.len() {
-        names.push(archive.by_index(index)?.name().to_string());
+        names.push(archive.by_index(index)?.name()?.into_owned());
     }
     Ok(names)
 }

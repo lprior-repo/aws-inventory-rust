@@ -76,7 +76,7 @@ fn entry_names(path: &Path) -> TestResult<Vec<String>> {
     let mut archive = ZipArchive::new(File::open(path)?)?;
     let mut names = Vec::new();
     for index in 0..archive.len() {
-        names.push(archive.by_index(index)?.name().to_string());
+        names.push(archive.by_index(index)?.name()?.into_owned());
     }
     Ok(names)
 }
@@ -222,7 +222,7 @@ fn given_committed_catalog_when_checked_then_rust_reproduces_every_file() -> Tes
     assert_eq!(report.mode, SdkMode::Check);
     assert!(report.newer_registry_versions.is_empty());
     assert!(report.cache.is_none());
-    assert_eq!(report.release, json!("release-2026-11-12"));
+    assert_eq!(report.release, json!("release-2026-11-13"));
     Ok(())
 }
 

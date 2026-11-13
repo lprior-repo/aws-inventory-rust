@@ -22,7 +22,7 @@ sqlx.workspace = true
 redis = { version = "1.8.1", features = ["tokio-rustls-comp"] }
 
 [dev-dependencies]
-tempfile = "3"
+tempfile = "3.27.0"
 proptest.workspace = true
 
 [lints]

@@ -32,10 +32,9 @@ pub(super) fn snapshot_document(
 fn provenance(summary_sha: &str, emulator: &Value, baseline: &Baseline) -> Value {
     let commit = emulator
         .get("source_commit")
-        .cloned()
-        .unwrap_or(Value::Null);
+        .map_or(Value::Null, Clone::clone);
     json!({
-        "emulator_version": "1.0.336",
+        "emulator_version": crate::emulator::PINNED_VERSION,
         "emulator_commit": commit,
         "summary_sha256": summary_sha,
         "baseline_binary_sha256": baseline.binary_sha,

@@ -123,8 +123,10 @@ fn check_emulator(summary: &Value) -> Result<(), HarnessError> {
     let version = emulator
         .get("version_output")
         .and_then(Value::as_str)
-        .unwrap_or_default();
-    if identity(emulator) != expected_identity() || !version.contains("1.0.336") {
+        .ok_or_else(|| HarnessError::invalid("snapshot baseline lacks emulator version"))?;
+    if identity(emulator) != expected_identity()
+        || !version.contains(crate::emulator::PINNED_VERSION)
+    {
         return Err(HarnessError::invalid(
             "snapshot baseline emulator identity does not match the pinned fixture",
         ));
@@ -148,7 +150,7 @@ fn expected_identity() -> (
     (
         Some("000000000000"),
         Some("us-east-1"),
-        Some("f515581569b98a9dcbd2e686c12f912fdce51bba"),
+        Some(crate::emulator::PINNED_COMMIT),
     )
 }
 

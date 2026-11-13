@@ -45,7 +45,7 @@ async fn given_incomplete_pinned_metadata_when_installing_then_it_is_rejected_ea
         &metadata,
         serde_json::to_string(&json!({
             "repository": "https://github.com/aws/aws-emulator.git",
-            "commit": "f515581569b98a9dcbd2e686c12f912fdce51bba"
+            "commit": inventory_harness::emulator::PINNED_COMMIT
         }))?,
     )?;
     let destination = root.join("runtime");

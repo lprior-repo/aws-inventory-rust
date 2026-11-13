@@ -16,7 +16,7 @@ description = "In-process AWS Emulator seam for the inventory collector. Detache
 
 [dev-dependencies]
 # Same commit as the pinned standalone package in scripts/emulator/upstream.json.
-aws-emulator-embedded = { git = "https://github.com/aws/aws-emulator", rev = "f515581569b98a9dcbd2e686c12f912fdce51bba" }
-aws-config = "1"
-aws-sdk-s3 = { version = "1", default-features = false, features = ["default-https-client", "rt-tokio"] }
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+aws-emulator-embedded = { git = "https://github.com/aws/aws-emulator", rev = "7461ab1bbe540afe8063ce03ee5477ebb649df48" }
+aws-config = "1.13.2"
+aws-sdk-s3 = { version = "1.159.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
+tokio = { version = "1.54.1", features = ["macros", "rt-multi-thread"] }

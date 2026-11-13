@@ -154,7 +154,9 @@ implemented.
 ## Reproduce local integration
 
 The complete official AWS Emulator source checkout is pinned to commit
-`f515581569b98a9dcbd2e686c12f912fdce51bba`. The verified signed binary is 1.0.336.
+`7461ab1bbe540afe8063ce03ee5477ebb649df48` (release 1.0.348). Its package hash
+and AWS signature are verified; runtime integration on this pin is not yet
+verified. Existing 1.0.336 receipts and fixtures remain historical evidence.
 The native graph installer pins Redis 8.10.3 and FalkorDB 6.0.4 with SHA-256
 checksums. Both are local synthetic fixtures.
 

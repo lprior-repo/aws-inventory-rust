@@ -83,7 +83,10 @@ fn read_member(
     let mut member = archive
         .by_index(index)
         .map_err(|error| HarnessError::invalid(format!("schema archive: {error}")))?;
-    let file = member.name().to_string();
+    let file = member
+        .name()
+        .map_err(|error| HarnessError::invalid(format!("schema archive filename: {error}")))?
+        .into_owned();
     if !file.ends_with(".json") {
         return Ok(None);
     }

@@ -85,15 +85,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "330a5ed07fa54e4702c9d6c4174f74427fc0ef6e214bbd677ae50a5099946470"
 
 [[package]]
-name = "arbitrary"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3bc62ac97cc33321f50863d514c3bc38a453947a8f9e781137e47c7401020aed"
-dependencies = [
- "derive_arbitrary",
-]
-
-[[package]]
 name = "arc-swap"
 version = "1.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -944,9 +935,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-appstream"
-version = "1.140.0"
+version = "1.141.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e9ffafbd9c86b8d8137554d82d9e64a2672f44bd2d587684b007c24faae7e1c"
+checksum = "61853d2071272b6b9806835f58cc50be24b31b044953994a3d9c2b4998c3c497"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -1985,9 +1976,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-cloudformation"
-version = "1.138.0"
+version = "1.139.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5038473e44e63ecf055a0e4dd8c7ad13682fd60d4e6e88309b09e7f4fedff405"
+checksum = "b77def03a5fb2442348afdd6ecd0eafbfa117243865cc78e899beb26edf7fb6d"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -2633,9 +2624,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-cognitoidentityprovider"
-version = "1.147.0"
+version = "1.148.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "67f6b85822810a2ac542cc56106e128ed0f58e600dd3d06f046790c1d0137f0a"
+checksum = "c91a9eb5fa9e9e0e80a19a1c0df4856df059b6b182de4e3036e0d28d485f038e"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -2851,9 +2842,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-connectcampaignsv2"
-version = "1.81.0"
+version = "1.82.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7ae71cd21e99f1de2cc7d49c6293d59f4ea3b01c202a23964b40c95b8fa9e914"
+checksum = "a7ccd16d86a08bfdae4c857a8cf5147371480492b56cc727ba35df58383fd3dc"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -3326,9 +3317,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-deadline"
-version = "1.127.0"
+version = "1.128.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "84ac8c7d4bfa8ad4b4d02512c716767ab1f709fd88a5cc83c98209d84a2b3f5d"
+checksum = "8430e56df3c6179618a7fcce19e3e1c45dfd6479c349a2f232decf810c350b5a"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -3401,9 +3392,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-devopsagent"
-version = "1.34.0"
+version = "1.35.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4b3d4da43ce0dc8833a1b1712e43e467363203053e37183567caaf2a6558b9e"
+checksum = "752a45d55e8d73e4afed361f05cea3d9a0e5d3dd00092ec00acc8a4cd78c52aa"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -3552,9 +3543,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-docdb"
-version = "1.130.0"
+version = "1.130.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0747e68d55f1f4792c04890f08ef6b504d4c25e8b6e21555b236e1205df3d8a8"
+checksum = "91713dc259288f45e62c814e684d97c5857081ed7bde8b546b34a8b9517627d9"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -3729,9 +3720,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-ec2"
-version = "1.279.0"
+version = "1.280.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8b5de33cfb8d56e96b072e096e43ae18a9a3025b071d990e6f39293a34299d8"
+checksum = "2f4b884e8e1d323fda60c20c7c4d9929be47ce8da0ed287463477572c0564ffd"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -4670,9 +4661,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-glue"
-version = "1.186.0"
+version = "1.187.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "709102930f35febdf3dd1fb575e8edffe0214e137bddf10112cc449b20c689a3"
+checksum = "9e708873404aca92a3a254a2e0590b3787b3ea337b35c2f27b3bb2350bd40264"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -4865,9 +4856,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-iam"
-version = "1.135.0"
+version = "1.136.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1efc8802ed8838a9e47263dffda96ade100f50b640e352fef6e2af8234e358f9"
+checksum = "0f53b6d3c4f3f04b734a5ae6eea34491e5c356be99bc677fa7fd84eba0cc671b"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -4941,9 +4932,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-imagebuilder"
-version = "1.140.0"
+version = "1.141.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "07d3c72573745294e07b71c067a3855c7a8f4ef584eebffe1a5693e782f59ea3"
+checksum = "dfad2afb020b3aab54f9ddd9889a00c2a4bc56f3408b62db220da88c47024f78"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -5854,9 +5845,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-lambda"
-version = "1.158.0"
+version = "1.159.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ea90c7f101b913d02169f9f7070d97e20035e7639b10685b5f1c8346bf0fffc9"
+checksum = "2cc0b4925cd55cabd17679859a0b2b71f66512262861cee5c83e3065aa8fd9d2"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -5880,9 +5871,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-lambdacore"
-version = "1.20.0"
+version = "1.21.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2128d9b43755710cde7f320a00f1ca25f82bb85f88ab8a6ffa4b2e8f24342961"
+checksum = "a5fa32b1b63bfdae2b546ab0d376c4747334ffe6175e7e97046e3540a645a063"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -7186,9 +7177,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-networkfirewall"
-version = "1.139.0"
+version = "1.140.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a713bc226f9b45a94459d7df8a089727e5ac9afe4633729bf88ed02ec1ffa128"
+checksum = "c2db33785120b7868738a2b040d960864f5685280c35470c16f0b0d5fe79193c"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -7533,9 +7524,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-organizations"
-version = "1.139.0"
+version = "1.140.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b6521f1867062a1e3eb1aa5a63a24b34ebfa017c17fd6aa09e216102a35e3f1"
+checksum = "12b2cc17ebfecff0f1296596af0ea9d9ffd02948b7987ec200a9defee2b846cc"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -8226,9 +8217,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-qconnect"
-version = "1.138.0"
+version = "1.139.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b59a4de9590d7cb96bed93fef7ac89db08e3e56abe1c634e1304c66fb3ddab2"
+checksum = "111999f955e3701fdb4a77a6dc02691dc85f974820f0e19785599020edcba632"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -8624,9 +8615,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-rolesanywhere"
-version = "1.128.0"
+version = "1.129.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4d1bf16cf3e951cf92fb79e31415f96d9c7de9067cbf23b9654763336fc2d53"
+checksum = "8a233889432e0ed526760c4cea8530621679fa2aeb1d05fa205f6d2ea013501e"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -9059,9 +9050,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-sagemaker"
-version = "1.252.0"
+version = "1.253.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1bdf9298330fe598cb1fd5c216c780f54ec095bcba31b91bab4777e303a541a6"
+checksum = "2bcc6a8ad7965c02ded3681755fd7856b15044473c00ed8f7d98be1dbac36586"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -9336,9 +9327,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-scheduler"
-version = "1.121.0"
+version = "1.122.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "315789914956b6ce872f18aff07ad50cc3e3092e20da1ce51aacd6c888e12580"
+checksum = "7f9a3faa69034a6dd953a35466d80d77696543e14e18f12843823a87f25dda46"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -9432,9 +9423,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-securityhub"
-version = "1.140.0"
+version = "1.141.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "30146e166352bd679f139d89fa10b5554fe0ab58019cb9192d85aef620529aea"
+checksum = "a24d1b111e5e415f6b553128dfd2e1df0c68eb3adb682a47b6b755c1fb23ad1e"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -9954,9 +9945,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-ssm"
-version = "1.136.0"
+version = "1.137.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "915984b39468a5d9cf36d1813e1847a2fa67ab3ca9fda1a1e17735a30b6b1b24"
+checksum = "db5dffb9ec07fac5dbbf475396fbe1a4a319ee46528b7054662c518f18d00421"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -10722,9 +10713,9 @@ dependencies = [
 
 [[package]]
 name = "aws-sdk-vpclattice"
-version = "1.130.0"
+version = "1.131.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "71db4811ec506ad118a2809135b5e126ca6ac117305ef0e46881767511b97f93"
+checksum = "cfe14897eb904a7a8641437e058b7aef158a992476ffff719595052f728e7424"
 dependencies = [
  "arc-swap",
  "aws-credential-types",
@@ -11461,9 +11452,9 @@ dependencies = [
 
 [[package]]
 name = "bumpalo"
-version = "3.20.3"
+version = "3.20.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "72f5acc6cb2ba439de613abc23857ec3d78374d8ed5ac84e9d11336e87da8649"
+checksum = "87a0cf66fd1eb2fb7b822cb78370d82303750809bc6ba855f3f58e517d3238db"
 
 [[package]]
 name = "bytemuck"
@@ -11504,9 +11495,9 @@ dependencies = [
 
 [[package]]
 name = "cc"
-version = "1.11.1"
+version = "1.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ff2a8126fff0f8c839080d619675a585e61720bb12d2baceae45769fd66f155"
+checksum = "33ef9e3e8154a45c7a95cff4c1299702106ad94062d7bb85fdc5d3a5afd91d45"
 dependencies = [
  "find-msvc-tools",
  "jobserver",
@@ -11519,6 +11510,12 @@ name = "cfg-if"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4e7648175b45a9a48536d676f68d918270699102aa8dab5496df06904c914600"
+
+[[package]]
+name = "cfg_aliases"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f079e83a288787bcd14a6aea84cee5c87a67c5a3e660c30f557a3d24761b3527"
 
 [[package]]
 name = "chacha20"
@@ -11640,6 +11637,15 @@ name = "const-oid"
 version = "0.10.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be95d4a884358a21a199689323c29e9256b4a1b315e22f183d155422041d3a9a"
+
+[[package]]
+name = "constant_time_eq"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9eb6feb175df65d0a3ccd3e73484e940d0ac664e8034f0519fd49a93db3071d9"
+dependencies = [
+ "rustversion",
+]
 
 [[package]]
 name = "core-foundation"
@@ -11805,17 +11811,6 @@ name = "deranged"
 version = "0.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e9de72ce2ad1f90dc62fa25f0f430ef85eb4b0d8fa0be4f30373bc40a21d28e"
-
-[[package]]
-name = "derive_arbitrary"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b034bd7d5f032402a2479444dcc6f74e36a03f31854d41680fb240ef682a1ac"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 3.0.10",
-]
 
 [[package]]
 name = "digest"
@@ -12143,9 +12138,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "300e883d756b2e4ec94e02791f39b04b522276138852cfc41d9fb7e904106099"
 dependencies = [
  "cfg-if",
+ "js-sys",
  "libc",
  "r-efi",
  "rand_core",
+ "wasm-bindgen",
 ]
 
 [[package]]
@@ -12509,6 +12506,7 @@ dependencies = [
 name = "inventory-core"
 version = "0.6.0"
 dependencies = [
+ "minicbor",
  "proptest",
  "serde",
  "serde_json",
@@ -13775,13 +13773,25 @@ dependencies = [
 
 [[package]]
 name = "mio"
-version = "1.2.4"
+version = "1.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1788edb87fdc09c7e26304471e2f5be8cdefb1b6930d6e3985fc02ff53bf86ee"
+checksum = "20521a903f02b0a573cd6840e9d0a5a0cc043d361fe924092cd70f8556cc9c4a"
 dependencies = [
  "libc",
  "wasi",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "nix"
+version = "0.31.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cf20d2fde8ff38632c426f1165ed7436270b44f199fc55284c38276f9db47c3d"
+dependencies = [
+ "bitflags 2.13.2",
+ "cfg-if",
+ "cfg_aliases",
+ "libc",
 ]
 
 [[package]]
@@ -14967,6 +14977,12 @@ version = "0.24.1"
 source = "git+https://github.com/makepad/makepad?rev=506ec05105b9adb08d1d21f9879df181b5244ea7#506ec05105b9adb08d1d21f9879df181b5244ea7"
 
 [[package]]
+name = "typed-path"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9ce898823d8cd0f028662d2f349694b1af0a5cc9be83f1d213a00d3147445e1e"
+
+[[package]]
 name = "typenum"
 version = "1.20.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -15391,6 +15407,20 @@ name = "zeroize"
 version = "1.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e13084392c5e4bc371903e2935a5eaeed24905a7511356b883835e18a78f6879"
+dependencies = [
+ "zeroize_derive",
+]
+
+[[package]]
+name = "zeroize_derive"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c50655cbb0fe3fc43170059e702f1ce5e19b84cec58dc87b037a09935c2f328"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.119",
+]
 
 [[package]]
 name = "zerotrie"
@@ -15427,16 +15457,21 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "2.6.1"
+version = "9.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1dcb24d0152526ae49b9b96c1dcf71850ca1e0b882e4e28ed898a93c41334744"
+checksum = "e3476fd497ac8af5b1ec7b51acab7bef380f7e8dd8e0487595bafd839417a302"
 dependencies = [
- "arbitrary",
+ "constant_time_eq",
  "crc32fast",
- "crossbeam-utils",
  "flate2",
+ "getrandom 0.4.3",
  "indexmap",
+ "libc",
  "memchr",
+ "nix",
+ "typed-path",
+ "windows-sys 0.61.2",
+ "zeroize",
  "zopfli",
 ]
 

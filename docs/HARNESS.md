@@ -53,10 +53,13 @@ catalog digests are resolved against.
 | Delivery verification | `scripts/emulator/verify_delivery.py` (477) | not started | — |
 | Mutation gate | `scripts/mutation/*.py` (3,688) | not started | — |
 
-### Live coverage against the installed emulator
+### Historical live coverage on emulator 1.0.336
 
-The pinned emulator is installed by this harness in `.local/runtime` and every
-`emulator_live` test runs without Python:
+The results below were captured on 1.0.336 (`f5155815`), not the current
+1.0.348 pin. The new package's SHA-256 and AWS GPG signature were verified;
+its standalone and embedded runtime gates have not been run for this upgrade.
+The Rust harness installs the current pin in `.local/runtime`; its
+`emulator_live` tests run without Python.
 
 | Check | Result |
 | --- | --- |
@@ -82,9 +85,14 @@ provider-unsupported, 0 failed, `/api/in_flight == 0`.
 
 The 292 `TypeNotFoundException` names are compared as an exact set against
 `crates/harness/fixtures/universal-unsupported-aws-emulator-1.0.336.json`, which
-records the pinned emulator version and commit. A newer emulator is new
-evidence: the test fails until the fixture and the literals are refreshed
-together after verifying the delta.
+records the historical 1.0.336 version and commit. It is a regression baseline,
+not evidence for 1.0.348. Metadata, exact type-set and partition assertions
+remain unchanged: the live gate must capture the new release's outcomes before
+the fixture or literals can be refreshed. The recorded capture command is
+`aws-inventory scan --db universal.sqlite --region us-east-1 --attempts 1 --max-pages 2 --page-size 2 --service cloud-control --cloud-control --resource-type all`.
+Extract types from `collection_failures.scope_key.parent_id` only after checking
+every failure has category `unsupported_type` and message `TypeNotFoundException`;
+`unsupported_types` in `tests/emulator_live/coverage.rs` is the checked extraction.
 
 The 11 reviewed-set gaps are not collector defects: they are the emulator's
 Cloud Control type registry, and they match the committed `list_error` set in
@@ -156,11 +164,16 @@ build with a `target/` footprint on the order of 100 GB. Ordinary
 cd harness/embedded && cargo test        # explicit, heavy build
 ```
 
-Pinned to `f515581569b98a9dcbd2e686c12f912fdce51bba` — the same commit as
-`scripts/emulator/upstream.json` (package 1.0.336), so the in-process and
-standalone fixtures cannot drift apart. Newer releases exist upstream; a patch
-release may change behavior, so the pin moves only with a re-run of both
-harnesses.
+Pinned to stable upstream release **v1.0.348**, commit
+`7461ab1bbe540afe8063ce03ee5477ebb649df48` — the same commit as
+`scripts/emulator/upstream.json` (package 1.0.348), so the in-process and
+standalone fixtures cannot drift apart. The upstream embedded facade source
+is unchanged from 1.0.336; this is API inspection, not runtime verification.
+Both harnesses require execution against the new pin before acceptance.
+
+The frozen legacy Python runner and snapshot scripts still hardcode 1.0.336;
+they are not a current-release verification path. Use the Rust harness for
+1.0.348. Historical receipts and catalogs have not been relabelled.
 
 Constraints that shaped the test:
 

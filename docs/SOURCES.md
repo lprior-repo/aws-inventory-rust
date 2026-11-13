@@ -143,11 +143,15 @@ fabricated DNS-target edge. A regression test checks that behavior.
 ## AWS Emulator integration and protocol evidence
 
 The emulator target is the full upstream source checkout at commit
-`f515581569b98a9dcbd2e686c12f912fdce51bba`, paired with the official Linux amd64
-binary **1.0.336**. [upstream.json](../scripts/emulator/upstream.json) retains the
+`7461ab1bbe540afe8063ce03ee5477ebb649df48`, paired with the official Linux amd64
+binary **1.0.348**. [upstream.json](../scripts/emulator/upstream.json) retains the
 package URL, checksum, publishing-key fingerprint and source pin. The installer
 verifies the detached package signature and expected signer; the runner checks
 the binary's reported version and commit.
+The new package's SHA-256 and AWS detached signature were verified on
+2026-11-13; standalone and embedded runtime verification remain required.
+The receipts, source links and operation outcomes below describe the historical
+1.0.336 baseline and have not been relabelled as current-release evidence.
 
 The retained [package proof](../artifacts/emulator-package-verification-v04.json)
 contains the matching checksum and exact machine-readable GPG signer evidence.
@@ -158,7 +162,7 @@ the emulator source and binary are unchanged upstream artifacts.
 
 | Primary source | Contract used |
 | --- | --- |
-| [Pinned AWS Emulator source](https://github.com/aws/aws-emulator/tree/f515581569b98a9dcbd2e686c12f912fdce51bba) | Concrete operation implementations, native-store integrations and unimplemented paths |
+| [Current pinned AWS Emulator source](https://github.com/aws/aws-emulator/tree/7461ab1bbe540afe8063ce03ee5477ebb649df48) | Reproducible source for the 1.0.348 standalone and embedded fixtures; runtime verification required |
 | [Official Linux setup and signature verification](https://docs.aws.amazon.com/emulator/latest/userguide/getting-started-linux.html) | Package installation and verification workflow |
 | [Official SDK connection instructions](https://docs.aws.amazon.com/emulator/latest/userguide/point-sdk-to-emulator.html) | Generated credentials, explicit HTTPS endpoint, Rust `SSL_CERT_FILE` and path-style S3 access |
 | [Official scope and limitations](https://docs.aws.amazon.com/emulator/latest/userguide/what-is-service.html) | In-memory state and limits on production, IAM, isolation and load-testing claims |

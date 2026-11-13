@@ -939,7 +939,7 @@ aws-sdk-applicationinsights = { version = "=1.123.0", optional = true, default-f
 aws-sdk-applicationsignals = { version = "=1.103.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-appmesh = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-apprunner = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-appstream = { version = "=1.140.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-appstream = { version = "=1.141.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-appsync = { version = "=1.135.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-arcregionswitch = { version = "=1.50.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-arczonalshift = { version = "=1.126.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
@@ -981,7 +981,7 @@ aws-sdk-cleanroomsml = { version = "=1.129.0", optional = true, default-features
 aws-sdk-cloud9 = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-cloudcontrol = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-clouddirectory = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-cloudformation = { version = "=1.138.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-cloudformation = { version = "=1.139.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-cloudfront = { version = "=1.143.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-cloudfrontkeyvaluestore = { version = "=1.120.0", optional = true, default-features = false, features = ["sigv4a", "default-https-client", "rt-tokio"] }
 aws-sdk-cloudhsm = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
@@ -1007,7 +1007,7 @@ aws-sdk-codepipeline = { version = "=1.134.0", optional = true, default-features
 aws-sdk-codestarconnections = { version = "=1.123.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-codestarnotifications = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-cognitoidentity = { version = "=1.123.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-cognitoidentityprovider = { version = "=1.147.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-cognitoidentityprovider = { version = "=1.148.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-cognitosync = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-comprehend = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-comprehendmedical = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
@@ -1016,7 +1016,7 @@ aws-sdk-computeoptimizerautomation = { version = "=1.33.0", optional = true, def
 aws-sdk-config = { version = "=1.134.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-connect = { version = "=1.226.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-connectcampaigns = { version = "=1.124.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-connectcampaignsv2 = { version = "=1.81.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-connectcampaignsv2 = { version = "=1.82.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-connectcases = { version = "=1.138.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-connectcontactlens = { version = "=1.126.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-connecthealth = { version = "=1.29.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
@@ -1035,23 +1035,23 @@ aws-sdk-datapipeline = { version = "=1.122.0", optional = true, default-features
 aws-sdk-datasync = { version = "=1.136.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-datazone = { version = "=1.170.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-dax = { version = "=1.123.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-deadline = { version = "=1.127.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-deadline = { version = "=1.128.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-detective = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-devicefarm = { version = "=1.129.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-devopsagent = { version = "=1.34.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-devopsagent = { version = "=1.35.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-devopsguru = { version = "=1.121.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-directconnect = { version = "=1.130.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-directory = { version = "=1.128.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-directoryservicedata = { version = "=1.79.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-dlm = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-docdb = { version = "=1.130.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-docdb = { version = "=1.130.1", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-docdbelastic = { version = "=1.123.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-drs = { version = "=1.130.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-dsql = { version = "=1.81.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-dynamodb = { version = "=1.139.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-dynamodbstreams = { version = "=1.124.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-ebs = { version = "=1.121.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-ec2 = { version = "=1.279.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-ec2 = { version = "=1.280.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-ec2instanceconnect = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-ecr = { version = "=1.140.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-ecrpublic = { version = "=1.124.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
@@ -1089,7 +1089,7 @@ aws-sdk-geoplaces = { version = "=1.76.0", optional = true, default-features = f
 aws-sdk-georoutes = { version = "=1.78.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-glacier = { version = "=1.123.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-globalaccelerator = { version = "=1.124.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-glue = { version = "=1.186.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-glue = { version = "=1.187.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-grafana = { version = "=1.125.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-greengrass = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-greengrassv2 = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
@@ -1097,10 +1097,10 @@ aws-sdk-groundstation = { version = "=1.127.0", optional = true, default-feature
 aws-sdk-guardduty = { version = "=1.157.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-health = { version = "=1.127.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-healthlake = { version = "=1.129.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-iam = { version = "=1.135.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-iam = { version = "=1.136.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-iamtoolbox = { version = "=1.13.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-identitystore = { version = "=1.125.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-imagebuilder = { version = "=1.140.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-imagebuilder = { version = "=1.141.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-inspector = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-inspector2 = { version = "=1.140.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-inspectorscan = { version = "=1.123.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
@@ -1137,8 +1137,8 @@ aws-sdk-kinesisvideosignaling = { version = "=1.121.0", optional = true, default
 aws-sdk-kinesisvideowebrtcstorage = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-kms = { version = "=1.131.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-lakeformation = { version = "=1.128.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-lambda = { version = "=1.158.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-lambdacore = { version = "=1.20.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-lambda = { version = "=1.159.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-lambdacore = { version = "=1.21.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-lambdamicrovms = { version = "=1.21.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-lambdaweb = { version = "=1.9.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-launchwizard = { version = "=1.124.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
@@ -1191,7 +1191,7 @@ aws-sdk-mwaaserverless = { version = "=1.36.0", optional = true, default-feature
 aws-sdk-neptune = { version = "=1.126.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-neptunedata = { version = "=1.124.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-neptunegraph = { version = "=1.121.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-networkfirewall = { version = "=1.139.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-networkfirewall = { version = "=1.140.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-networkflowmonitor = { version = "=1.77.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-networkmanager = { version = "=1.126.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-networkmonitor = { version = "=1.112.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
@@ -1205,7 +1205,7 @@ aws-sdk-odb = { version = "=1.59.0", optional = true, default-features = false, 
 aws-sdk-omics = { version = "=1.139.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-opensearch = { version = "=1.159.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-opensearchserverless = { version = "=1.131.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-organizations = { version = "=1.139.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-organizations = { version = "=1.140.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-osis = { version = "=1.126.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-outposts = { version = "=1.139.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-partnercentralaccount = { version = "=1.36.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
@@ -1233,7 +1233,7 @@ aws-sdk-pricingplanmanager = { version = "=1.16.0", optional = true, default-fea
 aws-sdk-proton = { version = "=1.121.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-qapps = { version = "=1.89.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-qbusiness = { version = "=1.138.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-qconnect = { version = "=1.138.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-qconnect = { version = "=1.139.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-quicksight = { version = "=1.169.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-ram = { version = "=1.124.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-rbin = { version = "=1.124.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
@@ -1249,7 +1249,7 @@ aws-sdk-resiliencehubv2 = { version = "=1.25.0", optional = true, default-featur
 aws-sdk-resourceexplorer2 = { version = "=1.126.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-resourcegroups = { version = "=1.125.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-resourcegroupstagging = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-rolesanywhere = { version = "=1.128.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-rolesanywhere = { version = "=1.129.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-route53 = { version = "=1.135.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-route53domains = { version = "=1.129.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-route53globalresolver = { version = "=1.34.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
@@ -1266,7 +1266,7 @@ aws-sdk-s3files = { version = "=1.25.0", optional = true, default-features = fal
 aws-sdk-s3outposts = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-s3tables = { version = "=1.79.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-s3vectors = { version = "=1.49.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-sagemaker = { version = "=1.252.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-sagemaker = { version = "=1.253.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-sagemakera2iruntime = { version = "=1.121.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-sagemakeredge = { version = "=1.121.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-sagemakerfeaturestoreruntime = { version = "=1.124.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
@@ -1277,11 +1277,11 @@ aws-sdk-sagemakerruntime = { version = "=1.125.0", optional = true, default-feat
 aws-sdk-sagemakerruntimehttp2 = { version = "=1.32.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-sagemakertrainingsessionruntime = { version = "=1.7.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-savingsplans = { version = "=1.124.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-scheduler = { version = "=1.121.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-scheduler = { version = "=1.122.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-schemas = { version = "=1.121.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-secretsmanager = { version = "=1.128.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-securityagent = { version = "=1.42.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-securityhub = { version = "=1.140.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-securityhub = { version = "=1.141.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-securityir = { version = "=1.77.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-securitylake = { version = "=1.125.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-serverlessapplicationrepository = { version = "=1.121.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
@@ -1302,7 +1302,7 @@ aws-sdk-snowdevicemanagement = { version = "=1.122.0", optional = true, default-
 aws-sdk-sns = { version = "=1.123.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-socialmessaging = { version = "=1.83.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-sqs = { version = "=1.121.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-ssm = { version = "=1.136.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-ssm = { version = "=1.137.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-ssmcontacts = { version = "=1.120.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-ssmguiconnect = { version = "=1.57.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-ssmincidents = { version = "=1.121.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
@@ -1333,7 +1333,7 @@ aws-sdk-trustedadvisor = { version = "=1.124.0", optional = true, default-featur
 aws-sdk-uxc = { version = "=1.25.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-verifiedpermissions = { version = "=1.134.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-voiceid = { version = "=1.121.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-vpclattice = { version = "=1.130.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-vpclattice = { version = "=1.131.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-waf = { version = "=1.121.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-wafregional = { version = "=1.123.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-wafv2 = { version = "=1.142.0", optional = true, default-features = false, features = ["default-https-client", "rt-tokio"] }

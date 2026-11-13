@@ -7,7 +7,7 @@ rust-version.workspace = true
 description = "GPU-rendered desktop viewer for the synthetic CMDB fixture"
 
 [dependencies]
-# Makepad 2.0 dev line, pinned to main at the commit the local skills describe.
+# Keep the Makepad 2.0 source pin: the latest published widgets are still 1.0.0.
 # Only the core widget family is linked; this screen needs views, labels,
 # buttons, inputs, a portal list and its scroll bar.
 makepad-widgets = { git = "https://github.com/makepad/makepad", rev = "506ec05105b9adb08d1d21f9879df181b5244ea7", default-features = false }
