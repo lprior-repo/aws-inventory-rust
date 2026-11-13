@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 use sqlx::{Connection, SqliteConnection, sqlite::SqliteConnectOptions};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-const CURRENT_SCHEMA_VERSION: i64 = 13;
+const CURRENT_SCHEMA_VERSION: i64 = inventory_engine::store::SCHEMA_VERSION;
 const NEW_VIEWS: [&str; 10] = [
     "aws_s3_bucket",
     "aws_iam_role",

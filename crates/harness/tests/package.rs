@@ -173,6 +173,25 @@ fn given_tree_with_exclusions_when_packaged_then_manifest_and_entries_are_exact(
 }
 
 #[test]
+fn given_tree_with_local_directory_when_packaged_then_local_files_are_excluded() -> TestResult {
+    let tree = tempfile::tempdir()?;
+    let output = tempfile::tempdir()?;
+    synthetic_tree(tree.path())?;
+    fs::write(tree.path().join(".localrc"), "keep")?;
+    fs::create_dir_all(tree.path().join(".local"))?;
+    fs::write(tree.path().join(".local/config.json"), "config")?;
+    fs::create_dir_all(tree.path().join("src/.local"))?;
+    fs::write(tree.path().join("src/.local/cache"), "nested")?;
+    let receipt = package(tree.path(), &output.path().join("bundle.zip"))?;
+    let mut expected = vec!["aws-inventory-rs/.localrc".to_string()];
+    expected.extend(INCLUDED.iter().map(|n| format!("aws-inventory-rs/{n}")));
+    expected.push("aws-inventory-rs/MANIFEST.sha256".to_string());
+    assert_eq!(entry_names(&output.path().join("bundle.zip"))?, expected);
+    assert_eq!(receipt.files, 6);
+    Ok(())
+}
+
+#[test]
 fn given_same_tree_when_packaged_by_catalog_tool_and_rust_then_bytes_match() -> TestResult {
     let tree = tempfile::tempdir()?;
     let reference = tempfile::tempdir()?;

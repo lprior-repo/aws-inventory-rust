@@ -22,7 +22,7 @@ pub fn catalog() -> Value {
         else { "tags returned by the selected list/describe operations" },
         "level":"selected configuration fields and documented relationships; not full upstream schema parity"
     })).collect();
-    json!({"schema_version":6,"sqlite_schema_version":12,
+    json!({"schema_version":6,"sqlite_schema_version":inventory_engine::store::SCHEMA_VERSION,
         "native_resource_kind_count":tables.len(),"aws_feature_enabled":cfg!(feature="aws"),"tables":tables,
         "selectors":[
             {"selector":"ec2","aliases":["vpc","ebs"],"collector_groups":["ec2","network"]},

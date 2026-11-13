@@ -7,12 +7,13 @@ use std::path::{Path, PathBuf};
 use crate::HarnessError;
 
 /// Directories excluded at any depth.
-const EXCLUDED_DIRECTORIES: [&str; 5] = [
+const EXCLUDED_DIRECTORIES: [&str; 6] = [
     "target",
     ".git",
     "__pycache__",
     ".pytest_cache",
     "mutants.out.old",
+    ".local",
 ];
 /// Artifact trees that are development intermediates, never evidence.
 const EXCLUDED_ARTIFACT_TREES: [&str; 4] = [

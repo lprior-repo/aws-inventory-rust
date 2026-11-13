@@ -8,7 +8,7 @@ use std::path::Path;
 
 type TestError = Box<dyn std::error::Error>;
 type TestResult = Result<(), TestError>;
-const CURRENT_SCHEMA_VERSION: i64 = 13;
+const CURRENT_SCHEMA_VERSION: i64 = inventory_engine::store::SCHEMA_VERSION;
 
 fn fixture(id: &str, kind: &str, properties: serde_json::Value, time: i64) -> Resource {
     Resource {

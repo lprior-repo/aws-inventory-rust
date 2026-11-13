@@ -1,6 +1,10 @@
 //! Transactional schema initialization and managed-view migration.
 use super::*;
 
+/// The current SQLite schema version. Incremented by every migration that
+/// changes the durable schema.
+pub const SCHEMA_VERSION: i64 = 13;
+
 pub(super) async fn initialize_schema(pool: &SqlitePool) -> Result<(), StoreError> {
     let application: i64 = sqlx::query_scalar("PRAGMA application_id")
         .fetch_one(pool)
@@ -22,7 +26,7 @@ pub(super) async fn initialize_schema(pool: &SqlitePool) -> Result<(), StoreErro
     let version: i64 = sqlx::query_scalar("PRAGMA user_version")
         .fetch_one(&mut *tx)
         .await?;
-    if !(0..=13).contains(&version) {
+    if !(0..=SCHEMA_VERSION).contains(&version) {
         return Err(StoreError::SchemaVersion(version));
     }
     if version == 0 {
@@ -279,25 +283,6 @@ pub(super) async fn verify_managed_columns(
         if actual.iter().map(String::as_str).ne(names.iter().copied()) {
             return Err(StoreError::InvalidInput(
                 "managed table columns differ from the supported migration schema",
-            ));
-        }
-    }
-    Ok(())
-}
-
-pub(super) async fn verify_sqlite_limits(pool: &SqlitePool) -> Result<(), StoreError> {
-    let row = sqlx::query(
-        "SELECT sqlite_compileoption_used('MAX_LENGTH=8388608') AS length_ok,
-        sqlite_compileoption_used('MAX_SQL_LENGTH=65536') AS sql_ok,
-        sqlite_compileoption_used('MAX_COLUMN=256') AS column_ok,
-        sqlite_compileoption_used('MAX_EXPR_DEPTH=128') AS depth_ok",
-    )
-    .fetch_one(pool)
-    .await?;
-    for column in ["length_ok", "sql_ok", "column_ok", "depth_ok"] {
-        if !row.try_get::<bool, _>(column)? {
-            return Err(StoreError::InvalidInput(
-                "SQLite compile bounds missing; build with repository .cargo/config.toml",
             ));
         }
     }

@@ -24,8 +24,8 @@ fn catalog_kinds_and_derived_views_match_the_sqlite_schema()
         Some(6)
     );
     assert_eq!(
-        catalog.get("sqlite_schema_version").and_then(Value::as_u64),
-        Some(12)
+        catalog.get("sqlite_schema_version").and_then(Value::as_i64),
+        Some(inventory_engine::store::SCHEMA_VERSION)
     );
     let migrations = [
         include_str!("../../crates/engine/sql/001_inventory.sql"),

@@ -110,7 +110,7 @@ fn entrypoint_version_catalog_and_error_exit_are_real() -> Result<()> {
         catalog.get("cloud_control_resource_type_count"),
         Some(&json!(421))
     );
-    assert_eq!(catalog.get("sqlite_schema_version"), Some(&json!(12)));
+    assert_eq!(catalog.get("sqlite_schema_version"), Some(&json!(13)));
     assert_eq!(
         catalog.pointer("/sdk_catalog/service_crates"),
         Some(&json!(437))

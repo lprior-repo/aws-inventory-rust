@@ -208,6 +208,25 @@ fn given_destination_child_when_packaged_then_parent_directories_are_created() -
 }
 
 #[test]
+fn given_tree_with_local_directory_when_packaged_then_local_files_are_excluded() -> TestResult {
+    let tree = tempfile::tempdir()?;
+    let output = tempfile::tempdir()?;
+    synthetic_tree(tree.path())?;
+    fs::write(tree.path().join(".localrc"), "keep")?;
+    fs::create_dir_all(tree.path().join(".local"))?;
+    fs::write(tree.path().join(".local/config.json"), "config")?;
+    fs::create_dir_all(tree.path().join("src/.local"))?;
+    fs::write(tree.path().join("src/.local/cache"), "nested")?;
+    let receipt = package(tree.path(), &output.path().join("bundle.zip"))?;
+    let mut expected = vec![format!("{PREFIX}.localrc")];
+    expected.extend(INCLUDED.iter().map(|n| format!("{PREFIX}{n}")));
+    expected.push(format!("{PREFIX}MANIFEST.sha256"));
+    assert_eq!(entry_names(&output.path().join("bundle.zip"))?, expected);
+    assert_eq!(receipt.files, 6);
+    Ok(())
+}
+
+#[test]
 fn given_payload_root_when_packaged_then_only_one_manifest_entry_exists() -> TestResult {
     let tree = tempfile::tempdir()?;
     let output = tempfile::tempdir()?;
