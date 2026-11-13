@@ -1,8 +1,9 @@
 # Universal coverage: CloudQuery × Cartographer
 
-> Superseded direction. [VISION.md](VISION.md) decision V04 retires Cloud
-> Control: this document describes the baseline collector that endpoint
-> collection replaces, and no further work is planned on it.
+> Status: Baseline being replaced. Universal listing through Cloud Control is
+> retired by decisions V01 and V04, gets no further work, and is deleted in
+> ROADMAP M9.5; complete coverage comes from endpoint collection of every
+> service instead (M9). See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
 
 This project collects AWS inventory two ways: native SDK adapters for the
 resource kinds that need typed handling, and provider-generic listing through

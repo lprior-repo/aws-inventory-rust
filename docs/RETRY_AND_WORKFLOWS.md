@@ -1,5 +1,10 @@
 # Retry primitives and durable workflows
 
+> Status: Kept and extended. The decision stands: one retry owner, a local
+> durable queue, no workflow engine; the plan goes further by removing SDK
+> retries altogether with the wire engine (ROADMAP M2) and taking retry classes
+> from the catalog (M4.2). See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 Research checked on **2026-11-12**. This is an architectural decision note, not
 a claim that every integration below is installed or implemented. The current
 scheduler contract is in [SCHEDULER.md](SCHEDULER.md); storage and delivery

@@ -1,5 +1,10 @@
 # FalkorDB delivery, retries, and checkpoint recovery
 
+> Status: Kept and extended. FalkorDB delivery through the one retry owner with
+> acknowledged, idempotent batches is kept; ROADMAP M6.1 replaces whole-snapshot
+> plan files with a bounded pending-projection queue that sends only changed
+> and deleted keys. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 Graph delivery uses the existing bounded `ApiExecutor` as its only automatic
 retry owner. It reconnects after temporary transport or retryable server errors,
 replays the same validated idempotent batch, and writes a SQLx acknowledgement

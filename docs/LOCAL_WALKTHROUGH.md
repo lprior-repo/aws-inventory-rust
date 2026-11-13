@@ -1,5 +1,10 @@
 # Using your local AWS Emulator
 
+> Status: Baseline being replaced. It walks through the baseline `scan` on the
+> local emulator of one machine; ROADMAP M6.4 replaces it with one documented
+> path from an empty directory to the DAG. See [VISION](VISION.md) and
+> [ROADMAP](ROADMAP.md).
+
 The emulator and FalkorDB are installed and running. The demonstrated scan
 completed with 150 resources, 340 configuration relationships, 131 completed
 collection scopes, and zero failed scopes. Its synthetic account is

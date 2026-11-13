@@ -1,5 +1,10 @@
 # AWS operation reconciliation for v0.6
 
+> Status: Historical evidence. It records the v0.6 source and run
+> reconciliation of the baseline collector and is not updated; links into
+> `artifacts/` point to an ignored local directory and do not resolve in a
+> clone. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 **The v0.6 source, collection, full live workspace and graph-delivery checks passed for the bound run. The whole-project 95% mutation target remains open.**
 
 The [current reconciliation receipt](../artifacts/aws-operation-source-reconciliation-v06-complete.json) binds the source tree and compiled collector to the run in [artifacts/emulator-v06-complete](../artifacts/emulator-v06-complete/summary.json). Collection passed **2,522 harness checks with zero failed checks**, both repetitions of the five collector snapshots passed, and the full live first-party workspace passed **530 tests, zero failed and zero ignored**. All five snapshots then passed exact JSON/SQLite and real FalkorDB projection comparisons, checkpointed replay and cleanup. Ten portable exports were retained and verified. The earlier interrupted attempt remains documented below. See [VERIFICATION.md](VERIFICATION.md) for the current release result index.

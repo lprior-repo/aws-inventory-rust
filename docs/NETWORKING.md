@@ -1,5 +1,9 @@
 # Native VPC networking inventory
 
+> Status: Baseline being replaced. The `network` adapter described here is
+> replaced by overlay data on the wire engine in ROADMAP M5.1 and deleted in
+> the same change. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 The `network` selector collects six kinds of VPC configuration through the native
 AWS Rust EC2 SDK. The `ec2`, `vpc`, and `ebs` selectors also include these scopes.
 Every record has `source = Direct`, the observation time, its account and region,

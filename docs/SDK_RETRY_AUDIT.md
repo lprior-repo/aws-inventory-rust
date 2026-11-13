@@ -1,5 +1,11 @@
 # AWS SDK source and retry audit
 
+> Status: Baseline being replaced. It audits the typed SDK crates that ROADMAP
+> M1.7 removes from the workspace; its conclusion, one retry owner outside the
+> SDK, is kept, and the wire engine has no internal retries at all (VISION
+> 5.3). The audit report it cites lives under the ignored `artifacts/`
+> directory. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 This audit examines the 437 exact service SDK versions in `crates/sdk-catalog/sdk-services.json`, pinned to AWS's `release-2026-11-11` catalog. The reproducible machine report is `artifacts/sdk-capabilities-v03.json`; the auditor is `crates/sdk-catalog/examples/audit.rs`. It does not load credentials, construct service clients, or make AWS requests.
 
 The SDK already provides request classification, bounded retries, exponential backoff, jitter, retry budgets, and service-specific retry behavior. Those are preferable to duplicate application implementations when they can be integrated without breaking the application's quota and timeout contract. The inspected public interfaces do not provide a direct asynchronous admission point before both signing and attempt timeout. For the current strict contract, retaining one outer retry owner with SDK attempts set to one is the verified baseline; native retry migration remains conditional on an explicit timing-policy change or a suitable upstream hook. A retry budget is not a service's requests-per-second quota.

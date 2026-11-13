@@ -1,5 +1,10 @@
 # Mutation readiness audit for the v0.6 development increment
 
+> Status: Historical evidence. It records the v0.6 audit of the Python mutation
+> harness and is not updated; links into `artifacts/` point to an ignored local
+> directory and do not resolve in a clone. See [VISION](VISION.md) and
+> [ROADMAP](ROADMAP.md).
+
 The complete 95% mutation gate is still **unachieved**. This increment repairs
 acceptance and provenance defects in the Python harness. It does not
 represent a new Rust mutation campaign, does not reuse interrupted v0.4 counts

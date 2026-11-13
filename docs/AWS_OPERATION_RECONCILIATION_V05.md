@@ -1,5 +1,9 @@
 # AWS operation reconciliation for v0.5
 
+> Status: Historical evidence. It records the v0.5 operation reconciliation of
+> the baseline collector and is not updated. See [VISION](VISION.md) and
+> [ROADMAP](ROADMAP.md).
+
 The preserved v0.4 operation matrix inventories **72 explicit SDK operations at
 73 Rust send sites**, across 15 SDK services. One additional `sts.assume_role`
 boundary belongs to `aws-config`'s credential provider and is counted separately.

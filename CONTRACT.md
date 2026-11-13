@@ -1,5 +1,17 @@
 # Implementation contract
 
+> Status: Baseline being replaced. This is the implementation contract of the
+> baseline collector (typed SDK adapters, Cloud Control, JSON properties,
+> SQLite schema 13); it binds changes to that code until the roadmap deletes it
+> and is not the contract for new work. See [VISION](docs/VISION.md) and
+> [ROADMAP](docs/ROADMAP.md).
+
+New work follows VISION section 4 (design rules) and section 10 (how work
+lands), and the "Rules for every package" in the roadmap. Where they differ
+from this file they win: for example no JSON on the data path, no new typed SDK
+service crates, and services described by data instead of adapters. The first
+paragraph below, no `unsafe` and the listed lint bans, holds for both.
+
 All application Rust forbids unsafe; no unwrap/expect/panic/todo/unimplemented,
 unchecked indexing, lossy as casts, or silently ignored fallible results.
 
@@ -8,12 +20,18 @@ unchecked indexing, lossy as casts, or silently ignored fallible results.
 - `inventory-core`: synchronous model, identity, validation only.
 - `inventory-engine`: rate/retry executor, SQLite store, graph projection.
 - `inventory-aws`: official AWS Rust SDK collectors, no SDK nested retries.
-- `inventory-sdk-catalog`: all pinned official service SDK dependencies and provenance.
+- `inventory-sdk-catalog`, `sdk-operations`: all pinned official service SDK
+  dependencies, provenance and the operation inventory. Deleted in ROADMAP M1.7.
+- `inventory-harness`: emulator installation, seeding, assertions and audits;
+  never linked into the collector.
+- `catalog-tool`: catalog maintenance and source packaging.
+- `cmdb-bench`, `cmdb-view`, `cmdb-ui`: workload generator and oracle, read
+  model, Makepad viewer. `cmdb-api`: loopback read API, deleted in ROADMAP M6.5.
 - root binary `aws-inventory`: CLI, fixtures, reports and composition.
 
 ## Shared model (`inventory_core`)
 
-`Source` is `Direct`, `AwsConfig`, or `ResourceExplorer`.
+`Source` is `Direct`, `CloudControl`, `AwsConfig`, or `ResourceExplorer`.
 `Resource` fields: `id: String` (canonical ARN when available), `account_id: String`,
 `region: String`, `kind: String` (Steampipe-style singular table name),
 `name: Option<String>`, `properties: serde_json::Value`,
@@ -89,7 +107,8 @@ Page data, graph edges and checkpoint commit in ONE transaction. Replays idempot
 Provenance per source retained. Partial scans never infer deletion.
 WAL; synchronous FULL; busy timeout; foreign keys; prepared statements; SQL views.
 Schema initialization/upgrades run within one `BEGIN IMMEDIATE` transaction.
-Version 1 upgrades additively to version 2; unsupported newer versions fail.
+Older supported versions upgrade additively to the current version, 13
+(`inventory_engine::store::SCHEMA_VERSION`); unsupported newer versions fail.
 Do not claim full Steampipe SQL/schema compatibility, merely familiar names.
 
 ## AWS adapter (`inventory_aws`)
@@ -106,8 +125,10 @@ AWS source objects aren't generally serde Serialize; map selected typed fields e
 Native list pagination bounded by max_pages <= hard ceiling; reject repeated token loops;
 continue empty pages with token; errors emit explicit coverage failure. No fake resources.
 Config/Explorer are optional read-only sources; never auto-enable paid services.
-Native selections: ec2 (including network), network, dynamodb, lambda, ecs, eks,
-elbv2. Twenty-four native resource/component kinds are described by `catalog`.
+Native selections: ec2 (including network), network, dynamodb, lambda, ecs,
+ecs-task-definitions, eks, elbv2, s3, iam, route53, cloudfront, sqs, sns, kms,
+step-functions. Thirty-nine native resource/component kinds are described by
+`catalog`.
 ELBv2 target-health membership is distinct from the referenced target resource.
 All ELBv2 operations share the `elasticloadbalancing:read` quota family.
 

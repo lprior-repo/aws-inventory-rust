@@ -1,10 +1,23 @@
 # Portable handoff — AWS Inventory in Rust 0.6.0
 
-**Read first:** [docs/VISION.md](docs/VISION.md) is the product definition and
-[docs/ROADMAP.md](docs/ROADMAP.md) is the build plan (start at M0). The product
-is moving to direct endpoint collection through its own wire engine; the Cloud
-Control and typed-adapter collectors described below are the baseline being
-replaced. This file is the build-and-verify handoff for that baseline.
+> Status: Baseline being replaced. This is the build-and-verify handoff for
+> the baseline collector, version 0.6.0 (typed SDK adapters and Cloud Control);
+> new work starts at the first unfinished roadmap package and lands through
+> VISION section 10, not from this file. See [VISION](docs/VISION.md) and
+> [ROADMAP](docs/ROADMAP.md).
+
+The product is becoming a CMDB of every AWS resource, read through the
+services' own endpoint APIs by our own wire engine driven by the pinned AWS API
+models, stored as binary records in SQLite, projected into FalkorDB and shown
+as a DAG in a native Makepad application, on one laptop with about 10
+profiles. [docs/VISION.md](docs/VISION.md) defines it,
+[docs/ROADMAP.md](docs/ROADMAP.md) orders the work and records what has landed,
+and [docs/README.md](docs/README.md) classifies every document.
+
+What works today is the baseline: the built binary's `catalog` and `coverage`
+commands report 39 native resource kinds from typed SDK adapters, 421 reviewed
+Cloud Control types, 968 property relationship rules and SQLite schema 13.
+Everything below describes that baseline.
 
 This bundle contains the Rust application, design documents, pinned dependency
 manifests, synthetic fixtures and verification receipts. The current development
@@ -15,7 +28,7 @@ a loopback query API, and a Makepad table/DAG viewer. **Full universal AWS
 coverage (parent workflows and native breadth) and the whole-project 95% mutation
 target remain open.**
 
-The current development tree passes **781 Rust tests with zero failures** (15
+On 2026-11-13 the development tree passed **781 Rust tests with zero failures** (15
 ignored by default). The native live emulator phase passes (263 attempts, 168
 resources, 344 edges, SQS/SNS/KMS/Step Functions assertions included). The
 prepared live baseline passes **2,664 checks with zero failures**, including
@@ -25,6 +38,10 @@ clean, formatting passes, and the 300-line source and 25-line function gates
 pass. The universal partition is pinned literally against the pinned emulator:
 1,881 schema types, 1,291 list-capable, 410 parent-required, 180 without list
 handlers, and 999 listed / 292 provider-unsupported / 0 failed.
+
+These results were recorded on that date. The test suites have not been re-run
+since commit `b5332e8` (ROADMAP M0.2), and `cargo fmt --all --check` now
+reports drift that ROADMAP M0.3 still has open.
 
 The completed v0.6 local run remains recorded for release context: it passed
 **530 Rust tests with zero failures and zero
@@ -65,7 +82,8 @@ can exceed a small memory-backed `/tmp` filesystem.
 
 ```sh
 cargo fetch --locked
-python3 scripts/generate_sdk_catalog.py --check --verify-cache
+# Optional, legacy Python (deleted in ROADMAP M2.10): check the SDK catalog.
+# python3 scripts/generate_sdk_catalog.py --check --verify-cache
 cargo build --locked --features aws -j1
 cargo test --workspace --exclude inventory-sdk-catalog --all-features --locked -j1
 
@@ -84,6 +102,7 @@ cargo run -p cmdb-ui
 cargo run -p cmdb-bench -- workload --accounts 1000 --assets-total 1000000 \
   --output target/cmdb-smoke
 cargo run -p cmdb-bench -- verify --input target/cmdb-smoke
+# cmdb-api is deleted in ROADMAP M6.5; the UI will read the store in process.
 cargo run -p cmdb-api -- --export inventory.json --bind 127.0.0.1:8787
 ```
 
@@ -95,7 +114,7 @@ parent execution evidence is a separate artifact referenced by
 rewritten as a current pass merely because a descriptor is now selected.
 
 The maintainer gate is `scripts/verify.sh`. It needs no Python; the Python
-scripts in the tree are frozen legacy tooling. Ordinary tests
+scripts in the tree are frozen legacy tooling, deleted in ROADMAP M2.10. Ordinary tests
 leave 15 integration cases ignored until their local servers are prepared.
 
 ## Collect, export and project
@@ -137,6 +156,11 @@ The complete official AWS Emulator source checkout is pinned to commit
 The native graph installer pins Redis 8.10.3 and FalkorDB 6.0.4 with SHA-256
 checksums. Both are local synthetic fixtures.
 
+The emulator package can be installed without Python:
+`cargo run -p inventory-harness -- install /DISK/aws-inventory-emulator`. The
+FalkorDB installer and the fixture and recording scripts below are still
+Python; they are replaced or dropped, then deleted, in ROADMAP M2.9 and M2.10.
+
 ```sh
 python3 scripts/emulator/install.py /DISK/aws-inventory-emulator
 python3 scripts/emulator/install_graph.py /DISK/aws-inventory-graph
@@ -174,8 +198,10 @@ scope, not reused as a current full-project score.
 The 1,881-schema universe still excludes 1,460 types from reviewed, detailed
 collection: 180 without both read/list handlers, 386 needing additional parent
 workflows and 894 with unreviewed collection scope (those 894 are already listed,
-identity only, by `--resource-type all`). The roadmap closes these in M1 and M3;
-preserve exact identities and architecture evidence. Live AWS
+identity only, by `--resource-type all`). The roadmap does not close these by
+extending Cloud Control: every CloudFormation type is mapped to an
+endpoint-collected kind or recorded with a reason (ROADMAP M1.5, M9.4), and
+Cloud Control is deleted in M9.5. Live AWS
 validation and quota calibration require an authorized AWS environment. The
 scheduler uses configured/adaptive limits and does not claim automatic discovery
 of every service quota or hundreds of thousands of simultaneous requests.
@@ -184,3 +210,7 @@ The ZIP excludes Cargo targets/caches, server binaries, the large upstream
 checkout and generated credentials. It retains pins, installers and synthetic
 verification databases. `MANIFEST.sha256` covers every packaged payload file;
 the packaging tool verifies ZIP CRCs and payload hashes before publication.
+
+The working copy of `MANIFEST.sha256` is stale: it has not been regenerated
+from tracked files since both packagers began excluding `.local` (ROADMAP
+M0.5).

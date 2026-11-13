@@ -1,10 +1,15 @@
 # Continuous CMDB target architecture
 
-Status: target architecture, 2026-11-13. The product definition is
-[VISION.md](VISION.md) and the ordered work is [ROADMAP.md](ROADMAP.md); this
-document specifies the service that the
-[performance contract](CMDB_PERFORMANCE_CONTRACT.md) proposes to measure.
-It does not assert that proposed components exist, that any candidate budget has
+> Status: Plan (superseded draft). It is the earlier target architecture for a
+> multi-tenant continuous service; the owner's decisions replace it wherever a
+> passage is marked below with a decision ID, the unmarked data contracts remain
+> reference detail, and it is replaced together with
+> [ARCHITECTURE.md](ARCHITECTURE.md) by one document at ROADMAP M10.3. See
+> [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
+This document specifies the service that the
+[performance contract](CMDB_PERFORMANCE_CONTRACT.md) proposed to measure. It
+does not assert that proposed components exist, that any candidate budget has
 been met, or that the current tree is a deployed multi-tenant service.
 
 Evidence labels used throughout:
@@ -34,9 +39,19 @@ selection), [DELIVERY.md](DELIVERY.md) (export, projection, jobs),
 [SCHEDULER.md](SCHEDULER.md) (admission and retry), [DURABLE_JOBS.md](DURABLE_JOBS.md)
 (leases), [DISCOVERY.md](DISCOVERY.md) (accounts and sources),
 [EXPORT.md](EXPORT.md) (portable snapshots), [GRAPH_DELIVERY.md](GRAPH_DELIVERY.md)
-(projection retries), and [ROADMAP.md](ROADMAP.md) (stage sequence).
+(projection retries), and [ROADMAP.md](ROADMAP.md) (the build plan, which
+replaces the stage sequence in section 8).
 
 ## 1. Components
+
+> Superseded in part. The first version is one process on one laptop with no
+> separate control plane and no multi-tenant service (V08, V09). Collection
+> uses the service endpoint APIs through the wire engine, not Cloud Control
+> (V01, V04). There is no versioned change log (V22), no query and delta API
+> (V32: the Makepad app reads SQLite and FalkorDB in process through
+> `cmdb-view`, and `cmdb-api` is deleted in ROADMAP M6.5), and no event
+> consumer (V10). The current architecture diagram is VISION section 5. The
+> "current anchor" column below still describes the tree.
 
 The target service separates a **control plane** that decides what must be
 collected, by which credential, with which quota, from a **data plane** that
@@ -266,6 +281,12 @@ Rules:
 
 ### 2.4 Absence and tombstone rules
 
+> Superseded by V22: the first version stores no tombstones and no history.
+> Deletion is still detected, after a resource is missing from two complete
+> enumerations of its scope, and then the row and its edges are removed (VISION
+> 5.5, ROADMAP M3.4). The conditions below on when absence may be concluded
+> remain the reference.
+
 Absence is a derived claim, never an inference from a missing row. A tombstone
 may be created only when **all** of the following hold:
 
@@ -384,6 +405,10 @@ that the store has not established.
 
 ### 2.7 Deletion and retention
 
+> Superseded by V22: no change log, no tombstones and no retention in the first
+> version. The store holds current state only. History and retention are listed
+> under "After 1.0" in the roadmap.
+
 The target current-state model has three lifecycle values: `present`, `deleted`
 (only via a valid tombstone) and `unknown` (no complete observation within the
 freshness horizon).
@@ -439,6 +464,10 @@ job queue as a distributed scheduler.
 
 ### 3.2 PostgreSQL evaluation gate (proposed, before any other database)
 
+> Superseded by V05 and V08: PostgreSQL is not a near-term gate. SQLite in WAL
+> mode is the store on one laptop; PostgreSQL or DuckDB is added only when a
+> measurement shows SQLite is the limit (the sweep benchmark, ROADMAP M4.4).
+
 Before adding a second database engine, evaluate PostgreSQL as the shared
 control and observation store with the same workload and oracle:
 
@@ -463,6 +492,11 @@ must define the SQL dialect boundary explicitly. The current SQL uses SQLite
 be assumed to translate.
 
 ### 3.3 Target logical schema (proposed)
+
+> Superseded by V05, V22 and V24: the schema of the first version is generated
+> from the API catalog, one table per resource kind with typed columns and the
+> binary record, created fresh as version 14 (ROADMAP M3.2). It has no
+> tombstone, change-log or evidence-history tables.
 
 | Table | Purpose | Key columns and constraints |
 |---|---|---|
@@ -557,9 +591,15 @@ known divergence to resolve before the graph is used as a relationship read mode
 
 ## 4. Query API contract
 
-Status: **proposed**. No HTTP/gRPC dependency or server exists in this tree; the
-only current read surfaces are the local CLI `query`, `neighbors`, `path`,
-`architecture`, `diff` and `export` commands (`src/cli.rs`, `src/analysis/`).
+Status: **superseded by V32**. There is no HTTP read API in the first version.
+The Makepad app reads SQLite and FalkorDB in process through `cmdb-view`
+(ROADMAP M6.2, M6.3). A read-only loopback API over one exported snapshot
+exists today in `crates/cmdb-api` and is deleted in M6.5 with its `axum`,
+`tower` and `tower-http` dependencies. The tenant, authentication and
+authorization rules in 4.4 belong to a multi-tenant deployment that is not
+planned (V08), and the delta feed to a change log that is not kept (V22). The
+contract below is kept as a record of the earlier draft; an HTTP read API is
+listed under "After 1.0" in the roadmap.
 
 ### 4.1 Resource list
 
@@ -658,10 +698,13 @@ applies only to the requested scope; it is not "the fleet is complete".
 
 ## 5. UI contract
 
-Status: **scaffold only**. `crates/cmdb-ui/Cargo.toml` pins the Makepad 2.0 dev
-line from git; `crates/cmdb-ui/src/main.rs` has an empty `main`. No window,
-widget, renderer, data client or accessibility behavior is implemented. The
-following is a proposed contract, and no frame-time claim is supported.
+Status: a Makepad table and DAG exist in `crates/cmdb-ui` and render a
+synthetic fixture; nothing reads real data yet and no frame-time claim is
+supported. The UI stays a native Makepad 2.0 application (V17). Superseded by
+V32 and V22: it calls `cmdb-view` in process instead of the `/v1/...`
+endpoints named below, there is no versioned delta feed, and it shows and
+does not edit (V16). ROADMAP M6.3 is the package; V28 fixes the opening view
+as account, region, service, resources.
 
 ### 5.1 Shape
 
@@ -713,6 +756,10 @@ From the accepted performance contract, as **candidate targets to validate**:
 - Change visibility p95 under 5 seconds receipt-to-query-visible at the declared
   steady workload, measured separately from provider delivery delay.
 
+> The five-second change-visibility target is deferred by V10: freshness in the
+> first version comes from repeated full sweeps on an interval the user sets.
+> The API budget is void with the API (V32).
+
 The UI must expose measured lag and drop frames rather than blocking the main
 thread. If the client cannot meet the budget, it degrades the visible window and
 states the degradation.
@@ -740,6 +787,11 @@ without discarding the last safe read-only snapshot.
 
 Status: Config and Resource Explorer ingestion is implemented; EventBridge and
 CloudTrail consumption and the reconciliation loop are proposed.
+
+> Superseded by V10 and V12: change events are added later and only say what to
+> re-read; the first version has no event consumer. Config, Resource Explorer
+> and CloudTrail may supply hints and cross-checks, and every stored fact comes
+> from the service's own API (tags excepted, V31).
 
 ### 6.1 Config aggregator prerequisites
 
@@ -850,6 +902,14 @@ authorized real-account trial. The existing emulator snapshot suite and harness
 Status: proposed sequence. C0 has partial groundwork (contracts, baseline,
 workload prototype); no later stage is delivered.
 
+> Superseded by [ROADMAP.md](ROADMAP.md) (M0 to M10), which is the only build
+> sequence. Of the stages below: tombstones and retention in C2 are out (V22);
+> the query API, delta feed and authorization in C3 are out (V32, V08); the
+> event consumer in C4 is deferred (V10); the PostgreSQL evaluation in C5 waits
+> for a measurement (V05); the 100 to 1,000 account rollout in C7 and the fleet
+> campaigns in C8 are deferred, the first version being proven on about 10
+> accounts (V09). Head-to-head runs are ROADMAP M5.6 and M10.2 (V19).
+
 Each stage has a measurable exit gate. A later stage may start only when the
 earlier gate is evidenced, not when its code compiles. Candidate performance
 numbers remain targets until measured on a declared workload.
@@ -889,6 +949,11 @@ Global blockers, independent of code progress:
 
 This table maps current files and APIs to missing pieces. Nothing in the "target"
 column is implemented unless the status column says so.
+
+> Read with the decisions: the Cloud Control row is being deleted, not extended
+> (V01, V04, ROADMAP M9.5); event ingestion (V10), tombstones, retention and the
+> delta feed (V22), the query API (V32), a shared PostgreSQL store (V05) and
+> auth and tenancy (V08) are not gaps of the first version.
 
 | Area | Current file or API | Missing piece | Status |
 |---|---|---|---|

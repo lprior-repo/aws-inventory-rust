@@ -1,32 +1,44 @@
 # AWS Inventory in Rust
 
-**Local stack:** [setup and commands](docs/LOCAL_SETUP.md) ·
-[current results](docs/DEPENDENCY_UPDATE.md) ·
-[black-hat and Rust review](docs/LOCAL_REVIEW.md).
+> Status: Baseline being replaced. The opening states where the product is
+> going; every section after it documents the baseline collector as it works
+> today. See [VISION](docs/VISION.md) and [ROADMAP](docs/ROADMAP.md).
 
-**Continuing development elsewhere? Start with [START_HERE.md](START_HERE.md)**
-for build commands, measured results, remaining work and the
-portable handoff boundaries.
+This project is becoming a CMDB of every AWS resource in the accounts it is
+pointed at. It will read AWS through the services' own endpoint APIs with our
+own wire engine, driven by the pinned official AWS API models, and keep the
+inventory current by repeated fast sweeps. Resources are stored as binary
+records in SQLite, projected into FalkorDB for graph traversal, and shown as a
+DAG in a native Makepad application that reads both databases in process. The
+first version runs on one laptop with about 10 profiles, holds current state
+without history, and derives owner, team and application from tags.
+[docs/VISION.md](docs/VISION.md) defines the product,
+[docs/ROADMAP.md](docs/ROADMAP.md) is the build plan and records what has
+landed, and [docs/README.md](docs/README.md) indexes every document by whether
+it is plan, kept subsystem, baseline or history.
 
-**Where this is going:** [the vision spec](docs/VISION.md) defines the product:
-a CMDB of every AWS resource, read through the services' own endpoint APIs by
-our own wire engine, kept current by fast repeated sweeps, stored in SQL and a
-relationship graph, and shown as a Makepad DAG. [The roadmap](docs/ROADMAP.md)
-is the build plan. Cloud Control collection, described below, is being
-replaced and will be deleted (decision V04).
+**What works today** is the baseline collector that the plan replaces. The
+`catalog` and `coverage` commands of the built binary report 39 native resource
+kinds collected by hand-written typed SDK adapters behind 16 service selectors,
+421 reviewed Cloud Control resource types (431 distinct kinds together), 968
+property relationship rules, and SQLite schema 13. The baseline also has a
+FalkorDB snapshot projection, a rate limiter that is the single retry owner,
+fenced durable scan jobs, an emulator harness (`inventory-harness`), a workload
+generator (`cmdb-bench`), a loopback read API (`cmdb-api`, to be deleted) and a
+Makepad viewer that renders a synthetic fixture. Of the new architecture only
+groundwork has landed; there is no wire engine, binary record store or sweep
+yet. Cloud Control collection is not the way forward: it gets no new work and
+is deleted in ROADMAP M9.5 (decisions V01, V04).
 
-A working foundation for AWS architecture inventory: official Rust SDK
-collectors, bounded request scheduling, SQLx with local SQLite, familiar SQL
-resource views, and replayable FalkorDB snapshot projections.
+All product code is Rust. SQLx's bundled SQLite engine is native SQLite C and
+FalkorDB is an external database. Python helper scripts remain under `scripts/`
+as legacy development tooling (emulator fixture seeding, request recording,
+FalkorDB installation, the mutation gate, SDK catalog generation). The build
+and the maintainer gate do not use them, and they are deleted in ROADMAP M2.10.
 
-The application and collectors are Rust. SQLx's bundled SQLite engine is native
-SQLite C; FalkorDB is an external database. SDK/resource-catalog refresh utilities
-use Python as development tooling, outside collection and the deployed application.
-The SDK source auditor and SQLite view generator are Rust.
-The optional AWS Emulator harness has a Rust implementation (`inventory-harness`)
-for installing the pinned emulator, freezing snapshots, seeding, assertions and
-live end-to-end tests; request recording and the mutation gate remain Python
-until their ports land.
+**The sections below document the baseline.** For the local emulator stack see
+[setup and commands](docs/LOCAL_SETUP.md); for the baseline build-and-verify
+handoff see [START_HERE.md](START_HERE.md).
 
 ## Current scope
 
@@ -70,7 +82,7 @@ until their ports land.
   credential-assumption failures. Global services run once per target scan.
 - A **SQLx durable scan queue** with transactional claims, attempt history,
   renewable fenced leases, cancellation and recovery after worker crashes.
-- **437 official AWS service SDK crates**, pinned to the November 12, 2026 SDK
+- **437 official AWS service SDK crates** (to be removed in ROADMAP M1.7), pinned to the November 12, 2026 SDK
   release, available as optional features in a generated catalog. Package
   checksums and source/model fingerprints are retained.
 - An offline `plan` command exposes APIs, dependencies, quota groups, known
@@ -114,9 +126,11 @@ benchmark, and live-environment boundaries of this delivery.
 
 [AWS Emulator testing](docs/EMULATOR_TESTING.md) describes the pinned full source
 checkout, verified AWS binary, populated service fixtures and operation-by-operation
-evidence. [The historical call matrix](docs/AWS_CALL_MATRIX.md) enumerates **72 explicit AWS
-operations plus the SDK's AssumeRole boundary**, separately from the 421 Cloud
-Control resource types and 437 available SDK crates.
+evidence. [The call matrix](docs/AWS_CALL_MATRIX.md) enumerates **89 explicit SDK
+operations in 19 services** (79 in the frozen matrix plus 10 reviewed KMS and
+Step Functions additions; 2 of the 89 are Cloud Control) **plus the SDK's
+AssumeRole boundary**, separately from the 421 Cloud Control resource types and
+437 available SDK crates.
 The [current source/run reconciliation](docs/AWS_OPERATION_RECONCILIATION.md)
 binds operation identities to a specific source tree and executed evidence.
 The parent workflows reuse Cloud Control's two existing operation identities;
@@ -165,7 +179,6 @@ respects upstream crate hints rather than applying the flag to every dependency.
 ```bash
 # Fetch the locked SDK catalog and all other workspace dependencies.
 cargo fetch --locked
-python scripts/generate_sdk_catalog.py --check --verify-cache
 
 # Local ingestion, SQLite SQL, and FalkorDB export; no AWS clients compiled.
 cargo build --locked
@@ -466,8 +479,11 @@ specify exactly which fields and relationships are collected.
 
 ## Retry primitives and workflow engines
 
-The SDK source audit covers all 437 pinned service crates: 19,617 operations,
-3,779 paginators, and 407 waiters. AWS already supplies retry classifiers,
+The SDK source audit covers all 437 pinned service crates. Its report counts
+19,617 operations, 3,779 paginators and 407 waiters; that report is under the
+ignored `artifacts/` directory, and the tracked inventory
+`catalog/aws-sdk-operations.json` counts 20,537 operations in 440 crates. AWS
+already supplies retry classifiers,
 backoff, timeouts, and duplicate-token controls. A service SDK does not supply
 this scanner's account/region quota coordination, durable page commits, or
 resource-to-architecture mapping.
@@ -540,8 +556,9 @@ cargo check -p inventory-sdk-catalog --features sts
 
 Start with [architecture](docs/ARCHITECTURE.md), [storage](docs/STORAGE.md),
 [collectors](docs/COLLECTORS.md), [scheduler](docs/SCHEDULER.md), and
-[SDK catalog](docs/SDK_CATALOG.md). [The expansion plan](docs/ROADMAP.md)
-separates breadth work, production hardening, and performance validation.
+[SDK catalog](docs/SDK_CATALOG.md); these describe the baseline, and
+[docs/README.md](docs/README.md) says which of them the plan keeps.
+[The roadmap](docs/ROADMAP.md) is the build plan for what replaces it.
 The [collection plan](docs/COLLECTION_PLAN.md) specifies the shared 421-type
 adapter, schema evidence, architecture relationships, and query generation.
 [Parent collection design](docs/PARENT_COLLECTIONS.md) explains prerequisite
@@ -557,15 +574,19 @@ also contains the first continuous-CMDB slice: freshness views and an
 account/region/collector coverage registry, a deterministic workload generator
 with an independent oracle (`cmdb-bench`), a bounded read model (`cmdb-view`), a
 read-only loopback query API (`cmdb-api`), and a Makepad viewer (`cmdb-ui`) with
-a filterable table and a real account→region→kind→resource DAG. Missing pieces
-are explicit: server-side auth and a write API, event ingestion,
-tombstones/retention, per-collector enumeration epochs, distributed quota
-coordination, PostgreSQL evaluation, durable fault/soak campaigns and live AWS
-calibration. The [performance contract](docs/CMDB_PERFORMANCE_CONTRACT.md) defines
-the target; the [CMDB architecture](docs/CMDB_ARCHITECTURE.md) records component
-status and the [release baseline](docs/CMDB_BASELINE_2026-11-13.md) records
-preliminary local storage and mock-scheduler measurements only. It does not
-establish fleet capacity or competitive superiority.
+a filterable table and an account→region→kind→resource DAG over a synthetic
+fixture.
+
+That slice was built against an earlier draft: the
+[performance contract](docs/CMDB_PERFORMANCE_CONTRACT.md) and the
+[CMDB architecture](docs/CMDB_ARCHITECTURE.md). [The vision](docs/VISION.md)
+supersedes both. Under it the first version has no HTTP API (`cmdb-api` is
+deleted in ROADMAP M6.5 and the UI reads SQLite and FalkorDB in process), no
+history, tombstones or retention, no event ingestion, no PostgreSQL and no
+multi-machine quota coordination. The
+[release baseline](docs/CMDB_BASELINE_2026-11-13.md) records preliminary local
+storage and mock-scheduler measurements only. It does not establish fleet
+capacity or competitive superiority.
 
 Upstream projects informed the design; this is an independent implementation.
 See [sources and licensing](docs/SOURCES.md). No upstream documentation prose,

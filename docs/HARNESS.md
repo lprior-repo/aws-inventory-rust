@@ -1,5 +1,11 @@
 # Rust development harness
 
+> Status: Kept and extended. `inventory-harness` is kept and gains a data-driven
+> seeder that sends through the wire engine (ROADMAP M2.9) and a fault proxy
+> (M4.3); the Python tooling tracked below is deleted in M2.10 and the Cloud
+> Control seeding and assertions in M9.5. See [VISION](VISION.md) and
+> [ROADMAP](ROADMAP.md).
+
 The collector, storage, export and graph delivery are Rust. The remaining
 Python is development tooling: fixture seeding, independent assertions,
 snapshot freezing and the mutation gate. This document tracks the move of that
@@ -9,6 +15,10 @@ is never linked into the collector.
 Python is retained as the parity oracle until each Rust slice reproduces it
 byte-for-byte. Deleting a `.py` file before its replacement passes parity would
 discard the only independent check that the replacement is faithful.
+
+> Superseded by V21 and ROADMAP M2.10: Python is no longer kept until byte
+> parity. Each script still in use is replaced in Rust or dropped with a
+> recorded reason, and every tracked `.py` file is then deleted.
 
 ## Commands
 

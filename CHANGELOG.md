@@ -8,6 +8,24 @@
   the first runtime, and the CMDB layer in the first version. Cloud Control
   collection is retired as endpoint collection replaces it.
 - The working tree was committed as the baseline (`78d3ac2`).
+- M0 (`bbd0821`): `inventory_engine::store::SCHEMA_VERSION` is the single
+  source of the SQLite schema version and `aws-inventory catalog` reports it
+  (it reported a stale 12); both packagers exclude `.local`; `scripts/verify.sh`
+  no longer invokes Python and runs the function-size check.
+- Project agents in `.omp/agents/` (`aws-build-5090`, `aws-build-3090`,
+  `aws-black-hat`, `aws-test-review`) preload the required skills, and builders
+  compile in their own git worktrees.
+- Decision V34: records are CBOR through the `minicbor` library. A codec
+  benchmark (`docs/performance-evidence/record-codec-2026-11-13.md`) found it
+  faster to build and smaller than our own format, `rkyv`, `postcard` and
+  JSON. Our own format was deleted before landing; it and the benchmark are on
+  the branch `evidence/o1-record-codec`.
+- Every document now carries a status line (plan, kept and extended, baseline
+  being replaced, or historical evidence) and `docs/README.md` indexes them by
+  class. Statements the owner's decisions superseded are marked with the
+  decision ID in `docs/ARCHITECTURE.md`, `docs/CMDB_ARCHITECTURE.md` and
+  `docs/CMDB_PERFORMANCE_CONTRACT.md`. `CONTRACT.md` is declared the baseline
+  contract.
 - Corrected stale counts and links in `README.md`, `START_HERE.md`,
   `NEXT_AGENT_PROMPT.txt`, `docs/CMDB_ARCHITECTURE.md`, `docs/VERIFICATION.md`
   and `docs/UNIVERSAL_COVERAGE.md`. Removed the duplicate

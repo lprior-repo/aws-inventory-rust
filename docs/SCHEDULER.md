@@ -1,5 +1,10 @@
 # API admission, pacing, retries, and cancellation
 
+> Status: Kept and extended. `ApiExecutor` stays the only retry owner; the plan
+> adds buckets per account, region and quota group, adaptive concurrency with
+> learned rates stored and reused (ROADMAP M4.1), and retry classes and budgets
+> from the catalog (M4.2). See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 ## Contract and scope
 
 `inventory_engine::limiter::ApiExecutor` owns the process-local request budget.

@@ -1,5 +1,10 @@
 # Architecture reports and snapshot queries
 
+> Status: Baseline being replaced. It is a worked example of the baseline
+> `ingest`, `architecture` and snapshot SQL commands on schema 13; that schema
+> and the old `scan` path are deleted in ROADMAP M9.5 and the DAG on real data
+> comes from M6. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 The repository includes a deterministic configuration example in
 [`examples/architecture-events.jsonl`](../examples/architecture-events.jsonl).
 It exercises the same `CollectionEvent` / `CollectionPage` schema consumed by

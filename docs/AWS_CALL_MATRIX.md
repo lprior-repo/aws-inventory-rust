@@ -1,5 +1,12 @@
 # Implemented AWS call matrix
 
+> Status: Baseline being replaced. It inventories the typed-SDK calls of the
+> hand-written adapters, which ROADMAP M5 replaces service by service and M9.5
+> finishes by deleting Cloud Control; M2.6 uses the non-Cloud-Control operations
+> listed here as the differential proof for the wire engine. Links into
+> `artifacts/` point to an ignored local directory and do not resolve in a
+> clone. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 This is the operation inventory for the Rust collector, discovery, and credential-provider code. The frozen historical matrix in [`catalog/aws-operations.json`](../catalog/aws-operations.json) inventories **79 distinct explicit SDK operations at 80 production `.send()` callsites**. The reviewed additive overlay in [`catalog/aws-operation-additions.json`](../catalog/aws-operation-additions.json) admits **10 further reviewed operations at 11 callsites**: five KMS operations at five callsites and five Step Functions operations at six callsites. The current source therefore has **89 distinct explicit SDK operations at 91 production `.send()` callsites across 19 services** and **39 native resource kinds**, backed by 74 of those operations. Additions are reported separately as unexercised until a bound execution receipt advances them. SDK availability does not imply an implemented collector.
 
 The SQS and SNS adapter rows bind native-phase evidence from

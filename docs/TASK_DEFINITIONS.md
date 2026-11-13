@@ -1,5 +1,10 @@
 # ECS task definitions and service load-balancer references
 
+> Status: Baseline being replaced. The `ecs` and `task_definitions` adapters
+> described here are replaced by overlay data on the wire engine in ROADMAP
+> M5.5 and deleted in the same change. See [VISION](VISION.md) and
+> [ROADMAP](ROADMAP.md).
+
 The native ECS inventory includes `aws_ecs_task_definition` resources and service
 relationships to target groups and Classic load-balancer names. The `ecs`
 selector includes clusters, services, tasks, and task definitions. The

@@ -1,19 +1,25 @@
 # Continuous AWS CMDB: performance contract proposal
 
-Status: DRAFT engineering proposal, 2026-11-13. The user requires thousands of
-AWS accounts, continuous inventory, a performant GPU-rendered UI, and replacement
-of their Steampipe/CloudQuery use. This document proposes acceptance criteria;
-it does not establish deployed fleet capacity or competitive superiority.
+> Status: Plan (superseded draft). It is the earlier performance proposal;
+> VISION changes the hypotheses and budgets marked below, while the measurement
+> discipline (the definitions and the comparison protocol) is kept and is what
+> V19 and ROADMAP M4.4, M5.6 and M10.2 apply. See [VISION](VISION.md) and
+> [ROADMAP](ROADMAP.md).
 
-The subsequent full [CMDB specification draft](cmdb-spec/architecture-spec.draft.md)
-records the user's confirmed commercial-only, self-hosted, hourly-reconciliation
-scope. Its explicit decisions supersede the earlier candidate budgets here;
-final policy/pre-mortem choices remain visible in that bundle.
+Written 2026-11-13 as a draft engineering proposal, against a requirement at
+that time for thousands of AWS accounts, continuous inventory, a GPU-rendered
+UI, and replacement of Steampipe and CloudQuery use. It proposes acceptance
+criteria; it does not establish deployed fleet capacity or competitive
+superiority.
 
-[VISION.md](VISION.md) is now the product definition and replaces this
-proposal where they differ: collection goes through the services' own endpoint
-APIs, the first runtime is one laptop, the UI is a native Makepad application,
-and speed claims come only from head-to-head runs.
+The later [CMDB specification draft](cmdb-spec/architecture-spec.draft.md)
+recorded a commercial-only, self-hosted, hourly-reconciliation scope and
+superseded the candidate budgets here. VISION in turn replaces both where they
+differ: collection goes through the services' own endpoint APIs (V01), the
+first runtime is one laptop with about 10 profiles (V08, V09), hourly
+reconciliation and five-second visibility wait for the change-event work
+(V10), the UI is a native Makepad application (V17), and speed claims come only
+from head-to-head runs (V19).
 
 ## What we are competing with
 
@@ -63,12 +69,31 @@ acknowledging before commit, disabling fsync, or discarding relationships/histor
 | Recovery | Crash/restart, duplicate delivery, expired lease, and projection rebuild preserve accepted observations and converge without manual repair |
 | Efficiency | API attempts and estimated charge per valid changed asset, CPU time, peak RSS, write amplification, network bytes, projection lag, and total infrastructure cost |
 
+> Changed by VISION. Change visibility: the five-second target is deferred
+> (V10); freshness comes from sweeps repeated on a set interval. Queries: there
+> is no query API (V32), and the 10 million asset size belongs to the deferred
+> thousands-of-accounts scope (V09). UI: the frame-time target stands for the
+> native Makepad app (V17, ROADMAP M6.3 records frame times); "client/network"
+> does not apply because the UI reads SQLite and FalkorDB in process. The
+> measures VISION requires for every run are listed in its section 6.
+
 These numbers are proposed engineering targets, not measured results or an approved
 SLA. Budgets apply only to a published workload, hardware, concurrency, permissions,
 durability policy, and query suite. Report p50/p95/p99 only with sufficient samples;
 three short runs establish a preliminary range and median, not tail latency.
 
 ## Architecture hypotheses to prove
+
+> Changed by VISION, by hypothesis number. 1: accounts come from local profiles;
+> Organizations discovery and cross-account roles are deferred (V09). 2: one
+> process on one laptop, so no quota coordination across workers (V08); the
+> typed SDK clients are replaced by the wire engine (V02). 3: change events are
+> deferred and only ever say what to re-read (V10); freshness comes from
+> repeated full sweeps. 5: PostgreSQL is evaluated only if a measurement shows
+> SQLite is the limit (V05), and no history is retained (V22). 6: no server, no
+> authorization layer and no versioned deltas; the UI reads in process (V32).
+> 7: browser rendering with WebGL2 or WebGPU is replaced by the native Makepad
+> application (V17). Hypothesis 4 stands (VISION 5.4, ROADMAP M3.3).
 
 1. Discover accounts through Organizations and maintain an explicit onboarding and
    coverage registry. Use dedicated read-only roles, credential refresh, partition
@@ -114,11 +139,21 @@ API, SSO/RBAC, and the GPU UI still require implementation. See `STORAGE.md` for
 the existing source/absence semantics. Whole-project strict engineering review
 also remains rejected; prior functional checks do not erase those findings.
 
+> Since then a Makepad table and DAG over a synthetic fixture and a loopback
+> read API have been added to the tree. A web API and SSO/RBAC are no longer
+> planned for the first version (V32, VISION section 11), and tombstones and
+> retention are out (V22).
+
 The release baseline in `CMDB_BASELINE_2026-11-13.md` measures existing local
 ingestion and mock scheduling only. No production optimization was made in this
 measurement pass.
 
 ## Reproducible comparison protocol
+
+> Kept. This protocol is the discipline behind V19. Changed by VISION: the
+> workload sizes of 1,000 to 10,000 simulated accounts and the thousand-account
+> rollout are deferred (V09); the first version is proven on about 10 accounts,
+> and the sweep benchmark's own size is set in ROADMAP M4.4.
 
 Freeze a manifest before each campaign: source/plugin versions and hashes,
 resource/field/tag/relationship matrix, account/region population, permissions,
@@ -153,6 +188,9 @@ Allow performance claims only for named workloads and tested competitors. An
 absolute market-wide claim requires broader evidence than one stage benchmark.
 
 ## Delivery sequence
+
+> Superseded by [ROADMAP.md](ROADMAP.md). Step 4's query API and browser frame
+> times are replaced by in-process reads and the native Makepad app (V32, V17).
 
 1. Accept identity, ordering, freshness, absence, and failure contracts; build the
    deterministic workload/oracle and capture profiles on representative data.

@@ -10,18 +10,18 @@ The owner's hard rules:
 - All product code is Rust. The Python scripts under scripts/ and catalog/upstream/ are frozen legacy tooling: do not extend, port or plan around them.
 - Performance claims come only from measurements, and "fastest" only from head-to-head runs.
 
-State of the tree at commit b5332e8:
-- `cargo check --workspace --all-targets` passes. The full test suites have not been re-run since the baseline was committed.
+State of the tree (check `git log --oneline -5` and docs/ROADMAP.md for what has landed since):
+- `cargo check --workspace --all-targets` passes. The full gate `scripts/verify.sh` has not been run end to end; it no longer needs Python.
 - 39 resource kinds come from hand-written typed adapters and 421 types from Cloud Control, into SQLite schema 13 in WAL mode. 968 reviewed relationship rules. The collector calls 89 AWS operations in 19 services.
 - crates/engine has the rate limiter (ApiExecutor, the only retry owner), the SQLx store, fenced jobs and the FalkorDB projection. These are kept and extended.
 - crates/harness owns the pinned AWS Emulator (1.0.336, commit f5155815). Live gate: `cargo build --bin aws-inventory --features aws`, then `cargo test -p inventory-harness --test emulator_live -- --ignored --test-threads=1`.
 - cmdb-api, cmdb-view, cmdb-ui (Makepad 2.0) and cmdb-bench exist. The UI renders a synthetic fixture.
-- There is no wire engine, no binary record, no continuous mode and no collection benchmark yet.
+- There is no wire engine, no continuous mode and no collection benchmark yet. The binary record module (`inventory-core::record`, CBOR through the `minicbor` library, decision V34, ROADMAP M3.1a) and the model lock (`catalog-tool models`, M1.1) are the first pieces of the new architecture; ROADMAP says whether each has landed.
 - MANIFEST.sha256 is modified and uncommitted on purpose (ROADMAP M0.5).
 
 Measured facts about the AWS API models (github.com/aws/api-models-aws at commit 46135f8): 436 services, 19,641 operations, 8,366 read operations by name, 2,209 List/Describe operations with no required input in 359 services, 3,787 modeled paginators, 44 services offering the binary rpcv2Cbor protocol.
 
-How work lands: local GPU model agents do the building; fable orchestrates, reviews and patches. Each work package runs the loop in VISION.md section 10: a local worker implements with holzman-rust, functional-rust and scott-ddd-refactor loaded; the coordinator compiles and runs the narrow checks; black-hat-reviewer and test-reviewer review independently; findings go back to the same worker as one repair packet; repeat until both report no findings; then land. Makepad work follows the makepad-2.0-* skills.
+How work lands: local GPU model agents do the building; fable orchestrates, reviews and patches. Each work package runs the loop in VISION.md section 10. Spawn the builder as the project agent `aws-build-5090` or `aws-build-3090` (defined in `.omp/agents/`; the harness preloads holzman-rust, functional-rust and scott-ddd-refactor, so they cannot be skipped) with an absolute path to a fresh git worktree under `/home/lewis/src/aws-inventory-worktrees/`; the builder formats, lints and tests its crate until clean and commits on its branch. Repeat the checks yourself, then spawn `aws-black-hat` and `aws-test-review` on the commit; send their findings back to the same builder as one repair packet; repeat until both report no findings; then land the commit on `main` with explicit paths (never `git add -A`: other sessions may have files in the tree). Makepad work follows the makepad-2.0-* skills.
 
 Engineering rules:
 - Workspace lints apply: no unsafe, unwrap, expect, panic, todo, unchecked indexing or lossy casts. Files at or under 300 lines, functions at or under 25.

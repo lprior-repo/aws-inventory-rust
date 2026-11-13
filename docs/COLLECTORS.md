@@ -1,5 +1,11 @@
 # AWS collectors
 
+> Status: Baseline being replaced. It describes the hand-written typed-SDK
+> adapters and the Cloud Control path as they work today; ROADMAP M5 replaces
+> the adapters service by service with overlay data on the wire engine and M9.5
+> deletes Cloud Control and the old `scan` path. See [VISION](VISION.md) and
+> [ROADMAP](ROADMAP.md).
+
 The `inventory-aws` crate performs read-only inventory with the official AWS Rust
 SDK. It streams pages to the caller's bounded event channel. It does not invoke
 the AWS CLI, enable services, create indexes or recorders, change IAM, or retain an account-sized resource vector. Existing roles can be

@@ -1,5 +1,11 @@
 # Official AWS SDK catalog
 
+> Status: Baseline being replaced. The typed-SDK catalog is redundant once the
+> pinned API model catalog exists; ROADMAP M1.7 deletes `crates/sdk-catalog`,
+> `crates/sdk-operations` and the `sdk-catalog` command, and the Python
+> generator shown below goes in M2.10. See [VISION](VISION.md) and
+> [ROADMAP](ROADMAP.md).
+
 ## What the catalog means
 
 `crates/sdk-catalog` records every AWS service SDK listed in the official SDK

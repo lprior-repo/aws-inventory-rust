@@ -1,11 +1,16 @@
 # Architecture and design decisions
 
-Status: version 0.6 collector plus the first continuous-CMDB slice (freshness and
-coverage state, workload oracle, read model/API, Makepad table/DAG). The
-authoritative implementation coverage is `COLLECTORS.md`; dependency
-availability is `SDK_CATALOG.md`; observed validation results are
-`VERIFICATION.md`; the continuous-service target and component gaps are in
-`CMDB_ARCHITECTURE.md`.
+> Status: Baseline being replaced. It describes the version 0.6 collector as
+> built (typed adapters, Cloud Control, SQLite schema 13, snapshot projection)
+> and the first CMDB slice; together with
+> [CMDB_ARCHITECTURE.md](CMDB_ARCHITECTURE.md) it is replaced by one document
+> at ROADMAP M10.3, and the passages that contradict an owner decision are
+> marked below with the decision ID. See [VISION](VISION.md) and
+> [ROADMAP](ROADMAP.md).
+
+Implementation coverage of the baseline is in `COLLECTORS.md`; dependency
+availability is `SDK_CATALOG.md`; recorded validation results are
+`VERIFICATION.md`.
 
 ## 1. Product boundary
 
@@ -305,6 +310,10 @@ histories may need materialized views and retention. These optimizations must
 preserve provenance and page transaction semantics. WAL is intended for a
 suitable local filesystem; shared remote storage requires a separate design.
 
+> Superseded by V22: the first version keeps no history, so there are no
+> retained histories to materialize or expire. The store holds current state
+> only (VISION 5.4, 5.5).
+
 ### Schema evolution and architecture reports
 
 Schema version 2 added typed views for six networking kinds and five ELBv2
@@ -455,6 +464,13 @@ service. Those remain production observability work.
 
 ## 11. SDK catalog and future generation
 
+> Superseded by V01, V02 and V04: collection moves to the service endpoint
+> APIs through our own wire engine, driven by the pinned AWS API models. The
+> typed-SDK catalog is deleted in ROADMAP M1.7, new services are added as
+> overlay data and not as collectors (M5, M9), and Cloud Control is deleted in
+> M9.5; only its type list and the reviewed relationship rules are kept. This
+> section describes the baseline.
+
 All 437 service crates in the pinned official release have exact versions,
 optional features, conditional re-exports, registry checksums, source/model
 fingerprints and immutable source origins. Runtime, credential and Smithy
@@ -502,6 +518,12 @@ why simply enabling nested SDK retries would violate current admission semantics
 See `SDK_RETRY_AUDIT.md` and `RETRY_AND_WORKFLOWS.md`.
 
 ## 12. Production acceptance
+
+> Superseded. Cloud Control parent workflows and further typed collectors are
+> not next work (V01, V04); a retention policy is not needed because there is no
+> history (V22); the first version is proven on about 10 accounts from local
+> profiles (V09). What has to be proven, and where, is VISION section 9 and the
+> exit evidence of each ROADMAP package.
 
 Production acceptance requires live multi-account fixtures, denied-scope tests,
 throttle observations, representative RSS/disk-pressure measurements, restart

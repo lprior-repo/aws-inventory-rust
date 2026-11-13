@@ -1,5 +1,10 @@
 # Verification and delivery boundaries — 0.5.0
 
+> Status: Historical evidence. It records what was run for version 0.5.0 of the
+> baseline collector and is not updated; links into `artifacts/` point to an
+> ignored local directory and do not resolve in a clone. See
+> [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 This report records the November 12, 2026 v0.5 implementation and its executed
 checks. The complete live Rust workspace passed **503 tests, with zero failures
 and zero ignored tests**. The populated AWS Emulator baseline passed **1,188

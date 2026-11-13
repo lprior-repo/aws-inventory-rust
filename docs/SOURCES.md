@@ -1,5 +1,12 @@
 # Primary sources and attribution
 
+> Status: Kept and extended. Attribution and licensing stay current
+> obligations; the Cloud Control and typed-SDK references describe the baseline,
+> and the pinned AWS API models the plan builds on (VISION section 3) are not
+> listed here yet. Links into `artifacts/` point to an ignored local directory
+> and do not resolve in a clone. See [VISION](VISION.md) and
+> [ROADMAP](ROADMAP.md).
+
 Research and SDK snapshot date: November 12, 2026. The SDK catalog records its
 exact immutable revision, registry checksums and check timestamp separately.
 

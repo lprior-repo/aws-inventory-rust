@@ -1,5 +1,10 @@
 # Preliminary release baseline: local storage and scheduler
 
+> Status: Historical evidence. It is a dated measurement of the baseline's
+> SQLite ingestion and mock scheduling and says nothing about the planned wire
+> engine or sweep; the sweep benchmark is ROADMAP M4.4. See
+> [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 Measured 2026-11-13 on source commit
 `57ee7de687be3f445a39bf2e2eb81807e5d68959`. Three sequential runs of the existing
 `inventory-engine` benchmark passed. No production source changed for this run.

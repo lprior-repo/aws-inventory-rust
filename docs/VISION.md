@@ -62,6 +62,7 @@ decisions O9, O3, O5, O10 and O11.
 | V31 | Tags come from the Resource Groups Tagging API in bulk first, for speed, and from the service's own tag call only for kinds the bulk API does not cover. This is the one exception to V12. The bulk call is a classified, overlay-reviewed operation like any other. |
 | V32 | The UI reads its data in process: the Makepad app opens SQLite and talks to FalkorDB itself, through `cmdb-view`. There is no HTTP read API in the first version; `cmdb-api` is deleted. |
 | V33 | Page-level hashing is dropped; only records are hashed. It may return only if the sweep benchmark shows decoding is the bottleneck. |
+| V34 | Records are CBOR (RFC 8949), written and read with the `minicbor` library. Our code only fixes which CBOR forms are written, so that equal values give equal bytes. Chosen by benchmark over our own format, `rkyv`, `postcard` and JSON: fastest to build and hash, and smallest ([evidence](performance-evidence/record-codec-2026-11-13.md)). A library is preferred to our own code wherever it is at least as fast. |
 
 The earlier requirements draft in [cmdb-spec/](cmdb-spec/README.md) remains the
 detailed reference for behavior this document does not restate (deletion needs
@@ -482,13 +483,23 @@ reviews and patches only as needed, and keeps its own context small (V20).
 
 Every work package goes through this loop:
 
-1. A local worker implements the package with `holzman-rust`,
-   `functional-rust` and `scott-ddd-refactor` loaded.
-2. The coordinator compiles and runs the narrow checks for the package.
-3. `black-hat-reviewer` and `test-reviewer` review independently.
+1. A local worker implements the package in its own git worktree. It runs as
+   one of the project agents in `.omp/agents/` (`aws-build-5090`,
+   `aws-build-3090`), which load `holzman-rust`, `functional-rust` and
+   `scott-ddd-refactor` before the worker's first prompt, so the skills cannot
+   be skipped. The worker formats, lints and tests its crate until all are
+   clean, then commits on its branch.
+2. The coordinator repeats the checks on the worker's commit.
+3. `aws-black-hat` and `aws-test-review`, which load `black-hat-reviewer` and
+   `test-reviewer` the same way, review independently and read-only.
 4. Their findings go back to the same worker as one repair packet.
 5. Steps 1 to 4 repeat until both reviewers report no findings. Then the
-   package lands.
+   coordinator lands the commit on `main`.
+
+Workers that could not compile needed four or five repair rounds per package
+and produced code that was far from building; that is why they compile now.
+The coordinator still repeats every check and reads every diff: a worker's
+report of success is not evidence.
 
 Every package uses `scott-ddd-refactor` (domain types), `holzman-rust`
 (implementation), `black-hat-reviewer` (adversarial code review) and
@@ -533,12 +544,11 @@ exists.
 ## 12. Open decisions
 
 Defaults are stated so work is not blocked; each is settled by the named
-evidence or by the owner. O3, O5, O9, O10 and O11 are settled (V23, V24, V22,
-V30, V31).
+evidence or by the owner. O1, O3, O5, O9, O10 and O11 are settled (V34, V23,
+V24, V22, V30, V31).
 
 | ID | Question | Default | Settled by |
 | --- | --- | --- | --- |
-| O1 | Binary record codec | Leading candidate, in review as M3.1a: our own dependency-free canonical tagged format, which needs no `unsafe`, gives canonical bytes for hashing and reads field by field. `rkyv` with validation and a deserializing codec are the alternatives. Only codecs with a safe, validated read path qualify (rule 9) | Codec benchmark in M3.1 |
 | O2 | Overlay file format | TOML (`toml` is already a workspace dependency), one file per service, compiled into the catalog | Owner, at M1.4 |
 | O4 | SQLite `synchronous` setting | `FULL` as today | Sweep benchmark in M4.4 |
 | O6 | Store used from Lambda | Deferred | Owner, before Lambda work starts |

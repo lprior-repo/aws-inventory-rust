@@ -1,5 +1,12 @@
 # Testing the Rust collector with AWS Emulator
 
+> Status: Kept and extended. The pinned emulator stays the proof environment
+> (VISION section 9); Python seeding and recording are replaced by the Rust
+> seeder and deleted (ROADMAP M2.9, M2.10), the Cloud Control scans and
+> assertions go in M9.5, and the v0.4 and v0.5 sections are historical evidence.
+> Links into `artifacts/` point to an ignored local directory and do not resolve
+> in a clone. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 The integration harness starts a fresh, authenticated local [AWS Emulator][emulator], creates disposable fixtures, runs the **shipped Rust CLI**, and saves request, collector, and SQLite evidence. Python provides fixture setup and transport recording. It does not replace Rust collection.
 
 The current executable catalog contains **421 Cloud Control types**: **397 frozen root types and 24 reviewed parent-dependent types**. The harness selects those groups in separate scans and compares the compiled CLI's combined catalog with both source manifests. SQLite schema version 13 exposes 421 provider views and 4,309 selected columns. The parent workflow contract is in [PARENT_COLLECTIONS.md](PARENT_COLLECTIONS.md); selection and mapping semantics are in [CLOUDCONTROL_COVERAGE.md](CLOUDCONTROL_COVERAGE.md).
@@ -41,6 +48,11 @@ This package is for Linux amd64. The official native platform prerequisites incl
 ## Prerequisites and installation
 
 Run these commands from the `aws-inventory-rs` project root. The installer needs Python 3.11 or later, `git`, `curl`, `gpg` and `dpkg-deb`. The recording proxy also needs `openssl`. The Rust toolchain must satisfy this workspace's `rust-version` in [Cargo.toml](../Cargo.toml).
+
+The package can also be installed without Python:
+`cargo run -p inventory-harness -- install <destination>` (see
+[HARNESS.md](HARNESS.md)). The Python commands below are the ones the recorded
+runs in this document used.
 
 ```bash
 python3 scripts/emulator/install.py /tmp/aws-inventory-emulator

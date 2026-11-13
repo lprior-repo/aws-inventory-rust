@@ -1,10 +1,11 @@
 # Initial local deployment (historical)
 
-Date: 2026-11-12 (America/Chicago).
+> Status: Historical evidence. It is the initial-import result of 2026-11-12,
+> superseded first by [DEPENDENCY_UPDATE.md](DEPENDENCY_UPDATE.md) and kept
+> unchanged for traceability. See [VISION](VISION.md) and
+> [ROADMAP](ROADMAP.md).
 
-This is the initial-import result. The dependency update and current operational
-results supersede it; see [DEPENDENCY_UPDATE.md](DEPENDENCY_UPDATE.md).
-The raw evidence below remains unchanged for traceability.
+Date: 2026-11-12 (America/Chicago).
 
 **Local operational setup: PASS. Strict Rust release assurance: REJECTED.**
 See [the review](LOCAL_REVIEW.md) for the unresolved findings. No Rust source,

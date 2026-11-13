@@ -1,5 +1,12 @@
 # Cloud Control collection and architecture coverage
 
+> Status: Baseline being replaced. Cloud Control is not used by the new
+> architecture (V01, V04) and its collectors and catalogs are deleted in ROADMAP
+> M9.5; only the CloudFormation type list survives, as an offline checklist and
+> naming authority (M1.5, M9.4). Links into `artifacts/` point to an ignored
+> local directory and do not resolve in a clone. See [VISION](VISION.md) and
+> [ROADMAP](ROADMAP.md).
+
 The executable Cloud Control catalog contains **421 reviewed regional resource types across 76 service families**: the frozen **397 root types** plus **24 parent-dependent types**. It uses the official Rust Cloud Control SDK's `ListResources` and `GetResource` operations through the shared executor. Parent discovery supplies an explicit `ResourceModel` for each reviewed child list. The same adapter handles each selected descriptor; adding a service SDK dependency alone does not add a collector.
 
 The retained [capability matrix](../catalog/cloudcontrol-capabilities.json) audits **all 1,881 schemas** in the AWS registry archive and preserves the v0.5 root selection and executed evidence. The offline `coverage` command overlays the separate [parent catalog](../catalog/cloudcontrol-parent-resources.json), reports the current 421-type selection, and exposes its prerequisite plans without promoting historical results into new evidence. The [generated evidence rollup](CLOUDCONTROL_EVIDENCE.md) remains a source-bound record for the root catalog. Schema eligibility, implemented workflows and executed evidence are separate.

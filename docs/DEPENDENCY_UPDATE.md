@@ -1,5 +1,9 @@
 # Dependency update and current local verification
 
+> Status: Historical evidence. It records the 2026-11-12 dependency update and
+> the local verification run made then, on the baseline collector; "current" in
+> its text means that date. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 Date: 2026-11-12 (America/Chicago).
 
 This update refreshes the collector and local verification dependencies and

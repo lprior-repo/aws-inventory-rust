@@ -1,5 +1,9 @@
 # ELBv2 inventory and routing evidence
 
+> Status: Baseline being replaced. The `load_balancing` adapter described here
+> is replaced by overlay data on the wire engine in ROADMAP M5.5 and deleted in
+> the same change. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 The `elbv2` service selector collects modern Application, Network, and Gateway
 Load Balancers through the official `aws-sdk-elasticloadbalancingv2` client.
 `elb` and `load-balancing` are selector aliases. The collector describes five

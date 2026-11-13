@@ -1,5 +1,10 @@
 # Durable scan jobs with SQLx
 
+> Status: Kept and extended. Fenced whole-scan jobs stay as they are; the plan
+> adds a durable work queue inside the store that resumes at page level
+> (ROADMAP M3.3) and bounded slices (M7.4), which this document does not
+> describe. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 Version 0.4 adds a local durable work queue using SQLx and SQLite. This is an
 invocation-level recovery mechanism: it stores validated scan intent, leases,
 attempts and terminal outcomes. It does not replay arbitrary Rust call stacks

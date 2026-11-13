@@ -1,5 +1,10 @@
 # Collection and architecture plan for 421 resource types
 
+> Status: Baseline being replaced. It is the plan for the Cloud Control
+> collector, which the new architecture does not use (V01, V04) and ROADMAP
+> M9.5 deletes; the reviewed relationship rules are carried over (M5, step 3).
+> See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 The scanner combines **421 reviewed Cloud Control resource-type descriptors** with the native collectors for deeper EC2/VPC, DynamoDB, Lambda, ECS, EKS, ELBv2, S3, IAM, Route 53 and CloudFront architecture. The combined selection contains **397 root types and 24 parent-dependent types**. One Rust adapter performs Cloud Control discovery and reads, with an explicit prerequisite plan for each admitted child. Adding a descriptor does not require another handwritten client, paginator, retry loop, or database writer.
 
 The 421 types are configured coverage, not a claim that an AWS account has been scanned or that all providers succeed in every region. No live account requests were used to construct this catalog. Native and Cloud Control coverage overlap; their counts must not be added as though every type were distinct. [VERIFICATION.md](VERIFICATION.md) distinguishes implementation from executed local checks.

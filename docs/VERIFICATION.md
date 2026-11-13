@@ -1,5 +1,11 @@
 # Verification and delivery boundaries — 0.6.0
 
+> Status: Historical evidence. It is the verification record of the baseline
+> collector, version 0.6.0; the counts below were recorded on 2026-11-13 and
+> the test suites have not been re-run since commit `b5332e8` (ROADMAP M0.2).
+> Links into `artifacts/` point to an ignored local directory and do not resolve
+> in a clone. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 ## Current development tree (2026-11-13)
 
 - **781 Rust tests passed, zero failures, 15 ignored** across the workspace
@@ -25,6 +31,11 @@
   whole-project 95% mutation score, tombstone/retention semantics, event
   ingestion, distributed quota coordination, PostgreSQL evaluation, fault/soak
   campaigns, and full live-emulator harness repair.
+
+> The blocker list above predates the vision. History and retention are out of
+> the first version (V22), change events are deferred (V10), quota coordination
+> across processes is not needed on one laptop (V08) and PostgreSQL waits for a
+> measurement (V05); the 95% mutation score is not a roadmap gate.
 
 ### Expanded parent workflow state
 

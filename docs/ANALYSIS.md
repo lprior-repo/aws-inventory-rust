@@ -1,5 +1,11 @@
 # Snapshot comparison and architecture analysis
 
+> Status: Baseline being replaced. It describes the `diff`, `neighbors`, `path`
+> and `findings` commands over scan snapshots in SQLite schema 13; the first
+> version keeps no snapshots or history (V22), graph traversal moves to FalkorDB
+> through `cmdb-view` (ROADMAP M6.2), and SQL files 001 to 013 are deleted in
+> M9.5. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 The offline analysis commands operate on **finalized local observations**. They
 make no AWS requests. They answer what the inventory observed and which declared
 relationships connect those observations. They do not turn missing records into

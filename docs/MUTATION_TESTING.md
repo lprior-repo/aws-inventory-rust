@@ -1,5 +1,10 @@
 # Mutation testing: fixed scope, measured results, and the 95% gate
 
+> Status: Baseline being replaced. The mutation gate described here is Python
+> tooling over the baseline packages; ROADMAP M2.10 either replaces it in Rust
+> or drops it with a recorded reason, and the roadmap sets no mutation-score
+> target of its own. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 The target is **at least 95% of viable completed mutations caught by tests across
 all four production packages**. A partial run cannot satisfy that target.
 Neither property-test case counts nor ordinary test counts are mutation scores.

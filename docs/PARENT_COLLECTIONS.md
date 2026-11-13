@@ -1,5 +1,11 @@
 # Parent-dependent Cloud Control collection
 
+> Status: Baseline being replaced. Parent-dependent Cloud Control collection is
+> part of the path the new architecture does not use (V01, V04); ROADMAP M9.5
+> deletes the parent workflows and their catalog, and parent-to-child bindings
+> come from the API models and overlay instead (M1.4). See [VISION](VISION.md)
+> and [ROADMAP](ROADMAP.md).
+
 The v0.6 implementation adds 24 reviewed parent-dependent types to the existing
 397 regional root types. The original `catalog/cloudcontrol-resources.json`
 remains unchanged; `catalog/cloudcontrol-parent-resources.json` holds the new

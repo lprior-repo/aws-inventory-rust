@@ -1,5 +1,11 @@
 # Portable inventory export
 
+> Status: Kept and extended. An explicit export is the only place the plan
+> allows JSON (V03); the scan-snapshot format and provenance modes described
+> here follow schema 13, and the roadmap has no package yet that redefines
+> export over binary records. See [VISION](VISION.md) and
+> [ROADMAP](ROADMAP.md).
+
 The `export` command writes a complete selected scan as a streaming JSON document
 or JSON Lines file. It reads the local SQLx/SQLite store; it makes no AWS or
 FalkorDB requests. Resource properties and tags remain structured JSON values.

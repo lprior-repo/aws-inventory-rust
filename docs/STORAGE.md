@@ -1,5 +1,12 @@
 # SQLx inventory storage
 
+> Status: Kept and extended. SQLite in WAL mode with one writer and atomic,
+> idempotent page commits is kept (V05); schema 13, its JSON property blobs,
+> observation history and upgrade path are baseline: ROADMAP M3 replaces them
+> with binary records and typed columns in a generated schema 14 created fresh
+> (V24), hash reconciliation (M3.4) and no history (V22), and M9.5 deletes SQL
+> files 001 to 013. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 `inventory-engine::store::Store` uses SQLx 0.9 with the SQLite and Tokio runtime
 features. Ingestion, migration, checkpoints, reporting queries and export streams
 all use SQLx. There is no rusqlite backend or nominal SQLx wrapper around another

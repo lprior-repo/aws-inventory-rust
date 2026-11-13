@@ -1,5 +1,10 @@
 # Collection fixtures and their test universes
 
+> Status: Baseline being replaced. These JSONL event fixtures feed the baseline
+> `ingest` command and schema 13 SQL checks; schema 13 is deleted in ROADMAP
+> M9.5 and the new path is proven with emulator seed files instead (M2.9). See
+> [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 These files are deterministic **synthetic event inputs** for local ingestion and
 SQL checks. They contain no observations collected from an AWS account. A source
 label exercises that path in the inventory model; it does not establish how the

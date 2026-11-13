@@ -1,5 +1,11 @@
 # Inventory export and FalkorDB delivery
 
+> Status: Kept and extended. Explicit JSON export and FalkorDB as a rebuildable
+> projection of SQL are kept (V03, V14); delivery at the end of a `scan` and
+> whole-snapshot projection are baseline, replaced by the pending-projection
+> queue and delta projection in ROADMAP M6.1 and by the removal of the old
+> `scan` path in M9.5. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 Version 0.5 connects collection, portable inventory files and graph projection.
 SQLite remains the durable inventory. A delivery failure does not discard a
 scan or cause its AWS API calls to run again.

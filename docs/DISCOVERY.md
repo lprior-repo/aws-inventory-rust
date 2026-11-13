@@ -1,5 +1,11 @@
 # Account and inventory-source discovery
 
+> Status: Baseline being replaced. The typed-SDK discovery calls are replaced
+> in ROADMAP M5.2; in the first version accounts come from local profiles (V09),
+> Organizations discovery and cross-account roles are not scheduled until after
+> 1.0, and Config and Resource Explorer may only supply hints (V12). See
+> [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 The `inventory_aws::discovery` module supplies a bounded, read-only bootstrap
 layer for native collectors. It discovers Organizations accounts and their
 hierarchy, describes existing Config aggregators, and inspects an existing

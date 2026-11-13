@@ -1,5 +1,10 @@
 # Property tests and retry contracts
 
+> Status: Kept and extended. The property tests of the executor, store and job
+> queue stay; the emulator oracle section depends on Python scripts (deleted in
+> ROADMAP M2.10) and on Cloud Control descriptors (deleted in M9.5). See
+> [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 The test suite uses Proptest to generate bounded inputs and command histories,
 Tokio's paused clock for retry scheduling, and real SQLx/SQLite databases for
 durable effects. The mutation gate is described in [MUTATION_TESTING.md](MUTATION_TESTING.md).

@@ -1,5 +1,10 @@
 # AWS property tests, retry ownership and collector oracles
 
+> Status: Baseline being replaced. These tests cover the typed-SDK adapters and
+> their one-attempt SDK configuration, which go with the adapters in ROADMAP M5
+> and M9.5; the rule they protect, one retry owner, is kept (VISION 5.3). See
+> [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 The AWS tests exercise generated error metadata, retry directives, pagination histories, discovery identities and SDK configuration. A separate, explicitly ignored integration target runs the real public collector against a prepared local emulator and compares its output with a verified snapshot. Passing helper tests alone does not demonstrate that a collector still performs its requests or emits its resources.
 
 This document describes the test contracts. A mutation percentage must come from completed, reproducible campaign receipts for a frozen candidate set; the presence or count of these tests does not establish 95% mutation coverage.

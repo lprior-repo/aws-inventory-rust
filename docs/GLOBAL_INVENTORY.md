@@ -1,5 +1,10 @@
 # Account-global inventory
 
+> Status: Baseline being replaced. The `global_inventory` adapter described
+> here is replaced by overlay data on the wire engine in ROADMAP M5.2 (IAM) and
+> M5.3 (S3, Route 53, CloudFront) and deleted in the same changes. See
+> [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+
 The native global inventory module adds seven resource kinds for S3, IAM,
 Route 53, and CloudFront. Collection runs once for each resolved account scan,
 outside the regional collector fan-out. It records control-plane architecture

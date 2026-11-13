@@ -1,5 +1,9 @@
 # Verification and delivery boundaries
 
+> Status: Historical evidence. It records what was run for version 0.4.0 of the
+> baseline collector and is not updated. See [VISION](VISION.md) and
+> [ROADMAP](ROADMAP.md).
+
 This report records version 0.4.0 work in the delivery workspace on November 12,
 2026. Earlier 0.3.0, 0.2.0 and 0.1.0 evidence is preserved and labelled below.
 A command that only checks types is not described as an executable build;
