@@ -1,0 +1,91 @@
+{
+  "edges_per_resource": 1,
+  "interpretation": "local stage measurements; mock API latency; no live AWS benchmark",
+  "journal_mode": "WAL",
+  "rows_per_storage_case": 1000,
+  "runtime_worker_threads": 4,
+  "scheduler": [
+    {
+      "elapsed_seconds": 1.56733644,
+      "global_concurrency": 1,
+      "independent_buckets": 512,
+      "mock_latency_ms": 2,
+      "operations_per_second": 326.668854837574,
+      "stats": {
+        "active_buckets": 512,
+        "attempts": 512,
+        "cancelled": 0,
+        "failures": 0,
+        "in_flight": 0,
+        "peak_in_flight": 1,
+        "rejected_retry_hints": 0,
+        "retries": 0,
+        "server_delays": 0,
+        "successes": 512,
+        "throttles": 0,
+        "timeouts": 0
+      }
+    },
+    {
+      "elapsed_seconds": 0.196376145,
+      "global_concurrency": 8,
+      "independent_buckets": 512,
+      "mock_latency_ms": 2,
+      "operations_per_second": 2607.241322513995,
+      "stats": {
+        "active_buckets": 512,
+        "attempts": 512,
+        "cancelled": 0,
+        "failures": 0,
+        "in_flight": 0,
+        "peak_in_flight": 8,
+        "rejected_retry_hints": 0,
+        "retries": 0,
+        "server_delays": 0,
+        "successes": 512,
+        "throttles": 0,
+        "timeouts": 0
+      }
+    },
+    {
+      "elapsed_seconds": 0.024724042,
+      "global_concurrency": 64,
+      "independent_buckets": 512,
+      "mock_latency_ms": 2,
+      "operations_per_second": 20708.588021327578,
+      "stats": {
+        "active_buckets": 512,
+        "attempts": 512,
+        "cancelled": 0,
+        "failures": 0,
+        "in_flight": 0,
+        "peak_in_flight": 64,
+        "rejected_retry_hints": 0,
+        "retries": 0,
+        "server_delays": 0,
+        "successes": 512,
+        "throttles": 0,
+        "timeouts": 0
+      }
+    }
+  ],
+  "storage": [
+    {
+      "edges": 1000,
+      "elapsed_seconds": 0.60763178,
+      "resource_rows_per_second": 1645.733539480111,
+      "resources": 1000,
+      "resources_per_transaction": 1
+    },
+    {
+      "edges": 1000,
+      "elapsed_seconds": 0.028649963,
+      "resource_rows_per_second": 34904.059038400854,
+      "resources": 1000,
+      "resources_per_transaction": 100
+    }
+  ],
+  "storage_location": "artifacts/ (workspace filesystem)",
+  "synchronous": "FULL",
+  "synthetic": true
+}

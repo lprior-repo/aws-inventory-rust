@@ -1,0 +1,57 @@
+{
+  "schema_version": "cmdb-spec-provenance/v1",
+  "date": "2026-11-13",
+  "source_commit": "57ee7de687be3f445a39bf2e2eb81807e5d68959",
+  "source_changed_for_spec": false,
+  "official_sdk_revision": "c8e11bea896b54530c587c29ce30ebd6619af62a",
+  "official_sdk_release": "release-2026-11-12",
+  "source_inputs": [
+    {
+      "repository_relative_path": "catalog/cloudcontrol-resources.json",
+      "sha256": "7d551d1ae5d32e83dc7bf45d5ef94fca35b0cecbc510cd5a3fe75aafa73300e4"
+    },
+    {
+      "repository_relative_path": "catalog/cloudcontrol-parent-resources.json",
+      "sha256": "26593330f8388812474ca9d8c81f0f5d23ac2a57410a11b99bd24ee5116e354a"
+    },
+    {
+      "repository_relative_path": "crates/sdk-catalog/sdk-services.json",
+      "sha256": "e62f9dbb297e8b6ebd0cbb941fdfb49e1fe7a5322c1c383ceb398abc541727e3"
+    }
+  ],
+  "sdk_audit": {
+    "artifact": "catalogs/current-sdk-source-audit.json",
+    "sha256": "8c8a16287f7da2f9e975f481ecb7771f9807e15f8c605d52d53732949e891a86",
+    "catalog_hash_matches": true,
+    "services": 437,
+    "archives_verified": 437,
+    "operation_modules": 19643,
+    "paginators": 3784,
+    "waiters": 407,
+    "archive_bytes_hashed": 242234008,
+    "source_bytes_read": 647856058,
+    "limitation": "Offline lexical package inspection, not collector implementation or AWS runtime evidence"
+  },
+  "auditor_source_hashes": [
+    {
+      "repository_relative_path": "crates/sdk-catalog/examples/audit.rs",
+      "sha256": "7cc50020b5320a2080ca03fb8ea52423c438464231f130781e1aeb4684fc4d8a"
+    },
+    {
+      "repository_relative_path": "crates/sdk-catalog/examples/audit/services.rs",
+      "sha256": "e8e73853f69fea8170dc3110292c2539a1d116514d31d0297a17174677c17424"
+    },
+    {
+      "repository_relative_path": "crates/sdk-catalog/examples/audit/source_files.rs",
+      "sha256": "eae134d166ef8d5c0b14e9841091ee8cf6577046be6c9428a11c16877f099c51"
+    }
+  ],
+  "auditor_binary_sha256": "e67f8b4ccb1a1b44953ec7ddf8c20d97578f469584f53a1bdb877984812ae963",
+  "collector_descriptors": {
+    "native": 32,
+    "cloud_control_root": 397,
+    "cloud_control_parent": 21,
+    "total": 450,
+    "distinct_normalized_kinds_claimed": false
+  }
+}

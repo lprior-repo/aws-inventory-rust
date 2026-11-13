@@ -1,0 +1,25 @@
+{
+  "schema_version": "cmdb-spec-validation/v1",
+  "date": "2026-11-13",
+  "document_consistency_passed": true,
+  "architecture_baseline_accepted": false,
+  "implementation_verified": false,
+  "requirements": 135,
+  "traceability_rows": 135,
+  "acceptance_scenario_families": 29,
+  "domain_proof_seeds": 14,
+  "collector_descriptors": 450,
+  "sdk_services": 437,
+  "sdk_operation_modules": 19643,
+  "archives_verified": 437,
+  "local_links_checked": 27,
+  "markdown_lines": 1770,
+  "max_chapter_lines": 144,
+  "pending": [
+    "overload policy answer",
+    "retention default answer",
+    "final architectural pre-mortem/recovery hardening",
+    "subsequent independent design and implementation reviews"
+  ],
+  "failures": []
+}
