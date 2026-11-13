@@ -75,7 +75,8 @@ scripts/local-stack.sh start
 The checked-in toolchain is used. The installer verifies the emulator package
 SHA-256 and AWS signature before extracting it, and the Redis and FalkorDB
 downloads have pinned checksums. Arch Linux uses `bsdtar` when `dpkg-deb` is
-absent. No global packages or toolchains are changed by the wrapper.
+absent. The wrapper installs no system packages. Cargo uses Rustup's pinned
+user toolchain; Rustup may download it if it is not already installed.
 
 Runtime downloads, Python packages, logs and session environment files live
 under the ignored `.local/` tree. On the initial machine, its `runtime` and
