@@ -1,5 +1,12 @@
 # AWS CMDB full specification bundle
 
+> [../VISION.md](../VISION.md) is the product definition and wins where this
+> bundle differs. Its decisions of 2026-11-13 change this draft in four ways:
+> collection uses service endpoint APIs through our own wire engine, not Cloud
+> Control; the first runtime is one laptop with about 10 accounts, with the
+> enterprise deployment later; freshness comes from fast repeated sweeps, with
+> the five-second event path later; and the UI is a native Makepad application.
+
 Start with [the full specification index](architecture-spec.draft.md), then read
 [the decisions and pending choices](decisions.md). This is a comprehensive
 implementation design draft for commercial AWS, self-hosted enterprise use,

@@ -1,5 +1,18 @@
 # Changes
 
+## Unreleased — Direction: endpoint wire engine
+
+- `docs/VISION.md` and `docs/ROADMAP.md` now define the product and the build
+  plan: direct service endpoint collection through a model-driven wire engine,
+  binary records, hash-based reconciliation, full-send quota use, a laptop as
+  the first runtime, and the CMDB layer in the first version. Cloud Control
+  collection is retired as endpoint collection replaces it.
+- The working tree was committed as the baseline (`78d3ac2`).
+- Corrected stale counts and links in `README.md`, `START_HERE.md`,
+  `NEXT_AGENT_PROMPT.txt`, `docs/CMDB_ARCHITECTURE.md`, `docs/VERIFICATION.md`
+  and `docs/UNIVERSAL_COVERAGE.md`. Removed the duplicate
+  `docs/PERFORMANCE_CONTRACT.md`.
+
 ## Unreleased — Universal listable coverage, reference graph and Rust evidence harness
 
 - Added native Step Functions state machine and activity adapters (schema 012),

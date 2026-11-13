@@ -10,6 +10,11 @@ records the user's confirmed commercial-only, self-hosted, hourly-reconciliation
 scope. Its explicit decisions supersede the earlier candidate budgets here;
 final policy/pre-mortem choices remain visible in that bundle.
 
+[VISION.md](VISION.md) is now the product definition and replaces this
+proposal where they differ: collection goes through the services' own endpoint
+APIs, the first runtime is one laptop, the UI is a native Makepad application,
+and speed claims come only from head-to-head runs.
+
 ## What we are competing with
 
 | System | Documented execution model | Design implication |

@@ -1,5 +1,9 @@
 # Universal coverage: CloudQuery × Cartographer
 
+> Superseded direction. [VISION.md](VISION.md) decision V04 retires Cloud
+> Control: this document describes the baseline collector that endpoint
+> collection replaces, and no further work is planned on it.
+
 This project collects AWS inventory two ways: native SDK adapters for the
 resource kinds that need typed handling, and provider-generic listing through
 Cloud Control. The universal layer exists so coverage is bounded by the
@@ -47,7 +51,7 @@ parent workflows fall inside that set, so 386 remain, which is what
 the 24 as reviewed and therefore prints 390 remaining; it misses
 `AWS::ApiGateway::GatewayResponse`, `AWS::EKS::Nodegroup`,
 `AWS::EKS::PodIdentityAssociation` and `AWS::ElasticLoadBalancingV2::Listener`
-(ROADMAP M0.5). Among the 390 it lists as open, inferring from required
+(not being fixed; this tooling is retired). Among the 390 it lists as open, inferring from required
 list-handler/create properties proposes a parent for 325 at high confidence
 (same family) and 13 at medium confidence (one cross-family match), leaves 52
 low/unmapped, and reports zero disagreements with the reviewed workflows. A

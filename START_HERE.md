@@ -1,9 +1,10 @@
 # Portable handoff — AWS Inventory in Rust 0.6.0
 
 **Read first:** [docs/VISION.md](docs/VISION.md) is the product definition and
-[docs/ROADMAP.md](docs/ROADMAP.md) is the ordered plan (start at M0). The
-detailed requirements draft is [docs/cmdb-spec](docs/cmdb-spec/README.md). This
-file is the build-and-verify handoff for the current tree.
+[docs/ROADMAP.md](docs/ROADMAP.md) is the build plan (start at M0). The product
+is moving to direct endpoint collection through its own wire engine; the Cloud
+Control and typed-adapter collectors described below are the baseline being
+replaced. This file is the build-and-verify handoff for that baseline.
 
 This bundle contains the Rust application, design documents, pinned dependency
 manifests, synthetic fixtures and verification receipts. The current development

@@ -527,20 +527,17 @@
       "provider": {
         "Name": "inventory-parent-eks-accessentry-a-1",
         "ClusterName": "inventory-parent-eks-a",
-        "PrincipalArn": "arn:aws:iam::000000000000:role/fixture-eks-user-1",
         "Role": "admin",
         "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/accessentry/arn:aws:iam::000000000000:role/fixture-eks-user-1"
       },
       "expected_provider": {
         "Name": "inventory-parent-eks-accessentry-a-1",
         "ClusterName": "inventory-parent-eks-a",
-        "PrincipalArn": "arn:aws:iam::000000000000:role/fixture-eks-user-1",
         "Role": "admin",
         "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/accessentry/arn:aws:iam::000000000000:role/fixture-eks-user-1"
       },
       "expected_model": {
-        "ClusterName": "inventory-parent-eks-a",
-        "PrincipalArn": "arn:aws:iam::000000000000:role/fixture-eks-user-1"
+        "ClusterName": "inventory-parent-eks-a"
       },
       "expected_resource_id": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/accessentry/arn:aws:iam::000000000000:role/fixture-eks-user-1",
       "expected_kind": "aws_eks_access_entry",
@@ -553,20 +550,17 @@
       "provider": {
         "Name": "inventory-parent-eks-accessentry-a-2",
         "ClusterName": "inventory-parent-eks-a",
-        "PrincipalArn": "arn:aws:iam::000000000000:role/fixture-eks-user-2",
         "Role": "view",
         "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/accessentry/arn:aws:iam::000000000000:role/fixture-eks-user-2"
       },
       "expected_provider": {
         "Name": "inventory-parent-eks-accessentry-a-2",
         "ClusterName": "inventory-parent-eks-a",
-        "PrincipalArn": "arn:aws:iam::000000000000:role/fixture-eks-user-2",
         "Role": "view",
         "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/accessentry/arn:aws:iam::000000000000:role/fixture-eks-user-2"
       },
       "expected_model": {
-        "ClusterName": "inventory-parent-eks-a",
-        "PrincipalArn": "arn:aws:iam::000000000000:role/fixture-eks-user-2"
+        "ClusterName": "inventory-parent-eks-a"
       },
       "expected_resource_id": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/accessentry/arn:aws:iam::000000000000:role/fixture-eks-user-2",
       "expected_kind": "aws_eks_access_entry",
@@ -580,7 +574,6 @@
         "Name": "inventory-parent-eks-podidentity-a-1",
         "ClusterName": "inventory-parent-eks-a",
         "Namespace": "kube-system",
-        "RoleArn": "arn:aws:iam::000000000000:role/fixture-pod-identity-1",
         "ServiceAccount": "my-service-account-1",
         "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/podidentityassociation/kube-system/my-service-account-1/01234567"
       },
@@ -588,14 +581,11 @@
         "Name": "inventory-parent-eks-podidentity-a-1",
         "ClusterName": "inventory-parent-eks-a",
         "Namespace": "kube-system",
-        "RoleArn": "arn:aws:iam::000000000000:role/fixture-pod-identity-1",
         "ServiceAccount": "my-service-account-1",
         "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/podidentityassociation/kube-system/my-service-account-1/01234567"
       },
       "expected_model": {
-        "ClusterName": "inventory-parent-eks-a",
-        "Namespace": "kube-system",
-        "ServiceAccount": "my-service-account-1"
+        "ClusterName": "inventory-parent-eks-a"
       },
       "expected_resource_id": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/podidentityassociation/kube-system/my-service-account-1/01234567",
       "expected_kind": "aws_eks_pod_identity_association",
@@ -609,7 +599,6 @@
         "Name": "inventory-parent-eks-podidentity-a-2",
         "ClusterName": "inventory-parent-eks-a",
         "Namespace": "default",
-        "RoleArn": "arn:aws:iam::000000000000:role/fixture-pod-identity-2",
         "ServiceAccount": "my-service-account-2",
         "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/podidentityassociation/default/my-service-account-2/01234567"
       },
@@ -617,14 +606,11 @@
         "Name": "inventory-parent-eks-podidentity-a-2",
         "ClusterName": "inventory-parent-eks-a",
         "Namespace": "default",
-        "RoleArn": "arn:aws:iam::000000000000:role/fixture-pod-identity-2",
         "ServiceAccount": "my-service-account-2",
         "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/podidentityassociation/default/my-service-account-2/01234567"
       },
       "expected_model": {
-        "ClusterName": "inventory-parent-eks-a",
-        "Namespace": "default",
-        "ServiceAccount": "my-service-account-2"
+        "ClusterName": "inventory-parent-eks-a"
       },
       "expected_resource_id": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/podidentityassociation/default/my-service-account-2/01234567",
       "expected_kind": "aws_eks_pod_identity_association",
@@ -637,20 +623,17 @@
       "provider": {
         "Name": "inventory-parent-eks-accessentry-b-1",
         "ClusterName": "inventory-parent-eks-b",
-        "PrincipalArn": "arn:aws:iam::000000000000:role/fixture-eks-user-b",
         "Role": "admin",
         "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-b/accessentry/arn:aws:iam::000000000000:role/fixture-eks-user-b"
       },
       "expected_provider": {
         "Name": "inventory-parent-eks-accessentry-b-1",
         "ClusterName": "inventory-parent-eks-b",
-        "PrincipalArn": "arn:aws:iam::000000000000:role/fixture-eks-user-b",
         "Role": "admin",
         "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-b/accessentry/arn:aws:iam::000000000000:role/fixture-eks-user-b"
       },
       "expected_model": {
-        "ClusterName": "inventory-parent-eks-b",
-        "PrincipalArn": "arn:aws:iam::000000000000:role/fixture-eks-user-b"
+        "ClusterName": "inventory-parent-eks-b"
       },
       "expected_resource_id": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-b/accessentry/arn:aws:iam::000000000000:role/fixture-eks-user-b",
       "expected_kind": "aws_eks_access_entry",
@@ -664,7 +647,6 @@
         "Name": "inventory-parent-eks-podidentity-b-1",
         "ClusterName": "inventory-parent-eks-b",
         "Namespace": "kube-system",
-        "RoleArn": "arn:aws:iam::000000000000:role/fixture-pod-identity-b",
         "ServiceAccount": "my-service-account-b",
         "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-b/podidentityassociation/kube-system/my-service-account-b/01234567"
       },
@@ -672,14 +654,11 @@
         "Name": "inventory-parent-eks-podidentity-b-1",
         "ClusterName": "inventory-parent-eks-b",
         "Namespace": "kube-system",
-        "RoleArn": "arn:aws:iam::000000000000:role/fixture-pod-identity-b",
         "ServiceAccount": "my-service-account-b",
         "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-b/podidentityassociation/kube-system/my-service-account-b/01234567"
       },
       "expected_model": {
-        "ClusterName": "inventory-parent-eks-b",
-        "Namespace": "kube-system",
-        "ServiceAccount": "my-service-account-b"
+        "ClusterName": "inventory-parent-eks-b"
       },
       "expected_resource_id": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-b/podidentityassociation/kube-system/my-service-account-b/01234567",
       "expected_kind": "aws_eks_pod_identity_association",

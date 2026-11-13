@@ -1,320 +1,402 @@
 # Vision spec
 
-Status: accepted direction, 2026-11-13. This is the top-level product
-definition. Every other document is subordinate to it: when a design, roadmap
-entry or handoff note disagrees with this file, this file wins and the other
-document is the defect. The sequenced work is in [ROADMAP.md](ROADMAP.md).
+Status: owner-confirmed direction, 2026-11-13. This document defines the product
+and its architecture. [ROADMAP.md](ROADMAP.md) orders the build. Where any other
+document in this repository disagrees with this one, this one wins.
 
 ## 1. The product
 
-A continuously updated AWS CMDB, written in Rust, that:
+A CMDB of every AWS resource in every account we are pointed at, kept current by
+repeated sweeps, stored in SQL, projected into a relationship graph, and shown
+as a DAG in a native Makepad application. It reads AWS through the services' own
+endpoint APIs and it is built to be the fastest tool there is at sweeping an
+account and reconciling what changed.
 
-1. **collects every AWS resource** in **every account and region** of a fleet,
-2. **keeps it current** without being asked,
-3. stores it as **queryable SQL** and as a **relationship graph**,
-4. shows the whole estate and how it relates as a **GPU-rendered DAG in
-   Makepad**, and
-5. is **the fastest collector available** for that job, with retries built in.
+It covers the ground of CloudQuery, Cartography and Steampipe. It is our own
+implementation and promises compatibility with none of them.
 
-It occupies the ground that CloudQuery (broad sync into a database), Cartography
-(relationship graph) and Steampipe (familiar SQL tables) each cover in part. It
-is our own implementation with its own model, schema and storage. It is not a
-port of any of them and promises compatibility with none of them. MIT licensed.
+Speed of collection and reconciliation is the selling point. Every design choice
+below is judged first on whether it makes a sweep faster or a reconcile cheaper,
+and second on whether it removes code.
 
-## 2. Pillars and what "done" means for each
+## 2. Decisions
 
-Each pillar has one acceptance statement. A pillar is met only by retained
-evidence, never by code that compiles.
+Confirmed by the owner on 2026-11-13. A later decision replaces an earlier one
+with the same ID; nothing here is changed silently.
 
-### 2.1 Complete: every AWS resource
-
-**Done means:** every resource type in the declared universe is in exactly one
-ledger state, and no type is in a pending state.
-
-The universe is not "the adapters someone wrote". It is:
-
-- every type in the pinned CloudFormation registry snapshot (1,881 types on
-  2026-11-12), re-pinned on a schedule so new AWS types enter the ledger when
-  AWS publishes them; plus
-- resources and components that have an SDK list/describe operation but no
-  registry type (target-health memberships, DNS records, running tasks and
-  similar), tracked in a reviewed native catalog.
-
-Ledger states, from best to worst:
-
-| State | Meaning |
+| ID | Decision |
 | --- | --- |
-| Detailed + related | Identity, redacted configuration, SQL columns and relationship edges collected |
-| Detailed | Identity and redacted configuration collected |
-| Listed | Identity only |
-| Pending: parent workflow | Listing needs a parent model that no workflow supplies yet |
-| Pending: native adapter | No Cloud Control list/read handler; needs an SDK adapter |
-| Provider boundary | AWS itself offers no enumeration for it; reason recorded |
-| Excluded by policy | Content, secrets or key material; never collected |
+| V01 | Collection calls the service endpoint APIs directly. Cloud Control is not used. |
+| V02 | We build our own wire engine. The official AWS API models are pinned as data, and one client signs, sends and pages any operation of any service. AWS crates are used only for credentials and request signing. |
+| V03 | Each AWS response is parsed exactly once, streaming, into a binary record. No JSON after the socket: not in the store, not between components, not to the UI. Where a service offers AWS's binary protocol, we request it. JSON is produced only by an explicit export. |
+| V04 | The existing Cloud Control collectors are deleted as endpoint collection replaces them. The CloudFormation type list is kept only as an offline checklist that no resource type was missed, and the reviewed relationship rules are carried over. No new work is done on Cloud Control code. |
+| V05 | SQL holds typed columns generated from the API model plus the full record as one binary blob. SQLite in WAL mode is the store. PostgreSQL or DuckDB is added only when a measurement shows SQLite is the limit. |
+| V06 | Scope is every configurable resource plus the runtime components that matter for architecture (running tasks, target health, DNS records). Content, secrets and paid calls are never read. The deny list fails closed: an unclassified operation is not called. |
+| V07 | Commercial AWS partition only. |
+| V08 | It runs on one laptop. AWS Lambda is the second runtime target, so collection must work in resumable slices and must not need a second long-lived process. |
+| V09 | Accounts come from local AWS profiles. The first version is proven on about 10 accounts. |
+| V10 | Freshness comes from fast repeated full sweeps first. Change events are added later and only tell us what to re-read. |
+| V11 | Reconciliation is hash-based: unchanged pages and records cause no writes. Only changes reach the store and the graph. |
+| V12 | AWS Config, Resource Explorer and CloudTrail may supply change hints and cross-checks. Every stored fact comes from the service's own API. |
+| V13 | Full send is the default: use all the request rate AWS will grant. A configurable cap exists for accounts that share quota with production automation. |
+| V14 | FalkorDB is the graph database. SQL is the source of truth and the graph can always be rebuilt from it. |
+| V15 | Edges come from three labelled sources: the API model, reviewed rules, and inference where a field value exactly matches a collected resource's ARN or unique ID. Ambiguous matches are counted, not drawn. |
+| V16 | The CMDB layer (owners, teams, applications, custom fields, notes) is part of the first version. |
+| V17 | The UI is a native Makepad 2.0 desktop application. A web build is not planned for the first version. |
+| V18 | Build order is depth first: the large services complete with relationships and the DAG, then every remaining service. |
+| V19 | "Fastest" is claimed only from head-to-head runs against CloudQuery, Steampipe and Cartography, on the same emulator dataset and machine and on a real account the owner authorizes. |
+| V20 | Work is executed by agents straight from the roadmap, through the gates in section 10. No separate tracker. |
+| V21 | Code is a liability. A service is described by data, never by Rust. All product code is Rust, MIT licensed. The Python helper scripts are frozen and are not part of any plan. |
 
-Coverage is always reported on this ladder. Dependency available, enumeration
-implemented, fields implemented, relationships implemented, emulator-verified
-and live-verified are separate facts and are never merged into one tick.
+The earlier requirements draft in [cmdb-spec/](cmdb-spec/README.md) remains the
+detailed reference for behavior this document does not restate (deletion needs
+two complete enumerations, the four coverage states, isolation of CMDB
+annotations from observed facts). These decisions replace it where they differ:
+its 5-second visibility and hourly reconciliation targets wait for V10's event
+work, its enterprise deployment waits behind V08, and its browser renderer is
+replaced by V17.
 
-### 2.2 Fleet: many accounts
+## 3. Measured ground
 
-**Done means:** one deployment collects thousands of accounts across all enabled
-regions and partitions from a persisted account registry, with a declared
-population (account × region × collector) and an explicit result for every unit
-in it.
+Numbers from the tree at commit `78d3ac2` and from the official AWS API models
+(`github.com/aws/api-models-aws`, commit `46135f8`, 2026-11-13, Apache-2.0).
 
-Accounts come from Organizations discovery and existing read-only roles. A unit
-that was denied, unsupported, throttled out or never attempted is visible as
-such. A unit the collector never emitted is a gap, not a silent success.
-
-### 2.3 Continuous: always current
-
-**Done means:** the service runs indefinitely and every resource carries a
-known age. Three loops keep it current:
-
-1. **Bootstrap sweep** — full enumeration of the declared population.
-2. **Targeted refresh** — change signals (EventBridge, CloudTrail, Config)
-   schedule a refresh of the affected scope. Signals never write evidence
-   themselves and never prove completeness.
-3. **Reconciliation sweep** — periodic complete enumeration, the only thing
-   that can establish that a resource is gone.
-
-Deleted, unobserved, inaccessible and unsupported are four different states. A
-resource is tombstoned only by a complete enumeration of its scope. Provider
-time, receipt time and ingest time stay distinct.
-
-### 2.4 Fastest
-
-**Done means:** a published, reproducible head-to-head on a named workload shows
-a shorter cold full sweep and lower steady-state change latency than CloudQuery
-and Steampipe at equal coverage, equal permissions and equal quota.
-
-AWS API quotas bound every collector. Speed therefore comes from four places,
-and the design commits to all four:
-
-1. **Fewest calls per resource.** List first, enrich only what is missing or
-   stale, reuse Config/Resource Explorer where they already hold the answer,
-   refresh changed scopes instead of re-sweeping everything.
-2. **Saturate the allowed quota, never exceed it.** Admission is per
-   account/region/quota family, adaptive to throttling feedback, and parallel
-   across every independent bucket in the fleet.
-3. **No wasted work.** Durable checkpoints mean a crash, a retry or a restart
-   never repeats a committed page.
-4. **Nothing slow off the wire.** Streaming, bounded memory, batched durable
-   commits, profile-driven optimization of the hot path.
-
-Speed is never bought by dropping coverage, relationships, history or
-durability. A claim names its workload; "fastest" is asserted only for what was
-measured.
-
-Target budgets, unmet until measured on a declared workload and hardware:
-
-| Dimension | Target |
+| Fact | Value |
 | --- | --- |
-| Fleet size | 1,000 → 10,000 accounts; 1 M → 10 M assets |
-| Change visibility | p95 receipt-to-query-visible under 5 s at steady state |
-| Query | p95 under 250 ms on the frozen indexed suite at 10 M assets |
-| UI | p95 frame under 16.7 ms on a 5,000-node / 20,000-edge view; first useful view under 2 s |
+| Service models | 436 |
+| Operations in the models | 19,641 |
+| Read operations by name (List, Describe, Get, BatchGet, Search, Scan, Query, Lookup, Select) | 8,366 |
+| List/Describe operations | 5,207 |
+| List/Describe operations with no required input | 2,209, in 359 services |
+| Operations with a modeled paginator | 3,787 |
+| Services with modeled resources / resource shapes | 127 / 763 |
+| ARN templates / ARN-reference traits / reference traits in the models | 385 / 200 / 534 |
+| Services offering AWS's binary protocol (rpcv2Cbor) | 44, covering 1,774 operations |
+| Services with a JSON body protocol (restJson1, awsJson1.0, awsJson1.1) | 413 |
+| Services with an XML body protocol only (awsQuery, ec2Query, restXml) | 20, covering 2,406 operations |
+| Operations the collector calls today | 89, in 19 services; 2 of them are Cloud Control |
+| Resource kinds collected today by hand-written adapters | 39 |
+| Cloud Control types collected today (to be replaced) | 421 reviewed in detail; 1,291 listed |
+| Reviewed relationship rules to carry over | 968 |
+| CloudFormation type checklist | 1,881 |
+| Rust in `crates/aws` today | 28,868 lines, 5,376 of them Cloud Control |
 
-### 2.5 Resilient: retries built in
+The 2,209 input-free enumerations set the floor for a complete sweep: each
+regional one is called once per enabled region per account, whether or not the
+account uses the service. A sweep is tens of thousands of calls per account
+before the first child resource is read. That is the workload the design is
+sized for.
 
-**Done means:** every failure class has a proven outcome and none of them
-produces a false "complete" or a false "empty".
+## 4. Design rules
 
-- One retry owner. The shared executor retries; SDK clients are configured for
-  a single attempt, so attempts are never multiplied.
-- Every attempt re-enters admission. Server retry hints extend the bucket
-  cooldown. Backoff, deadlines and attempt budgets are bounded.
-- Collection, export and graph delivery retry independently. Re-delivering
-  never repeats AWS reads.
-- Work is leased and fenced. A stale worker cannot write.
-- Partial is a first-class result that is stored and reported, never hidden.
+1. **Services are data.** The pinned models plus a small reviewed overlay say
+   what to call, how to page it, what identifies a resource and what it refers
+   to. Adding a service adds no Rust. Service-specific Rust needs a written
+   reason in the change that adds it.
+2. **One of each.** One HTTP client, one signer, one retry owner, one record
+   format, one work queue, one writer per database.
+3. **State that matters is on disk.** The work queue, pagination position,
+   learned request rates and scope outcomes live in SQL. A killed process
+   resumes; it does not restart.
+4. **Every write is idempotent.** Records are keyed by identity and content
+   hash. Replaying a page changes nothing.
+5. **Everything is bounded.** Queues, batches, retries, response sizes and
+   traversals have limits. No detached tasks.
+6. **Writes are proportional to change.** An unchanged account costs API calls
+   and comparisons, not disk writes.
+7. **Delete as we go.** Each replaced adapter, SDK dependency and JSON path is
+   removed in the change that replaces it.
+8. **Nothing is claimed without evidence.** Implemented, emulator-verified and
+   live-verified are separate facts. Deleted, unobserved, inaccessible and
+   unsupported are separate states.
 
-### 2.6 Related: the DAG
-
-**Done means:** every collected resource is a node, every reference between
-resources that the data supports is an edge with its evidence, and a reference
-to something not collected is an explicit unresolved placeholder.
-
-Two edge sources: reviewed relationship rules per type, and runtime reference
-resolution that connects any listed resource by exact ARN or unique identifier
-within its own account and region. Ambiguity is counted, not guessed. No edge
-is invented, and a configured rule is never reported as an observed edge.
-SQLite holds the evidence; FalkorDB is a rebuildable projection of it.
-
-### 2.7 Queryable
-
-**Done means:** every collected type is reachable through SQL with stable,
-familiar table names, and through a bounded, authenticated query API that the
-UI and other consumers share. No read path can ever trigger collection.
-
-### 2.8 Visible: Makepad
-
-**Done means:** a native Makepad application renders the live estate as a
-navigable DAG (account → region → service → type → resource, with relationship
-overlays), with a table equivalent for every graph view, coverage and freshness
-shown on what is displayed, and live updates as the CMDB changes. Makepad is the
-UI. There is no browser client.
-
-### 2.9 Proven: emulators first
-
-**Done means:** every capability is exercised by the shipped binary making real
-SDK calls against a pinned AWS emulator before it is called working, and
-against real AWS before it is called production-ready.
-
-The pinned official AWS Emulator is the standing proving ground for request
-serialization, decoding, pagination, retry behavior, storage and delivery. It
-does not certify real provider semantics, IAM, quotas or eventual consistency;
-those need authorized live accounts. Emulator evidence and live evidence are
-reported separately.
-
-## 3. Where the tree stands
-
-Measured from this checkout on 2026-11-13. The command in the last column
-prints the number; documents quote it, they do not own it.
-
-| Fact | Value | Source of truth |
-| --- | --- | --- |
-| Type universe | 1,881 | `catalog/cloudcontrol-universal.json` |
-| List-capable, attempted by `--resource-type all` | 1,291 | same |
-| Parent workflow required | 410 (24 implemented, 386 pending) | `aws-inventory coverage` |
-| No list/read handler | 180 | same |
-| Detailed (reviewed descriptors, SQL views) | 421 across 76 families | `aws-inventory catalog` |
-| Listed only | 894 | `aws-inventory coverage` |
-| Relationship rules | 968 property rules, 24 parent workflows, 268 types with at least one | `aws-inventory coverage` |
-| Native SDK kinds | 39 | `aws-inventory catalog` |
-| SDK surface available | 440 crates, 20,537 operations | `catalog/aws-sdk-operations.json` |
-| SQLite schema | 13 | `crates/engine/src/store/schema.rs` |
-| Emulator universal run | 1,291 attempted = 999 listed + 292 provider-unsupported + 0 failed | `cargo test -p inventory-harness --test emulator_live -- --ignored` |
-
-Against the pillars:
-
-| Pillar | State today |
-| --- | --- |
-| Complete | 421 detailed; 894 listed only; 386 + 180 pending; non-registry catalog not started |
-| Fleet | Organizations discovery and role assumption exist per invocation (128 profiles, 1,024 accounts max); registry storage exists but is not wired to discovery; whole-scan jobs only |
-| Continuous | Not started: no daemon, no change log, no tombstones, no event ingestion. Freshness views and the coverage registry are in place |
-| Fastest | No collection benchmark. Only a local storage/mock-scheduler baseline exists |
-| Resilient | Single-owner executor, adaptive pacing, fenced whole-scan jobs and replayable delivery are implemented and tested |
-| Related | Rules for 268 types; runtime reference resolution is opt-in at export; projection is whole-snapshot |
-| Queryable | SQL views and a bounded `query` command; read-only loopback API over one exported snapshot, no auth |
-| Visible | Makepad table and hierarchical DAG render over a synthetic fixture; not connected to real data |
-| Proven | Live emulator gate for native, reviewed, universal, combined, pagination and seeded S3; no CI; no live AWS |
-
-## 4. Architecture in one picture
+## 5. Architecture
 
 ```mermaid
 flowchart LR
-    aws["AWS: service APIs, Cloud Control, Config, events"]
-    reg["Account registry + declared population"]
-    sch["Durable task scheduler, fenced leases"]
-    quo["Quota coordinator + single retry owner"]
-    col["Collectors: universal Cloud Control, parent workflows, native SDK"]
-    ev[("Evidence store: SQL")]
-    cur[("Current state + change log")]
-    gr[("FalkorDB projection")]
-    api["Query + delta API"]
-    ui["Makepad DAG and table"]
-
-    reg --> sch --> quo --> col
-    aws --> col --> ev --> cur
-    aws -. change signals .-> sch
-    cur --> api --> ui
-    cur --> gr --> api
-    ev -. staleness .-> sch
+    M[Pinned AWS API models] --> C[Catalog compiler]
+    O[Reviewed overlay] --> C
+    C --> K[Binary API catalog]
+    K --> P[Planner]
+    P --> Q[(Durable work queue)]
+    Q --> X[Executor: quota, retry]
+    X --> W[Wire engine: sign, send, page, decode]
+    W -->|AWS endpoints or emulator| A((AWS))
+    W --> R[Reconciler: hash and diff]
+    R --> S[(SQLite WAL: columns + binary records, edges, change log)]
+    R --> Q
+    S --> G[(FalkorDB)]
+    S --> I[Read API, binary]
+    L[CMDB layer: owners, teams, apps, notes] --> S
+    I --> U[Makepad DAG and tables]
 ```
 
-Invariants:
-
-1. Evidence is committed before anything derived from it is visible.
-2. Completion is per scope. One finished scan says nothing about another scope.
-3. Readers never create collection intent.
-4. Leases fence writes, not only acknowledgements.
-5. The graph is rebuildable; losing it changes no inventory answer.
-6. Collection is read-only. Nothing is created, enabled or modified in AWS.
-
-Component contracts are in [CMDB_ARCHITECTURE.md](CMDB_ARCHITECTURE.md);
-measurement rules are in [PERFORMANCE_CONTRACT.md](PERFORMANCE_CONTRACT.md).
-
-## 5. How work lands
-
-All product code is Rust. Each work package in the roadmap goes through the same
-gates, in order, and each gate has an owning skill:
-
-| Gate | What it produces | Skill |
+| Component | Crate | State |
 | --- | --- | --- |
-| Contract | Domain types, typestates and error model where illegal states cannot be built | `rust-contract`, `scott-ddd-refactor` |
-| Test plan | Behaviors, properties and failure cases, reviewed before code | `test-planner`, `test-reviewer` |
-| Implement | Bounded, panic-free Rust inside the workspace lints | `holzman-rust`, `functional-rust` |
-| Async review | Cancellation, backpressure, task ownership, no detached work | `async-rust-reviewer` |
-| Tests | Unit, property and integration tests that catch consumer-visible bugs | `test-writer`, `red-queen` |
-| Emulator proof | The shipped binary run against the pinned emulator, outputs inspected | `hands-on-qa`, `qa-enforcer` |
-| Adversarial review | Contract parity, hidden failure paths, claims checked against evidence | `black-hat-reviewer`, `truth-serum` |
-| Land | Evidence retained, documents updated, gates green, pushed | `evidence-packaging`, `landing-skill` |
+| Domain model, binary record | `inventory-core` | Model exists; record format is new |
+| Catalog compiler | `catalog-tool` | Exists for Cloud Control; model compiler is new |
+| Wire engine | `aws-wire` | New |
+| Executor, work queue, store, reconciler, graph projection | `inventory-engine` | Limiter, store, fenced jobs and projection exist; adaptive rate, work queue and reconciler are new |
+| Planner, credentials | `inventory-aws` | Shrinks to these two once adapters are deleted |
+| Read API | `cmdb-api` | Exists, loopback, serves one JSON export; moves to the store and binary responses |
+| View model, UI | `cmdb-view`, `cmdb-ui` | Exist; UI renders a synthetic fixture |
+| Emulator harness, benchmark | `inventory-harness`, `cmdb-bench` | Exist |
 
-Makepad work additionally follows the `makepad-2.0-*` skills. Performance work
-follows release-mode baselines and profiles before any optimization.
+### 5.1 API catalog
 
-Standing rules:
+The model files are pinned by commit and per-file digest and are not shipped.
+`catalog-tool` compiles them, with the overlay, into one binary catalog that the
+runtime memory-maps. The runtime never reads a model file. For each operation
+the catalog holds its protocol, endpoint data, input and output shapes,
+paginator, page-size limit, retryable errors and a class:
 
-- No `unsafe`, `unwrap`, `expect`, `panic`, unchecked indexing or lossy casts.
-  Files stay at or under 300 lines and functions at or under 25.
-- Every queue, batch, retry and traversal is bounded.
-- No universal-coverage, throughput or mutation-score statement without the
-  evidence that produced it.
-- New work is Rust. The legacy Python helper scripts are frozen: nothing in the
-  roadmap depends on extending them.
+- **enumerate**: a read with no required input; a root of collection.
+- **expand**: a read whose required inputs come from a parent's output.
+- **denied**: content, secret, paid or mutating. Never called.
+- **unclassified**: not yet reviewed. Never called.
 
-## 6. Non-goals
+The compiler derives what it can and the overlay supplies the rest:
 
-- Writing to AWS, deploying roles, or enabling Config, Resource Explorer or any
-  paid service on the user's behalf.
-- Reading resource content, secrets or key material.
-- Clouds other than AWS.
-- Schema, query or plugin compatibility with CloudQuery, Cartography or
-  Steampipe.
+- Bindings from a parent's output to a child's input, from modeled resource
+  identifiers where they exist.
+- The largest page size the model allows, so each enumeration uses the fewest
+  calls.
+- Lists that already return everything the matching describe returns, so the
+  describe is skipped.
+- Batch reads in place of one call per resource.
+- Identity: the modeled ARN template, else an ARN field, else a synthesized key.
+- Fields that change on every read (timestamps of the read itself, counters),
+  which are excluded from the content hash.
+
+Every field name gets a stable numeric ID from an append-only registry, so a
+record written under one model version reads under the next.
+
+### 5.2 Wire engine
+
+One crate, driven entirely by the catalog.
+
+- **Request**: five serializers cover all 436 services: JSON RPC (awsJson1.0 and
+  1.1), REST JSON, form-encoded query (awsQuery and ec2Query), REST XML, and
+  binary RPC (rpcv2Cbor), which is chosen wherever a service offers it.
+- **Signing**: `aws-sigv4`, with the derived signing key cached per credential,
+  day, region and service. Credentials come from `aws-config` profiles.
+- **Transport**: one pooled client; connections are kept alive per endpoint and
+  use HTTP/2 where the endpoint offers it. Every request has a deadline and a
+  response size limit.
+- **Decode**: three streaming decoders (JSON, XML, CBOR) driven by the output
+  shape. A response becomes binary records in one pass with no intermediate
+  tree, and the content hash is computed in the same pass.
+- **Errors**: decoded into throttle, retryable, access denied, not supported,
+  expired token and fatal, using the model's error shapes.
+
+The 87 service operations wired today are the first proof: for each, the wire engine
+must return the same fields as the typed SDK against the emulator.
+
+### 5.3 Executor, quota and retries
+
+The existing `ApiExecutor` stays the only retry owner; SDK-style internal
+retries do not exist in the wire engine.
+
+- Quota is tracked per account, region and service, because that is how AWS
+  enforces it. Buckets are independent, so the sweep's total rate is the sum of
+  all of them. Keeping every bucket busy at once is where most of the speed
+  comes from.
+- Each bucket raises its concurrency until AWS throttles, backs off, and holds
+  just under the limit. The learned rate is stored, so the next sweep starts
+  there instead of probing again.
+- A retry re-enters admission like any other request, with jittered backoff and
+  a server-supplied delay honored. Each bucket has a retry budget; when it is
+  exhausted the scope is recorded as failed and the sweep goes on.
+- Access denied and not-supported outcomes are remembered per scope with an
+  expiry, so they are not re-asked on every sweep.
+- An expired pagination token restarts that one enumeration. Expired
+  credentials are refreshed once and the request is retried.
+
+### 5.4 Records and store
+
+- A record is a schema-coded binary value: numeric field IDs, no field names,
+  readable in place without deserializing. The same bytes go into the store,
+  through the read API and into the UI.
+- Each resource kind has one table: identity, account, region, content hash,
+  first and last change, typed columns generated from the output shape for
+  scalar fields, and the record blob. Tags and edges have their own tables.
+- One writer task owns the database. It groups page commits into batched
+  transactions. Readers use WAL snapshots and never block it.
+- A page commit is one transaction containing the changed records, the changed
+  edges, the change-log rows and the work-queue update (next token, or done plus
+  the child work it produced). There is no window in which data is stored but
+  the position is not.
+- The store sits behind one interface with one implementation. A second
+  implementation is written when the sweep benchmark shows the writer is the
+  limit, not before.
+
+### 5.5 Reconciliation
+
+- **Page level**: where the protocol keeps request metadata out of the body, the
+  raw page is hashed before decoding. A page identical to last sweep's is not
+  decoded.
+- **Record level**: at the start of a scope the known identities and hashes are
+  loaded; each arriving record is compared and matched off. Equal hash: nothing
+  is written. Different hash: new version, change-log row, edge diff. Unknown
+  identity: insert.
+- **Missing**: identities left unmatched when an enumeration completes cleanly
+  are missing candidates. A resource is marked deleted after it is missing from
+  two complete enumerations of its scope. A partial, denied or failed
+  enumeration never deletes anything.
+- **Outcome**: every scope ends each sweep as complete, partial, inaccessible,
+  unsupported or failed, and that is stored and shown.
+
+### 5.6 Relationships and graph
+
+Edges are computed from changed records only, and each carries its source:
+declared by the model, reviewed rule, or inferred by exact match. The 968
+reviewed rules are remapped from CloudFormation property paths to API field
+paths as each service lands. Edges live in SQL; changed nodes and edges are
+sent to FalkorDB as deltas with an acknowledgment log, and the whole graph can
+be replayed from SQL. FalkorDB is a local process on the laptop and is not
+required for collection or SQL queries.
+
+### 5.7 CMDB layer
+
+Owners, teams, applications, custom fields, notes and user-drawn relationships
+are stored in their own tables and are never overwritten by collection. They
+attach to a resource by identity or by rule (a tag selector, an account, a
+kind). They appear in SQL, in the graph and in the UI, always marked as
+asserted rather than observed.
+
+### 5.8 Read API and UI
+
+`cmdb-api` reads the store and returns binary records and edge pages. `cmdb-ui`
+shows a filterable table, a detail view, and the DAG with level of detail, and
+edits the CMDB layer. The UI never triggers collection by browsing.
+
+## 6. Where the time goes, and the answer to each
+
+| Cost | Answer |
+| --- | --- |
+| Waiting on AWS | All quota buckets driven concurrently; learned rates persisted; full send by default |
+| Number of calls | Largest page size; describe skipped when the list is complete; batch reads; remembered denied and unsupported scopes |
+| Connection setup | Pooled keep-alive connections; HTTP/2 where offered; cached signing keys |
+| Decoding | One streaming pass into the binary record; binary protocol where offered; unchanged pages not decoded |
+| Disk writes | One writer, batched transactions; unchanged records not written |
+| Graph load | Deltas only |
+| Re-sweep | Cost is API calls plus hash comparisons; writes are proportional to change |
+
+Three limits apply to any claim. When one service's quota is the bottleneck,
+every tool converges on that quota; our advantage is in the calls we do not
+make, in running all buckets at once, and in reconcile cost. The emulator has
+no real quotas, so emulator runs measure the engine and real runs measure the
+whole system. A result is published with tool versions, dataset, machine and
+the set of resource kinds compared.
+
+Measured for every run: cold sweep time, warm re-sweep time, API calls made,
+resources per second, CPU seconds, peak memory, bytes written.
+
+## 7. Failure handling
+
+| Failure | Behavior |
+| --- | --- |
+| Throttle | Bucket backs off; request re-enters admission; learned rate lowered |
+| 5xx, timeout, reset, truncated body | Retried within the bucket's budget; then the scope is failed for this sweep |
+| Access denied, service not in region | Scope stored as inaccessible or unsupported; skipped until expiry |
+| Expired pagination token | That enumeration restarts |
+| Expired credentials | Refreshed once; then the account is failed for this sweep |
+| Process killed, laptop sleeps | Work queue resumes from the last committed page |
+| Model disagrees with the service | Decode error is stored with the operation and shape; the scope is partial; the overlay is corrected |
+| FalkorDB down | Collection and SQL continue; projection resumes from its acknowledgment log |
+| Disk full or database error | The sweep stops with the error; nothing is half-written |
+
+Each row is proven by injecting the fault between the wire engine and the
+emulator.
+
+## 8. Runtime targets
+
+**Laptop, now.** One binary, one SQLite file, an optional local FalkorDB, the
+Makepad app. About 10 profiles. No network service is exposed beyond loopback.
+
+**Lambda, next.** The same collector runs as bounded slices that stop before
+the time limit and resume from the work queue. That needs a store reachable
+from Lambda, which is an open decision (section 12). Nothing in the collector
+may assume a long-lived process or local-only state beyond the store interface.
+
+## 9. Proof
+
+- **Emulator** (pinned AWS Emulator 1.0.336, commit `f5155815`): every wired
+  operation is called with real signed requests. It proves serialization,
+  decoding, pagination, retry, storage and delivery. It does not prove real
+  provider semantics, IAM, quotas or eventual consistency.
+- **Differential**: while a typed adapter still exists, the wire engine's
+  output is compared to it field by field. The adapter is deleted when they
+  match.
+- **Checklist**: every CloudFormation type maps to an endpoint-collected kind
+  or is listed with the reason it does not.
+- **Real account**: read-only, in an account the owner has authorized, reported
+  separately from emulator evidence.
+- **Head-to-head**: section 6.
+
+## 10. How work lands
+
+Each roadmap work package passes these gates in order, each with its skill:
+
+1. Contract: `rust-contract`, `scott-ddd-refactor`
+2. Test plan: `test-planner`, `test-reviewer`
+3. Implementation: `holzman-rust`, `functional-rust`
+4. Async review: `async-rust-reviewer`
+5. Tests: `test-writer`, `red-queen`
+6. Proof with the shipped binary against the emulator: `hands-on-qa`, `qa-enforcer`
+7. Adversarial review: `black-hat-reviewer`, `truth-serum`
+8. Landing: `evidence-packaging`, `landing-skill`
+
+Makepad work follows the `makepad-2.0-*` skills.
+
+Documentation is part of the gate. A change that alters behavior updates this
+document's status, the roadmap and the affected design document in the same
+commit. Every crate states its contract in its crate-level documentation, and
+public items without documentation fail the build. When this architecture is
+implemented, `ARCHITECTURE.md` and `CMDB_ARCHITECTURE.md` are replaced by one
+document that describes what exists.
+
+## 11. Not in the first version
+
+- Cloud Control, in any form.
+- Change-event ingestion; Organizations discovery and cross-account roles;
+  more than about 10 accounts.
+- PostgreSQL, DuckDB, Kubernetes, SSO, workspaces, a network-exposed API.
 - A browser UI.
-- Network reachability or effective-permission verdicts. Configuration evidence
-  is reported as configuration.
+- GovCloud and China partitions.
+- Content, secrets, paid read calls, and any write to AWS.
+- Objects inside resources (Kubernetes objects, S3 object listings, database
+  schemas).
 
-## 7. Decisions
+## 12. Open decisions
 
-Locked:
+Defaults are stated so work is not blocked; each is settled by the named
+evidence or by the owner.
 
-| Decision | Choice |
+| ID | Question | Default | Settled by |
+| --- | --- | --- | --- |
+| O1 | Binary record codec | `rkyv` over a schema-coded value | Codec benchmark in M3.1 |
+| O2 | Overlay file format | TOML, compiled into the catalog | Owner, at M1.4 |
+| O3 | How model files are pinned | Lock file of commit and digests; files fetched into an ignored cache | Owner, at M1.1 |
+| O4 | SQLite `synchronous` setting | `FULL` as today | Sweep benchmark in M4.4 |
+| O5 | Existing local databases | Re-collected under the new schema, not migrated | Owner, at M3.2 |
+| O6 | Store used from Lambda | Undecided | Owner, before Lambda work starts |
+| O7 | Competitor versions and licenses for head-to-head runs | Latest freely runnable release of each | Checked at M5.6 |
+| O8 | Real AWS account for proof | None authorized yet | Owner, before M10 |
+| O9 | Change-log retention | 90 days of changes | Owner, at M7.2 |
+
+## 13. Milestones
+
+| ID | Outcome |
 | --- | --- |
-| Language | Rust for all product and new tooling code |
-| License | MIT |
-| UI | Makepad 2.0, native |
-| System of record | SQL evidence store; SQLite for local and single-host mode |
-| Graph | FalkorDB as a rebuildable projection |
-| Retry ownership | One shared executor; SDK attempts fixed at one |
-| Proving ground | Pinned official AWS Emulator; live AWS only when authorized |
-| Type universe | Pinned CloudFormation registry snapshot plus a reviewed native catalog |
-
-Open, with the default that applies until the owner decides otherwise:
-
-| Question | Default |
-| --- | --- |
-| Shared store for the fleet service | Evaluate PostgreSQL against the existing store contract before adding any other database (roadmap M7) |
-| Internal encoding on hot paths | Keep JSON at the SQL and export boundary; adopt a binary encoding internally only where a profile shows serialization dominates |
-| Multi-account emulation | Establish whether the pinned emulator can hold many accounts in one process; otherwise run one owned emulator per simulated account |
-| Whole-project mutation gate | Stays a release gate at 95% of viable mutations; per-package adversarial testing applies from M0 |
-| Work tracking | Roadmap work packages are written to be decomposed into beads; no tracker is initialized in this repository yet |
-
-## 8. Milestones
-
-Each milestone is a vertical slice that can be demonstrated end to end. Detail,
-dependencies and exit evidence are in [ROADMAP.md](ROADMAP.md).
-
-| Milestone | Outcome |
-| --- | --- |
-| M0 Stable base | Tree committed, Rust-only gate lane, CI, known drift defects fixed |
-| M1 Every listable type, in detail | All 1,291 list-capable types collected with redacted configuration, SQL and reference edges; first sweep benchmark |
-| M2 See the real thing | Makepad DAG and table driven by a real scan through the API |
-| M3 Close the universe | Parent workflows, native adapters and the non-registry catalog; no pending ledger state |
-| M4 Many accounts | Registry, declared population, task scheduler and shared quota; 1,000 emulated accounts |
-| M5 Continuous | Daemon, change log, tombstones, retention, incremental graph, live UI updates |
-| M6 Events | EventBridge, CloudTrail and Config signals drive targeted refresh |
-| M7 Speed and scale proof | Profiled hot path, store decision, 10 M-asset query and UI evidence |
-| M8 Live AWS and the claim | Authorized calibration, fleet rollout, published head-to-head, release gates |
+| M0 | Baseline committed, compiling and gated without Python |
+| M1 | AWS API models pinned and compiled; every operation classified |
+| M2 | Wire engine calls any classified operation; matches the typed SDK on today's 87 |
+| M3 | Binary records, generated schema, durable work queue, hash reconciliation |
+| M4 | Full-send executor, fault-injection proof, sweep benchmark |
+| M5 | Large services complete on the wire engine; their old adapters deleted; first head-to-head |
+| M6 | Makepad DAG and tables on a real scan; graph deltas |
+| M7 | Continuous sweeps of about 10 profiles on a laptop; change log and deletions |
+| M8 | CMDB layer |
+| M9 | Every remaining service; checklist closed; Cloud Control deleted |
+| M10 | Real-account proof, published head-to-head, version 1.0 |

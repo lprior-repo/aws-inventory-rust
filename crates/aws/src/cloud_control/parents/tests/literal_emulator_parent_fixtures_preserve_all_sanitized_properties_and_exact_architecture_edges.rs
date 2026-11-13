@@ -23,7 +23,7 @@ fn literal_emulator_parent_fixtures_preserve_all_sanitized_properties_and_exact_
         .get("pagination_children")
         .and_then(Value::as_array)
         .ok_or("missing pagination children")?;
-    assert_eq!(children.len(), 63);
+    assert_eq!(children.len(), 72);
     assert_eq!(pagination.len(), 98);
     let text = |row: &Value, key: &str| -> Result<String, TestError> {
         row.get(key)

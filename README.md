@@ -8,11 +8,12 @@
 for build commands, measured results, remaining work and the
 portable handoff boundaries.
 
-**Where this is going:** [the vision spec](docs/VISION.md) defines the product —
-a continuously updated CMDB of every AWS resource across many accounts, in SQL
-and a relationship graph, shown as a Makepad DAG — and
-[the roadmap](docs/ROADMAP.md) sequences the work. The detailed requirements
-draft is [docs/cmdb-spec](docs/cmdb-spec/README.md).
+**Where this is going:** [the vision spec](docs/VISION.md) defines the product:
+a CMDB of every AWS resource, read through the services' own endpoint APIs by
+our own wire engine, kept current by fast repeated sweeps, stored in SQL and a
+relationship graph, and shown as a Makepad DAG. [The roadmap](docs/ROADMAP.md)
+is the build plan. Cloud Control collection, described below, is being
+replaced and will be deleted (decision V04).
 
 A working foundation for AWS architecture inventory: official Rust SDK
 collectors, bounded request scheduling, SQLx with local SQLite, familiar SQL

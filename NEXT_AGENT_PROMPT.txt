@@ -1,34 +1,36 @@
 Continue the Rust AWS CMDB project in this directory.
 
-What we are building: a continuously updated CMDB of every AWS resource across many accounts, stored in SQL and projected into a relationship graph, shown as a Makepad DAG, and measurably the fastest collector for that job. It is our own implementation; it covers the ground of CloudQuery, Cartography and Steampipe without porting or promising compatibility with any of them. Read docs/VISION.md first. It is the product definition and it wins over every other document.
+What we are building: a CMDB of every AWS resource, read through the services' own endpoint APIs by our own wire engine, kept current by fast repeated sweeps, stored in SQL and a relationship graph, and shown as a Makepad DAG. Sweep and reconcile speed is the selling point. It runs on one laptop first. Read docs/VISION.md before anything else: it holds the owner's decisions (V01 to V21) and the architecture, and it wins over every other document. Then read docs/ROADMAP.md, which is the build plan. Take the first unfinished work package whose dependencies are done.
 
-Then read, in this order: docs/ROADMAP.md (ordered work packages with exit evidence; start at M0), docs/cmdb-spec/README.md and docs/cmdb-spec/decisions.md (the detailed requirements draft and the owner's confirmed decisions), START_HERE.md (build and verification handoff), docs/CMDB_ARCHITECTURE.md (component contracts, failure matrix, gap table), docs/UNIVERSAL_COVERAGE.md and docs/HARNESS.md (the universal collector and the emulator gate).
+The owner's hard rules:
+- No Cloud Control. The Cloud Control collectors in the tree are the baseline being replaced; do no new work on them and delete them when the roadmap says so.
+- Collection goes through our own wire engine, driven by the pinned official AWS API models. Do not add typed AWS SDK service crates. AWS crates are for credentials and signing only.
+- No JSON on the data path. An AWS response is parsed once into a binary record; JSON exists only in an explicit export.
+- Code is a liability. A service is described by data (models plus a reviewed overlay), never by Rust. Delete what you replace in the same change.
+- All product code is Rust. The Python scripts under scripts/ and catalog/upstream/ are frozen legacy tooling: do not extend, port or plan around them.
+- Performance claims come only from measurements, and "fastest" only from head-to-head runs.
 
-Do not trust a number in a document over the tree. These commands are the source of truth:
-- target/debug/aws-inventory catalog          native kinds, reviewed Cloud Control types, schema version
-- target/debug/aws-inventory coverage --limit 1   universe, exclusions, relationship rule counts
-- jq .summary catalog/cloudcontrol-universal.json   1,881 = 1,291 list-capable + 410 parent-required + 180 without handlers
-- cargo test -p inventory-harness --test emulator_live -- --ignored --test-threads=1   live emulator gate (needs `cargo build --bin aws-inventory --features aws` first)
+State of the tree at commit 78d3ac2:
+- `cargo check --workspace` passes. `cargo check --workspace --all-targets` fails with 9 errors in two Cloud Control parent test files (ROADMAP M0.2).
+- 39 resource kinds come from hand-written typed adapters and 421 types from Cloud Control, into SQLite schema 13 in WAL mode. 968 reviewed relationship rules. The collector calls 89 AWS operations in 19 services.
+- crates/engine has the rate limiter (ApiExecutor, the only retry owner), the SQLx store, fenced jobs and the FalkorDB projection. These are kept and extended.
+- crates/harness owns the pinned AWS Emulator (1.0.336, commit f5155815). Live gate: `cargo build --bin aws-inventory --features aws`, then `cargo test -p inventory-harness --test emulator_live -- --ignored --test-threads=1`.
+- cmdb-api, cmdb-view, cmdb-ui (Makepad 2.0) and cmdb-bench exist. The UI renders a synthetic fixture.
+- There is no wire engine, no binary record, no continuous mode and no collection benchmark yet.
+- MANIFEST.sha256 is modified and uncommitted on purpose (ROADMAP M0.5).
 
-State of the tree on 2026-11-13:
-- 421 reviewed Cloud Control types across 76 families (397 root + 24 parent-scoped) are collected in detail with redaction and SQL views. `--resource-type all` lists all 1,291 list-capable types, identity only. 386 parent-scoped and 180 handler-less types are not collected.
-- 39 native SDK kinds. 968 property relationship rules and 24 parent workflows; 268 types have at least one. Runtime reference resolution exists and is opt-in at export.
-- SQLx SQLite schema 13. ApiExecutor is the only retry owner; SDK max_attempts is one; every attempt re-enters admission. Fenced durable whole-scan jobs. Replayable FalkorDB projection.
-- cmdb-bench, cmdb-view, a read-only loopback cmdb-api and a Makepad cmdb-ui exist. The UI renders a synthetic fixture and is not wired to real data.
-- No long-running service, change log, tombstones, event ingestion, CI, collection benchmark or live AWS validation.
-- Most of this exists only in the working tree. ROADMAP M0.1 is to commit it.
+Measured facts about the AWS API models (github.com/aws/api-models-aws at commit 46135f8): 436 services, 19,641 operations, 8,366 read operations by name, 2,209 List/Describe operations with no required input in 359 services, 3,787 modeled paginators, 44 services offering the binary rpcv2Cbor protocol.
 
-How work lands. Every work package goes through the gates in VISION.md section 5, each with its skill: contract (rust-contract, scott-ddd-refactor), test plan (test-planner, test-reviewer), implementation (holzman-rust, functional-rust), async review (async-rust-reviewer), tests (test-writer, red-queen), emulator proof with the shipped binary (hands-on-qa, qa-enforcer), adversarial review (black-hat-reviewer, truth-serum), landing (evidence-packaging, landing-skill). Makepad work follows the makepad-2.0-* skills.
+How work lands: every work package goes through the gates in VISION.md section 10, each with its skill: contract (rust-contract, scott-ddd-refactor), test plan (test-planner, test-reviewer), implementation (holzman-rust, functional-rust), async review (async-rust-reviewer), tests (test-writer, red-queen), emulator proof with the shipped binary (hands-on-qa, qa-enforcer), adversarial review (black-hat-reviewer, truth-serum), landing (evidence-packaging, landing-skill). Makepad work follows the makepad-2.0-* skills.
 
-Rules:
-- All new code is Rust. The Python helper scripts under scripts/ and catalog/upstream/ are frozen legacy tooling. Do not extend them, do not plan work around them, and do not spend time porting them unless the owner asks.
+Engineering rules:
 - Workspace lints apply: no unsafe, unwrap, expect, panic, todo, unchecked indexing or lossy casts. Files at or under 300 lines, functions at or under 25.
-- Every queue, batch, retry and traversal is bounded. No detached tasks. One retry owner.
-- Collection is read-only. Never create, enable or modify anything in AWS. Never read content, secrets or key material. Use real AWS only in an environment the owner has already authorized.
-- Prove behavior against the pinned AWS Emulator (1.0.336, commit f5155815) with real SDK calls before calling it working. The emulator verifies serialization, decoding, pagination, retry, storage and delivery; it does not certify real provider semantics, IAM, quotas or eventual consistency. Report emulator and live evidence separately.
-- Dependency available, enumeration implemented, fields implemented, relationships implemented, emulator-verified and live-verified are separate facts. Never merge them into one support claim.
-- Deleted, unobserved, inaccessible and unsupported are four different states. Partial is a stored, reported result.
-- No universal-coverage, throughput, "fastest" or mutation-score statement without the evidence that produced it. A failed check is reported as failed.
-- Keep Cargo targets on disk-backed storage and run one heavy Cargo lane at a time. Servers and their clients must share one owned process lifetime; never assume a server started by an earlier command is still reachable.
+- Every queue, batch, retry, response and traversal is bounded. No detached tasks. One retry owner.
+- State that matters lives in the store: work queue, pagination position, learned rates, scope outcomes. A killed process resumes.
+- Collection is read-only. Never create, enable or modify anything in AWS. Never call an operation the catalog has not classified. Never read content, secrets or key material. Use real AWS only in an account the owner has authorized.
+- Prove behavior against the pinned emulator with real signed requests before calling it working. The emulator proves serialization, decoding, pagination, retry, storage and delivery; it does not prove real provider semantics, IAM, quotas or eventual consistency. Report emulator and real-account evidence separately.
+- Implemented, emulator-verified and live-verified are separate facts. Deleted, unobserved, inaccessible and unsupported are separate states. Partial is a stored, reported result.
+- Take numbers from the tree and the catalog, not from documents.
+- Keep Cargo targets on disk-backed storage and run one heavy Cargo build at a time. A server and its clients must share one owned process lifetime.
 
-Finish the next work package to its exit evidence, update VISION/ROADMAP status and the affected design documents in the same change, and report exact commands, results, failed attempts and what was not run.
+Finish the work package to its exit evidence, mark it done in docs/ROADMAP.md with the command that proved it, update the affected design documents in the same change, and report exact commands, results, failed attempts and what was not run.
