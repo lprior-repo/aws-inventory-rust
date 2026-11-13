@@ -19,9 +19,10 @@ describe (39 native kinds through typed SDK adapters, 421 reviewed Cloud
 Control types, SQLite schema 13, FalkorDB projection, emulator harness). Toward
 the plan, `scripts/verify.sh` no longer uses Python,
 `inventory_engine::store::SCHEMA_VERSION` is the single schema-version source
-and both packagers exclude `.local`. The binary record module (CBOR through the
-`minicbor` library, V34, ROADMAP M3.1a) and the model lock commands (M1.1) were
-being built, not landed. Nothing else of
+and both packagers exclude `.local`. The AWS API models are pinned as a git
+submodule at `.local/aws-models` (V23, ROADMAP M1.1). The binary record module
+(CBOR through the `minicbor` library, V34, ROADMAP M3.1a) was being built, not
+landed. Nothing else of
 the new architecture exists yet; [ROADMAP.md](ROADMAP.md) records what has
 landed since.
 

@@ -1,0 +1,4 @@
+[submodule ".local/aws-models"]
+	path = .local/aws-models
+	url = https://github.com/aws/api-models-aws
+	shallow = true

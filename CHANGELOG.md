@@ -20,6 +20,10 @@
   faster to build and smaller than our own format, `rkyv`, `postcard` and
   JSON. Our own format was deleted before landing; it and the benchmark are on
   the branch `evidence/o1-record-codec`.
+- M1.1: the AWS API models are pinned as a shallow git submodule at
+  `.local/aws-models` (commit `46135f8`, 436 files), checked by
+  `scripts/check-models.sh`. Lock, verify and fetch commands of our own were
+  built and discarded after review (decision V23 as changed).
 - Every document now carries a status line (plan, kept and extended, baseline
   being replaced, or historical evidence) and `docs/README.md` indexes them by
   class. Statements the owner's decisions superseded are marked with the

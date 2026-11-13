@@ -16,7 +16,7 @@ State of the tree (check `git log --oneline -5` and docs/ROADMAP.md for what has
 - crates/engine has the rate limiter (ApiExecutor, the only retry owner), the SQLx store, fenced jobs and the FalkorDB projection. These are kept and extended.
 - crates/harness owns the pinned AWS Emulator (1.0.336, commit f5155815). Live gate: `cargo build --bin aws-inventory --features aws`, then `cargo test -p inventory-harness --test emulator_live -- --ignored --test-threads=1`.
 - cmdb-api, cmdb-view, cmdb-ui (Makepad 2.0) and cmdb-bench exist. The UI renders a synthetic fixture.
-- There is no wire engine, no continuous mode and no collection benchmark yet. The binary record module (`inventory-core::record`, CBOR through the `minicbor` library, decision V34, ROADMAP M3.1a) and the model lock (`catalog-tool models`, M1.1) are the first pieces of the new architecture; ROADMAP says whether each has landed.
+- There is no wire engine, no continuous mode and no collection benchmark yet. The AWS API models are pinned as a git submodule at `.local/aws-models` (fetch with `git submodule update --init --depth 1 .local/aws-models`, check with `scripts/check-models.sh`; decision V23, ROADMAP M1.1). The binary record module (`inventory-core::record`, CBOR through the `minicbor` library, decision V34, ROADMAP M3.1a) is the first code of the new architecture; ROADMAP says whether it has landed.
 - MANIFEST.sha256 is modified and uncommitted on purpose (ROADMAP M0.5).
 
 Measured facts about the AWS API models (github.com/aws/api-models-aws at commit 46135f8): 436 services, 19,641 operations, 8,366 read operations by name, 2,209 List/Describe operations with no required input in 359 services, 3,787 modeled paginators, 44 services offering the binary rpcv2Cbor protocol.

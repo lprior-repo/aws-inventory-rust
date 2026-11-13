@@ -51,7 +51,7 @@ decisions O9, O3, O5, O10 and O11.
 | V20 | Work is executed by agents straight from the roadmap, through the loop and gates in section 10. Local GPU model agents do about 98% of the building. Fable orchestrates, reviews and patches only as needed, and keeps its own context small. No separate tracker. |
 | V21 | Code is a liability. A service is described by data, never by Rust. All product code is Rust, MIT licensed. The Python helper scripts are not part of any plan and are deleted from the tree as soon as nothing uses them (M2.10). |
 | V22 | No history in the first version. The store holds current state only; there is no change log and no retention. Deletion is still detected (two complete enumerations) and applied. |
-| V23 | The model lock file (upstream commit plus a digest per file) and the compiled catalog are committed. Raw model files go in an ignored cache. |
+| V23 | The models are pinned as a git submodule at `.local/aws-models`. The pinned commit is recorded in this repository's tree, so git is the lock and none of the lock code is ours. The compiled catalog is committed. Changed 2026-11-13: the first form was a lock file with a digest per file kept by our own commands; it was built, reviewed and discarded, because it was 1,181 lines that repeated what git does. |
 | V24 | Existing local databases are thrown away and re-collected. No migration code from schema 13. |
 | V25 | The first wave of services is EC2 with VPC networking, IAM, STS, Organizations, S3, Route 53, CloudFront, Lambda, EKS, ECS, KMS, DynamoDB, SQS, SNS, Step Functions, load balancers, RDS and CloudWatch. CloudWatch is in it so the binary protocol (rpcv2Cbor) is proven end to end early. |
 | V26 | A resource kind is named by its CloudFormation type name (`AWS::EC2::Instance`) and exposed in SQL as `aws_ec2_instance` (rule: V30). A kind with no CloudFormation type gets a name in the same style, derived from service and resource. |
@@ -176,8 +176,8 @@ flowchart LR
 
 ### 5.1 API catalog
 
-The lock file and the compiled catalog are committed; raw model files live in
-an ignored cache (V23). `catalog-tool` compiles the models, with the overlay,
+The models are a git submodule pinned to one commit, and the compiled catalog
+is committed (V23). `catalog-tool` compiles the models, with the overlay,
 into one binary catalog. It is embedded in the binary (`include_bytes!`) and
 read in place through a validated, safe accessor (rule 9). The runtime never
 reads a model file.

@@ -39,8 +39,8 @@ that proved it.
   returned at least one seeded resource.
 - One heavy Cargo build at a time on this machine.
 
-Paths fixed here so that packages agree: lock file `catalog/aws-models.lock`;
-model cache `.local/aws-models/` (ignored); field-ID registry
+Paths fixed here so that packages agree: models `.local/aws-models/` (a git
+submodule; `scripts/check-models.sh` checks it); field-ID registry
 `catalog/field-ids.txt`; compiled catalog `catalog/aws-api.catalog`; overlay
 `catalog/overlay/<service>.toml`; kind names `catalog/kinds.tsv`; wire engine
 crate `crates/wire` (`aws-wire`).
@@ -86,13 +86,20 @@ The diagram is the coarse order; the "Needs" column of each package is exact.
 Starting now (V29): M0.3, M0.4, M0.5 and M0.7 finish M0, while M1.1 and M3.1
 start in parallel. M4.3 needs only M0 and can start any time.
 
-Status from the coordinator, 2026-11-13. O1 is settled as V34: records are
-CBOR through the `minicbor` library. The coordinator first wrote its own
-format (1,054 lines), then ran the codec benchmark at the owner's prompting;
-CBOR was faster to build and smaller, so the own format was deleted before it
-landed. It and the benchmark are kept on the branch `evidence/o1-record-codec`.
-M3.1a, the record module over `minicbor`, and M1.1 are each with a compiling
-worker in its own worktree.
+Status from the coordinator, 2026-11-13.
+
+- **M1.1 is done**, as a git submodule and not as our own code. A local worker
+  built lock, verify and fetch commands (1,181 lines); the coordinator found
+  the stored digests were hashes of hashes, and the two reviewers found 14
+  blocking defects, one of which would have run `git checkout` on this
+  repository. It was discarded for the submodule, which needs no code (V23).
+- **O1 is settled as V34**: records are CBOR through the `minicbor` library.
+  The coordinator first wrote its own format (1,054 lines), then ran the codec
+  benchmark at the owner's prompting; CBOR was faster to build and smaller, so
+  the own format was deleted before it landed. It and the benchmark are kept
+  on the branch `evidence/o1-record-codec`.
+- M3.1a, the record module over `minicbor`, is with a compiling worker in its
+  own worktree.
 
 Packages that can run at the same time: M1 with M3.1 and M4.3; M2.1a to M2.1c,
 M2.2 and M2.3 with each other; M2.4a with M2.4b; the M5 services
@@ -118,7 +125,7 @@ tooling, not the data path.
 
 | ID | Work | Needs | Exit evidence |
 | --- | --- | --- | --- |
-| M1.1 | Pin the models (V23). `catalog/aws-models.lock` holds the upstream URL (`github.com/aws/api-models-aws`), commit `46135f8468cd5cb60d983b97290c9f6661e359c6` and a SHA-256 for each of the 436 model files. `catalog-tool models fetch` fills the ignored cache at that commit. `catalog-tool models verify` checks every cached file against the lock. | M0.2 | On a fresh clone, `fetch` then `verify` exits 0 and prints 436 files; changing one byte in the cache makes `verify` exit non-zero and name the file; `git status` shows no model file |
+| M1.1 | Pin the models (V23). Done: `.local/aws-models` is a shallow git submodule of `github.com/aws/api-models-aws` at commit `46135f8468cd5cb60d983b97290c9f6661e359c6`. `git submodule update --init --depth 1 .local/aws-models` fetches it; `scripts/check-models.sh` fails unless the checkout is at the pinned commit with no file changed or added. | M0.2 | On a fresh clone the update then the check exits 0 and prints 436 files; changing one byte or adding a file makes the check exit non-zero and name the file; a checkout at another commit, or none, fails the check |
 | M1.2a | Model reader and report. `catalog-tool models report` parses the 436 files into services, protocols, operations, shapes, paginators, page-size limits and error traits. | M1.1 | The report prints the model rows of VISION section 3 exactly: 436 services; 19,641 operations; 8,366 read-named; 2,736 `readonly`; 5,207 List/Describe, 2,209 of them input-free in 359 services; 3,787 paginators; 44 rpcv2Cbor services; 413 JSON; 20 XML-only; 238,070 members and 49,069 distinct names. A difference is reported as a finding against VISION, not tuned away |
 | M1.2b | Field-ID registry `catalog/field-ids.txt`, committed: one member name per line; the line number is the ID; lines are only ever appended. | M1.2a | The file has 49,069 lines; regenerating it changes nothing; a test fails when the committed file is not a prefix of the regenerated one; removing a member from a test model leaves its line in place |
 | M1.2c | Binary catalog `catalog/aws-api.catalog`, committed (V23), embedded with `include_bytes!` and read in place through a validated safe accessor. It is encoded as CBOR with the M3.1a record module (V34). | M1.2b, M3.1 | Recompiling is byte-identical; the gate fails when the committed catalog differs from a recompile; `aws-inventory catalog` reports the M1.2a counts from the embedded bytes; a corrupted catalog gives an error, never a panic; no `unsafe` |
