@@ -44,7 +44,6 @@ pub(super) fn verified_snapshot() -> TestResult<Snapshot> {
     for required in [
         "endpoint:emulator_identity",
         "native:terminal_scan",
-        "global:all_32_native_kinds",
         "sqlite:integrity",
         "coverage:every_operation_attempted",
         "coverage:no_unexplained_operation_failures",
@@ -55,6 +54,16 @@ pub(super) fn verified_snapshot() -> TestResult<Snapshot> {
                 "baseline lacks required independent assertion {required}"
             )));
         }
+    }
+    // Historical baselines record the 35- or 37-kind check; the current
+    // baseline records 39. Any of them proves the all-kind assertion.
+    if !names.contains("global:all_35_native_kinds")
+        && !names.contains("global:all_37_native_kinds")
+        && !names.contains("global:all_39_native_kinds")
+    {
+        return Err(fail(
+            "baseline lacks the all-native-kinds independent assertion",
+        ));
     }
     if summary.get("failed_checks").and_then(Value::as_u64) != Some(0)
         || summary.get("passed_checks").and_then(Value::as_u64)
@@ -148,18 +157,18 @@ pub(super) fn options(name: &str, snapshot: &Snapshot) -> TestResult<AwsScanOpti
             duration_seconds: 3_600,
         }),
         cloud_control: matches!(name, "cloudcontrol" | "parents"),
-        resource_types: match name {
+        selection: inventory_core::Selection::Types(match name {
             "cloudcontrol" => inventory_aws::cloud_control::root_catalog()?
                 .into_iter()
-                .map(|entry| entry.type_name)
+                .map(|entry| inventory_core::ResourceType::new(entry.type_name))
                 .collect(),
             "parents" => inventory_aws::cloud_control::parent_catalog()?
                 .into_iter()
-                .map(|entry| entry.type_name)
+                .map(|entry| inventory_core::ResourceType::new(entry.type_name))
                 .collect(),
             _ => Vec::new(),
-        },
-        max_pages: 100,
+        }),
+        max_pages: 128,
         page_size: 1,
     })
 }

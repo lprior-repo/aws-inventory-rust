@@ -22,10 +22,10 @@ pub(super) fn classify_sdk_error<E: ProvideErrorMetadata + ProvideErrorKind + De
             service.message().unwrap_or("no service message")
         );
         let detail: String = detail.chars().take(1_024).collect();
+        let normalized = code.to_ascii_lowercase();
         if status == Some(501) {
             return ApiError::Permanent(detail);
         }
-        let normalized = code.to_ascii_lowercase();
         if matches!(
             service.retryable_error_kind(),
             Some(ErrorKind::ThrottlingError)
@@ -100,6 +100,7 @@ pub(crate) fn error_category(error: &AwsScanError) -> &'static str {
         AwsScanError::Api(ApiError::RetryAfterRejected(_)) => "retry_after_rejected",
         AwsScanError::Api(ApiError::Timeout) => "timeout",
         AwsScanError::Api(ApiError::Exhausted(_)) => "retry_budget_exhausted",
+        AwsScanError::Api(ApiError::UnsupportedType(_)) => "unsupported_type",
         AwsScanError::Api(_) => "api_error",
         AwsScanError::InvalidData(_) | AwsScanError::Validation(_) => "invalid_response",
         AwsScanError::InvalidOptions(_) => "invalid_options",

@@ -37,6 +37,59 @@ fn cli_requires_output_directory_before_admitting_falkor_delivery() {
     );
 }
 
+#[test]
+fn universal_references_export_flag_is_opt_in_and_propagates() -> Result<()> {
+    let plain = crate::cli::Cli::try_parse_from([
+        "aws-inventory",
+        "export",
+        "--scan-id",
+        "scan",
+        "--output",
+        "out.jsonl",
+    ])?;
+    let crate::cli::Command::Export(options) = plain.command else {
+        anyhow::bail!("not an export");
+    };
+    assert!(!options.derive_references);
+    assert!(!options.reference_mode().is_enabled());
+    assert!(
+        !crate::delivery::export_options(
+            options.format,
+            options.provenance,
+            options.allow_partial,
+            options.reference_mode(),
+        )
+        .reference_mode
+        .is_enabled()
+    );
+
+    let requested = crate::cli::Cli::try_parse_from([
+        "aws-inventory",
+        "export",
+        "--scan-id",
+        "scan",
+        "--output",
+        "out.jsonl",
+        "--universal-references",
+    ])?;
+    let crate::cli::Command::Export(options) = requested.command else {
+        anyhow::bail!("not an export");
+    };
+    assert!(options.derive_references);
+    assert!(options.reference_mode().is_enabled());
+    assert!(
+        crate::delivery::export_options(
+            options.format,
+            options.provenance,
+            options.allow_partial,
+            options.reference_mode(),
+        )
+        .reference_mode
+        .is_enabled()
+    );
+    Ok(())
+}
+
 #[tokio::test]
 async fn repeated_offline_delivery_publishes_separate_complete_artifacts() -> Result<()> {
     let temporary = tempfile::tempdir()?;

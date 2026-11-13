@@ -1,5 +1,55 @@
 # Verification and delivery boundaries — 0.6.0
 
+## Current development tree (2026-11-13)
+
+- **781 Rust tests passed, zero failures, 15 ignored** across the workspace
+  (`cargo test --workspace --all-targets`).
+- All-target/all-feature clippy is clean for the application workspace (the SDK catalog is excluded); formatting, the 300-line source gate
+  and the 25-line function gate pass.
+- Operation coverage is live-scanned and verified: **76 exercised operations of
+  20,537**, with 79 historical reviewed explicit operations at 80 production
+  callsites plus 10 reviewed additive operations at 11 callsites across 19 SDK
+  services; `coverage operations --check` and the additive `--check-additions`
+  validator pass.
+- Native live emulator phase: **263 attempts, 168 resources, 344 edges**, with
+  SQS/SNS/KMS/Step Functions assertions passing. The prepared live baseline
+  passes **2,664 checks with zero failures**, including the Config freeze and
+  parent pagination gates.
+- Workload oracle: 1M and 10M resources generated and independently verified
+  (10,000 accounts, deletions, duplicates, reorders, empty/global cases); peak
+  RSS under 5 MB.
+- CMDB viewer: Makepad table and hierarchical DAG render in a live Wayland
+  window; capture at `/tmp/dag-final.png` during development. No frame-time or
+  API-wiring evidence yet.
+- Remaining blockers are explicit: live AWS authorization/quota calibration,
+  whole-project 95% mutation score, tombstone/retention semantics, event
+  ingestion, distributed quota coordination, PostgreSQL evaluation, fault/soak
+  campaigns, and full live-emulator harness repair.
+
+### Expanded parent workflow state
+
+This increment adds **three additional parent-dependent Cloud Control types**,
+bringing the configured catalog to **421 types across 76 service families**
+(397 root + 24 parent-dependent). SQLx/SQLite schema version is now **13**;
+migration 013 adds the views for the three new parent types.
+
+**New parent-dependent types added:**
+
+- `AWS::EKS::AccessEntry` (parent: EKS::Cluster)
+- `AWS::EKS::PodIdentityAssociation` (parent: EKS::Cluster)
+- `AWS::AppConfig::ExperimentDefinition` (parent: AppConfig::Application)
+
+The configured descriptors now contain **968 property relationship rules** (up
+from 965), and 268 types have at least one property rule or parent workflow, as
+reported by `aws-inventory coverage`. Catalog JSON files, Rust code and tests
+have been regenerated to reflect the expanded counts.
+
+The retained v0.6 baseline documented below (530 tests, schema 6, 21 parent types)
+predates this expansion and is kept for historical comparison.
+
+The rest of this document records the retained v0.6 release run and is
+historical; it is not evidence for the current development tree.
+
 This increment adds **21 parent-dependent Cloud Control types**, bringing the
 configured catalog to **418 types across 76 service families**. SQLx/SQLite
 schema 6 exposes **4,273 provider columns**. The complete live first-party Rust

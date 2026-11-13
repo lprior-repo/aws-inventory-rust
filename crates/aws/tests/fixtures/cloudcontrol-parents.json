@@ -521,6 +521,171 @@
       ]
     },
     {
+      "name": "eks-accessentry-a-1",
+      "parent_key": "eks-a",
+      "type_name": "AWS::EKS::AccessEntry",
+      "provider": {
+        "Name": "inventory-parent-eks-accessentry-a-1",
+        "ClusterName": "inventory-parent-eks-a",
+        "PrincipalArn": "arn:aws:iam::000000000000:role/fixture-eks-user-1",
+        "Role": "admin",
+        "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/accessentry/arn:aws:iam::000000000000:role/fixture-eks-user-1"
+      },
+      "expected_provider": {
+        "Name": "inventory-parent-eks-accessentry-a-1",
+        "ClusterName": "inventory-parent-eks-a",
+        "PrincipalArn": "arn:aws:iam::000000000000:role/fixture-eks-user-1",
+        "Role": "admin",
+        "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/accessentry/arn:aws:iam::000000000000:role/fixture-eks-user-1"
+      },
+      "expected_model": {
+        "ClusterName": "inventory-parent-eks-a",
+        "PrincipalArn": "arn:aws:iam::000000000000:role/fixture-eks-user-1"
+      },
+      "expected_resource_id": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/accessentry/arn:aws:iam::000000000000:role/fixture-eks-user-1",
+      "expected_kind": "aws_eks_access_entry",
+      "expected_relationships": []
+    },
+    {
+      "name": "eks-accessentry-a-2",
+      "parent_key": "eks-a",
+      "type_name": "AWS::EKS::AccessEntry",
+      "provider": {
+        "Name": "inventory-parent-eks-accessentry-a-2",
+        "ClusterName": "inventory-parent-eks-a",
+        "PrincipalArn": "arn:aws:iam::000000000000:role/fixture-eks-user-2",
+        "Role": "view",
+        "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/accessentry/arn:aws:iam::000000000000:role/fixture-eks-user-2"
+      },
+      "expected_provider": {
+        "Name": "inventory-parent-eks-accessentry-a-2",
+        "ClusterName": "inventory-parent-eks-a",
+        "PrincipalArn": "arn:aws:iam::000000000000:role/fixture-eks-user-2",
+        "Role": "view",
+        "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/accessentry/arn:aws:iam::000000000000:role/fixture-eks-user-2"
+      },
+      "expected_model": {
+        "ClusterName": "inventory-parent-eks-a",
+        "PrincipalArn": "arn:aws:iam::000000000000:role/fixture-eks-user-2"
+      },
+      "expected_resource_id": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/accessentry/arn:aws:iam::000000000000:role/fixture-eks-user-2",
+      "expected_kind": "aws_eks_access_entry",
+      "expected_relationships": []
+    },
+    {
+      "name": "eks-podidentity-a-1",
+      "parent_key": "eks-a",
+      "type_name": "AWS::EKS::PodIdentityAssociation",
+      "provider": {
+        "Name": "inventory-parent-eks-podidentity-a-1",
+        "ClusterName": "inventory-parent-eks-a",
+        "Namespace": "kube-system",
+        "RoleArn": "arn:aws:iam::000000000000:role/fixture-pod-identity-1",
+        "ServiceAccount": "my-service-account-1",
+        "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/podidentityassociation/kube-system/my-service-account-1/01234567"
+      },
+      "expected_provider": {
+        "Name": "inventory-parent-eks-podidentity-a-1",
+        "ClusterName": "inventory-parent-eks-a",
+        "Namespace": "kube-system",
+        "RoleArn": "arn:aws:iam::000000000000:role/fixture-pod-identity-1",
+        "ServiceAccount": "my-service-account-1",
+        "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/podidentityassociation/kube-system/my-service-account-1/01234567"
+      },
+      "expected_model": {
+        "ClusterName": "inventory-parent-eks-a",
+        "Namespace": "kube-system",
+        "ServiceAccount": "my-service-account-1"
+      },
+      "expected_resource_id": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/podidentityassociation/kube-system/my-service-account-1/01234567",
+      "expected_kind": "aws_eks_pod_identity_association",
+      "expected_relationships": []
+    },
+    {
+      "name": "eks-podidentity-a-2",
+      "parent_key": "eks-a",
+      "type_name": "AWS::EKS::PodIdentityAssociation",
+      "provider": {
+        "Name": "inventory-parent-eks-podidentity-a-2",
+        "ClusterName": "inventory-parent-eks-a",
+        "Namespace": "default",
+        "RoleArn": "arn:aws:iam::000000000000:role/fixture-pod-identity-2",
+        "ServiceAccount": "my-service-account-2",
+        "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/podidentityassociation/default/my-service-account-2/01234567"
+      },
+      "expected_provider": {
+        "Name": "inventory-parent-eks-podidentity-a-2",
+        "ClusterName": "inventory-parent-eks-a",
+        "Namespace": "default",
+        "RoleArn": "arn:aws:iam::000000000000:role/fixture-pod-identity-2",
+        "ServiceAccount": "my-service-account-2",
+        "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/podidentityassociation/default/my-service-account-2/01234567"
+      },
+      "expected_model": {
+        "ClusterName": "inventory-parent-eks-a",
+        "Namespace": "default",
+        "ServiceAccount": "my-service-account-2"
+      },
+      "expected_resource_id": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-a/podidentityassociation/default/my-service-account-2/01234567",
+      "expected_kind": "aws_eks_pod_identity_association",
+      "expected_relationships": []
+    },
+    {
+      "name": "eks-accessentry-b-1",
+      "parent_key": "eks-b",
+      "type_name": "AWS::EKS::AccessEntry",
+      "provider": {
+        "Name": "inventory-parent-eks-accessentry-b-1",
+        "ClusterName": "inventory-parent-eks-b",
+        "PrincipalArn": "arn:aws:iam::000000000000:role/fixture-eks-user-b",
+        "Role": "admin",
+        "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-b/accessentry/arn:aws:iam::000000000000:role/fixture-eks-user-b"
+      },
+      "expected_provider": {
+        "Name": "inventory-parent-eks-accessentry-b-1",
+        "ClusterName": "inventory-parent-eks-b",
+        "PrincipalArn": "arn:aws:iam::000000000000:role/fixture-eks-user-b",
+        "Role": "admin",
+        "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-b/accessentry/arn:aws:iam::000000000000:role/fixture-eks-user-b"
+      },
+      "expected_model": {
+        "ClusterName": "inventory-parent-eks-b",
+        "PrincipalArn": "arn:aws:iam::000000000000:role/fixture-eks-user-b"
+      },
+      "expected_resource_id": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-b/accessentry/arn:aws:iam::000000000000:role/fixture-eks-user-b",
+      "expected_kind": "aws_eks_access_entry",
+      "expected_relationships": []
+    },
+    {
+      "name": "eks-podidentity-b-1",
+      "parent_key": "eks-b",
+      "type_name": "AWS::EKS::PodIdentityAssociation",
+      "provider": {
+        "Name": "inventory-parent-eks-podidentity-b-1",
+        "ClusterName": "inventory-parent-eks-b",
+        "Namespace": "kube-system",
+        "RoleArn": "arn:aws:iam::000000000000:role/fixture-pod-identity-b",
+        "ServiceAccount": "my-service-account-b",
+        "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-b/podidentityassociation/kube-system/my-service-account-b/01234567"
+      },
+      "expected_provider": {
+        "Name": "inventory-parent-eks-podidentity-b-1",
+        "ClusterName": "inventory-parent-eks-b",
+        "Namespace": "kube-system",
+        "RoleArn": "arn:aws:iam::000000000000:role/fixture-pod-identity-b",
+        "ServiceAccount": "my-service-account-b",
+        "Arn": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-b/podidentityassociation/kube-system/my-service-account-b/01234567"
+      },
+      "expected_model": {
+        "ClusterName": "inventory-parent-eks-b",
+        "Namespace": "kube-system",
+        "ServiceAccount": "my-service-account-b"
+      },
+      "expected_resource_id": "arn:aws:eks:us-east-1:000000000000:cluster/inventory-parent-eks-b/podidentityassociation/kube-system/my-service-account-b/01234567",
+      "expected_kind": "aws_eks_pod_identity_association",
+      "expected_relationships": []
+    },
+    {
       "name": "elb-listener-a-1",
       "parent_key": "elb-a",
       "type_name": "AWS::ElasticLoadBalancingV2::Listener",
@@ -2023,6 +2188,120 @@
       "expected_relationships": []
     },
     {
+      "name": "app-experiment-a-1",
+      "parent_key": "app-a",
+      "type_name": "AWS::AppConfig::ExperimentDefinition",
+      "provider": {
+        "Name": "inventory-parent-app-experiment-a-1",
+        "ApplicationId": "app00a1",
+        "ExperimentId": "inventory-parent-app-experiment-a-1",
+        "TreatmentConfigurations": [
+          {
+            "Name": "Treatment_A",
+            "AllocationStrategy": "PROPORTIONAL",
+            "AllocationValue": 50.0,
+            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-1"
+          },
+          {
+            "Name": "Treatment_B",
+            "AllocationStrategy": "PROPORTIONAL",
+            "AllocationValue": 50.0,
+            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-2"
+          }
+        ],
+        "PercentageSplitPolicy": "PROPORTIONAL"
+      },
+      "expected_provider": {
+        "Name": "inventory-parent-app-experiment-a-1",
+        "ApplicationId": "app00a1",
+        "ExperimentId": "inventory-parent-app-experiment-a-1",
+        "TreatmentConfigurations": [
+          {
+            "Name": "Treatment_A",
+            "AllocationStrategy": "PROPORTIONAL",
+            "AllocationValue": 50.0,
+            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-1"
+          },
+          {
+            "Name": "Treatment_B",
+            "AllocationStrategy": "PROPORTIONAL",
+            "AllocationValue": 50.0,
+            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-2"
+          }
+        ],
+        "PercentageSplitPolicy": "PROPORTIONAL"
+      },
+      "expected_model": {
+        "ApplicationId": "app00a1"
+      },
+      "expected_resource_id": null,
+      "expected_kind": "aws_app_config_experiment_definition",
+      "expected_relationships": []
+    },
+    {
+      "name": "app-experiment-a-2",
+      "parent_key": "app-a",
+      "type_name": "AWS::AppConfig::ExperimentDefinition",
+      "provider": {
+        "Name": "inventory-parent-app-experiment-a-2",
+        "ApplicationId": "app00a1",
+        "ExperimentId": "inventory-parent-app-experiment-a-2",
+        "TreatmentConfigurations": [
+          {
+            "Name": "Treatment_C",
+            "AllocationStrategy": "PROPORTIONAL",
+            "AllocationValue": 33.3,
+            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-1"
+          },
+          {
+            "Name": "Treatment_D",
+            "AllocationStrategy": "PROPORTIONAL",
+            "AllocationValue": 33.3,
+            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-2"
+          },
+          {
+            "Name": "Treatment_E",
+            "AllocationStrategy": "PROPORTIONAL",
+            "AllocationValue": 33.4,
+            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-1"
+          }
+        ],
+        "PercentageSplitPolicy": "PROPORTIONAL"
+      },
+      "expected_provider": {
+        "Name": "inventory-parent-app-experiment-a-2",
+        "ApplicationId": "app00a1",
+        "ExperimentId": "inventory-parent-app-experiment-a-2",
+        "TreatmentConfigurations": [
+          {
+            "Name": "Treatment_C",
+            "AllocationStrategy": "PROPORTIONAL",
+            "AllocationValue": 33.3,
+            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-1"
+          },
+          {
+            "Name": "Treatment_D",
+            "AllocationStrategy": "PROPORTIONAL",
+            "AllocationValue": 33.3,
+            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-2"
+          },
+          {
+            "Name": "Treatment_E",
+            "AllocationStrategy": "PROPORTIONAL",
+            "AllocationValue": 33.4,
+            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-1"
+          }
+        ],
+        "PercentageSplitPolicy": "PROPORTIONAL"
+      },
+      "expected_model": {
+        "ApplicationId": "app00a1"
+      },
+      "expected_resource_id": null,
+      "expected_kind": "aws_app_config_experiment_definition",
+      "expected_relationships": []
+    },
+    {
       "name": "app-environment-b-1",
       "parent_key": "app-b",
       "type_name": "AWS::AppConfig::Environment",
@@ -2081,6 +2360,57 @@
       },
       "expected_resource_id": null,
       "expected_kind": "aws_app_config_configuration_profile",
+      "expected_relationships": []
+    },
+    {
+      "name": "app-experiment-b-1",
+      "parent_key": "app-b",
+      "type_name": "AWS::AppConfig::ExperimentDefinition",
+      "provider": {
+        "Name": "inventory-parent-app-experiment-b-1",
+        "ApplicationId": "app00b1",
+        "ExperimentId": "inventory-parent-app-experiment-b-1",
+        "TreatmentConfigurations": [
+          {
+            "Name": "Treatment_X",
+            "AllocationStrategy": "PROPORTIONAL",
+            "AllocationValue": 50.0,
+            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-b-1"
+          },
+          {
+            "Name": "Treatment_Y",
+            "AllocationStrategy": "PROPORTIONAL",
+            "AllocationValue": 50.0,
+            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-b-1"
+          }
+        ],
+        "PercentageSplitPolicy": "PROPORTIONAL"
+      },
+      "expected_provider": {
+        "Name": "inventory-parent-app-experiment-b-1",
+        "ApplicationId": "app00b1",
+        "ExperimentId": "inventory-parent-app-experiment-b-1",
+        "TreatmentConfigurations": [
+          {
+            "Name": "Treatment_X",
+            "AllocationStrategy": "PROPORTIONAL",
+            "AllocationValue": 50.0,
+            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-b-1"
+          },
+          {
+            "Name": "Treatment_Y",
+            "AllocationStrategy": "PROPORTIONAL",
+            "AllocationValue": 50.0,
+            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-b-1"
+          }
+        ],
+        "PercentageSplitPolicy": "PROPORTIONAL"
+      },
+      "expected_model": {
+        "ApplicationId": "app00b1"
+      },
+      "expected_resource_id": null,
+      "expected_kind": "aws_app_config_experiment_definition",
       "expected_relationships": []
     }
   ],

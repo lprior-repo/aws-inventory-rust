@@ -47,7 +47,8 @@ proptest! {
     #[test]
     fn terminal_empty_page_completes_at_the_exact_page_limit(tokens in prop::collection::btree_set("[a-z0-9]{1,16}", 0..12)) {
         let mut cursor = Cursor::default();
-        let cap = u32::try_from(tokens.len() + 1).map_err(|error| TestCaseError::fail(error.to_string()))?;
+        let cap = u32::try_from(tokens.len().checked_add(1).ok_or_else(|| TestCaseError::fail("token count overflow"))?)
+            .map_err(|error| TestCaseError::fail(error.to_string()))?;
         for token in &tokens {
             cursor.advance(&PageBody { next_token: Some(token.clone()), ..PageBody::default() }, cap);
             prop_assert!(!cursor.done);
@@ -68,7 +69,10 @@ proptest! {
         for token in &tokens {
             cursor.advance(&PageBody { next_token: Some(token.clone()), ..PageBody::default() }, 100);
         }
-        let replay = tokens.iter().nth(repeat % tokens.len()).ok_or_else(|| TestCaseError::fail("missing replay token"))?;
+        let replay_index = repeat
+            .checked_rem(tokens.len())
+            .ok_or_else(|| TestCaseError::fail("missing replay token"))?;
+        let replay = tokens.iter().nth(replay_index).ok_or_else(|| TestCaseError::fail("missing replay token"))?;
         cursor.advance(&PageBody { next_token: Some(replay.clone()), ..PageBody::default() }, 100);
         prop_assert!(matches!(cursor.pending_failure, Some(("pagination_cycle", _))));
         prop_assert_eq!(cursor.seen.len(), tokens.len());
@@ -85,7 +89,7 @@ proptest! {
         prop_assert_eq!(cursor.token, Some(format!("page-{cap}")));
         prop_assert!(!cursor.done);
         prop_assert!(matches!(cursor.pending_failure, Some(("page_limit", _))));
-        prop_assert_eq!(cursor.seen.len(), usize::try_from(cap - 1).map_err(|error| TestCaseError::fail(error.to_string()))?);
+        prop_assert_eq!(cursor.seen.len(), usize::try_from(cap.saturating_sub(1)).map_err(|error| TestCaseError::fail(error.to_string()))?);
     }
 
     #[test]

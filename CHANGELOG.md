@@ -1,5 +1,95 @@
 # Changes
 
+## Unreleased — Universal listable coverage, reference graph and Rust evidence harness
+
+- Added native Step Functions state machine and activity adapters (schema 012),
+  bringing native coverage to 39 kinds. `ListStateMachines`/`ListActivities`
+  paginate and enrich each item with `DescribeStateMachine`/`DescribeActivity`
+  and `ListTagsForResource` in per-item child scopes. Definitions, variable
+  references and execution data are never stored; tag failures retain the item
+  with `tags_collected=false`. `ASSUMES_ROLE` and `ENCRYPTED_BY` edges are
+  emitted only for exact in-scope IAM role and KMS key ARNs, and logging
+  destinations produce no CloudWatch edge. The `step-functions` selector also
+  accepts `stepfunctions` and `sfn`.
+
+- Added native KMS key and alias adapters (schema 011), bringing native coverage
+  to 37 kinds. `ListKeys`/`DescribeKey` paginate and enrich keys, with
+  customer-managed rotation status and tags read in per-key child scopes;
+  `ListAliases` maps exact alias ARNs and keeps the target key ID as a property.
+  Rotation and tag failures retain the key with explicit collection flags, and no
+  key policy body, key material or alias-to-key edge is produced.
+
+- Added universal Cloud Control listable coverage. `--resource-type all`
+  attempts every list-capable type in the pinned schema (1,291 of 1,881), not
+  just the reviewed 418, through one bounded shared adapter. Against the pinned
+  emulator the verified partition is 1,291 attempted, 999 listed, 292
+  provider-unsupported and 0 failed, with 410 parent-scoped and 180
+  handler-less types reported as explicit skips. Scan JSON carries the full
+  partition and names every skip.
+- Added opt-in runtime reference edges (`--universal-references`, default off).
+  Resolution uses a bounded, account/region-scoped identity index with exact
+  ARN, unique primary identifier and ARN trailing-component tiers, emits
+  idempotent synthetic `REFERENCES` edges, and streams resource observations so
+  large scans are not materialised in memory.
+- Added current-state freshness views (schema 007) with deterministic source
+  preference: newer authoritative observations win, equal timestamps use source
+  priority, and historical/per-source evidence remains available.
+- Added an explicit account/region/collector coverage registry (schema 008):
+  account onboarding, role identity, status transitions and per-scope coverage
+  results are durable and queryable before any collection starts.
+- Added native SQS and SNS adapters (schema 009/010), bringing native coverage
+  to 35 kinds. SQS maps queues, attributes and redrive `DELIVERS_TO` edges; SNS
+  maps topics and account-wide subscriptions with `SUBSCRIBES_TO` edges,
+  deterministic pending-subscription identities and presence-only policy
+  reporting (no policy bodies).
+- Added `cmdb-bench`: a streaming deterministic fleet generator and independent
+  oracle. Verified 1M and 10M resources (10,000 accounts, skewed distribution,
+  duplicates, reorders, deletions, empty regions, global services) with peak
+  RSS under 5 MB and byte-deterministic output.
+- Added `cmdb-view`, a bounded read model over exported SQLite snapshots, and
+  `cmdb-api`, a read-only loopback HTTP API carrying the snapshot fingerprint
+  with typed errors, bounded pagination, graph neighborhoods, LOD and coverage.
+- Added `cmdb-ui`, a Makepad 2.0 viewer over the synthetic fixture: filter rail,
+  virtualized table, detail rail and a deterministic account→region→kind→resource
+  DAG with resource overlay edges, hover/selection, wheel zoom and drag pan.
+- Added executable performance/failure contracts and the CMDB architecture
+  baseline, including explicit boundaries: no auth/write API, no event
+  ingestion, no tombstones/retention and no measured fleet capacity yet.
+- Repaired the operation-coverage callsite scanner so it resolves clients
+  imported through `use super::*` and reports verified exercised operations
+  against the reviewed matrix instead of publishing an unavailable count.
+- Replaced the Python emulator snapshot/assertion entry point with the Rust
+  `inventory-harness` operator binary: pinned emulator installation, snapshot
+  freezing, S3 and Cloud Control seeding and Cloud Control assertions.
+- Replaced the Python release packager with `cargo run -p catalog-tool --
+  package --destination <zip>`. Selection rules, manifest bytes and payloads
+  match the retired tool; entry order is sorted and every entry carries a fixed
+  1980-01-01 timestamp, so archives over an unchanged tree are byte-identical.
+- Added six ignored live emulator tests that own a fresh emulator, seed through
+  the real SDKs and scan with the shipped collector: native services, reviewed
+  Cloud Control gaps, the universal partition, combined native+universal,
+  multi-page Cloud Control listing, and an exported seeded bucket.
+- Added `catalog/cloudcontrol-universal.json`: 1,881 schema types partitioned
+  into 1,291 list-capable, 410 parent-required and 180 without list handlers,
+  with digest and pinned source archive identity.
+
+- Added `cmdb-api`, a read-only loopback HTTP query API over one parsed
+  snapshot: typed GET endpoints for meta, filtered/paginated resources, bounded
+  graph neighborhoods, LOD and coverage, all carrying the snapshot fingerprint,
+  with typed JSON errors and no write path or authentication. Non-loopback
+  binds are refused until an auth story exists.
+
+Current development-tree evidence: 781 Rust tests pass with zero failures (15
+ignored by default). The native live emulator phase passes with 263 attempts,
+168 resources and 344 edges, including SQS/SNS/KMS/Step Functions assertions.
+The prepared live baseline passes 2,664 checks with zero failures, including the
+Config freeze and parent pagination gates. All-target clippy is clean, formatting
+and the 300-line source/25-line function gates pass. Cloud Control listing now
+sends the page-size budget as `max_results`; the live pagination gate proves a
+three-page list chain at page size two. Operation-coverage `--check` verifies 76
+exercised operations plus 10 reviewed additive operations and refuses to publish
+when the live scan cannot resolve reviewed callsites.
+
 ## 0.6.0 — Parent-scoped collection and exact graph verification
 
 - Added 21 reviewed parent-scoped Cloud Control types across API Gateway

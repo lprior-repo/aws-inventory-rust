@@ -140,15 +140,18 @@ fn account_ceiling_applies_after_explicit_filtering() -> Result<()> {
 #[test]
 fn role_targets_share_a_source_profile_but_keep_separate_scan_identities() -> Result<()> {
     let options = scan_options()?;
+    let selection = options.selection()?;
     let first = job(
         &options,
         Some("source-fixture".into()),
         Some(role("123456789012")?),
+        &selection,
     );
     let second = job(
         &options,
         Some("source-fixture".into()),
         Some(role("223456789012")?),
+        &selection,
     );
     assert_ne!(first.scan_id, second.scan_id);
     assert_eq!(first.options.profile, second.options.profile);
@@ -227,6 +230,7 @@ async fn known_target_failure_remains_attributed_and_partial_in_sqlite() -> Resu
 #[tokio::test]
 async fn precancelled_queued_roles_drain_without_loading_credentials() -> Result<()> {
     let options = scan_options()?;
+    let selection = options.selection()?;
     let executor = Arc::new(ApiExecutor::new(ExecutorConfig::default())?);
     executor.cancel();
     let jobs = (0..PROFILE_CONCURRENCY.saturating_add(5))
@@ -235,6 +239,7 @@ async fn precancelled_queued_roles_drain_without_loading_credentials() -> Result
                 &options,
                 Some("fixture-profile-must-not-be-loaded".into()),
                 Some(role("123456789012")?),
+                &selection,
             ))
         })
         .collect::<Result<Vec<_>>>()?;

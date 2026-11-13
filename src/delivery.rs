@@ -4,6 +4,7 @@
 //! graph writes across attempts; failed delivery never restarts AWS collection.
 use crate::cli::{DeliverArgs, DeliveryArgs, ExportArgs, ExportFormat, ExportProvenance};
 use anyhow::{Context, Result, ensure};
+#[cfg(any(feature = "aws", test))]
 use futures_util::{StreamExt, stream};
 use inventory_core::ScanStatus;
 use inventory_engine::{export, graph, store::Store};
@@ -111,6 +112,7 @@ fn export_options(
     format: ExportFormat,
     provenance: ExportProvenance,
     allow_partial: bool,
+    reference_mode: export::ReferenceMode,
 ) -> export::ExportOptions {
     export::ExportOptions {
         format: match format {
@@ -122,6 +124,7 @@ fn export_options(
             ExportProvenance::AllObservations => export::ProvenanceMode::AllObservations,
         },
         allow_partial,
+        reference_mode,
         ..export::ExportOptions::default()
     }
 }
@@ -135,7 +138,12 @@ pub async fn export_command(options: ExportArgs) -> Result<Value> {
         &store,
         &options.scan_id,
         &options.output,
-        export_options(options.format, options.provenance, options.allow_partial),
+        export_options(
+            options.format,
+            options.provenance,
+            options.allow_partial,
+            options.reference_mode(),
+        ),
         &token,
     );
     let result = until_signal(work, &token).await;
@@ -179,6 +187,7 @@ where
 
 /// Sequential delivery bounds open files, SQL readers and remote graph writes.
 /// Collection and delivery statuses stay separate in the scan result.
+#[cfg(any(feature = "aws", test))]
 #[tracing::instrument(skip_all)]
 pub async fn after_scan(
     db: &Path,
@@ -220,6 +229,7 @@ pub async fn after_scan(
     Ok(result)
 }
 
+#[cfg(any(feature = "aws", test))]
 fn merge_delivery_result(
     result: &mut Value,
     deliveries: Vec<Value>,

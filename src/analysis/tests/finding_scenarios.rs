@@ -77,7 +77,7 @@ async fn findings_use_declared_facts_and_do_not_treat_missing_reads_as_false() -
         Some(1)
     );
     assert_eq!(
-        result["rules"]["s3_policy_reported_public"]["rows"][0]["bucket_arn"],
+        first(&result["rules"]["s3_policy_reported_public"]["rows"])["bucket_arn"],
         "public"
     );
     assert_eq!(
@@ -128,7 +128,7 @@ async fn findings_preserve_collection_gaps_and_real_row_truncation() -> Result<(
     );
     assert_eq!(result["rules"]["collection_scope_gap"]["truncated"], false);
     assert_eq!(
-        result["rules"]["collection_scope_gap"]["rows"][0]["coverage_status"],
+        first(&result["rules"]["collection_scope_gap"]["rows"])["coverage_status"],
         "failed"
     );
     store.close().await;

@@ -1,6 +1,9 @@
 #![forbid(unsafe_code)]
 #![deny(unused_must_use)]
 
+#[cfg(test)]
+mod json_test;
+
 mod analysis;
 mod architecture;
 mod catalog;
@@ -78,7 +81,7 @@ fn dispatch(command: Command) -> BoxFuture<'static, Result<Value>> {
             unselected,
             limit,
         ))),
-        Command::Plan(options) => Box::pin(std::future::ready(plan::create(options))),
+        Command::Plan(options) => Box::pin(std::future::ready(plan_command(options))),
         Command::SdkCatalog { service } => {
             Box::pin(std::future::ready(catalog::sdk_catalog(service)))
         }
@@ -136,6 +139,11 @@ fn dispatch(command: Command) -> BoxFuture<'static, Result<Value>> {
         } => Box::pin(push_graph(input, checkpoint, url_env, attempts)),
         Command::Scan(options) => Box::pin(run_scan(options)),
     }
+}
+
+fn plan_command(options: cli::PlanArgs) -> Result<Value> {
+    let selection = options.selection()?;
+    plan::create(options, &selection)
 }
 
 #[tracing::instrument(skip_all)]

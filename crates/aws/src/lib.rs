@@ -10,10 +10,14 @@ mod ec2;
 mod ecs;
 mod eks;
 mod global_inventory;
+mod kms;
 mod lambda;
 mod load_balancing;
 mod network;
+mod sns;
 mod source_discovery;
+mod sqs;
+mod step_functions;
 mod supplemental;
 mod task_definitions;
 
@@ -25,7 +29,7 @@ use aws_config::meta::region::RegionProviderChain;
 use aws_config::{BehaviorVersion, retry::RetryConfig};
 use aws_types::region::Region;
 use futures_util::{StreamExt, TryStreamExt, future::BoxFuture, stream};
-use inventory_core::{CollectionEvent, Source};
+use inventory_core::{CollectionEvent, Selection, Source};
 use inventory_engine::limiter::{ApiError, ApiExecutor};
 use thiserror::Error;
 use tokio::sync::mpsc::Sender;
@@ -33,7 +37,7 @@ use tokio::sync::mpsc::Sender;
 use common::{Context, MAX_SCAN_PAGES, required, sdk_error};
 
 const MAX_REGIONS: usize = 64;
-const NATIVE_SERVICES: [&str; 8] = [
+const NATIVE_SERVICES: [&str; 12] = [
     "ec2",
     "network",
     "dynamodb",
@@ -42,6 +46,10 @@ const NATIVE_SERVICES: [&str; 8] = [
     "ecs-task-definitions",
     "eks",
     "elbv2",
+    "sqs",
+    "sns",
+    "kms",
+    "step-functions",
 ];
 
 #[derive(Clone, Debug)]
@@ -54,7 +62,7 @@ pub struct AwsScanOptions {
     pub discover_sources: bool,
     pub assume_role: Option<discovery::AssumeRoleOptions>,
     pub cloud_control: bool,
-    pub resource_types: Vec<String>,
+    pub selection: Selection,
     pub max_pages: u32,
     pub page_size: i32,
 }
@@ -94,13 +102,13 @@ impl AwsScanOptions {
         for region in &self.regions {
             validate_region(region)?;
         }
-        if !self.cloud_control && !self.resource_types.is_empty() {
+        if !self.cloud_control && !self.selection.is_empty() {
             return Err(AwsScanError::InvalidOptions(
                 "resource type selection requires Cloud Control".into(),
             ));
         }
         if self.cloud_control {
-            cloud_control::validate_selection(&self.resource_types)?;
+            cloud_control::validate_selection(&self.selection)?;
         }
         for (label, value) in [
             ("profile", &self.profile),
@@ -142,8 +150,17 @@ impl AwsScanOptions {
                     selected.insert("ecs".to_owned());
                     selected.insert("ecs-task-definitions".to_owned());
                 }
-                "lambda" | "ecs-task-definitions" | "eks" => {
+                "lambda"
+                | "ecs-task-definitions"
+                | "eks"
+                | "sqs"
+                | "sns"
+                | "kms"
+                | "step-functions" => {
                     selected.insert(service.clone());
+                }
+                "stepfunctions" | "sfn" => {
+                    selected.insert("step-functions".to_owned());
                 }
                 "s3" | "iam" | "route53" | "cloudfront" => {
                     selected.insert(service.clone());

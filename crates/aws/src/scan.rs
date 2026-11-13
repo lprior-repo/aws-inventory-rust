@@ -26,10 +26,11 @@ pub(super) async fn scan_inner(
     }
     let services = Arc::new(options.validate()?);
     let resource_types = Arc::new(if options.cloud_control {
-        cloud_control::validate_selection(&options.resource_types)?
+        cloud_control::validate_selection(&options.selection)?
     } else {
         Vec::new()
     });
+    let selection = Arc::new(options.selection.clone());
     let mut region_builder = aws_config::default_provider::region::Builder::default();
     if let Some(profile) = &options.profile {
         region_builder = region_builder.profile_name(profile);
@@ -135,10 +136,12 @@ pub(super) async fn scan_inner(
         .map(|context| {
             let services = Arc::clone(&services);
             let resource_types = Arc::clone(&resource_types);
+            let selection = Arc::clone(&selection);
             let work: BoxFuture<'static, Result<(), AwsScanError>> = Box::pin(collect_region(
                 context,
                 services,
                 resource_types,
+                selection,
                 auto_config,
                 auto_explorer,
             ));
@@ -233,6 +236,7 @@ pub(super) async fn collect_region(
     ctx: Context,
     services: Arc<BTreeSet<String>>,
     resource_types: Arc<Vec<cloud_control::ResourceType>>,
+    selection: Arc<Selection>,
     auto_config: bool,
     auto_explorer: bool,
 ) -> Result<(), AwsScanError> {
@@ -246,7 +250,11 @@ pub(super) async fn collect_region(
         .map(|service| service_future(&ctx, service))
         .collect();
     if !resource_types.is_empty() {
-        work.push(Box::pin(cloud_control::collect(&ctx, &resource_types)));
+        work.push(Box::pin(cloud_control::collect(
+            &ctx,
+            &resource_types,
+            &selection,
+        )));
     }
     if auto_config || auto_explorer {
         work.push(Box::pin(source_discovery::collect(
@@ -274,6 +282,10 @@ pub(super) fn service_future<'a>(
         "ecs" => Box::pin(ecs::collect(ctx)),
         "ecs-task-definitions" => Box::pin(task_definitions::collect(ctx)),
         "eks" => Box::pin(eks::collect(ctx)),
+        "sqs" => Box::pin(sqs::collect(ctx)),
+        "sns" => Box::pin(sns::collect(ctx)),
+        "kms" => Box::pin(kms::collect(ctx)),
+        "step-functions" => Box::pin(step_functions::collect(ctx)),
         _ => Box::pin(async {
             Err(AwsScanError::InvalidOptions(
                 "internal unknown collector".into(),

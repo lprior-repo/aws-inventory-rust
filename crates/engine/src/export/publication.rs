@@ -1,5 +1,8 @@
 //! Cancellation-safe inventory export publication and cleanup.
 use super::*;
+use crate::graph::reference::{
+    ReferenceConfig, SyntheticSnapshot, persist_scan, restore_synthetic, snapshot_synthetic,
+};
 
 /// Stream an immutable scan, then atomically install a new output file.
 ///
@@ -8,6 +11,12 @@ use super::*;
 /// are never overwritten. Cooperative cancellation removes only the partial
 /// file created by this call. Once the final no-clobber link begins, publication
 /// wins a concurrent cancellation; callers must retain the successful result.
+///
+/// Universal reference edges are derived and persisted before the snapshot is
+/// written because the artifact streams those persisted edges and its header
+/// counts describe the post-persistence scan. The pre-export synthetic edge set
+/// is captured first; any write, cancellation, or publication failure restores
+/// it, so a failed export leaves `store.edges()` unchanged.
 #[tracing::instrument(skip(store, output, cancellation), fields(scan_id))]
 pub async fn export_snapshot(
     store: &Store,
@@ -21,11 +30,69 @@ pub async fn export_snapshot(
     check_cancel(cancellation)?;
     let temporary = partial_path(output)?;
     reject_existing(output).await?;
+    let snapshot = if options.reference_mode.is_enabled() {
+        Some(persist_references(store, scan_id, options, cancellation).await?)
+    } else {
+        None
+    };
+    let result = write_and_publish(store, scan_id, output, options, &temporary, cancellation).await;
+    settle(result, store, scan_id, snapshot.as_ref()).await
+}
+
+/// Derive and persist universal reference edges, capturing the prior state.
+#[tracing::instrument(skip_all)]
+async fn persist_references(
+    store: &Store,
+    scan_id: &str,
+    options: ExportOptions,
+    cancellation: &CancellationToken,
+) -> Result<SyntheticSnapshot, ExportError> {
+    let status = await_read(cancellation, store.scan_status(scan_id)).await?;
+    validate_status(status, options)?;
+    let before = await_read(cancellation, snapshot_synthetic(store, scan_id)).await?;
+    await_read(
+        cancellation,
+        persist_scan(store, scan_id, &ReferenceConfig::default()),
+    )
+    .await?;
+    Ok(before)
+}
+
+#[tracing::instrument(skip_all)]
+async fn write_and_publish(
+    store: &Store,
+    scan_id: &str,
+    output: &Path,
+    options: ExportOptions,
+    temporary: &Path,
+    cancellation: &CancellationToken,
+) -> Result<ExportSummary, ExportError> {
     let header = snapshot_header(store, scan_id, options, cancellation).await?;
     check_cancel(cancellation)?;
-    let file = create_partial(&temporary).await?;
+    let file = create_partial(temporary).await?;
     let result = write_partial(store, file, &header, options, cancellation).await;
-    publish_or_discard(result, &temporary, output, cancellation).await
+    publish_or_discard(result, temporary, output, cancellation).await
+}
+
+/// Return the export result, restoring the pre-export reference state on error.
+#[tracing::instrument(skip_all)]
+async fn settle(
+    result: Result<ExportSummary, ExportError>,
+    store: &Store,
+    scan_id: &str,
+    snapshot: Option<&SyntheticSnapshot>,
+) -> Result<ExportSummary, ExportError> {
+    match (result, snapshot) {
+        (Ok(summary), _) => Ok(summary),
+        (Err(cause), None) => Err(cause),
+        (Err(cause), Some(snapshot)) => match restore_synthetic(store, scan_id, snapshot).await {
+            Ok(()) => Err(cause),
+            Err(restore) => Err(ExportError::Restore {
+                cause: Box::new(cause),
+                restore: Box::new(restore),
+            }),
+        },
+    }
 }
 
 pub(super) fn partial_path(output: &Path) -> Result<PathBuf, ExportError> {
@@ -67,15 +134,7 @@ pub(super) async fn snapshot_header(
     cancellation: &CancellationToken,
 ) -> Result<ExportHeader, ExportError> {
     let status = await_read(cancellation, store.scan_status(scan_id)).await?;
-    match status {
-        ScanStatus::Running => return Err(ExportError::Invalid("cannot export a running scan")),
-        ScanStatus::Partial | ScanStatus::Cancelled if !options.allow_partial => {
-            return Err(ExportError::Invalid(
-                "partial or cancelled scan requires allow_partial",
-            ));
-        }
-        _ => {}
-    }
+    validate_status(status, options)?;
     let summary = await_read(cancellation, store.summary(scan_id)).await?;
     let row = await_read(
         cancellation,
@@ -95,6 +154,20 @@ pub(super) async fn snapshot_header(
             finished_at: row.try_get("finished_at")?,
         },
     })
+}
+
+/// Reject illegal scans before any mutating step such as reference persistence.
+pub(super) fn validate_status(
+    status: ScanStatus,
+    options: ExportOptions,
+) -> Result<(), ExportError> {
+    match status {
+        ScanStatus::Running => Err(ExportError::Invalid("cannot export a running scan")),
+        ScanStatus::Partial | ScanStatus::Cancelled if !options.allow_partial => Err(
+            ExportError::Invalid("partial or cancelled scan requires allow_partial"),
+        ),
+        _ => Ok(()),
+    }
 }
 
 #[tracing::instrument(skip_all)]

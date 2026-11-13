@@ -1,8 +1,23 @@
 //! collection operations.
 use super::*;
+use aws_sdk_cloudcontrol::{error::SdkError, operation::list_resources::ListResourcesError};
 
+fn list_resources_error(error: SdkError<ListResourcesError>) -> ApiError {
+    if let Some(ListResourcesError::TypeNotFoundException(service)) = error.as_service_error() {
+        let message = service.message().unwrap_or("no service message");
+        return ApiError::UnsupportedType(format!("TypeNotFoundException: {message}"));
+    }
+    sdk_error(error)
+}
 #[tracing::instrument(skip_all, fields(resource_types = types.len()))]
-pub(crate) async fn collect(ctx: &Context, types: &[ResourceType]) -> Result<(), AwsScanError> {
+pub(crate) async fn collect(
+    ctx: &Context,
+    types: &[ResourceType],
+    selection: &Selection,
+) -> Result<(), AwsScanError> {
+    if selection.is_universal() {
+        return universal::collect(ctx, types).await;
+    }
     if ctx.executor.is_cancelled() {
         return Err(ApiError::Cancelled.into());
     }
@@ -25,11 +40,12 @@ pub(crate) async fn collect(ctx: &Context, types: &[ResourceType]) -> Result<(),
                         client
                             .list_resources()
                             .type_name(&request.type_name)
+                            .max_results(list_page_size(ctx))
                             .set_resource_model(request.resource_model.clone())
                             .set_next_token(request.token.clone())
                             .send()
                             .await
-                            .map_err(sdk_error)
+                            .map_err(list_resources_error)
                     })
                     .await
                 },
@@ -128,6 +144,18 @@ pub(super) fn remember_list_page(
     Ok(())
 }
 
+/// A provider capability boundary is an explicit, accounted outcome rather
+/// than an incomplete scope: persist `unsupported_type`, then emit a terminal
+/// empty page so the list scope completes and the scan can stay `complete`.
+pub(super) async fn record_unsupported(
+    ctx: &Context,
+    scope: &CollectionScope,
+    message: String,
+) -> Result<PageBody, AwsScanError> {
+    ctx.failure(scope, "unsupported_type", message).await?;
+    Ok(PageBody::default())
+}
+
 #[tracing::instrument(skip_all, fields(resource_type = descriptor.type_name))]
 pub(super) async fn collect_type_with<L, LFut, G, GFut>(
     ctx: &Context,
@@ -145,39 +173,42 @@ where
         return Err(ApiError::Cancelled.into());
     }
     let ledger = Mutex::new(IdentityLedger::default());
-    paginate(
-        ctx,
-        ctx.scope(
-            "cloud_control_list",
-            Some(&descriptor.type_name),
-            Source::CloudControl,
-        ),
-        |token, budget| {
-            let list = &list;
-            let get = &get;
-            let ledger = &ledger;
-            async move {
-                if ctx.executor.is_cancelled() {
-                    return Err(ApiError::Cancelled.into());
-                }
-                let output = list(token).await?;
-                remember_list_page(descriptor, &output, ledger, budget)?;
-                collect_bounded(
-                        output.resource_descriptions(),
-                        READ_CONCURRENCY,
-                        |description| async move {
-                            enrich_with(ctx, descriptor, description, get).await
-                        },
-                    )
-                    .await?;
-                Ok(PageBody {
-                    listed_count: output.resource_descriptions().len(),
-                    next_token: output.next_token().map(str::to_owned),
-                    ..PageBody::default()
-                })
+    let scope = ctx.scope(
+        "cloud_control_list",
+        Some(&descriptor.type_name),
+        Source::CloudControl,
+    );
+    let failure_scope = scope.clone();
+    paginate(ctx, scope, |token, budget| {
+        let list = &list;
+        let get = &get;
+        let ledger = &ledger;
+        let failure_scope = failure_scope.clone();
+        async move {
+            if ctx.executor.is_cancelled() {
+                return Err(ApiError::Cancelled.into());
             }
-        },
-    )
+            let output = match list(token).await {
+                Ok(output) => output,
+                Err(ApiError::UnsupportedType(message)) => {
+                    return record_unsupported(ctx, &failure_scope, message).await;
+                }
+                Err(error) => return Err(error.into()),
+            };
+            remember_list_page(descriptor, &output, ledger, budget)?;
+            collect_bounded(
+                output.resource_descriptions(),
+                READ_CONCURRENCY,
+                |description| async move { enrich_with(ctx, descriptor, description, get).await },
+            )
+            .await?;
+            Ok(PageBody {
+                listed_count: output.resource_descriptions().len(),
+                next_token: output.next_token().map(str::to_owned),
+                ..PageBody::default()
+            })
+        }
+    })
     .await?;
     if ctx.executor.is_cancelled() {
         Err(ApiError::Cancelled.into())

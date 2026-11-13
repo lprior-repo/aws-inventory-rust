@@ -105,12 +105,12 @@ fn entrypoint_version_catalog_and_error_exit_are_real() -> Result<()> {
         format!("aws-inventory {}", env!("CARGO_PKG_VERSION"))
     );
     let catalog = json_command(&arguments(&["catalog"]), 0)?;
-    assert_eq!(catalog.get("native_resource_kind_count"), Some(&json!(32)));
+    assert_eq!(catalog.get("native_resource_kind_count"), Some(&json!(39)));
     assert_eq!(
         catalog.get("cloud_control_resource_type_count"),
-        Some(&json!(418))
+        Some(&json!(421))
     );
-    assert_eq!(catalog.get("sqlite_schema_version"), Some(&json!(6)));
+    assert_eq!(catalog.get("sqlite_schema_version"), Some(&json!(12)));
     assert_eq!(
         catalog.pointer("/sdk_catalog/service_crates"),
         Some(&json!(437))

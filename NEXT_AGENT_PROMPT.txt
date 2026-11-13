@@ -1,38 +1,34 @@
-Continue the Rust AWS architecture inventory project in this directory. Implement and verify working capabilities; do not pad source size or equate a dependency/catalog entry with a working collector. Preserve the user's goal: broad read-only AWS collection, fast bounded request scheduling, SQLx/SQLite queries, portable JSON/JSONL, and FalkorDB architecture projections.
+Continue the Rust AWS CMDB project in this directory.
 
-Read START_HERE.md, docs/VERIFICATION.md, docs/PARENT_COLLECTIONS.md, docs/CLOUDCONTROL_COVERAGE.md, docs/MUTATION_TESTING.md and docs/MUTATION_READINESS_V06.md first. Inspect the actual working tree and receipts before asserting status. Historical v0.4/v0.5 receipts are not current evidence. Preserve failed attempts and current successful receipts separately.
+What we are building: a continuously updated CMDB of every AWS resource across many accounts, stored in SQL and projected into a relationship graph, shown as a Makepad DAG, and measurably the fastest collector for that job. It is our own implementation; it covers the ground of CloudQuery, Cartography and Steampipe without porting or promising compatibility with any of them. Read docs/VISION.md first. It is the product definition and it wins over every other document.
 
-Verified v0.6 checkpoint: artifacts/emulator-v06-complete passed 2,522 collection assertions, two five-case snapshot baselines, the full 530-test Rust workspace with zero failures/ignored tests, and exact JSONL/all-property FalkorDB verification of all five scans. Every graph replay made zero attempts and cleanup passed; the owning fixture command closed with exit 0. Four distinct Python helper suites passed 308 tests. The current whole-project mutation campaign has NOT passed: fresh enumeration contains 2,959 candidates (core 56, engine 810, AWS 1,683, CLI 410) and executed none. Treat artifacts/verification-v06.json and docs/VERIFICATION.md as the result index; do not mistake the earlier interrupted directory named emulator-v06-final for the successful run.
+Then read, in this order: docs/ROADMAP.md (ordered work packages with exit evidence; start at M0), docs/cmdb-spec/README.md and docs/cmdb-spec/decisions.md (the detailed requirements draft and the owner's confirmed decisions), START_HERE.md (build and verification handoff), docs/CMDB_ARCHITECTURE.md (component contracts, failure matrix, gap table), docs/UNIVERSAL_COVERAGE.md and docs/HARNESS.md (the universal collector and the emulator gate).
 
-Current architecture:
-- Rust application and collectors; SQLx SQLite schema 6; streaming observations and transactional page/checkpoint writes.
-- 397 frozen regional root Cloud Control descriptors plus 21 reviewed parent descriptors, totaling 418 types across 76 families. 418 provider views expose 4,273 columns. Preserve the old descriptor/migration bytes.
-- 965 property relationship rules across 255 types plus 21 CHILD_OF workflows; 265 types have at least one relationship rule. Configured rules are distinct from observed edges.
-- 32 native resource/component kinds, existing Config/Resource Explorer discovery, Organizations account selection and existing-role assumption. Native and Cloud Control kinds overlap.
-- 437 exact official SDK crate pins and checksum verification. Normal builds compile implemented service clients, not every SDK. The call auditor separately identifies explicit SDK operation boundaries.
-- ApiExecutor is the sole retry owner for explicit inventory calls; SDK max_attempts is one. Preserve per-attempt global/account/region/quota-family admission, bounded backoff, deadlines, retry metadata, cancellation and accounting. Credential-provider refresh is a separate boundary.
-- A fenced SQLx durable job queue owns scan attempts; export/delivery retries use persisted scans and do not repeat AWS calls. Falkor writes are recognized idempotent projections with server-success acknowledgements.
+Do not trust a number in a document over the tree. These commands are the source of truth:
+- target/debug/aws-inventory catalog          native kinds, reviewed Cloud Control types, schema version
+- target/debug/aws-inventory coverage --limit 1   universe, exclusions, relationship rule counts
+- jq .summary catalog/cloudcontrol-universal.json   1,881 = 1,291 list-capable + 410 parent-required + 180 without handlers
+- cargo test -p inventory-harness --test emulator_live -- --ignored --test-threads=1   live emulator gate (needs `cargo build --bin aws-inventory --features aws` first)
 
-First actions:
-1. Verify MANIFEST.sha256 if starting from the ZIP, inspect git status/instructions, and establish a reproducible baseline with the pinned toolchain/lockfile.
-2. Keep Cargo targets/toolchains on disk-backed storage, not a small tmpfs. Run one heavy Cargo lane. Keep independent helper reviews/tests parallel.
-3. Run ordinary Rust tests, generated catalog/view checks and relevant Python helper suites. Inspect actual failures; do not weaken gates to make them green.
-4. Reproduce the official signed AWS Emulator and native FalkorDB with the retained installers. Servers and all clients must share one owned process/network lifetime in isolated environments. Never assume a server started by a previous tool call is reachable.
+State of the tree on 2026-11-13:
+- 421 reviewed Cloud Control types across 76 families (397 root + 24 parent-scoped) are collected in detail with redaction and SQL views. `--resource-type all` lists all 1,291 list-capable types, identity only. 386 parent-scoped and 180 handler-less types are not collected.
+- 39 native SDK kinds. 968 property relationship rules and 24 parent workflows; 268 types have at least one. Runtime reference resolution exists and is opt-in at export.
+- SQLx SQLite schema 13. ApiExecutor is the only retry owner; SDK max_attempts is one; every attempt re-enters admission. Fenced durable whole-scan jobs. Replayable FalkorDB projection.
+- cmdb-bench, cmdb-view, a read-only loopback cmdb-api and a Makepad cmdb-ui exist. The UI renders a synthetic fixture and is not wired to real data.
+- No long-running service, change log, tombstones, event ingestion, CI, collection benchmark or live AWS validation.
+- Most of this exists only in the working tree. ROADMAP M0.1 is to commit it.
 
-Highest-priority unfinished work:
-A. Complete a genuine current whole-project mutation campaign. Use scripts/mutation/run_all.py with a fresh source/fixture closure, two clean baselines and all ten live cases (five AWS, three native graph, two CLI). Retain every candidate and outcome. The required score is >=95% of viable mutations caught. Missing outcomes, mixed frozen fixture identities, timeouts, OOMs, compiler-cache/toolchain failures and fixture failures are unresolved, not caught or excluded. Reproduce survivors independently, add behavior-focused tests or fix real defects, then rerun the affected/full frozen scope. A partial/core-only campaign or an enumeration is not a full pass. Do not start a long campaign until source, tests, generated data and the fixture are stable.
-B. Expand coverage from the explicit excluded matrix. There remain 389 parent-dependent types, 894 types with unreviewed scope, and 180 without both read/list handlers in the pinned 1,881-schema universe. Review manageable related families against primary AWS schemas/docs. Add actual workflows, identity/ownership contracts, sensitive-field handling, SQL views and independent semantic fixtures. Treat global/home-region placement explicitly.
-C. Extend parent collection without breaking its contracts: required roots added once, independent child ResourceModel/cursors, empty pages with continuation followed correctly, duplicate model/identifier rejection, bounded model and child budgets, complete-empty only after successful prerequisite exhaustion, cancellation drainage and partial failures retained. Child read properties must confirm the expected parent before CHILD_OF is emitted.
-D. Close real emulator/provider gaps honestly. The pinned emulator has unsupported Cloud Control namespaces and Organizations operations, plus Resource Explorer response-decoding issues. A generic property store verifies serialization/decoding/mapping/storage, not real AWS provider semantics. Do not count unsupported endpoints as successes, fabricate responses, or claim all endpoints of all 437 SDKs were tested.
-E. Perform real AWS validation and quota calibration only in an already authorized environment. Do not enable Config/Resource Explorer, create IAM roles, deploy infrastructure or use unknown credentials merely to obtain coverage. Broad live-account tests require appropriate access. Configured/adaptive pacing is not automatic discovery of every AWS quota or proof of massive concurrency throughput.
+How work lands. Every work package goes through the gates in VISION.md section 5, each with its skill: contract (rust-contract, scott-ddd-refactor), test plan (test-planner, test-reviewer), implementation (holzman-rust, functional-rust), async review (async-rust-reviewer), tests (test-writer, red-queen), emulator proof with the shipped binary (hands-on-qa, qa-enforcer), adversarial review (black-hat-reviewer, truth-serum), landing (evidence-packaging, landing-skill). Makepad work follows the makepad-2.0-* skills.
 
-Acceptance for each new family:
-- Real production collector code uses the common executor and bounded structured concurrency, and is wired into selectors/plans/catalogs.
-- Independent fixtures assert exact identities, scalar/nested fields, sensitive-field redaction, owner/parent attribution and architecture relationships; include multiple parents, pagination, empty nonterminal pages, access denial, malformed data, repeated tokens/identifiers, truncation and cancellation where relevant.
-- Additive SQLx migrations preserve observations, fingerprints, prior views and caller-owned objects, and roll back on conflict.
-- The shipped binary is tested against the official local emulator wherever supported. Bind executed source, binary, catalogs, fixtures and every command receipt; snapshot.freeze requires the exact five distinct scans.
-- Verify SQLite -> JSONL -> actual FalkorDB for every projected resource, edge and marker property, unresolved nodes, cardinality and idempotent zero-attempt checkpoint replay.
-- Keep source breadth, successful detailed reads, semantic relationships, emulator compatibility, native compilation and live AWS validation as separate dimensions.
-- Report exact commands/results, failed attempts, unrun work and remaining risks. No universal-coverage, throughput or mutation-score claim without corresponding evidence.
+Rules:
+- All new code is Rust. The Python helper scripts under scripts/ and catalog/upstream/ are frozen legacy tooling. Do not extend them, do not plan work around them, and do not spend time porting them unless the owner asks.
+- Workspace lints apply: no unsafe, unwrap, expect, panic, todo, unchecked indexing or lossy casts. Files at or under 300 lines, functions at or under 25.
+- Every queue, batch, retry and traversal is bounded. No detached tasks. One retry owner.
+- Collection is read-only. Never create, enable or modify anything in AWS. Never read content, secrets or key material. Use real AWS only in an environment the owner has already authorized.
+- Prove behavior against the pinned AWS Emulator (1.0.336, commit f5155815) with real SDK calls before calling it working. The emulator verifies serialization, decoding, pagination, retry, storage and delivery; it does not certify real provider semantics, IAM, quotas or eventual consistency. Report emulator and live evidence separately.
+- Dependency available, enumeration implemented, fields implemented, relationships implemented, emulator-verified and live-verified are separate facts. Never merge them into one support claim.
+- Deleted, unobserved, inaccessible and unsupported are four different states. Partial is a stored, reported result.
+- No universal-coverage, throughput, "fastest" or mutation-score statement without the evidence that produced it. A failed check is reported as failed.
+- Keep Cargo targets on disk-backed storage and run one heavy Cargo lane at a time. Servers and their clients must share one owned process lifetime; never assume a server started by an earlier command is still reachable.
 
-Finish the next verified increment, update design and handoff docs, create a portable ZIP using scripts/package.py, verify ZIP CRCs and payload SHA-256 values, and preserve the artifacts. Avoid filler code, redundant retry loops, detached tasks, unbounded queues, unchecked panics and misleading completeness flags. Keep working autonomously on authorized reversible implementation and validation; ask only when a real access or scope decision cannot be resolved from the project and conversation.
+Finish the next work package to its exit evidence, update VISION/ROADMAP status and the affected design documents in the same change, and report exact commands, results, failed attempts and what was not run.

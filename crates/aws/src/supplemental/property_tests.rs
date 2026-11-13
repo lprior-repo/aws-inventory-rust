@@ -90,9 +90,9 @@ proptest! {
         let value = input.iter().collect::<String>();
         let kind = fallback_kind(&value);
         prop_assert!(kind.starts_with("aws_"));
-        prop_assert_eq!(kind.len(), 4 + input.len().min(256));
+        prop_assert_eq!(kind.len(), 4_usize.saturating_add(input.len().min(256)));
         prop_assert!(kind.bytes().all(|byte| byte.is_ascii_alphanumeric() || byte == b'_'));
-        for (original, output) in input.iter().take(256).zip(kind[4..].chars()) {
+        for (original, output) in input.iter().take(256).zip(kind.chars().skip(4)) {
             if original.is_ascii_alphanumeric() {
                 prop_assert_eq!(output, *original);
             } else {
@@ -142,9 +142,15 @@ proptest! {
             prop_assert!(explorer_elbv2_kind(family, &valid).is_some());
             prop_assert!(explorer_elbv2_kind(family, &format!("{valid}/extra")).is_none(), "extra ARN path component accepted");
             for index in 0..parts.len() {
-                let previous = std::mem::take(&mut parts[index]);
+                let previous = parts
+                    .get_mut(index)
+                    .map(std::mem::take)
+                    .ok_or_else(|| TestCaseError::fail("missing ARN component"))?;
                 prop_assert!(explorer_elbv2_kind(family, &format!("{prefix}{}", parts.join("/"))).is_none(), "empty ARN path component accepted");
-                parts[index] = previous;
+                let slot = parts
+                    .get_mut(index)
+                    .ok_or_else(|| TestCaseError::fail("missing ARN component"))?;
+                *slot = previous;
             }
             parts.pop();
             prop_assert!(explorer_elbv2_kind(family, &format!("{prefix}{}", parts.join("/"))).is_none(), "truncated ARN path accepted");

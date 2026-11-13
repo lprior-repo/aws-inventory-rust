@@ -1,8 +1,11 @@
 # Architecture and design decisions
 
-Status: version 0.5 implementation with explicit expansion and validation work. The authoritative
-implementation coverage is `COLLECTORS.md`; dependency availability is
-`SDK_CATALOG.md`; observed validation results are `VERIFICATION.md`.
+Status: version 0.6 collector plus the first continuous-CMDB slice (freshness and
+coverage state, workload oracle, read model/API, Makepad table/DAG). The
+authoritative implementation coverage is `COLLECTORS.md`; dependency
+availability is `SDK_CATALOG.md`; observed validation results are
+`VERIFICATION.md`; the continuous-service target and component gaps are in
+`CMDB_ARCHITECTURE.md`.
 
 ## 1. Product boundary
 
@@ -122,18 +125,22 @@ does not make the original data fresh.
 | Source | Useful evidence | Coverage limitations |
 |---|---|---|
 | Direct SDK | Relevant service response and detailed selected fields | Permissions, endpoints, quota, pagination, transient deletion and implemented types |
-| Cloud Control | Schema-backed configuration for 418 regional types across 76 families: 397 roots plus 21 reviewed parent-dependent types | Provider read/list support, regional availability, IAM, prerequisite discovery, remaining filter exclusions and selected mappings |
+| Cloud Control | Schema-backed configuration for 421 regional types across 76 families: 397 roots plus 24 reviewed parent-dependent types | Provider read/list support, regional availability, IAM, prerequisite discovery, remaining filter exclusions and selected mappings |
 | Config aggregator | Existing recorded configuration across its accounts/regions | Recorder/type scope, aggregation delay, supported types, permissions and query exclusions |
 | Resource Explorer view | Broad identities and indexed metadata in its view | Index/type coverage, filters, service-linked role state, delay and permissions |
 
-The preference is Direct (4), Cloud Control (3), Config (2), Explorer (1), followed by the
-latest observation within the preferred source. Other observations are retained.
+Current-state selection (`latest_resources`, `latest_edges` and the service views)
+is freshness-first: the greatest `observed_at` wins across sources. Source
+priority breaks only equal timestamps: Direct (4), Cloud Control (3), Config (2),
+Explorer (1). Remaining ties use descending `scan_id`, ascending `scope_key` and
+descending `page_number`, never arrival order. All observations are retained and
 `latest_resource_sources` exposes independently selected source records.
 
-An old direct row can therefore outrank a newer Config row in the cross-scan
-convenience view. Source and timestamp remain visible. Use an explicit snapshot
-or the per-source view when freshness matters. Future field-level reconciliation
-needs provenance per field; a hybrid object must not pretend to have one source.
+A newer Config row therefore outranks an older direct row in the cross-scan
+convenience view. Source and timestamp remain visible. Per-scan snapshots
+(`scan_resources`, `scan_edges`) deliberately keep priority-first selection so
+exports and summaries stay reproducible. Future field-level reconciliation needs
+provenance per field; a hybrid object must not pretend to have one source.
 
 Supplemental adapters run in addition to selected native collectors. They can
 use explicitly selected aggregators/views or discover existing sources with
@@ -312,8 +319,8 @@ procedure, preserving user views, triggers and indexes in the same transaction.
 Foreign keys are checked before commit and restored before the Store is exposed.
 Schema version 4 adds the native global-service views. Version 5 adds 197
 source-specific root views, retaining 397 root views and 4,104 provider columns.
-Current schema version 6 adds 21 parent-type views and 169 columns, for **418
-provider views and 4,273 selected columns**. The earlier view definitions remain
+Current schema version 13 adds the 24 parent-type views and 205 columns, for **421
+provider views and 4,309 selected columns**. The earlier view definitions remain
 unchanged. These additive upgrades do not rebuild inventory rows, replace caller
 objects or alter finalized scans; an
 added view-name conflict rolls the whole upgrade back.
@@ -462,14 +469,14 @@ Each additional collector requires more than its SDK:
 - Relationships and unresolved-reference policy.
 - Deterministic fixtures, error/pagination tests and live-account validation.
 
-The combined 418-type Cloud Control catalog applies that principle to a shared
+The combined 421-type Cloud Control catalog applies that principle to a shared
 ListResources/GetResource adapter. It preserves the frozen 397-type root catalog
-and adds a separate 21-type parent catalog. Official schemas establish read/list
+and adds a separate 24-type parent catalog. Official schemas establish read/list
 handlers, identifiers, write-only properties and top-level query columns. A Rust
-view generator reproduces the source-specific SQLite views. Its 965 property
-relationship rules across 255 types retain field evidence. The 21 additional
+view generator reproduces the source-specific SQLite views. Its 968 property
+relationship rules across 255 types retain field evidence. The 24 additional
 runtime `CHILD_OF` workflows bring the number of types with either form of
-relationship evidence to 265. Generic property names do not imply arbitrary
+relationship evidence to 268. Generic property names do not imply arbitrary
 links, and a type without applicable evidence does not gain fabricated edges.
 The all-schema capability matrix separately records exclusions and source-bound
 historical emulator evidence; the current offline report overlays parent plans.
@@ -501,7 +508,7 @@ throttle observations, representative RSS/disk-pressure measurements, restart
 and replay tests, migration compatibility, retention/backup policy and a reviewed
 coverage matrix. Routes/gateways and ELBv2 load balancers/targets now have typed
 collectors; their remaining enrichment and live validation are tracked separately.
-The broad Cloud Control path covers 418 configured regional types; native ECS
+The broad Cloud Control path covers 421 configured regional types; native ECS
 task definitions and service target-group links are implemented. Next work is
 live regional/account validation, richer native relationships where provider
 models are insufficient, further global resources and additional reviewed

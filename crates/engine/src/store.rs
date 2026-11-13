@@ -72,6 +72,8 @@ pub enum StoreError {
     Limit(&'static str),
     #[error("unknown scan: {0}")]
     MissingScan(String),
+    #[error("unknown account: {0}")]
+    MissingAccount(String),
     #[error("scan is no longer running: {0}")]
     FinishedScan(String),
     #[error("conflicting persisted state: {0}")]
@@ -86,6 +88,17 @@ pub enum StoreError {
     PreparationPanicked,
     #[error("page preparation was cancelled")]
     PreparationCancelled,
+}
+
+/// Persisted Cloud Control drain accounting for one scan. `attempted` and
+/// `succeeded` count list scopes (one per type and region), while `unsupported`
+/// counts explicit provider capability boundaries.
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub struct UniversalOutcomes {
+    pub attempted: u64,
+    pub succeeded: u64,
+    pub unsupported: u64,
+    pub failed: u64,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
@@ -121,6 +134,12 @@ impl Store {
         &self.reader
     }
 
+    /// Derived-edge persistence uses the single writer pool under its own
+    /// `BEGIN IMMEDIATE` transaction.
+    pub(crate) fn writer_pool(&self) -> &SqlitePool {
+        &self.writer
+    }
+
     /// Executes one SELECT/WITH statement on a query-only connection. File-backed
     /// databases also use SQLITE_OPEN_READONLY. Every bound fails explicitly.
     #[tracing::instrument(skip(self, sql))]
@@ -154,6 +173,8 @@ mod records;
 use records::*;
 mod query;
 use query::*;
+mod registry;
+pub use registry::{AccountRecord, AccountStatus, CoverageRecord, CoverageState, CoverageSummary};
 mod sql_policy;
 use sql_policy::*;
 #[cfg(test)]

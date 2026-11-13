@@ -5,10 +5,12 @@ Only HTTPS on a literal loopback address is accepted. Credentials, complete SDK
 responses and function code are never retained in the report. This module does
 not alter emulator stores or replace unsupported operations with invented data.
 
-The fixtures populate inputs for the 32 regional collector operations, including
-child lists. Most parent/child lists receive two entries; one RunInstances request
-creates six instances so the collector's minimum EC2 page size of five can page.
-Fixture API successes do not certify subsequent collector or data-plane success.
+The fixtures populate inputs for the 39 native resource kinds, including SQS
+queues, SNS topics and subscriptions, KMS keys and aliases, and Step Functions
+state machines and activities. Most parent/child
+lists receive two entries; one RunInstances request creates six instances so the
+collector's minimum EC2 page size of five can page. Fixture API successes do not
+certify subsequent collector or data-plane success.
 """
 
 from __future__ import annotations
@@ -151,6 +153,11 @@ class _Seed:
             ("ecs", "clusters"): 2, ("ecs", "task_definition_arns"): 4,
             ("eks", "clusters"): 2, ("elbv2", "load_balancers"): 2,
             ("elbv2", "target_group_arns"): 2,
+            ("sqs", "queue_arns"): 1,
+            ("sns", "topic_arns"): 1, ("sns", "subscription_arns"): 1,
+            ("kms", "key_arns"): 2, ("kms", "alias_arns"): 1,
+            ("step_functions", "state_machine_arns"): 2,
+            ("step_functions", "activity_arns"): 2,
         }
         missing = []
         for path, minimum in expected.items():
@@ -190,11 +197,14 @@ def seed(session: Any, record: Callable[..., Any] | None = None) -> dict[str, An
         return context.report()
     network = _network(context)
     roles = _roles(context)
-    _functions(context, roles, network)
+    functions = _functions(context, roles, network)
     _tables(context)
     _kubernetes(context, roles, network)
     _load_balancers(context, network)
     _containers(context, roles, network)
+    _messaging(context, functions)
+    _keys(context)
+    _workflows(context, roles)
     return context.report()
 
 
@@ -326,6 +336,7 @@ def _roles(ctx: _Seed) -> dict[str, str]:
         "eks_cluster": (["eks.amazonaws.com"], ["AmazonEKSClusterPolicy"]),
         "eks_node": (["ec2.amazonaws.com"], ["AmazonEKSWorkerNodePolicy", "AmazonEC2ContainerRegistryReadOnly"]),
         "ecs": (["ecs-tasks.amazonaws.com"], ["service-role/AmazonECSTaskExecutionRolePolicy"]),
+        "states": (["states.amazonaws.com"], []),
     }
     for label, (services, policies) in definitions.items():
         name = ctx.prefix + "-" + label
@@ -339,12 +350,12 @@ def _roles(ctx: _Seed) -> dict[str, str]:
     return roles
 
 
-def _functions(ctx: _Seed, roles: dict[str, str], network: dict[str, Any]) -> None:
+def _functions(ctx: _Seed, roles: dict[str, str], network: dict[str, Any]) -> list[str]:
     functions = []
     ctx.fixtures["lambda"] = {"function_arns": functions}
     if "lambda" not in roles:
         ctx.skip("Lambda functions", "execution role was not created")
-        return
+        return functions
     archive = io.BytesIO()
     with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as package:
         package.writestr("handler.py", "def handler(event, context):\n    return {'inventory_fixture': True}\n")
@@ -359,6 +370,106 @@ def _functions(ctx: _Seed, roles: dict[str, str], network: dict[str, Any]) -> No
         response = ctx.call("lambda", "create_function", f"function-{index}", **arguments)
         if arn := _at(response, "FunctionArn"):
             functions.append(arn)
+    return functions
+
+
+def _messaging(ctx: _Seed, function_arns: list[str]) -> None:
+    queues: list[str] = []
+    queue_names: list[str] = []
+    queue_arns: list[str] = []
+    topics: list[str] = []
+    subscriptions: list[str] = []
+    ctx.fixtures["sqs"] = {"queue_urls": queues, "queue_names": queue_names, "queue_arns": queue_arns}
+    ctx.fixtures["sns"] = {"topic_arns": topics, "subscription_arns": subscriptions}
+    queue_name = f"{ctx.prefix}-orders"
+    created = ctx.call("sqs", "create_queue", "queue", QueueName=queue_name, tags={"purpose": "inventory-emulator-fixture"})
+    if queue_url := _at(created, "QueueUrl"):
+        queues.append(queue_url)
+        queue_names.append(queue_name)
+        queue_arns.append(f"arn:aws:sqs:{ctx.region}:{ACCOUNT}:{queue_name}")
+    if not function_arns:
+        ctx.skip("SNS topic and subscription", "a Lambda endpoint is required")
+        return
+    topic_name = f"{ctx.prefix}-orders"
+    topic = ctx.call("sns", "create_topic", "topic", Name=topic_name, Tags=[{"Key": "purpose", "Value": "inventory-emulator-fixture"}, {"Key": "Name", "Value": topic_name}])
+    if topic_arn := _at(topic, "TopicArn"):
+        topics.append(topic_arn)
+        subscribed = ctx.call("sns", "subscribe", "subscription", TopicArn=topic_arn, Protocol="lambda", Endpoint=function_arns[0], ReturnSubscriptionArn=True)
+        if subscription_arn := _at(subscribed, "SubscriptionArn"):
+            subscriptions.append(subscription_arn)
+
+
+def _keys(ctx: _Seed) -> None:
+    key_arns: list[str] = []
+    key_ids: list[str] = []
+    alias_arns: list[str] = []
+    alias_names: list[str] = []
+    alias_targets: list[str] = []
+    ctx.fixtures["kms"] = {
+        "key_arns": key_arns, "key_ids": key_ids,
+        "alias_arns": alias_arns, "alias_names": alias_names, "alias_targets": alias_targets,
+    }
+    for index in range(2):
+        response = ctx.call(
+            "kms", "create_key", f"key-{index}",
+            Description=f"{ctx.prefix} inventory key {index}",
+            Tags=[{"TagKey": "purpose", "TagValue": "inventory-emulator-fixture"}],
+        )
+        key_id = _at(response, "KeyMetadata", "KeyId")
+        key_arn = _at(response, "KeyMetadata", "Arn")
+        if key_id and key_arn:
+            key_ids.append(key_id)
+            key_arns.append(key_arn)
+    if not key_ids:
+        ctx.skip("KMS alias", "a created key is required")
+        return
+    alias_name = f"alias/{ctx.prefix}-orders"
+    ctx.call("kms", "create_alias", "alias", AliasName=alias_name, TargetKeyId=key_ids[0])
+    listed = ctx.call("kms", "list_aliases", "alias-readback", KeyId=key_ids[0])
+    for item in _at(listed, "Aliases") or []:
+        if item.get("AliasName") != alias_name or not item.get("AliasArn"):
+            continue
+        alias_arns.append(item["AliasArn"])
+        alias_names.append(alias_name)
+        alias_targets.append(item.get("TargetKeyId") or key_ids[0])
+        break
+
+
+def _workflows(ctx: _Seed, roles: dict[str, str]) -> None:
+    state_machine_arns: list[str] = []
+    state_machine_names: list[str] = []
+    activity_arns: list[str] = []
+    activity_names: list[str] = []
+    ctx.fixtures["step_functions"] = {
+        "state_machine_arns": state_machine_arns,
+        "state_machine_names": state_machine_names,
+        "activity_arns": activity_arns,
+        "activity_names": activity_names,
+    }
+    if "states" not in roles:
+        ctx.skip("Step Functions fixtures", "state machine execution role was not created")
+        return
+    definition = json.dumps({"StartAt": "Done", "States": {"Done": {"Type": "Succeed"}}})
+    tags = [{"key": "purpose", "value": "inventory-emulator-fixture"}]
+    for index in range(2):
+        name = f"{ctx.prefix}-workflow-{index}"
+        response = ctx.call(
+            "stepfunctions", "create_state_machine", f"state-machine-{index}",
+            name=name, definition=definition, roleArn=roles["states"],
+            type="STANDARD", tags=tags,
+        )
+        if arn := _at(response, "stateMachineArn"):
+            state_machine_arns.append(arn)
+            state_machine_names.append(name)
+    for index in range(2):
+        name = f"{ctx.prefix}-activity-{index}"
+        response = ctx.call(
+            "stepfunctions", "create_activity", f"activity-{index}",
+            name=name, tags=tags,
+        )
+        if arn := _at(response, "activityArn"):
+            activity_arns.append(arn)
+            activity_names.append(name)
 
 
 def _tables(ctx: _Seed) -> None:

@@ -6,7 +6,7 @@ use serde_json::{Value, json};
 use sqlx::{Connection, SqliteConnection, sqlite::SqliteConnectOptions};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-const CURRENT_SCHEMA_VERSION: i64 = 6;
+const CURRENT_SCHEMA_VERSION: i64 = 13;
 const NEW_VIEWS: [&str; 10] = [
     "aws_s3_bucket",
     "aws_iam_role",
@@ -107,10 +107,11 @@ async fn make_v3(path: &std::path::Path) -> TestResult {
     // Store::open creates the current schema. A genuine v3 database predates
     // both the global views and the v5 Cloud Control expansion, so remove only
     // the reviewed view identifiers declared by that later migration.
-    let mut removed_expansion_views = 0;
+    let mut removed_expansion_views: usize = 0;
     for view in [
         include_str!("../sql/005_cloudcontrol_expansion.sql"),
         include_str!("../sql/006_cloudcontrol_parents.sql"),
+        include_str!("../sql/013_cloudcontrol_parent_additions.sql"),
     ]
     .into_iter()
     .flat_map(str::lines)
@@ -125,9 +126,9 @@ async fn make_v3(path: &std::path::Path) -> TestResult {
         sqlx::raw_sql(sqlx::AssertSqlSafe(format!("DROP VIEW {view}")))
             .execute(&mut connection)
             .await?;
-        removed_expansion_views += 1;
+        removed_expansion_views = removed_expansion_views.saturating_add(1);
     }
-    assert_eq!(removed_expansion_views, 218);
+    assert_eq!(removed_expansion_views, 221);
     let legacy_cloud_control_views: i64 = sqlx::query_scalar(
         "SELECT count(*) FROM sqlite_schema WHERE type='view' AND name GLOB 'aws_cc_*'",
     )

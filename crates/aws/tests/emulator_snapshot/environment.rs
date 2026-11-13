@@ -22,7 +22,7 @@ pub(super) fn bounded_file(path: &Path, limit: u64) -> TestResult<Vec<u8>> {
         return Err(fail("prepared fixture must be a regular file"));
     }
     let mut bytes = Vec::new();
-    file.take(limit + 1).read_to_end(&mut bytes)?;
+    file.take(limit.saturating_add(1)).read_to_end(&mut bytes)?;
     if u64::try_from(bytes.len())? > limit {
         return Err(fail("prepared fixture file exceeded its byte budget"));
     }

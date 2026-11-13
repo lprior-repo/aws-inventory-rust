@@ -1,0 +1,25 @@
+[package]
+name = "sdk-operations"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+description = "Inventory of every operation exposed by the pinned AWS SDK crates"
+
+[[bin]]
+name = "sdk-operations"
+path = "src/main.rs"
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+sha2.workspace = true
+base16ct.workspace = true
+
+[dev-dependencies]
+tempfile = "3"
+
+[lints]
+workspace = true

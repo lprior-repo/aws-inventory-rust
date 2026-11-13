@@ -66,7 +66,7 @@ fn merge_parent_capabilities(catalog: &mut Value) -> Result<()> {
         .and_then(Value::as_array)
         .context("missing parent workflows")?;
     ensure!(
-        types.len() == 21 && plans.len() == 21,
+        types.len() == 24 && plans.len() == 24,
         "invalid parent capability bound"
     );
     let rows = catalog
@@ -127,7 +127,7 @@ fn merge_parent_capabilities(catalog: &mut Value) -> Result<()> {
             .checked_add(1)
             .context("parent capability count overflow")?;
     }
-    ensure!(added == 21, "parent capability set incomplete");
+    ensure!(added == 24, "parent capability set incomplete");
     let mut exclusions = BTreeMap::<String, usize>::new();
     for row in rows
         .iter()
@@ -208,33 +208,33 @@ mod tests {
             rows.iter()
                 .filter(|r| r.get("selected") == Some(&json!(true)))
                 .count(),
-            418
+            421
         );
         let excluded = report(None, None, true, 4_096)?;
-        assert_eq!(excluded.get("matched"), Some(&json!(1_463)));
-        assert_eq!(full.pointer("/summary/selected_count"), Some(&json!(418)));
-        assert_eq!(full.pointer("/summary/excluded_count"), Some(&json!(1463)));
+        assert_eq!(excluded.get("matched"), Some(&json!(1_460)));
+        assert_eq!(full.pointer("/summary/selected_count"), Some(&json!(421)));
+        assert_eq!(full.pointer("/summary/excluded_count"), Some(&json!(1460)));
         assert_eq!(
             full.pointer("/summary/root_only_selected_count"),
             Some(&json!(397))
         );
         assert_eq!(
             full.pointer("/summary/relationship_rule_count"),
-            Some(&json!(965))
+            Some(&json!(968))
         );
         assert_eq!(
             full.pointer("/summary/parent_relationship_rule_count"),
-            Some(&json!(21))
+            Some(&json!(24))
         );
         assert_eq!(
             full.pointer("/summary/types_with_relationships"),
-            Some(&json!(265))
+            Some(&json!(268))
         );
         assert_eq!(
             full.pointer("/summary/exclusions"),
             Some(&json!({
                 "missing_read_or_list_handler":180,"scope_unreviewed":894,
-                "schema_parent_model_required":357,"documented_parent_model_required":32
+                "schema_parent_model_required":354,"documented_parent_model_required":32
             }))
         );
         Ok(())
@@ -281,7 +281,7 @@ mod tests {
         );
         assert_eq!(
             result.pointer("/summary/parent_dependent_selected_count"),
-            Some(&json!(21))
+            Some(&json!(24))
         );
         assert_eq!(
             report(None, Some("AWS::EKS::Addon"), true, 1)?.get("matched"),

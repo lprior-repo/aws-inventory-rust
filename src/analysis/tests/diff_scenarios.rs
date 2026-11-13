@@ -1,4 +1,5 @@
 use super::*;
+use crate::json_test::first as first_row;
 
 #[tokio::test]
 async fn diff_ignores_observation_time_and_object_key_order() -> Result<()> {
@@ -56,7 +57,7 @@ async fn diff_reports_tags_arrays_and_provider_timestamps_as_data() -> Result<()
     let result = diff::report(&before, &after, "before", "after", 100, 100).await?;
     assert_eq!(result["resources"]["counts"]["changed"], 1);
     assert_eq!(
-        result["resources"]["rows"][0]["changed_fields"],
+        first_row(&result["resources"]["rows"])["changed_fields"],
         json!(["properties", "tags"])
     );
     before.close().await;
@@ -89,11 +90,14 @@ async fn diff_absence_is_not_deletion_even_for_complete_scans() -> Result<()> {
     assert_eq!(result["resources"]["counts"]["no_longer_observed"], 1);
     assert_eq!(result["relationships"]["counts"]["no_longer_observed"], 1);
     assert_eq!(
-        result["resources"]["rows"][0]["change"],
+        first_row(&result["resources"]["rows"])["change"],
         "no_longer_observed"
     );
-    assert_eq!(result["resources"]["rows"][0]["deletion_inferred"], false);
-    assert_eq!(result["resources"]["rows"][1]["after"]["id"], "b");
+    assert_eq!(
+        first_row(&result["resources"]["rows"])["deletion_inferred"],
+        false
+    );
+    assert_eq!(nth(&result["resources"]["rows"], 1)["after"]["id"], "b");
     before.close().await;
     after.close().await;
     Ok(())
@@ -113,7 +117,7 @@ async fn diff_keeps_partial_inputs_and_source_changes_explicit() -> Result<()> {
     assert_eq!(result["after_scan"]["status"], "partial");
     assert_eq!(result["resources"]["counts"]["source_changed"], 1);
     assert_eq!(
-        result["resources"]["rows"][0]["changed_fields"],
+        first_row(&result["resources"]["rows"])["changed_fields"],
         json!(["source"])
     );
     before.close().await;

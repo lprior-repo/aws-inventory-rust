@@ -20,6 +20,30 @@ status, coverage and failures remain in the artifact. A running scan is always
 rejected. A complete scan means its selected attempted scopes completed; export
 does not enlarge the scan's resource, service, region or relationship coverage.
 
+Add `--universal-references` to derive and persist universal `REFERENCES` edges
+from observed resource properties before writing the snapshot. The flag is off
+by default, so existing exports keep their exact edge set. The resolver indexes
+the scan's own resource ids, Cloud Control primary identifiers and ARN
+components, matches exact ARNs and ARN-shaped primary identifiers, and resolves
+unique identifiers scoped to the owner's account and region. Only provider
+primary identifiers of at least 8 bytes enter that unique-identifier tier;
+shorter values (provider enums such as `abc` or `yes`) are never indexed, while
+ARN component resolution keeps its own 3-byte floor. An emitted edge's
+`properties.reference` is `arn` for an exact observed ARN and `identifier` for a
+unique-in-scope identifier match (a full identity, an ARN component, or a
+primary identifier at or above the floor); there is no separate confidence
+property, so `identifier` always means "unique within account and region".
+Ambiguous matches are counted, never guessed. Derived edges live in a synthetic
+`universal_reference` scope that replay rewrites idempotently.
+
+Status legality, output-path checks and the pre-export synthetic edge snapshot
+run before resolution, so a rejected export never changes the scan's edge set.
+The artifact streams the persisted derived edges and its header counts describe
+the scan after persistence, so derivation necessarily precedes the file write.
+To keep failed exports side-effect free, the exporter restores the captured
+synthetic edge set (or its absence) whenever writing, sync, cancellation or
+final publication fails; only a successful publication keeps the new set.
+
 ## Provenance modes
 
 | Mode | Resource and edge records | Provenance |
@@ -204,6 +228,19 @@ temporary link fails after publication, the distinct `PublishedCleanup` error
 states that the final file already exists. Cleanup failures before publication
 retain the original error and cleanup detail. File contents are synced, but this
 API does not claim directory-entry durability across power loss.
+
+When `--universal-references` is enabled, derived reference edges are committed
+to the store before the artifact is written (the artifact and its header counts
+include them). If any later step fails — a record or byte budget, a file write
+or sync error, cancellation, or the final hard link — the exporter restores the
+synthetic `universal_reference` scopes captured before the export, so
+`store.edges()` matches its pre-call state even though the edges were briefly
+rewritten. Restoring an already-successful earlier replay therefore keeps that
+replay's edges rather than clearing them. If the restore itself fails, the
+`ExportError::Restore` error reports both the publication failure and the store
+failure. Abruptly dropping the future after persistence, or killing the process,
+can leave the rewritten scopes exactly as it can leave a partial file; only an
+awaited failure is guaranteed to restore them.
 
 The snapshot is immutable through the `Store` API. External modification of the
 underlying database while exporting is outside that contract.

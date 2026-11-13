@@ -28,16 +28,25 @@ where
             .await;
     }
     let identities = Mutex::new(IdentityLedger::default());
+    let failure_scope = scope.clone();
     paginate(ctx, scope, |token, budget| {
         let identities = &identities;
+        let failure_scope = failure_scope.clone();
         async move {
             check_cancelled(ctx)?;
-            let output = list(ListRequest {
+            let output = match list(ListRequest {
                 type_name: child.descriptor.type_name.clone(),
                 resource_model: Some(parent.encoded_model.clone()),
                 token,
             })
-            .await?;
+            .await
+            {
+                Ok(output) => output,
+                Err(ApiError::UnsupportedType(message)) => {
+                    return record_unsupported(ctx, &failure_scope, message).await;
+                }
+                Err(error) => return Err(error.into()),
+            };
             remember_list_page(child.descriptor, &output, identities, budget)?;
             admit_children(&state.ledger, child.descriptor, &output)?;
             collect_bounded(

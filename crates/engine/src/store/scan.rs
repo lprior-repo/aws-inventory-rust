@@ -98,6 +98,45 @@ impl Store {
         scan_summary(&mut connection, scan_id).await
     }
 
+    /// Cloud Control drain accounting for one scan. List scopes are unique per
+    /// type and region; unsupported capability boundaries stay visible even
+    /// though they do not make the scan partial.
+    pub async fn universal_outcomes(&self, scan_id: &str) -> Result<UniversalOutcomes, StoreError> {
+        validate_identifier(scan_id, "scan id")?;
+        let mut connection = self.reader.acquire().await?;
+        reset_progress(&mut connection).await?;
+        let row = sqlx::query(
+            "SELECT
+                (SELECT count(*) FROM scope_checkpoints
+                    WHERE scan_id=?1 AND collector='cloud_control_list' AND source='cloud_control') AS attempted,
+                (SELECT count(*) FROM scope_checkpoints AS scopes
+                    WHERE scopes.scan_id=?1 AND scopes.collector='cloud_control_list'
+                    AND scopes.source='cloud_control' AND scopes.complete=1 AND scopes.failed=0
+                    AND NOT EXISTS (SELECT 1 FROM collection_failures AS failures
+                        WHERE failures.scan_id=scopes.scan_id AND failures.scope_key=scopes.scope_key
+                        AND failures.category='unsupported_type')) AS succeeded,
+                (SELECT count(*) FROM collection_failures AS failures
+                    JOIN scope_checkpoints AS scopes
+                        ON scopes.scan_id=failures.scan_id
+                        AND scopes.scope_key=failures.scope_key
+                    WHERE failures.scan_id=?1 AND failures.category='unsupported_type'
+                    AND scopes.collector='cloud_control_list' AND scopes.source='cloud_control')
+                    AS unsupported,
+                (SELECT count(*) FROM scope_checkpoints
+                    WHERE scan_id=?1 AND collector='cloud_control_list' AND source='cloud_control'
+                    AND failed=1) AS failed",
+        )
+        .bind(scan_id)
+        .fetch_one(&mut *connection)
+        .await?;
+        Ok(UniversalOutcomes {
+            attempted: row_u64(&row, "attempted")?,
+            succeeded: row_u64(&row, "succeeded")?,
+            unsupported: row_u64(&row, "unsupported")?,
+            failed: row_u64(&row, "failed")?,
+        })
+    }
+
     pub async fn scan_status(&self, scan_id: &str) -> Result<ScanStatus, StoreError> {
         let mut connection = self.reader.acquire().await?;
         reset_progress(&mut connection).await?;

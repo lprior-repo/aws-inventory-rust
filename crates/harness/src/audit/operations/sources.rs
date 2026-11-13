@@ -1,0 +1,298 @@
+//! Recorded emulator outcomes used to qualify operation coverage claims.
+
+use std::collections::{BTreeMap, BTreeSet};
+use std::path::Path;
+
+use serde_json::Value;
+
+use crate::HarnessError;
+use crate::provenance::sha256_hex;
+
+use super::super::files::{array_field, read_json_audit, text_field};
+use super::additions::{self, Additions};
+use super::{INVENTORY, Inventory, OPERATION_MATRIX, OperationKey, OperationRow, RECONCILIATION};
+
+/// Recorded outcomes and the document that supplied them.
+pub(crate) struct StatusEvidence {
+    pub(crate) statuses: BTreeMap<OperationKey, String>,
+    pub(crate) claims: BTreeMap<OperationKey, BTreeSet<String>>,
+    pub(crate) reviewed_files: usize,
+    pub(crate) reviewed_changed: usize,
+    pub(crate) status_source: String,
+    pub(crate) status_source_path: String,
+    pub(crate) matrix_sha256: String,
+    pub(crate) matrix_execution: String,
+    pub(crate) reconciliation_status: String,
+    pub(crate) reconciliation_sha256: Option<String>,
+    pub(crate) additions: Additions,
+}
+
+/// Source files the matrix reviewed and how many changed since.
+fn reviewed_hashes(document: &Value, sources: &BTreeMap<String, String>) -> (usize, usize) {
+    let mut reviewed_files = 0_usize;
+    let mut reviewed_changed = 0_usize;
+    if let Some(hashes) = document
+        .pointer("/extraction/source_sha256")
+        .and_then(Value::as_object)
+    {
+        for (path, digest) in hashes {
+            reviewed_files = reviewed_files.saturating_add(1);
+            let current = sources
+                .get(path)
+                .map(|source| sha256_hex(source.as_bytes()));
+            if current.as_deref() != digest.as_str() {
+                reviewed_changed = reviewed_changed.saturating_add(1);
+            }
+        }
+    }
+    (reviewed_files, reviewed_changed)
+}
+
+fn operation_claims(row: &Value) -> Result<BTreeSet<String>, HarnessError> {
+    let mut callsites: BTreeSet<String> = BTreeSet::new();
+    for call in array_field(row, "source_calls")? {
+        callsites.insert(format!(
+            "reviewed:{}:{}",
+            text_field(call, "path")?,
+            text_field(call, "function")?
+        ));
+    }
+    Ok(callsites)
+}
+
+/// Inventory row and key for one recorded matrix operation.
+fn recorded_key<'a>(
+    row: &Value,
+    inventory: &'a Inventory,
+) -> Result<(OperationKey, &'a OperationRow), HarnessError> {
+    let id = text_field(row, "id")?;
+    let crate_name = text_field(row, "sdk_crate")?;
+    let module = text_field(row, "sdk_operation")?;
+    let (service, version) = inventory.by_crate.get(crate_name).ok_or_else(|| {
+        HarnessError::invalid(format!("recorded operation {id} names an unknown crate"))
+    })?;
+    let key = (crate_name.to_owned(), version.clone(), module.to_owned());
+    let operation = inventory.rows.get(&key).ok_or_else(|| {
+        HarnessError::invalid(format!(
+            "recorded operation {id} is absent from {INVENTORY}"
+        ))
+    })?;
+    if format!("{service}.{}", operation.module) != id {
+        return Err(HarnessError::invalid(format!(
+            "recorded operation {id} disagrees with its crate/module"
+        )));
+    }
+    Ok((key, operation))
+}
+
+fn provider_boundary(row: &Value) -> bool {
+    row.get("credential_provider_boundary")
+        .and_then(Value::as_bool)
+        == Some(true)
+}
+
+fn record_operation(
+    row: &Value,
+    inventory: &Inventory,
+    statuses: &mut BTreeMap<OperationKey, String>,
+    claims: &mut BTreeMap<OperationKey, BTreeSet<String>>,
+) -> Result<(), HarnessError> {
+    let (key, _operation) = recorded_key(row, inventory)?;
+    claims
+        .entry(key.clone())
+        .or_default()
+        .extend(operation_claims(row)?);
+    let Some(coverage) = row.get("emulator_coverage") else {
+        return Ok(());
+    };
+    if provider_boundary(coverage) {
+        return Ok(());
+    }
+    statuses.insert(key, text_field(coverage, "status")?.to_owned());
+    Ok(())
+}
+
+fn matrix_execution(document: &Value) -> String {
+    document
+        .pointer("/emulator_run/evidence_directory")
+        .and_then(Value::as_str)
+        .unwrap_or("unspecified")
+        .to_owned()
+}
+
+fn matrix_evidence(
+    statuses: BTreeMap<OperationKey, String>,
+    claims: BTreeMap<OperationKey, BTreeSet<String>>,
+    reviewed: (usize, usize),
+    document: &Value,
+    sha256: String,
+) -> StatusEvidence {
+    StatusEvidence {
+        statuses,
+        claims,
+        reviewed_files: reviewed.0,
+        reviewed_changed: reviewed.1,
+        status_source: "operation_matrix".to_owned(),
+        status_source_path: OPERATION_MATRIX.to_owned(),
+        matrix_sha256: sha256,
+        matrix_execution: matrix_execution(document),
+        reconciliation_status: "absent".to_owned(),
+        reconciliation_sha256: None,
+        additions: Additions::absent(),
+    }
+}
+
+fn matrix_statuses(
+    root: &Path,
+    inventory: &Inventory,
+    sources: &BTreeMap<String, String>,
+) -> Result<StatusEvidence, HarnessError> {
+    let (document, sha256) = read_json_audit(&root.join(OPERATION_MATRIX))?;
+    let reviewed = reviewed_hashes(&document, sources);
+    let mut statuses: BTreeMap<OperationKey, String> = BTreeMap::new();
+    let mut claims: BTreeMap<OperationKey, BTreeSet<String>> = BTreeMap::new();
+    for row in array_field(&document, "operations")? {
+        record_operation(row, inventory, &mut statuses, &mut claims)?;
+    }
+    if statuses.is_empty() {
+        return Err(HarnessError::invalid(
+            "operation matrix records no emulator outcomes",
+        ));
+    }
+    Ok(matrix_evidence(
+        statuses, claims, reviewed, &document, sha256,
+    ))
+}
+
+fn closure_matches(
+    document: &Value,
+    sources: &BTreeMap<String, String>,
+) -> Result<bool, HarnessError> {
+    let rows = array_field(document, "aws_source_files")?;
+    let mut seen: BTreeSet<&str> = BTreeSet::new();
+    for row in rows {
+        let path = text_field(row, "path")?;
+        let digest = text_field(row, "sha256")?;
+        let current = sources
+            .get(path)
+            .map(|source| sha256_hex(source.as_bytes()));
+        if current.as_deref() != Some(digest) {
+            return Ok(false);
+        }
+        seen.insert(path);
+    }
+    Ok(seen.len() == sources.len() && sources.keys().all(|path| seen.contains(path.as_str())))
+}
+
+/// One recorded receipt outcome, or `None` for a provider-boundary read.
+fn receipt_row(
+    row: &Value,
+    inventory: &Inventory,
+) -> Result<Option<(OperationKey, String)>, HarnessError> {
+    if provider_boundary(row) {
+        return Ok(None);
+    }
+    let id = text_field(row, "id")?;
+    let (service, module) = id
+        .split_once('.')
+        .ok_or_else(|| HarnessError::invalid(format!("invalid operation identity {id}")))?;
+    let (crate_name, version) = inventory
+        .active
+        .get(service)
+        .ok_or_else(|| HarnessError::invalid(format!("unknown SDK service namespace {service}")))?;
+    let key = (crate_name.clone(), version.clone(), module.to_owned());
+    if !inventory.rows.contains_key(&key) {
+        return Err(HarnessError::invalid(format!(
+            "recorded operation {id} is absent from {INVENTORY}"
+        )));
+    }
+    Ok(Some((key, text_field(row, "status")?.to_owned())))
+}
+
+fn receipt_statuses(
+    document: &Value,
+    inventory: &Inventory,
+) -> Result<BTreeMap<OperationKey, String>, HarnessError> {
+    let results = document
+        .pointer("/emulator_evidence/operation_results")
+        .and_then(Value::as_array)
+        .ok_or_else(|| HarnessError::invalid("reconciliation receipt lacks operation results"))?;
+    let mut statuses: BTreeMap<OperationKey, String> = BTreeMap::new();
+    for row in results {
+        if let Some((key, status)) = receipt_row(row, inventory)? {
+            statuses.insert(key, status);
+        }
+    }
+    if statuses.is_empty() {
+        return Err(HarnessError::invalid(
+            "reconciliation receipt records no operation outcomes",
+        ));
+    }
+    Ok(statuses)
+}
+
+fn reconciliation_evidence(
+    statuses: BTreeMap<OperationKey, String>,
+    sha256: String,
+    fallback: StatusEvidence,
+) -> StatusEvidence {
+    StatusEvidence {
+        statuses,
+        status_source: "reconciliation".to_owned(),
+        status_source_path: RECONCILIATION.to_owned(),
+        reconciliation_status: "applied".to_owned(),
+        reconciliation_sha256: Some(sha256),
+        ..fallback
+    }
+}
+
+fn reconciliation_statuses(
+    root: &Path,
+    inventory: &Inventory,
+    sources: &BTreeMap<String, String>,
+    fallback: StatusEvidence,
+) -> Result<StatusEvidence, HarnessError> {
+    let path = root.join(RECONCILIATION);
+    if !path.try_exists()? {
+        return Ok(fallback);
+    }
+    let (document, sha256) = read_json_audit(&path)?;
+    if !closure_matches(&document, sources)? {
+        return Ok(StatusEvidence {
+            reconciliation_status: "stale_source_closure".to_owned(),
+            reconciliation_sha256: Some(sha256),
+            ..fallback
+        });
+    }
+    let statuses = receipt_statuses(&document, inventory)?;
+    Ok(reconciliation_evidence(statuses, sha256, fallback))
+}
+
+fn additions_evidence(
+    root: &Path,
+    inventory: &Inventory,
+    sources: &BTreeMap<String, String>,
+    mut evidence: StatusEvidence,
+) -> Result<StatusEvidence, HarnessError> {
+    let additions = additions::Additions::load(root, &evidence.matrix_sha256)?;
+    if additions.is_present() {
+        additions.bind(
+            inventory,
+            &additions::matrix_ids(inventory, &evidence.claims),
+            sources,
+        )?;
+    }
+    evidence.additions = additions;
+    Ok(evidence)
+}
+
+/// Load the newest applicable recorded outcomes for asserted operations.
+pub(crate) fn statuses(
+    root: &Path,
+    inventory: &Inventory,
+    sources: &BTreeMap<String, String>,
+) -> Result<StatusEvidence, HarnessError> {
+    let fallback = matrix_statuses(root, inventory, sources)?;
+    let bound = reconciliation_statuses(root, inventory, sources, fallback)?;
+    additions_evidence(root, inventory, sources, bound)
+}

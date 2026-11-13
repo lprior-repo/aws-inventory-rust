@@ -30,6 +30,16 @@ pub struct ExportArgs {
     pub provenance: ExportProvenance,
     #[arg(long)]
     pub allow_partial: bool,
+    /// Derive and persist universal REFERENCES edges before exporting.
+    #[arg(long = "universal-references")]
+    pub derive_references: bool,
+}
+
+impl ExportArgs {
+    /// Parse `--universal-references` once into the typed export mode.
+    pub fn reference_mode(&self) -> inventory_engine::export::ReferenceMode {
+        inventory_engine::export::ReferenceMode::from_flag(self.derive_references)
+    }
 }
 
 #[derive(Args, Debug)]

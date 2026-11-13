@@ -1,0 +1,33 @@
+[package]
+name = "inventory-harness"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Development harness: fixture provenance, oracle snapshots and release packaging."
+publish = false
+
+[[bin]]
+name = "inventory-harness"
+path = "src/main.rs"
+
+[dependencies]
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+sha2.workspace = true
+base16ct.workspace = true
+sqlx.workspace = true
+aws-config = "1"
+aws-sdk-s3 = { version = "1", default-features = false, features = ["default-https-client", "rt-tokio"] }
+aws-sdk-cloudcontrol = { version = "1", default-features = false, features = ["default-https-client", "rt-tokio"] }
+regex.workspace = true
+toml.workspace = true
+zip.workspace = true
+
+[dev-dependencies]
+catalog-tool = { path = "../catalog-tool" }
+tempfile = "3"
+
+[lints]
+workspace = true

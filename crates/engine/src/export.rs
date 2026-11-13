@@ -50,11 +50,40 @@ pub enum ProvenanceMode {
     AllObservations,
 }
 
+/// Whether export derives universal `REFERENCES` edges before publication.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ReferenceMode {
+    /// Write only observed edges; no resolver runs.
+    #[default]
+    Disabled,
+    /// Derive and persist universal `REFERENCES` edges from observed resource
+    /// properties. Idempotent across replays.
+    Derive,
+}
+
+impl ReferenceMode {
+    /// The single CLI-boundary conversion from `--universal-references`.
+    pub const fn from_flag(enabled: bool) -> Self {
+        if enabled {
+            Self::Derive
+        } else {
+            Self::Disabled
+        }
+    }
+
+    pub const fn is_enabled(self) -> bool {
+        matches!(self, Self::Derive)
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct ExportOptions {
     pub format: ExportFormat,
     pub provenance: ProvenanceMode,
     pub allow_partial: bool,
+    /// Derive and persist universal `REFERENCES` edges before writing the
+    /// snapshot. Default: disabled, so existing exports keep their edge set.
+    pub reference_mode: ReferenceMode,
     /// Resource, edge, scope and failure records combined; excludes two envelopes.
     pub max_records: usize,
     /// All output bytes, including headers, punctuation and the final newline.
@@ -67,6 +96,7 @@ impl Default for ExportOptions {
             format: ExportFormat::Jsonl,
             provenance: ProvenanceMode::Normalized,
             allow_partial: false,
+            reference_mode: ReferenceMode::Disabled,
             max_records: MAX_EXPORT_RECORDS,
             max_bytes: MAX_EXPORT_BYTES,
         }
@@ -119,6 +149,12 @@ pub enum ExportError {
         output: PathBuf,
         #[source]
         source: std::io::Error,
+    },
+    #[error("{cause}; restoring the pre-export reference edges failed: {restore}")]
+    Restore {
+        #[source]
+        cause: Box<Self>,
+        restore: Box<StoreError>,
     },
 }
 

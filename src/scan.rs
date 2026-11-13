@@ -9,7 +9,9 @@ use inventory_aws::{
     AwsScanOptions,
     discovery::{self, AssumeRoleOptions, DiscoveryOptions, OrganizationDiscovery},
 };
-use inventory_core::{CollectionEvent, CollectionFailure, CollectionScope, ScanStatus, Source};
+use inventory_core::{
+    CollectionEvent, CollectionFailure, CollectionScope, ScanStatus, Selection, Source,
+};
 use inventory_engine::{
     limiter::{ApiExecutor, ExecutorConfig},
     store::Store,
@@ -42,6 +44,7 @@ struct Outcome {
     profile: Option<String>,
     target_account: Option<String>,
     error: Option<String>,
+    selection: Selection,
 }
 struct PipelineResult {
     outcomes: Vec<Outcome>,

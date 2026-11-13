@@ -144,7 +144,7 @@ class Run:
         db = self.output / "inventory.sqlite"
         if db.exists():
             raise RuntimeError("output inventory already exists; use a new output directory")
-        common = ["--db", str(db), "--region", "us-east-1", "--attempts", "2", "--max-pages", "100",
+        common = ["--db", str(db), "--region", "us-east-1", "--attempts", "2", "--max-pages", "128",
                   "--page-size", "1", "--concurrency", "32", "--per-bucket-concurrency", "4", "--rps", "100"]
         native = self.cli("native", ["scan", *common, "--service", "all"], recorder)
         self.check("native:terminal_scan", native.get("exit_code") in (0, 2))

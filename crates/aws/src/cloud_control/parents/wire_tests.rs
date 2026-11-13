@@ -203,11 +203,12 @@ async fn production_sdk_serializes_parent_models_keeps_cursors_isolated_and_exec
         max_pages: 3,
         page_size: 100,
     };
-    let types = validate_selection(&["AWS::EKS::Addon".into()])?;
+    let selection = Selection::Types(vec![inventory_core::ResourceType::new("AWS::EKS::Addon")]);
+    let types = validate_selection(&selection)?;
     let work = async {
         tokio::try_join!(
             async {
-                super::super::collect(&ctx, &types)
+                super::super::collect(&ctx, &types, &selection)
                     .await
                     .map_err(|error| -> TestError { Box::new(error) })
             },

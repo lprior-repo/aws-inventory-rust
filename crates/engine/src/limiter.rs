@@ -66,6 +66,10 @@ pub enum ApiError {
     Denied(String),
     #[error("permanent API failure: {0}")]
     Permanent(String),
+    /// The provider does not expose this discoverable catalog type. This is a
+    /// capability boundary, not a transient or malformed response.
+    #[error("provider does not support this type: {0}")]
+    UnsupportedType(String),
     #[error("API attempt timed out")]
     Timeout,
     #[error("API execution cancelled")]

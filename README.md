@@ -8,6 +8,12 @@
 for build commands, measured results, remaining work and the
 portable handoff boundaries.
 
+**Where this is going:** [the vision spec](docs/VISION.md) defines the product —
+a continuously updated CMDB of every AWS resource across many accounts, in SQL
+and a relationship graph, shown as a Makepad DAG — and
+[the roadmap](docs/ROADMAP.md) sequences the work. The detailed requirements
+draft is [docs/cmdb-spec](docs/cmdb-spec/README.md).
+
 A working foundation for AWS architecture inventory: official Rust SDK
 collectors, bounded request scheduling, SQLx with local SQLite, familiar SQL
 resource views, and replayable FalkorDB snapshot projections.
@@ -16,32 +22,45 @@ The application and collectors are Rust. SQLx's bundled SQLite engine is native
 SQLite C; FalkorDB is an external database. SDK/resource-catalog refresh utilities
 use Python as development tooling, outside collection and the deployed application.
 The SDK source auditor and SQLite view generator are Rust.
-The optional AWS Emulator harness uses Python for fixture setup and request
-recording; it runs the same compiled Rust collectors against signed local APIs.
+The optional AWS Emulator harness has a Rust implementation (`inventory-harness`)
+for installing the pinned emulator, freezing snapshots, seeding, assertions and
+live end-to-end tests; request recording and the mutation gate remain Python
+until their ports land.
 
 ## Current scope
 
-- **418 schema-backed Cloud Control resource types across 76 service families** through one shared Rust
+- **421 schema-backed Cloud Control resource types across 76 service families** through one shared Rust
   list/read adapter, with bounded enrichment, per-resource failures, schema-based
   redaction, source provenance, and generated SQLite views. These are configured
   collection capabilities, not a claim of live-account coverage in every region.
-  The selection includes 397 root types and 21 parent-scoped types. Selecting a
+  The selection includes 397 root types and 24 parent-scoped types. Selecting a
   child automatically collects its required root and checks ownership before
   deriving a `CHILD_OF` relationship.
 - A complete **1,881-schema capability matrix** distinguishes selected types,
   missing handlers, parent-model dependencies and unreviewed scope. The offline
   `coverage` command exposes exclusions and separately bound emulator evidence.
-  SQLite schema 6 exposes 4,273 provider columns. The catalog includes 965
-  property relationship rules across 255 types plus 21 explicit parent workflows,
-  covering 265 types with at least one relationship rule. A configured rule is
+  SQLite schema 13 exposes 4,309 provider columns across the 421 Cloud Control
+  views, plus native views for SQS, SNS, KMS and Step Functions. The catalog includes 968
+  property relationship rules across 255 types plus 24 explicit parent workflows,
+  covering 268 types with at least one relationship rule. A configured rule is
   distinct from an observed relationship.
-- **32 direct resource and component kinds:** EC2 instances, VPCs, subnets, security groups,
+- **Universal listable coverage.** `--resource-type all` attempts every one of
+  the 1,291 list-capable types through the shared Cloud Control adapter, not just
+  the reviewed 397. Against the pinned emulator: 1,291 attempted, 999 listed,
+  292 provider-unsupported, 0 failed, with 410 parent-scoped and 180 handler-less
+  types reported as explicit skips. The scan JSON carries the full partition and
+  names every skip. `--service all,cloud-control --cloud-control --resource-type
+  all` combines the native adapters with universal listing in one scan. See
+  [universal coverage](docs/UNIVERSAL_COVERAGE.md).
+- **39 direct resource and component kinds:** EC2 instances, VPCs, subnets, security groups,
   network interfaces, EBS volumes, DynamoDB tables, Lambda functions, ECS
   clusters/services/tasks and ACTIVE task-definition revisions, EKS clusters/nodegroups, route tables, internet and
   NAT gateways, VPC endpoints, network ACLs, peering connections, and ELBv2
   load balancers, listeners, rules, target groups and target-health memberships;
   S3 buckets, IAM roles/instance profiles/customer-managed policy metadata,
-  Route 53 zones/records and CloudFront distributions.
+  Route 53 zones/records, CloudFront distributions, SQS queues, SNS topics
+  and subscriptions, KMS keys and aliases, and Step Functions state machines
+  and activities.
 - Optional collection through an **existing AWS Config aggregator** and an
   **existing Resource Explorer view**, selected explicitly or through conservative
   automatic source discovery, including additional resource kinds they return.
@@ -95,7 +114,7 @@ benchmark, and live-environment boundaries of this delivery.
 [AWS Emulator testing](docs/EMULATOR_TESTING.md) describes the pinned full source
 checkout, verified AWS binary, populated service fixtures and operation-by-operation
 evidence. [The historical call matrix](docs/AWS_CALL_MATRIX.md) enumerates **72 explicit AWS
-operations plus the SDK's AssumeRole boundary**, separately from the 418 Cloud
+operations plus the SDK's AssumeRole boundary**, separately from the 421 Cloud
 Control resource types and 437 available SDK crates.
 The [current source/run reconciliation](docs/AWS_OPERATION_RECONCILIATION.md)
 binds operation identities to a specific source tree and executed evidence.
@@ -174,8 +193,8 @@ INVENTORY_PYTHON=/tmp/aws-inventory-checks/bin/python bash scripts/verify.sh
 ```
 
 Live emulator/FalkorDB tests require the explicit local fixture setup described
-below. Ordinary tests leave those ten integration cases ignored unless the
-guarded environment is prepared.
+below. Ordinary tests leave those integration cases ignored unless the guarded
+environment is prepared.
 
 ## Try it locally
 
@@ -205,7 +224,7 @@ chain. These examples perform inventory
 reads when you run them with your own credentials.
 
 ```bash
-# Inspect the 418-type breadth plan and direct architecture collectors offline.
+# Inspect the 421-type breadth plan and direct architecture collectors offline.
 cargo run --locked -- plan --cloud-control --region us-east-1,us-west-2
 
 # Explain selected types, exclusions and separately recorded emulator evidence.
@@ -383,14 +402,16 @@ multiple scanner processes require separate quota coordination.
 
 ## Query the inventory
 
-The service views expose the preferred last-known observation across scans.
-Use `scan_resources` or `scan_edges` with an explicit `scan_id` for a particular
-snapshot. An old direct observation can outrank newer supplemental metadata;
-`source` and `observed_at` remain visible. `latest_resource_sources` exposes
-the independently retained source records.
+The service views expose the freshest last-known observation across scans;
+source priority only breaks equal observation timestamps, so a newer Config
+observation is selected over an older direct one. Use `scan_resources` or
+`scan_edges` with an explicit `scan_id` for a particular priority-first
+snapshot. `source` and `observed_at` remain visible on every selected row.
+`latest_resource_sources` exposes the independently retained source records.
 Cloud Control views use the `aws_cc_*` namespace and select their own source
 records, retaining top-level provider columns and `provider_properties` JSON.
-They remain inspectable even when a richer direct observation is preferred.
+They remain inspectable even when a fresher observation from another source is
+selected.
 
 ```sql
 SELECT account_id, region, kind, count(*) AS resources
@@ -439,7 +460,7 @@ Each panel has a row limit and an explicit `truncated` flag. A route target or
 load-balancer scheme is configuration evidence, not a reachability verdict.
 Unknown endpoints mean they were not observed in the same scan.
 
-Opening a version-1, version-2 or version-3 database upgrades it transactionally to schema version 4,
+Opening an older database upgrades it transactionally to schema version 13,
 including when opened by query/report commands. Observation and checkpoint
 tables are preserved. [Storage design](docs/STORAGE.md) describes the upgrade;
 [networking](docs/NETWORKING.md) and [load balancing](docs/LOAD_BALANCING.md)
@@ -523,13 +544,39 @@ Start with [architecture](docs/ARCHITECTURE.md), [storage](docs/STORAGE.md),
 [collectors](docs/COLLECTORS.md), [scheduler](docs/SCHEDULER.md), and
 [SDK catalog](docs/SDK_CATALOG.md). [The expansion plan](docs/ROADMAP.md)
 separates breadth work, production hardening, and performance validation.
-The [collection plan](docs/COLLECTION_PLAN.md) specifies the shared 418-type
+The [collection plan](docs/COLLECTION_PLAN.md) specifies the shared 421-type
 adapter, schema evidence, architecture relationships, and query generation.
 [Parent collection design](docs/PARENT_COLLECTIONS.md) explains prerequisite
 discovery, exact resource models, ownership checks and bounded child traversal.
 The [coverage matrix](docs/CLOUDCONTROL_COVERAGE.md) explains the full registry
 partition, excluded types, relationship inference and observed emulator evidence.
 
+## CMDB product direction
+
+The current tool is a local inventory CLI with SQLite, a process-local scheduler,
+persistent jobs and a replayable FalkorDB projection. The development tree now
+also contains the first continuous-CMDB slice: freshness views and an
+account/region/collector coverage registry, a deterministic workload generator
+with an independent oracle (`cmdb-bench`), a bounded read model (`cmdb-view`), a
+read-only loopback query API (`cmdb-api`), and a Makepad viewer (`cmdb-ui`) with
+a filterable table and a real account→region→kind→resource DAG. Missing pieces
+are explicit: server-side auth and a write API, event ingestion,
+tombstones/retention, per-collector enumeration epochs, distributed quota
+coordination, PostgreSQL evaluation, durable fault/soak campaigns and live AWS
+calibration. The [performance contract](docs/CMDB_PERFORMANCE_CONTRACT.md) defines
+the target; the [CMDB architecture](docs/CMDB_ARCHITECTURE.md) records component
+status and the [release baseline](docs/CMDB_BASELINE_2026-11-13.md) records
+preliminary local storage and mock-scheduler measurements only. It does not
+establish fleet capacity or competitive superiority.
+
 Upstream projects informed the design; this is an independent implementation.
 See [sources and licensing](docs/SOURCES.md). No upstream documentation prose,
 logos, or complete Steampipe schemas are bundled as a claimed port.
+
+## License
+
+MIT. See [LICENSE](LICENSE). The project license was deliberately changed from
+Apache-2.0 to MIT for this development tree by the project owner; third-party
+dependencies keep their own licenses: the official
+AWS SDK for Rust crates are Apache-2.0, SQLx and FalkorDB are covered in
+[sources and licensing](docs/SOURCES.md).

@@ -5,6 +5,24 @@ pub(super) fn invalid(message: impl Into<String>) -> AwsScanError {
     AwsScanError::InvalidData(message.into())
 }
 
+#[derive(Deserialize)]
+struct SensitiveCatalog {
+    evidence: CatalogEvidence,
+}
+
+/// The global property-name policy from the reviewed catalog evidence. It is
+/// shared by reviewed descriptors and synthesized universal descriptors, so an
+/// unreviewed provider row cannot bypass redaction.
+pub fn global_sensitive_names() -> Result<Arc<BTreeSet<String>>, AwsScanError> {
+    let catalog: SensitiveCatalog = serde_json::from_str(CATALOG_JSON)
+        .map_err(|error| invalid(format!("embedded Cloud Control catalog: {error}")))?;
+    let sensitive = catalog.evidence.global_sensitive_property_names;
+    if sensitive.is_empty() || sensitive.len() > 128 {
+        return Err(invalid("invalid common sensitive-property policy"));
+    }
+    Ok(Arc::new(sensitive))
+}
+
 /// Parse and validate the embedded, pinned catalog, without credentials or I/O.
 pub fn root_catalog() -> Result<Vec<ResourceType>, AwsScanError> {
     let mut catalog: Catalog = serde_json::from_str(CATALOG_JSON)
@@ -47,14 +65,18 @@ pub fn catalog() -> Result<Vec<ResourceType>, AwsScanError> {
 
 /// An empty selection means the whole pinned catalog. Unknown selections fail
 /// before credentials are loaded; duplicate selectors are harmlessly deduped.
-pub fn validate_selection(selected: &[String]) -> Result<Vec<ResourceType>, AwsScanError> {
+pub fn validate_selection(selection: &Selection) -> Result<Vec<ResourceType>, AwsScanError> {
+    let selected = match selection {
+        Selection::Universal => return super::universal::list_descriptors(),
+        Selection::Types(selected) => selected,
+    };
     if selected.len() > TYPE_COUNT {
         return Err(AwsScanError::InvalidOptions(
-            "at most 418 Cloud Control resource types may be selected".into(),
+            "at most 421 Cloud Control resource types may be selected".into(),
         ));
     }
     let descriptors = catalog()?;
-    let mut requested: BTreeSet<&str> = selected.iter().map(String::as_str).collect();
+    let mut requested: BTreeSet<&str> = selected.iter().map(|value| value.as_str()).collect();
     for name in &requested {
         if !descriptors
             .iter()

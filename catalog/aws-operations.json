@@ -1,19 +1,19 @@
 {
   "schema_version": 1,
-  "generated_at_utc": "2026-11-12T18:32:07.668837+00:00",
+  "generated_at_utc": "2026-11-13T08:56:09.291114+00:00",
   "scope": "Implemented explicit Rust AWS SDK send callsites plus a separately identified credential-provider boundary. Not a catalog of all published SDK methods.",
   "counts": {
-    "explicit_unique_operations": 72,
-    "explicit_sdk_send_callsites": 73,
-    "sdk_services": 15,
+    "explicit_unique_operations": 79,
+    "explicit_sdk_send_callsites": 80,
+    "sdk_services": 17,
     "credential_provider_operation_boundaries": 1,
-    "native_resource_kinds": 32,
+    "native_resource_kinds": 35,
     "by_category": {
       "bootstrap": 2,
       "cloud_control": 2,
       "discovery": 9,
       "native_global": 25,
-      "native_regional": 32,
+      "native_regional": 39,
       "supplemental": 2
     },
     "by_sdk_service": {
@@ -31,6 +31,8 @@
       "resourceexplorer2": 5,
       "route53": 4,
       "s3": 12,
+      "sns": 4,
+      "sqs": 3,
       "sts": 1
     }
   },
@@ -39,9 +41,9 @@
     "channel_sends_excluded": true,
     "source_sha256": {
       "crates/aws/src/cloud_control.rs": "3f206ad4c7b4417b55f4a0727e25a267a8f7e6deabfd18082f7e4adc0528c93e",
+      "crates/aws/src/discovery.rs": "a8065921a652b0407f9a3e063d9326641b554fb49dd983ab0d78125b84836547",
       "crates/aws/src/discovery/organizations.rs": "db0d000e128b60421e9745d72397307722ab6963b9f01d2e9ffae2a0181d5c1d",
       "crates/aws/src/discovery/sources.rs": "5ce9e5b3487d67f09472c94ee54ec31b691d975b6ffd9cc4d3ded75e583097aa",
-      "crates/aws/src/discovery.rs": "a8065921a652b0407f9a3e063d9326641b554fb49dd983ab0d78125b84836547",
       "crates/aws/src/dynamo.rs": "273a3f148ec9562aa4cac300d8e220b3de9cca878f94cf5db807f4672d91c9f9",
       "crates/aws/src/ec2.rs": "224daea624e5591696bd6fd513c07697b5a6b729d172ee934a7c3aa8b6bacdc7",
       "crates/aws/src/ecs.rs": "5d1f34bc7e2c34739e14def034216c0e7b0fdb2b16d0fdb40f7ecb2f881252ec",
@@ -51,9 +53,12 @@
       "crates/aws/src/global_inventory/route53.rs": "9113ed632751f8b9a6ea1d0bec53dbe8c8ad69b56fdbec1a66449e80c2f0699c",
       "crates/aws/src/global_inventory/s3.rs": "f71dd703acd1c89b5e638ec6a5d127fcb82fa34004a3f4bfd852fa4634757227",
       "crates/aws/src/lambda.rs": "8896d51db7346c064f8198e0c4a84c62a2f8da100fcd13dc45ecff6b63743ac3",
-      "crates/aws/src/lib.rs": "baa2d50dbcf31d1cddc6d695f20c0835214487bcb624c486206bd88c9b4b6c8c",
+      "crates/aws/src/lib.rs": "5d48a644e184bba02fe9e52b2d8d730edc007fc179b89ebf419876164684069f",
       "crates/aws/src/load_balancing.rs": "76d119f266fe37f9f0aa6efef823cfe6e20330b93237de1a83d78e053658a789",
       "crates/aws/src/network.rs": "bb87e4d0698d464ce35b73d3e0c521afe44b9fff0bfb26203839232363d9e776",
+      "crates/aws/src/scan.rs": "22977d23ab26dad7f5b0343587d493022ba9c60a63e6bde5d100d78e7864fe48",
+      "crates/aws/src/sns.rs": "8b452d27d0e2660ebb8e8d5704772b1191d24b0a4fe72c1c2d875aa398453792",
+      "crates/aws/src/sqs.rs": "ab591272454af2d01cd0105b927215b64e6edd49379af05ecbeed70e55512387",
       "crates/aws/src/supplemental.rs": "8ddf668485980d64f022bb8884ab71d971df3acc712680bc20ecece6be935883",
       "crates/aws/src/task_definitions.rs": "5a80312375cdabf8c74bd9615527ceeeecbf1ab79ae2594500d2c591fac182f0"
     },
@@ -6917,6 +6922,650 @@
       }
     },
     {
+      "id": "sns.get_topic_attributes",
+      "sdk_service": "sns",
+      "boto3_service": "sns",
+      "sdk_crate": "aws-sdk-sns",
+      "sdk_version": "1.123.0",
+      "sdk_operation": "get_topic_attributes",
+      "api_operation": "GetTopicAttributes",
+      "category": "native_regional",
+      "explicit_sdk_send": true,
+      "source_calls": [
+        {
+          "path": "crates/aws/src/sns.rs",
+          "function": "topic_attributes",
+          "builder_line": 217,
+          "operation_line": 218,
+          "send_line": 220
+        }
+      ],
+      "scope": "account-region",
+      "parent_inputs": [
+        "TopicArn"
+      ],
+      "depends_on": [
+        "sns.list_topics"
+      ],
+      "request_constants": {},
+      "request_notes": [
+        "Policy and DeliveryPolicy bodies are presence-only; subscription counts are retained."
+      ],
+      "fixture_requirements": [
+        "A seeded topic with tags; a missing topic exercises the terminal permanent failure path."
+      ],
+      "pagination": null,
+      "wire": {
+        "method": "POST",
+        "path_template": "/",
+        "query_flags": [],
+        "query_action": "GetTopicAttributes",
+        "query_version": "2010-03-31",
+        "protocol": "query"
+      },
+      "wire_source": {
+        "kind": "botocore installed SDK service model, API name verified against pinned Rust SDK",
+        "botocore_version": "1.44.2",
+        "service": "sns",
+        "api_version": "2010-03-31",
+        "operation_model_sha256": "fd7eb3cb2919312568be22167042ad09fed4d752c107630dac692dccdba6fe83",
+        "rust_operation_module": "src/operation/get_topic_attributes.rs",
+        "rust_operation_module_sha256": "89451fde79c590921de1011d192a02cc1008eebe6cdb8e72e70dfaeb9c86d605"
+      },
+      "iam_actions": [
+        "sns:GetTopicAttributes"
+      ],
+      "executor": {
+        "owner": "ApiExecutor",
+        "service": "sns",
+        "quota_group": "control_read",
+        "sdk_max_attempts": 1
+      },
+      "native_kinds": [
+        "aws_sns_topic"
+      ],
+      "related_test_suites": [
+        "crates/aws/src/sns/tests.rs",
+        "crates/aws/src/sns/tests/topic_tests.rs",
+        "crates/aws/src/sns/tests/subscription_tests.rs",
+        "crates/aws/src/sns/tests/pagination_tests.rs"
+      ],
+      "emulator_coverage": {
+        "status": "collector_success",
+        "evidence": {
+          "summary": "artifacts/emulator-sns-native/summary.json",
+          "requests": "artifacts/emulator-sns-native/requests.jsonl",
+          "result_receipts": [
+            "artifacts/emulator-sns-native/native.json"
+          ]
+        },
+        "attempts": 3,
+        "phases": [
+          "rust:native"
+        ],
+        "http_statuses": {
+          "200": 3
+        },
+        "pagination_requests": 0,
+        "collector_path_observed": true,
+        "direct_sdk_probe_observed": false,
+        "credential_provider_boundary": false
+      }
+    },
+    {
+      "id": "sns.list_subscriptions",
+      "sdk_service": "sns",
+      "boto3_service": "sns",
+      "sdk_crate": "aws-sdk-sns",
+      "sdk_version": "1.123.0",
+      "sdk_operation": "list_subscriptions",
+      "api_operation": "ListSubscriptions",
+      "category": "native_regional",
+      "explicit_sdk_send": true,
+      "source_calls": [
+        {
+          "path": "crates/aws/src/sns.rs",
+          "function": "subscriptions",
+          "builder_line": 78,
+          "operation_line": 79,
+          "send_line": 81
+        }
+      ],
+      "scope": "account-region",
+      "parent_inputs": [],
+      "depends_on": [],
+      "request_constants": {},
+      "request_notes": [
+        "Account-wide listing filtered to subscription ARNs in the scan account, region and partition; pending confirmations use a deterministic synthetic digest identity because SNS returns no ARN."
+      ],
+      "fixture_requirements": [
+        "One confirmed Lambda subscription and its topic; foreign-region rows are filtered."
+      ],
+      "pagination": {
+        "request_fields": [
+          "NextToken"
+        ],
+        "response_fields": [
+          "NextToken"
+        ],
+        "requires_truncation_flag": false
+      },
+      "wire": {
+        "method": "POST",
+        "path_template": "/",
+        "query_flags": [],
+        "query_action": "ListSubscriptions",
+        "query_version": "2010-03-31",
+        "protocol": "query"
+      },
+      "wire_source": {
+        "kind": "botocore installed SDK service model, API name verified against pinned Rust SDK",
+        "botocore_version": "1.44.2",
+        "service": "sns",
+        "api_version": "2010-03-31",
+        "operation_model_sha256": "423a2bc0af89307b9a1cf40df830dfdb6c5632012db94b331985efd6ba6c1ba4",
+        "rust_operation_module": "src/operation/list_subscriptions.rs",
+        "rust_operation_module_sha256": "2a2ea3295a3176c4a25cdd42bc5d610c4b7a33b1c69902c9831eb72422e049e0"
+      },
+      "iam_actions": [
+        "sns:ListSubscriptions"
+      ],
+      "executor": {
+        "owner": "ApiExecutor",
+        "service": "sns",
+        "quota_group": "control_read",
+        "sdk_max_attempts": 1
+      },
+      "native_kinds": [
+        "aws_sns_subscription"
+      ],
+      "related_test_suites": [
+        "crates/aws/src/sns/tests.rs",
+        "crates/aws/src/sns/tests/topic_tests.rs",
+        "crates/aws/src/sns/tests/subscription_tests.rs",
+        "crates/aws/src/sns/tests/pagination_tests.rs"
+      ],
+      "emulator_coverage": {
+        "status": "collector_success",
+        "evidence": {
+          "summary": "artifacts/emulator-sns-native/summary.json",
+          "requests": "artifacts/emulator-sns-native/requests.jsonl",
+          "result_receipts": [
+            "artifacts/emulator-sns-native/native.json"
+          ]
+        },
+        "attempts": 1,
+        "phases": [
+          "rust:native"
+        ],
+        "http_statuses": {
+          "200": 1
+        },
+        "pagination_requests": 0,
+        "collector_path_observed": true,
+        "direct_sdk_probe_observed": false,
+        "credential_provider_boundary": false
+      }
+    },
+    {
+      "id": "sns.list_tags_for_resource",
+      "sdk_service": "sns",
+      "boto3_service": "sns",
+      "sdk_crate": "aws-sdk-sns",
+      "sdk_version": "1.123.0",
+      "sdk_operation": "list_tags_for_resource",
+      "api_operation": "ListTagsForResource",
+      "category": "native_regional",
+      "explicit_sdk_send": true,
+      "source_calls": [
+        {
+          "path": "crates/aws/src/sns.rs",
+          "function": "topic_tags",
+          "builder_line": 245,
+          "operation_line": 246,
+          "send_line": 248
+        }
+      ],
+      "scope": "account-region",
+      "parent_inputs": [
+        "ResourceArn"
+      ],
+      "depends_on": [
+        "sns.list_topics"
+      ],
+      "request_constants": {},
+      "request_notes": [
+        "Tag failure keeps the topic with tags_collected=false."
+      ],
+      "fixture_requirements": [
+        "A seeded topic with at least one tag."
+      ],
+      "pagination": null,
+      "wire": {
+        "method": "POST",
+        "path_template": "/",
+        "query_flags": [],
+        "query_action": "ListTagsForResource",
+        "query_version": "2010-03-31",
+        "protocol": "query"
+      },
+      "wire_source": {
+        "kind": "botocore installed SDK service model, API name verified against pinned Rust SDK",
+        "botocore_version": "1.44.2",
+        "service": "sns",
+        "api_version": "2010-03-31",
+        "operation_model_sha256": "4edab2fe8b0140dfcc1b6a5feb66c5ef8ead58f4589b4f639643812476ceb8a9",
+        "rust_operation_module": "src/operation/list_tags_for_resource.rs",
+        "rust_operation_module_sha256": "6e14c7d609d2191c7d06a568bd0ff3f48a75ad860dadd7fe1072db99caaa6c8b"
+      },
+      "iam_actions": [
+        "sns:ListTagsForResource"
+      ],
+      "executor": {
+        "owner": "ApiExecutor",
+        "service": "sns",
+        "quota_group": "control_read",
+        "sdk_max_attempts": 1
+      },
+      "native_kinds": [
+        "aws_sns_topic"
+      ],
+      "related_test_suites": [
+        "crates/aws/src/sns/tests.rs",
+        "crates/aws/src/sns/tests/topic_tests.rs",
+        "crates/aws/src/sns/tests/subscription_tests.rs",
+        "crates/aws/src/sns/tests/pagination_tests.rs"
+      ],
+      "emulator_coverage": {
+        "status": "collector_success",
+        "evidence": {
+          "summary": "artifacts/emulator-sns-native/summary.json",
+          "requests": "artifacts/emulator-sns-native/requests.jsonl",
+          "result_receipts": [
+            "artifacts/emulator-sns-native/native.json"
+          ]
+        },
+        "attempts": 3,
+        "phases": [
+          "rust:native"
+        ],
+        "http_statuses": {
+          "200": 3
+        },
+        "pagination_requests": 0,
+        "collector_path_observed": true,
+        "direct_sdk_probe_observed": false,
+        "credential_provider_boundary": false
+      }
+    },
+    {
+      "id": "sns.list_topics",
+      "sdk_service": "sns",
+      "boto3_service": "sns",
+      "sdk_crate": "aws-sdk-sns",
+      "sdk_version": "1.123.0",
+      "sdk_operation": "list_topics",
+      "api_operation": "ListTopics",
+      "category": "native_regional",
+      "explicit_sdk_send": true,
+      "source_calls": [
+        {
+          "path": "crates/aws/src/sns.rs",
+          "function": "topics",
+          "builder_line": 47,
+          "operation_line": 48,
+          "send_line": 50
+        }
+      ],
+      "scope": "account-region",
+      "parent_inputs": [],
+      "depends_on": [],
+      "request_constants": {},
+      "request_notes": [
+        "Topic ARN is the identity; every topic must match the scan account, region and partition."
+      ],
+      "fixture_requirements": [
+        "At least one topic; a second topic or a page size below the topic count exercises continuation."
+      ],
+      "pagination": {
+        "request_fields": [
+          "NextToken"
+        ],
+        "response_fields": [
+          "NextToken"
+        ],
+        "requires_truncation_flag": false
+      },
+      "wire": {
+        "method": "POST",
+        "path_template": "/",
+        "query_flags": [],
+        "query_action": "ListTopics",
+        "query_version": "2010-03-31",
+        "protocol": "query"
+      },
+      "wire_source": {
+        "kind": "botocore installed SDK service model, API name verified against pinned Rust SDK",
+        "botocore_version": "1.44.2",
+        "service": "sns",
+        "api_version": "2010-03-31",
+        "operation_model_sha256": "a791ed08447f969242e0efd289a1b92b6444203fe5c92ff237fcac087267622a",
+        "rust_operation_module": "src/operation/list_topics.rs",
+        "rust_operation_module_sha256": "10e8d474e1ceeedcc4441a4fef68c9a9ef7b043a8220bdd0bc4c89920387d72f"
+      },
+      "iam_actions": [
+        "sns:ListTopics"
+      ],
+      "executor": {
+        "owner": "ApiExecutor",
+        "service": "sns",
+        "quota_group": "control_read",
+        "sdk_max_attempts": 1
+      },
+      "native_kinds": [
+        "aws_sns_topic"
+      ],
+      "related_test_suites": [
+        "crates/aws/src/sns/tests.rs",
+        "crates/aws/src/sns/tests/topic_tests.rs",
+        "crates/aws/src/sns/tests/subscription_tests.rs",
+        "crates/aws/src/sns/tests/pagination_tests.rs"
+      ],
+      "emulator_coverage": {
+        "status": "collector_success",
+        "evidence": {
+          "summary": "artifacts/emulator-sns-native/summary.json",
+          "requests": "artifacts/emulator-sns-native/requests.jsonl",
+          "result_receipts": [
+            "artifacts/emulator-sns-native/native.json"
+          ]
+        },
+        "attempts": 1,
+        "phases": [
+          "rust:native"
+        ],
+        "http_statuses": {
+          "200": 1
+        },
+        "pagination_requests": 0,
+        "collector_path_observed": true,
+        "direct_sdk_probe_observed": false,
+        "credential_provider_boundary": false
+      }
+    },
+    {
+      "id": "sqs.get_queue_attributes",
+      "sdk_service": "sqs",
+      "boto3_service": "sqs",
+      "sdk_crate": "aws-sdk-sqs",
+      "sdk_version": "1.121.0",
+      "sdk_operation": "get_queue_attributes",
+      "api_operation": "GetQueueAttributes",
+      "category": "native_regional",
+      "explicit_sdk_send": true,
+      "source_calls": [
+        {
+          "path": "crates/aws/src/sqs.rs",
+          "function": "queue_attributes",
+          "builder_line": 133,
+          "operation_line": 134,
+          "send_line": 137
+        }
+      ],
+      "scope": "account-region",
+      "parent_inputs": [
+        "QueueUrl"
+      ],
+      "depends_on": [
+        "sqs.list_queues"
+      ],
+      "request_constants": {},
+      "request_notes": [
+        "One batched GetQueueAttributes call per queue with nine explicit attribute names; no policy body retained."
+      ],
+      "fixture_requirements": [
+        "A seeded queue; tags exercise ListQueueTags and attribute enrichment."
+      ],
+      "pagination": null,
+      "wire": {
+        "method": "POST",
+        "path_template": "/",
+        "query_flags": [],
+        "json_target": "AmazonSQS.GetQueueAttributes",
+        "protocol": "json"
+      },
+      "wire_source": {
+        "kind": "botocore installed SDK service model, API name verified against pinned Rust SDK",
+        "botocore_version": "1.44.2",
+        "service": "sqs",
+        "api_version": "2012-11-05",
+        "operation_model_sha256": "e5150ba50b25fd51111f57121b2d3e4f6bf6a3eff959c4a777719de762bc03c7",
+        "rust_operation_module": "src/operation/get_queue_attributes.rs",
+        "rust_operation_module_sha256": "dd719997a12bf7e47c79f060c4faa1d2fef3995d373f52c5012fba8198e9e30d"
+      },
+      "iam_actions": [
+        "sqs:GetQueueAttributes"
+      ],
+      "executor": {
+        "owner": "ApiExecutor",
+        "service": "sqs",
+        "quota_group": "control_read",
+        "sdk_max_attempts": 1
+      },
+      "native_kinds": [
+        "aws_sqs_queue"
+      ],
+      "related_test_suites": [
+        "crates/aws/src/sqs/tests.rs"
+      ],
+      "emulator_coverage": {
+        "status": "collector_success",
+        "evidence": {
+          "summary": "artifacts/emulator-sns-native/summary.json",
+          "requests": "artifacts/emulator-sns-native/requests.jsonl",
+          "result_receipts": [
+            "artifacts/emulator-sns-native/native.json"
+          ]
+        },
+        "attempts": 5,
+        "phases": [
+          "rust:native"
+        ],
+        "http_statuses": {
+          "200": 5
+        },
+        "pagination_requests": 0,
+        "collector_path_observed": true,
+        "direct_sdk_probe_observed": false,
+        "credential_provider_boundary": false
+      }
+    },
+    {
+      "id": "sqs.list_queue_tags",
+      "sdk_service": "sqs",
+      "boto3_service": "sqs",
+      "sdk_crate": "aws-sdk-sqs",
+      "sdk_version": "1.121.0",
+      "sdk_operation": "list_queue_tags",
+      "api_operation": "ListQueueTags",
+      "category": "native_regional",
+      "explicit_sdk_send": true,
+      "source_calls": [
+        {
+          "path": "crates/aws/src/sqs.rs",
+          "function": "queue_tags",
+          "builder_line": 166,
+          "operation_line": 167,
+          "send_line": 169
+        }
+      ],
+      "scope": "account-region",
+      "parent_inputs": [
+        "QueueUrl"
+      ],
+      "depends_on": [
+        "sqs.list_queues"
+      ],
+      "request_constants": {},
+      "request_notes": [
+        "Tag failure is recorded per queue and keeps the queue with tags_collected=false."
+      ],
+      "fixture_requirements": [
+        "A seeded queue; tags exercise ListQueueTags and attribute enrichment."
+      ],
+      "pagination": null,
+      "wire": {
+        "method": "POST",
+        "path_template": "/",
+        "query_flags": [],
+        "json_target": "AmazonSQS.ListQueueTags",
+        "protocol": "json"
+      },
+      "wire_source": {
+        "kind": "botocore installed SDK service model, API name verified against pinned Rust SDK",
+        "botocore_version": "1.44.2",
+        "service": "sqs",
+        "api_version": "2012-11-05",
+        "operation_model_sha256": "a96516972eedb1fff8c6aa7040f023f9fbb30a53b8f80adaaf8f0f00dd2b7faa",
+        "rust_operation_module": "src/operation/list_queue_tags.rs",
+        "rust_operation_module_sha256": "0567056eb86425baa344b91f9803bb550c3b45b9ee6d790d53d84ce8577cd7db"
+      },
+      "iam_actions": [
+        "sqs:ListQueueTags"
+      ],
+      "executor": {
+        "owner": "ApiExecutor",
+        "service": "sqs",
+        "quota_group": "control_read",
+        "sdk_max_attempts": 1
+      },
+      "native_kinds": [
+        "aws_sqs_queue"
+      ],
+      "related_test_suites": [
+        "crates/aws/src/sqs/tests.rs"
+      ],
+      "emulator_coverage": {
+        "status": "collector_success",
+        "evidence": {
+          "summary": "artifacts/emulator-sns-native/summary.json",
+          "requests": "artifacts/emulator-sns-native/requests.jsonl",
+          "result_receipts": [
+            "artifacts/emulator-sns-native/native.json"
+          ]
+        },
+        "attempts": 5,
+        "phases": [
+          "rust:native"
+        ],
+        "http_statuses": {
+          "200": 5
+        },
+        "pagination_requests": 0,
+        "collector_path_observed": true,
+        "direct_sdk_probe_observed": false,
+        "credential_provider_boundary": false
+      }
+    },
+    {
+      "id": "sqs.list_queues",
+      "sdk_service": "sqs",
+      "boto3_service": "sqs",
+      "sdk_crate": "aws-sdk-sqs",
+      "sdk_version": "1.121.0",
+      "sdk_operation": "list_queues",
+      "api_operation": "ListQueues",
+      "category": "native_regional",
+      "explicit_sdk_send": true,
+      "source_calls": [
+        {
+          "path": "crates/aws/src/sqs.rs",
+          "function": "collect",
+          "builder_line": 39,
+          "operation_line": 40,
+          "send_line": 43
+        }
+      ],
+      "scope": "account-region",
+      "parent_inputs": [],
+      "depends_on": [],
+      "request_constants": {},
+      "request_notes": [
+        "MaxResults is the caller page size clamped to 1..=1000; NextToken is the only continuation cursor."
+      ],
+      "fixture_requirements": [
+        "At least one queue; a second queue or a page size below the queue count exercises continuation."
+      ],
+      "pagination": {
+        "request_fields": [
+          "MaxResults",
+          "NextToken"
+        ],
+        "response_fields": [
+          "NextToken"
+        ],
+        "requires_truncation_flag": false
+      },
+      "wire": {
+        "method": "POST",
+        "path_template": "/",
+        "query_flags": [],
+        "json_target": "AmazonSQS.ListQueues",
+        "protocol": "json"
+      },
+      "wire_source": {
+        "kind": "botocore installed SDK service model, API name verified against pinned Rust SDK",
+        "botocore_version": "1.44.2",
+        "service": "sqs",
+        "api_version": "2012-11-05",
+        "operation_model_sha256": "3c5b32117a83ecabd3916fd4500b5bb0de5fb4db7d56721714ec6b404ee21ddb",
+        "rust_operation_module": "src/operation/list_queues.rs",
+        "rust_operation_module_sha256": "bd4b7ad6a18a9aef090d2e47da079952ca17c05ab1a40a9337725b9ee63c53a1"
+      },
+      "iam_actions": [
+        "sqs:ListQueues"
+      ],
+      "executor": {
+        "owner": "ApiExecutor",
+        "service": "sqs",
+        "quota_group": "control_read",
+        "sdk_max_attempts": 1
+      },
+      "native_kinds": [
+        "aws_sqs_queue"
+      ],
+      "related_test_suites": [
+        "crates/aws/src/sqs/tests.rs",
+        "crates/aws/src/sqs/tests/redrive.rs"
+      ],
+      "emulator_coverage": {
+        "status": "collector_success",
+        "evidence": {
+          "summary": "artifacts/emulator-sns-native/summary.json",
+          "requests": "artifacts/emulator-sns-native/requests.jsonl",
+          "result_receipts": [
+            "artifacts/emulator-sns-native/native.json"
+          ]
+        },
+        "attempts": 5,
+        "phases": [
+          "rust:native"
+        ],
+        "http_statuses": {
+          "200": 5
+        },
+        "pagination_requests": 4,
+        "collector_path_observed": true,
+        "direct_sdk_probe_observed": false,
+        "credential_provider_boundary": false
+      },
+      "page_size": {
+        "sdk_field": "max_results",
+        "min": 1,
+        "max": 1000
+      }
+    },
+    {
       "id": "sts.get_caller_identity",
       "sdk_service": "sts",
       "boto3_service": "sts",
@@ -7214,6 +7863,22 @@
       "test_count": 5,
       "evidence_kind": "offline behavior/mapper tests; not emulator transport evidence"
     },
+    "crates/aws/src/global_inventory.rs": {
+      "path": "crates/aws/src/global_inventory.rs",
+      "test_names": [
+        "global_scope_does_not_become_sdk_endpoint_region",
+        "marker_requires_evidence_of_more_pages",
+        "identity_ledger_rejects_duplicates_and_budget_before_commit",
+        "compound_identity_is_unambiguous",
+        "detail_failure_precedes_fallback_and_keeps_scope_incomplete",
+        "invalid_child_metadata_does_not_drop_valid_siblings",
+        "cancellation_and_closed_consumers_never_become_fallback_success",
+        "unavailable_section_is_distinct_from_successful_absence",
+        "pre_cancelled_global_scan_never_constructs_service_work"
+      ],
+      "test_count": 9,
+      "evidence_kind": "offline behavior/mapper tests; not emulator transport evidence"
+    },
     "crates/aws/src/global_inventory/cloudfront.rs": {
       "path": "crates/aws/src/global_inventory/cloudfront.rs",
       "test_names": [
@@ -7265,22 +7930,6 @@
         "conflicting_s3_arn_is_not_silently_accepted"
       ],
       "test_count": 6,
-      "evidence_kind": "offline behavior/mapper tests; not emulator transport evidence"
-    },
-    "crates/aws/src/global_inventory.rs": {
-      "path": "crates/aws/src/global_inventory.rs",
-      "test_names": [
-        "global_scope_does_not_become_sdk_endpoint_region",
-        "marker_requires_evidence_of_more_pages",
-        "identity_ledger_rejects_duplicates_and_budget_before_commit",
-        "compound_identity_is_unambiguous",
-        "detail_failure_precedes_fallback_and_keeps_scope_incomplete",
-        "invalid_child_metadata_does_not_drop_valid_siblings",
-        "cancellation_and_closed_consumers_never_become_fallback_success",
-        "unavailable_section_is_distinct_from_successful_absence",
-        "pre_cancelled_global_scan_never_constructs_service_work"
-      ],
-      "test_count": 9,
       "evidence_kind": "offline behavior/mapper tests; not emulator transport evidence"
     },
     "crates/aws/src/lambda.rs": {
@@ -7348,6 +7997,25 @@
       "test_count": 13,
       "evidence_kind": "offline behavior/mapper tests; not emulator transport evidence"
     },
+    "crates/aws/src/sns.rs": {
+      "path": "crates/aws/src/sns.rs",
+      "test_names": [
+        "maps_topic_identity_and_bounded_attributes",
+        "policy_bodies_are_presence_only",
+        "tag_failure_is_visible_and_does_not_discard_the_topic",
+        "topic_arn_must_match_the_scan_scope_and_service",
+        "empty_tag_values_are_preserved",
+        "missing_topic_is_a_terminal_permanent_failure",
+        "unmodeled_throttle_codes_stay_retryable",
+        "maps_confirmed_subscription_identity_and_edge",
+        "pending_subscriptions_use_a_deterministic_synthetic_identity",
+        "edge_requires_an_identifiable_in_scope_topic",
+        "account_wide_listing_is_partitioned_by_region_without_duplicates",
+        "malformed_subscription_arns_and_endpoints_are_explicit_errors",
+        "topic_page_keeps_the_terminal_token_and_counts_attempted_topics",
+        "subscription_page_counts_filtered_rows_and_keeps_edges"
+      ]
+    },
     "crates/aws/src/source_discovery.rs": {
       "path": "crates/aws/src/source_discovery.rs",
       "test_names": [
@@ -7355,6 +8023,20 @@
       ],
       "test_count": 1,
       "evidence_kind": "offline behavior/mapper tests; not emulator transport evidence"
+    },
+    "crates/aws/src/sqs.rs": {
+      "path": "crates/aws/src/sqs.rs",
+      "test_names": [
+        "maps_stable_arn_identity_and_bounded_attributes",
+        "tag_failure_is_visible_and_does_not_discard_the_queue",
+        "redrive_policy_emits_only_identifiable_delivery_edges",
+        "accepts_aws_legacy_and_loopback_queue_urls",
+        "rejects_malformed_queue_urls",
+        "queue_url_and_arn_must_agree_with_the_scan_scope",
+        "page_keeps_the_terminal_token_and_counts_failed_queues",
+        "missing_queue_is_a_terminal_permanent_failure",
+        "throttled_queue_read_is_retryable"
+      ]
     },
     "crates/aws/src/supplemental.rs": {
       "path": "crates/aws/src/supplemental.rs",

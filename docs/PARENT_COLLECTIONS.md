@@ -1,10 +1,10 @@
 # Parent-dependent Cloud Control collection
 
-The v0.6 implementation adds 21 reviewed parent-dependent types to the existing
+The v0.6 implementation adds 24 reviewed parent-dependent types to the existing
 397 regional root types. The original `catalog/cloudcontrol-resources.json`
 remains unchanged; `catalog/cloudcontrol-parent-resources.json` holds the new
 descriptors and explicit discovery bindings. `cloud_control::catalog()` exposes
-the combined 418 types, while `root_catalog()` and `parent_catalog()` expose the
+the combined 421 types, while `root_catalog()` and `parent_catalog()` expose the
 separate catalogs for evidence and migration tooling.
 
 These counts describe implemented collection plans. They do not claim live AWS
@@ -17,12 +17,13 @@ establish production provider behavior.
 
 | Parent type | Sanitized parent property | Child `ResourceModel` property | Child resource types |
 |---|---|---|---|
-| `AWS::EKS::Cluster` | `Name` | `ClusterName` | `Addon`, `FargateProfile`, `Nodegroup` |
+| `AWS::EKS::Cluster` | `Name` | `ClusterName` | `Addon`, `FargateProfile`, `Nodegroup`, `AccessEntry`, `PodIdentityAssociation` |
 | `AWS::ElasticLoadBalancingV2::LoadBalancer` | `LoadBalancerArn` | `LoadBalancerArn` | `Listener` |
 | `AWS::ApiGateway::RestApi` | `RestApiId` | `RestApiId` | `Authorizer`, `Deployment`, `DocumentationVersion`, `GatewayResponse`, `Model`, `RequestValidator`, `Resource`, `Stage` |
 | `AWS::ApiGatewayV2::Api` | `ApiId` | `ApiId` | `Authorizer`, `Deployment`, `Integration`, `Route`, `Stage` |
 | `AWS::Logs::LogGroup` | `LogGroupName` | `LogGroupName` | `LogStream`, `SubscriptionFilter` |
 | `AWS::AppConfig::Application` | `ApplicationId` | `ApplicationId` | `Environment`, `ConfigurationProfile` |
+| `AWS::AppConfig::Application` | `ApplicationId` | `ApplicationIdentifier` | `ExperimentDefinition` |
 
 Bindings are explicit records checked against both pinned schemas and each
 child's list-handler schema. AWS documents `ResourceModel` as the request field
@@ -125,7 +126,7 @@ reached. Existing 10,000-page, list-page, provider-JSON, token-history and
 per-scope limits remain in force.
 
 Parent models contain at most four bindings, each copied value is at most 1,024
-bytes, and encoded model size is at most 8,192 bytes. The current 21 plans each
+bytes, and encoded model size is at most 8,192 bytes. The current 24 plans each
 use exactly one binding. A group ledger tracks bounded hashed identities and
 rejects the same child identifier across parent scopes. It also rejects two
 distinct parent resources producing the same child model before a second list
@@ -139,7 +140,7 @@ errors remain explicit partial-coverage records.
 
 ## Verification obligations
 
-`cloud_control/parents/tests.rs` includes literal expectations for all 21 model
+`cloud_control/parents/tests.rs` includes literal expectations for all 24 model
 bindings, selection closure/idempotence properties, context bounds, denied and
 empty discovery, parent-page limits, malformed and mismatched responses,
 redaction, per-parent cursors, bounded admission, and cancellation.

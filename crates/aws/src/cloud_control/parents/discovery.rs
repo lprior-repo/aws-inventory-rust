@@ -52,41 +52,51 @@ where
     GFut: Future<Output = Result<GetResourceOutput, ApiError>> + Send,
 {
     let identities = Mutex::new(IdentityLedger::default());
-    paginate(
-        ctx,
-        ctx.scope(
-            "cloud_control_list",
-            Some(&group.descriptor.type_name),
-            Source::CloudControl,
-        ),
-        |token, budget| {
-            let identities = &identities;
-            async move {
-                check_cancelled(ctx)?;
-                let output = list(ListRequest {
-                    type_name: group.descriptor.type_name.clone(),
-                    resource_model: None,
-                    token,
-                })
-                .await?;
-                remember_list_page(group.descriptor, &output, identities, budget)?;
-                collect_bounded(
-                    output.resource_descriptions(),
-                    READ_CONCURRENCY,
-                    |description| collect_parent_item(ctx, group, state, description, list, get),
-                )
-                .await?;
-                if output.next_token().is_none() {
-                    state.exhausted.store(true, Ordering::Relaxed);
+    let scope = ctx.scope(
+        "cloud_control_list",
+        Some(&group.descriptor.type_name),
+        Source::CloudControl,
+    );
+    let failure_scope = scope.clone();
+    paginate(ctx, scope, |token, budget| {
+        let identities = &identities;
+        let failure_scope = failure_scope.clone();
+        async move {
+            check_cancelled(ctx)?;
+            let output = match list(ListRequest {
+                type_name: group.descriptor.type_name.clone(),
+                resource_model: None,
+                token,
+            })
+            .await
+            {
+                Ok(output) => output,
+                Err(ApiError::UnsupportedType(message)) => {
+                    // Children cannot be enumerated through an unsupported
+                    // parent; keep the gap explicit instead of claiming an
+                    // empty child inventory.
+                    state.missing.store(true, Ordering::Relaxed);
+                    return record_unsupported(ctx, &failure_scope, message).await;
                 }
-                Ok(PageBody {
-                    listed_count: output.resource_descriptions().len(),
-                    next_token: output.next_token().map(str::to_owned),
-                    ..PageBody::default()
-                })
+                Err(error) => return Err(error.into()),
+            };
+            remember_list_page(group.descriptor, &output, identities, budget)?;
+            collect_bounded(
+                output.resource_descriptions(),
+                READ_CONCURRENCY,
+                |description| collect_parent_item(ctx, group, state, description, list, get),
+            )
+            .await?;
+            if output.next_token().is_none() {
+                state.exhausted.store(true, Ordering::Relaxed);
             }
-        },
-    )
+            Ok(PageBody {
+                listed_count: output.resource_descriptions().len(),
+                next_token: output.next_token().map(str::to_owned),
+                ..PageBody::default()
+            })
+        }
+    })
     .await
 }
 

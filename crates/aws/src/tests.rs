@@ -14,12 +14,12 @@ fn selectors_include_new_groups_without_duplicate_collectors() -> Result<(), Aws
         discover_sources: false,
         assume_role: None,
         cloud_control: false,
-        resource_types: vec![],
+        selection: inventory_core::Selection::Types(Vec::new()),
         max_pages: 1,
         page_size: 100,
     };
     let all = options.validate()?;
-    assert_eq!(all.len(), 12);
+    assert_eq!(all.len(), 16);
     assert!(all.contains("network"));
     assert!(all.contains("elbv2"));
     options.services = vec!["ec2".into(), "vpc".into(), "network".into()];
@@ -53,7 +53,7 @@ fn supplemental_only_selection_does_not_enable_native_collectors() -> Result<(),
         discover_sources: false,
         assume_role: None,
         cloud_control: false,
-        resource_types: vec![],
+        selection: inventory_core::Selection::Types(Vec::new()),
         max_pages: 1,
         page_size: 100,
     };
@@ -74,7 +74,7 @@ fn rejects_unbounded_options() {
         discover_sources: false,
         assume_role: None,
         cloud_control: false,
-        resource_types: vec![],
+        selection: inventory_core::Selection::Types(Vec::new()),
         max_pages: 10_001,
         page_size: 100,
     };
@@ -97,7 +97,7 @@ fn pre_cancelled_scan_returns_before_sdk_setup() -> Result<(), Box<dyn std::erro
         discover_sources: false,
         assume_role: None,
         cloud_control: false,
-        resource_types: vec![],
+        selection: inventory_core::Selection::Types(Vec::new()),
         max_pages: 1,
         page_size: 100,
     };

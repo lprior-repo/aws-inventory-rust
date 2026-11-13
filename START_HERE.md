@@ -1,11 +1,32 @@
 # Portable handoff — AWS Inventory in Rust 0.6.0
 
-This bundle contains the Rust application, design documents, pinned dependency
-manifests, synthetic fixtures and verification receipts. The current release
-adds parent-scoped collection and stronger graph/evidence verification.
-**Universal AWS coverage and the whole-project 95% mutation target remain open.**
+**Read first:** [docs/VISION.md](docs/VISION.md) is the product definition and
+[docs/ROADMAP.md](docs/ROADMAP.md) is the ordered plan (start at M0). The
+detailed requirements draft is [docs/cmdb-spec](docs/cmdb-spec/README.md). This
+file is the build-and-verify handoff for the current tree.
 
-The completed v0.6 local run passed **530 Rust tests with zero failures and zero
+This bundle contains the Rust application, design documents, pinned dependency
+manifests, synthetic fixtures and verification receipts. The current development
+tree adds universal listable collection, opt-in runtime reference edges, a Rust
+evidence harness, native SQS/SNS adapters, and the first continuous-CMDB slice:
+freshness/coverage state, a deterministic workload oracle, a bounded read model,
+a loopback query API, and a Makepad table/DAG viewer. **Full universal AWS
+coverage (parent workflows and native breadth) and the whole-project 95% mutation
+target remain open.**
+
+The current development tree passes **781 Rust tests with zero failures** (15
+ignored by default). The native live emulator phase passes (263 attempts, 168
+resources, 344 edges, SQS/SNS/KMS/Step Functions assertions included). The
+prepared live baseline passes **2,664 checks with zero failures**, including
+the Config freeze and parent pagination gates. `cargo clippy
+--workspace --exclude inventory-sdk-catalog --all-targets --all-features` is
+clean, formatting passes, and the 300-line source and 25-line function gates
+pass. The universal partition is pinned literally against the pinned emulator:
+1,881 schema types, 1,291 list-capable, 410 parent-required, 180 without list
+handlers, and 999 listed / 292 provider-unsupported / 0 failed.
+
+The completed v0.6 local run remains recorded for release context: it passed
+**530 Rust tests with zero failures and zero
 ignored tests**, **2,522 emulator assertions**, and exact SQLite/JSONL/FalkorDB
 verification for all five snapshots. Every graph replay made zero attempts and
 cleanup succeeded. The four Python helper suites passed 308 tests. See
@@ -17,15 +38,17 @@ not execute mutations or establish a score.
 
 | Area | Current behavior |
 | --- | --- |
-| Cloud Control | 418 reviewed regional resource types across 76 families: the frozen 397 root descriptors plus 21 parent-scoped descriptors |
+| Cloud Control | 421 reviewed regional resource types across 76 families: the frozen 397 root descriptors plus 24 parent-scoped descriptors. `--resource-type all` additionally attempts all 1,291 list-capable schema types through one bounded adapter: 999 listed, 292 provider-unsupported and 0 failed against the pinned emulator, with 410 parent-required and 180 handler-less types reported as explicit skips |
+| Universal references | Opt-in `--universal-references` resolves runtime list data into idempotent `REFERENCES` edges using a bounded, account/region-scoped identity index (exact ARN, unique primary identifier, ARN trailing component); universal scans emit no static relationship edges |
 | Parent workflows | API Gateway REST/V2, AppConfig, EKS, ELBv2 Listener and CloudWatch Logs children; required roots added automatically; exact models and ownership checked before `CHILD_OF` edges |
-| Native collection | 32 resource/component kinds, existing Config aggregators, existing Resource Explorer views, Organizations discovery and existing role assumption |
-| SQL | SQLx with SQLite schema 6; 418 source-specific provider views exposing 4,273 provider columns; transactional upgrades preserve existing observations and user objects |
-| Architecture | 965 property relationship rules across 255 types plus 21 parent workflows; 265 types have at least one rule; a configured rule is distinct from an observed edge |
+| Native collection | 39 resource/component kinds, including native SQS queues, SNS topics/subscriptions, KMS keys/aliases and Step Functions state machines/activities; existing Config aggregators, Resource Explorer views, Organizations discovery and role assumption |
+| SQL | SQLx with SQLite schema 13; freshness views, account/coverage registry, 421 Cloud Control provider views exposing 4,309 provider columns plus native SQS/SNS/KMS/Step Functions views; transactional upgrades preserve existing observations and user objects |
+| Architecture | 968 property relationship rules across 255 types plus 24 parent workflows; 268 types have at least one rule; a configured rule is distinct from an observed edge |
 | Delivery | Streaming JSON/JSONL; bounded, replayable FalkorDB projection with transactional local acknowledgements and separate delivery retry |
 | Execution | Shared request admission, configured/adaptive quota buckets, bounded retry/backoff/deadlines, cancellation and a fenced SQLx job queue |
+| CMDB | Freshness/source-priority views, account/region/collector coverage registry, deterministic `cmdb-bench` generator+oracle, bounded `cmdb-view` read model, read-only loopback `cmdb-api`, and Makepad `cmdb-ui` table + DAG |
 | SDK availability | 437 official service SDK crates pinned to the November 12, 2026 release; archives verified; only implemented clients compiled by normal application builds |
-| Verification | Five local snapshot scenarios; exact property checks in SQLite, JSONL and real FalkorDB; ten guarded Rust integration cases; strict mutation acceptance accounting |
+| Verification | Five local snapshot scenarios; exact property checks in SQLite, JSONL and real FalkorDB; 781 Rust tests; ignored live emulator gates (native, reviewed gaps, universal partition, combined, multi-page Cloud Control, exported bucket); Rust `inventory-harness` for snapshots/seeding/assertions; strict mutation acceptance accounting |
 
 Native and Cloud Control kinds overlap. Adding their counts would overstate
 unique coverage. The new parent workflows reuse the existing Cloud Control
@@ -54,6 +77,13 @@ cargo run --locked -- export --db demo.sqlite --scan-id synthetic-demo-001 \
 cargo run --locked -- plan --service cloud-control --cloud-control \
   --resource-type AWS::EKS::Addon --region us-east-1
 cargo run --locked -- coverage --service EKS --limit 100
+
+# CMDB slice: synthetic DAG viewer, deterministic workload oracle, loopback API.
+cargo run -p cmdb-ui
+cargo run -p cmdb-bench -- workload --accounts 1000 --assets-total 1000000 \
+  --output target/cmdb-smoke
+cargo run -p cmdb-bench -- verify --input target/cmdb-smoke
+cargo run -p cmdb-api -- --export inventory.json --bind 127.0.0.1:8787
 ```
 
 The SDK catalog's `all-services` feature is a separate, expensive build of all
@@ -66,7 +96,7 @@ rewritten as a current pass merely because a descriptor is now selected.
 For maintainer checks, install `scripts/requirements.txt` into a Python virtual
 environment and set `INVENTORY_PYTHON` before running `scripts/verify.sh`. Python
 is development/fixture tooling; the deployed collector is Rust. Ordinary tests
-leave ten integration cases ignored until their local servers are prepared.
+leave 15 integration cases ignored until their local servers are prepared.
 
 ## Collect, export and project
 
@@ -141,10 +171,11 @@ The complete current mutation campaign has not passed. Historical core results
 and interrupted other-package campaigns are retained as evidence of their own
 scope, not reused as a current full-project score.
 
-The 1,881-schema universe still excludes 1,463 types: 180 without both read/list
-handlers, 389 needing additional parent workflows and 894 with unreviewed
-collection scope. Prioritize reviewed global/home-region placement and the next
-parent families; preserve exact identities and architecture evidence. Live AWS
+The 1,881-schema universe still excludes 1,460 types from reviewed, detailed
+collection: 180 without both read/list handlers, 386 needing additional parent
+workflows and 894 with unreviewed collection scope (those 894 are already listed,
+identity only, by `--resource-type all`). The roadmap closes these in M1 and M3;
+preserve exact identities and architecture evidence. Live AWS
 validation and quota calibration require an authorized AWS environment. The
 scheduler uses configured/adaptive limits and does not claim automatic discovery
 of every service quota or hundreds of thousands of simultaneous requests.

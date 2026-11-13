@@ -117,6 +117,15 @@ pub(super) fn validate_failure(
     Ok(())
 }
 
+/// Categories that describe a provider capability boundary rather than a
+/// failed collection scope. They remain explicit in `collection_failures`, but
+/// they do not mark the scope failed: the scope still enumerated every result
+/// the provider is willing to expose, so a catalog-wide drain can finish
+/// complete while a reader still sees the unsupported count.
+fn accounted_category(category: &str) -> bool {
+    matches!(category, "unsupported_type")
+}
+
 pub(super) async fn persist_failure(
     connection: &mut SqliteConnection,
     scan_id: &str,
@@ -125,11 +134,13 @@ pub(super) async fn persist_failure(
 ) -> Result<(), StoreError> {
     sqlx::query("INSERT INTO collection_failures(scan_id,scope_key,category,message) VALUES (?1,?2,?3,?4) ON CONFLICT DO NOTHING")
         .bind(scan_id).bind(key).bind(&failure.category).bind(&failure.message).execute(&mut *connection).await?;
-    sqlx::query("UPDATE scope_checkpoints SET failed=1 WHERE scan_id=?1 AND scope_key=?2")
-        .bind(scan_id)
-        .bind(key)
-        .execute(connection)
-        .await?;
+    if !accounted_category(&failure.category) {
+        sqlx::query("UPDATE scope_checkpoints SET failed=1 WHERE scan_id=?1 AND scope_key=?2")
+            .bind(scan_id)
+            .bind(key)
+            .execute(connection)
+            .await?;
+    }
     Ok(())
 }
 

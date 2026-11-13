@@ -14,11 +14,14 @@ the store and all four required compile-time limits.
 ## Connections and lifecycle
 
 `Store::open(path).await` opens one writer connection, verifies the compiled SQLite
-limits, and initializes or upgrades to schema version 6 in an immediate transaction. It then opens
+limits, and initializes or upgrades to schema version 13 in an immediate transaction. It then opens
 one separate reader connection. File databases use WAL, `synchronous=FULL`, foreign
 keys, a five second busy timeout, disabled trusted schema, and file backed temporary
 storage. Each connection has an 8 MiB page cache target, a command queue of eight,
-and a row channel of one. Pool acquisition has a five second deadline.
+and a row channel of one. Pool acquisition has a five second deadline. Migrations
+007–012 add freshness views, the account/coverage registry, and native
+SQS/SNS/KMS/Step Functions views; all are additive and preserve existing
+observations and user objects.
 
 The reader opens a real file with SQLite's read-only flag and also enables
 `PRAGMA query_only=ON`. It cannot create a missing database. Test-only `:memory:`
@@ -43,7 +46,8 @@ expansion. Version 1 receives `002_architecture.sql` before the version-3
 migration; version 2 receives the version-3 migration. Versions 1–3 then receive
 the additive version-4 global-service views. Versions 1–4 then receive the
 version-5 Cloud Control expansion. Versions 1–5 then receive the additive
-version-6 parent-type views. Version 6 is unchanged on reopen.
+version-6 parent-type views. Versions 1–6 then receive the version-7 freshness
+view rebuild. Version 7 is unchanged on reopen.
 A nonzero foreign SQLite application ID is rejected before inventory migration.
 This prevents the separate SQLx job queue from being treated as an inventory
 file. Unsupported versions fail explicitly. One `BEGIN IMMEDIATE`
@@ -64,13 +68,23 @@ Version 4 adds ten native global-service and derived views. Version 5 adds
 197 source-specific Cloud Control views through
 `005_cloudcontrol_expansion.sql`, bringing that version's root catalog to 397 types,
 76 service families and 4,104 selected provider columns. Version 6 adds 21
-parent-dependent views through `006_cloudcontrol_parents.sql`, bringing the
-combined catalog to **418 types and 4,273 selected provider columns**, still
+parent-dependent views through `006_cloudcontrol_parents.sql`; version 13 adds
+the final three parent views through `013_cloudcontrol_parent_additions.sql`.
+The combined catalog is **421 types and 4,309 selected provider columns**, still
 across 76 families. These additive migrations do not rebuild
 observations or replace the original 200 provider-column definitions. The
 frozen v0.3/v0.4 type list and migration, and the 397-type v0.5 root catalog,
 remain available for compatibility checks. A caller-owned object occupying an added view name causes rollback;
 the migration does not silently replace it or mark a partial upgrade complete.
+
+Version 7 rebuilds only the `latest_resources` and `latest_edges` views; no
+table or observation row is copied. Both views select the greatest `observed_at`
+first, use `source_priority` only to break equal timestamps, and then order by
+descending `scan_id`, ascending `scope_key` and descending `page_number`.
+`scan_resources`, `scan_edges` and `latest_resource_sources` keep their previous
+priority-first or per-source definitions, so snapshot exports and provenance
+audits do not change. The rebuild shares the immediate migration transaction, so
+a failure restores the version-6 views and version number.
 
 The private initialization connection disables foreign keys before beginning
 the transaction, follows SQLite's create/copy/drop/rename procedure, runs
@@ -157,23 +171,34 @@ RAM-shared VPC. Resource and edge source must match their scope's source.
 ## Provenance and selection
 
 Every observation remains in `resource_observations` or `edge_observations`.
-Selection uses a documented priority: direct service APIs first, Cloud Control
-second, AWS Config third, Resource Explorer fourth. Within a source, a newer
-observation timestamp wins.
-Remaining ties use stable scan/scope/page keys instead of arrival order.
+Current selection (`latest_resources`, `latest_edges` and the service views built
+on them) is freshness-first: the greatest `observed_at` wins, regardless of
+source. `source_priority` breaks only equal timestamps, ordered direct service
+APIs (4), Cloud Control (3), AWS Config (2), Resource Explorer (1). Remaining
+ties are deterministic: descending `scan_id`, ascending `scope_key`, then
+descending `page_number`; arrival order never decides. Authority is therefore
+not absolute, and a newer AWS Config observation outranks an older direct
+observation.
+
+Snapshot selection (`scan_resources`, `scan_edges`) keeps the original
+priority-first order so per-scan summaries and exports remain reproducible:
+`source_priority DESC, observed_at DESC, scope_key, page_number DESC`. Use those
+views when a snapshot must prefer the most authoritative source.
 
 | View | Meaning |
 | --- | --- |
-| `scan_resources` | One selected resource per identity in one scan; filter by `scan_id`. |
-| `scan_edges` | One selected relationship per identity in one scan. |
+| `scan_resources` | One priority-first resource per identity in one scan; filter by `scan_id`. |
+| `scan_edges` | One priority-first relationship per identity in one scan. |
 | `latest_resource_sources` | The newest observation of each resource from each source. |
-| `latest_resources` | The preferred source's newest observation, across scans. |
-| `latest_edges` | The preferred observation of each relationship, across scans. |
+| `latest_resources` | The freshest observation of each resource across scans; priority breaks equal timestamps. |
+| `latest_edges` | The freshest observation of each relationship across scans; priority breaks equal timestamps. |
 | `scan_coverage` | Completed, failed or incomplete collection scopes with scan outcome. |
 
-An older direct observation can outrank a newer Config observation. The selected
-`source`, `observed_at` and `scan_id` remain visible, so priority does not imply
-freshness. Query `latest_resource_sources` when comparing sources or timestamps.
+`latest_resource_sources` is unchanged and retains every source's newest
+observation, so source comparison and timestamp audits remain possible. The
+selected `source`, `observed_at` and `scan_id` remain visible, so provenance is
+never lost to the freshness choice. Query `latest_resource_sources` when
+comparing sources or timestamps.
 
 An absent observation never creates a deletion, even after a nominally complete
 scan. Partial permissions, eventual consistency and changed scope selection make
@@ -264,10 +289,10 @@ Source-specific views do not silently replace Cloud Control data with a direct
 collector's different schema.
 Version 4 adds the S3, IAM, Route 53 and CloudFront native views and derived
 origin, role-membership and zone-VPC rows. Version 5 adds 197 further `aws_cc_*`
-root views. Version 6 adds 21 parent-type views and 169 selected columns. All
-**418 current provider views** retain source-specific data, with **4,273 selected
+root views. Version 6 adds the first 21 parent-type views and 169 selected columns; version 13 adds the final three parent-type views and 36 columns. All
+**421 current provider views** retain source-specific data, with **4,309 selected
 top-level provider columns** in total. The Rust `resource_views` example
-regenerates migrations 003, 005 and 006 from the separate catalog selections;
+regenerates migrations 003, 005, 006 and 013 from the separate catalog selections;
 `--check` verifies the exact catalog-to-SQL result. The parent view definitions
 retain the common identity/source fields and sanitized provider values just as
 the root views do. Parent provenance and the model used to list the child remain

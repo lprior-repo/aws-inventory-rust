@@ -55,7 +55,7 @@ class ParentOracleTests(unittest.TestCase):
                     "from_id": child_id, "to_id": edge["target"], "relation": edge["relation"], "source": "cloud_control", "observed_at": 10,
                     "properties": {"target_kind": edge["kind"], "cloudformation_type": child["type_name"],
                         "property_paths": edge["paths"], "owner_resolution": edge["owner_resolution"]}}),))
-        for type_name in {row["type_name"] for row in fixture["children"]}:
+        for type_name in {row["type_name"] for row in fixture["children"]} | assert_parents.NEW_PARENT_TYPES:
             self.connection.execute("INSERT INTO scope_checkpoints VALUES('scan','cloud_control_parent_discovery',?,1,1,0)", (type_name,))
         for side in ("a", "b"):
             model = json.dumps({"ClusterName": "inventory-parent-eks-" + side}, sort_keys=True, separators=(",", ":"))
@@ -123,7 +123,7 @@ class ParentOracleTests(unittest.TestCase):
     def test_incomplete_discovery_or_failure_record_fails(self):
         self.connection.execute("UPDATE scope_checkpoints SET failed=1 WHERE collector='cloud_control_parent_discovery'")
         self.connection.execute("INSERT INTO collection_failures VALUES('scan')")
-        self.assertIn("parents:all_twenty_one_parent_discoveries_complete", self.failures())
+        self.assertIn("parents:all_twenty_four_parent_discoveries_complete", self.failures())
         self.assertIn("parents:no_collection_failures", self.failures())
 
     def test_single_page_receipt_does_not_claim_pagination(self):

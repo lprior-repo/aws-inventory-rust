@@ -27,6 +27,12 @@ const SELECTORS: &[(&str, &[&str])] = &[
     ("iam", &["iam"]),
     ("route53", &["route53"]),
     ("cloudfront", &["cloudfront"]),
+    ("sqs", &["sqs"]),
+    ("sns", &["sns"]),
+    ("kms", &["kms"]),
+    ("step-functions", &["step-functions"]),
+    ("stepfunctions", &["step-functions"]),
+    ("sfn", &["step-functions"]),
 ];
 
 fn configuration() -> Config {
@@ -48,7 +54,7 @@ fn options() -> AwsScanOptions {
         discover_sources: false,
         assume_role: None,
         cloud_control: false,
-        resource_types: vec![],
+        selection: inventory_core::Selection::Types(Vec::new()),
         max_pages: 1,
         page_size: 100,
     }
@@ -72,6 +78,10 @@ fn all_native() -> BTreeSet<String> {
         "iam",
         "route53",
         "cloudfront",
+        "sqs",
+        "sns",
+        "kms",
+        "step-functions",
     ])
 }
 
@@ -124,8 +134,8 @@ const TEXT_FIELDS: [OptionalText; 3] = [
 fn text_with_bytes(bytes: usize, unit: &str) -> String {
     format!(
         "{}{}",
-        unit.repeat(bytes / unit.len()),
-        "x".repeat(bytes % unit.len())
+        unit.repeat(bytes.div_euclid(unit.len())),
+        "x".repeat(bytes.rem_euclid(unit.len()))
     )
 }
 

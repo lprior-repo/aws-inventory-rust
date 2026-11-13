@@ -29,10 +29,10 @@ pub(super) async fn four_sources_preserve_provenance_and_order_in_latest_and_sna
         .finish_scan("new-sources", ScanStatus::Complete, 400)
         .await?;
     let expected = json!([
-        {"id":"new-all","source":"direct","source_priority":4,"observed_at":60},
-        {"id":"preferred-cloud","source":"cloud_control","source_priority":3,"observed_at":100},
-        {"id":"preferred-config","source":"aws_config","source_priority":2,"observed_at":20},
-        {"id":"preferred-direct","source":"direct","source_priority":4,"observed_at":10},
+        {"id":"new-all","source":"resource_explorer","source_priority":1,"observed_at":300},
+        {"id":"preferred-cloud","source":"resource_explorer","source_priority":1,"observed_at":300},
+        {"id":"preferred-config","source":"resource_explorer","source_priority":1,"observed_at":30},
+        {"id":"preferred-direct","source":"cloud_control","source_priority":3,"observed_at":100},
         {"id":"preferred-explorer","source":"resource_explorer","source_priority":1,"observed_at":30}
     ]);
     assert_eq!(

@@ -1,6 +1,13 @@
 # Implemented AWS call matrix
 
-This is the operation inventory for the Rust collector, discovery, and credential-provider code. The machine-readable source is [`catalog/aws-operations.json`](../catalog/aws-operations.json). It inventories **72 distinct explicit SDK operations at 73 production `.send()` callsites across 15 services**. There are **32 native resource kinds**, backed by 57 of those operations. SDK availability does not imply an implemented collector.
+This is the operation inventory for the Rust collector, discovery, and credential-provider code. The frozen historical matrix in [`catalog/aws-operations.json`](../catalog/aws-operations.json) inventories **79 distinct explicit SDK operations at 80 production `.send()` callsites**. The reviewed additive overlay in [`catalog/aws-operation-additions.json`](../catalog/aws-operation-additions.json) admits **10 further reviewed operations at 11 callsites**: five KMS operations at five callsites and five Step Functions operations at six callsites. The current source therefore has **89 distinct explicit SDK operations at 91 production `.send()` callsites across 19 services** and **39 native resource kinds**, backed by 74 of those operations. Additions are reported separately as unexercised until a bound execution receipt advances them. SDK availability does not imply an implemented collector.
+
+The SQS and SNS adapter rows bind native-phase evidence from
+[`artifacts/emulator-sns-native/summary.json`](../artifacts/emulator-sns-native/summary.json).
+That baseline completed every native collector and regional assertion; its only
+failed checks were the separately owned parent Cloud Control `AWS::EKS::Addon`
+page-cap assertions (100 addons at page size one exceeds the 100-page budget).
+Historical v0.4 counts and outcomes below remain scoped to that run.
 
 The catalog preserves the source and executable hashes of the earlier endpoint
 audit. Later property tests and the explicit retry-origin correction are
@@ -16,15 +23,15 @@ This document contains the source snapshot and linked results from the final sig
 
 | Code area | Distinct explicit operations |
 | --- | ---: |
-| Regional native collectors | 32 |
+| Regional native collectors | 49 |
 | Account/global native collectors | 25 |
 | Identity and enabled-region bootstrap | 2 |
 | Organizations and source discovery | 9 |
 | Config and Resource Explorer inventory | 2 |
 | Cloud Control list/get adapter | 2 |
-| **Total** | **72** |
+| **Total** | **89** |
 
-STS `GetCallerIdentity` has two explicit callsites, one for scan bootstrap and one for discovery. SDK-owned `AssumeRole` is an additional credential-provider boundary, outside the 72-operation count.
+STS `GetCallerIdentity` has two explicit callsites, one for scan bootstrap and one for discovery. SDK-owned `AssumeRole` is an additional credential-provider boundary, outside the 89-operation count. The ten additive rows are source-bound to exact callsites, file hashes and pinned SDK operation modules; the overlay reports `pending_execution` and carries no emulator outcome. The historical matrix and its receipts remain byte-identical.
 
 ## How to match requests
 
@@ -146,6 +153,18 @@ SDK `aws-sdk-iam 1.135.0`; recorder/Boto3 name `iam`.
 | `ListPolicies` / `list_policies` | `iam:ListPolicies` | account-global; No resource parent |
 | `ListRoles` / `list_roles` | `iam:ListRoles` | account-global; No resource parent |
 
+### kms
+
+SDK `aws-sdk-kms 1.131.0`; recorder/Boto3 name `kms`.
+
+| API / SDK method | IAM action | Scope and parent inputs |
+| --- | --- | --- |
+| `ListKeys` / `list_keys` | `kms:ListKeys` | account-region; Limit (clamped to 1..=1000), Marker |
+| `DescribeKey` / `describe_key` | `kms:DescribeKey` | account-region; KeyId (exact listed key ARN) |
+| `GetKeyRotationStatus` / `get_key_rotation_status` | `kms:GetKeyRotationStatus` | account-region; KeyId (exact key ARN), customer-managed keys only |
+| `ListResourceTags` / `list_resource_tags` | `kms:ListResourceTags` | account-region; KeyId (exact key ARN), Limit 50 |
+| `ListAliases` / `list_aliases` | `kms:ListAliases` | account-region; Limit (clamped to 1..=1000), Marker |
+
 ### lambda
 
 SDK `aws-sdk-lambda 1.158.0`; recorder/Boto3 name `lambda`.
@@ -207,6 +226,39 @@ SDK `aws-sdk-s3 1.159.0`; recorder/Boto3 name `s3`.
 | `HeadBucket` / `head_bucket` | `s3:ListBucket` | bucket endpoint region discovery; Bucket, ExpectedBucketOwner |
 | `ListBuckets` / `list_buckets` | `s3:ListAllMyBuckets` | account-global; No resource parent |
 
+### sns
+
+SDK `aws-sdk-sns 1.123.0`; recorder/Boto3 name `sns`.
+
+| API / SDK method | IAM action | Scope and parent inputs |
+| --- | --- | --- |
+| `ListTopics` / `list_topics` | `sns:ListTopics` | account-region; NextToken |
+| `GetTopicAttributes` / `get_topic_attributes` | `sns:GetTopicAttributes` | account-region; TopicArn (after `sns.list_topics`) |
+| `ListTagsForResource` / `list_tags_for_resource` | `sns:ListTagsForResource` | account-region; ResourceArn (topic ARN) |
+| `ListSubscriptions` / `list_subscriptions` | `sns:ListSubscriptions` | account-region; NextToken; rows filtered by subscription ARN scope |
+
+### sqs
+
+SDK `aws-sdk-sqs 1.121.0`; recorder/Boto3 name `sqs`.
+
+| API / SDK method | IAM action | Scope and parent inputs |
+| --- | --- | --- |
+| `ListQueues` / `list_queues` | `sqs:ListQueues` | account-region; MaxResults (clamped to 1..=1000), NextToken |
+| `GetQueueAttributes` / `get_queue_attributes` | `sqs:GetQueueAttributes` | account-region; QueueUrl; one batched call with nine explicit attribute names |
+| `ListQueueTags` / `list_queue_tags` | `sqs:ListQueueTags` | account-region; QueueUrl |
+
+### stepfunctions
+
+SDK `aws-sdk-sfn 1.127.0`; recorder/Boto3 name `stepfunctions`.
+
+| API / SDK method | IAM action | Scope and parent inputs |
+| --- | --- | --- |
+| `ListStateMachines` / `list_state_machines` | `states:ListStateMachines` | account-region; maxResults (clamped to 1..=1000), nextToken |
+| `DescribeStateMachine` / `describe_state_machine` | `states:DescribeStateMachine` | account-region; stateMachineArn (exact listed ARN) |
+| `ListTagsForResource` / `list_tags_for_resource` | `states:ListTagsForResource` | account-region; resourceArn (exact state machine or activity ARN) |
+| `ListActivities` / `list_activities` | `states:ListActivities` | account-region; maxResults (clamped to 1..=1000), nextToken |
+| `DescribeActivity` / `describe_activity` | `states:DescribeActivity` | account-region; activityArn (exact listed ARN) |
+
 ### sts
 
 SDK `aws-sdk-sts 1.126.0`; recorder/Boto3 name `sts`.
@@ -230,6 +282,7 @@ Every explicit service operation passes through `ApiExecutor` with SDK `max_atte
 - ECS cluster pages lead to `DescribeClusters`, per-cluster services, and separate RUNNING and STOPPED task scopes. `DescribeServices` batches at most 10 ARNs; task descriptions batch at most 100. ACTIVE task definitions are listed independently and described by exact ARN and revision, with `TAGS` requested.
 - EKS lists node groups even when cluster detail fails. A nonempty node-group list is necessary to reach `DescribeNodegroup`.
 - ELBv2 listener rules are requested only for **application** load balancers. A load balancer without listeners does not cover `DescribeRules`. Target groups are listed independently and need registered targets to exercise membership edges and `DescribeTargetHealth` result mapping.
+- KMS needs at least two customer-managed keys and one alias. `ListKeys` must page or complete, `DescribeKey` must confirm the listed key identity, and `ListAliases` must return the alias ARN and target key ID. If the pinned emulator answers `GetKeyRotationStatus` or `ListResourceTags` with HTTP 501, the fixture assertion must require the recorded child-scope failure and retained key with `rotation_collected`/`tags_collected` false rather than invented rotation or tag state.
 
 ### Global native fixtures
 
@@ -302,7 +355,7 @@ Request counts alone cannot prove correct pagination, completeness, retries, reg
 
 `related_offline_test_suites` records exact test names in the current AWS source tree and operation entries link the relevant suites. These are mapper, pagination, source-selection, and error-behavior tests, not endpoint tests. Some simple collectors rely on shared tests and integration coverage rather than a dedicated source-file test module.
 
-The extraction counted every production empty-argument `.send()` in `crates/aws/src`, excluding test sections and channel `.send(event)` calls. It resolved each client operation, checked parent branches manually, verified the 32 native catalog rows against their operation names, and verified all API names against their pinned SDKs. Source hashes and line numbers capture a snapshot; refresh this matrix when a collector, SDK version, branch, or catalog changes. `builder_line` starts the SDK receiver expression, `operation_line` identifies the SDK method, and `send_line` identifies its `.send()`. Provider locations identify configuration because the SDK owns its network call. The final refresh rechecked a one-to-one mapping between all 73 production sends and the 72 explicit operation records, verified the pinned SDK versions, and linked each observed outcome to frozen evidence.
+The extraction counted every production empty-argument `.send()` in `crates/aws/src`, excluding test sections and channel `.send(event)` calls. It resolved each client operation, checked parent branches manually, verified the 39 native catalog rows against their operation names, and verified all API names against their pinned SDKs. Source hashes and line numbers capture a snapshot; refresh this matrix when a collector, SDK version, branch, or catalog changes. `builder_line` starts the SDK receiver expression, `operation_line` identifies the SDK method, and `send_line` identifies its `.send()`. Provider locations identify configuration because the SDK owns its network call. The final refresh rechecked a one-to-one mapping between all production sends and the explicit operation records of that snapshot, verified the pinned SDK versions, and linked each observed outcome to frozen evidence.
 
 ## Observed emulator run: final v0.4
 

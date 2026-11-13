@@ -31,6 +31,89 @@ async fn absent_list_properties_still_enriches_with_the_exact_composite_identifi
 }
 
 #[tokio::test]
+async fn two_page_continuation_emits_terminal_page_with_every_listed_resource() -> TestResult {
+    let (ctx, mut events) = context(2)?;
+    let kind = descriptor("AWS::EC2::Instance")?;
+    let calls = AtomicUsize::new(0);
+    let seen = Mutex::new(Vec::new());
+    collect_type_with(
+        &ctx,
+        &kind,
+        |token| {
+            if let Ok(mut seen) = seen.lock() {
+                seen.push(token.clone());
+            }
+            calls.fetch_add(1, Ordering::SeqCst);
+            async move {
+                match token.as_deref() {
+                    None => Ok(ListResourcesOutput::builder()
+                        .resource_descriptions(description("i-one", json!({"InstanceId":"i-one"})))
+                        .next_token("next")
+                        .build()),
+                    Some("next") => Ok(ListResourcesOutput::builder()
+                        .resource_descriptions(description("i-two", json!({"InstanceId":"i-two"})))
+                        .build()),
+                    Some(other) => Err(ApiError::Permanent(format!(
+                        "unexpected continuation token {other}"
+                    ))),
+                }
+            }
+        },
+        |id| async move { Ok(get(description(&id, json!({"InstanceId": id})))) },
+    )
+    .await?;
+    assert_eq!(calls.load(Ordering::SeqCst), 2);
+    let observed_tokens = match seen.lock() {
+        Ok(seen) => seen.clone(),
+        Err(_) => return Err("token ledger was poisoned".into()),
+    };
+    assert_eq!(observed_tokens, vec![None, Some("next".to_owned())]);
+    let collected = drain(&mut events)?;
+    let list_pages: Vec<&inventory_core::CollectionPage> = collected
+        .iter()
+        .filter_map(|event| match event {
+            CollectionEvent::Page(page) if page.scope.collector == "cloud_control_list" => {
+                Some(page)
+            }
+            _ => None,
+        })
+        .collect();
+    assert_eq!(list_pages.len(), 2);
+    let first = list_pages.first().ok_or("missing first list page")?;
+    let second = list_pages.get(1).ok_or("missing second list page")?;
+    assert_eq!(first.page_number, 1);
+    assert_eq!(first.next_token.as_deref(), Some("next"));
+    assert_eq!(second.page_number, 2);
+    assert!(second.next_token.is_none());
+    let identifiers: BTreeSet<String> = collected
+        .iter()
+        .filter_map(|event| match event {
+            CollectionEvent::Page(page) if page.scope.collector == "cloud_control_get" => {
+                Some(page.resources.iter().filter_map(|resource| {
+                    resource
+                        .properties
+                        .get("resource_identifier")
+                        .and_then(Value::as_str)
+                        .map(str::to_owned)
+                }))
+            }
+            _ => None,
+        })
+        .flatten()
+        .collect();
+    assert_eq!(
+        identifiers,
+        BTreeSet::from(["i-one".to_owned(), "i-two".to_owned()])
+    );
+    assert!(
+        !collected
+            .iter()
+            .any(|event| matches!(event, CollectionEvent::Failure(_)))
+    );
+    Ok(())
+}
+
+#[tokio::test]
 async fn denied_and_malformed_children_do_not_erase_valid_siblings() -> TestResult {
     let (ctx, mut events) = context(3)?;
     let kind = descriptor("AWS::EC2::Instance")?;

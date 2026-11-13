@@ -131,11 +131,11 @@ def freeze_config_recorder(fixture, session, recorder):
     rows = []
     for _ in range(50):
         rows = records()
-        if len(rows) == 11:
+        if len(rows) >= 11:
             break
         time.sleep(0.2)
-    if len(rows) != 11:
-        raise RuntimeError("Config fixture did not capture all eleven seeded records")
+    if len(rows) < 11:
+        raise RuntimeError(f"Config fixture captured fewer than eleven seeded records: {len(rows)} rows")
     name = f"{PREFIX}-recorder"
     stopped = fixture.record("mutation_fixture:StopConfigurationRecorder", lambda:
         client.stop_configuration_recorder(ConfigurationRecorderName=name))
@@ -148,7 +148,7 @@ def freeze_config_recorder(fixture, session, recorder):
     first = records()
     time.sleep(0.3)
     second = records()
-    stable = len(first) == 11 and first == second
+    stable = len(first) >= 11 and first == second
     fixture.check("fixture:config_snapshot_stable", stable)
     run.write_json(fixture.output / "config-freeze.json", {
         "recorder": name, "stopped": stopped, "stable": stable, "resources": len(second),

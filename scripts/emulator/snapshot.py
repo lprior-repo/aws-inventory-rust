@@ -23,7 +23,7 @@ CASES = (("native", "native"), ("sources", "sources"),
          ("cloudcontrol", "cloud-control"), ("assumedrole", "assumed-role"),
          ("parents", "parents"))
 REQUIRED_CHECKS = {
-    "endpoint:emulator_identity", "native:terminal_scan", "global:all_32_native_kinds",
+    "endpoint:emulator_identity", "native:terminal_scan", "global:all_39_native_kinds",
     "sqlite:integrity", "sqlite:all_scans_finalized", "coverage:every_operation_attempted",
     "coverage:no_unexplained_operation_failures", "coverage:every_registered_type_read",
     "provenance:embedded_catalog_matches", "provenance:source_unchanged",
@@ -31,7 +31,7 @@ REQUIRED_CHECKS = {
     "provenance:parent_fixture_unchanged", "provenance:scan_commands_bound",
     "parents:fixture_hash", "parents:seed_source_hash", "parents:parent_catalog_hash",
     "parents:seed_complete", "parents:exact_child_count", "parents:exact_parent_edge_count",
-    "parents:all_twenty_one_parent_discoveries_complete", "parents:no_collection_failures",
+    "parents:all_twenty_four_parent_discoveries_complete", "parents:no_collection_failures",
 }
 
 
@@ -94,7 +94,7 @@ def execution_binding(summary: dict, evidence: Path, binary: Path):
 
 def case_arguments(evidence: Path, role: str, catalog: dict, parents: dict) -> dict:
     common = ["scan", "--db", str(evidence / "inventory.sqlite"), "--region", "us-east-1",
-              "--attempts", "2", "--max-pages", "100", "--page-size", "1", "--concurrency", "32",
+              "--attempts", "2", "--max-pages", "128", "--page-size", "1", "--concurrency", "32",
               "--per-bucket-concurrency", "4", "--rps", "100"]
     return {
         "native": common + ["--service", "all"],

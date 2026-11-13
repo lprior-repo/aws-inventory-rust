@@ -1,4 +1,9 @@
+// `serde_json::Value` indexing by `&str` yields `Null` for absent keys and never
+// panics; clippy cannot see that specialization. Array positions use `first`.
+#![allow(clippy::indexing_slicing)]
+
 use super::{Direction, TraversalOptions, diff, findings, graph};
+pub(crate) use crate::json_test::{first, nth};
 use anyhow::{Context, Result};
 use inventory_core::{
     CollectionFailure, CollectionPage, CollectionScope, Edge, Resource, ScanStatus, Source,

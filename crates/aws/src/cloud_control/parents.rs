@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 use super::*;
 
-pub(super) const PARENT_TYPE_COUNT: usize = 21;
+pub(super) const PARENT_TYPE_COUNT: usize = 24;
 const PARENT_CATALOG_JSON: &str =
     include_str!("../../../../catalog/cloudcontrol-parent-resources.json");
 const CHILD_TYPE_CONCURRENCY: usize = 2;

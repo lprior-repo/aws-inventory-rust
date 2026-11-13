@@ -30,11 +30,11 @@ proptest! {
             let empty_pages = usize::try_from(empty_pages)?;
             let config = config();
             let executor = ApiExecutor::new(ExecutorConfig::default()).map_err(|error| TestCaseError::fail(error.to_string()))?;
-            let client = client(&config, &executor, u32::try_from(empty_pages)? + 1);
+            let client = client(&config, &executor, u32::try_from(empty_pages)?.saturating_add(1));
             let calls = AtomicUsize::new(0);
             let listing = collect(&client, "ListFixture", None, 1, |token| {
                 let call = calls.fetch_add(1, Ordering::SeqCst);
-                let expected = (call > 0).then(|| format!("cursor-{}", call - 1));
+                let expected = (call > 0).then(|| format!("cursor-{}", call.saturating_sub(1)));
                 assert!(call <= empty_pages, "driver fetched beyond the terminal fixture page");
                 assert_eq!(token, expected, "driver changed the expected continuation token");
                 let result = if call == empty_pages {
@@ -44,9 +44,9 @@ proptest! {
                 };
                 future::ready(result)
             }).await;
-            prop_assert_eq!(calls.load(Ordering::SeqCst), empty_pages + 1);
+            prop_assert_eq!(calls.load(Ordering::SeqCst), empty_pages.saturating_add(1));
             prop_assert_eq!(listing.items, vec!["terminal-resource"]);
-            prop_assert_eq!(listing.coverage.pages, u64::try_from(empty_pages)? + 1);
+            prop_assert_eq!(listing.coverage.pages, u64::try_from(empty_pages)?.saturating_add(1));
             prop_assert_eq!(listing.coverage.items_seen, 1);
             prop_assert!(listing.coverage.complete);
             prop_assert!(listing.coverage.failures.is_empty());
@@ -67,14 +67,14 @@ proptest! {
             let prefix_size = usize::try_from(prefix)?;
             let config = config();
             let executor = ApiExecutor::new(ExecutorConfig::default()).map_err(|error| TestCaseError::fail(error.to_string()))?;
-            let client = client(&config, &executor, prefix + 2);
+            let client = client(&config, &executor, prefix.saturating_add(2));
             let calls = AtomicUsize::new(0);
-            let listing = collect(&client, "ListFixture", Some("parent"), prefix_size + 2, |token| {
+            let listing = collect(&client, "ListFixture", Some("parent"), prefix_size.saturating_add(2), |token| {
                 let call = calls.fetch_add(1, Ordering::SeqCst);
-                let expected = (call > 0).then(|| format!("cursor-{}", call - 1));
+                let expected = (call > 0).then(|| format!("cursor-{}", call.saturating_sub(1)));
                 assert!(call < prefix_size, "driver fetched after cancellation");
                 assert_eq!(token, expected, "driver changed the expected continuation token");
-                if call + 1 == prefix_size {
+                if call.saturating_add(1) == prefix_size {
                     executor.cancel();
                 }
                 future::ready(Ok(page(vec![Ok(format!("resource-{call}"))], Some(format!("cursor-{call}")))))
@@ -86,7 +86,9 @@ proptest! {
             prop_assert!(!listing.coverage.complete);
             prop_assert!(listing.coverage.cancelled);
             prop_assert_eq!(listing.coverage.failures.len(), 1);
-            prop_assert_eq!(&listing.coverage.failures[0].category, "cancelled");
+            let failure = listing.coverage.failures.first()
+                .ok_or_else(|| TestCaseError::fail("missing cancellation failure"))?;
+            prop_assert_eq!(&failure.category, "cancelled");
             prop_assert_eq!(executor.stats().attempts, 0);
             Ok(())
         })?;
@@ -101,11 +103,11 @@ proptest! {
             let prefix_size = usize::try_from(prefix)?;
             let config = config();
             let executor = ApiExecutor::new(ExecutorConfig::default()).map_err(|error| TestCaseError::fail(error.to_string()))?;
-            let client = client(&config, &executor, prefix + 2);
+            let client = client(&config, &executor, prefix.saturating_add(2));
             let calls = AtomicUsize::new(0);
-            let listing = collect(&client, "ListFixture", None, prefix_size + 2, |token| {
+            let listing = collect(&client, "ListFixture", None, prefix_size.saturating_add(2), |token| {
                 let call = calls.fetch_add(1, Ordering::SeqCst);
-                let expected = (call > 0).then(|| format!("cursor-{}", call - 1));
+                let expected = (call > 0).then(|| format!("cursor-{}", call.saturating_sub(1)));
                 assert!(call <= prefix_size, "driver fetched after terminal failure");
                 assert_eq!(token, expected, "driver changed the expected continuation token");
                 let result = if call == prefix_size {
@@ -115,14 +117,16 @@ proptest! {
                 };
                 future::ready(result)
             }).await;
-            prop_assert_eq!(calls.load(Ordering::SeqCst), prefix_size + 1);
+            prop_assert_eq!(calls.load(Ordering::SeqCst), prefix_size.saturating_add(1));
             prop_assert_eq!(listing.items, (0..prefix).map(|index| format!("resource-{index}")).collect::<Vec<_>>());
             prop_assert_eq!(listing.coverage.pages, u64::from(prefix));
             prop_assert_eq!(listing.coverage.items_seen, u64::from(prefix));
             prop_assert!(!listing.coverage.complete);
             prop_assert!(!listing.coverage.cancelled);
             prop_assert_eq!(listing.coverage.failures.len(), 1);
-            prop_assert_eq!(&listing.coverage.failures[0].category, if denied { "access_denied" } else { "timeout" });
+            let failure = listing.coverage.failures.first()
+                .ok_or_else(|| TestCaseError::fail("missing fetch failure"))?;
+            prop_assert_eq!(&failure.category, if denied { "access_denied" } else { "timeout" });
             Ok(())
         })?;
     }

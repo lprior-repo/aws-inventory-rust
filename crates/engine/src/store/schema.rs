@@ -22,26 +22,20 @@ pub(super) async fn initialize_schema(pool: &SqlitePool) -> Result<(), StoreErro
     let version: i64 = sqlx::query_scalar("PRAGMA user_version")
         .fetch_one(&mut *tx)
         .await?;
-    if !(0..=6).contains(&version) {
+    if !(0..=13).contains(&version) {
         return Err(StoreError::SchemaVersion(version));
     }
     if version == 0 {
-        sqlx::raw_sql(include_str!("../../sql/001_inventory.sql"))
-            .execute(&mut *tx)
-            .await?;
+        apply(&mut tx, include_str!("../../sql/001_inventory.sql")).await?;
     }
     if version < 2 {
-        sqlx::raw_sql(include_str!("../../sql/002_architecture.sql"))
-            .execute(&mut *tx)
-            .await?;
+        apply(&mut tx, include_str!("../../sql/002_architecture.sql")).await?;
     }
     if version < 3 {
         migrate_sources(&mut tx).await?;
     }
     if version < 4 {
-        sqlx::raw_sql(include_str!("../../sql/004_global_inventory.sql"))
-            .execute(&mut *tx)
-            .await?;
+        apply(&mut tx, include_str!("../../sql/004_global_inventory.sql")).await?;
     }
     if version < 5 {
         migrate_cloud_control_views(
@@ -57,6 +51,35 @@ pub(super) async fn initialize_schema(pool: &SqlitePool) -> Result<(), StoreErro
         )
         .await?;
     }
+    if version < 7 {
+        apply(&mut tx, include_str!("../../sql/007_freshness.sql")).await?;
+    }
+    if version < 8 {
+        apply(&mut tx, include_str!("../../sql/008_coverage_registry.sql")).await?;
+    }
+    if version < 9 {
+        apply(&mut tx, include_str!("../../sql/009_native_sqs_view.sql")).await?;
+    }
+    if version < 10 {
+        apply(&mut tx, include_str!("../../sql/010_native_sns_views.sql")).await?;
+    }
+    if version < 11 {
+        apply(&mut tx, include_str!("../../sql/011_native_kms_views.sql")).await?;
+    }
+    if version < 12 {
+        apply(
+            &mut tx,
+            include_str!("../../sql/012_native_step_functions_views.sql"),
+        )
+        .await?;
+    }
+    if version < 13 {
+        migrate_cloud_control_views(
+            &mut tx,
+            include_str!("../../sql/013_cloudcontrol_parent_additions.sql"),
+        )
+        .await?;
+    }
     tx.commit().await?;
     sqlx::query("PRAGMA foreign_keys=ON")
         .execute(&mut *connection)
@@ -67,6 +90,14 @@ pub(super) async fn initialize_schema(pool: &SqlitePool) -> Result<(), StoreErro
     if !foreign_keys {
         return Err(StoreError::InvalidInput("foreign keys were not restored"));
     }
+    Ok(())
+}
+
+async fn apply(
+    tx: &mut Transaction<'_, Sqlite>,
+    migration: &'static str,
+) -> Result<(), StoreError> {
+    sqlx::raw_sql(migration).execute(&mut **tx).await?;
     Ok(())
 }
 

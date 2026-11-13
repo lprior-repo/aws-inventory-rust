@@ -7,6 +7,9 @@ use serde_json::Value;
 use std::collections::BTreeMap;
 use thiserror::Error;
 
+mod selection;
+pub use selection::{ResourceType, Selection, SelectionError};
+
 pub const MAX_PAGE_RESOURCES: usize = 10_000;
 pub const MAX_PAGE_EDGES: usize = 100_000;
 pub const MAX_PROPERTY_BYTES: usize = 1_048_576;

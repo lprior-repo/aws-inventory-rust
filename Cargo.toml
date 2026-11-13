@@ -1,11 +1,11 @@
 [workspace]
-members = ["crates/core", "crates/engine", "crates/aws", "crates/sdk-catalog"]
+members = ["crates/core", "crates/engine", "crates/aws", "crates/sdk-catalog", "crates/harness", "crates/sdk-operations", "crates/catalog-tool", "crates/cmdb-bench", "crates/cmdb-ui", "crates/cmdb-view", "crates/cmdb-api"]
 resolver = "3"
 
 [workspace.package]
 version = "0.6.0"
 edition = "2024"
-license = "Apache-2.0"
+license = "MIT"
 rust-version = "1.101"
 
 [workspace.dependencies]
@@ -15,12 +15,21 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync", "signal", "net", "io-util", "fs", "test-util"] }
+axum = { version = "0.8.9", default-features = false, features = ["http1", "json", "query", "tokio"] }
+tower = { version = "0.5.3", features = ["util"] }
+tower-http = { version = "0.6", default-features = false, features = ["cors"] }
 tokio-util = { version = "0.7", features = ["rt"] }
 futures-util = "0.3"
 tracing = "0.1"
 sha2 = "0.11.1"
 base16ct = "1.0.0"
+# Upstream's merged SQLite 0.39 support; retain bundled SQLite and allocation limits.
+# https://github.com/transact-rs/sqlx/pull/4502
+sqlx = { git = "https://github.com/transact-rs/sqlx", rev = "10462fa4414c6c7f1ed1d39bb31678e3b726878c", default-features = false, features = ["sqlite", "runtime-tokio"] }
 proptest = { version = "1.12.0", default-features = false, features = ["std"] }
+regex = "1.13.1"
+toml = "1.2.1"
+zip = { version = "2.6.1", default-features = false, features = ["deflate"] }
 
 [workspace.lints.rust]
 unsafe_code = "forbid"

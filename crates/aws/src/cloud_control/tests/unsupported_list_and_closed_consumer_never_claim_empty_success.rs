@@ -58,7 +58,7 @@ async fn pre_cancelled_collection_admits_no_types_or_children() -> TestResult {
         Err(AwsScanError::Api(ApiError::Cancelled))
     ));
     assert!(matches!(
-        collect(&ctx, &[kind]).await,
+        collect(&ctx, &[kind], &Selection::Types(Vec::new())).await,
         Err(AwsScanError::Api(ApiError::Cancelled))
     ));
     assert_eq!(calls.load(Ordering::SeqCst), 0);

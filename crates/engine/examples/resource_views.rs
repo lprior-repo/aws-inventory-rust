@@ -5,7 +5,13 @@ use std::path::PathBuf;
 
 use serde_json::Value;
 
-type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+type Result<T, E = Box<dyn std::error::Error>> = std::result::Result<T, E>;
+
+const PARENT_ADDITIONS: [&str; 3] = [
+    "AWS::AppConfig::ExperimentDefinition",
+    "AWS::EKS::AccessEntry",
+    "AWS::EKS::PodIdentityAssociation",
+];
 
 fn main() -> Result<()> {
     let arguments: Vec<String> = std::env::args().skip(1).take(2).collect();
@@ -41,9 +47,41 @@ fn main() -> Result<()> {
     let parents: Value = serde_json::from_str(include_str!(
         "../../../catalog/cloudcontrol-parent-resources.json"
     ))?;
-    let mut parent_sql = generate(&parents)?;
+    let parent_rows = parents
+        .get("resource_types")
+        .and_then(Value::as_array)
+        .ok_or("missing parent resource_types")?;
+    let additions: Vec<Value> = parent_rows
+        .iter()
+        .filter(|row| {
+            row.get("type_name")
+                .and_then(Value::as_str)
+                .is_some_and(|name| PARENT_ADDITIONS.contains(&name))
+        })
+        .cloned()
+        .collect();
+    if additions.len() != PARENT_ADDITIONS.len() {
+        return Err("parent view addition is missing from the catalog".into());
+    }
+    let base: Vec<Value> = parent_rows
+        .iter()
+        .filter(|row| {
+            row.get("type_name")
+                .and_then(Value::as_str)
+                .is_none_or(|name| !PARENT_ADDITIONS.contains(&name))
+        })
+        .cloned()
+        .collect();
+    let mut parent_sql = generate(&serde_json::json!({"resource_types":base}))?;
     parent_sql.push_str("PRAGMA user_version = 6;\n");
     publish("006_cloudcontrol_parents.sql", &parent_sql, check)?;
+    let mut addition_sql = generate(&serde_json::json!({"resource_types":additions}))?;
+    addition_sql.push_str("PRAGMA user_version = 13;\n");
+    publish(
+        "013_cloudcontrol_parent_additions.sql",
+        &addition_sql,
+        check,
+    )?;
     println!(
         "Cloud Control SQL views {}",
         if check { "verified" } else { "generated" }

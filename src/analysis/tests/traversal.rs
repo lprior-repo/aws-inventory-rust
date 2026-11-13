@@ -60,9 +60,9 @@ async fn traversal_deduplicates_observations_and_preserves_source_precedence() -
     let report = graph::report(&store, "overlap", "a", None, options(Direction::Both, 4)).await?;
     assert_eq!(rows(&report, "nodes")?.len(), 2);
     assert_eq!(rows(&report, "relationships")?.len(), 1);
-    assert_eq!(report["relationships"][0]["source"], "direct");
-    assert_eq!(report["relationships"][0]["from_kind"], "direct-kind");
-    assert_eq!(report["relationships"][0]["observed_at"], 10);
+    assert_eq!(first(&report["relationships"])["source"], "direct");
+    assert_eq!(first(&report["relationships"])["from_kind"], "direct-kind");
+    assert_eq!(first(&report["relationships"])["observed_at"], 10);
     assert_eq!(report["status"], "partial");
     assert_eq!(report["truncated"], false);
     store.close().await;
@@ -91,7 +91,7 @@ async fn traversal_directions_change_distances_and_path_orientation() -> Result<
     )
     .await?;
     assert_eq!(incoming["path"]["hops"], 1);
-    assert_eq!(incoming["path"]["steps"][0]["reversed"], true);
+    assert_eq!(first(&incoming["path"]["steps"])["reversed"], true);
     assert_eq!(incoming["path"]["effective_reachability_inferred"], false);
     store.close().await;
     Ok(())

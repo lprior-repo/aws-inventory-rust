@@ -14,7 +14,7 @@ exact immutable revision, registry checksums and check timestamp separately.
 | [SQLx](https://github.com/transact-rs/sqlx) | Async SQLite connection/transaction/query layer | Actual inventory and checkpoint storage dependency |
 | [FalkorDB](https://github.com/FalkorDB/FalkorDB) | Redis-protocol Cypher graph database | External projection target |
 
-This repository's new implementation is licensed under Apache-2.0; see LICENSE.
+This repository's new implementation is licensed under MIT; see LICENSE.
 It does not bundle the upstream awsmap/Cartography/Steampipe implementations or
 their documentation as a claimed complete port. The Steampipe repository
 distinguishes Apache-2.0 source code from CC BY-NC-ND documentation; original

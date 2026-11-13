@@ -7,17 +7,19 @@ selected explicitly or through bounded Organizations account discovery.
 
 This file describes implemented collectors. An SDK dependency in the optional
 SDK catalog does not, by itself, implement a resource collector. The current
-native coverage is **32 resource/component kinds**: the original 13 compute,
+native coverage is **39 resource/component kinds**: the original 13 compute,
 container and data kinds, six VPC networking kinds, five ELBv2 kinds, and
 ACTIVE ECS task-definition revisions, plus seven S3/IAM/Route 53/CloudFront
-kinds described in `GLOBAL_INVENTORY.md`. An additional shared Cloud Control
-adapter collects 418 schema-backed regional types across 76 service families:
-397 frozen root types and 21 parent-dependent types. See
+kinds described in `GLOBAL_INVENTORY.md`, SQS queues, SNS topics and
+subscriptions, KMS keys and aliases, and Step Functions state machines and
+activities. An additional shared Cloud Control
+adapter collects 421 schema-backed regional types across 76 service families:
+397 frozen root types and 24 parent-dependent types. See
 [COLLECTION_PLAN.md](COLLECTION_PLAN.md) and [PARENT_COLLECTIONS.md](PARENT_COLLECTIONS.md).
-SQLite schema version **6** exposes their 4,273 selected provider columns and architectural
-evidence. SQL aliases and expanded route rows do not add native resource kinds.
-The catalog declares 965 property relationship rules across 255 types, plus 21
-runtime `CHILD_OF` workflows; 265 distinct types have at least one of these.
+The provider views added through SQLite schema version **13** expose their 4,309 selected provider columns and architectural
+evidence; the current on-disk schema is version **13**, which adds the SQS queue, SNS topic/subscription, KMS key/alias, Step Functions state-machine/activity views and the final parent views. SQL aliases and expanded route rows do not add native resource kinds.
+The catalog declares 968 property relationship rules across 255 types, plus 24
+runtime `CHILD_OF` workflows; 268 distinct types have at least one of these.
 An eligible field must actually be returned for a property rule to emit an edge.
 The remaining descriptors
 still provide resource observations without a complete graph of their dependencies.
@@ -51,8 +53,8 @@ standard SSO credential refresh, remains part of the SDK credential provider.
 SDK clients are reused within each collector/region across its pages.
 The public async scan boundary contains one boxed `Send` future per profile.
 Region, service, pagination-scope, and bounded enrichment-group boundaries also
-erase their concrete future types. A region assembles at most ten collector
-group futures (eight direct groups, one bounded Cloud Control stream and optional source discovery) before awaiting them. The base EC2 and networking groups share the
+erase their concrete future types. A region assembles at most twelve collector
+group futures (ten direct groups, one bounded Cloud Control stream and optional source discovery) before awaiting them. The base EC2 and networking groups share the
 same EC2 quota family. This keeps the SDK's large future tree inside this
 crate and bounds downstream compiler/type-layout expansion. Service requests
 remain typed. These are bounded orchestration allocations, not detached tasks;
@@ -81,6 +83,13 @@ observation time in epoch milliseconds.
 | `aws_ebs_volume` | `DescribeVolumes` | volume ID, size, type/state, encryption, AZ, IOPS, throughput, KMS key, snapshot, instance attachments |
 | `aws_dynamodb_table` | `ListTables`, `DescribeTable` | table name/ID/status, item count, byte count, key schema, attribute definitions, billing mode, deletion protection, provisioned throughput, latest stream ARN |
 | `aws_lambda_function` | `ListFunctions` | function name, runtime, handler, memory, timeout, role, code size, description, version, modification time, package type, architectures, VPC/subnets/security groups |
+| `aws_sqs_queue` | `ListQueues`, `GetQueueAttributes`, `ListQueueTags` | queue ARN/name/URL, FIFO flag, approximate queued and not-visible counts, visibility timeout, creation timestamp, KMS key ID, SQS-managed SSE flag, redrive maximum receive count, tags; a `DELIVERS_TO` edge only when `RedrivePolicy.deadLetterTargetArn` is a parseable queue ARN |
+| `aws_sns_topic` | `ListTopics`, `GetTopicAttributes`, `ListTagsForResource` | topic ARN/name, display name, owner, confirmed/pending/deleted subscription counts, topic-policy presence (no body), delivery-policy presence (no body), KMS master key ID, FIFO flag, content-based deduplication, tags |
+| `aws_sns_subscription` | `ListSubscriptions` | identity from the subscription ARN, or a deterministic synthetic digest for `PendingConfirmation` rows; topic ARN, protocol, endpoint as returned, owner, pending flag; a `SUBSCRIBES_TO` edge only when `TopicArn` is a well-formed in-scope SNS topic ARN |
+| `aws_kms_key` | `ListKeys`, `DescribeKey`, `GetKeyRotationStatus`, `ListResourceTags` | exact key ARN identity and key ID, account, description, key manager/usage/state/spec, origin, enabled and multi-Region flags, creation time, rotation enabled/period and tags for customer-managed keys; no key policy body or key material. A failed describe discards that key; a failed rotation or tag read keeps it with `rotation_collected` or `tags_collected` false |
+| `aws_kms_alias` | `ListAliases` | exact alias ARN identity and alias name, target key ID, creation/last-updated times; no tags are returned by `ListAliases`, and the target key remains a property rather than an inferred edge |
+| `aws_step_functions_state_machine` | `ListStateMachines`, `DescribeStateMachine`, `ListTagsForResource` | exact state machine ARN identity and name, list and describe types, status, creation time, role ARN, revision, description, logging/tracing/encryption configuration and tags; definitions, variable references and execution data are never stored. A failed describe discards that state machine; a failed tag read keeps it with `tags_collected=false`. `ASSUMES_ROLE` requires an exact in-account IAM role ARN and `ENCRYPTED_BY` an exact in-scope KMS key ARN; logging destinations emit no CloudWatch edge |
+| `aws_step_functions_activity` | `ListActivities`, `DescribeActivity`, `ListTagsForResource` | exact activity ARN identity and name, creation time, encryption configuration and tags; no definition or execution data. A failed describe discards that activity; a failed tag read keeps it with `tags_collected=false`. `ENCRYPTED_BY` requires an exact in-scope KMS key ARN |
 | `aws_ecs_cluster` | `ListClusters`, `DescribeClusters` with tags | cluster ARN/name/status, registered-container-instance count, running/pending task counts, active-service count, capacity providers |
 | `aws_ecs_service` | `ListServices`, `DescribeServices` with tags | service ARN/name/status, cluster, task definition, desired/running/pending counts, launch type, platform version, scheduling strategy, subnets/security groups, primary/alternate target groups and Classic load-balancer references |
 | `aws_ecs_task` | `ListTasks`, `DescribeTasks` with tags | task/cluster/task-definition ARNs, desired/last status, launch type, CPU/memory, AZ, group, container instance, stop details, selected container fields |
@@ -105,6 +114,10 @@ observation time in epoch milliseconds.
 | `network` | Six networking kinds only |
 | `dynamodb`, `dynamo` | DynamoDB tables |
 | `lambda` | Lambda functions |
+| `sqs` | SQS queues with bounded attribute and tag enrichment |
+| `sns` | SNS topics and account-wide subscriptions filtered to the scan region |
+| `kms` | KMS keys and aliases with per-key rotation and tag enrichment |
+| `step-functions`, `stepfunctions`, `sfn` | Step Functions state machines and activities with per-item describe and tag enrichment |
 | `ecs` | ECS clusters, services, tasks and ACTIVE task-definition revisions |
 | `ecs-task-definitions` | ACTIVE task-definition revisions only |
 | `eks` | EKS clusters and managed nodegroups |
@@ -113,9 +126,29 @@ observation time in epoch milliseconds.
 | `iam` | Roles, instance profiles and customer-managed policy metadata |
 | `route53` | Hosted zones and record sets |
 | `cloudfront` | Distributions and their selected embedded origin/behavior metadata |
-| `all` or an empty selector list | All twelve native collector groups, covering 32 kinds including global inventory |
+| `all` or an empty selector list | All sixteen native collector groups, covering 39 kinds including global inventory |
 
-Use `--cloud-control` to add all 418 catalog types, or `--resource-type` to
+SNS subscriptions are discovered from the account-wide `ListSubscriptions`
+response and retained only when the subscription ARN belongs to the scan
+account, region and partition. Confirmed subscriptions use that ARN as identity;
+`PendingConfirmation` rows use a deterministic digest identity scoped to the
+topic. `SUBSCRIBES_TO` edges target the returned `TopicArn` only when it is a
+well-formed in-scope topic ARN; an unobserved target stays an exact-ARN dangling
+reference, matching the other native edge rules. Endpoints are stored as AWS
+reports them, which for `email`, `email-json` and `sms` protocols can contain
+personal contact data. Topic and delivery policy bodies are never stored.
+
+KMS keys are enumerated regionally by `ListKeys` and described with
+`DescribeKey`; only customer-managed keys receive `GetKeyRotationStatus` and
+`ListResourceTags`. Aliases are enumerated independently by `ListAliases`, keep
+the exact alias ARN as identity, and retain the target key ID as a property.
+Every returned key and alias ARN must match the scan partition, account and
+region. A describe failure is recorded in a child scope and discards that key;
+rotation and tag failures are recorded in child scopes and retain the key with
+explicit `rotation_collected`/`tags_collected` false values. No key policy body
+or key material is requested or stored, and no alias-to-key edge is inferred.
+
+Use `--cloud-control` to add all 421 catalog types, or `--resource-type` to
 select exact CloudFormation type names. `--service cloud-control --cloud-control`
 selects only that broad source. The `plan` command performs the same selector
 expansion offline and exposes the collection stages and request-cost uncertainty.
@@ -279,7 +312,7 @@ EC2 instances/VPCs/subnets/security groups/ENIs use 5–1,000; volumes use 5–5
 route tables use 5–100; internet gateways, NAT gateways, ACLs, and peering use
 5–1,000; VPC endpoints use 1–1,000; DynamoDB, ECS, EKS, Config, and Resource
 Explorer use 1–100; Lambda uses 1–50; the four paginated ELBv2 operations use
-1–400. The unpaginated target-health response accepts at most 10,000 memberships
+1–400; SQS, SNS and KMS paginated listings use 1–1,000. The unpaginated target-health response accepts at most 10,000 memberships
 and explicitly fails a larger response instead of truncating it.
 Service pages are held only while they are mapped/enriched and sent to the
 bounded channel. Child descriptions buffer at most one bounded list page.

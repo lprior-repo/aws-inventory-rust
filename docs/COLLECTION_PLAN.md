@@ -1,8 +1,8 @@
-# Collection and architecture plan for 418 resource types
+# Collection and architecture plan for 421 resource types
 
-The scanner combines **418 reviewed Cloud Control resource-type descriptors** with the native collectors for deeper EC2/VPC, DynamoDB, Lambda, ECS, EKS, ELBv2, S3, IAM, Route 53 and CloudFront architecture. The combined selection contains **397 root types and 21 parent-dependent types**. One Rust adapter performs Cloud Control discovery and reads, with an explicit prerequisite plan for each admitted child. Adding a descriptor does not require another handwritten client, paginator, retry loop, or database writer.
+The scanner combines **421 reviewed Cloud Control resource-type descriptors** with the native collectors for deeper EC2/VPC, DynamoDB, Lambda, ECS, EKS, ELBv2, S3, IAM, Route 53 and CloudFront architecture. The combined selection contains **397 root types and 24 parent-dependent types**. One Rust adapter performs Cloud Control discovery and reads, with an explicit prerequisite plan for each admitted child. Adding a descriptor does not require another handwritten client, paginator, retry loop, or database writer.
 
-The 418 types are configured coverage, not a claim that an AWS account has been scanned or that all providers succeed in every region. No live account requests were used to construct this catalog. Native and Cloud Control coverage overlap; their counts must not be added as though every type were distinct. [VERIFICATION.md](VERIFICATION.md) distinguishes implementation from executed local checks.
+The 421 types are configured coverage, not a claim that an AWS account has been scanned or that all providers succeed in every region. No live account requests were used to construct this catalog. Native and Cloud Control coverage overlap; their counts must not be added as though every type were distinct. [VERIFICATION.md](VERIFICATION.md) distinguishes implementation from executed local checks.
 
 ## Evidence and selection
 
@@ -10,12 +10,12 @@ The 418 types are configured coverage, not a claim that an AWS account has been 
 
 | Current catalog measure | Count | Evidence |
 | --- | ---: | --- |
-| Executable regional resource types | 418 | 397 frozen roots plus 21 reviewed parent-dependent descriptors |
+| Executable regional resource types | 421 | 397 frozen roots plus 24 reviewed parent-dependent descriptors |
 | CloudFormation service families | 76 | Distinct service namespaces in selected type names |
-| Source-specific SQL views | 418 | One `aws_cc_*` view per descriptor; schema version 6 |
-| Top-level provider columns | 4,273 | Descriptor `columns`; at most 85 per type |
-| Property relationship rules | 965 | Explicit rules across 255 selected types |
-| Parent relationship workflows | 21 | Runtime `CHILD_OF` binding per child type; 265 types have either form |
+| Source-specific SQL views | 421 | One `aws_cc_*` view per descriptor; schema version 13 |
+| Top-level provider columns | 4,309 | Descriptor `columns`; at most 85 per type |
+| Property relationship rules | 968 | Explicit rules across 255 selected types |
+| Parent relationship workflows | 24 | Runtime `CHILD_OF` binding per child type; 268 types have either form |
 | Pinned schema universe | 1,881 | [Capability matrix](../catalog/cloudcontrol-capabilities.json), including exclusions |
 
 [CLOUDCONTROL_COVERAGE.md](CLOUDCONTROL_COVERAGE.md) describes eligibility, remaining exclusions and relationship constraints. [PARENT_COLLECTIONS.md](PARENT_COLLECTIONS.md) defines every admitted prerequisite binding. [CLOUDCONTROL_EVIDENCE.md](CLOUDCONTROL_EVIDENCE.md) retains source-bound root-catalog evidence; the 21 parent workflows have a separate emulator case. The frozen 200-type event fixture remains a historical v0.3/v0.4 subset and has not been relabeled as a complete current fixture.
@@ -54,7 +54,7 @@ aws-inventory scan --db inventory.sqlite --cloud-control \
 
 An explicit region list selects exactly those regional endpoints. With no region list, the existing scan coordinator discovers opted-in regions. Profiles use the existing AWS credential chain; STS resolves their actual account identities. Multiple profiles may refer to the same account. With `--organization-role`, the coordinator enumerates ACTIVE Organizations accounts and assumes that existing role in each selected target; `DISCOVERY.md` describes bounds and eligibility. Plain profiles remain available without Organizations access.
 
-At least one `ListResources` request is needed for each selected root/account/region that collection reaches. Each admitted child requires a separate list chain for every discovered parent; a successfully empty prerequisite list makes no child calls. Child-only selection automatically adds the relevant root, and selected siblings share that root enumeration. Every listed identifier is passed to `GetResource` once logically; retries add attempts. Two regions and all 397 roots imply 794 initial root lists per profile if those scopes are reached, before any parent-dependent lists, reads, continuation pages, native collectors or retries. Multiplying 418 by the region count would misstate the workload. A precise total is unknowable before enumeration.
+At least one `ListResources` request is needed for each selected root/account/region that collection reaches. Each admitted child requires a separate list chain for every discovered parent; a successfully empty prerequisite list makes no child calls. Child-only selection automatically adds the relevant root, and selected siblings share that root enumeration. Every listed identifier is passed to `GetResource` once logically; retries add attempts. Two regions and all 397 roots imply 794 initial root lists per profile if those scopes are reached, before any parent-dependent lists, reads, continuation pages, native collectors or retries. Multiplying 421 by the region count would misstate the workload. A precise total is unknowable before enumeration.
 
 ## Execution and coverage
 
@@ -94,7 +94,7 @@ Parent list pages contain checkpoints, not a buffer of all child resources. Reso
 
 | Boundary | Limit and behavior |
 | --- | --- |
-| Type catalog and selected set | 418 descriptors; unknown type names rejected and child prerequisites expanded before credentials load |
+| Type catalog and selected set | 421 descriptors; unknown type names rejected and child prerequisites expanded before credentials load |
 | Active work | 4 root groups per region, 4 parent reads, 2 child types per parent and 4 child reads per page; existing global/per-bucket admission also applies |
 | Traversal | At most 10,000 pages and 100,000 listed identifiers per type scope; lower configured page limits apply |
 | Service response processing | Local maximum 1,000 descriptions per list response and 8 MiB aggregate list property text; limits are local containment, not claimed AWS page-size guarantees |
@@ -117,7 +117,7 @@ When a reliable ARN cannot be obtained, the ID is a namespaced value containing 
 
 Overlapping native types use the same canonical `kind` names and prefer the direct source when canonical IDs match: `direct` priority 4, `cloud_control` 3, `aws_config` 2, `resource_explorer` 1. All observations retain provenance. A few reviewed scalar aliases make familiar native views useful, but provider JSON is not represented as a complete equivalent of native service output.
 
-Every Cloud Control descriptor has a dedicated `aws_cc_*` SQL view, filtered by source and `cloudformation_type`. The combined catalog defines **4,273 top-level provider columns**, at most 85 per type. Primitive values use SQLite JSON extraction; objects and arrays remain JSON. Column names are safe identifiers, with reserved names renamed. These source-specific views preserve Cloud Control observations even when a native resource wins the preferred-resource view. The generic `aws_cloudcontrol_resource` view and sanitized `provider_properties` remain available for common queries. Schema version 5 installed 197 additional root views; version 6 adds 21 parent views and 169 columns. The original 200 projections, later root projections and stored observations remain intact.
+Every Cloud Control descriptor has a dedicated `aws_cc_*` SQL view, filtered by source and `cloudformation_type`. The combined catalog defines **4,309 top-level provider columns**, at most 85 per type. Primitive values use SQLite JSON extraction; objects and arrays remain JSON. Column names are safe identifiers, with reserved names renamed. These source-specific views preserve Cloud Control observations even when a native resource wins the preferred-resource view. The generic `aws_cloudcontrol_resource` view and sanitized `provider_properties` remain available for common queries. Schema version 5 installed 197 additional root views; version 6 installed the first 21 parent views, and version 13 completed the 24 parent views and 205 columns. The original 200 projections, later root projections and stored observations remain intact.
 
 ```bash
 aws-inventory query --db inventory.sqlite \
@@ -130,7 +130,7 @@ aws-inventory query --db inventory.sqlite \
   'SELECT log_group_name, retention_in_days FROM aws_cc_logs_log_group LIMIT 100'
 ```
 
-The combined catalog includes **965 explicit property relationship rules across 255 types**, derived from declared string properties and reviewed ARN or short-identifier semantics. Examples include EC2-to-VPC/subnet/security-group membership, Lambda/EKS role and subnet references, ECS task-definition roles and ELB/VPC Lattice target groups, load-balancer subnets, RDS proxy secrets, event targets, DMS endpoints and Pipe source/target links. The additional **21 runtime `CHILD_OF` workflows** bring the number of types with either kind of relationship evidence to **265**. Parent edges point to the successfully observed parent identity and retain the exact requested model as evidence. Repeated `(from, to, relation)` observations merge their property-path evidence before persistence. Relation names match native collectors when their semantics match. These rules require returned evidence and do not constitute full dependency coverage for every resource.
+The combined catalog includes **968 explicit property relationship rules across 255 types**, derived from declared string properties and reviewed ARN or short-identifier semantics. Examples include EC2-to-VPC/subnet/security-group membership, Lambda/EKS role and subnet references, ECS task-definition roles and ELB/VPC Lattice target groups, load-balancer subnets, RDS proxy secrets, event targets, DMS endpoints and Pipe source/target links. The additional **24 runtime `CHILD_OF` workflows** bring the number of types with either kind of relationship evidence to **268**. Parent edges point to the successfully observed parent identity and retain the exact requested model as evidence. Repeated `(from, to, relation)` observations merge their property-path evidence before persistence. Relation names match native collectors when their semantics match. These rules require returned evidence and do not constitute full dependency coverage for every resource.
 
 Explicit referenced ARNs retain their account and region, with service/resource-prefix checks for typed rules. Reviewed short EC2 IDs create references marked `assumed_scanning_account`; these can remain unresolved or be corrected by stronger ownership evidence. EC2 image and snapshot templates retain the official empty account segment. Compound identifiers and fields defined as names are not expanded into guessed resource ARNs. Generic event destinations remain generic references instead of fabricated typed observations. IAM roles and secrets referenced by another resource do not count as proof that those targets were independently discovered. Configuration references describe declared architecture, not effective IAM authorization, successful network reachability or observed traffic.
 
@@ -146,9 +146,9 @@ This is a field-based metadata policy. It cannot recognize arbitrary secrets pla
 
 ## Remaining gaps and next increments
 
-The regional catalog intentionally excludes global/account-home-region enumeration such as IAM roles, CloudFront distributions, Route 53 hosted zones and S3 buckets. Version 0.4 introduced those selected global kinds through native adapters with explicit endpoint and once-per-account policies; see `GLOBAL_INVENTORY.md`. They remain excluded from the combined regional Cloud Control selection. Parent discovery now includes EKS addons/Fargate profiles/nodegroups, ELBv2 listeners, and reviewed API Gateway, Logs and AppConfig children. ELBv2 listener rules, RDS proxy target groups, ECS task sets and other unreviewed contexts remain excluded. Native ELBv2 already covers listeners/rules and target health. A supported schema does not imply that all provider properties or every service's runtime entities are exposed by Cloud Control.
+The regional catalog intentionally excludes global/account-home-region enumeration such as IAM roles, CloudFront distributions, Route 53 hosted zones and S3 buckets. Version 0.4 introduced those selected global kinds through native adapters with explicit endpoint and once-per-account policies; see `GLOBAL_INVENTORY.md`. They remain excluded from the combined regional Cloud Control selection. Parent discovery now includes EKS addons/Fargate profiles/nodegroups/access entries/pod identity associations, ELBv2 listeners, and reviewed API Gateway, Logs and AppConfig children including experiment definitions. ELBv2 listener rules, RDS proxy target groups, ECS task sets and other unreviewed contexts remain excluded. Native ELBv2 already covers listeners/rules and target health. A supported schema does not imply that all provider properties or every service's runtime entities are exposed by Cloud Control.
 
-The next increments should follow evidence: validate the admitted parent workflows against actual regional providers; extend reviewed global coverage and additional dependency levels; improve authoritative ARN/owner resolution; and extend relationships only where source fields have clear semantics. Preserve explicit missing/failed scopes, redaction and bounded work while expanding breadth. The 418-descriptor selection is an implemented catalog, not a claim to inventory all AWS resource types.
+The next increments should follow evidence: validate the admitted parent workflows against actual regional providers; extend reviewed global coverage and additional dependency levels; improve authoritative ARN/owner resolution; and extend relationships only where source fields have clear semantics. Preserve explicit missing/failed scopes, redaction and bounded work while expanding breadth. The 421-descriptor selection is an implemented catalog, not a claim to inventory all AWS resource types.
 
 ## Reproduction and tests
 

@@ -8,7 +8,7 @@ use std::path::Path;
 
 type TestError = Box<dyn std::error::Error>;
 type TestResult = Result<(), TestError>;
-const CURRENT_SCHEMA_VERSION: i64 = 6;
+const CURRENT_SCHEMA_VERSION: i64 = 13;
 
 fn fixture(id: &str, kind: &str, properties: serde_json::Value, time: i64) -> Resource {
     Resource {
@@ -91,12 +91,16 @@ async fn legacy_database(path: &Path) -> TestResult {
 
 #[path = "migrations/architecture_edges_and_routes_do_not_mix_snapshots.rs"]
 mod architecture_edges_and_routes_do_not_mix_snapshots;
+#[path = "migrations/coverage_registry_upgrades_version_seven.rs"]
+mod coverage_registry_upgrades_version_seven;
 #[path = "migrations/failed_migration_rolls_back_views_and_version_together.rs"]
 mod failed_migration_rolls_back_views_and_version_together;
 #[path = "migrations/foreign_key_check_failure_rolls_back_source_migration.rs"]
 mod foreign_key_check_failure_rolls_back_source_migration;
 #[path = "migrations/four_sources_preserve_provenance_and_order_in_latest_and_snapshot_views.rs"]
 mod four_sources_preserve_provenance_and_order_in_latest_and_snapshot_views;
+#[path = "migrations/freshness_view_rebuild_upgrades_version_six.rs"]
+mod freshness_view_rebuild_upgrades_version_six;
 #[path = "migrations/legacy_population.rs"]
 mod legacy_population;
 #[path = "migrations/load_balancer_aliases_preserve_type_and_target_identity_fields.rs"]

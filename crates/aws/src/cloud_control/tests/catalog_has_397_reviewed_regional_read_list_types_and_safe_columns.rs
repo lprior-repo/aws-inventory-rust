@@ -1,6 +1,15 @@
 //! catalog has 397 reviewed regional read list types and safe columns behavior.
 use super::*;
 
+fn selection(names: &[&str]) -> Selection {
+    Selection::Types(
+        names
+            .iter()
+            .map(|name| inventory_core::ResourceType::new(*name))
+            .collect(),
+    )
+}
+
 #[test]
 fn catalog_has_397_reviewed_regional_read_list_types_and_safe_columns() -> TestResult {
     let catalog = root_catalog()?;
@@ -60,12 +69,20 @@ fn catalog_has_397_reviewed_regional_read_list_types_and_safe_columns() -> TestR
 
 #[test]
 fn selection_rejects_unknown_types_and_deduplicates_exact_names() -> TestResult {
-    assert_eq!(validate_selection(&[])?.len(), 418);
-    let selection =
-        validate_selection(&["AWS::EC2::Instance".into(), "AWS::EC2::Instance".into()])?;
-    assert_eq!(selection.len(), 1);
-    assert!(validate_selection(&["AWS::IAM::Role".into()]).is_err());
-    assert!(validate_selection(&vec!["AWS::EC2::Instance".into(); 419]).is_err());
+    assert_eq!(validate_selection(&selection(&[]))?.len(), 421);
+    let descriptors =
+        validate_selection(&selection(&["AWS::EC2::Instance", "AWS::EC2::Instance"]))?;
+    assert_eq!(descriptors.len(), 1);
+    assert!(validate_selection(&selection(&["AWS::IAM::Role"])).is_err());
+    assert!(
+        validate_selection(&Selection::Types(vec![
+            inventory_core::ResourceType::new(
+                "AWS::EC2::Instance"
+            );
+            422
+        ]))
+        .is_err()
+    );
     Ok(())
 }
 

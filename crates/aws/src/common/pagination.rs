@@ -114,7 +114,11 @@ where
                     }
                 }
                 CollectionEvent::Failure(failure) => {
-                    tracing::warn!(collector = %failure.scope.collector, category = %failure.category, "collection scope incomplete");
+                    if failure.category == "unsupported_type" {
+                        tracing::info!(collector = %failure.scope.collector, category = %failure.category, "provider capability boundary recorded");
+                    } else {
+                        tracing::warn!(collector = %failure.scope.collector, category = %failure.category, "collection scope incomplete");
+                    }
                 }
             }
             ctx.sender

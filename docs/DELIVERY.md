@@ -127,6 +127,27 @@ without rebuilding observations, altering finished scans or replacing caller
 views. A name conflict fails and rolls back both the added views and schema
 version. The migration tests preserve existing data and exercise that rollback.
 
+## Release packaging
+
+The portable source/evidence ZIP is built by the Rust catalog tool; no Python
+interpreter is involved:
+
+```bash
+cargo run -q -p catalog-tool -- package --destination /path/to/aws-inventory-rs.zip
+```
+
+`--root` overrides the payload root (default: the workspace). The command scans
+the tree, excludes Cargo targets and caches, VCS data, credential material and
+non-published databases exactly as the former Python packager did, writes
+`MANIFEST.sha256` beside the sources and embeds it in the archive. Entry order is
+the sorted slash-separated relative path, and every entry carries a fixed
+1980-01-01 ZIP timestamp and deterministic deflate settings, so repeated runs
+over an unchanged tree produce byte-identical archives (the retired Python tool
+embedded the current time instead). The archive is written to a temporary
+sibling, re-read to verify the entry count, every payload hash and the manifest,
+then atomically renamed. The command prints a JSON receipt with `path`, `files`,
+`bytes` and `sha256` for the finished archive.
+
 ## Verification boundaries
 
 The implementation includes offline artifact/status/cancellation tests, a

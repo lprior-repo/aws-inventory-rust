@@ -104,6 +104,13 @@ CPU, and time budget. Normal inventory builds compile the concrete adapters
 they use. Downloaded crates and a valid feature graph do not establish that an
 all-services build has completed or that every SDK combination was tested.
 
+`crates/aws` compiles only its explicit adapter dependencies. The SQS queue
+collector pins `aws-sdk-sqs = "=1.121.0"` and the SNS collector pins
+`aws-sdk-sns = "=1.123.0"`, both with `default-features = false` and the
+same `default-https-client`/`rt-tokio` transport features as the other adapters,
+so they resolve to the exact versions recorded in `crates/sdk-catalog` and
+`Cargo.lock` rather than newer floating releases.
+
 The catalog is marked `publish = false`. Its 437 individual service features
 exceed crates.io's usual 300-feature publishing limit; that limit does not
 prevent using this local workspace package. If the catalog is published later,

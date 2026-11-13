@@ -13,7 +13,8 @@ use aws_sdk_cloudcontrol::{
     types::ResourceDescription,
 };
 use inventory_core::{
-    CollectionEvent, CollectionPage, CollectionScope, Edge, Resource, Source, validate_identifier,
+    CollectionEvent, CollectionPage, CollectionScope, Edge, Resource, Selection, Source,
+    validate_identifier,
 };
 use inventory_engine::limiter::ApiError;
 use serde::{Deserialize, Serialize};
@@ -45,6 +46,14 @@ const MAX_PATH_MATCHES: usize = 4_096;
 const MAX_PATH_BYTES: usize = 1_048_576;
 const MAX_RESOURCE_EDGES: usize = 4_096;
 const MAX_RELATIONSHIP_RULES: usize = 256;
+/// Cloud Control `ListResources` accepts a bounded page-size hint. The
+/// collector's validated `--page-size` is clamped into the provider range so a
+/// continuation token is requested instead of one unbounded list response.
+const MAX_LIST_PAGE_SIZE: i32 = 100;
+
+pub(super) fn list_page_size(ctx: &Context) -> i32 {
+    ctx.page_size.clamp(1, MAX_LIST_PAGE_SIZE)
+}
 
 /// A reviewed provider-property reference; short EC2 IDs explicitly retain the
 /// assumption that the owner is the scanning account, rather than claiming an
@@ -79,7 +88,7 @@ pub struct ProviderColumn {
 
 /// The complete catalog is available without making an AWS request. Optional
 /// identity templates apply only to reviewed types and provider properties.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceType {
     pub type_name: String,
@@ -134,13 +143,18 @@ mod architecture_tests;
 mod tests;
 
 mod catalog_validation;
-pub use catalog_validation::{catalog, parent_catalog, root_catalog, validate_selection};
+pub use catalog_validation::{
+    catalog, global_sensitive_names, parent_catalog, root_catalog, validate_selection,
+};
 use catalog_validation::{invalid, validate_descriptor, validate_pointer};
 mod collection;
 pub(crate) use collection::collect;
+mod universal;
 use collection::{
-    collect_type_with, emit_child, identifier, remember_list_page, validate_response_type,
+    collect_type_with, emit_child, identifier, record_unsupported, remember_list_page,
+    validate_response_type,
 };
+pub use universal::{UniversalReport, digest as universal_digest, report as universal_report};
 mod property_paths;
 use property_paths::{expand_pointer, map_get, sanitized_properties};
 mod identity;

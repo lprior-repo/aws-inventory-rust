@@ -83,12 +83,14 @@ pub(super) async fn collect_job(
         .as_ref()
         .and_then(|role| role.role_arn.split(':').nth(4))
         .map(str::to_owned);
+    let selection = job.options.selection.clone();
     if executor.is_cancelled() {
         return Outcome {
             scan_id: job.scan_id,
             profile: job.options.profile,
             target_account,
             error: Some("collection cancelled before credential loading".into()),
+            selection,
         };
     }
     let (native_sender, native_receiver) = mpsc::channel(1);
@@ -111,6 +113,7 @@ pub(super) async fn collect_job(
         profile,
         target_account,
         error,
+        selection,
     }
 }
 
@@ -230,11 +233,36 @@ pub(super) async fn finish_profile(
     } else {
         requested
     };
+    let universal = outcome.selection.is_universal();
+    let scan_id = outcome.scan_id.clone();
     let summary = store
         .finish_scan(&outcome.scan_id, status, demo::now_ms()?)
         .await?;
     let actual = store.scan_status(&outcome.scan_id).await?;
-    Ok(
-        json!({"scan_id":outcome.scan_id,"profile":outcome.profile,"target_account":outcome.target_account,"status":actual.as_str(),"summary":summary,"error":outcome.error}),
-    )
+    let mut scan = json!({"scan_id":outcome.scan_id,"profile":outcome.profile,"target_account":outcome.target_account,"status":actual.as_str(),"summary":summary,"error":outcome.error});
+    if universal {
+        let catalog = inventory_aws::cloud_control::universal_report()?;
+        let outcomes = store.universal_outcomes(&scan_id).await?;
+        let object = scan
+            .as_object_mut()
+            .context("scan result must be an object")?;
+        object.insert(
+            "universal".into(),
+            json!({
+                "catalog_digest": catalog.catalog_digest,
+                "total": catalog.total,
+                "list_capable": catalog.list_capable,
+                "attempted": outcomes.attempted,
+                "succeeded": outcomes.succeeded,
+                "unsupported": outcomes.unsupported,
+                "failed": outcomes.failed,
+                "skipped": catalog.parent_required.saturating_add(catalog.unsupported),
+                "skipped_parent_required": catalog.parent_required,
+                "skipped_unsupported": catalog.unsupported,
+                "skipped_parent_required_types": catalog.skipped_parent_required,
+                "skipped_unsupported_types": catalog.skipped_unsupported,
+            }),
+        );
+    }
+    Ok(scan)
 }

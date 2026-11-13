@@ -210,7 +210,7 @@ def check(
     kind_counts = Counter(row.get("kind") for row in rows)
     global_counts = {kind: count for kind, count in kind_counts.items() if isinstance(kind, str) and kind.startswith(GLOBAL_PREFIXES)}
     add("all_seven_global_kinds", len(global_counts) == 7, global_counts)
-    add("all_32_native_kinds", len(kind_counts) == 32, {"distinct_kinds": len(kind_counts)})
+    add("all_39_native_kinds", len(kind_counts) == 39, {"distinct_kinds": len(kind_counts)})
     return checks
 
 

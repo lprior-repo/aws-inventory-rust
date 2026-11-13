@@ -66,6 +66,8 @@ mod edge_failure_also_rolls_back_resources_and_checkpoint;
 mod empty_resource_name_preserves_valid_aws_tag_value;
 #[path = "store/empty_terminal_page_proves_empty_scope_but_unfinished_page_does_not.rs"]
 mod empty_terminal_page_proves_empty_scope_but_unfinished_page_does_not;
+#[path = "store/equal_observation_timestamps_use_source_priority_tie_break.rs"]
+mod equal_observation_timestamps_use_source_priority_tie_break;
 #[path = "store/equal_timestamp_source_ties_ignore_page_arrival_order.rs"]
 mod equal_timestamp_source_ties_ignore_page_arrival_order;
 #[path = "store/exact_page_replay_is_idempotent_even_after_finalization.rs"]
@@ -74,18 +76,26 @@ mod exact_page_replay_is_idempotent_even_after_finalization;
 mod failed_scopes_are_durable_idempotent_and_prevent_complete_status;
 #[path = "store/file_reader_denies_cte_writes_and_preserves_bound_values.rs"]
 mod file_reader_denies_cte_writes_and_preserves_bound_values;
+#[path = "store/freshest_observation_wins_and_latest_within_source_are_deterministic.rs"]
+mod freshest_observation_wins_and_latest_within_source_are_deterministic;
 #[path = "store/graph_checkpoints_are_monotonic_and_require_a_frozen_scan.rs"]
 mod graph_checkpoints_are_monotonic_and_require_a_frozen_scan;
+#[path = "store/historical_observations_and_per_source_view_remain_intact.rs"]
+mod historical_observations_and_per_source_view_remain_intact;
 #[path = "store/invalid_scan_lifecycle_does_not_reopen_terminal_scans.rs"]
 mod invalid_scan_lifecycle_does_not_reopen_terminal_scans;
+#[path = "store/newer_config_observation_outranks_older_direct_observation.rs"]
+mod newer_config_observation_outranks_older_direct_observation;
+#[path = "store/newer_direct_observation_outranks_older_config_observation.rs"]
+mod newer_direct_observation_outranks_older_config_observation;
+#[path = "store/newer_observation_within_the_same_source_wins.rs"]
+mod newer_observation_within_the_same_source_wins;
 #[path = "store/observation_failure_rolls_back_page_checkpoint_edges_and_other_observations.rs"]
 mod observation_failure_rolls_back_page_checkpoint_edges_and_other_observations;
 #[path = "store/pages_require_contiguous_order_and_reject_continuation_cycles.rs"]
 mod pages_require_contiguous_order_and_reject_continuation_cycles;
 #[path = "store/partial_snapshot_never_erases_previous_resources_or_edges.rs"]
 mod partial_snapshot_never_erases_previous_resources_or_edges;
-#[path = "store/preferred_source_and_latest_observation_within_source_are_deterministic.rs"]
-mod preferred_source_and_latest_observation_within_source_are_deterministic;
 #[path = "store/query_bounds_native_columns_and_decoded_cells.rs"]
 mod query_bounds_native_columns_and_decoded_cells;
 #[path = "store/query_caps_rows_columns_output_and_instruction_work.rs"]
@@ -106,3 +116,5 @@ mod sql_views_expose_selected_configuration_and_provenance;
 mod streaming_exports_propagate_consumer_failure;
 #[path = "store/successful_page_roundtrips_all_rows_across_multiple_sql_batches.rs"]
 mod successful_page_roundtrips_all_rows_across_multiple_sql_batches;
+#[path = "store/universal_unsupported_outcomes_only_count_cloud_control_list_scopes.rs"]
+mod universal_unsupported_outcomes_only_count_cloud_control_list_scopes;

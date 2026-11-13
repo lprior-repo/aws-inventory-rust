@@ -89,6 +89,26 @@ fn varied_case(value: &str, mask: u64) -> String {
 }
 
 #[test]
+fn foreign_type_not_found_codes_are_not_unsupported_type_boundaries()
+-> Result<(), Box<dyn std::error::Error>> {
+    for code in [
+        "TypeNotFoundException",
+        "SOME_TYPENOTFOUND_ERROR",
+        "typenotfound",
+    ] {
+        let error = match modeled(400, Some(code), None, "fixture") {
+            Ok(error) => error,
+            Err(error) => return Err(format!("fixture status: {error}").into()),
+        };
+        assert!(
+            matches!(classify_sdk_error(error), ApiError::Permanent(_)),
+            "code {code} must not be downgraded to UnsupportedType"
+        );
+    }
+    Ok(())
+}
+
+#[test]
 fn continuation_history_rejects_growth_after_its_exact_byte_budget() {
     let mut cursor = Cursor::default();
     let count = MAX_TOKEN_TOTAL_BYTES / MAX_TOKEN_BYTES;

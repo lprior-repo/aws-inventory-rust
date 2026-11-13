@@ -9,6 +9,7 @@ scripts/check-source-size.sh
 cargo fmt --all --check
 "$INVENTORY_PYTHON" scripts/generate_sdk_catalog.py --check
 "$INVENTORY_PYTHON" catalog/upstream/build_parent_catalog.py --check
+cargo run -q -p catalog-tool -- parent-candidates --root . --check
 "$INVENTORY_PYTHON" -m unittest discover -s catalog/upstream -p 'test_*.py'
 "$INVENTORY_PYTHON" -m unittest discover -s scripts/catalog -p 'test_*.py'
 "$INVENTORY_PYTHON" -m unittest discover -s scripts/emulator -p 'test_*.py'

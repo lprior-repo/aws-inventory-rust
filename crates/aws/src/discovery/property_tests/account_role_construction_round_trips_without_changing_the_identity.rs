@@ -130,12 +130,12 @@ proptest! {
         for _ in 0..trailing {
             coverage.fail("ListFixture", None, &AwsScanError::Api(ApiError::Denied("fixture".into())));
         }
-        let total = ordinary + 1 + trailing;
+        let total = ordinary.saturating_add(1).saturating_add(trailing);
         prop_assert!(!coverage.complete);
         prop_assert!(coverage.cancelled);
         prop_assert_eq!(coverage.failures.len(), total.min(MAX_FAILURES));
         prop_assert_eq!(coverage.suppressed_failures, u64::try_from(total.saturating_sub(MAX_FAILURES))?);
-        prop_assert_eq!(u64::try_from(coverage.failures.len())? + coverage.suppressed_failures, u64::try_from(total)?);
+        prop_assert_eq!(u64::try_from(coverage.failures.len())?.saturating_add(coverage.suppressed_failures), u64::try_from(total)?);
     }
 
     #[test]
@@ -160,17 +160,24 @@ proptest! {
         };
         let right = DiscoveryCoverage {
             pages: right_pages, items_seen: right_items, complete: right_complete,
-            cancelled: right_cancelled, failures: (left_count..left_count + right_count).map(failure).collect(),
+            cancelled: right_cancelled, failures: (left_count..left_count.saturating_add(right_count)).map(failure).collect(),
             suppressed_failures: right_suppressed,
         };
         left.merge(right);
-        let retained = (left_count + right_count).min(MAX_FAILURES);
+        let retained = left_count.saturating_add(right_count).min(MAX_FAILURES);
         prop_assert_eq!(left.pages, left_pages.saturating_add(right_pages));
         prop_assert_eq!(left.items_seen, left_items.saturating_add(right_items));
         prop_assert_eq!(left.complete, left_complete && right_complete);
         prop_assert_eq!(left.cancelled, left_cancelled || right_cancelled);
         prop_assert_eq!(left.failures, (0..retained).map(failure).collect::<Vec<_>>());
-        prop_assert_eq!(left.suppressed_failures, left_suppressed + right_suppressed + u64::try_from(left_count + right_count - retained)?);
+        prop_assert_eq!(
+            left.suppressed_failures,
+            left_suppressed.saturating_add(right_suppressed).saturating_add(u64::try_from(
+                left_count
+                    .saturating_add(right_count)
+                    .saturating_sub(retained)
+            )?)
+        );
     }
 
     #[test]

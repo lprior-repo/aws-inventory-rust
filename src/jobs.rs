@@ -88,7 +88,10 @@ async fn execute_open(store: &JobStore, command: JobCommand) -> Result<Value> {
 
 pub fn validate_scan(options: &ScanArgs) -> Result<()> {
     crate::delivery::validate(&options.delivery)?;
-    plan::create(PlanArgs {
+    // The planner accepts `all` as the universal Cloud Control selector and
+    // validates its partition; reviewed per-type plans remain the executable
+    // subset described without credentials.
+    let plan_args = PlanArgs {
         profile: options.profile.clone(),
         region: options.region.clone(),
         service: options.service.clone(),
@@ -98,7 +101,9 @@ pub fn validate_scan(options: &ScanArgs) -> Result<()> {
         resource_explorer_view: options.resource_explorer_view.clone(),
         discover_sources: options.discover_sources,
         accounts: options.accounts.clone(),
-    })?;
+    };
+    let selection = plan_args.selection()?;
+    plan::create(plan_args, &selection)?;
     ensure!(
         (1..=10000).contains(&options.max_pages) && (1..=1000).contains(&options.page_size),
         "max-pages must be 1..10000 and page-size 1..1000"

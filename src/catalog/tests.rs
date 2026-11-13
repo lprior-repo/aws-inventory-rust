@@ -12,12 +12,12 @@ fn catalog_kinds_and_derived_views_match_the_sqlite_schema()
         .get("tables")
         .and_then(Value::as_array)
         .ok_or("missing native table catalog")?;
-    assert_eq!(tables.len(), 32);
+    assert_eq!(tables.len(), 39);
     assert_eq!(
         catalog
             .get("native_resource_kind_count")
             .and_then(Value::as_u64),
-        Some(32)
+        Some(39)
     );
     assert_eq!(
         catalog.get("schema_version").and_then(Value::as_u64),
@@ -25,13 +25,17 @@ fn catalog_kinds_and_derived_views_match_the_sqlite_schema()
     );
     assert_eq!(
         catalog.get("sqlite_schema_version").and_then(Value::as_u64),
-        Some(6)
+        Some(12)
     );
     let migrations = [
         include_str!("../../crates/engine/sql/001_inventory.sql"),
         include_str!("../../crates/engine/sql/002_architecture.sql"),
         include_str!("../../crates/engine/sql/003_sources.sql"),
         include_str!("../../crates/engine/sql/004_global_inventory.sql"),
+        include_str!("../../crates/engine/sql/009_native_sqs_view.sql"),
+        include_str!("../../crates/engine/sql/010_native_sns_views.sql"),
+        include_str!("../../crates/engine/sql/011_native_kms_views.sql"),
+        include_str!("../../crates/engine/sql/012_native_step_functions_views.sql"),
     ];
     let mut native_names = BTreeSet::new();
     for table in tables {
@@ -41,8 +45,11 @@ fn catalog_kinds_and_derived_views_match_the_sqlite_schema()
             .ok_or("missing native table name")?;
         assert!(native_names.insert(name), "duplicate native kind: {name}");
         let declaration = format!("CREATE VIEW {name} AS");
+        let idempotent = format!("CREATE VIEW IF NOT EXISTS {name} AS");
         assert!(
-            migrations.iter().any(|sql| sql.contains(&declaration)),
+            migrations
+                .iter()
+                .any(|sql| sql.contains(&declaration) || sql.contains(&idempotent)),
             "catalog table has no SQLite view: {name}"
         );
         let operations = table

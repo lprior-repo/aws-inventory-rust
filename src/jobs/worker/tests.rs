@@ -1,4 +1,8 @@
+// `serde_json::Value` string indexing is infallible; array positions use `first`.
+#![allow(clippy::indexing_slicing)]
+
 use super::*;
+use crate::json_test::first;
 use std::sync::atomic::{AtomicBool, Ordering};
 
 fn executor() -> Result<Arc<ApiExecutor>> {
@@ -197,8 +201,12 @@ fn oversized_results_retain_bounded_scan_summaries_and_explicit_counts() -> Resu
     )?;
     assert_eq!(compact["result_truncated"], true);
     assert_eq!(compact["scan_count"], 1);
-    assert_eq!(compact["scans"][0]["summary"]["resources"], 12);
-    assert!(compact["scans"][0]["summary"].get("unexpected").is_none());
+    assert_eq!(first(&compact["scans"])["summary"]["resources"], 12);
+    assert!(
+        first(&compact["scans"])["summary"]
+            .get("unexpected")
+            .is_none()
+    );
     assert!(compact.get("unneeded").is_none());
 
     let maximum = json!({"status":"partial","scans":

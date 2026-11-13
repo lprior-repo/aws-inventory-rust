@@ -18,14 +18,14 @@ proptest! {
         }
         let mut cursor = Cursor::new();
         for (index, rows) in pages.iter().enumerate() {
-            let token = (index + 1 < pages.len()).then(|| format!("cursor-{index}"));
+            let token = (index.saturating_add(1) < pages.len()).then(|| format!("cursor-{index}"));
             cursor.accept(
                 page(rows.iter().map(|item| Ok(format!("resource-{item}"))).collect(), token),
-                "ListFixture", Some("parent"), u32::try_from(pages.len())?, raw_count + 1,
+                "ListFixture", Some("parent"), u32::try_from(pages.len())?, raw_count.saturating_add(1),
             );
-            prop_assert_eq!(cursor.done, index + 1 == pages.len());
+            prop_assert_eq!(cursor.done, index.saturating_add(1) == pages.len());
         }
-        let duplicates = raw_count - expected.len();
+        let duplicates = raw_count.saturating_sub(expected.len());
         prop_assert_eq!(&cursor.listing.items, &expected);
         prop_assert_eq!(cursor.listing.coverage.pages, u64::try_from(pages.len())?);
         prop_assert_eq!(cursor.listing.coverage.items_seen, u64::try_from(raw_count)?);
@@ -44,7 +44,7 @@ proptest! {
     fn terminal_response_at_the_exact_page_and_item_caps_is_complete(cap in 1_u32..64) {
         let mut cursor = Cursor::new();
         for index in 0..cap {
-            let terminal = index + 1 == cap;
+            let terminal = index.saturating_add(1) == cap;
             cursor.accept(
                 page(vec![Ok(format!("resource-{index}"))], (!terminal).then(|| format!("cursor-{index}"))),
                 "ListFixture", None, cap, usize::try_from(cap)?,
@@ -64,15 +64,17 @@ proptest! {
         for index in 0..cap {
             cursor.accept(
                 page(vec![Ok(format!("resource-{index}"))], Some(format!("cursor-{index}"))),
-                "ListFixture", None, cap, usize::try_from(cap)? + 1,
+                "ListFixture", None, cap, usize::try_from(cap)?.saturating_add(1),
             );
-            prop_assert_eq!(cursor.done, index + 1 == cap);
+            prop_assert_eq!(cursor.done, index.saturating_add(1) == cap);
         }
         prop_assert_eq!(cursor.listing.items.len(), usize::try_from(cap)?);
         prop_assert_eq!(cursor.listing.coverage.pages, u64::from(cap));
         prop_assert!(!cursor.listing.coverage.complete);
         prop_assert_eq!(cursor.listing.coverage.failures.len(), 1);
-        prop_assert!(cursor.listing.coverage.failures[0].message.contains("page limit"));
+        let failure = cursor.listing.coverage.failures.first()
+            .ok_or_else(|| TestCaseError::fail("missing page-limit failure"))?;
+        prop_assert!(failure.message.contains("page limit"));
     }
 
     #[test]
@@ -87,7 +89,9 @@ proptest! {
         prop_assert_eq!(cursor.listing.coverage.items_seen, u64::try_from(cap)?);
         prop_assert!(!cursor.listing.coverage.complete);
         prop_assert_eq!(cursor.listing.coverage.failures.len(), 1);
-        prop_assert!(cursor.listing.coverage.failures[0].message.contains("item limit"));
+        let failure = cursor.listing.coverage.failures.first()
+            .ok_or_else(|| TestCaseError::fail("missing item-limit failure"))?;
+        prop_assert!(failure.message.contains("item limit"));
     }
 
     #[test]
@@ -98,18 +102,20 @@ proptest! {
     ) {
         let mut cursor = Cursor::new();
         let first = (0..retained).map(|index| format!("resource-{index}")).collect::<Vec<_>>();
-        cursor.accept(page(first.iter().cloned().map(Ok).collect(), Some("next".into())), "ListFixture", None, 3, retained + remaining);
+        cursor.accept(page(first.iter().cloned().map(Ok).collect(), Some("next".into())), "ListFixture", None, 3, retained.saturating_add(remaining));
         prop_assert!(!cursor.done);
         // Even duplicate identities consume the response budget. Deduplicating
         // before admission would permit unbounded raw response processing.
-        cursor.accept(page(std::iter::repeat_with(|| Ok("resource-0".to_owned())).take(remaining + excess).collect(), None), "ListFixture", None, 3, retained + remaining);
+        cursor.accept(page(std::iter::repeat_with(|| Ok("resource-0".to_owned())).take(remaining.saturating_add(excess)).collect(), None), "ListFixture", None, 3, retained.saturating_add(remaining));
         prop_assert!(cursor.done);
         prop_assert_eq!(cursor.listing.items, first);
         prop_assert_eq!(cursor.listing.coverage.items_seen, u64::try_from(retained)?);
         prop_assert_eq!(cursor.listing.coverage.pages, 2);
         prop_assert_eq!(cursor.listing.coverage.failures.len(), 1);
         prop_assert!(!cursor.listing.coverage.complete);
-        prop_assert!(cursor.listing.coverage.failures[0].message.contains("would be exceeded"));
+        let failure = cursor.listing.coverage.failures.first()
+            .ok_or_else(|| TestCaseError::fail("missing budget failure"))?;
+        prop_assert!(failure.message.contains("would be exceeded"));
     }
 
     #[test]
@@ -119,21 +125,33 @@ proptest! {
             cursor.accept(page(vec![Ok(format!("resource-{index}"))], Some(format!("cursor-{index}"))), "ListFixture", None, 100, 100);
             prop_assert!(!cursor.done);
         }
-        let repeated = choose % prefix;
+        let repeated = choose
+            .checked_rem(prefix)
+            .ok_or_else(|| TestCaseError::fail("missing cycle token"))?;
         cursor.accept(page(vec![Ok("last-observation".to_owned())], Some(format!("cursor-{repeated}"))), "ListFixture", None, 100, 100);
         prop_assert!(cursor.done);
-        prop_assert_eq!(cursor.listing.items.len(), prefix + 1);
+        prop_assert_eq!(cursor.listing.items.len(), prefix.saturating_add(1));
         prop_assert_eq!(cursor.seen_tokens.len(), prefix);
-        prop_assert_eq!(cursor.token, Some(format!("cursor-{}", prefix - 1)));
+        prop_assert_eq!(cursor.token, Some(format!("cursor-{}", prefix.saturating_sub(1))));
         prop_assert!(!cursor.listing.coverage.complete);
         prop_assert_eq!(cursor.listing.coverage.failures.len(), 1);
-        prop_assert!(cursor.listing.coverage.failures[0].message.contains("token cycle"));
+        let failure = cursor.listing.coverage.failures.first()
+            .ok_or_else(|| TestCaseError::fail("missing token-cycle failure"))?;
+        prop_assert!(failure.message.contains("token cycle"));
     }
 
     #[test]
     fn continuation_limit_counts_utf8_bytes(delta in -4_i32..=4) {
-        let byte_length = usize::try_from(i64::try_from(MAX_TOKEN_BYTES)? + i64::from(delta))?;
-        let token = format!("{}{}", "🦀".repeat(byte_length / 4), "x".repeat(byte_length % 4));
+        let byte_length = usize::try_from(
+            i64::try_from(MAX_TOKEN_BYTES)?
+                .checked_add(i64::from(delta))
+                .ok_or_else(|| TestCaseError::fail("token byte length overflow"))?,
+        )?;
+        let token = format!(
+            "{}{}",
+            "🦀".repeat(byte_length.div_euclid(4)),
+            "x".repeat(byte_length.rem_euclid(4))
+        );
         prop_assert_eq!(token.len(), byte_length);
         let mut cursor = Cursor::<String>::new();
         cursor.accept(page(vec![], Some(token.clone())), "ListFixture", None, 2, 1);
@@ -156,7 +174,11 @@ proptest! {
         oversized in any::<bool>(),
     ) {
         let expected = valid.iter().map(|id| format!("resource-{id}")).collect::<Vec<_>>();
-        let invalid = if oversized { "é".repeat(MAX_METADATA_BYTES / 2 + 1) } else { String::new() };
+        let invalid_length = MAX_METADATA_BYTES
+            .checked_div(2)
+            .and_then(|value| value.checked_add(1))
+            .ok_or_else(|| TestCaseError::fail("invalid fixture length overflow"))?;
+        let invalid = if oversized { "é".repeat(invalid_length) } else { String::new() };
         let rows = expected.iter().cloned().map(Ok)
             .chain(std::iter::repeat_with(|| Ok(invalid.clone())).take(bad_count))
             .chain(std::iter::once(Err(data_error("invalid mapped fixture")))).collect::<Vec<_>>();
@@ -166,7 +188,7 @@ proptest! {
         prop_assert!(cursor.done);
         prop_assert_eq!(cursor.listing.items, expected);
         prop_assert_eq!(cursor.listing.coverage.items_seen, u64::try_from(length)?);
-        prop_assert_eq!(cursor.listing.coverage.failures.len(), bad_count + 1);
+        prop_assert_eq!(cursor.listing.coverage.failures.len(), bad_count.saturating_add(1));
         prop_assert!(!cursor.listing.coverage.complete);
     }
 

@@ -1,8 +1,13 @@
 """Negative controls for the lexical source and execution provenance audit."""
 
 import copy
+from collections import Counter
+import hashlib
+import io
 import json
+from contextlib import redirect_stdout
 from pathlib import Path
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -283,6 +288,214 @@ class RequestLedgerTests(unittest.TestCase):
     def test_http_summary_cannot_credit_requests_absent_from_the_rust_ledger(self):
         with self.assertRaisesRegex(ValueError, "disagrees with the Rust request ledger"):
             self.evidence(2)
+
+
+class ReviewedAdditionsTests(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        (self.root / "crates/aws/src").mkdir(parents=True)
+        (self.root / "catalog").mkdir()
+        (self.root / "artifacts").mkdir()
+        self.source = ("use aws_sdk_kms::Client;\n"
+                       "fn list_keys(client: &Client) {\n"
+                       "    client.list_keys().send();\n"
+                       "}\n")
+        self.source_path = self.root / "crates/aws/src/kms.rs"
+        self.source_path.write_text(self.source)
+        self.matrix = {"operations": [{"id": "alpha.list_things"}]}
+        self.inventory = {"schema_version": 1, "summary": {"crates": 1, "operations": 1},
+                          "crates": [{"name": "aws-sdk-kms", "version": "1.131.0",
+                                      "operations": [{"module": "list_keys",
+                                                      "api_operation": "ListKeys"}]}]}
+        self.matrix_sha = self.write_json("catalog/aws-operations.json", self.matrix)
+        self.inventory_sha = self.write_json("catalog/aws-sdk-operations.json", self.inventory)
+        self.additions = self.overlay()
+        self.write_overlay(self.additions)
+
+    def write_json(self, name, value):
+        path = self.root / name
+        raw = json.dumps(value).encode()
+        path.write_bytes(raw)
+        return hashlib.sha256(raw).hexdigest()
+
+    def write_overlay(self, value):
+        self.write_json(audit.ADDITIONS_NAME, value)
+
+    def overlay(self):
+        source_sha = hashlib.sha256(self.source.encode()).hexdigest()
+        return {
+            "schema_version": 1, "scope": "fixture reviewed additions",
+            "binds": {
+                "historical_matrix": {"path": "catalog/aws-operations.json", "sha256": self.matrix_sha},
+                "operation_inventory": {"path": audit.INVENTORY_NAME, "sha256": self.inventory_sha},
+            },
+            "review": {"reviewed_at_utc": "2026-11-13T00:00:00Z", "method": "fixture"},
+            "additions": [{
+                "id": "kms.list_keys", "sdk_service": "kms", "boto3_service": "kms",
+                "sdk_crate": "aws-sdk-kms", "sdk_version": "1.131.0",
+                "sdk_operation": "list_keys", "api_operation": "ListKeys",
+                "category": "native_regional", "explicit_sdk_send": True,
+                "source_calls": [{"path": "crates/aws/src/kms.rs", "function": "list_keys",
+                                  "builder_line": 3, "operation_line": 3, "send_line": 3}],
+                "source_sha256": {"crates/aws/src/kms.rs": source_sha},
+                "wire_source": {"kind": "fixture", "service": "kms", "api_version": "2014-11-01",
+                                "operation_model_sha256": "a" * 64,
+                                "rust_operation_module": "src/operation/list_keys.rs",
+                                "rust_operation_module_sha256": "b" * 64},
+                "coverage": {"status": "pending_execution", "reason": "fixture review",
+                             "execution_receipt": None},
+            }],
+        }
+
+    def load(self):
+        return audit.load_additions(self.root, self.matrix, self.matrix_sha)
+
+    def mutate(self, change):
+        overlay = copy.deepcopy(self.additions)
+        change(overlay["additions"][0], overlay)
+        self.write_overlay(overlay)
+
+    def test_absent_overlay_is_a_noop_for_the_validator(self):
+        (self.root / audit.ADDITIONS_NAME).unlink()
+        self.assertIsNone(self.load())
+        self.assertEqual(audit.addition_expected(None), [])
+        self.assertEqual(audit.check_additions(self.root),
+                         {"additions": 0, "callsites": 0, "status": "absent"})
+
+    def test_reviewed_addition_is_admitted_separately_from_history(self):
+        additions = self.load()
+        self.assertIsNotNone(additions)
+        row = additions["additions"][0]
+        self.assertEqual((row["id"], row["coverage"]["status"]), ("kms.list_keys", "pending_execution"))
+        expected = audit.addition_expected(additions)
+        self.assertEqual(len(expected), 1)
+        self.assertEqual(expected[0]["origin"], "reviewed_addition")
+        historical = [{"path": "crates/aws/src/collect.rs", "function": "collect",
+                       "id": "alpha.list_things", "origin": "historical_matrix"}]
+        self.assertEqual(len(historical + expected), 2)
+        self.assertNotEqual(audit.key(historical[0]), audit.key(expected[0]))
+        union = Counter(audit.key(row) for row in historical + expected)
+        self.assertEqual((len(union), sum(union.values())), (2, 2))
+
+    def test_check_additions_rejects_a_moved_callsite(self):
+        self.mutate(lambda row, _overlay: row["source_calls"][0].update(function="moved"))
+        with self.assertRaisesRegex(ValueError, "callsites changed; re-review"):
+            audit.check_additions(self.root)
+
+    def test_historical_identity_cannot_be_reused(self):
+        def change(row, _overlay):
+            row.update(id="alpha.list_things", sdk_service="alpha", boto3_service="alpha",
+                       sdk_crate="aws-sdk-alpha", sdk_operation="list_things")
+        self.mutate(change)
+        with self.assertRaisesRegex(ValueError, "reuses a historical operation identity"):
+            self.load()
+
+    def test_overlay_bound_to_another_matrix_is_rejected(self):
+        self.mutate(lambda _row, overlay: overlay["binds"]["historical_matrix"].update(sha256="0" * 64))
+        with self.assertRaisesRegex(ValueError, "different historical operation matrix"):
+            self.load()
+
+    def test_emulator_success_status_is_rejected(self):
+        self.mutate(lambda row, _overlay: row["coverage"].update(status="collector_success"))
+        with self.assertRaisesRegex(ValueError, "must not claim an emulator outcome"):
+            self.load()
+
+    def test_changed_reviewed_source_is_rejected(self):
+        self.mutate(lambda row, _overlay: row["source_sha256"].update(
+            {"crates/aws/src/kms.rs": "0" * 64}))
+        with self.assertRaisesRegex(ValueError, "source changed since review"):
+            self.load()
+
+    def test_unpinned_operation_is_rejected(self):
+        def change(row, _overlay):
+            row.update(id="kms.no_such", sdk_operation="no_such",
+                       wire_source={**row["wire_source"],
+                                    "rust_operation_module": "src/operation/no_such.rs"})
+        self.mutate(change)
+        with self.assertRaisesRegex(ValueError, "absent from catalog/aws-sdk-operations.json"):
+            self.load()
+
+    def test_pinned_module_hash_is_checked_against_the_registry(self):
+        (self.root / "Cargo.lock").write_text(
+            '[[package]]\nname = "aws-sdk-kms"\nversion = "1.131.0"\n')
+        module = self.root / "list_keys.rs"
+        module.write_text("pinned module")
+        digest = hashlib.sha256(module.read_bytes()).hexdigest()
+        self.mutate(lambda row, _overlay: row["wire_source"].update(
+            rust_operation_module_sha256=digest))
+        overlay = self.load()
+        with patch.object(audit, "registry_file", return_value=module):
+            rows = audit.addition_dependency_evidence(self.root, overlay)
+            self.assertEqual(rows[0]["module_sha256"], digest)
+            self.mutate(lambda row, _overlay: row["wire_source"].update(
+                rust_operation_module_sha256="0" * 64))
+            with self.assertRaisesRegex(ValueError, "pinned SDK operation module changed"):
+                audit.addition_dependency_evidence(self.root, self.load())
+
+    def test_overlay_is_not_a_writable_receipt(self):
+        with self.assertRaisesRegex(ValueError, "historical evidence"):
+            audit.output_path(self.root, self.root / audit.ADDITIONS_NAME)
+
+    def test_check_additions_command_path_needs_no_v04(self):
+        (self.root / "Cargo.lock").write_text(
+            '[[package]]\nname = "aws-sdk-kms"\nversion = "1.131.0"\n')
+        module = self.root / "list_keys.rs"
+        module.write_text("pinned module")
+        digest = hashlib.sha256(module.read_bytes()).hexdigest()
+        self.mutate(lambda row, _overlay: row["wire_source"].update(
+            rust_operation_module_sha256=digest))
+        with patch.object(audit, "ROOT", self.root), \
+                patch.object(audit, "registry_file", return_value=module), \
+                patch.object(sys, "argv", ["audit", "--check-additions"]), \
+                redirect_stdout(io.StringIO()) as output:
+            audit.main()
+        self.assertEqual(json.loads(output.getvalue()),
+                         {"additions": 1, "callsites": 1, "status": "applied"})
+
+    def test_absent_overlay_leaves_reconciliation_output_untouched(self):
+        (self.root / audit.ADDITIONS_NAME).unlink()
+        (self.root / "Cargo.lock").write_text("")
+        (self.root / "Cargo.toml").write_text("")
+        (self.root / "rust-toolchain.toml").write_text("")
+        self.source_path.unlink()
+        collect = self.root / "crates/aws/src/collect.rs"
+        collect.write_text("use aws_sdk_alpha::Client;\n"
+                           "fn collect(client: &Client) {\n"
+                           "    client.list_things().send();\n"
+                           "}\n")
+        collect_sha = hashlib.sha256(collect.read_bytes()).hexdigest()
+        matrix = {"schema_version": 1,
+                  "operations": [{"id": "alpha.list_things", "sdk_crate": "aws-sdk-alpha",
+                                  "sdk_operation": "list_things",
+                                  "source_calls": [{"path": "crates/aws/src/collect.rs",
+                                                    "function": "collect", "builder_line": 3,
+                                                    "operation_line": 3, "send_line": 3}]}],
+                  "extraction": {"source_sha256": {"crates/aws/src/collect.rs": collect_sha}},
+                  "credential_provider_boundaries": [{"id": "sts.assume_role",
+                                                      "explicit_sdk_send": False,
+                                                      "source_calls": []}],
+                  "cloud_control_provider_dimension": {"resource_type_count": 1}}
+        matrix_sha = self.write_json("catalog/aws-operations.json", matrix)
+        self.write_json("artifacts/aws-operation-source-reconciliation-v04.json",
+                        {"historical_matrix": {"sha256": matrix_sha},
+                         "all_current_aws_source_sha256": {"crates/aws/src/collect.rs": collect_sha}})
+        root_catalog = {"resource_types": [{"type_name": "AWS::Example::Root",
+                                            "list_requires_model": False}]}
+        root_sha = self.write_json("catalog/cloudcontrol-resources.json", root_catalog)
+        parent_catalog = {"resource_types": [{"type_name": "AWS::Example::Child",
+                                              "list_requires_model": True}],
+                          "parent_plans": [{"type_name": "AWS::Example::Child",
+                                            "parent_type": "AWS::Example::Root",
+                                            "bindings": []}],
+                          "evidence": {"root_catalog_sha256": root_sha}}
+        self.write_json("catalog/cloudcontrol-parent-resources.json", parent_catalog)
+        with patch.object(audit, "dependency_evidence", return_value=([], {})):
+            report = audit.reconcile(self.root)
+        self.assertNotIn("reviewed_additions", report)
+        self.assertNotIn("reviewed_additive_operations", report["summary"])
+        self.assertTrue(all("origin" not in row for row in report["callsites"]))
 
 
 if __name__ == "__main__":

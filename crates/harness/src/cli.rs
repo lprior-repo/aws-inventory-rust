@@ -1,0 +1,230 @@
+//! Argument parsing for the operator entry point.
+
+use std::path::PathBuf;
+
+use inventory_harness::HarnessError;
+
+use super::{Command, USAGE, workspace_root};
+
+pub(super) fn parse(arguments: &[String]) -> Result<Command, HarnessError> {
+    match arguments.first().map(String::as_str) {
+        Some("snapshot") if arguments.get(1).map(String::as_str) == Some("freeze") => {
+            parse_freeze(arguments.get(2..).unwrap_or_default())
+        }
+        Some("install") => parse_install(arguments.get(1..).unwrap_or_default()),
+        Some("catalog") if arguments.get(1).map(String::as_str) == Some("universal") => {
+            parse_universal(arguments.get(2..).unwrap_or_default())
+        }
+        Some("assert") if arguments.get(1).map(String::as_str) == Some("cloud-control") => {
+            parse_cloud_control(arguments.get(2..).unwrap_or_default())
+        }
+        Some("seed") if arguments.get(1).map(String::as_str) == Some("s3") => {
+            parse_seed_s3(arguments.get(2..).unwrap_or_default())
+        }
+        Some("seed") if arguments.get(1).map(String::as_str) == Some("cloud-control") => {
+            parse_seed_cloud_control(arguments.get(2..).unwrap_or_default())
+        }
+        Some("coverage") if arguments.get(1).map(String::as_str) == Some("operations") => {
+            parse_coverage_operations(arguments.get(2..).unwrap_or_default())
+        }
+        _ => Err(HarnessError::invalid(USAGE)),
+    }
+}
+
+fn parse_freeze(arguments: &[String]) -> Result<Command, HarnessError> {
+    let options = options(arguments)?;
+    Ok(Command::Freeze {
+        evidence: options.value("--evidence")?,
+        output: options.value("--output")?,
+        binary: options.value("--binary")?,
+        root: options.get("--root").unwrap_or_else(workspace_root),
+    })
+}
+
+fn parse_install(arguments: &[String]) -> Result<Command, HarnessError> {
+    let destination = arguments
+        .first()
+        .filter(|value| !value.starts_with("--"))
+        .map(PathBuf::from)
+        .ok_or_else(|| HarnessError::invalid(USAGE))?;
+    let options = options(arguments.get(1..).unwrap_or_default())?;
+    Ok(Command::Install {
+        destination,
+        root: options.get("--root").unwrap_or_else(workspace_root),
+    })
+}
+
+fn parse_universal(arguments: &[String]) -> Result<Command, HarnessError> {
+    let mut root = None;
+    let mut check = false;
+    let mut remaining = arguments.iter();
+    while let Some(flag) = remaining.next() {
+        match flag.as_str() {
+            "--check" => check = true,
+            "--root" => {
+                let value = remaining.next().ok_or_else(|| {
+                    HarnessError::invalid(format!("--root requires a value; {USAGE}"))
+                })?;
+                root = Some(PathBuf::from(value));
+            }
+            other => {
+                return Err(HarnessError::invalid(format!(
+                    "unexpected {other}; {USAGE}"
+                )));
+            }
+        }
+    }
+    Ok(Command::CatalogUniversal {
+        root: root.unwrap_or_else(workspace_root),
+        check,
+    })
+}
+
+fn parse_cloud_control(arguments: &[String]) -> Result<Command, HarnessError> {
+    let options = options(arguments)?;
+    let scan_id = options
+        .text("--scan-id")
+        .ok_or_else(|| HarnessError::invalid(USAGE))?;
+    Ok(Command::AssertCloudControl {
+        database: options.value("--db")?,
+        scan_id,
+        seed_results: options.get("--seed-results"),
+        root: options.get("--root").unwrap_or_else(workspace_root),
+    })
+}
+
+fn parse_seed_s3(arguments: &[String]) -> Result<Command, HarnessError> {
+    let options = options(arguments)?;
+    let bucket = options
+        .text("--bucket")
+        .filter(|name| !name.is_empty())
+        .ok_or_else(|| HarnessError::invalid(USAGE))?;
+    Ok(Command::SeedS3 { bucket })
+}
+
+fn parse_seed_cloud_control(arguments: &[String]) -> Result<Command, HarnessError> {
+    let options = options(arguments)?;
+    let prefix = options
+        .text("--prefix")
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| HarnessError::invalid(USAGE))?;
+    let count = options
+        .text("--count")
+        .and_then(|value| value.parse::<usize>().ok())
+        .ok_or_else(|| HarnessError::invalid(USAGE))?;
+    Ok(Command::SeedCloudControl { prefix, count })
+}
+
+fn flag_value<'a>(
+    remaining: &mut impl Iterator<Item = &'a String>,
+    flag: &str,
+) -> Result<&'a str, HarnessError> {
+    remaining
+        .next()
+        .map(String::as_str)
+        .ok_or_else(|| HarnessError::invalid(format!("{flag} requires a value; {USAGE}")))
+}
+
+fn require_json(value: &str) -> Result<(), HarnessError> {
+    if value != "json" {
+        return Err(HarnessError::invalid(format!(
+            "unsupported --format {value}; only json is supported"
+        )));
+    }
+    Ok(())
+}
+
+fn parse_coverage_operations(arguments: &[String]) -> Result<Command, HarnessError> {
+    let flags = CoverageFlags::parse(arguments)?;
+    if flags.check && flags.write.is_some() {
+        return Err(HarnessError::invalid(
+            "--check and --write are mutually exclusive",
+        ));
+    }
+    Ok(Command::CoverageOperations {
+        root: flags.root.unwrap_or_else(workspace_root),
+        write: flags.write,
+        check: flags.check,
+    })
+}
+
+/// Flags accepted by `coverage operations`.
+struct CoverageFlags {
+    root: Option<PathBuf>,
+    write: Option<PathBuf>,
+    check: bool,
+}
+
+impl CoverageFlags {
+    fn parse(arguments: &[String]) -> Result<Self, HarnessError> {
+        let mut parsed = Self {
+            root: None,
+            write: None,
+            check: false,
+        };
+        let mut remaining = arguments.iter();
+        while let Some(flag) = remaining.next() {
+            parsed.apply(flag, &mut remaining)?;
+        }
+        Ok(parsed)
+    }
+
+    fn apply(
+        &mut self,
+        flag: &str,
+        remaining: &mut std::slice::Iter<'_, String>,
+    ) -> Result<(), HarnessError> {
+        match flag {
+            "--check" => self.check = true,
+            "--root" => self.root = Some(PathBuf::from(flag_value(remaining, "--root")?)),
+            "--write" => self.write = Some(PathBuf::from(flag_value(remaining, "--write")?)),
+            "--format" => require_json(flag_value(remaining, "--format")?)?,
+            other => {
+                return Err(HarnessError::invalid(format!(
+                    "unexpected {other}; {USAGE}"
+                )));
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Bounded `--flag value` pairs; unknown flags are rejected.
+struct Options {
+    pairs: Vec<(String, String)>,
+}
+
+impl Options {
+    fn get(&self, flag: &str) -> Option<PathBuf> {
+        self.pairs
+            .iter()
+            .find(|(name, _)| name == flag)
+            .map(|(_, value)| PathBuf::from(value))
+    }
+
+    fn text(&self, flag: &str) -> Option<String> {
+        self.pairs
+            .iter()
+            .find(|(name, _)| name == flag)
+            .map(|(_, value)| value.clone())
+    }
+
+    fn value(&self, flag: &str) -> Result<PathBuf, HarnessError> {
+        self.get(flag).ok_or_else(|| HarnessError::invalid(USAGE))
+    }
+}
+
+fn options(arguments: &[String]) -> Result<Options, HarnessError> {
+    let mut pairs = Vec::new();
+    let mut remaining = arguments.iter();
+    while let Some(flag) = remaining.next() {
+        if !flag.starts_with("--") {
+            return Err(HarnessError::invalid(format!("unexpected {flag}; {USAGE}")));
+        }
+        let value = remaining
+            .next()
+            .ok_or_else(|| HarnessError::invalid(format!("{flag} requires a value")))?;
+        pairs.push((flag.clone(), value.clone()));
+    }
+    Ok(Options { pairs })
+}

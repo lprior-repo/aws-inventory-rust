@@ -42,7 +42,7 @@
     ],
     "list_semantics_url": "https://docs.aws.amazon.com/cloudcontrolapi/latest/userguide/resource-operations-list.html",
     "list_api_url": "https://docs.aws.amazon.com/cloudcontrolapi/latest/APIReference/API_ListResources.html",
-    "scope_review": "Six reviewed regional root types; one dependency level; exact string property bindings",
+    "scope_review": "Six reviewed regional root types; one dependency level; exact string property bindings; reviewed high-confidence candidate additions",
     "live_validated": false,
     "limitations": [
       "Schema and request-model audit is not live AWS provider validation.",
@@ -1241,6 +1241,215 @@
       ]
     },
     {
+      "type_name": "AWS::AppConfig::ExperimentDefinition",
+      "kind": "aws_app_config_experiment_definition",
+      "view_name": "aws_cc_app_config_experiment_definition",
+      "service": "app_config",
+      "scope": "regional",
+      "home_region": null,
+      "read_supported": true,
+      "list_supported": true,
+      "list_requires_model": true,
+      "list_model_validation": "reviewed_parent_model",
+      "primary_identifier": [
+        "/ApplicationId",
+        "/Id"
+      ],
+      "identifier_is_arn": false,
+      "arn_pointers": [],
+      "arn_template": null,
+      "arn_identifier_pointer": null,
+      "name_pointers": [
+        "/Name"
+      ],
+      "write_only_properties": [],
+      "sensitive_properties": [],
+      "relationships": [],
+      "schema_file": "aws-appconfig-experimentdefinition.json",
+      "schema_sha256": "61346ffd9e72295f71fb6c87636231d75b13a7094a3e85c78ce8afcf0f3e770d",
+      "read_permissions": [
+        "appconfig:GetExperimentDefinition",
+        "appconfig:ListTagsForResource"
+      ],
+      "list_permissions": [
+        "appconfig:ListExperimentDefinitions"
+      ],
+      "columns": [
+        {
+          "name": "application_id",
+          "pointer": "/ApplicationId",
+          "json_type": "string"
+        },
+        {
+          "name": "application_identifier",
+          "pointer": "/ApplicationIdentifier",
+          "json_type": "string"
+        },
+        {
+          "name": "audience_description",
+          "pointer": "/AudienceDescription",
+          "json_type": "string"
+        },
+        {
+          "name": "audience_rule",
+          "pointer": "/AudienceRule",
+          "json_type": "string"
+        },
+        {
+          "name": "configuration_profile_identifier",
+          "pointer": "/ConfigurationProfileIdentifier",
+          "json_type": "string"
+        },
+        {
+          "name": "control",
+          "pointer": "/Control",
+          "json_type": "object"
+        },
+        {
+          "name": "created_at",
+          "pointer": "/CreatedAt",
+          "json_type": "string"
+        },
+        {
+          "name": "environment_identifier",
+          "pointer": "/EnvironmentIdentifier",
+          "json_type": "string"
+        },
+        {
+          "name": "flag_key",
+          "pointer": "/FlagKey",
+          "json_type": "string"
+        },
+        {
+          "name": "hypothesis",
+          "pointer": "/Hypothesis",
+          "json_type": "string"
+        },
+        {
+          "name": "provider_id",
+          "pointer": "/Id",
+          "json_type": "string"
+        },
+        {
+          "name": "launch_criteria",
+          "pointer": "/LaunchCriteria",
+          "json_type": "string"
+        },
+        {
+          "name": "provider_name",
+          "pointer": "/Name",
+          "json_type": "string"
+        },
+        {
+          "name": "status",
+          "pointer": "/Status",
+          "json_type": "string"
+        },
+        {
+          "name": "provider_tags",
+          "pointer": "/Tags",
+          "json_type": "array"
+        },
+        {
+          "name": "treatments",
+          "pointer": "/Treatments",
+          "json_type": "array"
+        },
+        {
+          "name": "updated_at",
+          "pointer": "/UpdatedAt",
+          "json_type": "string"
+        }
+      ]
+    },
+    {
+      "type_name": "AWS::EKS::AccessEntry",
+      "kind": "aws_eks_access_entry",
+      "view_name": "aws_cc_eks_access_entry",
+      "service": "eks",
+      "scope": "regional",
+      "home_region": null,
+      "read_supported": true,
+      "list_supported": true,
+      "list_requires_model": true,
+      "list_model_validation": "reviewed_parent_model",
+      "primary_identifier": [
+        "/PrincipalArn",
+        "/ClusterName"
+      ],
+      "identifier_is_arn": false,
+      "arn_pointers": [
+        "/AccessEntryArn",
+        "/PrincipalArn"
+      ],
+      "arn_template": null,
+      "arn_identifier_pointer": null,
+      "name_pointers": [],
+      "write_only_properties": [],
+      "sensitive_properties": [],
+      "relationships": [
+        {
+          "pointer": "/AccessPolicies/*/PolicyArn",
+          "relation": "REFERENCES",
+          "target_kind": "aws_reference",
+          "target_format": "arn",
+          "arn_template": null,
+          "evidence": "schema_arn_property_reference"
+        }
+      ],
+      "schema_file": "aws-eks-accessentry.json",
+      "schema_sha256": "b288e899d706ca2563ff67286d235c62bc87ba9245cf9eee616690bdd8c81edf",
+      "read_permissions": [
+        "eks:DescribeAccessEntry",
+        "eks:ListAssociatedAccessPolicies"
+      ],
+      "list_permissions": [
+        "eks:ListAccessEntries"
+      ],
+      "columns": [
+        {
+          "name": "access_entry_arn",
+          "pointer": "/AccessEntryArn",
+          "json_type": "string"
+        },
+        {
+          "name": "access_policies",
+          "pointer": "/AccessPolicies",
+          "json_type": "array"
+        },
+        {
+          "name": "cluster_name",
+          "pointer": "/ClusterName",
+          "json_type": "string"
+        },
+        {
+          "name": "kubernetes_groups",
+          "pointer": "/KubernetesGroups",
+          "json_type": "array"
+        },
+        {
+          "name": "principal_arn",
+          "pointer": "/PrincipalArn",
+          "json_type": "string"
+        },
+        {
+          "name": "provider_tags",
+          "pointer": "/Tags",
+          "json_type": "array"
+        },
+        {
+          "name": "type",
+          "pointer": "/Type",
+          "json_type": "string"
+        },
+        {
+          "name": "username",
+          "pointer": "/Username",
+          "json_type": "string"
+        }
+      ]
+    },
+    {
       "type_name": "AWS::EKS::Addon",
       "kind": "aws_eks_addon",
       "view_name": "aws_cc_eks_addon",
@@ -1584,6 +1793,117 @@
           "name": "warm_pool_config",
           "pointer": "/WarmPoolConfig",
           "json_type": "object"
+        }
+      ]
+    },
+    {
+      "type_name": "AWS::EKS::PodIdentityAssociation",
+      "kind": "aws_eks_pod_identity_association",
+      "view_name": "aws_cc_eks_pod_identity_association",
+      "service": "eks",
+      "scope": "regional",
+      "home_region": null,
+      "read_supported": true,
+      "list_supported": true,
+      "list_requires_model": true,
+      "list_model_validation": "reviewed_parent_model",
+      "primary_identifier": [
+        "/AssociationArn"
+      ],
+      "identifier_is_arn": true,
+      "arn_pointers": [
+        "/AssociationArn"
+      ],
+      "arn_template": null,
+      "arn_identifier_pointer": null,
+      "name_pointers": [],
+      "write_only_properties": [],
+      "sensitive_properties": [],
+      "relationships": [
+        {
+          "pointer": "/RoleArn",
+          "relation": "ASSUMES_ROLE",
+          "target_kind": "aws_iam_role",
+          "target_format": "arn",
+          "arn_template": null,
+          "evidence": "schema_arn_property_reference",
+          "arn_service": "iam",
+          "arn_resource_prefix": "role/"
+        },
+        {
+          "pointer": "/TargetRoleArn",
+          "relation": "ASSUMES_ROLE",
+          "target_kind": "aws_iam_role",
+          "target_format": "arn",
+          "arn_template": null,
+          "evidence": "schema_arn_property_reference",
+          "arn_service": "iam",
+          "arn_resource_prefix": "role/"
+        }
+      ],
+      "schema_file": "aws-eks-podidentityassociation.json",
+      "schema_sha256": "d8afa6d266b49670e5490813b15453dcf2ee22c8d9db531b8827605f6976af27",
+      "read_permissions": [
+        "eks:DescribePodIdentityAssociation"
+      ],
+      "list_permissions": [
+        "eks:ListPodIdentityAssociations"
+      ],
+      "columns": [
+        {
+          "name": "association_arn",
+          "pointer": "/AssociationArn",
+          "json_type": "string"
+        },
+        {
+          "name": "association_id",
+          "pointer": "/AssociationId",
+          "json_type": "string"
+        },
+        {
+          "name": "cluster_name",
+          "pointer": "/ClusterName",
+          "json_type": "string"
+        },
+        {
+          "name": "disable_session_tags",
+          "pointer": "/DisableSessionTags",
+          "json_type": "boolean"
+        },
+        {
+          "name": "external_id",
+          "pointer": "/ExternalId",
+          "json_type": "string"
+        },
+        {
+          "name": "namespace",
+          "pointer": "/Namespace",
+          "json_type": "string"
+        },
+        {
+          "name": "policy",
+          "pointer": "/Policy",
+          "json_type": "string"
+        },
+        {
+          "name": "role_arn",
+          "pointer": "/RoleArn",
+          "json_type": "string"
+        },
+        {
+          "name": "service_account",
+          "pointer": "/ServiceAccount",
+          "json_type": "string"
+        },
+        {
+          "name": "provider_tags",
+          "pointer": "/Tags",
+          "json_type": "array"
+        },
+        {
+          "name": "target_role_arn",
+          "pointer": "/TargetRoleArn",
+          "json_type": "string"
         }
       ]
     },
@@ -2063,6 +2383,30 @@
       "evidence": "reviewed_parent_resource_model_and_matching_read_properties"
     },
     {
+      "type_name": "AWS::AppConfig::ExperimentDefinition",
+      "parent_type": "AWS::AppConfig::Application",
+      "bindings": [
+        {
+          "source_pointer": "/ApplicationId",
+          "model_property": "ApplicationIdentifier"
+        }
+      ],
+      "relation": "CHILD_OF",
+      "evidence": "reviewed_parent_resource_model_and_matching_read_properties"
+    },
+    {
+      "type_name": "AWS::EKS::AccessEntry",
+      "parent_type": "AWS::EKS::Cluster",
+      "bindings": [
+        {
+          "source_pointer": "/Name",
+          "model_property": "ClusterName"
+        }
+      ],
+      "relation": "CHILD_OF",
+      "evidence": "reviewed_parent_resource_model_and_matching_read_properties"
+    },
+    {
       "type_name": "AWS::EKS::Addon",
       "parent_type": "AWS::EKS::Cluster",
       "bindings": [
@@ -2088,6 +2432,18 @@
     },
     {
       "type_name": "AWS::EKS::Nodegroup",
+      "parent_type": "AWS::EKS::Cluster",
+      "bindings": [
+        {
+          "source_pointer": "/Name",
+          "model_property": "ClusterName"
+        }
+      ],
+      "relation": "CHILD_OF",
+      "evidence": "reviewed_parent_resource_model_and_matching_read_properties"
+    },
+    {
+      "type_name": "AWS::EKS::PodIdentityAssociation",
       "parent_type": "AWS::EKS::Cluster",
       "bindings": [
         {

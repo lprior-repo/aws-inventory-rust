@@ -11,11 +11,20 @@ async fn connect(path: &Path) -> TestResult<SqliteConnection> {
     Ok(SqliteConnection::connect_with(&SqliteConnectOptions::new().filename(path)).await?)
 }
 
-fn parent_views() -> Vec<&'static str> {
+fn legacy_parent_views() -> Vec<&'static str> {
     include_str!("../sql/006_cloudcontrol_parents.sql")
         .lines()
         .filter_map(|line| line.strip_prefix("CREATE VIEW "))
         .filter_map(|line| line.strip_suffix(" AS"))
+        .collect()
+}
+
+fn parent_views() -> Vec<&'static str> {
+    let additions = include_str!("../sql/013_cloudcontrol_parent_additions.sql");
+    legacy_parent_views()
+        .into_iter()
+        .chain(additions.lines().filter_map(|line| line.strip_prefix("CREATE VIEW ")))
+        .map(|line| line.strip_suffix(" AS").unwrap_or(line))
         .collect()
 }
 
@@ -43,7 +52,7 @@ async fn version_five_fixture(path: &Path) -> TestResult {
     store.close().await;
     let mut connection = connect(path).await?;
     let views = parent_views();
-    assert_eq!(views.len(), 21);
+    assert_eq!(views.len(), 24);
     for name in views {
         assert!(name.starts_with("aws_cc_"));
         assert!(
@@ -87,7 +96,7 @@ async fn frozen_rows(connection: &mut SqliteConnection) -> TestResult<Value> {
 }
 
 #[tokio::test]
-async fn schema_six_preserves_every_old_view_and_immutable_payload() -> TestResult {
+async fn schema_thirteen_preserves_every_old_view_and_immutable_payload() -> TestResult {
     let directory = tempfile::tempdir()?;
     let path = directory.path().join("v5.sqlite");
     version_five_fixture(&path).await?;
@@ -114,9 +123,9 @@ async fn schema_six_preserves_every_old_view_and_immutable_payload() -> TestResu
         store
             .query("SELECT user_version AS version FROM pragma_user_version", 1)
             .await?,
-        json!([{"version":6}])
+        json!([{"version":13}])
     );
-    assert_eq!(store.query("SELECT count(*) AS n FROM sqlite_schema WHERE type='view' AND name GLOB 'aws_cc_*'",1).await?, json!([{"n":418}]));
+    assert_eq!(store.query("SELECT count(*) AS n FROM sqlite_schema WHERE type='view' AND name GLOB 'aws_cc_*'",1).await?, json!([{"n":421}]));
     store.close().await;
     let mut after = connect(&path).await?;
     assert_eq!(frozen_rows(&mut after).await?, frozen);

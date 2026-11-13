@@ -24,6 +24,7 @@ pub(super) fn job(
     options: &ScanArgs,
     profile: Option<String>,
     assume_role: Option<AssumeRoleOptions>,
+    selection: &Selection,
 ) -> Job {
     Job {
         scan_id: uuid::Uuid::new_v4().to_string(),
@@ -36,7 +37,7 @@ pub(super) fn job(
             discover_sources: options.discover_sources,
             assume_role,
             cloud_control: options.cloud_control,
-            resource_types: options.resource_type.clone(),
+            selection: selection.clone(),
             max_pages: options.max_pages,
             page_size: options.page_size,
         },
@@ -49,6 +50,7 @@ pub(super) async fn prepare_jobs(
     executor: Arc<ApiExecutor>,
 ) -> Result<(Vec<Job>, Option<Value>)> {
     let profiles = profiles(options)?;
+    let selection = options.selection()?;
     let external_id = options
         .accounts
         .external_id_env
@@ -87,7 +89,12 @@ pub(super) async fn prepare_jobs(
             .map(|account| {
                 let arn = discovery::account_role_arn(&report.partition, account, role_name)?;
                 let role = role_options(&options.accounts, arn, external_id.clone())?;
-                Ok(job(options, options.profile.first().cloned(), Some(role)))
+                Ok(job(
+                    options,
+                    options.profile.first().cloned(),
+                    Some(role),
+                    &selection,
+                ))
             })
             .collect::<Result<Vec<_>>>()?;
         let summary = json!({"source_account":report.account_id,"partition":report.partition,
@@ -105,7 +112,7 @@ pub(super) async fn prepare_jobs(
     Ok((
         profiles
             .into_iter()
-            .map(|profile| job(options, profile, role.clone()))
+            .map(|profile| job(options, profile, role.clone(), &selection))
             .collect(),
         None,
     ))

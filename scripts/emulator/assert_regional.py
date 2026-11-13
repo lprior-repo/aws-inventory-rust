@@ -89,12 +89,26 @@ def _validate_fixtures(fixtures: dict, emit) -> bool:
     sequence(network, "vpc_peering_connection_ids", 1)
     require("image_id", isinstance(network, dict) and _identifier(network.get("image_id")), "created instances must reference an observed image ID")
     roles = fixtures.get("roles", {})
-    for role in ("lambda", "ecs", "eks_cluster", "eks_node"):
+    for role in ("lambda", "ecs", "eks_cluster", "eks_node", "states"):
         require("role:" + role, isinstance(roles, dict) and _identifier(roles.get(role)), "role ARN must be recorded by fixture creation")
     sequence(fixtures.get("lambda", {}), "function_arns", 2)
     sequence(fixtures.get("dynamodb", {}), "table_names", 2)
     sequence(fixtures.get("ecs", {}), "task_definition_arns", 4)
     sequence(fixtures.get("elbv2", {}), "target_group_arns", 2)
+    kms = fixtures.get("kms", {})
+    key_arns = sequence(kms, "key_arns", 2)
+    key_ids = sequence(kms, "key_ids", 2)
+    sequence(kms, "alias_arns", 1)
+    sequence(kms, "alias_names", 1)
+    alias_targets = sequence(kms, "alias_targets", 1)
+    require("kms:alias-target",
+            bool(alias_targets) and alias_targets[0] in key_ids,
+            "the alias must target one created key")
+    workflows = fixtures.get("step_functions", {})
+    sequence(workflows, "state_machine_arns", 2)
+    sequence(workflows, "state_machine_names", 2)
+    sequence(workflows, "activity_arns", 2)
+    sequence(workflows, "activity_names", 2)
     for service, key, children in (
         ("ecs", "clusters", {"service_arns": 2, "task_arns": 2}),
         ("eks", "clusters", {"nodegroups": 2}),
@@ -235,6 +249,9 @@ def _assert_snapshot(resources, edges, scopes, fixtures, region, emit):
     regional_kinds = {entry[2] for entry in network_map} | {
         'aws_dynamodb_table','aws_lambda_function','aws_ecs_cluster','aws_ecs_service','aws_ecs_task','aws_ecs_task_definition',
         'aws_eks_cluster','aws_eks_node_group','aws_elbv2_load_balancer','aws_elbv2_listener','aws_elbv2_rule','aws_elbv2_target_group','aws_elbv2_target_health',
+        'aws_sqs_queue','aws_sns_topic','aws_sns_subscription',
+        'aws_kms_key','aws_kms_alias',
+        'aws_step_functions_state_machine','aws_step_functions_activity',
     }
     counts = collections.Counter(row['kind'] for row in resources.values())
     for kind in sorted(regional_kinds):
@@ -335,7 +352,7 @@ def _assert_snapshot(resources, edges, scopes, fixtures, region, emit):
                 if expected is not None: check(cluster['name']+'/'+name+':created-arn',observed,expected,'identity')
                 row=resource(expected or observed,'aws_eks_node_group'); fields(row,{'node_role':fixtures['roles']['eks_node'],'desired_size':0,'min_size':0,'max_size':1}); array(row,'subnets',network['subnet_ids']); edge(row,'IN_CLUSTER',cluster['arn']); edge(row,'ASSUMES_ROLE',fixtures['roles']['eks_node'])
                 for subnet in network['subnet_ids']: edge(row,'USES_SUBNET',ec2('subnet',subnet))
-    for index,lb in enumerate(fixtures['elbv2']['load_balancers']):
+    for index, lb in enumerate(fixtures['elbv2']['load_balancers']):
         row=resource(lb['arn'],'aws_elbv2_load_balancer'); fields(row,{'type':'application','scheme':'internet-facing','vpc_id':primary_vpc}); edge(row,'IN_VPC',ec2('vpc',primary_vpc))
         for key,relation,path in [('subnet_ids','USES_SUBNET','subnet'),('security_group_ids','USES_SECURITY_GROUP','security-group')]:
             array(row,key,network[key])
@@ -349,11 +366,53 @@ def _assert_snapshot(resources, edges, scopes, fixtures, region, emit):
         for target in network['instance_ids'][:2]:
             identity='aws-elbv2-target-health:'+json.dumps([group,target,80,None,None],separators=(',',':'))
             health=resource(identity,'aws_elbv2_target_health'); fields(health,{'target_group_arn':group,'target_id':target,'target_port':80,'target_type':'instance'}); edge(row,'HAS_TARGET',identity); edge(health,'TARGETS',ec2('instance',target))
+    sqs = fixtures.get('sqs', {})
+    for index, identity in enumerate(sqs.get('queue_arns', [])):
+        row=resource(identity,'aws_sqs_queue'); fields(row,{'queue_name':sqs['queue_names'][index],'queue_arn':identity,'queue_url':sqs['queue_urls'][index]})
+        check(identity+':queue-url-prefix', str(properties(row).get('queue_url','')).startswith('https://sqs.'))
+    sns = fixtures.get('sns', {})
+    topic_arns = sns.get('topic_arns', [])
+    for identity in topic_arns:
+        row=resource(identity,'aws_sns_topic'); fields(row,{'topic_arn':identity})
+        check(identity+':policy-body-absent', 'policy' not in properties(row) and 'delivery_policy' not in properties(row))
+    if topic_arns:
+        for identity in sns.get('subscription_arns', []):
+            row=resource(identity,'aws_sns_subscription'); fields(row,{'topic_arn':topic_arns[0],'protocol':'lambda','endpoint':fixtures['lambda']['function_arns'][0],'pending_confirmation':False,'identity_source':'subscription_arn'}); edge(row,'SUBSCRIBES_TO',topic_arns[0])
+    kms = fixtures.get('kms', {})
+    key_ids = kms.get('key_ids', [])
+    for index, identity in enumerate(kms.get('key_arns', [])):
+        row=resource(identity,'aws_kms_key')
+        fields(row,{'key_arn':identity,'key_id':key_ids[index],'key_manager':'CUSTOMER','enabled':True,'rotation_collected':True,'tags_collected':True})
+        values=properties(row)
+        check(identity+':rotation-not-invented', values.get('rotation_enabled'), False)
+        check(identity+':rotation-read-succeeded', not any(s['collector']=='aws_kms_key_rotation' and s['parent_id']==identity and s['failed'] for s in scopes))
+        check(identity+':tag-read-succeeded', not any(s['collector']=='aws_kms_key_tags' and s['parent_id']==identity and s['failed'] for s in scopes))
+        check(identity+':policy-body-absent', 'policy' not in values)
+    for index, identity in enumerate(kms.get('alias_arns', [])):
+        row=resource(identity,'aws_kms_alias')
+        fields(row,{'alias_arn':identity,'alias_name':kms['alias_names'][index],'target_key_id':kms['alias_targets'][index],'tags_collected':False})
+        check(identity+':target-resolves', kms['alias_targets'][index] in key_ids)
+    workflows = fixtures.get('step_functions', {})
+    for index, identity in enumerate(workflows.get('state_machine_arns', [])):
+        row=resource(identity,'aws_step_functions_state_machine')
+        fields(row,{'state_machine_arn':identity,'name':workflows['state_machine_names'][index],
+                    'state_machine_type':'STANDARD','type':'STANDARD','status':'ACTIVE',
+                    'role_arn':fixtures['roles']['states'],'tags_collected':True})
+        values=properties(row)
+        check(identity+':definition-absent', 'definition' not in values and 'variable_references' not in values)
+        edge(row,'ASSUMES_ROLE',fixtures['roles']['states'])
+    for index, identity in enumerate(workflows.get('activity_arns', [])):
+        row=resource(identity,'aws_step_functions_activity')
+        fields(row,{'activity_arn':identity,'name':workflows['activity_names'][index],'tags_collected':True})
+        check(identity+':definition-absent', 'definition' not in properties(row))
 
     regional_scopes=[scope for scope in scopes if scope['collector'] in regional_kinds or scope['collector'].startswith(('aws_ecs_','aws_eks_','aws_elbv2_'))]
     roots = [entry[2] for entry in network_map] + [
         'aws_dynamodb_table', 'aws_lambda_function', 'aws_ecs_cluster',
         'aws_eks_cluster', 'aws_elbv2_load_balancer', 'aws_elbv2_target_group',
+        'aws_sqs_queue', 'aws_sns_topic', 'aws_sns_subscription',
+        'aws_kms_key', 'aws_kms_alias',
+        'aws_step_functions_state_machine', 'aws_step_functions_activity',
     ]
     for collector in roots:
         selected = [s for s in regional_scopes if s['collector']==collector and s['parent_id'] is None]

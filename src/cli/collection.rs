@@ -1,4 +1,5 @@
 use super::*;
+use inventory_core::{Selection, SelectionError};
 
 #[derive(Args, Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -68,6 +69,21 @@ pub struct PlanArgs {
     pub discover_sources: bool,
     #[command(flatten)]
     pub accounts: AccountArgs,
+}
+
+impl PlanArgs {
+    /// Parse `--resource-type` selectors once at the CLI boundary.
+    pub fn selection(&self) -> Result<Selection, SelectionError> {
+        Selection::parse(&self.resource_type)
+    }
+}
+
+#[cfg(feature = "aws")]
+impl ScanArgs {
+    /// Parse `--resource-type` selectors once at the CLI boundary.
+    pub fn selection(&self) -> Result<Selection, SelectionError> {
+        Selection::parse(&self.resource_type)
+    }
 }
 
 #[derive(Args, Clone, Debug, Deserialize, Serialize)]

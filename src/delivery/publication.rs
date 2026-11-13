@@ -23,6 +23,7 @@ pub(super) async fn write_outputs(
             options.export_format,
             options.provenance,
             options.allow_partial,
+            export::ReferenceMode::Disabled,
         ),
         cancellation,
     )

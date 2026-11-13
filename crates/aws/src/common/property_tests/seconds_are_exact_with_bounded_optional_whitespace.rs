@@ -50,10 +50,20 @@ proptest! {
         elapsed_millis in 0_u64..1_000,
     ) {
         let epoch_seconds = 1_794_470_400_i64;
-        let date = DateTime::from_secs(epoch_seconds + offset_seconds)
-            .fmt(Format::HttpDate).map_err(|error| TestCaseError::fail(error.to_string()))?;
-        let now = UNIX_EPOCH + Duration::from_secs(1_794_470_400) + Duration::from_millis(elapsed_millis);
-        let difference = i128::from(offset_seconds) * 1_000 - i128::from(elapsed_millis);
+        let date = DateTime::from_secs(
+            epoch_seconds
+                .checked_add(offset_seconds)
+                .ok_or_else(|| TestCaseError::fail("epoch seconds overflow"))?,
+        )
+        .fmt(Format::HttpDate).map_err(|error| TestCaseError::fail(error.to_string()))?;
+        let now = UNIX_EPOCH
+            .checked_add(Duration::from_secs(1_794_470_400))
+            .and_then(|time| time.checked_add(Duration::from_millis(elapsed_millis)))
+            .ok_or_else(|| TestCaseError::fail("system clock overflow"))?;
+        let difference = i128::from(offset_seconds)
+            .checked_mul(1_000)
+            .and_then(|value| value.checked_sub(i128::from(elapsed_millis)))
+            .ok_or_else(|| TestCaseError::fail("wait difference overflow"))?;
         let expected = if difference <= 0 {
             RetryAfter::Delay(Duration::ZERO)
         } else if difference > i128::from(MAX_RETRY_AFTER_MS) {
@@ -92,7 +102,7 @@ proptest! {
     #[test]
     fn header_count_and_encoding_limits_are_fail_closed(extra in 1_usize..16, valid in 0_u64..=MAX_RETRY_AFTER_MS) {
         let text = valid.to_string();
-        prop_assert_eq!(header_hints(std::iter::repeat_n(text.as_bytes(), MAX_RETRY_HEADER_VALUES + extra), true, UNIX_EPOCH), Some(RetryAfter::Invalid));
+        prop_assert_eq!(header_hints(std::iter::repeat_n(text.as_bytes(), MAX_RETRY_HEADER_VALUES.saturating_add(extra)), true, UNIX_EPOCH), Some(RetryAfter::Invalid));
         prop_assert_eq!(header_hints([text.as_bytes(), &[0xff], text.as_bytes()].into_iter(), true, UNIX_EPOCH), Some(RetryAfter::Invalid));
     }
 

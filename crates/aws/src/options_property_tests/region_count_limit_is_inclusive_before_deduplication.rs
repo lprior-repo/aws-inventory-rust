@@ -67,11 +67,14 @@ proptest! {
     fn resource_type_selection_requires_explicit_cloud_control(count in 1_usize..8) {
         let mut options = options();
         prop_assert_eq!(admitted(&options)?, expected(&["iam"]));
-        options.resource_types = vec!["AWS::EC2::VPC".into(); count];
+        options.selection = inventory_core::Selection::Types(vec![
+            inventory_core::ResourceType::new("AWS::EC2::VPC");
+            count
+        ]);
         rejected(&options, "resource type selection requires Cloud Control")?;
         options.cloud_control = true;
         prop_assert_eq!(admitted(&options)?, expected(&["iam"]));
-        options.resource_types.clear();
+        options.selection = inventory_core::Selection::Types(Vec::new());
         prop_assert_eq!(admitted(&options)?, expected(&["iam"]));
     }
 

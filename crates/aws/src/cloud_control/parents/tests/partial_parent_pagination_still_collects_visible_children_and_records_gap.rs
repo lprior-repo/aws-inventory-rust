@@ -70,8 +70,10 @@ fn mismatched_parent_is_rejected_and_thin_fallback_never_adds_parent_edges() -> 
             .resources
             .first()
             .ok_or("missing fallback")?
-            .properties["details_available"],
-        false
+            .properties
+            .get("details_available")
+            .and_then(Value::as_bool),
+        Some(false)
     );
     Ok(())
 }

@@ -171,4 +171,41 @@ pub(super) const ENTRIES: &[(&str, &str, &str, &str)] = &[
         "ListDistributions,ListTagsForResource",
         "ORIGINATES_FROM,USES_VPC_ORIGIN,USES_CERTIFICATE,USES_WEB_ACL,ASSOCIATES_LAMBDA,ASSOCIATES_FUNCTION,LOGS_TO",
     ),
+    (
+        "aws_sqs_queue",
+        "sqs",
+        "ListQueues,GetQueueAttributes,ListQueueTags",
+        "DELIVERS_TO",
+    ),
+    (
+        "aws_sns_topic",
+        "sns",
+        "ListTopics,GetTopicAttributes,ListTagsForResource",
+        "",
+    ),
+    (
+        "aws_sns_subscription",
+        "sns",
+        "ListSubscriptions",
+        "SUBSCRIBES_TO",
+    ),
+    (
+        "aws_kms_key",
+        "kms",
+        "ListKeys,DescribeKey,GetKeyRotationStatus,ListResourceTags",
+        "",
+    ),
+    ("aws_kms_alias", "kms", "ListAliases", ""),
+    (
+        "aws_step_functions_state_machine",
+        "stepfunctions",
+        "ListStateMachines,DescribeStateMachine,ListTagsForResource",
+        "ASSUMES_ROLE,ENCRYPTED_BY",
+    ),
+    (
+        "aws_step_functions_activity",
+        "stepfunctions",
+        "ListActivities,DescribeActivity,ListTagsForResource",
+        "ENCRYPTED_BY",
+    ),
 ];

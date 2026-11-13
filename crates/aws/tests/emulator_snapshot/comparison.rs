@@ -9,7 +9,7 @@ pub(super) fn canonical(value: &Value, depth: usize) -> TestResult<Value> {
         Value::Object(fields) => Value::Object(
             fields
                 .iter()
-                .map(|(key, value)| Ok((key.clone(), canonical(value, depth + 1)?)))
+                .map(|(key, value)| Ok((key.clone(), canonical(value, depth.saturating_add(1))?)))
                 .collect::<TestResult<BTreeMap<_, _>>>()?
                 .into_iter()
                 .collect(),
@@ -17,7 +17,7 @@ pub(super) fn canonical(value: &Value, depth: usize) -> TestResult<Value> {
         Value::Array(values) => Value::Array(
             values
                 .iter()
-                .map(|value| canonical(value, depth + 1))
+                .map(|value| canonical(value, depth.saturating_add(1)))
                 .collect::<TestResult<_>>()?,
         ),
         other => other.clone(),
@@ -36,7 +36,7 @@ pub(super) fn first_difference(expected: &Value, actual: &Value, depth: usize) -
                         return format!(
                             ".{}{}",
                             key.chars().take(128).collect::<String>(),
-                            first_difference(value, other, depth + 1)
+                            first_difference(value, other, depth.saturating_add(1))
                         );
                     }
                     None => {
@@ -55,8 +55,12 @@ pub(super) fn first_difference(expected: &Value, actual: &Value, depth: usize) -
                 .zip(right)
                 .enumerate()
                 .find_map(|(index, (left, right))| {
-                    (left != right)
-                        .then(|| format!("[{index}]{}", first_difference(left, right, depth + 1)))
+                    (left != right).then(|| {
+                        format!(
+                            "[{index}]{}",
+                            first_difference(left, right, depth.saturating_add(1))
+                        )
+                    })
                 })
                 .unwrap_or_default()
         }

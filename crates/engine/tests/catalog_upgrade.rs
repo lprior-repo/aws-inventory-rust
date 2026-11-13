@@ -126,12 +126,12 @@ async fn upgrades_existing_v04_inventory_without_recollecting_or_replacing_user_
         store.query("SELECT count(*) AS n FROM user_vpc", 1).await?,
         json!([{"n":1}])
     );
-    assert_eq!(store.query("SELECT count(*) AS n FROM sqlite_schema WHERE type='view' AND name GLOB 'aws_cc_*'", 1).await?, json!([{"n":418}]));
+    assert_eq!(store.query("SELECT count(*) AS n FROM sqlite_schema WHERE type='view' AND name GLOB 'aws_cc_*'", 1).await?, json!([{"n":421}]));
     assert_eq!(
         store
             .query("SELECT user_version AS version FROM pragma_user_version", 1)
             .await?,
-        json!([{"version":6}])
+        json!([{"version":13}])
     );
     store.close().await;
     Ok(())

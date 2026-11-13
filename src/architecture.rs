@@ -116,8 +116,10 @@ async fn panel(
 }
 
 #[cfg(test)]
+#[allow(clippy::indexing_slicing)] // JSON string keys are infallible; arrays use `first`.
 mod tests {
     use super::report_open;
+    use crate::json_test::first;
     use inventory_core::{CollectionPage, CollectionScope, Edge, Resource, ScanStatus, Source};
     use inventory_engine::store::Store;
     use serde_json::json;
@@ -180,7 +182,7 @@ mod tests {
             json!(false)
         );
         assert_eq!(
-            report["panels"]["unresolved_references"]["rows"][0]["target_observed"],
+            first(&report["panels"]["unresolved_references"]["rows"])["target_observed"],
             json!(0)
         );
         assert_eq!(report["summary"]["resources"], json!(2));

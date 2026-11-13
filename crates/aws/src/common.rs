@@ -124,7 +124,11 @@ impl Context {
         message: impl Into<String>,
     ) -> Result<(), AwsScanError> {
         let message: String = message.into();
-        tracing::warn!(collector = %scope.collector, category, "collection scope incomplete");
+        if category == "unsupported_type" {
+            tracing::info!(collector = %scope.collector, category, "provider capability boundary recorded");
+        } else {
+            tracing::warn!(collector = %scope.collector, category, "collection scope incomplete");
+        }
         self.sender
             .send(CollectionEvent::Failure(CollectionFailure {
                 scope: scope.clone(),

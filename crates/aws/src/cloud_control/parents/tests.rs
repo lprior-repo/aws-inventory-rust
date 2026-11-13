@@ -71,12 +71,12 @@ fn events(
 }
 
 fn selected(names: &[&str]) -> Result<Vec<ResourceType>, AwsScanError> {
-    validate_selection(
-        &names
+    validate_selection(&Selection::Types(
+        names
             .iter()
-            .map(|name| (*name).to_owned())
-            .collect::<Vec<_>>(),
-    )
+            .map(|name| inventory_core::ResourceType::new(*name))
+            .collect(),
+    ))
 }
 
 fn one_group(types: &[ResourceType]) -> Result<RootGroup<'_>, TestError> {
@@ -102,7 +102,7 @@ fn fixture_resource(properties: Value) -> Resource {
 }
 
 proptest! {
-    #![proptest_config(Config { cases: 128, rng_seed: RngSeed::Fixed(0x06cc_21), ..Config::default() })]
+    #![proptest_config(Config { cases: 128, rng_seed: RngSeed::Fixed(0x0006_cc21), ..Config::default() })]
 
     #[test]
     fn property_parent_models_are_escaped_exactly_and_scope_identity_is_value_sensitive(
@@ -119,12 +119,14 @@ proptest! {
     }
 
     #[test]
-    fn property_selection_is_idempotent_and_closed_under_prerequisites(indices in prop::collection::vec(0_usize..21,1..32)) {
+    fn property_selection_is_idempotent_and_closed_under_prerequisites(indices in prop::collection::vec(0_usize..24,1..32)) {
         let children=parent_catalog().map_err(|e|TestCaseError::fail(e.to_string()))?;
         let requested:Vec<_>=indices.iter().filter_map(|index|children.get(*index).map(|row|row.type_name.clone())).collect();
-        let first=validate_selection(&requested).map_err(|e|TestCaseError::fail(e.to_string()))?;
+        let first_selection=Selection::Types(requested.iter().map(|name|inventory_core::ResourceType::new(name.clone())).collect());
+        let first=validate_selection(&first_selection).map_err(|e|TestCaseError::fail(e.to_string()))?;
         let first_names:Vec<_>=first.iter().map(|row|row.type_name.clone()).collect();
-        let second=validate_selection(&first_names).map_err(|e|TestCaseError::fail(e.to_string()))?;
+        let second_selection=Selection::Types(first_names.iter().map(|name|inventory_core::ResourceType::new(name.clone())).collect());
+        let second=validate_selection(&second_selection).map_err(|e|TestCaseError::fail(e.to_string()))?;
         prop_assert_eq!(&first_names,&second.iter().map(|row|row.type_name.clone()).collect::<Vec<_>>());
         let planned=groups(&first).map_err(|e|TestCaseError::fail(e.to_string()))?;
         prop_assert_eq!(planned.iter().map(|group|group.children.len()).sum::<usize>(),requested.iter().collect::<BTreeSet<_>>().len());
@@ -132,7 +134,10 @@ proptest! {
 }
 
 mod child_denial_and_child_read_fallback_remain_failed_without_parent_edges;
-mod combined_catalog_adds_exactly_twenty_one_reviewed_children;
+mod combined_catalog_adds_exactly_twenty_four_reviewed_children;
+mod eks_access_entry_builds_provider_model_and_list_request;
+mod eks_pod_identity_association_builds_provider_model_and_list_request;
+mod appconfig_experiment_definition_builds_provider_model_and_list_request;
 mod literal_emulator_parent_fixtures_preserve_all_sanitized_properties_and_exact_architecture_edges;
 mod partial_parent_pagination_still_collects_visible_children_and_records_gap;
 mod successful_empty_parent_discovery_marks_children_complete_without_child_calls;

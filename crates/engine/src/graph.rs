@@ -15,6 +15,7 @@ use tokio_util::sync::CancellationToken;
 
 mod delivery;
 pub use delivery::{PushOptions, PushSummary, push_file_with_options};
+pub mod reference;
 
 const MAX_BATCH_ROWS: usize = 256;
 const MAX_QUERY_BYTES: usize = 2_097_152;

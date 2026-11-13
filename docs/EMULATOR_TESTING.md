@@ -2,7 +2,7 @@
 
 The integration harness starts a fresh, authenticated local [AWS Emulator][emulator], creates disposable fixtures, runs the **shipped Rust CLI**, and saves request, collector, and SQLite evidence. Python provides fixture setup and transport recording. It does not replace Rust collection.
 
-The current executable catalog contains **418 Cloud Control types**: **397 frozen root types and 21 reviewed parent-dependent types**. The harness selects those groups in separate scans and compares the compiled CLI's combined catalog with both source manifests. SQLite schema version 6 exposes 418 provider views and 4,273 selected columns. The parent workflow contract is in [PARENT_COLLECTIONS.md](PARENT_COLLECTIONS.md); selection and mapping semantics are in [CLOUDCONTROL_COVERAGE.md](CLOUDCONTROL_COVERAGE.md).
+The current executable catalog contains **421 Cloud Control types**: **397 frozen root types and 24 reviewed parent-dependent types**. The harness selects those groups in separate scans and compares the compiled CLI's combined catalog with both source manifests. SQLite schema version 13 exposes 421 provider views and 4,309 selected columns. The parent workflow contract is in [PARENT_COLLECTIONS.md](PARENT_COLLECTIONS.md); selection and mapping semantics are in [CLOUDCONTROL_COVERAGE.md](CLOUDCONTROL_COVERAGE.md).
 
 The retained **v0.5** run attempted all 397 root types and persisted detailed reads for 386 types, with eleven unsupported list scopes retained as failures. Its source-bound evidence remains in [CLOUDCONTROL_EVIDENCE.md](CLOUDCONTROL_EVIDENCE.md). The historical v0.5/v0.4 sections below preserve those results; neither is evidence that the new parent collector or current binary has passed. Current command outcomes belong in [VERIFICATION.md](VERIFICATION.md).
 
@@ -13,7 +13,7 @@ The test has two separate coverage dimensions:
 | Explicit Rust collector/discovery SDK operations | 72 distinct operations at 73 production callsites | Recorded operation, phase, HTTP result and collector outcome |
 | SDK credential-provider boundary | 1: STS `AssumeRole` | Observed refreshable-provider traffic and subsequent identity |
 | Cloud Control root resource types | 397 frozen entries using `ListResources` and `GetResource` | Per-type list/read results and stored resource observations |
-| Parent-dependent Cloud Control types | 21 additional entries using the same two operations | Prerequisite discovery, exact request models, independent pagination, detailed child rows and parent edges |
+| Parent-dependent Cloud Control types | 24 additional entries using the same two operations | Prerequisite discovery, exact request models, independent pagination, detailed child rows and parent edges |
 
 The resource types exercise different providers through the same two Cloud Control operations; the parent workflows introduce no additional SDK operation identities. SDK dependencies also do not establish collector coverage. The authoritative operation inventory is [catalog/aws-operations.json](../catalog/aws-operations.json), explained in [AWS_CALL_MATRIX.md](AWS_CALL_MATRIX.md). Type inventories are [cloudcontrol-resources.json](../catalog/cloudcontrol-resources.json) and [cloudcontrol-parent-resources.json](../catalog/cloudcontrol-parent-resources.json); the full capability audit covers all 1,881 retained schemas.
 
@@ -118,7 +118,7 @@ The full run executes these paths:
 | `discover --organization --hierarchy --config-aggregators --resource-explorer` | Organizations topology and existing supplemental sources |
 | `scan --service config,resource-explorer --discover-sources` | Config and Resource Explorer rows through production source selection |
 | Cloud Control scan with the explicit 397 root type names | Frozen root selection and generic list/read collection |
-| Cloud Control scan with the explicit 21 child type names | Parent discovery and child collection; selection automatically adds the six root prerequisites |
+| Cloud Control scan with the explicit 24 child type names | Parent discovery and child collection; selection automatically adds the six root prerequisites |
 | `scan --service iam --role-arn …` | Official refreshable AssumeRole provider followed by an actual scan |
 | `emulator_branches` example | Explicit SDK requests for conditional branches the normal fixture scan can skip |
 | `architecture` and `report` | Analysis of a finalized scan in the produced SQLite database |
@@ -203,7 +203,7 @@ The runner invokes five fixture modules:
 | `seed_regional.py` | EC2 networking and instances, DynamoDB, Lambda, ECS, EKS and load balancer parent/detail paths |
 | `seed_discovery.py` | Organizations OUs, Config aggregation/recorded rows, Resource Explorer sources, same-account role assumption and Cloud Control SQS fixtures |
 | `seed_catalog.py` | Catalog-wide synthetic Cloud Control read-contract models, thirteen independent architecture models, and native Logs fixtures |
-| `seed_parents.py` | Twelve parent fixtures, 63 semantic child models across 21 types, and 98 extra EKS addon models for pagination |
+| `seed_parents.py` | Twelve parent fixtures, 63 semantic child models across the original 21 fixture-backed types, and 98 extra EKS addon models for pagination; three newer catalog-only workflows are exercised by model tests pending fixture expansion |
 
 Every seed result records its outcome. A failed fixture may prevent a dependent detail call from executing; that leaves missing or error evidence, not a successful test. Each run must be assessed from `seed-results.json`, the operation matrix and SQLite results together.
 
@@ -235,13 +235,13 @@ The retained v0.5 run observed these eleven root catalog types rejected with **`
 
 The first three were also present in the historical v0.4 selection. The eight Bedrock gaps were added to the acknowledged set only after the initial expanded run demonstrated matching seed errors, Rust list errors and persisted failures, and a source inspection confirmed the absent namespaces. That failed initial run remains preserved. [Gap review](../artifacts/cloudcontrol-gap-review-v05.json) · [Initial expanded run](../artifacts/emulator-v05-first/summary.json)
 
-The current runner explicitly selects all 397 roots for its root case and all 21 children for a separate parent case, retaining refused scopes as errors. Child requests depend on successful prerequisite discovery and can have several list chains per type. An attempted list does not imply a successful list, a populated result or a successful read. Consult the exact run's receipts and assertions; retained root evidence is not a parent-workflow result. The emulator's registration decision is in its [pinned Cloud Control state implementation][cloudcontrol-state].
+The current runner explicitly selects all 397 roots for its root case and all 24 children for a separate parent case, retaining refused scopes as errors. Child requests depend on successful prerequisite discovery and can have several list chains per type. An attempted list does not imply a successful list, a populated result or a successful read. Consult the exact run's receipts and assertions; retained root evidence is not a parent-workflow result. The emulator's registration decision is in its [pinned Cloud Control state implementation][cloudcontrol-state].
 
 Thirteen supported generic-provider types are seeded with independently authored architecture properties. [assert_cloud_control.py](../scripts/emulator/assert_cloud_control.py) checks 111 assertions on the Rust-to-SQLite result: thirteen exact resource identities, 30 exact relationships, target kinds, ownership evidence, merged property paths, redaction and observation timestamps. It also rejects a security-group name that resembles an ID, distinguishes ECS VPC Lattice target groups from ELB target groups, and preserves DMS certificates and MSK CA secrets without misclassifying them as ACM certificates. Python seed requests remain excluded from collector coverage.
 
 ### Parent models and forced pagination
 
-[cloudcontrol-parents.json](../crates/aws/tests/fixtures/cloudcontrol-parents.json) is an independently authored fixture with two parents for each of six roots. Each of its 21 child types has two semantic records under parent A and one under parent B. Ninety-eight additional EKS Addon records bring that one type to **101 records** and the complete child fixture to **161 records**. These repetitive extras test pagination; they are separate from the 63 semantic records.
+[cloudcontrol-parents.json](../crates/aws/tests/fixtures/cloudcontrol-parents.json) is an independently authored fixture with two parents for each of six roots. Each of the original 21 fixture-backed child types has two semantic records under parent A and one under parent B. Ninety-eight additional EKS Addon records bring that one type to **101 records** and the complete child fixture to **161 records**. These repetitive extras test pagination; they are separate from the 63 semantic records. The three newer catalog-only types have literal model tests but no live fixture records yet.
 
 The pinned emulator applies `ResourceModel` to each examined window, whose default size is 100. The fixture orders all 100 A addons before B's addon, so B's first page is empty with a continuation token and its second page contains its child. Both parent chains must reach at least page two and complete. The collector deliberately omits the reserved `MaxResults` field; this test forces pagination by fixture size. See the [pinned ListResources implementation][cloudcontrol-list] and [AWS API contract](https://docs.aws.amazon.com/cloudcontrolapi/latest/APIReference/API_ListResources.html).
 
@@ -253,7 +253,7 @@ A selected child's root is automatically included once. Failed lists, failed req
 
 ### Source and binary binding
 
-Before collection, the harness executes the compiled CLI's offline `catalog` command and requires its descriptors to equal the merged 418-type catalog. `summary.json.execution` records that receipt, both catalog hashes, the binary hash, the Rust source/manifest fingerprint, both architecture-fixture hashes and separate root/parent command receipts and scan IDs. After collection, source, binary and fixture hashes must remain unchanged. The root coverage refresher verifies these bindings again and requires same-scan detailed SQLite observations; changed mappings cannot reuse an older successful provider count. Parent assertions remain a separately identified result.
+Before collection, the harness executes the compiled CLI's offline `catalog` command and requires its descriptors to equal the merged 421-type catalog. `summary.json.execution` records that receipt, both catalog hashes, the binary hash, the Rust source/manifest fingerprint, both architecture-fixture hashes and separate root/parent command receipts and scan IDs. After collection, source, binary and fixture hashes must remain unchanged. The root coverage refresher verifies these bindings again and requires same-scan detailed SQLite observations; changed mappings cannot reuse an older successful provider count. Parent assertions remain a separately identified result.
 
 Resource Explorer has live owner integrations for **SQS queues and SNS topics**, plus its own indexes and views. It does not discover every service that happens to be mounted in the emulator. [Pinned Resource Explorer owner integration][explorer-owners]
 

@@ -55,8 +55,8 @@ fn emulator_cli_native_snapshot_reports_and_graph_delivery() -> Result<()> {
     let id = scan_id(&collected)?;
     assert_eq!(collected.get("status"), expected.get("status"));
     assert_eq!(collected.pointer("/api/in_flight"), Some(&json!(0)));
-    assert_eq!(collected.pointer("/api/attempts"), Some(&json!(212)));
-    assert_eq!(collected.pointer("/api/successes"), Some(&json!(212)));
+    assert_eq!(collected.pointer("/api/attempts"), Some(&json!(263)));
+    assert_eq!(collected.pointer("/api/successes"), Some(&json!(263)));
     assert_eq!(collected.get("collection_status"), Some(&json!("complete")));
     assert_eq!(
         collected.pointer("/deliveries/0/delivery_status"),
@@ -64,11 +64,11 @@ fn emulator_cli_native_snapshot_reports_and_graph_delivery() -> Result<()> {
     );
     assert_eq!(
         collected.pointer("/deliveries/0/outputs/inventory/summary/resources"),
-        Some(&json!(150))
+        Some(&json!(168))
     );
     assert_eq!(
         collected.pointer("/deliveries/0/outputs/inventory/summary/edges"),
-        Some(&json!(340))
+        Some(&json!(344))
     );
     assert_eq!(
         collected.pointer("/deliveries/0/outputs/falkor/push/applied_batches"),
@@ -76,8 +76,8 @@ fn emulator_cli_native_snapshot_reports_and_graph_delivery() -> Result<()> {
     );
     observations(&database, id, expected, before, after)?;
     let report = cli(&["report", "--db", &database, "--scan-id", id], 0)?;
-    assert_eq!(report.pointer("/summary/resources"), Some(&json!(150)));
-    assert_eq!(report.pointer("/summary/edges"), Some(&json!(340)));
+    assert_eq!(report.pointer("/summary/resources"), Some(&json!(168)));
+    assert_eq!(report.pointer("/summary/edges"), Some(&json!(344)));
     let architecture = cli(
         &[
             "architecture",
@@ -131,8 +131,8 @@ fn emulator_cli_native_snapshot_reports_and_graph_delivery() -> Result<()> {
         ],
         0,
     )?;
-    assert_eq!(exported.get("resources"), Some(&json!(150)));
-    assert_eq!(exported.get("edges"), Some(&json!(340)));
+    assert_eq!(exported.get("resources"), Some(&json!(168)));
+    assert_eq!(exported.get("edges"), Some(&json!(344)));
     assert_eq!(exported.get("batches"), Some(&json!(6)));
     let checkpoint = text_path(&directory.path().join("ack.sqlite"))?;
     let push = [

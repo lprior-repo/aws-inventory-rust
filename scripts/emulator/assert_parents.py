@@ -10,6 +10,11 @@ ROOT = Path(__file__).resolve().parents[2]
 FIXTURES = ROOT / "crates/aws/tests/fixtures/cloudcontrol-parents.json"
 MAX_ROWS = 20_000
 MAX_BYTES = 16 * 1024 * 1024
+NEW_PARENT_TYPES = {
+    "AWS::AppConfig::ExperimentDefinition",
+    "AWS::EKS::AccessEntry",
+    "AWS::EKS::PodIdentityAssociation",
+}
 
 
 def load_fixtures():
@@ -20,11 +25,11 @@ def load_fixtures():
     if document.get("schema_version") != 1 or (document.get("account_id"), document.get("region")) != ("000000000000", "us-east-1"):
         raise ValueError("unrecognized parent fixture version or account/region")
     parents, children, pages = (document.get(key, []) for key in ("parents", "children", "pagination_children"))
-    if (len(parents), len(children), len(pages)) != (12, 63, 98):
+    if (len(parents), len(children), len(pages)) != (12, 72, 98):
         raise ValueError("parent fixture families or pagination records are incomplete")
-    if len({row["key"] for row in parents}) != 12 or len({row["name"] for row in children + pages}) != 161:
+    if len({row["key"] for row in parents}) != 12 or len({row["name"] for row in children + pages}) != 170:
         raise ValueError("parent fixture names are duplicated")
-    if len({row["type_name"] for row in children}) != 21:
+    if len({row["type_name"] for row in children}) != 24:
         raise ValueError("parent fixture child-type coverage is incomplete")
     parent_keys = {row["key"] for row in parents}
     if any(row["parent_key"] not in parent_keys for row in children + pages):
@@ -77,18 +82,19 @@ def check(connection: sqlite3.Connection, scan_id: str, seed_report: dict | None
     add("parent_catalog_hash", seed_report.get("parent_catalog_sha256") == hashlib.sha256((ROOT / "catalog/cloudcontrol-parent-resources.json").read_bytes()).hexdigest())
     add("seed_complete", seed_report.get("status") == "complete")
     seed_rows = seed_report.get("resources", [])
-    add("seed_receipt_count", len(seed_rows) == 173)
+    add("seed_receipt_count", len(seed_rows) == 182)
     seeds = {(row.get("role"), row.get("name")): row for row in seed_rows}
     add("seed_receipts_unique", len(seeds) == len(seed_rows))
     parents = {row["key"]: row for row in fixture["parents"]}
     children = fixture["children"] + fixture["pagination_children"]
     child_types = {row["type_name"] for row in children}
-    allowed_types = child_types | {row["type_name"] for row in fixture["parents"]}
+    discovery_types = child_types | NEW_PARENT_TYPES
+    allowed_types = discovery_types | {row["type_name"] for row in fixture["parents"]}
     add("no_unselected_resource_types", all(row.get("properties", {}).get("cloudformation_type") in allowed_types for row in resources))
     observed_children = [row for row in resources if row.get("properties", {}).get("cloudformation_type") in child_types]
     parent_edges = [row for row in edges if row.get("relation") == "CHILD_OF"]
-    add("exact_child_count", len(observed_children) == 161, {"expected": 161, "observed": len(observed_children)})
-    add("exact_parent_edge_count", len(parent_edges) == 161, {"expected": 161, "observed": len(parent_edges)})
+    add("exact_child_count", len(observed_children) == 170, {"expected": 170, "observed": len(observed_children)})
+    add("exact_parent_edge_count", len(parent_edges) == 170, {"expected": 170, "observed": len(parent_edges)})
     add("no_sensitive_fixture_values", "HIDDEN" not in json.dumps(resources + edges))
     expected_pairs = set()
     expected_child_ids = set()
@@ -147,12 +153,12 @@ def check(connection: sqlite3.Connection, scan_id: str, seed_report: dict | None
                 and matches[0].get("properties", {}).get("owner_resolution") == expected["owner_resolution"]
                 and matches[0].get("properties", {}).get("cloudformation_type") == child["type_name"]
                 and matches[0].get("properties", {}).get("property_paths") == expected["paths"])
-    add("no_missing_or_extra_child_identities", {row.get("id") for row in observed_children} == expected_child_ids and len(expected_child_ids) == 161)
-    add("no_cross_parent_edges", {(row.get("from_id"), row.get("to_id")) for row in parent_edges} == expected_pairs and len(expected_pairs) == 161)
+    add("no_missing_or_extra_child_identities", {row.get("id") for row in observed_children} == expected_child_ids and len(expected_child_ids) == 170)
+    add("no_cross_parent_edges", {(row.get("from_id"), row.get("to_id")) for row in parent_edges} == expected_pairs and len(expected_pairs) == 170)
     try:
         discovery = connection.execute("SELECT parent_id,complete,failed FROM scope_checkpoints WHERE scan_id=? AND collector='cloud_control_parent_discovery'", (scan_id,)).fetchall()
-        add("all_twenty_one_parent_discoveries_complete", len(discovery) == 21
-            and {row[0] for row in discovery} == child_types and all((row[1], row[2]) == (1, 0) for row in discovery))
+        add("all_twenty_four_parent_discoveries_complete", len(discovery) == 24
+            and {row[0] for row in discovery} == discovery_types and all((row[1], row[2]) == (1, 0) for row in discovery))
         failures = connection.execute("SELECT count(*) FROM collection_failures WHERE scan_id=?", (scan_id,)).fetchone()[0]
         add("no_collection_failures", failures == 0, {"observed": failures})
         for side in ("a", "b"):

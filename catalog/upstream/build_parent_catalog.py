@@ -24,17 +24,34 @@ from cloudcontrol_enrichment import enrich_rules, sensitive_paths
 # Parent property -> child ResourceModel property. Every binding has been
 # checked against both retained schemas and the child's list handler schema.
 GROUPS = (
-    ("EKS", "Cluster", "Name", "ClusterName", "Addon FargateProfile Nodegroup"),
+    ("EKS", "Cluster", "Name", "ClusterName", "Addon FargateProfile Nodegroup AccessEntry PodIdentityAssociation"),
     ("ElasticLoadBalancingV2", "LoadBalancer", "LoadBalancerArn", "LoadBalancerArn", "Listener"),
     ("ApiGateway", "RestApi", "RestApiId", "RestApiId", "Authorizer Deployment DocumentationVersion GatewayResponse Model RequestValidator Resource Stage"),
     ("ApiGatewayV2", "Api", "ApiId", "ApiId", "Authorizer Deployment Integration Route Stage"),
     ("Logs", "LogGroup", "LogGroupName", "LogGroupName", "LogStream SubscriptionFilter"),
     ("AppConfig", "Application", "ApplicationId", "ApplicationId", "Environment ConfigurationProfile"),
+    ("AppConfig", "Application", "ApplicationId", "ApplicationIdentifier", "ExperimentDefinition"),
 )
 NATIVE_KINDS = {
     "AWS::EKS::Nodegroup": "aws_eks_node_group",
     "AWS::ElasticLoadBalancingV2::Listener": "aws_elbv2_listener",
 }
+CANDIDATE_REPORT = ROOT / "catalog/cloudcontrol-parent-candidates.json"
+REVIEWED_ADDITIONS = {
+    "AWS::EKS::AccessEntry": "AWS::EKS::Cluster",
+    "AWS::EKS::PodIdentityAssociation": "AWS::EKS::Cluster",
+    "AWS::AppConfig::ExperimentDefinition": "AWS::AppConfig::Application",
+}
+
+
+def validate_candidate_additions() -> None:
+    """Cross-check reviewed additions against the generated candidate report."""
+    report = json.loads(CANDIDATE_REPORT.read_text())
+    inferred = {row["type_name"]: row for row in report["candidates"]}
+    for child, parent in REVIEWED_ADDITIONS.items():
+        row = inferred.get(child)
+        if row is None or row.get("confidence") != "high" or row.get("proposed_parent") != parent:
+            raise ValueError(f"candidate addition lacks a high-confidence parent: {child} -> {parent}")
 SENSITIVE = {
     "AWS::EKS::Addon": ["/ConfigurationValues"],
     "AWS::ApiGateway::Stage": ["/Variables", "/CanarySetting/StageVariableOverrides"],
@@ -101,6 +118,7 @@ def make_descriptor(family: str, resource: str, filename: str, raw: bytes, schem
 def build() -> dict:
     if hashlib.sha256(ARCHIVE.read_bytes()).hexdigest() != EXPECTED_SHA256:
         raise ValueError("pinned CloudFormation schema archive checksum differs")
+    validate_candidate_additions()
     root_catalog = json.loads((ROOT / "catalog/cloudcontrol-resources.json").read_text())
     parents = {d["type_name"]: d for d in root_catalog["resource_types"]}
     resources, plans = [], []
@@ -135,8 +153,8 @@ def build() -> dict:
                               "bindings": [{"source_pointer": "/" + source, "model_property": target}],
                               "relation": "CHILD_OF",
                               "evidence": "reviewed_parent_resource_model_and_matching_read_properties"})
-    if len(resources) != 21 or len({row["type_name"] for row in resources}) != 21:
-        raise ValueError("expected exactly 21 distinct reviewed parent-dependent types")
+    if len(resources) != 24 or len({row["type_name"] for row in resources}) != 24:
+        raise ValueError("expected exactly 24 distinct reviewed parent-dependent types")
     return {"schema_version": 1, "evidence": {
         "source_kind": "official_aws_cloudformation_registry_schema_archive",
         "archive_file": "upstream/" + ARCHIVE.name, "archive_sha256": EXPECTED_SHA256,
@@ -144,7 +162,7 @@ def build() -> dict:
         "global_sensitive_property_names": sorted(GLOBAL_SENSITIVE),
         "list_semantics_url": "https://docs.aws.amazon.com/cloudcontrolapi/latest/userguide/resource-operations-list.html",
         "list_api_url": "https://docs.aws.amazon.com/cloudcontrolapi/latest/APIReference/API_ListResources.html",
-        "scope_review": "Six reviewed regional root types; one dependency level; exact string property bindings",
+        "scope_review": "Six reviewed regional root types; one dependency level; exact string property bindings; reviewed high-confidence candidate additions",
         "live_validated": False,
         "limitations": ["Schema and request-model audit is not live AWS provider validation.",
                         "Two-level parents, account/global contexts, and other unreviewed bindings remain excluded.",
@@ -164,7 +182,7 @@ def main() -> None:
             raise SystemExit("parent catalog differs; regenerate with build_parent_catalog.py")
     else:
         path.write_text(output)
-    print("21 reviewed parent-dependent Cloud Control types " + ("verified" if args.check else "generated"))
+    print("24 reviewed parent-dependent Cloud Control types " + ("verified" if args.check else "generated"))
 
 
 if __name__ == "__main__":
