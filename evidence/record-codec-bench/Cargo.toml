@@ -1,0 +1,20 @@
+[package]
+name = "record-bench"
+version = "0.0.0"
+edition = "2024"
+
+[workspace]
+
+[dependencies]
+inventory-core = { path = "../../crates/core" }
+minicbor = { version = "2.3", features = ["std"] }
+rkyv = "0.8"
+postcard = { version = "1", features = ["use-std"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+blake3 = "1"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
