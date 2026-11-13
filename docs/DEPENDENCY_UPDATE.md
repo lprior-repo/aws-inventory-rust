@@ -113,8 +113,8 @@ Their exact moved names were also updated in the mutation acceptance contract.
 
 ## Acceptance evidence
 
-Current command outcomes, exact test counts, running endpoints and evidence
-hashes are recorded below after the complete verification run finishes.
+Completed command outcomes, exact test counts, running endpoints and evidence
+hashes are recorded below for the completed verification runs.
 
 No mutation score, universal AWS provider support, live-account IAM validation,
 or formal proof is inferred from this local integration run. The strict black-hat review retains its independent verdict; functional checks
@@ -157,3 +157,34 @@ The source review is not owner-approved debt or a passing global gate. File-size
 compliance and operational success do not imply that all strict skill constraints,
 mutation coverage, instrumentation, formal proof, or real-account behavior have
 been established.
+
+### Final verification of pushed main
+
+The current main implementation passed a fresh Rust workspace run against the
+already prepared authenticated emulator and real FalkorDB: **539 passed, zero
+failed, zero ignored**. This includes the ten guarded live tests and the three
+new public SQL-boundary regression tests. The exact frozen fixture paths and
+hashes were supplied from the active session receipt; no real AWS account was
+used. See`dependency-evidence/final-main/final-main-live.log`.
+
+Extended strict source Clippy, formatting and the source-size gate passed.
+There are452 first-party Rust files and every file is at most300 lines. The
+executable SHA-256 remains
+`8fe9df4f994c84de546cf3f2c1614895f17ff9cab0fdfaa3e533aef02bf867e8`,
+so the earlier manual, Red Queen and exact five-case delivery receipts apply to
+the same executable. The final receipt commit adds documentation/evidence only.
+The dependency graph and all437SDK build evidence are unchanged.
+
+The[walkthrough](LOCAL_WALKTHROUGH.md)was executed against a separate learning
+database and graph. It completed with150resources,340edges,131scopes and no
+failed scopes; six graph batches were acknowledged. Its result is preserved in
+`dependency-evidence/final-main/learning-scan.json`.
+
+The explicitly requested RTX3090 was used through native OMP task dispatch in an
+isolated checkout. Three parser candidates were rejected by coordinator checks;
+none was integrated. Actual model/read/write metadata, failure output and the
+hardware-route check are retained in
+`dependency-evidence/local-gpu/`. The working production policy and new
+regression bank remain on main. This is an operationally verified local setup,
+with the strict whole-project engineering review still **REJECTED**, not a claim
+of universal skill approval or a formal certification.

@@ -1,0 +1,201 @@
+    Checking inventory-core v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/core)
+    Checking inventory-engine v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine)
+error: variable `found_close` is assigned to, but never used
+  --> crates/engine/src/store/sql_policy/prefix.rs:30:17
+   |
+30 |             let mut found_close = false;
+   |                 ^^^^^^^^^^^^^^^
+   |
+   = note: consider using `_found_close` instead
+   = note: `-D unused-variables` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(unused_variables)]`
+
+error: value assigned to `index` is never read
+  --> crates/engine/src/store/sql_policy/prefix.rs:33:21
+   |
+33 |                     index += 2;
+   |                     ^^^^^^^^^^
+   |
+   = help: maybe it is overwritten before being read?
+   = note: `-D unused-assignments` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(unused_assignments)]`
+
+error: value assigned to `found_close` is never read
+  --> crates/engine/src/store/sql_policy/prefix.rs:34:21
+   |
+34 |                     found_close = true;
+   |                     ^^^^^^^^^^^^^^^^^^
+   |
+   = help: maybe it is overwritten before being read?
+
+error: indexing may panic
+  --> crates/engine/src/store/sql_policy/prefix.rs:11:20
+   |
+11 |         let byte = bytes[index];
+   |                    ^^^^^^^^^^^^
+   |
+   = help: consider using `.get(n)` or `.get_mut(n)` instead
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#indexing_slicing
+   = note: requested on the command line with `-D clippy::indexing-slicing`
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/engine/src/store/sql_policy/prefix.rs:14:13
+   |
+14 |             index += 1;
+   |             ^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+   = note: requested on the command line with `-D clippy::arithmetic-side-effects`
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/engine/src/store/sql_policy/prefix.rs:18:28
+   |
+18 |         if byte == b'-' && index + 1 < bytes.len() && bytes[index + 1] == b'-' {
+   |                            ^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: indexing may panic
+  --> crates/engine/src/store/sql_policy/prefix.rs:18:55
+   |
+18 |         if byte == b'-' && index + 1 < bytes.len() && bytes[index + 1] == b'-' {
+   |                                                       ^^^^^^^^^^^^^^^^
+   |
+   = help: consider using `.get(n)` or `.get_mut(n)` instead
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#indexing_slicing
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/engine/src/store/sql_policy/prefix.rs:18:61
+   |
+18 |         if byte == b'-' && index + 1 < bytes.len() && bytes[index + 1] == b'-' {
+   |                                                             ^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/engine/src/store/sql_policy/prefix.rs:20:13
+   |
+20 |             index += 2;
+   |             ^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: indexing may panic
+  --> crates/engine/src/store/sql_policy/prefix.rs:21:42
+   |
+21 |             while index < bytes.len() && bytes[index] != b'\n' && bytes[index] != b'\r' {
+   |                                          ^^^^^^^^^^^^
+   |
+   = help: consider using `.get(n)` or `.get_mut(n)` instead
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#indexing_slicing
+
+error: indexing may panic
+  --> crates/engine/src/store/sql_policy/prefix.rs:21:67
+   |
+21 |             while index < bytes.len() && bytes[index] != b'\n' && bytes[index] != b'\r' {
+   |                                                                   ^^^^^^^^^^^^
+   |
+   = help: consider using `.get(n)` or `.get_mut(n)` instead
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#indexing_slicing
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/engine/src/store/sql_policy/prefix.rs:22:17
+   |
+22 |                 index += 1;
+   |                 ^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/engine/src/store/sql_policy/prefix.rs:27:28
+   |
+27 |         if byte == b'/' && index + 1 < bytes.len() && bytes[index + 1] == b'*' {
+   |                            ^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: indexing may panic
+  --> crates/engine/src/store/sql_policy/prefix.rs:27:55
+   |
+27 |         if byte == b'/' && index + 1 < bytes.len() && bytes[index + 1] == b'*' {
+   |                                                       ^^^^^^^^^^^^^^^^
+   |
+   = help: consider using `.get(n)` or `.get_mut(n)` instead
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#indexing_slicing
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/engine/src/store/sql_policy/prefix.rs:27:61
+   |
+27 |         if byte == b'/' && index + 1 < bytes.len() && bytes[index + 1] == b'*' {
+   |                                                             ^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/engine/src/store/sql_policy/prefix.rs:29:13
+   |
+29 |             index += 2;
+   |             ^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: indexing may panic
+  --> crates/engine/src/store/sql_policy/prefix.rs:32:20
+   |
+32 |                 if bytes[index] == b'*' && index + 1 < bytes.len() && bytes[index + 1] == b'/' {
+   |                    ^^^^^^^^^^^^
+   |
+   = help: consider using `.get(n)` or `.get_mut(n)` instead
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#indexing_slicing
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/engine/src/store/sql_policy/prefix.rs:32:44
+   |
+32 |                 if bytes[index] == b'*' && index + 1 < bytes.len() && bytes[index + 1] == b'/' {
+   |                                            ^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: indexing may panic
+  --> crates/engine/src/store/sql_policy/prefix.rs:32:71
+   |
+32 |                 if bytes[index] == b'*' && index + 1 < bytes.len() && bytes[index + 1] == b'/' {
+   |                                                                       ^^^^^^^^^^^^^^^^
+   |
+   = help: consider using `.get(n)` or `.get_mut(n)` instead
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#indexing_slicing
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/engine/src/store/sql_policy/prefix.rs:32:77
+   |
+32 |                 if bytes[index] == b'*' && index + 1 < bytes.len() && bytes[index + 1] == b'/' {
+   |                                                                             ^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/engine/src/store/sql_policy/prefix.rs:33:21
+   |
+33 |                     index += 2;
+   |                     ^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/engine/src/store/sql_policy/prefix.rs:37:17
+   |
+37 |                 index += 1;
+   |                 ^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: indexing into a string may panic if the index is within a UTF-8 character
+  --> crates/engine/src/store/sql_policy/prefix.rs:46:21
+   |
+46 |         let tail = &sql[index..];
+   |                     ^^^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#string_slice
+   = note: requested on the command line with `-D clippy::string-slice`
+
+error: could not compile `inventory-engine` (lib) due to 23 previous errors

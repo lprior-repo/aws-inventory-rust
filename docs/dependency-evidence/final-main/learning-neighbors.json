@@ -1,0 +1,215 @@
+{
+  "depth_boundary_nodes": 8,
+  "detail_byte_limit": 14680064,
+  "expanded_nodes": 1,
+  "inspected_edge_limit": 8001,
+  "inspected_edges": 8,
+  "limits": {
+    "direction": "both",
+    "max_depth": 1,
+    "max_edges": 4000,
+    "max_nodes": 1000
+  },
+  "nodes": [
+    {
+      "distance": 0,
+      "id": "arn:aws:ec2:us-east-1:000000000000:instance/i-00000000000000001",
+      "kind": "aws_ec2_instance",
+      "name": "inventory-1bd0f944",
+      "observed": true
+    },
+    {
+      "distance": 1,
+      "id": "arn:aws:ec2:us-east-1:000000000000:network-interface/eni-000000000000000bb",
+      "kind": "aws_ec2_network_interface",
+      "name": null,
+      "observed": true
+    },
+    {
+      "distance": 1,
+      "id": "arn:aws:ec2:us-east-1:000000000000:security-group/sg-0000000000000009c",
+      "kind": "aws_vpc_security_group",
+      "name": "inventory-1bd0f944-a",
+      "observed": true
+    },
+    {
+      "distance": 1,
+      "id": "arn:aws:ec2:us-east-1:000000000000:subnet/subnet-0000000000000009a",
+      "kind": "aws_vpc_subnet",
+      "name": "inventory-1bd0f944-a",
+      "observed": true
+    },
+    {
+      "distance": 1,
+      "id": "arn:aws:ec2:us-east-1:000000000000:volume/vol-000000000000000a0",
+      "kind": "aws_ebs_volume",
+      "name": "inventory-1bd0f944-a",
+      "observed": true
+    },
+    {
+      "distance": 1,
+      "id": "arn:aws:ec2:us-east-1:000000000000:volume/vol-000000000000000b9",
+      "kind": "aws_ebs_volume",
+      "name": null,
+      "observed": true
+    },
+    {
+      "distance": 1,
+      "id": "arn:aws:ec2:us-east-1:000000000000:vpc/vpc-00000000000000088",
+      "kind": "aws_vpc",
+      "name": "inventory-1bd0f944-vpc-0",
+      "observed": true
+    },
+    {
+      "distance": 1,
+      "id": "aws-elbv2-target-health:[\"arn:aws:elasticloadbalancing:us-east-1:000000000000:targetgroup/inventory-1bd0f944-tg-0/ca4a46012e3b44ce\",\"i-00000000000000001\",80,null,null]",
+      "kind": "aws_elbv2_target_health",
+      "name": null,
+      "observed": true
+    },
+    {
+      "distance": 1,
+      "id": "aws-elbv2-target-health:[\"arn:aws:elasticloadbalancing:us-east-1:000000000000:targetgroup/inventory-1bd0f944-tg-1/4cd407424d140fac\",\"i-00000000000000001\",80,null,null]",
+      "kind": "aws_elbv2_target_health",
+      "name": null,
+      "observed": true
+    }
+  ],
+  "path": null,
+  "relationships": [
+    {
+      "from_id": "arn:aws:ec2:us-east-1:000000000000:instance/i-00000000000000001",
+      "from_kind": "aws_ec2_instance",
+      "from_name": "inventory-1bd0f944",
+      "observed_at": 1794551272740,
+      "owner_resolution": "assumed_scanning_account",
+      "relation": "USES_SECURITY_GROUP",
+      "source": "direct",
+      "source_observed": 1,
+      "target_observed": 1,
+      "to_id": "arn:aws:ec2:us-east-1:000000000000:security-group/sg-0000000000000009c",
+      "to_kind": "aws_vpc_security_group",
+      "to_name": "inventory-1bd0f944-a"
+    },
+    {
+      "from_id": "arn:aws:ec2:us-east-1:000000000000:instance/i-00000000000000001",
+      "from_kind": "aws_ec2_instance",
+      "from_name": "inventory-1bd0f944",
+      "observed_at": 1794551272740,
+      "owner_resolution": "assumed_scanning_account",
+      "relation": "IN_SUBNET",
+      "source": "direct",
+      "source_observed": 1,
+      "target_observed": 1,
+      "to_id": "arn:aws:ec2:us-east-1:000000000000:subnet/subnet-0000000000000009a",
+      "to_kind": "aws_vpc_subnet",
+      "to_name": "inventory-1bd0f944-a"
+    },
+    {
+      "from_id": "arn:aws:ec2:us-east-1:000000000000:instance/i-00000000000000001",
+      "from_kind": "aws_ec2_instance",
+      "from_name": "inventory-1bd0f944",
+      "observed_at": 1794551272740,
+      "owner_resolution": "assumed_scanning_account",
+      "relation": "IN_VPC",
+      "source": "direct",
+      "source_observed": 1,
+      "target_observed": 1,
+      "to_id": "arn:aws:ec2:us-east-1:000000000000:vpc/vpc-00000000000000088",
+      "to_kind": "aws_vpc",
+      "to_name": "inventory-1bd0f944-vpc-0"
+    },
+    {
+      "from_id": "arn:aws:ec2:us-east-1:000000000000:network-interface/eni-000000000000000bb",
+      "from_kind": "aws_ec2_network_interface",
+      "from_name": null,
+      "observed_at": 1794551273519,
+      "owner_resolution": null,
+      "relation": "ATTACHED_TO",
+      "source": "direct",
+      "source_observed": 1,
+      "target_observed": 1,
+      "to_id": "arn:aws:ec2:us-east-1:000000000000:instance/i-00000000000000001",
+      "to_kind": "aws_ec2_instance",
+      "to_name": "inventory-1bd0f944"
+    },
+    {
+      "from_id": "arn:aws:ec2:us-east-1:000000000000:volume/vol-000000000000000a0",
+      "from_kind": "aws_ebs_volume",
+      "from_name": "inventory-1bd0f944-a",
+      "observed_at": 1794551273718,
+      "owner_resolution": null,
+      "relation": "ATTACHED_TO",
+      "source": "direct",
+      "source_observed": 1,
+      "target_observed": 1,
+      "to_id": "arn:aws:ec2:us-east-1:000000000000:instance/i-00000000000000001",
+      "to_kind": "aws_ec2_instance",
+      "to_name": "inventory-1bd0f944"
+    },
+    {
+      "from_id": "arn:aws:ec2:us-east-1:000000000000:volume/vol-000000000000000b9",
+      "from_kind": "aws_ebs_volume",
+      "from_name": null,
+      "observed_at": 1794551273718,
+      "owner_resolution": null,
+      "relation": "ATTACHED_TO",
+      "source": "direct",
+      "source_observed": 1,
+      "target_observed": 1,
+      "to_id": "arn:aws:ec2:us-east-1:000000000000:instance/i-00000000000000001",
+      "to_kind": "aws_ec2_instance",
+      "to_name": "inventory-1bd0f944"
+    },
+    {
+      "from_id": "aws-elbv2-target-health:[\"arn:aws:elasticloadbalancing:us-east-1:000000000000:targetgroup/inventory-1bd0f944-tg-0/ca4a46012e3b44ce\",\"i-00000000000000001\",80,null,null]",
+      "from_kind": "aws_elbv2_target_health",
+      "from_name": null,
+      "observed_at": 1794551273528,
+      "owner_resolution": "assumed_scanning_account",
+      "relation": "TARGETS",
+      "source": "direct",
+      "source_observed": 1,
+      "target_observed": 1,
+      "to_id": "arn:aws:ec2:us-east-1:000000000000:instance/i-00000000000000001",
+      "to_kind": "aws_ec2_instance",
+      "to_name": "inventory-1bd0f944"
+    },
+    {
+      "from_id": "aws-elbv2-target-health:[\"arn:aws:elasticloadbalancing:us-east-1:000000000000:targetgroup/inventory-1bd0f944-tg-1/4cd407424d140fac\",\"i-00000000000000001\",80,null,null]",
+      "from_kind": "aws_elbv2_target_health",
+      "from_name": null,
+      "observed_at": 1794551273729,
+      "owner_resolution": "assumed_scanning_account",
+      "relation": "TARGETS",
+      "source": "direct",
+      "source_observed": 1,
+      "target_observed": 1,
+      "to_id": "arn:aws:ec2:us-east-1:000000000000:instance/i-00000000000000001",
+      "to_kind": "aws_ec2_instance",
+      "to_name": "inventory-1bd0f944"
+    }
+  ],
+  "scan_id": "08033e81-87c9-47eb-9868-7c7256aead67",
+  "scan_status": "complete",
+  "semantics": {
+    "distance": "breadth-first relationship hops in the requested direction",
+    "edges": "relationships encountered while expanding nodes below max_depth; boundary-only edges are not enumerated",
+    "identity": "exact identity in the selected scan; no cross-scan endpoint substitution",
+    "incoming": "reverse references are potential dependents; they are not proof of operational blast radius",
+    "limits": "depth defines the requested radius; node, edge, byte and inspection exhaustion are explicit truncation",
+    "no_path": "a missing path is scoped to this snapshot, selected direction and limits; it does not prove isolation",
+    "path": "one deterministic shortest observed path when found without work truncation; not effective network or IAM reachability",
+    "unresolved": "referenced endpoint was not observed in this scan; it is retained without fabricated metadata"
+  },
+  "start_id": "arn:aws:ec2:us-east-1:000000000000:instance/i-00000000000000001",
+  "status": "complete",
+  "target_id": null,
+  "truncated": false,
+  "truncation": {
+    "detail_byte_limit": false,
+    "edge_limit": false,
+    "inspected_edge_limit": false,
+    "node_limit": false
+  }
+}

@@ -1,0 +1,11 @@
+   Compiling inventory-engine v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/crates/engine)
+    Finished `test` profile [unoptimized] target(s) in 3.03s
+     Running tests/query_lexical_contract.rs (target/debug/build/inventory-engine/e9b2420eadedd0e3/out/query_lexical_contract-e9b2420eadedd0e3)
+
+running 3 tests
+test given_unfinished_operators_when_querying_then_native_syntax_errors_remain_typed ... ok
+test given_hostile_sql_when_querying_then_exact_policy_errors_prevent_execution ... ok
+test given_readonly_sql_when_quoted_or_commented_then_exact_values_survive ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+

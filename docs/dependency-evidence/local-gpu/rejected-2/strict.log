@@ -1,0 +1,19 @@
+    Checking inventory-engine v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine)
+error: indexing into a string may panic if the index is within a UTF-8 character
+   --> crates/engine/src/store/sql_policy/prefix.rs:146:24
+    |
+146 |             return Ok(&sql[start..i]);
+    |                        ^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#string_slice
+    = note: requested on the command line with `-D clippy::string-slice`
+
+error: indexing into a string may panic if the index is within a UTF-8 character
+   --> crates/engine/src/store/sql_policy/prefix.rs:150:20
+    |
+150 |         return Ok(&sql[start..]);
+    |                    ^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#string_slice
+
+error: could not compile `inventory-engine` (lib) due to 2 previous errors

@@ -1,0 +1,245 @@
+{
+  "worker": "Rust3090SqlPolicyCorrection",
+  "models": [
+    {
+      "model": "local-3090-llama/qwen3.8-27b-uncensored",
+      "resolvedModelIsFallback": false,
+      "runtime": {
+        "version": "18.20.0"
+      }
+    }
+  ],
+  "reads": [
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-packets/third-worker-3090.md",
+      "successful": true,
+      "returned_text_bytes": 5592
+    },
+    {
+      "path": "/home/lewis/.agents/skills/local-gpu-coding/SKILL.md",
+      "successful": true,
+      "returned_text_bytes": 6945
+    },
+    {
+      "path": "/home/lewis/.agents/skills/holzman-rust/SKILL.md",
+      "successful": true,
+      "returned_text_bytes": 23767
+    },
+    {
+      "path": "/home/lewis/.agents/skills/functional-rust/SKILL.md",
+      "successful": true,
+      "returned_text_bytes": 10925
+    },
+    {
+      "path": "/home/lewis/.agents/skills/scott-ddd-refactor/SKILL.md",
+      "successful": true,
+      "returned_text_bytes": 5571
+    },
+    {
+      "path": "/home/lewis/.agents/skills/holzman-rust/references/nasa-jpl-standards.md",
+      "successful": true,
+      "returned_text_bytes": 13918
+    },
+    {
+      "path": "/home/lewis/.agents/skills/holzman-rust/references/zero-cost-abstractions.md",
+      "successful": true,
+      "returned_text_bytes": 9303
+    },
+    {
+      "path": "/home/lewis/.agents/skills/holzman-rust/references/runtime-performance-architecture.md",
+      "successful": true,
+      "returned_text_bytes": 9372
+    },
+    {
+      "path": "/home/lewis/.agents/skills/functional-rust/references/rust-ai-verification-doctrine.md",
+      "successful": true,
+      "returned_text_bytes": 3588
+    },
+    {
+      "path": "/home/lewis/.agents/skills/scott-ddd-refactor/reference.md",
+      "successful": true,
+      "returned_text_bytes": 1381
+    },
+    {
+      "path": "/home/lewis/.agents/skills/scott-ddd-refactor/decision-matrix.md",
+      "successful": true,
+      "returned_text_bytes": 1184
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy.rs",
+      "successful": false,
+      "returned_text_bytes": 122
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/mod.rs",
+      "successful": true,
+      "returned_text_bytes": 1430
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/state.rs",
+      "successful": true,
+      "returned_text_bytes": 538
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/prefix.rs",
+      "successful": true,
+      "returned_text_bytes": 1333
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/transition.rs",
+      "successful": true,
+      "returned_text_bytes": 2190
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/prefix.rs:raw",
+      "successful": true,
+      "returned_text_bytes": 4251
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/transition.rs:raw",
+      "successful": true,
+      "returned_text_bytes": 6820
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-packets/submission-2/behavior.log",
+      "successful": true,
+      "returned_text_bytes": 1897
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-packets/submission-2/strict.log",
+      "successful": true,
+      "returned_text_bytes": 940
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/tests/query_lexical_contract.rs",
+      "successful": true,
+      "returned_text_bytes": 2139
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/tests/query_lexical_contract.rs:raw",
+      "successful": true,
+      "returned_text_bytes": 4843
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/crates/engine/src/store/sql_policy.rs",
+      "successful": true,
+      "returned_text_bytes": 1405
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/crates/engine/src/store/sql_policy.rs:raw",
+      "successful": true,
+      "returned_text_bytes": 5102
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/transition.rs:10-45",
+      "successful": true,
+      "returned_text_bytes": 1873
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/prefix.rs:1-55",
+      "successful": true,
+      "returned_text_bytes": 1777
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/prefix.rs:100-130",
+      "successful": true,
+      "returned_text_bytes": 1180
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/prefix.rs:100-115",
+      "successful": true,
+      "returned_text_bytes": 626
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/mod.rs:raw",
+      "successful": true,
+      "returned_text_bytes": 1301
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/state.rs:raw",
+      "successful": true,
+      "returned_text_bytes": 538
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/prefix.rs:raw",
+      "successful": true,
+      "returned_text_bytes": 5023
+    },
+    {
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/transition.rs:raw",
+      "successful": true,
+      "returned_text_bytes": 8580
+    }
+  ],
+  "writes": [
+    {
+      "tool": "edit",
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/transition.rs"
+    },
+    {
+      "tool": "edit",
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/mod.rs"
+    },
+    {
+      "tool": "edit",
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/mod.rs"
+    },
+    {
+      "tool": "edit",
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/prefix.rs"
+    },
+    {
+      "tool": "edit",
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/transition.rs"
+    },
+    {
+      "tool": "edit",
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/transition.rs"
+    },
+    {
+      "tool": "edit",
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/transition.rs"
+    },
+    {
+      "tool": "edit",
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/prefix.rs"
+    },
+    {
+      "tool": "edit",
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/prefix.rs"
+    },
+    {
+      "tool": "edit",
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/prefix.rs"
+    },
+    {
+      "tool": "edit",
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/prefix.rs"
+    },
+    {
+      "tool": "edit",
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/prefix.rs"
+    },
+    {
+      "tool": "edit",
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/prefix.rs"
+    },
+    {
+      "tool": "edit",
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/prefix.rs"
+    },
+    {
+      "tool": "edit",
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/prefix.rs"
+    },
+    {
+      "tool": "edit",
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/transition.rs"
+    },
+    {
+      "tool": "edit",
+      "path": "/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine/src/store/sql_policy/prefix.rs"
+    }
+  ],
+  "shell_commands": []
+}
