@@ -1,0 +1,753 @@
+//! Portable snapshot contracts through the public Store/export APIs.
+
+use futures_util::StreamExt;
+use inventory_core::{
+    CollectionEvent, CollectionFailure, CollectionPage, CollectionScope, Edge, Resource,
+    ScanStatus, Source,
+};
+use inventory_engine::export::{
+    EXPORT_ARTIFACT, EXPORT_VERSION, ExportCounts, ExportError, ExportFormat, ExportHeader,
+    ExportOptions, ExportRecord, MAX_EXPORT_BYTES, MAX_EXPORT_RECORDS, ProvenanceMode,
+    export_snapshot,
+};
+use inventory_engine::store::Store;
+use serde::Deserialize;
+use serde_json::json;
+use sha2::{Digest, Sha256};
+use std::collections::BTreeMap;
+use std::path::Path;
+use std::time::Duration;
+use tokio::io::{AsyncBufReadExt, AsyncReadExt, BufReader};
+use tokio_util::sync::CancellationToken;
+
+type TestResult = Result<(), Box<dyn std::error::Error + Send + Sync>>;
+const SCAN: &str = "portable-snapshot";
+
+#[derive(Debug, Deserialize, PartialEq)]
+struct Document {
+    header: ExportHeader,
+    records: Vec<ExportRecord>,
+    summary: ExportCounts,
+}
+
+fn scope(source: Source) -> CollectionScope {
+    CollectionScope {
+        account_id: "111111111111".into(),
+        region: "eu-west-1".into(),
+        collector: format!("fixture_{}", source.as_str()),
+        parent_id: Some("parent/世界".into()),
+        source,
+    }
+}
+
+fn resource(id: &str, source: Source, time: i64) -> Resource {
+    Resource {
+        id: id.into(),
+        account_id: "111111111111".into(),
+        region: "eu-west-1".into(),
+        kind: "aws_vpc".into(),
+        name: Some("quotes \" and newline\n日本語".into()),
+        properties: json!({"null":null,"enabled":true,"counter":18446744073709551615_u64,
+            "nested":{"source":source,"items":["line\n\t",3,false]},"binary_text":"\u{0000}"}),
+        tags: BTreeMap::from([("purpose".into(), "JSON / JSONL \\ round trip".into())]),
+        source,
+        observed_at: time,
+    }
+}
+
+fn edge(source: Source, time: i64) -> Edge {
+    Edge {
+        from_id: "z-resource".into(),
+        to_id: "uncollected-target".into(),
+        relation: "USES".into(),
+        source,
+        observed_at: time,
+        properties: json!({"paths":["VpcId"],"owner_resolution":"observed","source":source}),
+    }
+}
+
+fn fixture_pages() -> Vec<CollectionPage> {
+    let mut pages: Vec<_> = [
+        (Source::Direct, 100),
+        (Source::CloudControl, 120),
+        (Source::AwsConfig, 150),
+        (Source::ResourceExplorer, 180),
+    ]
+    .into_iter()
+    .map(|(source, time)| CollectionPage {
+        scope: scope(source),
+        page_number: 1,
+        next_token: (source == Source::Direct).then(|| "opaque-next-page".into()),
+        resources: vec![resource("z-resource", source, time)],
+        edges: if source == Source::ResourceExplorer {
+            Vec::new()
+        } else {
+            vec![edge(source, 100)]
+        },
+    })
+    .collect();
+    pages.push(CollectionPage {
+        scope: scope(Source::Direct),
+        page_number: 2,
+        next_token: None,
+        resources: vec![
+            resource("z-resource", Source::Direct, 101),
+            resource("a-resource", Source::Direct, 102),
+        ],
+        edges: vec![edge(Source::Direct, 101)],
+    });
+    pages
+}
+
+async fn fixture(status: ScanStatus) -> Result<Store, Box<dyn std::error::Error + Send + Sync>> {
+    let store = Store::open(":memory:").await?;
+    store.begin_scan(SCAN, 1).await?;
+    for page in fixture_pages() {
+        store.apply_page(SCAN, page).await?;
+    }
+    store.finish_scan(SCAN, status, 200).await?;
+    Ok(store)
+}
+
+async fn parse(
+    path: &Path,
+    format: ExportFormat,
+) -> Result<Document, Box<dyn std::error::Error + Send + Sync>> {
+    let bytes = tokio::fs::read(path).await?;
+    if format == ExportFormat::Json {
+        return Ok(serde_json::from_slice(&bytes)?);
+    }
+    let text = std::str::from_utf8(&bytes)?;
+    let mut lines = text.lines();
+    let first = lines.next().ok_or("missing header")?;
+    assert!(serde_json::from_str::<CollectionEvent>(first).is_err());
+    let ExportRecord::Header(header) = serde_json::from_str(first)? else {
+        return Err("first record is not a header".into());
+    };
+    let mut records = lines
+        .map(serde_json::from_str)
+        .collect::<Result<Vec<ExportRecord>, _>>()?;
+    let Some(ExportRecord::Summary(summary)) = records.pop() else {
+        return Err("last record is not a summary".into());
+    };
+    Ok(Document {
+        header,
+        records,
+        summary,
+    })
+}
+
+#[tokio::test]
+async fn both_formats_round_trip_preferred_resources_edges_and_coverage() -> TestResult {
+    let store = fixture(ScanStatus::Complete).await?;
+    let directory = tempfile::tempdir()?;
+    let mut parsed = Vec::new();
+    for format in [ExportFormat::Json, ExportFormat::Jsonl] {
+        let path = directory.path().join(format!("normalized-{format:?}"));
+        let options = ExportOptions {
+            format,
+            ..ExportOptions::default()
+        };
+        let result =
+            export_snapshot(&store, SCAN, &path, options, &CancellationToken::new()).await?;
+        let document = parse(&path, format).await?;
+        assert_eq!(document.header.artifact, EXPORT_ARTIFACT);
+        assert_eq!(document.header.version, EXPORT_VERSION);
+        assert_eq!(document.header.scan.summary, store.summary(SCAN).await?);
+        assert_eq!(document.header.scan.started_at, 1);
+        assert_eq!(document.header.scan.finished_at, 200);
+        assert_eq!(document.header.scan.status, ScanStatus::Complete);
+        assert_eq!(document.summary, result.counts);
+        assert_eq!(
+            result.counts,
+            ExportCounts {
+                resources: 2,
+                edges: 1,
+                scopes: 4,
+                failures: 0,
+                records: 7
+            }
+        );
+        let resources: Vec<_> = document
+            .records
+            .iter()
+            .filter_map(|record| match record {
+                ExportRecord::Resource(row) => {
+                    assert!(row.observation.is_none());
+                    Some(row.resource.clone())
+                }
+                _ => None,
+            })
+            .collect();
+        let edges: Vec<_> = document
+            .records
+            .iter()
+            .filter_map(|record| match record {
+                ExportRecord::Edge(row) => {
+                    assert!(row.observation.is_none());
+                    Some(row.edge.clone())
+                }
+                _ => None,
+            })
+            .collect();
+        assert_eq!(resources, store.resources(SCAN).await?);
+        assert_eq!(edges, store.edges(SCAN).await?);
+        assert_eq!(
+            resources.last().map(|row| (row.source, row.observed_at)),
+            Some((Source::Direct, 101))
+        );
+        let bytes = tokio::fs::read(&path).await?;
+        assert_eq!(result.bytes, u64::try_from(bytes.len())?);
+        assert_eq!(result.sha256, format!("{:x}", Sha256::digest(&bytes)));
+        parsed.push(document);
+    }
+    assert_eq!(parsed.first(), parsed.last());
+    store.close().await;
+    Ok(())
+}
+
+#[tokio::test]
+async fn all_observations_retain_every_source_page_and_original_value() -> TestResult {
+    let store = fixture(ScanStatus::Complete).await?;
+    let directory = tempfile::tempdir()?;
+    let expected = fixture_pages();
+    for format in [ExportFormat::Json, ExportFormat::Jsonl] {
+        let options = ExportOptions {
+            format,
+            provenance: ProvenanceMode::AllObservations,
+            ..ExportOptions::default()
+        };
+        let path = directory.path().join(format!("all-{format:?}"));
+        let result =
+            export_snapshot(&store, SCAN, &path, options, &CancellationToken::new()).await?;
+        assert_eq!(
+            result.counts,
+            ExportCounts {
+                resources: 6,
+                edges: 4,
+                scopes: 4,
+                failures: 0,
+                records: 14
+            }
+        );
+        let document = parse(&path, format).await?;
+        assert_eq!(document.header.scan.summary.resources, 2);
+        assert_eq!(document.header.scan.summary.edges, 1);
+        assert_eq!(document.header.provenance, ProvenanceMode::AllObservations);
+        for page in &expected {
+            for resource in &page.resources {
+                let matches = document
+                    .records
+                    .iter()
+                    .filter(|record| match record {
+                        ExportRecord::Resource(row) => {
+                            row.resource == *resource
+                                && row.observation.as_ref().is_some_and(|observation| {
+                                    observation.scope == page.scope
+                                        && observation.page_number == page.page_number
+                                })
+                        }
+                        _ => false,
+                    })
+                    .count();
+                assert_eq!(matches, 1);
+            }
+            for edge in &page.edges {
+                let matches = document
+                    .records
+                    .iter()
+                    .filter(|record| match record {
+                        ExportRecord::Edge(row) => {
+                            row.edge == *edge
+                                && row.observation.as_ref().is_some_and(|observation| {
+                                    observation.scope == page.scope
+                                        && observation.page_number == page.page_number
+                                })
+                        }
+                        _ => false,
+                    })
+                    .count();
+                assert_eq!(matches, 1);
+            }
+        }
+        assert!(
+            !tokio::fs::read_to_string(path)
+                .await?
+                .contains("opaque-next-page")
+        );
+    }
+    store.close().await;
+    Ok(())
+}
+
+#[tokio::test]
+async fn ordering_and_content_hash_are_deterministic_for_both_modes_and_formats() -> TestResult {
+    let store = fixture(ScanStatus::Complete).await?;
+    let directory = tempfile::tempdir()?;
+    for provenance in [ProvenanceMode::Normalized, ProvenanceMode::AllObservations] {
+        for format in [ExportFormat::Json, ExportFormat::Jsonl] {
+            let options = ExportOptions {
+                format,
+                provenance,
+                ..ExportOptions::default()
+            };
+            let a = directory
+                .path()
+                .join(format!("first-{provenance:?}-{format:?}"));
+            let b = directory
+                .path()
+                .join(format!("second-{provenance:?}-{format:?}"));
+            let first =
+                export_snapshot(&store, SCAN, &a, options, &CancellationToken::new()).await?;
+            let second =
+                export_snapshot(&store, SCAN, &b, options, &CancellationToken::new()).await?;
+            assert_eq!(first, second);
+            assert_eq!(tokio::fs::read(a).await?, tokio::fs::read(b).await?);
+        }
+    }
+    store.close().await;
+    Ok(())
+}
+
+#[tokio::test]
+async fn finalized_partial_and_cancelled_require_opt_in_and_keep_their_status() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    for status in [ScanStatus::Partial, ScanStatus::Cancelled] {
+        let store = fixture(status).await?;
+        let path = directory.path().join(status.as_str());
+        assert!(matches!(
+            export_snapshot(
+                &store,
+                SCAN,
+                &path,
+                ExportOptions::default(),
+                &CancellationToken::new()
+            )
+            .await,
+            Err(ExportError::Invalid(_))
+        ));
+        assert!(!path.exists());
+        let options = ExportOptions {
+            allow_partial: true,
+            ..ExportOptions::default()
+        };
+        let result =
+            export_snapshot(&store, SCAN, &path, options, &CancellationToken::new()).await?;
+        assert_eq!(result.status, status);
+        assert_eq!(
+            parse(&path, ExportFormat::Jsonl).await?.header.scan.status,
+            status
+        );
+        store.close().await;
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn failures_and_empty_scopes_survive_export_without_inventing_resources() -> TestResult {
+    let store = Store::open(":memory:").await?;
+    store.begin_scan(SCAN, 1).await?;
+    store
+        .apply_page(
+            SCAN,
+            CollectionPage {
+                scope: scope(Source::Direct),
+                page_number: 1,
+                next_token: None,
+                resources: Vec::new(),
+                edges: Vec::new(),
+            },
+        )
+        .await?;
+    let failure = CollectionFailure {
+        scope: scope(Source::AwsConfig),
+        category: "access_denied".into(),
+        message: "Configured recorder unavailable\nwith quoted \"detail\"".into(),
+    };
+    store.record_failure(SCAN, &failure).await?;
+    store.finish_scan(SCAN, ScanStatus::Complete, 2).await?;
+    let directory = tempfile::tempdir()?;
+    let path = directory.path().join("failed.json");
+    let options = ExportOptions {
+        format: ExportFormat::Json,
+        allow_partial: true,
+        ..ExportOptions::default()
+    };
+    let result = export_snapshot(&store, SCAN, &path, options, &CancellationToken::new()).await?;
+    assert_eq!(result.status, ScanStatus::Partial);
+    assert_eq!(
+        result.counts,
+        ExportCounts {
+            resources: 0,
+            edges: 0,
+            scopes: 2,
+            failures: 1,
+            records: 3
+        }
+    );
+    let document = parse(&path, ExportFormat::Json).await?;
+    assert_eq!(
+        document.records.last(),
+        Some(&ExportRecord::Failure(failure))
+    );
+    assert_eq!(document.header.scan.summary.completed_scopes, 1);
+    assert_eq!(document.header.scan.summary.failed_scopes, 1);
+    store.close().await;
+    Ok(())
+}
+
+#[tokio::test]
+async fn running_and_unknown_scans_never_create_an_output_even_with_opt_in() -> TestResult {
+    let store = Store::open(":memory:").await?;
+    store.begin_scan(SCAN, 1).await?;
+    let directory = tempfile::tempdir()?;
+    let path = directory.path().join("must-not-exist");
+    let options = ExportOptions {
+        allow_partial: true,
+        ..ExportOptions::default()
+    };
+    assert!(matches!(
+        export_snapshot(&store, SCAN, &path, options, &CancellationToken::new()).await,
+        Err(ExportError::Invalid(_))
+    ));
+    assert!(matches!(
+        export_snapshot(&store, "unknown", &path, options, &CancellationToken::new()).await,
+        Err(ExportError::Store(_))
+    ));
+    assert!(
+        tokio::fs::read_dir(directory.path())
+            .await?
+            .next_entry()
+            .await?
+            .is_none()
+    );
+    store.close().await;
+    Ok(())
+}
+
+#[tokio::test]
+async fn exact_record_and_byte_budgets_succeed_and_overflow_cleans_owned_partial() -> TestResult {
+    let store = fixture(ScanStatus::Complete).await?;
+    let directory = tempfile::tempdir()?;
+    let baseline = directory.path().join("baseline");
+    let receipt = export_snapshot(
+        &store,
+        SCAN,
+        &baseline,
+        ExportOptions::default(),
+        &CancellationToken::new(),
+    )
+    .await?;
+    let exact = ExportOptions {
+        max_records: usize::try_from(receipt.counts.records)?,
+        max_bytes: receipt.bytes,
+        ..ExportOptions::default()
+    };
+    let path = directory.path().join("exact");
+    assert_eq!(
+        export_snapshot(&store, SCAN, &path, exact, &CancellationToken::new()).await?,
+        receipt
+    );
+    for (name, options) in [
+        (
+            "short-byte",
+            ExportOptions {
+                max_bytes: receipt.bytes.saturating_sub(1),
+                ..exact
+            },
+        ),
+        (
+            "short-record",
+            ExportOptions {
+                max_records: exact.max_records.saturating_sub(1),
+                ..exact
+            },
+        ),
+        (
+            "one-byte",
+            ExportOptions {
+                max_bytes: 1,
+                ..exact
+            },
+        ),
+    ] {
+        let path = directory.path().join(name);
+        assert!(matches!(
+            export_snapshot(&store, SCAN, &path, options, &CancellationToken::new()).await,
+            Err(ExportError::Limit(_))
+        ));
+        assert!(!path.exists());
+        assert!(!directory.path().join(format!("{name}.partial")).exists());
+    }
+    store.close().await;
+    Ok(())
+}
+
+#[tokio::test]
+async fn invalid_budget_bounds_are_rejected_before_any_file_is_created() -> TestResult {
+    let store = fixture(ScanStatus::Complete).await?;
+    let directory = tempfile::tempdir()?;
+    let path = directory.path().join("invalid");
+    for options in [
+        ExportOptions {
+            max_records: 0,
+            ..ExportOptions::default()
+        },
+        ExportOptions {
+            max_records: MAX_EXPORT_RECORDS.saturating_add(1),
+            ..ExportOptions::default()
+        },
+        ExportOptions {
+            max_bytes: 0,
+            ..ExportOptions::default()
+        },
+        ExportOptions {
+            max_bytes: MAX_EXPORT_BYTES.saturating_add(1),
+            ..ExportOptions::default()
+        },
+    ] {
+        assert!(matches!(
+            export_snapshot(&store, SCAN, &path, options, &CancellationToken::new()).await,
+            Err(ExportError::Invalid(_))
+        ));
+    }
+    assert!(
+        tokio::fs::read_dir(directory.path())
+            .await?
+            .next_entry()
+            .await?
+            .is_none()
+    );
+    store.close().await;
+    Ok(())
+}
+
+#[tokio::test]
+async fn existing_outputs_and_partials_are_never_clobbered_or_removed() -> TestResult {
+    let store = fixture(ScanStatus::Complete).await?;
+    let directory = tempfile::tempdir()?;
+    let path = directory.path().join("owned-by-someone-else");
+    tokio::fs::write(&path, b"preserve final").await?;
+    assert!(
+        export_snapshot(
+            &store,
+            SCAN,
+            &path,
+            ExportOptions::default(),
+            &CancellationToken::new()
+        )
+        .await
+        .is_err()
+    );
+    assert_eq!(tokio::fs::read(&path).await?, b"preserve final");
+    let path = directory.path().join("unfinished");
+    let partial = directory.path().join("unfinished.partial");
+    tokio::fs::write(&partial, b"preserve foreign partial").await?;
+    assert!(
+        export_snapshot(
+            &store,
+            SCAN,
+            &path,
+            ExportOptions::default(),
+            &CancellationToken::new()
+        )
+        .await
+        .is_err()
+    );
+    assert_eq!(tokio::fs::read(partial).await?, b"preserve foreign partial");
+    assert!(!path.exists());
+    store.close().await;
+    Ok(())
+}
+
+#[tokio::test]
+async fn concurrent_exports_publish_exactly_one_complete_file() -> TestResult {
+    let store = fixture(ScanStatus::Complete).await?;
+    let directory = tempfile::tempdir()?;
+    let path = directory.path().join("raced");
+    let cancellation = CancellationToken::new();
+    let (first, second) = tokio::join!(
+        export_snapshot(&store, SCAN, &path, ExportOptions::default(), &cancellation),
+        export_snapshot(&store, SCAN, &path, ExportOptions::default(), &cancellation),
+    );
+    assert_ne!(first.is_ok(), second.is_ok());
+    assert_eq!(
+        parse(&path, ExportFormat::Jsonl).await?.summary.resources,
+        2
+    );
+    assert!(!directory.path().join("raced.partial").exists());
+    store.close().await;
+    Ok(())
+}
+
+#[tokio::test]
+async fn cancellation_before_and_during_a_pending_read_does_not_publish() -> TestResult {
+    let store = fixture(ScanStatus::Complete).await?;
+    let directory = tempfile::tempdir()?;
+    let path = directory.path().join("cancelled");
+    let cancellation = CancellationToken::new();
+    cancellation.cancel();
+    assert!(matches!(
+        export_snapshot(&store, SCAN, &path, ExportOptions::default(), &cancellation).await,
+        Err(ExportError::Cancelled)
+    ));
+    let cancellation = CancellationToken::new();
+    let mut held_reader = store.resource_stream(SCAN);
+    assert!(held_reader.next().await.transpose()?.is_some());
+    let mut export = Box::pin(export_snapshot(
+        &store,
+        SCAN,
+        &path,
+        ExportOptions::default(),
+        &cancellation,
+    ));
+    assert!(futures_util::poll!(&mut export).is_pending());
+    cancellation.cancel();
+    assert!(matches!(export.await, Err(ExportError::Cancelled)));
+    drop(held_reader);
+    assert!(
+        tokio::fs::read_dir(directory.path())
+            .await?
+            .next_entry()
+            .await?
+            .is_none()
+    );
+    store.close().await;
+    Ok(())
+}
+
+#[tokio::test]
+async fn snapshot_export_can_exceed_the_read_only_query_row_cap() -> TestResult {
+    tokio::time::timeout(Duration::from_secs(30), export_above_query_cap())
+        .await
+        .map_err(|_| "inventory export streaming test exceeded its 30-second deadline")?
+}
+
+async fn export_above_query_cap() -> TestResult {
+    const TOTAL: usize = 10_001;
+    const PAGE_ROWS: usize = 500;
+    let pages = TOTAL.div_ceil(PAGE_ROWS);
+    let store = Store::open(":memory:").await?;
+    store.begin_scan(SCAN, 1).await?;
+    for page_index in 0..pages {
+        let start = page_index.saturating_mul(PAGE_ROWS);
+        let end = start.saturating_add(PAGE_ROWS).min(TOTAL);
+        let resources = (start..end)
+            .map(|index| Resource {
+                id: format!("resource-{index:05}"),
+                account_id: "111111111111".into(),
+                region: "eu-west-1".into(),
+                kind: "aws_test_resource".into(),
+                name: None,
+                properties: json!({"index": index}),
+                tags: BTreeMap::new(),
+                source: Source::Direct,
+                observed_at: 1,
+            })
+            .collect();
+        store
+            .apply_page(
+                SCAN,
+                CollectionPage {
+                    scope: scope(Source::Direct),
+                    page_number: u32::try_from(page_index.saturating_add(1))?,
+                    next_token: (end < TOTAL).then(|| format!("next-{end}")),
+                    resources,
+                    edges: Vec::new(),
+                },
+            )
+            .await?;
+    }
+    store.finish_scan(SCAN, ScanStatus::Complete, 2).await?;
+    let directory = tempfile::tempdir()?;
+    let path = directory.path().join("over-query-cap.jsonl");
+    let summary = export_snapshot(
+        &store,
+        SCAN,
+        &path,
+        ExportOptions::default(),
+        &CancellationToken::new(),
+    )
+    .await?;
+    assert_eq!(
+        summary.counts,
+        ExportCounts {
+            resources: 10_001,
+            edges: 0,
+            scopes: 1,
+            failures: 0,
+            records: 10_002
+        }
+    );
+    let mut reader = BufReader::new(tokio::fs::File::open(&path).await?);
+    let mut line = Vec::with_capacity(16_384);
+    let mut digest = Sha256::new();
+    let mut byte_count = 0_u64;
+    let mut resource_count = 0_usize;
+    let mut scope_seen = false;
+    let mut end_seen = false;
+    let mut eof_seen = false;
+    // This independent reader holds at most one bounded line. An accidentally
+    // unframed whole-file JSON document cannot force a giant test allocation.
+    for line_index in 0..TOTAL.saturating_add(4) {
+        line.clear();
+        let read = (&mut reader)
+            .take(16_384)
+            .read_until(b'\n', &mut line)
+            .await?;
+        if read == 0 {
+            eof_seen = true;
+            break;
+        }
+        assert!(!end_seen, "extra data after summary");
+        assert_eq!(
+            line.last(),
+            Some(&b'\n'),
+            "fixture line exceeded its read bound"
+        );
+        byte_count = byte_count
+            .checked_add(u64::try_from(read)?)
+            .ok_or("byte count overflow")?;
+        digest.update(&line);
+        match serde_json::from_slice::<ExportRecord>(&line)? {
+            ExportRecord::Header(header) => {
+                assert_eq!(line_index, 0);
+                assert_eq!(header.artifact, EXPORT_ARTIFACT);
+                assert_eq!(header.version, EXPORT_VERSION);
+                assert_eq!(header.scan.summary.resources, 10_001);
+                assert_eq!(header.scan.summary.edges, 0);
+                assert_eq!(header.scan.summary.completed_scopes, 1);
+                assert_eq!(header.scan.status, ScanStatus::Complete);
+            }
+            ExportRecord::Resource(row) => {
+                assert!(line_index != 0 && !scope_seen);
+                assert_eq!(row.resource.id, format!("resource-{resource_count:05}"));
+                assert_eq!(row.resource.properties, json!({"index":resource_count}));
+                assert_eq!(row.resource.source, Source::Direct);
+                assert!(row.observation.is_none());
+                resource_count = resource_count.saturating_add(1);
+            }
+            ExportRecord::Scope(row) => {
+                assert_eq!(resource_count, TOTAL);
+                assert!(!scope_seen);
+                assert_eq!(row.last_page, u32::try_from(pages)?);
+                assert!(row.complete && !row.failed);
+                scope_seen = true;
+            }
+            ExportRecord::Summary(counts) => {
+                assert_eq!(resource_count, TOTAL);
+                assert!(scope_seen);
+                assert_eq!(counts, summary.counts);
+                end_seen = true;
+            }
+            _ => return Err("unexpected record kind in resource-only fixture".into()),
+        }
+    }
+    assert!(eof_seen && end_seen);
+    assert_eq!(resource_count, TOTAL);
+    assert_eq!(byte_count, summary.bytes);
+    assert_eq!(tokio::fs::metadata(&path).await?.len(), summary.bytes);
+    assert_eq!(format!("{:x}", digest.finalize()), summary.sha256);
+    store.close().await;
+    Ok(())
+}

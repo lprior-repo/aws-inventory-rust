@@ -1,0 +1,659 @@
+{
+  "schema_version": 1,
+  "fixtures": [
+    {
+      "name": "sagemaker_model_role_and_vpc",
+      "type_name": "AWS::SageMaker::Model",
+      "identifier": "arn:aws:sagemaker:us-east-1:111111111111:model/model-demo",
+      "provider": {
+        "ModelArn": "arn:aws:sagemaker:us-east-1:111111111111:model/model-demo",
+        "ModelName": "model-demo",
+        "ExecutionRoleArn": "arn:aws:iam::222222222222:role/ml/runtime",
+        "VpcConfig": {
+          "Subnets": [
+            "subnet-a",
+            "subnet-a"
+          ],
+          "SecurityGroupIds": [
+            "sg-a"
+          ]
+        },
+        "PrimaryContainer": {
+          "Environment": {
+            "TOKEN": "HIDDEN",
+            "ROLE": "arn:aws:iam::111111111111:role/HIDDEN"
+          }
+        }
+      },
+      "expected_resource_id": "arn:aws:sagemaker:us-east-1:111111111111:model/model-demo",
+      "opaque_identity": false,
+      "edges": [
+        {
+          "relation": "USES_EXECUTION_ROLE",
+          "target": "arn:aws:iam::222222222222:role/ml/runtime",
+          "kind": "aws_iam_role",
+          "paths": [
+            "/ExecutionRoleArn"
+          ],
+          "owner": "returned_arn"
+        },
+        {
+          "relation": "USES_SUBNET",
+          "target": "arn:aws:ec2:us-east-1:111111111111:subnet/subnet-a",
+          "kind": "aws_vpc_subnet",
+          "paths": [
+            "/VpcConfig/Subnets/0",
+            "/VpcConfig/Subnets/1"
+          ],
+          "owner": "assumed_scanning_account"
+        },
+        {
+          "relation": "USES_SECURITY_GROUP",
+          "target": "arn:aws:ec2:us-east-1:111111111111:security-group/sg-a",
+          "kind": "aws_vpc_security_group",
+          "paths": [
+            "/VpcConfig/SecurityGroupIds/0"
+          ],
+          "owner": "assumed_scanning_account"
+        }
+      ]
+    },
+    {
+      "name": "bedrock_agent_role_and_key",
+      "type_name": "AWS::Bedrock::Agent",
+      "identifier": "agent-123",
+      "provider": {
+        "AgentId": "agent-123",
+        "AgentArn": "arn:aws:bedrock:us-east-1:111111111111:agent/agent-123",
+        "AgentResourceRoleArn": "arn:aws:iam::222222222222:role/ml/runtime",
+        "CustomerEncryptionKeyArn": "arn:aws:kms:us-west-2:222222222222:key/12345678-1234-1234-1234-123456789012",
+        "Instruction": "HIDDEN",
+        "PromptOverrideConfiguration": {
+          "PromptConfigurations": [
+            {
+              "BasePromptTemplate": "HIDDEN"
+            }
+          ]
+        }
+      },
+      "expected_resource_id": "arn:aws:bedrock:us-east-1:111111111111:agent/agent-123",
+      "opaque_identity": false,
+      "edges": [
+        {
+          "relation": "ASSUMES_ROLE",
+          "target": "arn:aws:iam::222222222222:role/ml/runtime",
+          "kind": "aws_iam_role",
+          "paths": [
+            "/AgentResourceRoleArn"
+          ],
+          "owner": "returned_arn"
+        },
+        {
+          "relation": "ENCRYPTED_BY",
+          "target": "arn:aws:kms:us-west-2:222222222222:key/12345678-1234-1234-1234-123456789012",
+          "kind": "aws_kms_key",
+          "paths": [
+            "/CustomerEncryptionKeyArn"
+          ],
+          "owner": "returned_arn"
+        }
+      ]
+    },
+    {
+      "name": "rds_cluster_multiple_property_evidence",
+      "type_name": "AWS::RDS::DBCluster",
+      "identifier": "db-cluster",
+      "provider": {
+        "DBClusterIdentifier": "db-cluster",
+        "DBClusterArn": "arn:aws:rds:us-east-1:111111111111:cluster:db-cluster",
+        "KmsKeyId": "arn:aws:kms:us-west-2:222222222222:key/12345678-1234-1234-1234-123456789012",
+        "MasterUserSecret": {
+          "KmsKeyId": "arn:aws:kms:us-west-2:222222222222:key/12345678-1234-1234-1234-123456789012",
+          "SecretArn": "arn:aws:secretsmanager:us-west-2:222222222222:secret:database-secret"
+        },
+        "AssociatedRoles": [
+          {
+            "RoleArn": "arn:aws:iam::222222222222:role/ml/runtime"
+          }
+        ],
+        "VpcSecurityGroupIds": [
+          "sg-db"
+        ]
+      },
+      "expected_resource_id": "arn:aws:rds:us-east-1:111111111111:cluster:db-cluster",
+      "opaque_identity": false,
+      "edges": [
+        {
+          "relation": "ENCRYPTED_BY",
+          "target": "arn:aws:kms:us-west-2:222222222222:key/12345678-1234-1234-1234-123456789012",
+          "kind": "aws_kms_key",
+          "paths": [
+            "/KmsKeyId",
+            "/MasterUserSecret/KmsKeyId"
+          ],
+          "owner": "returned_arn"
+        },
+        {
+          "relation": "USES_SECRET",
+          "target": "arn:aws:secretsmanager:us-west-2:222222222222:secret:database-secret",
+          "kind": "aws_secrets_manager_secret",
+          "paths": [
+            "/MasterUserSecret/SecretArn"
+          ],
+          "owner": "returned_arn"
+        },
+        {
+          "relation": "ASSUMES_ROLE",
+          "target": "arn:aws:iam::222222222222:role/ml/runtime",
+          "kind": "aws_iam_role",
+          "paths": [
+            "/AssociatedRoles/0/RoleArn"
+          ],
+          "owner": "returned_arn"
+        },
+        {
+          "relation": "USES_SECURITY_GROUP",
+          "target": "arn:aws:ec2:us-east-1:111111111111:security-group/sg-db",
+          "kind": "aws_vpc_security_group",
+          "paths": [
+            "/VpcSecurityGroupIds/0"
+          ],
+          "owner": "assumed_scanning_account"
+        }
+      ]
+    },
+    {
+      "name": "firehose_schema_refs_preserve_bucket_arn",
+      "type_name": "AWS::KinesisFirehose::DeliveryStream",
+      "identifier": "delivery",
+      "provider": {
+        "DeliveryStreamName": "delivery",
+        "Arn": "arn:aws:firehose:us-east-1:111111111111:deliverystream/delivery",
+        "ExtendedS3DestinationConfiguration": {
+          "RoleARN": "arn:aws:iam::222222222222:role/ml/runtime",
+          "BucketARN": "arn:aws:s3:::archive-bucket",
+          "EncryptionConfiguration": {
+            "KMSEncryptionConfig": {
+              "AWSKMSKeyARN": "arn:aws:kms:us-west-2:222222222222:key/12345678-1234-1234-1234-123456789012"
+            }
+          }
+        }
+      },
+      "expected_resource_id": "arn:aws:firehose:us-east-1:111111111111:deliverystream/delivery",
+      "opaque_identity": false,
+      "edges": [
+        {
+          "relation": "ASSUMES_ROLE",
+          "target": "arn:aws:iam::222222222222:role/ml/runtime",
+          "kind": "aws_iam_role",
+          "paths": [
+            "/ExtendedS3DestinationConfiguration/RoleARN"
+          ],
+          "owner": "returned_arn"
+        },
+        {
+          "relation": "REFERENCES",
+          "target": "arn:aws:s3:::archive-bucket",
+          "kind": "aws_reference",
+          "paths": [
+            "/ExtendedS3DestinationConfiguration/BucketARN"
+          ],
+          "owner": "returned_arn"
+        },
+        {
+          "relation": "ENCRYPTED_BY",
+          "target": "arn:aws:kms:us-west-2:222222222222:key/12345678-1234-1234-1234-123456789012",
+          "kind": "aws_kms_key",
+          "paths": [
+            "/ExtendedS3DestinationConfiguration/EncryptionConfiguration/KMSEncryptionConfig/AWSKMSKeyARN"
+          ],
+          "owner": "returned_arn"
+        }
+      ]
+    },
+    {
+      "name": "volume_snapshot_uses_accountless_arn",
+      "type_name": "AWS::EC2::Volume",
+      "identifier": "vol-123",
+      "provider": {
+        "VolumeId": "vol-123",
+        "SnapshotId": "snap-456",
+        "KmsKeyId": "arn:aws:kms:us-west-2:222222222222:key/12345678-1234-1234-1234-123456789012"
+      },
+      "expected_resource_id": "arn:aws:ec2:us-east-1:111111111111:volume/vol-123",
+      "opaque_identity": false,
+      "edges": [
+        {
+          "relation": "USES_SNAPSHOT",
+          "target": "arn:aws:ec2:us-east-1::snapshot/snap-456",
+          "kind": "aws_ec2_snapshot",
+          "paths": [
+            "/SnapshotId"
+          ],
+          "owner": "arn_has_no_account_component"
+        },
+        {
+          "relation": "ENCRYPTED_BY",
+          "target": "arn:aws:kms:us-west-2:222222222222:key/12345678-1234-1234-1234-123456789012",
+          "kind": "aws_kms_key",
+          "paths": [
+            "/KmsKeyId"
+          ],
+          "owner": "returned_arn"
+        }
+      ]
+    },
+    {
+      "name": "snapshot_self_identity_uses_accountless_arn",
+      "type_name": "AWS::EC2::Snapshot",
+      "identifier": "snap-456",
+      "provider": {
+        "SnapshotId": "snap-456"
+      },
+      "expected_resource_id": "arn:aws:ec2:us-east-1::snapshot/snap-456",
+      "opaque_identity": false,
+      "edges": []
+    },
+    {
+      "name": "compound_attachment_is_not_a_fabricated_arn",
+      "type_name": "AWS::EC2::VolumeAttachment",
+      "identifier": "vol-123|i-456",
+      "provider": {
+        "VolumeId": "vol-123",
+        "InstanceId": "i-456",
+        "Device": "/dev/sdf"
+      },
+      "expected_resource_id": null,
+      "opaque_identity": true,
+      "edges": [
+        {
+          "relation": "USES_VOLUME",
+          "target": "arn:aws:ec2:us-east-1:111111111111:volume/vol-123",
+          "kind": "aws_ebs_volume",
+          "paths": [
+            "/VolumeId"
+          ],
+          "owner": "assumed_scanning_account"
+        },
+        {
+          "relation": "USES_INSTANCE",
+          "target": "arn:aws:ec2:us-east-1:111111111111:instance/i-456",
+          "kind": "aws_ec2_instance",
+          "paths": [
+            "/InstanceId"
+          ],
+          "owner": "assumed_scanning_account"
+        }
+      ]
+    },
+    {
+      "name": "dax_role_topic_and_security_group",
+      "type_name": "AWS::DAX::Cluster",
+      "identifier": "dax-demo",
+      "provider": {
+        "ClusterName": "dax-demo",
+        "Arn": "arn:aws:dax:us-east-1:111111111111:cache/dax-demo",
+        "IAMRoleARN": "arn:aws:iam::222222222222:role/ml/runtime",
+        "NotificationTopicARN": "arn:aws:sns:us-west-2:222222222222:alerts",
+        "SecurityGroupIds": [
+          "sg-dax"
+        ]
+      },
+      "expected_resource_id": "arn:aws:dax:us-east-1:111111111111:cache/dax-demo",
+      "opaque_identity": false,
+      "edges": [
+        {
+          "relation": "ASSUMES_ROLE",
+          "target": "arn:aws:iam::222222222222:role/ml/runtime",
+          "kind": "aws_iam_role",
+          "paths": [
+            "/IAMRoleARN"
+          ],
+          "owner": "returned_arn"
+        },
+        {
+          "relation": "USES_TOPIC",
+          "target": "arn:aws:sns:us-west-2:222222222222:alerts",
+          "kind": "aws_sns_topic",
+          "paths": [
+            "/NotificationTopicARN"
+          ],
+          "owner": "returned_arn"
+        },
+        {
+          "relation": "USES_SECURITY_GROUP",
+          "target": "arn:aws:ec2:us-east-1:111111111111:security-group/sg-dax",
+          "kind": "aws_vpc_security_group",
+          "paths": [
+            "/SecurityGroupIds/0"
+          ],
+          "owner": "assumed_scanning_account"
+        }
+      ]
+    },
+    {
+      "name": "apprunner_ingress_links_network_and_service",
+      "type_name": "AWS::AppRunner::VpcIngressConnection",
+      "identifier": "arn:aws:apprunner:us-east-1:111111111111:vpcingressconnection/ingress/123",
+      "provider": {
+        "VpcIngressConnectionArn": "arn:aws:apprunner:us-east-1:111111111111:vpcingressconnection/ingress/123",
+        "ServiceArn": "arn:aws:apprunner:us-east-1:111111111111:service/app/456",
+        "IngressVpcConfiguration": {
+          "VpcId": "vpc-app",
+          "VpcEndpointId": "vpce-app"
+        }
+      },
+      "expected_resource_id": "arn:aws:apprunner:us-east-1:111111111111:vpcingressconnection/ingress/123",
+      "opaque_identity": false,
+      "edges": [
+        {
+          "relation": "REFERENCES",
+          "target": "arn:aws:apprunner:us-east-1:111111111111:service/app/456",
+          "kind": "aws_reference",
+          "paths": [
+            "/ServiceArn"
+          ],
+          "owner": "returned_arn"
+        },
+        {
+          "relation": "IN_VPC",
+          "target": "arn:aws:ec2:us-east-1:111111111111:vpc/vpc-app",
+          "kind": "aws_vpc",
+          "paths": [
+            "/IngressVpcConfiguration/VpcId"
+          ],
+          "owner": "assumed_scanning_account"
+        },
+        {
+          "relation": "USES_VPC_ENDPOINT",
+          "target": "arn:aws:ec2:us-east-1:111111111111:vpc-endpoint/vpce-app",
+          "kind": "aws_vpc_endpoint",
+          "paths": [
+            "/IngressVpcConfiguration/VpcEndpointId"
+          ],
+          "owner": "assumed_scanning_account"
+        }
+      ]
+    },
+    {
+      "name": "concrete_returned_log_group_arn_suffix",
+      "type_name": "AWS::Logs::Destination",
+      "identifier": "destination",
+      "provider": {
+        "DestinationName": "destination",
+        "Arn": "arn:aws:logs:us-east-1:111111111111:destination:destination",
+        "RoleArn": "arn:aws:iam::222222222222:role/ml/runtime",
+        "TargetArn": "arn:aws:logs:us-west-2:222222222222:log-group:group:*"
+      },
+      "expected_resource_id": "arn:aws:logs:us-east-1:111111111111:destination:destination",
+      "opaque_identity": false,
+      "edges": [
+        {
+          "relation": "ASSUMES_ROLE",
+          "target": "arn:aws:iam::222222222222:role/ml/runtime",
+          "kind": "aws_iam_role",
+          "paths": [
+            "/RoleArn"
+          ],
+          "owner": "returned_arn"
+        },
+        {
+          "relation": "DELIVERS_TO",
+          "target": "arn:aws:logs:us-west-2:222222222222:log-group:group:*",
+          "kind": "aws_reference",
+          "paths": [
+            "/TargetArn"
+          ],
+          "owner": "returned_arn"
+        }
+      ]
+    },
+    {
+      "name": "incorrect_role_service_and_compound_subnets_are_not_edges",
+      "type_name": "AWS::SageMaker::Model",
+      "identifier": "arn:aws:sagemaker:us-east-1:111111111111:model/model-demo",
+      "provider": {
+        "ModelArn": "arn:aws:sagemaker:us-east-1:111111111111:model/model-demo",
+        "ExecutionRoleArn": "arn:aws:sns:us-east-1:111111111111:role/not-iam",
+        "VpcConfig": {
+          "Subnets": [
+            "subnet-a|subnet-b",
+            "subnet-a/b",
+            "arn:aws:ec2:us-east-1:111111111111:subnet/subnet-c",
+            "wrong-prefix"
+          ],
+          "SecurityGroupIds": [
+            "sg-*"
+          ]
+        }
+      },
+      "expected_resource_id": "arn:aws:sagemaker:us-east-1:111111111111:model/model-demo",
+      "opaque_identity": false,
+      "edges": []
+    },
+    {
+      "name": "undeclared_arn_properties_are_not_inferred",
+      "type_name": "AWS::SageMaker::Model",
+      "identifier": "arn:aws:sagemaker:us-east-1:111111111111:model/model-demo",
+      "provider": {
+        "ModelArn": "arn:aws:sagemaker:us-east-1:111111111111:model/model-demo",
+        "NeverDeclaredArn": "arn:aws:iam::222222222222:role/ml/runtime",
+        "Arbitrary": {
+          "RoleArn": "arn:aws:iam::222222222222:role/ml/runtime"
+        }
+      },
+      "expected_resource_id": "arn:aws:sagemaker:us-east-1:111111111111:model/model-demo",
+      "opaque_identity": false,
+      "edges": []
+    },
+    {
+      "name": "reference_to_self_is_not_a_dependency",
+      "type_name": "AWS::SageMaker::Model",
+      "identifier": "arn:aws:sagemaker:us-east-1:111111111111:model/model-demo",
+      "provider": {
+        "ModelArn": "arn:aws:sagemaker:us-east-1:111111111111:model/model-demo",
+        "PrimaryContainer": {
+          "ImageConfig": {
+            "RepositoryAuthConfig": {
+              "RepositoryCredentialsProviderArn": "arn:aws:sagemaker:us-east-1:111111111111:model/model-demo"
+            }
+          }
+        }
+      },
+      "expected_resource_id": "arn:aws:sagemaker:us-east-1:111111111111:model/model-demo",
+      "opaque_identity": false,
+      "edges": []
+    },
+    {
+      "name": "security_group_names_are_not_ids_even_when_they_resemble_ids",
+      "type_name": "AWS::EC2::Instance",
+      "identifier": "i-0123456789abcdef0",
+      "provider": {
+        "InstanceId": "i-0123456789abcdef0",
+        "SecurityGroups": [
+          "sg-12345678"
+        ],
+        "SecurityGroupIds": [
+          "sg-87654321"
+        ]
+      },
+      "expected_resource_id": "arn:aws:ec2:us-east-1:111111111111:instance/i-0123456789abcdef0",
+      "opaque_identity": false,
+      "edges": [
+        {
+          "relation": "USES_SECURITY_GROUP",
+          "target": "arn:aws:ec2:us-east-1:111111111111:security-group/sg-87654321",
+          "kind": "aws_vpc_security_group",
+          "paths": [
+            "/SecurityGroupIds/0"
+          ],
+          "owner": "assumed_scanning_account"
+        }
+      ]
+    },
+    {
+      "name": "ecs_lattice_and_elb_target_groups_have_distinct_services",
+      "type_name": "AWS::ECS::Service",
+      "identifier": "arn:aws:ecs:us-east-1:111111111111:service/cluster/service",
+      "provider": {
+        "ServiceArn": "arn:aws:ecs:us-east-1:111111111111:service/cluster/service",
+        "LoadBalancers": [
+          {
+            "TargetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:111111111111:targetgroup/web/1234567890abcdef"
+          }
+        ],
+        "VpcLatticeConfigurations": [
+          {
+            "TargetGroupArn": "arn:aws:vpc-lattice:us-west-2:222222222222:targetgroup/tg-0123456789abcdef0",
+            "AdvancedConfiguration": {
+              "AlternateTargetGroupArn": "arn:aws:vpc-lattice:us-west-2:222222222222:targetgroup/tg-1123456789abcdef0"
+            }
+          }
+        ]
+      },
+      "expected_resource_id": "arn:aws:ecs:us-east-1:111111111111:service/cluster/service",
+      "opaque_identity": false,
+      "edges": [
+        {
+          "relation": "USES_TARGET_GROUP",
+          "target": "arn:aws:elasticloadbalancing:us-east-1:111111111111:targetgroup/web/1234567890abcdef",
+          "kind": "aws_elbv2_target_group",
+          "paths": [
+            "/LoadBalancers/0/TargetGroupArn"
+          ],
+          "owner": "returned_arn"
+        },
+        {
+          "relation": "USES_TARGET_GROUP",
+          "target": "arn:aws:vpc-lattice:us-west-2:222222222222:targetgroup/tg-0123456789abcdef0",
+          "kind": "aws_vpc_lattice_target_group",
+          "paths": [
+            "/VpcLatticeConfigurations/0/TargetGroupArn"
+          ],
+          "owner": "returned_arn"
+        },
+        {
+          "relation": "USES_TARGET_GROUP",
+          "target": "arn:aws:vpc-lattice:us-west-2:222222222222:targetgroup/tg-1123456789abcdef0",
+          "kind": "aws_vpc_lattice_target_group",
+          "paths": [
+            "/VpcLatticeConfigurations/0/AdvancedConfiguration/AlternateTargetGroupArn"
+          ],
+          "owner": "returned_arn"
+        }
+      ]
+    },
+    {
+      "name": "dms_endpoint_certificates_are_exact_dms_references",
+      "type_name": "AWS::DMS::Endpoint",
+      "identifier": "arn:aws:dms:us-east-1:111111111111:endpoint:ENDPOINT123",
+      "provider": {
+        "EndpointArn": "arn:aws:dms:us-east-1:111111111111:endpoint:ENDPOINT123",
+        "CertificateArn": "arn:aws:dms:us-west-2:222222222222:cert:CERTIFICATEROOT",
+        "KafkaSettings": {
+          "SslCaCertificateArn": "arn:aws:dms:us-west-2:222222222222:cert:CERTIFICATEKAFKACA",
+          "SslClientCertificateArn": "arn:aws:dms:us-west-2:222222222222:cert:CERTIFICATEKAFKACLIENT"
+        },
+        "RedisSettings": {
+          "SslCaCertificateArn": "arn:aws:dms:us-west-2:222222222222:cert:CERTIFICATEREDISCA"
+        }
+      },
+      "expected_resource_id": "arn:aws:dms:us-east-1:111111111111:endpoint:ENDPOINT123",
+      "opaque_identity": false,
+      "edges": [
+        {
+          "relation": "REFERENCES",
+          "target": "arn:aws:dms:us-west-2:222222222222:cert:CERTIFICATEROOT",
+          "kind": "aws_reference",
+          "paths": [
+            "/CertificateArn"
+          ],
+          "owner": "returned_arn"
+        },
+        {
+          "relation": "REFERENCES",
+          "target": "arn:aws:dms:us-west-2:222222222222:cert:CERTIFICATEKAFKACA",
+          "kind": "aws_reference",
+          "paths": [
+            "/KafkaSettings/SslCaCertificateArn"
+          ],
+          "owner": "returned_arn"
+        },
+        {
+          "relation": "REFERENCES",
+          "target": "arn:aws:dms:us-west-2:222222222222:cert:CERTIFICATEKAFKACLIENT",
+          "kind": "aws_reference",
+          "paths": [
+            "/KafkaSettings/SslClientCertificateArn"
+          ],
+          "owner": "returned_arn"
+        },
+        {
+          "relation": "REFERENCES",
+          "target": "arn:aws:dms:us-west-2:222222222222:cert:CERTIFICATEREDISCA",
+          "kind": "aws_reference",
+          "paths": [
+            "/RedisSettings/SslCaCertificateArn"
+          ],
+          "owner": "returned_arn"
+        }
+      ]
+    },
+    {
+      "name": "dms_data_provider_certificate_is_not_acm",
+      "type_name": "AWS::DMS::DataProvider",
+      "identifier": "arn:aws:dms:us-east-1:111111111111:data-provider:PROVIDER123",
+      "provider": {
+        "DataProviderArn": "arn:aws:dms:us-east-1:111111111111:data-provider:PROVIDER123",
+        "Settings": {
+          "OracleSettings": {
+            "CertificateArn": "arn:aws:dms:us-west-2:222222222222:cert:CERTIFICATEORACLE"
+          }
+        }
+      },
+      "expected_resource_id": "arn:aws:dms:us-east-1:111111111111:data-provider:PROVIDER123",
+      "opaque_identity": false,
+      "edges": [
+        {
+          "relation": "REFERENCES",
+          "target": "arn:aws:dms:us-west-2:222222222222:cert:CERTIFICATEORACLE",
+          "kind": "aws_reference",
+          "paths": [
+            "/Settings/OracleSettings/CertificateArn"
+          ],
+          "owner": "returned_arn"
+        }
+      ]
+    },
+    {
+      "name": "msk_oauth_ca_certificate_is_a_secrets_manager_reference",
+      "type_name": "AWS::MSK::Replicator",
+      "identifier": "arn:aws:kafka:us-east-1:111111111111:replicator/replicator/123",
+      "provider": {
+        "ReplicatorArn": "arn:aws:kafka:us-east-1:111111111111:replicator/replicator/123",
+        "KafkaClusters": [
+          {
+            "ClientAuthentication": {
+              "SaslOAuthBearer": {
+                "TokenEndpointTlsCertificateArn": "arn:aws:secretsmanager:us-west-2:222222222222:secret:identity-provider-ca"
+              }
+            }
+          }
+        ]
+      },
+      "expected_resource_id": "arn:aws:kafka:us-east-1:111111111111:replicator/replicator/123",
+      "opaque_identity": false,
+      "edges": [
+        {
+          "relation": "USES_SECRET",
+          "target": "arn:aws:secretsmanager:us-west-2:222222222222:secret:identity-provider-ca",
+          "kind": "aws_secrets_manager_secret",
+          "paths": [
+            "/KafkaClusters/0/ClientAuthentication/SaslOAuthBearer/TokenEndpointTlsCertificateArn"
+          ],
+          "owner": "returned_arn"
+        }
+      ]
+    }
+  ]
+}

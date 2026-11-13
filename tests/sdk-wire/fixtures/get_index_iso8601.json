@@ -1,0 +1,8 @@
+{
+  "Arn": "arn:aws:resource-explorer-2:us-east-1:000000000000:index/00000000-0000-0000-0000-000000000001",
+  "CreatedAt": "2024-01-02T03:04:05.006Z",
+  "LastUpdatedAt": "2024-01-02T04:04:06.007+01:00",
+  "State": "ACTIVE",
+  "Type": "LOCAL",
+  "Tags": {"Fixture": "offline-sdk-wire"}
+}

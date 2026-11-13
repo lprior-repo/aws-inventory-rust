@@ -1,0 +1,49 @@
+{
+  "emulator_version": "1.0.336",
+  "source_commit": "f515581569b98a9dcbd2e686c12f912fdce51bba",
+  "semantics": "Expected upstream gaps remain failed operation outcomes; acknowledging them does not turn them into passes.",
+  "operations": {
+    "organizations.list_accounts": "emulator_not_implemented",
+    "organizations.list_children": "emulator_not_implemented",
+    "resourceexplorer2.get_index": "sdk_decode_failure",
+    "resourceexplorer2.get_view": "sdk_decode_failure",
+    "resourceexplorer2.list_resources": "sdk_decode_failure"
+  },
+  "cloud_control_unregistered_types": [
+    "AWS::S3Express::DirectoryBucket",
+    "AWS::S3Tables::TableBucket",
+    "AWS::Scheduler::ScheduleGroup",
+    "AWS::Bedrock::Agent",
+    "AWS::Bedrock::ApplicationInferenceProfile",
+    "AWS::Bedrock::AutomatedReasoningPolicy",
+    "AWS::Bedrock::DataAutomationProject",
+    "AWS::Bedrock::Flow",
+    "AWS::Bedrock::Guardrail",
+    "AWS::Bedrock::KnowledgeBase",
+    "AWS::Bedrock::Prompt"
+  ],
+  "setup_only": [
+    {
+      "operation": "ec2:AcceptVpcPeeringConnection",
+      "http_status": 501,
+      "effect": "Peering remains pending acceptance and is still collected."
+    }
+  ],
+  "timestamp_evidence": "artifacts/emulator-resource-explorer-wire-check.json",
+  "cloud_control_gap_evidence": {
+    "summary_file": "artifacts/emulator-v05-first/summary.json",
+    "summary_sha256": "f4a83927bb4a28a79bf7dc03d58dd3a0e66629b5bce6ac581ad98841846553d6",
+    "semantics": "Each acknowledged type had a Rust HTTP 400 ListResources failure, no GetResource, persisted TypeNotFoundException and a matching seed TypeNotFoundException; its namespace is absent from the pinned upstream registry.",
+    "upstream_source": "https://github.com/aws/aws-emulator/blob/f515581569b98a9dcbd2e686c12f912fdce51bba/services/service-com-amazonaws-cloudcontrol-cloudapiservice/src/state.rs",
+    "newly_observed_types": [
+      "AWS::Bedrock::Agent",
+      "AWS::Bedrock::ApplicationInferenceProfile",
+      "AWS::Bedrock::AutomatedReasoningPolicy",
+      "AWS::Bedrock::DataAutomationProject",
+      "AWS::Bedrock::Flow",
+      "AWS::Bedrock::Guardrail",
+      "AWS::Bedrock::KnowledgeBase",
+      "AWS::Bedrock::Prompt"
+    ]
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "repository": "https://github.com/aws/aws-emulator.git",
+  "commit": "f515581569b98a9dcbd2e686c12f912fdce51bba",
+  "version": "1.0.336",
+  "release_date": "2026-11-12",
+  "checkout": "full git clone, not shallow",
+  "package_url": "https://downloads.aws.com/aws-emulator/packages/aws-emulator/LTS/aws-emulator_1.0.336-1_amd64.deb",
+  "package_sha256": "e2c621ec12c8a4bb46c884792d72f189378ea83ffcce180dc837b4c5e6b97f1c",
+  "package_signing_key_url": "https://downloads.aws.com/keys/gpg/current.asc",
+  "package_signing_key_fingerprint": "98BCF336A3BE53B734E967C52E5BF49BD940F624",
+  "signature_verified": true,
+  "source_modified": false,
+  "telemetry": false,
+  "authentication": "on",
+  "sdk_setup_documentation": "https://docs.aws.amazon.com/emulator/latest/userguide/point-sdk-to-emulator.html",
+  "limitations_documentation": "https://docs.aws.amazon.com/emulator/latest/userguide/what-is-service.html"
+}

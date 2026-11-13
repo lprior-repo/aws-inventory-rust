@@ -1,0 +1,12 @@
+{
+  "View": {
+    "ViewArn": "arn:aws:resource-explorer-2:us-east-1:000000000000:view/wire-fixture/00000000-0000-0000-0000-000000000002",
+    "ViewName": "wire-fixture",
+    "Owner": "000000000000",
+    "Scope": "arn:aws:iam::000000000000:root",
+    "LastUpdatedAt": "2024-01-02T03:04:05.006Z",
+    "IncludedProperties": [{"Name": "tags"}],
+    "Filters": {"FilterString": "region:us-east-1"}
+  },
+  "Tags": {"Fixture": "offline-sdk-wire"}
+}
