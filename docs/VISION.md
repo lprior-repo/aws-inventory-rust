@@ -22,9 +22,10 @@ and second on whether it removes code. "Fastest" is a goal until it is measured
 ## 2. Decisions
 
 Confirmed by the owner on 2026-11-13. A later decision replaces an earlier one
-with the same ID; nothing here is changed silently. V04, V10, V14, V16 and V20
-were amended and V22 to V29 added later the same day; V22 to V24 settle what
-were open decisions O9, O3 and O5.
+with the same ID; nothing here is changed silently. V04, V10, V11, V12, V14,
+V16, V20, V21 and V25 were amended and V22 to V33 added later the same day;
+V13 was confirmed as written. V22, V23, V24, V30 and V31 settle what were open
+decisions O9, O3, O5, O10 and O11.
 
 | ID | Decision |
 | --- | --- |
@@ -38,25 +39,29 @@ were open decisions O9, O3 and O5.
 | V08 | It runs on one laptop. AWS Lambda is the second runtime target, so collection must work in resumable slices and must not need a second long-lived process. |
 | V09 | Accounts come from local AWS profiles. The first version is proven on about 10 accounts. |
 | V10 | Freshness comes from fast full sweeps, repeated on an interval the user sets; the process idles between sweeps. Within a sweep the stalest scopes go first. Change events are added later and only tell us what to re-read. |
-| V11 | Reconciliation is hash-based: unchanged pages and records cause no writes. Only changes reach the store and the graph. |
-| V12 | AWS Config, Resource Explorer and CloudTrail may supply change hints and cross-checks. Every stored fact comes from the service's own API. |
+| V11 | Reconciliation is hash-based, at record level (V33): unchanged records cause no writes. Only changes reach the store and the graph. |
+| V12 | AWS Config, Resource Explorer and CloudTrail may supply change hints and cross-checks. Every stored fact comes from the service's own API, with one exception: tags (V31). |
 | V13 | Full send is the default: use all the request rate AWS will grant. A configurable cap exists for accounts that share quota with production automation. |
-| V14 | FalkorDB is the graph database. SQL is the source of truth and the graph can always be rebuilt from it. The UI's tables and resource details come from SQL through our read API; graph traversal (neighbors, paths, blast radius) comes from FalkorDB through Cypher. FalkorDB is therefore required for the DAG's traversal features and is not required for collection or SQL queries. |
+| V14 | FalkorDB is the graph database. SQL is the source of truth and the graph can always be rebuilt from it. The UI's tables and resource details come from SQL; graph traversal (neighbors, paths, blast radius) comes from FalkorDB through Cypher; the UI reads both in process (V32). FalkorDB is therefore required for the DAG's traversal features and is not required for collection or SQL queries. |
 | V15 | Edges come from three labelled sources: the API model, reviewed rules, and inference where a field value exactly matches a collected resource's ARN or unique ID. Ambiguous matches are counted, not drawn. |
 | V16 | The CMDB layer in the first version is owner, team and application, derived from AWS tags through a mapping of which tag keys mean which. There is no manual editing. |
 | V17 | The UI is a native Makepad 2.0 desktop application. A web build is not planned for the first version. |
 | V18 | Build order is depth first: the large services complete with relationships and the DAG, then every remaining service. |
 | V19 | "Fastest" is claimed only from head-to-head runs against CloudQuery, Steampipe and Cartography, on the same emulator dataset and machine and on a real account the owner authorizes. |
 | V20 | Work is executed by agents straight from the roadmap, through the loop and gates in section 10. Local GPU model agents do about 98% of the building. Fable orchestrates, reviews and patches only as needed, and keeps its own context small. No separate tracker. |
-| V21 | Code is a liability. A service is described by data, never by Rust. All product code is Rust, MIT licensed. The Python helper scripts are frozen and are not part of any plan. |
+| V21 | Code is a liability. A service is described by data, never by Rust. All product code is Rust, MIT licensed. The Python helper scripts are not part of any plan and are deleted from the tree as soon as nothing uses them (M2.10). |
 | V22 | No history in the first version. The store holds current state only; there is no change log and no retention. Deletion is still detected (two complete enumerations) and applied. |
 | V23 | The model lock file (upstream commit plus a digest per file) and the compiled catalog are committed. Raw model files go in an ignored cache. |
 | V24 | Existing local databases are thrown away and re-collected. No migration code from schema 13. |
-| V25 | The first wave of services is EC2 with VPC networking, IAM, STS, Organizations, S3, Route 53, CloudFront, Lambda, EKS, ECS, KMS, DynamoDB, SQS, SNS, Step Functions, load balancers and RDS. |
-| V26 | A resource kind is named by its CloudFormation type name (`AWS::EC2::Instance`) and exposed in SQL as `aws_ec2_instance`. A kind with no CloudFormation type gets a name in the same style, derived from service and resource. |
+| V25 | The first wave of services is EC2 with VPC networking, IAM, STS, Organizations, S3, Route 53, CloudFront, Lambda, EKS, ECS, KMS, DynamoDB, SQS, SNS, Step Functions, load balancers, RDS and CloudWatch. CloudWatch is in it so the binary protocol (rpcv2Cbor) is proven end to end early. |
+| V26 | A resource kind is named by its CloudFormation type name (`AWS::EC2::Instance`) and exposed in SQL as `aws_ec2_instance` (rule: V30). A kind with no CloudFormation type gets a name in the same style, derived from service and resource. |
 | V27 | Every region enabled in the account is swept, discovered automatically. A flag narrows it. |
 | V28 | The DAG opens on the hierarchy: account, then region, then service, then resources. Expanding a node shows what it connects to. |
 | V29 | Building starts now: M0 is finished while M1 and M3.1 start in parallel. |
+| V30 | A SQL name is the CloudFormation type name split into words, lower-cased and joined with `_`: `AWS::ElasticLoadBalancingV2::TargetGroup` is `aws_elastic_load_balancing_v2_target_group`. Acronyms stay whole: `aws_ec2_instance`, `aws_iam_role`, `aws_kms_key`, `aws_rds_db_instance`. The exact rule and its exceptions are in M1.5. |
+| V31 | Tags come from the Resource Groups Tagging API in bulk first, for speed, and from the service's own tag call only for kinds the bulk API does not cover. This is the one exception to V12. The bulk call is a classified, overlay-reviewed operation like any other. |
+| V32 | The UI reads its data in process: the Makepad app opens SQLite and talks to FalkorDB itself, through `cmdb-view`. There is no HTTP read API in the first version; `cmdb-api` is deleted. |
+| V33 | Page-level hashing is dropped; only records are hashed. It may return only if the sweep benchmark shows decoding is the bottleneck. |
 
 The earlier requirements draft in [cmdb-spec/](cmdb-spec/README.md) remains the
 detailed reference for behavior this document does not restate (deletion needs
@@ -149,7 +154,7 @@ flowchart LR
     R --> S[(SQLite WAL: columns + binary records, edges, pending projection)]
     R --> Q
     S --> G[(FalkorDB)]
-    S --> I[Read API, binary]
+    S --> I[cmdb-view: in-process queries]
     G -->|traversal| I
     T[Tag-key mapping: owner, team, application] --> S
     I --> U[Makepad DAG and tables]
@@ -162,8 +167,9 @@ flowchart LR
 | Wire engine | `aws-wire` | New |
 | Executor, work queue, store, reconciler, edges, graph projection | `inventory-engine` | Limiter with adaptive pacing, store, fenced jobs and snapshot projection exist; learned rates, work queue, reconciler, edge extraction and delta projection are new |
 | Planner, profile credentials | `inventory-aws` | Profile loading exists; the planner is new; the crate shrinks to these two once adapters are deleted |
-| Read API | `cmdb-api` | Exists, loopback, serves one JSON export; moves to the store, FalkorDB traversal and binary responses |
-| View model, UI | `cmdb-view`, `cmdb-ui` | Exist; UI renders a synthetic fixture |
+| In-process query layer | `cmdb-view` | Exists; parses one JSON export today; becomes the layer that reads SQLite and FalkorDB for the UI (V32) |
+| HTTP read API | `cmdb-api` | Exists; deleted in M6.5 with its `axum`, `tower` and `tower-http` dependencies |
+| UI | `cmdb-ui` | Exists; renders a synthetic fixture |
 | Emulator harness, benchmark | `inventory-harness`, `cmdb-bench` | Exist; the harness seeds through Cloud Control and Python today |
 | Typed-SDK inventories | `inventory-sdk-catalog`, `sdk-operations` | Redundant once the model catalog exists; deleted in M1.7 |
 
@@ -300,8 +306,8 @@ retries do not exist in the wire engine.
 
 - A record is a schema-coded binary value: numeric field IDs, no field names, a
   format version, readable in place through a validated accessor without
-  deserializing. The same bytes go into the store, through the read API and
-  into the UI.
+  deserializing. The same bytes go into the store and from the store into the
+  UI.
 - Each resource kind has one table, named as in V26: identity, account, region,
   content hash, first seen, last changed, typed columns for scalar fields, and
   the record blob. The column set is generated from the output shape and the
@@ -326,17 +332,9 @@ retries do not exist in the wire engine.
 
 ### 5.5 Reconciliation
 
-- **Page level**: a page whose raw bytes equal last sweep's is not decoded. The
-  stored page entry holds the hash and the identities the page carried, so a
-  skipped page still marks its resources as seen and still issues their child
-  work. This applies only where the body is stable. JSON, CBOR and REST XML
-  bodies carry no request ID. awsQuery and ec2Query bodies do (16 services,
-  among them EC2, IAM and RDS), so those are compared at record level only. A
-  page that carries a changing continuation token or a volatile field never
-  matches either. M4.4 measures how often pages match; if it is rare, page
-  hashing is removed.
-- **Record level**: at the start of a scope the known identities and hashes are
-  loaded; each arriving record is compared and matched off. Equal hash: nothing
+- **Record level** (the only level, V33): at the start of a scope the known
+  identities and hashes are loaded; each arriving record is compared and
+  matched off. Equal hash: nothing
   is written. Different hash: the row is replaced, its edges are diffed and its
   key is queued for projection. Unknown identity: insert.
 - **Missing**: identities left unmatched when an enumeration completes cleanly
@@ -376,14 +374,18 @@ from AWS tags (V16). A mapping file says which tag keys mean owner, team and
 application. The derived values are stored apart from the observed record, are
 derived again when the mapping changes without a sweep, and appear in SQL, in
 the graph and in the UI marked as derived from tags. Nothing is edited by hand.
-A kind whose tags are not returned by its list or describe needs a tag read
-named in the overlay; M8.1 reports the kinds that have no tag source.
+Tags come from the Resource Groups Tagging API in bulk, joined to resources by
+ARN; a kind the bulk API does not cover uses its service's own tag call (V31).
+The overlay names each kind's tag source, and M8.1 reports the kinds that have
+none.
 
-### 5.8 Read API and UI
+### 5.8 Query layer and UI
 
-`cmdb-api` is the UI's only data source. Tables and resource details come from
-SQL as binary record pages. Traversal is bounded Cypher that `cmdb-api` runs on
-FalkorDB; it returns keys, and their details come from SQL.
+There is no HTTP read API (V32). The Makepad app calls `cmdb-view` in process.
+`cmdb-view` opens the SQLite file read-only for tables and resource details,
+which it returns as binary record pages, and runs bounded Cypher on FalkorDB
+for traversal. A traversal returns keys, and their details come from SQL.
+Queries are bounded and run off the UI thread.
 
 The DAG opens on the hierarchy: account, then region, then service, then
 resources. Expanding a node shows what it connects to (V28). `cmdb-ui` also
@@ -399,7 +401,7 @@ unavailable. The UI never triggers collection by browsing.
 | Waiting on AWS | All quota buckets driven concurrently; learned rates persisted; full send by default |
 | Number of calls | Largest page size; describe skipped when the list is complete; batch reads; remembered denied and unsupported scopes |
 | Connection setup | Pooled keep-alive connections; HTTP/2 where offered. The first call to each endpoint still pays a TLS handshake, and an enumeration is one call per endpoint, so a cold sweep opens thousands of connections |
-| Decoding | One streaming pass into the binary record; binary protocol where offered (44 of 436 services); unchanged pages not decoded where the body is stable |
+| Decoding | One streaming pass into the binary record; binary protocol where offered (44 of 436 services) |
 | Disk writes | One writer, batched transactions; unchanged records not written |
 | Graph load | Changed keys only; no full records |
 | Re-sweep | Cost is API calls plus hash comparisons; writes are proportional to change |
@@ -445,8 +447,8 @@ wire engine and the emulator.
 **Laptop, now.** One binary, one SQLite file, a local FalkorDB (needed for the
 DAG's traversal, not for collection), the Makepad app. About 10 profiles, every
 enabled region of each (V27). Continuous mode sweeps on an interval the user
-sets and idles in between (V10). No network service is exposed beyond
-loopback.
+sets and idles in between (V10). The product opens no listening socket;
+FalkorDB listens on loopback.
 
 **Lambda, next.** The only requirement now is that collection runs as bounded
 slices that stop before a time limit and resume from the work queue (M7.4).
@@ -515,11 +517,13 @@ exists.
 
 - Cloud Control, in any form.
 - History of changes and retention (V22).
+- An HTTP read API, on loopback or on the network (V32).
+- Page-level hashing (V33).
 - Notes, custom fields, user-drawn relationships and any editing of the CMDB
   layer in the UI (V16).
 - Change-event ingestion; Organizations discovery and cross-account roles;
   more than about 10 accounts.
-- PostgreSQL, DuckDB, Kubernetes, SSO, workspaces, a network-exposed API.
+- PostgreSQL, DuckDB, Kubernetes, SSO, workspaces.
 - A browser UI.
 - GovCloud and China partitions.
 - Content, secrets, paid read calls, and any write to AWS.
@@ -529,18 +533,17 @@ exists.
 ## 12. Open decisions
 
 Defaults are stated so work is not blocked; each is settled by the named
-evidence or by the owner. O3, O5 and O9 are settled (V23, V24, V22).
+evidence or by the owner. O3, O5, O9, O10 and O11 are settled (V23, V24, V22,
+V30, V31).
 
 | ID | Question | Default | Settled by |
 | --- | --- | --- | --- |
-| O1 | Binary record codec | `rkyv` over a schema-coded value. Only codecs with a safe, validated, in-place read path qualify (rule 9) | Codec benchmark in M3.1 |
+| O1 | Binary record codec | Leading candidate, in review as M3.1a: our own dependency-free canonical tagged format, which needs no `unsafe`, gives canonical bytes for hashing and reads field by field. `rkyv` with validation and a deserializing codec are the alternatives. Only codecs with a safe, validated read path qualify (rule 9) | Codec benchmark in M3.1 |
 | O2 | Overlay file format | TOML (`toml` is already a workspace dependency), one file per service, compiled into the catalog | Owner, at M1.4 |
 | O4 | SQLite `synchronous` setting | `FULL` as today | Sweep benchmark in M4.4 |
 | O6 | Store used from Lambda | Deferred | Owner, before Lambda work starts |
 | O7 | Competitor versions and licenses for head-to-head runs | Latest freely runnable release of each, run from its published image; none is added to this repository | Checked at M5.6 |
 | O8 | Real AWS account for proof | Emulator only until the large services are done; the owner names an account then | Owner, at M5.8 |
-| O10 | How a CloudFormation type name becomes a SQL name beyond the one example in V26 | Lower case; `::` becomes `_`; the resource part is split into words at case changes (`AWS::EC2::NatGateway` becomes `aws_ec2_nat_gateway`); the service part is not split | Owner, at M1.5 |
-| O11 | Tag source for kinds whose list and describe return no tags | The service's own tag operation, one call per resource (V12) | Owner, at M8.1 |
 
 ## 13. Milestones
 

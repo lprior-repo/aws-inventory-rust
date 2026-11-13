@@ -1,6 +1,6 @@
 Continue the Rust AWS CMDB project in this directory.
 
-What we are building: a CMDB of every AWS resource, read through the services' own endpoint APIs by our own wire engine, kept current by fast repeated sweeps, stored in SQL and a relationship graph, and shown as a Makepad DAG. Sweep and reconcile speed is the selling point. It runs on one laptop first. Read docs/VISION.md before anything else: it holds the owner's decisions (V01 to V21) and the architecture, and it wins over every other document. Then read docs/ROADMAP.md, which is the build plan. Take the first unfinished work package whose dependencies are done.
+What we are building: a CMDB of every AWS resource, read through the services' own endpoint APIs by our own wire engine, kept current by repeated sweeps, stored in SQL and a relationship graph, and shown as a Makepad DAG. Sweep and reconcile speed is the selling point. It runs on one laptop first. Read docs/VISION.md before anything else: its section 2 holds the owner's decisions and it wins over every other document. Then read docs/ROADMAP.md, which is the build plan. Take the first unfinished work package whose needs are done.
 
 The owner's hard rules:
 - No Cloud Control. The Cloud Control collectors in the tree are the baseline being replaced; do no new work on them and delete them when the roadmap says so.
@@ -21,7 +21,7 @@ State of the tree at commit b5332e8:
 
 Measured facts about the AWS API models (github.com/aws/api-models-aws at commit 46135f8): 436 services, 19,641 operations, 8,366 read operations by name, 2,209 List/Describe operations with no required input in 359 services, 3,787 modeled paginators, 44 services offering the binary rpcv2Cbor protocol.
 
-How work lands: every work package goes through the gates in VISION.md section 10, each with its skill: contract (rust-contract, scott-ddd-refactor), test plan (test-planner, test-reviewer), implementation (holzman-rust, functional-rust), async review (async-rust-reviewer), tests (test-writer, red-queen), emulator proof with the shipped binary (hands-on-qa, qa-enforcer), adversarial review (black-hat-reviewer, truth-serum), landing (evidence-packaging, landing-skill). Makepad work follows the makepad-2.0-* skills.
+How work lands: local GPU model agents do the building; fable orchestrates, reviews and patches. Each work package runs the loop in VISION.md section 10: a local worker implements with holzman-rust, functional-rust and scott-ddd-refactor loaded; the coordinator compiles and runs the narrow checks; black-hat-reviewer and test-reviewer review independently; findings go back to the same worker as one repair packet; repeat until both report no findings; then land. Makepad work follows the makepad-2.0-* skills.
 
 Engineering rules:
 - Workspace lints apply: no unsafe, unwrap, expect, panic, todo, unchecked indexing or lossy casts. Files at or under 300 lines, functions at or under 25.
