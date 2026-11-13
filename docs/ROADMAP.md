@@ -3,12 +3,12 @@
 Status: build plan for [VISION.md](VISION.md), 2026-11-13. Decision IDs (V01 to
 V34, O2 to O8) refer to that document.
 
-Agents work from this file (V20). Local GPU model agents do about 98% of the
-building. Fable orchestrates, reviews and patches only as needed, and keeps its
-own context small. Every package goes through the same loop:
+Agents work from this file (V20). Local GPU workers and ChatGPT Sol build
+independent packages in parallel in separate worktrees. The coordinator owns
+integration and verification. Every package goes through the same loop:
 
-1. A local worker implements it with `holzman-rust`, `functional-rust` and
-   `scott-ddd-refactor` loaded.
+1. A local GPU or Sol worker implements it with `holzman-rust`,
+   `functional-rust` and `scott-ddd-refactor` loaded.
 2. The coordinator compiles and runs the narrow checks.
 3. `black-hat-reviewer` and `test-reviewer` review independently.
 4. Findings go back to the same worker as one repair packet.

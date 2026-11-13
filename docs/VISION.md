@@ -48,7 +48,7 @@ decisions O9, O3, O5, O10 and O11.
 | V17 | The UI is a native Makepad 2.0 desktop application. A web build is not planned for the first version. |
 | V18 | Build order is depth first: the large services complete with relationships and the DAG, then every remaining service. |
 | V19 | "Fastest" is claimed only from head-to-head runs against CloudQuery, Steampipe and Cartography, on the same emulator dataset and machine and on a real account the owner authorizes. |
-| V20 | Work is executed by agents straight from the roadmap, through the loop and gates in section 10. Local GPU model agents do about 98% of the building. Fable orchestrates, reviews and patches only as needed, and keeps its own context small. No separate tracker. |
+| V20 | Work is executed by agents straight from the roadmap, through the loop and gates in section 10. Local GPU workers and ChatGPT Sol work in parallel in separate worktrees. The coordinator owns integration and verification. No separate tracker. Amended 2026-11-13 at the owner's request to add Sol alongside both local GPUs. |
 | V21 | Code is a liability. A service is described by data, never by Rust. All product code is Rust, MIT licensed. The Python helper scripts are not part of any plan and are deleted from the tree as soon as nothing uses them (M2.10). |
 | V22 | No history in the first version. The store holds current state only; there is no change log and no retention. Deletion is still detected (two complete enumerations) and applied. |
 | V23 | The models are pinned as a git submodule at `.local/aws-models`. The pinned commit is recorded in this repository's tree, so git is the lock and none of the lock code is ours. The compiled catalog is committed. Changed 2026-11-13: the first form was a lock file with a digest per file kept by our own commands; it was built, reviewed and discarded, because it was 1,181 lines that repeated what git does. |
@@ -478,28 +478,26 @@ assume a long-lived process or local-only state beyond the store interface.
 
 ## 10. How work lands
 
-Local GPU model agents do about 98% of the building. Fable orchestrates,
-reviews and patches only as needed, and keeps its own context small (V20).
+Local GPU workers and ChatGPT Sol implement independent packages in parallel,
+with exclusive file ownership and separate worktrees (V20).
 
 Every work package goes through this loop:
 
-1. A local worker implements the package in its own git worktree. It runs as
-   one of the project agents in `.omp/agents/` (`aws-build-5090`,
-   `aws-build-3090`), which load `holzman-rust`, `functional-rust` and
-   `scott-ddd-refactor` before the worker's first prompt, so the skills cannot
-   be skipped. The worker formats, lints and tests its crate until all are
-   clean, then commits on its branch.
-2. The coordinator repeats the checks on the worker's commit.
+1. A worker implements the package in its own git worktree as `aws-build-5090`,
+   `aws-build-3090` or `aws-build-sol`. Each loads `holzman-rust`,
+   `functional-rust` and `scott-ddd-refactor` before implementation.
+   Workers do not build, test, lint or format mid-flight.
+2. The coordinator integrates the completed patch and runs the narrow checks,
+   serializing heavy Cargo builds.
 3. `aws-black-hat` and `aws-test-review`, which load `black-hat-reviewer` and
    `test-reviewer` the same way, review independently and read-only.
 4. Their findings go back to the same worker as one repair packet.
 5. Steps 1 to 4 repeat until both reviewers report no findings. Then the
    coordinator lands the commit on `main`.
 
-Workers that could not compile needed four or five repair rounds per package
-and produced code that was far from building; that is why they compile now.
-The coordinator still repeats every check and reads every diff: a worker's
-report of success is not evidence.
+Worker reports are not verification evidence. The coordinator supplies actual
+compiler, lint and behavior failures in the repair packet; a completed patch
+is checked again after repairs before landing.
 
 Every package uses `scott-ddd-refactor` (domain types), `holzman-rust`
 (implementation), `black-hat-reviewer` (adversarial code review) and
