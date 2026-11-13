@@ -124,11 +124,12 @@ fn every_reviewed_binding_builds_the_literal_expected_model() -> TestResult {
         let resource = fixture_resource(properties);
         for child in group.children {
             let context = parent_context(&child, &resource)?;
-            let child_expected = if child.descriptor.type_name == "AWS::AppConfig::ExperimentDefinition" {
-                json!({"ApplicationIdentifier":"app123"})
-            } else {
-                expected.clone()
-            };
+            let child_expected =
+                if child.descriptor.type_name == "AWS::AppConfig::ExperimentDefinition" {
+                    json!({"ApplicationIdentifier":"app123"})
+                } else {
+                    expected.clone()
+                };
             assert_eq!(
                 serde_json::from_str::<Value>(&context.encoded_model)?,
                 child_expected

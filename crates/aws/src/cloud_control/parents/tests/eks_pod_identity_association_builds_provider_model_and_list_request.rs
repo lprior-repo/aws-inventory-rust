@@ -66,9 +66,21 @@ async fn eks_pod_identity_association_builds_provider_model_and_list_request() -
     let get_requests = get_requests.into_inner().map_err(|_| "poisoned requests")?;
 
     assert!(requests.iter().any(|r| r.type_name == "AWS::EKS::Cluster"));
-    assert!(requests.iter().any(|r| r.type_name == "AWS::EKS::PodIdentityAssociation"));
-    assert!(get_requests.iter().any(|r| r.type_name == "AWS::EKS::Cluster"));
-    assert!(get_requests.iter().any(|r| r.type_name == "AWS::EKS::PodIdentityAssociation"));
+    assert!(
+        requests
+            .iter()
+            .any(|r| r.type_name == "AWS::EKS::PodIdentityAssociation")
+    );
+    assert!(
+        get_requests
+            .iter()
+            .any(|r| r.type_name == "AWS::EKS::Cluster")
+    );
+    assert!(
+        get_requests
+            .iter()
+            .any(|r| r.type_name == "AWS::EKS::PodIdentityAssociation")
+    );
 
     let list_requests: Vec<_> = requests
         .iter()

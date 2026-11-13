@@ -114,6 +114,26 @@ fn unknown_resource_lookup_is_none() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
+fn given_export_when_resource_is_read_then_tag_keys_keep_their_values()
+-> Result<(), Box<dyn std::error::Error>> {
+    // Given a parsed export with two distinct instance tags.
+    let snapshot = support::snapshot()?;
+    // When the resource is read through the public view API.
+    let resource = snapshot
+        .resource(support::INSTANCE_ONE)
+        .ok_or("fixture instance missing")?;
+    // Then neither tag names nor their values are lost or swapped.
+    assert_eq!(
+        resource.tags,
+        std::collections::BTreeMap::from([
+            ("Name".to_owned(), "web-one".to_owned()),
+            ("env".to_owned(), "prod".to_owned()),
+        ])
+    );
+    Ok(())
+}
+
+#[test]
 fn rejects_invalid_page_limit_and_cursor() -> Result<(), Box<dyn std::error::Error>> {
     assert!(matches!(
         PageRequest::new(0, 0),

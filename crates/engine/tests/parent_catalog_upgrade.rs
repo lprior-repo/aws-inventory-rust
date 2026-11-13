@@ -23,7 +23,11 @@ fn parent_views() -> Vec<&'static str> {
     let additions = include_str!("../sql/013_cloudcontrol_parent_additions.sql");
     legacy_parent_views()
         .into_iter()
-        .chain(additions.lines().filter_map(|line| line.strip_prefix("CREATE VIEW ")))
+        .chain(
+            additions
+                .lines()
+                .filter_map(|line| line.strip_prefix("CREATE VIEW ")),
+        )
         .map(|line| line.strip_suffix(" AS").unwrap_or(line))
         .collect()
 }
