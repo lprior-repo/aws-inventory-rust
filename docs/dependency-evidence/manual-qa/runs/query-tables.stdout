@@ -1,0 +1,41 @@
+[
+  {
+    "name": "aws_cc_api_gateway_resource"
+  },
+  {
+    "name": "aws_cc_batch_consumable_resource"
+  },
+  {
+    "name": "aws_cc_logs_resource_policy"
+  },
+  {
+    "name": "aws_cc_ram_resource_share"
+  },
+  {
+    "name": "aws_cc_ssm_resource_data_sync"
+  },
+  {
+    "name": "aws_cc_vpc_lattice_resource_configuration"
+  },
+  {
+    "name": "aws_cc_vpc_lattice_resource_gateway"
+  },
+  {
+    "name": "aws_cloudcontrol_resource"
+  },
+  {
+    "name": "aws_resource"
+  },
+  {
+    "name": "latest_resource_sources"
+  },
+  {
+    "name": "latest_resources"
+  },
+  {
+    "name": "resource_observations"
+  },
+  {
+    "name": "scan_resources"
+  }
+]

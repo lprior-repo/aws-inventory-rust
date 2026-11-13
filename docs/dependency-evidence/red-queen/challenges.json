@@ -1,0 +1,191 @@
+[
+  {
+    "generation": 1,
+    "dimension": "cli-contract",
+    "id": "cli-unknown",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-unknown",
+    "expected_exit": 0
+  },
+  {
+    "generation": 1,
+    "dimension": "cli-contract",
+    "id": "cli-missing-export",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-missing-export",
+    "expected_exit": 0
+  },
+  {
+    "generation": 1,
+    "dimension": "cli-contract",
+    "id": "cli-invalid-limit",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-invalid-limit",
+    "expected_exit": 0
+  },
+  {
+    "generation": 1,
+    "dimension": "sql-isolation",
+    "id": "sql-literal",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-literal",
+    "expected_exit": 0
+  },
+  {
+    "generation": 1,
+    "dimension": "sql-isolation",
+    "id": "sql-mutation",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-mutation",
+    "expected_exit": 0
+  },
+  {
+    "generation": 1,
+    "dimension": "sql-isolation",
+    "id": "sql-multiple",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-multiple",
+    "expected_exit": 0
+  },
+  {
+    "generation": 1,
+    "dimension": "artifact-workflow",
+    "id": "workflow-demo",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-demo",
+    "expected_exit": 0
+  },
+  {
+    "generation": 1,
+    "dimension": "artifact-workflow",
+    "id": "workflow-jsonl",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-jsonl",
+    "expected_exit": 0
+  },
+  {
+    "generation": 1,
+    "dimension": "artifact-workflow",
+    "id": "workflow-no-clobber",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-no-clobber",
+    "expected_exit": 0
+  },
+  {
+    "generation": 2,
+    "dimension": "cli-contract",
+    "id": "cli-format",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-format",
+    "expected_exit": 0
+  },
+  {
+    "generation": 2,
+    "dimension": "cli-contract",
+    "id": "cli-missing-graph-input",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-missing-graph-input",
+    "expected_exit": 0
+  },
+  {
+    "generation": 2,
+    "dimension": "cli-contract",
+    "id": "cli-unknown-option",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-unknown-option",
+    "expected_exit": 0
+  },
+  {
+    "generation": 2,
+    "dimension": "sql-isolation",
+    "id": "sql-zero-limit",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-zero-limit",
+    "expected_exit": 0
+  },
+  {
+    "generation": 2,
+    "dimension": "sql-isolation",
+    "id": "sql-huge-limit",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-huge-limit",
+    "expected_exit": 0
+  },
+  {
+    "generation": 2,
+    "dimension": "sql-isolation",
+    "id": "sql-blob",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-blob",
+    "expected_exit": 0
+  },
+  {
+    "generation": 2,
+    "dimension": "artifact-workflow",
+    "id": "workflow-json",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-json",
+    "expected_exit": 0
+  },
+  {
+    "generation": 2,
+    "dimension": "artifact-workflow",
+    "id": "workflow-partial-preserved",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-partial-preserved",
+    "expected_exit": 0
+  },
+  {
+    "generation": 2,
+    "dimension": "artifact-workflow",
+    "id": "workflow-missing-db",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-missing-db",
+    "expected_exit": 0
+  },
+  {
+    "generation": 3,
+    "dimension": "cli-contract",
+    "id": "cli-negative-limit",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-negative-limit",
+    "expected_exit": 0
+  },
+  {
+    "generation": 3,
+    "dimension": "cli-contract",
+    "id": "cli-absent-sql",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-absent-sql",
+    "expected_exit": 0
+  },
+  {
+    "generation": 3,
+    "dimension": "cli-contract",
+    "id": "cli-bad-provenance",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-bad-provenance",
+    "expected_exit": 0
+  },
+  {
+    "generation": 3,
+    "dimension": "sql-isolation",
+    "id": "sql-value-budget",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-value-budget",
+    "expected_exit": 0
+  },
+  {
+    "generation": 3,
+    "dimension": "sql-isolation",
+    "id": "sql-row-budget",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-row-budget",
+    "expected_exit": 0
+  },
+  {
+    "generation": 3,
+    "dimension": "sql-isolation",
+    "id": "sql-quoted-semicolon",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-quoted-semicolon",
+    "expected_exit": 0
+  },
+  {
+    "generation": 3,
+    "dimension": "artifact-workflow",
+    "id": "workflow-invalid-ingest",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-invalid-ingest",
+    "expected_exit": 0
+  },
+  {
+    "generation": 3,
+    "dimension": "artifact-workflow",
+    "id": "workflow-page-replay",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-page-replay",
+    "expected_exit": 0
+  },
+  {
+    "generation": 3,
+    "dimension": "artifact-workflow",
+    "id": "workflow-partial-export",
+    "command": "bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-partial-export",
+    "expected_exit": 0
+  }
+]

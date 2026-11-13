@@ -1,0 +1,1 @@
+aws-inventory: queue and inventory must use different database files

@@ -1,0 +1,10 @@
+Claim and run up to this many available jobs, then exit; expired leases are recovered
+
+Usage: aws-inventory job run [OPTIONS]
+
+Options:
+      --queue <QUEUE>                  [default: jobs.sqlite]
+      --limit <LIMIT>                  [default: 1]
+      --lease-seconds <LEASE_SECONDS>  [default: 60]
+      --worker <WORKER>                
+  -h, --help                           Print help

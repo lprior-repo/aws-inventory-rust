@@ -1,0 +1,11 @@
+Read-only SQLite SQL; result count and execution work are bounded
+
+Usage: aws-inventory query [OPTIONS] <SQL>
+
+Arguments:
+  <SQL>  
+
+Options:
+      --db <DB>        [default: inventory.sqlite]
+      --limit <LIMIT>  [default: 1000]
+  -h, --help           Print help

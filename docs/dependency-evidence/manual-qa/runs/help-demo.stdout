@@ -1,0 +1,7 @@
+Create a clearly synthetic, reproducible local demonstration
+
+Usage: aws-inventory demo [OPTIONS]
+
+Options:
+      --db <DB>  [default: inventory.sqlite]
+  -h, --help     Print help

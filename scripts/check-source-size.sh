@@ -4,6 +4,7 @@ cd "$(dirname "$0")/.."
 failed=0
 count=0
 while IFS= read -r -d '' file; do
+    [[ -f "$file" ]] || continue
     lines=$(wc -l < "$file")
     count=$((count + 1))
     if (( lines > 300 )); then

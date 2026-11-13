@@ -1,0 +1,9 @@
+Explicitly requeue a terminal job with a bounded number of additional attempts
+
+Usage: aws-inventory job retry [OPTIONS] --job-id <JOB_ID>
+
+Options:
+      --queue <QUEUE>                              [default: jobs.sqlite]
+      --job-id <JOB_ID>                            
+      --additional-attempts <ADDITIONAL_ATTEMPTS>  [default: 1]
+  -h, --help                                       Print help

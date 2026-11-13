@@ -1,0 +1,68 @@
+{
+  "depth_boundary_nodes": 0,
+  "detail_byte_limit": 14680064,
+  "expanded_nodes": 2,
+  "inspected_edge_limit": 41,
+  "inspected_edges": 1,
+  "limits": {
+    "direction": "outgoing",
+    "max_depth": 2,
+    "max_edges": 20,
+    "max_nodes": 20
+  },
+  "nodes": [
+    {
+      "distance": 0,
+      "id": "arn:aws:ec2:us-east-1:111122223333:instance/i-demo",
+      "kind": "aws_ec2_instance",
+      "name": "synthetic-example",
+      "observed": true
+    },
+    {
+      "distance": 1,
+      "id": "arn:aws:ec2:us-east-1:111122223333:vpc/vpc-demo",
+      "kind": "aws_vpc",
+      "name": "synthetic-example",
+      "observed": true
+    }
+  ],
+  "path": null,
+  "relationships": [
+    {
+      "from_id": "arn:aws:ec2:us-east-1:111122223333:instance/i-demo",
+      "from_kind": "aws_ec2_instance",
+      "from_name": "synthetic-example",
+      "observed_at": 1794484800000,
+      "owner_resolution": null,
+      "relation": "IN_VPC",
+      "source": "direct",
+      "source_observed": 1,
+      "target_observed": 1,
+      "to_id": "arn:aws:ec2:us-east-1:111122223333:vpc/vpc-demo",
+      "to_kind": "aws_vpc",
+      "to_name": "synthetic-example"
+    }
+  ],
+  "scan_id": "synthetic-demo-001",
+  "scan_status": "complete",
+  "semantics": {
+    "distance": "breadth-first relationship hops in the requested direction",
+    "edges": "relationships encountered while expanding nodes below max_depth; boundary-only edges are not enumerated",
+    "identity": "exact identity in the selected scan; no cross-scan endpoint substitution",
+    "incoming": "reverse references are potential dependents; they are not proof of operational blast radius",
+    "limits": "depth defines the requested radius; node, edge, byte and inspection exhaustion are explicit truncation",
+    "no_path": "a missing path is scoped to this snapshot, selected direction and limits; it does not prove isolation",
+    "path": "one deterministic shortest observed path when found without work truncation; not effective network or IAM reachability",
+    "unresolved": "referenced endpoint was not observed in this scan; it is retained without fabricated metadata"
+  },
+  "start_id": "arn:aws:ec2:us-east-1:111122223333:instance/i-demo",
+  "status": "complete",
+  "target_id": null,
+  "truncated": false,
+  "truncation": {
+    "detail_byte_limit": false,
+    "edge_limit": false,
+    "inspected_edge_limit": false,
+    "node_limit": false
+  }
+}

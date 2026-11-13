@@ -1,0 +1,11 @@
+Compare finalized snapshots without treating missing observations as deletion
+
+Usage: aws-inventory diff [OPTIONS] --before <BEFORE> --after <AFTER>
+
+Options:
+      --db <DB>                [default: inventory.sqlite]
+      --before <BEFORE>        
+      --after <AFTER>          
+      --limit <LIMIT>          [default: 100]
+      --max-items <MAX_ITEMS>  [default: 100000]
+  -h, --help                   Print help

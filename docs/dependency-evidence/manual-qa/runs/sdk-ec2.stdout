@@ -1,0 +1,18 @@
+{
+  "checksum_sha256": "f8b5de33cfb8d56e96b072e096e43ae18a9a3025b071d990e6f39293a34299d8",
+  "client_features": [
+    "default-https-client",
+    "rt-tokio"
+  ],
+  "feature": "ec2",
+  "latest_published_version_at_check": "1.279.0",
+  "model_sha256": "2b0d9107b7a7b8e65e4909f4dff5e32830fb433e7d87af8adb29de41073dc816",
+  "name": "aws-sdk-ec2",
+  "origin": "https://github.com/awslabs/aws-sdk-rust/tree/c8e11bea896b54530c587c29ce30ebd6619af62a/sdk/ec2",
+  "registry_index_url": "https://index.crates.io/aw/s-/aws-sdk-ec2",
+  "registry_package_url": "https://crates.io/crates/aws-sdk-ec2/1.279.0",
+  "rust_version": "1.94.1",
+  "sdk_source_sha256": "e45de1f722b7af403b2a13534d194ad9dbe76dfe8fe68d718d833ef03df2c0be",
+  "version": "1.279.0",
+  "yanked": false
+}

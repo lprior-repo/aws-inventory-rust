@@ -1,0 +1,27 @@
+{
+  "id": "job-submit-offline-profile",
+  "expected_exit": 0,
+  "actual_exit": 0,
+  "exit_matches": true,
+  "argv": [
+    "/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/target/debug/aws-inventory",
+    "job",
+    "submit",
+    "--queue",
+    "/home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/offline-only.sqlite",
+    "--job-id",
+    "manual-café",
+    "--delay-seconds",
+    "3600",
+    "--max-job-attempts",
+    "1",
+    "--profile",
+    "manual-qa-nonexistent-profile",
+    "--db",
+    "/home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/never-created.sqlite",
+    "--region",
+    "us-east-1",
+    "--service",
+    "lambda"
+  ]
+}

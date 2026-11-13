@@ -1,0 +1,14 @@
+Find a bounded relationship path; this is not a network reachability test
+
+Usage: aws-inventory path [OPTIONS] --scan-id <SCAN_ID> --from <FROM> --to <TO>
+
+Options:
+      --db <DB>                [default: inventory.sqlite]
+      --scan-id <SCAN_ID>      
+      --from <FROM>            
+      --to <TO>                
+      --direction <DIRECTION>  [default: both] [possible values: outgoing, incoming, both]
+      --max-depth <MAX_DEPTH>  [default: 2]
+      --max-nodes <MAX_NODES>  [default: 1000]
+      --max-edges <MAX_EDGES>  [default: 4000]
+  -h, --help                   Print help

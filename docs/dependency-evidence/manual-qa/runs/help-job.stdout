@@ -1,0 +1,15 @@
+Persist, inspect, cancel and execute bounded scan jobs
+
+Usage: aws-inventory job <COMMAND>
+
+Commands:
+  submit  Persist a scan specification without loading credentials or making AWS calls
+  run     Claim and run up to this many available jobs, then exit; expired leases are recovered
+  list    
+  show    
+  cancel  
+  retry   Explicitly requeue a terminal job with a bounded number of additional attempts
+  help    Print this message or the help of the given subcommand(s)
+
+Options:
+  -h, --help  Print help

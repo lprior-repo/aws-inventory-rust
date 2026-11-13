@@ -1,0 +1,21 @@
+{
+  "id": "job-run-drained",
+  "expected_exit": 0,
+  "actual_exit": 0,
+  "exit_matches": true,
+  "argv": [
+    "bash",
+    "scripts/local-stack.sh",
+    "cli",
+    "job",
+    "run",
+    "--queue",
+    "/home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/jobs.sqlite",
+    "--limit",
+    "1",
+    "--lease-seconds",
+    "60",
+    "--worker",
+    "manual-qa-worker"
+  ]
+}

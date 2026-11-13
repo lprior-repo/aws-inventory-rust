@@ -1,0 +1,1 @@
+jq -e .job.state==\"cancelled\"\ and\ .job.attempt==1\ and\ .job.result.api.in_flight==0\ and\ \(.attempts\|length\)==1\ and\ .attempts\[0\].state==\"cancelled\" /home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/job-show-signal.stdout 
