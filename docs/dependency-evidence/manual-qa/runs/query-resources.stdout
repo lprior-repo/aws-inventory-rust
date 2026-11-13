@@ -1,0 +1,30 @@
+[
+  {
+    "id": "arn:aws:dynamodb:us-east-1:111122223333:table/demo",
+    "kind": "aws_dynamodb_table"
+  },
+  {
+    "id": "arn:aws:ec2:us-east-1:111122223333:instance/i-demo",
+    "kind": "aws_ec2_instance"
+  },
+  {
+    "id": "arn:aws:ec2:us-east-1:111122223333:subnet/subnet-demo",
+    "kind": "aws_vpc_subnet"
+  },
+  {
+    "id": "arn:aws:ec2:us-east-1:111122223333:vpc/vpc-demo",
+    "kind": "aws_vpc"
+  },
+  {
+    "id": "arn:aws:ecs:us-east-1:111122223333:cluster/demo",
+    "kind": "aws_ecs_cluster"
+  },
+  {
+    "id": "arn:aws:eks:us-east-1:111122223333:cluster/demo",
+    "kind": "aws_eks_cluster"
+  },
+  {
+    "id": "arn:aws:lambda:us-east-1:111122223333:function:demo",
+    "kind": "aws_lambda_function"
+  }
+]

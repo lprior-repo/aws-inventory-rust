@@ -1,0 +1,14 @@
+   Compiling inventory-engine v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/work/local-gpu-candidate/crates/engine)
+error[E0282]: type annotations needed
+  --> crates/engine/src/store/sql_policy/prefix.rs:23:51
+   |
+23 |         remaining = remaining.trim_start_matches(|ch| ch.is_ascii_whitespace());
+   |                                                   ^^  -- type must be known at this point
+   |
+help: consider giving this closure parameter an explicit type
+   |
+23 |         remaining = remaining.trim_start_matches(|ch: /* Type */| ch.is_ascii_whitespace());
+   |                                                     ++++++++++++
+
+For more information about this error, try `rustc --explain E0282`.
+error: could not compile `inventory-engine` (lib) due to 1 previous error

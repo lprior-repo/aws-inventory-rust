@@ -1,0 +1,48 @@
+{
+  "source_commit": "57ee7de687be3f445a39bf2e2eb81807e5d68959",
+  "synthetic": true,
+  "runs": 3,
+  "storage": [
+    {
+      "resources_per_transaction": 1,
+      "samples": 3,
+      "resources_per_case": 1000,
+      "edges_per_case": 1000,
+      "rows_per_second_min": 765.3647511461323,
+      "rows_per_second_median": 820.8926963118009,
+      "rows_per_second_max": 1645.733539480111
+    },
+    {
+      "resources_per_transaction": 100,
+      "samples": 3,
+      "resources_per_case": 1000,
+      "edges_per_case": 1000,
+      "rows_per_second_min": 17280.24377032524,
+      "rows_per_second_median": 25035.250258244865,
+      "rows_per_second_max": 34904.059038400854
+    }
+  ],
+  "scheduler": [
+    {
+      "global_concurrency": 1,
+      "samples": 3,
+      "operations_per_second_min": 325.6305065998833,
+      "operations_per_second_median": 326.1321920620939,
+      "operations_per_second_max": 326.668854837574
+    },
+    {
+      "global_concurrency": 8,
+      "samples": 3,
+      "operations_per_second_min": 2603.6901816165437,
+      "operations_per_second_median": 2607.241322513995,
+      "operations_per_second_max": 2613.949913472642
+    },
+    {
+      "global_concurrency": 64,
+      "samples": 3,
+      "operations_per_second_min": 20395.334885821976,
+      "operations_per_second_median": 20674.68774558763,
+      "operations_per_second_max": 20708.588021327578
+    }
+  ]
+}

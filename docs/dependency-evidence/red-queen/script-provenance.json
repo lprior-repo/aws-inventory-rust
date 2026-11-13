@@ -1,0 +1,11 @@
+{
+  "source": "/home/lewis/.agents/skills/red-queen/liza-advanced.nu",
+  "destination": "/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu",
+  "source_sha256": "720680c06dfe94db49e6ea1f5c7e8a0f2ee7543fcc36d8cfb3ece78debfc982b",
+  "task_copy_sha256": "6c34b536fc3bf83b0f6128ff26bd5aae682eada6fe929a34b3335fab45c21ba0",
+  "only_config_change": {
+    "before": "const BLACKBOARD_DIR = \"~/.local/share/liza\"",
+    "after": "const BLACKBOARD_DIR = \"/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/state\""
+  },
+  "global_blackboard_sha256": "c2d73e9e78e5c5f006c1e14e65dc548a1caf7fd4578291724400f865138c9c1b"
+}

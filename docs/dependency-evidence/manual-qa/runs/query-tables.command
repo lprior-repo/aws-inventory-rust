@@ -1,0 +1,1 @@
+/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/target/debug/aws-inventory query --db /home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/demo.sqlite SELECT\ name\ FROM\ sqlite_schema\ WHERE\ type\ IN\ \(\'table\'\,\'view\'\)\ AND\ name\ LIKE\ \'%resource%\'\ ORDER\ BY\ name --limit 100 

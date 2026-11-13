@@ -1,0 +1,11 @@
+--- /home/lewis/.agents/skills/red-queen/liza-advanced.nu	2026-03-29 14:11:54.368880148 -0500
++++ /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu	2026-11-12 23:24:52.175041374 -0600
+@@ -11,7 +11,7 @@
+ #
+ # AI generates test commands. Everything else is deterministic code.
+ 
+-const BLACKBOARD_DIR = "~/.local/share/liza"
++const BLACKBOARD_DIR = "/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/state"
+ const BLACKBOARD_FILE = "blackboard.yml"
+ 
+ # ── Blackboard Persistence ────────────────────────────────────────────────────

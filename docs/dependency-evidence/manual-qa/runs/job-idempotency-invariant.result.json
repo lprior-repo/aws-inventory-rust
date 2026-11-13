@@ -1,0 +1,14 @@
+{
+  "id": "job-idempotency-invariant",
+  "expected_exit": 0,
+  "actual_exit": 0,
+  "exit_matches": true,
+  "argv": [
+    "bash",
+    "-c",
+    "diff <(jq -S .job \"$1\") <(jq -S .job \"$2\")",
+    "manual-check",
+    "/home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/job-submit.stdout",
+    "/home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/job-submit-replay.stdout"
+  ]
+}

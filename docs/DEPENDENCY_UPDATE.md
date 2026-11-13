@@ -113,9 +113,78 @@ Their exact moved names were also updated in the mutation acceptance contract.
 
 ## Acceptance evidence
 
-Current command outcomes, exact test counts, running endpoints and evidence
-hashes are recorded below after the complete verification run finishes.
+Completed command outcomes, exact test counts, running endpoints and evidence
+hashes are recorded below for the completed verification runs.
 
 No mutation score, universal AWS provider support, live-account IAM validation,
 or formal proof is inferred from this local integration run. The strict black-hat review retains its independent verdict; functional checks
 do not establish compliance with every engineering-style constraint.
+
+### Verified baseline before the isolated local GPU candidate
+
+The following receipts describe binary SHA-256
+`8fe9df4f994c84de546cf3f2c1614895f17ff9cab0fdfaa3e533aef02bf867e8`.
+The subsequent local GPU candidate is isolated and is not accepted by these
+receipts. Its integration requires fresh behavior and lint results.
+
+| Gate | Observed result | Receipt |
+| --- | --- | --- |
+| Canonical validation | 526 Rust tests passed; ten guarded live tests reserved for explicit local execution; 310 helper tests passed | `dependency-evidence/pre-local-gpu/canonical-complete.log` |
+| Explicit live Rust workspace | 536 passed, zero failed, zero ignored | `dependency-evidence/pre-local-gpu/workspace-live.log` |
+| Native emulator behavior | 2,522 assertions passed, zero failed; 73 Rust operation boundaries observed | `dependency-evidence/pre-local-gpu/live.log` |
+| SQLite/export/FalkorDB | All five cases matched exact identities, properties, provenance and cardinality; each resume made zero write attempts | `dependency-evidence/pre-local-gpu/delivery-verification.json` |
+| All SDK clients | All 437 service SDKs compiled together; catalog rebuilt successfully after generated-module refactor | `dependency-evidence/pre-local-gpu/all-sdks-final.log`, `all-sdks-refactored.log` |
+| Extended source Clippy | Passed with warnings and explicit panic, indexing, arithmetic, ignored-result and large-future diagnostics denied | `dependency-evidence/pre-local-gpu/strict.log` |
+| Dependency audit | Zero vulnerabilities and zero warnings; no advisory suppression | `dependency-evidence/pre-local-gpu/audit.json` |
+| Unused dependencies | None reported | `dependency-evidence/pre-local-gpu/machete.log` |
+| Manual invocation QA | 120 captured invocations; documented incorrect initial expectations retained and corrected; no unresolved functional failure in this scope | `dependency-evidence/manual-qa/REPORT.md`, `results.json`, `runs/` |
+| Red Queen bounded CLI contract | Three generations, three zero-survivor generations, all 27 permanent checks and lineage replay passed | `dependency-evidence/red-queen/summary.json` |
+| Strict whole-project engineering review | **REJECTED**: function-size/parameter, domain-typing and async assurance requirements remain open | `dependency-evidence/BLACK_HAT_REVIEW.md` |
+
+The interactive scan persisted 150 observed resources, 340 edges and 131 complete
+scopes with no failures. Direct graph reads found 193 Resource nodes, including
+43 explicitly unresolved references, and 340 edges. Replaying its saved graph
+plan skipped all six batches and attempted zero writes. SQLite, exports and old
+receipts remain available under the ignored `.local/` directory.
+
+A failed first canonical invocation inherited the machine's `sccache` wrapper;
+the mutation-assurance helper correctly rejected that unexpected override. The
+successful canonical run cleared compiler wrapper variables explicitly. No gate
+was disabled. QA also retained and corrected initial assumptions that partial
+and cancelled results exit zero: the documented CLI contract returns exit 2.
+
+The source review is not owner-approved debt or a passing global gate. File-size
+compliance and operational success do not imply that all strict skill constraints,
+mutation coverage, instrumentation, formal proof, or real-account behavior have
+been established.
+
+### Final verification of pushed main
+
+The current main implementation passed a fresh Rust workspace run against the
+already prepared authenticated emulator and real FalkorDB: **539 passed, zero
+failed, zero ignored**. This includes the ten guarded live tests and the three
+new public SQL-boundary regression tests. The exact frozen fixture paths and
+hashes were supplied from the active session receipt; no real AWS account was
+used. See`dependency-evidence/final-main/final-main-live.log`.
+
+Extended strict source Clippy, formatting and the source-size gate passed.
+There are452 first-party Rust files and every file is at most300 lines. The
+executable SHA-256 remains
+`8fe9df4f994c84de546cf3f2c1614895f17ff9cab0fdfaa3e533aef02bf867e8`,
+so the earlier manual, Red Queen and exact five-case delivery receipts apply to
+the same executable. The final receipt commit adds documentation/evidence only.
+The dependency graph and all437SDK build evidence are unchanged.
+
+The[walkthrough](LOCAL_WALKTHROUGH.md)was executed against a separate learning
+database and graph. It completed with150resources,340edges,131scopes and no
+failed scopes; six graph batches were acknowledged. Its result is preserved in
+`dependency-evidence/final-main/learning-scan.json`.
+
+The explicitly requested RTX3090 was used through native OMP task dispatch in an
+isolated checkout. Three parser candidates were rejected by coordinator checks;
+none was integrated. Actual model/read/write metadata, failure output and the
+hardware-route check are retained in
+`dependency-evidence/local-gpu/`. The working production policy and new
+regression bank remain on main. This is an operationally verified local setup,
+with the strict whole-project engineering review still **REJECTED**, not a claim
+of universal skill approval or a formal certification.

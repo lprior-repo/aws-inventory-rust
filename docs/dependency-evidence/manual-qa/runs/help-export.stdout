@@ -1,0 +1,12 @@
+Stream a finalized inventory snapshot, including coverage, to JSON or JSONL
+
+Usage: aws-inventory export [OPTIONS] --scan-id <SCAN_ID> --output <OUTPUT>
+
+Options:
+      --db <DB>                  [default: inventory.sqlite]
+      --scan-id <SCAN_ID>        
+      --output <OUTPUT>          
+      --format <FORMAT>          [default: jsonl] [possible values: json, jsonl]
+      --provenance <PROVENANCE>  [default: normalized] [possible values: normalized, all-observations]
+      --allow-partial            
+  -h, --help                     Print help

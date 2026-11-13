@@ -1,0 +1,58 @@
+{
+  "row_limit_per_rule": 10,
+  "rule_count": 6,
+  "rules": {
+    "blackhole_route": {
+      "limitation": "This is the collected route state, not a fresh connectivity probe or proof of the underlying cause.",
+      "meaning": "The retained route state is blackhole.",
+      "rows": [],
+      "title": "AWS reported a blackhole route",
+      "truncated": false
+    },
+    "collection_scope_gap": {
+      "limitation": "Coverage gaps qualify every absence-based interpretation; this is not a statement about the AWS resource itself.",
+      "meaning": "A persisted scope is failed or incomplete.",
+      "rows": [],
+      "title": "A selected collection scope did not complete successfully",
+      "truncated": false
+    },
+    "default_route_to_internet_gateway": {
+      "limitation": "A declared route does not establish an attached gateway, usable route, public address or effective network access.",
+      "meaning": "An IPv4 or IPv6 default route explicitly names an igw- gateway.",
+      "rows": [],
+      "title": "A default route names an internet gateway",
+      "truncated": false
+    },
+    "internet_facing_http_listener": {
+      "limitation": "An HTTP listener can redirect to HTTPS; routes, security controls and effective exposure are not evaluated.",
+      "meaning": "The observed load balancer scheme is internet-facing and an observed listener uses HTTP.",
+      "rows": [],
+      "title": "Internet-facing load balancer declares an HTTP listener",
+      "truncated": false
+    },
+    "s3_policy_reported_public": {
+      "limitation": "Account/bucket access blocks, ACLs and other authorization controls can change effective access; no anonymous request was made.",
+      "meaning": "A successful native GetBucketPolicyStatus observation reported IsPublic=true.",
+      "rows": [],
+      "title": "S3 reported a bucket policy as public",
+      "truncated": false
+    },
+    "unresolved_architecture_reference": {
+      "limitation": "Disabled collectors, permissions, identity assumptions, timing and unsupported types can explain this; absence is not inferred.",
+      "meaning": "At least one endpoint of a collected relationship has no selected resource observation in the same scan.",
+      "rows": [],
+      "title": "A relationship endpoint was not observed in this scan",
+      "truncated": false
+    }
+  },
+  "scan_id": "synthetic-demo-001",
+  "semantics": {
+    "coverage": "native normalized routes and listeners are required for their rules; raw supplemental payloads may not expose equivalent fields",
+    "evidence": "rules report specific retained configuration facts, not security verdicts",
+    "missing_fields": "a missing or failed read is unknown, not false",
+    "no_findings": "zero matches does not establish safety, completeness or absence of public access",
+    "snapshot": "all resource and endpoint joins are confined to the selected finalized scan"
+  },
+  "status": "complete",
+  "truncated": false
+}

@@ -1,0 +1,103 @@
+{
+  "attempts": [
+    {
+      "attempt": 1,
+      "error": null,
+      "finished_at": 1794548020191,
+      "started_at": 1794548019909,
+      "state": "succeeded",
+      "worker": "manual-qa-worker"
+    }
+  ],
+  "job": {
+    "attempt": 1,
+    "available_at": 1794547941831,
+    "cancel_requested": false,
+    "created_at": 1794547941724,
+    "job_id": "qa-cancel-retry",
+    "kind": "aws_scan",
+    "last_error": null,
+    "lease_owner": null,
+    "lease_until": null,
+    "max_attempts": 1,
+    "payload": {
+      "accounts": {
+        "account_id": [],
+        "external_id_env": null,
+        "max_accounts": 128,
+        "organization_role": null,
+        "role_arn": null,
+        "role_duration_seconds": 3600,
+        "role_session_name": "aws-inventory"
+      },
+      "attempts": 1,
+      "cloud_control": false,
+      "concurrency": 4,
+      "config_aggregator": null,
+      "db": "/home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/worker-inventory.sqlite",
+      "delivery": {
+        "allow_partial": false,
+        "delivery_attempts": 5,
+        "delivery_timeout_seconds": 900,
+        "export_format": "jsonl",
+        "falkor": false,
+        "falkor_url_env": "FALKORDB_URL",
+        "graph": "aws_inventory",
+        "output_dir": null,
+        "provenance": "normalized"
+      },
+      "discover_sources": false,
+      "max_pages": 10,
+      "page_size": 100,
+      "per_bucket_concurrency": 2,
+      "profile": [],
+      "rate_policy": null,
+      "region": [
+        "us-east-1"
+      ],
+      "resource_explorer_view": null,
+      "resource_type": [],
+      "rps": 100,
+      "service": [
+        "ec2"
+      ]
+    },
+    "result": {
+      "api": {
+        "active_buckets": 2,
+        "attempts": 14,
+        "cancelled": 0,
+        "failures": 0,
+        "in_flight": 0,
+        "peak_in_flight": 1,
+        "rejected_retry_hints": 0,
+        "retries": 0,
+        "server_delays": 0,
+        "successes": 14,
+        "throttles": 0,
+        "timeouts": 0
+      },
+      "scans": [
+        {
+          "error": null,
+          "profile": null,
+          "scan_id": "e60768d9-ca89-4649-9ba6-d799ecddcbc6",
+          "status": "complete",
+          "summary": {
+            "completed_scopes": 12,
+            "edges": 127,
+            "failed_scopes": 0,
+            "resources": 62,
+            "scan_id": "e60768d9-ca89-4649-9ba6-d799ecddcbc6"
+          },
+          "target_account": null
+        }
+      ],
+      "semantics": "one immutable scan per credential profile or assumed-role account target; complete means selected scopes completed, not all AWS resource types",
+      "status": "complete",
+      "write_error": null
+    },
+    "state": "succeeded",
+    "updated_at": 1794548020191
+  }
+}

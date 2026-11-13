@@ -1,0 +1,12 @@
+{
+  "id": "completed-job-invariant",
+  "expected_exit": 0,
+  "actual_exit": 0,
+  "exit_matches": true,
+  "argv": [
+    "jq",
+    "-e",
+    ".job.state==\"succeeded\" and .job.attempt==1 and .job.result.status==\"complete\" and (.attempts|length)==1 and .attempts[0].state==\"succeeded\"",
+    "/home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/job-show-complete.stdout"
+  ]
+}

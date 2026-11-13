@@ -1,0 +1,187 @@
+{
+  "evidence": {
+    "archive_file": "upstream/cloudformation-us-east-1-2026-11-12.zip",
+    "archive_sha256": "8226b9cd82f432997fe3918b134ef155245636f35ac37f8006de5abe88dd54a8",
+    "catalog_sha256": "7d551d1ae5d32e83dc7bf45d5ef94fca35b0cecbc510cd5a3fe75aafa73300e4",
+    "emulator": {
+      "architecture_fixture_sha256": "becbfa28fca31c361c165d7533f5b4a9945c34cf7ef86c6b3a2abc65587ac5ea",
+      "binary_sha256": "b00a23d5dea91327a365f31ec5c58e41bb4169146f9f53fcd7c41ed126e8cc80",
+      "catalog_command_file": "artifacts/emulator-v05/catalog.json",
+      "catalog_command_sha256": "9685be18542e38ed1119c867662fe778164d462bd59fd80bf200ae0364cf3ed3",
+      "catalog_sha256": "7d551d1ae5d32e83dc7bf45d5ef94fca35b0cecbc510cd5a3fe75aafa73300e4",
+      "command_file": "artifacts/emulator-v05/cloud-control.json",
+      "command_sha256": "6e901082d8f84d8139b910ff339324252ab5b4fb6fa5b6c99728e0e838886273",
+      "database_file": "artifacts/emulator-v05/inventory.sqlite",
+      "emulator_source_commit": "f515581569b98a9dcbd2e686c12f912fdce51bba",
+      "scan_id": "8ad965d5-bbd0-4450-b9d9-9aa9062272ee",
+      "semantics": "Rust request ledger plus typed Cloud Control GetResource observations in the asserted scan",
+      "source_sha256": "933e260caad06cbf59701c03782722d783ef2d9dc0ff79c8f7df2290e6f966fa",
+      "summary_file": "artifacts/emulator-v05/summary.json",
+      "summary_sha256": "c13e384c51e1318e79d46ffa63be189afa8ad3630def523cd45a23718289fba8"
+    },
+    "parent_workflows": {
+      "archive_file": "upstream/cloudformation-us-east-1-2026-11-12.zip",
+      "archive_sha256": "8226b9cd82f432997fe3918b134ef155245636f35ac37f8006de5abe88dd54a8",
+      "global_sensitive_property_names": [
+        "accesstoken",
+        "apikeyvalue",
+        "args",
+        "authorizationtoken",
+        "authtoken",
+        "buildspec",
+        "clientsecret",
+        "code",
+        "command",
+        "connectionstring",
+        "connectionstrings",
+        "content",
+        "credentials",
+        "defaultarguments",
+        "definition",
+        "definitionstring",
+        "entrypoint",
+        "env",
+        "environment",
+        "environmentvariables",
+        "hectoken",
+        "invocationhttpparameters",
+        "masteruserpassword",
+        "nonoverridablearguments",
+        "oauthhttpparameters",
+        "password",
+        "privatekey",
+        "refreshtoken",
+        "secretaccesskey",
+        "secretbinary",
+        "secretstring",
+        "sessiontoken",
+        "userdata"
+      ],
+      "limitations": [
+        "Schema and request-model audit is not live AWS provider validation.",
+        "Two-level parents, account/global contexts, and other unreviewed bindings remain excluded.",
+        "Parent discovery uses complete sanitized GetResource properties; missing context records a failure."
+      ],
+      "list_api_url": "https://docs.aws.amazon.com/cloudcontrolapi/latest/APIReference/API_ListResources.html",
+      "list_semantics_url": "https://docs.aws.amazon.com/cloudcontrolapi/latest/userguide/resource-operations-list.html",
+      "live_validated": false,
+      "root_catalog_sha256": "7d551d1ae5d32e83dc7bf45d5ef94fca35b0cecbc510cd5a3fe75aafa73300e4",
+      "scope_review": "Six reviewed regional root types; one dependency level; exact string property bindings",
+      "source_kind": "official_aws_cloudformation_registry_schema_archive"
+    },
+    "selection_policy": "397 reviewed regional types across architectural service families; read and list handlers; empty list model accepted; documented parent-model exceptions excluded",
+    "source_url": "https://schema.cloudformation.us-east-1.amazonaws.com/CloudformationSchema.zip",
+    "warning": "Schema eligibility, reviewed mappings and executed provider evidence are separate claims."
+  },
+  "limit": 3,
+  "matched": 126,
+  "mode": "offline_capability_evidence",
+  "resource_types": [
+    {
+      "emulator_verification": {
+        "get_attempted": false,
+        "get_http_statuses": {},
+        "list_attempted": false,
+        "list_http_statuses": {},
+        "read_observed": false,
+        "status": "not_run",
+        "summary_file": null
+      },
+      "exclusion": "scope_unreviewed",
+      "list_model_validation": "no_handler_schema",
+      "list_supported": true,
+      "read_supported": true,
+      "relationship_rule_count": 0,
+      "schema_file": "aws-ec2-applicationstatuscheck.json",
+      "schema_sha256": "1d72cfcefb8b2820d21839f880b2ae94cc1a2f0cf5a590bf8ef75d47309df3fb",
+      "scope_review": "unreviewed",
+      "selected": false,
+      "service": "ec2",
+      "service_name": "EC2",
+      "type_name": "AWS::EC2::ApplicationStatusCheck",
+      "view_name": null
+    },
+    {
+      "emulator_verification": {
+        "get_attempted": false,
+        "get_http_statuses": {},
+        "list_attempted": false,
+        "list_http_statuses": {},
+        "read_observed": false,
+        "status": "not_run",
+        "summary_file": null
+      },
+      "exclusion": "scope_unreviewed",
+      "list_model_validation": "no_handler_schema",
+      "list_supported": true,
+      "read_supported": true,
+      "relationship_rule_count": 0,
+      "schema_file": "aws-ec2-capacitymanagerdataexport.json",
+      "schema_sha256": "37e730dd6b4cddf4595b4e04efc5148315d32833e92efec872f986bf034003b2",
+      "scope_review": "unreviewed",
+      "selected": false,
+      "service": "ec2",
+      "service_name": "EC2",
+      "type_name": "AWS::EC2::CapacityManagerDataExport",
+      "view_name": null
+    },
+    {
+      "emulator_verification": {
+        "get_attempted": true,
+        "get_http_statuses": {
+          "200": 1
+        },
+        "list_attempted": true,
+        "list_http_statuses": {
+          "200": 1
+        },
+        "persisted_read_count": 1,
+        "read_observed": true,
+        "status": "read_observed",
+        "summary_file": "artifacts/emulator-v05/summary.json"
+      },
+      "exclusion": null,
+      "list_model_validation": "no_handler_schema",
+      "list_supported": true,
+      "read_supported": true,
+      "relationship_rule_count": 2,
+      "schema_file": "aws-ec2-capacityreservation.json",
+      "schema_sha256": "86f6c7f1c3959880ea4bed5ff05cf1406c2ddb1bb52096d28238ed4dc3e72ee6",
+      "scope_review": "reviewed_regional",
+      "selected": true,
+      "service": "ec2",
+      "service_name": "EC2",
+      "type_name": "AWS::EC2::CapacityReservation",
+      "view_name": "aws_cc_ec2_capacity_reservation"
+    }
+  ],
+  "returned": 3,
+  "schema_version": 1,
+  "semantics": "selected means an executable reviewed collector descriptor; emulator outcomes are separately recorded, and neither proves live account/region availability",
+  "status": "complete",
+  "summary": {
+    "emulator_evidence_basis": "Retained v0.5 root-catalog receipts remain source-bound; parent workflow execution evidence is reported separately.",
+    "emulator_list_attempted": 397,
+    "emulator_outcomes": {
+      "list_error": 11,
+      "read_observed": 386
+    },
+    "emulator_read_observed": 386,
+    "excluded_count": 1463,
+    "exclusions": {
+      "documented_parent_model_required": 32,
+      "missing_read_or_list_handler": 180,
+      "schema_parent_model_required": 357,
+      "scope_unreviewed": 894
+    },
+    "parent_dependent_selected_count": 21,
+    "parent_relationship_rule_count": 21,
+    "read_and_list_count": 1701,
+    "relationship_rule_count": 965,
+    "root_only_selected_count": 397,
+    "schema_count": 1881,
+    "selected_count": 418,
+    "types_with_relationships": 265
+  },
+  "truncated": true
+}

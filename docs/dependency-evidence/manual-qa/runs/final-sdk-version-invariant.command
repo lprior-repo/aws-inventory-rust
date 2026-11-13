@@ -1,0 +1,1 @@
+jq -e .version==\"1.279.0\"\ and\ .client_features==\[\"default-https-client\"\,\"rt-tokio\"\]\ and\ .yanked==false /home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/sdk-ec2.stdout 

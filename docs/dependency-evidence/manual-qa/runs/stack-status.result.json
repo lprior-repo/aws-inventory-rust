@@ -1,0 +1,11 @@
+{
+  "id": "stack-status",
+  "expected_exit": 0,
+  "actual_exit": 1,
+  "exit_matches": false,
+  "argv": [
+    "bash",
+    "scripts/local-stack.sh",
+    "status"
+  ]
+}

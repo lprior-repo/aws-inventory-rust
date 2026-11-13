@@ -1,0 +1,14 @@
+Discover existing organization accounts and inventory sources (requires aws feature)
+
+Usage: aws-inventory discover [OPTIONS]
+
+Options:
+      --profile <PROFILE>      
+      --region <REGION>        [default: us-east-1]
+      --organization           
+      --hierarchy              
+      --config-aggregators     
+      --resource-explorer      
+      --max-pages <MAX_PAGES>  [default: 10000]
+      --page-size <PAGE_SIZE>  [default: 100]
+  -h, --help                   Print help

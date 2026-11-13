@@ -1,0 +1,114 @@
+{
+  "coverage": [
+    {
+      "account_id": "111122223333",
+      "collector": "aws_dynamodb_table",
+      "coverage_status": "complete",
+      "parent_id": null,
+      "region": "us-east-1",
+      "source": "direct"
+    },
+    {
+      "account_id": "111122223333",
+      "collector": "aws_ec2_instance",
+      "coverage_status": "complete",
+      "parent_id": null,
+      "region": "us-east-1",
+      "source": "direct"
+    },
+    {
+      "account_id": "111122223333",
+      "collector": "aws_ecs_cluster",
+      "coverage_status": "complete",
+      "parent_id": null,
+      "region": "us-east-1",
+      "source": "direct"
+    },
+    {
+      "account_id": "111122223333",
+      "collector": "aws_eks_cluster",
+      "coverage_status": "complete",
+      "parent_id": null,
+      "region": "us-east-1",
+      "source": "direct"
+    },
+    {
+      "account_id": "111122223333",
+      "collector": "aws_lambda_function",
+      "coverage_status": "complete",
+      "parent_id": null,
+      "region": "us-east-1",
+      "source": "direct"
+    },
+    {
+      "account_id": "111122223333",
+      "collector": "aws_vpc",
+      "coverage_status": "complete",
+      "parent_id": null,
+      "region": "us-east-1",
+      "source": "direct"
+    },
+    {
+      "account_id": "111122223333",
+      "collector": "aws_vpc_subnet",
+      "coverage_status": "complete",
+      "parent_id": null,
+      "region": "us-east-1",
+      "source": "direct"
+    }
+  ],
+  "failures": [],
+  "resources_by_scope": [
+    {
+      "account_id": "111122223333",
+      "kind": "aws_dynamodb_table",
+      "region": "us-east-1",
+      "resources": 1
+    },
+    {
+      "account_id": "111122223333",
+      "kind": "aws_ec2_instance",
+      "region": "us-east-1",
+      "resources": 1
+    },
+    {
+      "account_id": "111122223333",
+      "kind": "aws_ecs_cluster",
+      "region": "us-east-1",
+      "resources": 1
+    },
+    {
+      "account_id": "111122223333",
+      "kind": "aws_eks_cluster",
+      "region": "us-east-1",
+      "resources": 1
+    },
+    {
+      "account_id": "111122223333",
+      "kind": "aws_lambda_function",
+      "region": "us-east-1",
+      "resources": 1
+    },
+    {
+      "account_id": "111122223333",
+      "kind": "aws_vpc",
+      "region": "us-east-1",
+      "resources": 1
+    },
+    {
+      "account_id": "111122223333",
+      "kind": "aws_vpc_subnet",
+      "region": "us-east-1",
+      "resources": 1
+    }
+  ],
+  "semantics": "point-in-time observations; not a simultaneous AWS snapshot; no absence-based deletion",
+  "status": "complete",
+  "summary": {
+    "completed_scopes": 7,
+    "edges": 4,
+    "failed_scopes": 0,
+    "resources": 7,
+    "scan_id": "synthetic-demo-001"
+  }
+}

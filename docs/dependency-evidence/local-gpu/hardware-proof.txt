@@ -1,0 +1,9 @@
+Local provider and hardware evidence captured after actual native dispatch:
+3:    baseUrl: http://127.0.0.1:11000/v1
+17:    baseUrl: http://127.0.0.1:11001/v1
+State  Recv-Q Send-Q Local Address:Port  Peer Address:PortProcess
+LISTEN 0      512        127.0.0.1:11001      0.0.0.0:*    users:(("llama-server",pid=1500970,fd=13))
+0, NVIDIA GeForce RTX 5090, GPU-b2092e2c-3f30-482d-182b-17f3f6cda12c
+1, NVIDIA GeForce RTX 3090, GPU-403c2dbf-8f1c-f0d6-94a8-bd1fa4f6629f
+GPU-403c2dbf-8f1c-f0d6-94a8-bd1fa4f6629f, 1500970, 23340 MiB
+{"model":"local-3090-llama/qwen3.8-27b-uncensored","runtime":{"version":"18.20.0"},"resolvedModelIsFallback":false}

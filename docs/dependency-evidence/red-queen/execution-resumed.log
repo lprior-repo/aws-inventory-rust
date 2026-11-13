@@ -1,0 +1,836 @@
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+
+VALIDATION: Running 27 checks — the ratchet
+═══════════════════════════════════════════════════════════════
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-unknown
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-missing-export
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-invalid-limit
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-literal
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-mutation
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-multiple
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-demo
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-jsonl
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-no-clobber
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-format
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-missing-graph-input
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-unknown-option
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-zero-limit
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-huge-limit
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-blob
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-json
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-partial-preserved
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-missing-db
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-negative-limit
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-absent-sql
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-bad-provenance
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-value-budget
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-row-budget
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-quoted-semicolon
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-invalid-ingest
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-page-replay
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-partial-export
+
+Results: 27/27 passed
+ALL CHECKS PASS — ratchet holds
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+
+LINEAGE REPLAY — Every predecessor must be defeated
+═══════════════════════════════════════════════════════════════
+Total lineage: 27 warriors from 1 generations
+
+  DEFEATED [gen 1] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-unknown
+  DEFEATED [gen 1] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-missing-export
+  DEFEATED [gen 1] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-invalid-limit
+  DEFEATED [gen 1] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-literal
+  DEFEATED [gen 1] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-mutation
+  DEFEATED [gen 1] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-multiple
+  DEFEATED [gen 1] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-demo
+  DEFEATED [gen 1] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-jsonl
+  DEFEATED [gen 1] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-no-clobber
+  DEFEATED [gen 2] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-format
+  DEFEATED [gen 2] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-missing-graph-input
+  DEFEATED [gen 2] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-unknown-option
+  DEFEATED [gen 2] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-zero-limit
+  DEFEATED [gen 2] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-huge-limit
+  DEFEATED [gen 2] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-blob
+  DEFEATED [gen 2] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-json
+  DEFEATED [gen 2] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-partial-preserved
+  DEFEATED [gen 2] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-missing-db
+  DEFEATED [gen 3] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-negative-limit
+  DEFEATED [gen 3] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-absent-sql
+  DEFEATED [gen 3] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-bad-provenance
+  DEFEATED [gen 3] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-value-budget
+  DEFEATED [gen 3] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-row-budget
+  DEFEATED [gen 3] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-quoted-semicolon
+  DEFEATED [gen 3] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-invalid-ingest
+  DEFEATED [gen 3] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-page-replay
+  DEFEATED [gen 3] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-partial-export
+
+PER-GENERATION SCORECARD
+═══════════════════════════════════════════════════════════════
+  Gen 1: 9/9 defeated — ALL DEFEATED
+  Gen 2: 9/9 defeated — ALL DEFEATED
+  Gen 3: 9/9 defeated — ALL DEFEATED
+
+TOTAL: 27/27 predecessors defeated
+LINEAGE INTACT: All predecessors defeated — the current code survives
+
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+Generation 2 started for 'aws-inventory-local'
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+DISCARD in cli-contract tests_run=4
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+DISCARD in cli-contract tests_run=5
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+DISCARD in cli-contract tests_run=6
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+DISCARD in sql-isolation tests_run=4
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+DISCARD in sql-isolation tests_run=5
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+DISCARD in sql-isolation tests_run=6
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+DISCARD in artifact-workflow tests_run=4
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+DISCARD in artifact-workflow tests_run=5
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+DISCARD in artifact-workflow tests_run=6
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+Generation 2 ended: 0 survivors, zero-streak=2 [need 3 for equilibrium]
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+
+THE RED QUEEN'S LANDSCAPE
+═══════════════════════════════════════════════════════════════
+Champion:    aws-inventory local CLI adversarial contract
+Generation:  2
+Survivors:   0
+Lineage:     27 checks
+Beads Filed: 0
+Crown:       CROWN DEFENDED
+
+Dimension                Tests   Survivors   Fitness   Status
+───────────────────────────────────────────────────────────────────
+cli-contract             6       0           0         DORMANT
+sql-isolation            6       0           0         DORMANT
+artifact-workflow        6       0           0         DORMANT
+
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+
+VALIDATION: Running 27 checks — the ratchet
+═══════════════════════════════════════════════════════════════
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-unknown
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-missing-export
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-invalid-limit
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-literal
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-mutation
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-multiple
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-demo
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-jsonl
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-no-clobber
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-format
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-missing-graph-input
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-unknown-option
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-zero-limit
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-huge-limit
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-blob
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-json
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-partial-preserved
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-missing-db
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-negative-limit
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-absent-sql
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-bad-provenance
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-value-budget
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-row-budget
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-quoted-semicolon
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-invalid-ingest
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-page-replay
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-partial-export
+
+Results: 27/27 passed
+ALL CHECKS PASS — ratchet holds
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+
+LINEAGE REPLAY — Every predecessor must be defeated
+═══════════════════════════════════════════════════════════════
+Total lineage: 27 warriors from 2 generations
+
+  DEFEATED [gen 1] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-unknown
+  DEFEATED [gen 1] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-missing-export
+  DEFEATED [gen 1] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-invalid-limit
+  DEFEATED [gen 1] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-literal
+  DEFEATED [gen 1] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-mutation
+  DEFEATED [gen 1] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-multiple
+  DEFEATED [gen 1] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-demo
+  DEFEATED [gen 1] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-jsonl
+  DEFEATED [gen 1] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-no-clobber
+  DEFEATED [gen 2] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-format
+  DEFEATED [gen 2] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-missing-graph-input
+  DEFEATED [gen 2] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-unknown-option
+  DEFEATED [gen 2] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-zero-limit
+  DEFEATED [gen 2] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-huge-limit
+  DEFEATED [gen 2] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-blob
+  DEFEATED [gen 2] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-json
+  DEFEATED [gen 2] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-partial-preserved
+  DEFEATED [gen 2] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-missing-db
+  DEFEATED [gen 3] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-negative-limit
+  DEFEATED [gen 3] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-absent-sql
+  DEFEATED [gen 3] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-bad-provenance
+  DEFEATED [gen 3] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-value-budget
+  DEFEATED [gen 3] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-row-budget
+  DEFEATED [gen 3] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-quoted-semicolon
+  DEFEATED [gen 3] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-invalid-ingest
+  DEFEATED [gen 3] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-page-replay
+  DEFEATED [gen 3] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-partial-export
+
+PER-GENERATION SCORECARD
+═══════════════════════════════════════════════════════════════
+  Gen 1: 9/9 defeated — ALL DEFEATED
+  Gen 2: 9/9 defeated — ALL DEFEATED
+  Gen 3: 9/9 defeated — ALL DEFEATED
+
+TOTAL: 27/27 predecessors defeated
+LINEAGE INTACT: All predecessors defeated — the current code survives
+
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+
+THE RED QUEEN'S CARNAGE REPORT
+═══════════════════════════════════════════════════════════════
+Champion:    aws-inventory local CLI adversarial contract
+Generation:  2
+Escalation:  1.5x
+
+Total Attacks:   18
+Total Kills:     0
+Kill Rate:       0.0 [0.0%]
+  CRITICAL:      0
+  MAJOR:         0
+  MINOR:         0
+Beads Filed:     0
+
+Dimension           Attacks   Kills     Lethality   Status
+───────────────────────────────────────────────────────────────────
+cli-contract        6         0         0           DORMANT
+sql-isolation       6         0         0           DORMANT
+artifact-workflow   6         0         0           DORMANT
+
+THREAT LEVEL: LOW — codebase is defending well
+  But the Queen never stops. Dormant dimensions will reawaken.
+
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+Generation 3 started for 'aws-inventory-local'
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+DISCARD in cli-contract tests_run=7
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+DISCARD in cli-contract tests_run=8
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+DISCARD in cli-contract tests_run=9
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+DISCARD in sql-isolation tests_run=7
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+DISCARD in sql-isolation tests_run=8
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+DISCARD in sql-isolation tests_run=9
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+DISCARD in artifact-workflow tests_run=7
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+DISCARD in artifact-workflow tests_run=8
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+DISCARD in artifact-workflow tests_run=9
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+╔═══════════════════════════════════════════════╗
+║  EQUILIBRIUM: 3 consecutive zero-survivor gens  ║
+╚═══════════════════════════════════════════════╝
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+
+THE RED QUEEN'S LANDSCAPE
+═══════════════════════════════════════════════════════════════
+Champion:    aws-inventory local CLI adversarial contract
+Generation:  3
+Survivors:   0
+Lineage:     27 checks
+Beads Filed: 0
+Crown:       CROWN DEFENDED
+
+Dimension                Tests   Survivors   Fitness   Status
+───────────────────────────────────────────────────────────────────
+cli-contract             9       0           0         EXHAUSTED
+sql-isolation            9       0           0         EXHAUSTED
+artifact-workflow        9       0           0         EXHAUSTED
+
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+
+VALIDATION: Running 27 checks — the ratchet
+═══════════════════════════════════════════════════════════════
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-unknown
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-missing-export
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-invalid-limit
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-literal
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-mutation
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-multiple
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-demo
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-jsonl
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-no-clobber
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-format
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-missing-graph-input
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-unknown-option
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-zero-limit
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-huge-limit
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-blob
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-json
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-partial-preserved
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-missing-db
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-negative-limit
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-absent-sql
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-bad-provenance
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-value-budget
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-row-budget
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-quoted-semicolon
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-invalid-ingest
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-page-replay
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-partial-export
+
+Results: 27/27 passed
+ALL CHECKS PASS — ratchet holds
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+
+LINEAGE REPLAY — Every predecessor must be defeated
+═══════════════════════════════════════════════════════════════
+Total lineage: 27 warriors from 3 generations
+
+  DEFEATED [gen 1] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-unknown
+  DEFEATED [gen 1] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-missing-export
+  DEFEATED [gen 1] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-invalid-limit
+  DEFEATED [gen 1] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-literal
+  DEFEATED [gen 1] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-mutation
+  DEFEATED [gen 1] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-multiple
+  DEFEATED [gen 1] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-demo
+  DEFEATED [gen 1] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-jsonl
+  DEFEATED [gen 1] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-no-clobber
+  DEFEATED [gen 2] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-format
+  DEFEATED [gen 2] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-missing-graph-input
+  DEFEATED [gen 2] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-unknown-option
+  DEFEATED [gen 2] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-zero-limit
+  DEFEATED [gen 2] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-huge-limit
+  DEFEATED [gen 2] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-blob
+  DEFEATED [gen 2] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-json
+  DEFEATED [gen 2] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-partial-preserved
+  DEFEATED [gen 2] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-missing-db
+  DEFEATED [gen 3] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-negative-limit
+  DEFEATED [gen 3] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-absent-sql
+  DEFEATED [gen 3] cli-contract: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-bad-provenance
+  DEFEATED [gen 3] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-value-budget
+  DEFEATED [gen 3] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-row-budget
+  DEFEATED [gen 3] sql-isolation: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-quoted-semicolon
+  DEFEATED [gen 3] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-invalid-ingest
+  DEFEATED [gen 3] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-page-replay
+  DEFEATED [gen 3] artifact-workflow: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-partial-export
+
+PER-GENERATION SCORECARD
+═══════════════════════════════════════════════════════════════
+  Gen 1: 9/9 defeated — ALL DEFEATED
+  Gen 2: 9/9 defeated — ALL DEFEATED
+  Gen 3: 9/9 defeated — ALL DEFEATED
+
+TOTAL: 27/27 predecessors defeated
+LINEAGE INTACT: All predecessors defeated — the current code survives
+
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+
+THE RED QUEEN'S CARNAGE REPORT
+═══════════════════════════════════════════════════════════════
+Champion:    aws-inventory local CLI adversarial contract
+Generation:  3
+Escalation:  1.5x
+
+Total Attacks:   27
+Total Kills:     0
+Kill Rate:       0.0 [0.0%]
+  CRITICAL:      0
+  MAJOR:         0
+  MINOR:         0
+Beads Filed:     0
+
+Dimension           Attacks   Kills     Lethality   Status
+───────────────────────────────────────────────────────────────────
+cli-contract        9         0         0           EXHAUSTED
+sql-isolation       9         0         0           EXHAUSTED
+artifact-workflow   9         0         0           EXHAUSTED
+
+THREAT LEVEL: LOW — codebase is defending well
+  But the Queen never stops. Dormant dimensions will reawaken.
+
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+Task 'aws-inventory-local' submitted for review [sha=afbdcac1db3bab6a5be7eb71a253d4dceb07385c]
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+
+VALIDATION: Running 27 checks — the ratchet
+═══════════════════════════════════════════════════════════════
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-unknown
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-missing-export
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-invalid-limit
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-literal
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-mutation
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-multiple
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-demo
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-jsonl
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-no-clobber
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-format
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-missing-graph-input
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-unknown-option
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-zero-limit
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-huge-limit
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-blob
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-json
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-partial-preserved
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-missing-db
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-negative-limit
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-absent-sql
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh cli-bad-provenance
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-value-budget
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-row-budget
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh sql-quoted-semicolon
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-invalid-ingest
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-page-replay
+  PASS: bash /home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/challenge.sh workflow-partial-export
+
+Results: 27/27 passed
+ALL CHECKS PASS — ratchet holds
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+EQUILIBRIUM: YES — Crown defended through sustained resistance
+  Global zero-survivor streak: 3
+  All dimensions exhausted: true
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+
+THE RED QUEEN'S VERDICT
+═══════════════════════════════════════════════════════════════
+
+Champion:    aws-inventory local CLI adversarial contract
+Generations: 3
+Lineage:     27 permanent checks
+Survivors:   0 — CRITICAL=0 MAJOR=0 MINOR=0 OBS=0
+Beads Filed: 0
+Final:       CROWN DEFENDED
+
+FITNESS LANDSCAPE
+═══════════════════════════════════════════════════════════════
+Dimension                Tests   Survivors   Fitness   Status
+───────────────────────────────────────────────────────────────────
+cli-contract             9       0           0         EXHAUSTED
+sql-isolation            9       0           0         EXHAUSTED
+artifact-workflow        9       0           0         EXHAUSTED
+
+VALIDATION
+═══════════════════════════════════════════════════════════════
+All checks pass: true
+Passed: 27/27
+
+═══════════════════════════════════════════════════════════════
+Warning: nu::parser::deprecated
+
+  ! Command deprecated.
+     ,-[/home/lewis/Documents/Codex/2026-11-12/let/work/red-queen/liza-advanced.nu:323:20]
+ 322 |     let trimmed = ($line | str trim)
+ 323 |     if ($trimmed | str downcase) =~ "^(commands|subcommands|available commands)" {
+     :                    ^^^^^^|^^^^^
+     :                          `-- str downcase was deprecated in 0.114.0 and will be removed in a future release.
+ 324 |       $in_commands = true
+     `----
+  help: Use `str lowercase` instead.
+
+/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/target/debug/aws-inventory: OK

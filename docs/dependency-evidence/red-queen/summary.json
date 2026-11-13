@@ -1,0 +1,34 @@
+{
+  "scope": "Offline public CLI contract: argument rejection, bounded readonly SQL, persistent snapshots and exports",
+  "binary_sha256": "8fe9df4f994c84de546cf3f2c1614895f17ff9cab0fdfaa3e533aef02bf867e8",
+  "generations": 3,
+  "zero_survivor_generations": 3,
+  "permanent_checks": 27,
+  "selected_challenges": 27,
+  "product_survivors": 0,
+  "validation": {
+    "all_pass": true,
+    "passed": 27,
+    "total": 27,
+    "failed": [],
+    "validated_at": "2026-11-12T23:33:09"
+  },
+  "status": "READY_FOR_REVIEW",
+  "computed_verdict": "CROWN DEFENDED",
+  "global_blackboard_unchanged": true,
+  "qa_oracle_correction": "qa-oracle-correction.json",
+  "first_failed_ratchet_log": "execution.log",
+  "successful_run_log": "execution-resumed.log",
+  "scope_limits": [
+    "No mutation-testing campaign in this task-owned QA run",
+    "No formal verification claim",
+    "Live AWS emulator and native graph verification executed separately by parent",
+    "Not a whole-project black-hat approval"
+  ],
+  "evidence": {
+    "liza_state": "final-state.json",
+    "challenges": "challenges.json",
+    "script_provenance": "script-provenance.json",
+    "only_script_change": "script-config.diff"
+  }
+}

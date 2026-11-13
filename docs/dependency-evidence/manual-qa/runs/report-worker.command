@@ -1,0 +1,1 @@
+/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/target/debug/aws-inventory report --db /home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/worker-inventory.sqlite --scan-id e60768d9-ca89-4649-9ba6-d799ecddcbc6 

@@ -1,0 +1,10 @@
+Inspect reviewed collection coverage and exclusions for all pinned AWS schemas
+
+Usage: aws-inventory coverage [OPTIONS]
+
+Options:
+      --service <SERVICE>      Match either the CloudFormation family or its normalized service name
+      --type-name <TYPE_NAME>  
+      --unselected             Include only types that are not in the executable catalog
+      --limit <LIMIT>          [default: 200]
+  -h, --help                   Print help

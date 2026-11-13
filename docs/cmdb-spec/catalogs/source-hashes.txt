@@ -1,0 +1,4 @@
+7d551d1ae5d32e83dc7bf45d5ef94fca35b0cecbc510cd5a3fe75aafa73300e4  catalog/cloudcontrol-resources.json
+26593330f8388812474ca9d8c81f0f5d23ac2a57410a11b99bd24ee5116e354a  catalog/cloudcontrol-parent-resources.json
+e62f9dbb297e8b6ebd0cbb941fdfb49e1fe7a5322c1c383ceb398abc541727e3  crates/sdk-catalog/sdk-services.json
+8c8a16287f7da2f9e975f481ecb7771f9807e15f8c605d52d53732949e891a86  catalogs/current-sdk-source-audit.json
