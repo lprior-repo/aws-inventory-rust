@@ -86,88 +86,6 @@ async fn write_batches(path: &Path, batches: &[GraphBatch]) -> TestResult {
     Ok(())
 }
 
-#[tokio::test]
-async fn graph_names_are_validated_against_an_existing_frozen_scan() -> TestResult {
-    let folder = tempfile::tempdir()?;
-    let store = frozen_store(&folder.path().join("inventory.sqlite"), 1, "small").await?;
-    let invalid = [
-        String::new(),
-        "é".into(),
-        "graph;delete".into(),
-        "graph name".into(),
-        "path/name".into(),
-        "contains\0nul".into(),
-        "a".repeat(129),
-        "b".repeat(130),
-    ];
-    for (index, name) in invalid.iter().enumerate() {
-        let output = folder.path().join(format!("invalid-{index}.jsonl"));
-        let result = graph::export_snapshot(&store, SCAN, name, &output).await;
-        assert!(matches!(result, Err(GraphError::Invalid(_))));
-        assert!(!output.exists());
-        assert!(
-            !folder
-                .path()
-                .join(format!("invalid-{index}.jsonl.partial"))
-                .exists()
-        );
-    }
-    for (index, name) in ["A".to_owned(), "_".into(), "-".into(), "a".repeat(128)]
-        .iter()
-        .enumerate()
-    {
-        let output = folder.path().join(format!("valid-{index}.jsonl"));
-        let summary = graph::export_snapshot(&store, SCAN, name, &output).await?;
-        assert_eq!(summary.graph, *name);
-        let batches = read_batches(&output).await?;
-        assert!(batches.iter().all(|batch| batch.graph == *name));
-        assert_eq!(
-            batches.last().map(|batch| batch.stage.as_str()),
-            Some("end")
-        );
-    }
-    store.close().await;
-    Ok(())
-}
-
-#[tokio::test]
-async fn metadata_heavy_resources_split_by_bytes_without_losing_rows() -> TestResult {
-    let folder = tempfile::tempdir()?;
-    // Twelve ordinary 256 KiB property values exceed one graph batch while
-    // remaining well below the per-resource and per-page inventory limits.
-    let metadata = "x".repeat(262_144);
-    let store = frozen_store(&folder.path().join("inventory.sqlite"), 12, &metadata).await?;
-    let output = folder.path().join("large.jsonl");
-    let summary = graph::export_snapshot(&store, SCAN, "large_metadata", &output).await?;
-    let batches = read_batches(&output).await?;
-    let resources = batches
-        .iter()
-        .filter(|batch| batch.stage == "resources")
-        .collect::<Vec<_>>();
-    assert!(resources.len() >= 2);
-    assert_eq!(resources.iter().map(|batch| batch.rows).sum::<u64>(), 12);
-    assert!(
-        batches
-            .iter()
-            .all(|batch| batch.rows <= 256 && batch.query.len() <= QUERY_LIMIT)
-    );
-    for index in 0..12 {
-        let field = format!("id:\"{}\"", resource_id(index));
-        assert_eq!(
-            resources
-                .iter()
-                .filter(|batch| batch.query.contains(&field))
-                .count(),
-            1
-        );
-    }
-    assert_eq!(summary.resources, 12);
-    assert_eq!(summary.edges, 1);
-    assert_eq!(u64::try_from(batches.len())?, summary.batches);
-    store.close().await;
-    Ok(())
-}
-
 #[derive(Clone, Copy, Debug)]
 enum Corruption {
     MixedGraph,
@@ -240,87 +158,6 @@ fn corrupt(batches: &mut Vec<GraphBatch>, change: Corruption) -> TestResult {
         Corruption::UnknownStage => stage_mut(batches, "resources")?.stage = "unknown".into(),
     }
     Ok(())
-}
-
-#[tokio::test]
-async fn malformed_envelopes_fail_before_connecting_or_creating_acknowledgements() -> TestResult {
-    let folder = tempfile::tempdir()?;
-    let store = frozen_store(&folder.path().join("inventory.sqlite"), 256, "small").await?;
-    let original = folder.path().join("original.jsonl");
-    graph::export_snapshot(&store, SCAN, "envelopes", &original).await?;
-    let batches = read_batches(&original).await?;
-    assert!(
-        batches
-            .iter()
-            .any(|batch| batch.stage == "resources" && batch.rows == 256)
-    );
-    let valid_ack = folder.path().join("valid-ack.sqlite");
-    let valid = graph::push_file(original, valid_ack.clone(), "not-a-redis-url").await;
-    assert!(matches!(valid, Err(GraphError::Redis(_))));
-    assert!(!valid_ack.exists());
-
-    // Whitespace preserves the generated Cypher while reaching the advertised
-    // 2 MiB query limit exactly. Validation must accept this inclusive boundary.
-    let mut padded = batches.clone();
-    let query = &mut stage_mut(&mut padded, "resources")?.query;
-    query.push_str(&" ".repeat(QUERY_LIMIT.saturating_sub(query.len())));
-    let padded_path = folder.path().join("padded.jsonl");
-    write_batches(&padded_path, &padded).await?;
-    let padded_ack = folder.path().join("padded-ack.sqlite");
-    let valid = graph::push_file(padded_path, padded_ack.clone(), "not-a-redis-url").await;
-    assert!(matches!(valid, Err(GraphError::Redis(_))));
-    assert!(!padded_ack.exists());
-
-    for (index, change) in [
-        Corruption::MixedGraph,
-        Corruption::MixedScan,
-        Corruption::SequenceGap,
-        Corruption::Version,
-        Corruption::QueryBytes,
-        Corruption::Rows,
-        Corruption::FirstStage,
-        Corruption::SecondStage,
-        Corruption::RepeatedIndex,
-        Corruption::BackwardStage,
-        Corruption::IndexRows,
-        Corruption::BeginRows,
-        Corruption::EndRows,
-        Corruption::TrailingBatch,
-        Corruption::MissingEnd,
-        Corruption::UnknownStage,
-    ]
-    .into_iter()
-    .enumerate()
-    {
-        let mut damaged = batches.clone();
-        corrupt(&mut damaged, change)?;
-        let input = folder.path().join(format!("damaged-{index}.jsonl"));
-        let ack = folder.path().join(format!("ack-{index}.sqlite"));
-        write_batches(&input, &damaged).await?;
-        let outcome = graph::push_file(input, ack.clone(), "not-a-redis-url").await;
-        assert!(
-            matches!(&outcome, Err(GraphError::Invalid(_))),
-            "{change:?}: {outcome:?}"
-        );
-        assert!(
-            !ack.exists(),
-            "{change:?} created an acknowledgement database"
-        );
-    }
-    store.close().await;
-    Ok(())
-}
-
-#[test]
-fn public_projection_schema_preserves_its_version_and_bounds() {
-    assert_eq!(
-        graph::graph_batch_schema_version(),
-        json!({
-            "version": 1,
-            "max_rows": 256,
-            "max_query_bytes": 2_097_152,
-        })
-    );
 }
 
 async fn acknowledged_sequences(path: &Path) -> Result<Vec<i64>, Box<dyn std::error::Error>> {
@@ -418,10 +255,13 @@ async fn server_rejection_case() -> TestResult {
     }
 }
 
-#[tokio::test]
-#[ignore = "requires explicit FALKORDB_TEST_URL; creates and removes an isolated test graph"]
-async fn live_falkordb_rejected_batch_is_never_acknowledged_or_finalized() -> TestResult {
-    tokio::time::timeout(Duration::from_secs(10), server_rejection_case())
-        .await
-        .map_err(|_| "engine graph integration test exceeded its 10-second deadline")?
-}
+#[path = "graph_contracts/graph_names_are_validated_against_an_existing_frozen_scan.rs"]
+mod graph_names_are_validated_against_an_existing_frozen_scan;
+#[path = "graph_contracts/live_falkordb_rejected_batch_is_never_acknowledged_or_finalized.rs"]
+mod live_falkordb_rejected_batch_is_never_acknowledged_or_finalized;
+#[path = "graph_contracts/malformed_envelopes_fail_before_connecting_or_creating_acknowledgements.rs"]
+mod malformed_envelopes_fail_before_connecting_or_creating_acknowledgements;
+#[path = "graph_contracts/metadata_heavy_resources_split_by_bytes_without_losing_rows.rs"]
+mod metadata_heavy_resources_split_by_bytes_without_losing_rows;
+#[path = "graph_contracts/public_projection_schema_preserves_its_version_and_bounds.rs"]
+mod public_projection_schema_preserves_its_version_and_bounds;

@@ -14,10 +14,12 @@ tokio.workspace = true
 tokio-util.workspace = true
 futures-util.workspace = true
 tracing.workspace = true
-sha2 = "0.10"
-sqlx = { version = "0.9", default-features = false, features = ["sqlite", "runtime-tokio"] }
-redis = { version = "1.8", features = ["tokio-rustls-comp"] }
-tokio-stream = "0.1"
+sha2.workspace = true
+base16ct.workspace = true
+# Upstream's merged SQLite 0.39 support; retain bundled SQLite and allocation limits.
+# https://github.com/transact-rs/sqlx/pull/4502
+sqlx = { git = "https://github.com/transact-rs/sqlx", rev = "10462fa4414c6c7f1ed1d39bb31678e3b726878c", default-features = false, features = ["sqlite", "runtime-tokio"] }
+redis = { version = "1.8.1", features = ["tokio-rustls-comp"] }
 
 [dev-dependencies]
 tempfile = "3"

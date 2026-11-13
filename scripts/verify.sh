@@ -5,6 +5,7 @@ set -euo pipefail
 # compiling all 437 service SDKs in an ordinary application validation job.
 # Install scripts/requirements.txt into the interpreter selected below first.
 INVENTORY_PYTHON="${INVENTORY_PYTHON:-python3}"
+scripts/check-source-size.sh
 cargo fmt --all --check
 "$INVENTORY_PYTHON" scripts/generate_sdk_catalog.py --check
 "$INVENTORY_PYTHON" catalog/upstream/build_parent_catalog.py --check
@@ -18,7 +19,9 @@ cargo check -p inventory-sdk-catalog --no-default-features --locked
 cargo clippy --workspace --exclude inventory-sdk-catalog --lib --bins --examples --all-features --locked -j1 -- -D warnings
 cargo clippy -p inventory-sdk-catalog --example audit --locked -j1 -- -D warnings
 cargo test --workspace --exclude inventory-sdk-catalog --all-features --locked -j1
-cargo build --features aws --locked -j1
+# Keep the final binary on the same workspace/dev-feature graph as the tests
+# and integration examples, avoiding a second SDK rebuild and binary replacement.
+cargo build --workspace --exclude inventory-sdk-catalog --all-features --bins --examples --locked -j1
 
 # Explicit opt-in checks, requiring their own environment/resources:
 # python scripts/generate_sdk_catalog.py --check --verify-cache

@@ -1,0 +1,65 @@
+//! Per-quota-family fair admission and feedback.
+use super::*;
+
+#[derive(Debug)]
+pub(super) struct Bucket {
+    pub(super) in_flight: Semaphore,
+    pub(super) dispatch: Semaphore,
+    pub(super) state: Mutex<PacingState>,
+    pub(super) rejected: CancellationToken,
+}
+
+impl Bucket {
+    pub(super) fn new(limits: ValidatedLimits) -> Self {
+        Self {
+            in_flight: Semaphore::new(limits.concurrency),
+            dispatch: Semaphore::new(1),
+            state: Mutex::new(PacingState {
+                last_start: None,
+                cooldown_until: None,
+                rejected: None,
+                rate: limits.rate,
+            }),
+            rejected: CancellationToken::new(),
+        }
+    }
+
+    pub(super) fn due_at(&self) -> Result<Option<Instant>, ApiError> {
+        self.state.lock().map_err(|_| poisoned_pacing())?.due_at()
+    }
+
+    pub(super) fn try_start(&self, now: Instant) -> Result<bool, ApiError> {
+        let mut state = self.state.lock().map_err(|_| poisoned_pacing())?;
+        if state.due_at()?.is_some_and(|due| due > now) {
+            return Ok(false);
+        }
+        state.last_start = Some(now);
+        Ok(true)
+    }
+
+    pub(super) fn feedback<T>(&self, result: &Result<T, ApiError>) -> Result<(), ApiError> {
+        let outcome = self
+            .state
+            .lock()
+            .map_err(|_| poisoned_pacing())?
+            .feedback(result, Instant::now());
+        if matches!(outcome, Err(ApiError::RetryAfterRejected(_))) {
+            self.rejected.cancel();
+        }
+        outcome
+    }
+
+    pub(super) fn rejection_error(&self) -> ApiError {
+        match self.state.lock() {
+            Ok(state) => state.rejected.map_or_else(
+                || ApiError::Permanent("missing bucket rejection cause".into()),
+                RejectedHint::error,
+            ),
+            Err(_) => poisoned_pacing(),
+        }
+    }
+}
+
+pub(super) fn poisoned_pacing() -> ApiError {
+    ApiError::Permanent("bucket pacing state poisoned".into())
+}

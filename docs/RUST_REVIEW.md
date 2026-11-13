@@ -1,5 +1,10 @@
 # Rust source and asynchronous ownership review
 
+> Historical import review. Tool availability, SDK compilation, dependency audit,
+> and source-size statements below describe the imported archive. Current work
+> is recorded in [DEPENDENCY_UPDATE.md](DEPENDENCY_UPDATE.md) and its linked
+> review artifacts; historical failures are retained rather than overwritten.
+
 **Date:** 2026-11-12. **Scope:** targeted implementation review with observed
 test and compiler evidence. **Full requested skill approval: REJECTED pending
 the open verification gates below.** This is not a safety certification,

@@ -200,7 +200,7 @@ async fn push_graph(
         },
         &token,
     );
-    let summary = delivery::until_signal(work, &token).await?;
+    let summary = Box::pin(delivery::until_signal(work, &token)).await?;
     let mut result = serde_json::to_value(summary)?;
     result
         .as_object_mut()

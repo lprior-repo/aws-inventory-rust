@@ -1,6 +1,10 @@
-# Verified local deployment
+# Initial local deployment (historical)
 
 Date: 2026-11-12 (America/Chicago).
+
+This is the initial-import result. The dependency update and current operational
+results supersede it; see [DEPENDENCY_UPDATE.md](DEPENDENCY_UPDATE.md).
+The raw evidence below remains unchanged for traceability.
 
 **Local operational setup: PASS. Strict Rust release assurance: REJECTED.**
 See [the review](LOCAL_REVIEW.md) for the unresolved findings. No Rust source,

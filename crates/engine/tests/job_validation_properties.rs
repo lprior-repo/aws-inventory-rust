@@ -5,7 +5,7 @@
 use std::future::Future;
 use std::time::Duration;
 
-use inventory_engine::jobs::{Completion, JobError, JobSpec, JobState, JobStore};
+use inventory_engine::jobs::{Completion, JobError, JobSpec, JobState, JobStore, TerminalJobState};
 use proptest::prelude::*;
 use proptest::test_runner::{Config, RngSeed, TestCaseError, TestCaseResult};
 use serde_json::{Value, json};
@@ -126,7 +126,7 @@ async fn snapshot(store: &JobStore, id: &str) -> Result<Value, JobError> {
     }))
 }
 
-fn completion(state: JobState) -> Completion {
+fn completion(state: TerminalJobState) -> Completion {
     Completion {
         state,
         result: None,
@@ -155,13 +155,13 @@ async fn check_epoch_boundary(store: &JobStore, negative: i64) -> TestCaseResult
     ));
     prop_assert!(rejected_input(
         store
-            .complete(&lease, completion(JobState::Succeeded), negative)
+            .complete(&lease, completion(TerminalJobState::Succeeded), negative)
             .await
     ));
     prop_assert_eq!(snapshot(store, "epoch").await.map_err(failure)?, running);
 
     store
-        .complete(&lease, completion(JobState::Failed), 0)
+        .complete(&lease, completion(TerminalJobState::Failed), 0)
         .await
         .map_err(failure)?;
     let terminal = snapshot(store, "epoch").await.map_err(failure)?;
@@ -247,7 +247,7 @@ async fn invalid_worker_capabilities_do_not_claim_or_consume_attempts() -> TestR
         .ok_or("valid boundary capability was not accepted")?;
     assert_eq!(lease.job.attempt, 1);
     store
-        .complete(&lease, completion(JobState::Succeeded), 0)
+        .complete(&lease, completion(TerminalJobState::Succeeded), 0)
         .await?;
     store.close().await;
     Ok(())

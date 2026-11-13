@@ -17,6 +17,7 @@ import os
 import pathlib
 import re
 import sys
+import tarfile
 import time
 import tomllib
 import urllib.error
@@ -108,6 +109,8 @@ def registry_record(name: str, upstream: dict[str, str], revision: str) -> dict[
         "registry_package_url": f"https://crates.io/crates/{name}/{version}",
         "checksum_sha256": published["cksum"],
         "rust_version": published.get("rust_version"),
+        "client_features": [feature for feature in published.get("features", {}).get("default", [])
+                            if feature != "rustls"],
         "yanked": False,
         "sdk_source_sha256": upstream["source_hash"],
         "model_sha256": upstream.get("model_hash"),
@@ -206,6 +209,14 @@ def validate(document: dict[str, object], original: bytes) -> None:
             raise ValueError(f"invalid crate name or stable version: {name}")
         if service["feature"] != name.removeprefix("aws-sdk-"):
             raise ValueError(f"feature does not match crate name: {name}")
+        client_features = service.get("client_features")
+        if (not isinstance(client_features, list) or not 2 <= len(client_features) <= 16
+                or any(not isinstance(item, str) or re.fullmatch(r"[a-zA-Z0-9_-]+", item) is None
+                       for item in client_features)
+                or len(set(client_features)) != len(client_features)
+                or not {"default-https-client", "rt-tokio"}.issubset(client_features)
+                or "rustls" in client_features):
+            raise ValueError(f"invalid modern SDK client feature selection: {name}")
         if service["version"] != upstream[name]["version"] or service["yanked"]:
             raise ValueError(f"version does not match official source or is yanked: {name}")
         if service["sdk_source_sha256"] != upstream[name]["source_hash"]:
@@ -238,15 +249,17 @@ def manifest(document: dict[str, object]) -> str:
     ]
     lines.extend(f'    "{service["feature"]}",' for service in services)
     lines.append("]")
-    lines.extend(f'{service["feature"]} = ["dep:{service["name"]}"]' for service in services)
+    lines.extend(f'{service["feature"]} = ["dep:{service["name"]}", "catalog-{service["feature"][0]}"]' for service in services)
+    lines.extend(f'catalog-{letter} = []' for letter in sorted({service["feature"][0] for service in services}))
     lines.extend(["", "[dependencies]"])
     lines.extend(
-        f'{service["name"]} = {{ version = "={service["version"]}", optional = true }}'
+        f'{service["name"]} = {{ version = "={service["version"]}", optional = true, '
+        f'default-features = false, features = {json.dumps(service["client_features"])} }}'
         for service in services
     )
     lines.extend([
         "", "[dev-dependencies]", "serde_json.workspace = true",
-        'sha2 = "0.10.9"', 'toml = "1.2.1"',
+        'sha2.workspace = true', 'base16ct.workspace = true', 'toml = "1.2.1"',
         "", "[lints]", "workspace = true", "",
     ])
     return "\n".join(lines)
@@ -262,13 +275,22 @@ def library(document: dict[str, object]) -> str:
         f'pub const SERVICE_COUNT: usize = {document["service_count"]};',
         'pub const SERVICE_MANIFEST_JSON: &str = include_str!("../sdk-services.json");',
     ]
-    for service in document["services"]:
-        lines.extend([
-            "",
-            f'#[cfg(feature = "{service["feature"]}")]',
-            f'pub use {service["name"].replace("-", "_")} as {service["feature"]};',
-        ])
+    for letter in sorted({service["feature"][0] for service in document["services"]}):
+        lines.extend(["", f'#[cfg(feature = "catalog-{letter}")]', f"mod services_{letter};",
+                      f'#[cfg(feature = "catalog-{letter}")]', f"pub use services_{letter}::*;"])
     return "\n".join(lines) + "\n"
+
+
+def service_libraries(document: dict[str, object]) -> dict[pathlib.Path, str]:
+    outputs = {}
+    for letter in sorted({service["feature"][0] for service in document["services"]}):
+        lines = [f"//! Generated SDK reexports beginning with {letter}."]
+        for service in document["services"]:
+            if service["feature"][0] == letter:
+                lines.extend(["", f'#[cfg(feature = "{service["feature"]}")]',
+                              f'pub use {service["name"].replace("-", "_")} as {service["feature"]};'])
+        outputs[DESTINATION / "src" / f"services_{letter}.rs"] = "\n".join(lines) + "\n"
+    return outputs
 
 
 def write(path: pathlib.Path, text: str) -> None:
@@ -294,12 +316,34 @@ def verify_cache(document: dict[str, object]) -> dict[str, int]:
             with path.open("rb") as reader:
                 digest = hashlib.file_digest(reader, "sha256").hexdigest()
             if digest == service["checksum_sha256"]:
+                verify_client_features(path, service)
                 total_bytes += path.stat().st_size
                 verified = True
                 break
         if not verified:
             raise ValueError(f"SDK archive checksum mismatch: {archive}")
-    return {"verified_sdk_archives": document["service_count"], "sdk_archive_bytes": total_bytes}
+    return {"verified_sdk_archives": document["service_count"],
+            "verified_client_feature_sets": document["service_count"], "sdk_archive_bytes": total_bytes}
+
+
+def verify_client_features(path: pathlib.Path, service: dict) -> None:
+    manifest_name = f'{service["name"]}-{service["version"]}/Cargo.toml'
+    with tarfile.open(path, mode="r|gz") as archive:
+        for index, member in enumerate(archive):
+            if index >= 128:
+                raise ValueError("SDK manifest exceeds archive search bound")
+            if member.name != manifest_name:
+                continue
+            if not member.isfile() or not 0 < member.size <= 1_048_576:
+                raise ValueError("SDK manifest is not a bounded regular file")
+            with archive.extractfile(member) as stream:
+                manifest = tomllib.loads(stream.read(1_048_577).decode("utf-8"))
+            expected = [item for item in manifest.get("features", {}).get("default", [])
+                        if item != "rustls"]
+            if service.get("client_features") != expected:
+                raise ValueError(f'SDK client features differ from verified archive: {service["name"]}')
+            return
+    raise ValueError("SDK archive lacks its package manifest")
 
 
 def main() -> int:
@@ -316,6 +360,7 @@ def main() -> int:
     document = refresh(args.revision) if args.refresh else json.loads(SNAPSHOT.read_text(encoding="utf-8"))
     validate(document, UPSTREAM.read_bytes())
     outputs = {DESTINATION / "Cargo.toml": manifest(document), DESTINATION / "src" / "lib.rs": library(document)}
+    outputs.update(service_libraries(document))
     for path, text in outputs.items():
         if args.check:
             if not path.exists() or path.read_text(encoding="utf-8") != text:

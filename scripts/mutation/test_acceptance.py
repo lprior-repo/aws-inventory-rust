@@ -23,14 +23,14 @@ SPEC.loader.exec_module(gate)
 # Literal public acceptance contract: do not derive this oracle from gate.py.
 LIVE_TESTS = {
     "aws-inventory": [
-        "emulator_cli_native_snapshot_reports_and_graph_delivery",
-        "emulator_cli_durable_worker_persists_an_assumed_role_scan",
+        "native::emulator_cli_native_snapshot_reports_and_graph_delivery",
+        "worker::emulator_cli_durable_worker_persists_an_assumed_role_scan",
     ],
     "inventory-core": [],
     "inventory-engine": [
         "live_falkordb_replay_and_parameter_round_trip",
-        "live_falkordb_rejected_batch_is_never_acknowledged_or_finalized",
-        "live_falkordb_ambiguous_write_replay_preserves_nodes_edges_and_checkpoint",
+        "live_falkordb_rejected_batch_is_never_acknowledged_or_finalized::live_falkordb_rejected_batch_is_never_acknowledged_or_finalized",
+        "live_falkordb_ambiguous_write_replay_preserves_nodes_edges_and_checkpoint::live_falkordb_ambiguous_write_replay_preserves_nodes_edges_and_checkpoint",
     ],
     "inventory-aws": [
         "emulator_snapshot_native", "emulator_snapshot_sources",

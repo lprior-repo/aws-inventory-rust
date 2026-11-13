@@ -83,6 +83,8 @@ The page is owned so bounded preparation can move into a tracked worker without
 duplicating its payload. The preparation permit remains held through its write
 transaction. SQL query execution uses a physical read-only/query-only reader,
 single-statement validation and native/result bounds.
+Queries that hit SQLite's native `SQLITE_TOOBIG` bound return
+`StoreError::Limit("SQLite value bytes")`.
 Page data, graph edges and checkpoint commit in ONE transaction. Replays idempotent.
 Provenance per source retained. Partial scans never infer deletion.
 WAL; synchronous FULL; busy timeout; foreign keys; prepared statements; SQL views.

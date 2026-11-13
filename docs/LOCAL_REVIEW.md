@@ -1,6 +1,10 @@
-# Local setup and Rust assurance review
+# Initial local setup and Rust assurance review (historical)
 
 Date: 2026-11-12 (America/Chicago).
+
+This review describes the initial import. Dependency, unused-dependency and
+large-future findings are reassessed in [DEPENDENCY_UPDATE.md](DEPENDENCY_UPDATE.md).
+This historical report and its raw evidence have not been restamped as a pass.
 
 This review distinguishes operational local setup from blanket Rust release
 approval. The imported Rust source and dependency lockfile have not been changed.

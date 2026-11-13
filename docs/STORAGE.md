@@ -4,9 +4,12 @@
 features. Ingestion, migration, checkpoints, reporting queries and export streams
 all use SQLx. There is no rusqlite backend or nominal SQLx wrapper around another
 database library. SQLx runs SQLite calls on its connection worker threads.
-The lockfile resolves libsqlite3-sys 0.37.0, whose bundled header identifies SQLite
-3.51.3 (2026-03-13). That patch includes the
-[WAL-reset corruption fix](https://sqlite.org/releaselog/3_51_3.html).
+The lockfile resolves libsqlite3-sys 0.39.1 with bundled SQLite 3.54.1. SQLx is
+pinned to upstream commit `10462fa4414c6c7f1ed1d39bb31678e3b726878c`, which adds
+support for this patched SQLite family. This retains the native allocation
+limits and includes the [WAL page-size security fix](https://rustsec.org/advisories/RUSTSEC-2026-0459.html).
+The `sqlite_dependency` integration tests check the library actually linked to
+the store and all four required compile-time limits.
 
 ## Connections and lifecycle
 

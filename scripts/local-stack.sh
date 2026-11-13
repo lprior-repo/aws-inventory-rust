@@ -58,6 +58,12 @@ install)
     "$PYTHON" scripts/emulator/install_graph.py "$RUNTIME/graph" --jobs 2
     cargo build --locked --workspace --exclude inventory-sdk-catalog --all-features --bins --examples -j1
     ;;
+sdk-build)
+    exec systemd-run --user --scope --collect --unit="$UNIT-sdk-build" \
+        -p MemoryHigh=24G -p MemoryMax=32G -p MemorySwapMax=0 \
+        cargo build -p inventory-sdk-catalog --features all-services --locked -j2 \
+        --target-dir "$STATE/all-sdk-target"
+    ;;
 start)
     require_install
     if systemctl --user is-active --quiet "$UNIT"; then
@@ -100,7 +106,9 @@ status)
     systemctl --user show "$UNIT" --property=ActiveState --property=SubState --property=MainPID
     if systemctl --user is-active --quiet "$UNIT" && [[ -f "$STATE/session.env" ]]; then
         source "$STATE/session.env"
-        if curl --fail --silent --max-time 5 --cacert "$SSL_CERT_FILE" "$AWS_ENDPOINT_URL/__admin/health" >/dev/null \
+        active_pid=$(systemctl --user show "$UNIT" --property=MainPID --value)
+        if [[ "$INVENTORY_LOCAL_SESSION" == "$STATE/sessions/"*-"$active_pid" && -r "$SSL_CERT_FILE" ]] \
+            && curl --fail --silent --max-time 5 --cacert "$SSL_CERT_FILE" "$AWS_ENDPOINT_URL/__admin/health" >/dev/null \
             && [[ $("$REDIS_CLI" -u "$FALKORDB_URL" ping) == PONG ]]; then
             printf 'READY\nEmulator: %s\nFalkorDB: %s\nSession: %s\n' \
                 "$AWS_ENDPOINT_URL" "$FALKORDB_URL" "$INVENTORY_LOCAL_SESSION"
@@ -135,10 +143,11 @@ logs)
     exec journalctl --user -u "$UNIT" -n 50 --no-pager
     ;;
 help|-h|--help)
-    printf '%s\n' 'Usage: scripts/local-stack.sh {install|start|status|stop|cli ARGS...|verify|logs}' \
+    printf '%s\n' 'Usage: scripts/local-stack.sh {install|sdk-build|start|status|stop|cli ARGS...|verify|logs}' \
         'start: supervised, seeded loopback AWS emulator + FalkorDB; no sudo or live AWS.' \
         'cli: invoke the collector using only the verified local emulator environment.' \
         'verify: fresh fixtures, all Rust tests, exact SQLite/export/graph checks and replay.' \
+        'sdk-build: compile all 437 SDKs in a separate target with a 32 GiB memory cap.' \
         'Services stop after seven days or on reboot; use start again to recreate fixtures.'
     ;;
 *) printf 'Unknown command: %s\n' "$1" >&2; exit 2 ;;

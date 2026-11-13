@@ -196,7 +196,10 @@ impl<W: AsyncWrite + Unpin> ArtifactWriter<W> {
             provenance: self.options.provenance,
             counts: self.counts,
             bytes: self.bytes,
-            sha256: format!("{:x}", self.digest.clone().finalize()),
+            sha256: format!(
+                "{:x}",
+                base16ct::HexDisplay(&self.digest.clone().finalize())
+            ),
         }
     }
 

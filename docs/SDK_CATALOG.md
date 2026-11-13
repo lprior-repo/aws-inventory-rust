@@ -6,7 +6,7 @@
 release snapshot. It is a dependency and provenance catalog, not an assertion
 that every service has an implemented inventory collector.
 
-The initial snapshot follows AWS SDK for Rust release `release-2026-11-11` and
+The current snapshot follows AWS SDK for Rust release `release-2026-11-12` and
 contains **437 service crates**. The official generated service index and
 `versions.toml` agree on those service names. Configuration, credentials,
 runtime, and Smithy support crates are separate and are resolved transitively;
@@ -31,13 +31,18 @@ The catalog retains three kinds of evidence:
    transitive packages. `cargo fetch --locked` reproduces the locked downloads.
 
 Every SDK uses an exact `=version` requirement, not a floating major-version
-range. Registry validation rejects a missing or yanked version. The generator
+range. Service dependencies disable the combined default feature group and
+explicitly preserve every default except the obsolete `rustls` compatibility
+transport. This retains SigV4a and HTTP protocol features where the SDK declares
+them, together with `default-https-client` and `rt-tokio`. `--verify-cache`
+compares all selected feature sets against each checksum-verified package's
+manifest. Registry validation rejects a missing or yanked version. The generator
 also records a newer registry version if one exists, rather than silently
 mixing a newer package with an older source/model fingerprint.
 
 Branch and release-tag inputs are resolved to a full Git commit before any
-source URL is recorded. The initial source commit is
-`0f29bbb75b57d337bd00cf46c0d29d6988e2c372`. The retained manifest checksum
+source URL is recorded. The current source commit is
+`c8e11bea896b54530c587c29ce30ebd6619af62a`. The retained manifest checksum
 protects offline reproduction even if an upstream branch or tag later moves.
 
 ## Refresh and offline checks
@@ -49,7 +54,7 @@ The generator uses Python 3.11 or later and only the standard library:
 python scripts/generate_sdk_catalog.py --refresh
 
 # Reproduce a specified official release's service set.
-python scripts/generate_sdk_catalog.py --refresh --revision release-2026-11-11
+python scripts/generate_sdk_catalog.py --refresh --revision release-2026-11-12
 
 # Rebuild Cargo.toml and lib.rs from the retained local snapshot, offline.
 python scripts/generate_sdk_catalog.py

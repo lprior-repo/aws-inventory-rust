@@ -69,6 +69,7 @@ Install Rustup, a C compiler, make, git, curl, GnuPG, OpenSSL, Python, and eithe
 
 ```bash
 scripts/local-stack.sh install
+scripts/local-stack.sh sdk-build
 scripts/local-stack.sh start
 ```
 
@@ -77,6 +78,11 @@ SHA-256 and AWS signature before extracting it, and the Redis and FalkorDB
 downloads have pinned checksums. Arch Linux uses `bsdtar` when `dpkg-deb` is
 absent. The wrapper installs no system packages. Cargo uses Rustup's pinned
 user toolchain; Rustup may download it if it is not already installed.
+
+`sdk-build` compiles the catalog with all 437 optional SDK clients enabled. It
+uses `.local/all-sdk-target` and two build jobs in a 32 GiB memory scope, so
+it can run independently of ordinary collector builds. Collector scope is
+defined by the application's implemented resource collectors.
 
 Runtime downloads, Python packages, logs and session environment files live
 under the ignored `.local/` tree. On the initial machine, its `runtime` and
@@ -101,6 +107,7 @@ env -u RUSTC_WRAPPER -u RUSTC_WORKSPACE_WRAPPER \
 ```
 
 Operational local integration and strict Rust assurance have separate results.
-See `LOCAL_REVIEW.md` for the black-hat findings and verifier applicability.
+See `DEPENDENCY_UPDATE.md` for current dependency and end-to-end results.
+`LOCAL_REVIEW.md` preserves the initial black-hat findings and verifier applicability.
 The original project's universal AWS coverage and whole-project mutation score
 remain open; successful local tests do not establish either claim.

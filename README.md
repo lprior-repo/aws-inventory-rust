@@ -1,7 +1,7 @@
 # AWS Inventory in Rust
 
 **Local stack:** [setup and commands](docs/LOCAL_SETUP.md) ·
-[current results](docs/LOCAL_RESULTS.md) ·
+[current results](docs/DEPENDENCY_UPDATE.md) ·
 [black-hat and Rust review](docs/LOCAL_REVIEW.md).
 
 **Continuing development elsewhere? Start with [START_HERE.md](START_HERE.md)**
@@ -50,7 +50,7 @@ recording; it runs the same compiled Rust collectors against signed local APIs.
   credential-assumption failures. Global services run once per target scan.
 - A **SQLx durable scan queue** with transactional claims, attempt history,
   renewable fenced leases, cancellation and recovery after worker crashes.
-- **437 official AWS service SDK crates**, pinned to the November 11, 2026 SDK
+- **437 official AWS service SDK crates**, pinned to the November 12, 2026 SDK
   release, available as optional features in a generated catalog. Package
   checksums and source/model fingerprints are retained.
 - An offline `plan` command exposes APIs, dependencies, quota groups, known

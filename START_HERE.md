@@ -24,7 +24,7 @@ not execute mutations or establish a score.
 | Architecture | 965 property relationship rules across 255 types plus 21 parent workflows; 265 types have at least one rule; a configured rule is distinct from an observed edge |
 | Delivery | Streaming JSON/JSONL; bounded, replayable FalkorDB projection with transactional local acknowledgements and separate delivery retry |
 | Execution | Shared request admission, configured/adaptive quota buckets, bounded retry/backoff/deadlines, cancellation and a fenced SQLx job queue |
-| SDK availability | 437 official service SDK crates pinned to the November 11, 2026 release; archives verified; only implemented clients compiled by normal application builds |
+| SDK availability | 437 official service SDK crates pinned to the November 12, 2026 release; archives verified; only implemented clients compiled by normal application builds |
 | Verification | Five local snapshot scenarios; exact property checks in SQLite, JSONL and real FalkorDB; ten guarded Rust integration cases; strict mutation acceptance accounting |
 
 Native and Cloud Control kinds overlap. Adding their counts would overstate
