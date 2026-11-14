@@ -17,6 +17,13 @@
   neither Python nor Python3 on `PATH`: source/function size guards, formatting,
   generated-data checks, split SDK-facade checks, Clippy, tests, doctests and
   the final build all passed.
+- Preserve the concurrently merged O1 codec experiment under
+  `evidence/record-codec-bench` without reverting production CBOR. Its
+  `inventory-core` dependency now pins the original experiment's Git revision;
+  its original measurements are explicitly historical, not current-codec results.
+  Both size guards pass after integration (778 Rust files); the isolated
+  benchmark's locked release run passes both fixtures and its cross-codec
+  field assertions. Original result tables remain unchanged.
 - Project agents in `.omp/agents/` include the local GPU builders and
   `aws-build-sol` (ChatGPT Sol). Builders implement independent packages in
   parallel; the coordinator owns serialized compilation, formatting and tests.
