@@ -18,6 +18,9 @@ verify `cargo --version` before Moon setup. The first pushed Moon run
 failed because Moon's Rust installer did not provide the pinned toolchain's
 `cargo`; the bootstrap makes that runner prerequisite explicit.
 
+The Linux prerequisites include `libpulse-dev` and `libdrm-dev`: Makepad links
+PulseAudio and DRM when the workspace UI test target is built.
+
 The current generated checks do not prove a generated collection-plan catalog or binary API-catalog parity: no dedicated checked-in generator/check command for either exists in the current Rust CLI. Collection-plan behavior and catalog access are covered by ordinary workspace tests, but are not universal inventory proof. The ignored live FalkorDB test verifies graph delivery behavior, and the ignored prepared-emulator snapshot tests verify specific collector components against a frozen snapshot. Both opt-in Moon tasks require their explicit service/environment prerequisites and neither is a universal AWS E2E pipeline. Universal resource coverage, real AWS semantics, and universal live-emulator collection remain unfinished; see [CLOUDCONTROL_COVERAGE](CLOUDCONTROL_COVERAGE.md) and [UNIVERSAL_COVERAGE](UNIVERSAL_COVERAGE.md).
 
 Local verification commands:
