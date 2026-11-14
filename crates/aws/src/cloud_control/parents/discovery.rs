@@ -1,4 +1,3 @@
-//! discovery operations.
 use super::*;
 
 pub(in super::super) async fn collect_group_with<L, LFut, G, GFut>(
@@ -72,9 +71,6 @@ where
             {
                 Ok(output) => output,
                 Err(ApiError::UnsupportedType(message)) => {
-                    // Children cannot be enumerated through an unsupported
-                    // parent; keep the gap explicit instead of claiming an
-                    // empty child inventory.
                     state.missing.store(true, Ordering::Relaxed);
                     return record_unsupported(ctx, &failure_scope, message).await;
                 }

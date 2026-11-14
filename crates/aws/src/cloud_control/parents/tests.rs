@@ -1,5 +1,3 @@
-//! Literal parent models, adversarial scope outcomes, and deterministic properties.
-
 use std::sync::atomic::AtomicUsize;
 
 use inventory_engine::limiter::{ApiExecutor, ExecutorConfig};

@@ -20,11 +20,10 @@ const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 
 #[test]
 fn every_per_model_counter_matches_the_contract() -> Result<(), Box<dyn std::error::Error>> {
-    // Given a service, all counted shapes, and unknown data.
     let model: ModelFile = serde_json::from_str(MODEL)?;
-    // When pure statistics are computed.
+
     let stats = compute_stats(&model);
-    // Then every counter, not just a subset, is exact.
+
     assert_eq!(
         stats,
         ModelStats {
@@ -58,7 +57,6 @@ fn every_per_model_counter_matches_the_contract() -> Result<(), Box<dyn std::err
 
 #[test]
 fn roots_require_an_exact_structure_target() -> Result<(), Box<dyn std::error::Error>> {
-    // Given every root case plus deceptive suffix and nonstructure matches.
     let model: ModelFile = serde_json::from_str(
         r#"{"shapes":{
       "n#Svc":{"type":"service"},"n#ListAbsent":{"type":"operation"},
@@ -74,9 +72,9 @@ fn roots_require_an_exact_structure_target() -> Result<(), Box<dyn std::error::E
       "n#Union":{"type":"union","members":{"Id":{"traits":{"smithy.api#required":{}}}}}
     }}"#,
     )?;
-    // When targets are resolved, only the exact required structure excludes a root.
+
     let stats = compute_stats(&model);
-    // Then missing namespaces, Unit, and unions remain roots.
+
     assert_eq!(
         (
             stats.operations,
@@ -90,7 +88,6 @@ fn roots_require_an_exact_structure_target() -> Result<(), Box<dyn std::error::E
 
 #[test]
 fn read_prefixes_are_case_sensitive() -> Result<(), Box<dyn std::error::Error>> {
-    // Given all exact prefixes and lowercase/uppercase impostors.
     let model: ModelFile = serde_json::from_str(
         r#"{"shapes":{
       "n#Svc":{"type":"service"},"n#ListA":{"type":"operation"},"n#DescribeA":{"type":"operation"},
@@ -100,9 +97,9 @@ fn read_prefixes_are_case_sensitive() -> Result<(), Box<dyn std::error::Error>> 
       "n#describeA":{"type":"operation"},"n#getA":{"type":"operation"},"n#BatchgetA":{"type":"operation"}
     }}"#,
     )?;
-    // When names are counted without case normalization.
+
     let stats = compute_stats(&model);
-    // Then only the nine specified prefixes match.
+
     assert_eq!(
         (
             stats.operations,
@@ -117,20 +114,18 @@ fn read_prefixes_are_case_sensitive() -> Result<(), Box<dyn std::error::Error>> 
 
 #[test]
 fn unknown_shapes_and_fields_do_not_add_counters() -> Result<(), Box<dyn std::error::Error>> {
-    // Given an unknown shape and metadata.
     let model: ModelFile = serde_json::from_str(
         r#"{"unknown":42,"shapes":{
       "n#Svc":{"type":"service","future":true},"n#X":{"type":"future","future":{"x":1}}
     }}"#,
     )?;
-    // When only accepted kinds are counted, then no counter changes.
+
     assert_eq!(compute_stats(&model), ModelStats::default());
     Ok(())
 }
 
 #[test]
 fn rendering_is_the_complete_fixed_literal() -> Result<(), Box<dyn std::error::Error>> {
-    // Given distinct values for every rendered counter and unequal protocol counts.
     let totals = Totals {
         services: 1,
         services_with_root: 7,
@@ -155,7 +150,7 @@ fn rendering_is_the_complete_fixed_literal() -> Result<(), Box<dyn std::error::E
         ]
         .into(),
     };
-    // When rendered, then every field and sorted protocol line is exact.
+
     assert_eq!(
         render_report(&totals)?,
         concat!(
@@ -170,8 +165,6 @@ fn rendering_is_the_complete_fixed_literal() -> Result<(), Box<dyn std::error::E
 
 #[test]
 fn comparison_preserves_every_line_and_terminator() -> Result<(), Box<dyn std::error::Error>> {
-    // Given changed whitespace, CRLF, missing final newline, and extra lines.
-    // When compared, then all differing lines retain their raw contents.
     assert_eq!(
         differences("a\nb\nc\n", "a \nb\r\nc\nextra\n")?,
         concat!(

@@ -1,12 +1,3 @@
-//! Full-inventory coverage against one owned emulator: every native service and
-//! every reviewed Cloud Control type is attempted, and the terminal report is
-//! preserved rather than reduced to a boolean.
-//!
-//! The eleven Cloud Control types the pinned emulator cannot list are compared
-//! against the committed capability matrix. Provider-unsupported types are a
-//! capability boundary, not a scan failure: they are recorded as
-//! `unsupported_type` and the scan stays complete.
-
 use std::collections::BTreeSet;
 use std::error::Error;
 use std::path::Path;
@@ -184,8 +175,7 @@ async fn given_many_resources_when_scanned_with_small_pages_then_all_pages_are_p
             row.try_get::<Option<String>, _>(1)?,
         ));
     }
-    // Only enrichment scopes persist resources, so the continuation chain is
-    // proven by counting the observations the list scope handed to them.
+
     let (observed, failures): (i64, i64) = sqlx::query_as(
         "SELECT
            (SELECT count(*) FROM resource_observations
@@ -253,10 +243,6 @@ fn scan(
     scan_pages(database, selection, environment, "2", "2")
 }
 
-/// Types the provider reported as unsupported, extracted from the persisted scope key.
-///
-/// Every recorded failure must be a provider boundary (`unsupported_type` with a
-/// `TypeNotFoundException` message); anything else is a real scan failure.
 async fn unsupported_types(database: &Path) -> Result<BTreeSet<String>, Box<dyn Error>> {
     let options = SqliteConnectOptions::new()
         .filename(database)

@@ -1,6 +1,3 @@
-//! Reviewed parent workflows and their child redaction tables.
-
-/// One relationship: pointer, relation, target kind, optional ARN template.
 pub type RelationshipSeed = (
     &'static str,
     &'static str,

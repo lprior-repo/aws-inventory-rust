@@ -1,4 +1,3 @@
-//! Generated fenced lease and database-reopen scenarios.
 use super::*;
 
 pub(super) async fn first_lease_phase(
@@ -71,8 +70,7 @@ pub(super) async fn resumed_lease_phase(
     prop_assert_eq!(replacement.is_some(), budget > 1);
     if let Some(replacement) = replacement {
         prop_assert_eq!(replacement.job.attempt, 2);
-        // The entire public presentation can be copied from the new owner.
-        // It still must not replace the old lease's immutable capability.
+
         old.job = replacement.job.clone();
         let before =
             serde_json::to_value(store.get(JOB).await.map_err(failure)?).map_err(failure)?;

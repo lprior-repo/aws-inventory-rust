@@ -1,4 +1,3 @@
-//! Behavior: retry_exhaustion_stops_at_the_configured_attempt_count.
 use super::*;
 
 #[tokio::test(start_paused = true)]

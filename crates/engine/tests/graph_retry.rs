@@ -1,4 +1,3 @@
-//! Real TCP fault injection; the optional live case also uses native FalkorDB.
 use inventory_core::{CollectionPage, CollectionScope, Edge, Resource, ScanStatus, Source};
 use inventory_engine::{
     graph::{self, GraphError, PushOptions},

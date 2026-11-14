@@ -1,55 +1,40 @@
-//! Header-only SigV4 signing with caller-supplied time and no key cache.
-//! Re-sign an expired request by calling [`sign`] again with its original unsigned
-//! parts and a new time. Replace the returned headers on the outbound request.
-
 mod types;
 use aws_sigv4::{http_request as aws, sign::v4};
 use http::{HeaderMap, HeaderName, HeaderValue, Uri};
 use std::time::SystemTime;
 pub use types::{Body, Credentials, PathMode, PayloadHeader, Region, Request, Scope, SigningName};
 
-/// Signing failures; diagnostics never contain credentials or request data.
 #[derive(Debug, thiserror::Error, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum Error {
-    /// Invalid credential length or character.
     #[error("invalid signing credentials")]
     Credentials,
-    /// Invalid region length or character.
+
     #[error("invalid signing region")]
     Region,
-    /// Invalid signing-name length or character.
+
     #[error("invalid signing name")]
     SigningName,
-    /// Invalid absolute HTTP(S) URI or host.
+
     #[error("invalid signing URI")]
     Uri,
-    /// Invalid/non-ASCII header, conflicting host, or signing-owned input header.
+
     #[error("invalid signing headers")]
     Headers,
-    /// Request exceeds a documented input bound.
+
     #[error("signing input exceeds its bound")]
     Bounds,
-    /// Digest is not 64 lowercase hexadecimal characters.
+
     #[error("invalid precomputed SHA-256")]
     Digest,
-    /// Time is before 1970 or after 9999, outside the supported signing range.
+
     #[error("signing time outside 1970..=9999")]
     Time,
-    /// AWS signing or output-header conversion failed.
-    /// No currently known input satisfying public validation reaches this variant.
+
     #[error("SigV4 signing failed")]
     Signing,
 }
 
-/// Returns two to four headers to add; token and authorization values are sensitive.
-/// Body bytes are borrowed; only a precomputed digest is copied for the AWS API.
-/// No clock, credential provider, network, retry policy or key cache is consulted.
-///
-/// # Errors
-/// Returns a typed [`Error`] for invalid/bounds-exceeding inputs or AWS signing failures.
-/// Input bounds are documented on [`Request`], [`Credentials`] and [`Body`].
-/// Times must be in 1970..=9999. Session tokens are always signed, never appended later.
 pub fn sign(
     credentials: &Credentials,
     scope: &Scope<'_>,

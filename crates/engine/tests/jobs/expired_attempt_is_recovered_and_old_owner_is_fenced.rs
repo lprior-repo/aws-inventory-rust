@@ -1,4 +1,3 @@
-//! Behavior: expired_attempt_is_recovered_and_old_owner_is_fenced.
 use super::*;
 
 #[tokio::test]
@@ -14,7 +13,7 @@ pub(super) async fn expired_attempt_is_recovered_and_old_owner_is_fenced() -> Te
         .await?
         .ok_or("new lease")?;
     assert_eq!(new.job.attempt, 2);
-    // Presentation metadata cannot forge the immutable fencing capability.
+
     old.job.attempt = new.job.attempt;
     assert!(matches!(
         store.heartbeat(&old, 10101, 10000).await,

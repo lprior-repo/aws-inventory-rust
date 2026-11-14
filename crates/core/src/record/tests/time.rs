@@ -17,9 +17,8 @@ fn timestamp_chain(maps: usize) -> TestResult<(Value, Vec<u8>)> {
 
 #[test]
 fn timestamp_array_is_the_thirty_second_container_at_the_inclusive_boundary() -> TestResult {
-    // Given 31 maps followed by the timestamp's physical array.
     let (value, bytes) = timestamp_chain(31)?;
-    // When encoding and rebuilding independently written bytes, then both accept depth 32.
+
     assert_eq!(Record::encode(&value)?.as_bytes(), bytes);
     assert_eq!(
         ValueRef::Map(Record::from_bytes(bytes)?.root()).to_value()?,
@@ -30,9 +29,8 @@ fn timestamp_array_is_the_thirty_second_container_at_the_inclusive_boundary() ->
 
 #[test]
 fn timestamp_array_is_rejected_when_it_is_the_thirty_third_container() -> TestResult {
-    // Given 32 maps followed by the timestamp's array: 33 physical containers.
     let (value, bytes) = timestamp_chain(32)?;
-    // When constructing from either tree or bytes, then only generic structural validation accepts.
+
     assert_eq!(Record::encode(&value), Err(RecordError::DepthLimit));
     assert_eq!(
         ValueRef::Map(Record::from_bytes(bytes)?.root()).to_value(),
@@ -55,8 +53,6 @@ fn time_error(seconds: &[u8], nanos: &[u8]) -> TestResult<RecordError> {
 
 #[test]
 fn timestamp_component_types_are_not_misreported_as_integer_overflow() -> TestResult {
-    // Given well-formed noninteger seconds or nanoseconds.
-    // When read, then the actual encountered type and position are retained.
     assert_eq!(
         time_error(&[0xF5], &[0])?,
         RecordError::ValueType {
@@ -83,9 +79,8 @@ fn timestamp_component_types_are_not_misreported_as_integer_overflow() -> TestRe
 
 #[test]
 fn timestamp_integer_range_errors_remain_distinct_from_component_types() -> TestResult {
-    // Given a native unsigned integer that cannot fit seconds, and negative nanoseconds.
     let overflow = [0x1B, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
-    // When read, then integer bounds and a negative fraction have specific domain errors.
+
     assert_eq!(
         time_error(&overflow, &[0])?,
         RecordError::UnsignedOutOfRange { offset: 4 }
@@ -102,8 +97,6 @@ fn timestamp_integer_range_errors_remain_distinct_from_component_types() -> Test
 
 #[test]
 fn extreme_native_negative_integers_retain_their_exact_nanosecond_cause() -> TestResult {
-    // Given the most negative native CBOR integer, beyond the i64 seconds domain.
-    // When used in either component, then the domain failure remains exact.
     let negative = [0x3B, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
     assert_eq!(
         time_error(&negative, &[0])?,

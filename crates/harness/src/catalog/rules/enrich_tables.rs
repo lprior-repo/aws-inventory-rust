@@ -1,6 +1,3 @@
-//! Bounded identifier and ARN-reference tables for enrichment rules.
-
-/// Relation, target kind, lookup field, identifier prefix, and whether required.
 pub type Ec2Identifier = (&'static str, &'static str, &'static str, &'static str, bool);
 
 #[rustfmt::skip]

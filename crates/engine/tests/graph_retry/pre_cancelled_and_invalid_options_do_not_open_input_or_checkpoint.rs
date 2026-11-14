@@ -1,4 +1,3 @@
-//! Behavior: pre_cancelled_and_invalid_options_do_not_open_input_or_checkpoint.
 use super::*;
 
 #[tokio::test]

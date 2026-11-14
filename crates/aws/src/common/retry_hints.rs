@@ -1,4 +1,3 @@
-//! retry hints operations.
 use super::*;
 
 pub(crate) fn sdk_error<E: ProvideErrorMetadata + ProvideErrorKind + Debug>(
@@ -7,8 +6,6 @@ pub(crate) fn sdk_error<E: ProvideErrorMetadata + ProvideErrorKind + Debug>(
     sdk_error_with_hint(error, None)
 }
 
-/// Typed service metadata and raw headers are combined before the SDK response
-/// is dropped. Malformed/oversized hints stay visible to the shared executor.
 pub(crate) fn sdk_error_with_hint<E: ProvideErrorMetadata + ProvideErrorKind + Debug>(
     error: SdkError<E>,
     typed_hint: Option<RetryAfter>,

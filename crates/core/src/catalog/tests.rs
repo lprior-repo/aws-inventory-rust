@@ -45,7 +45,6 @@ fn shape() -> Result<Value, RecordError> {
         (CatalogKey::Name, Value::Text("Input".into())),
         (CatalogKey::Kind, Value::Int(14)),
         (CatalogKey::Members, Value::List(vec![member])),
-        (CatalogKey::Arn, Value::Null),
     ])
 }
 fn operation() -> Result<Value, RecordError> {
@@ -74,7 +73,6 @@ fn exercise(bytes: &[u8]) -> Result<String, CatalogError> {
 
 #[test]
 fn embedded_empty_placeholder_reports_generation_command() -> TestResult {
-    // Given the ungenerated placeholder, when opened, then failure is typed and actionable.
     let Err(error @ CatalogError::Empty) = Catalog::open(b"") else {
         return Err("expected Empty".into());
     };
@@ -83,7 +81,6 @@ fn embedded_empty_placeholder_reports_generation_command() -> TestResult {
 }
 #[test]
 fn reader_retains_commit_and_service_identities() -> TestResult {
-    // Given writer-created records, when looked up, missing names never invent a service.
     let bytes = root(service()?, CATALOG_VERSION)?;
     let catalog = Catalog::borrow(&bytes)?;
     assert_eq!(catalog.models_commit()?, "test-commit");
@@ -96,7 +93,6 @@ fn reader_retains_commit_and_service_identities() -> TestResult {
 }
 #[test]
 fn counts_are_computed_from_members_and_operation_flags() -> TestResult {
-    // Given a nested member and root operation, when aggregated, their exact counts appear.
     let bytes = root(service()?, CATALOG_VERSION)?;
     let counts = Catalog::borrow(&bytes)?.counts()?;
     assert_eq!(counts.get("services"), Some(1));
@@ -108,7 +104,6 @@ fn counts_are_computed_from_members_and_operation_flags() -> TestResult {
 }
 #[test]
 fn unsupported_root_version_is_reported() -> TestResult {
-    // Given valid CBOR with a newer schema, when opened, then version is not guessed.
     let bytes = root(service()?, 1)?;
     assert!(matches!(
         Catalog::borrow(&bytes),
@@ -118,7 +113,6 @@ fn unsupported_root_version_is_reported() -> TestResult {
 }
 #[test]
 fn malformed_service_is_deferred_until_first_access() -> TestResult {
-    // Given valid outer bytes containing a wrong service field, when opened, no service is read.
     let mut fields = match service()? {
         Value::Map(fields) => fields,
         _ => return Err("map".into()),
@@ -126,7 +120,7 @@ fn malformed_service_is_deferred_until_first_access() -> TestResult {
     fields.insert(Key::Field(CatalogKey::Name.field()?), Value::Bool(true));
     let bytes = root(Value::Map(fields), CATALOG_VERSION)?;
     let catalog = Catalog::borrow(&bytes)?;
-    // Then first access reports corruption rather than silently accepting a count.
+
     assert!(matches!(
         catalog.services()?.next().ok_or("service")?,
         Err(CatalogError::Field(CatalogKey::Name))
@@ -135,7 +129,6 @@ fn malformed_service_is_deferred_until_first_access() -> TestResult {
 }
 #[test]
 fn every_single_byte_mutation_and_truncation_is_total() -> TestResult {
-    // Given a small catalog, when any byte changes or truncates, no path panics.
     let bytes = root(service()?, CATALOG_VERSION)?;
     (0..bytes.len()).try_for_each(|position| -> TestResult {
         (1..=255u8).try_for_each(|mask| check_flip(&bytes, position, mask))?;
@@ -162,7 +155,7 @@ proptest! {
     })]
     #[test]
     fn arbitrary_corruption_returns_only_typed_results(bytes in prop::collection::vec(any::<u8>(), 0..512)) {
-        // Given bounded hostile bytes, when the complete reader path runs, then it is total.
+
         let result: Result<String, CatalogError> = exercise(&bytes);
         match result {
             Ok(report) => prop_assert!(report.starts_with("services ")),

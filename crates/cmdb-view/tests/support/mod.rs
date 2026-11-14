@@ -1,6 +1,3 @@
-//! Synthetic export fixture: two accounts, three kinds, a cycle, a dangling edge.
-//!
-//! Included by several test binaries; each uses a different subset.
 #![allow(dead_code)]
 
 use cmdb_view::Snapshot;
@@ -72,7 +69,6 @@ fn header(scan_id: &str, resources: u64, edges: u64) -> Value {
     })
 }
 
-/// The canonical fixture document as a `serde_json::Value`.
 pub fn document() -> Value {
     json!({
         "header": header("scan-fixture", 4, 5),
@@ -106,12 +102,10 @@ pub fn document() -> Value {
     })
 }
 
-/// Compact fixture bytes, as read from an export file.
 pub fn bytes() -> Result<Vec<u8>, serde_json::Error> {
     serde_json::to_vec(&document())
 }
 
-/// Same fixture with a different scan id, for stale-data checks.
 pub fn bytes_with_scan_id(scan_id: &str) -> Result<Vec<u8>, serde_json::Error> {
     let mut value = document();
     if let Some(target) = value
@@ -124,7 +118,6 @@ pub fn bytes_with_scan_id(scan_id: &str) -> Result<Vec<u8>, serde_json::Error> {
     serde_json::to_vec(&value)
 }
 
-/// All-observations shape: every resource and edge identity appears twice.
 pub fn duplicate_bytes() -> Result<Vec<u8>, serde_json::Error> {
     let mut value = document();
     if let Some(provenance) = value
@@ -144,7 +137,6 @@ pub fn duplicate_bytes() -> Result<Vec<u8>, serde_json::Error> {
     serde_json::to_vec(&value)
 }
 
-/// Parsed canonical fixture.
 pub fn snapshot() -> Result<Snapshot, Box<dyn std::error::Error>> {
     Ok(Snapshot::parse(&bytes()?)?)
 }

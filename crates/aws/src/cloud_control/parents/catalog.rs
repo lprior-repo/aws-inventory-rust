@@ -1,4 +1,3 @@
-//! catalog operations.
 use super::*;
 
 pub(in super::super) fn read_catalog() -> Result<ParentCatalog, AwsScanError> {

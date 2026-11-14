@@ -1,4 +1,3 @@
-//! Cold report aggregation; sets/maps contain at most one entry per encoded member/protocol.
 use super::{Catalog, CatalogError, Service};
 use crate::record::FieldId;
 use std::collections::{BTreeMap, BTreeSet};
@@ -22,7 +21,6 @@ const FIELDS: [&str; 15] = [
     "cbor_services",
 ];
 
-/// Report counts computed from catalog contents. Allocation occurs only during aggregation.
 #[derive(Debug, Default)]
 pub struct Counts<'a> {
     values: BTreeMap<&'static str, usize>,
@@ -38,7 +36,7 @@ impl<'a> Counts<'a> {
         counts.values.insert("distinct_member_names", names.len());
         Ok(counts)
     }
-    /// Read a named report counter; unknown names have no value.
+
     pub fn get(&self, name: &str) -> Option<usize> {
         if FIELDS.contains(&name) {
             Some(self.count(name))
@@ -46,9 +44,7 @@ impl<'a> Counts<'a> {
             None
         }
     }
-    /// Render the M1.2a report byte-for-byte, including protocol ordering and final newline.
-    /// # Errors
-    /// Returns a formatting error; data was checked during aggregation.
+
     pub fn render(&self) -> Result<String, CatalogError> {
         let mut output = String::new();
         FIELDS

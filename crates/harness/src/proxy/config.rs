@@ -5,30 +5,26 @@ use super::{
 use std::path::PathBuf;
 use std::time::Duration;
 
-/// AWS protocol-specific canned error envelope.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub enum BodyStyle {
-    /// AWS JSON error object.
     #[default]
     Json,
-    /// AWS Query ErrorResponse envelope.
+
     QueryXml,
-    /// REST XML Error envelope (including S3 codes).
+
     RestXml,
-    /// EC2 Response/Errors envelope.
+
     Ec2Xml,
-    /// Definite CBOR map with __type and message fields.
+
     Cbor,
 }
 
-/// Optional signed-component matches; an empty filter also matches Unsigned.
 #[derive(Clone, Debug, Default)]
 pub struct ScopeFilter {
-    /// Account or unmapped access key.
     pub account: Option<ScopeName>,
-    /// Signing region.
+
     pub region: Option<ScopeName>,
-    /// Signing service.
+
     pub service: Option<ScopeName>,
 }
 impl ScopeFilter {
@@ -50,71 +46,60 @@ impl ScopeFilter {
     }
 }
 
-/// First successful matching rule wins after scheduled entries.
 #[derive(Clone, Debug)]
 pub struct Rule {
-    /// Scope selection.
     pub filter: ScopeFilter,
-    /// Probability in parts per million.
+
     pub probability: Probability,
-    /// Fault to inject.
+
     pub fault: Fault,
 }
 
-/// Exact per-scope ordinal override, starting at zero.
 #[derive(Clone, Debug)]
 pub struct Schedule {
-    /// Full scope tuple to match.
     pub scope: Scope,
-    /// Zero-based request number in that scope.
+
     pub ordinal: u64,
-    /// Fault to inject.
+
     pub fault: Fault,
 }
 
-/// Integer token bucket with one second of burst capacity.
 #[derive(Clone, Debug)]
 pub struct RateLimit {
-    /// Matching scope (first matching limit wins).
     pub filter: ScopeFilter,
-    /// 1..=MAX_RATE tokens per second and burst size.
+
     pub requests_per_second: u32,
 }
 
-/// Raw public builder options, consumed and frozen by `Proxy::start`.
-/// Every table/capacity/timing bound is established before a listener is bound.
 #[derive(Clone, Debug)]
 pub struct Config {
-    /// http://host:port or https://host:port, without a path or userinfo.
     pub upstream: String,
-    /// Required for HTTPS, rejected for HTTP; only these authorities are trusted.
+
     pub ca_bundle: Option<PathBuf>,
-    /// Deterministic SplitMix64 seed.
+
     pub seed: u64,
-    /// Ordered probabilistic fault rules.
+
     pub rules: Vec<Rule>,
-    /// Exact overrides; duplicate scope/ordinal pairs are rejected.
+
     pub schedule: Vec<Schedule>,
-    /// Access-key to account mappings; duplicate keys are rejected.
+
     pub accounts: Vec<(ScopeName, ScopeName)>,
-    /// Per-service envelope styles; duplicate services are rejected.
+
     pub styles: Vec<(ScopeName, BodyStyle)>,
-    /// Fallback envelope style.
+
     pub default_style: BodyStyle,
-    /// First matching fixed latency, bounded by MAX_DELAY.
+
     pub latency: Vec<(ScopeFilter, Duration)>,
-    /// First matching per-scope token bucket.
+
     pub rate_limits: Vec<RateLimit>,
-    /// Plan-driven connection refusal duration, 1ns..=MAX_DELAY.
+
     pub refusal_duration: Duration,
-    /// Retained entries; 1..=MAX_LOG_ENTRIES, oldest discarded on overflow.
+
     pub log_capacity: usize,
-    /// Maximum registered scopes, 1..=MAX_SCOPES, no eviction.
+
     pub scope_capacity: usize,
 }
 impl Config {
-    /// Construct a fault-free plain HTTP configuration. HTTPS callers must set
-    /// `ca_bundle` before `Proxy::start`; every bound is checked there.
     pub fn new(upstream: impl Into<String>, seed: u64) -> Self {
         Self {
             upstream: upstream.into(),

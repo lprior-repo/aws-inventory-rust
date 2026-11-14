@@ -1,4 +1,3 @@
-//! Behavior: retryable_server_error_reconnects_but_permanent_errors_do_not_retry_or_ack.
 use super::*;
 
 #[tokio::test]

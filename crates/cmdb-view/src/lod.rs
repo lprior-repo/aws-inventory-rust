@@ -1,16 +1,12 @@
-//! Level-of-detail summaries: counts per kind/account and top-degree nodes.
-
 use crate::Snapshot;
 use crate::error::ViewError;
 use crate::resource::ResourceView;
 use std::collections::BTreeMap;
 
-/// Largest number of buckets one LOD axis may return.
 pub const MAX_LOD_BUCKETS: usize = 1_024;
-/// Largest top-degree list one LOD summary may return.
+
 pub const MAX_TOP_DEGREE: usize = 1_000;
 
-/// Caps applied when materializing a summary.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct LodLimits {
     max_kinds: usize,
@@ -19,10 +15,6 @@ pub struct LodLimits {
 }
 
 impl LodLimits {
-    /// Validate each cap against its global maximum.
-    ///
-    /// # Errors
-    /// Rejects zero caps, kind/account caps above 1,024 or degree caps above 1,000.
     pub fn new(
         max_kinds: usize,
         max_accounts: usize,
@@ -52,42 +44,36 @@ impl Default for LodLimits {
     }
 }
 
-/// One `(key, count)` bucket.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CountBucket {
-    /// Resource kind or account spelling for the summary axis.
     pub key: String,
-    /// Number of retained resource views in this bucket.
+
     pub count: usize,
 }
 
-/// One node plus its incident-edge count.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct DegreeEntry<'a> {
-    /// Identity of a retained resource with at least one incident edge.
     pub id: &'a str,
-    /// Kind copied from the retained resource view.
+
     pub kind: &'a str,
-    /// Incident edge records; a self-loop counts once.
+
     pub degree: usize,
 }
 
-/// Compact summary used for high-level rendering of large views.
 #[derive(Clone, Debug)]
 pub struct LodSummary<'a> {
-    /// Retained resource count, independent of the requested summary caps.
     pub total_resources: usize,
-    /// Sorted by count descending, then key ascending.
+
     pub kinds: Vec<CountBucket>,
-    /// Sorted by count descending, then key ascending.
+
     pub accounts: Vec<CountBucket>,
-    /// Nodes with at least one incident edge, degree descending then id ascending.
+
     pub top_degree: Vec<DegreeEntry<'a>>,
-    /// More kind buckets exist than the requested cap.
+
     pub truncated_kinds: bool,
-    /// More account buckets exist than the requested cap.
+
     pub truncated_accounts: bool,
-    /// More present resources have incident edges than the requested cap.
+
     pub truncated_top_degree: bool,
 }
 
@@ -181,7 +167,6 @@ fn lookup<'a>(
 }
 
 impl Snapshot {
-    /// Level-of-detail summary bounded by `limits`.
     pub fn lod(&self, limits: LodLimits) -> LodSummary<'_> {
         summarize(
             &self.resources,

@@ -1,4 +1,3 @@
-//! denied followup retains preceding accounts and partial evidence behavior.
 use super::*;
 
 #[tokio::test]

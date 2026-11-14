@@ -4,7 +4,6 @@ use overlay_support::{TestResult, name, parse, reject};
 
 #[test]
 fn identity_requires_exactly_one_strategy_and_valid_placeholders() {
-    // Given ambiguous or malformed identities, when parsed, then no strategy is inferred.
     [
         "{}",
         "{arn='A',key=['B']}",
@@ -48,7 +47,6 @@ fn identity_requires_exactly_one_strategy_and_valid_placeholders() {
 }
 #[test]
 fn paginator_requires_kind_specific_keys_and_distinct_inputs() {
-    // Given mixed paginator shapes, when parsed, then only selected-kind fields are legal.
     reject("paginator={}", "paginator.kind", "", Rule::Missing);
     reject(
         "paginator={kind='other'}",
@@ -114,7 +112,6 @@ fn paginator_requires_kind_specific_keys_and_distinct_inputs() {
 }
 #[test]
 fn bindings_require_one_complete_source_and_true_context_flags() {
-    // Given partial or conflicting sources, when parsed, then the exact binding is rejected.
     [
         "{}",
         "{from='ListParents'}",
@@ -165,7 +162,6 @@ fn bindings_require_one_complete_source_and_true_context_flags() {
 }
 #[test]
 fn bind_cycles_of_two_and_three_are_rejected_but_external_parents_are_allowed() -> TestResult {
-    // Given cyclic and acyclic graphs, when parsed, then only in-file cycles fail.
     [ ("[operation.A.bind]\nId={from='B',path='Id'}\n[operation.B.bind]\nId={from='A',path='Id'}", "A"),
         ("[operation.A.bind]\nId={from='B',path='Id'}\n[operation.B.bind]\nId={from='C',path='Id'}\n[operation.C.bind]\nId={from='A',path='Id'}", "A") ]
         .into_iter().for_each(|(body, op)| overlay_support::error(&format!("{}{body}", overlay_support::HEADER),
@@ -182,7 +178,6 @@ fn bind_cycles_of_two_and_three_are_rejected_but_external_parents_are_allowed() 
 }
 #[test]
 fn fixed_and_bind_map_keys_are_member_paths() {
-    // Given invalid input paths, when parsed, then map keys receive typed errors.
     reject("fixed={'A..B'=1}", "fixed.A..B", "A..B", Rule::MemberPath);
     reject(
         "bind={'A[]'={account=true}}",

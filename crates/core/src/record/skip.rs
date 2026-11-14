@@ -1,8 +1,3 @@
-//! Allocation-free generic skipping over already structurally validated CBOR.
-//!
-//! Record validation guarantees item boundaries and matching break placement.
-//! Borrowed-view byte fields are private, so callers cannot bypass that boundary.
-//! No form or depth policy belongs here; selected values are checked by readers.
 use super::RecordError;
 use minicbor::{Decoder, data::Type};
 
@@ -15,7 +10,7 @@ fn walk<'a>(
     mut step: impl FnMut(&mut Decoder<'a>, u64) -> Result<u64, RecordError>,
 ) -> Result<(), RecordError> {
     let mut pending = 1;
-    // Every step consumes at least one input byte, including indefinite headers.
+
     let Some(result) =
         (0..d.input().len().saturating_sub(d.position())).find_map(|_| match step(d, pending) {
             Ok(0) => Some(Ok(())),
@@ -77,8 +72,7 @@ fn skip_group(d: &mut Decoder<'_>, groups: u64) -> Result<u64, RecordError> {
     let found = d.datatype()?;
     let offset = d.position();
     header_or_scalar(d)?;
-    // Prior validation guarantees no break interrupts an incomplete definite item.
-    // Ignore definite arities here; only indefinite array/map nesting matters.
+
     match found {
         Type::ArrayIndef | Type::MapIndef => groups.checked_add(1),
         Type::Break => groups.checked_sub(1),
@@ -92,7 +86,7 @@ fn header_or_scalar(d: &mut Decoder<'_>) -> Result<(), RecordError> {
         Type::Array | Type::ArrayIndef => d.array().map(|_| ()),
         Type::Map | Type::MapIndef => d.map().map(|_| ()),
         Type::Tag => d.tag().map(|_| ()),
-        // The library's string/bytes iterators consume their own breaks without a stack.
+
         _ => d.skip(),
     }
     .map_err(Into::into)

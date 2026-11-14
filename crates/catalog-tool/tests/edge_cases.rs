@@ -4,7 +4,6 @@ use catalog_tool::smithy::{Error, ReportMode, build_report, run};
 
 #[test]
 fn no_service_has_its_own_filename_bearing_variant() -> Result<(), Box<dyn std::error::Error>> {
-    // Given a model with no service, when loaded, then its exact filename is retained.
     let dir = tempfile::tempdir()?;
     write_fixture(dir.path(), "models/empty.json", r#"{"shapes":{}}"#)?;
     let error = build_report(dir.path())
@@ -20,7 +19,6 @@ fn no_service_has_its_own_filename_bearing_variant() -> Result<(), Box<dyn std::
 #[test]
 fn several_services_have_their_own_filename_bearing_variant()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given two services, when loaded, then ambiguity is not conflated with no service.
     let dir = tempfile::tempdir()?;
     write_fixture(
         dir.path(),
@@ -39,7 +37,6 @@ fn several_services_have_their_own_filename_bearing_variant()
 
 #[test]
 fn invalid_json_retains_filename_and_parser_error() -> Result<(), Box<dyn std::error::Error>> {
-    // Given malformed JSON, when loaded, then both path and parser evidence survive.
     let dir = tempfile::tempdir()?;
     write_fixture(dir.path(), "models/broken.json", "{")?;
     let error = build_report(dir.path())
@@ -58,12 +55,11 @@ fn invalid_json_retains_filename_and_parser_error() -> Result<(), Box<dyn std::e
 
 #[test]
 fn sparse_oversized_json_is_refused_before_parsing() -> Result<(), Box<dyn std::error::Error>> {
-    // Given an oversized sparse file with invalid content.
     let dir = tempfile::tempdir()?;
     std::fs::create_dir(dir.path().join("models"))?;
     let path = dir.path().join("models/ordinary.json");
     std::fs::File::create(&path)?.set_len(67_108_865)?;
-    // When loading, then size wins over JSON errors, with an exact filename.
+
     let error = build_report(dir.path())
         .err()
         .ok_or("missing FileTooLarge error")?;
@@ -76,7 +72,6 @@ fn sparse_oversized_json_is_refused_before_parsing() -> Result<(), Box<dyn std::
 
 #[test]
 fn command_error_contains_every_modified_line() -> Result<(), Box<dyn std::error::Error>> {
-    // Given a stored report with two modified lines.
     let dir = fixture()?;
     let changed = REPORT.replacen(
         "services 1\noperations 1\n",
@@ -84,7 +79,7 @@ fn command_error_contains_every_modified_line() -> Result<(), Box<dyn std::error
         1,
     );
     write_fixture(dir.path(), "catalog/aws-models.report", &changed)?;
-    // When checking through the command function, then its typed error holds both.
+
     let error = run(dir.path(), dir.path(), ReportMode::Check)
         .err()
         .ok_or("missing mismatch")?;
@@ -103,7 +98,6 @@ fn command_error_contains_every_modified_line() -> Result<(), Box<dyn std::error
 
 #[test]
 fn missing_models_and_empty_models_are_distinct() -> Result<(), Box<dyn std::error::Error>> {
-    // Given a missing models directory, when loading, then the path accompanies I/O.
     let dir = tempfile::tempdir()?;
     let error = build_report(dir.path()).err().ok_or("missing I/O error")?;
     match error {
@@ -113,7 +107,7 @@ fn missing_models_and_empty_models_are_distinct() -> Result<(), Box<dyn std::err
         }
         other => return Err(format!("expected Io, got {other:?}").into()),
     }
-    // Given an empty directory, when loading, then it is specifically NoModels.
+
     std::fs::create_dir(dir.path().join("models"))?;
     let error = build_report(dir.path())
         .err()
@@ -124,12 +118,11 @@ fn missing_models_and_empty_models_are_distinct() -> Result<(), Box<dyn std::err
 
 #[test]
 fn exactly_sixty_four_mib_reaches_the_json_reader() -> Result<(), Box<dyn std::error::Error>> {
-    // Given a sparse file exactly at the size limit, with invalid JSON content.
     let dir = tempfile::tempdir()?;
     std::fs::create_dir(dir.path().join("models"))?;
     let path = dir.path().join("models/at-limit.json");
     std::fs::File::create(&path)?.set_len(67_108_864)?;
-    // When loading, then the limit is inclusive and parsing, not size, fails.
+
     let error = build_report(dir.path())
         .err()
         .ok_or("missing InvalidJson error")?;

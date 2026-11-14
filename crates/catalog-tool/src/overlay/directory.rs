@@ -8,11 +8,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-/// Read `root/catalog/overlay/*.toml`, sorted by filename, with stems as service names.
-/// Non-TOML entries are ignored; at most 4,096 matching files, each at most 1 MiB.
-/// Traversal is capped at 65,536 entries, including ignored non-TOML entries.
-/// # Errors
-/// Returns filesystem, invalid stem, byte/count limit or contextual parsing errors.
 pub fn load_dir(root: impl AsRef<Path>) -> Result<Vec<ServiceOverlay>, OverlayError> {
     let dir = root.as_ref().join("catalog/overlay");
     let paths = collect_paths(&dir, MAX_FILES, MAX_DIRECTORY_ENTRIES)?;

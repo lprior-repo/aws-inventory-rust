@@ -1,4 +1,3 @@
-//! environment responsibilities for emulator_snapshot.
 use super::*;
 
 pub(super) fn fail(message: impl Into<String>) -> Box<dyn std::error::Error + Send + Sync> {

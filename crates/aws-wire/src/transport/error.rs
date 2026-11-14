@@ -2,31 +2,26 @@ use std::{error::Error, io};
 
 pub(super) type Source = Box<dyn Error + Send + Sync>;
 
-/// Executor-facing failures. The transport never retries any variant.
 #[derive(Debug, thiserror::Error)]
 pub enum TransportError {
-    /// The whole-request deadline or the independent connector bound elapsed.
     #[error("transport deadline elapsed")]
     Timeout,
-    /// DNS, refusal/reset/premature close, or remote graceful HTTP/2 retirement/refused stream.
+
     #[error("connection failed: {0}")]
     Connect(#[source] Source),
-    /// Trust loading, certificate verification, or TLS negotiation failed.
+
     #[error("TLS failed: {0}")]
     Tls(#[source] Source),
-    /// Advertised actual body length or the next DATA frame exceeds the buffered-byte limit.
+
     #[error("response body exceeds {limit} bytes")]
-    BodyTooLarge {
-        /// Configured maximum buffered bytes.
-        limit: usize,
-    },
-    /// Other socket or filesystem I/O failed.
+    BodyTooLarge { limit: usize },
+
     #[error("I/O failed: {0}")]
     Io(#[source] Source),
-    /// The peer did not speak valid HTTP.
+
     #[error("HTTP protocol failed: {0}")]
     Protocol(#[source] Source),
-    /// Configuration or request URI/method is not supported.
+
     #[error("invalid request: {0}")]
     InvalidRequest(&'static str),
 }

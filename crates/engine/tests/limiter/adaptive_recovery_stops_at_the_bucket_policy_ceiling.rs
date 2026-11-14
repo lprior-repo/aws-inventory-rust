@@ -1,4 +1,3 @@
-//! Behavior: adaptive_recovery_stops_at_the_bucket_policy_ceiling.
 use super::*;
 
 #[tokio::test(start_paused = true)]

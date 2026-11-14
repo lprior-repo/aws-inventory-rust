@@ -1,5 +1,3 @@
-//! Child-scope failure recording shared by KMS listing and enrichment.
-
 use inventory_core::{Resource, Source};
 
 use crate::{

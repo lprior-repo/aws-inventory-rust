@@ -1,11 +1,3 @@
-//! Buffered event writer that injects duplicate and adjacent-reorder defects.
-//!
-//! Duplicates are emitted as an adjacent pair so the oracle verifier can recognise
-//! and discard them without retaining every resource id. With `--reorder-pct p`, a
-//! `p` percent share of events is held back and written after the following event
-//! (one adjacent swap per held event); units keep their internal adjacency, so
-//! duplicate lines stay adjacent.
-
 use std::error::Error;
 use std::io::Write;
 

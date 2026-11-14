@@ -1,4 +1,4 @@
-//! Shared tolerant Smithy inputs for reporting, registry extraction and compilation.
+pub(super) mod mixins;
 mod traits;
 
 use std::collections::BTreeMap;
@@ -10,7 +10,7 @@ pub(super) struct ModelFile {
     pub shapes: BTreeMap<String, Shape>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub(super) struct Shape {
     #[serde(default)]
     pub version: Option<String>,
@@ -18,11 +18,13 @@ pub(super) struct Shape {
     pub traits: BTreeMap<String, serde_json::Value>,
     #[serde(default)]
     pub errors: Vec<Target>,
+    #[serde(default)]
+    pub mixins: Vec<Target>,
     #[serde(flatten)]
     pub kind: ShapeKind,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 pub(super) enum ShapeKind {
     Service,
@@ -77,14 +79,14 @@ impl Shape {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub(super) struct Member {
     pub target: Option<String>,
     #[serde(default, deserialize_with = "traits::read")]
     pub traits: BTreeMap<String, serde_json::Value>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub(super) struct Target {
     pub target: String,
     #[serde(default, deserialize_with = "traits::read")]

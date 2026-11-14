@@ -1,25 +1,17 @@
-//! Screen-space camera for the DAG: fit, wheel zoom anchored under the
-//! pointer, and drag panning. Layout coordinates stay in f32; only the
-//! camera is f64 so large pan offsets do not jitter.
-
 use makepad_widgets::{DVec2, Rect, dvec2};
 
-/// Lossy `f64 -> f32` through the engine's own vector cast, which keeps the
-/// workspace's `clippy::as_conversions = deny` gate satisfied.
 pub fn f32_of(value: f64) -> f32 {
     DVec2 { x: value, y: 0.0 }.into_vec2().x
 }
 
-/// Smallest camera scale the wheel may reach.
 pub const MIN_SCALE: f32 = 0.15;
-/// Largest camera scale the wheel may reach.
+
 pub const MAX_SCALE: f32 = 4.0;
-/// Gap kept between the fitted content and the widget edge.
+
 pub const FIT_MARGIN: f32 = 24.0;
-/// Labels are omitted below this scale to keep the first paint cheap.
+
 pub const LABEL_MIN_SCALE: f32 = 0.45;
 
-/// Scale plus translation from layout coordinates to window coordinates.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ViewTransform {
     pub scale: f32,
@@ -54,7 +46,6 @@ impl ViewTransform {
         (f32_of(local_x / scale), f32_of(local_y / scale))
     }
 
-    /// Centres content of `width` by `height` inside the widget with margins.
     pub fn fit(rect: Rect, width: f32, height: f32) -> Self {
         if width <= 0.0 || height <= 0.0 || rect.size.x <= 1.0 || rect.size.y <= 1.0 {
             return Self::default();
@@ -75,7 +66,6 @@ impl ViewTransform {
         }
     }
 
-    /// Scales around a window-space anchor, keeping the world point under it.
     pub fn zoomed(self, factor: f32, anchor: DVec2, rect: Rect) -> Self {
         let scale = (self.scale * factor).clamp(MIN_SCALE, MAX_SCALE);
         let (world_x, world_y) = self.to_world(rect, anchor);

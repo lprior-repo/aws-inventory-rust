@@ -1,14 +1,9 @@
-//! Behavior: exact-ARN identity alone resolves an edge when the ARN's trailing
-//! resource component is unusable — too short to index, or shared between
-//! observed resources in the same account and region.
 use super::{SCAN, TestResult, property, resource, store_with};
 use inventory_engine::graph::reference::{self, ReferenceConfig};
 use serde_json::json;
 
 #[tokio::test]
 async fn exact_arn_resolves_when_the_trailing_component_is_too_short() -> TestResult {
-    // "xy" is below the minimum indexed identifier length, so only the exact
-    // ARN map can resolve this reference.
     let target = "arn:aws:service:us-east-1:111111111111:widget/xy";
     let source = "arn:aws:service:us-east-1:111111111111:widget/consumer-exact";
     let store = store_with(vec![
@@ -30,8 +25,6 @@ async fn exact_arn_resolves_when_the_trailing_component_is_too_short() -> TestRe
 
 #[tokio::test]
 async fn exact_arn_resolves_despite_an_ambiguous_trailing_component() -> TestResult {
-    // A decoy in the same account and region shares the trailing component, so
-    // only the exact ARN match can pick the intended target.
     let target = "arn:aws:service:us-east-1:111111111111:widget/exact-arn-target";
     let decoy = "arn:aws:service:us-east-1:111111111111:other/decoy-target";
     let source = "arn:aws:service:us-east-1:111111111111:widget/consumer-exact";

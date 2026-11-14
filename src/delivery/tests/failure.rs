@@ -87,8 +87,7 @@ async fn missing_falkor_environment_retains_completed_inventory_and_graph_plan_r
     options.falkor = true;
     options.falkor_url_env = format!("AWS_INVENTORY_MISSING_{}", uuid::Uuid::new_v4().simple());
     assert!(std::env::var_os(&options.falkor_url_env).is_none());
-    // Bypass preflight deliberately: exercise a late configuration failure after
-    // both local artifacts exist. No environment mutation or network is needed.
+
     let result = after_scan(
         &database,
         &options,

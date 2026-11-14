@@ -1,4 +1,3 @@
-//! Behavior: heartbeat_prevents_early_reclaim_and_never_shortens_lease.
 use super::*;
 
 #[tokio::test]

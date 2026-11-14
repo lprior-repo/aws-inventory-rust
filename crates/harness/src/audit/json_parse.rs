@@ -1,5 +1,3 @@
-//! Recursive-descent parser for the order-preserving JSON value.
-
 use crate::HarnessError;
 
 use super::json_ordered::Json;
@@ -8,7 +6,6 @@ fn malformed() -> HarnessError {
     HarnessError::invalid("invalid JSON document")
 }
 
-/// Parse one complete JSON document.
 pub(super) fn parse(text: &str) -> Result<Json, HarnessError> {
     let mut parser = Parser {
         bytes: text.as_bytes(),

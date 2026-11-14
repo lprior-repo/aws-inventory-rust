@@ -1,8 +1,7 @@
-use super::{uri, EncodeError};
+use super::{EncodeError, uri};
 use crate::request::common::BoundedBody;
 
 mod fixtures;
-
 
 #[test]
 fn rest_uri_labels_encode_regular_and_greedy_values_exactly() -> Result<(), EncodeError> {
@@ -12,7 +11,10 @@ fn rest_uri_labels_encode_regular_and_greedy_values_exactly() -> Result<(), Enco
 }
 #[test]
 fn rest_uri_label_encoding_rejects_oversized_output() {
-    assert!(matches!(uri::encode_label("large", false, 3), Err(EncodeError::Limit("URI"))));
+    assert!(matches!(
+        uri::encode_label("large", false, 3),
+        Err(EncodeError::Limit("URI"))
+    ));
 }
 
 #[test]

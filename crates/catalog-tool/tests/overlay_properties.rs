@@ -14,7 +14,7 @@ proptest! {
             !c.is_ascii_alphanumeric() && !matches!(c, '_' | '.')),
         position in 0usize..256,
     ) {
-        // Given valid paths and arbitrary forbidden characters, when inserted, then validation fails.
+
         let text = parts.join(".");
         let parsed = MemberPath::new(&text).map_err(|e| TestCaseError::fail(e.to_string()))?;
         prop_assert_eq!(parsed.as_str(), text.as_str());

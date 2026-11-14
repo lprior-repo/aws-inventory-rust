@@ -1,10 +1,3 @@
-//! Universal reference resolution over persisted observations.
-//!
-//! The resolver derives `REFERENCES` edges purely from observed resource
-//! properties and the identities of the resources observed in the same scan.
-//! It has no per-resource-type rules: any string property that exactly matches
-//! an observed ARN, a resource identity, or a provider primary identifier is a
-//! candidate edge. Ambiguous matches are dropped rather than guessed.
 use crate::store::{Store, StoreError};
 use inventory_core::{Edge, Resource};
 use serde::{Deserialize, Serialize};
@@ -19,31 +12,28 @@ mod persist;
 pub use persist::persist_scan;
 pub(crate) use persist::{SyntheticSnapshot, restore_synthetic, snapshot_synthetic};
 
-/// Relation emitted by the universal resolver.
 pub const REFERENCE_RELATION: &str = "REFERENCES";
-/// Marker stored in edge properties to identify universal resolution.
+
 pub const REFERENCE_SOURCE: &str = "universal_reference";
-/// JSON pointer prefix for properties inside a persisted resource record.
+
 pub const PROPERTIES_PREFIX: &str = "/properties";
-/// Maximum container nesting walked inside one resource's properties.
+
 pub const DEFAULT_MAX_DEPTH: usize = 8;
-/// Maximum JSON nodes visited inside one resource's properties.
+
 pub const DEFAULT_MAX_NODES_PER_RESOURCE: usize = 10_000;
-/// Maximum serialized properties bytes processed for one resource.
+
 pub const DEFAULT_MAX_PROPERTIES_BYTES: usize = 2_097_152;
-/// Maximum candidate string bytes considered as a reference.
+
 pub const DEFAULT_MAX_REFERENCE_BYTES: usize = 4_096;
 
-/// Bounds applied while resolving one scan.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ReferenceConfig {
-    /// Container nesting limit inside `properties`.
     pub max_depth: usize,
-    /// JSON node budget per resource.
+
     pub max_nodes_per_resource: usize,
-    /// Serialized `properties` byte limit; larger payloads are skipped.
+
     pub max_properties_bytes: usize,
-    /// Longest string value considered a reference candidate.
+
     pub max_reference_bytes: usize,
 }
 
@@ -58,34 +48,26 @@ impl Default for ReferenceConfig {
     }
 }
 
-/// Accounting for one resolver pass.
 #[derive(Clone, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 pub struct ReferenceSummary {
-    /// String property values examined as potential references.
     pub candidates_scanned: usize,
-    /// Unique edges emitted.
+
     pub edges_emitted: usize,
-    /// Reference-shaped values with no observed target.
+
     pub references_unresolved: usize,
-    /// Identifier values that matched more than one observed resource.
+
     pub ambiguous: usize,
-    /// Resources where a bound stopped the scan or the payload was skipped.
+
     pub truncated: usize,
 }
 
-/// Derived edges plus their accounting.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct ReferenceResolution {
-    /// Bounded resolution counters, including skipped/ambiguous candidates.
     pub summary: ReferenceSummary,
-    /// Deterministically ordered, deduplicated derived edges; empty means none resolved.
+
     pub edges: Vec<Edge>,
 }
 
-/// Resolve references across an in-memory set of observed resources.
-///
-/// The result is deterministic and idempotent: replaying the same resources
-/// yields the same edge set.
 pub fn resolve(resources: &[Resource], config: &ReferenceConfig) -> ReferenceResolution {
     let index = IdentityIndex::build(resources);
     let mut state = ResolutionState::default();
@@ -95,7 +77,6 @@ pub fn resolve(resources: &[Resource], config: &ReferenceConfig) -> ReferenceRes
     state.finish()
 }
 
-/// Accumulates edges and accounting across one bounded resource pass.
 #[derive(Default)]
 struct ResolutionState {
     edges: BTreeMap<(String, String), Edge>,
@@ -120,7 +101,6 @@ impl ResolutionState {
         self.summary.truncated = self.summary.truncated.saturating_add(1);
     }
 
-    /// Account for one candidate string and record its edge when it resolves.
     fn observe(
         &mut self,
         index: &IdentityIndex,
@@ -137,7 +117,6 @@ impl ResolutionState {
         self.insert_edge(resource, target, reference, path);
     }
 
-    /// Accounting for one lookup; `Some` iff it names exactly one target.
     fn record_lookup<'a>(&mut self, lookup: Lookup<'a>) -> Option<(&'a str, &'static str)> {
         match lookup {
             Lookup::Arn(target) => Some((target, "arn")),
@@ -155,7 +134,6 @@ impl ResolutionState {
         }
     }
 
-    /// Insert one deduplicated edge for a resolved reference candidate.
     fn insert_edge(&mut self, resource: &Resource, target: &str, reference: &str, path: &str) {
         let key = (resource.id.clone(), target.to_owned());
         if self.edges.contains_key(&key) {
@@ -187,12 +165,6 @@ impl ResolutionState {
     }
 }
 
-/// Read one scan's deduplicated observations and resolve their references.
-///
-/// Resources are streamed twice instead of collected, so the resolver is not
-/// bounded by the export snapshot budget.
-/// # Errors
-/// Propagates invalid/missing scan, SQL, resource decoding/validation or stream-bound errors.
 pub async fn resolve_scan(
     store: &Store,
     scan_id: &str,

@@ -1,10 +1,6 @@
-//! Queue record decoding, listing, and attempt history.
 use super::*;
 
 impl JobStore {
-    /// Load one persisted job including its payload and optional result.
-    /// # Errors
-    /// Returns invalid-key, missing-job, SQL, JSON or persisted-state decoding errors.
     #[tracing::instrument(skip(self), fields(job_id))]
     pub async fn get(&self, job_id: &str) -> Result<JobRecord, JobError> {
         validate_key(job_id, "job ID")?;
@@ -16,10 +12,6 @@ impl JobStore {
         decode_job(&row)
     }
 
-    /// Listing omits potentially large payload/result JSON. Use get for one job.
-    /// Returns at most `limit` rows in ascending creation-time/job-ID order.
-    /// # Errors
-    /// Rejects limits outside `1..=1000` and propagates SQL/persisted-row decoding failures.
     #[tracing::instrument(skip(self))]
     pub async fn list(&self, limit: usize) -> Result<Vec<JobRecord>, JobError> {
         if !(1..=MAX_LIST_ROWS).contains(&limit) {
@@ -31,10 +23,6 @@ impl JobStore {
         rows.iter().map(decode_job).collect()
     }
 
-    /// Attempt history in ascending attempt order, capped at 32 rows.
-    /// A job with no attempts, including an unknown identity, returns an empty vector.
-    /// # Errors
-    /// Returns invalid-key, SQL or persisted-attempt decoding errors.
     #[tracing::instrument(skip(self), fields(job_id))]
     pub async fn history(&self, job_id: &str) -> Result<Vec<AttemptRecord>, JobError> {
         validate_key(job_id, "job ID")?;

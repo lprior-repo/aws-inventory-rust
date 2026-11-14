@@ -1,4 +1,3 @@
-//! Attempt outcomes, retry classification, and bounded backoff.
 use super::*;
 
 impl ApiExecutor {
@@ -29,9 +28,7 @@ impl ApiExecutor {
                 Err(_) => Err(ApiError::Timeout),
             },
         };
-        // Publish rate feedback before releasing local/global reservations.
-        // Thus each currently active request can cause at most one rate change
-        // while the next dispatch reservation is waiting.
+
         self.feedback(bucket, &result)?;
         result
     }
@@ -117,8 +114,6 @@ pub(super) fn bounded_message(message: &str) -> String {
     message.chars().take(MAX_ERROR_CHARS).collect()
 }
 
-/// SplitMix64 finalizer. Wrapping arithmetic is part of this non-cryptographic
-/// jitter permutation; the seed is randomized once outside the attempt path.
 pub(super) fn mix(value: u64) -> u64 {
     let first = (value ^ value.wrapping_shr(30)).wrapping_mul(0xbf58_476d_1ce4_e5b9);
     let second = (first ^ first.wrapping_shr(27)).wrapping_mul(0x94d0_49bb_1331_11eb);

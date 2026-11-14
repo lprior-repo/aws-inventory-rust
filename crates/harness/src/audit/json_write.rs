@@ -1,5 +1,3 @@
-//! Render ordered documents exactly as Python's `json.dumps` does.
-
 use std::collections::BTreeSet;
 
 use serde_json::Value;
@@ -100,7 +98,6 @@ fn write_array(out: &mut String, items: &[Json], depth: usize) {
     out.push(']');
 }
 
-/// Render JSON with two-space indentation, preserving object order.
 pub fn pretty(json: &Json) -> String {
     let mut out = String::new();
     write(&mut out, json, 0);
@@ -129,7 +126,6 @@ fn default_value(value: &Value) -> String {
     }
 }
 
-/// Render compact JSON with Python's default separators and sorted keys.
 pub fn dumps_default(value: &Value) -> String {
     default_value(value)
 }

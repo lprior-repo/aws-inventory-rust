@@ -1,4 +1,3 @@
-//! Behavior: successive_server_hints_extend_but_never_shorten_shared_cooldowns.
 use super::*;
 
 #[tokio::test(start_paused = true)]

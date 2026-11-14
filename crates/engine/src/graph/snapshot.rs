@@ -1,10 +1,5 @@
-//! Cancellation-safe durable graph snapshot publication.
 use super::*;
 
-/// Export an immutable scan through bounded SQLx streams and async file writes.
-/// # Errors
-/// Rejects invalid names, running scans, exceeded plan bounds, record/SQL errors
-/// or plan-file write/sync/publication and cleanup failures.
 #[tracing::instrument(skip(store, output))]
 pub async fn export_snapshot(
     store: &Store,
@@ -16,10 +11,6 @@ pub async fn export_snapshot(
         .await
 }
 
-/// Cancel an owned export and remove its incomplete temporary file before returning.
-/// # Errors
-/// Returns invalid input/scan state, cancellation, bounded-plan/record errors,
-/// file/database failures or cleanup failures; callers must inspect the result.
 #[tracing::instrument(skip(store, output, cancellation))]
 pub async fn export_snapshot_with_cancellation(
     store: &Store,
@@ -41,8 +32,7 @@ pub async fn export_snapshot_with_cancellation(
     let mut temporary = output.as_os_str().to_owned();
     temporary.push(".partial");
     let temporary = PathBuf::from(temporary);
-    // Establish ownership before selecting cancellation. In particular, never
-    // remove a pre-existing .partial belonging to another invocation.
+
     let file = File::options()
         .write(true)
         .create_new(true)
@@ -66,8 +56,7 @@ pub async fn export_snapshot_with_cancellation(
     } else {
         result
     };
-    // Retain the writer outside the selected future: dropping a Tokio file
-    // write future alone does not wait for its owned blocking file operation.
+
     let result = match tokio::time::timeout(Duration::from_secs(10), batch.writer.flush()).await {
         Ok(Ok(())) => result,
         Ok(Err(source)) => Err(GraphError::Cleanup { source }),
@@ -204,14 +193,10 @@ pub(super) async fn finish_export(
     output: &Path,
 ) -> Result<GraphExportSummary, GraphError> {
     let installed = match result {
-        Ok(summary) => {
-            // Atomic no-clobber installation on the same filesystem. In
-            // particular, output must never replace the live inventory DB.
-            tokio::fs::hard_link(temporary, output)
-                .await
-                .map(|()| summary)
-                .map_err(GraphError::Io)
-        }
+        Ok(summary) => tokio::fs::hard_link(temporary, output)
+            .await
+            .map(|()| summary)
+            .map_err(GraphError::Io),
         Err(error) => Err(error),
     };
     let cleanup = tokio::fs::remove_file(temporary).await;

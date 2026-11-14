@@ -1,4 +1,3 @@
-//! every compiled inventory sdk inherits single attempt configuration properties.
 use super::*;
 
 proptest! {
@@ -41,8 +40,8 @@ proptest! {
             prop_assert!(assumed.credentials_provider().is_some());
             prop_assert!(assumed.get_origin("retry_config").is_client_config());
 
-            // These are the same official from-shared-config conversions used
-            // by Client::new. Constructing them must not fetch credentials.
+
+
             let mut configurations = Vec::new();
             macro_rules! check_sdk {
                 ($sdk:ident, $shared:expr) => {{

@@ -1,33 +1,29 @@
-//! Bounded executor counters and immutable statistics.
 use super::*;
 
-/// Cumulative counters and current occupancy. Concurrent reads are approximate;
-/// after all caller-owned futures have completed/dropped, the snapshot is final.
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq, Serialize)]
 pub struct ExecutorStats {
-    /// API starts admitted so far, including retried starts.
     pub attempts: u64,
-    /// Admitted starts after an execution's initial attempt.
+
     pub retries: u64,
-    /// Attempts classified as throttled, including those carrying server hints.
+
     pub throttles: u64,
-    /// Server retry directives accepted into bucket pacing.
+
     pub server_delays: u64,
-    /// Server retry directives rejected and used to close their bucket.
+
     pub rejected_retry_hints: u64,
-    /// Attempts classified as timed out, whether adapter- or executor-reported.
+
     pub timeouts: u64,
-    /// Executions completed with a successful result.
+
     pub successes: u64,
-    /// Executions completed with a noncancellation error.
+
     pub failures: u64,
-    /// Executions cancelled explicitly or dropped before completion.
+
     pub cancelled: u64,
-    /// Current attempts holding global and bucket admission permits.
+
     pub in_flight: u64,
-    /// Largest observed simultaneous admitted-attempt count.
+
     pub peak_in_flight: u64,
-    /// Distinct quota keys registered; buckets are retained for the executor lifetime.
+
     pub active_buckets: u64,
 }
 

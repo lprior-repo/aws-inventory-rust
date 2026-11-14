@@ -1,4 +1,3 @@
-//! literal emulator parent fixtures preserve all sanitized properties and exact architecture edges behavior.
 use super::*;
 
 #[test]

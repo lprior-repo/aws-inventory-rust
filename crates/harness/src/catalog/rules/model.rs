@@ -1,33 +1,28 @@
-//! Reviewable rule and descriptor types shared by both catalog builders.
-
 use crate::catalog::json::Json;
 use crate::catalog::rules::enrich_tables::ARN_TARGETS;
 
-/// One emitted architecture reference.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Rule {
-    /// Schema-relative property path.
     pub pointer: String,
-    /// Semantic relation name.
+
     pub relation: String,
-    /// Target resource kind.
+
     pub target_kind: String,
-    /// `arn` or `template`.
+
     pub target_format: String,
-    /// ARN template for `template` rules.
+
     pub arn_template: Option<String>,
-    /// Evidence class for the rule.
+
     pub evidence: String,
-    /// Identifier prefix for EC2 template rules.
+
     pub identifier_prefix: Option<String>,
-    /// ARN service segment.
+
     pub arn_service: Option<String>,
-    /// ARN resource-name prefix.
+
     pub arn_resource_prefix: Option<String>,
 }
 
 impl Rule {
-    /// A reviewed seed rule; `arn` distinguishes template pointers.
     pub fn reviewed(path: &str, relation: &str, kind: &str, arn: Option<&str>) -> Self {
         Self {
             pointer: path.to_string(),
@@ -64,7 +59,6 @@ impl Rule {
         rule
     }
 
-    /// Serialize with the descriptor's declared key order.
     pub fn to_json(&self) -> Json {
         let mut entries = self.base_entries();
         self.push_optional(&mut entries);
@@ -129,21 +123,19 @@ fn evidence_class(template: Option<&str>) -> String {
     .to_string()
 }
 
-/// The descriptor subset relationship compilation depends on.
 pub struct Descriptor {
-    /// CloudFormation type name.
     pub type_name: String,
-    /// Native resource kind.
+
     pub kind: String,
-    /// Reviewed primary identifier pointers.
+
     pub primary_identifier: Vec<String>,
-    /// Reviewed self-ARN pointers.
+
     pub arn_pointers: Vec<String>,
-    /// Schema write-only pointers.
+
     pub write_only_properties: Vec<String>,
-    /// Reviewed sensitive pointers.
+
     pub sensitive_properties: Vec<String>,
-    /// Reviewed seed rules.
+
     pub relationships: Vec<Rule>,
 }
 

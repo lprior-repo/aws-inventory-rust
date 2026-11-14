@@ -1,4 +1,3 @@
-//! Seeded proptest runners keep every test's public fallible signature explicit.
 use super::support::{TestResult, fields, hash};
 use inventory_core::record::*;
 use proptest::prelude::*;
@@ -26,7 +25,6 @@ fn scalar() -> impl Strategy<Value = Value> {
 }
 
 fn tree() -> impl Strategy<Value = Value> {
-    // At most three generated container levels and four children per container.
     scalar().prop_recursive(3, 32, 4, |inner| {
         prop_oneof![
             prop::collection::vec(inner.clone(), 0..=4).prop_map(Value::List),
@@ -78,18 +76,16 @@ fn changed_leaf_case((background, leaf): (Value, bool)) -> TestResult {
 
 #[test]
 fn generated_equal_values_have_equal_hashes() -> TestResult {
-    // Given seeded bounded scalar/list/map trees with canonical float values.
     let mut runner = TestRunner::new(config());
-    // When key 1 uses shortest versus eight-byte forms, then equal values hash alike.
+
     runner.run(&tree(), |value| equal_value_case(value).map_err(failure))?;
     Ok(())
 }
 
 #[test]
 fn generated_records_change_hash_when_one_scalar_leaf_changes() -> TestResult {
-    // Given arbitrary bounded background trees and a boolean scalar leaf.
     let mut runner = TestRunner::new(config());
-    // When only that leaf is flipped, then no-exclusion hashes differ.
+
     runner.run(&(tree(), any::<bool>()), |value| {
         changed_leaf_case(value).map_err(failure)
     })?;
@@ -133,10 +129,9 @@ fn nested_leaf_case((background, leaf, in_map): (Value, Value, bool)) -> TestRes
 
 #[test]
 fn generated_nested_scalar_changes_affect_list_and_map_hashes() -> TestResult {
-    // Given seeded bounded background trees and every generated scalar kind, including text.
     let mut runner = TestRunner::new(config());
     let strategy = (tree(), scalar(), any::<bool>());
-    // When one leaf inside a list or map changes, then its record's digest changes.
+
     runner.run(&strategy, |case| nested_leaf_case(case).map_err(failure))?;
     Ok(())
 }

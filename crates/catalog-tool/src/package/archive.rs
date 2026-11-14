@@ -1,5 +1,3 @@
-//! Deterministic ZIP writing and read-back verification.
-
 use std::fs::File;
 use std::io::{self, Read, Seek, Write};
 
@@ -11,16 +9,12 @@ use super::Payload;
 use super::selection::MANIFEST_NAME;
 use super::sha256_hex;
 
-/// Deflate level used by the original Python archive writer.
 const COMPRESSION_LEVEL: i64 = 7;
 
-/// Fixed ZIP timestamp (the earliest representable DOS time), so archives are
-/// reproducible instead of inheriting file modification times.
 pub(super) fn fixed_timestamp() -> Result<DateTime, Box<dyn std::error::Error>> {
     DateTime::from_date_and_time(1980, 1, 1, 0, 0, 0).map_err(zip_error)
 }
 
-/// Convert a ZIP failure into an operator-facing I/O error.
 fn zip_error(error: impl std::fmt::Display) -> Box<dyn std::error::Error> {
     Box::new(io::Error::new(
         io::ErrorKind::InvalidData,
@@ -28,7 +22,6 @@ fn zip_error(error: impl std::fmt::Display) -> Box<dyn std::error::Error> {
     ))
 }
 
-/// Write the payload set and manifest, sorted by the caller.
 pub(super) fn write(
     file: &mut File,
     payloads: &[Payload],
@@ -48,7 +41,6 @@ pub(super) fn write(
     Ok(())
 }
 
-/// Write one entry through the already exclusively opened archive handle.
 fn write_entry(
     writer: &mut ZipWriter<&mut File>,
     name: &str,
@@ -62,7 +54,6 @@ fn write_entry(
     Ok(())
 }
 
-/// Re-read the archive, checking entry count, payload hashes and manifest bytes.
 pub(super) fn verify(
     file: &mut File,
     payloads: &[Payload],
@@ -87,7 +78,6 @@ pub(super) fn verify(
     Ok(())
 }
 
-/// Compare one archived payload with the input snapshot.
 fn verify_entry(
     archive: &mut ZipArchive<&mut File>,
     name: &str,
@@ -100,7 +90,6 @@ fn verify_entry(
     Ok(())
 }
 
-/// Read one named entry completely, validating its CRC as a side effect.
 fn read_entry<R: Read + std::io::Seek>(
     archive: &mut ZipArchive<R>,
     name: &str,
@@ -111,7 +100,6 @@ fn read_entry<R: Read + std::io::Seek>(
     Ok(bytes)
 }
 
-/// Build an invalid-data error for consistency-check failures.
 fn invalid(message: impl Into<String>) -> Box<dyn std::error::Error> {
     Box::new(io::Error::new(io::ErrorKind::InvalidData, message.into()))
 }

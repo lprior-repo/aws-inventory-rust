@@ -14,11 +14,21 @@ pub(super) fn emit(
     body_limit: usize,
 ) -> Result<(), EncodeError> {
     match (kind, value) {
+        ("float" | "double", ValueRef::Text(text))
+            if matches!(text, "NaN" | "Infinity" | "-Infinity") =>
+        {
+            form::pair(body, first, name, text)
+        }
         ("string" | "enum" | "bigDecimal", ValueRef::Text(text)) => {
             form::pair(body, first, name, text)
         }
-        ("boolean", ValueRef::Bool(value)) => form::pair(body, first, name, if value { "true" } else { "false" }),
-        ("byte" | "short" | "integer" | "long" | "bigInteger" | "intEnum", ValueRef::Int(value)) => {
+        ("boolean", ValueRef::Bool(value)) => {
+            form::pair(body, first, name, if value { "true" } else { "false" })
+        }
+        (
+            "byte" | "short" | "integer" | "long" | "bigInteger" | "intEnum",
+            ValueRef::Int(value),
+        ) => {
             let mut text = Text::new();
             write!(&mut text, "{value}").map_err(|_| invalid("numeric formatting failed"))?;
             form::pair(body, first, name, text.as_str()?)
@@ -33,26 +43,38 @@ pub(super) fn emit(
             let formatted = timestamp(time, timestamp_format)?;
             form::pair(body, first, name, formatted.as_str()?)
         }
-        ("document", _) => Err(EncodeError::Unsupported("document values are not supported by AWS Query protocols")),
+        ("document", _) => Err(EncodeError::Unsupported(
+            "document values are not supported by AWS Query protocols",
+        )),
         (_, ValueRef::Null) => Ok(()),
-        _ => Err(EncodeError::InvalidValue { field: None, reason: "value kind does not match modeled scalar" }),
+        _ => Err(EncodeError::InvalidValue {
+            field: None,
+            reason: "value kind does not match modeled scalar",
+        }),
     }
 }
 
 fn write_float(text: &mut Text, value: f64) -> Result<(), EncodeError> {
     if value.is_nan() {
-        return text.write_str("NaN").map_err(|_| invalid("float formatting failed"));
+        return text
+            .write_str("NaN")
+            .map_err(|_| invalid("float formatting failed"));
     }
     if value == f64::INFINITY {
-        return text.write_str("Infinity").map_err(|_| invalid("float formatting failed"));
+        return text
+            .write_str("Infinity")
+            .map_err(|_| invalid("float formatting failed"));
     }
     if value == f64::NEG_INFINITY {
-        return text.write_str("-Infinity").map_err(|_| invalid("float formatting failed"));
+        return text
+            .write_str("-Infinity")
+            .map_err(|_| invalid("float formatting failed"));
     }
     write!(text, "{value}").map_err(|_| invalid("float formatting failed"))?;
     let formatted = text.as_str()?;
     if !formatted.contains('.') && !formatted.contains('e') && !formatted.contains('E') {
-        text.write_str(".0").map_err(|_| invalid("float formatting failed"))?;
+        text.write_str(".0")
+            .map_err(|_| invalid("float formatting failed"))?;
     }
     Ok(())
 }
@@ -80,18 +102,30 @@ fn date_time(time: Time) -> Result<Text, EncodeError> {
     )
     .map_err(|_| invalid("timestamp formatting failed"))?;
     fractional(&mut text, time.nanoseconds())?;
-    text.write_str("Z").map_err(|_| invalid("timestamp formatting failed"))?;
+    text.write_str("Z")
+        .map_err(|_| invalid("timestamp formatting failed"))?;
     Ok(text)
 }
 
 fn epoch(time: Time) -> Result<Text, EncodeError> {
     let mut text = Text::new();
     if time.seconds() < 0 && time.nanoseconds() > 0 {
-        write!(&mut text, "-{}", time.seconds().checked_add(1).and_then(i64::checked_neg).ok_or_else(|| invalid("timestamp is out of range"))?)
-            .map_err(|_| invalid("timestamp formatting failed"))?;
-        fractional(&mut text, 1_000_000_000 - time.nanoseconds())?;
+        write!(
+            &mut text,
+            "-{}",
+            time.seconds()
+                .checked_add(1)
+                .and_then(i64::checked_neg)
+                .ok_or_else(|| invalid("timestamp is out of range"))?
+        )
+        .map_err(|_| invalid("timestamp formatting failed"))?;
+        let fractional_nanoseconds = 1_000_000_000u32
+            .checked_sub(time.nanoseconds())
+            .ok_or_else(|| invalid("timestamp is out of range"))?;
+        fractional(&mut text, fractional_nanoseconds)?;
     } else {
-        write!(&mut text, "{}", time.seconds()).map_err(|_| invalid("timestamp formatting failed"))?;
+        write!(&mut text, "{}", time.seconds())
+            .map_err(|_| invalid("timestamp formatting failed"))?;
         fractional(&mut text, time.nanoseconds())?;
     }
     Ok(text)
@@ -101,13 +135,23 @@ fn http_date(time: Time) -> Result<Text, EncodeError> {
     let days = time.seconds().div_euclid(86_400);
     let seconds = time.seconds().rem_euclid(86_400);
     let (year, month, day) = civil(days)?;
-    let weekday = usize::try_from((days + 4).rem_euclid(7)).map_err(|_| invalid("timestamp weekday is invalid"))?;
+    let weekday =
+        usize::try_from(days.rem_euclid(7)).map_err(|_| invalid("timestamp weekday is invalid"))?;
     let weekday = ["Thu", "Fri", "Sat", "Sun", "Mon", "Tue", "Wed"]
         .get(weekday)
         .ok_or_else(|| invalid("timestamp weekday is invalid"))?;
-    let month = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
-        .get(usize::try_from(month - 1).map_err(|_| invalid("timestamp month is invalid"))?)
-        .ok_or_else(|| invalid("timestamp month is invalid"))?;
+    let month = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ]
+    .get(
+        usize::try_from(
+            month
+                .checked_sub(1)
+                .ok_or_else(|| invalid("timestamp month is invalid"))?,
+        )
+        .map_err(|_| invalid("timestamp month is invalid"))?,
+    )
+    .ok_or_else(|| invalid("timestamp month is invalid"))?;
     let mut text = Text::new();
     write!(
         &mut text,
@@ -125,29 +169,59 @@ fn fractional(text: &mut Text, nanoseconds: u32) -> Result<(), EncodeError> {
         return Ok(());
     }
     let mut fraction = Text::new();
-    write!(&mut fraction, "{nanoseconds:09}").map_err(|_| invalid("timestamp formatting failed"))?;
+    write!(&mut fraction, "{nanoseconds:09}")
+        .map_err(|_| invalid("timestamp formatting failed"))?;
     let fraction = fraction.as_str()?;
     let trimmed = fraction.trim_end_matches('0');
-    text.write_char('.').map_err(|_| invalid("timestamp formatting failed"))?;
-    text.write_str(trimmed).map_err(|_| invalid("timestamp formatting failed"))
+    text.write_char('.')
+        .map_err(|_| invalid("timestamp formatting failed"))?;
+    text.write_str(trimmed)
+        .map_err(|_| invalid("timestamp formatting failed"))
+}
+
+fn checked_add(left: i64, right: i64) -> Result<i64, EncodeError> {
+    left.checked_add(right)
+        .ok_or_else(|| invalid("timestamp is out of range"))
+}
+
+fn checked_sub(left: i64, right: i64) -> Result<i64, EncodeError> {
+    left.checked_sub(right)
+        .ok_or_else(|| invalid("timestamp is out of range"))
+}
+
+fn checked_mul(left: i64, right: i64) -> Result<i64, EncodeError> {
+    left.checked_mul(right)
+        .ok_or_else(|| invalid("timestamp is out of range"))
 }
 
 fn civil(days: i64) -> Result<(i64, i64, i64), EncodeError> {
-    let z = days.checked_add(719_468).ok_or_else(|| invalid("timestamp is out of range"))?;
+    let z = checked_add(days, 719_468)?;
     let era = z.div_euclid(146_097);
-    let doe = z - era * 146_097;
-    let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365;
-    let year = yoe + era * 400;
-    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
-    let mp = (5 * doy + 2) / 153;
-    let day = doy - (153 * mp + 2) / 5 + 1;
-    let month = mp + if mp < 10 { 3 } else { -9 };
-    let year = year + i64::from(month <= 2);
+    let doe = checked_sub(z, checked_mul(era, 146_097)?)?;
+    let yoe = checked_sub(
+        checked_add(checked_sub(doe, doe / 1_460)?, doe / 36_524)?,
+        doe / 146_096,
+    )? / 365;
+    let year = checked_add(yoe, checked_mul(era, 400)?)?;
+    let year_days = checked_sub(checked_add(checked_mul(365, yoe)?, yoe / 4)?, yoe / 100)?;
+    let doy = checked_sub(doe, year_days)?;
+    let mp = checked_add(checked_mul(5, doy)?, 2)? / 153;
+    let month_days = checked_add(checked_mul(153, mp)?, 2)? / 5;
+    let day = checked_add(checked_sub(doy, month_days)?, 1)?;
+    let month = if mp < 10 {
+        checked_add(mp, 3)?
+    } else {
+        checked_sub(mp, 9)?
+    };
+    let year = checked_add(year, i64::from(month <= 2))?;
     Ok((year, month, day))
 }
 
 fn invalid(reason: &'static str) -> EncodeError {
-    EncodeError::InvalidValue { field: None, reason }
+    EncodeError::InvalidValue {
+        field: None,
+        reason,
+    }
 }
 
 struct Text {
@@ -157,11 +231,18 @@ struct Text {
 
 impl Text {
     fn new() -> Self {
-        Self { bytes: [0; 128], len: 0 }
+        Self {
+            bytes: [0; 128],
+            len: 0,
+        }
     }
 
     fn as_str(&self) -> Result<&str, EncodeError> {
-        std::str::from_utf8(&self.bytes[..self.len]).map_err(|_| invalid("formatted scalar is not UTF-8"))
+        let bytes = self
+            .bytes
+            .get(..self.len)
+            .ok_or_else(|| invalid("formatted scalar is not UTF-8"))?;
+        std::str::from_utf8(bytes).map_err(|_| invalid("formatted scalar is not UTF-8"))
     }
 }
 
@@ -196,7 +277,10 @@ mod tests {
             Ok(value) => value,
             Err(error) => panic!("{error}"),
         };
-        assert_eq!(http_date.as_str().ok(), Some("Sun, 25 Jan 2015 08:00:00 GMT"));
+        assert_eq!(
+            http_date.as_str().ok(),
+            Some("Sun, 25 Jan 2015 08:00:00 GMT")
+        );
 
         let negative = match Time::new(-1, 500_000_000) {
             Ok(time) => time,

@@ -2,30 +2,22 @@ use std::{path::PathBuf, time::Duration};
 
 use super::TransportError;
 
-/// Construction-time limits shared by every clone of a client.
 #[derive(Clone, Debug)]
 pub struct Config {
-    /// Whole-request deadline, 2 ms through 300 s; default 30 s.
     pub request_deadline: Duration,
-    /// Bound for the whole connector, including permit wait, DNS, TCP and TLS; default 10 s.
-    /// Must be positive and no greater than `request_deadline`, including background connects.
+
     pub connect_timeout: Duration,
-    /// Maximum buffered body, 1 byte through 64 MiB; default 8 MiB.
+
     pub response_body_limit: usize,
-    /// Global socket cap, 1 through 512; provisional default 128.
-    /// Choose near the executor's in-flight limit; reserve other process FDs separately.
+
     pub max_connections: usize,
-    /// Idle timeout, at least 1 ms and at most half the request deadline; provisional default 1 s.
-    /// Idle sockets retain permits for up to this timeout plus `max(idle_timeout, 90 ms)`.
-    /// A sweep of M endpoints with cap N needs about ceil(M/N) capacity waves; new hosts
-    /// can time out before eviction. Choose a short valid expiry and cap near the in-flight
-    /// limit; defaults await sweep benchmarks. Active HTTP/2 streams can outlive pool expiry.
+
     pub idle_timeout: Duration,
-    /// Maximum idle sockets per endpoint, 1 through the global cap; default 2.
+
     pub pool_idle_per_host: usize,
-    /// Optional PEM roots appended to system roots; bundle size is capped at 1 MiB.
+
     pub extra_ca_bundle: Option<PathBuf>,
-    /// Permit unencrypted HTTP for local emulators/proxies; default false.
+
     pub allow_plain_http: bool,
 }
 

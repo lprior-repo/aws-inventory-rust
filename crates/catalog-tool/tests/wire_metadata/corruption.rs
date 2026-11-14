@@ -1,6 +1,6 @@
 use super::{TestResult, compile_model};
 use inventory_core::{
-    catalog::{CATALOG_VERSION, Catalog, CatalogError, CatalogKey},
+    catalog::{CATALOG_VERSION, Catalog, CatalogError, CatalogKey, Shape, Target},
     record::{Key, Record, Value},
 };
 use std::collections::BTreeMap;
@@ -35,14 +35,14 @@ fn service_with_shape(
     let mut shape = shape_fields.to_vec();
     shape.push((CatalogKey::Name, Value::Text("Fixture".to_owned())));
     shape.push((CatalogKey::Kind, Value::Int(kind)));
-    let shape = Record::encode(&Value::Map(shape.iter().try_fold(
-        BTreeMap::new(),
-        |mut map, (key, value)| {
-            map.insert(Key::Field(key.field()?), value.clone());
-            Ok::<_, Box<dyn std::error::Error>>(map)
-        },
-    )?))?
-    .into_bytes();
+    let shape = Value::Map(
+        shape
+            .iter()
+            .try_fold(BTreeMap::new(), |mut map, (key, value)| {
+                map.insert(Key::Field(key.field()?), value.clone());
+                Ok::<_, Box<dyn std::error::Error>>(map)
+            })?,
+    );
     let service = root(&[
         (CatalogKey::Name, Value::Text("example".to_owned())),
         (
@@ -53,7 +53,7 @@ fn service_with_shape(
         (CatalogKey::Operations, Value::List(Vec::new())),
         (CatalogKey::Protocols, Value::List(Vec::new())),
         (CatalogKey::Resources, Value::List(Vec::new())),
-        (CatalogKey::Shapes, Value::List(vec![Value::Bytes(shape)])),
+        (CatalogKey::Shapes, Value::List(vec![shape])),
     ])?;
     root(&[
         (CatalogKey::Format, Value::Int(2)),
@@ -116,6 +116,13 @@ fn field_registry_rejects_out_of_bounds_and_non_utf8_offset_ranges() -> TestResu
 }
 #[test]
 fn public_reader_rejects_unknown_wire_enums_and_out_of_bounds_shape_references() -> TestResult {
+    let scalar = service_with_shape(2, &[])?;
+    assert_eq!(fixture_shape(&scalar)?.kind()?, "string");
+    let recursive_list = service_with_shape(16, &[(CatalogKey::Element, Value::Int(0))])?;
+    assert_eq!(
+        fixture_shape(&recursive_list)?.element()?,
+        Some(Target::Shape(0))
+    );
     let enum_bytes = service_with_shape(
         2,
         &[(
@@ -123,14 +130,29 @@ fn public_reader_rejects_unknown_wire_enums_and_out_of_bounds_shape_references()
             Value::Text("wall-clock".to_owned()),
         )],
     )?;
-    assert!(matches!(
-        Catalog::borrow(&enum_bytes)?.service("example"),
-        Err(CatalogError::Field(CatalogKey::ShapeTimestampFormat))
-    ));
+    let observed = Catalog::borrow(&enum_bytes)?.service("example");
+    assert!(
+        matches!(
+            &observed,
+            Err(CatalogError::Field(CatalogKey::ShapeTimestampFormat))
+        ),
+        "observed error: {:?}",
+        observed.as_ref().err()
+    );
     let reference_bytes = service_with_shape(16, &[(CatalogKey::Element, Value::Int(9))])?;
     assert!(matches!(
         Catalog::borrow(&reference_bytes)?.service("example"),
         Err(CatalogError::Reference)
     ));
     Ok(())
+}
+
+fn fixture_shape(bytes: &[u8]) -> Result<Shape<'_>, Box<dyn std::error::Error>> {
+    Catalog::borrow(bytes)?
+        .service("example")?
+        .ok_or("service missing")?
+        .shapes()?
+        .next()
+        .transpose()?
+        .ok_or_else(|| "shape missing".into())
 }

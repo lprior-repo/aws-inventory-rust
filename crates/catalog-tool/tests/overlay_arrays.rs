@@ -10,7 +10,6 @@ fn strings(n: usize) -> String {
 }
 #[test]
 fn all_sixty_four_entry_arrays_accept_the_bound_and_reject_sixty_five() -> TestResult {
-    // Given each plan array at both count edges, when parsed, then the same cap applies.
     ["exclude_from_hash", "skip", "queryable", "fixed.Values"]
         .into_iter()
         .try_for_each(|key| -> TestResult {
@@ -44,7 +43,6 @@ fn all_sixty_four_entry_arrays_accept_the_bound_and_reject_sixty_five() -> TestR
 }
 #[test]
 fn identity_keys_accept_one_and_eight_and_reject_nine() -> TestResult {
-    // Given identity-key edges, when parsed, then the tighter eight-path cap wins.
     [1, 8].into_iter().try_for_each(|n| -> TestResult {
         let o = parse(&format!(
             "[operation.ListThings.identity]\nkey=[{}]",
@@ -77,7 +75,6 @@ fn pairs(n: usize) -> String {
 }
 #[test]
 fn token_pairs_accept_one_and_eight_and_reject_nine_and_duplicates() -> TestResult {
-    // Given token-pair edges, when parsed, then both pair and input uniqueness are enforced.
     [1, 8].into_iter().try_for_each(|n| -> TestResult {
         let o = parse(&format!(
             "[operation.ListThings.paginator]\nkind='tokens'\npairs=[{}]",

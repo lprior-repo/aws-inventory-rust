@@ -141,7 +141,6 @@ mod tests {
     use super::*;
     #[test]
     fn violated_service_sum_is_a_typed_error() -> Result<(), Error> {
-        // Given internally consistent totals but no service rows, rendering rejects the mismatch.
         let mut report = Report::default();
         report.totals.increment("operations")?;
         report.totals.increment("unclassified")?;

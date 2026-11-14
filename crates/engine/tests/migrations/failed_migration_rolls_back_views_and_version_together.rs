@@ -1,4 +1,3 @@
-//! Behavior: failed_migration_rolls_back_views_and_version_together.
 use super::*;
 
 #[tokio::test]

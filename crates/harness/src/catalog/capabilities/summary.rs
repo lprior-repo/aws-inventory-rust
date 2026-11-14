@@ -1,5 +1,3 @@
-//! Summary block for the capability matrix document.
-
 use std::collections::BTreeMap;
 
 use crate::catalog::archive::Archive;

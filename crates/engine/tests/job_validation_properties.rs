@@ -1,7 +1,3 @@
-//! Submission and lease validation must reject invalid intent before any write.
-//! These cases deliberately distinguish UTF-8 byte limits from SQLite's text
-//! character counts, and object intent from merely well-formed JSON.
-
 use std::future::Future;
 use std::time::Duration;
 
@@ -82,8 +78,7 @@ fn text_with_bytes(bytes: usize, prefix: &str) -> String {
 
 async fn check_byte_boundaries(store: &JobStore, prefix: &str, value: u16) -> TestCaseResult {
     let mut accepted = 0_usize;
-    // The last two strings are longer in bytes but still below SQLite's
-    // character-count limit. Rejecting them therefore tests the public API.
+
     for bytes in [63_usize, 64, 65, 66] {
         let mut spec = intent(&format!("kind-{bytes}-{value}"));
         spec.kind = text_with_bytes(bytes, prefix);

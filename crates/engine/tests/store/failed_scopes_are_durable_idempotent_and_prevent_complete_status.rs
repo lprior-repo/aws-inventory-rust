@@ -1,4 +1,3 @@
-//! Behavior: failed_scopes_are_durable_idempotent_and_prevent_complete_status.
 use super::*;
 
 #[tokio::test]

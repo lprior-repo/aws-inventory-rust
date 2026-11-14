@@ -3,64 +3,55 @@ use serde::Deserialize;
 use serde_json::Value;
 use std::collections::BTreeMap;
 
-/// One model-owned endpoint case; operation binding is explicitly out of scope.
 #[derive(Debug, Deserialize)]
 pub struct Case {
-    /// Explicit endpoint parameters, before applying defaults.
     #[serde(default)]
     pub params: BTreeMap<String, Value>,
-    /// Exact expected endpoint or modeled error.
+
     pub expect: Outcome,
-    /// Operation inputs or builtins requiring a separate binding layer.
+
     #[serde(default, rename = "operationInputs")]
     pub operation_inputs: Vec<Value>,
 }
 
-/// Exclusive buckets, chosen in declaration order when several exclusions apply.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum SkipReason {
-    /// Requires operation input or builtin binding.
     OperationInputs,
-    /// Region does not match the commercial partition table.
+
     OtherPartition,
-    /// FIPS is enabled.
+
     Fips,
-    /// Dual-stack is enabled.
+
     DualStack,
-    /// A custom endpoint is supplied.
+
     CustomEndpoint,
-    /// Parameters other than Region and the two disabled flags are supplied.
+
     OtherParameters,
-    /// A baseline case takes a branch requiring a request-time function.
+
     RequestTimeFunction,
 }
 
-/// Deterministic counts; preclassified skipped inputs are never evaluated.
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct CaseCounts {
-    /// Number of cases meeting the exact baseline scope.
     pub in_scope: usize,
-    /// Baseline cases matching their expectations.
+
     pub passed: usize,
-    /// Baseline cases failing or encountering interpreter errors.
+
     pub failed: usize,
-    /// Exclusive exclusion buckets.
+
     pub skipped: BTreeMap<SkipReason, usize>,
-    /// Baseline inputs whose taken branch needs an unsupported function.
+
     pub unsupported: Vec<UnsupportedCase>,
     pub(super) endpoints: Vec<super::exceptions::EndpointCase>,
 }
 
-/// An explicit diagnostic retaining the model-owned zero-based test index.
 #[derive(Debug, PartialEq, Eq)]
 pub struct UnsupportedCase {
-    /// Index in `endpointTests.testCases`.
     pub index: usize,
-    /// Unsupported function reached during evaluation.
+
     pub name: String,
 }
 
-/// Classify explicit inputs only, never defaults or expected output.
 #[must_use]
 pub fn classify_case(case: &Case) -> Option<SkipReason> {
     use SkipReason as S;
@@ -83,10 +74,6 @@ pub fn classify_case(case: &Case) -> Option<SkipReason> {
 }
 
 impl RuleSet {
-    /// Execute baseline cases only; record lazy unsupported calls as request-time skips.
-    ///
-    /// # Errors
-    /// Rejects more than 20,000 cases; interpreter errors count as case failures.
     pub fn run_cases(&self, cases: &[Case]) -> Result<CaseCounts, Error> {
         if cases.len() > 20_000 {
             return Err(self.error(Fault::Bound("test cases")));

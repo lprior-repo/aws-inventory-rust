@@ -1,4 +1,3 @@
-//! identity responsibilities for global_inventory.
 use super::*;
 
 pub(super) fn checked_text(value: &str, what: &'static str) -> Result<String, AwsScanError> {

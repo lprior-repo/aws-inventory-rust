@@ -1,4 +1,3 @@
-//! mapping responsibilities for s3.
 use super::*;
 
 pub(super) fn map_bucket(
@@ -140,8 +139,6 @@ pub(super) fn bucket_edges(ctx: &Context, resource: &Resource) -> Result<Vec<Edg
 }
 
 pub(super) fn validate_bucket_name(name: &str) -> Result<(), AwsScanError> {
-    // Preserve older general-purpose bucket names, including legacy uppercase
-    // and underscore forms, while rejecting identifier/path injection.
     if name.is_empty()
         || name.len() > 255
         || !name

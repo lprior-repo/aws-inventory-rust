@@ -4,7 +4,6 @@ use overlay_support::{HEADER, TestResult, error, reject};
 
 #[test]
 fn unknown_keys_are_contextual_at_every_structured_table() {
-    // Given an unknown key at each depth, when parsed, then its full location survives.
     error(
         &format!("{HEADER}extra='bad'"),
         None,
@@ -28,7 +27,6 @@ fn unknown_keys_are_contextual_at_every_structured_table() {
 }
 #[test]
 fn wrong_types_and_missing_root_keys_are_typed() {
-    // Given incompatible primitive/container types, when parsed, then key and value are exact.
     [
         ("items=1", "items", "1", "string"),
         ("page_size=true", "page_size", "true", "integer"),
@@ -88,7 +86,6 @@ fn wrong_types_and_missing_root_keys_are_typed() {
 }
 #[test]
 fn syntax_errors_keep_original_line_column_and_span() -> TestResult {
-    // Given invalid TOML on line four, when parsed, then the library error stays intact.
     let text = format!("{HEADER}bad = @\n");
     match ServiceOverlay::parse("ec2", &text) {
         Err(OverlayError::Syntax { service, source }) => {
@@ -106,7 +103,6 @@ fn syntax_errors_keep_original_line_column_and_span() -> TestResult {
 
 #[test]
 fn operation_values_and_token_pair_values_must_be_tables() {
-    // Given scalar operation/pair values, when parsed, then the enclosing operation survives.
     error(
         &format!("{HEADER}[operation]\nListThings=1"),
         Some("ListThings"),

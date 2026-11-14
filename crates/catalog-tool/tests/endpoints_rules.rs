@@ -6,7 +6,6 @@ use std::path::Path;
 
 #[test]
 fn assignments_are_visible_to_later_conditions_children_and_endpoint_templates() -> TestResult {
-    // Given a partition assignment and escaped braces, when a tree matches, then values propagate.
     let document = rules(
         json!({"Region":{"type":"string"}}),
         json!([{
@@ -25,7 +24,6 @@ fn assignments_are_visible_to_later_conditions_children_and_endpoint_templates()
 
 #[test]
 fn failed_rule_assignments_do_not_leak_to_siblings() -> TestResult {
-    // Given a rule assigning a partition then failing, when its sibling runs, then p is absent.
     let document = rules(
         json!({}),
         json!([
@@ -47,7 +45,6 @@ fn failed_rule_assignments_do_not_leak_to_siblings() -> TestResult {
 
 #[test]
 fn the_first_matching_rule_wins_without_evaluating_later_rules() -> TestResult {
-    // Given overlapping unconditional rules, when resolved, then the first URL is retained.
     let document = rules(
         json!({}),
         json!([
@@ -61,7 +58,6 @@ fn the_first_matching_rule_wins_without_evaluating_later_rules() -> TestResult {
 
 #[test]
 fn a_selected_tree_exhaustion_is_terminal_even_with_a_matching_outer_sibling() -> TestResult {
-    // Given an empty successful tree branch, when exhausted, then fallback siblings are not tried.
     let document = rules(
         json!({}),
         json!([{"type":"tree","conditions":[],"rules":[
@@ -81,7 +77,6 @@ fn a_selected_tree_exhaustion_is_terminal_even_with_a_matching_outer_sibling() -
 
 #[test]
 fn modeled_errors_expand_their_message_and_are_not_interpreter_failures() -> TestResult {
-    // Given an error rule, when its conditions match, then its exact message is returned.
     let document = rules(
         json!({"Region":{"type":"string"}}),
         json!([
@@ -96,7 +91,6 @@ fn modeled_errors_expand_their_message_and_are_not_interpreter_failures() -> Tes
 
 #[test]
 fn required_defaults_are_applied_but_explicit_parameters_win() -> TestResult {
-    // Given a required default, when absent or overridden, then binding is deterministic.
     let document = rules(
         json!({"Region":{"type":"string","required":true,"default":"us-east-1"}}),
         json!([endpoint(json!("{Region}"), json!([]))]),
@@ -111,7 +105,6 @@ fn required_defaults_are_applied_but_explicit_parameters_win() -> TestResult {
 
 #[test]
 fn absent_required_parameters_are_named_before_rule_evaluation() -> TestResult {
-    // Given a required Bucket, when omitted, then a filename-bearing missing-input error is returned.
     let document = rules(
         json!({"Bucket":{"type":"string","required":true}}),
         json!([endpoint(json!("unreachable"), json!([]))]),
@@ -126,7 +119,6 @@ fn absent_required_parameters_are_named_before_rule_evaluation() -> TestResult {
 
 #[test]
 fn expanded_templates_are_bounded_without_truncation() -> TestResult {
-    // Given a repeated maximum-sized value, when expanded, then typed bounds reject the whole result.
     let document = rules(
         json!({"Region":{"type":"string"}}),
         json!([endpoint(json!("{Region}{Region}"), json!([]))]),

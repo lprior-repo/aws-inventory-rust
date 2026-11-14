@@ -1,5 +1,3 @@
-//! Bind one emulator summary to the reviewed coverage matrix.
-
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};

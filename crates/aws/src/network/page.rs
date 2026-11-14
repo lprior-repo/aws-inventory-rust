@@ -1,4 +1,3 @@
-//! Bounded network observation page assembly.
 use super::*;
 
 impl NetworkPage {

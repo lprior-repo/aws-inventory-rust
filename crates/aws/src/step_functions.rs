@@ -1,8 +1,3 @@
-//! Step Functions state machine and activity inventory. `ListStateMachines` and
-//! `ListActivities` paginate independently; each listed item is described and
-//! its tags read in per-item child scopes. Definitions, variable references and
-//! execution data are never retained.
-
 use aws_sdk_sfn::{
     Client,
     operation::{

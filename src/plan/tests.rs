@@ -216,7 +216,7 @@ fn universal_plan_accounts_for_list_scopes_only() -> Result<()> {
         plan.pointer("/request_accounting/universal_list_types"),
         Some(&json!(1_291))
     );
-    // 1,291 list scopes × 2 profiles × 2 regions; no Get or parent stages.
+
     assert_eq!(
         plan.pointer("/request_accounting/first_cloud_control_list_requests_if_all_scopes_reached"),
         Some(&json!(5_164))

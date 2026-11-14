@@ -1,4 +1,3 @@
-//! Bounded graph batch serialization.
 use super::*;
 
 pub(super) struct BatchWriter {

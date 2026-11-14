@@ -1,5 +1,3 @@
-//! ID-only identity, input-order precedence and query agreement through parsing.
-
 use cmdb_view::{LodLimits, PageRequest, ResourceFilter, ResourceView, Snapshot};
 use proptest::prelude::*;
 use proptest::test_runner::{Config, RngSeed, TestCaseError, TestCaseResult};
@@ -148,26 +146,24 @@ fn assert_snapshot(observations: &[ResourceView]) -> Result<Vec<ResourceView>, T
 
 #[test]
 fn given_separated_duplicate_ids_when_parsed_then_every_retained_row_is_reachable() -> TestResult {
-    // Given x, y, x remain separated by the old display sort.
     let first = observation("x", "A", "r", "k", "first-x");
     let middle = observation("y", "A", "r", "k", "only-y");
     let later = observation("x", "B", "r", "k", "later-x");
-    // When the public snapshot builder reads the three input records.
+
     let retained = assert_snapshot(&[first.clone(), middle.clone(), later])
         .map_err(|error| error.to_string())?;
-    // Then ID alone determines the two retained, queryable rows.
+
     assert_eq!(retained, vec![first, middle]);
     Ok(())
 }
 
 #[test]
 fn given_adjacent_duplicate_ids_when_metadata_differs_then_first_input_wins() -> TestResult {
-    // Given the first observation sorts after the second in every scope field.
     let first = observation("x", "B", "z-region", "z-kind", "first-input");
     let later = observation("x", "A", "a-region", "a-kind", "later-input");
-    // When sorting would previously have selected the later observation.
+
     let retained = assert_snapshot(&[first.clone(), later]).map_err(|error| error.to_string())?;
-    // Then every retained field, including tags and name, comes from the first.
+
     assert_eq!(retained, vec![first]);
     Ok(())
 }
@@ -194,19 +190,18 @@ fn observations(entries: &[(Fields, u32)]) -> Vec<ResourceView> {
 }
 
 fn check_permutations(entries: Vec<(Fields, u32)>) -> TestCaseResult {
-    // Given collision-heavy observations and independent permutation priorities.
     let input = observations(&entries);
     let original = assert_snapshot(&input)?;
-    // When a stable permutation reorders IDs but preserves each ID's first row.
+
     let mut grouped = input;
     grouped.sort_by(|left, right| right.id.cmp(&left.id));
-    // Then the complete sorted result is invariant, including winning metadata.
+
     prop_assert_eq!(&original, &assert_snapshot(&grouped)?);
-    // When an arbitrary permutation may change which observation of an ID is first.
+
     let mut shuffled = entries;
     shuffled.sort_by_key(|(_, priority)| *priority);
     let permuted = observations(&shuffled);
-    // Then only the input-first winner may change; all query invariants still hold.
+
     let reordered = assert_snapshot(&permuted)?;
     prop_assert_eq!(ids(&original), ids(&reordered));
     Ok(())

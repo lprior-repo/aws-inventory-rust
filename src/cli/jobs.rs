@@ -2,7 +2,6 @@ use super::*;
 
 #[derive(Subcommand, Debug)]
 pub enum JobCommand {
-    /// Persist a scan specification without loading credentials or making AWS calls.
     Submit {
         #[arg(long, default_value = "jobs.sqlite")]
         queue: PathBuf,
@@ -15,7 +14,7 @@ pub enum JobCommand {
         #[command(flatten)]
         scan: Box<ScanArgs>,
     },
-    /// Claim and run up to this many available jobs, then exit; expired leases are recovered.
+
     Run {
         #[arg(long, default_value = "jobs.sqlite")]
         queue: PathBuf,
@@ -44,7 +43,7 @@ pub enum JobCommand {
         #[arg(long)]
         job_id: String,
     },
-    /// Explicitly requeue a terminal job with a bounded number of additional attempts.
+
     Retry {
         #[arg(long, default_value = "jobs.sqlite")]
         queue: PathBuf,

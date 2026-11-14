@@ -1,4 +1,3 @@
-//! fixture responsibilities for emulator_snapshot.
 use super::*;
 
 pub(super) fn verified_snapshot() -> TestResult<Snapshot> {
@@ -55,8 +54,7 @@ pub(super) fn verified_snapshot() -> TestResult<Snapshot> {
             )));
         }
     }
-    // Historical baselines record the 35- or 37-kind check; the current
-    // baseline records 39. Any of them proves the all-kind assertion.
+
     if !names.contains("global:all_35_native_kinds")
         && !names.contains("global:all_37_native_kinds")
         && !names.contains("global:all_39_native_kinds")

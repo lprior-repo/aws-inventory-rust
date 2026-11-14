@@ -1,4 +1,3 @@
-//! One retry owner for bounded, replayable graph writes.
 use super::{
     GraphBatch, GraphError, PlanReader, ProjectionLog, existing_resource_index, next_batch,
 };
@@ -18,16 +17,14 @@ use tokio_util::sync::CancellationToken;
 
 mod replay;
 
-/// Per-batch retry bounds and an overall deadline; every field must be nonzero.
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct PushOptions {
-    /// Total attempts per replay-safe batch in `1..=10`; unsafe batches get one.
     pub max_attempts: u32,
-    /// Per-attempt timeout in milliseconds, in `1..=300000`.
+
     pub attempt_timeout_ms: u64,
-    /// Maximum retry backoff in milliseconds, in `1..=300000`.
+
     pub max_backoff_ms: u64,
-    /// Whole-delivery timeout in milliseconds, in `1..=86400000`.
+
     pub overall_timeout_ms: u64,
 }
 
@@ -70,18 +67,16 @@ impl PushOptions {
     }
 }
 
-/// Delivery accounting; acknowledged batches skipped on replay are not reapplied.
 #[derive(Clone, Debug, Default, Eq, PartialEq, Serialize)]
 pub struct PushSummary {
-    /// Newly acknowledged batches successfully delivered during this call.
     pub applied_batches: u64,
-    /// Already acknowledged batches skipped using the durable checkpoint.
+
     pub skipped_batches: u64,
-    /// API attempts started by the executor, including retries.
+
     pub attempts: u64,
-    /// API attempts started after their batch's first attempt.
+
     pub retries: u64,
-    /// Connection-creation attempts after the first, saturating at zero.
+
     pub reconnects: u64,
 }
 

@@ -1,4 +1,3 @@
-//! Behavior: policies_match_exactly_and_preserve_default_rates.
 use super::*;
 
 #[tokio::test(start_paused = true)]

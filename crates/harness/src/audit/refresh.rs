@@ -1,5 +1,3 @@
-//! Refresh coverage evidence bound to one completed emulator run.
-
 mod bind;
 
 use std::path::Path;
@@ -12,7 +10,6 @@ use super::Json;
 use super::files::read_json_document;
 use super::rollup::{read_ordered, write_rollup};
 
-/// Refresh coverage evidence, optionally binding one emulator summary.
 pub async fn run_refresh(
     root: &Path,
     emulator_summary: Option<&Path>,

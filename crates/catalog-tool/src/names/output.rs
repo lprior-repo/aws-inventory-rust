@@ -1,6 +1,5 @@
 use super::{MAX_SQL_NAME_BYTES, NameError, SqlName};
 
-/// Only bounded input types reach this builder; retained diagnostic context is at most 256 bytes.
 pub(super) struct Output<'a> {
     type_name: &'a str,
     text: String,

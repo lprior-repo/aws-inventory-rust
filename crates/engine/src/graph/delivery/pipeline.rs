@@ -1,13 +1,5 @@
-//! Cancellation-aware graph delivery orchestration.
 use super::*;
 
-/// Validate the complete plan, bind immutable contents, then deliver serially.
-/// Retries own no detached task and never wrap the SQLx acknowledgement commit.
-/// Returns newly applied/skipped batches and executor counters; cancellation
-/// stops admission while already committed acknowledgements remain replayable.
-/// # Errors
-/// Rejects invalid options/plans or changed checkpoint binding; propagates file/
-/// checkpoint/transport failures, cancellation, deadline, retry or cleanup errors.
 #[tracing::instrument(skip_all, fields(input=%input.display()))]
 pub async fn push_file_with_options(
     input: PathBuf,
@@ -30,8 +22,7 @@ pub async fn push_file_with_options(
         "{:x}",
         base16ct::HexDisplay(&Sha256::digest(url.as_bytes()))
     );
-    // Construct the pool without starting I/O so it remains owned even if the
-    // first connection or schema statement is cancelled.
+
     let log = ProjectionLog::prepare(&checkpoint, destination);
     let mut projection = Projection {
         client,
@@ -49,8 +40,7 @@ pub async fn push_file_with_options(
             apply_plan(&input, &mut projection).await
         })
         .await;
-    // Redis's canonical multiplexed connection aborts its owned driver when
-    // its last handle drops. A server may still have applied an ambiguous write.
+
     drop(projection.connection.take());
     let closed = tokio::time::timeout(Duration::from_secs(10), projection.log.pool.close()).await;
     match (result, closed) {

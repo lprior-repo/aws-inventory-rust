@@ -1,4 +1,3 @@
-//! Pinned universal catalog parsing, accounting, and list-capable selection.
 use super::*;
 
 const UNIVERSAL_CATALOG_JSON: &str =
@@ -9,7 +8,6 @@ const UNIVERSAL_VIEW_PREFIX: &str = "aws_cc_u_";
 mod names;
 use names::{normalized_name, short_digest, unique_name};
 
-/// One row of the pinned universal catalog.
 #[derive(Clone, Debug, Deserialize)]
 pub struct UniversalRow {
     pub type_name: String,
@@ -38,7 +36,6 @@ struct UniversalCatalog {
     resource_types: Vec<UniversalRow>,
 }
 
-/// Catalog digest plus the complete, non-silent outcome partition.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct UniversalReport {
     pub catalog_digest: String,
@@ -86,7 +83,6 @@ fn check_catalog_size(
     Ok(())
 }
 
-/// Per-capability row totals, used to prove the summary partitions the rows.
 #[derive(Default)]
 struct CapabilityCounts {
     list: usize,
@@ -169,7 +165,6 @@ fn validate_digest(digest: &str) -> Result<(), AwsScanError> {
     Ok(())
 }
 
-/// Digest of the exact embedded bytes; the report never reads the filesystem.
 pub fn digest() -> String {
     format!(
         "{:x}",
@@ -177,8 +172,6 @@ pub fn digest() -> String {
     )
 }
 
-/// Complete catalog accounting: every row is either list-capable or an explicit
-/// skip category.
 pub fn report() -> Result<UniversalReport, AwsScanError> {
     let (summary, rows) = catalog()?;
     let mut skipped_parent_required = Vec::new();
@@ -201,9 +194,6 @@ pub fn report() -> Result<UniversalReport, AwsScanError> {
     })
 }
 
-/// Descriptors for every list-capable catalog row, in catalog order. Reviewed
-/// descriptors are reused so identity, names and columns stay consistent;
-/// unreviewed rows get an honest list-only descriptor derived from the row.
 pub fn list_descriptors() -> Result<Vec<ResourceType>, AwsScanError> {
     let (_, rows) = catalog()?;
     let reviewed: BTreeMap<String, ResourceType> = crate::cloud_control::catalog()?
@@ -236,8 +226,6 @@ fn synthesized(
     Ok(names.descriptor(row, sensitive))
 }
 
-/// Deterministic names for one synthesized descriptor, resolved before the
-/// descriptor is built so descriptor ordering stays catalog order.
 struct SyntheticNames {
     kind: String,
     view_name: String,

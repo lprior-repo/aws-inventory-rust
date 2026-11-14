@@ -1,9 +1,3 @@
-//! Fetch the pinned emulator source clone and verify/extract its signed binary.
-//!
-//! No system install and no service changes: everything lands inside the
-//! operator-supplied destination. Verification happens before extraction, and
-//! the signer is taken only from machine-readable `VALIDSIG` status lines.
-
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
@@ -16,7 +10,6 @@ mod signature;
 
 pub use signature::signed_by;
 
-/// Pinned upstream identities and artefact URLs.
 struct Metadata {
     repository: String,
     commit: String,
@@ -65,7 +58,6 @@ fn ensure_destination(destination: &Path) -> Result<PathBuf, HarnessError> {
         .map_err(HarnessError::Io)
 }
 
-/// Fetch, verify and extract the pinned emulator into `destination`.
 pub fn install(root: &Path, destination: &Path) -> Result<Value, HarnessError> {
     require_platform()?;
     let metadata = Metadata::read(&root.join("scripts/emulator/upstream.json"))?;
@@ -208,9 +200,7 @@ fn curl_command(path: &Path, url: &str) -> Command {
 
 fn fetch(url: &str, path: &Path) -> Result<(), HarnessError> {
     let mut command = curl_command(path, url);
-    // A shell scoped to an emulator exports that emulator's CA bundle, which
-    // cannot validate the vendor host. The package is downloaded against the
-    // system trust store; its own signature is verified separately.
+
     for name in [
         "SSL_CERT_FILE",
         "SSL_CERT_DIR",

@@ -1,5 +1,3 @@
-//! Validate the reviewed parent groups and collect their descriptor rows.
-
 use std::collections::BTreeSet;
 use std::path::Path;
 

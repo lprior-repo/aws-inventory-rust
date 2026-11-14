@@ -1,4 +1,3 @@
-//! Read-only query execution, progress cancellation, and JSON budgets.
 use super::*;
 
 pub(super) async fn install_query_progress(
@@ -72,8 +71,6 @@ pub(super) async fn execute_query(
     sql: &str,
     row_limit: usize,
 ) -> Result<Value, StoreError> {
-    // Intentional user-authored SQL, already validated as one SELECT/WITH statement;
-    // isolation and mutation prevention are enforced by the independent reader.
     let query = sqlx::query(sqlx::AssertSqlSafe(sql));
     let result = query
         .fetch(connection)

@@ -1,4 +1,3 @@
-//! Regression scenarios through the public record API.
 use super::{Key, Record, RecordError, Time, Value};
 use std::collections::BTreeMap;
 

@@ -1,4 +1,3 @@
-//! Stored lifecycle corruption is rejected by public Store operations.
 use inventory_core::{CollectionPage, CollectionScope, ScanStatus, Source};
 use inventory_engine::store::{Store, StoreError};
 use sqlx::{Connection, SqliteConnection};

@@ -1,4 +1,3 @@
-//! Universal reference resolution against the real SQLite schema.
 use inventory_core::{CollectionPage, CollectionScope, Resource, ScanStatus, Source};
 use inventory_engine::{
     graph::reference::{self, REFERENCE_RELATION, REFERENCE_SOURCE, ReferenceConfig},

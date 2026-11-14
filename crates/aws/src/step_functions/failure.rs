@@ -1,6 +1,3 @@
-//! Child-scope failure recording shared by Step Functions listing and
-//! enrichment.
-
 use inventory_core::Source;
 
 use crate::{
@@ -8,7 +5,6 @@ use crate::{
     common::{Context, error_category},
 };
 
-/// Records the failure in its own child scope and returns no observation.
 pub(super) async fn reject<T>(
     ctx: &Context,
     collector: &str,

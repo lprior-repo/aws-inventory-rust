@@ -1,7 +1,3 @@
-//! State machine enrichment: describe and tags per listed item. Only safe
-//! metadata is retained; the definition and variable references never leave
-//! this module.
-
 use std::collections::BTreeMap;
 
 use aws_sdk_sfn::{
@@ -94,7 +90,6 @@ async fn describe_call(
     .await
 }
 
-/// Tag failure is recorded but does not discard an otherwise described item.
 async fn tags(
     ctx: &Context,
     client: &Client,

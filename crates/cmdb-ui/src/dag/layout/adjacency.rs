@@ -1,8 +1,3 @@
-//! Edge adjacency used by cycle breaking, layering and ordering.
-//!
-//! Overlay edges are deliberately absent: they are drawn as same-tier data
-//! flow and must not stretch the containment layers.
-
 use crate::dag::graph::{DagEdge, DagGraph};
 
 pub(super) struct Adjacency {

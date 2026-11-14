@@ -1,4 +1,3 @@
-//! Generated terminal outcomes and cancellation precedence.
 use super::*;
 
 #[derive(Clone, Copy, Debug)]
@@ -105,8 +104,6 @@ pub(super) async fn terminal_commands(
                 .all(|row| row.finished_at.is_some_and(|time| time >= row.started_at))
         );
 
-        // Submission cannot resurrect or rewrite completed work, even after an
-        // explicit retry changed the mutable remaining attempt budget.
         let snapshot = serde_json::to_value(&result).map_err(failure)?;
         let mut repeated = original.clone();
         repeated.available_at = activity_time.saturating_add(50_000);

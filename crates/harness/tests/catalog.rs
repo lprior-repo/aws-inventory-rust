@@ -1,5 +1,3 @@
-//! Catalog reproduction contracts: byte parity, partitions, digests, tampering.
-
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 

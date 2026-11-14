@@ -1,4 +1,3 @@
-//! Behavior: dropping_a_call_releases_capacity_and_records_cancellation.
 use super::*;
 
 #[tokio::test(start_paused = true)]

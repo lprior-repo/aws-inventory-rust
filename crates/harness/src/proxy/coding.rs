@@ -21,7 +21,7 @@ pub(crate) fn parse(headers: &[httparse::Header<'_>]) -> Result<Coding, ProxyErr
         .filter(|h| h.name.eq_ignore_ascii_case("transfer-encoding"))
     {
         let text = std::str::from_utf8(header.value).map_err(|_| ProxyError::Framing)?;
-        // Each coding consumes input; the complete head has MAX_HEAD_BYTES bytes.
+
         for part in text.split(',').take(MAX_HEAD_BYTES) {
             list.push(part)?;
         }

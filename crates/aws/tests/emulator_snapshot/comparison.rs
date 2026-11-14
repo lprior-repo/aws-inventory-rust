@@ -1,4 +1,3 @@
-//! comparison responsibilities for emulator_snapshot.
 use super::*;
 
 pub(super) fn canonical(value: &Value, depth: usize) -> TestResult<Value> {

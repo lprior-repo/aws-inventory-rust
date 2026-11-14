@@ -5,7 +5,6 @@ use overlay_support::{EXAMPLE, TestResult, name, path};
 
 #[test]
 fn documented_example_has_exact_typed_fields() -> TestResult {
-    // Given the embedded reference fixture, when parsed, then every field is exact.
     let overlay = ServiceOverlay::parse("ec2", EXAMPLE)?;
     assert_eq!(
         (
@@ -116,7 +115,6 @@ fn common_absent(op: &OperationOverlay) {
 
 #[test]
 fn absent_overrides_and_deny_reason_taxonomy_are_preserved() -> TestResult {
-    // Given no overrides or each denial spelling, when parsed, then defaults stay absent.
     let o = overlay_support::parse("[operation.ListThings]")?;
     let op = o
         .operations()

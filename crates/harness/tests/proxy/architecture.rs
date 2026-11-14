@@ -19,7 +19,6 @@ async fn unsigned_and_signed_placeholder_scopes_keep_separate_ordinals_and_rates
 }
 
 async fn isolated_scopes() -> TestResult {
-    // Given a frozen clock and one token per scope, every spelling remains legal.
     let server = Server::start(OK).await?;
     let mut config = server.config();
     config.rate_limits.push(RateLimit {
@@ -28,12 +27,12 @@ async fn isolated_scopes() -> TestResult {
     });
     let proxy = Proxy::start(config).await?;
     let signed = request("unsigned", "unsigned", "unsigned");
-    // When signed placeholder components and a missing signature each arrive twice.
+
     assert_eq!(exchange(proxy.address(), UNSIGNED).await?, OK);
     assert_eq!(exchange(proxy.address(), &signed).await?, OK);
     assert_throttled(&proxy, UNSIGNED).await?;
     assert_throttled(&proxy, &signed).await?;
-    // Then both independent buckets and ordinal streams are visible in the snapshot.
+
     assert_distinct_scopes(&proxy.snapshot()?)?;
     shutdown(proxy).await?;
     Ok(())
@@ -85,14 +84,13 @@ async fn valid_ca_with_malformed_tls_authority_fails_before_returning_a_bound_ad
 }
 
 async fn tls_authorities() -> TestResult {
-    // Given a real, portable CA bundle that permits a valid TLS target to start.
     let mut ca = tempfile::NamedTempFile::new()?;
     ca.write_all(include_bytes!("ca.pem"))?;
     valid_tls_authority(ca.path()).await?;
-    // When a syntactically bounded host is not a valid rustls ServerName.
+
     for authority in ["https://-:443", "https://....:443"] {
         let result = Proxy::start(tls_config(authority, ca.path())).await;
-        // Then startup fails with a typed configuration error, exposing no address.
+
         assert_eq!(result.as_ref().ok().map(Proxy::address), None);
         assert!(matches!(
             result,

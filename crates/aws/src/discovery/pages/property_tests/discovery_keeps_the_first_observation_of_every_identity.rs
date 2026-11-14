@@ -1,4 +1,3 @@
-//! discovery keeps the first observation of every identity properties.
 use super::*;
 
 proptest! {
@@ -104,8 +103,8 @@ proptest! {
         let first = (0..retained).map(|index| format!("resource-{index}")).collect::<Vec<_>>();
         cursor.accept(page(first.iter().cloned().map(Ok).collect(), Some("next".into())), "ListFixture", None, 3, retained.saturating_add(remaining));
         prop_assert!(!cursor.done);
-        // Even duplicate identities consume the response budget. Deduplicating
-        // before admission would permit unbounded raw response processing.
+
+
         cursor.accept(page(std::iter::repeat_with(|| Ok("resource-0".to_owned())).take(remaining.saturating_add(excess)).collect(), None), "ListFixture", None, 3, retained.saturating_add(remaining));
         prop_assert!(cursor.done);
         prop_assert_eq!(cursor.listing.items, first);

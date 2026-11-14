@@ -1,5 +1,3 @@
-//! Destination isolation and atomic publication regressions.
-
 use std::fs;
 use std::io::{self, Write};
 use std::path::Path;
@@ -40,17 +38,16 @@ fn invalid_input(root: &Path, destination: &Path) -> TestResult {
 
 #[test]
 fn given_directory_destination_when_publish_fails_then_no_temporary_remains() -> TestResult {
-    // Given
     let fixture = tempfile::tempdir()?;
     let root = source(fixture.path())?;
     let destination = fixture.path().join("out.zip");
     fs::create_dir(&destination)?;
     let before = names(fixture.path())?;
-    // When
+
     let error = package(&root, &destination)
         .err()
         .ok_or("directory replaced")?;
-    // Then
+
     assert!(error.downcast_ref::<io::Error>().is_some());
     assert_eq!(names(fixture.path())?, before);
     assert!(destination.is_dir());
@@ -59,7 +56,6 @@ fn given_directory_destination_when_publish_fails_then_no_temporary_remains() ->
 
 #[test]
 fn given_symlink_temporary_sibling_when_packaged_then_victim_is_untouched() -> TestResult {
-    // Given
     let fixture = tempfile::tempdir()?;
     let root = source(fixture.path())?;
     let destination = fixture.path().join("out.zip");
@@ -67,9 +63,9 @@ fn given_symlink_temporary_sibling_when_packaged_then_victim_is_untouched() -> T
     let sibling = destination.with_extension("building.zip");
     fs::write(&victim, b"unrelated\n")?;
     std::os::unix::fs::symlink(&victim, &sibling)?;
-    // When
+
     let receipt = package(&root, &destination)?;
-    // Then
+
     assert_eq!(fs::read(&victim)?, b"unrelated\n");
     assert_eq!(fs::read_link(&sibling)?, victim);
     assert_eq!(receipt.path, destination.to_string_lossy());
@@ -78,15 +74,14 @@ fn given_symlink_temporary_sibling_when_packaged_then_victim_is_untouched() -> T
 
 #[test]
 fn given_regular_temporary_sibling_when_packaged_then_existing_file_is_untouched() -> TestResult {
-    // Given
     let fixture = tempfile::tempdir()?;
     let root = source(fixture.path())?;
     let destination = fixture.path().join("out.zip");
     let sibling = destination.with_extension("building.zip");
     fs::write(&sibling, b"unrelated\n")?;
-    // When
+
     let receipt = package(&root, &destination)?;
-    // Then
+
     assert_eq!(fs::read(&sibling)?, b"unrelated\n");
     assert_eq!(receipt.path, destination.to_string_lossy());
     Ok(())
@@ -94,11 +89,10 @@ fn given_regular_temporary_sibling_when_packaged_then_existing_file_is_untouched
 
 #[test]
 fn given_destination_inside_root_when_packaged_then_rejected_before_writes() -> TestResult {
-    // Given
     let fixture = tempfile::tempdir()?;
     let root = source(fixture.path())?;
     let destination = root.join("release.zip");
-    // When / Then
+
     invalid_input(&root, &destination)?;
     assert_eq!(names(&root)?, vec![std::ffi::OsString::from("a.txt")]);
     Ok(())
@@ -106,11 +100,10 @@ fn given_destination_inside_root_when_packaged_then_rejected_before_writes() -> 
 
 #[test]
 fn given_source_destination_when_packaged_then_typed_error_preserves_source() -> TestResult {
-    // Given
     let fixture = tempfile::tempdir()?;
     let root = source(fixture.path())?;
     let destination = root.join("a.txt");
-    // When / Then
+
     invalid_input(&root, &destination)?;
     assert_eq!(fs::read(&destination)?, b"precious\n");
     assert_eq!(names(&root)?, vec![std::ffi::OsString::from("a.txt")]);

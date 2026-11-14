@@ -1,6 +1,3 @@
-//! Attach conservative source discovery to an inventory scan. The standalone
-//! discovery report carries candidates; the scan persists discovery coverage
-//! and only invokes an unambiguous, existing source.
 use futures_util::{TryStreamExt, stream};
 use inventory_core::{CollectionEvent, CollectionPage, Source};
 
@@ -52,8 +49,6 @@ async fn record_selection(
     selection: &SourceSelection,
     coverage: Option<&DiscoveryCoverage>,
 ) -> Result<(), AwsScanError> {
-    // The scope's parent identifies the discovered source, or the observed
-    // absence. It is a discovery result, never a fabricated resource node.
     let parent = match selection {
         SourceSelection::Selected { identifier, .. } => Some(identifier.as_str()),
         SourceSelection::Absent => Some("absent"),

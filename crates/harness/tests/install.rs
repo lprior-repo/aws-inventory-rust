@@ -1,5 +1,3 @@
-//! Installer verification contracts: pinned metadata and GPG status parsing.
-
 use serde_json::json;
 
 use inventory_harness::install::{install, signed_by};

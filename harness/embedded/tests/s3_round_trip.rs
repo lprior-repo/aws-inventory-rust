@@ -1,4 +1,4 @@
-//! Embedded emulator seam: real SDK serialization over in-process transport.
+ 
 
 use std::error::Error;
 
@@ -7,7 +7,7 @@ use inventory_emulator_embedded::{BOOT_STACK_SIZE, WORKER_STACK_SIZE};
 
 type TestResult = Result<(), Box<dyn Error + Send + Sync>>;
 
-/// Build a facade with signature checks on and process telemetry off.
+ 
 fn emulator() -> AwsEmulatorEmbedded {
     AwsEmulatorEmbedded::new(
         EmbeddedOptions::default()
@@ -16,7 +16,7 @@ fn emulator() -> AwsEmulatorEmbedded {
     )
 }
 
-/// An S3 client whose transport is the embedded facade.
+ 
 async fn client(emulator: &AwsEmulatorEmbedded) -> aws_sdk_s3::Client {
     let shared = aws_config::defaults(aws_config::BehaviorVersion::latest())
         .region(aws_config::Region::new("us-east-1"))
@@ -31,7 +31,7 @@ async fn client(emulator: &AwsEmulatorEmbedded) -> aws_sdk_s3::Client {
     )
 }
 
-/// Construct the router on a 64 MiB thread, then drive the future there.
+ 
 fn run<F, Fut>(operation: F) -> TestResult
 where
     F: FnOnce() -> Fut + Send + 'static,

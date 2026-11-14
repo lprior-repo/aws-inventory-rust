@@ -1,8 +1,5 @@
-//! roles operations.
 use super::*;
 
-/// Construct an ARN for an existing role only. The name/path contains no
-/// wildcard, empty path segment, relative segment, URL escape, or control byte.
 pub fn account_role_arn(
     partition: &str,
     account_id: &str,
@@ -16,11 +13,6 @@ pub fn account_role_arn(
     ))
 }
 
-/// Configure AWS's refreshable AssumeRole provider. Building it performs no
-/// explicit inventory request; its later STS credential requests are not
-/// counted by ApiExecutor. Credential requests have a 30-second SDK deadline;
-/// the consuming operation remains cancellation- and timeout-bound. Credentials
-/// and external IDs are never put into reports.
 #[tracing::instrument(skip_all)]
 pub async fn assume_role_config(
     base: &SdkConfig,
@@ -41,8 +33,7 @@ pub async fn assume_role_config(
         .to_builder()
         .behavior_version(BehaviorVersion::latest())
         .retry_config(RetryConfig::standard().with_max_attempts(1));
-    // Service defaults inspect origin metadata. In particular, recent
-    // DynamoDB clients replace an unknown-origin retry limit with four attempts.
+
     builder.insert_origin("retry_config", aws_types::origin::Origin::shared_config());
     let base = builder.build();
     let credentials_config = base

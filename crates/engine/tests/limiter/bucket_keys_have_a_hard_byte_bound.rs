@@ -1,4 +1,3 @@
-//! Behavior: bucket_keys_have_a_hard_byte_bound.
 use super::*;
 
 #[tokio::test(start_paused = true)]

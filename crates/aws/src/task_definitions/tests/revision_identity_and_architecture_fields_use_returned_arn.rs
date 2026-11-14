@@ -1,4 +1,3 @@
-//! revision identity and architecture fields use returned arn behavior.
 use super::*;
 
 #[test]

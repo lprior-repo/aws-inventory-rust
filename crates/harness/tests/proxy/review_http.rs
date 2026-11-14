@@ -11,7 +11,6 @@ use tokio::{
 
 #[tokio::test]
 async fn mixed_and_bare_lf_heads_reject_hidden_requests_before_forwarding() -> TestResult {
-    // Given ambiguous boundaries, no hidden request may reach upstream.
     for request in [
         b"GET /first HTTP/1.1\r\nHost: x\n\nGET /hidden HTTP/1.1\r\nHost: x\r\n\r\n".as_slice(),
         b"GET /first HTTP/1.1\nHost: x\n\n",
@@ -36,7 +35,7 @@ async fn rejected_request(request: &[u8], status: u16, code: &str) -> TestResult
 #[tokio::test(start_paused = true)]
 async fn expect_continue_is_rejected_before_waiting_for_its_body() -> TestResult {
     let _clock = FrozenClock::new();
-    // No virtual time advances and no request body is sent.
+
     rejected_request(
         b"POST / HTTP/1.1\r\nHost: x\r\nExpect: 100-continue\r\nContent-Length: 12\r\n\r\n",
         417,
@@ -65,7 +64,6 @@ async fn rejected_response(response: &[u8]) -> TestResult {
 
 #[tokio::test]
 async fn only_final_chunked_selects_chunk_framing() -> TestResult {
-    // Non-final chunked and non-chunked codings are opaque close-delimited data.
     for response in [
         b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked, gzip\r\nConnection: close\r\n\r\nopaque payload".as_slice(),
         b"HTTP/1.1 200 OK\r\nTransfer-Encoding: gzip\r\nConnection: close\r\n\r\nopaque payload",

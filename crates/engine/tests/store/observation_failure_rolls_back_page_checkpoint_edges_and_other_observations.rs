@@ -1,4 +1,3 @@
-//! Behavior: observation_failure_rolls_back_page_checkpoint_edges_and_other_observations.
 use super::*;
 
 #[tokio::test]

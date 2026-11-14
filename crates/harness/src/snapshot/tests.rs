@@ -1,5 +1,3 @@
-//! Real-file byte limits and the shared reader's sentinel consumption bound.
-
 #[cfg(unix)]
 mod fifo;
 

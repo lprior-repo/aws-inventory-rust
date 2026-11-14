@@ -1,6 +1,3 @@
-//! Bounded observations of VPC configuration; these relationships are not a
-//! reachability analysis. In particular, route destinations are not targets.
-
 use std::collections::{BTreeMap, BTreeSet};
 
 use aws_sdk_ec2::{
@@ -162,8 +159,6 @@ impl<'a> Reference<'a> {
     }
 }
 
-/// Deduplication is page-local. The store's edge key excludes properties, so
-/// multiple route destinations to one target must share an evidence array.
 #[derive(Default)]
 struct NetworkPage {
     resources: Vec<Resource>,

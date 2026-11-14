@@ -1,4 +1,3 @@
-//! Behavior: cancellation_is_observable_before_and_after_the_signal.
 use super::*;
 
 #[tokio::test(start_paused = true)]

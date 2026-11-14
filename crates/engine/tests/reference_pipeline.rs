@@ -1,6 +1,3 @@
-//! Behavior: the export pipeline produces universal reference edges and
-//! persists them idempotently, so consumers see them without calling the
-//! resolver directly.
 use inventory_core::{CollectionPage, CollectionScope, Resource, ScanStatus, Source};
 use inventory_engine::{
     export::{ExportError, ExportOptions, ExportRecord, ReferenceMode, export_snapshot},
@@ -164,8 +161,7 @@ async fn illegal_export_never_persists_reference_edges() -> TestResult {
 async fn failed_publication_rolls_back_derived_edges() -> TestResult {
     let store = fixture(ScanStatus::Complete).await?;
     let directory = tempfile::tempdir()?;
-    // A one-byte artifact budget fails after reference edges were persisted but
-    // before the temporary file is published.
+
     let output = directory.path().join("failed.jsonl");
     let result = export_snapshot(
         &store,
@@ -200,8 +196,6 @@ async fn failed_publication_restores_previously_persisted_edges() -> TestResult 
     let persisted = store.edges(SCAN).await?;
     assert_eq!(persisted.len(), 1);
 
-    // Replay fails after rewriting the synthetic scope; the previous replay
-    // state must be restored exactly, not merely cleared.
     let failed = directory.path().join("replay-failed.jsonl");
     let result = export_snapshot(
         &store,

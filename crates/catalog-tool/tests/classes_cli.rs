@@ -29,8 +29,6 @@ fn success(output: &Output) {
 
 #[test]
 fn cli_print_emits_exact_report_without_creating_an_artifact() -> TestResult {
-    // Given models and no committed report, when printing through the real CLI,
-    // then stdout contains the entire report and no artifact is created.
     let dir = fixture()?;
     success(&classes(dir.path(), &[])?);
     assert!(!dir.path().join(COMMITTED).exists());
@@ -39,8 +37,6 @@ fn cli_print_emits_exact_report_without_creating_an_artifact() -> TestResult {
 
 #[test]
 fn cli_check_emits_exact_report_and_preserves_the_artifact() -> TestResult {
-    // Given exact committed bytes, when checking through the real CLI,
-    // then it succeeds with the complete stdout report and no diagnostics or changes.
     let dir = fixture()?;
     write(dir.path(), COMMITTED, REPORT)?;
     success(&classes(dir.path(), &["--check"])?);
@@ -50,8 +46,6 @@ fn cli_check_emits_exact_report_and_preserves_the_artifact() -> TestResult {
 
 #[test]
 fn cli_write_emits_exact_report_and_replaces_stale_bytes() -> TestResult {
-    // Given stale committed bytes, when writing through the real CLI,
-    // then both stdout and the replacement artifact equal the expected report.
     let dir = fixture()?;
     write(dir.path(), COMMITTED, "stale\n")?;
     success(&classes(dir.path(), &["--write"])?);

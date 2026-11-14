@@ -1,5 +1,3 @@
-//! Behavior: reference resolution streams resources and therefore succeeds on
-//! scans whose serialized resources exceed the bounded export snapshot budget.
 use inventory_core::{CollectionPage, CollectionScope, Resource, ScanStatus, Source};
 use inventory_engine::{
     graph::reference::{self, ReferenceConfig},
@@ -13,7 +11,7 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 const SCAN: &str = "streaming-scan";
 const ACCOUNT: &str = "111111111111";
 const REGION: &str = "us-east-1";
-/// Ten resources per page at ~690 KB each; ten pages exceed the 64 MiB export bound.
+
 const PADDING_BYTES: usize = 690_000;
 const PER_PAGE: usize = 10;
 const PAGES: usize = 10;
@@ -60,8 +58,6 @@ async fn resolution_and_persistence_stream_past_the_export_byte_budget() -> Test
     }
     store.finish_scan(SCAN, ScanStatus::Complete, 2).await?;
 
-    // The bounded snapshot collector still refuses this scan; the resolver must
-    // not depend on it.
     assert!(matches!(
         store.resources(SCAN).await,
         Err(StoreError::Limit(_))

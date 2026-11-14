@@ -1,4 +1,3 @@
-//! Behavior: live_falkordb_ambiguous_write_replay_preserves_nodes_edges_and_checkpoint.
 use super::*;
 
 #[tokio::test]

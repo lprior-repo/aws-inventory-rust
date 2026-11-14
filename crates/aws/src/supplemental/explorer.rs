@@ -1,4 +1,3 @@
-//! explorer operations.
 use super::*;
 
 #[tracing::instrument(skip_all)]
@@ -14,7 +13,6 @@ pub(crate) async fn explorer(ctx: &Context, view: &str) -> Result<(), AwsScanErr
         |token, budget| {
             let client = &client;
             async move {
-                // AWS explicitly suppresses NextToken when MaxResults is 1000.
                 let output = ctx
                     .execute("resource-explorer-2", "read", || async {
                         client

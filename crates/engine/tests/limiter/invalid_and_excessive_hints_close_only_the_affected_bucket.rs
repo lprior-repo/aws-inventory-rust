@@ -1,4 +1,3 @@
-//! Behavior: invalid_and_excessive_hints_close_only_the_affected_bucket.
 use super::*;
 
 #[tokio::test(start_paused = true)]

@@ -1,4 +1,3 @@
-//! Per-quota-family fair admission and feedback.
 use super::*;
 
 #[derive(Debug)]

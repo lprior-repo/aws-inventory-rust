@@ -8,7 +8,6 @@ use serde_json::json;
 
 #[test]
 fn complete_report_bytes_order_two_exception_rows_by_region_not_input_order() -> TestResult {
-    // Given exceptional cases and rules authored in reverse regional order.
     let document = rules(
         json!({"Region":{"type":"string"}}),
         json!([
@@ -32,7 +31,7 @@ fn complete_report_bytes_order_two_exception_rows_by_region_not_input_order() ->
     ]);
     let dir = tempfile::tempdir()?;
     write_service(dir.path(), "ordered", document, cases)?;
-    // When building the report, then every byte, including both row positions, is independently pinned.
+
     assert_eq!(
         build_report(dir.path())?.as_bytes(),
         concat!(

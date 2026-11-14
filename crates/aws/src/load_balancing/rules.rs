@@ -1,4 +1,3 @@
-//! rules operations.
 use super::*;
 
 pub(super) fn map_rule(
@@ -53,8 +52,8 @@ pub(super) fn map_actions(
         let forward = action.forward_config();
         let groups = forward.map(|config| config.target_groups()).unwrap_or_default();
         check_nested(groups, "forward target groups")?;
-        // Only forward actions establish routing edges; authentication/redirect
-        // settings remain their own action descriptions.
+
+
         if action_type == "forward" {
             if action.target_group_arn().is_none() && groups.is_empty() {
                 return Err(AwsScanError::InvalidData("forward action lacks target groups".into()));

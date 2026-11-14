@@ -1,4 +1,3 @@
-//! Behavior: populated_v1_and_v2_upgrade_preserves_raw_rows_json_fingerprints_and_replay.
 use super::*;
 
 #[tokio::test]

@@ -1,4 +1,3 @@
-//! Behavior: changed_unacknowledged_tail_is_rejected_before_any_reconnect.
 use super::*;
 
 #[tokio::test]

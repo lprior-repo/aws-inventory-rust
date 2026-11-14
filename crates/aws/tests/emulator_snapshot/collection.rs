@@ -1,4 +1,3 @@
-//! collection responsibilities for emulator_snapshot.
 use super::*;
 
 pub(super) async fn consume_events(

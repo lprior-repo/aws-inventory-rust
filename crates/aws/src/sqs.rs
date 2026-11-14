@@ -1,7 +1,3 @@
-//! SQS queue inventory. A queue URL is the request handle; the queue ARN is the
-//! stable identity. Queue attributes and tags are bounded per-queue enrichment,
-//! and one queue's failure never discards another queue's observation.
-
 use std::collections::BTreeMap;
 
 use aws_sdk_sqs::{
@@ -21,7 +17,6 @@ use crate::{
 mod queue;
 use queue::{QueueObservation, QueueUrl, map_queue, parse_queue_url};
 
-/// ListQueues accepts at most 1000 results per page.
 const LIST_QUEUES_MAX_RESULTS: i32 = 1_000;
 const ENRICHMENT_CONCURRENCY: usize = 16;
 
@@ -61,15 +56,10 @@ pub(crate) async fn collect(ctx: &Context) -> Result<(), AwsScanError> {
     .await
 }
 
-/// The caller's page budget is clamped to the service maximum; ListQueues only
-/// returns a continuation token when MaxResults is present.
 fn list_page_size(page_size: i32) -> i32 {
     page_size.clamp(1, LIST_QUEUES_MAX_RESULTS)
 }
 
-/// Build one page from a listing response. `listed_count` counts every returned
-/// URL, including queues whose enrichment failed, so cursor accounting cannot
-/// hide work that was attempted.
 fn page_body(output: &ListQueuesOutput, observations: Vec<QueueObservation>) -> PageBody {
     let mut body = PageBody {
         next_token: output.next_token().map(str::to_owned),
@@ -121,7 +111,6 @@ async fn enrich(
     }
 }
 
-/// One batched GetQueueAttributes call per queue with an explicit attribute set.
 async fn queue_attributes(
     ctx: &Context,
     client: &Client,
@@ -154,7 +143,6 @@ async fn queue_attributes(
     }
 }
 
-/// Tag failure is recorded but does not discard an otherwise valid queue.
 async fn queue_tags(
     ctx: &Context,
     client: &Client,
@@ -210,7 +198,6 @@ async fn fail(
     Ok(None)
 }
 
-/// Deliberately bounded: no policy documents and no raw RedrivePolicy body.
 fn attribute_names() -> Vec<QueueAttributeName> {
     vec![
         QueueAttributeName::QueueArn,

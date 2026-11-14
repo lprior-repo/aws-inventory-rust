@@ -135,24 +135,18 @@ fn assert_denials(entries: &[(&str, &str, DenyReason)]) -> TestResult {
 
 #[test]
 fn documentation_verified_list_describe_denials_are_service_scoped() -> TestResult {
-    // Given all 65 documented risks, when classifying either input form, then each
-    // reviewed reason wins despite readonly, without denying another service's same name.
     assert_eq!(VERIFIED.len(), 65);
     assert_denials(VERIFIED)
 }
 
 #[test]
 fn unverified_credential_shaped_outputs_stay_denied_pending_overlay_review() -> TestResult {
-    // Given five outputs whose redaction is unresolved, when classified, then secret
-    // denial remains conservative and scoped rather than claiming verified disclosure.
     assert_eq!(UNVERIFIED.len(), 5);
     assert_denials(UNVERIFIED)
 }
 
 #[test]
 fn reviewed_metadata_false_positives_and_customer_images_remain_candidates() -> TestResult {
-    // Given rejected false positives and mixed-ownership images, when classified,
-    // then no global secret/reference-data heuristic overrides the literal allow rule.
     let deny = DenyList::parse(POLICY)?;
     NOT_DENIED.iter().for_each(|(service, name)| {
         let facts = OperationFacts {

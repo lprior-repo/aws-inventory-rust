@@ -1,5 +1,3 @@
-//! Count persisted detailed Cloud Control reads for one asserted scan.
-
 use std::collections::BTreeMap;
 use std::path::Path;
 
@@ -11,7 +9,6 @@ use crate::HarnessError;
 use super::Json;
 use super::jhelpers::{array, field, text};
 
-/// Maximum persisted observations read for one scan.
 const MAX_OBSERVATIONS: usize = 100_000;
 
 fn schema_types(catalog: &Json) -> Result<BTreeMap<String, Json>, HarnessError> {
@@ -61,7 +58,6 @@ fn require_expected(status: &str, expected: Option<&str>) -> Result<(), HarnessE
     Ok(())
 }
 
-/// Open the database and require its recorded scan to be terminal.
 async fn open_scan(
     database: &Path,
     scan_id: &str,
@@ -89,7 +85,6 @@ fn observation_limit() -> Result<i64, HarnessError> {
         .map_err(|_| HarnessError::invalid("persisted coverage observation budget exceeded"))
 }
 
-/// Read Cloud Control observation rows for one scan.
 async fn observation_rows(
     connection: &mut SqliteConnection,
     scan_id: &str,
@@ -182,7 +177,6 @@ fn count_details(
     Ok(counts)
 }
 
-/// Count persisted detailed Cloud Control reads for one asserted scan.
 pub async fn persisted_reads(
     database: &Path,
     scan_id: &str,

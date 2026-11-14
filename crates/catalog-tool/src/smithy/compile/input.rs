@@ -1,4 +1,3 @@
-//! One input model per service directory; identity sets are bounded by discovered files.
 use super::{CompileError, Error, Registry, encode};
 use inventory_core::record::{MAX_RECORD_BYTES, RecordError, Value};
 use std::{

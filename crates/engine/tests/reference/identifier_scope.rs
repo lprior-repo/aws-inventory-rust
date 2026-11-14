@@ -1,5 +1,3 @@
-//! Behavior: a plain identifier only binds within the source resource's own
-//! account and region; same-named resources observed elsewhere never bind.
 use super::{ACCOUNT, REGION, SCAN, TestResult, resource, store_with};
 use inventory_core::Resource;
 use inventory_engine::graph::reference::{self, ReferenceConfig};

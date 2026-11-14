@@ -1,4 +1,3 @@
-//! Deterministic seeded retry-tape conformance.
 use super::*;
 
 pub(super) async fn check_tape(tape: &[Step], budget: u32, seed: u64) -> TestCaseResult {
@@ -56,8 +55,6 @@ pub(super) async fn check_tape(tape: &[Step], budget: u32, seed: u64) -> TestCas
     prop_assert_eq!(stats.server_delays, 0);
     prop_assert_eq!(stats.rejected_retry_hints, 0);
 
-    // Both reservations must be reusable after every terminal class, including
-    // a timed-out pending attempt and operation-originated cancellation.
     for bucket in ["script", "independent"] {
         let followup = timeout(
             CASE_DEADLINE,

@@ -6,7 +6,6 @@ use std::path::Path;
 
 #[test]
 fn unsupported_functions_are_lazy_typed_results_only_on_taken_branches() -> TestResult {
-    // Given each request-time function and an unknown name, when untaken, then no failure occurs.
     [
         "aws.parseArn",
         "aws.isVirtualHostableS3Bucket",
@@ -28,7 +27,7 @@ fn unsupported_functions_are_lazy_typed_results_only_on_taken_branches() -> Test
             ]),
         );
         assert_eq!(resolve(&unreachable, json!({}))?, result("right"));
-        // When that same call is reached, then the function's name survives in the typed outcome.
+
         let reached = rules(
             json!({}),
             json!([endpoint(json!("wrong"), json!([call(name, json!([]))]))]),
@@ -43,7 +42,6 @@ fn unsupported_functions_are_lazy_typed_results_only_on_taken_branches() -> Test
 
 #[test]
 fn missing_rules_and_unknown_rule_types_return_filename_bearing_schema_errors() -> TestResult {
-    // Given malformed schemas, when parsed, then errors are typed and retain the source filename.
     [
         json!({"version":"1.0","parameters":{}}),
         rules(json!({}), json!([{"type":"surprise","conditions":[]}])),
@@ -62,7 +60,6 @@ fn missing_rules_and_unknown_rule_types_return_filename_bearing_schema_errors() 
 
 #[test]
 fn wrong_function_argument_counts_are_rejected_during_parsing() -> TestResult {
-    // Given wrong arities for supported functions, when parsed, then malformed calls are named.
     [
         ("isSet", json!([])),
         ("not", json!([true, false])),
@@ -85,7 +82,6 @@ fn wrong_function_argument_counts_are_rejected_during_parsing() -> TestResult {
 
 #[test]
 fn wrong_function_argument_types_return_typed_evaluation_errors() -> TestResult {
-    // Given correct arities but wrong types, when called, then they never coerce or panic.
     [
         ("not", json!(["false"])),
         ("booleanEquals", json!([true, "true"])),
@@ -114,7 +110,6 @@ fn wrong_function_argument_types_return_typed_evaluation_errors() -> TestResult 
 
 #[test]
 fn nesting_and_node_count_limits_return_typed_bounds() -> TestResult {
-    // Given bounded adversarial documents, when parsed, then depth and work are checked first.
     let nested = (0..MAX_DEPTH).fold(
         endpoint(json!("deep"), json!([])),
         |inner, _| json!({"type":"tree","conditions":[],"rules":[inner]}),
@@ -145,7 +140,6 @@ fn nesting_and_node_count_limits_return_typed_bounds() -> TestResult {
 
 #[test]
 fn invalid_templates_and_non_string_substitutions_are_typed_errors() -> TestResult {
-    // Given invalid brace patterns and missing/non-string references, when expanded, then all fail.
     [
         "{",
         "}",

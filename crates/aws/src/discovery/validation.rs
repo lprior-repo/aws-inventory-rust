@@ -1,4 +1,3 @@
-//! validation operations.
 use super::*;
 
 pub(super) fn validate_account_id(account: &str) -> Result<(), AwsScanError> {

@@ -1,5 +1,3 @@
-//! Pure accumulation with one global distinct-member-name set.
-
 use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
 
@@ -21,7 +19,6 @@ pub(super) struct Totals {
     pub protocol_counts: BTreeMap<String, usize>,
 }
 
-/// Extract member names from a model. Shared by totals and registry.
 pub(super) fn member_names(model: ModelFile) -> impl Iterator<Item = String> {
     model
         .shapes

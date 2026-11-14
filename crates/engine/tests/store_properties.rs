@@ -1,6 +1,3 @@
-//! Generated page commands are checked against an independent committed ledger.
-//! SQLx transactions, failed writes, finalization and database reopen are real.
-
 use std::collections::{BTreeMap, BTreeSet};
 use std::future::Future;
 use std::time::Duration;

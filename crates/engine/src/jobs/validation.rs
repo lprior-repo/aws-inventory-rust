@@ -1,4 +1,3 @@
-//! Pure bounded queue input parsing and JSON encoding.
 use super::*;
 
 pub(super) fn validate_spec(spec: &JobSpec, now: i64) -> Result<(), JobError> {

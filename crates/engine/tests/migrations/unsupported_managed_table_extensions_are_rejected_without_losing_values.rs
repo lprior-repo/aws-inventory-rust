@@ -1,4 +1,3 @@
-//! Behavior: unsupported_managed_table_extensions_are_rejected_without_losing_values.
 use super::*;
 
 #[tokio::test]
@@ -9,7 +8,7 @@ pub(super) async fn unsupported_managed_table_extensions_are_rejected_without_lo
         let path = directory.path().join("extended-managed-table.sqlite");
         populated_legacy(&path, 2).await?;
         let mut connection = connect(&path).await?;
-        // Table names come only from the two fixed identifiers above.
+
         sqlx::raw_sql(AssertSqlSafe(format!(
             "ALTER TABLE {table} ADD COLUMN user_note TEXT;
             UPDATE {table} SET user_note='preserve application-owned value';"
@@ -25,8 +24,6 @@ pub(super) async fn unsupported_managed_table_extensions_are_rejected_without_lo
         .await?;
         connection.close().await?;
 
-        // The managed table rebuild has no safe mapping for unknown columns.
-        // Refuse migration instead of successfully discarding their contents.
         assert!(Store::open(&path).await.is_err());
         let mut connection = connect(&path).await?;
         assert_eq!(inventory_snapshot(&mut connection).await?, data_before);

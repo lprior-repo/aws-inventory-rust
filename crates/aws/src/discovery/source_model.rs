@@ -1,4 +1,3 @@
-//! source model model.
 use super::*;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
@@ -43,7 +42,7 @@ pub struct ConfigAggregator {
     pub organization_source: bool,
     pub organization_all_regions: bool,
     pub organization_regions: Vec<String>,
-    /// Filters can exclude recorded resources; their presence is retained.
+
     pub has_filters: bool,
 }
 
@@ -68,7 +67,7 @@ pub struct ExplorerView {
     pub arn: String,
     pub owner: Option<String>,
     pub scope: Option<String>,
-    /// The SDK marks filter strings sensitive. Only their presence is retained.
+
     pub has_filter: bool,
     pub included_properties: Vec<String>,
 }

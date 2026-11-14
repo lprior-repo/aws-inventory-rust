@@ -1,6 +1,3 @@
-//! Append-only field IDs. All models load before any publication or directory creation.
-//! Valid existing order is authoritative; comparing historical revisions is the caller's job.
-
 pub(super) mod publish;
 
 use inventory_core::record::FieldId;
@@ -15,7 +12,7 @@ use super::{
 };
 
 const FIELD_IDS_PATH: &str = "catalog/field-ids.txt";
-// Registry reads and publication share the same byte limit; reads use one extra probe byte.
+
 const MAX_REGISTRY_BYTES: u64 = 16_777_216;
 
 #[derive(Debug)]
@@ -39,16 +36,6 @@ struct PreparedRegistry {
     added: usize,
 }
 
-/// Print a candidate registry, atomically write changed bytes, or check for new names.
-///
-/// Existing names retain their IDs even when retired. Bootstrap sorts distinct names;
-/// later writes append unseen names in bytewise order. Check never creates files.
-/// Each model uses the shared 64 MiB input limit; registries are limited to 16 MiB,
-/// and IDs are bounded by `u32::MAX`. An exclusive temporary file serializes publication.
-///
-/// # Errors
-/// Returns named input/I/O errors, invalid or oversized registries, ID overflow,
-/// `RegistryStale`, `RegistryChanged`, `WriteInProgress`, or publication cleanup errors.
 pub fn fields(root: &Path, source: &Path, mode: ReportMode) -> Result<(), Error> {
     let files = find_model_files(&source.join("models"))?;
     if files.is_empty() {

@@ -1,4 +1,3 @@
-//! Public API contract: all fault observations use real plain TCP HTTP clients.
 #[path = "proxy/architecture.rs"]
 mod architecture;
 #[path = "proxy/clock.rs"]

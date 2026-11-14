@@ -1,4 +1,3 @@
-//! explorer maps verified v2 arns including ambiguous type behavior.
 use super::*;
 
 #[test]

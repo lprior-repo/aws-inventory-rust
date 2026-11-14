@@ -1,28 +1,15 @@
-//! Typed Cloud Control resource-type selection.
-//!
-//! CLI selectors are parsed once into [`Selection`]; collection, planning and
-//! reporting APIs accept the enum instead of re-interpreting the magic `all`
-//! string or carrying a parallel `universal` boolean.
-
 use std::fmt;
 
 use thiserror::Error;
 
-/// One CloudFormation type name selected for Cloud Control collection.
-///
-/// This is only the requested name. Whether the pinned catalog can collect it
-/// is decided by the catalog-aware validation in `inventory-aws` and by the
-/// offline plan catalog, so their existing error messages stay authoritative.
 #[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ResourceType(String);
 
 impl ResourceType {
-    /// Store the supplied text unchanged, without syntax, length or catalog checks.
     pub fn new(name: impl Into<String>) -> Self {
         Self(name.into())
     }
 
-    /// Borrow the stored text unchanged, including any empty or noncanonical name.
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -34,25 +21,14 @@ impl fmt::Display for ResourceType {
     }
 }
 
-/// What a Cloud Control scan collects: explicit types or the whole catalog.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Selection {
-    /// Exactly the named types; empty means the pinned catalog default.
     Types(Vec<ResourceType>),
-    /// Every list-capable type in the pinned universal catalog.
+
     Universal,
 }
 
 impl Selection {
-    /// Parse resource-type selectors at the CLI boundary.
-    ///
-    /// `all` selects the universal catalog and must be the only selector.
-    /// Other names retain their order, duplicates and text unchanged; an empty slice
-    /// selects the pinned catalog default.
-    ///
-    /// # Errors
-    /// Returns [`SelectionError::MixedUniversal`] if an exact `all` selector appears
-    /// alongside any other entry, including another `all`.
     pub fn parse(values: &[String]) -> Result<Self, SelectionError> {
         if !values.iter().any(|value| value == "all") {
             return Ok(Self::Types(
@@ -68,7 +44,6 @@ impl Selection {
         Ok(Self::Universal)
     }
 
-    /// The named types; empty for a universal selection.
     pub fn types(&self) -> &[ResourceType] {
         match self {
             Self::Types(types) => types,
@@ -76,21 +51,17 @@ impl Selection {
         }
     }
 
-    /// Whether this is [`Self::Universal`], not the empty named-type default.
     pub fn is_universal(&self) -> bool {
         matches!(self, Self::Universal)
     }
 
-    /// Whether there are no explicit names: true for both universal and empty named selections.
     pub fn is_empty(&self) -> bool {
         self.types().is_empty()
     }
 }
 
-/// A resource-type selector that cannot be interpreted safely.
 #[derive(Clone, Copy, Debug, Error, PartialEq, Eq)]
 pub enum SelectionError {
-    /// An exact `all` selector was supplied with at least one additional entry.
     #[error("`all` must be the only Cloud Control resource-type selector")]
     MixedUniversal,
 }

@@ -1,4 +1,3 @@
-//! views operations.
 use super::*;
 
 pub(super) fn select_view_candidate(

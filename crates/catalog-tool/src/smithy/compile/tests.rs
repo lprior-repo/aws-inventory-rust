@@ -1,6 +1,7 @@
 use super::*;
 use crate::smithy::{model::ModelFile, stats};
 use inventory_core::catalog::{Catalog, Target};
+use std::collections::BTreeMap;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 const MODEL: &str = r#"{"shapes":{
@@ -64,7 +65,6 @@ fn root(service: Record) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
 }
 #[test]
 fn compiler_preserves_registry_member_order_and_targets() -> TestResult {
-    // Given opposite name and registry order, when compiled, IDs determine member order.
     let bytes = root(record(MODEL, "Zulu\nAlpha\n")?)?;
     let service = Catalog::borrow(&bytes)?
         .service("example")?
@@ -82,7 +82,6 @@ fn compiler_preserves_registry_member_order_and_targets() -> TestResult {
 }
 #[test]
 fn compiler_preserves_container_relationships() -> TestResult {
-    // Given list/map shapes, when compiled, numeric targets still resolve in this service.
     let bytes = root(record(MODEL, "Zulu\nAlpha\n")?)?;
     let service = Catalog::borrow(&bytes)?
         .service("example")?
@@ -97,7 +96,6 @@ fn compiler_preserves_container_relationships() -> TestResult {
 }
 #[test]
 fn compiler_preserves_union_requiredness_and_resource_templates() -> TestResult {
-    // Given modeled union members and ARNs, when compiled, neither trait is discarded.
     let bytes = root(record(MODEL, "Zulu\nAlpha\n")?)?;
     let service = Catalog::borrow(&bytes)?
         .service("example")?
@@ -113,7 +111,6 @@ fn compiler_preserves_union_requiredness_and_resource_templates() -> TestResult 
 }
 #[test]
 fn compilation_is_identical_despite_json_member_and_shape_order() -> TestResult {
-    // Given a reordered JSON representation, when compiled, the wire records are identical.
     let value: serde_json::Value = serde_json::from_str(MODEL)?;
     let compact = serde_json::to_string(&value)?;
     assert_eq!(
@@ -124,7 +121,6 @@ fn compilation_is_identical_despite_json_member_and_shape_order() -> TestResult 
 }
 #[test]
 fn missing_registry_name_is_actionable_and_never_allocates_an_id() -> TestResult {
-    // Given a stale registry, when compiling, then the missing member is named exactly.
     let (shape, cause) = shape_failure(MODEL, "Zulu\n")?;
     assert_eq!(shape, "n#Choice");
     let CompileError::MissingMember(name) = cause else {
@@ -140,7 +136,6 @@ fn missing_registry_name_is_actionable_and_never_allocates_an_id() -> TestResult
 }
 #[test]
 fn unknown_target_retains_its_owning_shape_and_typed_cause() -> TestResult {
-    // Given an unresolved target, no fallback is substituted and its owner is retained.
     let bad = MODEL.replace("smithy.api#String", "n#Missing");
     let (shape, cause) = shape_failure(&bad, "Zulu\nAlpha\n")?;
     assert_eq!(shape, "n#Input");
@@ -149,7 +144,6 @@ fn unknown_target_retains_its_owning_shape_and_typed_cause() -> TestResult {
 }
 #[test]
 fn unknown_kind_retains_its_owning_shape_and_typed_cause() -> TestResult {
-    // Given an unsupported kind, no scalar substitute hides the offending shape.
     let bad = MODEL.replace("\"type\":\"string\"", "\"type\":\"future\"");
     let (shape, cause) = shape_failure(&bad, "Zulu\nAlpha\n")?;
     assert_eq!(shape, "n#Text");
@@ -158,7 +152,6 @@ fn unknown_kind_retains_its_owning_shape_and_typed_cause() -> TestResult {
 }
 #[test]
 fn compiler_report_matches_independent_model_reader() -> TestResult {
-    // Given the same model, when each independent path counts it, reports agree exactly.
     let source = tempfile::tempdir()?;
     std::fs::create_dir_all(source.path().join("models/example"))?;
     std::fs::write(source.path().join("models/example/model.json"), MODEL)?;
@@ -173,7 +166,6 @@ fn compiler_report_matches_independent_model_reader() -> TestResult {
 }
 #[test]
 fn primitive_and_big_number_preludes_have_distinct_kind_codes() -> TestResult {
-    // Given every prelude form, when encoded, no local shape or lossy string conversion appears.
     let indexes = std::collections::BTreeMap::new();
     assert_eq!(
         encode::reference("smithy.api#PrimitiveBoolean", &indexes)?,
@@ -191,6 +183,61 @@ fn primitive_and_big_number_preludes_have_distinct_kind_codes() -> TestResult {
         encode::reference("smithy.api#Unit", &indexes)?,
         Value::Int(-14)
     );
+    Ok(())
+}
+
+#[test]
+fn prelude_unit_uses_builtin_identity_before_local_shape_index() -> TestResult {
+    let indexes = BTreeMap::from([("smithy.api#Unit", 0)]);
+    assert_eq!(
+        encode::reference("smithy.api#Unit", &indexes)?,
+        Value::Int(-14)
+    );
+    Ok(())
+}
+
+#[test]
+fn unknown_smithy_api_shape_uses_only_an_explicit_local_index() -> TestResult {
+    let indexes = BTreeMap::from([("smithy.api#PrivateShape", 4)]);
+    assert_eq!(
+        encode::reference("smithy.api#PrivateShape", &indexes)?,
+        Value::Int(4)
+    );
+    assert!(matches!(
+        encode::reference("smithy.api#UnknownShape", &indexes),
+        Err(CompileError::Target(id)) if id == "smithy.api#UnknownShape"
+    ));
+    Ok(())
+}
+#[test]
+fn shared_reader_compiles_inherited_blob_default_and_client_optional() -> TestResult {
+    let source = tempfile::tempdir()?;
+    let directory = source.path().join("models/example");
+    std::fs::create_dir_all(&directory)?;
+    std::fs::write(
+        directory.join("model.json"),
+        r#"{"shapes":{
+        "n#Svc":{"type":"service","version":"2024-01-01","traits":{"aws.protocols#restJson1":{}}},
+        "n#Base":{"type":"structure","traits":{"smithy.api#mixin":{}},"members":{"value":{"target":"smithy.api#Blob","traits":{"smithy.api#default":"AQID","smithy.api#clientOptional":{}}}}},
+        "n#Input":{"type":"structure","mixins":[{"target":"n#Base"}]},
+        "n#Call":{"type":"operation","input":{"target":"n#Input"},"output":{"target":"smithy.api#Unit"}}
+    }}"#,
+    )?;
+    let bytes = build_catalog(source.path(), &Registry::parse("value\n")?, "fixture")?;
+    let service = Catalog::borrow(&bytes)?
+        .service("example")?
+        .ok_or("service")?;
+    let member = service
+        .shape(2)?
+        .ok_or("input")?
+        .members()?
+        .next()
+        .ok_or("member")??;
+    assert_eq!(member.target, Target::Prelude("blob"));
+    assert!(
+        matches!(member.default_value()?, Some(inventory_core::record::ValueRef::Bytes(bytes)) if bytes == &[1, 2, 3])
+    );
+    assert!(member.client_optional()?);
     Ok(())
 }
 

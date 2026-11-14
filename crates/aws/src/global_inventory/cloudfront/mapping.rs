@@ -1,4 +1,3 @@
-//! mapping responsibilities for cloudfront.
 use super::*;
 
 pub(super) fn map_distribution(

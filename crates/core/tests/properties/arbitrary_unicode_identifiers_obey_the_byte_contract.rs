@@ -1,4 +1,3 @@
-//! arbitrary unicode identifiers obey the byte contract properties.
 use super::*;
 
 proptest! {

@@ -1,4 +1,3 @@
-//! discovery options reject unbounded or meaningless requests behavior.
 use super::*;
 
 #[test]

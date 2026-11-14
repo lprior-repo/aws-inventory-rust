@@ -31,7 +31,6 @@ const SCALARS: [&str; 15] = [
 
 #[test]
 fn complete_ordered_shape_names_and_kinds_survive_compilation() -> TestResult {
-    // Given the complete fixture, each numeric position has exactly its modeled short name and kind.
     let bytes = root(record(MODEL, "Zulu\nAlpha\n")?)?;
     let service = Catalog::borrow(&bytes)?
         .service("example")?
@@ -49,7 +48,6 @@ fn complete_ordered_shape_names_and_kinds_survive_compilation() -> TestResult {
 
 #[test]
 fn operation_and_resource_names_survive_compilation_in_order() -> TestResult {
-    // Given modeled operations and resources, their own name lists are not inferred from counts.
     let bytes = root(record(MODEL, "Zulu\nAlpha\n")?)?;
     let service = Catalog::borrow(&bytes)?
         .service("example")?
@@ -68,7 +66,6 @@ fn operation_and_resource_names_survive_compilation_in_order() -> TestResult {
 
 #[test]
 fn modeled_operation_input_output_and_flags_survive_compilation() -> TestResult {
-    // Given ListThings' modeled input and output, the compiler must preserve both local references.
     let bytes = root(record(MODEL, "Zulu\nAlpha\n")?)?;
     let service = Catalog::borrow(&bytes)?
         .service("example")?
@@ -83,7 +80,6 @@ fn modeled_operation_input_output_and_flags_survive_compilation() -> TestResult 
 
 #[test]
 fn absent_operation_input_and_output_compile_to_unit() -> TestResult {
-    // Given no modeled operation targets, both directions resolve to the Unit prelude kind.
     let model = MODEL.replace(
         "\"input\":{\"target\":\"n#Input\"},\"output\":{\"target\":\"n#Things\"},",
         "",
@@ -100,14 +96,13 @@ fn absent_operation_input_and_output_compile_to_unit() -> TestResult {
 
 fn scalar_model(kind: &str) -> Result<String, serde_json::Error> {
     serde_json::to_string(&serde_json::json!({"shapes": {
-        "n#Svc": {"type": "service"},
+        "n#Svc": {"type": "service", "version": "2020-01-01"},
         "n#Scalar": {"type": kind}
     }}))
 }
 
 #[test]
 fn every_modeled_scalar_kind_round_trips_through_compiler_and_public_reader() -> TestResult {
-    // Given every modeled scalar and enum kind, no mapping may silently substitute a different kind.
     SCALARS.into_iter().try_for_each(|kind| -> TestResult {
         let bytes = root(record(&scalar_model(kind)?, "")?)?;
         let service = Catalog::borrow(&bytes)?

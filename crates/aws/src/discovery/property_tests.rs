@@ -1,5 +1,3 @@
-//! Role identity, partial-report and lazy SDK configuration invariants.
-
 use aws_credential_types::Credentials;
 use aws_types::sdk_config::TimeSource;
 use inventory_engine::limiter::ExecutorConfig;

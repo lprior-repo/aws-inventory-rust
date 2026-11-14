@@ -9,7 +9,6 @@ use std::collections::BTreeSet;
 const MAX_VOCABULARY: usize = 4096;
 const MAX_PATH_DEPTH: usize = 32;
 
-/// Cross-model token names and pairs; each set has at most 4,096 bounded strings.
 #[derive(Debug, Default)]
 #[non_exhaustive]
 pub struct Vocabulary {
@@ -18,9 +17,6 @@ pub struct Vocabulary {
     pub(super) pairs: BTreeSet<(String, String)>,
 }
 impl Vocabulary {
-    /// Add every modeled paginator, regardless of name or class.
-    /// # Errors
-    /// Rejects malformed merged tokens, paths or vocabulary limits.
     pub fn record(&mut self, model: &Model<'_>) -> Result<(), Error> {
         model.of_type("operation").try_for_each(|(id, _)| {
             if let Some(Pagination::Modeled {
@@ -59,9 +55,6 @@ fn insert_name(set: &mut BTreeSet<String>, name: &str) -> Result<(), Error> {
     Ok(())
 }
 
-/// Derive pagination using vocabularies collected from every model.
-/// # Errors
-/// Rejects malformed structures, tokens or paths.
 pub fn pagination<'a>(
     model: &Model<'a>,
     id: &str,
@@ -158,9 +151,6 @@ fn validate_tokens(model: &Model<'_>, id: &str, input: &str, output: &str) -> Re
 }
 
 impl Pagination<'_> {
-    /// Resolve a range, preferring the member's maximum over its target's.
-    /// # Errors
-    /// Rejects absent page-size members and invalid u32 maxima.
     pub fn largest_page_size(
         &self,
         model: &Model<'_>,

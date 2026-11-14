@@ -1,4 +1,3 @@
-//! Immutable graph plan hashing and binding.
 use super::*;
 
 #[derive(Default)]
@@ -70,7 +69,7 @@ pub(super) async fn bind_plan(log: &ProjectionLog, plan: &FrozenPlan) -> Result<
             "projection plan changed after checkpoint; use a new checkpoint or scan ID".into(),
         ));
     }
-    // Also validate legacy checkpoints in full before any new server write.
+
     let limit = i64::try_from(crate::graph::MAX_BATCHES.saturating_add(1))
         .map_err(|_| GraphError::Invalid("checkpoint row bound overflow".into()))?;
     sqlx::query_as::<_, (i64, String)>("SELECT sequence,digest FROM projection_ack WHERE destination=?1 AND graph=?2 AND scan_id=?3 ORDER BY sequence LIMIT ?4")

@@ -1,12 +1,8 @@
-//! Catalog-wide list drain and explicit provider-boundary outcome handling.
 use super::*;
 
 use aws_sdk_cloudcontrol::error::SdkError;
 use aws_sdk_cloudcontrol::operation::list_resources::ListResourcesError;
 
-/// The modeled TypeNotFoundException variant is the authoritative signal that
-/// the provider registry advertises a type but cannot serve it. Keep that
-/// classification independent of error-metadata decoding.
 pub(super) fn list_error(error: SdkError<ListResourcesError>) -> ApiError {
     if let Some(ListResourcesError::TypeNotFoundException(service)) = error.as_service_error() {
         let detail = format!(
@@ -18,8 +14,6 @@ pub(super) fn list_error(error: SdkError<ListResourcesError>) -> ApiError {
     sdk_error(error)
 }
 
-/// Drain every selected list-capable type. A per-type failure is recorded and
-/// contained by `paginate`; only channel closure aborts the drain.
 pub(crate) async fn collect(ctx: &Context, types: &[ResourceType]) -> Result<(), AwsScanError> {
     if ctx.executor.is_cancelled() {
         return Err(ApiError::Cancelled.into());
@@ -33,8 +27,6 @@ pub(crate) async fn collect(ctx: &Context, types: &[ResourceType]) -> Result<(),
     Ok(())
 }
 
-/// One descriptor's listed page, with the shared executor and page-size hint
-/// applied to every continuation request.
 async fn list_one(
     ctx: &Context,
     client: &Client,
@@ -83,7 +75,6 @@ where
     .await
 }
 
-/// Per-descriptor paging state carried into each page request.
 struct PageContext<'a> {
     ledger: &'a Mutex<IdentityLedger>,
     scope: &'a CollectionScope,
@@ -100,8 +91,6 @@ impl<'a> PageContext<'a> {
     }
 }
 
-/// Fetch one page, containing provider-boundary outcomes and persisting the
-/// listed identifiers before their descriptions are enriched.
 async fn collect_page<L, LFut>(
     ctx: &Context,
     descriptor: &ResourceType,
@@ -126,12 +115,6 @@ where
     })
 }
 
-/// Request one page from the provider.
-///
-/// The scope is fully accounted for when the provider's catalog advertises the
-/// type but its handler cannot serve it: the failure remains persisted as
-/// `unsupported_type`, and the terminal empty page completes the scope so a
-/// catalog drain can finish `complete`.
 async fn list_page<L, LFut>(
     ctx: &Context,
     list: &L,
@@ -167,7 +150,6 @@ async fn collect_descriptions(
     Ok(())
 }
 
-/// Enrich one listed description into its own persisted child scope.
 async fn read_description(
     ctx: &Context,
     descriptor: &ResourceType,

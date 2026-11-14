@@ -1,5 +1,3 @@
-//! Packaging contracts: selection, ordering, hashes and determinism.
-
 use std::collections::BTreeMap;
 use std::fs::{self, File};
 use std::io::Read;
@@ -135,7 +133,6 @@ fn given_packaged_archive_when_manifest_is_rehashed_then_every_entry_matches() -
     Ok(())
 }
 
-/// Parse `sha256  name` lines, rejecting duplicates and malformed digests.
 fn parse_manifest(manifest: &str) -> TestResult<BTreeMap<String, String>> {
     let mut parsed = BTreeMap::new();
     for line in manifest.lines() {
@@ -152,7 +149,6 @@ fn parse_manifest(manifest: &str) -> TestResult<BTreeMap<String, String>> {
     Ok(parsed)
 }
 
-/// Re-hash every archive payload and compare it with its manifest entry.
 fn verify_manifest_entries(destination: &Path, parsed: &BTreeMap<String, String>) -> TestResult {
     for (name, digest) in parsed {
         let bytes = entry_bytes(destination, &format!("{PREFIX}{name}"))?;

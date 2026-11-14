@@ -1,4 +1,3 @@
-//! Generated server delay and rejected-hint properties.
 use super::*;
 
 pub(super) fn kind(index: u8) -> RetryKind {

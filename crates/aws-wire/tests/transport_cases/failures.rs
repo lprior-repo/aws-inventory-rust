@@ -7,12 +7,11 @@ use tokio::net::TcpSocket;
 
 #[tokio::test]
 async fn refused_connection_returns_connect_without_retry() -> TestResult {
-    // Given a retained bound, non-listening socket: its port cannot be stolen by another test.
     let socket = TcpSocket::new_v4()?;
     socket.bind("127.0.0.1:0".parse()?)?;
     let url = format!("http://{}/", socket.local_addr()?);
     let client = client()?;
-    // When connecting once, then refusal remains classifiable.
+
     assert!(matches!(
         client.send(request(&url)?).await,
         Err(TransportError::Connect(_))
@@ -24,10 +23,9 @@ async fn refused_connection_returns_connect_without_retry() -> TestResult {
 
 #[tokio::test]
 async fn peer_reset_returns_connect_without_retry() -> TestResult {
-    // Given a socket that resets after receiving the complete request.
     let server = Server::start(Mode::Reset, Arc::default()).await?;
     let client = client()?;
-    // When sending, then reset is Connect and the server sees exactly one attempt.
+
     assert!(matches!(
         client.send(request(&server.url)?).await,
         Err(TransportError::Connect(_))
@@ -38,10 +36,9 @@ async fn peer_reset_returns_connect_without_retry() -> TestResult {
 
 #[tokio::test]
 async fn plain_http_is_rejected_unless_explicitly_allowed() -> TestResult {
-    // Given a real endpoint and secure-by-default configuration.
     let server = Server::start(Mode::Good, Arc::default()).await?;
     let secure = Client::new(Config::default())?;
-    // When plain HTTP is sent, then rejection happens before opening a socket.
+
     assert!(matches!(
         secure.send(request(&server.url)?).await,
         Err(TransportError::InvalidRequest(_))
@@ -56,7 +53,6 @@ async fn plain_http_is_rejected_unless_explicitly_allowed() -> TestResult {
 
 #[tokio::test]
 async fn redirect_is_returned_unchanged_and_never_followed() -> TestResult {
-    // Given a live redirect destination with independently counted accepts.
     let destination = Server::start(Mode::Good, Arc::default()).await?;
     let origin = Endpoint::bind(false, b"").await?;
     let client = client()?;
@@ -80,7 +76,6 @@ async fn redirect_is_returned_unchanged_and_never_followed() -> TestResult {
 
 #[tokio::test]
 async fn invalid_http_response_is_a_protocol_error() -> TestResult {
-    // Given a peer speaking invalid HTTP, when sending once, then classify Protocol.
     let server = Server::start(Mode::BadProtocol, Arc::default()).await?;
     assert!(matches!(
         client()?.send(request(&server.url)?).await,
@@ -92,16 +87,15 @@ async fn invalid_http_response_is_a_protocol_error() -> TestResult {
 
 #[tokio::test]
 async fn dropping_a_mid_body_send_does_not_poison_the_next_request() -> TestResult {
-    // Given the first socket stalls mid-body and the next socket serves normally.
     let mut server = Server::start(Mode::MidBodyThenGood, Arc::default()).await?;
     let client = client()?;
     let mut send = Box::pin(client.send(request(&server.url)?));
     crate::observe_stall(&mut server, &mut send).await?;
     crate::deadlines::observe_body(&client, &mut send).await?;
-    // When cancellation drops the future, incomplete bytes must not be reused.
+
     drop(send);
     let response = client.send(request(&server.url)?).await?;
-    // Then a clean socket yields exactly the expected body.
+
     assert_eq!(response.body.as_ref(), b"ok");
     assert_eq!(count(&server.counts.accepts), 2);
     assert_eq!(client.statistics().connections_opened, 2);

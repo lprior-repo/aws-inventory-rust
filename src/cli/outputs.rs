@@ -30,13 +30,12 @@ pub struct ExportArgs {
     pub provenance: ExportProvenance,
     #[arg(long)]
     pub allow_partial: bool,
-    /// Derive and persist universal REFERENCES edges before exporting.
+
     #[arg(long = "universal-references")]
     pub derive_references: bool,
 }
 
 impl ExportArgs {
-    /// Parse `--universal-references` once into the typed export mode.
     pub fn reference_mode(&self) -> inventory_engine::export::ReferenceMode {
         inventory_engine::export::ReferenceMode::from_flag(self.derive_references)
     }
@@ -55,14 +54,13 @@ pub struct DeliverArgs {
 #[derive(Args, Clone, Debug, Deserialize, Serialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct DeliveryArgs {
-    /// Export each finalized scan into a new attempt directory under this path.
     #[arg(long)]
     pub output_dir: Option<PathBuf>,
     #[arg(long, value_enum, default_value_t = ExportFormat::Jsonl)]
     pub export_format: ExportFormat,
     #[arg(long, value_enum, default_value_t = ExportProvenance::Normalized)]
     pub provenance: ExportProvenance,
-    /// Also build and push a replayable FalkorDB plan; requires an output directory.
+
     #[arg(long, requires = "output_dir")]
     pub falkor: bool,
     #[arg(long, default_value = "FALKORDB_URL")]
@@ -71,10 +69,10 @@ pub struct DeliveryArgs {
     pub graph: String,
     #[arg(long, default_value_t = 5)]
     pub delivery_attempts: u32,
-    /// Bound each scan's full export/delivery operation, including retry backoff.
+
     #[arg(long, default_value_t = 900)]
     pub delivery_timeout_seconds: u64,
-    /// Include finalized partial/cancelled snapshots with their actual status.
+
     #[arg(long)]
     pub allow_partial: bool,
 }

@@ -1,3 +1,4 @@
+mod defaults;
 pub(in crate::catalog) mod field_name;
 use super::super::{CatalogError, CatalogKey};
 use crate::record::{MapRef, ValueRef};
@@ -264,6 +265,13 @@ impl<'a> WireTraits<'a> {
     pub fn host_label(self) -> Result<bool, CatalogError> {
         self.flag(CatalogKey::MemberHostLabel)
     }
+    pub fn default_value(self) -> Result<Option<ValueRef<'a>>, CatalogError> {
+        defaults::default_value(self)
+    }
+
+    pub fn client_optional(self) -> Result<bool, CatalogError> {
+        defaults::client_optional(self)
+    }
     pub(super) fn validate(self) -> Result<(), CatalogError> {
         self.json_name()?;
         self.xml_name()?;
@@ -278,6 +286,8 @@ impl<'a> WireTraits<'a> {
         self.streaming()?;
         self.sensitive()?;
         self.idempotency_token()?;
+        self.default_value()?;
+        self.client_optional()?;
         self.host_label()?;
         Ok(())
     }

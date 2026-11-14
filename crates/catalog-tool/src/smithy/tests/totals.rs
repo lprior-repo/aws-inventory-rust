@@ -16,12 +16,11 @@ const CBOR_QUERY: &str = r#"{"shapes":{
 #[test]
 fn two_models_sum_counters_and_share_one_distinct_name_set()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given two models sharing a member name and only one root service.
     let mut totals = Totals::default();
     totals.add_model(serde_json::from_str(JSON)?, Path::new("a.json"))?;
-    // When the next model is consumed.
+
     totals.add_model(serde_json::from_str(CBOR_QUERY)?, Path::new("b.json"))?;
-    // Then all sums, root classification, names, and protocols are exact.
+
     assert_eq!(
         totals.counts,
         ModelStats {
@@ -64,14 +63,13 @@ fn two_models_sum_counters_and_share_one_distinct_name_set()
 
 #[test]
 fn protocol_classes_count_services_not_traits() -> Result<(), Box<dyn std::error::Error>> {
-    // Given JSON, mixed CBOR/query, and query-only services.
     let mut totals = Totals::default();
     totals.add_model(serde_json::from_str(JSON)?, Path::new("a.json"))?;
     totals.add_model(serde_json::from_str(CBOR_QUERY)?, Path::new("b.json"))?;
-    // When a query-only service and another JSON service are added.
+
     totals.add_model(serde_json::from_str(r#"{"shapes":{"n#Svc":{"type":"service","traits":{"aws.protocols#awsQuery":{},"aws.protocols#awsQueryCompatible":{}}}}}"#)?, Path::new("c.json"))?;
     totals.add_model(serde_json::from_str(JSON)?, Path::new("d.json"))?;
-    // Then classes are per service, and query/CBOR is not XML-only.
+
     assert_eq!(
         (
             totals.services,
@@ -128,7 +126,6 @@ const CLASSIFICATION_CASES: &[ClassificationCase] = &[
 #[test]
 fn every_protocol_class_and_custom_protocol_trait_is_exact()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given each named protocol class and a custom protocol/nonprotocol pair.
     CLASSIFICATION_CASES
         .iter()
         .try_for_each(|(traits, expected, ids)| {
@@ -136,7 +133,7 @@ fn every_protocol_class_and_custom_protocol_trait_is_exact()
             let document =
                 serde_json::json!({"shapes":{"n#Svc":{"type":"service","traits":traits}}});
             let mut totals = Totals::default();
-            // When a service is accumulated, then classification and every protocol key match.
+
             totals.add_model(
                 serde_json::from_value(document)?,
                 Path::new("protocol.json"),

@@ -30,7 +30,6 @@ fn oracle_rows() -> Result<Vec<(&'static str, &'static str)>, Box<dyn std::error
 
 #[test]
 fn plain_names_match_all_independent_oracle_rows_reporting_every_difference() -> TestResult {
-    // Given the separate sed oracle, when naming all types, then every difference is reported.
     let rows = oracle_rows()?;
     assert_eq!(rows.len(), 1_881);
     let differences: Vec<_> = rows
@@ -53,7 +52,6 @@ fn plain_names_match_all_independent_oracle_rows_reporting_every_difference() ->
 
 #[test]
 fn reviewed_exceptions_render_1881_unique_bounded_names_in_type_order() -> TestResult {
-    // Given all pinned types and the committed exceptions, when rendering, then all names are usable.
     let catalog: Catalog = serde_json::from_str(CATALOG)?;
     let types: Vec<_> = catalog
         .resource_types
@@ -91,7 +89,6 @@ fn assert_catalog_names(rows: &[(&str, super::super::SqlName)]) {
 
 #[test]
 fn rendering_sorts_types_regardless_of_input_order() -> TestResult {
-    // Given reversed input, when rendering, then output is sorted by original type.
     let rows = render_names(&["Z::Thing", "A::Thing"], &Exceptions::none())?;
     let actual: Vec<_> = rows
         .iter()
@@ -103,7 +100,6 @@ fn rendering_sorts_types_regardless_of_input_order() -> TestResult {
 
 #[test]
 fn rendering_reports_the_first_invalid_type_in_input_order() -> TestResult {
-    // Given unsorted invalid types, when rendering, then validation preserves input order.
     assert_eq!(
         render_names(&["Z", "A"], &Exceptions::none()),
         Err(NameError::InvalidType {
@@ -115,7 +111,6 @@ fn rendering_reports_the_first_invalid_type_in_input_order() -> TestResult {
 
 #[test]
 fn rendering_reports_colliding_plain_names_with_both_types() -> TestResult {
-    // Given two spellings of the same SQL name, when rendering, then neither silently wins.
     assert_eq!(
         render_names(
             &["AWS::EC2::EC2Fleet", "AWS::EC2::Ec2Fleet"],
@@ -132,7 +127,6 @@ fn rendering_reports_colliding_plain_names_with_both_types() -> TestResult {
 
 #[test]
 fn rendering_reports_collisions_introduced_by_exceptions() -> TestResult {
-    // Given distinct spellings replaced identically, when rendering, then collisions still fail.
     let exceptions = Exceptions::parse("X\tsame\nY\tsame\n")?;
     assert_eq!(
         render_names(&["AWS::X", "AWS::Y"], &exceptions),
@@ -147,7 +141,6 @@ fn rendering_reports_collisions_introduced_by_exceptions() -> TestResult {
 
 #[test]
 fn rendering_rejects_repeated_types_instead_of_dropping_rows() -> TestResult {
-    // Given the same type twice, when rendering, then duplicate output is an explicit failure.
     assert_eq!(
         render_names(&["A::B", "A::B"], &Exceptions::none()),
         Err(NameError::DuplicateSqlName {
@@ -161,7 +154,6 @@ fn rendering_rejects_repeated_types_instead_of_dropping_rows() -> TestResult {
 
 #[test]
 fn rendering_reports_first_unused_exception_in_original_line_order() -> TestResult {
-    // Given two unused spellings, when rendering, then original line order selects the error.
     let exceptions = Exceptions::parse("IoT\tiot\nZ\tz\nA\ta\n")?;
     assert_eq!(
         render_names(&["AWS::IoT"], &exceptions),
@@ -175,7 +167,6 @@ fn rendering_reports_first_unused_exception_in_original_line_order() -> TestResu
 
 #[test]
 fn rendering_does_not_count_shadowed_shorter_exceptions_as_used() -> TestResult {
-    // Given a longer match, when rendering, then its shadowed shorter spelling remains unused.
     let exceptions = Exceptions::parse("IP\tip\nIPv6\tipv6\n")?;
     assert_eq!(
         render_names(&["AWS::IPv6"], &exceptions),
@@ -189,7 +180,6 @@ fn rendering_does_not_count_shadowed_shorter_exceptions_as_used() -> TestResult 
 
 #[test]
 fn rendering_accumulates_exception_usage_across_types() -> TestResult {
-    // Given matches on different rows, when rendering, then usage is the union of all rows.
     let exceptions = Exceptions::parse("IoT\tiot\nIP\tip\n")?;
     let rows = render_names(&["AWS::IoT", "AWS::IP"], &exceptions)?;
     assert_eq!(
@@ -203,7 +193,6 @@ fn rendering_accumulates_exception_usage_across_types() -> TestResult {
 
 #[test]
 fn rendering_empty_input_requires_an_empty_exception_list() -> TestResult {
-    // Given no types, when rendering, then only a genuinely empty exception list is usable.
     let rows = render_names(&[], &Exceptions::none())?;
     assert_eq!(rows.len(), 0);
     let exceptions = Exceptions::parse("IoT\tiot\n")?;
@@ -219,7 +208,6 @@ fn rendering_empty_input_requires_an_empty_exception_list() -> TestResult {
 
 #[test]
 fn rendering_propagates_overlong_names_before_unused_exception_errors() -> TestResult {
-    // Given an oversized first type, when rendering, then its naming failure takes precedence.
     let exceptions = Exceptions::parse("IoT\tiot\n")?;
     assert_eq!(
         render_names(&[&format!("A::{}", "B".repeat(127))], &exceptions),
@@ -262,7 +250,6 @@ const COMMITTED_EXCEPTION_CASES: [(&str, &str); 11] = [
 
 #[test]
 fn committed_exceptions_preserve_each_reviewed_real_type_name() -> TestResult {
-    // Given all eleven committed exceptions, when naming real types, then each name is exact.
     let exceptions = Exceptions::parse(EXCEPTIONS)?;
     COMMITTED_EXCEPTION_CASES
         .iter()
@@ -275,7 +262,6 @@ fn committed_exceptions_preserve_each_reviewed_real_type_name() -> TestResult {
 
 #[test]
 fn collision_payload_preserves_reversed_input_order() -> TestResult {
-    // Given reverse lexical input, when names collide, then the error preserves encounter order.
     assert_eq!(
         render_names(
             &["AWS::EC2::Ec2Fleet", "AWS::EC2::EC2Fleet"],

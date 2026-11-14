@@ -1,6 +1,3 @@
-//! Activity enrichment: describe and tags per listed item. Activities have no
-//! definition body; only safe metadata and an exact KMS reference are retained.
-
 use std::collections::BTreeMap;
 
 use aws_sdk_sfn::{
@@ -92,7 +89,6 @@ async fn describe_call(
     .await
 }
 
-/// Tag failure is recorded but does not discard an otherwise described item.
 async fn tags(
     ctx: &Context,
     client: &Client,

@@ -1,4 +1,3 @@
-//! identity operations.
 use super::*;
 
 pub(super) fn arn_parts(value: &str) -> Option<(&str, &str)> {

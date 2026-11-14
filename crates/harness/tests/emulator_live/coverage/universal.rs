@@ -1,11 +1,3 @@
-//! Universal catalog partition coverage against one owned emulator.
-//!
-//! The partition is compared against literals observed on the pinned emulator,
-//! not against the catalog the scan was generated from: a bug that stops the
-//! scan early must fail even when the catalog agrees with itself. The 292
-//! provider boundaries are compared as an exact type-name set from committed
-//! evidence captured independently on aws-emulator 1.0.348.
-
 use std::collections::BTreeSet;
 
 use inventory_harness::emulator::{PINNED_COMMIT, PINNED_VERSION};

@@ -1,4 +1,3 @@
-//! Registry input validation and SQLite row decoding.
 use super::*;
 
 pub(super) fn validate_coverage(record: &CoverageRecord) -> Result<(), StoreError> {

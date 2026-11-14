@@ -1,21 +1,17 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-/// Approximate concurrent snapshot. Lifetime totals wrap at `usize::MAX`.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct Statistics {
-    /// TCP connections successfully established (TLS may subsequently fail).
     pub connections_opened: usize,
-    /// Established sockets currently owned by the connector/pool.
+
     pub connections_open: usize,
-    /// Validated send attempts, including failed/cancelled attempts.
+
     pub requests_sent: usize,
-    /// Estimate: attempts minus opened connections, saturating at zero.
-    /// Hyper does not expose a per-request reuse flag; failures affect this estimate.
+
     pub requests_reused: usize,
-    /// Public `send` outcomes returning `Timeout`, counted once for either deadline bound.
-    /// Caller cancellation and detached connector expiry after a successful send are not counted.
+
     pub timeouts: usize,
-    /// Socket bytes read, including HTTP headers and TLS records.
+
     pub bytes_read: usize,
 }
 

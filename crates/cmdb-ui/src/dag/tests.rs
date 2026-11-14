@@ -1,6 +1,3 @@
-//! Layout, builder and camera tests. The widget paint path is exercised by
-//! the app build; these tests pin the deterministic parts.
-
 use makepad_widgets::{Rect, dvec2};
 
 use super::builder;
@@ -132,9 +129,9 @@ fn fixture_builder_matches_the_projection() {
     let data = Data::synthetic();
     let source = data.graph();
     let graph = builder::from_data_graph(&source);
-    // 3 accounts + 6 regions + 23 kind paths + 24 resources.
+
     assert_eq!(graph.len(), 56);
-    // 6 + 23 + 24 containment edges, plus the 16 resource overlays.
+
     assert_eq!(graph.edges().len(), 69);
     assert_eq!(graph.dropped_nodes(), 0);
     assert_eq!(graph.dropped_edges(), 0);
@@ -168,9 +165,9 @@ fn filtered_projection_keeps_only_visible_endpoints() {
     let mut data = Data::synthetic();
     data.set_account(Some("prod"));
     let graph = builder::from_data_graph(&data.graph());
-    // 1 account + 2 regions + 8 kind paths + 9 visible resources.
+
     assert_eq!(graph.len(), 20);
-    // 2 + 8 + 9 containment edges, plus the 7 visible resource overlays.
+
     assert_eq!(graph.edges().len(), 26);
     assert_eq!(DagLayout::compute(&graph).node_count(), 20);
 }

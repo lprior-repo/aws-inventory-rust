@@ -1,8 +1,3 @@
-//! Subscription mapping. Confirmed subscriptions use their returned ARN as
-//! identity. Unconfirmed subscriptions have the literal `PendingConfirmation`
-//! marker instead of an ARN, so they use a deterministic synthetic identity
-//! derived from the topic, protocol and a digest of the endpoint.
-
 use std::collections::BTreeMap;
 
 use aws_sdk_sns::types::Subscription;
@@ -84,8 +79,6 @@ pub(super) fn map_subscription(
     Ok(Some(SubscriptionObservation { resource, edge }))
 }
 
-/// Same subscription listing produces the same synthetic ID; the raw endpoint is
-/// never part of an identifier.
 fn pending_identity(topic_arn: &str, protocol: &str, endpoint: &str) -> String {
     let seed = format!("{protocol}\n{endpoint}");
     format!(

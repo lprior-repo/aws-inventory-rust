@@ -1,4 +1,3 @@
-//! Generated rational-rate pacing properties.
 use super::*;
 
 pub(super) async fn check_rational_pacing(
@@ -41,8 +40,6 @@ pub(super) async fn check_rational_pacing(
     let starts = starts.into_inner();
     prop_assert_eq!(starts.len(), count);
     for (first, second) in starts.iter().zip(starts.iter().skip(1)) {
-        // Multiplication is an independent rate inequality; it does not copy
-        // the implementation's ceiling-division or adaptive-rate algorithm.
         let elapsed = second.duration_since(*first).as_nanos();
         prop_assert!(
             elapsed.saturating_mul(u128::from(requests))

@@ -1,4 +1,3 @@
-//! clusters responsibilities for ecs.
 use super::*;
 
 pub(crate) fn tags(values: &[Tag]) -> BTreeMap<String, String> {

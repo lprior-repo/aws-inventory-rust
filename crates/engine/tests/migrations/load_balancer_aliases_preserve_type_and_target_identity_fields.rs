@@ -1,4 +1,3 @@
-//! Behavior: load_balancer_aliases_preserve_type_and_target_identity_fields.
 use super::*;
 
 #[tokio::test]

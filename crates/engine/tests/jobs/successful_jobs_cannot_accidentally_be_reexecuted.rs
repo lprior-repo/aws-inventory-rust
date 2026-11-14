@@ -1,4 +1,3 @@
-//! Behavior: successful_jobs_cannot_accidentally_be_reexecuted.
 use super::*;
 
 #[tokio::test]

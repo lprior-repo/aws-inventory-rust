@@ -6,7 +6,6 @@ use super::{
 };
 use tokio::io::{AsyncRead, AsyncReadExt, BufReader};
 
-/// Wire overhead (chunk lines, delimiters and trailers) has its own hard cap.
 const MAX_WIRE_BODY_BYTES: usize = MAX_BODY_BYTES.saturating_add(MAX_HEAD_BYTES);
 const MAX_CHUNK_LINE: usize = 1_024;
 const MAX_INFORMATIONAL: usize = 16;

@@ -1,18 +1,3 @@
-//! One shared HTTP/1.1/ALPN HTTP/2 pool, without retries or redirects.
-//!
-//! A socket holds one global permit through TLS, active use and idle pooling.
-//! Idle eviction checks every `max(Config::idle_timeout, 90 ms)`; an idle socket
-//! can retain its permit for idle timeout plus one check interval (scheduler permitting).
-//! Connect waiters remain deadline-bound and may time out before eviction.
-//! A sweep of M distinct endpoints with cap N needs approximately ceil(M/N) capacity waves.
-//! Idle permits can delay fresh-host waiters past their deadlines. Choose the cap near the
-//! in-flight limit and a short valid expiry; defaults await sweep benchmark measurements.
-//! Hyper-util 0.1.21 ages shared HTTP/2 senders by checkout, not active streams
-//! (`pool.rs:227-241,318-325,488-503`). Expiry preserves a live stream and its socket permit,
-//! but another request needs a second connection/permit rather than multiplexing that stream.
-//! Construct outside latency-sensitive async code: system/extra roots load synchronously.
-//! Bodies are limited before collection; HTTP/1 read buffers are capped at 8 KiB.
-
 mod bounded;
 mod config;
 mod connection;
@@ -44,20 +29,17 @@ pub use error::TransportError;
 
 type HttpPool = Pool<Bounded<hyper_rustls::HttpsConnector<Connector>>, Full<Bytes>>;
 
-/// Complete bounded response; redirects and error HTTP statuses are returned unchanged.
 #[derive(Debug)]
 pub struct Response {
-    /// HTTP status, including non-success statuses.
     pub status: StatusCode,
-    /// Response headers without interpretation.
+
     pub headers: HeaderMap,
-    /// Whole response body, no larger than the configured limit.
+
     pub body: Bytes,
-    /// Negotiated protocol, observable for ALPN tests and diagnostics.
+
     pub version: Version,
 }
 
-/// Cheaply cloned handle; all clones share a single connection pool and socket cap.
 #[derive(Clone)]
 pub struct Client {
     pool: HttpPool,
@@ -66,11 +48,6 @@ pub struct Client {
 }
 
 impl Client {
-    /// Build a pool and load trust roots synchronously.
-    ///
-    /// # Errors
-    /// Returns `InvalidRequest` for invalid bounds, `Io` for bundle access/allocation,
-    /// or `Tls` for root-loading/verification-configuration failures.
     pub fn new(config: Config) -> Result<Self, TransportError> {
         config.validate()?;
         let counters = Arc::new(Counters::default());
@@ -82,11 +59,6 @@ impl Client {
         })
     }
 
-    /// Send once, with a deadline covering pool wait, connect, TLS, headers and body.
-    /// Cancellation discards incomplete HTTP/1 connections, but resets only the HTTP/2 stream.
-    ///
-    /// # Errors
-    /// Returns a typed transport error; never follows redirects or retries.
     pub async fn send(&self, request: Request<Bytes>) -> Result<Response, TransportError> {
         self.validate(&request)?;
         self.counters.sent();
@@ -104,7 +76,6 @@ impl Client {
         Ok(response)
     }
 
-    /// Read approximate atomic counters without taking a lock.
     #[must_use]
     pub fn statistics(&self) -> Statistics {
         self.counters.snapshot()

@@ -21,7 +21,6 @@ fn two_services() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
 }
 #[test]
 fn directory_identity_disambiguates_equal_unqualified_service_shape_names() -> TestResult {
-    // Given equal short names in different namespaces, directories remain the service identity.
     let bytes = two_services()?;
     let catalog = Catalog::borrow(&bytes)?;
     let ec2 = catalog.service("ec2")?.ok_or("ec2")?;
@@ -38,7 +37,6 @@ fn directory_identity_disambiguates_equal_unqualified_service_shape_names() -> T
 }
 #[test]
 fn same_full_service_shape_id_in_two_directories_is_a_typed_error() -> TestResult {
-    // Given two directories sharing a full Smithy identity, compilation refuses ambiguity.
     let source = tempfile::tempdir()?;
     model(source.path(), "a", "model.json", MODEL)?;
     model(source.path(), "b", "model.json", MODEL)?;
@@ -48,7 +46,6 @@ fn same_full_service_shape_id_in_two_directories_is_a_typed_error() -> TestResul
 }
 #[test]
 fn multiple_models_in_one_directory_cannot_replace_each_others_service_identity() -> TestResult {
-    // Given distinct service shapes under one directory, no duplicate lookup key is written.
     let source = tempfile::tempdir()?;
     model(source.path(), "a", "first.json", MODEL)?;
     model(
@@ -63,7 +60,6 @@ fn multiple_models_in_one_directory_cannot_replace_each_others_service_identity(
 }
 #[test]
 fn required_input_changes_enumeration_flags_and_report_counts() -> TestResult {
-    // Given a required input member, when compiled, ListThings is no longer input-free.
     let required = MODEL.replace(
         "\"Zulu\":{\"target\":\"smithy.api#String\"}",
         "\"Zulu\":{\"target\":\"smithy.api#String\",\"traits\":{\"smithy.api#required\":{}}}",
@@ -81,8 +77,7 @@ fn required_input_changes_enumeration_flags_and_report_counts() -> TestResult {
     Ok(())
 }
 #[test]
-fn missing_member_targets_and_malformed_arn_templates_fail_compilation() -> TestResult {
-    // Given malformed modeled content, no empty target or template is synthesized.
+fn missing_member_targets_and_non_string_arn_payloads_fail_compilation() -> TestResult {
     let missing = MODEL.replace("\"Zulu\":{\"target\":\"smithy.api#String\"}", "\"Zulu\":{}");
     let (shape, cause) = shape_failure(&missing, "Zulu\nAlpha\n")?;
     assert_eq!(shape, "n#Input");
@@ -90,6 +85,6 @@ fn missing_member_targets_and_malformed_arn_templates_fail_compilation() -> Test
     let malformed = MODEL.replace("\"template\":\"thing/{id}\"", "\"template\":42");
     let (shape, cause) = shape_failure(&malformed, "Zulu\nAlpha\n")?;
     assert_eq!(shape, "n#Thing");
-    assert!(matches!(cause, CompileError::Arn(name) if name == "n#Thing"));
+    assert!(matches!(cause, CompileError::Trait(name) if name == "aws.api#arn"));
     Ok(())
 }

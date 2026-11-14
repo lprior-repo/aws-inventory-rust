@@ -1,5 +1,3 @@
-//! Document writing and the call into the frozen snapshot command.
-
 use std::future::Future;
 use std::path::Path;
 

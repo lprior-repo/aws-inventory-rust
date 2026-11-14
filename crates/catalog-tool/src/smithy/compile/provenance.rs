@@ -1,4 +1,3 @@
-//! Catalog provenance requires a repository root with clean tracked and untracked model inputs.
 use super::CompileError;
 use std::{
     path::{Path, PathBuf},
@@ -54,7 +53,6 @@ fn clean_models(source: &Path) -> Result<(), CompileError> {
 }
 
 fn clean_untracked_models(source: &Path) -> Result<(), CompileError> {
-    // No exclude flags: the compiler also discovers inputs hidden by Git ignore rules.
     let files = git(source, &["ls-files", "--others", "-z", "--", "models"])?;
     match files.split('\0').find(|path| !path.is_empty()) {
         Some(path) => Err(CompileError::SourceModified(PathBuf::from(path))),

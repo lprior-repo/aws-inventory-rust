@@ -1,5 +1,3 @@
-//! Optional, existing indexes are supplementary evidence, not completeness proofs.
-
 use std::collections::BTreeMap;
 
 use aws_smithy_types::Document;
@@ -12,11 +10,6 @@ use crate::{
 };
 
 const CONFIG_QUERY: &str = "SELECT accountId, awsRegion, arn, resourceId, resourceName, resourceType, configuration, tags, configurationItemCaptureTime";
-
-// Config keeps its original nested representation under `configuration`. Only
-// scalar fields and arrays of strings have the same shape as these native
-// aliases. In particular, camelCase routes/actions must not become partial
-// snake_case native evidence, and missing fields must not become empty lists.
 
 #[cfg(test)]
 mod property_tests;

@@ -1,9 +1,3 @@
-//! Two-pass streaming verification: events first, deletion records second.
-//!
-//! Nothing but the per-account aggregate (bounded by the account count) is retained.
-//! Adjacent duplicated event lines are recognised and discarded, which is safe because
-//! the generator only ever injects duplicates as an immediate pair.
-
 use std::collections::BTreeMap;
 use std::error::Error;
 use std::fs::{self, File};

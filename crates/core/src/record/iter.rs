@@ -1,4 +1,3 @@
-//! Shared, statically dispatched traversal, bounded by the container length.
 use super::RecordError;
 use minicbor::Decoder;
 

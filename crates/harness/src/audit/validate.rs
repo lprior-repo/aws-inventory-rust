@@ -1,5 +1,3 @@
-//! Require a complete asserted emulator run before binding its operations.
-
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde_json::{Map, Value, json};
@@ -7,7 +5,6 @@ use serde_json::{Map, Value, json};
 use crate::HarnessError;
 use crate::provenance::canonical_sha256;
 
-/// Checks a complete asserted emulator run must declare.
 const REQUIRED_CHECKS: [&str; 6] = [
     "provenance:embedded_catalog_matches",
     "provenance:source_unchanged",
@@ -182,7 +179,6 @@ fn require_rows(rows: &[Value], expected: &BTreeMap<String, &Value>) -> Result<(
     Ok(())
 }
 
-/// Require a complete asserted emulator run and its operation identities.
 pub fn validate_summary(
     report: &Value,
     summary: &Value,

@@ -1,4 +1,3 @@
-//! Behavior: rejected_completion_preserves_live_lease.
 use super::*;
 
 #[tokio::test]

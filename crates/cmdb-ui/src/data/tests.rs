@@ -1,5 +1,3 @@
-//! Behaviour of the fixture and its filter state.
-
 use super::*;
 
 #[test]

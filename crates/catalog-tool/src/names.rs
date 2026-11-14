@@ -1,8 +1,3 @@
-//! Pure V30 SQL naming with bounded inputs, expansion, and SQLite-safe identifiers.
-//! Exception usage refers to original TSV line order.
-//! The committed `catalog/kinds.tsv` and its gate make a rename a failure; an exception may
-//! only be added before a kind is published.
-
 use thiserror::Error;
 
 mod exceptions;
@@ -16,16 +11,14 @@ use output::Output;
 pub use render::render_names;
 use words::append_plain;
 
-/// Maximum byte length of a generated SQL name.
 pub const MAX_SQL_NAME_BYTES: usize = 128;
-/// Maximum input type-name bytes, checked before copying the input into an error.
+
 pub const MAX_TYPE_NAME_BYTES: usize = 256;
-/// Maximum exception-file bytes, checked before parsing or copying rows.
+
 pub const MAX_EXCEPTIONS_BYTES: usize = 65_536;
-/// Maximum exception rows, checked before copying any row.
+
 pub const MAX_EXCEPTIONS_ROWS: usize = 1_024;
 
-/// Naming and exception-file failures, including whole-catalog validation.
 #[derive(Debug, PartialEq, Eq, Error)]
 pub enum NameError {
     #[error("invalid type name: {name}")]
@@ -133,20 +126,10 @@ fn derive_name(
     output.finish()
 }
 
-/// Derive a bounded, unquoted SQLite-safe SQL identifier using V30 and the supplied exceptions.
-///
-/// # Errors
-/// Rejects input above `MAX_TYPE_NAME_BYTES`, invalid types, output above `MAX_SQL_NAME_BYTES`,
-/// and invalid or SQLite-reserved SQL identifiers.
 pub fn sql_name(type_name: &str, exceptions: &Exceptions) -> Result<SqlName, NameError> {
     derive_name(type_name, exceptions, &mut [])
 }
 
-/// Derive a name and replace `used` with one flag per original exception line.
-///
-/// # Errors
-/// Returns the same errors as `sql_name`; flags describe matches visited during this call.
-/// Flag count is bounded by `MAX_EXCEPTIONS_ROWS`.
 pub fn sql_name_used(
     type_name: &str,
     exceptions: &Exceptions,

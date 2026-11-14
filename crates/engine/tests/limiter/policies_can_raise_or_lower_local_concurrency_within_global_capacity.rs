@@ -1,4 +1,3 @@
-//! Behavior: policies_can_raise_or_lower_local_concurrency_within_global_capacity.
 use super::*;
 
 #[tokio::test(start_paused = true)]

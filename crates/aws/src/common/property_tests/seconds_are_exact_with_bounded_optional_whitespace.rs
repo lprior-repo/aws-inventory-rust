@@ -1,4 +1,3 @@
-//! seconds are exact with bounded optional whitespace properties.
 use super::*;
 
 proptest! {

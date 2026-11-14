@@ -1,4 +1,3 @@
-//! targets operations.
 use super::*;
 
 pub(super) fn map_target_group(
@@ -57,7 +56,7 @@ pub(super) fn map_target_health(
         .target()
         .ok_or_else(|| AwsScanError::InvalidData("target-health record lacks target".into()))?;
     let target_id = required(target.id(), "registered target ID")?;
-    // JSON tuple encoding preserves absent values and avoids delimiter collisions.
+
     let id = format!(
         "aws-elbv2-target-health:{}",
         json!([

@@ -1,5 +1,3 @@
-//! Directed edge projection, graph limits and bounded neighborhood results.
-
 use crate::Snapshot;
 use crate::error::ViewError;
 use crate::resource::ResourceView;
@@ -8,32 +6,27 @@ mod traverse;
 
 pub(crate) use traverse::build_adjacency;
 
-/// Deepest neighborhood the UI may request.
 pub const MAX_GRAPH_DEPTH: u8 = 2;
-/// Largest node set one neighborhood may return.
+
 pub const MAX_GRAPH_NODES: usize = 10_000;
-/// Largest edge set one neighborhood may return.
+
 pub const MAX_GRAPH_EDGES: usize = 20_000;
 
-/// The UI-facing projection of one `edge` record.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EdgeView {
-    /// Directed source identity copied from the edge record.
     pub from_id: String,
-    /// Directed target identity; it need not have a resource record.
+
     pub to_id: String,
-    /// Producer's relation label, retained without normalization.
+
     pub relation: String,
 }
 
 impl EdgeView {
-    /// Stable ordering key `(from_id, to_id, relation)`.
     pub fn sort_key(&self) -> (&str, &str, &str) {
         (&self.from_id, &self.to_id, &self.relation)
     }
 }
 
-/// Bounded traversal request.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct GraphLimits {
     depth: u8,
@@ -42,10 +35,6 @@ pub struct GraphLimits {
 }
 
 impl GraphLimits {
-    /// Validate depth (`1..=2`) and caps (`1..=MAX_GRAPH_*`).
-    ///
-    /// # Errors
-    /// Rejects depth outside `1..=2`, or zero/above-maximum node or edge caps.
     pub fn new(depth: u8, max_nodes: usize, max_edges: usize) -> Result<Self, ViewError> {
         if !(1..=MAX_GRAPH_DEPTH).contains(&depth) {
             return Err(ViewError::InvalidGraphDepth);
@@ -62,69 +51,52 @@ impl GraphLimits {
         })
     }
 
-    /// Requested traversal depth.
     pub const fn depth(self) -> u8 {
         self.depth
     }
 
-    /// Node cap including the root.
     pub const fn max_nodes(self) -> usize {
         self.max_nodes
     }
 
-    /// Edge cap.
     pub const fn max_edges(self) -> usize {
         self.max_edges
     }
 }
 
-/// One node of a returned neighborhood.
-///
-/// `resource` is `None` when the id is referenced by an edge but absent from
-/// the snapshot's resource records (a dangling target). Such nodes are marked,
-/// never dropped.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct GraphNode<'a> {
-    /// Wire identity, including an unknown caller-supplied root.
     pub id: &'a str,
-    /// Matching resource view, or `None` for an identity absent from the snapshot.
+
     pub resource: Option<&'a ResourceView>,
 }
 
 impl GraphNode<'_> {
-    /// Whether the referenced resource exists in this snapshot.
     pub const fn is_present(&self) -> bool {
         self.resource.is_some()
     }
 }
 
-/// A bounded, deterministically ordered subgraph.
 #[derive(Clone, Debug)]
 pub struct Subgraph<'a> {
-    /// Requested root even when it has no resource record or incident edges.
     pub root: GraphNode<'a>,
-    /// Included nodes, sorted by id; includes the root and dangling targets.
+
     pub nodes: Vec<GraphNode<'a>>,
-    /// Included edges, sorted by `(from_id, to_id, relation)`.
+
     pub edges: Vec<&'a EdgeView>,
-    /// The node cap prevented including every reachable node.
+
     pub truncated_nodes: bool,
-    /// The edge cap prevented including every eligible edge.
+
     pub truncated_edges: bool,
-    /// Edges from boundary nodes lead beyond the requested depth.
+
     pub truncated_depth: bool,
 }
 
 impl Snapshot {
-    /// Sorted edge projection shared by LOD and graph queries.
     pub fn edges(&self) -> &[EdgeView] {
         &self.edges
     }
 
-    /// Bounded neighborhood around `root_id`.
-    ///
-    /// An unknown root is represented as a single absent node rather than an
-    /// error, so a UI can inspect dangling edge targets.
     pub fn neighborhood<'a>(&'a self, root_id: &'a str, limits: GraphLimits) -> Subgraph<'a> {
         traverse::neighborhood(
             root_id,

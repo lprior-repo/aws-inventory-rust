@@ -222,7 +222,7 @@ fn bad_address_family_is_rejected_and_zone_prefix_normalizes()
 fn null_mx_retains_rdata_without_inventing_a_dns_destination()
 -> Result<(), Box<dyn std::error::Error>> {
     let (ctx, _rx) = context()?;
-    // RFC 7505 section 3: a sole MX record "0 ." declares no mail service.
+
     let record = ResourceRecordSet::builder()
         .name("nomail.example.")
         .r#type(RrType::Mx)

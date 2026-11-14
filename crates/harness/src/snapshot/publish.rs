@@ -1,5 +1,3 @@
-//! Snapshot publication and its operator receipt.
-
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::Path;
@@ -11,7 +9,6 @@ use super::binding::Baseline;
 use crate::HarnessError;
 use crate::provenance::sha256_hex;
 
-/// Assemble the frozen document from the validated baseline.
 pub(super) fn snapshot_document(
     summary_sha: &str,
     role: &str,
@@ -42,7 +39,6 @@ fn provenance(summary_sha: &str, emulator: &Value, baseline: &Baseline) -> Value
     })
 }
 
-/// Write the oracle exactly once; an existing destination is never clobbered.
 pub(super) fn publish(destination: &Path, document: &Value) -> Result<(), HarnessError> {
     let mut encoded = serde_json::to_string_pretty(document)?;
     encoded.push('\n');
@@ -63,7 +59,6 @@ pub(super) fn publish(destination: &Path, document: &Value) -> Result<(), Harnes
     Ok(())
 }
 
-/// Describe the published oracle and its case cardinalities.
 pub(super) fn receipt(
     evidence: &Path,
     destination: &Path,

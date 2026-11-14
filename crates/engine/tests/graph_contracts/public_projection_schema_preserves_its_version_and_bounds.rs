@@ -1,4 +1,3 @@
-//! Behavior: public_projection_schema_preserves_its_version_and_bounds.
 use super::*;
 
 #[test]

@@ -5,7 +5,6 @@ use catalog_tool::plans::{
 use serde_json::{Value, json};
 #[test]
 fn member_range_maximum_overrides_target_range() -> TestResult {
-    // Given two ranges, when choosing a maximum, then the member range wins.
     let mut value = paginated();
     replace(
         &mut value,
@@ -23,7 +22,6 @@ fn member_range_maximum_overrides_target_range() -> TestResult {
 
 #[test]
 fn absent_maximum_is_unbounded_and_missing_page_size_is_distinct() -> TestResult {
-    // Given no maximum, when derived, then it is not fabricated from a minimum or default.
     let mut value = paginated();
     replace(
         &mut value,
@@ -45,7 +43,6 @@ fn absent_maximum_is_unbounded_and_missing_page_size_is_distinct() -> TestResult
 
 #[test]
 fn invalid_range_maxima_are_typed_errors() -> TestResult {
-    // Given fractional, negative, overflowing and nonnumeric maxima, none becomes a page size.
     [
         json!(1.5),
         json!(-1),
@@ -76,7 +73,6 @@ fn invalid_range_maxima_are_typed_errors() -> TestResult {
 
 #[test]
 fn zero_and_u32_maximum_are_accepted_exactly() -> TestResult {
-    // Given both u32 boundaries, when derived, then no conversion is lossy.
     [0_u32, u32::MAX].into_iter().try_for_each(|max| {
         let mut value = paginated();
         replace(
@@ -96,7 +92,6 @@ fn zero_and_u32_maximum_are_accepted_exactly() -> TestResult {
 
 #[test]
 fn member_range_without_maximum_uses_target_maximum() -> TestResult {
-    // Given a member minimum but no maximum, when derived, the target maximum remains usable.
     let mut value = paginated();
     replace(
         &mut value,

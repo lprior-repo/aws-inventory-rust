@@ -34,7 +34,6 @@ fn all_seven_functions_reject_missing_and_excess_arguments_with_exact_faults() -
 
 #[test]
 fn every_constrained_argument_position_rejects_wrong_types_with_exact_faults() -> TestResult {
-    // isSet has no type restriction; its accepted values are tested separately.
     for (name, label, args) in [
         (
             "booleanEquals",

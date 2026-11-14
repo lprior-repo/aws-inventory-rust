@@ -1,5 +1,3 @@
-//! Linux process identity checks that distinguish PID reuse from leaked children.
-
 use std::time::{Duration, Instant};
 
 use super::{ChildOwner, TestResult};

@@ -31,7 +31,6 @@ fn scope_signature(scope: Scope<'_>, credentials: &Credentials) -> TestResult<St
 
 #[test]
 fn malformed_credential_characters_are_rejected() {
-    // Given: malformed fields from an external profile loader.
     let cases = [
         ("", "secret", None),
         ("KEY", "", None),
@@ -41,7 +40,7 @@ fn malformed_credential_characters_are_rejected() {
         ("KEY", "secret", Some("token\r\n")),
         ("KEY", "é", None),
     ];
-    // When/Then: no invalid field enters AWS signing or header construction.
+
     cases.into_iter().for_each(|(key, secret, token)| {
         assert_eq!(
             Credentials::new(key, secret, token).err(),
@@ -52,9 +51,8 @@ fn malformed_credential_characters_are_rejected() {
 
 #[test]
 fn credentials_reject_spaces_in_secrets_and_session_tokens() {
-    // Given: visible ASCII containing spaces in either sensitive credential field.
     let cases = [("secret value", None), ("secret", Some("token value"))];
-    // When/Then: spaces are rejected with the exact credential error.
+
     cases.into_iter().for_each(|(secret, token)| {
         assert_eq!(
             Credentials::new("KEY", secret, token).err(),
@@ -65,11 +63,10 @@ fn credentials_reject_spaces_in_secrets_and_session_tokens() {
 
 #[test]
 fn oversized_credentials_are_rejected() {
-    // Given: each credential field one byte over its limit.
     let key = "A".repeat(129);
     let secret = "s".repeat(129);
     let token = "t".repeat(16_385);
-    // When/Then: every independent bound rejects its input.
+
     assert_eq!(
         Credentials::new(&key, "s", None).err(),
         Some(Error::Credentials)
@@ -86,9 +83,8 @@ fn oversized_credentials_are_rejected() {
 
 #[test]
 fn region_validation_rejects_invalid_lengths_and_charsets() {
-    // Given: empty, uppercase, punctuation, Unicode and oversized regions.
     let oversized = "r".repeat(64);
-    // When/Then: the region grammar rejects each boundary violation.
+
     ["", "US-east-1", "a/b", "é", &oversized]
         .into_iter()
         .for_each(|value| {
@@ -98,9 +94,8 @@ fn region_validation_rejects_invalid_lengths_and_charsets() {
 
 #[test]
 fn signing_name_validation_rejects_invalid_lengths_and_charsets() {
-    // Given: empty, punctuation, spaces, Unicode and oversized signing names.
     let oversized = "s".repeat(64);
-    // When/Then: signing scope separators cannot be injected.
+
     ["", "a/b", "s p", "é", &oversized]
         .into_iter()
         .for_each(|value| {
@@ -110,7 +105,6 @@ fn signing_name_validation_rejects_invalid_lengths_and_charsets() {
 
 #[test]
 fn inclusive_scope_boundaries_are_preserved_in_authorization() -> TestResult {
-    // Given: minimum and maximum lengths, plus the supported lowercase charset.
     let maximum = "r".repeat(63);
     let credentials = Credentials::new("A", "s", None)?;
     ["r", &maximum, "us-east-1"]
@@ -120,9 +114,9 @@ fn inclusive_scope_boundaries_are_preserved_in_authorization() -> TestResult {
                 region: Region::new(value)?,
                 name: SigningName::new(value)?,
             };
-            // When: signing with the validated scope.
+
             let authorization = scope_signature(scope, &credentials)?;
-            // Then: both typed components reach the credential scope intact.
+
             assert!(authorization.contains(&format!("/{value}/{value}/aws4_request,")));
             Ok(())
         })
@@ -130,16 +124,15 @@ fn inclusive_scope_boundaries_are_preserved_in_authorization() -> TestResult {
 
 #[test]
 fn maximum_credentials_are_usable_and_remain_redacted() -> TestResult {
-    // Given: all credential fields at their inclusive maxima.
     let key = "A".repeat(128);
     let credentials = Credentials::new(&key, &"s".repeat(128), Some(&"t".repeat(16_384)))?;
     let scope = Scope {
         region: Region::new("r")?,
         name: SigningName::new("S-3")?,
     };
-    // When: the credentials are used for signing, not merely constructed.
+
     let authorization = scope_signature(scope, &credentials)?;
-    // Then: the full ID and mixed-case signing name survive, while Debug stays redacted.
+
     assert!(authorization.contains(&format!("Credential={key}/19700101/r/S-3/aws4_request,")));
     assert_eq!(format!("{credentials:?}"), "Credentials([REDACTED])");
     Ok(())

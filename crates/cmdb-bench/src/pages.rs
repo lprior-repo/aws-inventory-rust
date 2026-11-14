@@ -1,5 +1,3 @@
-//! Page event emission shared by resource and edge writers.
-
 use std::error::Error;
 use std::io::Write;
 

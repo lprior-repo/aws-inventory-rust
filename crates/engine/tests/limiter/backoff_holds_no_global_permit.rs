@@ -1,4 +1,3 @@
-//! Behavior: backoff_holds_no_global_permit.
 use super::*;
 
 #[tokio::test(start_paused = true)]

@@ -148,7 +148,6 @@ mod tests {
     use super::*;
     #[test]
     fn violated_split_is_a_typed_error() -> Result<(), Error> {
-        // Given an expansion without its evidence split, when validated, then it is rejected.
         let mut counts = Counts::default();
         counts.increment("expand")?;
         assert!(matches!(counts.validate(), Err(Error::CountMismatch)));
@@ -156,7 +155,6 @@ mod tests {
     }
     #[test]
     fn overflowing_counter_is_a_typed_error() -> Result<(), Error> {
-        // Given a full counter, when incremented, then overflow never wraps.
         let mut counts = Counts::default();
         counts.add("operations", u64::MAX)?;
         assert!(matches!(

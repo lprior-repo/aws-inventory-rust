@@ -1,4 +1,3 @@
-//! property paths operations.
 use super::*;
 
 pub(super) fn map_get(
@@ -32,8 +31,6 @@ pub(super) fn normalized_key(value: &str) -> String {
         .collect()
 }
 
-/// Expand a reviewed wildcard pointer without recursion. Both arrays and
-/// string-keyed property maps are supported; array positions never shift.
 pub(super) fn expand_pointer(root: &Value, pattern: &str) -> Result<Vec<String>, AwsScanError> {
     validate_pointer(pattern)?;
     let mut paths = vec![String::new()];

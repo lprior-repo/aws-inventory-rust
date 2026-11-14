@@ -1,4 +1,3 @@
-//! grouping operations.
 use super::*;
 
 pub(in super::super) fn groups(types: &[ResourceType]) -> Result<Vec<RootGroup<'_>>, AwsScanError> {

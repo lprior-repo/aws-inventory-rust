@@ -1,4 +1,3 @@
-//! Original record scenarios, migrated to enum constructors and strict boundaries.
 use inventory_core::record::*;
 use std::collections::BTreeMap;
 
@@ -249,7 +248,6 @@ fn read_refuses_large_nanos() -> TestResult {
 }
 #[test]
 fn read_refuses_invalid_utf8() -> TestResult {
-    // Given invalid text, when structural validation skips it, then retain the UTF-8 cause.
     let error = Record::from_bytes(vec![0xA1, 1, 0x61, 0x80])
         .err()
         .ok_or("accepted invalid text")?;
@@ -265,9 +263,8 @@ fn read_refuses_invalid_utf8() -> TestResult {
 }
 #[test]
 fn lookup_stops_before_unsupported_values_after_the_requested_sorted_position() -> TestResult {
-    // Given valid sorted keys with unsupported values on the first greater key and its sibling.
     let record = Record::from_bytes(vec![0xA2, 2, 0xFA, 0, 0, 0, 0, 3, 0xFA, 0, 0, 0, 0])?;
-    // When seeking a smaller key, then no unselected value is interpreted.
+
     assert!(record.root().get_field(FieldId::new(1)?)?.is_none());
     let record = Record::from_bytes(vec![
         0xA2, 0x61, b'y', 0xFA, 0, 0, 0, 0, 0x61, b'z', 0xFA, 0, 0, 0, 0,
@@ -277,7 +274,6 @@ fn lookup_stops_before_unsupported_values_after_the_requested_sorted_position() 
 }
 #[test]
 fn null_advances_before_following_list_items_and_map_keys() -> TestResult {
-    // Given adjacent nulls and following scalars in both containers.
     let value = Value::Map(BTreeMap::from([
         (Key::Name("a".into()), Value::Null),
         (
@@ -286,7 +282,7 @@ fn null_advances_before_following_list_items_and_map_keys() -> TestResult {
         ),
         (Key::Name("c".into()), Value::Int(8)),
     ]));
-    // When iterators rebuild the tree, then no null repeats or hides the next item.
+
     assert_eq!(owned(&Record::encode(&value)?)?, value);
     Ok(())
 }

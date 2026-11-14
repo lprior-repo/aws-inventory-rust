@@ -1,4 +1,3 @@
-//! Graph checkpoint validation and persistence.
 use super::*;
 
 pub(super) fn validate_graph_key(

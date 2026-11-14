@@ -2,7 +2,6 @@ use super::{OverlayError, Rule, error::Context};
 use serde::{Deserialize, de::DeserializeOwned};
 use toml::Value;
 
-// Declaration-only macro: one field list drives Serde and contextual unknown-key checks.
 macro_rules! shape {
     ($name:ident { $($field:ident),* $(,)? }) => {
         #[derive(Deserialize)]

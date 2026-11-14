@@ -1,4 +1,3 @@
-//! Universal selection, provider-boundary classification and scan status.
 use super::*;
 use aws_sdk_cloudcontrol::operation::list_resources::ListResourcesError;
 use aws_sdk_cloudcontrol::types::error::TypeNotFoundException;

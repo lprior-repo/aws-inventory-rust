@@ -1,4 +1,3 @@
-//! organization model model.
 use super::*;
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -6,7 +5,7 @@ pub struct OrganizationAccount {
     pub id: String,
     pub arn: Option<String>,
     pub name: Option<String>,
-    /// Uses the current State field, never the retired Status field.
+
     pub state: Option<String>,
     pub eligible_for_scan: bool,
     pub joined_method: Option<String>,

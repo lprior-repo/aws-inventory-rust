@@ -1,4 +1,3 @@
-//! Behavior: retry_jitter_is_reproducible_and_bounded.
 use super::*;
 
 #[tokio::test(start_paused = true)]

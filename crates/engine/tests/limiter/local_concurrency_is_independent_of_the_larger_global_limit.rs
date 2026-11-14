@@ -1,4 +1,3 @@
-//! Behavior: local_concurrency_is_independent_of_the_larger_global_limit.
 use super::*;
 
 #[tokio::test(start_paused = true)]

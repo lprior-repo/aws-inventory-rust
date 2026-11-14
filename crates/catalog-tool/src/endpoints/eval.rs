@@ -10,11 +10,6 @@ pub(super) type Bindings = BTreeMap<String, Value>;
 mod bounds_tests;
 
 impl RuleSet {
-    /// Evaluate with typed parameter validation, defaults and lexical assignments.
-    ///
-    /// # Errors
-    /// Returns a filename-bearing failure for missing required parameters, bad types,
-    /// exhausted rules, unsupported partitions, malformed templates or exceeded bounds.
     pub fn evaluate(&self, parameters: &Bindings) -> Result<Outcome, Error> {
         let mut steps = MAX_STEPS;
         let result = self

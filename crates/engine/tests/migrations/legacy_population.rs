@@ -1,4 +1,3 @@
-//! Legacy source fixture population.
 use super::*;
 
 pub(super) fn source_page(source: Source, ids: &[&str], time: i64) -> CollectionPage {
@@ -34,8 +33,6 @@ pub(super) fn source_page(source: Source, ids: &[&str], time: i64) -> Collection
     input
 }
 
-/// Seed historical rows directly: opening the current Store would migrate them
-/// before the test could establish the old priority and replay contract.
 pub(super) async fn insert_legacy_page(
     connection: &mut SqliteConnection,
     input: &CollectionPage,
@@ -74,8 +71,6 @@ pub(super) async fn insert_legacy_page(
         .execute(&mut *connection)
         .await?;
     for resource in &input.resources {
-        // Noncanonical whitespace makes an accidental deserialize/reserialize
-        // detectable, while the page digest still uses the v1/v2 wire format.
         sqlx::query("INSERT INTO resource_observations VALUES('populated',?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)")
             .bind(&key).bind(i64::from(input.page_number)).bind(&resource.id).bind(&resource.account_id).bind(&resource.region)
             .bind(&resource.kind).bind(&resource.name).bind(resource.source.as_str())

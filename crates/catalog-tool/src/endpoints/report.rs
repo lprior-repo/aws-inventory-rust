@@ -40,11 +40,6 @@ pub(super) struct Service {
     pub(super) exceptions: Vec<EndpointException>,
 }
 
-/// Read models one at a time and return a complete, path-independent endpoint report.
-///
-/// # Errors
-/// Returns named schema/input errors or bound violations; case mismatches are counted.
-/// Discovery is capped at 1,024 models; individual reads use Smithy's 64 MiB limit.
 pub fn build_report(source: &Path) -> Result<String, Error> {
     let models = source.join("models");
     let files = crate::smithy::find_model_files(&models)?;

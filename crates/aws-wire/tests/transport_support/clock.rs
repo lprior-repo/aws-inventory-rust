@@ -4,7 +4,7 @@ use std::{pin::Pin, sync::mpsc, time::Duration};
 use tokio::time::Instant;
 
 type SendResult = Result<Response, TransportError>;
-// Tokio rounds the deadline wheel and the parked driver's wakeup to milliseconds.
+
 const SCHEDULER_GRANULE: Duration = Duration::from_millis(2);
 
 pub struct Clock {
@@ -15,8 +15,7 @@ pub struct Clock {
 impl Clock {
     pub fn pause() -> Self {
         let (hold, held) = mpsc::sync_channel::<()>(1);
-        // A live blocking task inhibits automatic clock advance during loopback I/O.
-        // Dropping the sender also releases the task on assertion failure/unwinding.
+
         let _task = tokio::task::spawn_blocking(move || {
             let _received = held.recv();
         });

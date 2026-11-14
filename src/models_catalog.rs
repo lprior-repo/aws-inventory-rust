@@ -1,4 +1,3 @@
-//! Text-only model catalog route; no JSON or model parser is involved.
 use crate::cli::{Cli, Command};
 use anyhow::Result;
 use clap::Parser;

@@ -1,4 +1,3 @@
-//! Behavior: cancelling_a_server_cooldown_wakes_all_bucket_waiters.
 use super::*;
 
 #[tokio::test(start_paused = true)]

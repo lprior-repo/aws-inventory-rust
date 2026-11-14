@@ -1,6 +1,3 @@
-//! Oracle freeze regressions: a synthetic evidence tree must be rejected on any
-//! provenance break, and must freeze exactly the asserted observations.
-
 mod fixture;
 mod provenance;
 
@@ -10,7 +7,6 @@ use sqlx::{Connection, SqliteConnection};
 
 use fixture::{ROLE, TestResult, fixture, free, save_summary, write_json};
 
-/// Replace one document slot without an indexing panic.
 fn put(target: &mut Value, pointer: &str, value: Value) -> TestResult {
     let slot = target.pointer_mut(pointer).ok_or("missing document slot")?;
     *slot = value;

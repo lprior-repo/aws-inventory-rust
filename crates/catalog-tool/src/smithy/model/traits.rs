@@ -1,4 +1,3 @@
-//! Retain ARN payloads and wire-relevant trait payloads; presence-only traits store null.
 use serde::{
     Deserializer,
     de::{IgnoredAny, MapAccess, Visitor},
@@ -7,6 +6,9 @@ use serde_json::Value;
 use std::{collections::BTreeMap, fmt};
 
 const RETAIN_PAYLOADS: &[&str] = &[
+    "smithy.api#default",
+    "smithy.api#clientOptional",
+    "smithy.api#mixin",
     "aws.api#arn",
     "aws.api#service",
     "aws.api#endpointPrefix",
@@ -28,7 +30,7 @@ const RETAIN_PAYLOADS: &[&str] = &[
     "smithy.api#mediaType",
     "smithy.api#jsonName",
     "smithy.api#xmlName",
-    "aws.api#ec2QueryName",
+    "aws.protocols#ec2QueryName",
     "smithy.api#httpLabel",
     "smithy.api#httpQuery",
     "smithy.api#httpQueryParams",
@@ -49,6 +51,7 @@ const RETAIN_PAYLOADS: &[&str] = &[
     "aws.protocols#awsQuery",
     "aws.protocols#ec2Query",
     "aws.protocols#restXml",
+    "smithy.protocols#rpcv2Cbor",
     "smithy.api#requestCompression",
     "smithy.api#required",
 ];
@@ -119,7 +122,7 @@ fn validate_aws_trait(name: &str, value: &Value) -> Option<bool> {
     match name {
         "aws.api#arn" => Some(object_string(value, "template")),
         "aws.api#service" => Some(service_payload(value)),
-        "aws.api#endpointPrefix" | "aws.api#arnNamespace" | "aws.api#ec2QueryName" => {
+        "aws.api#endpointPrefix" | "aws.api#arnNamespace" | "aws.protocols#ec2QueryName" => {
             Some(value.is_string())
         }
         "aws.auth#sigv4" => Some(object_string(value, "name")),
@@ -162,7 +165,7 @@ fn validate_wire_trait(name: &str, value: &Value) -> Option<bool> {
 
 fn validate_scalar_trait(name: &str, value: &Value) -> Option<bool> {
     match name {
-        "smithy.api#httpError" => Some(value.as_i64().is_some_and(|n| (400..=599).contains(&n))),
+        "smithy.api#httpError" => Some(value.as_i64().is_some_and(|n| (100..=599).contains(&n))),
         "smithy.api#error" => Some(
             value
                 .as_str()
@@ -185,16 +188,16 @@ fn validate_marker_trait(name: &str, value: &Value) -> Option<bool> {
         | "smithy.api#sparse"
         | "smithy.api#streaming"
         | "smithy.api#sensitive"
-        | "smithy.api#idempotencyToken"
+        | "smithy.api#clientOptional"
         | "smithy.api#httpLabel"
         | "smithy.api#httpPayload"
         | "smithy.api#httpQueryParams"
         | "smithy.api#httpResponseCode"
+        | "smithy.api#idempotencyToken"
         | "smithy.api#hostLabel"
         | "smithy.api#xmlFlattened"
         | "smithy.api#xmlAttribute"
-        | "smithy.api#httpChecksumRequired"
-        | "aws.protocols#awsQueryCompatible" => Some(
+        | "smithy.api#httpChecksumRequired" => Some(
             empty_object(value)
                 || (name == "smithy.api#httpChecksumRequired" && value.is_boolean()),
         ),
@@ -204,6 +207,7 @@ fn validate_marker_trait(name: &str, value: &Value) -> Option<bool> {
 
 fn validate_protocol_trait(name: &str, value: &Value) -> Option<bool> {
     match name {
+        "aws.protocols#awsQueryCompatible" => Some(value.is_object()),
         "aws.protocols#restJson1"
         | "aws.protocols#awsJson1_0"
         | "aws.protocols#awsJson1_1"
@@ -291,3 +295,6 @@ fn service_payload(value: &Value) -> bool {
         .all(|key| fields.get(*key).is_none_or(Value::is_string))
     })
 }
+#[cfg(test)]
+#[path = "traits/tests.rs"]
+mod tests;

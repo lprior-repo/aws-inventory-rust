@@ -1,5 +1,3 @@
-//! ELBv2 topology and target-registration evidence. Every child has its own scope.
-
 use std::collections::{BTreeMap, BTreeSet};
 use std::future::Future;
 

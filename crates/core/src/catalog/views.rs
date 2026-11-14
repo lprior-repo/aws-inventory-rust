@@ -8,7 +8,6 @@ pub use shape::{ErrorKind, Member, ModeledError, Shape, Target};
 pub(super) use wire::field_name;
 pub use wire::{HttpBinding, TimestampFormat, WireTraits, XmlNamespace};
 
-/// One structurally validated service record, borrowing its containing catalog.
 #[derive(Clone, Copy, Debug)]
 pub struct Service<'a> {
     map: MapRef<'a>,
@@ -54,15 +53,11 @@ impl<'a> Service<'a> {
         self.shapes()?.try_for_each(|item| item?.validate())?;
         Ok(())
     }
-    /// Unique model directory name, e.g. `ec2` or `storage-gateway`.
-    /// # Errors
-    /// Reports a missing or mistyped name.
+
     pub fn name(self) -> Result<&'a str, CatalogError> {
         text(self.map, CatalogKey::Name)
     }
-    /// Full Smithy service shape ID, retained separately from the directory identity.
-    /// # Errors
-    /// Reports a missing or mistyped shape identity.
+
     pub fn shape_id(self) -> Result<&'a str, CatalogError> {
         text(self.map, CatalogKey::ServiceShape)
     }
@@ -98,25 +93,19 @@ impl<'a> Service<'a> {
     pub fn field_name(self, id: crate::record::FieldId) -> Result<&'a str, CatalogError> {
         field_name(self.field_names, self.field_offsets, id)
     }
-    /// Protocol trait IDs in bytewise order.
-    /// # Errors
-    /// Reports malformed protocol lists or entries.
+
     pub fn protocols(
         self,
     ) -> Result<impl Iterator<Item = Result<&'a str, CatalogError>>, CatalogError> {
         texts(list(self.map, CatalogKey::Protocols)?)
     }
-    /// Resource shape names in full-shape-ID order.
-    /// # Errors
-    /// Reports malformed resource lists or entries.
+
     pub fn resources(
         self,
     ) -> Result<impl Iterator<Item = Result<&'a str, CatalogError>>, CatalogError> {
         texts(list(self.map, CatalogKey::Resources)?)
     }
-    /// Operations in full-shape-ID byte order.
-    /// # Errors
-    /// Reports malformed operation maps.
+
     pub fn operations(
         self,
     ) -> Result<impl Iterator<Item = Result<Operation<'a>, CatalogError>>, CatalogError> {
@@ -124,13 +113,11 @@ impl<'a> Service<'a> {
             .iter()?
             .map(move |value| Ok(Operation::new(map_value(value?)?, self.shape_count))))
     }
-    /// Shape count bounded by this service record's declared list length.
+
     pub fn shape_count(self) -> usize {
         self.shape_count
     }
-    /// Shapes in full-ID byte order.
-    /// # Errors
-    /// Reports malformed shape maps.
+
     pub fn shapes(
         self,
     ) -> Result<impl Iterator<Item = Result<Shape<'a>, CatalogError>>, CatalogError> {
@@ -145,9 +132,7 @@ impl<'a> Service<'a> {
                 )
             }))
     }
-    /// Look up a zero-based local shape index; an absent index is not corruption.
-    /// # Errors
-    /// Reports malformed selected shape maps.
+
     pub fn shape(self, index: usize) -> Result<Option<Shape<'a>>, CatalogError> {
         list(self.map, CatalogKey::Shapes)?
             .get(index)?

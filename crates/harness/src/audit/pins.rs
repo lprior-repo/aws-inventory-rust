@@ -1,5 +1,3 @@
-//! Pinned SDK operation modules and credential-provider source evidence.
-
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -12,7 +10,6 @@ use crate::provenance::file_sha256;
 
 use super::files::{MAX_INPUT_BYTES, array_field, text_field};
 
-/// Slack allowed on Cargo registry source roots.
 const MAX_REGISTRY_ROOTS: usize = 32;
 
 fn registry_home() -> Result<PathBuf, HarnessError> {
@@ -36,7 +33,6 @@ fn registry_roots(home: &Path) -> Result<Vec<PathBuf>, HarnessError> {
     Ok(roots)
 }
 
-/// Locate the single cached registry copy of a pinned source file.
 pub fn registry_file(
     crate_name: &str,
     version: &str,
@@ -206,7 +202,6 @@ fn provider_evidence(
     Ok(Value::Object(evidence))
 }
 
-/// Verify pinned SDK operation modules and the credential-provider source.
 pub fn dependency_evidence(
     root: &Path,
     matrix: &Value,

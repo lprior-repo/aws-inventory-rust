@@ -1,4 +1,3 @@
-//! evidence operations.
 use super::*;
 
 pub(super) fn network_reference_evidence(target: &str) -> Value {

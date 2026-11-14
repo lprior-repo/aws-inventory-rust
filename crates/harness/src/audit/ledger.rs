@@ -1,5 +1,3 @@
-//! Audit a Rust request ledger against the summary it claims to support.
-
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::io::{BufRead, BufReader};
@@ -12,19 +10,16 @@ use crate::HarnessError;
 
 use super::files::python_str;
 
-/// Maximum bytes of one request-ledger record.
 const MAX_LEDGER_RECORD: usize = 65_536;
-/// Maximum request-ledger records.
+
 const MAX_REQUESTS: usize = 100_000;
-/// Maximum total request-ledger bytes.
+
 const MAX_SOURCE_BYTES: u64 = 32 * 1024 * 1024;
 
-/// `(service, operation)` identity of one ledger row.
 type Identity = (String, String);
-/// HTTP status counts for one operation.
+
 type Histogram = BTreeMap<String, i64>;
 
-/// Accumulated ledger bounds, digest and per-operation tallies.
 struct Ledger {
     counts: BTreeMap<Identity, Histogram>,
     phases: BTreeMap<Identity, BTreeSet<String>>,
@@ -119,7 +114,6 @@ fn expected_operations(rows: &[Value]) -> (Vec<Identity>, BTreeMap<Identity, &Va
     (order, expected)
 }
 
-/// One counted ledger row, or `None` for a row outside the Rust phases.
 fn recorded_row(
     row: &Value,
     expected: &BTreeMap<Identity, &Value>,
@@ -160,7 +154,6 @@ type Tally = (
     String,
 );
 
-/// Read the whole ledger, returning its tallies, bounds and digest.
 fn tally_ledger(path: &Path, expected: &BTreeMap<Identity, &Value>) -> Result<Tally, HarnessError> {
     let file = fs::File::open(path)
         .map_err(|error| HarnessError::invalid(format!("{}: {error}", path.display())))?;
@@ -221,7 +214,6 @@ fn verify_summaries(
     Ok(())
 }
 
-/// Compare the claimed operation outcomes with the Rust request ledger.
 pub fn request_evidence(path: &Path, rows: &[Value]) -> Result<Value, HarnessError> {
     let (order, expected) = expected_operations(rows);
     let (counts, phases, records, size, digest) = tally_ledger(path, &expected)?;

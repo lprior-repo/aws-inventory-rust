@@ -8,10 +8,6 @@ use super::{Error, ReportMode, build_report};
 
 const REPORT_PATH: &str = "catalog/aws-endpoints.report";
 
-/// Print a complete report, then optionally check exact bytes or overwrite the report.
-///
-/// # Errors
-/// Returns input errors before printing/writing, or named stdout/report I/O failures.
 pub fn run(root: &Path, source: &Path, mode: ReportMode) -> Result<(), Error> {
     let text = build_report(source)?;
     io::stdout()

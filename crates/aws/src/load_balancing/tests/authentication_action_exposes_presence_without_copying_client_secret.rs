@@ -1,4 +1,3 @@
-//! authentication action exposes presence without copying client secret behavior.
 use super::*;
 
 #[test]

@@ -1,4 +1,3 @@
-//! Behavior: bucket_policies_validate_limits_and_exact_key_bounds.
 use super::*;
 
 #[test]

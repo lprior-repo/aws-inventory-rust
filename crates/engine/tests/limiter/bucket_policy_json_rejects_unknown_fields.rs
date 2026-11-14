@@ -1,4 +1,3 @@
-//! Behavior: bucket_policy_json_rejects_unknown_fields.
 use super::*;
 
 #[test]

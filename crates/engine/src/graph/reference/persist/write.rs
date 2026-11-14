@@ -1,4 +1,3 @@
-//! Scope and edge writes for synthetic reference persistence.
 use super::COLLECTOR;
 use crate::store::{MAX_RECORD_BYTES, StoreError};
 use inventory_core::{CollectionScope, Edge};
@@ -108,7 +107,6 @@ pub(super) async fn insert_edge(
     Ok(())
 }
 
-/// Serialize one edge, refusing payloads above the record ceiling.
 fn edge_json(edge: &Edge) -> Result<String, StoreError> {
     let json = serde_json::to_string(edge)?;
     if json.len() > MAX_RECORD_BYTES {

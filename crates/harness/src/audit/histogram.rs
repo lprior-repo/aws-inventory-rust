@@ -1,5 +1,3 @@
-//! Validate bounded operation status histograms.
-
 use crate::HarnessError;
 
 use super::Json;
@@ -14,7 +12,6 @@ fn is_status_code(code: &str) -> bool {
                 .unwrap_or(false))
 }
 
-/// Validate and copy one operation status histogram.
 pub fn checked_histogram(value: &Json) -> Result<Json, HarnessError> {
     let entries = value
         .as_object()

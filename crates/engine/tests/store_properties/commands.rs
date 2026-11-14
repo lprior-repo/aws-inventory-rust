@@ -1,4 +1,3 @@
-//! Generated transactional page and failure command workflows.
 use super::*;
 
 pub(super) async fn record_failure(store: &Store, ledger: &mut Ledger) -> TestCaseResult {
@@ -84,8 +83,7 @@ pub(super) async fn final_commands(
         apply(store, ledger, page.clone()).await?;
     }
     finish(store, ledger, ScanStatus::Complete).await?;
-    // Every accepted payload remains exactly replayable after finalization.
-    // Changing that payload must remain a conflict and leave all tables intact.
+
     for page in ledger.committed.clone().into_iter().take(5) {
         store
             .apply_page(SCAN, page.clone())

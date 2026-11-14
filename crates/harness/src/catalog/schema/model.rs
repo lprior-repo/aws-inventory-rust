@@ -1,11 +1,8 @@
-//! Draft 7 emptiness check for list handler request models.
-
 use serde_json::Value;
 
 use crate::HarnessError;
 use crate::catalog::schema::target;
 
-/// Draft 7 `is_valid({})` for a list handler request model.
 pub fn empty_model_valid(schema: &Value) -> Result<bool, HarnessError> {
     empty_valid(schema, schema)
 }

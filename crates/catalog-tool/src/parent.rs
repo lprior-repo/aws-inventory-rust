@@ -1,5 +1,3 @@
-//! Parent-workflow candidate derivation from the pinned CloudFormation schemas.
-
 mod inference;
 mod model;
 mod schema;
@@ -181,7 +179,6 @@ fn summarize(candidates: &[Candidate], workflows: usize) -> Summary {
     }
 }
 
-/// Count review candidates at an exact confidence level.
 fn confidence_count(remaining: &[&Candidate], confidence: &str) -> usize {
     remaining
         .iter()
@@ -189,7 +186,6 @@ fn confidence_count(remaining: &[&Candidate], confidence: &str) -> usize {
         .count()
 }
 
-/// Count reviewed rows whose inferred parent disagrees with the review.
 fn mismatch_count(candidates: &[Candidate]) -> usize {
     candidates
         .iter()

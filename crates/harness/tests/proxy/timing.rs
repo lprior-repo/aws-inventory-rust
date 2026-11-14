@@ -24,14 +24,14 @@ fn limited(server: &Server) -> Config {
 #[tokio::test(start_paused = true)]
 async fn rate_bucket_allows_n_then_throttles_and_refills_with_virtual_time() -> TestResult {
     let _clock = super::clock::FrozenClock::new();
-    // Given a two-token bucket, when three requests arrive without elapsed time.
+
     let server = Server::start(OK).await?;
     let proxy = Proxy::start(limited(&server)).await?;
     assert_eq!(exchange(proxy.address(), UNSIGNED).await?, OK);
     assert_eq!(exchange(proxy.address(), UNSIGNED).await?, OK);
     throttled(&proxy, UNSIGNED).await?;
     assert_eq!(proxy.snapshot()?.counters.forwarded, 2);
-    // Then half a second refills exactly one token.
+
     tokio::time::advance(Duration::from_millis(500)).await;
     assert_eq!(exchange(proxy.address(), UNSIGNED).await?, OK);
     throttled(&proxy, UNSIGNED).await?;
@@ -46,7 +46,7 @@ async fn rate_bucket_allows_n_then_throttles_and_refills_with_virtual_time() -> 
 #[tokio::test(start_paused = true)]
 async fn account_region_and_service_each_isolate_rate_buckets() -> TestResult {
     let _clock = super::clock::FrozenClock::new();
-    // Given four scope tuples differing in one coordinate, each has two tokens.
+
     let server = Server::start(OK).await?;
     let proxy = Proxy::start(limited(&server)).await?;
     let scopes = [
@@ -61,7 +61,7 @@ async fn account_region_and_service_each_isolate_rate_buckets() -> TestResult {
         assert_eq!(exchange(proxy.address(), &request).await?, OK);
         throttled(&proxy, &request).await?;
     }
-    // Then no cross-coordinate bucket consumed another scope's capacity.
+
     assert_eq!(proxy.snapshot()?.scopes, 4);
     assert_eq!(proxy.snapshot()?.counters.forwarded, 8);
     assert_eq!(proxy.snapshot()?.counters.rate_limited, 4);

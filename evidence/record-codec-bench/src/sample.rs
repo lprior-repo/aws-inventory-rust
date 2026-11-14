@@ -1,4 +1,4 @@
-//! Sample resources shaped like real AWS responses.
+ 
 
 use crate::S;
 
@@ -87,7 +87,7 @@ fn interface(i: usize) -> S {
     ])
 }
 
-/// One `DescribeInstances` instance: 44 top-level fields.
+ 
 pub fn instance() -> S {
     S::Struct(vec![
         ("AmiLaunchIndex", S::Int(0)),
@@ -205,7 +205,7 @@ pub fn instance() -> S {
     ])
 }
 
-/// A queue-like resource: ten scalar fields.
+ 
 pub fn small() -> S {
     S::Struct(vec![
         (

@@ -1,9 +1,6 @@
-//! Order-preserving JSON parser used for the reviewed manifest and additions.
-
 use super::Json;
 use crate::HarnessError;
 
-/// Parse one UTF-8 JSON document, rejecting trailing content.
 pub(super) fn parse(text: &str) -> Result<Json, HarnessError> {
     let mut parser = Parser {
         bytes: text.as_bytes(),

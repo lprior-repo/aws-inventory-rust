@@ -1,4 +1,3 @@
-//! read visible environment commands parameter values and firehose tokens are redacted behavior.
 use super::*;
 
 #[test]

@@ -1,4 +1,3 @@
-//! Behavior: validates_every_configuration_bound.
 use super::*;
 
 #[test]

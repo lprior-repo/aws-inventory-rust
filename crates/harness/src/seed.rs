@@ -1,13 +1,3 @@
-//! Minimal fixture seeding through the real SDK transport.
-//!
-//! These run inside a child process whose environment already points at the
-//! owned emulator (`AWS_ENDPOINT_URL`, generated credentials, TLS authority), so
-//! the SDK performs normal request signing and response decoding. Nothing here
-//! is a shortcut around the collector's own path.
-//!
-//! Topic names remain report labels. Only a successful provider progress event
-//! supplies the resource identifier checked against `ListResources`.
-
 use serde_json::{Value, json};
 
 use crate::HarnessError;
@@ -86,11 +76,6 @@ fn topic_report(
     Ok(json!({"prefix": prefix, "topics": names, "listed": observed}))
 }
 
-/// Create SNS topics through Cloud Control and confirm the emulator lists them.
-///
-/// Used by the live pagination gate: several resources of one type force the
-/// collector to follow continuation tokens instead of trusting one page.
-/// Requested names are retained in `topics`; `listed` contains provider IDs.
 pub async fn cloud_control_topics(prefix: &str, count: usize) -> Result<Value, HarnessError> {
     require_seed(prefix, count)?;
     let shared = aws_config::defaults(aws_config::BehaviorVersion::latest())
@@ -180,7 +165,6 @@ fn require_bucket(name: &str, buckets: &[&str]) -> Result<(), HarnessError> {
     Ok(())
 }
 
-/// Create one S3 bucket and confirm the emulator lists it back.
 pub async fn s3_bucket(name: &str) -> Result<Value, HarnessError> {
     let client = s3_client().await;
     client

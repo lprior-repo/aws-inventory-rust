@@ -157,7 +157,7 @@ proptest! {
     fn generated_small_models_preserve_service_sums_and_every_split(
         services in prop::collection::vec(prop::collection::vec((any::<bool>(), any::<bool>(), any::<bool>(), any::<bool>()), 0..6), 0..5)
     ) {
-        // Given seeded small models, when deriving the report, then every split and service sum agrees.
+
         verify(&services).map_err(|e| TestCaseError::fail(e.to_string()))?;
     }
 }

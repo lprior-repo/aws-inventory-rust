@@ -1,5 +1,3 @@
-//! Empty oracle skeleton for a workload configuration.
-
 use std::collections::BTreeMap;
 use std::error::Error;
 

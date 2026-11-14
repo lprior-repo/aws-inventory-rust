@@ -1,4 +1,3 @@
-//! Recognize only this exporter's idempotent query grammar for automatic replay.
 use super::super::{
     EDGE_QUERY, GraphBatch, INDEX_QUERY, MARKER_QUERY, MAX_QUERY_BYTES, RESOURCE_QUERY,
 };
@@ -125,9 +124,6 @@ fn paired_key(row: &Map<String, Value>, key: &str, id: &str, scan: &str) -> bool
     }
 }
 
-// The exporter uses JSON string literals and integer values, with unquoted
-// ASCII field names. Quote only those names, then let serde validate the data.
-// Arbitrary Cypher statements cannot pass this data-only grammar.
 fn json_map_keys(raw: &str) -> Option<String> {
     let mut output = String::with_capacity(raw.len());
     let mut chars = raw.chars().peekable();

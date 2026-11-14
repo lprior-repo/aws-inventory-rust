@@ -1,5 +1,3 @@
-//! Parsing, identity/fingerprint, deduplication and malformed-input coverage.
-
 mod support;
 
 use cmdb_view::{Provenance, ScanStatus, Snapshot, ViewError};

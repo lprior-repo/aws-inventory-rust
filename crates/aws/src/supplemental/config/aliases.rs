@@ -1,4 +1,3 @@
-//! aliases operations.
 use super::*;
 
 pub(in super::super) fn config_alias_value<'a>(

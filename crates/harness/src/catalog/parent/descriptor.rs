@@ -1,5 +1,3 @@
-//! One reviewed parent-dependent descriptor row.
-
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde_json::Value;
@@ -19,7 +17,6 @@ use fields::{
     arn_paths, columns, name_pointers, native_kind, redacted_paths, seeds, sensitive_set,
 };
 
-/// Build one parent-only descriptor with reviewed redaction.
 pub(super) fn make_descriptor(
     family: &str,
     resource: &str,

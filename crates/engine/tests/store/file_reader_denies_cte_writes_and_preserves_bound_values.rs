@@ -1,4 +1,3 @@
-//! Behavior: file_reader_denies_cte_writes_and_preserves_bound_values.
 use super::*;
 
 #[tokio::test]

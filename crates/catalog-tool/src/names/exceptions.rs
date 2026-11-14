@@ -1,24 +1,17 @@
 use super::{MAX_EXCEPTIONS_BYTES, MAX_EXCEPTIONS_ROWS, NameError};
 
-/// Spellings to replace before plain splitting; stored in original TSV line order.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Exceptions {
     pub(super) entries: Vec<(String, String)>,
 }
 
 impl Exceptions {
-    /// No exception spellings.
     pub fn none() -> Self {
         Self {
             entries: Vec::new(),
         }
     }
 
-    /// Parse LF-terminated `spelling<TAB>replacement` rows; empty text means no exceptions.
-    ///
-    /// # Errors
-    /// Rejects files above `MAX_EXCEPTIONS_BYTES` or `MAX_EXCEPTIONS_ROWS` before copying rows.
-    /// Rejects malformed rows or repeated spellings with their one-based line number.
     pub fn parse(text: &str) -> Result<Self, NameError> {
         validate_size(text)?;
         text.split_inclusive('\n')

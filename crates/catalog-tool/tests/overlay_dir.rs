@@ -4,7 +4,6 @@ use overlay_support::{EXAMPLE, HEADER, TestResult, write};
 
 #[test]
 fn directory_loads_sorted_stems_and_ignores_non_toml_without_touching_them() -> TestResult {
-    // Given unsorted files and an invalid deny-list sentinel, when loaded, then only TOML is parsed.
     let root = tempfile::tempdir()?;
     write(root.path(), "catalog/overlay/z-service.toml", HEADER)?;
     write(root.path(), "catalog/overlay/a-service.toml", EXAMPLE)?;
@@ -35,7 +34,6 @@ fn directory_loads_sorted_stems_and_ignores_non_toml_without_touching_them() -> 
 }
 #[test]
 fn empty_directory_returns_empty_list_and_missing_directory_returns_io() -> TestResult {
-    // Given empty and missing directories, when loaded, then absence is not mistaken for review.
     let root = tempfile::tempdir()?;
     match load_dir(root.path()) {
         Err(OverlayError::Io { path, source }) => {
@@ -50,7 +48,6 @@ fn empty_directory_returns_empty_list_and_missing_directory_returns_io() -> Test
 }
 #[test]
 fn oversized_file_is_rejected_before_invalid_toml_is_parsed() -> TestResult {
-    // Given an oversized invalid file, when loaded, then the byte rule wins over syntax.
     let root = tempfile::tempdir()?;
     write(root.path(), "catalog/overlay/ec2.toml", "@")?;
     let path = root.path().join("catalog/overlay/ec2.toml");
@@ -70,7 +67,6 @@ fn oversized_file_is_rejected_before_invalid_toml_is_parsed() -> TestResult {
 }
 #[test]
 fn directory_file_limit_accepts_exact_bound_and_rejects_one_past() -> TestResult {
-    // Given the public file-count bound, when loaded, then one extra file fails before parsing.
     let root = tempfile::tempdir()?;
     (0..MAX_FILES)
         .try_for_each(|i| write(root.path(), &format!("catalog/overlay/a{i}.toml"), HEADER))?;
@@ -121,7 +117,6 @@ fn limit(
 }
 #[test]
 fn directory_reports_invalid_stems_and_non_utf8_file_contents() -> TestResult {
-    // Given invalid names and contents, when loaded, then neither is silently skipped.
     let root = tempfile::tempdir()?;
     write(root.path(), "catalog/overlay/Bad.toml", HEADER)?;
     match load_dir(root.path()) {
@@ -157,7 +152,6 @@ fn directory_reports_invalid_stems_and_non_utf8_file_contents() -> TestResult {
 
 #[test]
 fn directory_accepts_a_file_at_the_exact_byte_bound() -> TestResult {
-    // Given an exactly bounded valid overlay, when loaded, then it remains reviewable.
     let root = tempfile::tempdir()?;
     let padding = MAX_FILE_BYTES
         .checked_sub(HEADER.len())

@@ -3,15 +3,14 @@ include!("smithy_helpers.rs");
 #[test]
 fn write_regenerates_and_check_prints_the_complete_report() -> Result<(), Box<dyn std::error::Error>>
 {
-    // Given a model and no committed report.
     let dir = fixture()?;
-    // When writing, then the report is created and canonical text is printed.
+
     success(&report(dir.path(), &["--write"])?, REPORT);
     assert_eq!(
         std::fs::read_to_string(dir.path().join("catalog/aws-models.report"))?,
         REPORT
     );
-    // Given stale text, when writing again, then it is overwritten, not rejected.
+
     write_fixture(dir.path(), "catalog/aws-models.report", "stale\n")?;
     success(&report(dir.path(), &["--write"])?, REPORT);
     assert_eq!(
@@ -25,13 +24,12 @@ fn write_regenerates_and_check_prints_the_complete_report() -> Result<(), Box<dy
 #[test]
 fn discovery_reads_all_json_recursively_and_nothing_outside_models()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given ordinary .json and .api.json files, plus invalid files outside models.
     let dir = fixture()?;
     write_fixture(dir.path(), "models/another/version/api.api.json", MODEL)?;
     write_fixture(dir.path(), "models/readme.txt", "invalid")?;
     write_fixture(dir.path(), "outside.json", "invalid")?;
     write_fixture(dir.path(), "other/deep/ignored.normal.json", "invalid")?;
-    // When recursively reporting, then both JSON models and shared names count.
+
     success(&report(dir.path(), &[])?, TWO_REPORT);
     Ok(())
 }
@@ -39,7 +37,6 @@ fn discovery_reads_all_json_recursively_and_nothing_outside_models()
 #[test]
 fn check_reports_every_changed_line_and_preserves_whitespace()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given a report with two changed lines and an extra line.
     let dir = fixture()?;
     let changed = REPORT.replacen(
         "services 1\noperations 1\n",
@@ -51,7 +48,7 @@ fn check_reports_every_changed_line_and_preserves_whitespace()
         "catalog/aws-models.report",
         &format!("{changed}extra\n"),
     )?;
-    // When checking, then the report still prints and every difference is diagnosed.
+
     let output = report(dir.path(), &["--check"])?;
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(output.stdout, REPORT.as_bytes());
@@ -69,9 +66,8 @@ fn check_reports_every_changed_line_and_preserves_whitespace()
 #[test]
 fn missing_report_still_prints_and_names_the_missing_path() -> Result<(), Box<dyn std::error::Error>>
 {
-    // Given models but no committed report.
     let dir = fixture()?;
-    // When checking, then stdout is complete and stderr names the failed file.
+
     let output = report(dir.path(), &["--check"])?;
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(output.stdout, REPORT.as_bytes());
@@ -89,11 +85,10 @@ fn missing_report_still_prints_and_names_the_missing_path() -> Result<(), Box<dy
 #[test]
 fn malformed_later_model_never_prints_or_overwrites_partial_results()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given a valid earlier file, a malformed later file, and an existing report.
     let dir = fixture()?;
     write_fixture(dir.path(), "models/z-last.json", "{")?;
     write_fixture(dir.path(), "catalog/aws-models.report", "preserve\n")?;
-    // When writing, then loading fails before stdout or the report changes.
+
     let output = report(dir.path(), &["--write"])?;
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(output.stdout, b"");
@@ -113,10 +108,9 @@ fn malformed_later_model_never_prints_or_overwrites_partial_results()
 
 #[test]
 fn defaults_source_to_root_local_checkout() -> Result<(), Box<dyn std::error::Error>> {
-    // Given models only at the root-relative default source.
     let dir = tempfile::tempdir()?;
     write_fixture(dir.path(), ".local/aws-models/models/service.json", MODEL)?;
-    // When source is omitted, then that checkout is used.
+
     let output = std::process::Command::new(env!("CARGO_BIN_EXE_catalog-tool"))
         .args(["models", "report", "--root"])
         .arg(dir.path())
@@ -128,7 +122,6 @@ fn defaults_source_to_root_local_checkout() -> Result<(), Box<dyn std::error::Er
 #[test]
 fn rejects_missing_unknown_duplicate_and_conflicting_arguments()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given malformed command lines, when invoked, then syntax fails before I/O.
     let cases: &[(&[&str], &str)] = &[
         (&["models"], "expected 'report' subcommand"),
         (&["models", "list"], "unexpected 'list'"),

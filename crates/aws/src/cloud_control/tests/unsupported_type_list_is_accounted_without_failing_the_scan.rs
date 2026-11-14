@@ -1,4 +1,3 @@
-//! explicit Cloud Control list capability-boundary behavior.
 use super::*;
 use inventory_core::ScanStatus;
 use inventory_engine::store::Store;

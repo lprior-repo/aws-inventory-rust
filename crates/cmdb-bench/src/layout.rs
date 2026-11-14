@@ -1,9 +1,3 @@
-//! Deterministic per-account layout: region assignment, identities, hubs, page counts.
-//!
-//! Everything here is a pure function of the account index, its size, the seed, and the
-//! options, so generation can stream pages without retaining an account's resources in
-//! memory and deletion records can address resources by index.
-
 use std::error::Error;
 
 use crate::model::{KINDS, PAGE_SIZE, REGIONS};
@@ -41,7 +35,6 @@ pub fn account_region(account: usize) -> Result<&'static str, Box<dyn Error>> {
         .ok_or_else(|| error("region slot out of range"))
 }
 
-/// Fraction of accounts flagged for a global service, derived per account from the seed.
 pub fn is_global_account(seed: u64, account: usize, share: u64) -> Result<bool, Box<dyn Error>> {
     if share == 0 {
         return Ok(false);
@@ -51,7 +44,6 @@ pub fn is_global_account(seed: u64, account: usize, share: u64) -> Result<bool, 
     Ok(rng.below(100) < share)
 }
 
-/// Number of leading resources consumed by the injected global service.
 #[must_use]
 pub fn shift(global: bool) -> usize {
     if global { 1 } else { 0 }

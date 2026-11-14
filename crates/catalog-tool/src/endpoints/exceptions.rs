@@ -2,25 +2,21 @@ use super::derive::signing_override;
 use super::{CaseCounts, DerivedEndpoint, Endpoint, Error, RuleSet};
 use std::collections::BTreeSet;
 
-/// A candidate template checked against every successfully evaluated baseline endpoint.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DerivedService {
-    /// Verified template or the explicit reason an overlay is required.
     pub endpoint: DerivedEndpoint,
-    /// Unique modeled exceptions, ordered by region and then endpoint/signing fields.
+
     pub exceptions: Vec<EndpointException>,
 }
 
-/// A modeled endpoint that the candidate template does not reproduce.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct EndpointException {
-    /// Explicit/default region, or `-` when the case has no region.
     pub region: String,
-    /// Actual modeled URL.
+
     pub url: String,
-    /// Actual modeled signing name, falling back to the service trait.
+
     pub signing_name: String,
-    /// Actual modeled signing region, falling back to the case region.
+
     pub signing_region: String,
 }
 
@@ -84,11 +80,6 @@ impl EndpointCase {
 }
 
 impl CaseCounts {
-    /// Verify a derived template against the passing endpoint cases retained by this runner.
-    /// Modeled errors and failed/skipped cases are not template evidence.
-    ///
-    /// # Errors
-    /// Returns the same bounded probe failures as `RuleSet::derive`.
     pub fn derive(
         &self,
         rules: &RuleSet,

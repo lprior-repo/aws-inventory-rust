@@ -1,4 +1,3 @@
-//! mapping operations.
 use super::*;
 
 pub(super) fn map_account(account: Account) -> Result<OrganizationAccount, AwsScanError> {

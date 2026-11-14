@@ -80,7 +80,6 @@ fn comparison_cases(
     wrong: Value,
     fail: bool,
 ) -> Result<Vec<Case>, serde_json::Error> {
-    // Use the baseline Region parameter as the branch selector; no scope-excluded parameters.
     let params = if fail {
         json!({"Region":"us-east-1"})
     } else {

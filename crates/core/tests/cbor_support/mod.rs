@@ -1,5 +1,3 @@
-//! Shared fixtures use only the public record API.
-
 use std::collections::BTreeMap;
 
 use inventory_core::record::{Key, Record, RecordError, Value, ValueRef};

@@ -1,5 +1,5 @@
-// Historical O1 comparison codecs, included in the benchmark's root module.
-// ---------- CBOR through minicbor ----------
+ 
+ 
 
 type Enc = minicbor::Encoder<Vec<u8>>;
 
@@ -47,7 +47,7 @@ fn cbor_encode(v: &Value) -> Vec<u8> {
     e.into_writer()
 }
 
-/// Leaves the decoder at the value of field `want` of the struct it is on.
+ 
 fn cbor_field(d: &mut minicbor::Decoder<'_>, want: u32) {
     let count = d.map().unwrap().unwrap();
     for _ in 0..count {
@@ -79,7 +79,7 @@ fn cbor_read(bytes: &[u8], paths: &[Path], validate: bool) -> usize {
     sum
 }
 
-// ---------- rkyv with validation ----------
+ 
 
 #[derive(rkyv::Archive, rkyv::Serialize)]
 #[rkyv(serialize_bounds(
@@ -149,7 +149,7 @@ fn rkyv_read(bytes: &[u8], paths: &[Path]) -> usize {
     sum
 }
 
-// ---------- postcard (full decode) ----------
+ 
 
 #[derive(serde::Serialize, serde::Deserialize)]
 enum B {
@@ -204,7 +204,7 @@ fn bitcode_read(bytes: &[u8], paths: &[Path]) -> usize {
     sum
 }
 
-// ---------- JSON, as the tree stores today ----------
+ 
 
 fn to_json(s: &S) -> serde_json::Value {
     use serde_json::Value as J;

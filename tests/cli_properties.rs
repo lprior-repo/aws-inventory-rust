@@ -1,6 +1,3 @@
-//! Exercise the actual binary so entrypoint/output mutations are observable.
-//! No property invokes a live collection command or uses ambient AWS credentials.
-
 use anyhow::{Context, Result, ensure};
 use proptest::prelude::*;
 use proptest::test_runner::RngSeed;

@@ -1,5 +1,3 @@
-//! Sensitive paths, columns and relationships for one parent descriptor row.
-
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde_json::Value;

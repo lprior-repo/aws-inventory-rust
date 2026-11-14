@@ -4,7 +4,6 @@ use overlay_support::{TestResult, name, parse, reject};
 
 #[test]
 fn batch_and_paginator_pairs_report_each_missing_required_key() {
-    // Given incomplete nested tables, when parsed, then the missing key is named exactly.
     reject(
         "batch={max=1,replaces='Other'}",
         "batch.member",
@@ -38,7 +37,6 @@ fn batch_and_paginator_pairs_report_each_missing_required_key() {
 }
 #[test]
 fn root_and_scalar_types_do_not_coerce_values() {
-    // Given wrong scalar types, when parsed, then strings, booleans and integers stay distinct.
     [
         ("class=1", "class"),
         ("scope=1", "scope"),
@@ -73,7 +71,6 @@ fn root_and_scalar_types_do_not_coerce_values() {
 }
 #[test]
 fn branching_dependencies_are_acyclic_only_when_every_parent_can_finish() -> TestResult {
-    // Given multiple bindings and context inputs, when parsed, then every parent edge participates.
     let body = "[operation.A.bind]\nId={from='B',path='Id'}\nOther={from='C',path='Id'}\nAccount={account=true}\n[operation.B]\n[operation.C.bind]\nId={from='External',path='Id'}";
     let o = parse(body)?;
     assert_eq!(o.operations().len(), 3);
@@ -98,7 +95,6 @@ fn branching_dependencies_are_acyclic_only_when_every_parent_can_finish() -> Tes
 }
 #[test]
 fn deeply_bound_operation_chain_is_iterative_at_the_operation_bound() -> TestResult {
-    // Given a maximal reverse dependency chain, when parsed, then no recursive stack is needed.
     let body = (0..catalog_tool::overlay::MAX_OPERATIONS)
         .map(|i| {
             let parent = i.saturating_add(1);

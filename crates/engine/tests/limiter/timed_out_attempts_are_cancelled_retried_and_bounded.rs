@@ -1,4 +1,3 @@
-//! Behavior: timed_out_attempts_are_cancelled_retried_and_bounded.
 use super::*;
 
 #[tokio::test(start_paused = true)]

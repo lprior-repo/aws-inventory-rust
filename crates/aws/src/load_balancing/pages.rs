@@ -1,8 +1,5 @@
-//! pages operations.
 use super::*;
 
-/// Bound enrichment before allocating mapped rows; each mapper emits one row.
-/// Payload accounting caps retained mapped JSON while the SDK response is alive.
 pub(super) fn map_page<T, F>(
     models: &[T],
     budget: usize,

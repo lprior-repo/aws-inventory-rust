@@ -15,11 +15,10 @@ async fn probabilistic_scopes_replay_across_interleavings_and_match_tcp_response
 
 #[tokio::test]
 async fn scheduled_entries_override_probability_at_exact_scope_ordinals_only() -> TestResult {
-    // Given a certain throttle rule and an exact exception at a's second request.
     let server = Server::start(OK).await?;
     let config = override_config(&server)?;
     let proxy = Proxy::start(config).await?;
-    // When b interleaves, then only a's ordinal one hits the override.
+
     for (key, code) in [
         ("a", "ThrottlingException"),
         ("b", "ThrottlingException"),
@@ -40,7 +39,6 @@ async fn scheduled_entries_override_probability_at_exact_scope_ordinals_only() -
 #[tokio::test]
 async fn mapped_access_keys_share_account_scope_and_unsigned_requests_share_fallback() -> TestResult
 {
-    // Given two keys mapped to one account and two unparseable authorizations.
     let server = Server::start(OK).await?;
     let mut config = server.config();
     for key in ["keyA", "keyB"] {
@@ -50,7 +48,7 @@ async fn mapped_access_keys_share_account_scope_and_unsigned_requests_share_fall
     }
     let proxy = Proxy::start(config).await?;
     mapped_requests(&proxy).await?;
-    // Then aliases and unsigned fallbacks each share a single ordinal sequence.
+
     let snapshot = proxy.snapshot()?;
     assert_eq!(snapshot.scopes, 2);
     assert_scope_ordinals(&snapshot, &MAPPED_ORDINALS);
@@ -60,7 +58,6 @@ async fn mapped_access_keys_share_account_scope_and_unsigned_requests_share_fall
 
 #[tokio::test]
 async fn scope_capacity_rejects_new_scope_without_evicting_existing_ordinal() -> TestResult {
-    // Given one registered scope slot.
     let server = Server::start(OK).await?;
     let mut config = server.config();
     config.scope_capacity = 1;
@@ -69,7 +66,7 @@ async fn scope_capacity_rejects_new_scope_without_evicting_existing_ordinal() ->
         exchange(proxy.address(), &request("a", "us-east-1", "s3")).await?,
         OK
     );
-    // When b exceeds it, then explicit overload does not erase a's state.
+
     let rejected = exchange(proxy.address(), &request("b", "us-east-1", "s3")).await?;
     assert!(rejected.starts_with(b"HTTP/1.1 503 "));
     assert_eq!(field(&rejected, "x-proxy-error")?, "scope-capacity");
@@ -84,7 +81,6 @@ async fn scope_capacity_rejects_new_scope_without_evicting_existing_ordinal() ->
 
 #[tokio::test]
 async fn decision_ring_drops_oldest_entries_and_counts_each_loss() -> TestResult {
-    // Given two retained entries and five requests.
     let server = Server::start(OK).await?;
     let mut config = server.config();
     config.log_capacity = 2;
@@ -92,7 +88,7 @@ async fn decision_ring_drops_oldest_entries_and_counts_each_loss() -> TestResult
     for _ in 0..5 {
         assert_eq!(exchange(proxy.address(), UNSIGNED).await?, OK);
     }
-    // Then the bounded log keeps the newest ordinals and exact dropped count.
+
     let snapshot = proxy.snapshot()?;
     assert_eq!(
         snapshot
@@ -110,7 +106,6 @@ async fn decision_ring_drops_oldest_entries_and_counts_each_loss() -> TestResult
 
 #[tokio::test]
 async fn scope_filter_never_faults_nonmatching_account_region_or_service() -> TestResult {
-    // Given a certain denial restricted to one full scope tuple.
     let server = Server::start(OK).await?;
     let config = denied_scope(&server)?;
     let proxy = Proxy::start(config).await?;

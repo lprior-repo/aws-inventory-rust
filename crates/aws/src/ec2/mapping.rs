@@ -1,4 +1,3 @@
-//! mapping operations.
 use super::*;
 
 pub(super) fn tags(values: &[Tag]) -> BTreeMap<String, String> {

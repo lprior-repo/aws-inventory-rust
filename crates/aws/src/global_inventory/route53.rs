@@ -1,6 +1,3 @@
-//! Hosted zones and record sets. Record cursors preserve name, type and routing
-//! identifier together. TXT/SPF and unknown RDATA are omitted, not interpreted.
-
 use std::collections::BTreeMap;
 
 use aws_sdk_route53::{

@@ -1,5 +1,3 @@
-//! Scan and summary path lookups for coverage binding.
-
 use std::path::Path;
 
 use serde_json::Value;

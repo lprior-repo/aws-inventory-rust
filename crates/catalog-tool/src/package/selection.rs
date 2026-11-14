@@ -1,5 +1,3 @@
-//! Source selection rules of the retired the retired Python packager.
-
 use std::ffi::OsStr;
 use std::fs;
 use std::io;
@@ -7,7 +5,6 @@ use std::path::{Path, PathBuf};
 
 use super::limits::{Limits, exceeded};
 
-/// Directories excluded at any depth.
 const EXCLUDED_DIRECTORIES: [&str; 6] = [
     "target",
     ".git",
@@ -16,14 +13,14 @@ const EXCLUDED_DIRECTORIES: [&str; 6] = [
     "mutants.out.old",
     ".local",
 ];
-/// Artifact trees that are development intermediates, never evidence.
+
 const EXCLUDED_ARTIFACT_TREES: [&str; 4] = [
     "emulator-seed-preflight",
     "emulator-v04-first",
     "emulator-v04-second",
     "emulator-v04-expanded",
 ];
-/// The only database files admitted into the payload.
+
 const INCLUDED_DATABASES: [&str; 6] = [
     "artifacts/emulator-v04/inventory.sqlite",
     "artifacts/emulator-v05/inventory.sqlite",
@@ -32,7 +29,7 @@ const INCLUDED_DATABASES: [&str; 6] = [
     "artifacts/emulator-v06-final/inventory.sqlite",
     "artifacts/emulator-v06-complete/inventory.sqlite",
 ];
-/// Credential material is never distributable.
+
 const CREDENTIAL_NAMES: [&str; 5] = [
     "credentials",
     "emulator_credentials",
@@ -40,10 +37,9 @@ const CREDENTIAL_NAMES: [&str; 5] = [
     "server.key",
     "leaf.key",
 ];
-/// Manifest file name written beside the sources.
+
 pub(super) const MANIFEST_NAME: &str = "MANIFEST.sha256";
 
-/// Walk bounded directory levels without recursion or following symlink entries.
 pub(super) fn walk(root: &Path, limits: Limits) -> io::Result<Vec<PathBuf>> {
     let mut scanner = Scanner {
         root,
@@ -59,7 +55,6 @@ pub(super) fn walk(root: &Path, limits: Limits) -> io::Result<Vec<PathBuf>> {
     Ok(scanner.paths)
 }
 
-/// Traversal state is bounded by the named entry and directory-depth ceilings.
 struct Scanner<'a> {
     root: &'a Path,
     limits: Limits,
@@ -68,7 +63,6 @@ struct Scanner<'a> {
 }
 
 impl Scanner<'_> {
-    /// Read one depth level, pruning excluded directories before opening them.
     fn read_level(&mut self, directories: &[PathBuf], depth: usize) -> io::Result<Vec<PathBuf>> {
         directories
             .iter()
@@ -79,7 +73,6 @@ impl Scanner<'_> {
             })
     }
 
-    /// Retain included regular files or queue allowed child directories.
     fn visit(
         &mut self,
         entry: fs::DirEntry,
@@ -101,7 +94,6 @@ impl Scanner<'_> {
         Ok(())
     }
 
-    /// Check the traversal budget before retaining another path.
     fn count_entry(&mut self, path: &Path) -> io::Result<()> {
         self.entries = self
             .entries
@@ -113,7 +105,6 @@ impl Scanner<'_> {
         Ok(())
     }
 
-    /// A child directory would have depth one greater than its containing level.
     fn queue_directory(
         &self,
         path: PathBuf,
@@ -127,14 +118,12 @@ impl Scanner<'_> {
     }
 }
 
-/// Growth is fallible and can occur at most once per checked traversal entry.
 fn store_path(paths: &mut Vec<PathBuf>, path: PathBuf) -> io::Result<()> {
     paths.try_reserve(1).map_err(io::Error::other)?;
     paths.push(path);
     Ok(())
 }
 
-/// Selection rules of the original `included()`, applied to a relative path.
 fn included(relative: &Path) -> bool {
     if excluded_directory(relative) {
         return false;
@@ -145,7 +134,6 @@ fn included(relative: &Path) -> bool {
     !excluded_name(name) && !excluded_database(relative, name)
 }
 
-/// Prune both cache/VCS components and excluded development artifact subtrees.
 fn excluded_directory(relative: &Path) -> bool {
     relative.iter().any(|part| {
         EXCLUDED_DIRECTORIES
@@ -154,7 +142,6 @@ fn excluded_directory(relative: &Path) -> bool {
     }) || excluded_artifact_tree(&relative.iter().collect::<Vec<_>>())
 }
 
-/// Names never distributed: manifest, compiled artifacts and credentials.
 fn excluded_name(name: &OsStr) -> bool {
     if name == OsStr::new(MANIFEST_NAME)
         || CREDENTIAL_NAMES
@@ -168,7 +155,6 @@ fn excluded_name(name: &OsStr) -> bool {
         .is_some_and(|extension| matches!(extension.to_str(), Some("pyc" | "deb" | "so")))
 }
 
-/// Development artifact trees are never evidence.
 fn excluded_artifact_tree(parts: &[&OsStr]) -> bool {
     if !parts
         .first()
@@ -185,7 +171,6 @@ fn excluded_artifact_tree(parts: &[&OsStr]) -> bool {
         || second.to_string_lossy().starts_with("emulator-oracle-")
 }
 
-/// Databases are excluded unless the path is one of the published fixtures.
 fn excluded_database(relative: &Path, name: &OsStr) -> bool {
     if !has_database_suffix(&name.to_string_lossy()) {
         return false;
@@ -193,7 +178,6 @@ fn excluded_database(relative: &Path, name: &OsStr) -> bool {
     !INCLUDED_DATABASES.contains(&slash_path(relative).as_str())
 }
 
-/// Whether a file name carries one of the database suffixes.
 fn has_database_suffix(name: &str) -> bool {
     const SUFFIXES: [&str; 6] = [
         ".sqlite",
@@ -206,7 +190,6 @@ fn has_database_suffix(name: &str) -> bool {
     SUFFIXES.iter().any(|suffix| name.ends_with(suffix))
 }
 
-/// Slash-separated relative name, matching Python's `Path.as_posix()`.
 pub(super) fn slash_path(path: &Path) -> String {
     let mut out = String::new();
     for component in path.components() {

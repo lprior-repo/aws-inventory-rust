@@ -1,7 +1,3 @@
-//! Account-global inventory. The coordinator invokes this once per resolved
-//! account scan, outside the regional fan-out. SDK endpoint region and observed
-//! resource scope are deliberately separate.
-
 mod cloudfront;
 mod iam;
 mod route53;
@@ -33,9 +29,7 @@ pub(crate) async fn collect(
 ) -> Result<(), AwsScanError> {
     ensure_active(base)?;
     let ctx = global_context(base)?;
-    // Materialize at most four boxed futures before streaming them. This also
-    // avoids the compiler's higher-ranked Send limitation for a borrowed Fn
-    // adapter when this future is erased at the scan boundary (rust#100013).
+
     let mut work = Vec::with_capacity(GLOBAL_SERVICES.len());
     for service in GLOBAL_SERVICES {
         if services.contains(service) {

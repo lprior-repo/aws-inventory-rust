@@ -1,4 +1,3 @@
-//! Behavior: equal_timestamp_source_ties_ignore_page_arrival_order.
 use super::*;
 
 #[tokio::test]

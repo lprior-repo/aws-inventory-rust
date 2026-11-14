@@ -1,4 +1,3 @@
-//! Behavior: pacing_one_bucket_does_not_occupy_global_capacity.
 use super::*;
 
 #[tokio::test(start_paused = true)]

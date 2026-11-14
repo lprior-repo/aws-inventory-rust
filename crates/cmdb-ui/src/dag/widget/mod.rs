@@ -1,23 +1,3 @@
-//! `DagView`: a single-batch Makepad renderer for [`DagGraph`].
-//!
-//! Registration (once, from `AppMain::script_mod`):
-//! ```ignore
-//! crate::dag::script_mod(vm);
-//! ```
-//! Instantiation inside any parent:
-//! ```ignore
-//! dag := DagView{ width: Fill height: Fill }
-//! ```
-//! Feeding data (on filter change):
-//! ```ignore
-//! let graph = table.graph(); // ResourceTable::graph()
-//! if let Some(mut dag) = self.ui.widget(cx, ids!(dag)).borrow_mut::<DagView>() {
-//!     dag.set_graph(cx, &graph);
-//! }
-//! ```
-//! A click posts [`DagSelectAction`] through the widget action channel; the
-//! same state is readable with [`DagView::selected_id`].
-
 mod input;
 mod paint;
 mod paint_style;
@@ -45,14 +25,11 @@ script_mod! {
     }
 }
 
-/// Emitted when the clicked/selected node changes. `id` is `None` when the
-/// selection was cleared (a click on empty canvas).
 #[derive(Clone, Debug, Default)]
 pub struct DagSelectAction {
     pub id: Option<String>,
 }
 
-/// Widget state: the model, its layout, and the camera.
 #[derive(Script, ScriptHook, Widget)]
 pub struct DagView {
     #[uid]
@@ -96,13 +73,11 @@ struct DragState {
 }
 
 impl DagView {
-    /// Rebuilds from the filtered fixture projection.
     pub fn set_graph(&mut self, cx: &mut Cx, source: &DataGraph) {
         let graph = builder::from_data_graph(source);
         self.set_dag(cx, graph);
     }
 
-    /// Replaces the model and recomputes layout. Layout never runs per frame.
     pub fn set_dag(&mut self, cx: &mut Cx, graph: DagGraph) {
         if self.graph == graph {
             return;
@@ -124,7 +99,6 @@ impl DagView {
         self.selected_node().map(DagNode::id)
     }
 
-    /// Selects a node by id; returns whether the selection changed.
     pub fn select_id(&mut self, cx: &mut Cx, id: &str) -> bool {
         let node = self.graph.index_of(id);
         let Some(node) = node else {

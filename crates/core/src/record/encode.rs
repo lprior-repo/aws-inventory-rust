@@ -1,4 +1,3 @@
-//! Fixed-form encoding through a size-bounded writer; minicbor handles all bytes.
 use super::{Key, MAX_RECORD_BYTES, RecordError, Time, Value, container_depth};
 use minicbor::{Encoder, encode::Write};
 use std::collections::BTreeMap;

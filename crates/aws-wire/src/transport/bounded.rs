@@ -38,7 +38,6 @@ where
     }
 
     fn call(&mut self, uri: Uri) -> Self::Future {
-        // Construct now: checkout may transfer this already-started future into a background task.
         let connecting = tokio::time::timeout(self.timeout, self.inner.call(uri));
         Box::pin(async move {
             connecting

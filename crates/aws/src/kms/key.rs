@@ -1,6 +1,3 @@
-//! KMS key metadata mapping. No key policy body and no key material is read or
-//! stored; rotation status is present only when a customer-managed read succeeded.
-
 use std::collections::BTreeMap;
 
 use aws_sdk_kms::types::{KeyManagerType, KeyMetadata, Tag};
@@ -18,8 +15,6 @@ pub(super) struct Rotation {
     pub period_in_days: Option<i32>,
 }
 
-/// Tag keys and values are preserved verbatim, including empty values, while
-/// entries the inventory model cannot store are dropped.
 pub(super) fn tags_from(tags: &[Tag]) -> BTreeMap<String, String> {
     tags.iter()
         .filter(|tag| {

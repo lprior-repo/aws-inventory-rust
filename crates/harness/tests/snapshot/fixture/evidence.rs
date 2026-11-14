@@ -1,5 +1,3 @@
-//! Scan-command selection and the synthetic SQLite evidence database.
-
 use std::collections::BTreeMap;
 use std::path::Path;
 

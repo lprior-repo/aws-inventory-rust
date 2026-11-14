@@ -1,4 +1,3 @@
-//! Bounded RESP command parsing and fixture response encoding.
 use super::*;
 
 pub(super) async fn line(reader: &mut BufReader<TcpStream>) -> io::Result<Option<String>> {

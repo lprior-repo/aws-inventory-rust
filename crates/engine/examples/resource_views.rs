@@ -1,5 +1,3 @@
-//! Reproduce the checked-in Cloud Control views from the pinned resource catalog.
-//! This development tool performs no AWS calls and needs no service SDK feature.
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
@@ -170,9 +168,7 @@ fn generate(manifest: &Value) -> Result<String> {
             let field = text(column, "pointer")?
                 .strip_prefix('/')
                 .ok_or("provider column is not a JSON pointer")?;
-            // The generated catalog selects top-level AWS schema properties.
-            // Restrict both identifiers and path components rather than putting
-            // arbitrary catalog SQL or expressions into the migration.
+
             if field.is_empty()
                 || field.len() > 256
                 || !field

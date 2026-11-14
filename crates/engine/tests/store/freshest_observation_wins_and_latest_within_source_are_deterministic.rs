@@ -1,4 +1,3 @@
-//! Behavior: freshest_observation_wins_and_latest_within_source_are_deterministic.
 use super::*;
 
 #[tokio::test]
@@ -19,14 +18,14 @@ pub(super) async fn freshest_observation_wins_and_latest_within_source_are_deter
             )
             .await?;
     }
-    // The newest observation wins regardless of source authority.
+
     assert_eq!(
         store
             .query("SELECT source,observed_at FROM latest_resources", 10)
             .await?,
         json!([{"source":"aws_config", "observed_at":200}])
     );
-    // One newest row per source remains available for provenance audits.
+
     assert_eq!(
         store
             .query("SELECT count(*) AS total FROM latest_resource_sources", 10)
@@ -39,7 +38,7 @@ pub(super) async fn freshest_observation_wins_and_latest_within_source_are_deter
             .await?,
         json!([{"total":4}])
     );
-    // The per-scan snapshot keeps its priority-first selection.
+
     assert_eq!(store.summary("one").await?.resources, 1);
     assert_eq!(
         store

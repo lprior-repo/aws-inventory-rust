@@ -1,5 +1,3 @@
-//! Palette and text-fitting helpers shared by the DAG paint passes.
-
 use crate::dag::layout::{LayoutEdge, LayoutRect};
 
 pub(super) const EDGE_COLOR: u32 = 0x6b768c;
@@ -20,7 +18,6 @@ pub(super) fn edge_box(a: LayoutRect, b: LayoutRect) -> LayoutRect {
     }
 }
 
-/// Cuts `text` to at most `max_chars` without allocating.
 pub(super) fn clamp_chars(text: &str, max_chars: usize) -> &str {
     if max_chars == 0 {
         return "";

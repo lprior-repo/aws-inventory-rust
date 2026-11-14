@@ -1,4 +1,3 @@
-//! Behavior: final_attempt_retry_hint_delays_queued_peers.
 use super::*;
 
 #[tokio::test(start_paused = true)]

@@ -1,4 +1,3 @@
-//! Behavior: submission_is_idempotent_but_different_work_conflicts.
 use super::*;
 
 #[tokio::test]

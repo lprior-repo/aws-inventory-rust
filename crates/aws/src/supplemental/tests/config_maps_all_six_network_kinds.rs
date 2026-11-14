@@ -1,4 +1,3 @@
-//! config maps all six network kinds behavior.
 use super::*;
 
 #[test]

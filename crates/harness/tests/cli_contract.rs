@@ -1,5 +1,3 @@
-//! Exit-code and argument contract of the `inventory-harness` binary.
-
 use std::path::Path;
 use std::process::{Command, Output};
 

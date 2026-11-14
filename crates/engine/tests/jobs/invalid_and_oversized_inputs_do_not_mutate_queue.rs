@@ -1,4 +1,3 @@
-//! Behavior: invalid_and_oversized_inputs_do_not_mutate_queue.
 use super::*;
 
 #[tokio::test]

@@ -1,4 +1,3 @@
-//! Behavior: shared_cooldown_releases_global_capacity_and_retries_keep_their_budget.
 use super::*;
 
 #[tokio::test(start_paused = true)]

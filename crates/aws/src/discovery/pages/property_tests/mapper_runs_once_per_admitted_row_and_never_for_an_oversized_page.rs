@@ -1,4 +1,3 @@
-//! mapper runs once per admitted row and never for an oversized page properties.
 use super::*;
 
 proptest! {
@@ -56,9 +55,9 @@ proptest! {
 
     #[test]
     fn cancellation_retains_a_generated_prefix_and_prevents_the_next_fetch(prefix in 1_u32..32) {
-        // Assert the terminal transition before entering the async driver. A
-        // broken cancellation transition otherwise spins without another fetch,
-        // so a fetch-count assertion alone cannot bound that defective future.
+
+
+
         let mut terminal = Cursor::<String>::new();
         terminal.fail("ListFixture", Some("parent"), &AwsScanError::Api(ApiError::Cancelled));
         prop_assert!(terminal.done, "cancellation must make the owned cursor terminal");

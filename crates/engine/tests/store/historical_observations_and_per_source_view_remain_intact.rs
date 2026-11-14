@@ -1,4 +1,3 @@
-//! Behavior: historical_observations_and_per_source_view_remain_intact.
 use super::*;
 
 #[tokio::test]
@@ -29,7 +28,7 @@ pub(super) async fn historical_observations_and_per_source_view_remain_intact() 
             .await?,
         json!([{"total":3}])
     );
-    // The per-source view still exposes each source's own newest observation.
+
     assert_eq!(
         store
             .query(

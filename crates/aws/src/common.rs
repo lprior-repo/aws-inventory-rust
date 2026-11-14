@@ -1,5 +1,3 @@
-//! Bounded page traversal, provenance, and AWS error translation.
-
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Debug;
 use std::future::Future;
@@ -145,7 +143,7 @@ pub(crate) struct PageBody {
     pub resources: Vec<Resource>,
     pub edges: Vec<Edge>,
     pub next_token: Option<String>,
-    /// Items enumerated before enrichment, including items whose describe failed.
+
     pub listed_count: usize,
 }
 

@@ -1,10 +1,3 @@
-//! Idempotent persistence of universal reference edges.
-//!
-//! Derived edges are written under a synthetic collection scope per
-//! `(source, account, region)`. The scope key is a real `CollectionScope`
-//! encoding, so provenance-aware exports decode it like any other scope. Each
-//! call clears the previous synthetic scopes for the scan inside the same
-//! transaction, which makes replay produce exactly the current edge set.
 use super::{ReferenceConfig, ReferenceSummary, resolve_scan};
 use crate::store::{Store, StoreError};
 use inventory_core::{CollectionScope, Edge, Source};
@@ -18,13 +11,6 @@ use write::{clear, edge_count, fingerprint, insert_edge, insert_scope_page};
 
 const COLLECTOR: &str = "universal_reference";
 
-/// Resolve references for `scan_id` and persist the derived edges.
-///
-/// Resources are streamed for resolution and again for the provenance of edge
-/// sources; the scan is never materialized, so this is not export-budget bound.
-/// # Errors
-/// Returns resource-stream/resolution errors, invalid synthetic scope/counts,
-/// serialization errors or transactional persistence failures.
 pub async fn persist_scan(
     store: &Store,
     scan_id: &str,
@@ -40,7 +26,6 @@ pub async fn persist_scan(
     Ok(resolution.summary)
 }
 
-/// Provenance of every resource that sources an edge, keyed by resource id.
 async fn edge_provenance(
     store: &Store,
     scan_id: &str,
@@ -65,7 +50,6 @@ async fn edge_provenance(
     Ok(provenance)
 }
 
-/// Bucket edges by the synthetic scope their source resource belongs to.
 fn group_edges<'a>(
     edges: &'a [Edge],
     provenance: &BTreeMap<String, (String, String, Source)>,

@@ -1,4 +1,3 @@
-//! unsupported endpoint does not retry and decode failure does not expose body behavior.
 use super::*;
 
 #[test]

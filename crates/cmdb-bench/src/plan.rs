@@ -1,5 +1,3 @@
-//! Per-account plan shared by the page writer and the edge writer.
-
 use std::error::Error;
 
 use inventory_core::{CollectionScope, Source};

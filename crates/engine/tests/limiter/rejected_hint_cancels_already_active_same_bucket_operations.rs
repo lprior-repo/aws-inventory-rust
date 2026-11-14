@@ -1,4 +1,3 @@
-//! Behavior: rejected_hint_cancels_already_active_same_bucket_operations.
 use super::*;
 
 #[tokio::test(start_paused = true)]

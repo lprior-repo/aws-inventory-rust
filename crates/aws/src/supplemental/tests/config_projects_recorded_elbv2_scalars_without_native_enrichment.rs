@@ -1,4 +1,3 @@
-//! config projects recorded elbv2 scalars without native enrichment behavior.
 use super::*;
 
 #[test]

@@ -1,4 +1,3 @@
-//! Behavior: graph_names_are_validated_against_an_existing_frozen_scan.
 use super::*;
 
 #[tokio::test]

@@ -1,8 +1,5 @@
-//! pagination operations.
 use super::*;
 
-/// One SDK page at a time. The only retained history is a bounded set of cursors.
-/// Empty pages with continuation tokens are deliberately not terminal.
 #[tracing::instrument(skip_all, fields(collector = scope.collector, region = scope.region))]
 pub(crate) async fn paginate<F, Fut>(
     ctx: &Context,
@@ -13,8 +10,6 @@ where
     F: Fn(Option<String>, usize) -> Fut + Send + Sync,
     Fut: Future<Output = Result<PageBody, AwsScanError>> + Send,
 {
-    // One erased driver per scope bounds trait/layout expansion through nested
-    // parent collectors. Requests themselves retain their typed SDK futures.
     let work: BoxFuture<'_, Result<(), AwsScanError>> = Box::pin(paginate_inner(ctx, scope, fetch));
     work.await
 }

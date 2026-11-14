@@ -15,7 +15,6 @@ fn rejected(result: Result<Proxy, ProxyError>, expected: &'static str) -> TestRe
 
 #[test]
 fn probability_and_scope_names_enforce_exact_boundaries_without_panics() -> TestResult {
-    // Given boundary and hostile primitive values, when parsed at the boundary.
     assert!(matches!(
         Probability::new(1_000_001),
         Err(ProxyError::Configuration("probability exceeds one million"))
@@ -26,7 +25,7 @@ fn probability_and_scope_names_enforce_exact_boundaries_without_panics() -> Test
             Err(ProxyError::Configuration("scope component"))
         ));
     }
-    // Then the maximum accepted size is exact, and one extra byte is rejected.
+
     assert_eq!(
         ScopeName::parse(&"a".repeat(MAX_SCOPE_NAME))?
             .as_str()
@@ -42,7 +41,6 @@ fn probability_and_scope_names_enforce_exact_boundaries_without_panics() -> Test
 
 #[tokio::test]
 async fn startup_rejects_out_of_bound_tables_rates_and_durations_before_binding() -> TestResult {
-    // Given a valid endpoint, when each startup resource bound is violated.
     let server = Server::start(OK).await?;
     let mut configs = Vec::new();
     let mut zero = server.config();
@@ -56,7 +54,7 @@ async fn startup_rejects_out_of_bound_tables_rates_and_durations_before_binding(
     configs.push((scopes, "configuration table capacity"));
     invalid_rules_and_durations(&server, &mut configs)?;
     invalid_rates(&server, &mut configs);
-    // Then each failure is typed and identifies its violated boundary.
+
     for (config, reason) in configs {
         rejected(Proxy::start(config).await, reason)?;
     }
@@ -66,7 +64,6 @@ async fn startup_rejects_out_of_bound_tables_rates_and_durations_before_binding(
 #[tokio::test]
 async fn startup_rejects_duplicate_scheduled_ordinals_and_invalid_upstream_authorities()
 -> TestResult {
-    // Given duplicated exact overrides, when startup validates immutable plans.
     let server = Server::start(OK).await?;
     let mut duplicate = server.config();
     let scheduled = Schedule {
@@ -76,7 +73,7 @@ async fn startup_rejects_duplicate_scheduled_ordinals_and_invalid_upstream_autho
     };
     duplicate.schedule = vec![scheduled.clone(), scheduled];
     rejected(Proxy::start(duplicate).await, "duplicate configuration key")?;
-    // Then malformed upstreams and HTTPS without explicit trust are also rejected.
+
     for (endpoint, reason) in [
         ("ftp://host:80", "upstream scheme"),
         ("http://host", "upstream port"),

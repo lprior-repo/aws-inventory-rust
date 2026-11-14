@@ -1,5 +1,3 @@
-//! Independent examples and generated identity contracts for schema-derived edges.
-
 use inventory_engine::limiter::{ApiExecutor, ExecutorConfig};
 use proptest::prelude::*;
 use proptest::test_runner::{Config, RngSeed};
@@ -162,8 +160,7 @@ fn independently_authored_architecture_fixtures_preserve_exact_targets_and_evide
             );
             assert_eq!(observed_paths(&edge.properties)?, expected.paths);
         }
-        // List-only properties never become architecture assertions, even if
-        // a provider happens to return the same rich properties in both calls.
+
         let partial = map_description(&ctx, descriptor, &fixture.identifier, &description, false)?;
         assert!(partial.edges.is_empty(), "{}", fixture.name);
     }

@@ -1,6 +1,3 @@
-//! Formatting helpers for audit evidence.
-
-/// Format an integer with Python's `,` thousands grouping.
 pub fn group_thousands(value: i64) -> String {
     let digits = value.unsigned_abs().to_string();
     let total = digits.chars().count();

@@ -1,4 +1,3 @@
-//! Behavior: throttling_halves_rate_and_success_recovers_additively.
 use super::*;
 
 #[tokio::test(start_paused = true)]

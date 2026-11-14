@@ -3,7 +3,6 @@ use super::{Exceptions, MAX_SQL_NAME_BYTES, NameError, TestResult, sql_name, sql
 
 #[test]
 fn type_name_byte_bound_accepts_256_and_rejects_257_before_copying() -> TestResult {
-    // Given a compressible type at the input limit, when naming, then only one byte beyond fails.
     let spelling = "B".repeat(253);
     let exceptions = Exceptions::parse(&format!("{spelling}\tb\n"))?;
     let bounded = format!("A::{spelling}");
@@ -21,7 +20,6 @@ fn type_name_byte_bound_accepts_256_and_rejects_257_before_copying() -> TestResu
 
 #[test]
 fn exception_file_byte_bound_accepts_65536_and_rejects_65537() -> TestResult {
-    // Given a valid row at the file limit, when parsing, then its output cannot bypass growth checks.
     let bounded = format!("X\t{}\n", "a".repeat(65_533));
     assert_eq!(bounded.len(), MAX_EXCEPTIONS_BYTES);
     let exceptions = Exceptions::parse(&bounded)?;
@@ -45,7 +43,6 @@ fn exception_file_byte_bound_accepts_65536_and_rejects_65537() -> TestResult {
 
 #[test]
 fn exception_row_bound_accepts_1024_and_rejects_1025_before_copying() -> TestResult {
-    // Given distinct valid rows at the limit, when adding one more, then row capacity fails explicitly.
     let bounded: String = (0..1_024).map(|index| format!("X{index}\tx\n")).collect();
     let exceptions = Exceptions::parse(&bounded)?;
     assert_eq!(sql_name("A::X1023", &exceptions)?.as_str(), "a_x");
@@ -61,7 +58,6 @@ fn exception_row_bound_accepts_1024_and_rejects_1025_before_copying() -> TestRes
 
 #[test]
 fn oversized_exception_files_fail_before_row_validation() -> TestResult {
-    // Given oversized malformed text, when parsing, then the byte bound wins without copying rows.
     let text = "!".repeat(65_537);
     assert_eq!(
         Exceptions::parse(&text),
@@ -75,7 +71,6 @@ fn oversized_exception_files_fail_before_row_validation() -> TestResult {
 
 #[test]
 fn excess_exception_rows_fail_before_row_validation() -> TestResult {
-    // Given excess malformed rows, when parsing, then the row bound wins before parsing any row.
     assert_eq!(
         Exceptions::parse(&"!\n".repeat(1_025)),
         Err(NameError::TooManyExceptions {
@@ -88,7 +83,6 @@ fn excess_exception_rows_fail_before_row_validation() -> TestResult {
 
 #[test]
 fn expansion_stops_before_later_exception_matches_are_visited() -> TestResult {
-    // Given a failing expansion followed by another match, when naming, then later work is skipped.
     let exceptions = Exceptions::parse(&format!("X\t{}\nY\ty\n", "a".repeat(127)))?;
     let mut used = Vec::new();
     assert_eq!(
@@ -104,7 +98,6 @@ fn expansion_stops_before_later_exception_matches_are_visited() -> TestResult {
 
 #[test]
 fn plain_output_stops_before_later_exception_matches_are_visited() -> TestResult {
-    // Given an overlong plain span, when naming, then a later exception is never visited.
     let exceptions = Exceptions::parse("Y\ty\n")?;
     let kind = format!("A::{}Y", "B".repeat(127));
     let mut used = Vec::new();
@@ -121,7 +114,6 @@ fn plain_output_stops_before_later_exception_matches_are_visited() -> TestResult
 
 #[test]
 fn repeated_large_replacements_return_a_bounded_failure() -> TestResult {
-    // Given a large replacement repeated within the type bound, when naming, then output is capped.
     let exceptions = Exceptions::parse(&format!("X\t{}\n", "a".repeat(32_768)))?;
     let kind = format!("A::{}", "X".repeat(128));
     assert_eq!(
@@ -136,7 +128,6 @@ fn repeated_large_replacements_return_a_bounded_failure() -> TestResult {
 
 #[test]
 fn plain_word_boundaries_cannot_grow_output_past_the_limit() -> TestResult {
-    // Given short CamelCase input with many boundaries, when naming, then separators are bounded too.
     let kind = format!("A::{}", "aB".repeat(64));
     assert_eq!(
         sql_name(&kind, &Exceptions::none()),

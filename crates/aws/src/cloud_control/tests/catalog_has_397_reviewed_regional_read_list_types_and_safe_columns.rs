@@ -1,4 +1,3 @@
-//! catalog has 397 reviewed regional read list types and safe columns behavior.
 use super::*;
 
 fn selection(names: &[&str]) -> Selection {

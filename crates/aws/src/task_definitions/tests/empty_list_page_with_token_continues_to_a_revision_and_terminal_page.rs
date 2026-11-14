@@ -1,4 +1,3 @@
-//! empty list page with token continues to a revision and terminal page behavior.
 use super::*;
 
 #[tokio::test]

@@ -12,7 +12,6 @@ use std::{
 
 #[test]
 fn cli_check_rejects_same_length_mutation_and_never_rewrites_the_report() -> TestResult {
-    // Given canonical bytes written through the real CLI dispatch.
     let dir = fixture()?;
     let path = dir.path().join("catalog/aws-endpoints.report");
     let written = cli(dir.path(), "--write")?;
@@ -23,9 +22,9 @@ fn cli_check_rejects_same_length_mutation_and_never_rewrites_the_report() -> Tes
     let first = mutation.first_mut().ok_or("empty fixture report")?;
     *first = b'C';
     fs::write(&path, &mutation)?;
-    // When checking a one-byte difference of identical length.
+
     let checked = cli(dir.path(), "--check")?;
-    // Then the complete canonical report is printed, failure is named, and bytes are untouched.
+
     assert_eq!(checked.status.code(), Some(1));
     assert_eq!(checked.stdout, REPORT.as_bytes());
     assert_eq!(

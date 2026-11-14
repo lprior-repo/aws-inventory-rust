@@ -94,8 +94,7 @@ fn inventory_export_and_existing_scan_delivery_work_through_actual_cli() -> Resu
         submitted.pointer("/job/payload/delivery/falkor"),
         Some(&json!(true))
     );
-    // Job submission remains credential-free; destination secrets are read only
-    // when its worker actually executes the persisted intent.
+
     assert!(!submitted.to_string().contains("redis://"));
     Ok(())
 }

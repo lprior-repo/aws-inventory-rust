@@ -1,5 +1,3 @@
-//! Reproducible catalog tooling that does not depend on Python.
-
 mod parent;
 
 use std::path::PathBuf;
@@ -102,7 +100,6 @@ fn overlay_arguments(
     Ok(overlay::run(&inputs.root, &inputs.source, inputs.mode)?)
 }
 
-/// Resolved inputs shared by every command that reads the pinned models.
 struct ReportInputs {
     root: PathBuf,
     source: PathBuf,

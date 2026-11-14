@@ -1,12 +1,6 @@
-//! Operator cancellation and bounded retry transitions.
 use super::*;
 
 impl JobStore {
-    /// Request cancellation using nonnegative millisecond `now`.
-    /// Queued jobs become cancelled immediately; running jobs retain their lease
-    /// with the cancellation flag set. Already terminal jobs are unchanged.
-    /// # Errors
-    /// Returns invalid-key/time, missing-job, SQL or persisted-row decoding errors.
     #[tracing::instrument(skip(self), fields(job_id))]
     pub async fn cancel(&self, job_id: &str, now: i64) -> Result<JobRecord, JobError> {
         validate_key(job_id, "job ID")?;
@@ -19,12 +13,6 @@ impl JobStore {
         Ok(record)
     }
 
-    /// Operator-authorized retry retains all attempts and requeues eligible terminal work.
-    /// Sets the total attempt budget to claims already started plus `additional`, capped at 32.
-    /// Clears terminal output and cancellation, and schedules at nonnegative millisecond `now`.
-    /// # Errors
-    /// Accepts failed, partial or cancelled jobs; rejects other states and invalid attempt budgets.
-    /// Also rejects invalid key/time, missing jobs or SQL/persisted-row decoding failures.
     #[tracing::instrument(skip(self), fields(job_id))]
     pub async fn retry(
         &self,

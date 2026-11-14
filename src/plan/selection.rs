@@ -28,7 +28,7 @@ fn validate_bounds(options: &PlanArgs) -> Result<()> {
         options.profile.len() <= 128 && options.region.len() <= 64,
         "profile or region bound exceeded"
     );
-    // Explicit resource types are bounded by catalog membership in requested_types.
+
     ensure!(options.service.len() <= 32, "selector bound exceeded");
     ensure!(
         options.cloud_control || options.resource_type.is_empty(),
@@ -78,7 +78,6 @@ fn add_groups(selector: &Value, groups: &mut BTreeSet<String>) -> Result<()> {
     Ok(())
 }
 
-/// Selectors whose work is already covered by a supplemental source.
 fn supplemented(selected: &str, options: &PlanArgs) -> bool {
     selected == "all"
         || (selected == "cloud-control" && options.cloud_control)
@@ -124,7 +123,6 @@ pub(super) fn native_plan(entry: &Value) -> Result<Value> {
     }))
 }
 
-/// Actions whose names already imply a read-only provider call.
 const COMMON_PREFIXES: [&str; 10] = [
     "get", "list", "describe", "search", "head", "batchget", "lookup", "select", "check", "scan",
 ];

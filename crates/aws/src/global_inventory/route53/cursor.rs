@@ -1,4 +1,3 @@
-//! cursor responsibilities for route53.
 use super::*;
 
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]

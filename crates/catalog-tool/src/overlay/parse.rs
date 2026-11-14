@@ -6,9 +6,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use toml::Value;
 
 impl ServiceOverlay {
-    /// Parse format one without I/O or model lookups; input is capped at 1 MiB.
-    /// # Errors
-    /// Returns contextual typed violations or the original TOML syntax error.
     pub fn parse(service: &str, text: &str) -> Result<Self, OverlayError> {
         let context = Context {
             service,
@@ -164,7 +161,6 @@ fn cycles(
     context: &Context<'_>,
     operations: &BTreeMap<OperationName, super::OperationOverlay>,
 ) -> Result<(), OverlayError> {
-    // Remove one ready operation per step. At most N steps; no recursion or external edges.
     let mut remaining: BTreeSet<_> = operations.keys().collect();
     (0..operations.len()).try_for_each(|_| {
         if let Some(name) = ready_operation(&remaining, operations) {

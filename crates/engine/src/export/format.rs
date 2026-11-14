@@ -1,5 +1,3 @@
-//! One-record serializer and deterministic JSON/JSONL framing.
-
 use super::{
     ExportCounts, ExportError, ExportFormat, ExportHeader, ExportOptions, ExportRecord,
     ExportSummary, MAX_EXPORT_RECORD_BYTES, ProvenanceMode, check_cancel,

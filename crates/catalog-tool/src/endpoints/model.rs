@@ -25,7 +25,6 @@ pub(super) struct Parameter {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(super) enum ParameterType {
-    // The pinned models spell these both ways (13 `String`, 4 `Boolean`).
     #[serde(alias = "String")]
     String,
     #[serde(alias = "Boolean")]
@@ -91,7 +90,6 @@ pub(super) enum Expr {
     Literal(Value),
 }
 
-/// Parsed rules with a filename retained for every subsequent failure.
 #[derive(Debug)]
 pub struct RuleSet {
     pub(super) file: PathBuf,
@@ -99,10 +97,6 @@ pub struct RuleSet {
 }
 
 impl RuleSet {
-    /// Parse an endpoint trait, checking depth, node, string and binding bounds.
-    ///
-    /// # Errors
-    /// Returns filename-bearing schema or resource-bound errors.
     pub fn parse(file: &Path, value: &Value) -> Result<Self, Error> {
         let result = Self::parse_document(value);
         result

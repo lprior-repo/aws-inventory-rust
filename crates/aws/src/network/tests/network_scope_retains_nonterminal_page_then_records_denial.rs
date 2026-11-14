@@ -1,4 +1,3 @@
-//! network scope retains nonterminal page then records denial behavior.
 use super::*;
 
 #[tokio::test]

@@ -1,4 +1,3 @@
-//! observation responsibilities for global_inventory.
 use super::*;
 
 #[tracing::instrument(skip_all, fields(collector = %scope.collector))]

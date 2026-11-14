@@ -1,5 +1,3 @@
-//! Actual CLI routes under explicitly prepared, independently checked fixtures.
-//! Run through scripts/emulator/mutate.py; missing fixture configuration fails.
 #![cfg(feature = "aws")]
 
 use anyhow::{Context, Result, ensure};
@@ -111,8 +109,7 @@ fn fixture() -> Result<Value> {
             && snapshot.pointer("/provenance/emulator_version") == Some(&json!("1.0.336")),
         "snapshot fixture identity mismatch"
     );
-    // The lifecycle wrapper and AWS integration test validate the snapshot SHA
-    // and its independently asserted baseline before any mutation is admitted.
+
     let summary = document(&PathBuf::from(std::env::var(
         "INVENTORY_EMULATOR_BASELINE_SUMMARY",
     )?))?;

@@ -1,4 +1,3 @@
-//! definition operations.
 use super::*;
 
 pub(super) fn map_definition(

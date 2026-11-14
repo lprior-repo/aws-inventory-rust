@@ -1,7 +1,3 @@
-//! Scan admission is checked without credentials or I/O. The expected selector
-//! sets and limits below are public input contracts, independent of fixtures
-//! that happen to exercise every collector through the `all` selector.
-
 use std::collections::BTreeSet;
 
 use proptest::prelude::*;
@@ -165,7 +161,6 @@ fn supplemental_selectors_require_their_own_explicit_or_discovered_source()
                 options.discover_sources = discover;
                 match selector {
                     "config" => {
-                        // An unrelated view cannot satisfy a Config source.
                         options.resource_explorer_view = Some("fixture-view".into());
                         options.config_aggregator = explicit.then(|| "fixture-aggregator".into());
                     }

@@ -1,4 +1,3 @@
-//! malformed identity and nested overflow are explicit errors behavior.
 use super::*;
 
 #[test]

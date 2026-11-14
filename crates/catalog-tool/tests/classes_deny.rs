@@ -29,7 +29,6 @@ const INVALID: &[(&str, usize, ParseErrorKind)] = &[
 
 #[test]
 fn parser_rejects_each_noncanonical_form_with_its_line() {
-    // Given malformed files, when parsed, then each precise cause and line survives.
     INVALID.iter().for_each(|(text, line, kind)| {
         let error = DenyList::parse(text).err();
         assert_eq!(
@@ -41,7 +40,6 @@ fn parser_rejects_each_noncanonical_form_with_its_line() {
 
 #[test]
 fn scoped_denial_matches_only_its_service() -> Result<(), Box<dyn std::error::Error>> {
-    // Given a scoped entry, when classifying two services, then only one is denied.
     let deny = DenyList::parse("alpha/ListThings\tcontent\n")?;
     let facts = OperationFacts {
         service: "alpha",
@@ -66,7 +64,6 @@ fn scoped_denial_matches_only_its_service() -> Result<(), Box<dyn std::error::Er
 #[test]
 fn scoped_reason_wins_over_global_but_nonread_is_always_mutating()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given overlapping denials, when matching, then specificity is deterministic.
     let deny = DenyList::parse("GetA\tcontent\nPutA\tsecret\nsvc/GetA\tsecret\n")?;
     let facts = OperationFacts {
         service: "svc",
@@ -90,7 +87,6 @@ fn scoped_reason_wins_over_global_but_nonread_is_always_mutating()
 
 #[test]
 fn empty_and_comment_only_lists_are_valid() -> Result<(), Box<dyn std::error::Error>> {
-    // Given no entries, when parsing, then the immutable list has zero entries.
     assert_eq!(DenyList::parse("")?.len(), 0);
     assert_eq!(DenyList::parse("# explanation\n")?.len(), 0);
     assert!(DenyList::parse("")?.is_empty());
@@ -99,7 +95,6 @@ fn empty_and_comment_only_lists_are_valid() -> Result<(), Box<dyn std::error::Er
 
 #[test]
 fn parser_rejects_oversized_bytes_at_line_one() -> Result<(), Box<dyn std::error::Error>> {
-    // Given exact and excessive byte bounds, when parsed, then only the latter is rejected.
     let exact = format!("#{}\n", "x".repeat(1_048_574));
     assert_eq!(DenyList::parse(&exact)?.len(), 0);
     let excess = "#".repeat(1_048_577);
@@ -112,7 +107,6 @@ fn parser_rejects_oversized_bytes_at_line_one() -> Result<(), Box<dyn std::error
 
 #[test]
 fn parser_bounds_entry_count() -> Result<(), Box<dyn std::error::Error>> {
-    // Given exact and excessive entry bounds, when parsed, then only the latter is rejected.
     let exact = (0..4096)
         .map(|i| format!("Get{i:04}\tsecret\n"))
         .collect::<String>();
@@ -128,7 +122,6 @@ fn parser_bounds_entry_count() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn scoped_keys_accept_directory_case_and_smithy_underscore_identifiers()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given ordinary directory and Smithy identifier characters, when parsed, then scope matches.
     let deny = DenyList::parse("Service_A/Get_Value\tsecret\n")?;
     let facts = OperationFacts {
         service: "Service_A",

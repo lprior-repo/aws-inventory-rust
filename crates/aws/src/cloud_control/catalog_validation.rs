@@ -1,4 +1,3 @@
-//! catalog validation operations.
 use super::*;
 
 pub(super) fn invalid(message: impl Into<String>) -> AwsScanError {
@@ -10,9 +9,6 @@ struct SensitiveCatalog {
     evidence: CatalogEvidence,
 }
 
-/// The global property-name policy from the reviewed catalog evidence. It is
-/// shared by reviewed descriptors and synthesized universal descriptors, so an
-/// unreviewed provider row cannot bypass redaction.
 pub fn global_sensitive_names() -> Result<Arc<BTreeSet<String>>, AwsScanError> {
     let catalog: SensitiveCatalog = serde_json::from_str(CATALOG_JSON)
         .map_err(|error| invalid(format!("embedded Cloud Control catalog: {error}")))?;
@@ -23,7 +19,6 @@ pub fn global_sensitive_names() -> Result<Arc<BTreeSet<String>>, AwsScanError> {
     Ok(Arc::new(sensitive))
 }
 
-/// Parse and validate the embedded, pinned catalog, without credentials or I/O.
 pub fn root_catalog() -> Result<Vec<ResourceType>, AwsScanError> {
     let mut catalog: Catalog = serde_json::from_str(CATALOG_JSON)
         .map_err(|error| invalid(format!("embedded Cloud Control catalog: {error}")))?;
@@ -50,12 +45,10 @@ pub fn root_catalog() -> Result<Vec<ResourceType>, AwsScanError> {
     Ok(catalog.resource_types)
 }
 
-/// Reviewed parent-dependent types, kept separate from the frozen root catalog.
 pub fn parent_catalog() -> Result<Vec<ResourceType>, AwsScanError> {
     parents::catalog()
 }
 
-/// Complete runnable catalog, including types that need a discovered parent.
 pub fn catalog() -> Result<Vec<ResourceType>, AwsScanError> {
     let mut descriptors = root_catalog()?;
     descriptors.extend(parent_catalog()?);
@@ -63,8 +56,6 @@ pub fn catalog() -> Result<Vec<ResourceType>, AwsScanError> {
     Ok(descriptors)
 }
 
-/// An empty selection means the whole pinned catalog. Unknown selections fail
-/// before credentials are loaded; duplicate selectors are harmlessly deduped.
 pub fn validate_selection(selection: &Selection) -> Result<Vec<ResourceType>, AwsScanError> {
     let selected = match selection {
         Selection::Universal => return super::universal::list_descriptors(),

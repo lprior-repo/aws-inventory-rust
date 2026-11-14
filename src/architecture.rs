@@ -1,4 +1,3 @@
-//! Bounded topology summaries from a finalized inventory snapshot.
 use anyhow::{Context, Result};
 use futures_util::{StreamExt, TryStreamExt, future::BoxFuture, stream};
 use inventory_core::ScanStatus;
@@ -71,8 +70,7 @@ async fn report_open(store: &Store, scan_id: &str, limit: usize) -> Result<Value
     );
     let summary = store.summary(scan_id).await?;
     let escaped = format!("'{}'", scan_id.replace('\'', "''"));
-    // Eight owned futures bound allocation and avoid the compiler's borrowed
-    // stream-closure lifetime limitation at the CLI's Send future boundary.
+
     let work: Vec<PanelFuture<'_>> = PANELS
         .into_iter()
         .map(|(name, sql)| {
@@ -116,7 +114,7 @@ async fn panel(
 }
 
 #[cfg(test)]
-#[allow(clippy::indexing_slicing)] // JSON string keys are infallible; arrays use `first`.
+#[allow(clippy::indexing_slicing)]
 mod tests {
     use super::report_open;
     use crate::json_test::first;

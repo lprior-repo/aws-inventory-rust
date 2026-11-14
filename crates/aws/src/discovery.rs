@@ -1,8 +1,3 @@
-//! Read-only account and supplemental-source discovery with explicit coverage.
-//!
-//! Discovery never creates AWS resources. A failed listing retains preceding
-//! observations and cannot produce a selected source or a complete account set.
-
 mod organizations;
 mod pages;
 mod sources;
@@ -30,8 +25,6 @@ const MAX_FAILURES: usize = 1_024;
 const MAX_METADATA_BYTES: usize = 8_192;
 const CONFIGURATION_TIMEOUT: Duration = Duration::from_secs(30);
 
-/// One endpoint region is explicit. Organization requests use the SDK's global
-/// endpoint resolution; Config and Resource Explorer discovery are regional.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct DiscoveryOptions {
@@ -74,8 +67,6 @@ pub struct DiscoveryFailure {
     pub message: String,
 }
 
-/// Failure records have a fixed cap. Suppressed records remain counted, so
-/// exhaustion of diagnostics cannot turn partial work into successful work.
 #[derive(Clone, Debug, Default, Serialize, Deserialize, PartialEq, Eq)]
 pub struct DiscoveryCoverage {
     pub pages: u64,
@@ -137,8 +128,6 @@ pub struct DiscoveryReport {
     pub complete: bool,
 }
 
-/// Shares admission with the native collectors without inventing an event
-/// receiver for a report-only discovery command.
 struct DiscoveryClient<'a> {
     config: &'a SdkConfig,
     executor: &'a ApiExecutor,
@@ -188,8 +177,6 @@ impl DiscoveryClient<'_> {
     }
 }
 
-/// Only the role ARN/session configuration is retained. Credentials are supplied
-/// lazily by the SDK and refreshed through its normal identity cache.
 #[derive(Clone)]
 pub struct AssumeRoleOptions {
     pub role_arn: String,

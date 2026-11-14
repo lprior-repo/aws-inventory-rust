@@ -1,37 +1,33 @@
 use super::{DenyReason, OperationFacts};
 use thiserror::Error;
 
-/// A canonical must-deny syntax failure, with a one-based line number.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
 #[error("must-deny line {line}: {kind:?}")]
 pub struct ParseError {
-    /// One-based offending line; whole-file size errors use line one.
     pub line: usize,
-    /// Machine-readable cause.
+
     pub kind: ParseErrorKind,
 }
 
-/// Rejections of noncanonical or excessive deny-list input.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ParseErrorKind {
-    /// Keys must be ascending, ignoring comment lines.
     Unsorted,
-    /// A key must occur only once, even with different reasons.
+
     Duplicate,
-    /// Empty lines are forbidden.
+
     BlankLine,
-    /// An entry needs a tab separator.
+
     MissingTab,
-    /// Reasons are exactly the five documented lowercase labels.
+
     UnknownReason,
-    /// Every nonempty file ends in LF.
+
     MissingFinalNewline,
-    /// CR, including CRLF, is forbidden.
+
     CarriageReturn,
-    /// Expected an ASCII operation identifier or service/operation key.
+
     InvalidKey,
-    /// Exceeds 1 MiB, 4,096 entries, or allocation capacity.
+
     Limit,
 }
 
@@ -51,14 +47,10 @@ impl Entry<'_> {
     }
 }
 
-/// Validated, borrowed entries; parsing allocates only the bounded entry vector.
 #[derive(Debug)]
 pub struct DenyList<'a>(pub(crate) Vec<Entry<'a>>);
 
 impl<'a> DenyList<'a> {
-    /// Parse strict LF text, ignoring `#` comments; empty text is an empty list.
-    /// # Errors
-    /// Returns the one-based offending line and typed syntax/resource cause.
     pub fn parse(text: &'a str) -> Result<Self, ParseError> {
         validate_text(text)?;
         text.split_terminator('\n')
@@ -69,13 +61,11 @@ impl<'a> DenyList<'a> {
             })
     }
 
-    /// Number of rules, excluding comments; at most 4,096.
     #[must_use]
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
-    /// Whether there are no rules.
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()

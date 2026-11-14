@@ -1,5 +1,3 @@
-//! Model boundaries checked against serialized bytes and public contracts.
-
 use inventory_core::{
     CollectionEvent, CollectionPage, CollectionScope, Edge, MAX_IDENTIFIER_BYTES, MAX_PAGE_EDGES,
     MAX_PAGE_RESOURCES, MAX_PAGES, MAX_PROPERTY_BYTES, Resource, ScanStatus, Source,
@@ -130,7 +128,7 @@ fn exact_identifier_text_token_and_record_boundaries() {
     ));
     observation.resources.clear();
     observation.edges = vec![edge(); MAX_PAGE_EDGES];
-    // Record cardinality is valid even if another aggregate bound is exceeded.
+
     assert!(!matches!(
         observation.validate(),
         Err(ValidationError::Limit("page records"))

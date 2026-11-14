@@ -1,5 +1,3 @@
-//! Exclusive publication rejects a stale snapshot and never truncates a live inode.
-
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, Read, Write};
 use std::path::Path;

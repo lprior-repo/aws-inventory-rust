@@ -1,4 +1,3 @@
-//! Behavior: expired_cancelled_work_is_not_requeued.
 use super::*;
 
 #[tokio::test]

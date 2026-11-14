@@ -1,5 +1,3 @@
-//! Property paths, redaction and columns for one descriptor row.
-
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde_json::Value;

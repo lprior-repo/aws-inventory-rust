@@ -109,7 +109,7 @@ fn edge_requires_an_identifiable_in_scope_topic() -> TestResult {
             expected_edge,
             "topic: {topic:?}"
         );
-        // The returned topic ARN stays visible as evidence even without an edge.
+
         assert_eq!(
             observation.resource.properties.get("topic_arn"),
             Some(&json!(topic))

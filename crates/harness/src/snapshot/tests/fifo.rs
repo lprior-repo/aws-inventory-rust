@@ -1,5 +1,3 @@
-//! Public byte-limit regression: an open FIFO cannot be read through to EOF.
-
 use std::fs::{File, OpenOptions};
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
@@ -16,8 +14,7 @@ fn create_pipe(path: &Path) -> io::Result<File> {
     if !Command::new("mkfifo").arg(path).status()?.success() {
         return Err(io::Error::other("mkfifo did not create the test pipe"));
     }
-    // Keep opening either worker nonblocking; this bootstrap handle is closed
-    // before joining so failed/early readers cannot strand a blocked writer.
+
     OpenOptions::new().read(true).write(true).open(path)
 }
 

@@ -1,4 +1,3 @@
-//! Original type scenarios, using the contracted enum constructors.
 use inventory_core::record::*;
 use std::collections::BTreeMap;
 
@@ -118,7 +117,6 @@ fn time_fields_accessible() -> TestResult {
 }
 #[test]
 fn generic_indefinite_root_is_accepted_but_rejected_when_read() -> TestResult {
-    // Given a well-formed indefinite root, when validated, then only reads reject its form.
     let record = Record::from_bytes(vec![0xBF, 1, 0, 0xFF])?;
     assert_eq!(record.as_bytes(), [0xBF, 1, 0, 0xFF]);
     assert_eq!(
@@ -129,10 +127,9 @@ fn generic_indefinite_root_is_accepted_but_rejected_when_read() -> TestResult {
 }
 #[test]
 fn iteration_terminates_after_reporting_an_unsupported_item() -> TestResult {
-    // Given supported null followed by unsupported f32 and another valid item.
     let record = Record::from_bytes(vec![0xA1, 1, 0x83, 0xF6, 0xFA, 0, 0, 0, 0, 1])?;
     let list = list_field(&record)?;
-    // When iterating, then the null advances and the first error ends traversal.
+
     let mut items = list.iter()?;
     assert_eq!(
         items
@@ -161,9 +158,8 @@ fn list_field(record: &Record) -> TestResult<ListRef<'_>> {
 }
 #[test]
 fn map_iteration_terminates_after_reporting_an_unsupported_value() -> TestResult {
-    // Given a supported key with an unsupported f32 value followed by a valid field.
     let record = Record::from_bytes(vec![0xA2, 1, 0xFA, 0, 0, 0, 0, 2, 0])?;
-    // When iterating, then the value error is reported exactly once.
+
     let mut entries = record.root().iter()?;
     assert!(matches!(
         entries.next(),

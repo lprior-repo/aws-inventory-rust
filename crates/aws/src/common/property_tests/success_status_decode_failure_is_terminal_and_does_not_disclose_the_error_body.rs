@@ -1,4 +1,3 @@
-//! success status decode failure is terminal and does not disclose the error body properties.
 use super::*;
 
 proptest! {

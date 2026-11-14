@@ -1,4 +1,3 @@
-//! Behavior: newer_observation_within_the_same_source_wins.
 use super::*;
 
 #[tokio::test]

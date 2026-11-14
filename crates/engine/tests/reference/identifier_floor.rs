@@ -1,13 +1,7 @@
-//! Behavior: the unique-identifier tier only indexes provider primary
-//! identifiers at or above the documented eight-byte floor. Shorter values are
-//! ordinary provider enums (such as `abc` or `yes`), so they never fabricate an
-//! edge and never move accounting counters. ARN components keep their own,
-//! lower floor and are not weakened.
 use super::{ACCOUNT, SCAN, TestResult, property, resource, store_with};
 use inventory_engine::graph::reference::{self, ReferenceConfig};
 use serde_json::json;
 
-/// Documented floor for a provider primary identifier to enter the tier.
 const FLOOR: usize = 8;
 
 #[tokio::test]
@@ -71,9 +65,6 @@ async fn identifier_at_the_floor_emits_the_weakest_accepted_edge() -> TestResult
 
 #[tokio::test]
 async fn arn_component_floor_is_unchanged_by_the_identifier_floor() -> TestResult {
-    // The three-byte component `abc` comes from an observed ARN, not from a
-    // provider enum. It still resolves through the ARN-component tier in the
-    // ARN's own account and region.
     let target = "arn:aws:sns:us-east-1:111111111111:abc";
     let source = "arn:aws:sqs:us-east-1:111111111111:consumer-component";
     let reference_arn = "arn:aws:sqs:us-east-1:111111111111:abc";
@@ -96,8 +87,6 @@ async fn arn_component_floor_is_unchanged_by_the_identifier_floor() -> TestResul
 
 #[tokio::test]
 async fn floor_matches_across_another_account_never_emit() -> TestResult {
-    // The at-floor identifier is unique in the scan but owned by another
-    // account, so the unique-in-scope tier must not guess a cross-account edge.
     let mut foreign = resource(
         "arn:aws:service:us-east-1:222222222222:widget/owner-floor",
         "aws_service_widget",

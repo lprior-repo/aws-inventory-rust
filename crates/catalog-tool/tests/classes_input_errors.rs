@@ -33,7 +33,6 @@ fn fixture(model: &str) -> Result<tempfile::TempDir, Box<dyn std::error::Error>>
 
 #[test]
 fn missing_input_target_names_the_service_operation_and_target() -> TestResult {
-    // Given a present dangling input, when reporting, then it cannot become input-free.
     let dir = fixture(MISSING)?;
     assert!(matches!(build_report(dir.path(), dir.path()),
         Err(Error::InvalidInput { service, operation, target })
@@ -43,7 +42,6 @@ fn missing_input_target_names_the_service_operation_and_target() -> TestResult {
 
 #[test]
 fn non_structure_input_target_names_the_service_operation_and_target() -> TestResult {
-    // Given a present string-shaped input, when reporting, then it is rejected explicitly.
     let dir = fixture(NON_STRUCTURE)?;
     assert!(matches!(build_report(dir.path(), dir.path()),
         Err(Error::InvalidInput { service, operation, target })
@@ -53,8 +51,6 @@ fn non_structure_input_target_names_the_service_operation_and_target() -> TestRe
 
 #[test]
 fn invalid_input_is_rejected_even_for_a_mutating_operation() -> TestResult {
-    // Given a denied name with a malformed input, when loading the model,
-    // then denial does not bypass the input boundary's validation.
     let dir = fixture(&MISSING.replace("ListBad", "PutBad"))?;
     assert!(matches!(build_report(dir.path(), dir.path()),
         Err(Error::InvalidInput { service, operation, target })
@@ -64,8 +60,6 @@ fn invalid_input_is_rejected_even_for_a_mutating_operation() -> TestResult {
 
 #[test]
 fn input_mixins_return_a_named_error_without_overwriting_the_report() -> TestResult {
-    // Given an inherited required member and good committed bytes, when writing,
-    // then unresolved mixins fail closed instead of silently permitting enumeration.
     let dir = fixture(MIXINS)?;
     let path = dir.path().join("catalog/aws-classes.report");
     std::fs::write(&path, "preserve\n")?;
@@ -84,8 +78,6 @@ fn input_mixins_return_a_named_error_without_overwriting_the_report() -> TestRes
 
 #[test]
 fn a_dangling_mixin_reference_is_rejected_like_a_resolvable_one() -> TestResult {
-    // Given an input whose mixin target is absent and good committed bytes,
-    // when writing, then the reference is not ignored and nothing is replaced.
     let model = r#"{"shapes":{
  "n#Svc":{"type":"service"},
  "n#ListBad":{"type":"operation","input":{"target":"n#Input"}},

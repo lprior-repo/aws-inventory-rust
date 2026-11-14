@@ -174,8 +174,6 @@ fn trusted_roots(pem: &[u8]) -> Result<rustls::RootCertStore, ProxyError> {
     Ok(roots)
 }
 
-// Box only the large TLS state, keeping the ordinary TCP variant compact.
-// Concrete enum dispatch avoids a trait object per read/write operation.
 pub(crate) enum Socket {
     Plain(TcpStream),
     Tls(Box<TlsStream<TcpStream>>),

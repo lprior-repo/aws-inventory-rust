@@ -1,5 +1,3 @@
-//! Render the human-readable coverage rollup.
-
 use std::fs;
 use std::path::Path;
 
@@ -9,7 +7,6 @@ use super::Json;
 use super::format::group_thousands;
 use super::jhelpers::{array, field, integer, object, text};
 
-/// Read the ordered capability matrix and its raw-byte digest.
 pub(super) fn read_ordered(path: &Path) -> Result<(Json, String), HarnessError> {
     let bytes = crate::files::read_bytes(path, super::files::MAX_DOCUMENT_BYTES)
         .map_err(super::files::budget_message)?;
@@ -199,7 +196,6 @@ fn interpretation_lines() -> Vec<String> {
     ]
 }
 
-/// Render the human-readable coverage rollup.
 pub fn write_rollup(matrix: &Json, path: &Path) -> Result<(), HarnessError> {
     let summary = field(matrix, "summary")?;
     let mut lines = document_header(summary)?;

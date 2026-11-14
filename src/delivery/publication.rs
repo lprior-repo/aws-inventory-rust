@@ -117,9 +117,7 @@ pub(super) async fn persist_receipt(directory: &Path, value: &Value) -> Result<(
     }
     .await;
     drop(file);
-    // This private function publishes once inside a newly owned UUID directory.
-    // Rename is the final operation, avoiding a post-publication unlink that
-    // could disagree with the durable receipt's outcome.
+
     let result = match result {
         Ok(()) => tokio::fs::rename(&temporary, &path).await,
         Err(error) => Err(error),

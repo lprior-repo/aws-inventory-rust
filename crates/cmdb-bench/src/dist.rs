@@ -1,9 +1,3 @@
-//! Seeded heavy-tail account sizing for `--assets-total` mode.
-//!
-//! Weights follow a harmonic (Zipf) tail, are shuffled by the seed, and are then
-//! apportioned with integer largest-remainder allocation so the sizes always sum
-//! exactly to the requested asset total.
-
 use std::error::Error;
 
 use crate::options::{Options, SizeSpec};

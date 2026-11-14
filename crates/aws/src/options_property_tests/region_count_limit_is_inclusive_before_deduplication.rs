@@ -1,4 +1,3 @@
-//! region count limit is inclusive before deduplication properties.
 use super::*;
 
 proptest! {

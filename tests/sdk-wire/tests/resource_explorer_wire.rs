@@ -1,9 +1,9 @@
-//! Offline protocol fixtures using the pinned, unmodified official Rust SDK.
-//!
-//! These tests are not emulator passes. StaticReplayClient supplies literal
-//! response bodies in memory; no endpoint, credential chain, DNS, socket, or
-//! emulator process is consulted. The numeric cases reproduce the upstream
-//! emulator's timestamp token shape without changing any real response body.
+ 
+ 
+ 
+ 
+ 
+ 
 #![forbid(unsafe_code)]
 
 use std::fmt::Debug;
@@ -53,8 +53,8 @@ fn replay_client(
         .behavior_version(BehaviorVersion::latest())
         .region(Region::new("us-east-1"))
         .endpoint_url(ENDPOINT)
-        // Synthetic values only sign in-memory requests; they are not emulator
-        // credentials and never leave the official replay transport.
+         
+         
         .credentials_provider(Credentials::new(
             "offline-wire-fixture-access-key",
             "offline-wire-fixture-secret",
@@ -86,8 +86,8 @@ fn assert_one_request(replay: &StaticReplayClient) -> Result<()> {
             "a second SDK request was recorded"
         );
     }
-    // Verifies exact URI and JSON request fields and that the event was consumed.
-    // The official utility intentionally ignores unspecified signing headers.
+     
+     
     replay.assert_requests_match(&[]);
     Ok(())
 }
@@ -113,8 +113,8 @@ fn assert_numeric_rejected<T, E: ProvideErrorMetadata + Debug>(
         Err(error) => error,
         Ok(_) => return Err("numeric epoch timestamp was accepted as a modeled date-time".into()),
     };
-    // A response was actually received. This is not a connection/configuration
-    // failure, and the response did not carry a modeled AWS service error code.
+     
+     
     assert_eq!(
         error
             .raw_response()

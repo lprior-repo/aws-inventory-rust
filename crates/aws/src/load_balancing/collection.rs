@@ -1,10 +1,9 @@
-//! collection operations.
 use super::*;
 
 #[tracing::instrument(skip_all)]
 pub(crate) async fn collect(ctx: &Context) -> Result<(), AwsScanError> {
     let client = Client::new(&ctx.config);
-    // These roots are independent: unattached target groups must also be inventoried.
+
     collect_bounded([false, true], 2, |groups| {
         let client = &client;
         async move {
@@ -184,8 +183,6 @@ pub(super) async fn target_groups(ctx: &Context, client: &Client) -> Result<(), 
     .await
 }
 
-/// DescribeTargetHealth has no pagination. Reuse the scope driver so a failed
-/// request never becomes an empty successful result, including in injected tests.
 #[tracing::instrument(skip_all, fields(target_group_arn, target_type))]
 pub(super) async fn target_health_with<F, Fut>(
     ctx: &Context,

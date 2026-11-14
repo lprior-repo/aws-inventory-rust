@@ -10,7 +10,7 @@ use tokio::{
 };
 
 pub type TestResult = Result<(), Box<dyn Error>>;
-/// Head (through the blank line) and body of one HTTP message.
+
 pub type Message<'a> = (&'a [u8], &'a [u8]);
 pub const TEST_REQUESTS: usize = 1_024;
 pub const TEST_RESPONSE_CAP: u64 = 16_777_216;

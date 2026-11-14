@@ -6,35 +6,27 @@ use crate::classes::{Class, DenyList, classify};
 use serde_json::Value;
 use std::collections::BTreeMap;
 
-/// Missing model evidence for an expansion binding.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ExpansionReason {
-    /// No resource references this operation.
     NotInResource,
-    /// Referencing resources cannot bind every required input to an identifier.
+
     RequiredMemberNotIdentifier,
 }
 
-/// Borrowed expansion evidence, never authorization to call an operation.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Expansion<'a> {
-    /// Resource chosen by shape ID; input member names map to resource identifier keys.
     Modeled {
         resource: &'a str,
         identifiers: BTreeMap<&'a str, &'a str>,
         list_source: bool,
         ambiguous_resource: bool,
     },
-    /// An overlay must supply the missing binding evidence.
+
     NeedsOverlay(ExpansionReason),
 }
 
-/// Bind required inputs to identifiers of a same-model resource, in shape ID order.
-/// Callers apply this only to classifier `Expand` operations. Optional members are ignored.
-/// # Errors
-/// Rejects malformed structures, dangling resource-list operations or identifier bounds.
 pub fn expansion<'a>(
     model: &Model<'a>,
     id: &str,

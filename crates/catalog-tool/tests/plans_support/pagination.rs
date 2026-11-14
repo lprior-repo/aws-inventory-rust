@@ -7,7 +7,6 @@ use serde_json::{Value, json};
 
 #[test]
 fn service_defaults_fill_missing_fields_and_operation_values_win() -> TestResult {
-    // Given conflicting defaults, when merged, then the operation wins and dotted output survives.
     let value = paginated();
     let model = Model::parse(&value, "alpha")?;
     let mut vocabulary = Vocabulary::default();
@@ -31,7 +30,6 @@ fn service_defaults_fill_missing_fields_and_operation_values_win() -> TestResult
 
 #[test]
 fn missing_tokens_name_service_and_operation() -> TestResult {
-    // Given an incomplete merged trait, when vocabulary is collected, then context is retained.
     let mut value = paginated();
     replace(&mut value, "/shapes/n#Service/traits", json!({}))?;
     let model = Model::parse(&value, "missing")?;
@@ -45,7 +43,6 @@ fn missing_tokens_name_service_and_operation() -> TestResult {
 
 #[test]
 fn missing_token_members_and_malformed_paths_are_typed_errors() -> TestResult {
-    // Given invalid merged output/input paths, none is silently treated as unpaginated.
     [
         ("Absent", "Envelope.Token", PaginatorError::InputMember),
         ("Next", "Missing.Token", PaginatorError::OutputMember),
@@ -70,7 +67,6 @@ fn suspected(input: Value, output: Value, boolean: &str) -> Value {
 
 #[test]
 fn cross_service_vocabulary_and_reason_precedence_are_exact() -> TestResult {
-    // Given vocabulary from another service, both token sides outrank one side and truncation.
     let source = paginated();
     let mut vocab = Vocabulary::default();
     vocab.record(&Model::parse(&source, "other")?)?;
@@ -112,7 +108,6 @@ fn cross_service_vocabulary_and_reason_precedence_are_exact() -> TestResult {
 
 #[test]
 fn nonboolean_more_member_and_absent_vocabulary_are_unpaginated() -> TestResult {
-    // Given lookalike names without matching types/vocabulary, no token heuristic is invented.
     let value = suspected(
         json!({"Next":{"target":"smithy.api#String"}}),
         json!({"IsTruncated":{"target":"n#Flag"}}),
@@ -128,7 +123,6 @@ fn nonboolean_more_member_and_absent_vocabulary_are_unpaginated() -> TestResult 
 
 #[test]
 fn operation_output_overrides_default_and_default_input_fills_its_absence() -> TestResult {
-    // Given only an operation output override, merging fills input but preserves that output.
     let mut value = paginated();
     replace(
         &mut value,
@@ -156,7 +150,6 @@ fn operation_output_overrides_default_and_default_input_fills_its_absence() -> T
 
 #[test]
 fn non_list_modeled_operations_still_supply_cross_service_vocabulary() -> TestResult {
-    // Given a modeled Get paginator, when vocabulary is collected, then it protects another service.
     let mut donor = paginated();
     let shapes = donor
         .get_mut("shapes")
@@ -181,7 +174,6 @@ fn non_list_modeled_operations_still_supply_cross_service_vocabulary() -> TestRe
 
 #[test]
 fn token_paths_accept_the_depth_bound_and_reject_one_beyond() -> TestResult {
-    // Given the named path-depth boundary, when collecting, only the oversized path fails.
     [32_usize, 33].into_iter().try_for_each(|depth| {
         let mut value = paginated();
         let path = vec!["Envelope"; depth].join(".");

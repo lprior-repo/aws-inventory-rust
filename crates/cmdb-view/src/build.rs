@@ -1,5 +1,3 @@
-//! Record collection: deduplication, stable ordering, indexes and counts.
-
 use crate::error::ViewError;
 use crate::graph::EdgeView;
 use crate::meta::{Coverage, FailureView, ScopeCoverage};
@@ -9,15 +7,14 @@ use serde_json::Value;
 use std::collections::BTreeMap;
 use std::io::{self, Write};
 
-/// Whole-document input bound; the UI parses one file per refresh.
 pub const MAX_SNAPSHOT_BYTES: usize = 1_073_741_824;
-/// Raw resource records accepted before the document is rejected.
+
 const MAX_RESOURCES: usize = 2_000_000;
-/// Raw edge records accepted before the document is rejected.
+
 const MAX_EDGES: usize = 5_000_000;
-/// Scope records retained; the remainder is reported as truncated.
+
 const MAX_SCOPES: usize = 500_000;
-/// Failure records retained; the remainder is reported as truncated.
+
 const MAX_FAILURES: usize = 500_000;
 
 pub(crate) struct Collected {
@@ -113,10 +110,6 @@ fn push_failure(coverage: &mut Coverage, record: RawFailureRecord) {
     });
 }
 
-/// Deduplicate resources by ID in input order, then sort the retained records.
-///
-/// All-observations exports repeat identities; account, region and kind are
-/// attributes, not identity components. Display ordering cannot select a winner.
 pub(crate) fn finalize(collected: Collected) -> Finalized {
     let Collected {
         mut resources,
@@ -133,7 +126,6 @@ pub(crate) fn finalize(collected: Collected) -> Finalized {
 }
 
 fn sort_resources(resources: &mut Vec<ResourceView>) {
-    // Stable ID sorting preserves input precedence within each identity.
     resources.sort_by(|left, right| left.id.cmp(&right.id));
     resources.dedup_by(|left, right| left.id == right.id);
     resources.sort_by(|left, right| {
@@ -194,7 +186,6 @@ impl Write for ByteCounter {
     }
 }
 
-/// Exact compact-JSON length of a property value, without retaining a copy.
 fn json_size(value: &Value) -> Result<usize, ViewError> {
     let mut counter = ByteCounter(0);
     serde_json::to_writer(&mut counter, value).map_err(|_| ViewError::SizeOverflow)?;

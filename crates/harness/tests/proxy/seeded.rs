@@ -7,8 +7,7 @@ struct Case {
     prefix: usize,
     byte: u8,
 }
-// Independent SplitMix64 evaluation of unsigned\0 repeated three times, then
-// ordinal zero: prefix=floor(15*(1+entropy%3)/4), byte=entropy's low byte.
+
 const CASES: [Case; 3] = [
     Case {
         seed: 7,

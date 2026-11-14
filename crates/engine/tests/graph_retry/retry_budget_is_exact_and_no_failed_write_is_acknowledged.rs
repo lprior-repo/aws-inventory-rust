@@ -1,4 +1,3 @@
-//! Behavior: retry_budget_is_exact_and_no_failed_write_is_acknowledged.
 use super::*;
 
 #[tokio::test]

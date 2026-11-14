@@ -1,4 +1,3 @@
-//! routes keep destinations states and one edge per target behavior.
 use super::*;
 
 #[test]

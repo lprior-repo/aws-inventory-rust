@@ -7,7 +7,6 @@ use std::path::Path;
 
 #[test]
 fn document_depth_exactly_64_succeeds_and_65_fails() -> TestResult {
-    // Root is depth zero; metadata begins at one, followed by 63 array edges.
     let metadata = (1..MAX_DEPTH).fold(Value::Null, |inner, _| Value::Array(vec![inner]));
     assert!(parse(metadata.clone()).is_ok());
     assert!(matches!(parse(Value::Array(vec![metadata])),
@@ -18,8 +17,6 @@ fn document_depth_exactly_64_succeeds_and_65_fails() -> TestResult {
 
 #[test]
 fn document_nodes_exactly_100000_succeed_and_100001_fail() -> TestResult {
-    // Ten nodes comprise root, version, parameters, rules/rule, conditions,
-    // endpoint, URL, rule type, and the metadata array; map keys are not Value nodes.
     let count = MAX_STEPS.saturating_sub(10);
     assert!(parse(json!(vec![Value::Null; count])).is_ok());
     assert!(

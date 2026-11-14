@@ -1,4 +1,3 @@
-//! Sorted streaming comparison: only one lookahead item per input is retained.
 use super::{DETAIL_BYTES, encoded_len, finalized};
 use anyhow::{Context, Result};
 use futures_util::{Stream, StreamExt, TryStreamExt, stream};

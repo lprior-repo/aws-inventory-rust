@@ -1,4 +1,3 @@
-//! Credential-free validation of account selection and role references.
 use crate::cli::AccountArgs;
 use anyhow::{Result, ensure};
 

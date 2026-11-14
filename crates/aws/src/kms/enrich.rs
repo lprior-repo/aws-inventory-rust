@@ -1,6 +1,3 @@
-//! Per-key enrichment: describe, customer-managed rotation, and tags. Every
-//! child failure is recorded in its own scope and never discards the key.
-
 use std::collections::BTreeMap;
 
 use aws_sdk_kms::{
@@ -17,11 +14,8 @@ use crate::{
     common::{Context, sdk_error},
 };
 
-/// KMS permits at most 50 tags on one key, so a truncated listing is anomalous.
 pub(super) const MAX_TAGS_PER_KEY: i32 = 50;
 
-/// Which per-key child reads apply to a key. AWS-managed keys cannot be tagged
-/// and their rotation is not customer-configurable, so both reads are skipped.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) struct Enrichment {
     pub(super) rotation: bool,
@@ -131,8 +125,6 @@ async fn describe_key(
     }
 }
 
-/// Automatic rotation is configurable only for customer-managed keys. Failure is
-/// recorded in a child scope and the key is retained without a rotation claim.
 async fn key_rotation(
     ctx: &Context,
     client: &Client,
@@ -166,7 +158,6 @@ async fn key_rotation(
     }
 }
 
-/// Tag failure is recorded but does not discard an otherwise valid key.
 async fn key_tags(
     ctx: &Context,
     client: &Client,

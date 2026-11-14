@@ -104,9 +104,7 @@ async fn make_v3(path: &std::path::Path) -> TestResult {
     store.close().await;
     let mut connection =
         SqliteConnection::connect_with(&SqliteConnectOptions::new().filename(path)).await?;
-    // Store::open creates the current schema. A genuine v3 database predates
-    // both the global views and the v5 Cloud Control expansion, so remove only
-    // the reviewed view identifiers declared by that later migration.
+
     let mut removed_expansion_views: usize = 0;
     for view in [
         include_str!("../sql/005_cloudcontrol_expansion.sql"),
@@ -136,7 +134,6 @@ async fn make_v3(path: &std::path::Path) -> TestResult {
     .await?;
     assert_eq!(legacy_cloud_control_views, 200);
     for view in NEW_VIEWS {
-        // Only reviewed, constant identifiers enter this migration fixture.
         sqlx::raw_sql(sqlx::AssertSqlSafe(format!("DROP VIEW {view}")))
             .execute(&mut connection)
             .await?;

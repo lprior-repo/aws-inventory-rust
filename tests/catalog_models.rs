@@ -1,7 +1,5 @@
-//! Compare the real CLI's text with the independently committed model report.
 #[test]
 fn catalog_models_reports_embedded_bytes_without_json() -> Result<(), Box<dyn std::error::Error>> {
-    // Given the generated embedded catalog, when requesting model statistics, text is canonical.
     assert!(
         !include_bytes!("../catalog/aws-api.catalog").is_empty(),
         "generate catalog first: cargo run -p catalog-tool -- models compile --write"

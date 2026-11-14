@@ -1,15 +1,10 @@
-//! scan operations.
 use super::*;
 
-/// Scan one profile. The caller owns the bounded channel and persists events.
-/// No AWS services, indexes, recorders, views, or roles are created or changed.
 pub async fn scan(
     options: AwsScanOptions,
     executor: Arc<ApiExecutor>,
     sender: Sender<CollectionEvent>,
 ) -> Result<(), AwsScanError> {
-    // Erase the SDK future tree at the crate boundary. This is one allocation
-    // per profile, and prevents every downstream caller expanding its layout.
     let work: futures_util::future::BoxFuture<'static, Result<(), AwsScanError>> =
         Box::pin(scan_inner(options, executor, sender));
     work.await
@@ -61,8 +56,7 @@ pub(super) async fn scan_inner(
         .map(|region| region.as_ref().to_owned())
         .ok_or_else(|| AwsScanError::InvalidOptions("unable to select bootstrap region".into()))?;
     let sts = aws_sdk_sts::Client::new(&config);
-    // Identity is not known before this request. Conservatively share one STS
-    // bootstrap bucket per endpoint region across profiles.
+
     let identity_bucket = format!("identity:{bootstrap_region}:sts");
     let identity = executor
         .execute(&identity_bucket, || async {

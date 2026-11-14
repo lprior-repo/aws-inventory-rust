@@ -1,15 +1,3 @@
-//! Run the universal reference resolver against a SQLite inventory.
-//!
-//! Without arguments the example creates a small file database, seeds a
-//! representative scan, resolves it, persists the derived edges, and resolves
-//! again to prove replay stability. With arguments it resolves an existing
-//! database and scan id; pass `persist` as the third argument to persist the
-//! derived edges into that database too:
-//!
-//! ```text
-//! cargo run -p inventory-engine --example reference_resolver
-//! cargo run -p inventory-engine --example reference_resolver -- <db> <scan> [persist]
-//! ```
 use inventory_core::{CollectionPage, CollectionScope, Resource, ScanStatus, Source};
 use inventory_engine::{
     graph::reference::{self, ReferenceConfig},

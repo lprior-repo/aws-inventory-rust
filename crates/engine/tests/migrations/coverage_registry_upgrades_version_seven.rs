@@ -1,4 +1,3 @@
-//! Behavior: coverage_registry_upgrades_version_seven.
 use super::*;
 
 #[tokio::test]

@@ -1,5 +1,3 @@
-//! The full capability matrix for every retained provider schema.
-
 use std::collections::BTreeMap;
 
 use serde_json::Value;
@@ -30,7 +28,6 @@ struct Facts {
     schema_sha256: String,
 }
 
-/// Build the deterministic capability matrix for the pinned schemas.
 pub fn build(
     archive: &Archive,
     resources: &Json,
@@ -198,7 +195,6 @@ fn source_fields(facts: &Facts, descriptor: Option<&Json>) -> Vec<(String, Json)
     ]
 }
 
-/// The archive base name embedded in evidence documents.
 pub fn archive_name() -> &'static str {
     crate::catalog::ARCHIVE
         .rsplit('/')

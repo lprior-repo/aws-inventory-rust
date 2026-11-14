@@ -1,4 +1,3 @@
-//! Behavior: lease_expiration_is_a_hard_commit_boundary.
 use super::*;
 
 #[tokio::test]

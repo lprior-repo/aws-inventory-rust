@@ -1,4 +1,3 @@
-//! Behavior: invalid_budget_bounds_are_rejected_before_any_file_is_created.
 use super::*;
 
 #[tokio::test]

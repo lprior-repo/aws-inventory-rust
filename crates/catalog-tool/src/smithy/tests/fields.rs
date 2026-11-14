@@ -3,7 +3,6 @@ use super::*;
 #[test]
 fn irrelevant_fields_are_ignored_for_unknown_and_known_kinds()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given unusable input/members fields where those fields have no meaning.
     let model: ModelFile = serde_json::from_str(
         r#"{"shapes":{
       "n#Svc":{"type":"service","input":42,"members":false},
@@ -15,7 +14,7 @@ fn irrelevant_fields_are_ignored_for_unknown_and_known_kinds()
       "n#ListIgnored":{"type":"operation","members":42}
     }}"#,
     )?;
-    // When counting, then irrelevant fields neither reject the model nor add members.
+
     assert_eq!(
         compute_stats(&model),
         ModelStats {
@@ -41,7 +40,6 @@ fn irrelevant_fields_are_ignored_for_unknown_and_known_kinds()
 #[test]
 fn required_members_exclude_roots_regardless_of_member_position()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given optional/required members in both lexical orders.
     let model: ModelFile = serde_json::from_str(
         r#"{"shapes":{
       "n#Svc":{"type":"service"},
@@ -51,7 +49,7 @@ fn required_members_exclude_roots_regardless_of_member_position()
       "n#Last":{"type":"structure","members":{"A":{},"Z":{"traits":{"smithy.api#required":{}}}}}
     }}"#,
     )?;
-    // When every member is inspected, then neither operation is a root.
+
     assert_eq!(
         compute_stats(&model),
         ModelStats {
@@ -67,9 +65,8 @@ fn required_members_exclude_roots_regardless_of_member_position()
 
 #[test]
 fn identical_reports_have_no_differences() -> Result<(), Box<dyn std::error::Error>> {
-    // Given matching reports with CRLF and trailing spaces.
     let report = "services 1 \r\noperations 2\n";
-    // When comparing borrowed lines, then no difference is produced.
+
     assert_eq!(differences(report, report)?, "");
     assert_eq!(differences("", "")?, "");
     Ok(())

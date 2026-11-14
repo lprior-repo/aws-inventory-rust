@@ -1,9 +1,3 @@
-//! Pointer handling: click-to-select, hover highlight, drag pan, wheel zoom.
-//!
-//! A press that moves no further than [`CLICK_SLOP`] is a selection; larger
-//! movement pans the camera. A click on empty canvas clears the selection and
-//! posts an action with `id: None`.
-
 use makepad_widgets::event::DigitId;
 use makepad_widgets::*;
 

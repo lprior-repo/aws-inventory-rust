@@ -1,6 +1,3 @@
-//! Projection of the table's state onto the title bar, filter rail and the
-//! detail panel. No filtering happens here: `Data` already decided.
-
 use makepad_widgets::*;
 
 use crate::data::{ACCOUNTS, KINDS, REGIONS, Row};

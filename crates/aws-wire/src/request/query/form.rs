@@ -1,4 +1,5 @@
 use crate::request::{EncodeError, common::BoundedBody};
+use base64::Engine;
 
 pub(super) fn pair(
     body: &mut BoundedBody,
@@ -21,8 +22,12 @@ pub(super) fn pair_base64(
     bytes: &[u8],
     limit: usize,
 ) -> Result<(), EncodeError> {
-    let encoded_len = bytes.len().checked_add(2).ok_or(EncodeError::Limit("body"))?
-        .checked_div(3).and_then(|count| count.checked_mul(4))
+    let encoded_len = bytes
+        .len()
+        .checked_add(2)
+        .ok_or(EncodeError::Limit("body"))?
+        .checked_div(3)
+        .and_then(|count| count.checked_mul(4))
         .ok_or(EncodeError::Limit("body"))?;
     if encoded_len > limit {
         return Err(EncodeError::Limit("body"));
@@ -33,33 +38,28 @@ pub(super) fn pair_base64(
     *first = false;
     component(body, name.as_bytes())?;
     body.write(b"=")?;
-    let mut input = bytes.iter().copied();
-    while let Some(a) = input.next() {
-        let b = input.next();
-        let c = input.next();
-        let values = [
-            BASE64[usize::from(a >> 2)],
-            BASE64[usize::from(((a & 0x03) << 4) | b.unwrap_or(0) >> 4)],
-            match b {
-                Some(value) => BASE64[usize::from(((value & 0x0f) << 2) | c.unwrap_or(0) >> 6)],
-                None => b'=',
-            },
-            match c {
-                Some(value) => BASE64[usize::from(value & 0x3f)],
-                None => b'=',
-            },
-        ];
-        component(body, &values)?;
+    let (chunks, remainder) = bytes.as_chunks::<3>();
+    for chunk in chunks {
+        write_base64_chunk(body, chunk)?;
+    }
+    if !remainder.is_empty() {
+        write_base64_chunk(body, remainder)?;
     }
     Ok(())
 }
 
-const BASE64: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+fn write_base64_chunk(body: &mut BoundedBody, bytes: &[u8]) -> Result<(), EncodeError> {
+    let mut encoded = [0; 4];
+    let length = base64::engine::general_purpose::STANDARD
+        .encode_slice(bytes, &mut encoded)
+        .map_err(|_| EncodeError::Limit("body"))?;
+    component(
+        body,
+        encoded.get(..length).ok_or(EncodeError::Limit("body"))?,
+    )
+}
 
-pub(super) fn component(
-    body: &mut BoundedBody,
-    value: &[u8],
-) -> Result<(), EncodeError> {
+pub(super) fn component(body: &mut BoundedBody, value: &[u8]) -> Result<(), EncodeError> {
     value.iter().try_for_each(|byte| write_byte(body, *byte))
 }
 
@@ -70,15 +70,15 @@ fn write_byte(body: &mut BoundedBody, byte: u8) -> Result<(), EncodeError> {
     if byte == b' ' {
         return body.write(b"+");
     }
-    let encoded = [b'%', hex(byte >> 4), hex(byte & 0x0f)];
+    let encoded = [b'%', hex(byte >> 4)?, hex(byte & 0x0f)?];
     body.write(&encoded)
 }
 
-fn hex(value: u8) -> u8 {
-    match value {
-        0..=9 => b'0' + value,
-        _ => b'A' + value - 10,
-    }
+fn hex(value: u8) -> Result<u8, EncodeError> {
+    b"0123456789ABCDEF"
+        .get(usize::from(value))
+        .copied()
+        .ok_or(EncodeError::Limit("query name"))
 }
 #[cfg(test)]
 mod tests {
@@ -93,25 +93,22 @@ mod tests {
         assert!(result.is_ok());
         let result = pair(&mut body, &mut first, "A~", "é");
         assert!(result.is_ok());
-        assert_eq!(
-            body.into_vec(),
-            b"Action=List+%2B%26&A%7E=%C3%A9"
-        );
+        assert_eq!(body.into_vec(), b"Action=List+%2B%26&A%7E=%C3%A9");
     }
 
     #[test]
     fn blob_base64_is_percent_encoded_and_body_bounded() {
-        let mut body = BoundedBody::new(64);
+        let mut body = BoundedBody::new(6);
         let mut first = true;
-        let result = pair_base64(&mut body, &mut first, "Blob", &[0xfb, 0xff], 64);
+        let result = pair_base64(&mut body, &mut first, "B", &[1, 2, 3], 6);
         assert!(result.is_ok());
-        assert_eq!(body.into_vec(), b"Blob=%2B%2F8%3D");
+        assert_eq!(body.into_vec(), b"B=AQID");
 
-        let mut body = BoundedBody::new(8);
+        let mut body = BoundedBody::new(5);
         let mut first = true;
-        let result = pair_base64(&mut body, &mut first, "B", &[1, 2, 3], 8);
+        let result = pair_base64(&mut body, &mut first, "B", &[1, 2, 3], 5);
         assert!(matches!(result, Err(EncodeError::Limit("body"))));
-        assert!(body.into_vec().len() <= 8);
+        assert!(body.into_vec().len() <= 5);
     }
 
     #[test]
@@ -119,7 +116,16 @@ mod tests {
         let mut body = BoundedBody::new(8);
         let mut first = true;
         let result = pair(&mut body, &mut first, "a", "longer");
-        assert!(matches!(result, Err(crate::request::EncodeError::Limit("body"))));
-        assert!(body.into_vec().len() <= 8);
+        assert!(result.is_ok());
+        assert_eq!(body.into_vec(), b"a=longer");
+
+        let mut body = BoundedBody::new(7);
+        let mut first = true;
+        let result = pair(&mut body, &mut first, "a", "longer");
+        assert!(matches!(
+            result,
+            Err(crate::request::EncodeError::Limit("body"))
+        ));
+        assert!(body.into_vec().len() <= 7);
     }
 }

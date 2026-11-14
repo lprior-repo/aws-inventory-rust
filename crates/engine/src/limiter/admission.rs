@@ -1,4 +1,3 @@
-//! Fair permit admission without holding capacity during pacing.
 use super::*;
 
 impl ApiExecutor {
@@ -48,10 +47,7 @@ impl ApiExecutor {
     ) -> Result<AttemptPermit<'a>, ApiError> {
         let local = self.acquire(&bucket.in_flight, bucket).await?;
         let sequence = self.acquire(&bucket.dispatch, bucket).await?;
-        // While sequence is owned, no new same-bucket attempt can start. At
-        // most bucket concurrency - 1 old attempts can change its rate.
-        // Each recheck consumes one such change; the bound includes initial
-        // admission and one spare round. No rate ticket can accumulate a burst.
+
         for _ in 0..MAX_ADMISSION_ROUNDS {
             self.wait_until(bucket.due_at()?, bucket).await?;
             let global = self.acquire(&self.global, bucket).await?;

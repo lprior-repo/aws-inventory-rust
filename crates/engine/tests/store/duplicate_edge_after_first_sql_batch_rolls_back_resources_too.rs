@@ -1,4 +1,3 @@
-//! Behavior: duplicate_edge_after_first_sql_batch_rolls_back_resources_too.
 use super::*;
 
 #[tokio::test]

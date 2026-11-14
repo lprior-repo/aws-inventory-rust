@@ -1,8 +1,3 @@
-//! The embedded synthetic CMDB fixture: 24 rows across 3 accounts, 2 regions
-//! and 4 kinds. Deliberately static: the scaffold proves the screen, not the
-//! collector.
-
-/// One inventory resource as shown by the table.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Row {
     pub account: &'static str,
@@ -12,11 +7,10 @@ pub struct Row {
     pub name: &'static str,
 }
 
-/// Accounts the filter rail offers, in display order.
 pub const ACCOUNTS: [&str; 3] = ["prod", "staging", "sandbox"];
-/// Regions the filter rail offers, in display order.
+
 pub const REGIONS: [&str; 2] = ["us-east-1", "eu-west-1"];
-/// Resource kinds the filter rail offers, in display order.
+
 pub const KINDS: [&str; 4] = ["ec2", "s3", "rds", "lambda"];
 
 #[rustfmt::skip]
@@ -63,7 +57,6 @@ const fn row(
     }
 }
 
-/// One synthetic relationship between two resource ids.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) struct EdgeLink {
     pub from: &'static str,
@@ -96,7 +89,6 @@ const fn link(from: &'static str, to: &'static str, label: &'static str) -> Edge
 }
 
 impl Row {
-    /// Synthetic facet tags, one per kind: the detail rail shows them.
     pub fn tags(&self) -> &'static str {
         match self.kind {
             "ec2" => "compute · linux · asg",
@@ -107,7 +99,6 @@ impl Row {
         }
     }
 
-    /// Synthetic shape of the resource, one per kind.
     pub fn size(&self) -> &'static str {
         match self.kind {
             "ec2" => "t3.medium · 2 vCPU · 4 GiB",

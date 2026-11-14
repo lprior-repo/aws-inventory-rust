@@ -1,11 +1,9 @@
-//! Behavior: metadata_heavy_resources_split_by_bytes_without_losing_rows.
 use super::*;
 
 #[tokio::test]
 pub(super) async fn metadata_heavy_resources_split_by_bytes_without_losing_rows() -> TestResult {
     let folder = tempfile::tempdir()?;
-    // Twelve ordinary 256 KiB property values exceed one graph batch while
-    // remaining well below the per-resource and per-page inventory limits.
+
     let metadata = "x".repeat(262_144);
     let store = frozen_store(&folder.path().join("inventory.sqlite"), 12, &metadata).await?;
     let output = folder.path().join("large.jsonl");

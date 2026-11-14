@@ -1,4 +1,3 @@
-//! behavior responsibilities for cloudfront.
 use super::*;
 
 pub(super) struct Behavior<'a> {

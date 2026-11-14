@@ -1,5 +1,3 @@
-//! Bounded schema traversal used by relationship compilation.
-
 use std::collections::BTreeMap;
 
 use serde_json::Value;
@@ -10,10 +8,6 @@ use crate::catalog::schema::{escape, target};
 const MAX_SCHEMA_NODES: usize = 40_000;
 const MAX_SCHEMA_DEPTH: usize = 32;
 
-/// Resolve the declared properties and arrays of a retained provider schema.
-///
-/// Opaque maps are left opaque and a recursive definition is visited once per
-/// branch, so a cycle cannot justify unbounded generated paths.
 pub fn schema_nodes(schema: &Value) -> Result<BTreeMap<String, Value>, HarnessError> {
     let mut traversal = Traversal {
         root: schema,

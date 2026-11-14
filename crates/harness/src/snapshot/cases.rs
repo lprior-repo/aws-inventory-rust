@@ -1,5 +1,3 @@
-//! Case arguments and read-only row extraction for the frozen oracle.
-
 use std::collections::BTreeMap;
 use std::path::Path;
 
@@ -9,7 +7,6 @@ use sqlx::{Row, Sqlite, Transaction};
 use super::MAX_ROWS;
 use crate::HarnessError;
 
-/// Collector flags shared by every baseline case, after `scan` and `--db`.
 const COMMON_FLAGS: [(&str, &str); 7] = [
     ("--region", "us-east-1"),
     ("--attempts", "2"),
@@ -20,17 +17,15 @@ const COMMON_FLAGS: [(&str, &str); 7] = [
     ("--rps", "100"),
 ];
 
-/// Fixed private statement for scope checkpoints.
 const SCOPE_CHECKPOINTS: &str = "SELECT scope_key,account_id,region,collector,parent_id,source,last_page,\
          next_token IS NOT NULL AS has_next_token,complete,failed \
          FROM scope_checkpoints WHERE scan_id=? LIMIT ?";
-/// Fixed private statement for collection failures.
+
 const FAILURES: &str =
     "SELECT scope_key,category,message FROM collection_failures WHERE scan_id=? LIMIT ?";
-/// Row-budget message shared by scope and failure reads.
+
 const SCOPE_BUDGET: &str = "snapshot scope/failure row budget exceeded";
 
-/// Build the exact collector arguments every baseline case must have recorded.
 pub fn case_arguments(
     evidence: &Path,
     role: &str,
@@ -136,7 +131,6 @@ fn type_names(catalog: &Value) -> Result<String, HarnessError> {
     Ok(names.join(","))
 }
 
-/// Read a bounded, fixed statement for one scan.
 async fn bounded_rows(
     transaction: &mut Transaction<'_, Sqlite>,
     statement: &'static str,
@@ -156,7 +150,6 @@ async fn bounded_rows(
     Ok(rows)
 }
 
-/// Observations for one scan, removing only the collector timestamp.
 pub async fn observations(
     transaction: &mut Transaction<'_, Sqlite>,
     statement: &'static str,
@@ -189,7 +182,6 @@ fn normalize(document: &str) -> Result<Value, HarnessError> {
     Ok(value)
 }
 
-/// Scope checkpoints for one scan, with flags normalized to JSON booleans.
 pub async fn scopes(
     transaction: &mut Transaction<'_, Sqlite>,
     scan_id: &str,
@@ -228,7 +220,6 @@ fn flag(row: &sqlx::sqlite::SqliteRow, index: usize) -> Result<bool, HarnessErro
     }
 }
 
-/// Collection failures for one scan.
 pub async fn failures(
     transaction: &mut Transaction<'_, Sqlite>,
     scan_id: &str,

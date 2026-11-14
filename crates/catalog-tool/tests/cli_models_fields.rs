@@ -42,13 +42,12 @@ fn failure(output: &std::process::Output, message: &str) {
 #[test]
 fn bootstrap_deduplicates_structure_union_and_reversed_models()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given two model trees with opposite sorted discovery order.
     let first = field_fixture()?;
     write_fixture(first.path(), "models/z.json", MODEL_B)?;
     let second = tempfile::tempdir()?;
     write_fixture(second.path(), "models/a.json", MODEL_B)?;
     write_fixture(second.path(), "models/z.json", MODEL_A)?;
-    // When bootstrapping, then both trees have the independently specified bytes.
+
     success(&fields(first.path(), &["--write"])?, "field-ids 3 (+3)\n");
     success(&fields(second.path(), &["--write"])?, "field-ids 3 (+3)\n");
     assert_eq!(read_registry(first.path())?, "Age\nEmail\nName\n");
@@ -58,7 +57,6 @@ fn bootstrap_deduplicates_structure_union_and_reversed_models()
 
 #[test]
 fn second_write_preserves_bytes_and_modification_time() -> Result<(), Box<dyn std::error::Error>> {
-    // Given an existing registry with a deliberately old modification time.
     let root = field_fixture()?;
     success(&fields(root.path(), &["--write"])?, "field-ids 3 (+3)\n");
     let file = std::fs::File::open(registry_path(root.path()))?;
@@ -67,7 +65,7 @@ fn second_write_preserves_bytes_and_modification_time() -> Result<(), Box<dyn st
         .ok_or("time")?;
     file.set_times(std::fs::FileTimes::new().set_modified(old))?;
     let before = file.metadata()?.modified()?;
-    // When regenerated, then unchanged content is not rewritten.
+
     success(&fields(root.path(), &["--write"])?, "field-ids 3 (+0)\n");
     assert_eq!(read_registry(root.path())?, "Age\nEmail\nName\n");
     assert_eq!(
@@ -80,11 +78,10 @@ fn second_write_preserves_bytes_and_modification_time() -> Result<(), Box<dyn st
 
 #[test]
 fn check_names_new_member_without_writing() -> Result<(), Box<dyn std::error::Error>> {
-    // Given a new member that sorts before every existing member.
     let root = field_fixture()?;
     success(&fields(root.path(), &["--write"])?, "field-ids 3 (+3)\n");
     write_fixture(root.path(), "models/a.json", ADDED)?;
-    // When checking, then the exact diagnostic names it and preserves the registry.
+
     failure(
         &fields(root.path(), &["--check"])?,
         concat!(
@@ -100,11 +97,10 @@ fn check_names_new_member_without_writing() -> Result<(), Box<dyn std::error::Er
 #[test]
 fn write_appends_earlier_name_and_subsequent_writes_preserve_history()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given a registry and a lexically earlier new name.
     let root = field_fixture()?;
     success(&fields(root.path(), &["--write"])?, "field-ids 3 (+3)\n");
     write_fixture(root.path(), "models/a.json", ADDED)?;
-    // When writing twice and checking, then IDs never reorder.
+
     success(&fields(root.path(), &["--write"])?, "field-ids 4 (+1)\n");
     assert_eq!(read_registry(root.path())?, "Age\nEmail\nName\nAardvark\n");
     success(&fields(root.path(), &["--write"])?, "field-ids 4 (+0)\n");
@@ -114,11 +110,10 @@ fn write_appends_earlier_name_and_subsequent_writes_preserve_history()
 
 #[test]
 fn removing_member_retains_its_line_and_check_passes() -> Result<(), Box<dyn std::error::Error>> {
-    // Given a previously generated member that is retired in the next valid model.
     let root = field_fixture()?;
     success(&fields(root.path(), &["--write"])?, "field-ids 3 (+3)\n");
     write_fixture(root.path(), "models/a.json", MODEL_B)?;
-    // When writing and checking, then retirement neither removes nor reuses IDs.
+
     success(&fields(root.path(), &["--write"])?, "field-ids 3 (+0)\n");
     assert_eq!(read_registry(root.path())?, "Age\nEmail\nName\n");
     success(&fields(root.path(), &["--check"])?, "field-ids 3 (+0)\n");
@@ -138,7 +133,6 @@ fn rejects_corruption(text: &str, message: &str) -> Result<(), Box<dyn std::erro
 
 #[test]
 fn malformed_registry_never_changes_on_write_or_check() -> Result<(), Box<dyn std::error::Error>> {
-    // Given corrupt registries, when either mode runs, then exact errors and bytes survive.
     rejects_corruption(
         "Age\nAge\n",
         "duplicate member name on registry line 2: \"Age\"\n",
@@ -162,10 +156,9 @@ fn malformed_model_error(root: &std::path::Path) -> String {
 
 #[test]
 fn malformed_later_model_creates_no_directory() -> Result<(), Box<dyn std::error::Error>> {
-    // Given a valid first model and malformed second model, with no output tree.
     let root = field_fixture()?;
     write_fixture(root.path(), "models/z-last.json", "{")?;
-    // When writing, then failure happens before any directory or partial stdout exists.
+
     failure(
         &fields(root.path(), &["--write"])?,
         &malformed_model_error(root.path()),
@@ -176,11 +169,10 @@ fn malformed_later_model_creates_no_directory() -> Result<(), Box<dyn std::error
 
 #[test]
 fn malformed_later_model_preserves_existing_bytes() -> Result<(), Box<dyn std::error::Error>> {
-    // Given history and a malformed model after a valid one.
     let root = field_fixture()?;
     write_fixture(root.path(), "catalog/field-ids.txt", "retired\n")?;
     write_fixture(root.path(), "models/z-last.json", "{")?;
-    // When writing, then even a valid earlier model cannot partially publish.
+
     failure(
         &fields(root.path(), &["--write"])?,
         &malformed_model_error(root.path()),
@@ -192,7 +184,6 @@ fn malformed_later_model_preserves_existing_bytes() -> Result<(), Box<dyn std::e
 
 #[test]
 fn missing_registry_is_io_failure_not_staleness() -> Result<(), Box<dyn std::error::Error>> {
-    // Given models but no registry, when checking, then the missing file is named.
     let root = field_fixture()?;
     let message = format!(
         "{}: No such file or directory (os error 2)\n",
@@ -205,7 +196,6 @@ fn missing_registry_is_io_failure_not_staleness() -> Result<(), Box<dyn std::err
 
 #[test]
 fn conflicting_and_unknown_flags_fail_with_usage() -> Result<(), Box<dyn std::error::Error>> {
-    // Given invalid syntax, when invoked, then usage fails before model I/O.
     let root = field_fixture()?;
     let cases = [
         (
@@ -228,7 +218,6 @@ fn conflicting_and_unknown_flags_fail_with_usage() -> Result<(), Box<dyn std::er
 #[test]
 fn missing_or_unknown_models_subcommand_fails_with_usage() -> Result<(), Box<dyn std::error::Error>>
 {
-    // Given missing and unknown subcommands, when invoked, then neither is silently accepted.
     let cases = [
         (&["models"][..], "expected 'report' subcommand"),
         (&["models", "unknown"][..], "unexpected 'unknown'"),
@@ -245,7 +234,6 @@ fn missing_or_unknown_models_subcommand_fails_with_usage() -> Result<(), Box<dyn
 #[test]
 fn print_bootstraps_full_candidate_without_creating_files() -> Result<(), Box<dyn std::error::Error>>
 {
-    // Given no registry, when printing, then exact candidate bytes go only to stdout.
     let root = field_fixture()?;
     success(&fields(root.path(), &[])?, "Age\nEmail\nName\n");
     assert!(!root.path().join("catalog").exists());
@@ -254,10 +242,9 @@ fn print_bootstraps_full_candidate_without_creating_files() -> Result<(), Box<dy
 
 #[test]
 fn print_extends_existing_history_without_mutating_it() -> Result<(), Box<dyn std::error::Error>> {
-    // Given nonalphabetical history including a retired name.
     let root = field_fixture()?;
     write_fixture(root.path(), "catalog/field-ids.txt", "Name\nRetired\nAge\n")?;
-    // When printing, then it shows the append-only candidate, not a sorted replacement.
+
     success(&fields(root.path(), &[])?, "Name\nRetired\nAge\nEmail\n");
     assert_eq!(read_registry(root.path())?, "Name\nRetired\nAge\n");
     Ok(())
@@ -265,7 +252,6 @@ fn print_extends_existing_history_without_mutating_it() -> Result<(), Box<dyn st
 
 #[test]
 fn generated_lines_have_exact_bidirectional_ids() -> Result<(), Box<dyn std::error::Error>> {
-    // Given generated output, when consumed through the public typed API, then IDs are exact.
     let root = field_fixture()?;
     success(&fields(root.path(), &["--write"])?, "field-ids 3 (+3)\n");
     let registry = catalog_tool::smithy::Registry::parse(&read_registry(root.path())?)?;

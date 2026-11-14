@@ -1,5 +1,3 @@
-//! Stable read transaction over one baseline database and its five cases.
-
 mod verify;
 
 use std::collections::BTreeMap;
@@ -14,13 +12,11 @@ use super::{CASES, cases, field};
 use crate::HarnessError;
 use verify::{verify_integrity, verify_persisted, verify_persisted_scans};
 
-/// Observations for one scan, keyed to a fixed private statement.
 const RESOURCE_OBSERVATIONS: &str =
     "SELECT resource_json FROM resource_observations WHERE scan_id=? LIMIT ?";
-/// Edges for one scan, keyed to a fixed private statement.
+
 const EDGE_OBSERVATIONS: &str = "SELECT edge_json FROM edge_observations WHERE scan_id=? LIMIT ?";
 
-/// Collect all five cases inside one read-only transaction.
 pub(super) async fn collect_cases(
     evidence: &Path,
     baseline: &Baseline,
@@ -64,7 +60,6 @@ async fn collect_all(
     Ok((collected, scans))
 }
 
-/// Rows read for one baseline case.
 struct CaseEvidence {
     resources: Vec<Value>,
     edges: Vec<Value>,

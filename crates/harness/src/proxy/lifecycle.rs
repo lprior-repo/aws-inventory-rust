@@ -10,23 +10,20 @@ use tokio::{
 };
 use tokio_util::sync::CancellationToken;
 
-/// Terminal task-region certificate. Completed includes failed sessions, whose
-/// separate `failed` subset preserves diagnostics without double-counting tasks.
 #[derive(Debug, Default)]
 pub struct DrainReport {
-    /// Total sockets admitted to the region.
     pub accepted: u64,
-    /// Sessions ending normally or with a transport/framing failure.
+
     pub completed: u64,
-    /// Subset of completed sessions ending with a typed error.
+
     pub failed: u64,
-    /// Sessions observing cooperative cancellation.
+
     pub cancelled: u64,
-    /// Sessions forcibly aborted after the drain deadline.
+
     pub aborted: u64,
-    /// Sessions whose JoinError reports panic.
+
     pub panicked: u64,
-    /// Most recent session error or unreceived control error, if any.
+
     pub last_error: Option<ProxyError>,
 }
 
@@ -40,8 +37,6 @@ pub(crate) struct Command {
     pub reply: oneshot::Sender<Result<(), ProxyError>>,
 }
 
-/// Owner handle for one loopback listener and its bounded connection region.
-/// Drop cancels and aborts the owner; its JoinSet aborts every child on drop.
 pub struct Proxy {
     address: SocketAddr,
     endpoint: String,
@@ -51,9 +46,6 @@ pub struct Proxy {
     owner: Option<JoinHandle<Result<DrainReport, ProxyError>>>,
 }
 impl Proxy {
-    /// Validate bounded configuration, load the configured TLS CA, bind an
-    /// ephemeral loopback port and start the single owned supervisor task.
-    /// Returns typed configuration, allocation, file or socket failures.
     pub async fn start(config: Config) -> Result<Self, ProxyError> {
         let (config, target) = ValidatedConfig::parse(config).await?;
         let target = Arc::new(target);
@@ -74,29 +66,27 @@ impl Proxy {
             owner: Some(owner),
         })
     }
-    /// Plain HTTP endpoint; upstream TLS is terminated only on the outbound side.
+
     pub fn endpoint(&self) -> &str {
         &self.endpoint
     }
-    /// Bound address, stable across refusal/resume cycles.
+
     pub fn address(&self) -> SocketAddr {
         self.address
     }
-    /// Read a bounded, consistent log/counter snapshot; poison is a typed error.
+
     pub fn snapshot(&self) -> Result<Snapshot, ProxyError> {
         self.state.snapshot()
     }
-    /// Close the listening socket and acknowledge once new connects are refused.
-    /// Existing sockets are unaffected. Cancellation of this call does not undo it.
+
     pub async fn refuse(&self) -> Result<(), ProxyError> {
         control(&self.commands, Control::Refuse).await
     }
-    /// Rebind the same address and acknowledge readiness, or surface rebind I/O.
+
     pub async fn resume(&self) -> Result<(), ProxyError> {
         control(&self.commands, Control::Resume).await
     }
-    /// Stop intake, cancel sessions, drain to DRAIN_TIMEOUT, then abort and join
-    /// stragglers. Auto-resume rebind/accept errors are surfaced after cleanup.
+
     pub async fn shutdown(mut self) -> Result<DrainReport, ProxyError> {
         self.cancel.cancel();
         let outcome = self.owner.as_mut().ok_or(ProxyError::Stopped)?.await;

@@ -1,4 +1,3 @@
-//! Generated capacity-release and cancellation properties.
 use super::*;
 
 pub(super) fn occupancy(assignments: &[bool], global: usize, local: usize) -> usize {
@@ -34,8 +33,7 @@ pub(super) async fn occupy_then_release(
             )
         })
         .collect();
-    // At most eight callers and nine polling rounds. A millisecond of virtual
-    // time admits the next paced sender without approaching attempt timeout.
+
     for _ in 0..9 {
         advance(Duration::from_millis(1)).await;
         for call in &mut calls {
@@ -104,8 +102,6 @@ pub(super) async fn check_permits(
         prop_assert_eq!(result, Err(ApiError::Cancelled));
         prop_assert!(!called.get());
     } else {
-        // Reattaining the entire expected occupancy catches lost permits even
-        // when a leaked permit would still leave room for one successful call.
         occupy_then_release(&executor, assignments, expected, false).await?;
     }
     prop_assert_eq!(executor.stats().in_flight, 0);

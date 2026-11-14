@@ -1,4 +1,3 @@
-//! Pure adaptive pacing and server retry-directive state.
 use super::*;
 
 #[derive(Clone, Copy, Debug)]
@@ -50,8 +49,6 @@ impl AdaptiveRate {
                 *current = current.saturating_add(1).min(*maximum)
             }
             Self::PerPeriod { recovery_rps, .. } => {
-                // Retaining +1 RPS credits prevents nanosecond rounding from
-                // discarding every increment at high configured rates.
                 *recovery_rps = recovery_rps.saturating_add(1).min(MAX_REQUESTS_PER_SECOND);
             }
         }

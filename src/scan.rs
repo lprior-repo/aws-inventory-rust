@@ -1,4 +1,3 @@
-//! Owned scan futures, bounded event routing, and one SQLx inventory writer.
 use crate::{
     cli::{AccountArgs, ScanArgs},
     demo,
@@ -59,8 +58,6 @@ pub async fn run(options: ScanArgs) -> Result<Value> {
     run_with_executor(options, executor).await
 }
 
-/// The durable worker owns cancellation and lease renewal; all scan futures
-/// remain under this call and its one bounded inventory writer.
 #[tracing::instrument(skip_all)]
 pub(crate) async fn run_with_executor(
     options: ScanArgs,

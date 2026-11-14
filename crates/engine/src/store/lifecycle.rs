@@ -1,4 +1,3 @@
-//! Trusted lifecycle values parsed once from persisted scan rows.
 use super::{ScanStatus, StoreError};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

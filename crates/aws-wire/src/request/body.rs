@@ -1,16 +1,23 @@
 mod cbor;
 pub(crate) mod json;
 mod wire;
-mod wire_shape;
+mod wire_decimal;
+mod wire_member;
 mod wire_scalar;
+mod wire_shape;
 mod wire_time;
 mod wire_time_format;
 mod wire_value;
-mod wire_decimal;
-mod wire_member;
+mod wire_value_scalar;
 
-use super::{EncodeError, Protocol, RequestContext, common::{BoundedBody, finish}};
-use http::{HeaderMap, HeaderValue, header::{ACCEPT, CONTENT_TYPE, HeaderName}};
+use super::{
+    EncodeError, Protocol, RequestContext,
+    common::{BoundedBody, finish},
+};
+use http::{
+    HeaderMap, HeaderValue,
+    header::{ACCEPT, CONTENT_TYPE, HeaderName},
+};
 use inventory_core::catalog::Target;
 
 pub fn encode(context: RequestContext<'_>) -> Result<http::Request<bytes::Bytes>, EncodeError> {
@@ -21,7 +28,18 @@ pub fn encode(context: RequestContext<'_>) -> Result<http::Request<bytes::Bytes>
     let body = encode_body(context, input, has_input)?;
     let headers = request_headers(context, has_input, content_type)?;
     let target = request_target(context)?;
-    finish(context, "POST", target.as_deref(), headers, body)
+    let endpoint = super::endpoint::resolve(context)?;
+    let adjusted = RequestContext {
+        endpoint: &endpoint,
+        ..context
+    };
+    finish(
+        adjusted,
+        "POST",
+        target.as_deref().or(Some("/")),
+        headers,
+        body,
+    )
 }
 fn request_target(context: RequestContext<'_>) -> Result<Option<String>, EncodeError> {
     match context.protocol {
@@ -38,7 +56,8 @@ fn rpc_target(context: RequestContext<'_>) -> Result<String, EncodeError> {
         reason: "service shape ID has no namespace separator",
     })?;
     let operation_name = context.operation.name()?;
-    let capacity = "/service/".len()
+    let capacity = "/service/"
+        .len()
         .checked_add(service_name.len())
         .and_then(|size| size.checked_add("/operation/".len()))
         .and_then(|size| size.checked_add(operation_name.len()))
@@ -66,21 +85,22 @@ fn content_type(protocol: Protocol) -> Result<&'static str, EncodeError> {
 
 fn validate_input(context: RequestContext<'_>, input: Target) -> Result<bool, EncodeError> {
     let has_input = input != Target::Prelude("unit");
-    if !has_input {
-        for entry in context.input.iter()? {
-            entry?;
-            return Err(EncodeError::InvalidValue {
-                field: None,
-                reason: "unit operation input contains members",
-            });
-        }
+    if !has_input && let Some(entry) = context.input.iter()?.next() {
+        entry?;
+        return Err(EncodeError::InvalidValue {
+            field: None,
+            reason: "unit operation input contains members",
+        });
     }
     if let Target::Shape(index) = input {
-        let shape = context.service.shape(index)?.ok_or(EncodeError::InvalidValue {
-            field: None,
-            reason: "operation input shape is missing",
-        })?;
-        if shape.wire()?.streaming() {
+        let shape = context
+            .service
+            .shape(index)?
+            .ok_or(EncodeError::InvalidValue {
+                field: None,
+                reason: "operation input shape is missing",
+            })?;
+        if shape.wire()?.streaming()? {
             return Err(EncodeError::Unsupported("streaming input shape"));
         }
     }
@@ -102,6 +122,8 @@ fn encode_body(
             context.idempotency_token,
             &mut body,
         )?;
+    } else if matches!(context.protocol, Protocol::AwsJson10 | Protocol::AwsJson11) {
+        body.write(b"{}")?;
     }
     Ok(body.into_vec())
 }
@@ -111,22 +133,26 @@ fn request_headers(
     has_input: bool,
     content_type: &'static str,
 ) -> Result<HeaderMap, EncodeError> {
-    match context.protocol {
-        Protocol::AwsJson10 | Protocol::AwsJson11 => json_headers(context, has_input, content_type),
-        Protocol::RpcV2Cbor => cbor_headers(context, has_input, content_type),
+    let mut headers = match context.protocol {
+        Protocol::AwsJson10 | Protocol::AwsJson11 => json_headers(context, content_type),
+        Protocol::RpcV2Cbor => cbor_headers(has_input, content_type),
         _ => Err(EncodeError::Unsupported("request body protocol")),
+    }?;
+    if context.service.aws_query_compatible()? {
+        headers.insert(
+            HeaderName::from_static("x-amzn-query-mode"),
+            HeaderValue::from_static("true"),
+        );
     }
+    Ok(headers)
 }
 
 fn json_headers(
     context: RequestContext<'_>,
-    has_input: bool,
     content_type: &'static str,
 ) -> Result<HeaderMap, EncodeError> {
     let mut headers = HeaderMap::new();
-    if has_input {
-        headers.insert(CONTENT_TYPE, HeaderValue::from_static(content_type));
-    }
+    headers.insert(CONTENT_TYPE, HeaderValue::from_static(content_type));
     headers.insert(
         HeaderName::from_static("x-amz-target"),
         json_target_header(context)?,
@@ -141,10 +167,14 @@ fn json_target_header(context: RequestContext<'_>) -> Result<HeaderValue, Encode
         reason: "service shape ID has no namespace separator",
     })?;
     let operation_name = context.operation.name()?;
-    let capacity = prefix.len().checked_add(operation_name.len())
+    let capacity = prefix
+        .len()
+        .checked_add(operation_name.len())
         .and_then(|size| size.checked_add(1))
         .ok_or(EncodeError::Limit("X-Amz-Target"))?;
-    let header_bytes = "x-amz-target".len().checked_add(4)
+    let header_bytes = "x-amz-target"
+        .len()
+        .checked_add(4)
         .and_then(|size| size.checked_add(capacity))
         .ok_or(EncodeError::Limit("headers"))?;
     if header_bytes > context.limits.header_bytes() {
@@ -158,23 +188,13 @@ fn json_target_header(context: RequestContext<'_>) -> Result<HeaderValue, Encode
     Ok(HeaderValue::try_from(target)?)
 }
 
-fn cbor_headers(
-    context: RequestContext<'_>,
-    has_input: bool,
-    content_type: &'static str,
-) -> Result<HeaderMap, EncodeError> {
+fn cbor_headers(has_input: bool, content_type: &'static str) -> Result<HeaderMap, EncodeError> {
     let mut headers = HeaderMap::new();
     headers.insert(ACCEPT, HeaderValue::from_static("application/cbor"));
     headers.insert(
         HeaderName::from_static("smithy-protocol"),
         HeaderValue::from_static("rpc-v2-cbor"),
     );
-    if context.service.aws_query_compatible()? {
-        headers.insert(
-            HeaderName::from_static("x-amzn-query-mode"),
-            HeaderValue::from_static("true"),
-        );
-    }
     if has_input {
         headers.insert(CONTENT_TYPE, HeaderValue::from_static(content_type));
     }
@@ -194,5 +214,7 @@ fn check_protocol(context: RequestContext<'_>) -> Result<(), EncodeError> {
             return Ok(());
         }
     }
-    Err(EncodeError::Unsupported("service protocol does not match request protocol"))
+    Err(EncodeError::Unsupported(
+        "service protocol does not match request protocol",
+    ))
 }

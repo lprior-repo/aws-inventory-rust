@@ -1,4 +1,3 @@
-//! Behavior: architecture_edges_and_routes_do_not_mix_snapshots.
 use super::*;
 
 #[tokio::test]

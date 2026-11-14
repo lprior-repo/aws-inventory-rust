@@ -4,7 +4,7 @@ use inventory_core::record::FieldId;
 
 const FIELDS: &str = "First\nSecond\nValue\n";
 const MODEL: &str = r#"{"smithy":"2.0","shapes":{
-"example#Service":{"type":"service","version":"1","traits":{"aws.api#service":{"commonErrors":["example#SharedFailure"]}}},
+"example#Service":{"type":"service","version":"1","errors":[{"target":"example#SharedFailure"}]},
 "example#Read":{"type":"operation","errors":[{"target":"example#ClientFailure"}]},
 "example#ClientFailure":{"type":"structure","traits":{"smithy.api#error":"client","smithy.api#httpError":409,"aws.protocols#awsQueryError":{"code":"ConflictException","httpResponseCode":422},"smithy.api#retryable":{"throttling":true}}},
 "example#ServerFailure":{"type":"structure","traits":{"smithy.api#error":"server","smithy.api#httpError":503,"smithy.api#retryable":{}}},
@@ -144,5 +144,24 @@ fn absent_error_and_wire_traits_return_empty_or_none_without_invented_ids() -> T
             .count(),
         0
     );
+    Ok(())
+}
+
+#[test]
+fn modeled_error_statuses_preserve_redirects_and_http_status_boundaries() -> TestResult {
+    for status in [100_u16, 308, 599] {
+        let model = format!(
+            r#"{{"smithy":"2.0","shapes":{{"example#Service":{{"type":"service","version":"1"}},"example#RedirectException":{{"type":"structure","traits":{{"smithy.api#error":"client","smithy.api#httpError":{status}}}}}}}}}"#
+        );
+        let (_source, bytes) = compile_model(&model, FIELDS)?;
+        let service = fixture_service(&bytes)?;
+        let error = named_shape(service, "example#RedirectException")?
+            .error()?
+            .ok_or("modeled error missing")?;
+        assert_eq!(error.kind, ErrorKind::Client);
+        assert_eq!(error.http_status, Some(status));
+        assert_eq!(error.status, Some(status));
+        assert_eq!(error.aws_query_status, None);
+    }
     Ok(())
 }

@@ -1,5 +1,3 @@
-//! Audit contracts: protected artefacts, evidence rollup, pinned SDK sources
-//! and persisted reads.
 use inventory_harness::HarnessError;
 use inventory_harness::audit::{
     Json, catalogs, dependency_evidence, dumps_default, persisted_reads, registry_file,

@@ -123,8 +123,7 @@ impl Owner {
             },
             Control::Resume => self.rebind().await,
         };
-        // A cancelled caller can discard its acknowledgement; the operation has
-        // committed. Preserve an unreceived error in the supervisor report.
+
         if let Err(Err(error)) = command.reply.send(result) {
             self.report.last_error = Some(error);
         }
@@ -140,8 +139,6 @@ impl Owner {
         Ok(())
     }
     async fn drain(&mut self) {
-        // JoinSet length never exceeds MAX_CONNECTIONS, including completed but
-        // not yet reaped tasks; no permit is awaited during drain.
         for _ in 0..MAX_CONNECTIONS {
             match self.tasks.join_next().await {
                 Some(result) => self.report.record(result),

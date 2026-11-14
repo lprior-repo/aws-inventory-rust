@@ -1,9 +1,3 @@
-//! Oracle schema, canonical record encodings, and order-independent state digests.
-//!
-//! State digests are multiset digests: each canonical record contributes one SHA-256
-//! word-vector that is added lane-wise, so equal event multisets in any order (the
-//! workload intentionally reorders events) still produce the same digest.
-
 use std::collections::BTreeMap;
 
 use inventory_core::{Edge, Resource};
@@ -68,7 +62,6 @@ pub struct Oracle {
     pub digest: String,
 }
 
-/// Commutative SHA-256 multiset accumulator.
 #[derive(Clone, Debug, Default)]
 pub struct MultiDigest {
     lanes: [u64; 4],

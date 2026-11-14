@@ -1,9 +1,3 @@
-//! Real collector conformance against an independently checked, frozen emulator.
-//!
-//! These ignored tests never start infrastructure or resolve live credentials.
-//! scripts/emulator/mutate.py prepares and verifies the disposable local server.
-//! Missing preparation is an error, not a successful skipped test.
-
 use std::collections::{BTreeMap, BTreeSet};
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -35,8 +29,6 @@ const MAX_EVENT_BYTES: usize = 64 * 1024 * 1024;
 const CASE_TIMEOUT: Duration = Duration::from_secs(180);
 const DRAIN_TIMEOUT: Duration = Duration::from_secs(15);
 
-// Serializes these read scenarios within one test binary. Separate mutation
-// shards must own separate prepared server instances, as enforced by the runner.
 static CASE_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 #[derive(Deserialize)]
@@ -80,8 +72,7 @@ async fn run_case(name: &'static str) -> TestResult {
         let started_at = now_millis()?;
         store.begin_scan(SCAN_ID, started_at).await?;
         collect_case(&store, scan_options, started_at).await?;
-        // Store derives Partial from actual incomplete/failed scopes even when
-        // the collector future itself completes successfully.
+
         store
             .finish_scan(SCAN_ID, ScanStatus::Complete, now_millis()?)
             .await?;

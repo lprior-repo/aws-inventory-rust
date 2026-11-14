@@ -1,4 +1,3 @@
-//! Both fixture sweeps and arbitrary bytes exercise the same complete public reader traversal.
 use super::*;
 mod fixture;
 
@@ -64,6 +63,7 @@ fn inspect_shape(shape: Shape<'_>, count: usize) -> Result<(), CatalogError> {
             id,
             target,
             required: _,
+            ..
         } = member?;
         assert_ne!(id.value(), 0);
         check_target(target, count);
@@ -87,7 +87,6 @@ fn check_target(target: Target, count: usize) {
 
 #[test]
 fn rich_catalog_mutations_traverse_every_public_accessor_and_check_local_bounds() -> TestResult {
-    // Given three services and all reference forms, every byte is swept with two fixed XOR masks.
     let bytes = fixture::bytes()?;
     exercise(&bytes)?;
     assert_eq!(Catalog::borrow(&bytes)?.counts()?.get("services"), Some(3));

@@ -1,5 +1,3 @@
-//! Edge page emission for the synthetic workload.
-
 use std::error::Error;
 use std::io::Write;
 

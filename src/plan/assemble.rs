@@ -1,4 +1,3 @@
-//! Plan JSON assembly. Every section is a pure function of its inputs.
 use super::*;
 
 pub(super) fn plan(

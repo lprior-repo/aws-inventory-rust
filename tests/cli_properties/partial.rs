@@ -39,8 +39,6 @@ fn partial_and_cancelled_snapshots_preserve_exit_status_and_evidence() -> Result
         Some(&json!("access_denied"))
     );
 
-    // Use the public durable-store boundary to prepare an actually cancelled
-    // snapshot; the child CLI must read that state after all handles close.
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?;

@@ -1,6 +1,3 @@
-//! Shared SNS ARN validation. Topic and subscription ARNs share the account,
-//! region, partition and topic-name grammar; only the resource suffix differs.
-
 use crate::common::Context;
 
 pub(super) const MAX_ARN_BYTES: usize = 512;
@@ -46,8 +43,6 @@ pub(super) fn split_sns_arn(arn: &str) -> Result<ArnRef<'_>, String> {
     })
 }
 
-/// Subscription ARNs append `:id` to the topic resource. Topic ARNs stop at the
-/// topic name, so the two shapes are distinguishable without provider calls.
 pub(super) fn split_subscription_arn(arn: &str) -> Result<(ArnRef<'_>, &str, &str), String> {
     let parts = split_sns_arn(arn)?;
     let (topic, id) = parts

@@ -1,5 +1,3 @@
-//! Queue URL/ARN validation and attribute mapping.
-
 use std::collections::{BTreeMap, HashMap};
 
 use aws_sdk_sqs::types::QueueAttributeName;
@@ -29,9 +27,6 @@ pub(super) struct QueueObservation {
     pub edges: Vec<Edge>,
 }
 
-/// Validates the account/name path and returns the canonical queue name. The
-/// authority is checked structurally but not pinned to an AWS DNS suffix so a
-/// configured SQS endpoint remains usable; the queue ARN is the identity.
 pub(super) fn parse_queue_url(url: &str) -> Result<QueueUrl<'_>, String> {
     if url.is_empty() || url.len() > QUEUE_HANDLE_MAX_BYTES {
         return Err("queue URL is empty or oversized".into());
@@ -181,8 +176,6 @@ pub(super) fn map_queue(
     })
 }
 
-/// Parses only the reviewed RedrivePolicy fields. Malformed or foreign values are
-/// evidence absence, never a fabricated relationship.
 fn redrive(attributes: &HashMap<QueueAttributeName, String>) -> (Option<String>, Option<u64>) {
     let Some(policy) = attribute(attributes, &QueueAttributeName::RedrivePolicy) else {
         return (None, None);

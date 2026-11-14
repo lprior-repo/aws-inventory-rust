@@ -111,7 +111,7 @@ impl<'a> Operation<'a> {
     ) -> Result<impl Iterator<Item = Result<super::Target, CatalogError>> + 'a, CatalogError> {
         Ok(optional_list(self.map, CatalogKey::Errors)?
             .into_iter()
-            .flat_map(|items| items)
+            .flatten()
             .map(move |value| {
                 super::shape::target(super::super::number(value?)?, self.shape_count)
             }))

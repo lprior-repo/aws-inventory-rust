@@ -1,5 +1,3 @@
-// `serde_json::Value` indexing by `&str` yields `Null` for absent keys and never
-// panics; clippy cannot see that specialization. Array positions use `first`.
 #![allow(clippy::indexing_slicing)]
 
 use super::{Direction, TraversalOptions, diff, findings, graph};

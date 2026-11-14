@@ -1,4 +1,3 @@
-//! Typed readers distinguish every supported value kind and preserve read errors.
 use inventory_core::record::*;
 use std::collections::BTreeMap;
 
@@ -57,23 +56,18 @@ fn check_other_kinds((value, found): (Value, ValueKind)) -> TestResult {
 
 #[test]
 fn every_supported_kind_returns_its_original_value() -> TestResult {
-    // Given one independently specified value of each of the nine kinds.
-    // When selected with its kind, then kind() and the complete value agree.
     values()?.into_iter().try_for_each(check_matching_kind)
 }
 
 #[test]
 fn every_nonmatching_kind_returns_a_precise_mismatch() -> TestResult {
-    // Given each supported kind and all eight other expectations (72 pairs).
-    // When selected, then the exact field, expected kind, and found kind are reported.
     values()?.into_iter().try_for_each(check_other_kinds)
 }
 
 #[test]
 fn typed_lookup_propagates_unsupported_selected_value_error() -> TestResult {
-    // Given structurally valid bytes whose selected value uses forbidden tag 2.
     let borrowed = MapRef::from_bytes(&[0xA1, 1, 0xC2, 0x60])?;
-    // When typed lookup runs, then the reader error is not rewritten as a mismatch.
+
     let actual = borrowed.get_typed(FieldId::new(1)?, ValueKind::Time);
     assert_eq!(actual.err(), Some(RecordError::Tag { tag: 2, offset: 2 }));
     Ok(())

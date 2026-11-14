@@ -1,4 +1,3 @@
-//! Validated views establish the key order required by early-stop lookup.
 use inventory_core::record::{FieldId, KeyRef, MapRef, Record, RecordError, Value};
 use minicbor::data::Type;
 
@@ -14,7 +13,6 @@ fn rejected(bytes: &[u8], error: RecordError) {
 
 #[test]
 fn swapped_root_fields_are_rejected_at_the_second_key() {
-    // Given {2: 0, 1: "x"}, when either constructor runs, then key 1 is rejected.
     rejected(
         &[0xA2, 2, 0, 1, 0x61, b'x'],
         RecordError::KeyOutOfOrder { offset: 3 },
@@ -23,13 +21,11 @@ fn swapped_root_fields_are_rejected_at_the_second_key() {
 
 #[test]
 fn duplicate_field_keys_are_rejected_at_the_repeated_key() {
-    // Given equal field IDs, when validated, then the second occurrence is ambiguous.
     rejected(&[0xA2, 1, 0, 1, 1], RecordError::DuplicateKey { offset: 3 });
 }
 
 #[test]
 fn duplicate_name_keys_are_rejected_at_the_repeated_key() {
-    // Given equal names, when validated, then the second name is rejected.
     rejected(
         &[0xA2, 0x61, b'a', 0, 0x61, b'a', 1],
         RecordError::DuplicateKey { offset: 4 },
@@ -38,7 +34,6 @@ fn duplicate_name_keys_are_rejected_at_the_repeated_key() {
 
 #[test]
 fn name_before_field_is_rejected_at_the_field_key() {
-    // Given a name followed by a field, when validated, then field-before-name order applies.
     rejected(
         &[0xA2, 0x60, 0, 1, 0],
         RecordError::KeyOutOfOrder { offset: 3 },
@@ -47,7 +42,6 @@ fn name_before_field_is_rejected_at_the_field_key() {
 
 #[test]
 fn names_are_ordered_by_bytes_not_encoded_length() {
-    // Given "z" before "aa", when validated, then lexical byte order rejects "aa".
     rejected(
         &[0xA2, 0x61, b'z', 0, 0x62, b'a', b'a', 0],
         RecordError::KeyOutOfOrder { offset: 4 },
@@ -56,7 +50,6 @@ fn names_are_ordered_by_bytes_not_encoded_length() {
 
 #[test]
 fn swapped_fields_in_map_values_are_rejected_at_the_nested_key() {
-    // Given an unsorted nested map value, when validated, then it cannot become a MapRef.
     rejected(
         &[0xA1, 1, 0xA2, 2, 0, 1, 0],
         RecordError::KeyOutOfOrder { offset: 5 },
@@ -65,7 +58,6 @@ fn swapped_fields_in_map_values_are_rejected_at_the_nested_key() {
 
 #[test]
 fn swapped_fields_in_list_items_are_rejected_at_the_nested_key() {
-    // Given an unsorted map inside two lists, when validated, then reachability is transitive.
     rejected(
         &[0xA1, 1, 0x81, 0x81, 0xA2, 2, 0, 1, 0],
         RecordError::KeyOutOfOrder { offset: 7 },
@@ -74,7 +66,6 @@ fn swapped_fields_in_list_items_are_rejected_at_the_nested_key() {
 
 #[test]
 fn unsupported_reachable_keys_are_rejected_during_validation() {
-    // Given unsupported keys at the root, in a map, and in a list, when validated, then reject.
     [
         (vec![0xA1, 0xF5, 0], 1),
         (vec![0xA1, 1, 0xA1, 0xF5, 0], 3),
@@ -94,7 +85,6 @@ fn unsupported_reachable_keys_are_rejected_during_validation() {
 
 #[test]
 fn differently_encoded_equal_field_ids_are_still_duplicates() {
-    // Given shortest and widened encodings of field 1, when validated, then compare key values.
     rejected(
         &[0xA2, 1, 0, 0x18, 1, 1],
         RecordError::DuplicateKey { offset: 3 },
@@ -126,26 +116,22 @@ fn assert_sibling(map: MapRef<'_>) -> TestResult {
 
 #[test]
 fn unsorted_maps_inside_tags_remain_skippable_before_a_sibling() -> TestResult {
-    // Given an unknown tag hiding an unsorted map, when skipping, then field 2 stays readable.
     sibling_after(&[0xD8, 99, 0xA2, 2, 0, 1, 0])
 }
 
 #[test]
 fn opaque_keys_duplicates_and_nested_maps_remain_generic_inside_tags() -> TestResult {
-    // Given tag contents unreachable by map readers, when validating, then only framing applies.
     sibling_after(&[0xC1, 0x81, 0xA2, 0xF5, 0, 0xF5, 0xA2, 2, 0, 1, 0])
 }
 
 #[test]
 fn unsorted_maps_inside_indefinite_containers_remain_skippable() -> TestResult {
-    // Given an indefinite array or map hiding an unsorted map, when skipped, then read its sibling.
     sibling_after(&[0x9F, 0xA2, 2, 0, 1, 0, 0xFF])?;
     sibling_after(&[0xBF, 0xF5, 0xA2, 2, 0, 1, 0, 0xFF])
 }
 
 #[test]
 fn opaque_child_does_not_disable_validation_of_a_following_map() {
-    // Given an opaque tag followed by a reachable unsorted map, when validated, then reject it.
     rejected(
         &[0xA2, 1, 0xC2, 0xA2, 2, 0, 1, 0, 2, 0xA2, 2, 0, 1, 0],
         RecordError::KeyOutOfOrder { offset: 12 },
@@ -173,12 +159,11 @@ fn lookup(map: MapRef<'_>, key: KeyRef<'_>) -> TestResult<Option<Value>> {
 
 #[test]
 fn validated_nonshortest_keys_have_lookups_equal_to_a_full_scan() -> TestResult {
-    // Given sorted mixed keys with widened field encoding and prefix/non-ASCII names.
     let bytes = [
         0xA5, 0x18, 1, 0, 0x18, 24, 1, 0x60, 2, 0x62, b'a', b'a', 3, 0x62, 0xC3, 0xA9, 4,
     ];
     let map = MapRef::from_bytes(&bytes)?;
-    // When querying present keys and gaps, then early-stop lookup agrees with a complete scan.
+
     compare_fields(map)?;
     compare_names(map)
 }
@@ -205,7 +190,6 @@ fn compare_names(map: MapRef<'_>) -> TestResult {
 
 #[test]
 fn overflowing_map_arity_retains_the_generic_framing_error() {
-    // Given a map count whose key/value arity overflows, when validated, then framing wins.
     rejected(
         &[0xBB, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF],
         RecordError::Malformed { offset: 9 },
@@ -214,7 +198,6 @@ fn overflowing_map_arity_retains_the_generic_framing_error() {
 
 #[test]
 fn duplicate_fields_in_map_values_are_rejected_at_the_repeated_key() {
-    // Given equal keys in a map value, when either constructor runs, then reject key two.
     rejected(
         &[0xA1, 1, 0xA2, 1, 0, 1, 0],
         RecordError::DuplicateKey { offset: 5 },
@@ -223,7 +206,6 @@ fn duplicate_fields_in_map_values_are_rejected_at_the_repeated_key() {
 
 #[test]
 fn duplicate_fields_in_list_items_are_rejected_at_the_repeated_key() {
-    // Given equal keys in a list's map item, when validated, then reject the repeated key.
     rejected(
         &[0xA1, 1, 0x81, 0xA2, 1, 0, 1, 0],
         RecordError::DuplicateKey { offset: 6 },
@@ -232,7 +214,6 @@ fn duplicate_fields_in_list_items_are_rejected_at_the_repeated_key() {
 
 #[test]
 fn mixed_width_field_keys_are_ordered_by_decoded_identifier() -> TestResult {
-    // Given widened field 1 before shortest-form field 2, when validated, then both accept.
     let bytes = [0xA2, 0x18, 1, 0, 2, 0];
     let owned = Record::from_bytes(bytes.to_vec())?;
     assert_eq!(owned.as_bytes(), bytes);
@@ -240,7 +221,7 @@ fn mixed_width_field_keys_are_ordered_by_decoded_identifier() -> TestResult {
     [owned.root(), borrowed]
         .into_iter()
         .try_for_each(assert_zero_fields)?;
-    // When those decoded identifiers descend, then the widened key starts the error.
+
     rejected(
         &[0xA2, 2, 0, 0x18, 1, 0],
         RecordError::KeyOutOfOrder { offset: 3 },
@@ -258,7 +239,6 @@ fn assert_zero_fields(map: MapRef<'_>) -> TestResult {
 
 #[test]
 fn strict_map_order_resumes_after_an_indefinite_array_child() {
-    // Given an indefinite list then a reachable map, when validated, then its keys stay strict.
     rejected(
         &[0xA2, 1, 0x9F, 0xFF, 2, 0xA2, 2, 0, 1, 0],
         RecordError::KeyOutOfOrder { offset: 8 },
@@ -267,7 +247,6 @@ fn strict_map_order_resumes_after_an_indefinite_array_child() {
 
 #[test]
 fn strict_map_order_resumes_after_an_indefinite_map_child() {
-    // Given an indefinite map then a reachable map, when validated, then its keys stay strict.
     rejected(
         &[0xA2, 1, 0xBF, 0xFF, 2, 0xA2, 2, 0, 1, 0],
         RecordError::KeyOutOfOrder { offset: 8 },

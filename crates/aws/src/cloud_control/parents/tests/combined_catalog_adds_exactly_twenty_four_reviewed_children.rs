@@ -1,4 +1,3 @@
-//! combined catalog adds exactly twenty four reviewed children behavior.
 use super::*;
 
 fn selection(names: &[&str]) -> Selection {
@@ -75,7 +74,6 @@ fn child_only_selection_adds_each_prerequisite_once_and_retains_explicit_roots()
 
 #[test]
 fn every_reviewed_binding_builds_the_literal_expected_model() -> TestResult {
-    // Values and expected models are independent of the generated catalog.
     let fixtures = [
         (
             "AWS::EKS::Cluster",

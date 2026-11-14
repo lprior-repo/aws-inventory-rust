@@ -1,4 +1,3 @@
-//! Behavior: four_sources_preserve_provenance_and_order_in_latest_and_snapshot_views.
 use super::*;
 
 #[tokio::test]

@@ -2,6 +2,14 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Request encoding covers all seven AWS wire protocols. Published REST tests
+  retain exact URI, resolved-host, header and body expectations, including S3
+  addressing settings. XML comparison follows modeled structures, maps and
+  ordered lists rather than inferring collection semantics from element counts.
+- `inventory_core::record::RecordBuilder` accepts bounded map/list/scalar events
+  without an intermediate `Value` tree. It emits the existing canonical CBOR
+  representation and rejects invalid state transitions, duplicate keys and
+  byte/node/depth overruns; event errors permanently invalidate the builder.
 - Moon 2.2.4 CI cutover: `moon ci` replaces the old verification script.
   All 17 CI tasks pass locally, including generated-data freshness, binary-only
   core coverage, workspace checks/tests, warnings-denied source Clippy and the

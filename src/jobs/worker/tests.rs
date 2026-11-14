@@ -1,4 +1,3 @@
-// `serde_json::Value` string indexing is infallible; array positions use `first`.
 #![allow(clippy::indexing_slicing)]
 
 use super::*;

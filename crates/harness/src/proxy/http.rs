@@ -78,7 +78,6 @@ pub(crate) fn length(headers: &[httparse::Header<'_>]) -> Result<Option<usize>, 
         .map_err(|_| ProxyError::Framing)
 }
 
-/// Buffered byte reads never overread a head; the hard bound also limits parser work.
 pub(crate) async fn head<R: AsyncRead + Unpin>(
     reader: &mut BufReader<R>,
 ) -> Result<Option<Vec<u8>>, ProxyError> {

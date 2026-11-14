@@ -1,4 +1,3 @@
-//! Behavior: rational_policy_maps_accept_the_boundary_and_never_truncate_overflow.
 use super::*;
 
 #[test]

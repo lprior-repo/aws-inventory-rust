@@ -1,4 +1,3 @@
-//! Behavior: edge_failure_also_rolls_back_resources_and_checkpoint.
 use super::*;
 
 #[tokio::test]

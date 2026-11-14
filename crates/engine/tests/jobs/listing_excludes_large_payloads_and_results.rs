@@ -1,4 +1,3 @@
-//! Behavior: listing_excludes_large_payloads_and_results.
 use super::*;
 
 #[tokio::test]

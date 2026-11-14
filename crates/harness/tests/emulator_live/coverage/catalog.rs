@@ -1,7 +1,5 @@
-//! Committed catalog evidence used by the coverage scenarios.
 use super::*;
 
-/// Types the committed matrix records as failing emulator list.
 pub(super) fn recorded_gaps() -> Result<BTreeSet<String>, Box<dyn Error>> {
     let root = workspace()?;
     let document: Value = serde_json::from_str(&std::fs::read_to_string(
@@ -23,7 +21,6 @@ pub(super) fn recorded_gaps() -> Result<BTreeSet<String>, Box<dyn Error>> {
         .collect())
 }
 
-/// Every reviewed root and parent-scoped type, in catalog order.
 pub(super) fn cloud_control_types() -> Result<String, Box<dyn Error>> {
     let root = workspace()?;
     let mut names = Vec::new();

@@ -1,8 +1,3 @@
-//! Step Functions ARN and reference-target validation. State machine and
-//! activity ARNs share the partition, region and account segments; only the
-//! resource prefix differs. IAM role and KMS key targets are accepted only as
-//! complete, in-scope ARNs so an edge always names an exact resource.
-
 use crate::common::Context;
 
 pub(super) const MAX_ARN_BYTES: usize = 2_048;
@@ -41,8 +36,6 @@ fn split_states_arn<'a>(arn: &'a str, prefix: &str) -> Result<ArnRef<'a>, String
     })
 }
 
-/// Returns partition, region, account and resource after validating the common
-/// service, length and account-shape segments.
 fn segments(arn: &str) -> Result<(&str, &str, &str, &str), String> {
     if arn.is_empty() || arn.len() > MAX_ARN_BYTES {
         return Err("Step Functions ARN is empty or oversized".into());
@@ -67,9 +60,6 @@ fn segments(arn: &str) -> Result<(&str, &str, &str, &str), String> {
     Ok((partition, region, account, resource))
 }
 
-/// State machine and activity names cannot contain a colon because it would
-/// make the resource segment ambiguous, and whitespace/control bytes cannot be
-/// safely rendered in the inventory identity.
 fn validate_name(name: &str) -> Result<(), String> {
     if name.is_empty()
         || name.len() > MAX_NAME_BYTES
@@ -87,7 +77,6 @@ pub(super) fn is_in_scope(parts: &ArnRef<'_>, ctx: &Context) -> bool {
     parts.partition == ctx.partition && parts.region == ctx.region && parts.account == ctx.account
 }
 
-/// IAM role ARNs are global, so scope is the partition and account only.
 pub(super) fn role_target(arn: &str, ctx: &Context) -> Option<String> {
     let mut parts = arn.splitn(6, ':');
     let scheme = parts.next();
@@ -111,8 +100,6 @@ pub(super) fn role_target(arn: &str, ctx: &Context) -> Option<String> {
     Some(arn.to_owned())
 }
 
-/// Only a full KMS key ARN in the scan partition, region and account can emit
-/// an `ENCRYPTED_BY` edge. Aliases, bare key IDs and foreign keys stay properties.
 pub(super) fn kms_target(value: &str, ctx: &Context) -> Option<String> {
     let mut parts = value.splitn(6, ':');
     let scheme = parts.next();

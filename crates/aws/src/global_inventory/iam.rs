@@ -1,6 +1,3 @@
-//! IAM identity metadata and declared policy references. Policy documents and
-//! trust-condition values are deliberately excluded from persisted records.
-
 use std::collections::BTreeMap;
 
 use aws_sdk_iam::{

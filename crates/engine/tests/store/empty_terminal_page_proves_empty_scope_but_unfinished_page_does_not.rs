@@ -1,4 +1,3 @@
-//! Behavior: empty_terminal_page_proves_empty_scope_but_unfinished_page_does_not.
 use super::*;
 
 #[tokio::test]

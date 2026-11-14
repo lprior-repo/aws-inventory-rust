@@ -2,13 +2,6 @@ use std::collections::{BTreeMap, btree_map::Entry};
 
 use super::{Exceptions, NameError, SqlName, derive_name};
 
-/// Derive every name, returning borrowed types sorted lexicographically by type.
-/// Input and output sizes are bounded by the supplied slice; no I/O is performed.
-///
-/// # Errors
-/// Stops at the first invalid or colliding type in input order (even a repeated type).
-/// After all names succeed, rejects the first unused exception in TSV line order.
-/// Collision errors name both input types and their shared SQL identifier.
 pub fn render_names<'a>(
     type_names: &[&'a str],
     exceptions: &Exceptions,

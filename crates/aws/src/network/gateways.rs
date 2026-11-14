@@ -1,4 +1,3 @@
-//! gateways operations.
 use super::*;
 
 pub(super) fn map_nat_gateway(
@@ -78,8 +77,7 @@ pub(super) fn map_nat_gateway(
             evidence,
         )?;
     }
-    // Appliance details are retained without inventing a target kind or
-    // asserting the appliance is in the data path while its attachment changes.
+
     page.resources.push(resource);
     Ok(())
 }
@@ -123,7 +121,7 @@ pub(super) fn map_endpoint(
             "last_error": endpoint.last_error().map(|error| json!({"code":error.code(),"message":error.message()})),
         }),
     )?;
-    // Endpoint ownership does not establish ownership of a shared VPC/subnet.
+
     page.link(
         ctx,
         &resource,

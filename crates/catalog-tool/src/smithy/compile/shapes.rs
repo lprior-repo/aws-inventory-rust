@@ -18,7 +18,19 @@ pub(super) fn encode(
     shape: &Shape,
     registry: &Registry,
     indexes: &BTreeMap<&str, usize>,
+    all_shapes: &BTreeMap<String, Shape>,
 ) -> Result<Value, CompileError> {
+    let mut fields = base_fields(id, shape)?;
+    let members = members(shape, registry, indexes, all_shapes)?;
+    if !members.is_empty() {
+        fields.push((CatalogKey::Members, Value::List(members)));
+    }
+    fields.extend(targets(&shape.kind, indexes)?);
+    fields.extend(metadata::shape_fields(&shape.traits)?);
+    map(fields)
+}
+
+fn base_fields(id: &str, shape: &Shape) -> Result<Vec<(CatalogKey, Value)>, CompileError> {
     let code = kind_code(kind(&shape.kind)?).ok_or(CompileError::Kind)?;
     let mut fields = vec![
         (CatalogKey::Name, name(id)),
@@ -30,13 +42,7 @@ pub(super) fn encode(
     if let Some(template) = arn(id, shape)? {
         fields.push((CatalogKey::Arn, Value::Text(template)));
     }
-    let members = members(shape, registry, indexes)?;
-    if !members.is_empty() {
-        fields.push((CatalogKey::Members, Value::List(members)));
-    }
-    fields.extend(targets(&shape.kind, indexes)?);
-    fields.extend(metadata::shape_fields(&shape.traits)?);
-    map(fields)
+    Ok(fields)
 }
 
 fn arn(id: &str, shape: &Shape) -> Result<Option<String>, CompileError> {
@@ -54,6 +60,7 @@ fn members(
     shape: &Shape,
     registry: &Registry,
     indexes: &BTreeMap<&str, usize>,
+    all_shapes: &BTreeMap<String, Shape>,
 ) -> Result<Vec<Value>, CompileError> {
     let source = match &shape.kind {
         ShapeKind::Structure { members } | ShapeKind::Union { members } => members,
@@ -65,7 +72,7 @@ fn members(
             let id = registry
                 .id(name)
                 .ok_or_else(|| CompileError::MissingMember(name.clone()))?;
-            Ok((id, member_value(name, member, id, indexes)?))
+            Ok((id, member_value(name, member, id, indexes, all_shapes)?))
         })
         .collect::<Result<BTreeMap<_, _>, CompileError>>()?;
     Ok(ordered.into_values().collect())
@@ -76,6 +83,7 @@ fn member_value(
     member: &Member,
     id: inventory_core::record::FieldId,
     indexes: &BTreeMap<&str, usize>,
+    all_shapes: &BTreeMap<String, Shape>,
 ) -> Result<Value, CompileError> {
     let target = member
         .target
@@ -89,7 +97,7 @@ fn member_value(
             Value::Bool(has_trait(&member.traits, "smithy.api#required")),
         ),
     ];
-    fields.extend(metadata::member_fields(member)?);
+    fields.extend(metadata::member_fields(member, target, all_shapes)?);
     map(fields)
 }
 

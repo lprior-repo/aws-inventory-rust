@@ -1,4 +1,3 @@
-//! Behavior: concurrent_exports_publish_exactly_one_complete_file.
 use super::*;
 
 #[tokio::test]

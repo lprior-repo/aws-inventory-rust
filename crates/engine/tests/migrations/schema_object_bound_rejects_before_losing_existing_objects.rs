@@ -1,4 +1,3 @@
-//! Behavior: schema_object_bound_rejects_before_losing_existing_objects.
 use super::*;
 
 #[tokio::test]
@@ -10,7 +9,7 @@ pub(super) async fn schema_object_bound_rejects_before_losing_existing_objects()
     let statements: String = (0..1_024)
         .map(|index| format!("CREATE VIEW user_bound_{index} AS SELECT {index} AS n;\n"))
         .collect();
-    // Only fixed SQL and bounded integer fixture indices are interpolated.
+
     sqlx::raw_sql(AssertSqlSafe(statements))
         .execute(&mut connection)
         .await?;

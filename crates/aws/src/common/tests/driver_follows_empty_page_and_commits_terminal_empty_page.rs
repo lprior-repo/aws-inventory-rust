@@ -1,4 +1,3 @@
-//! driver follows empty page and commits terminal empty page behavior.
 use super::*;
 
 #[tokio::test]

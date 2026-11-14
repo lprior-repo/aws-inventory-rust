@@ -1,4 +1,3 @@
-//! Small public-API fixture builders; expected hash bytes remain in each scenario.
 use inventory_core::record::*;
 
 pub type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;

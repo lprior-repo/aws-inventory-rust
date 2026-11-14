@@ -1,9 +1,3 @@
-//! Reproducible release packaging without Python.
-//!
-//! Selection, ordering, manifest bytes and ZIP payloads match the retired
-//! the retired Python packager. The deliberate difference is determinism: every ZIP
-//! entry carries the fixed 1980-01-01 timestamp instead of the packaging time.
-
 mod archive;
 mod destination;
 mod limits;
@@ -22,16 +16,12 @@ use selection::{MANIFEST_NAME, slash_path, walk};
 
 pub use destination::atomic_write;
 
-/// Top-level directory inside the archive.
 const ARCHIVE_PREFIX: &str = "aws-inventory-rs/";
 
-/// Fixed working storage for streaming the completed archive digest.
 const HASH_BUFFER_BYTES: usize = 8192;
 
-/// One included file: slash-separated relative name and exact bytes.
 pub(super) type Payload = (String, Vec<u8>);
 
-/// Receipt printed after a successful package, matching the Python JSON shape.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PackageReceipt {
     pub path: String,
@@ -41,7 +31,6 @@ pub struct PackageReceipt {
 }
 
 impl PackageReceipt {
-    /// Sorted-key JSON object, as `json.dumps(..., sort_keys=True)` produced.
     pub fn to_json(&self) -> Value {
         let mut map = Map::new();
         map.insert("path".to_string(), Value::String(self.path.clone()));
@@ -52,7 +41,6 @@ impl PackageReceipt {
     }
 }
 
-/// Package `root` into `destination` and print the receipt summary.
 pub fn run(root: &Path, destination: &Path) -> Result<(), Box<dyn std::error::Error>> {
     let receipt = package(root, destination)?;
     let summary = serde_json::to_string_pretty(&receipt.to_json())?;
@@ -60,14 +48,6 @@ pub fn run(root: &Path, destination: &Path) -> Result<(), Box<dyn std::error::Er
     Ok(())
 }
 
-/// Package every distributable file under `root` into `destination`.
-///
-/// `MANIFEST.sha256` is written under `root`, matching the Python tool. The
-/// archive is built in an exclusive temporary sibling, verified, then renamed.
-/// Destinations inside the canonical root are rejected before any writes with
-/// an `io::ErrorKind::InvalidInput` error naming both paths. Existing external
-/// files are replaced; destination symlinks themselves are replaced, not followed.
-/// The destination directory must not be writable by untrusted users; validation is not atomic with publication.
 pub fn package(
     root: &Path,
     destination: &Path,
@@ -87,7 +67,6 @@ pub fn package(
     })
 }
 
-/// Read included files within named traversal and metadata-checked byte limits.
 fn collect_payloads(
     root: &Path,
     limits: Limits,
@@ -104,7 +83,6 @@ fn collect_payloads(
     Ok(payloads)
 }
 
-/// Check metadata byte budgets before allocating or reading a payload.
 fn read_payload(
     root: &Path,
     relative: &Path,
@@ -125,7 +103,6 @@ fn read_payload(
     Ok(((slash_path(relative), data), next))
 }
 
-/// A growing file cannot grow this allocation beyond its checked metadata size.
 fn read_snapshot(file: &mut File, length: u64) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let length = usize::try_from(length)?;
     let mut bytes = Vec::new();
@@ -135,7 +112,6 @@ fn read_snapshot(file: &mut File, length: u64) -> Result<Vec<u8>, Box<dyn std::e
     Ok(bytes)
 }
 
-/// Build the manifest text: `<sha256>  <slash path>\n` per payload, in order.
 fn build_manifest(payloads: &[Payload]) -> String {
     payloads
         .iter()
@@ -148,7 +124,6 @@ fn build_manifest(payloads: &[Payload]) -> String {
         })
 }
 
-/// Fields the Python tool compares before and after reading a file.
 fn stamp(metadata: &Metadata) -> io::Result<(u64, Option<u128>)> {
     let modified = metadata
         .modified()
@@ -158,7 +133,6 @@ fn stamp(metadata: &Metadata) -> io::Result<(u64, Option<u128>)> {
     Ok((metadata.len(), modified))
 }
 
-/// Canonical destination plus payload count and archive digest.
 fn receipt(
     destination: &Path,
     file: &mut File,
@@ -181,18 +155,16 @@ fn receipt(
     })
 }
 
-/// Lowercase hexadecimal SHA-256 of a byte slice.
 pub(crate) fn sha256_hex(bytes: &[u8]) -> String {
     let digest = Sha256::digest(bytes);
     digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-/// Hash the completed, private archive with a fixed 8 KiB working buffer.
 fn hash_archive(file: &mut File) -> io::Result<String> {
     file.rewind()?;
     let mut digest = Sha256::new();
     let mut buffer = [0; HASH_BUFFER_BYTES];
-    // Each successful read advances through a finite, no-longer-written file.
+
     std::iter::from_fn(|| hash_next(file, &mut buffer, &mut digest))
         .try_for_each(std::convert::identity)?;
     Ok(digest
@@ -202,7 +174,6 @@ fn hash_archive(file: &mut File) -> io::Result<String> {
         .collect())
 }
 
-/// Hash one chunk; EOF terminates iteration and read errors propagate.
 fn hash_next(file: &mut File, buffer: &mut [u8], digest: &mut Sha256) -> Option<io::Result<()>> {
     match file.read(buffer) {
         Ok(0) => None,
@@ -216,7 +187,6 @@ fn hash_next(file: &mut File, buffer: &mut [u8], digest: &mut Sha256) -> Option<
     }
 }
 
-/// Build an invalid-data error for consistency-check failures.
 fn invalid(message: impl Into<String>) -> Box<dyn std::error::Error> {
     Box::new(io::Error::new(io::ErrorKind::InvalidData, message.into()))
 }

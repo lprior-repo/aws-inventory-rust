@@ -1,4 +1,3 @@
-//! Behavior: changed_replay_cannot_overwrite_committed_observation.
 use super::*;
 
 #[tokio::test]

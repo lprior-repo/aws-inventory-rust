@@ -11,7 +11,6 @@ fn unchanged_failure(output: &Output, path: &Path, original: &[u8]) -> TestResul
 
 #[test]
 fn check_rejects_same_length_one_byte_drift_without_output_or_rewrite() -> TestResult {
-    // Given a real catalog with one byte flipped, a length-only check must not accept it.
     let source = source()?;
     let root = root()?;
     let path = root.path().join("catalog/aws-api.catalog");
@@ -26,7 +25,6 @@ fn check_rejects_same_length_one_byte_drift_without_output_or_rewrite() -> TestR
 
 #[test]
 fn check_rejects_existing_empty_placeholder_without_output_or_rewrite() -> TestResult {
-    // Given the bootstrap placeholder, check fails read-only rather than treating it as missing.
     let source = source()?;
     let root = root()?;
     let path = root.path().join("catalog/aws-api.catalog");

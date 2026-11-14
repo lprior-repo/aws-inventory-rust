@@ -1,5 +1,3 @@
-//! Small injected ceilings exercise exact and one-past resource boundaries.
-
 use std::fs;
 use std::io::{self, Write};
 use std::path::Path;
@@ -28,16 +26,15 @@ fn limit_error<T>(
 
 #[test]
 fn given_file_at_byte_limit_when_collected_then_exact_bytes_are_retained() -> TestResult {
-    // Given
     let root = tempfile::tempdir()?;
     fs::write(root.path().join("a"), b"abc")?;
     let limits = Limits {
         file_bytes: 3,
         ..limits::DEFAULT
     };
-    // When
+
     let payloads = collect_payloads(root.path(), limits)?;
-    // Then
+
     assert_eq!(payloads, vec![("a".to_string(), b"abc".to_vec())]);
     Ok(())
 }
@@ -198,17 +195,17 @@ fn given_excluded_trees_past_depth_limit_when_collected_then_they_are_pruned() -
 #[test]
 fn given_unreadable_excluded_directory_when_packaged_then_it_is_not_opened() -> TestResult {
     use std::os::unix::fs::PermissionsExt;
-    // Given
+
     let fixture = tempfile::tempdir()?;
     let root = fixture.path().join("source");
     let excluded = root.join("target");
     fs::create_dir_all(&excluded)?;
     fs::write(root.join("a.txt"), b"payload")?;
     fs::set_permissions(&excluded, fs::Permissions::from_mode(0o000))?;
-    // When: restore permissions before propagating the result, including errors.
+
     let result = package(&root, &fixture.path().join("out.zip"));
     fs::set_permissions(excluded, fs::Permissions::from_mode(0o700))?;
-    // Then
+
     assert_eq!(result?.files, 2);
     Ok(())
 }

@@ -54,7 +54,6 @@ fn facts(name: &str, required: bool, readonly: bool) -> OperationFacts<'_> {
 #[test]
 fn list_describe_candidates_depend_on_required_members_not_readonly()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given List/Describe names, when classifying all flags, then inputs select the class.
     let deny = DenyList::parse(DENY)?;
     ["ListQueues", "DescribeInstances", "ListObjectsV2"]
         .iter()
@@ -76,8 +75,6 @@ fn list_describe_candidates_depend_on_required_members_not_readonly()
 #[test]
 fn literal_list_describe_prefixes_allow_empty_and_lowercase_suffixes()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given literal prefixes without word-boundary constraints, when required inputs change,
-    // then every matching name remains an enumeration or expansion candidate.
     let deny = DenyList::parse("")?;
     [
         "List",
@@ -100,7 +97,6 @@ fn literal_list_describe_prefixes_allow_empty_and_lowercase_suffixes()
 #[test]
 fn nonread_names_are_denied_mutating_even_when_readonly() -> Result<(), Box<dyn std::error::Error>>
 {
-    // Given mutating or differently cased names, when classified, then no trait rescues them.
     let deny = DenyList::parse(DENY)?;
     MUTATING.iter().for_each(|name| {
         assert_eq!(
@@ -113,8 +109,6 @@ fn nonread_names_are_denied_mutating_even_when_readonly() -> Result<(), Box<dyn 
 
 #[test]
 fn every_seed_denial_keeps_its_hand_reviewed_reason() -> Result<(), Box<dyn std::error::Error>> {
-    // Given the 15 global seed names, when classified (including readonly GetFunction),
-    // then each reason equals the independently written decision table.
     let deny = DenyList::parse(DENY)?;
     assert_eq!(deny.len(), 85);
     MUST_DENY.iter().for_each(|(name, reason)| {
@@ -133,7 +127,6 @@ fn every_seed_denial_keeps_its_hand_reviewed_reason() -> Result<(), Box<dyn std:
 #[test]
 fn other_read_prefixes_stay_unclassified_even_when_input_free_and_readonly()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given other read verbs, when classified with either input flag, then none is allowed.
     let deny = DenyList::parse(DENY)?;
     UNCLASSIFIED.iter().for_each(|name| {
         assert_eq!(
@@ -150,7 +143,6 @@ fn other_read_prefixes_stay_unclassified_even_when_input_free_and_readonly()
 
 #[test]
 fn list_denial_wins_over_both_allow_rules() -> Result<(), Box<dyn std::error::Error>> {
-    // Given a denied List name, when required inputs change, then denial always wins.
     let deny = DenyList::parse("ListForbidden\treference-data\n")?;
     assert_eq!(
         classify(&facts("ListForbidden", false, true), &deny),

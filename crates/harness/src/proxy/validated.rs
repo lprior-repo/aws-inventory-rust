@@ -14,7 +14,6 @@ struct ValidatedRate {
     per_second: NonZeroU32,
 }
 
-/// Created once before binding. Raw options never reach runtime plan evaluation.
 pub(crate) struct ValidatedConfig {
     seed: u64,
     rules: Vec<Rule>,

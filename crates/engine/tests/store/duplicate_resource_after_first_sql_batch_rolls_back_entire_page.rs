@@ -1,4 +1,3 @@
-//! Behavior: duplicate_resource_after_first_sql_batch_rolls_back_entire_page.
 use super::*;
 
 #[tokio::test]

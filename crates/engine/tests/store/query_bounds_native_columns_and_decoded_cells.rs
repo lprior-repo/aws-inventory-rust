@@ -1,4 +1,3 @@
-//! Behavior: query_bounds_native_columns_and_decoded_cells.
 use super::*;
 
 #[tokio::test]
@@ -9,8 +8,7 @@ pub(super) async fn query_bounds_native_columns_and_decoded_cells() -> TestResul
         .collect::<Vec<_>>()
         .join(",");
     assert!(store.query(&format!("SELECT {columns}"), 1).await.is_err());
-    // Exercise the cell budget with fewer SQLx row handoffs so this boundary
-    // test does not need to approach the separate native query deadline.
+
     let cell_columns = (0..100)
         .map(|index| format!("x AS c{index}"))
         .collect::<Vec<_>>()

@@ -1,4 +1,3 @@
-//! Independent persisted-row and schema snapshot oracle.
 use super::*;
 
 pub(super) type StoredResource = (

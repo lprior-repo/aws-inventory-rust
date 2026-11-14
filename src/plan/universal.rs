@@ -1,11 +1,7 @@
-//! Universal-catalog evidence and list-only request accounting.
 use super::*;
 
 const UNIVERSAL_CATALOG: &str = include_str!("../../catalog/cloudcontrol-universal.json");
 
-/// The universal catalog is data, not a collector dependency: planning can
-/// report its partition without the `aws` feature. Per-type plans remain the
-/// reviewed subset that carries executable descriptors.
 pub(super) fn evidence() -> Result<(u64, Value)> {
     let document: Value =
         serde_json::from_str(UNIVERSAL_CATALOG).context("embedded universal catalog")?;
@@ -74,7 +70,6 @@ fn partitions(rows: usize, total: u64, list_capable: u64, parent: u64, unsupport
             == Some(total)
 }
 
-/// Mark the plan as a universal drain and expose list-only request accounting.
 pub(super) fn annotate(plan: &mut Value, list_types: u64, evidence: Value) -> Result<()> {
     let coverage = plan
         .get_mut("coverage")

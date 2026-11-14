@@ -1,5 +1,3 @@
-//! Bind the capability matrix to observed traffic and persisted typed reads.
-
 mod merge;
 
 pub use merge::apply_verification;
@@ -11,10 +9,8 @@ use crate::HarnessError;
 use super::Json;
 use super::jhelpers::{array, text};
 
-/// Maximum executable catalog types (and matrix entries) considered.
 const MAX_TYPES: usize = 4_096;
 
-/// Checks a complete asserted emulator run must declare for coverage.
 const REQUIRED_CHECKS: [&str; 8] = [
     "coverage:all_catalog_types_listed",
     "coverage:every_registered_type_read",

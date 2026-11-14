@@ -1,22 +1,11 @@
-//! Stable data model for the DAG view.
-//!
-//! The builder fills this from the filtered fixture, but the model is
-//! independent of it: ids are stable strings, duplicate ids collapse to one
-//! node, duplicate and self edges are ignored, and both collections are
-//! capped so a hostile source cannot grow the layout or the draw pass without
-//! bound.
-
 use std::collections::{BTreeMap, BTreeSet};
 
-/// Hard ceiling on nodes retained by [`DagGraph`].
 pub const MAX_NODES: usize = 2_000;
-/// Hard ceiling on edges retained by [`DagGraph`].
+
 pub const MAX_EDGES: usize = 4_000;
-/// Longest label kept verbatim; longer labels get a single ellipsis.
+
 pub const MAX_LABEL_CHARS: usize = 24;
 
-/// What a node represents. Resource kinds carry their own accent colour so a
-/// fleet view reads at a glance even before the labels resolve.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum NodeKind {
     Account,
@@ -30,7 +19,6 @@ pub enum NodeKind {
 }
 
 impl NodeKind {
-    /// Maps the fixture's `kind` facet onto a node kind.
     pub fn from_facet(facet: &str) -> Self {
         match facet {
             "ec2" => Self::Ec2,
@@ -41,7 +29,6 @@ impl NodeKind {
         }
     }
 
-    /// Dark-theme accent, packed `0xRRGGBB` for `DrawVector::set_color_hex`.
     pub const fn accent(self) -> u32 {
         match self {
             Self::Account => 0x8f98a8,
@@ -55,7 +42,6 @@ impl NodeKind {
         }
     }
 
-    /// Resource nodes map to a fixture row; the structural layers do not.
     pub const fn is_resource(self) -> bool {
         matches!(
             self,
@@ -64,8 +50,6 @@ impl NodeKind {
     }
 }
 
-/// One node as the renderer needs it: a stable id, a pre-truncated label and
-/// the accent kind.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DagNode {
     id: String,
@@ -87,17 +71,14 @@ impl DagNode {
     }
 }
 
-/// A directed edge between two node indexes.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct DagEdge {
     pub from: usize,
     pub to: usize,
-    /// Overlay edges are drawn but excluded from layering, so same-tier
-    /// resource relationships do not stretch the hierarchy.
+
     pub overlay: bool,
 }
 
-/// Node/edge container with deduplication and explicit truncation counters.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct DagGraph {
     nodes: Vec<DagNode>,
@@ -109,8 +90,6 @@ pub struct DagGraph {
 }
 
 impl DagGraph {
-    /// Adds a node unless the id already exists. Returns the existing index for
-    /// a duplicate, `None` once [`MAX_NODES`] is reached.
     pub fn add_node(
         &mut self,
         kind: NodeKind,
@@ -135,13 +114,10 @@ impl DagGraph {
         Some(index)
     }
 
-    /// Adds a directed edge. Self loops, duplicates and edges with missing
-    /// endpoints are ignored; edges past [`MAX_EDGES`] are counted as dropped.
     pub fn add_edge(&mut self, from: usize, to: usize) -> bool {
         self.insert_edge(from, to, false)
     }
 
-    /// Adds a same-tier data-flow edge; layout ignores it for layering.
     pub fn add_overlay_edge(&mut self, from: usize, to: usize) -> bool {
         self.insert_edge(from, to, true)
     }
@@ -192,7 +168,6 @@ impl DagGraph {
     }
 }
 
-/// Caps a label at [`MAX_LABEL_CHARS`] characters, ending with one ellipsis.
 pub fn truncate_label(text: &str) -> String {
     if text.chars().count() <= MAX_LABEL_CHARS {
         return text.to_owned();

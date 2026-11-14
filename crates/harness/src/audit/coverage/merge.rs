@@ -1,5 +1,3 @@
-//! Merge one asserted emulator run into the capability matrix.
-
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::HarnessError;
@@ -10,7 +8,6 @@ use super::super::histogram::checked_histogram;
 use super::super::jhelpers::{field, text};
 use super::{MAX_TYPES, assert_complete, catalog_types, executed_block, observed_rows};
 
-/// Merge one asserted emulator run into the capability matrix.
 pub fn apply_verification(
     matrix: &Json,
     catalog: &Json,

@@ -1,4 +1,3 @@
-//! Durable job commands. Persisted specifications contain references, not credentials.
 use anyhow::{Context, Result, ensure};
 use inventory_engine::jobs::{JobSpec, JobStore};
 use inventory_engine::limiter::{ApiExecutor, ExecutorConfig};
@@ -88,9 +87,7 @@ async fn execute_open(store: &JobStore, command: JobCommand) -> Result<Value> {
 
 pub fn validate_scan(options: &ScanArgs) -> Result<()> {
     crate::delivery::validate(&options.delivery)?;
-    // The planner accepts `all` as the universal Cloud Control selector and
-    // validates its partition; reviewed per-type plans remain the executable
-    // subset described without credentials.
+
     let plan_args = PlanArgs {
         profile: options.profile.clone(),
         region: options.region.clone(),

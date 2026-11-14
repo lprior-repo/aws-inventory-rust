@@ -1,12 +1,6 @@
-//! Connection lifecycle and bounded SQLite pools.
 use super::*;
 
 impl Store {
-    /// Open/create the SQLite inventory and migrate its supported schema.
-    /// File-backed stores use WAL/FULL synchronization; `:memory:` uses separate
-    /// reader and writer pools sharing one isolated in-memory database.
-    /// # Errors
-    /// Rejects empty paths, unsupported schemas or any database setup/migration failure.
     #[tracing::instrument(skip(path))]
     pub async fn open(path: impl AsRef<Path>) -> Result<Self, StoreError> {
         let (options, memory) = connection_options(path.as_ref())?;
@@ -46,7 +40,6 @@ impl Store {
         }
     }
 
-    /// Consuming shutdown prevents simultaneous borrowers and drains preparation.
     #[tracing::instrument(skip(self))]
     pub async fn close(self) {
         self.preparation_permits.close();

@@ -1,7 +1,5 @@
-//! mapping responsibilities for iam.
 use super::*;
 
-/// Whether identity metadata came from its detail request or listing fallback.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum ObservationDetail {
     Listed,

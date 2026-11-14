@@ -1,4 +1,3 @@
-//! SQLite build limit verification.
 use super::*;
 
 pub(super) async fn verify_sqlite_limits(pool: &SqlitePool) -> Result<(), StoreError> {

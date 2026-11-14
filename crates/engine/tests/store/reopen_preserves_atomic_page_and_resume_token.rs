@@ -1,4 +1,3 @@
-//! Behavior: reopen_preserves_atomic_page_and_resume_token.
 use super::*;
 
 #[tokio::test]

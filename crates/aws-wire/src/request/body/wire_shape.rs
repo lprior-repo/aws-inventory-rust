@@ -1,41 +1,68 @@
+use super::wire::{Encoder, Task, ValueTask, push, value_is_null};
 use crate::request::{EncodeError, Protocol, common::BoundedBody};
-use inventory_core::{record::{KeyRef, MapRef, ValueRef}, catalog::Target};
-use super::wire::{Task, ValueTask, push, value_is_null};
+use inventory_core::{
+    catalog::{Service, Target},
+    record::{KeyRef, ValueRef},
+};
 
+#[derive(Clone, Copy)]
+pub(super) struct ListBinding<'a> {
+    pub(super) element: Target,
+    pub(super) sparse: bool,
+    pub(super) timestamp_format: Option<&'a str>,
+    pub(super) media_type: Option<&'a str>,
+}
+
+#[derive(Clone, Copy)]
+pub(super) struct MapBinding<'a> {
+    pub(super) key_target: Target,
+    pub(super) value_target: Target,
+    pub(super) sparse: bool,
+    pub(super) timestamp_format: Option<&'a str>,
+    pub(super) media_type: Option<&'a str>,
+}
+
+struct MapEntry<'a> {
+    key: KeyRef<'a>,
+    value: ValueRef<'a>,
+    index: usize,
+    length: usize,
+}
+
+#[derive(Clone, Copy)]
 struct ListOptions<'a> {
-    element: Target,
-    sparse: bool,
-    timestamp_format: Option<&'a str>,
-    media_type: Option<&'a str>,
+    binding: ListBinding<'a>,
     depth: usize,
 }
 
+#[derive(Clone, Copy)]
 struct MapOptions<'a> {
-    key_target: Target,
-    value_target: Target,
-    sparse: bool,
-    timestamp_format: Option<&'a str>,
-    media_type: Option<&'a str>,
+    binding: MapBinding<'a>,
     depth: usize,
 }
 
 pub(super) fn push_list<'a>(
-    body: &mut BoundedBody,
-    protocol: Protocol,
+    encoder: &mut Encoder<'a, '_>,
     values: Vec<ValueRef<'a>>,
-    element: Target,
-    sparse: bool,
-    timestamp_format: Option<&'a str>,
-    media_type: Option<&'a str>,
+    binding: ListBinding<'a>,
     parent: ValueTask<'a>,
-    pending: &mut Vec<Task<'a>>,
 ) -> Result<(), EncodeError> {
-    start_array(body, protocol, pending)?;
+    start_array(encoder.body, encoder.protocol, encoder.pending)?;
     let depth = next_depth(parent)?;
-    write_list_values(values, protocol, parent, ListOptions { element, sparse, timestamp_format, media_type, depth }, pending)
+    write_list_values(
+        values,
+        encoder.protocol,
+        parent,
+        ListOptions { binding, depth },
+        encoder.pending,
+    )
 }
 
-fn start_array(body: &mut BoundedBody, protocol: Protocol, pending: &mut Vec<Task<'_>>) -> Result<(), EncodeError> {
+fn start_array(
+    body: &mut BoundedBody,
+    protocol: Protocol,
+    pending: &mut Vec<Task<'_>>,
+) -> Result<(), EncodeError> {
     if protocol == Protocol::RpcV2Cbor {
         super::cbor::array_indefinite(body)?;
         return push(pending, Task::Raw(b"\xff"));
@@ -67,42 +94,48 @@ fn queue_list_value<'a>(
     length: usize,
     pending: &mut Vec<Task<'a>>,
 ) -> Result<(), EncodeError> {
-    if value_is_null(value) && !options.sparse {
-        return Err(EncodeError::InvalidValue { field: parent.field, reason: "null in a non-sparse list" });
+    if value_is_null(value) && !options.binding.sparse {
+        return Err(EncodeError::InvalidValue {
+            field: parent.field,
+            reason: "null in a non-sparse list",
+        });
     }
     if index < length.saturating_sub(1) && protocol != Protocol::RpcV2Cbor {
         push(pending, Task::Raw(b","))?;
     }
-    push(pending, Task::Value(ValueTask {
-        target: options.element,
-        value,
-        field: parent.field,
-        timestamp_format: options.timestamp_format,
-        media_type: options.media_type,
-        sparse: options.sparse,
-        depth: options.depth,
-    }))
+    push(
+        pending,
+        Task::Value(ValueTask {
+            target: options.binding.element,
+            value,
+            field: parent.field,
+            timestamp_format: options.binding.timestamp_format,
+            media_type: options.binding.media_type,
+            sparse: options.binding.sparse,
+            depth: options.depth,
+        }),
+    )
 }
 
 pub(super) fn push_map<'a>(
-    body: &mut BoundedBody,
-    protocol: Protocol,
+    encoder: &mut Encoder<'a, '_>,
     entries: Vec<(KeyRef<'a>, ValueRef<'a>)>,
-    key_target: Target,
-    value_target: Target,
-    sparse: bool,
-    timestamp_format: Option<&'a str>,
-    media_type: Option<&'a str>,
+    binding: MapBinding<'a>,
     parent: ValueTask<'a>,
-    pending: &mut Vec<Task<'a>>,
 ) -> Result<(), EncodeError> {
-    start_map(body, protocol, pending)?;
-    let depth = next_depth(parent)?;
-    let options = MapOptions { key_target, value_target, sparse, timestamp_format, media_type, depth };
-    write_map_entries(entries, protocol, parent, options, pending)
+    start_map(encoder.body, encoder.protocol, encoder.pending)?;
+    let options = MapOptions {
+        binding,
+        depth: next_depth(parent)?,
+    };
+    write_map_entries(encoder, entries, parent, options)
 }
 
-fn start_map(body: &mut BoundedBody, protocol: Protocol, pending: &mut Vec<Task<'_>>) -> Result<(), EncodeError> {
+fn start_map(
+    body: &mut BoundedBody,
+    protocol: Protocol,
+    pending: &mut Vec<Task<'_>>,
+) -> Result<(), EncodeError> {
     if protocol == Protocol::RpcV2Cbor {
         super::cbor::map_indefinite(body)?;
         return push(pending, Task::Raw(b"\xff"));
@@ -112,51 +145,95 @@ fn start_map(body: &mut BoundedBody, protocol: Protocol, pending: &mut Vec<Task<
 }
 
 fn write_map_entries<'a>(
+    encoder: &mut Encoder<'a, '_>,
     entries: Vec<(KeyRef<'a>, ValueRef<'a>)>,
-    protocol: Protocol,
     parent: ValueTask<'a>,
     options: MapOptions<'a>,
-    pending: &mut Vec<Task<'a>>,
 ) -> Result<(), EncodeError> {
     let length = entries.len();
     for (index, (key, value)) in entries.into_iter().enumerate().rev() {
-        queue_map_entry(key, value, protocol, parent, options, index, length, pending)?;
+        queue_map_entry(
+            encoder,
+            parent,
+            options,
+            MapEntry {
+                key,
+                value,
+                index,
+                length,
+            },
+        )?;
     }
     Ok(())
 }
 
 fn queue_map_entry<'a>(
-    key: KeyRef<'a>,
-    value: ValueRef<'a>,
-    protocol: Protocol,
+    encoder: &mut Encoder<'a, '_>,
     parent: ValueTask<'a>,
     options: MapOptions<'a>,
-    index: usize,
-    length: usize,
-    pending: &mut Vec<Task<'a>>,
+    entry: MapEntry<'a>,
 ) -> Result<(), EncodeError> {
-    check_sparse_null(value, options.sparse, parent.field)?;
-    let key = map_key(key, options.key_target, parent.field)?;
-    queue_map_separator(protocol, index, length, pending)?;
-    queue_map_value(value, parent, options, pending)?;
-    if protocol != Protocol::RpcV2Cbor {
-        push(pending, Task::Raw(b":"))?;
+    check_sparse_null(entry.value, options.binding.sparse, parent.field)?;
+    let key = map_key(
+        encoder.service,
+        entry.key,
+        options.binding.key_target,
+        parent.field,
+    )?;
+    queue_map_separator(encoder.protocol, entry.index, entry.length, encoder.pending)?;
+    queue_map_value(entry.value, parent, options, encoder.pending)?;
+    if encoder.protocol != Protocol::RpcV2Cbor {
+        push(encoder.pending, Task::Raw(b":"))?;
     }
-    push(pending, Task::Key(key))
+    push(encoder.pending, Task::Key(key))
 }
 
-fn check_sparse_null(value: ValueRef<'_>, sparse: bool, field: Option<inventory_core::record::FieldId>) -> Result<(), EncodeError> {
+fn check_sparse_null(
+    value: ValueRef<'_>,
+    sparse: bool,
+    field: Option<inventory_core::record::FieldId>,
+) -> Result<(), EncodeError> {
     if value_is_null(value) && !sparse {
-        Err(EncodeError::InvalidValue { field, reason: "null in a non-sparse map" })
+        Err(EncodeError::InvalidValue {
+            field,
+            reason: "null in a non-sparse map",
+        })
     } else {
         Ok(())
     }
 }
 
-fn map_key<'a>(key: KeyRef<'a>, target: Target, field: Option<inventory_core::record::FieldId>) -> Result<&'a str, EncodeError> {
-    match key {
-        KeyRef::Name(name) if target == Target::Prelude("string") => Ok(name),
-        _ => Err(EncodeError::InvalidValue { field, reason: "map key is not a string" }),
+fn map_key<'a>(
+    service: Service<'_>,
+    key: KeyRef<'a>,
+    target: Target,
+    field: Option<inventory_core::record::FieldId>,
+) -> Result<&'a str, EncodeError> {
+    let is_string = string_target(service, target, field)?;
+    match (key, is_string) {
+        (KeyRef::Name(name), true) => Ok(name),
+        _ => Err(EncodeError::InvalidValue {
+            field,
+            reason: "map key is not a string",
+        }),
+    }
+}
+
+fn string_target(
+    service: Service<'_>,
+    target: Target,
+    field: Option<inventory_core::record::FieldId>,
+) -> Result<bool, EncodeError> {
+    match target {
+        Target::Prelude(kind) => Ok(kind == "string"),
+        Target::Shape(index) => {
+            let shape = service.shape(index)?.ok_or(EncodeError::InvalidValue {
+                field,
+                reason: "map key shape is missing",
+            })?;
+            Ok(matches!(shape.kind()?, "string" | "enum"))
+        }
+        _ => Ok(false),
     }
 }
 
@@ -178,17 +255,23 @@ fn queue_map_value<'a>(
     options: MapOptions<'a>,
     pending: &mut Vec<Task<'a>>,
 ) -> Result<(), EncodeError> {
-    push(pending, Task::Value(ValueTask {
-        target: options.value_target,
-        value,
-        field: parent.field,
-        timestamp_format: options.timestamp_format,
-        media_type: options.media_type,
-        sparse: options.sparse,
-        depth: options.depth,
-    }))
+    push(
+        pending,
+        Task::Value(ValueTask {
+            target: options.binding.value_target,
+            value,
+            field: parent.field,
+            timestamp_format: options.binding.timestamp_format,
+            media_type: options.binding.media_type,
+            sparse: options.binding.sparse,
+            depth: options.depth,
+        }),
+    )
 }
 
 fn next_depth(parent: ValueTask<'_>) -> Result<usize, EncodeError> {
-    parent.depth.checked_add(1).ok_or(EncodeError::Limit("serialization depth"))
+    parent
+        .depth
+        .checked_add(1)
+        .ok_or(EncodeError::Limit("serialization depth"))
 }

@@ -1,8 +1,3 @@
-//! Cycle breaking, longest-path layering and barycenter ordering.
-//!
-//! All tie breaks are node indexes; the DFS and Kahn queue are ordered, so a
-//! graph and its layout are in bijection regardless of hash iteration order.
-
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
 

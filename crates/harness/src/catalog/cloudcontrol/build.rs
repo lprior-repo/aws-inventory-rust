@@ -1,5 +1,3 @@
-//! Assembly of the reviewed root catalog document and its evidence block.
-
 use std::collections::BTreeSet;
 
 use crate::HarnessError;
@@ -22,13 +20,10 @@ const SUPPORT_URL: &str =
 const SCHEMA_URL: &str =
     "https://docs.aws.amazon.com/cloudformation-cli/latest/userguide/resource-type-schema.html";
 
-/// The built root document and its per-service count table.
 type Built = (Json, Vec<(String, usize)>);
 
-/// The emitted type documents and their per-service count table.
 type TypeRows = (Vec<Json>, Vec<(String, usize)>);
 
-/// Build the root catalog document and the per-service type counts.
 pub fn build_resources(
     archive: &Archive,
     additions: &[(String, String)],

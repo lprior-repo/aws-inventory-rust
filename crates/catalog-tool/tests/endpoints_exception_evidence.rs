@@ -12,7 +12,6 @@ use std::path::Path;
 #[test]
 fn correctly_expected_fips_case_contributes_neither_template_matches_nor_exceptions() -> TestResult
 {
-    // Given a supported FIPS-enabled case whose expectation is genuinely correct.
     let document = rules(
         json!({"Region":{"type":"string"},"UseFIPS":{"type":"boolean"}}),
         json!([route("https://svc.{Region}.test", json!([]), "{Region}")]),
@@ -25,7 +24,7 @@ fn correctly_expected_fips_case_contributes_neither_template_matches_nor_excepti
     }]))?;
     let first = cases.first().ok_or("missing fixture case")?;
     assert_eq!(parsed.evaluate(&first.params)?, first.expect);
-    // When running the baseline and deriving, then a correct skipped case is still no evidence.
+
     let counts = parsed.run_cases(&cases)?;
     assert_eq!((counts.in_scope, counts.passed, counts.failed), (0, 0, 0));
     assert_eq!(counts.skipped.get(&SkipReason::Fips), Some(&1));

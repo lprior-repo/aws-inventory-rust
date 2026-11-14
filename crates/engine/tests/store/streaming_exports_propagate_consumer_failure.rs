@@ -1,4 +1,3 @@
-//! Behavior: streaming_exports_propagate_consumer_failure.
 use super::*;
 
 #[tokio::test]

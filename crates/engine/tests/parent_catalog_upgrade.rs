@@ -1,4 +1,3 @@
-//! Upgrade from the real v5 boundary without changing observations or user data.
 use inventory_core::{CollectionPage, CollectionScope, Resource, ScanStatus, Source};
 use inventory_engine::store::Store;
 use serde_json::{Value, json};
@@ -142,7 +141,7 @@ async fn schema_thirteen_preserves_every_old_view_and_immutable_payload() -> Tes
         assert_eq!(actual, sql);
     }
     after.close().await?;
-    // Reopening an already migrated database never recreates or changes views.
+
     Store::open(&path).await?.close().await;
     Ok(())
 }

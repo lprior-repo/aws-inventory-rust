@@ -1,7 +1,3 @@
-//! Safe property projections shared by state machines and activities. Logging
-//! destinations are retained as properties only; no CloudWatch log-group edge
-//! or definition body is produced.
-
 use std::collections::BTreeMap;
 
 use aws_sdk_sfn::types::{

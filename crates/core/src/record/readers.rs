@@ -1,4 +1,3 @@
-//! Supported-form interpretation, delegated byte parsing and UTF-8 to minicbor.
 use super::{FieldId, Float, KeyRef, ListRef, MapRef, RecordError, Time, ValueRef};
 use minicbor::{Decoder, data::Type};
 

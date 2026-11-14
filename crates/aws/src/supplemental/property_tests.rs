@@ -1,6 +1,3 @@
-//! Supplemental sources preserve resource identity and distinguish ambiguous
-//! Resource Explorer ELB types using the actual ARN grammar.
-
 use proptest::prelude::*;
 use proptest::test_runner::{Config, RngSeed};
 

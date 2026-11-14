@@ -1,23 +1,11 @@
-//! Python-compatible canonical JSON used by frozen fixture digests.
-//!
-//! Existing receipts hash `json.dumps(value, sort_keys=True,
-//! separators=(",", ":"))` with Python's default `ensure_ascii=True`. Digests
-//! must survive the toolchain migration unchanged, so the escaping and key
-//! ordering rules are reproduced exactly rather than delegated to serde_json.
-
 use serde_json::Value;
 
-/// Serialize with sorted keys and no insignificant whitespace.
-///
-/// `ensure_ascii` mirrors Python's flag: when set, every code point above
-/// `0x7e` is emitted as a `\uXXXX` escape (surrogate pairs above the BMP).
 pub fn canonical(value: &Value, ensure_ascii: bool) -> String {
     let mut out = String::new();
     write_value(&mut out, value, ensure_ascii);
     out
 }
 
-/// Serialize with sorted keys, no whitespace and UTF-8 preserved.
 pub fn canonical_utf8(value: &Value) -> String {
     canonical(value, false)
 }
@@ -40,8 +28,6 @@ fn write_number(out: &mut String, number: &serde_json::Number) {
     } else if let Some(value) = number.as_u64() {
         out.push_str(&value.to_string());
     } else {
-        // Python renders the same shortest round-trip digits for ordinary
-        // values; fixtures carry provider integers and strings, not floats.
         out.push_str(&number.to_string());
     }
 }
@@ -109,7 +95,6 @@ fn write_escape(out: &mut String, code: u32) {
             out.push_str(&format!("{unit:04x}"));
         }
         Err(_) => {
-            // Surrogate pair for code points above the BMP.
             let adjusted = code.saturating_sub(0x1_0000);
             let high = 0xd800_u32.saturating_add(adjusted >> 10);
             let low = 0xdc00_u32.saturating_add(adjusted & 0x3ff);

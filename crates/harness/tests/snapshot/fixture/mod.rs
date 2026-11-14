@@ -1,5 +1,3 @@
-//! Synthetic evidence tree used by the oracle freeze regressions.
-
 mod evidence;
 mod io;
 

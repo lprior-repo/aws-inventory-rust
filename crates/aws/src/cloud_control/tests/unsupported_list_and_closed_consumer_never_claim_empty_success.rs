@@ -1,4 +1,3 @@
-//! unsupported list and closed consumer never claim empty success behavior.
 use super::*;
 
 #[tokio::test]

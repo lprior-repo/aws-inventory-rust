@@ -1,8 +1,3 @@
-//! Reviewed type selection and reserved/global redaction names.
-//!
-//! Transcribed from the Python generator so the reproduced catalog keeps the
-//! same reviewed set, ordering and redaction policy.
-
 #[rustfmt::skip]
 pub const SELECTED: &[(&str, &str)] = &[
     ("EC2", "Instance VPC Subnet SecurityGroup NetworkInterface Volume Snapshot InternetGateway NatGateway RouteTable NetworkAcl VPCEndpoint VPCPeeringConnection EgressOnlyInternetGateway EIP CustomerGateway VPNGateway VPNConnection TransitGateway TransitGatewayVpcAttachment TransitGatewayPeeringAttachment TransitGatewayRouteTable LaunchTemplate PlacementGroup CapacityReservation Host FlowLog PrefixList DHCPOptions InstanceConnectEndpoint NetworkInsightsPath TrafficMirrorSession TrafficMirrorTarget VPCEndpointService SecurityGroupIngress SecurityGroupEgress SubnetRouteTableAssociation SubnetNetworkAclAssociation"),

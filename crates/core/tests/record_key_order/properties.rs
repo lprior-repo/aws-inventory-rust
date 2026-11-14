@@ -1,4 +1,3 @@
-//! Every generated map is scanned and every adjacent pair is independently swapped.
 use super::{TestResult, linear, lookup, rejected};
 use inventory_core::record::{
     FieldId, Float, Key, KeyRef, MapRef, Record, RecordError, Time, Value, ValueRef,
@@ -79,7 +78,7 @@ fn map_span(d: &mut Decoder<'_>) -> TestResult<MapSpan> {
 fn spans(bytes: &[u8]) -> TestResult<Vec<MapSpan>> {
     let mut d = Decoder::new(bytes);
     let mut maps = Vec::new();
-    // Every nonterminal iteration consumes at least one byte, including map keys.
+
     (0..bytes.len()).try_for_each(|_| -> TestResult {
         if d.position() == bytes.len() {
             return Ok(());
@@ -168,9 +167,8 @@ fn check_record(value: Value) -> TestResult {
 #[test]
 fn seeded_encoder_records_validate_reject_all_adjacent_map_swaps_and_match_linear_lookup()
 -> TestResult {
-    // Given bounded generated trees with mixed keys, nested maps, lists and all scalar kinds.
     let mut runner = TestRunner::new(config());
-    // When encoded, then both constructors accept; every map swap fails and lookup equals scan.
+
     runner.run(&records()?, |value| {
         check_record(value).map_err(|error| TestCaseError::fail(error.to_string()))
     })?;

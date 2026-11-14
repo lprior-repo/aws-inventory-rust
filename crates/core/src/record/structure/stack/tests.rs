@@ -4,7 +4,6 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[test]
 fn bounded_stack_borrows_the_callers_inline_array() -> TestResult {
-    // Given stack storage, bounded construction retains that array instead of owning heap storage.
     let mut storage = [None; MAX_DEPTH];
     let pointer = storage.as_ptr();
     let frames = Frames::inline(&mut storage, MAX_DEPTH)?;
@@ -17,7 +16,6 @@ fn bounded_stack_borrows_the_callers_inline_array() -> TestResult {
 
 #[test]
 fn inline_stack_accepts_32_frames_rejects_33_and_preserves_lifo() -> TestResult {
-    // Given exactly 32 slots, pushes are inclusive at the bound and pops reverse their order.
     let mut storage = [None; MAX_DEPTH];
     let mut frames = Frames::inline(&mut storage, MAX_DEPTH)?;
     let count = u64::try_from(MAX_DEPTH)?;
@@ -34,7 +32,6 @@ fn inline_stack_accepts_32_frames_rejects_33_and_preserves_lifo() -> TestResult 
 
 #[test]
 fn inline_stack_updates_and_reuses_its_top_slot() -> TestResult {
-    // Given a one-slot stack, mutation and pop leave the slot available for another push.
     let mut storage = [None; MAX_DEPTH];
     let mut frames = Frames::inline(&mut storage, 1)?;
     frames.push(Frame::Array)?;
@@ -48,7 +45,6 @@ fn inline_stack_updates_and_reuses_its_top_slot() -> TestResult {
 
 #[test]
 fn inline_stack_rejects_capacity_above_32_and_pushes_past_zero() -> TestResult {
-    // Given unsupported capacity or no permitted slots, no push can reach outside the array.
     let mut storage = [None; MAX_DEPTH];
     assert!(matches!(
         Frames::inline(&mut storage, 33),
@@ -62,7 +58,6 @@ fn inline_stack_rejects_capacity_above_32_and_pushes_past_zero() -> TestResult {
 
 #[test]
 fn generic_stack_remains_dynamic_and_accepts_more_than_32_frames() -> TestResult {
-    // Given the generic path, deep unknown values retain their previous dynamically sized stack.
     let mut frames = Frames::dynamic();
     assert!(matches!(&frames, Frames::Dynamic(_)));
     (0..64).try_for_each(|_| frames.push(Frame::Array))?;

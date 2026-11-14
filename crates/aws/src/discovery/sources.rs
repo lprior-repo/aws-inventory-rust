@@ -1,6 +1,3 @@
-//! Existing Config and Resource Explorer source selection. Selection requires
-//! complete evidence; multiple Config candidates are never chosen arbitrarily.
-
 use aws_sdk_config::types::ConfigurationAggregator;
 use aws_sdk_resourceexplorer2::operation::get_index::GetIndexOutput;
 use aws_sdk_resourceexplorer2::types::View;

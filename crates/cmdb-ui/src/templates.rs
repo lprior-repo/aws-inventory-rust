@@ -1,8 +1,3 @@
-//! Small Splash templates shared by the root view tree.
-//!
-//! Registered under `mod.widgets.*` so `ui.rs` imports them with the rest of
-//! the widget catalogue. No state and no Rust: presentation only.
-
 use makepad_widgets::*;
 
 script_mod! {

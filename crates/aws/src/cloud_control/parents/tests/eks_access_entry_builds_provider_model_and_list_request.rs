@@ -1,4 +1,3 @@
-//! EKS AccessEntry parent model construction and list request verification.
 use super::*;
 
 use std::sync::Mutex;

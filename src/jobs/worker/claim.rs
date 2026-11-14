@@ -24,8 +24,7 @@ pub(super) async fn run_claim(
     if store.heartbeat(&lease, demo::now_ms()?, lease_ms).await? || shutdown.is_cancelled() {
         return cancel_before_scan(store, &lease).await;
     }
-    // One owned future per admitted job bounds the compiler's composed
-    // Send proof and keeps the scan under this supervisor's cancellation.
+
     let scan: BoxFuture<'_, Result<Value>> = Box::pin(crate::scan::run_with_executor(
         options,
         Arc::clone(&executor),

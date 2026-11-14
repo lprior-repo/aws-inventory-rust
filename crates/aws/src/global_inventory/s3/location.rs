@@ -1,4 +1,3 @@
-//! location responsibilities for s3.
 use super::*;
 
 pub(super) fn bucket_context(ctx: &Context, region: &str) -> Context {
@@ -58,9 +57,6 @@ pub(super) async fn resolve_location(
             match result {
                 Ok(output) => Ok(output.bucket_region().map(str::to_owned)),
                 Err(error) => {
-                    // HeadBucket intentionally exposes region on redirects and
-                    // denied responses. This establishes location only; every
-                    // later metadata read still checks the expected owner.
                     let region = error.raw_response().and_then(|response| {
                         location_header(
                             response.status().as_u16(),

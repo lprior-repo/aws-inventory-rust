@@ -1,4 +1,3 @@
-//! Native-plus-universal scan coverage in one invocation.
 use super::*;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

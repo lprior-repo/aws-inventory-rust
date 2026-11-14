@@ -13,7 +13,6 @@ use tokio::{
 };
 
 pub(super) struct Socket {
-    // Field order closes the socket before releasing its permit.
     inner: TcpStream,
     counters: Arc<Counters>,
     _permit: OwnedSemaphorePermit,

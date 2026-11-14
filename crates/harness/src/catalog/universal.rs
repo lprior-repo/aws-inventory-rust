@@ -1,13 +1,3 @@
-//! Universal Cloud Control catalog over every schema in the pinned archive.
-//!
-//! The reviewed capability matrix stays the source of truth for handler
-//! availability, request-model evidence, exclusions and schema digests. This
-//! projection keeps all 1,881 archived provider types instead of the reviewed
-//! 397, so no schema is silently unreachable. Visibility is emitted from the
-//! schema when it declares one; the pinned archive declares none, so every row
-//! is `PUBLIC`. A parent type is emitted only where the reviewed parent catalog
-//! states one; schema request models never name their parent type.
-
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
@@ -21,10 +11,8 @@ use crate::provenance::sha256_hex;
 
 mod output;
 
-/// Schema members in the pinned archive.
 pub const SCHEMA_COUNT: usize = 1881;
 
-/// Exclusions that mean listing needs a parent request context.
 const PARENT_REASONS: [&str; 2] = [
     "schema_parent_model_required",
     "documented_parent_model_required",
@@ -37,7 +25,6 @@ struct Totals {
     unsupported: usize,
 }
 
-/// Build the universal catalog document.
 pub fn document(root: &Path) -> Result<Json, HarnessError> {
     let archive = archive::load(root)?;
     let matrix = read(&root.join(CAPABILITY_MATRIX))?;

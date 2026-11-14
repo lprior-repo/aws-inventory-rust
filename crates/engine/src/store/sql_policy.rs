@@ -1,4 +1,3 @@
-//! Pure lexical policy for bounded read-only SQL.
 use super::*;
 
 #[derive(Clone, Copy, PartialEq, Eq)]

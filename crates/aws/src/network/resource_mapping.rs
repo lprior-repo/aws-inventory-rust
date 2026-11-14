@@ -1,4 +1,3 @@
-//! resource mapping operations.
 use super::*;
 
 pub(super) fn resource(

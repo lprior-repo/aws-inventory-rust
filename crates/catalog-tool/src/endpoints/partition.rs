@@ -1,12 +1,6 @@
 use super::Fault;
 use serde_json::{Value, json};
 
-// Commercial partition data copied from the published aws-sdk-s3 1.159.0:
-// /cache/cargo-shared/registry/src/index.crates.io-1949cf8c6b5b557f/
-// aws-sdk-s3-1.159.0/src/endpoint_lib.rs, default partition resolver, line 13.
-// Source regex: ^(us|eu|ap|sa|ca|me|af|il|mx)\-\w+\-\d+$.
-// We implement its ASCII region-identifier subset without a regex dependency.
-// No partition fallback: unknown and non-commercial regions are explicitly excluded.
 const AWS: Commercial = Commercial {
     prefixes: &["us", "eu", "ap", "sa", "ca", "me", "af", "il", "mx"],
     regions: &[

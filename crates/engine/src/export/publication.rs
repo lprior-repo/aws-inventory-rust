@@ -1,25 +1,8 @@
-//! Cancellation-safe inventory export publication and cleanup.
 use super::*;
 use crate::graph::reference::{
     ReferenceConfig, SyntheticSnapshot, persist_scan, restore_synthetic, snapshot_synthetic,
 };
 
-/// Stream an immutable scan, then atomically install a new output file.
-///
-/// Complete is required unless allow_partial explicitly permits Partial or
-/// Cancelled. Running is always rejected. Existing output or `.partial` paths
-/// are never overwritten. Cooperative cancellation removes only the partial
-/// file created by this call. Once the final no-clobber link begins, publication
-/// wins a concurrent cancellation; callers must retain the successful result.
-///
-/// When enabled, universal reference edges are persisted before writing so the
-/// artifact and its header counts describe the post-persistence scan. Prior
-/// synthetic edges are captured first and restored on pre-publication failure.
-/// # Errors
-/// Rejects disallowed scan status, invalid identities, existing output/partial
-/// paths, cancellation before publication, record/byte bounds or persistence/I/O
-/// failures. Cleanup and restore failures are explicit; `PublishedCleanup` means
-/// the final artifact exists despite the returned error.
 #[tracing::instrument(skip(store, output, cancellation), fields(scan_id))]
 pub async fn export_snapshot(
     store: &Store,
@@ -42,7 +25,6 @@ pub async fn export_snapshot(
     settle(result, store, scan_id, snapshot.as_ref()).await
 }
 
-/// Derive and persist universal reference edges, capturing the prior state.
 #[tracing::instrument(skip_all)]
 async fn persist_references(
     store: &Store,
@@ -77,7 +59,6 @@ async fn write_and_publish(
     publish_or_discard(result, temporary, output, cancellation).await
 }
 
-/// Return the export result, restoring the pre-export reference state on error.
 #[tracing::instrument(skip_all)]
 async fn settle(
     result: Result<ExportSummary, ExportError>,
@@ -159,7 +140,6 @@ pub(super) async fn snapshot_header(
     })
 }
 
-/// Reject illegal scans before any mutating step such as reference persistence.
 pub(super) fn validate_status(
     status: ScanStatus,
     options: ExportOptions,
@@ -184,7 +164,7 @@ pub(super) async fn write_partial(
     let mut writer =
         ArtifactWriter::new(BufWriter::with_capacity(FILE_BUFFER_BYTES, file), options);
     let written = records::write_records(store, &mut writer, header, cancellation).await;
-    // Drain outstanding file writes even after cancellation or a record error.
+
     let drained = writer.sink.flush().await;
     let result = combine_drain(written, drained);
     result?;
@@ -225,8 +205,7 @@ pub(super) async fn publish_or_discard(
         Ok(summary) => summary,
         Err(cause) => return Err(discard_partial(temporary, cause).await),
     };
-    // This commit is deliberately not raced against cancellation. Same-directory
-    // hard-link installation is atomic and cannot overwrite an existing target.
+
     if let Err(error) = tokio::fs::hard_link(temporary, output).await {
         return Err(discard_partial(temporary, error.into()).await);
     }

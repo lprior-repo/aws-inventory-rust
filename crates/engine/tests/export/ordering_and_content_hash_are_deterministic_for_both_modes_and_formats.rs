@@ -1,4 +1,3 @@
-//! Behavior: ordering_and_content_hash_are_deterministic_for_both_modes_and_formats.
 use super::*;
 
 #[tokio::test]

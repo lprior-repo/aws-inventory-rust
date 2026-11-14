@@ -1,5 +1,3 @@
-//! Graph neighborhood depth, caps, cycles, dangling targets and determinism.
-
 mod support;
 
 use cmdb_view::{GraphLimits, MAX_GRAPH_EDGES, MAX_GRAPH_NODES, Snapshot, Subgraph, ViewError};

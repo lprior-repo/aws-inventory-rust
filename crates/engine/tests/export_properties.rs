@@ -1,5 +1,3 @@
-//! Fixed-seed generated Unicode/escaping/value round trips in both file formats.
-
 use inventory_core::{CollectionPage, CollectionScope, Edge, Resource, ScanStatus, Source};
 use inventory_engine::export::{
     ExportCounts, ExportFormat, ExportHeader, ExportOptions, ExportRecord, ProvenanceMode,

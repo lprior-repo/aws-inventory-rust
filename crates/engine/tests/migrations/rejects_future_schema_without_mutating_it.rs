@@ -1,4 +1,3 @@
-//! Behavior: rejects_future_schema_without_mutating_it.
 use super::*;
 
 #[tokio::test]

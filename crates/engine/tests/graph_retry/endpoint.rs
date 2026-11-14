@@ -1,4 +1,3 @@
-//! Owned fault-injection RESP endpoint with explicit task shutdown.
 use super::*;
 
 #[derive(Clone, Copy)]

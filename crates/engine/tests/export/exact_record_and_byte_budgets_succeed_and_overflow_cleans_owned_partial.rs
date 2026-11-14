@@ -1,4 +1,3 @@
-//! Behavior: exact_record_and_byte_budgets_succeed_and_overflow_cleans_owned_partial.
 use super::*;
 
 #[tokio::test]

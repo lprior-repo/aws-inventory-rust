@@ -1,4 +1,3 @@
-//! Pure bounded preparation of trusted collection pages.
 use super::*;
 
 pub(super) struct PreparedResource {

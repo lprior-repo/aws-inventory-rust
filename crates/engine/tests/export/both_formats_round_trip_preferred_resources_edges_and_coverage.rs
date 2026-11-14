@@ -1,4 +1,3 @@
-//! Behavior: both_formats_round_trip_preferred_resources_edges_and_coverage.
 use super::*;
 
 #[tokio::test]

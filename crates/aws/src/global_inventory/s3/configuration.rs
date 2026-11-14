@@ -1,4 +1,3 @@
-//! configuration responsibilities for s3.
 use super::*;
 
 #[tracing::instrument(skip_all)]

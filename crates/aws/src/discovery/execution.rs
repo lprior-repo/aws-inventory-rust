@@ -1,15 +1,10 @@
-//! execution operations.
 use super::*;
 
-/// A bounded bootstrap/discovery operation. Credential configuration failures
-/// return Err; service-listing failures stay in the report with partial data.
 #[tracing::instrument(skip_all, fields(region = %options.region))]
 pub async fn discover(
     options: DiscoveryOptions,
     executor: Arc<ApiExecutor>,
 ) -> Result<DiscoveryReport, AwsScanError> {
-    // Keep the SDK future tree out of downstream worker/CLI future layouts.
-    // The caller still owns and awaits the single discovery future.
     let work: BoxFuture<'static, Result<DiscoveryReport, AwsScanError>> =
         Box::pin(discover_inner(options, executor));
     work.await

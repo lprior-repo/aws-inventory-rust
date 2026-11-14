@@ -1,4 +1,3 @@
-//! Lease/recovery behavior exercised through real SQLx transactions.
 use inventory_engine::jobs::{Completion, JobError, JobSpec, JobState, JobStore, TerminalJobState};
 use inventory_engine::store::Store;
 use serde_json::json;

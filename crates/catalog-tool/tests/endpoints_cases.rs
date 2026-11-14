@@ -8,7 +8,6 @@ use serde_json::{Value, json};
 
 #[test]
 fn excluded_cases_are_never_interpreted_and_have_one_reason() -> TestResult {
-    // Given a rule that would fail if reached and overlapping exclusion reasons.
     let document = rules(
         json!({}),
         json!([endpoint(
@@ -26,9 +25,9 @@ fn excluded_cases_are_never_interpreted_and_have_one_reason() -> TestResult {
         )?,
         case(json!({"Region":"us-west-2"}), json!([{"Bucket":"b"}]))?,
     ];
-    // When the runner applies the scope boundary before evaluation.
+
     let counts = rules.run_cases(&cases)?;
-    // Then no excluded case evaluates the unsupported function or fails.
+
     assert_eq!((counts.in_scope, counts.passed, counts.failed), (0, 0, 0));
     assert_eq!(counts.skipped.len(), 4);
     assert!(counts.unsupported.is_empty());

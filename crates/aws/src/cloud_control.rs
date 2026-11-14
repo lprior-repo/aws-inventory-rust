@@ -1,8 +1,3 @@
-//! One bounded, read-only Cloud Control adapter for the pinned type catalog.
-//! Schema capabilities are evidence for a plan; live provider failures remain
-//! explicit coverage failures. Raw provider properties are sanitized before
-//! they become observations, SQL columns, tags, names, or relationship evidence.
-
 use std::collections::{BTreeMap, BTreeSet};
 use std::future::Future;
 use std::sync::{Arc, Mutex};
@@ -46,18 +41,13 @@ const MAX_PATH_MATCHES: usize = 4_096;
 const MAX_PATH_BYTES: usize = 1_048_576;
 const MAX_RESOURCE_EDGES: usize = 4_096;
 const MAX_RELATIONSHIP_RULES: usize = 256;
-/// Cloud Control `ListResources` accepts a bounded page-size hint. The
-/// collector's validated `--page-size` is clamped into the provider range so a
-/// continuation token is requested instead of one unbounded list response.
+
 const MAX_LIST_PAGE_SIZE: i32 = 100;
 
 pub(super) fn list_page_size(ctx: &Context) -> i32 {
     ctx.page_size.clamp(1, MAX_LIST_PAGE_SIZE)
 }
 
-/// A reviewed provider-property reference; short EC2 IDs explicitly retain the
-/// assumption that the owner is the scanning account, rather than claiming an
-/// authoritative cross-account identity.
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct Relationship {
@@ -67,13 +57,12 @@ pub struct Relationship {
     pub target_format: String,
     pub arn_template: Option<String>,
     pub evidence: String,
-    /// Only exact returned ARNs of this service may satisfy a typed rule.
+
     #[serde(default)]
     pub arn_service: Option<String>,
     #[serde(default)]
     pub arn_resource_prefix: Option<String>,
-    /// Reviewed single-ID grammars prevent names/compound identifiers from
-    /// being inserted into an unrelated EC2 ARN template.
+
     #[serde(default)]
     pub identifier_prefix: Option<String>,
 }
@@ -86,8 +75,6 @@ pub struct ProviderColumn {
     pub json_type: String,
 }
 
-/// The complete catalog is available without making an AWS request. Optional
-/// identity templates apply only to reviewed types and provider properties.
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ResourceType {

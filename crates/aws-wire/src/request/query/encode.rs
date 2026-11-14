@@ -1,8 +1,12 @@
 use super::{form, serialize};
 use crate::request::{
-    EncodeError, Protocol, RequestContext, common::{BoundedBody, finish},
+    EncodeError, Protocol, RequestContext,
+    common::{BoundedBody, finish},
 };
-use http::{HeaderMap, header::{CONTENT_LENGTH, CONTENT_TYPE}};
+use http::{
+    HeaderMap,
+    header::{CONTENT_LENGTH, CONTENT_TYPE},
+};
 
 pub fn encode(context: RequestContext<'_>) -> Result<http::Request<bytes::Bytes>, EncodeError> {
     let protocol_name = protocol_name(context.protocol)?;
@@ -15,30 +19,42 @@ pub fn encode(context: RequestContext<'_>) -> Result<http::Request<bytes::Bytes>
     form::pair(&mut body, &mut first, "Version", version)?;
     serialize::input(context, &mut body, &mut first)?;
     let mut headers = HeaderMap::new();
-    headers.insert(CONTENT_TYPE, http::HeaderValue::from_static("application/x-www-form-urlencoded"));
+    headers.insert(
+        CONTENT_TYPE,
+        http::HeaderValue::from_static("application/x-www-form-urlencoded"),
+    );
     let body = body.into_vec();
     let length = body.len().to_string();
     headers.insert(CONTENT_LENGTH, http::HeaderValue::from_str(&length)?);
-    finish(context, "POST", None, headers, body)
+    let endpoint = crate::request::endpoint::resolve(context)?;
+    let adjusted = RequestContext {
+        endpoint: &endpoint,
+        ..context
+    };
+    finish(adjusted, "POST", Some("/"), headers, body)
 }
 
 fn protocol_name(protocol: Protocol) -> Result<&'static str, EncodeError> {
     match protocol {
         Protocol::AwsQuery => Ok("aws.protocols#awsQuery"),
         Protocol::Ec2Query => Ok("aws.protocols#ec2Query"),
-        _ => Err(EncodeError::Unsupported("protocol is not AWS Query or EC2 Query")),
+        _ => Err(EncodeError::Unsupported(
+            "protocol is not AWS Query or EC2 Query",
+        )),
     }
 }
 
-fn ensure_service_protocol(
-    context: RequestContext<'_>,
-    expected: &str,
-) -> Result<(), EncodeError> {
-    let found = context.service.protocols()?.try_fold(false, |found, protocol| {
-        Ok::<bool, EncodeError>(found || protocol? == expected)
-    })?;
+fn ensure_service_protocol(context: RequestContext<'_>, expected: &str) -> Result<(), EncodeError> {
+    let found = context
+        .service
+        .protocols()?
+        .try_fold(false, |found, protocol| {
+            Ok::<bool, EncodeError>(found || protocol? == expected)
+        })?;
     if found {
         return Ok(());
     }
-    Err(EncodeError::Unsupported("protocol does not match service metadata"))
+    Err(EncodeError::Unsupported(
+        "protocol does not match service metadata",
+    ))
 }

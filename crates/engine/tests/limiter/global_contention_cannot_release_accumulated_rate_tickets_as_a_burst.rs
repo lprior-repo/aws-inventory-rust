@@ -1,4 +1,3 @@
-//! Behavior: global_contention_cannot_release_accumulated_rate_tickets_as_a_burst.
 use super::*;
 
 #[tokio::test(start_paused = true)]

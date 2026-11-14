@@ -1,4 +1,3 @@
-//! Behavior: partial_snapshot_never_erases_previous_resources_or_edges.
 use super::*;
 
 #[tokio::test]

@@ -1,4 +1,3 @@
-//! Behavior: sql_views_expose_selected_configuration_and_provenance.
 use super::*;
 
 #[tokio::test]

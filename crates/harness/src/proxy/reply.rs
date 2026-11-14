@@ -83,8 +83,6 @@ async fn send_error(
     deadline(client.get_mut().shutdown()).await
 }
 
-// Send FIN before draining so unread oversized input cannot replace rejection
-// bytes with RST. The enclosing session's cancellation drops both halves.
 async fn drain_rejected_peer(client: &mut BufReader<TcpStream>) -> Result<(), ProxyError> {
     const BUFFER_BYTES: usize = 4_096;
     const MAX_READS: usize = (MAX_BODY_BYTES / BUFFER_BYTES)

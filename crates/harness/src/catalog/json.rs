@@ -1,34 +1,23 @@
-//! Ordered JSON with Python `json.dumps(..., indent=2)` rendering.
-//!
-//! The committed catalogs preserve Python dict insertion order, so a sorted map
-//! cannot reproduce them byte for byte. This value keeps insertion order and
-//! renders exactly like CPython: two-space indent, `": "` between key and
-//! value, `,` between members, `ensure_ascii=True` and a `\uXXXX` escape for
-//! every code point above `0x7e`.
-
 mod parser;
 
 use crate::HarnessError;
 
-/// A JSON value that remembers object key order.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Json {
-    /// `null`.
     Null,
-    /// `true` or `false`.
+
     Bool(bool),
-    /// A number kept as its original literal.
+
     Number(String),
-    /// A string.
+
     String(String),
-    /// An array.
+
     Array(Vec<Json>),
-    /// An insertion-ordered object.
+
     Object(Vec<(String, Json)>),
 }
 
 impl Json {
-    /// Build an object from ordered entries.
     pub fn object(entries: Vec<(&str, Json)>) -> Self {
         Self::Object(
             entries
@@ -38,22 +27,18 @@ impl Json {
         )
     }
 
-    /// Build an array.
     pub fn array(items: Vec<Json>) -> Self {
         Self::Array(items)
     }
 
-    /// Build a string value.
     pub fn string(value: impl Into<String>) -> Self {
         Self::String(value.into())
     }
 
-    /// Build a non-negative integer value.
     pub fn count(value: usize) -> Self {
         Self::Number(value.to_string())
     }
 
-    /// Borrow an object member.
     pub fn get(&self, key: &str) -> Option<&Json> {
         match self {
             Self::Object(entries) => entries
@@ -64,7 +49,6 @@ impl Json {
         }
     }
 
-    /// Borrow a mutable object member.
     pub fn get_mut(&mut self, key: &str) -> Option<&mut Json> {
         match self {
             Self::Object(entries) => entries
@@ -75,7 +59,6 @@ impl Json {
         }
     }
 
-    /// Insert or replace an object member, preserving the original position.
     pub fn set(&mut self, key: &str, value: Json) {
         if let Self::Object(entries) = self {
             if let Some((_, slot)) = entries.iter_mut().find(|(name, _)| name == key) {
@@ -86,14 +69,12 @@ impl Json {
         }
     }
 
-    /// Remove an object member.
     pub fn remove(&mut self, key: &str) {
         if let Self::Object(entries) = self {
             entries.retain(|(name, _)| name != key);
         }
     }
 
-    /// Object members in insertion order.
     pub fn as_object(&self) -> Option<&[(String, Json)]> {
         match self {
             Self::Object(entries) => Some(entries),
@@ -101,7 +82,6 @@ impl Json {
         }
     }
 
-    /// Array items.
     pub fn as_array(&self) -> Option<&[Json]> {
         match self {
             Self::Array(items) => Some(items),
@@ -109,7 +89,6 @@ impl Json {
         }
     }
 
-    /// Mutable array items.
     pub fn as_array_mut(&mut self) -> Option<&mut [Json]> {
         match self {
             Self::Array(items) => Some(items),
@@ -117,7 +96,6 @@ impl Json {
         }
     }
 
-    /// String contents.
     pub fn as_str(&self) -> Option<&str> {
         match self {
             Self::String(value) => Some(value),
@@ -125,7 +103,6 @@ impl Json {
         }
     }
 
-    /// Boolean contents.
     pub fn as_bool(&self) -> Option<bool> {
         match self {
             Self::Bool(value) => Some(*value),
@@ -133,7 +110,6 @@ impl Json {
         }
     }
 
-    /// Follow a chain of object keys.
     pub fn at(&self, path: &[&str]) -> Option<&Json> {
         let mut current = self;
         for key in path {
@@ -142,19 +118,16 @@ impl Json {
         Some(current)
     }
 
-    /// Render with Python's `json.dumps(value, indent=2)` layout.
     pub fn pretty(&self) -> String {
         let mut out = String::new();
         write_value(&mut out, self, 0);
         out
     }
 
-    /// Parse UTF-8 JSON while preserving object key order.
     pub fn parse(text: &str) -> Result<Self, HarnessError> {
         parser::parse(text)
     }
 
-    /// Convert to `serde_json` for canonical digesting.
     pub fn to_serde(&self) -> Result<serde_json::Value, HarnessError> {
         Ok(match self {
             Self::Null => serde_json::Value::Null,

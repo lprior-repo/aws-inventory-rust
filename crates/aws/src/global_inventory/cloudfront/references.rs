@@ -1,4 +1,3 @@
-//! references responsibilities for cloudfront.
 use super::*;
 
 pub(super) fn distribution_edges(

@@ -1,4 +1,3 @@
-//! Deterministic breadth-first traversal with bounded database adjacency reads.
 use super::{Direction, TraversalOptions, encoded_len, finalized, literal, query_rows};
 use anyhow::{Context, Result};
 use futures_util::{StreamExt, TryStreamExt, stream};

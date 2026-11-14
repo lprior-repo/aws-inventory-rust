@@ -1,4 +1,3 @@
-//! Behavior: every_concurrent_start_obeys_bucket_rate.
 use super::*;
 
 #[tokio::test(start_paused = true)]

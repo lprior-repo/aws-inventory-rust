@@ -1,4 +1,3 @@
-//! Behavior: rational_policy_json_preserves_integer_shape_and_rejects_mixed_or_unknown_fields.
 use super::*;
 
 #[test]

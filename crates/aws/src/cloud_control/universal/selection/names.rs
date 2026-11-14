@@ -1,4 +1,3 @@
-//! Deterministic SQL-safe names for synthesized universal descriptors.
 use super::*;
 
 const MAX_NORMALIZED_NAME: usize = 100;
@@ -34,7 +33,6 @@ pub(super) fn normalized_name(type_name: &str) -> Result<String, AwsScanError> {
     validate_normalized(normalize_segments(type_name))
 }
 
-/// Fold every `::` component into one snake_case name.
 fn normalize_segments(type_name: &str) -> String {
     let mut name = String::new();
     let mut previous_lower = false;
@@ -74,7 +72,6 @@ fn push_separator(name: &mut String, previous_lower: &mut bool) {
     }
 }
 
-/// Lowercase one alphanumeric byte, breaking camel case at word starts.
 fn push_alphanumeric(name: &mut String, character: char, started: bool, previous_lower: bool) {
     if started && character.is_ascii_uppercase() && previous_lower && !name.ends_with('_') {
         name.push('_');

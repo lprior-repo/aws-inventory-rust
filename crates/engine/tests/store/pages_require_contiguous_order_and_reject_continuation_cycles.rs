@@ -1,4 +1,3 @@
-//! Behavior: pages_require_contiguous_order_and_reject_continuation_cycles.
 use super::*;
 
 #[tokio::test]

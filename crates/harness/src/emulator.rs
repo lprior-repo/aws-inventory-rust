@@ -1,13 +1,3 @@
-//! Owned AWS Emulator process for Rust tests.
-//!
-//! The emulator is a development fixture: it is started on an ephemeral loopback
-//! port with signature checks and telemetry off. Its endpoint and generated
-//! credentials are discovered from the pinned binary's own log and home folder,
-//! exactly as the collector's environment expects them.
-//! A single child guard owns the process from spawn through readiness and
-//! credential discovery. Explicit stop reports process errors; dropping the
-//! guard attempts the same kill-and-reap operation and logs failures.
-
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Stdio};
@@ -20,18 +10,16 @@ use crate::HarnessError;
 #[cfg(test)]
 mod tests;
 
-/// Pinned emulator release string.
 pub const PINNED_VERSION: &str = "1.0.348";
-/// Pinned emulator source commit.
+
 pub const PINNED_COMMIT: &str = "7461ab1bbe540afe8063ce03ee5477ebb649df48";
-/// Readiness budget for a fresh process.
+
 const READY_TIMEOUT: Duration = Duration::from_secs(30);
-/// Poll interval while waiting for the endpoint announcement.
+
 const READY_POLL: Duration = Duration::from_millis(200);
-/// Fixed upper bound on readiness polls within the readiness time budget.
+
 const READY_ATTEMPTS: usize = 150;
 
-/// The only process owner, retained unchanged when construction succeeds.
 struct ChildOwner {
     child: Child,
 }
@@ -68,7 +56,6 @@ fn report(error: &HarnessError) {
     }
 }
 
-/// A running emulator whose lifetime is tied to this value.
 pub struct Emulator {
     child: ChildOwner,
     endpoint: String,
@@ -123,7 +110,6 @@ fn emulator_from(child: ChildOwner, endpoint: String) -> Result<Emulator, Harnes
 }
 
 impl Emulator {
-    /// Start the pinned binary and wait until it announces its endpoint.
     pub fn start(
         binary: &Path,
         work: &Path,
@@ -134,22 +120,18 @@ impl Emulator {
         emulator_from(child, endpoint)
     }
 
-    /// Loopback endpoint the emulator is serving.
     pub fn endpoint(&self) -> &str {
         &self.endpoint
     }
 
-    /// Credential file holding this run's generated keys.
     pub fn credentials(&self) -> &Path {
         &self.credentials
     }
 
-    /// Generated TLS authority used by the loopback listener.
     pub fn ca_bundle(&self) -> &Path {
         &self.ca_bundle
     }
 
-    /// Environment the collector and any SDK client must run with.
     pub fn environment(&self) -> Vec<(String, String)> {
         let text = |path: &Path| path.to_string_lossy().into_owned();
         vec![
@@ -173,17 +155,11 @@ impl Emulator {
         ]
     }
 
-    /// Kill and reap the process; an already-exited process is also success.
-    ///
-    /// Returns `HarnessError::Io` if termination or reaping fails. The owning
-    /// guard still attempts best-effort cleanup when this value is dropped.
-    /// Observable process cleanup alone cannot distinguish explicit stop from its Drop fallback.
     pub fn stop(mut self) -> Result<(), HarnessError> {
         self.child.terminate()
     }
 }
 
-/// Fail unless the binary is the reviewed release and commit.
 pub fn verify_binary(binary: &Path) -> Result<(), HarnessError> {
     let output = Command::new(binary).arg("--version").output()?;
     if !output.status.success() {
@@ -250,7 +226,6 @@ fn poll_endpoint(log: &Path, child: &mut ChildOwner) -> Result<Option<String>, H
         .find_map(endpoint_from_line))
 }
 
-/// Extract the announced endpoint from one JSON log line.
 pub fn endpoint_from_line(line: &str) -> Option<String> {
     let value: Value = serde_json::from_str(line).ok()?;
     value
@@ -266,7 +241,6 @@ fn endpoint_port(endpoint: &str) -> Result<u16, HarnessError> {
         .ok_or_else(|| HarnessError::invalid("emulator endpoint is not HTTPS loopback with a port"))
 }
 
-/// Parse `https://127.0.0.1:<port>` and nothing else.
 fn loopback_port(endpoint: &str) -> Option<u16> {
     let rest = endpoint.strip_prefix("https://127.0.0.1:")?;
     if rest.is_empty() || !rest.chars().all(|character| character.is_ascii_digit()) {

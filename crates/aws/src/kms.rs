@@ -1,7 +1,3 @@
-//! KMS key and alias inventory. `ListKeys` paginates and enriches each key with
-//! `DescribeKey`, customer-managed rotation status and tags; `ListAliases`
-//! paginates independently. One key's child failure never discards the key.
-
 use aws_sdk_kms::Client;
 use inventory_core::Source;
 

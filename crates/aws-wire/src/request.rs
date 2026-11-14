@@ -1,7 +1,13 @@
 pub mod body;
+mod checksum;
 pub(crate) mod common;
 mod compression;
+mod customization;
+mod endpoint;
 pub use compression::{CompressionPolicy, CompressionThreshold};
+pub use endpoint::addressing::{
+    AddressingStyle, EndpointAddressing, ResolvedAddressing, S3EndpointConfig, s3_endpoint,
+};
 pub mod query;
 pub mod rest;
 
@@ -29,8 +35,16 @@ pub struct RequestLimits {
 }
 
 impl RequestLimits {
-    pub fn new(body_bytes: usize, header_bytes: usize, uri_bytes: usize) -> Result<Self, EncodeError> {
-        let limits = Self { body_bytes, header_bytes, uri_bytes };
+    pub fn new(
+        body_bytes: usize,
+        header_bytes: usize,
+        uri_bytes: usize,
+    ) -> Result<Self, EncodeError> {
+        let limits = Self {
+            body_bytes,
+            header_bytes,
+            uri_bytes,
+        };
         if body_bytes == 0 || body_bytes > inventory_core::record::MAX_RECORD_BYTES {
             return Err(EncodeError::Limit("body"));
         }
@@ -58,7 +72,11 @@ impl RequestLimits {
 
 impl Default for RequestLimits {
     fn default() -> Self {
-        Self { body_bytes: inventory_core::record::MAX_RECORD_BYTES, header_bytes: 65_536, uri_bytes: 16_384 }
+        Self {
+            body_bytes: inventory_core::record::MAX_RECORD_BYTES,
+            header_bytes: 65_536,
+            uri_bytes: 16_384,
+        }
     }
 }
 
@@ -72,6 +90,7 @@ pub struct RequestContext<'a> {
     pub limits: RequestLimits,
     pub idempotency_token: Option<&'a str>,
     pub compression: CompressionPolicy,
+    pub addressing: Option<EndpointAddressing<'a>>,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -94,7 +113,10 @@ pub enum EncodeError {
     #[error("unsupported request feature: {0}")]
     Unsupported(&'static str),
     #[error("invalid value for {field:?}: {reason}")]
-    InvalidValue { field: Option<FieldId>, reason: &'static str },
+    InvalidValue {
+        field: Option<FieldId>,
+        reason: &'static str,
+    },
     #[error("invalid request endpoint")]
     InvalidEndpoint,
     #[error("request input is missing")]

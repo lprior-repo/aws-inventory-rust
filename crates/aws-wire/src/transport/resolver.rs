@@ -47,7 +47,7 @@ where
     F: FnOnce(Name) -> io::Result<Addresses> + Send + 'static,
 {
     let permit = slots.acquire_owned().await.map_err(io::Error::other)?;
-    // libc/NSS is not cancellable. Admission belongs to the actual job, even if its waiter drops.
+
     tokio::task::spawn_blocking(move || {
         let _permit = permit;
         lookup(name)

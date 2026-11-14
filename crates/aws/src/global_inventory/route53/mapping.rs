@@ -1,4 +1,3 @@
-//! mapping responsibilities for route53.
 use super::*;
 
 pub(super) fn record_identity(

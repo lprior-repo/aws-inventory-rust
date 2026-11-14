@@ -1,4 +1,3 @@
-//! Behavior: cancellation_wakes_rate_and_local_reservation_waiters.
 use super::*;
 
 #[tokio::test(start_paused = true)]

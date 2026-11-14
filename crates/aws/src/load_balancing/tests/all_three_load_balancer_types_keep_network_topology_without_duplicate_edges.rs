@@ -1,4 +1,3 @@
-//! all three load balancer types keep network topology without duplicate edges behavior.
 use super::*;
 
 #[test]

@@ -1,4 +1,3 @@
-//! Behavior: newer_direct_observation_outranks_older_config_observation.
 use super::*;
 
 #[tokio::test]

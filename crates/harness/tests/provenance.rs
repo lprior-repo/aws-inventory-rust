@@ -1,5 +1,3 @@
-//! Fixture provenance contracts: digests, catalog overlay and source set.
-
 use serde_json::{Value, json};
 
 use inventory_harness::provenance::{
@@ -26,8 +24,6 @@ fn given_unsorted_object_when_canonicalized_then_digest_is_key_order_independent
 
 #[test]
 fn given_non_ascii_text_when_canonicalized_then_digest_matches_python_escaping() {
-    // Python: hashlib.sha256(json.dumps({"k": "é"}, sort_keys=True,
-    // separators=(",", ":")).encode()).hexdigest()
     assert_eq!(
         canonical_sha256(&json!({"k": "é"})),
         "9567d6e8f21bbdcbc2e0140bd733df64007ac8ed4af2329f39121e6349c3c86f"

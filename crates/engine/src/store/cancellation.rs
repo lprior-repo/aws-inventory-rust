@@ -1,4 +1,3 @@
-//! Transaction rollback on cancellation.
 use super::*;
 
 #[cfg(test)]
@@ -61,7 +60,7 @@ mod cancellation_tests {
                 }
             }
         }
-        // Reacquisition waits for SQLx's queued transaction rollback.
+
         {
             let mut writer = store.writer.acquire().await?;
             writer.lock_handle().await?.remove_update_hook();

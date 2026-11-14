@@ -1,7 +1,3 @@
-//! Explicit, replayable outputs for immutable inventory snapshots.
-//!
-//! Each attempt owns a new directory. A shared SQLx checkpoint acknowledges
-//! graph writes across attempts; failed delivery never restarts AWS collection.
 use crate::cli::{DeliverArgs, DeliveryArgs, ExportArgs, ExportFormat, ExportProvenance};
 use anyhow::{Context, Result, ensure};
 #[cfg(any(feature = "aws", test))]
@@ -76,8 +72,6 @@ fn validate_name(value: &str) -> Result<()> {
     Ok(())
 }
 
-/// Validate local output configuration before credentials or AWS APIs are used.
-/// URL values are never serialized, traced or included in error messages.
 #[tracing::instrument(skip_all)]
 pub async fn preflight(options: &DeliveryArgs) -> Result<()> {
     validate(options)?;
@@ -164,8 +158,6 @@ pub async fn command(options: DeliverArgs) -> Result<Value> {
     until_signal(work, &token).await
 }
 
-/// Own and drain the operation after a signal so publication and checkpoint
-/// cleanup is observable. A drain deadline is explicit, never reported success.
 #[tracing::instrument(skip_all)]
 pub(crate) async fn until_signal<F, T, E>(work: F, token: &CancellationToken) -> Result<T>
 where
@@ -185,8 +177,6 @@ where
     }
 }
 
-/// Sequential delivery bounds open files, SQL readers and remote graph writes.
-/// Collection and delivery statuses stay separate in the scan result.
 #[cfg(any(feature = "aws", test))]
 #[tracing::instrument(skip_all)]
 pub async fn after_scan(

@@ -1,9 +1,3 @@
-//! Reviewed one-level parent discovery with explicit incomplete prerequisites.
-//!
-//! Parents are streamed once per root type. Only bounded models made from
-//! sanitized, successful reads drive child lists; no full parent inventory is
-//! retained. A child read must independently agree with its requested parent.
-
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use super::*;

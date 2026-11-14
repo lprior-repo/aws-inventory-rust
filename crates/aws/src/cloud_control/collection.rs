@@ -1,4 +1,3 @@
-//! collection operations.
 use super::*;
 use aws_sdk_cloudcontrol::{error::SdkError, operation::list_resources::ListResourcesError};
 
@@ -144,9 +143,6 @@ pub(super) fn remember_list_page(
     Ok(())
 }
 
-/// A provider capability boundary is an explicit, accounted outcome rather
-/// than an incomplete scope: persist `unsupported_type`, then emit a terminal
-/// empty page so the list scope completes and the scan can stay `complete`.
 pub(super) async fn record_unsupported(
     ctx: &Context,
     scope: &CollectionScope,
@@ -251,8 +247,6 @@ where
         Err(AwsScanError::ChannelClosed) => Err(AwsScanError::ChannelClosed),
         Err(AwsScanError::Api(ApiError::Cancelled)) => Err(ApiError::Cancelled.into()),
         Err(error) => {
-            // Queue known failure first. Store retains its failed flag when a
-            // later thin page is committed in this same child scope.
             ctx.failure(&scope, error_category(&error), error.to_string())
                 .await?;
             let fallback = match map_description(ctx, descriptor, listed_identifier, listed, false)

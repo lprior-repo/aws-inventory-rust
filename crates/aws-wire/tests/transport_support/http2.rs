@@ -71,7 +71,6 @@ impl Peer {
 }
 
 fn duplicate_listener(endpoint: &Endpoint) -> io::Result<TcpListener> {
-    // The standard listener's safe clone gives the driver its own descriptor.
     let descriptor = std::os::fd::AsFd::as_fd(&endpoint.listener).try_clone_to_owned()?;
     let listener = std::net::TcpListener::from(descriptor);
     listener.set_nonblocking(true)?;

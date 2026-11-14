@@ -1,5 +1,3 @@
-//! Portable snapshot contracts through the public Store/export APIs.
-
 use futures_util::StreamExt;
 use inventory_core::{
     CollectionEvent, CollectionFailure, CollectionPage, CollectionScope, Edge, Resource,
@@ -201,8 +199,7 @@ async fn export_above_query_cap() -> TestResult {
     let mut scope_seen = false;
     let mut end_seen = false;
     let mut eof_seen = false;
-    // This independent reader holds at most one bounded line. An accidentally
-    // unframed whole-file JSON document cannot force a giant test allocation.
+
     for line_index in 0..TOTAL.saturating_add(4) {
         line.clear();
         let read = (&mut reader)

@@ -1,7 +1,5 @@
-//! Catalog selection for offline plans.
 use super::*;
 
-/// Catalog-derived inputs shared by coverage and request accounting.
 pub(super) struct CatalogPlan {
     pub evidence: Option<Value>,
     pub parent_evidence: Option<Value>,
@@ -13,7 +11,6 @@ pub(super) struct CatalogPlan {
     pub universal: Option<UniversalPlan>,
 }
 
-/// Universal-catalog evidence and its list-scope count.
 pub(super) struct UniversalPlan {
     pub list_types: u64,
     pub list_scopes: usize,
@@ -80,7 +77,6 @@ fn universal_plan(selection: &Selection) -> Result<Option<UniversalPlan>> {
     }))
 }
 
-/// Validate explicit names against the pinned catalog, deduplicating them.
 fn requested_types(cloud: &Value, selection: &Selection) -> Result<BTreeSet<String>> {
     let known: BTreeSet<&str> = array(cloud, "resource_types")?
         .iter()
@@ -102,7 +98,6 @@ fn requested_types(cloud: &Value, selection: &Selection) -> Result<BTreeSet<Stri
         })
 }
 
-/// Add the parent types selected children require, preserving plan output.
 fn implicit_parents(cloud: &Value, requested: &mut BTreeSet<String>) -> Result<BTreeSet<String>> {
     let implicit: BTreeSet<String> = if requested.is_empty() {
         BTreeSet::new()

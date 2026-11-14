@@ -8,11 +8,10 @@ async fn keep_alive_forwards_two_requests_on_one_client_and_upstream_connection(
 
 #[tokio::test]
 async fn chunked_response_preserves_chunk_extensions_payload_and_trailers() -> TestResult {
-    // Given a chunked upstream including extensions and a trailer.
     let response = b"HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\nTrailer: Checksum\r\n\r\n4;test=yes\r\nWiki\r\n5\r\npedia\r\n0\r\nChecksum: yes\r\n\r\n";
     let server = Server::start(response).await?;
     let proxy = Proxy::start(server.config()).await?;
-    // When a plain HTTP client reads to close, every framing byte is intact.
+
     assert_eq!(exchange(proxy.address(), UNSIGNED).await?, response);
     super::support::shutdown(proxy).await?;
     Ok(())
@@ -20,11 +19,10 @@ async fn chunked_response_preserves_chunk_extensions_payload_and_trailers() -> T
 
 #[tokio::test]
 async fn close_delimited_response_is_forwarded_until_eof() -> TestResult {
-    // Given no length or transfer-encoding, when upstream closes.
     let response = b"HTTP/1.1 200 OK\r\nConnection: close\r\n\r\nclose delimited payload";
     let server = Server::start(response).await?;
     let proxy = Proxy::start(server.config()).await?;
-    // Then all body bytes reach the client followed by EOF.
+
     assert_eq!(exchange(proxy.address(), UNSIGNED).await?, response);
     super::support::shutdown(proxy).await?;
     Ok(())
@@ -32,12 +30,11 @@ async fn close_delimited_response_is_forwarded_until_eof() -> TestResult {
 
 #[tokio::test]
 async fn signed_host_authorization_and_request_body_are_forwarded_unchanged() -> TestResult {
-    // Given an exact signed request containing a body and unusual Host value.
     let mut server = Server::start(OK).await?;
     let proxy = Proxy::start(server.config()).await?;
     let bytes = signed_request_body()?;
     assert_eq!(exchange(proxy.address(), &bytes).await?, OK);
-    // Then upstream sees every original byte, not reconstructed signed headers.
+
     assert_eq!(super::support::captured(&mut server).await?, bytes);
     assert_eq!(
         proxy
@@ -53,7 +50,6 @@ async fn signed_host_authorization_and_request_body_are_forwarded_unchanged() ->
 
 #[tokio::test]
 async fn oversized_head_is_rejected_before_upstream_contact() -> TestResult {
-    // Given a head exceeding the named cap.
     let server = Server::start(OK).await?;
     let proxy = Proxy::start(server.config()).await?;
     let bytes = [
@@ -63,7 +59,7 @@ async fn oversized_head_is_rejected_before_upstream_contact() -> TestResult {
     ]
     .concat();
     let response = exchange(proxy.address(), &bytes).await?;
-    // Then rejection is explicit and forwarding never started.
+
     assert!(response.starts_with(b"HTTP/1.1 431 "));
     assert_eq!(field(&response, "x-proxy-error")?, "request-head");
     assert_eq!(proxy.snapshot()?.counters.forwarded, 0);
@@ -73,13 +69,12 @@ async fn oversized_head_is_rejected_before_upstream_contact() -> TestResult {
 
 #[tokio::test]
 async fn oversized_declared_request_body_is_rejected_without_reading_it() -> TestResult {
-    // Given a Content-Length one byte above the cap with no sent body.
     let server = Server::start(OK).await?;
     let proxy = Proxy::start(server.config()).await?;
     let length = MAX_BODY_BYTES.checked_add(1).ok_or("length overflow")?;
     let request = format!("POST / HTTP/1.1\r\nHost: example\r\nContent-Length: {length}\r\n\r\n");
     let response = exchange(proxy.address(), request.as_bytes()).await?;
-    // Then 413 arrives immediately; no body or upstream is needed.
+
     assert!(response.starts_with(b"HTTP/1.1 413 "));
     assert_eq!(field(&response, "x-proxy-error")?, "request-body");
     assert_eq!(proxy.snapshot()?.counters.forwarded, 0);
@@ -89,7 +84,6 @@ async fn oversized_declared_request_body_is_rejected_without_reading_it() -> Tes
 
 #[tokio::test]
 async fn chunked_request_is_rejected_with_501_and_never_forwarded() -> TestResult {
-    // Given a chunked request, when only its head is sent.
     let server = Server::start(OK).await?;
     let proxy = Proxy::start(server.config()).await?;
     let response = exchange(
@@ -97,7 +91,7 @@ async fn chunked_request_is_rejected_with_501_and_never_forwarded() -> TestResul
         b"POST / HTTP/1.1\r\nHost: example\r\nTransfer-Encoding: chunked\r\n\r\n",
     )
     .await?;
-    // Then unsupported request framing gets its specified status.
+
     assert!(response.starts_with(b"HTTP/1.1 501 "));
     assert_eq!(field(&response, "x-proxy-error")?, "chunked-request");
     assert_eq!(proxy.snapshot()?.counters.forwarded, 0);

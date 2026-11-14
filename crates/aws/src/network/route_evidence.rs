@@ -1,4 +1,3 @@
-//! route evidence operations.
 use super::*;
 
 pub(super) fn route_json(route: &Route) -> Value {
@@ -62,8 +61,6 @@ pub(super) fn route_links(
     index: usize,
     table_owner: Option<&str>,
 ) -> Result<(), AwsScanError> {
-    // The literal "local" and unknown gateway types remain in routes JSON.
-    // Neither is assigned an invented gateway ARN.
     if let Some(reference) = gateway_reference(route.gateway_id(), table_owner) {
         page.link(
             ctx,

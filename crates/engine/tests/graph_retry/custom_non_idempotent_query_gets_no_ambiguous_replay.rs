@@ -1,4 +1,3 @@
-//! Behavior: custom_non_idempotent_query_gets_no_ambiguous_replay.
 use super::*;
 
 #[tokio::test]

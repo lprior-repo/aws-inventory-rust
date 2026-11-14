@@ -1,4 +1,3 @@
-//! components operations.
 use super::*;
 
 pub(super) fn map_logs(

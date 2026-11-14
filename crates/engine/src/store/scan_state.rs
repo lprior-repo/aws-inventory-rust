@@ -1,4 +1,3 @@
-//! Persisted scan lifecycle, sequence checks, and failure accounting.
 use super::*;
 
 pub(super) async fn scan_state(
@@ -117,11 +116,6 @@ pub(super) fn validate_failure(
     Ok(())
 }
 
-/// Categories that describe a provider capability boundary rather than a
-/// failed collection scope. They remain explicit in `collection_failures`, but
-/// they do not mark the scope failed: the scope still enumerated every result
-/// the provider is willing to expose, so a catalog-wide drain can finish
-/// complete while a reader still sees the unsupported count.
 fn accounted_category(category: &str) -> bool {
     matches!(category, "unsupported_type")
 }

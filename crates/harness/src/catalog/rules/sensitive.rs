@@ -1,5 +1,3 @@
-//! Reviewed provider-path redaction for selected resource types.
-
 #[rustfmt::skip]
 pub const SENSITIVE: &[(&str, &[&str])] = &[
     ("AWS::AmazonMQ::Broker", &["/Users/*/Password"]),

@@ -4,10 +4,10 @@ use crate::{
     xml_bridge::Bridge,
 };
 use aws_smithy_xml::decode::{Document, try_data};
-// XmlToken's inner token is private. The public depth-first start-element API
-// can drive a shape, but hides end-element/error events consumed by next_start_element.
-// Closing at the next depth is the only public non-recursive traversal here;
-// adversarial tests deliberately expose its resulting truncation acceptance.
+ 
+ 
+ 
+ 
 pub fn parse(input: &[u8], sink: &mut Sink) -> Result<()> {
     let mut doc = Document::try_from(input).map_err(syntax)?;
     let mut bridge = Bridge::new(sink);

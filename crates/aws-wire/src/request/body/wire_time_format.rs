@@ -1,18 +1,25 @@
+use super::wire_time::{fraction_digits, fraction_length};
 use crate::request::{EncodeError, common::BoundedBody};
 use inventory_core::record::FieldId;
-use super::wire_time::{fraction_digits, fraction_length};
 pub(super) fn write_datetime(
     value: inventory_core::record::Time,
     field: Option<FieldId>,
     body: &mut BoundedBody,
 ) -> Result<(), EncodeError> {
     let (year, month, day, hour, minute, second) = calendar(value.seconds(), field)?;
-    let mut text = TextBuffer { bytes: [0; 40], length: 0 };
+    let mut text = TextBuffer {
+        bytes: [0; 40],
+        length: 0,
+    };
     use std::fmt::Write;
-    write!(&mut text, "{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}")
-        .map_err(|_| EncodeError::Limit("timestamp"))?;
+    write!(
+        &mut text,
+        "{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}"
+    )
+    .map_err(|_| EncodeError::Limit("timestamp"))?;
     append_datetime_fraction(&mut text, value.nanoseconds())?;
-    text.write_str("Z").map_err(|_| EncodeError::Limit("timestamp"))?;
+    text.write_str("Z")
+        .map_err(|_| EncodeError::Limit("timestamp"))?;
     write_buffer(body, &text)
 }
 
@@ -23,10 +30,12 @@ fn append_datetime_fraction(text: &mut TextBuffer, nanos: u32) -> Result<(), Enc
     let digits = fraction_digits(nanos)?;
     let end = fraction_length(&digits)?;
     use std::fmt::Write;
-    text.write_str(".").map_err(|_| EncodeError::Limit("timestamp"))?;
+    text.write_str(".")
+        .map_err(|_| EncodeError::Limit("timestamp"))?;
     let fraction = std::str::from_utf8(digits.get(..end).ok_or(EncodeError::Limit("timestamp"))?)
         .map_err(|_| EncodeError::Limit("timestamp"))?;
-    text.write_str(fraction).map_err(|_| EncodeError::Limit("timestamp"))
+    text.write_str(fraction)
+        .map_err(|_| EncodeError::Limit("timestamp"))
 }
 
 pub(super) fn write_http_date(
@@ -37,35 +46,53 @@ pub(super) fn write_http_date(
     let (year, month, day, hour, minute, second) = calendar(value.seconds(), field)?;
     let weekday = weekday_name(value.seconds(), field)?;
     let month = month_name(month, field)?;
-    let mut text = TextBuffer { bytes: [0; 40], length: 0 };
+    let mut text = TextBuffer {
+        bytes: [0; 40],
+        length: 0,
+    };
     use std::fmt::Write;
-    write!(&mut text, "{weekday}, {day:02} {month} {year:04} {hour:02}:{minute:02}:{second:02} GMT")
-        .map_err(|_| EncodeError::Limit("timestamp"))?;
+    write!(
+        &mut text,
+        "{weekday}, {day:02} {month} {year:04} {hour:02}:{minute:02}:{second:02} GMT"
+    )
+    .map_err(|_| EncodeError::Limit("timestamp"))?;
     write_buffer(body, &text)
 }
 
 fn weekday_name(seconds: i64, field: Option<FieldId>) -> Result<&'static str, EncodeError> {
     const WEEKDAYS: [&str; 7] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    let day = seconds.div_euclid(86_400).checked_add(4).ok_or(EncodeError::InvalidValue {
-        field,
-        reason: "timestamp weekday is out of range",
-    })?;
+    let day = seconds
+        .div_euclid(86_400)
+        .checked_add(4)
+        .ok_or(EncodeError::InvalidValue {
+            field,
+            reason: "timestamp weekday is out of range",
+        })?;
     let index = usize::try_from(day.rem_euclid(7)).map_err(|_| EncodeError::InvalidValue {
         field,
         reason: "timestamp weekday is out of range",
     })?;
-    WEEKDAYS.get(index).copied().ok_or(EncodeError::InvalidValue {
-        field,
-        reason: "timestamp weekday is out of range",
-    })
+    WEEKDAYS
+        .get(index)
+        .copied()
+        .ok_or(EncodeError::InvalidValue {
+            field,
+            reason: "timestamp weekday is out of range",
+        })
 }
 
 fn month_name(month: i64, field: Option<FieldId>) -> Result<&'static str, EncodeError> {
-    const MONTHS: [&str; 12] = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const MONTHS: [&str; 12] = [
+        "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    ];
     let index = usize::try_from(month.checked_sub(1).ok_or(EncodeError::InvalidValue {
         field,
         reason: "timestamp month is out of range",
-    })?).map_err(|_| EncodeError::InvalidValue { field, reason: "timestamp month is out of range" })?;
+    })?)
+    .map_err(|_| EncodeError::InvalidValue {
+        field,
+        reason: "timestamp month is out of range",
+    })?;
     MONTHS.get(index).copied().ok_or(EncodeError::InvalidValue {
         field,
         reason: "timestamp month is out of range",
@@ -73,7 +100,10 @@ fn month_name(month: i64, field: Option<FieldId>) -> Result<&'static str, Encode
 }
 
 fn write_buffer(body: &mut BoundedBody, text: &TextBuffer) -> Result<(), EncodeError> {
-    let bytes = text.bytes.get(..text.length).ok_or(EncodeError::Limit("timestamp"))?;
+    let bytes = text
+        .bytes
+        .get(..text.length)
+        .ok_or(EncodeError::Limit("timestamp"))?;
     let value = std::str::from_utf8(bytes).map_err(|_| EncodeError::Limit("timestamp"))?;
     super::json::string(body, value)
 }
@@ -84,7 +114,14 @@ fn calendar(
 ) -> Result<(i64, i64, i64, i64, i64, i64), EncodeError> {
     let (year, month, day) = calendar_date(seconds.div_euclid(86_400), field)?;
     let day_seconds = seconds.rem_euclid(86_400);
-    Ok((year, month, day, day_seconds / 3_600, day_seconds / 60 % 60, day_seconds % 60))
+    Ok((
+        year,
+        month,
+        day,
+        day_seconds / 3_600,
+        day_seconds / 60 % 60,
+        day_seconds % 60,
+    ))
 }
 
 fn calendar_date(days: i64, field: Option<FieldId>) -> Result<(i64, i64, i64), EncodeError> {
@@ -93,7 +130,12 @@ fn calendar_date(days: i64, field: Option<FieldId>) -> Result<(i64, i64, i64), E
 }
 
 fn calendar_year(days: i64, field: Option<FieldId>) -> Result<(i64, i64, i64), EncodeError> {
-    let checked = |value: Option<i64>| value.ok_or(EncodeError::InvalidValue { field, reason: "timestamp date is out of range" });
+    let checked = |value: Option<i64>| {
+        value.ok_or(EncodeError::InvalidValue {
+            field,
+            reason: "timestamp date is out of range",
+        })
+    };
     let shifted = checked(days.checked_add(719_468))?;
     let era = shifted.div_euclid(146_097);
     let era_days = checked(era.checked_mul(146_097))?;
@@ -110,7 +152,12 @@ fn calendar_month(
     year_of_era: i64,
     field: Option<FieldId>,
 ) -> Result<(i64, i64, i64), EncodeError> {
-    let checked = |value: Option<i64>| value.ok_or(EncodeError::InvalidValue { field, reason: "timestamp date is out of range" });
+    let checked = |value: Option<i64>| {
+        value.ok_or(EncodeError::InvalidValue {
+            field,
+            reason: "timestamp date is out of range",
+        })
+    };
     let mut year = checked(year_of_era.checked_add(checked(era.checked_mul(400))?))?;
     let year_days = checked(year_of_era.checked_mul(365))?;
     let year_days = checked(year_days.checked_add(year_of_era / 4))?;
@@ -123,9 +170,14 @@ fn calendar_month(
     let day = checked(day_of_year.checked_sub(month_days))?;
     let day = checked(day.checked_add(1))?;
     let month = checked(month_prime.checked_add(if month_prime < 10 { 3 } else { -9 }))?;
-    if month <= 2 { year = checked(year.checked_add(1))?; }
+    if month <= 2 {
+        year = checked(year.checked_add(1))?;
+    }
     if !(0..=9999).contains(&year) {
-        return Err(EncodeError::InvalidValue { field, reason: "timestamp date is out of range" });
+        return Err(EncodeError::InvalidValue {
+            field,
+            reason: "timestamp date is out of range",
+        });
     }
     Ok((year, month, day))
 }
@@ -136,8 +188,14 @@ struct TextBuffer {
 
 impl std::fmt::Write for TextBuffer {
     fn write_str(&mut self, value: &str) -> std::fmt::Result {
-        let end = self.length.checked_add(value.len()).ok_or(std::fmt::Error)?;
-        let destination = self.bytes.get_mut(self.length..end).ok_or(std::fmt::Error)?;
+        let end = self
+            .length
+            .checked_add(value.len())
+            .ok_or(std::fmt::Error)?;
+        let destination = self
+            .bytes
+            .get_mut(self.length..end)
+            .ok_or(std::fmt::Error)?;
         destination.copy_from_slice(value.as_bytes());
         self.length = end;
         Ok(())

@@ -1,4 +1,3 @@
-//! Behavior: quoted_identifiers_and_values_are_bound_in_ingestion_paths.
 use super::*;
 
 #[tokio::test]

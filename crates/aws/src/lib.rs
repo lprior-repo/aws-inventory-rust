@@ -1,4 +1,3 @@
-//! Read-only AWS inventory with explicit partial-coverage records.
 #![forbid(unsafe_code)]
 #![deny(unused_must_use)]
 

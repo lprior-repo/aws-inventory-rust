@@ -1,4 +1,3 @@
-//! Behavior: accepted_hint_boundary_and_retry_exhaustion_remain_bounded.
 use super::*;
 
 #[tokio::test(start_paused = true)]

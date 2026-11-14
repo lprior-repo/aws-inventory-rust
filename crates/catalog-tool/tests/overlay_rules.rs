@@ -4,7 +4,6 @@ use overlay_support::{HEADER, TestResult, error, reject};
 
 #[test]
 fn format_date_reviewer_and_service_rules_reject_exact_values() -> TestResult {
-    // Given invalid metadata, when parsed, then each specific reason survives.
     [0, 2, -1].into_iter().for_each(|n| {
         error(
             &format!("format={n}"),
@@ -66,7 +65,6 @@ fn format_date_reviewer_and_service_rules_reject_exact_values() -> TestResult {
 }
 #[test]
 fn valid_metadata_and_calendar_boundaries_parse() -> TestResult {
-    // Given boundary dates and byte lengths, when parsed, then spellings are preserved.
     [
         "0001-01-01",
         "9999-12-31",
@@ -87,7 +85,6 @@ fn valid_metadata_and_calendar_boundaries_parse() -> TestResult {
 }
 #[test]
 fn deny_and_defer_have_no_plans_and_reason_is_exclusive() {
-    // Given conflicting classifications, when parsed, then callable plans are forbidden.
     reject("class='deny'", "deny_reason", "", Rule::DenyReason);
     [
         "",
@@ -153,7 +150,6 @@ fn no_plan(class: &str, plan: &str) {
 }
 #[test]
 fn enum_quota_and_identifier_spellings_are_exact() {
-    // Given names outside each grammar, when parsed, then values are not normalized.
     [
         ("class='Enumerate'", "class", "Enumerate"),
         ("scope='global'", "scope", "global"),

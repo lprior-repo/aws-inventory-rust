@@ -45,18 +45,16 @@ fn get<'a>(uri: &'a str, headers: &'a HeaderMap, body: &'a [u8]) -> Request<'a> 
 
 #[test]
 fn maximum_uri_length_is_accepted() -> TestResult {
-    // Given: an encoded absolute URI of exactly 16384 bytes.
     let uri = format!("https://example.com/{}", "a".repeat(16_364));
     assert_eq!(uri.len(), 16_384);
-    // When/Then: its inclusive boundary can be signed.
+
     assert_signed(get(&uri, &HeaderMap::new(), b""))
 }
 
 #[test]
 fn maximum_body_length_is_accepted_without_replacing_the_payload() -> TestResult {
-    // Given: caller-owned body bytes at exactly 16 MiB.
     let body = vec![0; 16_777_216];
-    // When/Then: the maximum borrowed body is signed successfully.
+
     assert_signed(get(URI, &HeaderMap::new(), &body))?;
     assert_eq!(body.len(), 16_777_216);
     assert_eq!(body.first(), Some(&0));
@@ -66,28 +64,25 @@ fn maximum_body_length_is_accepted_without_replacing_the_payload() -> TestResult
 
 #[test]
 fn maximum_header_count_is_accepted() -> TestResult {
-    // Given: 128 header values, including duplicates counted individually.
     let mut headers = HeaderMap::new();
     (0..128).for_each(|_| {
         headers.append("x-test", HeaderValue::from_static("value"));
     });
     assert_eq!(headers.len(), 128);
-    // When/Then: the inclusive count bound still permits signing.
+
     assert_signed(get(URI, &headers, b""))
 }
 
 #[test]
 fn maximum_header_value_length_is_accepted() -> TestResult {
-    // Given: exactly 8192 bytes in a single header value.
     let mut headers = HeaderMap::new();
     headers.insert("x-test", HeaderValue::from_str(&"a".repeat(8192))?);
-    // When/Then: the inclusive size bound still permits signing.
+
     assert_signed(get(URI, &headers, b""))
 }
 
 #[test]
 fn maximum_method_length_is_accepted() -> TestResult {
-    // Given: a valid HTTP extension method of exactly 64 bytes.
     let method = Method::from_bytes(&[b'A'; 64])?;
     let headers = HeaderMap::new();
     let request = Request {
@@ -97,6 +92,6 @@ fn maximum_method_length_is_accepted() -> TestResult {
         body: Body::Bytes(b""),
         payload_header: PayloadHeader::Omit,
     };
-    // When/Then: its inclusive boundary can be signed.
+
     assert_signed(request)
 }

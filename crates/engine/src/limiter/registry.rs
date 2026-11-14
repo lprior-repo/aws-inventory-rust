@@ -1,4 +1,3 @@
-//! Exact bounded bucket registration.
 use super::*;
 
 impl ApiExecutor {

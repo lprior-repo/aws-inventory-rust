@@ -1,5 +1,3 @@
-//! Executable retry and pagination contracts. Fixed seeds make failures replayable.
-
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use aws_sdk_sts::config::http::HttpResponse;

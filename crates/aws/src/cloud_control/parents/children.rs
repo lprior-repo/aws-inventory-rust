@@ -1,4 +1,3 @@
-//! children operations.
 use super::*;
 
 pub(super) async fn collect_child<L, LFut, G, GFut>(

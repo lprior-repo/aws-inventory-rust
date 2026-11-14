@@ -1,5 +1,3 @@
-//! Persistence checks tying collected cases to the baseline database.
-
 use std::collections::BTreeMap;
 
 use sqlx::{Row, Sqlite, SqliteConnection, Transaction};

@@ -1,5 +1,3 @@
-//! Behavior: a resource naming itself through its exact ARN or its primary
-//! identifier yields no self-edge and no ambiguity or unresolved accounting.
 use super::{SCAN, TestResult, resource, store_with};
 use inventory_engine::graph::reference::{self, ReferenceConfig};
 use serde_json::json;

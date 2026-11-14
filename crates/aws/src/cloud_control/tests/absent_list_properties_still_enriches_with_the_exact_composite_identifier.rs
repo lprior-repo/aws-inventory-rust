@@ -1,4 +1,3 @@
-//! absent list properties still enriches with the exact composite identifier behavior.
 use super::*;
 
 #[tokio::test]

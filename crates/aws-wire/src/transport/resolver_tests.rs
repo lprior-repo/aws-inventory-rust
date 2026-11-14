@@ -26,14 +26,13 @@ struct Job {
 
 #[tokio::test]
 async fn abandoned_dns_waiters_retain_admission_until_the_blocking_jobs_finish() -> TestResult {
-    // Given two admitted, independently gated libc-equivalent lookups.
     let slots = Arc::new(Semaphore::new(2));
     let activity = Arc::<Activity>::default();
     let mut first = job(&slots, &activity)?;
     let mut second = job(&slots, &activity)?;
     started(&mut first).await?;
     started(&mut second).await?;
-    // When both awaiting futures are abandoned, another lookup must remain unadmitted.
+
     drop(first.future);
     drop(second.future);
     let mut third = job(&slots, &activity)?;

@@ -1,4 +1,3 @@
-//! Behavior: errors_are_utf8_bounded_and_terminal_failures_are_explicit.
 use super::*;
 
 #[tokio::test]

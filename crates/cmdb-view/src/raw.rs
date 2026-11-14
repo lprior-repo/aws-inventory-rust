@@ -1,9 +1,3 @@
-//! Minimal Serde mirror of the `aws-inventory.snapshot` v1 document.
-//!
-//! Only fields the read model consumes are typed; every other field is ignored
-//! by Serde. This keeps parsing forward-compatible with added wire fields while
-//! still rejecting missing identities and unknown record tags.
-
 use crate::meta::{Provenance, ScanStatus};
 use serde::Deserialize;
 use serde_json::Value;
@@ -40,7 +34,6 @@ pub(crate) struct RawScan {
     pub(crate) finished_at: i64,
 }
 
-/// `{ "record": tag, "data": payload }`, the JSON document's record shape.
 #[derive(Debug, Deserialize)]
 #[serde(tag = "record", content = "data", rename_all = "snake_case")]
 pub(crate) enum RawRecord {

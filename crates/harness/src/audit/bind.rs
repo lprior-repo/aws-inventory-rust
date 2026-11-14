@@ -1,5 +1,3 @@
-//! Bind a completed emulator run to the current source, binary and catalogs.
-
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -30,7 +28,6 @@ struct Context {
     rows: Vec<Value>,
 }
 
-/// Bind a completed emulator run to the current source, binary and catalogs.
 pub fn bind_emulator(
     report: &Value,
     root: &Path,

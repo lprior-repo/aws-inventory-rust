@@ -1,5 +1,3 @@
-//! Grid placement for the ordered layers, bounded by construction.
-
 use super::{H_GAP, LayoutRect, NODE_H, NODE_W, PADDING, V_GAP, f32_index};
 
 pub(super) fn place(

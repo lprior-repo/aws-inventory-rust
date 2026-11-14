@@ -1,4 +1,3 @@
-//! Behavior: queued_cancellation_never_runs_and_running_cancellation_wins_completion.
 use super::*;
 
 #[tokio::test]

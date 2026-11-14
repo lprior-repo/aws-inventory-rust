@@ -1,5 +1,3 @@
-//! Topic attribute mapping. Policy and delivery-policy bodies are presence-only.
-
 use std::collections::{BTreeMap, HashMap};
 
 use aws_sdk_sns::types::Tag;
@@ -11,8 +9,6 @@ use crate::{AwsScanError, common::Context};
 
 const MAX_TAG_BYTES: usize = 4_096;
 
-/// Topic tags preserve empty values, which SNS permits, while dropping entries
-/// the inventory model cannot validate.
 pub(super) fn tags_from(tags: &[Tag]) -> BTreeMap<String, String> {
     tags.iter()
         .filter(|tag| {

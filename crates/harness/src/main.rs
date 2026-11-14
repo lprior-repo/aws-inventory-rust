@@ -1,5 +1,3 @@
-//! Operator entry point for the development harness.
-
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -17,7 +15,6 @@ inventory-harness seed cloud-control --prefix <inventory-page-...> --count <n>\n
 inventory-harness assert cloud-control --db <file> --scan-id <id> [--seed-results <file>] \
 [--root <dir>]";
 
-/// Supported harness operations.
 enum Command {
     Freeze {
         evidence: PathBuf,
@@ -52,7 +49,6 @@ fn workspace_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-/// True when a receipt is a list of checks and at least one did not pass.
 fn has_failed_check(receipt: &serde_json::Value) -> bool {
     receipt.as_array().is_some_and(|checks| {
         checks
@@ -129,7 +125,6 @@ async fn execute(arguments: &[String]) -> Result<serde_json::Value, HarnessError
     dispatch(parse(arguments)?).await
 }
 
-/// Extract the seeding module report the architecture check binds to.
 fn seed_report(path: Option<&std::path::Path>) -> Result<Option<serde_json::Value>, HarnessError> {
     let Some(path) = path else {
         return Ok(None);

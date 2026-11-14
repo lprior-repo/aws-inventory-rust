@@ -6,8 +6,8 @@ use crate::{
 };
 use inventory_core::record::{FieldId, MapRef, RecordError, ValueRef};
 pub fn run() -> Result<()> {
-    // Given deterministic equivalent JSON/XML pages; When decoding through every
-    // candidate; Then bytes agree and independent record readers see typed fields.
+     
+     
     let sample = sample::generate(2, 450)?;
     crate::measure::equivalence(ALL, &sample)?;
     ALL.iter().try_for_each(|&c| {
@@ -42,7 +42,7 @@ fn fields(root: MapRef<'_>) -> Result<()> {
     Ok(())
 }
 fn document() -> Result<()> {
-    // Given a retained depth-64 document; When encoding; Then a typed limit error.
+     
     let input = format!(
         "{{\"Items\":[{{\"Document\":{}0{}}}]}}",
         "[".repeat(64),
@@ -82,8 +82,8 @@ impl std::io::Read for Chunked<'_> {
     }
 }
 fn chunks(sample: &sample::Sample) -> Result<()> {
-    // Given 1-, 7-, and 4096-byte socket-like reads, including UTF-8 and escape
-    // boundaries; When streaming into records; Then output equals contiguous Jiter.
+     
+     
     let expected = Candidate::Jiter.decode(&sample.json, Mode::Records)?;
     [1, 7, 4096].into_iter().try_for_each(|size| {
         let mut sink = Sink::new(Mode::Records);

@@ -1,42 +1,28 @@
-//! Resource projection, combinable filters and offset/cursor pagination.
-
 use crate::Snapshot;
 use crate::error::ViewError;
 use crate::meta::SnapshotMeta;
 use std::collections::BTreeMap;
 
-/// Largest page a caller may request.
 pub const MAX_PAGE_LIMIT: usize = 10_000;
 
-/// The UI-facing projection of one `resource` record.
-///
-/// `properties_bytes` is the exact compact-JSON byte length of the wire
-/// `properties` value, measured once at parse time; the property tree itself is
-/// deliberately not retained.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ResourceView {
-    /// Sole wire identity for lookup, deduplication and edge endpoints.
-    ///
-    /// The first input record wins; account, region and kind are attributes.
     pub id: String,
-    /// Producer's owning-account identity, used for exact filtering.
+
     pub account_id: String,
-    /// Producer's region spelling, including global scopes.
+
     pub region: String,
-    /// Producer's resource-kind spelling, used without normalization.
+
     pub kind: String,
-    /// Optional display name; `None` means the record supplied none.
+
     pub name: Option<String>,
-    /// Tag keys and values in key order; empty means no tags were supplied.
+
     pub tags: BTreeMap<String, String>,
-    /// Compact-JSON property byte count; no property values are retained.
+
     pub properties_bytes: usize,
 }
 
 impl ResourceView {
-    /// ASCII case-insensitive containment over identity and tag text.
-    ///
-    /// Resource properties are not retained, so they are not searchable.
     pub fn matches_text(&self, needle: &str) -> bool {
         if needle.is_empty() {
             return true;
@@ -55,26 +41,22 @@ impl ResourceView {
     }
 }
 
-/// All filters are optional and combined with AND.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct ResourceFilter {
-    /// Exact account match.
     pub account_id: Option<String>,
-    /// Exact region match.
+
     pub region: Option<String>,
-    /// Exact resource kind match.
+
     pub kind: Option<String>,
-    /// Case-insensitive containment over id, account, region, kind, name and tags.
+
     pub text: Option<String>,
 }
 
 impl ResourceFilter {
-    /// An unfiltered view.
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Whether one resource survives every configured filter.
     pub fn matches(&self, resource: &ResourceView) -> bool {
         self.account_id
             .as_ref()
@@ -94,7 +76,6 @@ impl ResourceFilter {
     }
 }
 
-/// Offset plus a bounded page size.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PageRequest {
     offset: usize,
@@ -102,10 +83,6 @@ pub struct PageRequest {
 }
 
 impl PageRequest {
-    /// Validate a page request; `limit` must be in `1..=MAX_PAGE_LIMIT`.
-    ///
-    /// # Errors
-    /// Returns `InvalidPageLimit` when the limit is zero or exceeds 10,000.
     pub fn new(offset: usize, limit: usize) -> Result<Self, ViewError> {
         if !(1..=MAX_PAGE_LIMIT).contains(&limit) {
             return Err(ViewError::InvalidPageLimit);
@@ -113,24 +90,15 @@ impl PageRequest {
         Ok(Self { offset, limit })
     }
 
-    /// Resume a page at an opaque cursor's offset.
-    ///
-    /// # Errors
-    /// Returns `InvalidCursor` for an invalid offset or `InvalidPageLimit`.
     pub fn after(cursor: &PageCursor, limit: usize) -> Result<Self, ViewError> {
         Self::new(cursor.offset()?, limit)
     }
 }
 
-/// Opaque continuation token: the decimal offset of the next page.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PageCursor(String);
 
 impl PageCursor {
-    /// Parse a cursor spelling persisted by a UI.
-    ///
-    /// # Errors
-    /// Returns `InvalidCursor` for empty, over-20-byte or non-`usize` spellings.
     pub fn parse(value: &str) -> Result<Self, ViewError> {
         if value.is_empty() || value.len() > 20 {
             return Err(ViewError::InvalidCursor);
@@ -144,15 +112,10 @@ impl PageCursor {
         Self(offset.to_string())
     }
 
-    /// The cursor spelling a UI can persist.
     pub fn as_str(&self) -> &str {
         self.0.as_str()
     }
 
-    /// Parse the opaque spelling back into an offset.
-    ///
-    /// # Errors
-    /// Returns `InvalidCursor` if the stored spelling cannot parse as `usize`.
     pub fn offset(&self) -> Result<usize, ViewError> {
         self.0
             .parse::<usize>()
@@ -166,18 +129,16 @@ impl std::fmt::Display for PageCursor {
     }
 }
 
-/// One deterministic page over the filtered, sorted resource views.
 #[derive(Debug)]
 pub struct ResourcePage<'a> {
-    /// Borrowed views in `(account, region, kind, id)` order.
     pub resources: Vec<&'a ResourceView>,
-    /// Number of resources matching the filter, independent of the page.
+
     pub total_matching: usize,
-    /// Offset requested by the caller.
+
     pub offset: usize,
-    /// Page size requested by the caller.
+
     pub limit: usize,
-    /// Present only when more matching resources follow this page.
+
     pub next_cursor: Option<PageCursor>,
 }
 
@@ -234,7 +195,6 @@ fn set_cursor(page: &mut ResourcePage<'_>) -> Result<(), ViewError> {
     Ok(())
 }
 
-/// Zero-allocation ASCII case-insensitive containment.
 pub(crate) fn contains_ascii_ci(haystack: &str, needle: &str) -> bool {
     let needle = needle.as_bytes();
     if needle.is_empty() {
@@ -250,32 +210,23 @@ pub(crate) fn contains_ascii_ci(haystack: &str, needle: &str) -> bool {
 }
 
 impl Snapshot {
-    /// Identity of the parsed snapshot.
     pub fn meta(&self) -> &SnapshotMeta {
         &self.meta
     }
 
-    /// SHA-256 hex fingerprint suitable for change detection.
     pub fn fingerprint(&self) -> &str {
         self.meta.fingerprint()
     }
 
-    /// Sorted resource projection shared by every query.
     pub fn resources(&self) -> &[ResourceView] {
         &self.resources
     }
 
-    /// Look up one resource by its wire id.
-    /// Returns `None` when no retained resource has that exact identity.
     pub fn resource(&self, id: &str) -> Option<&ResourceView> {
         let position = *self.resource_index.get(id)?;
         self.resources.get(position)
     }
 
-    /// One filtered, deterministically ordered page.
-    ///
-    /// # Errors
-    /// Returns `SizeOverflow` if offset-plus-limit or page accounting overflows.
     pub fn page<'a>(
         &'a self,
         filter: &ResourceFilter,

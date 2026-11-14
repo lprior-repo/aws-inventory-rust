@@ -1,10 +1,3 @@
-//! Catalog reproduction from the pinned official schema archive.
-//!
-//! Byte-for-byte port of the reviewed build helpers under `catalog/upstream/`:
-//! the 397-type root catalog, the full capability matrix, the upstream manifest
-//! rewrite, and the 24-type parent overlay. No network access and no AWS API is
-//! used; the only inputs are the pinned archive and the reviewed JSON files.
-
 mod archive;
 mod capabilities;
 mod cloudcontrol;
@@ -21,31 +14,27 @@ use crate::HarnessError;
 use crate::provenance::{file_sha256, sha256_hex};
 pub use json::Json;
 
-/// Pinned official CloudFormation schema archive.
 pub const ARCHIVE: &str = "catalog/upstream/cloudformation-us-east-1-2026-11-12.zip";
-/// SHA-256 of the pinned archive.
+
 pub const ARCHIVE_SHA256: &str = "8226b9cd82f432997fe3918b134ef155245636f35ac37f8006de5abe88dd54a8";
-/// Reviewed regional additions manifest.
+
 pub const ADDITIONS: &str = "catalog/cloudcontrol-regional-additions.json";
-/// Executable root catalog.
+
 pub const ROOT_CATALOG: &str = "catalog/cloudcontrol-resources.json";
-/// Full provider capability matrix.
+
 pub const CAPABILITY_MATRIX: &str = "catalog/cloudcontrol-capabilities.json";
-/// Reviewed parent overlay.
+
 pub const PARENT_CATALOG: &str = "catalog/cloudcontrol-parent-resources.json";
-/// Upstream acquisition manifest.
+
 pub const UPSTREAM_MANIFEST: &str = "catalog/upstream/cloudcontrol-upstream.json";
 
-/// One regenerated document and the repository path it belongs at.
 #[derive(Debug, Clone)]
 pub struct Report {
-    /// Repository-relative destination path.
     pub file: String,
-    /// Exact bytes the Python generator writes, including the trailing newline.
+
     pub contents: String,
 }
 
-/// Regenerate every catalog document the Python helpers produce.
 pub fn reproduce(root: &Path) -> Result<Vec<Report>, HarnessError> {
     let archive = archive::load(root)?;
     let additions = archive::additions(root)?;
@@ -73,14 +62,6 @@ fn document(file: &str, contents: &Json) -> Report {
     }
 }
 
-/// Verify every regenerated document against the committed tree.
-///
-/// The root catalog, manifest, and parent overlay must match byte for byte,
-/// which is what the Python parent `--check` asserts for its own file and what
-/// the reproducibility tests assert for the root outputs. The committed
-/// capability matrix additionally carries the executed emulator evidence that
-/// `scripts/catalog/refresh_cloudcontrol_coverage.py` merges in; `check`
-/// reverses exactly that documented merge before comparing.
 pub fn check(root: &Path) -> Result<(), HarnessError> {
     let root_bytes = std::fs::read(root.join(ROOT_CATALOG))?;
     for report in reproduce(root)? {
@@ -191,7 +172,6 @@ fn discarded_acquisitions() -> Json {
     ])])
 }
 
-/// Verify the committed root catalog digest matches the pinned archive file set.
 pub fn verify_archive(root: &Path) -> Result<(), HarnessError> {
     if file_sha256(&root.join(ARCHIVE))? != ARCHIVE_SHA256 {
         return Err(HarnessError::invalid("upstream archive checksum mismatch"));

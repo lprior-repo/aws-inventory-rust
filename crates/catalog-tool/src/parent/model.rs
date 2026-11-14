@@ -1,5 +1,3 @@
-//! Report and catalog shapes for parent-candidate derivation.
-
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize)]

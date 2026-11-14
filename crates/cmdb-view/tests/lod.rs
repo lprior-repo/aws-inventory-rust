@@ -1,5 +1,3 @@
-//! LOD counts, ranking and cap behavior.
-
 mod support;
 
 use cmdb_view::{LodLimits, ViewError};

@@ -1,15 +1,7 @@
-//! The resource table: a `PortalList` whose rows are filled from [`Data`].
-//!
-//! `Data` is the container's state. The widget owns it, the app mutates it
-//! through the small `set_*` methods, and drawing projects the filtered rows
-//! onto the visible list items. No business logic lives in Splash.
-
 use makepad_widgets::*;
 
 use crate::data::{Data, Row};
 
-// Column widths live in the script module so the header (ui.rs) and every row
-// share one source of truth.
 script_mod! {
     use mod.prelude.widgets.*
     use mod.widgets.*
@@ -76,10 +68,10 @@ pub struct ResourceTable {
     view: View,
     #[rust]
     data: Data,
-    /// Index of the visible row whose head was pressed last, if any.
+
     #[rust]
     pressed: Option<usize>,
-    /// Index of the visible row under the pointer, if any.
+
     #[rust]
     hover: Option<usize>,
 }
@@ -105,7 +97,6 @@ impl ResourceTable {
         self.view.redraw(cx);
     }
 
-    /// Selects the row under a click; returns true when the selection moved.
     pub fn apply_actions(&mut self, cx: &mut Cx, actions: &Actions) -> bool {
         self.track_hover(cx, actions);
         let Some(index) = self.click_index(cx, actions) else {
@@ -189,12 +180,10 @@ impl ResourceTable {
         self.data.kind_count(kind)
     }
 
-    /// The current node/edge graph for the DAG renderer.
     pub fn graph(&self) -> crate::data::Graph {
         self.data.graph()
     }
 
-    /// Selects the visible row with this resource id.
     pub fn select_id(&mut self, cx: &mut Cx, id: &str) -> bool {
         let Some(index) = self.data.visible_index_of(id) else {
             return false;
@@ -206,7 +195,6 @@ impl ResourceTable {
         true
     }
 
-    /// Clears the row selection (empty-canvas click in the graph).
     pub fn clear_selection(&mut self, cx: &mut Cx) -> bool {
         if !self.data.clear_selection() {
             return false;

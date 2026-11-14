@@ -1,5 +1,3 @@
-//! Pinned schema archive access and reviewed-addition manifest loading.
-
 use std::collections::BTreeMap;
 use std::io::{Cursor, Read};
 use std::path::Path;
@@ -12,39 +10,32 @@ use crate::catalog::json::Json;
 use crate::catalog::{ADDITIONS, ARCHIVE, ARCHIVE_SHA256};
 use crate::provenance::file_sha256;
 
-/// One retained provider schema and its exact archive bytes.
 pub struct Entry {
-    /// Archive member name.
     pub file: String,
-    /// Original member bytes.
+
     pub raw: Vec<u8>,
-    /// Parsed schema.
+
     pub schema: Value,
 }
 
-/// Every retained schema, keyed by CloudFormation type name.
 pub struct Archive {
-    /// Schemas ordered by type name, as Python's sorted schema map.
     pub entries: BTreeMap<String, Entry>,
-    /// Count of JSON members in the archive.
+
     pub all_count: usize,
-    /// Count of members declaring both read and list handlers.
+
     pub eligible_count: usize,
 }
 
 impl Archive {
-    /// Borrow one retained schema by type name.
     pub fn get(&self, name: &str) -> Option<&Entry> {
         self.entries.get(name)
     }
 
-    /// Borrow one retained schema by archive member name.
     pub fn by_file(&self, file: &str) -> Option<&Entry> {
         self.entries.values().find(|entry| entry.file == file)
     }
 }
 
-/// Verify the pinned archive and load every JSON member.
 pub fn load(root: &Path) -> Result<Archive, HarnessError> {
     let mut archive = open_archive(&root.join(ARCHIVE))?;
     let mut entries = BTreeMap::new();
@@ -116,7 +107,6 @@ fn eligible(schema: &Value) -> bool {
     })
 }
 
-/// Handler names declared by a schema.
 pub fn handlers(schema: &Value) -> Option<Vec<String>> {
     schema
         .get("handlers")
@@ -124,7 +114,6 @@ pub fn handlers(schema: &Value) -> Option<Vec<String>> {
         .map(|object| object.keys().cloned().collect())
 }
 
-/// Load the reviewed regional additions in manifest order.
 pub fn additions(root: &Path) -> Result<Vec<(String, String)>, HarnessError> {
     let text = std::fs::read_to_string(root.join(ADDITIONS))?;
     let manifest = Json::parse(&text)?;

@@ -1,4 +1,3 @@
-//! Behavior: equal_observation_timestamps_use_source_priority_tie_break.
 use super::*;
 
 #[tokio::test]

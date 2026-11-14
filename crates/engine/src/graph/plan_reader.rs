@@ -1,8 +1,5 @@
-//! Strict bounded graph plan validation and replay.
 use super::*;
 
-/// The declaration order is the wire protocol's monotonic stage order.
-/// Completion is a stage, never a separate flag that can disagree with it.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 enum PlanStage {
     Index,

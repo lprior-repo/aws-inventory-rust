@@ -1,6 +1,3 @@
-//! Public projection contracts: validate complete envelopes before connecting,
-//! bound large exports, and never acknowledge a server-rejected batch.
-
 use std::collections::BTreeMap;
 use std::path::Path;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};

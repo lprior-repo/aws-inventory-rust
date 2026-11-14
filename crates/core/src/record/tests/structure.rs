@@ -3,7 +3,6 @@ use crate::record::{MapRef, ValueRef};
 
 #[test]
 fn misplaced_breaks_never_complete_definite_items_or_unmatched_map_keys() {
-    // Given breaks in places where a complete item is required.
     [
         vec![0xA1, 1, 0xFF],
         vec![0xBF, 1, 0xFF],
@@ -14,7 +13,6 @@ fn misplaced_breaks_never_complete_definite_items_or_unmatched_map_keys() {
     ]
     .into_iter()
     .for_each(|bytes| {
-        // When structurally validated, then each is malformed rather than accepted.
         assert!(matches!(
             Record::from_bytes(bytes),
             Err(RecordError::Malformed { .. })
@@ -24,7 +22,6 @@ fn misplaced_breaks_never_complete_definite_items_or_unmatched_map_keys() {
 
 #[test]
 fn legitimate_breaks_close_only_their_indefinite_containers() -> TestResult {
-    // Given nested generic CBOR, including indefinite strings and container-valued keys.
     [
         vec![0xBF, 0xFF],
         vec![0xA1, 1, 0x9F, 0xA0, 0xFF],
@@ -34,7 +31,6 @@ fn legitimate_breaks_close_only_their_indefinite_containers() -> TestResult {
     ]
     .into_iter()
     .try_for_each(|bytes| -> TestResult {
-        // When validated, then every original byte survives, including embedded 0xFF data.
         assert_eq!(Record::from_bytes(bytes.clone())?.as_bytes(), bytes);
         Ok(())
     })
@@ -42,13 +38,12 @@ fn legitimate_breaks_close_only_their_indefinite_containers() -> TestResult {
 
 #[test]
 fn generic_validation_accepts_deep_unsupported_items_without_recursive_descent() -> TestResult {
-    // Given 1024 generic array levels and an unsupported float-width leaf.
     let mut encoder = minicbor::Encoder::new(Vec::new());
     encoder.map(1)?.u8(1)?;
     (0..1024).try_for_each(|_| encoder.array(1).map(|_| ()))?;
     encoder.f32(0.0)?;
     let bytes = encoder.into_writer();
-    // When validated, then depth and supported-form checks remain deferred to readers.
+
     let record = Record::from_bytes(bytes.clone())?;
     assert_eq!(record.as_bytes(), bytes);
     assert_eq!(
@@ -60,10 +55,8 @@ fn generic_validation_accepts_deep_unsupported_items_without_recursive_descent()
 
 #[test]
 fn every_prefix_of_generic_indefinite_cbor_is_missing_an_item_or_terminator() -> TestResult {
-    // Given valid indefinite maps, arrays, and tags.
     let bytes = [0xBF, 1, 0x9F, 0xC2, 0x40, 0xFF, 0xFF];
     (0..bytes.len()).try_for_each(|length| -> TestResult {
-        // When any strict prefix is validated, then truncation cannot become a valid record.
         let prefix = bytes.get(..length).ok_or("prefix bounds")?;
         assert!(matches!(
             Record::from_bytes(prefix.to_vec()),
@@ -75,7 +68,6 @@ fn every_prefix_of_generic_indefinite_cbor_is_missing_an_item_or_terminator() ->
 
 #[test]
 fn tag_prefixes_cannot_turn_breaks_into_complete_items() {
-    // Given tagged breaks in values, indefinite arrays and opaque map keys or values.
     [
         vec![0xA1, 1, 0xC1, 0xC2, 0xFF],
         vec![0xA1, 1, 0x9F, 0xC1, 0xFF, 0xFF],

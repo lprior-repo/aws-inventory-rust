@@ -1,4 +1,3 @@
-//! Behavior: existing_outputs_and_partials_are_never_clobbered_or_removed.
 use super::*;
 
 #[tokio::test]

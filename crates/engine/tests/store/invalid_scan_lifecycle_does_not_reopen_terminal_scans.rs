@@ -1,4 +1,3 @@
-//! Behavior: invalid_scan_lifecycle_does_not_reopen_terminal_scans.
 use super::*;
 
 #[tokio::test]

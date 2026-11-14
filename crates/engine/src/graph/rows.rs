@@ -1,4 +1,3 @@
-//! Pure Cypher literals and observation projection rows.
 use super::*;
 
 pub(super) fn literal(value: &str) -> Result<String, GraphError> {

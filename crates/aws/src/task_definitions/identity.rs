@@ -1,4 +1,3 @@
-//! identity operations.
 use super::*;
 
 pub(super) fn arn_parts(arn: &str) -> Result<ArnParts<'_>, AwsScanError> {

@@ -1,4 +1,3 @@
-//! Behavior: rejected_hint_wakes_a_peer_already_queued_for_global_capacity.
 use super::*;
 
 #[tokio::test(start_paused = true)]

@@ -17,7 +17,6 @@ const CLOSE: &[u8] = b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\nConnection: close
 
 #[tokio::test]
 async fn checkout_wins_but_background_tls_cannot_keep_the_last_permit_forever() -> TestResult {
-    // Given a started connector transferred into Hyper's background task after checkout wins.
     let endpoint = Endpoint::bind(true, b"http/1.1").await?;
     let client = bounded_client(&endpoint)?;
     let _clock = Clock::pause();
@@ -25,9 +24,9 @@ async fn checkout_wins_but_background_tls_cannot_keep_the_last_permit_forever() 
     let (mut stalled, _) = watch(endpoint.listener.accept()).await??;
     let mut hello = [0; 5];
     watch(stalled.read_exact(&mut hello)).await??;
-    // When the abandoned TLS handshake reaches its original connector bound.
+
     expire_background(&client, &mut stalled).await?;
-    // Then another host gets that exact permit, without counting a completed send as timed out.
+
     let next = Endpoint::bind(false, b"").await?;
     let mut send = Box::pin(client.send(request(&next.url)?));
     let mut stream = next.accept(&mut send).await?;
@@ -49,7 +48,7 @@ async fn make_checkout_win(endpoint: &Endpoint, client: &Client) -> TestResult {
     tokio::time::advance(Duration::from_millis(50)).await;
     wire::write(&mut stream, GOOD).await?;
     assert_eq!(watch(first).await??.body.as_ref(), b"ok");
-    // Receiving request two on the original TLS socket independently proves checkout won.
+
     assert_eq!(
         wire::complete(second, &mut stream, CLOSE)
             .await??
@@ -76,7 +75,6 @@ async fn expire_background(client: &Client, stream: &mut TcpStream) -> TestResul
 
 #[tokio::test]
 async fn cancellation_on_a_reused_connection_never_retries_a_second_attempt() -> TestResult {
-    // Given a successfully pooled connection whose peer is closed before dispatcher polling.
     let endpoint = Endpoint::bind(false, b"").await?;
     let client = Client::new(endpoint.config(2))?;
     let _clock = Clock::pause();
@@ -90,11 +88,11 @@ async fn cancellation_on_a_reused_connection_never_retries_a_second_attempt() ->
             .as_ref(),
         b""
     );
-    let attempts = AtomicUsize::new(1); // Count the request actually read by the independent peer.
-    drop(stream); // Do not yield: checkout sees the stale sender before its read task observes EOF.
+    let attempts = AtomicUsize::new(1);
+    drop(stream);
     let mut second = Box::pin(client.send(request(&endpoint.url)?));
     crate::deadlines::poll_pending(&mut second).await?;
-    // Then a forbidden retry would be observed as another actual accepted/requested connection.
+
     let result = reject_retry(second, &endpoint, &attempts).await?;
     assert!(matches!(result, Err(TransportError::Connect(_))));
     assert_eq!(attempts.load(Ordering::SeqCst), 1);

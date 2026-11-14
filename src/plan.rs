@@ -1,4 +1,3 @@
-//! Pure collection planning. This module never loads credentials or performs I/O.
 use std::collections::{BTreeMap, BTreeSet};
 
 use anyhow::{Context, Result, anyhow, ensure};
@@ -11,7 +10,6 @@ const CLOUD_CONTROL_CATALOG: &str = include_str!("../catalog/cloudcontrol-resour
 pub(crate) const PARENT_CATALOG: &str =
     include_str!("../catalog/cloudcontrol-parent-resources.json");
 
-/// Build the offline plan for a selection already parsed at the CLI boundary.
 pub fn create(options: PlanArgs, selection: &Selection) -> Result<Value> {
     validate_options(&options)?;
     let mut catalog = build::catalog(&options, selection)?;

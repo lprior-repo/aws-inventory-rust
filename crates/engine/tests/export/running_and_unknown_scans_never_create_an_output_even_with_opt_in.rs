@@ -1,4 +1,3 @@
-//! Behavior: running_and_unknown_scans_never_create_an_output_even_with_opt_in.
 use super::*;
 
 #[tokio::test]

@@ -1,4 +1,3 @@
-//! Record decoding and bounded collection of export streams.
 use super::*;
 
 pub(super) fn decode_record<T: serde::de::DeserializeOwned>(

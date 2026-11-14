@@ -1,4 +1,3 @@
-//! Behavior: empty_resource_name_preserves_valid_aws_tag_value.
 use super::*;
 
 #[tokio::test]

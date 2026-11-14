@@ -1,5 +1,3 @@
-//! Argument parsing for the operator entry point.
-
 use std::path::PathBuf;
 
 use inventory_harness::HarnessError;
@@ -115,7 +113,6 @@ fn parse_seed_cloud_control(arguments: &[String]) -> Result<Command, HarnessErro
     Ok(Command::SeedCloudControl { prefix, count })
 }
 
-/// Bounded `--flag value` pairs; a flag outside the command's list, or given twice, is rejected.
 struct Options {
     pairs: Vec<(String, String)>,
 }

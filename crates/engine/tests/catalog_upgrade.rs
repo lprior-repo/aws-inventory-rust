@@ -1,4 +1,3 @@
-//! Schema-v5 upgrades preserve immutable snapshots and caller-owned SQL objects.
 use inventory_core::{CollectionPage, CollectionScope, Resource, ScanStatus, Source};
 use inventory_engine::store::Store;
 use serde_json::{Value, json};
@@ -95,8 +94,7 @@ async fn version_four_fixture(path: &Path) -> TestResult {
         .await?;
     store.close().await;
     let mut connection = connect(path).await?;
-    // Version5 changes views only. Remove exactly its added names to recreate
-    // the on-disk version4 boundary while preserving realistic observations.
+
     for view in added_views()?.into_iter().chain(parent_views()?) {
         sqlx::query(sqlx::AssertSqlSafe(format!("DROP VIEW {view}").as_str()))
             .execute(&mut connection)

@@ -194,6 +194,24 @@ done
 | 88 | MapValueWire | Optional wire metadata for a map value pseudo-member |
 | 89 | ErrorKind | Modeled client/server error kind |
 | 90 | RequestCompression | Canonical, ordered request `encodings` list |
+| 91 | DefaultValue | Optional target-normalized canonical member default; null differs from absence |
+| 92 | ClientOptional | Whether client-side member defaults are suppressed |
+
+Defaults are compiled once: blob trait strings become decoded bytes and
+timestamp defaults become canonical `Time` values. `WireTraits::default_value`
+borrows the value; `client_optional` is false when absent. Request encoders apply
+non-null defaults to missing nested structure members, not operation top-level
+inputs or client-optional members. Explicit values, including false, zero and
+empty containers, take precedence. Smithy mixins are resolved in the shared
+reader used by catalog compilation and Smithy stats. Raw classification readers
+reject unresolved input mixins rather than omitting inherited requirements.
+
+Request encoders resolve modeled host prefixes before building the URI. AWS JSON
+uses member names rather than `jsonName`; REST JSON honors `jsonName`.
+AWS Query-compatible services receive `x-amzn-query-mode` on body protocols.
+Required HTTP checksums cover the transmitted body after compression. Native
+Glacier requests use the service version and SHA-256/tree-hash headers rather
+than a default MD5; Machine Learning `Predict` uses its `PredictEndpoint` input.
 
 Kind codes, in order starting at zero:
 `blob boolean string byte short integer long float double bigInteger bigDecimal
@@ -234,9 +252,9 @@ request compression algorithm, and common plus operation-local modeled errors.
 `Operation::request_compression()` checks the ordered encoding list, returning
 `Some(CompressionAlgorithm::Gzip)` when supported and `None` when absent.
 Malformed or unsupported serialized values are typed errors.
-`FieldId`, borrowed indexed name, target, requiredness, and wire traits. Lists,
-maps, and structures retain pseudo-member wire metadata. All views borrow the
-catalog bytes; metadata does not grant callability.
+`Member<'a>` exposes its `FieldId`, borrowed indexed name, target, requiredness,
+and wire traits. Lists, maps, and structures retain pseudo-member wire metadata.
+All views borrow the catalog bytes; metadata does not grant callability.
 
 Opening and service access allocate nothing: structural validation uses a
 caller-owned inline array of 32 optional frames, never a heap-backed stack.
@@ -260,8 +278,9 @@ No throughput or latency benchmark claim is made.
   are numeric and never recursively followed; scans have finite record lengths.
 - Shape targets are checked against the current service's validated shape count;
   scalar targets against the 14 scalar/prelude codes. Field IDs use `FieldId::new`.
-- Member triples must have exactly three typed entries and strictly ascending,
-  nonzero field IDs. Kinds and flags have explicit finite allowed ranges.
+- Member encodings have strictly ascending, nonzero field IDs and validated
+  required flags and optional wire metadata. Kinds and flags have explicit finite
+  allowed ranges.
 - Model files and registry input reuse the existing tool readers and their size
   limits; catalog snapshots use the existing bounded publication reader.
 - Compilation reuses `smithy/fields/publish.rs`, including exclusive temporary
@@ -272,10 +291,10 @@ No throughput or latency benchmark claim is made.
 ## Size estimate and decisions
 
 The pinned models contain 142,767 shapes and 238,070 structure/union members.
-The 7–9 MiB design estimate and 6,951,532-byte measurement belong to the earlier
-format, before v2 wire metadata. No v2 size has been measured in this worktree.
-Regenerate the binary and stats from the pinned source models before publishing
-a v2 size measurement; the 16 MiB root limit is unchanged.
+The earlier format measured 6,951,532 bytes. The v2 catalog generated from the
+same pinned source on 2026-11-14 is **10,995,359 bytes** (10.486 MiB). A fresh
+`models compile --check` recompilation passed the byte comparison. The root
+limit remains 16 MiB.
 
 The coordinator's identity clarification replaces ambiguous short service names
 with model directories and adds key 18 for the full service ID. The optional
@@ -285,17 +304,35 @@ The allocation-free catalog contract is preserved through fixed-capacity inline
 validation storage. Generic record validation retains its dynamic stack and
 deep-unknown-value compatibility. No other frozen decision is intentionally changed.
 
+## Streaming record construction
+
+Runtime decoders can use `inventory_core::record::RecordBuilder` instead of
+constructing a `Value` tree. `new(max_bytes, max_nodes, max_depth)` requires
+positive budgets, bounded by 16 MiB, 65,536 nodes and 32 container levels.
+`begin_map`, `begin_list`, `scalar` and `end` form one root map; `finish` returns
+the validated `Record`. Root and list events have no key; map children require
+`KeyRef::Field` or `KeyRef::Name`. Container values cannot be passed to `scalar`.
+
+Maps are sorted by the existing record key order, duplicate keys are rejected,
+and lists preserve event order. Scalars retain the existing CBOR representation,
+including canonical floating-point values and tagged seconds/nanoseconds times.
+Open containers retain encoded fragments, not a decoded object tree. Aggregate
+fragment bytes are bounded by twice the configured record-byte budget while
+containers are assembled, and allocations use fallible reservation. Node and
+depth limits apply during event processing. Any event error is terminal:
+subsequent events and `finish` cannot recover a partial record.
+
+
 ## Coordinator commands
 
-Run from `/home/lewis/src/aws-inventory-worktrees/m1.2d`. Regenerate before
-testing the embedded product.
+Run from the repository root. Regenerate before testing the embedded product.
 
 ```sh
-SOURCE=/home/lewis/src/aws-inventory-rust/.local/aws-models
+SOURCE=.local/aws-models
 cargo run -p catalog-tool -- models compile --source "$SOURCE" --root . --write
-cp catalog/aws-api.catalog /tmp/aws-api.catalog.m1.2d.first
+cp catalog/aws-api.catalog /tmp/aws-api.catalog.first
 cargo run -p catalog-tool -- models compile --source "$SOURCE" --root . --write
-cmp /tmp/aws-api.catalog.m1.2d.first catalog/aws-api.catalog
+cmp /tmp/aws-api.catalog.first catalog/aws-api.catalog
 cargo run -p catalog-tool -- models compile --source "$SOURCE" --root . --check
 wc -c catalog/aws-api.catalog
 cargo fmt --all
@@ -356,7 +393,7 @@ a tighter limit is listed below. The file budget bounds `fixed` and `bind`.
 | `class` | `enumerate`, `expand`, `deny`, `defer` | Candidate class |
 | `deny_reason` | `content`, `secret`, `paid`, `mutating`, `reference-data` | Required exactly for `deny`; forbidden otherwise |
 | `scope` | `region`, `account`, `home-region` | Modeled scope |
-| `items` | Output member path | Modeled list, otherwise unresolved |
+| `items` | Output list/map member path, or `$` for the output structure itself | Modeled list, otherwise unresolved |
 | `page_size` | Integer 1–100000 | Largest modeled allowed size |
 | `exclude_from_hash` | Item member paths | No extra exclusions |
 | `skip` | Operation names, excluding self | No extra scheduling suppression |
@@ -393,6 +430,36 @@ The complete syntax example is
 Parsed `ServiceOverlay` values expose read-only accessors; callers cannot
 mutate their validated format, review metadata or operation map.
 
-This parser does not check operation existence, resolve modeled paths,
-establish reviewed-service completeness or create callable handles.
-Those are M1.4c. Parsing a review never promotes a denied operation.
+The syntax parser does not establish callability. Parsing a review never
+promotes a denied operation; the model-aware gate below decides whether a
+complete, safe callable plan exists.
+
+## Model-aware overlay gate (M1.4c)
+
+`catalog-tool overlay --source .local/aws-models --root . --check` validates
+reviews against the pinned models and compares `catalog/aws-overlay.report`.
+`--write` publishes the deterministic report only after validation succeeds.
+Moon runs the freshness check between collection plans and the binary catalog.
+
+The checker resolves operation names and paths in their modeled input, output
+or selected-item context, including built-in Smithy types. Ordinary `items`
+paths select a list or map; explicit `items = "$"` selects the output structure.
+Root selection is never inferred, and `$` is not a general member path.
+
+A `CallableOperation` has private fields and is constructed only by the checker.
+It represents an operation of a reviewed service with a permitted effective
+enumerate/expand class and complete pagination, item selection, identity and
+required-input bindings. Fixed values, token types and page sizes must match the
+models; member page-size ranges take precedence over target ranges. Activating
+a nested input also requires its required siblings. Dependencies must themselves
+be callable, and effective binding cycles are rejected.
+
+Every enumerate, expand or unclassified candidate of a reviewed service must be
+callable, explicitly denied or explicitly deferred. An override cannot promote
+an operation denied by the global list, service policy or no-read-verb rule.
+Validation reports all sorted diagnostics with their offending paths and does
+not publish a partial report.
+
+The current pinned baseline contains 436 unreviewed services and no callable
+operations. This gate proves offline plan validation, not AWS execution or the
+emulator-to-storage-to-viewer pipeline.

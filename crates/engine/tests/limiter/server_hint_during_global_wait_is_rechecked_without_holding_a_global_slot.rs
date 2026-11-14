@@ -1,4 +1,3 @@
-//! Behavior: server_hint_during_global_wait_is_rechecked_without_holding_a_global_slot.
 use super::*;
 
 #[tokio::test(start_paused = true)]
@@ -44,9 +43,7 @@ pub(super) async fn server_hint_during_global_wait_is_rechecked_without_holding_
             .execute("probe", || async { record(&probes) })
             .await
     };
-    // If a request fails before entering its operation, its barrier peers must
-    // be dropped promptly. An unexpected terminal result is a test failure,
-    // not a reason to strand the remaining futures at the barrier.
+
     let expected_first =
         async { require_error(first.await, |error| matches!(error, ApiError::Exhausted(_))) };
     bounded_barrier_case(async { tokio::try_join!(expected_first, blocker, peer, probe) }).await?;

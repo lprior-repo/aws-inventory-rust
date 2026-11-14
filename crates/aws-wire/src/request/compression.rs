@@ -1,7 +1,10 @@
 mod gzip;
 
 use crate::request::{EncodeError, RequestContext, common::check_headers};
-use http::{HeaderMap, HeaderValue, header::{CONTENT_ENCODING, CONTENT_LENGTH}};
+use http::{
+    HeaderMap, HeaderValue,
+    header::{CONTENT_ENCODING, CONTENT_LENGTH},
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct CompressionThreshold(usize);
@@ -54,11 +57,7 @@ pub(super) fn apply(
     if body.len() < threshold.bytes() {
         return Ok(body);
     }
-    validate_projected_headers(
-        headers,
-        context.limits.header_bytes(),
-        1,
-    )?;
+    validate_projected_headers(headers, context.limits.header_bytes(), 1)?;
     let compressed = match algorithm {
         inventory_core::catalog::CompressionAlgorithm::Gzip => {
             gzip::encode(&body, context.limits.body_bytes())?
@@ -79,26 +78,41 @@ fn validate_projected_headers(
     content_length: usize,
 ) -> Result<(), EncodeError> {
     let current = check_headers(headers, limit)?;
-    let encoding_cost = CONTENT_ENCODING.as_str().len().checked_add(4)
+    let encoding_cost = CONTENT_ENCODING
+        .as_str()
+        .len()
+        .checked_add(4)
         .and_then(|size| size.checked_add(b"gzip".len()))
         .ok_or(EncodeError::Limit("headers"))?;
-    let (length_count, removed_length_cost) = headers.get_all(CONTENT_LENGTH).iter()
-        .try_fold((0usize, 0usize), |(count, total), value| {
-            let cost = CONTENT_LENGTH.as_str().len().checked_add(value.as_bytes().len())
-                .and_then(|cost| cost.checked_add(4)).ok_or(EncodeError::Limit("headers"))?;
+    let (length_count, removed_length_cost) = headers.get_all(CONTENT_LENGTH).iter().try_fold(
+        (0usize, 0usize),
+        |(count, total), value| {
+            let cost = CONTENT_LENGTH
+                .as_str()
+                .len()
+                .checked_add(value.as_bytes().len())
+                .and_then(|cost| cost.checked_add(4))
+                .ok_or(EncodeError::Limit("headers"))?;
             Ok::<(usize, usize), EncodeError>((
                 count.checked_add(1).ok_or(EncodeError::Limit("headers"))?,
-                total.checked_add(cost).ok_or(EncodeError::Limit("headers"))?,
+                total
+                    .checked_add(cost)
+                    .ok_or(EncodeError::Limit("headers"))?,
             ))
-        })?;
+        },
+    )?;
     let added_length_cost = if length_count == 0 {
         0
     } else {
-        CONTENT_LENGTH.as_str().len().checked_add(4)
+        CONTENT_LENGTH
+            .as_str()
+            .len()
+            .checked_add(4)
             .and_then(|size| size.checked_add(decimal_digits(content_length)))
             .ok_or(EncodeError::Limit("headers"))?
     };
-    let projected = current.checked_add(encoding_cost)
+    let projected = current
+        .checked_add(encoding_cost)
         .and_then(|size| size.checked_sub(removed_length_cost))
         .and_then(|size| size.checked_add(added_length_cost))
         .ok_or(EncodeError::Limit("headers"))?;

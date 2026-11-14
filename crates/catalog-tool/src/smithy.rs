@@ -1,8 +1,3 @@
-//! One-model-at-a-time AWS statistics, with pure counters and canonical reports.
-//! Reads every `.json` below `source/models`, using case-sensitive operation
-//! prefixes and exact input targets. Only the global member-name set survives
-//! between models. No report is printed or overwritten until all models load.
-
 mod compile;
 mod fields;
 mod model;
@@ -24,51 +19,51 @@ use std::path::{Path, PathBuf};
 use thiserror::Error;
 
 const MAX_FILE_SIZE: u64 = 67_108_864;
-/// Directory entries one model discovery may visit before it stops.
+
 const MAX_MODEL_ENTRIES: usize = 65_536;
 const REPORT_PATH: &str = "catalog/aws-models.report";
 
-/// Failures from model input, report persistence, comparison, or command syntax.
 #[derive(Debug, Error)]
 #[non_exhaustive]
 pub enum Error {
-    /// A filesystem operation failed at the named path.
     #[error("{file}: {source}")]
     Io { file: PathBuf, source: io::Error },
-    /// The file is too large to read.
+
     #[error("file exceeds {MAX_FILE_SIZE} bytes: {0}")]
     FileTooLarge(PathBuf),
-    /// Model discovery visited more directory entries than its bound.
+
     #[error("more than {limit} directory entries under {directory}")]
     TooManyEntries { directory: PathBuf, limit: usize },
-    /// JSON syntax or required model fields are invalid.
+
     #[error("invalid JSON in {file}: {source}")]
     InvalidJson {
         file: PathBuf,
         source: serde_json::Error,
     },
-    /// A file has no service shape.
+    #[error("invalid Smithy model {file}: {message}")]
+    InvalidModel { file: PathBuf, message: String },
+
     #[error("no service shape in {0}")]
     NoService(PathBuf),
-    /// A file has more than one service shape.
+
     #[error("several service shapes in {0}")]
     SeveralServices(PathBuf),
-    /// The models directory contains no JSON files.
+
     #[error("no models found")]
     NoModels,
-    /// Catalog encoding or input schema failure.
+
     #[error(transparent)]
     Compile(#[from] compile::CompileError),
-    /// Every differing line, including whitespace and line terminators.
+
     #[error("{0}")]
     ReportMismatch(String),
-    /// Formatting a canonical report or line comparison failed.
+
     #[error("report formatting failed: {0}")]
     Formatting(#[from] std::fmt::Error),
-    /// The field-ID registry is invalid or inconsistent.
+
     #[error(transparent)]
     Registry(#[from] RegistryError),
-    /// New names are not in the registry.
+
     #[error(
         "{new_names} member names are not in the registry, first: {first}; run `catalog-tool models fields --write`"
     )]
@@ -77,16 +72,16 @@ pub enum Error {
         new_names: usize,
         first: String,
     },
-    /// Another writer changed the registry after this run read it.
+
     #[error("registry changed during the run; rerun")]
     RegistryChanged { path: PathBuf },
-    /// A temporary publication file already exists and must be removed by its owner.
+
     #[error("{path}: another run is writing or a previous run crashed; remove the temporary file")]
     WriteInProgress { path: PathBuf },
-    /// Registry input exceeds the bounded reader's byte limit.
+
     #[error("{path}: registry exceeds {limit} bytes")]
     RegistryTooLarge { path: PathBuf, limit: u64 },
-    /// Publication failed and removing its owned temporary file also failed.
+
     #[error("{original}; failed to remove temporary {path}: {cleanup}")]
     PublicationCleanup {
         #[source]
@@ -96,23 +91,17 @@ pub enum Error {
     },
 }
 
-/// Optional persistence or verification after printing a complete report.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ReportMode {
-    /// Print without touching the committed report.
     #[default]
     Print,
-    /// Overwrite or create the report.
+
     Write,
-    /// Compare the complete report without normalizing whitespace.
+
     Check,
 }
 
-/// Load every model, print the report, then optionally write or check it.
-///
-/// # Errors
-/// Returns a named input error, output I/O error, or all differing report lines.
 pub fn run(root: &Path, source: &Path, mode: ReportMode) -> Result<(), Error> {
     let text = build_report(source)?;
     write_stdout(&text)?;
@@ -137,10 +126,6 @@ fn check_report(path: &Path, text: &str) -> Result<(), Error> {
     }
 }
 
-/// Read JSON files in ascending path order and render their complete totals.
-///
-/// # Errors
-/// Returns a typed, filename-bearing error for invalid or oversized model files.
 pub fn build_report(source: &Path) -> Result<String, Error> {
     let files = find_model_files(&source.join("models"))?;
     if files.is_empty() {
@@ -164,10 +149,13 @@ fn write_stdout(text: &str) -> Result<(), Error> {
 }
 
 fn read_model_file(file: &Path) -> Result<model::ModelFile, Error> {
-    read_json(file)
+    let model = read_json(file)?;
+    model::mixins::expand(model).map_err(|message| Error::InvalidModel {
+        file: file.to_path_buf(),
+        message,
+    })
 }
 
-/// Read one JSON file of at most 64 MiB into `T`.
 pub(crate) fn read_json<T: serde::de::DeserializeOwned>(file: &Path) -> Result<T, Error> {
     let bytes = read_bounded(file, MAX_FILE_SIZE)?;
     serde_json::from_slice(&bytes).map_err(|source| Error::InvalidJson {
@@ -176,7 +164,6 @@ pub(crate) fn read_json<T: serde::de::DeserializeOwned>(file: &Path) -> Result<T
     })
 }
 
-/// Read at most `limit` bytes; one byte more is read to detect a larger or growing file.
 fn read_bounded(file: &Path, limit: u64) -> Result<Vec<u8>, Error> {
     let handle = fs::File::open(file).map_err(|source| io_error(file, source))?;
     let mut bytes = Vec::new();
@@ -191,9 +178,6 @@ fn read_bounded(file: &Path, limit: u64) -> Result<Vec<u8>, Error> {
     Ok(bytes)
 }
 
-/// Every `.json` file under `models`, sorted by path; symlinks are not followed.
-///
-/// Stops with `TooManyEntries` once 65,536 directory entries have been visited.
 pub(crate) fn find_model_files(models: &Path) -> Result<Vec<PathBuf>, Error> {
     find_model_files_within(models, MAX_MODEL_ENTRIES)
 }
@@ -212,7 +196,7 @@ fn find_model_files_within(models: &Path, limit: usize) -> Result<Vec<PathBuf>, 
         remaining: limit,
         limit,
     };
-    // Each real directory is removed once; symlinks are not followed.
+
     std::iter::from_fn(|| {
         walk.pending
             .pop()

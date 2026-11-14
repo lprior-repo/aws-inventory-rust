@@ -1,4 +1,3 @@
-//! Behavior: fractional_rates_round_up_instead_of_exceeding_budget.
 use super::*;
 
 #[tokio::test(start_paused = true)]

@@ -1,11 +1,3 @@
-//! Explicit SDK probes for branches a normal populated emulator scan may skip.
-//!
-//! DescribeRegions cannot drive a multi-region scan against one emulator because
-//! the emulator does not isolate region state. HeadBucket is a fallback when S3
-//! ListBuckets omits BucketRegion, which this emulator normally supplies. These
-//! probes are reported separately from production collector-path coverage.
-//! Resource Explorer probes also test downstream operations when an upstream
-//! discovery response cannot be decoded; errors remain errors in the report.
 #![forbid(unsafe_code)]
 
 use std::io::Write;

@@ -1,5 +1,3 @@
-//! Small deterministic PRNG. Same seed and call sequence always produce the same values.
-
 const MULTIPLIER: u64 = 6_364_136_223_846_793_005;
 const INCREMENT: u64 = 1_442_695_040_888_963_407;
 
@@ -19,10 +17,6 @@ impl Rng {
         self.state
     }
 
-    /// Uniform value in `0..bound`; `bound == 0` yields `0`.
-    ///
-    /// Multiply-high keeps the high-entropy bits of the LCG state; taking a
-    /// remainder of the raw state would inherit the low bits' short period.
     pub fn below(&mut self, bound: u64) -> u64 {
         if bound == 0 {
             return 0;

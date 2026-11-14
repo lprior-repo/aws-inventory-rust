@@ -1,6 +1,3 @@
-//! Offline account-target and cancellation regressions. None of these tests
-//! loads AWS configuration or asks a credentials provider for credentials.
-
 use std::time::Duration;
 
 use clap::Parser;

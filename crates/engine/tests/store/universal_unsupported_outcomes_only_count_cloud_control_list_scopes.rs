@@ -1,4 +1,3 @@
-//! Behavior: universal unsupported outcomes only count Cloud Control list scopes.
 use super::*;
 
 #[tokio::test]

@@ -13,7 +13,6 @@ const PARTIAL: &[u8] = b"HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\nx";
 
 #[tokio::test]
 async fn multiple_connections_have_exact_reuse_and_plaintext_byte_totals() -> TestResult {
-    // Given two endpoints and three successful requests, one reused.
     let first = Endpoint::bind(false, b"").await?;
     let second = Endpoint::bind(false, b"").await?;
     let client = Client::new(first.config(2))?;
@@ -35,7 +34,7 @@ async fn multiple_connections_have_exact_reuse_and_plaintext_byte_totals() -> Te
         wire::complete(send, &mut two, GOOD).await??.body.as_ref(),
         b"ok"
     );
-    // Then reuse subtracts both connections, and every wire byte is counted exactly.
+
     assert_eq!(
         client.statistics(),
         snapshot(2, 2, 3, 0, GOOD.len().saturating_mul(3))
@@ -47,7 +46,6 @@ async fn multiple_connections_have_exact_reuse_and_plaintext_byte_totals() -> Te
 
 #[tokio::test]
 async fn invalid_requests_leave_every_counter_unchanged() -> TestResult {
-    // Given an empty pool, when validation fails, then no attempted send is recorded.
     let client = Client::new(crate::config())?;
     assert!(matches!(
         client.send(request("/relative")?).await,
@@ -59,7 +57,6 @@ async fn invalid_requests_leave_every_counter_unchanged() -> TestResult {
 
 #[tokio::test]
 async fn failed_connection_records_one_attempt_and_no_socket_or_timeout() -> TestResult {
-    // Given a retained, bound but non-listening port.
     let socket = TcpSocket::new_v4()?;
     socket.bind("127.0.0.1:0".parse()?)?;
     let client = Client::new(crate::config())?;
@@ -74,7 +71,6 @@ async fn failed_connection_records_one_attempt_and_no_socket_or_timeout() -> Tes
 
 #[tokio::test]
 async fn caller_cancellation_is_not_a_timeout_and_closes_the_partial_socket() -> TestResult {
-    // Given an explicitly observed partial body.
     let endpoint = Endpoint::bind(false, b"").await?;
     let client = Client::new(endpoint.config(1))?;
     let _clock = Clock::pause();
@@ -83,7 +79,7 @@ async fn caller_cancellation_is_not_a_timeout_and_closes_the_partial_socket() ->
     wire::until(&mut send, wire::head(&mut stream)).await??;
     wire::write(&mut stream, PARTIAL).await?;
     wire::read_at_least(&client, &mut send, PARTIAL.len()).await?;
-    // When dropped, then EOF settles socket cleanup without incrementing timeouts.
+
     drop(send);
     eof(&mut stream).await?;
     assert_eq!(client.statistics(), snapshot(1, 0, 1, 0, PARTIAL.len()));
@@ -93,7 +89,6 @@ async fn caller_cancellation_is_not_a_timeout_and_closes_the_partial_socket() ->
 
 #[tokio::test]
 async fn request_timeout_is_counted_exactly_once_after_socket_cleanup() -> TestResult {
-    // Given a partial body with both connector and request timers configured.
     let endpoint = Endpoint::bind(false, b"").await?;
     let config = endpoint.config(1);
     let deadline = config.request_deadline;

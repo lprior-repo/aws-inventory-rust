@@ -1,4 +1,3 @@
-//! Audit contracts: emulator summary binding, request ledgers and coverage.
 use inventory_harness::HarnessError;
 use inventory_harness::audit::{
     Json, apply_verification, checked_histogram, py_eq, request_evidence, validate_summary,

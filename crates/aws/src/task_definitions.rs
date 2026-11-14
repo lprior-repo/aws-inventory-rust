@@ -1,7 +1,3 @@
-//! ACTIVE ECS task-definition revisions, with separate list/description coverage.
-//! SDK responses may contain environment values; only explicit reference and
-//! architecture fields below are retained in inventory events.
-
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::future::Future;
 use std::sync::Mutex;
@@ -37,8 +33,6 @@ const MAX_COMPONENTS: usize = 4_096;
 const LIST_SCOPE: &str = "aws_ecs_task_definition_list";
 const DEFINITION_KIND: &str = "aws_ecs_task_definition";
 
-/// The only scan-wide state is a bounded identity ledger. No SDK definitions or
-/// mapped resources accumulate across pages; descriptions stream independently.
 #[derive(Default)]
 struct ListedIdentities {
     arns: BTreeSet<String>,

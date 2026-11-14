@@ -44,8 +44,7 @@ pub(super) async fn deliver_open_store(
     let checkpoint = base.join("projection.sqlite");
     let local_cancel = cancellation.child_token();
     let mut outputs = json!({});
-    // One allocation per delivery cuts the nested SQLx/Redis future layout at
-    // the orchestration boundary; rows retain streaming backpressure.
+
     let work: futures_util::future::BoxFuture<'_, Result<()>> = Box::pin(write_outputs(
         store,
         scan_id,

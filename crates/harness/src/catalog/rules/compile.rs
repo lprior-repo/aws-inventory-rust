@@ -1,5 +1,3 @@
-//! Relationship compilation against a retained provider schema.
-
 use std::collections::{BTreeMap, BTreeSet};
 
 use serde_json::Value;
@@ -91,7 +89,6 @@ fn role_semantics(key: &str) -> Option<(&'static str, &'static str)> {
     None
 }
 
-/// Compile every declared string reference for one descriptor.
 pub fn enrich_rules(
     descriptor: &Descriptor,
     schema: &Value,
@@ -289,7 +286,6 @@ fn apply_overrides(rule: &mut Rule, type_name: &str) {
     }
 }
 
-/// Serialize compiled rules in descriptor order.
 pub fn rules_json(rules: &[Rule]) -> Json {
     Json::array(rules.iter().map(Rule::to_json).collect())
 }

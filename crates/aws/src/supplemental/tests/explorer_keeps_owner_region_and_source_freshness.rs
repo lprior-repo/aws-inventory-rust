@@ -1,4 +1,3 @@
-//! explorer keeps owner region and source freshness behavior.
 use super::*;
 
 #[test]

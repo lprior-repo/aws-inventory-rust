@@ -1,10 +1,3 @@
-//! Live check: an emulator this test owns, seeded through the real SDK, then
-//! scanned by the shipped collector.
-//!
-//! Ignored by default: it needs the pinned emulator binary
-//! (`INVENTORY_EMULATOR_BINARY`, or `<repo>/.local/runtime/...`) and a collector
-//! built with `--features aws`. No Python, no prepared external stack.
-
 mod coverage;
 mod proxy;
 
@@ -24,8 +17,7 @@ type TestResult = Result<(), Box<dyn Error>>;
 
 const BUCKET: &str = "rust-fixture-bucket";
 const EMULATOR_HEADER: &str = ".local/runtime/unpacked/opt/aws-emulator/bin/aws-emulator";
-/// Every child this module starts is bounded; a hung emulator or collector
-/// fails the test with its captured stderr instead of stalling the suite.
+
 const CHILD_DEADLINE: Duration = Duration::from_secs(180);
 const CHILD_POLL: Duration = Duration::from_millis(50);
 
@@ -170,9 +162,6 @@ fn join(handle: Option<JoinHandle<Vec<u8>>>) -> Vec<u8> {
         .unwrap_or_default()
 }
 
-/// Run one collector scan under the bounded child deadline. Exit status 2 is
-/// accepted only for a parsed partial/cancelled report, so a clap usage error
-/// surfaces its exit code and stderr instead of an opaque JSON EOF.
 fn scan_pages(
     database: &str,
     selection: &[&str],
@@ -240,9 +229,7 @@ fn verify_collector_binary() -> Result<PathBuf, String> {
             path.display()
         ));
     }
-    // An invalid `--max-pages` fails before any AWS request in an `aws` build,
-    // while a build without collectors rejects the scan immediately. The probe
-    // therefore distinguishes the two builds without touching the network.
+
     let mut command = Command::new(&path);
     command.args([
         "scan",

@@ -2,7 +2,6 @@ use super::{BodyStyle, Decision, Fault, ProxyError, protocol::Connection, respon
 
 type Envelope = (&'static str, Vec<u8>);
 
-/// One authoritative fault/status/code table. Transport faults have no envelope.
 fn descriptor(fault: Fault, style: BodyStyle) -> Option<(u16, &'static str)> {
     use BodyStyle::{Ec2Xml, QueryXml, RestXml};
     Some(match (fault, style) {

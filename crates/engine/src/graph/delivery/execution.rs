@@ -1,4 +1,3 @@
-//! Retry-safe batch submission and explicit attempt classification.
 use super::*;
 
 #[tracing::instrument(skip_all, fields(sequence=batch.sequence, stage=%batch.stage))]
@@ -55,8 +54,7 @@ pub(super) async fn apply_batch(
             return Err(error.map(GraphError::Redis).unwrap_or(GraphError::Timeout));
         }
     }
-    // Server confirmation precedes ACK. A cancelled/failed ACK can safely replay
-    // the exact same MERGE batch; no ACK is written on transport/server failure.
+
     projection.log.commit(&batch, &digest).await?;
     projection.summary.applied_batches = projection.summary.applied_batches.saturating_add(1);
     Ok(projection)

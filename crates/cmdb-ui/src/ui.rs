@@ -1,9 +1,3 @@
-//! The Splash view tree: title bar, filter rail, table and detail panel.
-//!
-//! Structure only. Every value shown here is either a fixed label or is
-//! written by `app.rs`/`chrome.rs` from `data::Data`. Colours, spacing,
-//! radii and type all come from the theme tokens.
-
 use makepad_widgets::*;
 
 use crate::app::App;
@@ -24,7 +18,7 @@ script_mod! {
                     padding: 0
                     margin: 0
 
-                    // ---- title bar -------------------------------------
+
                     SolidView{
                         width: Fill height: 96
                         flow: Right spacing: theme.space_5
@@ -54,12 +48,12 @@ script_mod! {
                     }
                     SolidView{width: Fill height: 1 draw_bg.color: theme.color_u_1}
 
-                    // ---- rail / table / detail -------------------------
+
                     View{
                         width: Fill height: Fill
                         flow: Right spacing: 0
 
-                        // left filter rail
+
                         SolidView{
                             width: 184 height: Fill
                             flow: Down spacing: theme.space_1
@@ -137,7 +131,7 @@ script_mod! {
                             }
                         }
 
-                        // central resource table
+
                         SolidView{
                             width: Fill height: Fill
                             flow: Down spacing: 0
@@ -243,7 +237,7 @@ script_mod! {
                             }
                         }
 
-                        // right detail panel
+
                         SolidView{
                             width: 240 height: Fill
                             flow: Down spacing: theme.space_2

@@ -1,4 +1,3 @@
-//! services responsibilities for ecs.
 use super::*;
 
 #[tracing::instrument(skip_all)]

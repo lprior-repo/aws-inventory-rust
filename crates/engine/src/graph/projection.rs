@@ -1,4 +1,3 @@
-//! Durable per-batch graph acknowledgement log.
 use super::*;
 
 pub(super) struct ProjectionLog {

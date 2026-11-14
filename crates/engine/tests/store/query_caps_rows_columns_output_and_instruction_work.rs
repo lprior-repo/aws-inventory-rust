@@ -1,4 +1,3 @@
-//! Behavior: query_caps_rows_columns_output_and_instruction_work.
 use super::*;
 
 #[tokio::test]

@@ -1,4 +1,3 @@
-//! routing operations.
 use super::*;
 
 pub(super) fn map_route_table(

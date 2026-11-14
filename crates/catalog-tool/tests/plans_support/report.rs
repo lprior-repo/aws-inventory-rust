@@ -8,13 +8,11 @@ use serde_json::json;
 
 #[test]
 fn report_has_exact_nonzero_fixture_bytes_for_every_counter_and_service_column() -> TestResult {
-    // Given every evidence class, when rendered, then every line and service column is exact.
     super::report_fixture::assert_fixture_report()
 }
 
 #[test]
 fn denied_list_stays_in_pagination_population_but_not_enumeration() -> TestResult {
-    // Given a denied List, when both reports run, its class and pagination population differ.
     let dir = fixture()?;
     let report = plans::build_report(dir.path(), dir.path())?;
     assert_eq!(report, EXPECTED);
@@ -27,7 +25,6 @@ fn denied_list_stays_in_pagination_population_but_not_enumeration() -> TestResul
 
 #[test]
 fn report_is_deterministic_under_file_creation_order() -> TestResult {
-    // Given identical services created in opposite orders, when rendered, all bytes agree.
     let first = tempfile::tempdir()?;
     let second = tempfile::tempdir()?;
     [first.path(), second.path()]
@@ -54,7 +51,6 @@ fn report_is_deterministic_under_file_creation_order() -> TestResult {
 
 #[test]
 fn vocabulary_is_taken_from_other_services_before_missing_paginators_are_split() -> TestResult {
-    // Given a paginator in zeta only, alpha's token-looking output is held for review.
     let dir = tempfile::tempdir()?;
     super_write(dir.path(), "catalog/overlay/must-deny.txt", "")?;
     write_model(dir.path(), "zeta", &super::paginated())?;
@@ -82,7 +78,6 @@ fn vocabulary_is_taken_from_other_services_before_missing_paginators_are_split()
 
 #[test]
 fn batch_counterparts_are_same_service_exact_then_remove_one_trailing_s() -> TestResult {
-    // Given exact, singular, missing and cross-service candidates, only the first two match.
     let dir = tempfile::tempdir()?;
     super_write(dir.path(), "catalog/overlay/must-deny.txt", "")?;
     write_model(
@@ -111,7 +106,6 @@ fn batch_counterparts_are_same_service_exact_then_remove_one_trailing_s() -> Tes
 
 #[test]
 fn invalid_classifier_inputs_and_unmatched_denials_remain_fail_closed() -> TestResult {
-    // Given missing input or a stale deny rule, plans reuse the classifier's typed failures.
     let dir = tempfile::tempdir()?;
     super_write(
         dir.path(),
@@ -145,7 +139,6 @@ fn invalid_classifier_inputs_and_unmatched_denials_remain_fail_closed() -> TestR
 
 #[test]
 fn existing_classifier_fixture_and_helpers_remain_compatible() -> TestResult {
-    // Given the classifier's fixture, when plans derive candidates, both use the same classes.
     let dir = crate::classes_support::fixture()?;
     assert_eq!(
         classes::build_report(dir.path(), dir.path())?,

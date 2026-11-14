@@ -8,7 +8,7 @@
 
 ## Current Moon CI contract
 
-The canonical CI entrypoint is `moon ci`, configured for the root Cargo workspace as one Moon project. CI runs formatting, source/function size guards, pinned AWS model provenance, generated parent/model/field/endpoint/operation-class/SQL-view checks, all-target/all-feature workspace `cargo check`, source-only Clippy, all-target/all-feature tests, and the workspace build. Cargo tasks share the `cargo-workspace` mutex and form an explicit dependency chain, so generated checks and compilation cannot overlap. The pinned Rust channel remains `nightly-2026-11-11`; Moon toolchain synchronization is disabled.
+The canonical CI entrypoint is `moon ci`, configured for the root Cargo workspace as one Moon project. CI runs formatting, source/function size guards, pinned AWS model provenance, generated parent/model/field/endpoint/operation-class/collection-plan/overlay/binary-catalog/SQL-view checks, all-target/all-feature workspace `cargo check`, source-only Clippy, all-target/all-feature tests, and the workspace build. Cargo tasks share the `cargo-workspace` mutex and form an explicit dependency chain, so generated checks and compilation cannot overlap. The pinned Rust channel remains `nightly-2026-11-11`; Moon toolchain synchronization is disabled.
 
 GitHub Actions checks out the AWS model submodule recursively and installs the native Linux packages required by Makepad before `moon ci`. A `v*` tag runs the same CI gate and uploads the resulting Linux `aws-inventory` and `cmdb-ui` debug binaries as build artifacts; it does not deploy or publish a release.
 
@@ -21,7 +21,25 @@ failed because Moon's Rust installer did not provide the pinned toolchain's
 The Linux prerequisites include `libpulse-dev` and `libdrm-dev`: Makepad links
 PulseAudio and DRM when the workspace UI test target is built.
 
-The current generated checks do not prove a generated collection-plan catalog or binary API-catalog parity: no dedicated checked-in generator/check command for either exists in the current Rust CLI. Collection-plan behavior and catalog access are covered by ordinary workspace tests, but are not universal inventory proof. The ignored live FalkorDB test verifies graph delivery behavior, and the ignored prepared-emulator snapshot tests verify specific collector components against a frozen snapshot. Both opt-in Moon tasks require their explicit service/environment prerequisites and neither is a universal AWS E2E pipeline. Universal resource coverage, real AWS semantics, and universal live-emulator collection remain unfinished; see [CLOUDCONTROL_COVERAGE](CLOUDCONTROL_COVERAGE.md) and [UNIVERSAL_COVERAGE](UNIVERSAL_COVERAGE.md).
+The generated collection-plan and binary API-catalog checks verify deterministic artifacts against the pinned inputs, not live collection parity. The ignored live FalkorDB test verifies graph delivery behavior, and the ignored prepared-emulator snapshot tests verify specific collector components against a frozen snapshot. Both opt-in Moon tasks require their explicit service/environment prerequisites and neither is a universal AWS E2E pipeline. Universal resource coverage, real AWS semantics, and universal live-emulator collection remain unfinished; see [CLOUDCONTROL_COVERAGE](CLOUDCONTROL_COVERAGE.md) and [UNIVERSAL_COVERAGE](UNIVERSAL_COVERAGE.md).
+
+Commit `9841354b2b61ad470c5b8adffaddf4a2baefee35` passed hosted `moon ci`
+in [run 43609151434](https://github.com/lprior-repo/aws-inventory-rust/actions/runs/43609151434).
+The complete CI job finished successfully in 18m3s, including Makepad native linking.
+
+### Universal request transport smoke
+
+The model-driven request encoders, SigV4 signer and pooled HTTPS client were
+exercised against the authenticated local AWS emulator at `https://127.0.0.1:47666`.
+All seven read-only calls returned HTTP 200; changing one signature byte returned
+HTTP 403 for every call. The calls were DynamoDB `ListTables` (AWS JSON 1.0),
+CloudWatch Logs `DescribeLogGroups` (AWS JSON 1.1), IAM `ListUsers` (AWS Query),
+EC2 `DescribeVpcs` (EC2 Query), API Gateway `GetRestApis` (REST JSON),
+S3 `ListBuckets` (REST XML), and CloudWatch `ListMetrics` (RPC v2 CBOR).
+The request guard rejected endpoints outside that explicit emulator address;
+no resources were mutated. The local log is `.oracles/wire-emulator-v39.log`.
+This proves request serialization, authentication and transport, not response
+decoding or the universal SQLite → FalkorDB → Makepad collection pipeline.
 
 Local verification commands:
 

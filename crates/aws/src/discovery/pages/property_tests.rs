@@ -1,6 +1,3 @@
-//! Finite pagination models: observed pages survive denial, malformed rows and
-//! cancellation, while every nonterminal cursor remains bounded.
-
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use aws_config::BehaviorVersion;

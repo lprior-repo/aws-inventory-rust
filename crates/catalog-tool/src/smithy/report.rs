@@ -1,5 +1,3 @@
-//! Pure canonical rendering and lossless line comparison.
-
 use std::fmt::{self, Write};
 
 use super::totals::Totals;

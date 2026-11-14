@@ -1,4 +1,3 @@
-//! Bounded validation borrows caller-owned inline storage; generic validation retains its Vec.
 use super::{Frame, RecordError};
 use crate::record::MAX_DEPTH;
 

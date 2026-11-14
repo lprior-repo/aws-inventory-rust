@@ -1,6 +1,3 @@
-//! CloudFront conventional distribution metadata. Origin header values and
-//! origin paths are excluded; routing and identity references remain explicit.
-
 use std::collections::{BTreeMap, BTreeSet};
 
 use aws_sdk_cloudfront::{

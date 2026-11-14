@@ -1,6 +1,3 @@
-//! Deterministic deletion bursts. `CollectionEvent` has no deletion variant, so these
-//! records live in a separate `deletions.jsonl` consumed by the oracle verifier.
-
 use std::collections::BTreeMap;
 use std::error::Error;
 use std::fs::File;

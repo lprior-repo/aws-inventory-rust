@@ -1,5 +1,3 @@
-//! Write and verify the committed universal catalog.
-
 use std::path::Path;
 
 use crate::HarnessError;
@@ -7,21 +5,17 @@ use crate::catalog::json::Json;
 
 use super::document;
 
-/// Generated universal catalog path.
 pub const UNIVERSAL_CATALOG: &str = "catalog/cloudcontrol-universal.json";
 
-/// Render the document exactly as written to disk, including the final newline.
 pub fn rendered(root: &Path) -> Result<String, HarnessError> {
     let document = document(root)?;
     Ok(format!("{}\n", document.pretty()))
 }
 
-/// Verify the committed catalog is byte-identical to a fresh generation.
 pub fn check(root: &Path) -> Result<(), HarnessError> {
     verify(root, &rendered(root)?)
 }
 
-/// Write the catalog, or verify it, and return the operator receipt.
 pub fn run(root: &Path, check_only: bool) -> Result<Json, HarnessError> {
     let document = document(root)?;
     let contents = format!("{}\n", document.pretty());

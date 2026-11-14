@@ -1,4 +1,3 @@
-//! Opt-in TLS-upstream parity: real S3 SDK signing, transport and error decoding.
 use aws_sdk_s3::config::{Credentials, Region, retry::RetryConfig};
 use inventory_harness::{
     emulator::Emulator,
@@ -15,7 +14,6 @@ const EMULATOR_IDLE_SECONDS: u64 = 300;
 #[ignore = "requires INVENTORY_EMULATOR_BINARY: real emulator TLS upstream and S3 SDK"]
 fn given_tls_emulator_when_s3_uses_proxy_then_forwarding_and_scheduled_throttle_decode()
 -> TestResult {
-    // Given an owned emulator and its own generated trust/credential material.
     let work = tempfile::tempdir()?;
     let emulator = Emulator::start(
         &super::emulator_binary()?,
@@ -26,7 +24,7 @@ fn given_tls_emulator_when_s3_uses_proxy_then_forwarding_and_scheduled_throttle_
         .worker_threads(2)
         .enable_all()
         .build()?;
-    // When the SDK uses the HTTP proxy, then outbound TLS and error decoding work.
+
     runtime.block_on(exercise(&emulator))?;
     emulator.stop()?;
     Ok(())

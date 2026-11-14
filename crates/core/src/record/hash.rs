@@ -1,9 +1,3 @@
-//! Content hash: BLAKE3 over the format version and the record's kept entries.
-//!
-//! Input: one byte `FORMAT_VERSION`, then the record re-encoded with maps and
-//! lists in indefinite-length form, entries in stored order, scalars in the
-//! fixed forms of the encoding table. An entry whose field-ID path is excluded
-//! contributes nothing, so a record lacking it hashes the same.
 use super::{
     Exclusions, FORMAT_VERSION, FieldId, KeyRef, ListRef, MapRef, Record, RecordError, Time,
     ValueRef, container_depth,
@@ -11,16 +5,14 @@ use super::{
 use minicbor::{Encoder, data::Tag, encode::Write};
 use std::convert::Infallible;
 
-/// A 32-byte BLAKE3 content hash.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct ContentHash([u8; 32]);
 
 impl ContentHash {
-    /// Borrow the 32 hash bytes.
     pub fn as_bytes(&self) -> &[u8; 32] {
         &self.0
     }
-    /// Wrap 32 stored hash bytes.
+
     pub fn from_bytes(bytes: [u8; 32]) -> Self {
         Self(bytes)
     }
@@ -39,7 +31,6 @@ impl Write for HashWriter {
 
 type Sink = Encoder<HashWriter>;
 
-/// Exclusion paths that share the field IDs already entered; `level` is how many.
 #[derive(Clone, Copy)]
 struct Scope<'p> {
     paths: &'p [Box<[FieldId]>],
@@ -47,7 +38,6 @@ struct Scope<'p> {
 }
 
 impl Scope<'_> {
-    /// Enter field `id`: `None` when a path ends here, else the narrowed scope.
     fn enter(self, id: FieldId) -> Result<Option<Self>, RecordError> {
         if self.paths.is_empty() {
             return Ok(Some(self));

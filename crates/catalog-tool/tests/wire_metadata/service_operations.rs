@@ -1,7 +1,8 @@
 use super::{TestResult, compile_model, fixture_service};
 use inventory_core::catalog::{HttpOperation, Target};
 
-const FIELDS: &str = "Entries\nId\nNext\nPageSize\nToken\nValue\nNextPage\nResults\nItems\nMessage\n";
+const FIELDS: &str =
+    "Entries\nId\nNext\nPageSize\nToken\nValue\nNextPage\nResults\nItems\nMessage\n";
 
 const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 "example#Service":{"type":"service","version":"2025-04-03","traits":{"aws.api#service":{"sdkId":"Fixture SDK","endpointPrefix":"fixture-prefix","arnNamespace":"fixture-arn"},"aws.auth#sigv4":{"name":"fixture-signing"},"aws.protocols#restJson1":{"noErrorWrapping":true},"aws.protocols#awsQueryCompatible":{},"smithy.api#xmlNamespace":{"uri":"urn:service","prefix":"svc"},"smithy.api#paginated":{"inputToken":"Token","outputToken":"Next","items":"Results.Entries","pageSize":"PageSize"}}},
@@ -116,5 +117,27 @@ fn absent_optional_service_and_operation_metadata_is_empty_or_none() -> TestResu
     assert_eq!(operation.checksum_required()?, false);
     assert_eq!(operation.paginator()?, None);
     assert_eq!(operation.errors()?.count(), 0);
+    Ok(())
+}
+
+#[test]
+fn every_supported_protocol_survives_trait_payload_retention() -> TestResult {
+    for protocol in [
+        "aws.protocols#awsJson1_0",
+        "aws.protocols#awsJson1_1",
+        "aws.protocols#awsQuery",
+        "aws.protocols#ec2Query",
+        "aws.protocols#restJson1",
+        "aws.protocols#restXml",
+        "smithy.protocols#rpcv2Cbor",
+    ] {
+        let model = format!(
+            r#"{{"smithy":"2.0","shapes":{{"example#Service":{{"type":"service","version":"1","traits":{{"{protocol}":{{}}}}}}}}}}"#
+        );
+        let (_source, bytes) = compile_model(&model, FIELDS)?;
+        let service = fixture_service(&bytes)?;
+        let observed = service.protocols()?.collect::<Result<Vec<_>, _>>()?;
+        assert_eq!(observed, vec![protocol], "{protocol}");
+    }
     Ok(())
 }

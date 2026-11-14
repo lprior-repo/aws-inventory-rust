@@ -33,7 +33,6 @@ fn write_stale_report(root: &Path, bytes: usize) -> std::io::Result<()> {
 
 #[test]
 fn nonempty_deny_list_is_not_empty() -> TestResult {
-    // Given one valid rule, when parsed, then emptiness reflects the stored entry.
     let deny = DenyList::parse("GetA\tsecret\n")?;
     assert_eq!(deny.len(), 1);
     assert!(!deny.is_empty());
@@ -42,8 +41,6 @@ fn nonempty_deny_list_is_not_empty() -> TestResult {
 
 #[test]
 fn digit_initial_deny_key_is_rejected() {
-    // Given an otherwise alphanumeric key, when its first byte is a digit,
-    // then parsing returns the exact key error rather than admitting the rule.
     assert_eq!(
         DenyList::parse("1Get\tsecret\n").err(),
         Some(ParseError {
@@ -55,8 +52,6 @@ fn digit_initial_deny_key_is_rejected() {
 
 #[test]
 fn later_invalid_deny_key_byte_is_rejected() {
-    // Given a valid initial letter, when a later byte is a hyphen,
-    // then the initial letter cannot override the invalid identifier byte.
     assert_eq!(
         DenyList::parse("Get-A\tsecret\n").err(),
         Some(ParseError {
@@ -68,8 +63,6 @@ fn later_invalid_deny_key_byte_is_rejected() {
 
 #[test]
 fn classifier_accepts_exactly_4096_model_files() -> TestResult {
-    // Given exactly the inclusive model limit and an empty policy, when built,
-    // then every valid service-only model contributes to the exact empty report.
     let root = model_fixture(4096)?;
     let actual = build_report(root.path(), root.path())?;
     assert_eq!(actual, EMPTY_REPORT);
@@ -78,8 +71,6 @@ fn classifier_accepts_exactly_4096_model_files() -> TestResult {
 
 #[test]
 fn classifier_rejects_4097_model_files() -> TestResult {
-    // Given one model above the limit, when built, then the typed limit wins
-    // instead of returning a successful empty-operation report.
     let root = model_fixture(4097)?;
     let actual = build_report(root.path(), root.path());
     assert!(matches!(actual, Err(Error::Limit)));
@@ -88,8 +79,6 @@ fn classifier_rejects_4097_model_files() -> TestResult {
 
 #[test]
 fn report_text_accepts_exactly_4_mib() -> TestResult {
-    // Given a stale report exactly at the byte limit, when Check reads it,
-    // then comparison is reached: mismatch, not a resource-limit failure.
     let root = model_fixture(1)?;
     write_stale_report(root.path(), 4_194_304)?;
     let actual = run(root.path(), root.path(), ReportMode::Check);
@@ -100,8 +89,6 @@ fn report_text_accepts_exactly_4_mib() -> TestResult {
 
 #[test]
 fn report_text_rejects_one_byte_over_4_mib() -> TestResult {
-    // Given a stale report one byte over the limit, when Check reads it,
-    // then it returns the typed limit rather than comparing truncated text.
     let root = model_fixture(1)?;
     write_stale_report(root.path(), 4_194_305)?;
     let actual = run(root.path(), root.path(), ReportMode::Check);

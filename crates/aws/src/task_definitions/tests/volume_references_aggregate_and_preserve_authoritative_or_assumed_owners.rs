@@ -1,4 +1,3 @@
-//! volume references aggregate and preserve authoritative or assumed owners behavior.
 use super::*;
 
 #[test]

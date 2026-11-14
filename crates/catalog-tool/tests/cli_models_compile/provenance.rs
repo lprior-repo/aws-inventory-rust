@@ -9,7 +9,6 @@ fn rejected(output: &Output, root: &Path, message: &str) {
 
 #[test]
 fn nested_plain_model_directory_cannot_claim_its_parent_repository_commit() -> TestResult {
-    // Given models under a plain directory inside a checkout, compiling rejects the wrong root.
     let parent = source()?;
     let nested = parent.path().join("plain");
     fs::create_dir_all(nested.join("models/example"))?;
@@ -22,7 +21,6 @@ fn nested_plain_model_directory_cannot_claim_its_parent_repository_commit() -> T
 
 #[test]
 fn modified_tracked_model_reports_the_first_uncommitted_path() -> TestResult {
-    // Given modified tracked input, compiling must not label its bytes with unchanged HEAD.
     let source = source()?;
     fs::write(
         source.path().join("models/example/model.json"),
@@ -40,7 +38,6 @@ fn modified_tracked_model_reports_the_first_uncommitted_path() -> TestResult {
 
 #[test]
 fn untracked_model_reports_the_first_uncommitted_path() -> TestResult {
-    // Given a clean committed model plus a new untracked model, compiling rejects the extra input.
     let source = source()?;
     fs::write(source.path().join("models/example/extra.json"), MODEL)?;
     let root = root()?;
@@ -55,7 +52,6 @@ fn untracked_model_reports_the_first_uncommitted_path() -> TestResult {
 
 #[test]
 fn clean_repository_is_accepted_and_its_own_commit_is_embedded() -> TestResult {
-    // Given an independently committed source, the catalog records that repository's real HEAD.
     let source = source()?;
     let root = root()?;
     let head = git::command(source.path(), &["rev-parse", "HEAD"])?;
@@ -79,7 +75,6 @@ fn ignored_source() -> Result<tempfile::TempDir, Box<dyn std::error::Error>> {
 
 #[test]
 fn ignored_untracked_model_is_rejected_even_when_git_status_is_clean() -> TestResult {
-    // Given an ignored extra model invisible to ordinary status, compilation still rejects it.
     let source = ignored_source()?;
     let status = git::command(
         source.path(),

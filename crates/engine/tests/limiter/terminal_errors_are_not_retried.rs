@@ -1,4 +1,3 @@
-//! Behavior: terminal_errors_are_not_retried.
 use super::*;
 
 #[tokio::test(start_paused = true)]

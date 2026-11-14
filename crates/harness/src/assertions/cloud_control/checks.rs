@@ -1,5 +1,3 @@
-//! Per-fixture expectations for the Cloud Control architecture assertions.
-
 use std::collections::BTreeSet;
 
 use serde_json::{Value, json};
@@ -7,7 +5,6 @@ use serde_json::{Value, json};
 use super::expected_id;
 use crate::HarnessError;
 
-/// One authored relationship the collector must have produced.
 struct ExpectedEdge {
     relation: String,
     target: String,
@@ -33,7 +30,6 @@ fn typed_read_check(name: &str, observed: usize) -> Value {
     })
 }
 
-/// Every assertion that one authored fixture implies.
 pub(super) fn fixture_checks(fixture: &Value, rows: &[Value], edges: &[Value]) -> Vec<Value> {
     let name = text(fixture, "name");
     let type_name = text(fixture, "type_name");

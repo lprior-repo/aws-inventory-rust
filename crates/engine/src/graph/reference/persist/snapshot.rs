@@ -1,19 +1,13 @@
-//! Snapshot and restore of the synthetic reference scopes of one scan.
 use super::COLLECTOR;
 use super::write::{clear, edge_count, fingerprint, insert_edge, insert_scope_page};
 use crate::store::{Store, StoreError};
 use inventory_core::{CollectionScope, Edge};
 use sqlx::SqliteConnection;
 
-/// Prior synthetic scopes and edges captured before an export rewrites them.
-///
-/// A failed or cancelled export restores this snapshot, so publication failure
-/// leaves the scan's edge set exactly as it was before the export started.
 pub(crate) struct SyntheticSnapshot {
     scopes: Vec<(String, CollectionScope, Vec<Edge>)>,
 }
 
-/// Capture the universal-reference scopes and edges currently persisted.
 pub(crate) async fn snapshot_synthetic(
     store: &Store,
     scan_id: &str,
@@ -61,7 +55,6 @@ async fn snapshot_scope(
     Ok((key, scope, edges))
 }
 
-/// Reinstate a [`SyntheticSnapshot`], replacing every current synthetic scope.
 pub(crate) async fn restore_synthetic(
     store: &Store,
     scan_id: &str,

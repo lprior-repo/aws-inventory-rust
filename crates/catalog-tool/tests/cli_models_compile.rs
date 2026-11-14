@@ -12,7 +12,7 @@ use std::{
 };
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 const MODEL: &str = r#"{"shapes":{
- "n#Svc":{"type":"service","traits":{"smithy.protocols#rpcv2Cbor":{}}},
+ "n#Svc":{"type":"service","version":"2020-01-01","traits":{"smithy.protocols#rpcv2Cbor":{}}},
  "n#ListItems":{"type":"operation"},
  "n#Item":{"type":"structure","members":{"Name":{"target":"smithy.api#String"}}}
 }}"#;
@@ -51,7 +51,6 @@ fn success(output: &Output, length: usize) {
 }
 #[test]
 fn write_twice_and_check_publish_identical_reader_visible_bytes() -> TestResult {
-    // Given isolated source and root, when writing twice and checking, no bytes or IDs drift.
     let source = source()?;
     let root = root()?;
     let path = root.path().join("catalog/aws-api.catalog");
@@ -71,7 +70,6 @@ fn write_twice_and_check_publish_identical_reader_visible_bytes() -> TestResult 
 }
 #[test]
 fn written_catalog_is_readable_without_changing_the_source_or_registry() -> TestResult {
-    // Given a valid source, when publishing, the consumer sees exact counts and IDs stay fixed.
     let source = source()?;
     let root = root()?;
     let output = compile(source.path(), root.path(), &["--write"])?;
@@ -92,7 +90,6 @@ fn written_catalog_is_readable_without_changing_the_source_or_registry() -> Test
 }
 #[test]
 fn check_rejects_missing_and_drifted_catalog_without_writing() -> TestResult {
-    // Given missing then altered committed bytes, when checking, the command fails read-only.
     let source = source()?;
     let root = root()?;
     let path = root.path().join("catalog/aws-api.catalog");
@@ -109,7 +106,6 @@ fn check_rejects_missing_and_drifted_catalog_without_writing() -> TestResult {
 }
 #[test]
 fn print_only_reports_size_without_creating_catalog() -> TestResult {
-    // Given an existing registry, when no mode is selected, only text is printed.
     let source = source()?;
     let root = root()?;
     let output = compile(source.path(), root.path(), &[])?;
@@ -120,7 +116,6 @@ fn print_only_reports_size_without_creating_catalog() -> TestResult {
 }
 #[test]
 fn stale_registry_preserves_previous_catalog_and_names_missing_member() -> TestResult {
-    // Given a missing member ID, when writing, neither output nor registry is changed.
     let source = source()?;
     let root = root()?;
     let path = root.path().join("catalog/aws-api.catalog");
@@ -137,7 +132,6 @@ fn stale_registry_preserves_previous_catalog_and_names_missing_member() -> TestR
 }
 #[test]
 fn owned_lock_is_never_overwritten() -> TestResult {
-    // Given another publisher's lock, when writing, the lock and original are preserved.
     let source = source()?;
     let root = root()?;
     let lock = root.path().join("catalog/aws-api.catalog.tmp");
@@ -151,7 +145,6 @@ fn owned_lock_is_never_overwritten() -> TestResult {
 }
 #[test]
 fn conflicting_publication_modes_are_rejected() -> TestResult {
-    // Given contradictory flags, when parsing the CLI, no compilation is published.
     let source = source()?;
     let root = root()?;
     let output = compile(source.path(), root.path(), &["--write", "--check"])?;

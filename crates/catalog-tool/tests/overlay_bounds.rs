@@ -6,7 +6,6 @@ use overlay_support::{HEADER, TestResult, error, name, parse, reject};
 
 #[test]
 fn page_and_batch_sizes_accept_extremes_and_reject_one_past() -> TestResult {
-    // Given integer edges, when parsed, then both inclusive limits and typed ranges hold.
     [1, 100_000].into_iter().try_for_each(|n| -> TestResult {
         let o = parse(&format!("[operation.ListThings]\npage_size={n}"))?;
         assert_eq!(
@@ -56,7 +55,6 @@ fn page_and_batch_sizes_accept_extremes_and_reject_one_past() -> TestResult {
 }
 #[test]
 fn paths_enforce_byte_segment_and_initial_character_bounds() -> TestResult {
-    // Given exact and excessive path bounds, when constructed or parsed, then they agree.
     let exact = "A".repeat(256);
     assert_eq!(MemberPath::new(&exact)?.to_string(), exact);
     let over = "A".repeat(257);
@@ -78,7 +76,6 @@ fn paths_enforce_byte_segment_and_initial_character_bounds() -> TestResult {
 }
 #[test]
 fn quota_and_reviewer_byte_limits_are_inclusive() -> TestResult {
-    // Given exact byte bounds, when parsed, then multibyte names are counted in bytes.
     let quota = format!("a{}", "-".repeat(31));
     let o = parse(&format!("[operation.ListThings]\nquota_group='{quota}'"))?;
     assert_eq!(
@@ -100,7 +97,6 @@ fn quota_and_reviewer_byte_limits_are_inclusive() -> TestResult {
 }
 #[test]
 fn file_and_operation_counts_accept_exact_limit_and_reject_one_past() -> TestResult {
-    // Given bounded input, when parsed, then byte limits run before syntax and counts are exact.
     let padding = MAX_FILE_BYTES
         .checked_sub(HEADER.len())
         .ok_or("header exceeds cap")?;

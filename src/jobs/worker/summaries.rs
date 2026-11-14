@@ -80,7 +80,6 @@ impl Outcomes {
     }
 }
 
-/// Cancellation is a terminal decision, distinct from the scan's output status.
 #[derive(Clone, Copy, Debug)]
 pub(super) enum Cancellation {
     Requested,
@@ -195,7 +194,6 @@ pub(super) fn bounded_text(value: Option<&Value>, bytes: usize) -> Option<&str> 
         .filter(|value| value.len() <= bytes)
 }
 
-/// A worker either admits another claim or has stopped for one explicit cause.
 enum Intake {
     Accepting,
     Stopped(StopReason),

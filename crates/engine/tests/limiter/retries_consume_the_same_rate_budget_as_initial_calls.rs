@@ -1,4 +1,3 @@
-//! Behavior: retries_consume_the_same_rate_budget_as_initial_calls.
 use super::*;
 
 #[tokio::test(start_paused = true)]

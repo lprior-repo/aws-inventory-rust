@@ -1,4 +1,3 @@
-//! trust responsibilities for iam.
 use super::*;
 
 pub(super) fn trust_summary(document: Option<&str>) -> Result<Vec<Value>, AwsScanError> {

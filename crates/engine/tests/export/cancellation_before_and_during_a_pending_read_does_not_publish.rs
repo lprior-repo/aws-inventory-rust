@@ -1,4 +1,3 @@
-//! Behavior: cancellation_before_and_during_a_pending_read_does_not_publish.
 use super::*;
 
 #[tokio::test]

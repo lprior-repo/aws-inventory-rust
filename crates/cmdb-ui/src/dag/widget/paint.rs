@@ -1,9 +1,3 @@
-//! One `DrawVector` batch for edges and node boxes, then one `DrawText` pass.
-//!
-//! Everything is converted to window coordinates on the CPU (the camera is a
-//! scale + translation), which keeps text at a fixed readable size and lets
-//! the whole graph share a single vector draw call.
-
 use makepad_widgets::*;
 
 use super::DagView;
@@ -15,7 +9,7 @@ const NODE_FILL: u32 = 0x1b1e27;
 const NODE_FILL_HOVER: u32 = 0x222736;
 const NODE_FILL_SELECTED: u32 = 0x2b3142;
 const FALLBACK_ACCENT: u32 = 0x8f98a8;
-/// Upper bound on text runs per frame; larger graphs rely on hover only.
+
 const MAX_LABELS: usize = 200;
 
 #[derive(Clone, Copy)]

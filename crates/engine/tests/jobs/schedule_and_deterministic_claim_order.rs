@@ -1,4 +1,3 @@
-//! Behavior: schedule_and_deterministic_claim_order.
 use super::*;
 
 #[tokio::test]

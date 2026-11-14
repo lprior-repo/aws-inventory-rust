@@ -1,8 +1,6 @@
-//! Shared real Git fixtures for compiler unit tests and the compile CLI integration suite.
 use std::{fs, path::Path, process::Command};
 type Failure = Box<dyn std::error::Error>;
 
-/// Create and commit a standalone model repository, without consulting global Git configuration.
 pub(super) fn repository(model: &str) -> Result<tempfile::TempDir, Failure> {
     let source = tempfile::tempdir()?;
     fs::create_dir_all(source.path().join("models/example"))?;
@@ -16,7 +14,6 @@ pub(super) fn repository(model: &str) -> Result<tempfile::TempDir, Failure> {
     Ok(source)
 }
 
-/// Run a real hermetic Git command and fail the scenario if fixture setup fails.
 pub(super) fn command(path: &Path, args: &[&str]) -> Result<String, Failure> {
     let output = builder(path).args(args).output()?;
     assert!(

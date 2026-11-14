@@ -1,4 +1,3 @@
-//! Reproducible synthetic stage measurements; never AWS throughput claims.
 use futures_util::{StreamExt, TryStreamExt, stream};
 use inventory_core::{CollectionPage, CollectionScope, Edge, Resource, ScanStatus, Source};
 use inventory_engine::{
@@ -23,8 +22,7 @@ fn main() -> BenchResult<()> {
     if !(1..=100_000).contains(&rows) {
         return Err("rows must be in 1..=100000".into());
     }
-    // Keep durable SQLite measurements off the container's tmpfs /tmp. File
-    // creation and cleanup occur outside the asynchronous executor.
+
     std::fs::create_dir_all("artifacts")?;
     let directory = tempfile::Builder::new()
         .prefix("inventory-benchmark-")

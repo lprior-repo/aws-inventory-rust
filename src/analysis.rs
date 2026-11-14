@@ -1,8 +1,3 @@
-//! Bounded, observation-based analysis of finalized local inventory snapshots.
-//!
-//! The shell owns SQLite reads. Comparison and traversal decisions have no AWS
-//! effects, and absence never becomes evidence of resource deletion.
-
 mod diff;
 mod findings;
 mod graph;
@@ -71,9 +66,6 @@ impl TraversalOptions {
     }
 }
 
-/// Compares selected observations using two bounded readers. Store deliberately
-/// has one connection per reader pool: two live streams from one Store would
-/// wait on each other. Both handles open before either stream starts.
 #[tracing::instrument(skip_all)]
 pub async fn diff(
     db: PathBuf,
@@ -113,8 +105,6 @@ pub async fn neighborhood(
     result.and_then(bounded_output)
 }
 
-/// Finds one deterministic breadth-first path in the requested direction.
-/// A non-result is scoped to the selected snapshot, depth and work budgets.
 #[tracing::instrument(skip_all)]
 pub async fn path(
     db: PathBuf,
@@ -211,7 +201,6 @@ fn bounded_output(value: Value) -> Result<Value> {
     Ok(value)
 }
 
-/// Counts encoded bytes without allocating a second serialized report buffer.
 fn encoded_len(value: &impl Serialize) -> Result<usize> {
     let mut counter = ByteCounter(0);
     serde_json::to_writer(&mut counter, value).context("analysis output byte bound")?;

@@ -1,4 +1,3 @@
-//! Behavior: pre_cancelled_executor_never_invokes_the_operation.
 use super::*;
 
 #[tokio::test(start_paused = true)]

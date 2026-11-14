@@ -1,4 +1,3 @@
-//! error classification operations.
 use super::*;
 
 pub(super) fn classify_sdk_error<E: ProvideErrorMetadata + ProvideErrorKind + Debug>(

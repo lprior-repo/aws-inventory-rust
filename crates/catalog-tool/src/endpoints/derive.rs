@@ -2,54 +2,47 @@ use super::eval::Bindings;
 use super::{Endpoint, Error, Fault, Outcome, RuleSet};
 use serde_json::{Value, json};
 
-/// Scope of a successfully derived commercial endpoint.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ServiceClass {
-    /// One URL and signing region across both probe regions.
     Global,
-    /// Region-sensitive URL or signing region.
+
     Regional,
 }
 
-/// Derived catalog inputs, or the explicit reason no template can be produced.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DerivedEndpoint {
-    /// A resolved endpoint with modeled SigV4 overrides applied.
     Resolved {
-        /// Global when both URL and signing region agree across the two probes.
         class: ServiceClass,
-        /// URL varies by `{region}` only when the two probe URLs differ.
+
         url_template: String,
-        /// Modeled signing name, falling back to the service's SigV4 trait.
+
         signing_name: String,
-        /// Fixed region or `{region}`.
+
         signing_region: String,
     },
-    /// Region-only evaluation requires a request-specific parameter.
-    NeedsOverlay { parameter: String },
-    /// Published cases do not sufficiently confirm the candidate template.
+
+    NeedsOverlay {
+        parameter: String,
+    },
+
     NeedsOverlayRouting {
-        /// Candidate URL retained for overlay review.
         url_template: String,
-        /// Candidate signing name.
+
         signing_name: String,
-        /// Candidate independently derived signing-region template.
+
         signing_region: String,
-        /// Passing endpoint cases reproduced by the candidate.
+
         matches: usize,
-        /// Contradicting passing cases, before deduplication.
+
         exceptions: usize,
     },
-    /// The rule error does not name a missing input, or SigV4 is unavailable.
-    Unsupported { reason: String },
+
+    Unsupported {
+        reason: String,
+    },
 }
 
 impl RuleSet {
-    /// Derive a candidate using two commercial regions, with default options off.
-    /// Use `CaseCounts::derive` to verify it against passing published cases.
-    ///
-    /// # Errors
-    /// Returns interpreter failures; modeled errors become explicit classifications.
     pub fn derive(&self, signing_name: Option<&str>) -> Result<DerivedEndpoint, Error> {
         let Some(name) = signing_name else {
             return Ok(DerivedEndpoint::Unsupported {

@@ -1,5 +1,3 @@
-//! Native kind identity and ARN templates for reviewed types.
-
 #[rustfmt::skip]
 pub const NATIVE: &[(&str, &str)] = &[
     ("AWS::DynamoDB::Table", "aws_dynamodb_table"),

@@ -1,5 +1,3 @@
-//! Artifact-digest bindings recorded in the refreshed coverage evidence.
-
 use std::path::Path;
 
 use serde_json::Value;

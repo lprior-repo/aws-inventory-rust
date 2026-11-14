@@ -10,7 +10,6 @@ use std::path::Path;
 #[test]
 fn the_two_service_report_counts_each_scope_bucket_and_identifies_a_reached_function() -> TestResult
 {
-    // Given independently authored global/regional models and cases, when reported, then text is exact.
     let dir = fixture()?;
     assert_eq!(build_report(dir.path())?, REPORT);
     assert_eq!(build_report(dir.path())?, REPORT);
@@ -19,12 +18,11 @@ fn the_two_service_report_counts_each_scope_bucket_and_identifies_a_reached_func
 
 #[test]
 fn print_does_not_write_and_write_check_use_exact_report_bytes() -> TestResult {
-    // Given the fixture, when printing, then no report file is created.
     let dir = fixture()?;
     let path = dir.path().join("catalog/aws-endpoints.report");
     run(dir.path(), dir.path(), ReportMode::Print)?;
     assert!(!path.exists());
-    // When writing and checking, then complete canonical bytes are persisted unchanged.
+
     run(dir.path(), dir.path(), ReportMode::Write)?;
     assert_eq!(std::fs::read_to_string(&path)?, REPORT);
     run(dir.path(), dir.path(), ReportMode::Check)?;
@@ -36,7 +34,6 @@ fn print_does_not_write_and_write_check_use_exact_report_bytes() -> TestResult {
 
 #[test]
 fn malformed_later_input_never_overwrites_a_preexisting_report() -> TestResult {
-    // Given a later invalid model and a committed report, when writing, then old bytes survive.
     let dir = fixture()?;
     let path = dir.path().join("catalog/aws-endpoints.report");
     std::fs::create_dir_all(dir.path().join("catalog"))?;
@@ -52,7 +49,6 @@ fn malformed_later_input_never_overwrites_a_preexisting_report() -> TestResult {
 
 #[test]
 fn two_commercial_region_probes_distinguish_global_and_regional_signing() -> TestResult {
-    // Given fixed and regional endpoints, when derived, then URL and signing defaults are preserved.
     let global = RuleSet::parse(Path::new("global.json"), &global_rules())?;
     assert_eq!(
         global.derive(Some("global-sign"))?,
@@ -79,7 +75,6 @@ fn two_commercial_region_probes_distinguish_global_and_regional_signing() -> Tes
 #[test]
 fn missing_request_parameters_and_reached_request_functions_name_the_overlay_requirement()
 -> TestResult {
-    // Given a required request input, when deriving without it, then its name is retained.
     let required = rules(
         json!({"Bucket":{"type":"string","required":true}}),
         json!([endpoint(json!("unused"), json!([]))]),
@@ -110,7 +105,6 @@ fn missing_request_parameters_and_reached_request_functions_name_the_overlay_req
 
 #[test]
 fn a_service_without_sigv4_is_explicitly_unsupported() -> TestResult {
-    // Given no SigV4 trait, when deriving, then signing is not invented from its directory name.
     let parsed = RuleSet::parse(Path::new("bearer.json"), &global_rules())?;
     assert_eq!(
         parsed.derive(None)?,

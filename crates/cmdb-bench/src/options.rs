@@ -1,5 +1,3 @@
-//! Workload options plus the bound checks the CLI relies on.
-
 use std::error::Error;
 
 pub const MAX_ACCOUNTS: usize = 1_000_000;

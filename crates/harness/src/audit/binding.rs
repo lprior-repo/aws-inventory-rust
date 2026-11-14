@@ -1,11 +1,8 @@
-//! Bind a coverage run to current catalog, source, binary and fixture digests.
-
 use crate::HarnessError;
 use crate::provenance::canonical_sha256;
 
 use super::Json;
 
-/// Executed digests required from the binding document.
 struct Digests<'a> {
     catalog: &'a str,
     source: &'a str,
@@ -46,7 +43,6 @@ fn aligned(executed: &Json, catalog: &Json, digests: &Digests<'_>) -> bool {
             == Some(digests.fixture)
 }
 
-/// Require the executed digests to describe the current inputs.
 pub(crate) fn validate_binding(
     executed: &Json,
     catalog: &Json,

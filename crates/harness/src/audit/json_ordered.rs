@@ -1,42 +1,31 @@
-//! Order-preserving JSON for evidence that is rewritten in place.
-//!
-//! Python's `json` module retains object key order, while `serde_json` sorts
-//! keys. Rewriting `catalog/cloudcontrol-capabilities.json` through a sorted
-//! map would reorder every object, so the refresh parses into this document
-//! model instead and keeps the original order.
-
 use serde_json::{Map, Number, Value};
 
 use crate::HarnessError;
 
-/// JSON value retaining source object order.
 #[derive(Clone, Debug)]
 pub enum Json {
-    /// `null`.
     Null,
-    /// Boolean literal.
+
     Bool(bool),
-    /// Signed integer literal.
+
     Int(i64),
-    /// Unsigned integer literal beyond `i64`.
+
     UInt(u64),
-    /// Floating-point literal.
+
     Float(f64),
-    /// String literal.
+
     String(String),
-    /// Ordered array.
+
     Array(Vec<Json>),
-    /// Ordered object entries.
+
     Object(Vec<(String, Json)>),
 }
 
 impl Json {
-    /// Parse one complete document.
     pub fn parse(text: &str) -> Result<Self, HarnessError> {
         super::json_parse::parse(text)
     }
 
-    /// Borrow an object member.
     pub fn get(&self, key: &str) -> Option<&Self> {
         match self {
             Self::Object(entries) => entries
@@ -47,7 +36,6 @@ impl Json {
         }
     }
 
-    /// Borrow a nested member.
     pub fn path(&self, keys: &[&str]) -> Option<&Self> {
         let mut current = self;
         for key in keys {
@@ -56,7 +44,6 @@ impl Json {
         Some(current)
     }
 
-    /// Mutably borrow an object member.
     pub fn get_mut(&mut self, key: &str) -> Option<&mut Self> {
         match self {
             Self::Object(entries) => entries
@@ -67,7 +54,6 @@ impl Json {
         }
     }
 
-    /// Borrow the ordered entries of an object.
     pub fn as_object(&self) -> Option<&Vec<(String, Self)>> {
         match self {
             Self::Object(entries) => Some(entries),
@@ -75,7 +61,6 @@ impl Json {
         }
     }
 
-    /// Mutably borrow the ordered entries of an object.
     pub fn as_object_mut(&mut self) -> Option<&mut Vec<(String, Self)>> {
         match self {
             Self::Object(entries) => Some(entries),
@@ -83,7 +68,6 @@ impl Json {
         }
     }
 
-    /// Borrow an array.
     pub fn as_array(&self) -> Option<&Vec<Self>> {
         match self {
             Self::Array(items) => Some(items),
@@ -91,7 +75,6 @@ impl Json {
         }
     }
 
-    /// Mutably borrow an array.
     pub fn as_array_mut(&mut self) -> Option<&mut Vec<Self>> {
         match self {
             Self::Array(items) => Some(items),
@@ -99,7 +82,6 @@ impl Json {
         }
     }
 
-    /// Borrow a string.
     pub fn as_str(&self) -> Option<&str> {
         match self {
             Self::String(text) => Some(text),
@@ -107,7 +89,6 @@ impl Json {
         }
     }
 
-    /// Borrow a boolean.
     pub fn as_bool(&self) -> Option<bool> {
         match self {
             Self::Bool(value) => Some(*value),
@@ -115,7 +96,6 @@ impl Json {
         }
     }
 
-    /// Borrow an integer.
     pub fn as_i64(&self) -> Option<i64> {
         match self {
             Self::Int(value) => Some(*value),
@@ -124,7 +104,6 @@ impl Json {
         }
     }
 
-    /// Update an object member in place or append it, like `dict.update`.
     pub fn insert(&mut self, key: &str, value: Self) {
         if let Self::Object(entries) = self {
             if let Some((_, slot)) = entries.iter_mut().find(|(name, _)| name == key) {
@@ -135,7 +114,6 @@ impl Json {
         }
     }
 
-    /// Python truthiness for containers, numbers and strings.
     pub fn truthy(&self) -> bool {
         match self {
             Self::Null => false,
@@ -149,7 +127,6 @@ impl Json {
         }
     }
 
-    /// Convert into a sorted `serde_json` value for comparisons and printing.
     pub fn to_value(&self) -> Value {
         match self {
             Self::Null => Value::Null,
@@ -171,7 +148,6 @@ impl Json {
         }
     }
 
-    /// Build from a sorted `serde_json` value.
     pub fn from_value(value: &Value) -> Self {
         match value {
             Value::Null => Self::Null,
@@ -205,7 +181,6 @@ impl PartialEq for Json {
     }
 }
 
-/// Python `==` semantics: object order is irrelevant and booleans equal 0/1.
 pub fn py_eq(left: &Json, right: &Json) -> bool {
     match (left, right) {
         (Json::Null, Json::Null) => true,

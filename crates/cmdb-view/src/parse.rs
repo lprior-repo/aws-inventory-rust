@@ -1,5 +1,3 @@
-//! Snapshot parsing and the shared read-model handle.
-
 use crate::build::{self, Finalized};
 use crate::error::ViewError;
 use crate::graph::{self, EdgeView};
@@ -8,11 +6,6 @@ use crate::raw::{RawDocument, RawHeader, RawRecord};
 use crate::resource::ResourceView;
 use std::collections::BTreeMap;
 
-/// A parsed, immutable snapshot plus every index a UI query needs.
-///
-/// Construction validates the artifact identity/version, bounds the record
-/// counts, sorts resources by `(account, region, kind, id)`, sorts edges by
-/// `(from, to, relation)` and builds adjacency and LOD counts once.
 #[derive(Debug)]
 pub struct Snapshot {
     pub(crate) meta: SnapshotMeta,
@@ -26,14 +19,6 @@ pub struct Snapshot {
 }
 
 impl Snapshot {
-    /// Parse `aws-inventory export --format json` bytes.
-    ///
-    /// The document must carry `header.artifact = "aws-inventory.snapshot"` and
-    /// `header.version = 1`; any other artifact or version is rejected.
-    ///
-    /// # Errors
-    /// Rejects input above 1 GiB, malformed wire data, unsupported headers,
-    /// more than 2,000,000 resource or 5,000,000 edge records, or size overflow.
     pub fn parse(bytes: &[u8]) -> Result<Self, ViewError> {
         if bytes.len() > build::MAX_SNAPSHOT_BYTES {
             return Err(ViewError::InputLimit("snapshot bytes"));
@@ -66,7 +51,6 @@ impl Snapshot {
         })
     }
 
-    /// Collection coverage and failures carried by the snapshot.
     pub fn coverage(&self) -> &Coverage {
         &self.coverage
     }

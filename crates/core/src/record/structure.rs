@@ -1,10 +1,3 @@
-//! CBOR framing and strictly ascending supported keys for reader-reachable maps.
-//!
-//! Reachable maps are the definite root and definite maps reached transitively
-//! through map values and list items. Tags and indefinite containers make their
-//! entire contents opaque: only generic framing is checked there, so version 1
-//! can still skip unknown value kinds. Minicbor decodes every header and scalar.
-//! Tags require a complete item; breaks close only their matching indefinite container.
 mod stack;
 use super::{KeyRef, RecordError, readers};
 use minicbor::{Decoder, data::Type};
@@ -61,7 +54,7 @@ fn validate_bounded(d: &mut Decoder<'_>, limit: usize) -> Result<(), RecordError
 
 fn validate_frames<'a>(d: &mut Decoder<'a>, mut frames: Frames<'a, '_>) -> Result<(), RecordError> {
     read_item(d, &mut frames, Reachability::Reachable)?;
-    // Each step consumes a byte, pops a previously pushed frame, or finishes.
+
     let steps = d
         .input()
         .len()
@@ -202,7 +195,7 @@ fn read_item<'a>(
 
 fn read_tags(d: &mut Decoder<'_>) -> Result<bool, RecordError> {
     let mut tagged = false;
-    // Every tag consumes a nonempty header; tags are not container-depth frames.
+
     for _ in 0..d.input().len() {
         match d.datatype()? {
             Type::Tag => {

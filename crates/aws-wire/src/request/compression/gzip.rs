@@ -37,19 +37,23 @@ pub(super) fn encode(body: &[u8], limit: usize) -> Result<Vec<u8>, EncodeError> 
         .operating_system(255)
         .write(sink, Compression::default());
     if let Err(error) = encoder.write_all(body) {
+        drop(encoder);
         return Err(match failure.take() {
             Some(error) => error,
             None => EncodeError::Compression(error),
         });
     }
     if let Err(error) = encoder.try_finish() {
+        drop(encoder);
         return Err(match failure.take() {
             Some(error) => error,
             None => EncodeError::Compression(error),
         });
     }
-    let BoundedSink { body: compressed, failure: _ } =
-        encoder.finish().map_err(EncodeError::Compression)?;
+    let BoundedSink {
+        body: compressed,
+        failure: _,
+    } = encoder.finish().map_err(EncodeError::Compression)?;
     match failure.take() {
         Some(error) => Err(error),
         None => Ok(compressed.into_vec()),

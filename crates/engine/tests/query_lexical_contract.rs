@@ -1,4 +1,3 @@
-//! Public query behavior across SQL literal, comment and statement boundaries.
 use inventory_engine::store::{Store, StoreError};
 use serde_json::{Value, json};
 

@@ -1,4 +1,3 @@
-//! Behavior: query_single_statement_check_understands_quotes_and_comments.
 use super::*;
 
 #[tokio::test]

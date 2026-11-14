@@ -1,5 +1,3 @@
-//! Cloud Control architecture assertion contracts.
-
 use serde_json::Value;
 use sqlx::Connection;
 
@@ -7,7 +5,6 @@ use inventory_harness::assertions::cloud_control;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-/// One check by position, without an indexing panic.
 fn check_at(checks: &[Value], index: usize) -> Result<&Value, Box<dyn std::error::Error>> {
     checks.get(index).ok_or_else(|| "missing check".into())
 }

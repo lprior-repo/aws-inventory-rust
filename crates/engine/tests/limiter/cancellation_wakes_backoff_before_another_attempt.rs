@@ -1,9 +1,7 @@
-//! Behavior: cancellation_wakes_backoff_before_another_attempt.
 use super::*;
 
 #[tokio::test(start_paused = true)]
 pub(super) async fn cancellation_wakes_backoff_before_another_attempt() -> TestResult {
-    // Seed 42 yields a positive first backoff; cancellation arrives before it.
     let executor = ApiExecutor::with_seed(
         ExecutorConfig {
             requests_per_second: 100_000,

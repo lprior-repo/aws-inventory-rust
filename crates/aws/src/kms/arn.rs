@@ -1,6 +1,3 @@
-//! Shared KMS ARN validation. Key and alias ARNs share the partition, region,
-//! account and service segments; only the `key/` or `alias/` resource differs.
-
 use crate::common::Context;
 
 pub(super) const MAX_ARN_BYTES: usize = 1_600;
@@ -47,7 +44,6 @@ pub(super) fn split_kms_arn(arn: &str) -> Result<ArnRef<'_>, String> {
     })
 }
 
-/// Returns the parsed ARN and its validated key id.
 pub(super) fn split_key_arn(arn: &str) -> Result<(ArnRef<'_>, &str), String> {
     let parts = split_kms_arn(arn)?;
     let key_id = parts
@@ -58,7 +54,6 @@ pub(super) fn split_key_arn(arn: &str) -> Result<(ArnRef<'_>, &str), String> {
     Ok((parts, key_id))
 }
 
-/// Returns the parsed ARN and the alias name, which keeps its `alias/` prefix.
 pub(super) fn split_alias_arn(arn: &str) -> Result<(ArnRef<'_>, &str), String> {
     let parts = split_kms_arn(arn)?;
     let name = parts.resource;
@@ -106,8 +101,6 @@ pub(super) fn validate_alias_name(name: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// `ListAliases` may return a bare key id or a key ARN as the target. Both forms
-/// are checked; an ARN target must stay inside the scan scope.
 pub(super) fn validate_target_key_id(value: &str, ctx: &Context) -> Result<(), String> {
     if !value.starts_with("arn:") {
         return validate_key_id(value);

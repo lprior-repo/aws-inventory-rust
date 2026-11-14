@@ -1,4 +1,3 @@
-//! Behavior: graph_checkpoints_are_monotonic_and_require_a_frozen_scan.
 use super::*;
 
 #[tokio::test]

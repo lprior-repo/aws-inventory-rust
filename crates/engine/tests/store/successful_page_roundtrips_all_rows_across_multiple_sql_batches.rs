@@ -1,4 +1,3 @@
-//! Behavior: successful_page_roundtrips_all_rows_across_multiple_sql_batches.
 use super::*;
 
 #[tokio::test]

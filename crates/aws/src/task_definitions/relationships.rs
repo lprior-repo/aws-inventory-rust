@@ -1,4 +1,3 @@
-//! relationships operations.
 use super::*;
 
 pub(super) fn returned_arn_edge(

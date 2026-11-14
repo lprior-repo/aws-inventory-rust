@@ -1,4 +1,3 @@
-//! Behavior: foreign_key_check_failure_rolls_back_source_migration.
 use super::*;
 
 #[tokio::test]

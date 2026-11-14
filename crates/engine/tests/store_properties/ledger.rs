@@ -1,4 +1,3 @@
-//! Independent append-only observation oracle and assertions.
 use super::*;
 
 #[derive(Default)]

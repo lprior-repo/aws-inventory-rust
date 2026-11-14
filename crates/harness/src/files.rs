@@ -1,11 +1,8 @@
-//! Shared bounded document reads; callers retain their own error vocabulary.
-
 use std::io::Read;
 use std::path::Path;
 
 use crate::HarnessError;
 
-/// Failures before a document can be decoded.
 #[derive(Debug)]
 pub(crate) enum ReadError {
     Io(std::io::Error),
@@ -13,7 +10,6 @@ pub(crate) enum ReadError {
     InvalidBudget,
 }
 
-/// Read no more than the byte budget and one sentinel byte, including streams.
 pub(crate) fn read_limited(reader: impl Read, limit: usize) -> Result<Vec<u8>, ReadError> {
     let budget = u64::try_from(limit)
         .ok()
@@ -30,7 +26,6 @@ pub(crate) fn read_limited(reader: impl Read, limit: usize) -> Result<Vec<u8>, R
     Ok(value)
 }
 
-/// Read one audit input, preserving its path-bearing error contract.
 pub(crate) fn read_bytes(path: &Path, limit: usize) -> Result<Vec<u8>, HarnessError> {
     let file = std::fs::File::open(path)
         .map_err(|error| HarnessError::invalid(format!("{}: {error}", path.display())))?;

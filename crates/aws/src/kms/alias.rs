@@ -1,6 +1,3 @@
-//! KMS alias mapping. The alias ARN is the identity; the target key stays a
-//! property and no alias-to-key edge is inferred without a registered relation.
-
 use std::collections::BTreeMap;
 
 use aws_sdk_kms::types::AliasListEntry;

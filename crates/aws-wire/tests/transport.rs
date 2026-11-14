@@ -32,17 +32,16 @@ use transport_support::{Counts, Mode, Server, TestResult, client, config, count,
 
 #[tokio::test]
 async fn sequential_requests_reuse_one_connection_across_clones() -> TestResult {
-    // Given one keep-alive endpoint and a shared client.
     let server = Server::start(Mode::Good, Arc::default()).await?;
     let client = client()?;
     let _clock = transport_support::clock::Clock::pause();
-    // When eight sequential requests alternate cheap clones.
+
     for _ in 0..8 {
         let response = client.clone().send(request(&server.url)?).await?;
         assert_eq!(response.status, StatusCode::OK);
         assert_eq!(response.body.as_ref(), b"ok");
     }
-    // Then accepts and transport counters independently prove reuse.
+
     assert_eq!(count(&server.counts.accepts), 1);
     assert_eq!(client.statistics().connections_opened, 1);
     assert_eq!(client.statistics().requests_sent, 8);
@@ -61,20 +60,19 @@ async fn oversized_chunked_body_is_rejected_during_collection() -> TestResult {
 }
 
 async fn oversized(mode: Mode) -> TestResult {
-    // Given a peer offering 1 MiB but withholding data after its first 4 KiB.
     let server = Server::start(mode, Arc::default()).await?;
     let client = Client::new(aws_wire::transport::Config {
         response_body_limit: 1024,
         ..config()
     })?;
-    // When the limit is crossed, collection must stop rather than await EOF.
+
     let result = client.send(request(&server.url)?).await;
-    // Then the error and actual socket reads are bounded, including headers.
+
     assert!(matches!(
         result,
         Err(TransportError::BodyTooLarge { limit: 1024 })
     ));
-    // No socket-read bound is claimed: read-ahead/packet coalescing is not a DATA limit.
+
     server.stop().await
 }
 
@@ -89,7 +87,6 @@ async fn silence_mid_body_times_out_at_deadline() -> TestResult {
 }
 
 async fn stalled(mode: Mode) -> TestResult {
-    // Given a stalled peer while virtual time is frozen before the request starts.
     let mut server = Server::start(mode, Arc::default()).await?;
     let client = client()?;
     let clock = transport_support::clock::Clock::pause();
@@ -98,9 +95,9 @@ async fn stalled(mode: Mode) -> TestResult {
     if matches!(mode, Mode::MidBody) {
         deadlines::observe_body(&client, &mut send).await?;
     }
-    // When virtual time reaches the whole-request deadline.
+
     let result = clock.expire(send, config().request_deadline).await?;
-    // Then timeout is typed and no backoff/retry extends the bound.
+
     assert!(matches!(result, Err(TransportError::Timeout)));
     assert_eq!(client.statistics().requests_sent, 1);
     server.stop().await
@@ -108,14 +105,13 @@ async fn stalled(mode: Mode) -> TestResult {
 
 #[tokio::test]
 async fn distinct_endpoints_never_exceed_the_global_connection_cap() -> TestResult {
-    // Given four endpoints competing for two global permits.
     let counts = Arc::new(Counts::default());
     let servers = start_servers(&counts).await?;
     let client = Client::new(capped_config(2))?;
-    // Explicit peer close retires server counters before the next capacity wave is accepted.
+
     let mut requests = send_all(&client, &servers)?;
     complete_requests(&mut requests, &client).await?;
-    // Then independently observed accepts never exceeded the cap.
+
     assert!(count(&counts.peak) <= 2);
     assert_eq!(client.statistics().requests_sent, 4);
     stop_servers(servers).await?;

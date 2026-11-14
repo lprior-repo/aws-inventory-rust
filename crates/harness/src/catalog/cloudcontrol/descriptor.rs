@@ -1,5 +1,3 @@
-//! One reviewed root-catalog descriptor row.
-
 use std::collections::BTreeSet;
 
 use serde_json::Value;
@@ -19,7 +17,6 @@ mod fields;
 
 use fields::{Paths, arn_paths, name_pointers, paths};
 
-/// Maximum provider columns per type.
 pub const MAX_COLUMNS: usize = 200;
 
 struct Parts {
@@ -31,7 +28,6 @@ struct Parts {
     rules: Vec<Rule>,
 }
 
-/// Build one descriptor, validating eligibility and the empty list model.
 pub(super) fn descriptor(
     service: &str,
     resource: &str,

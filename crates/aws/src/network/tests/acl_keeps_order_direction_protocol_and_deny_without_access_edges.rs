@@ -1,4 +1,3 @@
-//! acl keeps order direction protocol and deny without access edges behavior.
 use super::*;
 
 #[test]

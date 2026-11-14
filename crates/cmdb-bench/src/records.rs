@@ -1,5 +1,3 @@
-//! Resource and edge construction for the synthetic workload.
-
 use std::collections::BTreeMap;
 use std::error::Error;
 

@@ -1,4 +1,3 @@
-//! Behavior: freshness_view_rebuild_upgrades_version_six.
 use super::*;
 
 #[tokio::test]

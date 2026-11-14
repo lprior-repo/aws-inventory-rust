@@ -1,5 +1,3 @@
-//! Baseline summary validation: assertion completeness, identities and roles.
-
 use std::collections::BTreeSet;
 use std::path::Path;
 
@@ -8,7 +6,6 @@ use serde_json::Value;
 use super::read_json;
 use crate::HarnessError;
 
-/// Assertions that must be present for a baseline to become an oracle.
 const REQUIRED_CHECKS: [&str; 22] = [
     "endpoint:emulator_identity",
     "native:terminal_scan",
@@ -34,7 +31,6 @@ const REQUIRED_CHECKS: [&str; 22] = [
     "parents:no_collection_failures",
 ];
 
-/// Reject any baseline that is not complete, independently asserted and pinned.
 pub fn validate(summary: &Value) -> Result<(), HarnessError> {
     check_assertion_counts(summary)?;
     check_checks(summary)?;
@@ -154,7 +150,6 @@ fn expected_identity() -> (
     )
 }
 
-/// Read the synthetic assume-role identity the baseline seeded.
 pub fn assume_role(evidence: &Path) -> Result<String, HarnessError> {
     let (seed, _) = read_json(&evidence.join("seed-results.json"))?;
     let role = seed

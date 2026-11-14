@@ -1,21 +1,13 @@
-//! Deterministic layered (Sugiyama-style) layout.
-//!
-//! Pipeline: break cycles with a deterministic DFS, assign each node to its
-//! longest-path layer, reduce crossings with fixed barycenter sweeps, then
-//! place nodes on a bounded grid. Every ordering decision falls back to the
-//! node index, so identical graphs always produce identical rectangles.
-
 mod adjacency;
 mod order;
 mod place;
 
 use crate::dag::graph::DagGraph;
 
-/// Ceiling on nodes laid out, independent of the graph cap.
 pub const MAX_LAYOUT_NODES: usize = 2_000;
-/// Ceiling on layers; longer chains collapse into the last layer.
+
 pub const MAX_LAYERS: usize = 64;
-/// Barycenter sweeps per direction.
+
 const ORDER_PASSES: usize = 4;
 
 pub const NODE_W: f32 = 160.0;
@@ -24,7 +16,6 @@ pub const H_GAP: f32 = 72.0;
 pub const V_GAP: f32 = 8.0;
 pub const PADDING: f32 = 20.0;
 
-/// An axis-aligned rectangle in layout space.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct LayoutRect {
     pub x: f32,
@@ -54,7 +45,6 @@ impl LayoutRect {
     }
 }
 
-/// A drawn edge; `back` marks a cycle-breaking back edge.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct LayoutEdge {
     pub from: usize,
@@ -63,7 +53,6 @@ pub struct LayoutEdge {
     pub overlay: bool,
 }
 
-/// The placed graph. Rectangles are indexed by node index.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct DagLayout {
     rects: Vec<Option<LayoutRect>>,
@@ -151,7 +140,6 @@ impl DagLayout {
         self.height
     }
 
-    /// Topmost node containing a layout-space point.
     pub fn hit_test(&self, x: f32, y: f32) -> Option<usize> {
         self.order
             .iter()
@@ -181,7 +169,6 @@ fn collect_edges(graph: &DagGraph, node_count: usize, kept: &[bool]) -> (Vec<Lay
     (edges, dropped)
 }
 
-/// Bounded `usize -> f32` conversion without an `as` cast or overflow.
 fn f32_index(index: usize) -> f32 {
     f32::from(u16::try_from(index).unwrap_or(u16::MAX))
 }

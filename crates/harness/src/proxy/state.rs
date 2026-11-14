@@ -12,53 +12,46 @@ use tokio::time::Instant;
 const TOKEN_UNITS: u128 = 1_000_000_000;
 type PlannedDecision = (u64, Decision);
 
-/// Consumer-visible request and fault totals. All metrics saturate at u64::MAX.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub struct Counters {
-    /// Admitted client sockets (not connections still in the kernel backlog).
     pub accepted: u64,
-    /// Fully consumed requests, including scope-capacity rejections.
+
     pub requests: u64,
-    /// Requests actually written to an upstream connection.
+
     pub forwarded: u64,
-    /// Selected faults, including token-bucket throttles.
+
     pub faults: BTreeMap<Fault, u64>,
-    /// Requests receiving a nonzero fixed delay.
+
     pub delayed: u64,
-    /// Requests rejected by the per-scope bucket.
+
     pub rate_limited: u64,
-    /// Responses fully prepared, including those waiting for configured latency.
+
     pub responses_ready: u64,
-    /// Responses whose complete selected wire bytes have been written.
+
     pub responses_written: u64,
-    /// Sessions whose work ended, including failures and cooperative cancellation.
+
     pub finished: u64,
-    /// Bytes discarded while a selected stall remains open.
+
     pub stalled_bytes: u64,
 }
 
-/// One retained replay record; ordinal is local to this scope.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DecisionEntry {
-    /// Parsed scope.
     pub scope: Scope,
-    /// Zero-based request ordinal.
+
     pub ordinal: u64,
-    /// Plan plus limiter decision.
+
     pub decision: Decision,
 }
 
-/// Atomic bounded snapshot sorted by (scope, ordinal). Eviction is arrival-ordered;
-/// identical replay sets are guaranteed only while `dropped == 0`.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Snapshot {
-    /// Request/connection/fault totals.
     pub counters: Counters,
-    /// At most Config::log_capacity records; signed tuples sort before Unsigned.
+
     pub decisions: Vec<DecisionEntry>,
-    /// Number of discarded oldest records.
+
     pub dropped: u64,
-    /// Registered scope count (never evicted).
+
     pub scopes: usize,
 }
 

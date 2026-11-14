@@ -1,4 +1,3 @@
-//! Behavior: rational_policy_validates_fractional_floor_ceiling_and_payload_bounds.
 use super::*;
 
 #[test]

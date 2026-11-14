@@ -1,4 +1,3 @@
-//! Behavior: source_migration_conflicts_rollback_rebuilt_tables_objects_and_version.
 use super::*;
 
 #[tokio::test]

@@ -1,6 +1,3 @@
-//! Small generated command sequences exercise SQLx state, ownership and restart.
-//! The oracle is an append-only list of caller-visible attempts and outcomes.
-
 use std::collections::BTreeSet;
 use std::future::Future;
 use std::time::Duration;
@@ -20,8 +17,6 @@ fn failure(error: impl std::fmt::Display) -> TestCaseError {
 }
 
 fn runtime() -> Result<Runtime, TestCaseError> {
-    // Queue time is an explicit integer capability. SQLx worker I/O uses real
-    // Tokio scheduling; paused time would race its connection-acquire timers.
     Builder::new_current_thread()
         .enable_all()
         .build()

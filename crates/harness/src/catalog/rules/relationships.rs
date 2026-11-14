@@ -1,6 +1,3 @@
-//! Reviewed relationship seeds: pointer, relation, target kind, ARN template.
-
-/// Pointer, relation, target kind, optional ARN template.
 type RelationshipSeed = (
     &'static str,
     &'static str,

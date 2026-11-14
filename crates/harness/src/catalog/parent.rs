@@ -1,9 +1,3 @@
-//! Reproduction of the reviewed, parent-scoped Cloud Control catalog.
-//!
-//! One dependency level only: each child binds to a reviewed string property of
-//! its documented parent and is listed with that parent context as the sole
-//! required model member.
-
 mod build;
 mod descriptor;
 mod evidence;
@@ -16,10 +10,8 @@ use crate::HarnessError;
 use crate::catalog::archive::Archive;
 use crate::catalog::json::Json;
 
-/// The reviewed parent-dependent type count.
 pub const EXPECTED_TYPES: usize = 24;
 
-/// Build the parent catalog from the committed root catalog and archive.
 pub fn build(root: &Path, archive: &Archive) -> Result<Json, HarnessError> {
     build::verify_archive(root)?;
     let (root_catalog, root_sha) = build::root_catalog(root)?;

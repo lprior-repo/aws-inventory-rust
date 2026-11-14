@@ -1,4 +1,3 @@
-//! Behavior: independent_buckets_reach_but_never_exceed_global_concurrency.
 use super::*;
 
 #[tokio::test(start_paused = true)]

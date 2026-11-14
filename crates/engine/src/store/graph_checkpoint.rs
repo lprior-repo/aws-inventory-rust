@@ -1,11 +1,6 @@
-//! Durable graph projection progress.
 use super::*;
 
 impl Store {
-    /// Load progress for the exact scan/destination/snapshot key.
-    /// `None` means no checkpoint row, including for an otherwise unknown scan.
-    /// # Errors
-    /// Rejects invalid key identities or SQL/row-decoding failures.
     pub async fn graph_checkpoint(
         &self,
         scan_id: &str,
@@ -27,11 +22,6 @@ impl Store {
         row.as_ref().map(graph_checkpoint_from_row).transpose()
     }
 
-    /// Commit monotonic graph progress for an existing finalized scan.
-    /// Replaying equal counts/state is allowed; resource/edge counts and completion
-    /// cannot decrease. Counts must fit SQLite's nonnegative `i64` range.
-    /// # Errors
-    /// Rejects invalid keys/counts, missing/running scans, regressing progress or SQL failures.
     pub async fn save_graph_checkpoint(
         &self,
         checkpoint: &GraphExportCheckpoint,

@@ -38,8 +38,6 @@ fn fixture() -> Result<tempfile::TempDir, Box<dyn std::error::Error>> {
 
 #[test]
 fn absent_unit_empty_optional_and_required_inputs_are_classified() -> TestResult {
-    // Given supported input forms and one required member, when reporting,
-    // then only the required structure produces an expansion.
     let dir = fixture()?;
     assert_eq!(build_report(dir.path(), dir.path())?, EXPECTED);
     Ok(())
@@ -47,8 +45,6 @@ fn absent_unit_empty_optional_and_required_inputs_are_classified() -> TestResult
 
 #[test]
 fn mixed_optional_and_required_members_are_one_expansion() -> TestResult {
-    // Given optional members before and after a required member in lexical order,
-    // when resolving the input, then inspecting only the first or last member cannot suffice.
     let dir = fixture()?;
     let model = MODEL.replacen(
         r#""Parent":{"target":"n#String","traits":{"smithy.api#required":{}}}"#,
@@ -69,7 +65,6 @@ fn mixed_optional_and_required_members_are_one_expansion() -> TestResult {
 
 #[test]
 fn model_without_a_service_directory_is_rejected() -> TestResult {
-    // Given a JSON model directly under models, when reporting, then no scope is fabricated.
     let dir = fixture()?;
     std::fs::write(dir.path().join("models/direct.json"), MODEL)?;
     assert!(matches!(build_report(dir.path(), dir.path()),
@@ -79,7 +74,6 @@ fn model_without_a_service_directory_is_rejected() -> TestResult {
 
 #[test]
 fn missing_deny_file_is_not_treated_as_an_empty_policy() -> TestResult {
-    // Given models but no policy file, when building, then the named I/O failure is returned.
     let dir = fixture()?;
     let path = dir.path().join("catalog/overlay/must-deny.txt");
     std::fs::remove_file(&path)?;

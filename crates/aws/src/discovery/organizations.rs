@@ -1,5 +1,3 @@
-//! Organization account inventory and bounded root/OU membership traversal.
-
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use aws_sdk_organizations::types::{Account, Child, ChildType, OrganizationalUnit, Root};

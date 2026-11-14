@@ -1,9 +1,3 @@
-//! Streaming synthetic fleet generation with a deterministic expected-state oracle.
-//!
-//! Pages (at most `PAGE_SIZE` records) are built and written immediately; a large
-//! account is never materialised as a `Vec<Resource>`. Deletion records go to a
-//! separate `deletions.jsonl` because `CollectionEvent` has no deletion variant.
-
 use std::error::Error;
 use std::fs::{self, File};
 use std::io::{BufWriter, Write};

@@ -1,10 +1,7 @@
-//! Adjacency construction and depth/cap-limited BFS.
-
 use super::{EdgeView, GraphLimits, GraphNode, Subgraph};
 use crate::resource::ResourceView;
 use std::collections::{BTreeMap, BTreeSet};
 
-/// Build the incident-edge index once per snapshot.
 pub(crate) fn build_adjacency(edges: &[EdgeView]) -> BTreeMap<String, Vec<usize>> {
     let mut adjacency: BTreeMap<String, Vec<usize>> = BTreeMap::new();
     for (index, edge) in edges.iter().enumerate() {
@@ -55,7 +52,6 @@ struct Walk<'a> {
     truncated_depth: bool,
 }
 
-/// Depth-limited BFS with a node cap.
 fn walk<'a>(
     root_id: &'a str,
     limits: GraphLimits,
@@ -97,7 +93,6 @@ fn expand_levels<'a>(
     (frontier, truncated, exhausted)
 }
 
-/// Depth-limited BFS plus bounded edge selection.
 pub(crate) fn neighborhood<'a>(
     root_id: &'a str,
     limits: GraphLimits,
@@ -122,7 +117,6 @@ pub(crate) fn neighborhood<'a>(
     }
 }
 
-/// Expand one frontier level; stop as soon as the node cap is reached.
 fn expand<'a>(
     adjacency: &BTreeMap<String, Vec<usize>>,
     edges: &'a [EdgeView],
@@ -183,7 +177,6 @@ fn has_room(included: &BTreeSet<&str>, next: &BTreeSet<&str>, max_nodes: usize) 
         .is_none_or(|len| len < max_nodes)
 }
 
-/// Whether a node at the depth boundary has an incident node outside the set.
 fn boundary_crossed<'a>(
     adjacency: &BTreeMap<String, Vec<usize>>,
     edges: &'a [EdgeView],
@@ -202,7 +195,6 @@ fn boundary_crossed<'a>(
     })
 }
 
-/// Collect up to `max_edges` eligible edges; one extra probe detects truncation.
 fn collect_edges<'a>(
     included: &BTreeSet<&'a str>,
     adjacency: &BTreeMap<String, Vec<usize>>,

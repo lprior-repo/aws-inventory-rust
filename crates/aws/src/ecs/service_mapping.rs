@@ -1,4 +1,3 @@
-//! service mapping responsibilities for ecs.
 use super::*;
 
 pub(super) fn map_service(
@@ -142,8 +141,6 @@ pub(super) fn map_service(
 
 pub(super) const MAX_SERVICE_REFERENCES: usize = 1_024;
 
-/// One relationship can carry several container/port registrations. Retain the
-/// observations while matching the store's (from,to,relation) identity.
 pub(crate) fn merge_reference_edge(
     links: &mut BTreeMap<(String, String, String), Edge>,
     mut edge: Edge,

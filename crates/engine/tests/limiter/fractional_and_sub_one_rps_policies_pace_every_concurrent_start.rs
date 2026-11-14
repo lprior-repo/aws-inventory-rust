@@ -1,4 +1,3 @@
-//! Behavior: fractional_and_sub_one_rps_policies_pace_every_concurrent_start.
 use super::*;
 
 #[tokio::test(start_paused = true)]

@@ -5,7 +5,6 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[test]
 fn directory_entry_budget_counts_ignored_entries_at_bound_and_one_past() -> TestResult {
-    // Given ignored files at the injected bound, when listed, then only excess fails.
     let dir = tempfile::tempdir()?;
     (0..3).try_for_each(|i| std::fs::write(dir.path().join(format!("{i}.txt")), ""))?;
     assert_eq!(collect_paths(dir.path(), 2, 3)?.len(), 0);
@@ -15,7 +14,6 @@ fn directory_entry_budget_counts_ignored_entries_at_bound_and_one_past() -> Test
 }
 #[test]
 fn directory_file_budget_counts_only_toml_at_bound_and_one_past() -> TestResult {
-    // Given ignored entries plus TOML files, when listed, then only TOML consumes file budget.
     let dir = tempfile::tempdir()?;
     std::fs::write(dir.path().join("ignored.txt"), "")?;
     std::fs::write(dir.path().join("b.toml"), "")?;

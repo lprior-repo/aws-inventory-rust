@@ -1,5 +1,3 @@
-//! SQLx streams and typed provenance; never materialize a complete snapshot.
-
 use super::format::ArtifactWriter;
 use super::{
     ExportEdge, ExportError, ExportHeader, ExportRecord, ExportResource, ExportScope,

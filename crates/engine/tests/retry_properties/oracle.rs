@@ -1,4 +1,3 @@
-//! Independent expected outcome of generated retry tapes.
 use super::*;
 
 pub(super) fn retryable_step() -> impl Strategy<Value = Step> {
@@ -19,8 +18,6 @@ pub(super) fn step() -> impl Strategy<Value = Step> {
     ]
 }
 
-/// The specification is a prefix query: the first terminal response wins, or
-/// exactly the caller's attempt budget is consumed. It models no pacing state.
 pub(super) fn oracle(tape: &[Step], budget: usize) -> (usize, Terminal) {
     tape.iter()
         .take(budget)

@@ -1,5 +1,3 @@
-//! Evidence block and row assembly for the parent catalog document.
-
 use crate::catalog::json::Json;
 use crate::catalog::rules::GLOBAL_SENSITIVE;
 use crate::catalog::{ARCHIVE, ARCHIVE_SHA256};

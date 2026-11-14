@@ -1,4 +1,3 @@
-//! Public delivery scenarios for the graph plan's ordered stage protocol.
 use crate::graph::{GraphBatch, GraphError, push_file};
 use futures_util::{StreamExt, TryStreamExt, stream};
 
@@ -17,7 +16,6 @@ fn batch(sequence: usize, stage: &str) -> Result<String, Box<dyn std::error::Err
 }
 
 async fn assert_plan(stages: &[&str], expected: &str) -> TestResult {
-    // Given a real plan file and a URL that cannot initiate network I/O.
     let directory = tempfile::tempdir()?;
     let input = directory.path().join("plan.jsonl");
     let checkpoint = directory.path().join("checkpoint.sqlite");
@@ -27,9 +25,9 @@ async fn assert_plan(stages: &[&str], expected: &str) -> TestResult {
         .map(|(sequence, stage)| batch(sequence, stage))
         .collect::<Result<Vec<_>, _>>()?;
     tokio::fs::write(&input, records.join("\n")).await?;
-    // When delivery validates the entire plan before opening its destination.
+
     let outcome = push_file(input, checkpoint.clone(), "not-a-redis-url").await;
-    // Then validation either returns its exact error or reaches URL parsing.
+
     let observed = match outcome {
         Err(GraphError::Invalid(message)) => message,
         Err(GraphError::Redis(_)) => "validated".into(),

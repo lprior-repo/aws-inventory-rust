@@ -1,4 +1,3 @@
-//! Behavior: explicit_retry_retains_attempt_history_and_has_a_total_cap.
 use super::*;
 
 #[tokio::test]

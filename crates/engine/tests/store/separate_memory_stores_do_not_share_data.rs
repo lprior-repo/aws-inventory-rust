@@ -1,4 +1,3 @@
-//! Behavior: separate_memory_stores_do_not_share_data.
 use super::*;
 
 #[tokio::test]

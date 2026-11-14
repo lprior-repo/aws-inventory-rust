@@ -4,7 +4,6 @@ use serde_json::json;
 
 #[test]
 fn boolean_string_negation_and_set_functions_observe_exact_types() -> TestResult {
-    // Given independent hand-written expressions, when evaluated, then exact predicates match.
     [
         (call("booleanEquals", json!([true, false])), json!(false)),
         (call("booleanEquals", json!([false, false])), json!(true)),
@@ -22,7 +21,6 @@ fn boolean_string_negation_and_set_functions_observe_exact_types() -> TestResult
 
 #[test]
 fn host_labels_check_each_domain_segment_and_hyphen_boundaries() -> TestResult {
-    // Given labels with boundary violations, when checked, then only RFC1123 labels match.
     [
         ("a", false, true),
         ("A-b9", false, true),

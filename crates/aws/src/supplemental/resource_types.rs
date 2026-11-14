@@ -1,4 +1,3 @@
-//! resource types operations.
 use super::*;
 
 pub(super) fn resource_kind(resource_type: &str) -> String {
@@ -71,8 +70,6 @@ pub(super) fn explorer_resource_kind(resource_type: &str, arn: &str) -> String {
         .strip_prefix("elasticloadbalancing:")
         .or_else(|| normalized.strip_prefix("elasticloadbalancingv2:"));
     match elb_type {
-        // Resource Explorer documents that Classic and V2 load balancers can
-        // share this namespace/type. Never promote it without a V2 ARN shape.
         Some(resource_type) => explorer_elbv2_kind(resource_type, arn)
             .map(str::to_owned)
             .unwrap_or_else(|| fallback_kind(&normalized)),
@@ -100,8 +97,7 @@ pub(super) fn explorer_elbv2_kind(resource_type: &str, arn: &str) -> Option<&'st
         ("targetgroup", name) if !name.is_empty() => ("aws_elbv2_target_group", 1),
         _ => return None,
     };
-    // The maximum tail is four components. Exact arity rejects Classic's
-    // loadbalancer/name and truncated, extra-component or empty-component ARNs.
+
     if !(0..remaining).all(|_| path.next().is_some_and(|part| !part.is_empty()))
         || path.next().is_some()
     {

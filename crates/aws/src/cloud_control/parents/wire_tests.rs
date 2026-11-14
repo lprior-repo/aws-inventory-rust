@@ -1,6 +1,3 @@
-//! The production SDK path against a bounded in-process HTTP fixture.
-//! This independently verifies ResourceModel serialization and retry ownership.
-
 use std::time::Duration;
 
 use aws_config::{BehaviorVersion, retry::RetryConfig};

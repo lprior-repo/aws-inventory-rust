@@ -23,7 +23,7 @@ impl Connector {
     pub(super) fn new(cap: usize, counters: Arc<Counters>) -> Self {
         let mut inner = HttpConnector::new_with_resolver(Resolver::new());
         inner.enforce_http(false);
-        // One permit must never open parallel IPv4/IPv6 attempts.
+
         inner.set_happy_eyeballs_timeout(None);
         inner.set_nodelay(true);
         Self {

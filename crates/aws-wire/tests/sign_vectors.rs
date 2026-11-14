@@ -165,17 +165,16 @@ fn sign_vector(case: &str, parsed: &Parsed<'_>) -> TestResult<HeaderMap> {
 }
 
 fn assert_vector(case: &str, root: &Path) -> TestResult {
-    // Given: unchanged AWS request and signed-request fixtures, with a fixed clock.
     let input = fs::read_to_string(root.join(case).join("request.txt"))?;
     let expected = fs::read_to_string(root.join(case).join("header-signed-request.txt"))?;
     let parsed = parse_request(input.trim_end_matches('\n'))?;
-    // When: the public wire signer signs the parsed request without changing its body.
+
     let result = sign_vector(case, &parsed)?;
     let actual = result
         .get("authorization")
         .ok_or("missing authorization")?
         .to_str()?;
-    // Then: the entire Authorization value, not merely a signature suffix, matches AWS.
+
     assert_eq!(actual, expected_authorization(&expected)?, "{case}");
     Ok(())
 }

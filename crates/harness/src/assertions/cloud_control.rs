@@ -1,10 +1,3 @@
-//! Cloud Control architecture assertions against one persisted scan.
-//!
-//! These fixtures describe the relationship set that must be observed after the
-//! Rust SDK list/read/sanitize/map/SQLite path runs. They say nothing about real
-//! provider behaviour: the emulator's generic property store does not implement
-//! these services.
-
 mod checks;
 
 use std::collections::BTreeSet;
@@ -18,13 +11,12 @@ use crate::HarnessError;
 use crate::provenance::sha256_hex;
 use checks::{failure, fixture_checks};
 
-/// Maximum observation rows read for one assertion pass.
 const MAX_ROWS: usize = 20_000;
-/// Maximum accumulated observation bytes.
+
 const MAX_JSON_BYTES: usize = 16 * 1024 * 1024;
-/// Maximum fixture document bytes.
+
 const MAX_FIXTURE_BYTES: u64 = 2 * 1024 * 1024;
-/// Account the fixtures are rewritten to.
+
 const ACCOUNT: &str = "000000000000";
 
 const GOLDEN_NAMES: [&str; 13] = [
@@ -43,7 +35,6 @@ const GOLDEN_NAMES: [&str; 13] = [
     "msk_oauth_ca_certificate_is_a_secrets_manager_reference",
 ];
 
-/// Select the authored golden fixtures and rewrite the scanning account.
 pub fn golden_fixtures(root: &Path) -> Result<(Vec<Value>, String), HarnessError> {
     let (bytes, document) = fixture_document(root)?;
     let rows = document
@@ -126,7 +117,6 @@ fn required_text<'a>(fixture: &'a Value, key: &str, reason: &str) -> Result<&'a 
         .ok_or_else(|| HarnessError::invalid(reason.to_owned()))
 }
 
-/// The identity an independently authored fixture requires.
 pub fn expected_id(fixture: &Value) -> Result<String, HarnessError> {
     if let Some(value) = declared_identity(fixture) {
         return Ok(value);
@@ -159,10 +149,6 @@ fn fixture_metadata_of(seed_report: Option<&Value>) -> Value {
         .unwrap_or(Value::Null)
 }
 
-/// Run every architecture assertion for one scan.
-///
-/// Unbounded or unreadable evidence becomes a failing bounded-evidence check,
-/// exactly as the Python harness reports it; it is never an empty success.
 pub async fn check(
     root: &Path,
     database: &Path,

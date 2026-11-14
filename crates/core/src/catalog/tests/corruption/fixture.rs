@@ -13,6 +13,7 @@ pub(super) fn bytes() -> Result<Vec<u8>, RecordError> {
         (CatalogKey::FieldNameOffsets, field_offsets),
         (CatalogKey::Services, Value::List(services)),
     ])?;
+    Ok(Record::encode(&root)?.into_bytes())
 }
 
 fn encoded_service(name: &str) -> Result<Value, RecordError> {
@@ -76,7 +77,6 @@ fn fixture_shape(
         (CatalogKey::Name, Value::Text(name.into())),
         (CatalogKey::Kind, Value::Int(kind)),
         (CatalogKey::Members, Value::List(vec![])),
-        (CatalogKey::Arn, Value::Null),
     ];
     map(fields.into_iter().chain(extra))
 }

@@ -1,15 +1,7 @@
-//! Projects the filtered fixture graph onto the DAG model.
-//!
-//! The fixture carries flat resource rows plus resource-to-resource edges.
-//! The builder lifts each row through its containment path
-//! (account → region → kind → resource) and dedupes the shared prefixes, so
-//! the result has four visual tiers plus the data-flow edges as overlays.
-
 use crate::data::{Graph as DataGraph, Row};
 
 use super::graph::{DagGraph, NodeKind, truncate_label};
 
-/// Builds a capped, deduplicated DAG from the fixture projection.
 pub fn from_data_graph(source: &DataGraph) -> DagGraph {
     let mut dag = DagGraph::default();
     let mut rows: Vec<&Row> = source.nodes.iter().collect();

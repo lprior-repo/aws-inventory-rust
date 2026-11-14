@@ -1,4 +1,3 @@
-//! Credential-free target and request accounting for offline plans.
 use super::*;
 
 pub(super) struct Targets {
@@ -19,8 +18,6 @@ pub(super) fn targets(options: &PlanArgs) -> Targets {
     let regions: BTreeSet<String> = options.region.iter().cloned().collect();
     let profile_count = profiles.len().max(1);
     let target_count = if options.accounts.organization_role.is_some() {
-        // Discovery can return unknown, suspended or inaccessible accounts;
-        // no claimed target count is invented by this credential-free planner.
         None
     } else {
         Some(profile_count)
@@ -33,9 +30,6 @@ pub(super) fn targets(options: &PlanArgs) -> Targets {
     }
 }
 
-/// Universal mode runs one ListResources cursor per list-capable type and no
-/// parent, child or GetResource stages; reviewed plan detail stays visible in
-/// `coverage`, while request accounting reflects what the drain will do.
 pub(super) fn request_accounting(catalog: &build::CatalogPlan, targets: &Targets) -> Requests {
     let (types, children) = match &catalog.universal {
         Some(universal) => (universal.list_scopes, 0_usize),

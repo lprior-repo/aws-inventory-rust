@@ -1,5 +1,3 @@
-//! Page construction and identity de-duplication for Step Functions listings.
-
 use std::collections::BTreeSet;
 
 use aws_sdk_sfn::operation::{
@@ -9,7 +7,6 @@ use inventory_core::{Edge, Resource};
 
 use crate::common::PageBody;
 
-/// Step Functions list operations accept at most 1000 items per page.
 pub(super) const LIST_MAX_RESULTS: i32 = 1_000;
 
 #[derive(Clone)]
@@ -40,8 +37,6 @@ pub(super) fn activity_page_body(
     assemble(observations, output.next_token(), output.activities().len())
 }
 
-/// `listed_count` counts every listed item, including items whose describe
-/// failed, so cursor accounting cannot hide attempted work.
 fn assemble(observations: Vec<Observation>, token: Option<&str>, listed: usize) -> PageBody {
     let mut body = PageBody {
         next_token: token.map(str::to_owned),

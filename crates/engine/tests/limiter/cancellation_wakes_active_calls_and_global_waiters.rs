@@ -1,4 +1,3 @@
-//! Behavior: cancellation_wakes_active_calls_and_global_waiters.
 use super::*;
 
 #[tokio::test(start_paused = true)]

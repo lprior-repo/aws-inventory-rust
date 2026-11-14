@@ -1,7 +1,4 @@
-use super::{
-    wire_scalar::write_key,
-    wire_value::write_value,
-};
+use super::{wire_scalar::write_key, wire_value::write_value};
 use crate::request::{EncodeError, Protocol, common::BoundedBody};
 use inventory_core::{
     catalog::{Service, Target},
@@ -27,6 +24,13 @@ pub(super) enum Task<'a> {
     Value(ValueTask<'a>),
     Key(&'a str),
     Raw(&'static [u8]),
+}
+pub(super) struct Encoder<'a, 'b> {
+    pub(super) service: Service<'a>,
+    pub(super) protocol: Protocol,
+    pub(super) idempotency_token: Option<&'a str>,
+    pub(super) body: &'b mut BoundedBody,
+    pub(super) pending: &'b mut Vec<Task<'a>>,
 }
 
 pub(super) fn encode(
@@ -57,35 +61,37 @@ fn root_task(input_shape: Target, input: MapRef<'_>) -> Result<Task<'_>, EncodeE
     }))
 }
 
-fn process_tasks(
-    service: Service<'_>,
+fn process_tasks<'a>(
+    service: Service<'a>,
     protocol: Protocol,
-    idempotency_token: Option<&str>,
+    idempotency_token: Option<&'a str>,
     body: &mut BoundedBody,
-    pending: &mut Vec<Task<'_>>,
+    pending: &mut Vec<Task<'a>>,
 ) -> Result<(), EncodeError> {
     while let Some(task) = pending.pop() {
-        process_task(service, protocol, idempotency_token, body, pending, task)?;
+        let mut encoder = Encoder {
+            service,
+            protocol,
+            idempotency_token,
+            body,
+            pending,
+        };
+        process_task(&mut encoder, task)?;
     }
     Ok(())
 }
 
-fn process_task(
-    service: Service<'_>,
-    protocol: Protocol,
-    idempotency_token: Option<&str>,
-    body: &mut BoundedBody,
-    pending: &mut Vec<Task<'_>>,
-    task: Task<'_>,
-) -> Result<(), EncodeError> {
+fn process_task<'a, 'b>(encoder: &mut Encoder<'a, 'b>, task: Task<'a>) -> Result<(), EncodeError> {
     match task {
-        Task::Raw(raw) => body.write(raw),
-        Task::Key(key) => write_key(body, protocol, key),
-        Task::Value(value) => write_value(service, protocol, value, idempotency_token, body, pending),
+        Task::Raw(raw) => encoder.body.write(raw),
+        Task::Key(key) => write_key(encoder.body, encoder.protocol, key),
+        Task::Value(value) => write_value(encoder, value),
     }
 }
 
-pub(super) fn timestamp_format_name(format: inventory_core::catalog::TimestampFormat) -> &'static str {
+pub(super) fn timestamp_format_name(
+    format: inventory_core::catalog::TimestampFormat,
+) -> &'static str {
     match format {
         inventory_core::catalog::TimestampFormat::DateTime => "date-time",
         inventory_core::catalog::TimestampFormat::HttpDate => "http-date",
@@ -93,11 +99,10 @@ pub(super) fn timestamp_format_name(format: inventory_core::catalog::TimestampFo
     }
 }
 
-
-
-
-
-pub(super) fn collect_list<'a>(list: ListRef<'a>, field: Option<FieldId>) -> Result<Vec<ValueRef<'a>>, EncodeError> {
+pub(super) fn collect_list<'a>(
+    list: ListRef<'a>,
+    field: Option<FieldId>,
+) -> Result<Vec<ValueRef<'a>>, EncodeError> {
     let mut values = Vec::new();
     for value in list.iter()? {
         if values.len() >= MAX_ITEMS {
@@ -110,7 +115,10 @@ pub(super) fn collect_list<'a>(list: ListRef<'a>, field: Option<FieldId>) -> Res
     Ok(values)
 }
 
-pub(super) fn collect_map<'a>(map: MapRef<'a>, field: Option<FieldId>) -> Result<Vec<(KeyRef<'a>, ValueRef<'a>)>, EncodeError> {
+pub(super) fn collect_map<'a>(
+    map: MapRef<'a>,
+    field: Option<FieldId>,
+) -> Result<Vec<(KeyRef<'a>, ValueRef<'a>)>, EncodeError> {
     let mut values = Vec::new();
     for entry in map.iter()? {
         if values.len() >= MAX_ITEMS {

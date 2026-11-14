@@ -1,4 +1,3 @@
-//! Behavior: malformed_envelopes_fail_before_connecting_or_creating_acknowledgements.
 use super::*;
 
 #[tokio::test]
@@ -19,8 +18,6 @@ pub(super) async fn malformed_envelopes_fail_before_connecting_or_creating_ackno
     assert!(matches!(valid, Err(GraphError::Redis(_))));
     assert!(!valid_ack.exists());
 
-    // Whitespace preserves the generated Cypher while reaching the advertised
-    // 2 MiB query limit exactly. Validation must accept this inclusive boundary.
     let mut padded = batches.clone();
     let query = &mut stage_mut(&mut padded, "resources")?.query;
     query.push_str(&" ".repeat(QUERY_LIMIT.saturating_sub(query.len())));

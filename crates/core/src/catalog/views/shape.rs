@@ -1,17 +1,14 @@
-//! Shape and member views; targets are indexes or negative prelude kind codes.
 mod error;
 use super::super::{CatalogError, CatalogKey, SHAPE_KINDS, integer, number, text};
 use super::{optional_list, wire::WireTraits};
 use crate::record::{FieldId, MapRef, ValueRef};
 pub use error::{ErrorKind, ModeledError};
 
-/// A local zero-based index or a scalar/prelude kind name.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Target {
-    /// Index into the same service's shape list.
     Shape(usize),
-    /// Smithy prelude kind, including Unit.
+
     Prelude(&'static str),
 }
 pub(super) fn target(raw: i64, count: usize) -> Result<Target, CatalogError> {
@@ -34,7 +31,6 @@ pub(super) fn target(raw: i64, count: usize) -> Result<Target, CatalogError> {
     }
 }
 
-/// One borrowed Smithy shape.
 #[derive(Clone, Copy, Debug)]
 pub struct Shape<'a> {
     map: MapRef<'a>,
@@ -59,15 +55,11 @@ impl<'a> Shape<'a> {
         shape.kind()?;
         Ok(shape)
     }
-    /// Unqualified shape name.
-    /// # Errors
-    /// Reports malformed names.
+
     pub fn name(self) -> Result<&'a str, CatalogError> {
         text(self.map, CatalogKey::Name)
     }
-    /// Smithy kind name from the fixed code vocabulary.
-    /// # Errors
-    /// Rejects unknown kind codes.
+
     pub fn kind(self) -> Result<&'static str, CatalogError> {
         let code = usize::try_from(integer(self.map, CatalogKey::Kind)?)
             .map_err(|_| CatalogError::Reference)?;
@@ -91,9 +83,7 @@ impl<'a> Shape<'a> {
     pub fn map_value_wire(self) -> Result<WireTraits<'a>, CatalogError> {
         WireTraits::nested(self.map, CatalogKey::MapValueWire)
     }
-    /// Structure/union members, strictly ascending by registry field ID.
-    /// # Errors
-    /// Reports invalid member triples or order.
+
     pub fn members(
         self,
     ) -> Result<impl Iterator<Item = Result<Member<'a>, CatalogError>> + 'a, CatalogError> {
@@ -114,27 +104,19 @@ impl<'a> Shape<'a> {
             )
         }))
     }
-    /// List element target, present only on lists.
-    /// # Errors
-    /// Reports invalid target fields.
+
     pub fn element(self) -> Result<Option<Target>, CatalogError> {
         self.reference(CatalogKey::Element)
     }
-    /// Map key target, present only on maps.
-    /// # Errors
-    /// Reports invalid target fields.
+
     pub fn map_key(self) -> Result<Option<Target>, CatalogError> {
         self.reference(CatalogKey::MapKey)
     }
-    /// Map value target, present only on maps.
-    /// # Errors
-    /// Reports invalid target fields.
+
     pub fn map_value(self) -> Result<Option<Target>, CatalogError> {
         self.reference(CatalogKey::MapValue)
     }
-    /// ARN template text, when modeled.
-    /// # Errors
-    /// Reports mistyped templates.
+
     pub fn arn(self) -> Result<Option<&'a str>, CatalogError> {
         match self.map.get_field(CatalogKey::Arn.field()?)? {
             None => Ok(None),
@@ -154,6 +136,7 @@ impl<'a> Shape<'a> {
         let kind = self.kind()?;
         self.arn()?;
         self.error()?;
+        self.wire()?.validate()?;
         self.validate_members(kind)?;
         let element = self.element()?;
         let key = self.map_key()?;
@@ -182,7 +165,6 @@ impl<'a> Shape<'a> {
     }
 }
 
-/// A stable member identity, bounded target, and modeled requiredness.
 #[derive(Clone, Copy, Debug)]
 pub struct Member<'a> {
     pub id: FieldId,
@@ -198,6 +180,12 @@ impl<'a> Member<'a> {
     }
     pub fn wire(self) -> Result<WireTraits<'a>, CatalogError> {
         Ok(WireTraits::member(self.map))
+    }
+    pub fn default_value(self) -> Result<Option<ValueRef<'a>>, CatalogError> {
+        self.wire()?.default_value()
+    }
+    pub fn client_optional(self) -> Result<bool, CatalogError> {
+        self.wire()?.client_optional()
     }
 }
 fn read_member<'a>(

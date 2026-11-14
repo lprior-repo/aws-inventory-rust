@@ -1,4 +1,3 @@
-//! successful empty parent discovery marks children complete without child calls behavior.
 use super::*;
 
 #[tokio::test]

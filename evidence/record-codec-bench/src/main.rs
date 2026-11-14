@@ -1,7 +1,7 @@
-//! Throwaway benchmark: which binary record codec is fastest for one resource.
-//!
-//! Every codec encodes the same tree, then the same five text fields are read
-//! back from an unaligned byte slice, as SQLite would deliver it.
+ 
+ 
+ 
+ 
 
 use std::hint::black_box;
 use std::time::Instant;
@@ -10,7 +10,7 @@ use inventory_core::record::{FieldId, Float, Record, Time, Value, ValueRef};
 
 mod sample;
 
-/// The neutral tree every codec's native tree is built from.
+ 
 #[derive(Clone)]
 pub enum S {
     Null,
@@ -31,7 +31,7 @@ fn id(index: usize) -> u32 {
     u32::try_from(index + 1).unwrap()
 }
 
-// ---------- our format ----------
+ 
 
 fn to_custom(s: &S) -> Value {
     match s {
@@ -75,9 +75,9 @@ fn custom_read(bytes: &[u8], paths: &[Path]) -> usize {
 
 include!("codecs.rs");
 
-// ---------- harness ----------
+ 
 
-/// Median nanoseconds per call over 21 samples of about 10 ms each.
+ 
 fn time<T>(mut f: impl FnMut() -> T) -> f64 {
     let mut iterations = 1u64;
     loop {

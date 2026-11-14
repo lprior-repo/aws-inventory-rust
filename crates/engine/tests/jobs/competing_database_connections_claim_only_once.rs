@@ -1,4 +1,3 @@
-//! Behavior: competing_database_connections_claim_only_once.
 use super::*;
 
 #[tokio::test]

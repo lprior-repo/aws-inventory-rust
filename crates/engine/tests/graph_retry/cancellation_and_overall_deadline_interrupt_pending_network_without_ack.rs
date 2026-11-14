@@ -1,4 +1,3 @@
-//! Behavior: cancellation_and_overall_deadline_interrupt_pending_network_without_ack.
 use super::*;
 
 #[tokio::test]

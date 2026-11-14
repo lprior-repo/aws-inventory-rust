@@ -1,70 +1,152 @@
-use quick_xml::{events::Event, name::{QName, ResolveResult}, reader::NsReader};
+use inventory_core::catalog::{Operation, Service};
+use quick_xml::{XmlVersion, events::Event, name::ResolveResult, reader::NsReader};
+#[path = "../../../../tests/xml_infoset/compare.rs"]
+mod compare;
+const MAX_XML_BYTES: usize = 16 * 1024 * 1024;
+const MAX_XML_EVENTS: usize = 65_536;
+const MAX_XML_DEPTH: usize = 256;
 
-#[derive(Debug, Eq, PartialEq)]
-enum Item { Start(String, Vec<(String, String)>), End(String), Text(String) }
-
-pub(super) fn equal(left: &[u8], right: &[u8]) -> bool {
-    let (Ok(left), Ok(right)) = (std::str::from_utf8(left), std::str::from_utf8(right)) else { return false };
-    match (parse(left), parse(right)) { (Ok(left), Ok(right)) => left == right, _ => false }
+#[derive(Debug, Default, Eq, Ord, PartialEq, PartialOrd)]
+struct Node {
+    name: String,
+    attributes: Vec<(String, String)>,
+    text: String,
+    children: Vec<Node>,
 }
 
-fn parse(source: &str) -> Result<Vec<Item>, Box<dyn std::error::Error>> {
+pub(super) fn equal(
+    left: &[u8],
+    right: &[u8],
+    service: Service<'_>,
+    operation: Operation<'_>,
+) -> bool {
+    let (Ok(left), Ok(right)) = (std::str::from_utf8(left), std::str::from_utf8(right)) else {
+        return false;
+    };
+    let (Ok(left), Ok(right)) = (parse(left), parse(right)) else {
+        return false;
+    };
+    let Some((target, name)) = compare::root_target(service, operation) else {
+        return false;
+    };
+    compare::equal_roots(&left, &right, service, target, name.as_deref())
+}
+
+fn parse(source: &str) -> Result<Node, Box<dyn std::error::Error>> {
+    if source.len() > MAX_XML_BYTES {
+        return Err("XML byte limit exceeded".into());
+    }
+    let mut event_count = 0usize;
     let mut reader = NsReader::from_str(source);
-    let mut result = Vec::new();
-    let mut text = String::new();
+    let mut stack = vec![Node::default()];
     loop {
+        event_count = event_count
+            .checked_add(1)
+            .ok_or("XML event limit exceeded")?;
+        if event_count > MAX_XML_EVENTS {
+            return Err("XML event limit exceeded".into());
+        }
         let (namespace, event) = reader.read_resolved_event()?;
         match event {
             Event::Start(element) => {
-                flush_text(&mut text, &mut result);
-                result.push(Item::Start(expanded(namespace, element.name().as_ref()), attributes(&reader, &element)?));
+                if stack.len() >= MAX_XML_DEPTH {
+                    return Err("XML depth limit exceeded".into());
+                }
+                let name = expanded(namespace, element.name().as_ref())?;
+                stack.push(Node {
+                    name,
+                    attributes: attributes(&reader, &element)?,
+                    ..Node::default()
+                });
             }
             Event::Empty(element) => {
-                flush_text(&mut text, &mut result);
-                let name = expanded(namespace, element.name().as_ref());
-                result.push(Item::Start(name.clone(), attributes(&reader, &element)?));
-                result.push(Item::End(name));
+                let name = expanded(namespace, element.name().as_ref())?;
+                let child = Node {
+                    name,
+                    attributes: attributes(&reader, &element)?,
+                    ..Node::default()
+                };
+                attach(&mut stack, child)?;
             }
-            Event::End(element) => {
-                flush_text(&mut text, &mut result);
-                result.push(Item::End(expanded(namespace, element.name().as_ref())));
+            Event::End(_) => {
+                let child = stack.pop().ok_or("unbalanced XML")?;
+                attach(&mut stack, child)?;
             }
-            Event::Text(value) => text.push_str(&quick_xml::escape::unescape(value.as_ref())?),
-            Event::CData(value) => text.push_str(std::str::from_utf8(value.as_ref())?),
+            Event::Text(value) => {
+                append(&mut stack, &quick_xml::escape::unescape(value.as_ref())?)?;
+            }
+            Event::CData(value) => append(&mut stack, value.as_ref())?,
             Event::GeneralRef(reference) => {
-                if let Some(character) = reference.resolve_char_ref()? { text.push(character); }
-                else { text.push_str(named_entity(reference.as_ref())?); }
+                if let Some(character) = reference.resolve_char_ref()? {
+                    append(&mut stack, character.encode_utf8(&mut [0; 4]))?;
+                } else {
+                    append(
+                        &mut stack,
+                        quick_xml::escape::resolve_xml_entity(reference.as_ref())
+                            .ok_or("unknown XML entity")?,
+                    )?;
+                }
             }
             Event::Eof => break,
             Event::Decl(_) | Event::PI(_) | Event::Comment(_) | Event::DocType(_) => {}
         }
     }
-    flush_text(&mut text, &mut result);
-    Ok(result)
+    let root = stack.pop().ok_or("unbalanced XML")?;
+    if stack.is_empty() {
+        Ok(root)
+    } else {
+        Err("unclosed XML element".into())
+    }
 }
 
-fn attributes(reader: &NsReader<&[u8]>, element: &quick_xml::events::BytesStart<'_>) -> Result<Vec<(String, String)>, Box<dyn std::error::Error>> {
+fn attach(stack: &mut [Node], child: Node) -> Result<(), Box<dyn std::error::Error>> {
+    stack
+        .last_mut()
+        .ok_or("unbalanced XML")?
+        .children
+        .push(child);
+    Ok(())
+}
+
+fn append(stack: &mut [Node], text: &str) -> Result<(), Box<dyn std::error::Error>> {
+    stack
+        .last_mut()
+        .ok_or("unbalanced XML")?
+        .text
+        .push_str(text);
+    Ok(())
+}
+
+fn attributes(
+    reader: &NsReader<&[u8]>,
+    element: &quick_xml::events::BytesStart<'_>,
+) -> Result<Vec<(String, String)>, Box<dyn std::error::Error>> {
     let mut attributes = Vec::new();
     for attribute in element.attributes() {
         let attribute = attribute?;
-        if attribute.key.as_ref() == b"xmlns" || attribute.key.as_ref().starts_with(b"xmlns:") { continue; }
-        let (namespace, local) = reader.resolver().resolve_attribute(QName(attribute.key.as_ref()));
-        attributes.push((expanded(namespace, local.as_ref()), attribute.unescape_value()?.into_owned()));
+        let key = attribute.key.as_ref();
+        if key == "xmlns" || key.starts_with("xmlns:") {
+            continue;
+        }
+        let (namespace, local) = reader.resolver().resolve_attribute(attribute.key);
+        attributes.push((
+            expanded(namespace, local.as_ref())?,
+            attribute
+                .normalized_value(XmlVersion::Implicit1_0)?
+                .into_owned(),
+        ));
     }
     attributes.sort();
     Ok(attributes)
 }
 
-fn expanded(namespace: ResolveResult<'_>, local: &[u8]) -> String {
-    let local = String::from_utf8_lossy(local);
+fn expanded(namespace: ResolveResult<'_>, local: &str) -> Result<String, &'static str> {
     match namespace {
-        ResolveResult::Bound(uri) => format!("{{{}}}{local}", uri.as_ref()),
-        ResolveResult::Unbound => local.into_owned(),
-        _ => panic!("unresolved XML namespace"),
+        ResolveResult::Bound(uri) => Ok(format!("{{{}}}{local}", uri.as_ref())),
+        ResolveResult::Unbound => Ok(local.to_owned()),
+        _ => Err("unresolved XML namespace"),
     }
 }
-
-fn flush_text(text: &mut String, result: &mut Vec<Item>) {
-    if !text.trim().is_empty() { result.push(Item::Text(std::mem::take(text))); }
-    else { text.clear(); }
-}
+#[cfg(test)]
+#[path = "../../../../tests/xml_infoset/tests.rs"]
+mod behavior_tests;

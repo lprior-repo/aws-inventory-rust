@@ -1,4 +1,3 @@
-//! account role construction round trips without changing the identity properties.
 use super::*;
 
 proptest! {

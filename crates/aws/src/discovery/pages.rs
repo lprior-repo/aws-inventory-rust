@@ -1,6 +1,3 @@
-//! Report-oriented pagination. The cursor, item budget and retained results
-//! have one owner; failed/cancelled traversals return their preceding results.
-
 use std::collections::BTreeSet;
 use std::future::Future;
 
@@ -169,9 +166,6 @@ impl<T: Identified> Cursor<T> {
     }
 }
 
-/// SDK calls are supplied by a typed closure. The single cursor owns all
-/// retained results; at most one response is mapped at a time. An empty page
-/// with a token continues, including the AWS Organizations empty-page case.
 #[tracing::instrument(skip_all, fields(operation, parent))]
 pub(super) async fn collect<T, F, Fut>(
     client: &DiscoveryClient<'_>,

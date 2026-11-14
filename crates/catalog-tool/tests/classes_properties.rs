@@ -12,7 +12,7 @@ proptest! {
         name in prop_oneof![".{0,80}", "List[A-Za-z0-9_]{0,32}", "Describe[A-Za-z0-9_]{0,32}"],
         required in any::<bool>(), readonly in any::<bool>(),
     ) {
-        // Given arbitrary names/flags, when classified, then allowance implies an allow prefix.
+
         let deny = DenyList::parse("").map_err(|e| TestCaseError::fail(e.to_string()))?;
         let facts = OperationFacts { service: "svc", name: &name,
             has_required_input: required, readonly };
@@ -30,7 +30,7 @@ proptest! {
             "Describe[A-Za-z0-9_]{0,32}"], required in any::<bool>(),
         readonly in any::<bool>(), scoped in any::<bool>(),
     ) {
-        // Given an arbitrary denied name, when classified, then neither allow class is possible.
+
         let key = if scoped { format!("svc/{name}") } else { name.clone() };
         let text = format!("{key}\tcontent\n");
         let deny = DenyList::parse(&text).map_err(|e| TestCaseError::fail(e.to_string()))?;

@@ -1,8 +1,5 @@
-//! Transactional schema initialization and managed-view migration.
 use super::*;
 
-/// The current SQLite schema version. Incremented by every migration that
-/// changes the durable schema.
 pub const SCHEMA_VERSION: i64 = 13;
 
 pub(super) async fn initialize_schema(pool: &SqlitePool) -> Result<(), StoreError> {
@@ -15,9 +12,7 @@ pub(super) async fn initialize_schema(pool: &SqlitePool) -> Result<(), StoreErro
         ));
     }
     verify_sqlite_limits(pool).await?;
-    // This pool is private to Store::open until migration succeeds. On any
-    // failure it is closed, so a connection with temporarily disabled foreign
-    // keys cannot escape. Keep it alive on success for shared in-memory stores.
+
     let mut connection = pool.acquire().await?;
     sqlx::query("PRAGMA foreign_keys=OFF")
         .execute(&mut *connection)
@@ -105,8 +100,6 @@ async fn apply(
     Ok(())
 }
 
-/// Add reviewed source views without rebuilding observations or replacing user
-/// schema objects. A name conflict rolls back the entire migration.
 #[tracing::instrument(skip_all)]
 pub(super) async fn migrate_cloud_control_views(
     tx: &mut Transaction<'_, Sqlite>,
@@ -132,8 +125,6 @@ pub(super) async fn migrate_cloud_control_views(
     Ok(())
 }
 
-/// SQLite's generalized table-rebuild migration, preserving user views,
-/// indexes, and triggers. No sqlite_schema edits or legacy ALTER semantics.
 pub(super) async fn migrate_sources(tx: &mut Transaction<'_, Sqlite>) -> Result<(), StoreError> {
     verify_managed_columns(tx).await?;
     let sizes = sqlx::query(
@@ -159,16 +150,14 @@ pub(super) async fn migrate_sources(tx: &mut Transaction<'_, Sqlite>) -> Result<
     )
     .fetch_all(&mut **tx)
     .await?;
-    // Dropping a view also drops its INSTEAD OF triggers, so remove triggers
-    // first. Restoration uses the opposite order from the schema query above.
+
     for (kind, keyword) in [("trigger", "TRIGGER"), ("view", "VIEW")] {
         for object in &objects {
             if object.try_get::<&str, _>("type")? != kind {
                 continue;
             }
             let name: &str = object.try_get("name")?;
-            // DDL identifiers cannot be bound. Only the fixed keywords above
-            // and a double-quote-escaped schema identifier enter this SQL.
+
             let quoted = name.replace('"', "\"\"");
             let drop_sql = format!("DROP {keyword} \"{quoted}\"");
             sqlx::query(sqlx::AssertSqlSafe(drop_sql.as_str()))
@@ -183,18 +172,15 @@ pub(super) async fn migrate_sources(tx: &mut Transaction<'_, Sqlite>) -> Result<
         let kind: &str = object.try_get("type")?;
         let name: &str = object.try_get("name")?;
         if kind == "view" && name == "aws_ecs_service" {
-            continue; // Migration 3 installs the expanded managed view.
+            continue;
         }
         let definition: &str = object.try_get("sql")?;
-        // Replay only already-persisted, bounded CREATE definitions selected
-        // from SQLite's schema. No CLI expression or bound value becomes DDL.
+
         sqlx::raw_sql(sqlx::AssertSqlSafe(definition))
             .execute(&mut **tx)
             .await?;
     }
-    // SQLite checks the supplied SQL buffer against MAX_SQL_LENGTH, even when
-    // it contains many small statements. This generator permits semicolons
-    // only as statement terminators (names and JSON paths are restricted).
+
     let views: Vec<&'static str> = include_str!("../../sql/003_cloudcontrol_views.sql")
         .split_terminator(';')
         .map(str::trim)
@@ -221,9 +207,6 @@ pub(super) async fn migrate_sources(tx: &mut Transaction<'_, Sqlite>) -> Result<
 pub(super) async fn verify_managed_columns(
     tx: &mut Transaction<'_, Sqlite>,
 ) -> Result<(), StoreError> {
-    // These tables are application-owned. Rebuilding a table with an unknown
-    // extra column would silently discard its values, even if no view/index
-    // refers to it. Reject extensions before any schema object is dropped.
     let expected: [(&str, &[&str]); 3] = [
         (
             "scope_checkpoints",

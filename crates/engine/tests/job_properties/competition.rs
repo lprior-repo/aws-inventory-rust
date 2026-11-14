@@ -1,4 +1,3 @@
-//! Concurrent claim ownership property scenarios.
 use super::*;
 
 pub(super) async fn competing_claims(

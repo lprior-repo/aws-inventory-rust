@@ -1,4 +1,3 @@
-//! Behavior: finalized_partial_and_cancelled_require_opt_in_and_keep_their_status.
 use super::*;
 
 #[tokio::test]

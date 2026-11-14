@@ -1,5 +1,3 @@
-//! Evidence block and document assembly for the capability matrix.
-
 use crate::catalog::json::Json;
 
 use super::archive_name;
@@ -56,7 +54,6 @@ fn policy_fields() -> Vec<(String, Json)> {
     ]
 }
 
-/// The default per-type emulator evidence block.
 pub fn not_run() -> Json {
     Json::object(vec![
         ("status", Json::string("not_run")),
@@ -69,12 +66,6 @@ pub fn not_run() -> Json {
     ])
 }
 
-/// Remove the documented emulator-evidence merge from a committed matrix.
-///
-/// `scripts/catalog/refresh_cloudcontrol_coverage.py` converts this generated
-/// matrix into the committed one by replacing `emulator_verification` per row
-/// and adding the executed-run evidence. Reversing exactly that transform lets
-/// `check` prove the generated content, not the execution evidence.
 pub fn without_executed_evidence(matrix: &mut Json) {
     if let Some(evidence) = matrix.get_mut("evidence") {
         evidence.remove("emulator");

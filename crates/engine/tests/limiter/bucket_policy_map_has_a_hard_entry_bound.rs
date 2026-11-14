@@ -1,4 +1,3 @@
-//! Behavior: bucket_policy_map_has_a_hard_entry_bound.
 use super::*;
 
 #[test]

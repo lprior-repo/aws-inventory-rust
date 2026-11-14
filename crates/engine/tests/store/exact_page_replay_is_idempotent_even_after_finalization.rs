@@ -1,4 +1,3 @@
-//! Behavior: exact_page_replay_is_idempotent_even_after_finalization.
 use super::*;
 
 #[tokio::test]

@@ -1,15 +1,8 @@
-//! Filter state and the visible projection over the synthetic fixture.
-//!
-//! The fixture rows live in `fixture`; `Data` owns the filter, the indices the
-//! filter keeps, and the current selection. A real source replaces
-//! [`Data::synthetic`] without touching the widget tree.
-
 mod fixture;
 
 pub use fixture::{ACCOUNTS, KINDS, REGIONS, Row};
 use fixture::{EDGES, ROWS};
 
-/// One relationship between two resource ids.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Edge {
     pub from: &'static str,
@@ -17,21 +10,18 @@ pub struct Edge {
     pub label: &'static str,
 }
 
-/// The graph the DAG renderer consumes: the visible rows plus every edge whose
-/// two endpoints are visible. Ids are [`Row::id`] values.
 #[derive(Clone, Debug, Default)]
 pub struct Graph {
     pub nodes: Vec<Row>,
     pub edges: Vec<Edge>,
 }
 
-/// The active filter, one selector per rail section plus the search box.
 #[derive(Clone, Debug, Default)]
 pub struct Filter {
     pub account: Option<&'static str>,
     pub region: Option<&'static str>,
     pub kind: Option<&'static str>,
-    /// Lower-cased, trimmed search text; empty means "no text filter".
+
     pub query: String,
 }
 
@@ -50,8 +40,6 @@ fn matches_query(row: &Row, query: &str) -> bool {
         || row.kind.contains(query)
 }
 
-/// The table's backing state: the full fixture, the filter, and the indices of
-/// rows the filter keeps visible.
 #[derive(Clone, Debug)]
 pub struct Data {
     rows: &'static [Row],
@@ -61,7 +49,6 @@ pub struct Data {
 }
 
 impl Data {
-    /// Build the scaffold's dataset from the embedded fixture.
     pub fn synthetic() -> Self {
         let mut data = Self {
             rows: &ROWS,
@@ -100,7 +87,6 @@ impl Data {
         self.rows.len()
     }
 
-    /// The row at `index` of the *filtered* view.
     pub fn visible_row(&self, index: usize) -> Option<&Row> {
         self.visible.get(index).and_then(|row| self.rows.get(*row))
     }
@@ -109,14 +95,12 @@ impl Data {
         self.selected.and_then(|index| self.visible_row(index))
     }
 
-    /// Position of a resource id in the filtered view.
     pub fn visible_index_of(&self, id: &str) -> Option<usize> {
         self.visible
             .iter()
             .position(|index| self.rows.get(*index).is_some_and(|row| row.id == id))
     }
 
-    /// Clears the selection; returns whether anything changed.
     pub fn clear_selection(&mut self) -> bool {
         let changed = self.selected.is_some();
         self.selected = None;
@@ -172,7 +156,6 @@ impl Data {
         }
     }
 
-    /// Human-readable description of the active selectors.
     pub fn filter_label(&self) -> String {
         let mut parts: Vec<&str> = Vec::new();
         if let Some(account) = self.filter.account {
@@ -194,7 +177,6 @@ impl Data {
         }
     }
 
-    /// Title-bar summary, derived from the fixture.
     pub fn summary(&self) -> String {
         let accounts = ACCOUNTS
             .iter()
@@ -213,7 +195,6 @@ impl Data {
         )
     }
 
-    /// One-line toolbar count: visible rows, plus the active selectors.
     pub fn status_line(&self) -> String {
         let shown = self.visible_len();
         let label = self.filter_label();
@@ -224,14 +205,12 @@ impl Data {
         }
     }
 
-    /// Whether a resource id is in the filtered view.
     fn visible_id(&self, id: &str) -> bool {
         self.visible
             .iter()
             .any(|index| self.rows.get(*index).is_some_and(|row| row.id == id))
     }
 
-    /// Edges whose two endpoints are both visible.
     pub fn edge_count(&self) -> usize {
         EDGES
             .iter()
@@ -239,7 +218,6 @@ impl Data {
             .count()
     }
 
-    /// The node/edge graph the DAG renderer draws, scoped to the filter.
     pub fn graph(&self) -> Graph {
         let nodes = self
             .visible
@@ -258,7 +236,6 @@ impl Data {
         Graph { nodes, edges }
     }
 
-    /// Count of rows in an account, independent of the active filter.
     pub fn account_count(&self, account: &str) -> usize {
         self.rows
             .iter()

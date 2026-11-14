@@ -1,4 +1,3 @@
-//! relationships operations.
 use super::*;
 
 pub(super) fn reference_arn_matches(rule: &Relationship, value: &str) -> bool {
@@ -30,8 +29,7 @@ pub(super) fn reference_arn_matches(rule: &Relationship, value: &str) -> bool {
     {
         return false;
     }
-    // CloudWatch Logs returns this suffix for a concrete log group's ARN.
-    // Other wildcard/resource-pattern expressions are not concrete targets.
+
     let concrete_log_group = service == "logs"
         && resource.strip_suffix(":*").is_some_and(|group| {
             group.starts_with("log-group:") && !group.contains(['*', '?', '{', '}'])

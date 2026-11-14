@@ -187,7 +187,7 @@ async fn fetch_response(
 async fn stall(client: &mut BufReader<TcpStream>, context: &Context) -> Result<(), ProxyError> {
     const STALL_BUFFER: usize = 4_096;
     let mut buffer = [0u8; STALL_BUFFER];
-    // EOF/error or outer cancellation bounds this lifetime, never cumulative bytes.
+
     loop {
         let count = client.read(&mut buffer).await?;
         if count == 0 {

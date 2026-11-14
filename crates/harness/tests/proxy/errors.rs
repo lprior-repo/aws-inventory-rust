@@ -96,11 +96,10 @@ async fn signature_expiration_observes_each_protocol_status_code_and_prefix() ->
 
 #[tokio::test]
 async fn service_style_overrides_default_without_affecting_other_services() -> TestResult {
-    // Given a REST XML S3 override and JSON default.
     let server = Server::start(OK).await?;
     let config = style_override(&server)?;
     let proxy = Proxy::start(config).await?;
-    // When separate service scopes hit the same proxy, then envelopes differ.
+
     let s3 = exchange(
         proxy.address(),
         &super::support::request("key", "us-east-1", "s3"),

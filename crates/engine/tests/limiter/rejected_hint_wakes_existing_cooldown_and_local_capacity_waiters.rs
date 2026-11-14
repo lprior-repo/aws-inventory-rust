@@ -1,4 +1,3 @@
-//! Behavior: rejected_hint_wakes_existing_cooldown_and_local_capacity_waiters.
 use super::*;
 
 #[tokio::test(start_paused = true)]

@@ -1,4 +1,3 @@
-//! Atomic page writes and batched observation insertion.
 use super::*;
 
 pub(super) async fn persist_page(

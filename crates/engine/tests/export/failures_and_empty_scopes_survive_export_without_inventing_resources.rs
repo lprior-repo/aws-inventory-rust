@@ -1,4 +1,3 @@
-//! Behavior: failures_and_empty_scopes_survive_export_without_inventing_resources.
 use super::*;
 
 #[tokio::test]

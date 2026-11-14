@@ -1,9 +1,7 @@
-//! Bounded traversal of resource properties.
 use super::{PROPERTIES_PREFIX, ReferenceConfig};
 use serde_json::{Map, Value};
 use std::io::{self, Write};
 
-/// The Cloud Control primary identifier is identity, not a reference.
 const PRIMARY_IDENTIFIER: &str = "resource_identifier";
 
 pub(super) struct WalkOutcome {
@@ -18,10 +16,6 @@ struct WalkState {
     truncated: bool,
 }
 
-/// Visit every string value under `properties` with its JSON pointer.
-///
-/// Traversal stops at the configured depth and node budget; both mark the
-/// resource as truncated rather than silently producing partial evidence.
 pub(super) fn walk_properties(
     properties: &Value,
     config: &ReferenceConfig,
@@ -109,7 +103,6 @@ fn walk_leaf(text: &str, pointer: &str, state: &WalkState, visit: &mut impl FnMu
     }
 }
 
-/// Append one RFC 6901 reference token.
 fn push_segment(pointer: &mut String, segment: &str) {
     pointer.push('/');
     for character in segment.chars() {
@@ -121,7 +114,6 @@ fn push_segment(pointer: &mut String, segment: &str) {
     }
 }
 
-/// True when serializing `properties` would exceed `limit` bytes.
 pub(super) fn serialized_size_exceeds(value: &Value, limit: usize) -> bool {
     serde_json::to_writer(LimitedSink { used: 0, limit }, value).is_err()
 }

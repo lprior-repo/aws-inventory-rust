@@ -1,4 +1,3 @@
-//! Behavior: throttle_feedback_during_global_wait_rechecks_pacing_without_a_held_permit.
 use super::*;
 
 #[tokio::test(start_paused = true)]

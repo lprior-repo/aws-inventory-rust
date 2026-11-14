@@ -1,5 +1,3 @@
-//! Bounded file fingerprints shared by fixture execution and evidence refresh.
-
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -9,27 +7,23 @@ use serde_json::{Value, json};
 use crate::HarnessError;
 use crate::json::canonical;
 
-/// Maximum number of files a source fingerprint may cover.
 pub const MAX_SOURCE_FILES: usize = 4_096;
-/// Maximum total bytes a source fingerprint may cover.
+
 pub const MAX_SOURCE_BYTES: u64 = 32 * 1024 * 1024;
-/// Maximum number of rows in either frozen catalog projection.
+
 const MAX_CATALOG_ROWS: usize = 512;
 
-/// Lowercase hexadecimal SHA-256 of a file's bytes.
 pub fn file_sha256(path: &Path) -> Result<String, HarnessError> {
     let bytes = fs::read(path)?;
     Ok(sha256_hex(&bytes))
 }
 
-/// Lowercase hexadecimal SHA-256 of a byte slice.
 pub fn sha256_hex(bytes: &[u8]) -> String {
     use sha2::Digest;
     let digest = sha2::Sha256::digest(bytes);
     format!("{:x}", base16ct::HexDisplay(&digest))
 }
 
-/// SHA-256 of the Python-compatible canonical encoding.
 pub fn canonical_sha256(value: &Value) -> String {
     sha256_hex(canonical(value, true).as_bytes())
 }
@@ -103,7 +97,6 @@ fn parent_evidence(parent_catalog: &Value) -> Result<&Value, HarnessError> {
         .ok_or_else(|| HarnessError::invalid("parent runtime catalog evidence missing"))
 }
 
-/// Build the exact additive parent overlay without changing frozen inputs.
 pub fn expected_runtime_catalog(
     root_catalog: &Value,
     parent_catalog: &Value,
@@ -184,7 +177,6 @@ fn validate_bounds(roots: usize, children: usize, plans: usize) -> Result<(), Ha
     Ok(())
 }
 
-/// Fingerprint every reviewed source and embedded input the collector compiles.
 pub fn source_fingerprint(root: &Path) -> Result<Value, HarnessError> {
     let files = source_files(root)?;
     let mut total = 0_u64;

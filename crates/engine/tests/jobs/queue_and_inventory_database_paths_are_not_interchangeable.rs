@@ -1,4 +1,3 @@
-//! Behavior: queue_and_inventory_database_paths_are_not_interchangeable.
 use super::*;
 
 #[tokio::test]

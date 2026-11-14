@@ -1,4 +1,3 @@
-//! Behavior: cancelled_query_keeps_runtime_responsive_and_reader_reusable.
 use super::*;
 
 #[tokio::test]

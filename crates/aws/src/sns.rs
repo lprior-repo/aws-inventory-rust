@@ -1,7 +1,3 @@
-//! SNS topic and subscription inventory. Topics paginate and enrich per topic;
-//! subscriptions come from the account-wide listing and are filtered to the
-//! scan account, region and partition by their ARN.
-
 use std::collections::{BTreeMap, BTreeSet};
 
 use aws_sdk_sns::{
@@ -122,9 +118,6 @@ fn dedupe_subscriptions(
         .collect()
 }
 
-/// `listed_count` counts every subscription the page returned, including the
-/// out-of-region rows filtered out of this scope, so cursor accounting stays
-/// honest. Duplicate identities on one page are collapsed deterministically.
 fn subscription_page_body(
     output: &ListSubscriptionsOutput,
     observations: Vec<SubscriptionObservation>,
@@ -233,7 +226,6 @@ async fn topic_attributes(
     }
 }
 
-/// Tag failure is recorded but does not discard an otherwise valid topic.
 async fn topic_tags(
     ctx: &Context,
     client: &Client,

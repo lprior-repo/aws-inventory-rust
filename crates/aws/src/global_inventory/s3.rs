@@ -1,6 +1,3 @@
-//! General-purpose buckets and selected control-plane configuration. No object
-//! listing, object reads, raw bucket policy, ACL grants or credential material.
-
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Debug;
 

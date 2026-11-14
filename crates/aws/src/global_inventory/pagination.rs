@@ -1,4 +1,3 @@
-//! pagination responsibilities for global_inventory.
 use super::*;
 
 pub(super) fn marker(truncated: bool, token: Option<&str>) -> Result<Option<String>, AwsScanError> {
@@ -14,9 +13,6 @@ pub(super) fn marker(truncated: bool, token: Option<&str>) -> Result<Option<Stri
     }
 }
 
-/// Hashes only, with fixed cardinality. The mutex never crosses an await; one
-/// list cursor owns each instance. It permits Fn request closures without a
-/// shared account-wide cache of resource models or raw identifiers.
 #[derive(Default)]
 pub(super) struct SeenIds(Mutex<BTreeSet<[u8; 32]>>);
 

@@ -1,5 +1,3 @@
-//! One reviewed parent binding plan row.
-
 use crate::catalog::json::Json;
 
 pub(super) fn plan_row(name: &str, parent_name: &str, source: &str, target: &str) -> Json {

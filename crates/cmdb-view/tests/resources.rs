@@ -1,5 +1,3 @@
-//! Resource filtering, ordering and pagination behavior.
-
 mod support;
 
 use cmdb_view::{MAX_PAGE_LIMIT, PageCursor, PageRequest, ResourceFilter, ResourcePage, ViewError};
@@ -116,13 +114,12 @@ fn unknown_resource_lookup_is_none() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn given_export_when_resource_is_read_then_tag_keys_keep_their_values()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given a parsed export with two distinct instance tags.
     let snapshot = support::snapshot()?;
-    // When the resource is read through the public view API.
+
     let resource = snapshot
         .resource(support::INSTANCE_ONE)
         .ok_or("fixture instance missing")?;
-    // Then neither tag names nor their values are lost or swapped.
+
     assert_eq!(
         resource.tags,
         std::collections::BTreeMap::from([

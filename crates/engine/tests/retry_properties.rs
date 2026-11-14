@@ -1,6 +1,3 @@
-//! Generated retry contracts use an outcome-tape oracle, not executor internals.
-//! Every case has a fixed seed, bounded input/shrinking, and paused Tokio time.
-
 use std::cell::{Cell, RefCell};
 use std::collections::BTreeMap;
 use std::future::pending;

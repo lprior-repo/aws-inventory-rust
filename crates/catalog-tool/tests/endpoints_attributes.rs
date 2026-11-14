@@ -6,7 +6,6 @@ use std::path::Path;
 
 #[test]
 fn commercial_partition_exposes_the_published_signing_and_dns_properties() -> TestResult {
-    // Given known and regex-matched commercial regions, when resolved, then all outputs match.
     [
         "us-west-2",
         "eu-west-1",
@@ -40,7 +39,6 @@ fn commercial_partition_exposes_the_published_signing_and_dns_properties() -> Te
 
 #[test]
 fn partition_rejects_sovereign_gov_and_unknown_regions_with_a_typed_filename_error() -> TestResult {
-    // Given regions outside the commercial definition, when evaluated, then no fallback is used.
     [
         "cn-north-1",
         "us-gov-west-1",
@@ -70,7 +68,6 @@ fn partition_rejects_sovereign_gov_and_unknown_regions_with_a_typed_filename_err
 
 #[test]
 fn attribute_paths_follow_nested_keys_and_checked_array_indices() -> TestResult {
-    // Given nested documents, when extracting paths, then missing keys and indices return none.
     [
         (json!([["zero", "one"], "[1]"]), json!("one")),
         (
@@ -88,7 +85,6 @@ fn attribute_paths_follow_nested_keys_and_checked_array_indices() -> TestResult 
 
 #[test]
 fn attribute_missing_partition_key_returns_none() -> TestResult {
-    // Given a resolved partition, when asking for an absent key, then isSet is false.
     assert_value(
         call(
             "getAttr",
@@ -100,7 +96,6 @@ fn attribute_missing_partition_key_returns_none() -> TestResult {
 
 #[test]
 fn endpoint_function_url_and_headers_expand_together() -> TestResult {
-    // Given modeled properties and headers, when resolving, then neither is dropped.
     let document = rules(
         json!({"Region":{"type":"string"}}),
         json!([{

@@ -1,4 +1,3 @@
-//! access operations.
 use super::*;
 
 pub(super) fn map_network_acl(
@@ -73,8 +72,7 @@ pub(super) fn map_peering(
         accepter.map_or(0, |info| info.cidr_block_set().len()),
         accepter.map_or(0, |info| info.ipv6_cidr_block_set().len()),
     ])?;
-    // DescribeVpcPeeringConnections returns ownership for each participant,
-    // but no authoritative owner/ARN for the connection observation itself.
+
     let resource = resource(
         ctx,
         PEERING,

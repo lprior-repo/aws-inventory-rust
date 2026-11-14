@@ -1,5 +1,3 @@
-//! Property-to-parent inference used only to propose review candidates.
-
 use std::collections::BTreeMap;
 
 use super::model::{ReviewedCatalog, Signal};

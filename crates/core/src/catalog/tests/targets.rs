@@ -12,7 +12,7 @@ fn with_operation(key: CatalogKey, value: i64) -> Result<Vec<u8>, RecordError> {
         Key::Field(CatalogKey::Operations.field()?),
         Value::List(vec![Value::Map(operation)]),
     );
-    root(Value::Map(fields), 1)
+    root(Value::Map(fields), CATALOG_VERSION)
 }
 
 fn with_container(kind: i64, targets: &[(CatalogKey, i64)]) -> Result<Vec<u8>, RecordError> {
@@ -20,7 +20,6 @@ fn with_container(kind: i64, targets: &[(CatalogKey, i64)]) -> Result<Vec<u8>, R
         (CatalogKey::Name, Value::Text("Container".into())),
         (CatalogKey::Kind, Value::Int(kind)),
         (CatalogKey::Members, Value::List(vec![])),
-        (CatalogKey::Arn, Value::Null),
     ];
     let targets = targets
         .iter()
@@ -33,12 +32,11 @@ fn with_container(kind: i64, targets: &[(CatalogKey, i64)]) -> Result<Vec<u8>, R
         Key::Field(CatalogKey::Shapes.field()?),
         Value::List(vec![shape]),
     );
-    root(Value::Map(fields), 1)
+    root(Value::Map(fields), CATALOG_VERSION)
 }
 
 #[test]
 fn operation_input_and_output_equal_to_shape_count_are_exact_reference_errors() -> TestResult {
-    // Given exactly one shape, neither operation reference may equal its exclusive upper bound.
     [CatalogKey::Input, CatalogKey::Output]
         .into_iter()
         .try_for_each(|key| -> TestResult {
@@ -53,7 +51,6 @@ fn operation_input_and_output_equal_to_shape_count_are_exact_reference_errors() 
 
 #[test]
 fn invalid_negative_operation_preludes_are_exact_reference_errors() -> TestResult {
-    // Given the first invalid scalar code and i64::MIN, both operation directions reject them.
     [CatalogKey::Input, CatalogKey::Output]
         .into_iter()
         .try_for_each(|key| -> TestResult {
@@ -73,7 +70,6 @@ fn invalid_negative_operation_preludes_are_exact_reference_errors() -> TestResul
 #[test]
 fn list_element_at_shape_count_and_invalid_negative_codes_are_exact_reference_errors() -> TestResult
 {
-    // Given a list and no extraneous members, its own target bound must reject invalid indexes.
     [1, -15, i64::MIN]
         .into_iter()
         .try_for_each(|target| -> TestResult {
@@ -88,7 +84,6 @@ fn list_element_at_shape_count_and_invalid_negative_codes_are_exact_reference_er
 
 #[test]
 fn both_map_targets_at_shape_count_and_invalid_preludes_are_exact_reference_errors() -> TestResult {
-    // Given otherwise valid maps, independently corrupt the key and the value reference.
     [CatalogKey::MapKey, CatalogKey::MapValue]
         .into_iter()
         .try_for_each(|field| -> TestResult {
@@ -114,7 +109,6 @@ fn map_case(field: CatalogKey, bad: i64) -> TestResult {
 
 #[test]
 fn flags_above_31_are_exact_reference_errors() -> TestResult {
-    // Given unknown operation bits, first service validation must reject rather than mask them.
     [32, 63, 255, i64::MAX]
         .into_iter()
         .try_for_each(|flags| -> TestResult {

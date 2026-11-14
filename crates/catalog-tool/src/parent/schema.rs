@@ -1,11 +1,8 @@
-//! Required-property extraction from the pinned CloudFormation schemas.
-
 use std::io::Read;
 
 use serde_json::Value;
 use zip::ZipArchive;
 
-/// Read handle for the pinned schema archive.
 pub(super) type Archive = ZipArchive<std::io::Cursor<Vec<u8>>>;
 
 pub(super) fn schema_required(

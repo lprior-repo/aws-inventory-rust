@@ -1,4 +1,3 @@
-//! Behavior: rebuild_preserves_custom_schema_data_and_restores_writer_foreign_keys.
 use super::*;
 
 #[tokio::test]

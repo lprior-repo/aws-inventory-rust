@@ -1,9 +1,3 @@
-//! Bounded, schema-backed relationship compilation.
-//!
-//! A rule is only emitted from a declared string property. Opaque maps are not
-//! searched, identifier prefixes are bound to the reviewed EC2 grammar, and a
-//! type-specific path override always outranks lexical resemblance.
-
 mod compile;
 mod enrich_tables;
 mod model;
@@ -30,7 +24,6 @@ pub(crate) use relationships::RELATIONSHIPS;
 pub(crate) use selection::{GLOBAL_SENSITIVE, MODEL_REQUIRED, RESERVED, SELECTED};
 pub(crate) use sensitive::SENSITIVE;
 
-/// Reviewed sensitive paths for one type.
 pub(crate) fn sensitive_paths(name: &str) -> &'static [&'static str] {
     SENSITIVE
         .iter()
@@ -39,7 +32,6 @@ pub(crate) fn sensitive_paths(name: &str) -> &'static [&'static str] {
         .unwrap_or(&[])
 }
 
-/// Reviewed seed rules for one type.
 pub(crate) fn reviewed_rules(name: &str) -> Vec<Rule> {
     RELATIONSHIPS
         .iter()
@@ -53,7 +45,6 @@ pub(crate) fn reviewed_rules(name: &str) -> Vec<Rule> {
         .unwrap_or_default()
 }
 
-/// Additional conservative sensitivity for a newly admitted type.
 pub fn sensitive_paths_for(name: &str, schema: &Value) -> Result<Vec<String>, HarnessError> {
     let mut paths: BTreeSet<String> = ADDITIONAL_SENSITIVE
         .iter()
@@ -69,7 +60,6 @@ pub fn sensitive_paths_for(name: &str, schema: &Value) -> Result<Vec<String>, Ha
     Ok(paths.into_iter().collect())
 }
 
-/// Escape helper re-exported for descriptor builders.
 pub(crate) fn escaped_pointer(key: &str) -> String {
     format!("/{}", escape(key))
 }

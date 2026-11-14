@@ -1,12 +1,3 @@
-//! Bounded admission and retries for cancellation-safe, read-only API calls.
-//!
-//! A bucket is an account/region/quota family, which can contain one or more
-//! API operations according to the service's actual throttling rules.
-//! The registry is bounded and locked only during lookup/registration. Each
-//! bucket has a fair dispatch reservation: only its next sender may wait for
-//! global capacity. No mutex guard crosses an await, and global capacity is
-//! never retained during pacing or backoff. This module spawns no tasks.
-
 use std::collections::{BTreeMap, HashMap, hash_map::RandomState};
 use std::future::Future;
 use std::hash::BuildHasher;
@@ -20,17 +11,16 @@ use tokio::sync::{Semaphore, SemaphorePermit};
 use tokio::time::{Instant, sleep, sleep_until, timeout};
 use tokio_util::sync::CancellationToken;
 
-/// Hard admission bounds, independent of caller configuration.
 pub const MAX_CONCURRENCY: usize = 4_096;
-/// Maximum API starts for one execution, including the initial attempt.
+
 pub const MAX_ATTEMPTS: u32 = 10;
 pub(crate) const MAX_REQUESTS_PER_SECOND: u32 = 100_000;
 pub(crate) const MAX_DURATION_MS: u64 = 300_000;
-/// Largest exact requests-per-period window, in milliseconds.
+
 pub const MAX_RATE_PERIOD_MS: u64 = 300_000;
-/// Largest server-directed retry delay accepted, in milliseconds.
+
 pub const MAX_RETRY_AFTER_MS: u64 = 300_000;
-/// Maximum registered quota keys and maximum entries in an immutable policy map.
+
 pub const MAX_BUCKETS: usize = 65_536;
 pub(crate) const MAX_PENDING_OPERATIONS: usize = 65_536;
 pub(crate) const MAX_BUCKET_KEY_BYTES: usize = 512;
@@ -40,79 +30,69 @@ const MAX_ERROR_CHARS: usize = 1_024;
 const NANOS_PER_SECOND: u64 = 1_000_000_000;
 const NANOS_PER_MILLISECOND: u64 = 1_000_000;
 
-/// Classification retained when a service supplies its own retry deadline.
 #[derive(Clone, Copy, Debug, Error, Eq, PartialEq)]
 pub enum RetryKind {
-    /// The provider reported throttling; adaptive pacing is reduced.
     #[error("throttled")]
     Throttled,
-    /// A retryable transport or service failure without a throttle signal.
+
     #[error("transient failure")]
     Transient,
-    /// An attempt exceeded its deadline.
+
     #[error("timeout")]
     Timeout,
 }
 
-/// A parsed server directive. Invalid and excessive hints must not be dropped
-/// by an adapter: the executor closes that bucket instead of retrying early.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum RetryAfter {
-    /// Parsed delay; the executor separately checks range and clock overflow.
     Delay(Duration),
-    /// Malformed directive; the affected quota bucket must close.
+
     Invalid,
-    /// Directive exceeded the adapter's accepted range; the bucket must close.
+
     Excessive,
 }
 
-/// Adapter and executor outcomes; only classified transient errors are retried.
 #[derive(Clone, Debug, Error, Eq, PartialEq)]
 pub enum ApiError {
-    /// Retryable throttling diagnostic, with adaptive bucket slowdown.
     #[error("AWS throttled the request: {0}")]
     Throttled(String),
-    /// Retryable transport or temporary-service diagnostic.
+
     #[error("transient API failure: {0}")]
     Transient(String),
-    /// Authorization denied; never retried by the executor.
+
     #[error("access denied: {0}")]
     Denied(String),
-    /// Nonretryable request, response or internal invariant failure.
+
     #[error("permanent API failure: {0}")]
     Permanent(String),
-    /// The provider does not expose this discoverable catalog type. This is a
-    /// capability boundary, not a transient or malformed response.
+
     #[error("provider does not support this type: {0}")]
     UnsupportedType(String),
-    /// An attempt deadline expired; retryable within the attempt budget.
+
     #[error("API attempt timed out")]
     Timeout,
-    /// Executor cancellation was observed.
+
     #[error("API execution cancelled")]
     Cancelled,
-    /// Admission capacity, retry count or another execution budget was exhausted.
+
     #[error("API execution budget exhausted: {0}")]
     Exhausted(String),
-    /// Configuration, quota-key or policy validation failed.
+
     #[error("invalid executor configuration: {0}")]
     InvalidConfig(String),
-    /// Retryable error carrying a server delay that is validated before reuse.
+
     #[error("{kind}: {message} (server retry directive: {retry_after:?})")]
     RetryAfter {
-        /// Classification retained for adaptive pacing and counters.
         kind: RetryKind,
-        /// Adapter-supplied diagnostic, bounded when the executor retains it.
+
         message: String,
-        /// Parsed directive; invalid/excessive values close the quota bucket.
+
         retry_after: RetryAfter,
     },
-    /// Server delay was invalid, excessive or unrepresentable; the bucket is closed.
+
     #[error("server retry directive rejected; bucket closed: {0}")]
     RetryAfterRejected(String),
 }
 
-/// Shared bounded admission, pacing and retry owner; callers retain operation futures.
 #[derive(Debug)]
 pub struct ApiExecutor {
     config: ExecutorConfig,

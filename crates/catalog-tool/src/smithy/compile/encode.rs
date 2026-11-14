@@ -50,7 +50,7 @@ fn encode_shapes(
         .shapes
         .iter()
         .map(|(id, shape)| {
-            encode_shape(id, shape, registry, indexes).map_err(|error| error.in_shape(id))
+            encode_shape(id, shape, registry, indexes, model).map_err(|error| error.in_shape(id))
         })
         .collect()
 }
@@ -73,9 +73,10 @@ fn encode_shape(
     shape: &Shape,
     registry: &Registry,
     indexes: &BTreeMap<&str, usize>,
+    model: &ModelFile,
 ) -> Result<Value, CompileError> {
     crate::smithy::model::validate_shape_traits(shape).map_err(CompileError::Trait)?;
-    shapes::encode(id, shape, registry, indexes)
+    shapes::encode(id, shape, registry, indexes, &model.shapes)
 }
 
 pub(super) fn service_shape(model: &ModelFile) -> Result<(&str, &Shape), CompileError> {
@@ -103,24 +104,35 @@ pub(super) fn optional_target(
 }
 
 pub(super) fn reference(id: &str, indexes: &BTreeMap<&str, usize>) -> Result<Value, CompileError> {
+    if let Some(name) = prelude_shape(id) {
+        return prelude_reference(name, id);
+    }
     if let Some(index) = indexes.get(id) {
         return i64::try_from(*index)
             .map(Value::Int)
             .map_err(|_| CompileError::Target(id.into()));
     }
-    let prelude = match id.strip_prefix("smithy.api#") {
-        Some("PrimitiveBoolean") => "boolean",
-        Some("PrimitiveByte") => "byte",
-        Some("PrimitiveShort") => "short",
-        Some("PrimitiveInteger") => "integer",
-        Some("PrimitiveLong") => "long",
-        Some("PrimitiveFloat") => "float",
-        Some("PrimitiveDouble") => "double",
-        Some("Unit") => "unit",
-        Some(name) => return prelude_reference(name, id),
-        None => return Err(CompileError::Target(id.into())),
-    };
-    prelude_reference(prelude, id)
+    Err(CompileError::Target(id.into()))
+}
+
+fn prelude_shape(id: &str) -> Option<&'static str> {
+    match id.strip_prefix("smithy.api#")? {
+        "Blob" => Some("blob"),
+        "Boolean" | "PrimitiveBoolean" => Some("boolean"),
+        "String" => Some("string"),
+        "Byte" | "PrimitiveByte" => Some("byte"),
+        "Short" | "PrimitiveShort" => Some("short"),
+        "Integer" | "PrimitiveInteger" => Some("integer"),
+        "Long" | "PrimitiveLong" => Some("long"),
+        "Float" | "PrimitiveFloat" => Some("float"),
+        "Double" | "PrimitiveDouble" => Some("double"),
+        "BigInteger" => Some("bigInteger"),
+        "BigDecimal" => Some("bigDecimal"),
+        "Timestamp" => Some("timestamp"),
+        "Document" => Some("document"),
+        "Unit" => Some("unit"),
+        _ => None,
+    }
 }
 
 fn prelude_reference(name: &str, id: &str) -> Result<Value, CompileError> {

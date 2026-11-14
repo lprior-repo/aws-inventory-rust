@@ -1,6 +1,3 @@
-//! Behavior: an ARN-valued property whose exact ARN is not an observed
-//! resource identity resolves through the ARN's final component, scoped to the
-//! ARN's own account and region and only when that component is unique.
 use inventory_core::{CollectionPage, CollectionScope, Resource, ScanStatus, Source};
 use inventory_engine::{
     graph::reference::{self, ReferenceConfig},
@@ -187,7 +184,6 @@ async fn arn_shaped_primary_identifier_of_synthesized_resource_resolves() -> Tes
 
 #[tokio::test]
 async fn arn_shaped_primary_identifier_keeps_region_scope_and_ambiguity() -> TestResult {
-    // The ARN names us-east-1, but the only owner was observed in eu-west-1.
     let mut mismatched = workspace(REGION, "workspace");
     mismatched.region = "eu-west-1".to_owned();
     let store = store_with(vec![scraper(&workspace_arn(REGION)), mismatched]).await?;
@@ -196,7 +192,6 @@ async fn arn_shaped_primary_identifier_keeps_region_scope_and_ambiguity() -> Tes
     assert_eq!(result.summary.references_unresolved, 1);
     store.close().await;
 
-    // Two in-region owners of the same ARN identifier are ambiguous.
     let store = store_with(vec![
         scraper(&workspace_arn(REGION)),
         workspace(REGION, "workspace-first"),

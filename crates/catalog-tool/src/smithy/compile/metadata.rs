@@ -1,5 +1,5 @@
 use super::{CompileError, encode::map};
-use crate::smithy::model::Member;
+use crate::smithy::model::{Member, Shape};
 use inventory_core::{catalog::CatalogKey, record::Value};
 use serde_json::Value as Json;
 use std::collections::BTreeMap;
@@ -71,8 +71,14 @@ fn shape_error_metadata(
     Ok(())
 }
 
-pub(super) fn member_fields(member: &Member) -> Result<Vec<(CatalogKey, Value)>, CompileError> {
-    wire_fields(&member.traits, true)
+pub(super) fn member_fields(
+    member: &Member,
+    target: &str,
+    shapes: &BTreeMap<String, Shape>,
+) -> Result<Vec<(CatalogKey, Value)>, CompileError> {
+    let mut fields = wire_fields(&member.traits, true)?;
+    fields.extend(super::defaults::fields(&member.traits, target, shapes)?);
+    Ok(fields)
 }
 
 pub(super) fn pseudo_field(
@@ -112,7 +118,7 @@ fn member_wire_fields(
     for (name, key) in [
         ("smithy.api#jsonName", CatalogKey::JsonName),
         ("smithy.api#xmlName", CatalogKey::MemberXmlName),
-        ("aws.api#ec2QueryName", CatalogKey::Ec2QueryName),
+        ("aws.protocols#ec2QueryName", CatalogKey::Ec2QueryName),
         ("smithy.api#timestampFormat", CatalogKey::TimestampFormat),
         ("smithy.api#httpQuery", CatalogKey::HttpQuery),
         ("smithy.api#httpHeader", CatalogKey::HttpHeader),

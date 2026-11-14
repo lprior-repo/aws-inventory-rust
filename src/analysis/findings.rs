@@ -1,4 +1,3 @@
-//! Rules report retained configuration evidence; they do not evaluate access.
 use super::{finalized, limited_rows, literal};
 use anyhow::Result;
 use futures_util::{StreamExt, TryStreamExt, future::BoxFuture, stream};
@@ -99,9 +98,7 @@ pub(super) async fn report(store: &Store, scan: &str, limit: usize) -> Result<Va
     super::validate_limit(limit)?;
     let status = finalized(store, scan).await?;
     let scan_literal = literal(scan);
-    // Six futures are created, but only one is polled at a time. Explicit
-    // future types retain the CLI's Send boundary without borrowed-item HRTB
-    // inference through a stream closure.
+
     let work: Vec<RuleFuture<'_>> = RULES
         .iter()
         .map(|rule| {

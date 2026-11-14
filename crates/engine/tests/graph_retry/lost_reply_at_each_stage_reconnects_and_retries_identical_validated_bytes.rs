@@ -1,4 +1,3 @@
-//! Behavior: lost_reply_at_each_stage_reconnects_and_retries_identical_validated_bytes.
 use super::*;
 
 #[tokio::test]

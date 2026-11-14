@@ -8,7 +8,6 @@ const COMMITTED: &str = "catalog/aws-classes.report";
 
 #[test]
 fn two_service_report_matches_hand_counted_text() -> TestResult {
-    // Given reverse-created service files, when building, then totals and rows are canonical.
     let dir = fixture()?;
     assert_eq!(build_report(dir.path(), dir.path())?, REPORT);
     assert_eq!(build_report(dir.path(), dir.path())?, REPORT);
@@ -17,7 +16,6 @@ fn two_service_report_matches_hand_counted_text() -> TestResult {
 
 #[test]
 fn print_never_changes_the_committed_report() -> TestResult {
-    // Given stale text, when Print runs, then it does not write or check the file.
     let dir = fixture()?;
     write(dir.path(), COMMITTED, "preserve\n")?;
     run(dir.path(), dir.path(), ReportMode::Print)?;
@@ -30,11 +28,10 @@ fn print_never_changes_the_committed_report() -> TestResult {
 
 #[test]
 fn write_creates_and_replaces_the_report_and_check_accepts_exact_bytes() -> TestResult {
-    // Given no report, when writing, then the complete artifact is created.
     let dir = fixture()?;
     run(dir.path(), dir.path(), ReportMode::Write)?;
     assert_eq!(std::fs::read_to_string(dir.path().join(COMMITTED))?, REPORT);
-    // Given stale bytes, when writing again and checking, then canonical bytes replace them.
+
     write(dir.path(), COMMITTED, "stale\n")?;
     run(dir.path(), dir.path(), ReportMode::Write)?;
     run(dir.path(), dir.path(), ReportMode::Check)?;
@@ -44,7 +41,6 @@ fn write_creates_and_replaces_the_report_and_check_accepts_exact_bytes() -> Test
 
 #[test]
 fn check_reports_all_byte_sensitive_differences_without_writing() -> TestResult {
-    // Given trailing space and CRLF changes, when checking, then both lines are diagnosed.
     let dir = fixture()?;
     let changed = REPORT.replacen(
         "operations 10\nenumerate 2\n",
@@ -66,7 +62,6 @@ fn check_reports_all_byte_sensitive_differences_without_writing() -> TestResult 
 
 #[test]
 fn unmatched_deny_name_is_a_typed_error_with_its_line() -> TestResult {
-    // Given a typo after a comment, when building, then it cannot silently disappear.
     let dir = fixture()?;
     write(
         dir.path(),
@@ -80,7 +75,6 @@ fn unmatched_deny_name_is_a_typed_error_with_its_line() -> TestResult {
 
 #[test]
 fn unmatched_scoped_entry_cannot_be_satisfied_by_another_service() -> TestResult {
-    // Given a real name under the wrong scope, when building, then the rule is unmatched.
     let dir = fixture()?;
     write(
         dir.path(),
@@ -94,7 +88,6 @@ fn unmatched_scoped_entry_cannot_be_satisfied_by_another_service() -> TestResult
 
 #[test]
 fn model_error_leaves_a_preexisting_report_intact() -> TestResult {
-    // Given a bad later model, when Write runs, then no partial report replaces good bytes.
     let dir = fixture()?;
     write(dir.path(), COMMITTED, "preserve\n")?;
     write(dir.path(), "models/z-last/service/v1/bad.json", "{")?;
@@ -112,7 +105,6 @@ fn model_error_leaves_a_preexisting_report_intact() -> TestResult {
 
 #[test]
 fn unmatched_entry_leaves_a_preexisting_report_intact() -> TestResult {
-    // Given a typo and good committed bytes, when Write runs, then validation precedes writes.
     let dir = fixture()?;
     write(dir.path(), COMMITTED, "preserve\n")?;
     write(
@@ -133,7 +125,6 @@ fn unmatched_entry_leaves_a_preexisting_report_intact() -> TestResult {
 
 #[test]
 fn missing_report_is_a_named_io_error() -> TestResult {
-    // Given no committed file, when Check runs, then its exact path and I/O cause survive.
     let dir = fixture()?;
     let error = run(dir.path(), dir.path(), ReportMode::Check).err();
     assert!(matches!(error, Some(Error::Io { file, source })
@@ -143,7 +134,6 @@ fn missing_report_is_a_named_io_error() -> TestResult {
 
 #[test]
 fn root_policy_is_used_when_source_policy_is_absent() -> TestResult {
-    // Given separate output/overlay root and model source, when building, then both are honored.
     let source = fixture()?;
     std::fs::remove_file(source.path().join("catalog/overlay/must-deny.txt"))?;
     let root = tempfile::tempdir()?;
@@ -158,7 +148,6 @@ fn root_policy_is_used_when_source_policy_is_absent() -> TestResult {
 
 #[test]
 fn no_models_is_not_a_successful_empty_inventory() -> TestResult {
-    // Given an empty model directory, when building, then a typed missing-model error results.
     let dir = tempfile::tempdir()?;
     std::fs::create_dir_all(dir.path().join("models"))?;
     write(dir.path(), "catalog/overlay/must-deny.txt", "")?;
@@ -171,7 +160,6 @@ fn no_models_is_not_a_successful_empty_inventory() -> TestResult {
 
 #[test]
 fn missing_service_shape_is_rejected() -> TestResult {
-    // Given valid JSON without a service, when building, then structural validation fails.
     let dir = fixture()?;
     write(dir.path(), "models/z/service/v1/z.json", r#"{"shapes":{}}"#)?;
     assert!(matches!(
@@ -183,7 +171,6 @@ fn missing_service_shape_is_rejected() -> TestResult {
 
 #[test]
 fn two_service_shapes_are_rejected() -> TestResult {
-    // Given ambiguous service metadata, when building, then no report is accepted.
     let dir = fixture()?;
     write(
         dir.path(),
@@ -201,7 +188,6 @@ fn two_service_shapes_are_rejected() -> TestResult {
 
 #[test]
 fn check_rejects_a_single_changed_byte_without_writing() -> TestResult {
-    // Given one changed digit on one line, when checking, then even one difference fails.
     let dir = fixture()?;
     let changed = REPORT.replacen("operations 10", "operations 11", 1);
     write(dir.path(), COMMITTED, &changed)?;
@@ -218,8 +204,6 @@ fn check_rejects_a_single_changed_byte_without_writing() -> TestResult {
 
 #[test]
 fn check_rejects_a_missing_final_newline_without_writing() -> TestResult {
-    // Given an otherwise exact report missing only its final LF, when checking,
-    // then newline normalization cannot silently accept or repair it.
     let dir = fixture()?;
     let Some(changed) = REPORT.strip_suffix('\n') else {
         return Err("report fixture must end in LF".into());

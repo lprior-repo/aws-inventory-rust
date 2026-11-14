@@ -1,4 +1,3 @@
-//! Behavior: restart_preserves_claim_and_recovers_only_after_expiration.
 use super::*;
 
 #[tokio::test]

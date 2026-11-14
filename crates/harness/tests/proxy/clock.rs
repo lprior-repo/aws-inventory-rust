@@ -1,6 +1,3 @@
-//! Keep paused Tokio clocks from automatically leaping over a TCP exchange.
-//! Real sockets wake from the OS, not virtual time; an owned runnable checkpoint
-//! task makes advance() the only clock driver while each timing scenario runs.
 use std::{
     error::Error,
     future::Future,

@@ -1,4 +1,3 @@
-//! Behavior: account onboarding and coverage-registry state are explicit and durable.
 use std::error::Error;
 
 use inventory_engine::store::{AccountStatus, CoverageRecord, CoverageState, Store, StoreError};

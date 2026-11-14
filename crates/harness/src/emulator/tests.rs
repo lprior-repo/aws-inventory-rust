@@ -1,5 +1,3 @@
-//! Child lifecycle regressions using Linux executables, never the emulator.
-
 mod process;
 
 use std::path::{Path, PathBuf};

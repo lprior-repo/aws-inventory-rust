@@ -1,4 +1,3 @@
-//! Behavior: query_denies_writes_pragma_transactions_and_external_side_effects.
 use super::*;
 
 #[tokio::test]

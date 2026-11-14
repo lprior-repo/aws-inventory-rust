@@ -1,4 +1,3 @@
-//! Behavior: newer_config_observation_outranks_older_direct_observation.
 use super::*;
 
 #[tokio::test]
@@ -25,7 +24,7 @@ pub(super) async fn newer_config_observation_outranks_older_direct_observation()
             .await?,
         json!([{"source":"aws_config", "source_priority":2, "observed_at":200}])
     );
-    // The priority-first snapshot view is intentionally unchanged.
+
     assert_eq!(
         store
             .query("SELECT source,observed_at FROM scan_resources", 10)

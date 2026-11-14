@@ -1,4 +1,3 @@
-//! Behavior: live_falkordb_rejected_batch_is_never_acknowledged_or_finalized.
 use super::*;
 
 #[tokio::test]

@@ -1,5 +1,3 @@
-//! Deterministic publication and cancellation boundaries inaccessible to callers.
-
 use super::*;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -118,7 +116,7 @@ async fn cancellation_during_a_record_drains_framing_then_stops_intake() -> Test
         writer.record(record.clone(), &cancellation).await,
         Err(ExportError::Cancelled)
     ));
-    assert_eq!(writer.sink.writes, 2); // Complete envelope, then newline.
+    assert_eq!(writer.sink.writes, 2);
     let previous = writer.sink.bytes;
     assert!(matches!(
         writer.record(record, &cancellation).await,

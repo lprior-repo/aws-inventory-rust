@@ -1,6 +1,3 @@
-//! Binding checks that tie a frozen snapshot to one binary, source tree and
-//! exactly five collector command receipts.
-
 use std::collections::BTreeSet;
 use std::path::Path;
 
@@ -12,15 +9,13 @@ use crate::provenance::{
     canonical_sha256, expected_runtime_catalog, file_sha256, source_fingerprint,
 };
 
-/// Verified baseline execution inputs shared by every case check.
 pub struct Baseline {
-    /// Frozen digest of the collector binary the baseline ran.
     pub binary_sha: String,
-    /// Execution provenance recorded by the baseline summary.
+
     pub execution: Value,
-    /// Reviewed root catalog.
+
     pub catalog: Value,
-    /// Reviewed parent catalog.
+
     pub parents: Value,
 }
 
@@ -28,7 +23,6 @@ fn command_names() -> BTreeSet<&'static str> {
     CASES.iter().map(|(_, command)| *command).collect()
 }
 
-/// Read one command receipt and confirm the summary's binding describes it.
 pub fn bound_command(
     evidence: &Path,
     name: &str,
@@ -55,7 +49,6 @@ pub fn bound_command(
     Ok(command)
 }
 
-/// Confirm the baseline was produced by this binary, source tree and catalogs.
 pub fn execution_binding(
     summary: &Value,
     evidence: &Path,
@@ -83,7 +76,6 @@ fn execution_provenance(summary: &Value) -> Result<&Value, HarnessError> {
         .ok_or_else(|| HarnessError::invalid("snapshot baseline lacks execution provenance"))
 }
 
-/// Read both reviewed catalogs and confirm the baseline binds their digests.
 fn load_catalogs(
     execution: &Value,
     evidence: &Path,
@@ -100,7 +92,6 @@ fn load_catalogs(
     Ok((catalog, parents))
 }
 
-/// Digests the baseline summary must carry for these catalogs and fixtures.
 fn expected_digests(
     root: &Path,
     catalog: &Value,

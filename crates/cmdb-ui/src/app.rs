@@ -1,6 +1,3 @@
-//! App shell: owns the widget tree, routes actions into [`ResourceTable`]'s
-//! `Data`, and hands the resulting state to `chrome` for projection.
-
 use makepad_widgets::*;
 
 use crate::data::{ACCOUNTS, KINDS, REGIONS};
@@ -240,7 +237,6 @@ impl AppMain for App {
         crate::dag::script_mod(vm);
         crate::templates::script_mod(vm);
         if !vm.is_reload() {
-            // Data that must survive a Splash/style reload.
             script_eval!(vm, { mod.state = {visible_count: 0 graph_view: 0} true });
         }
         crate::ui::script_mod(vm)

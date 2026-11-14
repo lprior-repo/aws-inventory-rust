@@ -1,4 +1,3 @@
-//! Behavior: fractional_throttle_recovery_never_exceeds_the_original_ceiling.
 use super::*;
 
 #[tokio::test(start_paused = true)]

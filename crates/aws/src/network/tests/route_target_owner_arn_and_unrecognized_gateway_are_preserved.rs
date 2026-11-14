@@ -1,4 +1,3 @@
-//! route target owner arn and unrecognized gateway are preserved behavior.
 use super::*;
 
 #[test]

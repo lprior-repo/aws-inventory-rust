@@ -41,13 +41,11 @@ fn parse_missing_final_newline() {
 
 #[test]
 fn parse_blank_line_in_middle() {
-    // Given an internal blank, when parsed, then its exact line and name are rejected.
     assert_eq!(Registry::parse("foo\n\nbar\n"), Err(invalid(2, "")));
 }
 
 #[test]
 fn parse_trailing_blank_line() {
-    // Given an extra terminator, when parsed, then it is not silently removed.
     assert_eq!(Registry::parse("a\n\n"), Err(invalid(2, "")));
 }
 
@@ -214,7 +212,6 @@ fn verify_prefix_lines_swapped() -> Result<(), Box<dyn std::error::Error>> {
 
 #[test]
 fn unknown_names_and_out_of_range_ids_have_no_mapping() -> Result<(), Box<dyn std::error::Error>> {
-    // Given one entry, when looking beyond it, then no name or ID is invented.
     let registry = Registry::parse("a\n")?;
     assert_eq!(registry.id("missing"), None);
     assert_eq!(registry.name(FieldId::new(2)?), None);
@@ -225,7 +222,6 @@ fn unknown_names_and_out_of_range_ids_have_no_mapping() -> Result<(), Box<dyn st
 
 #[test]
 fn extending_rejects_invalid_names() -> Result<(), Box<dyn std::error::Error>> {
-    // Given valid history, when extending with malformed names, then errors retain context.
     ["", " ", "a-b", "1a", "a b", "é"]
         .into_iter()
         .try_for_each(|name| {
@@ -243,7 +239,6 @@ fn extending_rejects_invalid_names() -> Result<(), Box<dyn std::error::Error>> {
 #[test]
 fn empty_extension_and_duplicate_inputs_preserve_exact_registry()
 -> Result<(), Box<dyn std::error::Error>> {
-    // Given two entries, when no names change, then the entire registry is equal.
     let registry = Registry::parse("z\na\n")?;
     assert_eq!(registry.clone().extend([])?, registry);
     let next = Registry::default().extend(["b", "a", "b"].map(str::to_owned))?;
@@ -253,7 +248,6 @@ fn empty_extension_and_duplicate_inputs_preserve_exact_registry()
 
 #[test]
 fn line_number_overflow_is_a_typed_error() {
-    // Given the ID boundary, when calculating the next line, then overflow never wraps.
     assert_eq!(super::next_line(usize::MAX), Err(Error::IdOverflow));
     if let Ok(max) = usize::try_from(u32::MAX) {
         assert_eq!(super::next_line(max), Err(Error::IdOverflow));

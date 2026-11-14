@@ -46,7 +46,6 @@ const OTHER_PLAIN_CASES: [(&str, &str); 15] = [
 
 #[test]
 fn plain_names_preserve_required_acronyms_and_boundaries() -> TestResult {
-    // Given the seven V30 acceptance types, when naming without exceptions, then names are exact.
     EXACT_CASES.iter().try_for_each(|(kind, expected)| {
         let name = sql_name(kind, &Exceptions::none())?;
         assert_eq!(name.as_str(), *expected, "{kind}");
@@ -56,7 +55,6 @@ fn plain_names_preserve_required_acronyms_and_boundaries() -> TestResult {
 
 #[test]
 fn plain_names_split_versions_and_keep_other_digits_attached() -> TestResult {
-    // Given additional boundary cases, when naming them, then only V30 boundaries split.
     OTHER_PLAIN_CASES.iter().try_for_each(|(kind, expected)| {
         let name = sql_name(kind, &Exceptions::none())?;
         assert_eq!(name.as_str(), *expected, "{kind}");
@@ -103,7 +101,6 @@ const INVALID_TYPES: [&str; 13] = [
 
 #[test]
 fn exceptions_replace_longest_spelling_at_each_position() -> TestResult {
-    // Given overlapping and interior spellings, when naming, then longest matches win.
     let exceptions = Exceptions::parse("IP\tip\nIPv6\tipv6\nIoT\tiot\n")?;
     LONGEST_CASES.iter().try_for_each(|(kind, expected)| {
         let name = sql_name(kind, &exceptions)?;
@@ -114,7 +111,6 @@ fn exceptions_replace_longest_spelling_at_each_position() -> TestResult {
 
 #[test]
 fn exceptions_preserve_replacement_words_and_split_unmatched_digits() -> TestResult {
-    // Given replacement pieces, when naming, then unmatched spans are independently split.
     let exceptions =
         Exceptions::parse("VPCDHCP\tvpc_dhcp\nWAFv2\twafv2\nOAuth\toauth\nIoT\tiot\n")?;
     EXCEPTION_CASES.iter().try_for_each(|(kind, expected)| {
@@ -126,7 +122,6 @@ fn exceptions_preserve_replacement_words_and_split_unmatched_digits() -> TestRes
 
 #[test]
 fn invalid_types_are_rejected_before_exception_matching() -> TestResult {
-    // Given invalid parts, when naming, then every invalid type is reported verbatim.
     INVALID_TYPES.iter().for_each(|kind| {
         assert_eq!(
             sql_name(kind, &Exceptions::none()),
@@ -140,7 +135,6 @@ fn invalid_types_are_rejected_before_exception_matching() -> TestResult {
 
 #[test]
 fn names_accept_exactly_128_bytes_and_reject_129_bytes() -> TestResult {
-    // Given the byte boundary, when naming, then the limit is inclusive.
     let accepted = sql_name(&format!("A::{}", "B".repeat(126)), &Exceptions::none())?;
     assert_eq!(accepted.as_str(), format!("a_{}", "b".repeat(126)));
     assert_eq!(accepted.as_str().len(), MAX_SQL_NAME_BYTES);
@@ -156,7 +150,6 @@ fn names_accept_exactly_128_bytes_and_reject_129_bytes() -> TestResult {
 
 #[test]
 fn exception_expansion_obeys_the_same_byte_limit() -> TestResult {
-    // Given a length-expanding replacement, when naming, then the final output is bounded.
     let exceptions = Exceptions::parse(&format!("X\t{}\n", "a".repeat(127)))?;
     assert_eq!(
         sql_name("A::X", &exceptions),
@@ -170,7 +163,6 @@ fn exception_expansion_obeys_the_same_byte_limit() -> TestResult {
 
 #[test]
 fn used_flags_follow_original_line_order_and_reset_each_call() -> TestResult {
-    // Given overlaps and stale flags, when naming twice, then only each call's matches remain.
     let exceptions = Exceptions::parse("IP\tip\nIPv6\tipv6\nIoT\tiot\n")?;
     let mut used = vec![true; 9];
     let first = sql_name_used("AWS::IoTIPv6::IPv6Pool", &exceptions, &mut used)?;
@@ -184,7 +176,6 @@ fn used_flags_follow_original_line_order_and_reset_each_call() -> TestResult {
 
 #[test]
 fn used_flags_clear_even_when_type_validation_fails() -> TestResult {
-    // Given stale usage, when the next type is invalid, then flags are reset, not inherited.
     let exceptions = Exceptions::parse("IoT\tiot\n")?;
     let mut used = vec![true];
     assert_eq!(
@@ -199,7 +190,6 @@ fn used_flags_clear_even_when_type_validation_fails() -> TestResult {
 
 #[test]
 fn sql_name_display_and_value_traits_preserve_the_identifier() -> TestResult {
-    // Given a derived name, when displaying and cloning, then the identifier is unchanged.
     let name = sql_name("AWS::EC2::Instance", &Exceptions::none())?;
     assert_eq!(name.to_string(), "aws_ec2_instance");
     assert_eq!(name.clone(), name);
@@ -212,7 +202,6 @@ fn sql_name_display_and_value_traits_preserve_the_identifier() -> TestResult {
 
 #[test]
 fn repeated_exception_spelling_is_replaced_every_time_in_one_part() -> TestResult {
-    // Given a repeated spelling, when naming one part, then both matches use the exception.
     let exceptions = Exceptions::parse("IoT\tiot\n")?;
     let mut used = Vec::new();
     let name = sql_name_used("AWS::IoTIoT", &exceptions, &mut used)?;
@@ -223,7 +212,6 @@ fn repeated_exception_spelling_is_replaced_every_time_in_one_part() -> TestResul
 
 #[test]
 fn exception_expansion_accepts_exactly_128_output_bytes() -> TestResult {
-    // Given an expanding replacement, when the output is exactly 128 bytes, then it succeeds.
     let replacement = "a".repeat(126);
     let exceptions = Exceptions::parse(&format!("X\t{replacement}\n"))?;
     let name = sql_name("A::X", &exceptions)?;
@@ -234,7 +222,6 @@ fn exception_expansion_accepts_exactly_128_output_bytes() -> TestResult {
 
 #[test]
 fn lowercase_initial_letters_are_valid_in_every_type_part() -> TestResult {
-    // Given lower-case initial letters, when naming, then validation accepts them unchanged.
     let name = sql_name("aws::ec2::instance", &Exceptions::none())?;
     assert_eq!(name.as_str(), "aws_ec2_instance");
     Ok(())
@@ -242,7 +229,6 @@ fn lowercase_initial_letters_are_valid_in_every_type_part() -> TestResult {
 
 #[test]
 fn exceptions_cannot_make_a_digit_initial_type_part_valid() -> TestResult {
-    // Given a matching exception, when the original part starts with a digit, then it is invalid.
     let exceptions = Exceptions::parse("1X\tone_x\n")?;
     assert_eq!(
         sql_name("AWS::1X", &exceptions),

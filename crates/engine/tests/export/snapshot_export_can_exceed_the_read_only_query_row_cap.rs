@@ -1,4 +1,3 @@
-//! Behavior: snapshot_export_can_exceed_the_read_only_query_row_cap.
 use super::*;
 
 #[tokio::test]

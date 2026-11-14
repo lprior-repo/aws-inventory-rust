@@ -1,4 +1,3 @@
-//! Behavior: upgrades_version_one_without_changing_inventory_or_checkpoints.
 use super::*;
 
 #[tokio::test]
