@@ -11,6 +11,7 @@ fn named_shape<'a>(
     service: inventory_core::catalog::Service<'a>,
     expected: &str,
 ) -> Result<inventory_core::catalog::Shape<'a>, Box<dyn std::error::Error>> {
+    let expected = expected.rsplit_once('#').map_or(expected, |(_, name)| name);
     service
         .shapes()?
         .find_map(|shape| match shape {

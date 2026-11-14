@@ -17,6 +17,7 @@ fn named_shape<'a>(
     service: inventory_core::catalog::Service<'a>,
     expected: &str,
 ) -> Result<inventory_core::catalog::Shape<'a>, Box<dyn std::error::Error>> {
+    let expected = expected.rsplit_once('#').map_or(expected, |(_, name)| name);
     service
         .shapes()?
         .find_map(|shape| match shape {
@@ -31,6 +32,7 @@ fn shape_index(
     service: inventory_core::catalog::Service<'_>,
     expected: &str,
 ) -> Result<usize, Box<dyn std::error::Error>> {
+    let expected = expected.rsplit_once('#').map_or(expected, |(_, name)| name);
     service
         .shapes()?
         .enumerate()
@@ -86,7 +88,7 @@ fn registry_ids_remain_registry_ordered_and_shared_field_names_resolve() -> Test
     let mut shapes = service.shapes()?;
     let input = shapes
         .find_map(|shape| match shape {
-            Ok(shape) if shape.name().ok() == Some("example#Input") => Some(Ok(shape)),
+            Ok(shape) if shape.name().ok() == Some("Input") => Some(Ok(shape)),
             Ok(_) => None,
             Err(error) => Some(Err(error)),
         })

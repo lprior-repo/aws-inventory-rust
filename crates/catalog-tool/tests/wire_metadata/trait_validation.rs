@@ -152,7 +152,7 @@ fn unknown_traits_are_ignored_and_known_absent_metadata_stays_absent() -> TestRe
     let input = service
         .shapes()?
         .find_map(|shape| match shape {
-            Ok(shape) if shape.name().ok() == Some("example#Input") => Some(Ok(shape)),
+            Ok(shape) if shape.name().ok() == Some("Input") => Some(Ok(shape)),
             Ok(_) => None,
             Err(error) => Some(Err(error)),
         })

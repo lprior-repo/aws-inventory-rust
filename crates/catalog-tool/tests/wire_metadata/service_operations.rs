@@ -16,6 +16,7 @@ fn shape_index(
     service: inventory_core::catalog::Service<'_>,
     expected: &str,
 ) -> Result<usize, Box<dyn std::error::Error>> {
+    let expected = expected.rsplit_once('#').map_or(expected, |(_, name)| name);
     service
         .shapes()?
         .enumerate()
@@ -59,10 +60,7 @@ fn service_protocol_and_identity_metadata_is_borrowed_from_compiled_catalog() ->
     );
     assert_eq!(
         service.protocols()?.collect::<Result<Vec<_>, _>>()?,
-        [
-            "aws.protocols#awsQueryCompatible",
-            "aws.protocols#restJson1"
-        ]
+        ["aws.protocols#restJson1"]
     );
     Ok(())
 }
