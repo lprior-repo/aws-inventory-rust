@@ -20,17 +20,17 @@ pub(super) struct Connector {
 }
 
 impl Connector {
-    pub(super) fn new(cap: usize, counters: Arc<Counters>) -> Self {
-        let mut inner = HttpConnector::new_with_resolver(Resolver::new());
+    pub(super) fn new(cap: usize, counters: Arc<Counters>) -> Result<Self, std::io::Error> {
+        let mut inner = HttpConnector::new_with_resolver(Resolver::new()?);
         inner.enforce_http(false);
 
         inner.set_happy_eyeballs_timeout(None);
         inner.set_nodelay(true);
-        Self {
+        Ok(Self {
             inner,
             slots: Arc::new(Semaphore::new(cap)),
             counters,
-        }
+        })
     }
 }
 

@@ -91,6 +91,21 @@ generated-data checks, binary-only core tests, all-target/all-feature workspace
 check/tests/build, warnings-denied source Clippy and Makepad native linking.
 Ignored live component tests are not counted as executed coverage.
 
+### DNS cancellation repair — 2026-11-14
+
+The wire connector now owns a Hickory asynchronous resolver and its 32-lookup
+admission limit. Dropping a lookup releases its permit without leaving an
+uncancellable OS resolver worker. System DNS configuration, search domains and
+hosts files are used; configuration/load failures propagate during client
+creation, without a public-DNS fallback. Platform-specific NSS plugins are not
+reproduced.
+
+Coordinator execution passed `cargo test -p aws-wire --lib --test transport
+--locked --offline -j1`: 118 tests across two suites. The new local UDP DNS
+regression cancels an unanswered query, answers a subsequent query and checks
+the resolved address. Warnings-denied source Clippy also passed. These are
+narrow transport checks, not a new full-workspace or live-sweep result.
+
 ### Request and streaming-record integration — 2026-11-14
 
 The completed integration gate passed formatting and

@@ -136,7 +136,8 @@ impl Client {
 }
 
 fn build_pool(config: &Config, counters: Arc<Counters>) -> Result<HttpPool, TransportError> {
-    let connector = Connector::new(config.max_connections, counters);
+    let connector = Connector::new(config.max_connections, counters)
+        .map_err(|error| TransportError::Io(Box::new(error)))?;
     let https = hyper_rustls::HttpsConnectorBuilder::new()
         .with_tls_config(trust::load(config)?)
         .https_or_http()

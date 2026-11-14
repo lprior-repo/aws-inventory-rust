@@ -28,6 +28,7 @@ hyper-rustls = { version = "0.27.10", default-features = false, features = ["htt
 rustls = { version = "0.23.46", default-features = false, features = ["aws_lc_rs", "std", "tls12"] }
 rustls-pki-types = "1.16.0"
 rustls-native-certs = "0.8.5"
+hickory-resolver = { version = "0.26.3", default-features = false, features = ["system-config", "tokio"] }
 tokio.workspace = true
 tower-service = "0.3.3"
 quick-xml = "0.42"

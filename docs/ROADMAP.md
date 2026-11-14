@@ -112,6 +112,12 @@ Status from the coordinator, 2026-11-13.
   permits until eviction, and checkout-age expiry may retire an HTTP/2 sender
   while active streams keep their permits. Rust lines: 3,313 added, none
   deleted; production 766. Serializers and decoders remain open.
+  A later cancellation review found that stalled OS DNS workers could retain
+  all lookup permits after request cancellation. Client-owned asynchronous
+  Hickory DNS replaces those workers; the cancellation/recovery regression,
+  transport suites (118 tests total) and warnings-denied source Clippy pass.
+  System DNS/hosts/search configuration is retained, but custom NSS plugins
+  are outside this resolver's compatibility boundary.
 
 - **M1.4a is done.** `catalog-tool plans` derives collection evidence, never
   authorization to send requests: 2,197 enumeration candidates, 2,940 expansions,
