@@ -165,8 +165,9 @@ Status from the coordinator, 2026-11-13.
 - **M1.6a is done: every service's endpoint is derived from its own rule
   set and proven on the models' own cases.** `catalog-tool models endpoints
   [--check | --write]` evaluates each model's endpoint rules with a small
-  interpreter (seven of the standard functions; the rest are typed
-  "unsupported" and reached only behind request-time parameters) and writes
+  interpreter (seven of the standard functions; any other is a typed
+  "unsupported" result, and no in-scope case of the pinned models reaches
+  one) and writes
   `catalog/aws-endpoints.report`. Of the 14,115 published endpoint cases,
   4,109 are in this package's scope (a commercial region, FIPS and
   dual-stack off, no other parameter) and all 4,109 pass; the other 10,006
@@ -185,9 +186,13 @@ Status from the coordinator, 2026-11-13.
   of it. `cargo test -p catalog-tool --locked` passes 302 tests; the gate
   runs `models endpoints --check`. Black Hat: five findings, three closed
   and confirmed against 99 expectations in 12 services, one closed by
-  amending the scope (skipped cases are executed by the wire engine's
-  request-time resolution, not here), one closed afterwards with the shared
-  reader bounds; test review: 13 gaps and 5 later survivors, closed. Rust lines:
+  amending the scope (the skipped cases are outside what this package
+  proves; the product has no rules interpreter at run time, so other
+  partitions, FIPS and dual-stack stay unsupported until a later package
+  compiles templates for them, a custom endpoint is the user's override of
+  the whole URL, and services whose endpoint depends on a request value need
+  overlay data), one closed afterwards with the shared reader bounds; test
+  review: 13 gaps and 5 later survivors, closed. Rust lines:
   4,138 added, 2 deleted; production 1,783 against a 1,200 estimate. Still
   open in M1.6: overlay templates for the five services and storing the
   result in the binary catalog.
