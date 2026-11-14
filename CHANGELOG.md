@@ -2,6 +2,14 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- M1.4b: bounded reviewed-overlay parser with typed values, strict unknown-key
+  rejection, Gregorian review dates and iterative binding-cycle checks.
+  Parsed service metadata and operation maps are read-only to consumers;
+  an external compile probe rejects all three attempted invariant mutations
+  with `E0616`. After integration rebase, 427 catalog-tool tests, source
+  Clippy and both source guards pass. Syntax contracts now live in
+  `docs/API_CATALOG.md`. Semantic validation and callable plans remain M1.4c.
+  Rust lines: 2,855 added, none deleted; production 1,454.
 - `docs/VISION.md` and `docs/ROADMAP.md` now define the product and the build
   plan: direct service endpoint collection through a model-driven wire engine,
   binary records, hash-based reconciliation, full-send quota use, a laptop as

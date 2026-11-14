@@ -195,3 +195,69 @@ exercise clean provenance, nested-directory rejection, modified/untracked models
 (including ignored untracked inputs), same-length byte drift and existing empty
 catalog files. Inline-stack tests cover caller-storage identity, the inclusive
 32-frame bound, LIFO ordering, mutable top/pop reuse and generic dynamic storage.
+
+## Reviewed overlay syntax (M1.4b)
+
+`catalog/overlay/<service>.toml` records a review, not authorization by itself.
+The filename stem matches `[a-z0-9][a-z0-9-]*`. Each file is at most 1 MiB
+and contains at most 4,096 operations. Directory loading visits at most 65,536
+entries and accepts at most 4,096 TOML files, in filename order. Non-TOML
+entries, including `must-deny.txt`, count toward traversal but are ignored.
+Distinct accepted filenames cannot share a service stem.
+
+Required root keys are integer `format = 1`, a quoted Gregorian `reviewed`
+date in `YYYY-MM-DD` form (years 0001–9999), and a nonempty `reviewer` string
+of at most 64 UTF-8 bytes. `operation` is an optional table keyed by exact
+`[A-Za-z][A-Za-z0-9]*` operation names.
+
+Unknown keys and wrong types are errors at every structured boundary.
+Member paths contain `[A-Za-z][A-Za-z0-9_]*` segments separated by dots,
+at most eight segments and 256 bytes. Lists and maps are traversed implicitly,
+not indexed. Arrays reject duplicates and contain at most 64 entries unless
+a tighter limit is listed below. The file budget bounds `fixed` and `bind`.
+
+| Operation key | Accepted value | Absence |
+|---|---|---|
+| `class` | `enumerate`, `expand`, `deny`, `defer` | Candidate class |
+| `deny_reason` | `content`, `secret`, `paid`, `mutating`, `reference-data` | Required exactly for `deny`; forbidden otherwise |
+| `scope` | `region`, `account`, `home-region` | Modeled scope |
+| `items` | Output member path | Modeled list, otherwise unresolved |
+| `page_size` | Integer 1–100000 | Largest modeled allowed size |
+| `exclude_from_hash` | Item member paths | No extra exclusions |
+| `skip` | Operation names, excluding self | No extra scheduling suppression |
+| `quota_group` | `[a-z][a-z0-9-]*`, at most 32 bytes | Service-wide group |
+| `queryable` | Item member paths | Modeled SQL columns |
+| `tags` | Item member path | Modeled tags, otherwise unresolved |
+| `fixed` | Input paths to string, i64, boolean, or string array | No extra fixed inputs |
+| `paginator` | Reviewed pagination table | Modeled pagination evidence |
+| `identity` | Reviewed identity table | Modeled identity evidence |
+| `bind` | Input paths to binding tables | Modeled binding evidence |
+| `batch` | Reviewed batch table | No extra batch replacement |
+
+`deny` and `defer` entries carry no plan keys, even explicitly empty arrays
+or tables. The typed deny variant contains its reason.
+
+`paginator.kind = "token"` requires `input` and `output` paths and forbids
+other keys. `"tokens"` requires one to eight `{input, output}` pairs with
+distinct inputs and optionally a `truncated` output path. `"none"` forbids
+every other key. Model-aware validation checks the token and flag types.
+
+`identity` has exactly one of `arn` (item path), `template` (string), or
+`key` (one to eight item paths). A template has balanced, nonempty
+placeholders naming `partition`, `region`, `account`, or an item path;
+at least one placeholder is required.
+
+Each binding is exactly `{from = "Operation", path = "Item.Path"}`,
+`{account = true}`, or `{region = true}`. False context flags, self-bindings
+and explicit binding cycles are rejected. `batch` requires `member` (input
+list path), `max` (1–10000), and `replaces` (a different operation).
+Nested required keys have no defaults.
+
+The complete syntax example is
+[`complete.toml`](../crates/catalog-tool/tests/fixtures/overlay/complete.toml).
+Parsed `ServiceOverlay` values expose read-only accessors; callers cannot
+mutate their validated format, review metadata or operation map.
+
+This parser does not check operation existence, resolve modeled paths,
+establish reviewed-service completeness or create callable handles.
+Those are M1.4c. Parsing a review never promotes a denied operation.

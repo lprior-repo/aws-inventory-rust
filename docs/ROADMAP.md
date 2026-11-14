@@ -126,6 +126,18 @@ Status from the coordinator, 2026-11-13.
   Rust lines: 2,374 added, 21 deleted. Semantic overlay validation and callable
   handles remain M1.4c, not part of this report.
 
+- **M1.4b is done: the overlay syntax parser, not callable authorization.**
+  It bounds files, traversal, operations and arrays; rejects unknown keys and
+  wrong types; and validates dates, templates and explicit binding cycles.
+  Parsed service values expose only read-only getters. An external consumer
+  compile probe produces three `E0616` errors for attempted format, review
+  and operation-map mutation. Code and test review findings are closed;
+  after integration rebase all 427 catalog-tool tests, source Clippy and
+  both source guards pass. The external format reference is in
+  `docs/API_CATALOG.md`; source comments are pending the global removal.
+  Rust lines: 2,855 added, none deleted; production 1,454, above the original
+  estimate without dropping validation. M1.4c remains open.
+
 - **M4.3 is done.** The seeded HTTP fault proxy supports every requested
   fault, latency and per-scope rate limit, with bounded state and owned task
   shutdown. Independent code and test reviews closed their findings after

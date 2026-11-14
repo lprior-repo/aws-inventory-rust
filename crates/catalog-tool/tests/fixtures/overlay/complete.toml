@@ -1,0 +1,57 @@
+format = 1
+reviewed = "2026-11-13"
+reviewer = "Example reviewer"
+
+[operation.DescribeInstances]
+class = "enumerate"
+scope = "region"
+items = "Reservations.Instances"
+page_size = 1000
+exclude_from_hash = ["LaunchTime", "State.Code"]
+skip = ["DescribeInstanceStatus"]
+quota_group = "describe"
+queryable = ["InstanceType"]
+tags = "Tags"
+[operation.DescribeInstances.fixed]
+"Filters.Name" = "owner-id"
+Limit = 42
+Enabled = true
+Owners = ["self", "123456789012"]
+[operation.DescribeInstances.paginator]
+kind = "token"
+input = "NextToken"
+output = "NextToken"
+[operation.DescribeInstances.identity]
+arn = "InstanceArn"
+
+[operation.DescribeInstanceAttribute]
+class = "expand"
+scope = "account"
+[operation.DescribeInstanceAttribute.bind]
+InstanceId = { from = "DescribeInstances", path = "InstanceId" }
+AccountId = { account = true }
+Region = { region = true }
+[operation.DescribeInstanceAttribute.identity]
+template = "arn:{partition}:ec2:{region}:{account}:instance/{InstanceId}"
+[operation.DescribeInstanceAttribute.paginator]
+kind = "none"
+
+[operation.BatchGetThings]
+scope = "home-region"
+[operation.BatchGetThings.batch]
+member = "ThingIds"
+max = 100
+replaces = "DescribeThing"
+[operation.BatchGetThings.identity]
+key = ["ThingId"]
+[operation.BatchGetThings.paginator]
+kind = "tokens"
+pairs = [{ input = "StartRecordName", output = "NextRecordName" }]
+truncated = "IsTruncated"
+
+[operation.GetObject]
+class = "deny"
+deny_reason = "content"
+
+[operation.GetOther]
+class = "defer"

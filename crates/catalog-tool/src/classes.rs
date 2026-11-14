@@ -33,6 +33,24 @@ pub enum DenyReason {
     ReferenceData,
 }
 
+impl std::str::FromStr for DenyReason {
+    type Err = ParseErrorKind;
+
+    /// Parse the five canonical must-deny/overlay reason labels.
+    /// # Errors
+    /// Returns `UnknownReason` for any other spelling.
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
+            "content" => Ok(Self::Content),
+            "secret" => Ok(Self::Secret),
+            "paid" => Ok(Self::Paid),
+            "mutating" => Ok(Self::Mutating),
+            "reference-data" => Ok(Self::ReferenceData),
+            _ => Err(ParseErrorKind::UnknownReason),
+        }
+    }
+}
+
 /// Classification is not itself permission to call an operation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
