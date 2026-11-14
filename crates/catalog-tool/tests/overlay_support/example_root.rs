@@ -10,7 +10,10 @@ pub fn root_fields(o: &ServiceOverlay) -> TestResult {
         (op.class, op.scope),
         (Some(OverlayClass::Enumerate), Some(Scope::Region))
     );
-    assert_eq!(op.items, Some(path("Reservations.Instances")?));
+    assert_eq!(
+        op.items,
+        Some(ItemSelector::Member(path("Reservations.Instances")?))
+    );
     assert_eq!(op.page_size, Some(1000));
     assert_eq!(
         op.exclude_from_hash,

@@ -1,6 +1,6 @@
 use super::{
-    OperationName, OperationOverlay, OverlayClass, OverlayError, Rule, Scope, error::Context,
-    fields, pagination, plan, raw,
+    ItemSelector, OperationName, OperationOverlay, OverlayClass, OverlayError, Rule, Scope,
+    error::Context, fields, pagination, plan, raw,
 };
 use toml::Value;
 
@@ -42,7 +42,7 @@ fn simple(
     Ok(OperationOverlay {
         class,
         scope: scope(context, raw.scope.as_ref())?,
-        items: fields::optional_path(context, "items", raw.items.as_ref())?,
+        items: item_selector(context, raw.items.as_ref())?,
         page_size: page_size(context, raw.page_size.as_ref())?,
         exclude_from_hash: exclusions(context, raw)?,
         skip: Vec::new(),
@@ -55,6 +55,19 @@ fn simple(
         bind: Default::default(),
         batch: None,
     })
+}
+fn item_selector(
+    context: &Context<'_>,
+    value: Option<&Value>,
+) -> Result<Option<ItemSelector>, OverlayError> {
+    value
+        .map(|value| {
+            fields::string(context, "items", value).and_then(|text| {
+                ItemSelector::parse(text)
+                    .map_err(|_| context.error("items", text, Rule::MemberPath))
+            })
+        })
+        .transpose()
 }
 fn exclusions(
     context: &Context<'_>,

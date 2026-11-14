@@ -7,7 +7,7 @@
 
 mod counts;
 mod expansion;
-mod model;
+pub(crate) mod model;
 mod pagination;
 mod report;
 mod tally;

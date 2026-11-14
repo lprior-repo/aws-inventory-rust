@@ -134,7 +134,7 @@ pub struct OperationOverlay {
     /// Execution scope override.
     pub scope: Option<Scope>,
     /// Output record-list path override.
-    pub items: Option<MemberPath>,
+    pub items: Option<ItemSelector>,
     /// Page size, 1..=100,000.
     pub page_size: Option<i64>,
     /// Item fields excluded from hashing, at most 64 unique paths.
@@ -157,6 +157,21 @@ pub struct OperationOverlay {
     pub bind: BTreeMap<MemberPath, Binding>,
     /// Batch-read override.
     pub batch: Option<Batch>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ItemSelector {
+    Root,
+    Member(MemberPath),
+}
+
+impl ItemSelector {
+    pub fn parse(value: &str) -> Result<Self, NameError> {
+        if value == "$" {
+            return Ok(Self::Root);
+        }
+        MemberPath::new(value).map(Self::Member)
+    }
 }
 
 /// Allowed fixed request value; string arrays have at most 64 unique entries.

@@ -5,9 +5,9 @@ mod parent;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use catalog_tool::{classes, endpoints, package, plans, smithy};
+use catalog_tool::{classes, endpoints, overlay, package, plans, smithy};
 
-const USAGE: &str = "usage:\n  catalog-tool parent-candidates [--root <dir>] [--write | --check]\n  catalog-tool package --destination <zip path> [--root <dir>]\n  catalog-tool models <report|fields|compile|endpoints> [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool classes [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool plans [--source <dir>] [--root <dir>] [--check | --write]";
+const USAGE: &str = "usage:\n  catalog-tool parent-candidates [--root <dir>] [--write | --check]\n  catalog-tool package --destination <zip path> [--root <dir>]\n  catalog-tool models <report|fields|compile|endpoints> [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool classes [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool plans [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool overlay [--source <dir>] [--root <dir>] [--check | --write]";
 
 fn main() -> ExitCode {
     match run(std::env::args().skip(1).collect()) {
@@ -27,6 +27,7 @@ fn run(arguments: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
         Some("models") => models_arguments(&mut arguments),
         Some("classes") => classes_arguments(&mut arguments),
         Some("plans") => plans_arguments(&mut arguments),
+        Some("overlay") => overlay_arguments(&mut arguments),
         _ => Err(USAGE.into()),
     }
 }
@@ -93,6 +94,12 @@ fn plans_arguments(
 ) -> Result<(), Box<dyn std::error::Error>> {
     let inputs = report_inputs(arguments)?;
     Ok(plans::run(&inputs.root, &inputs.source, inputs.mode)?)
+}
+fn overlay_arguments(
+    arguments: &mut std::slice::Iter<'_, String>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let inputs = report_inputs(arguments)?;
+    Ok(overlay::run(&inputs.root, &inputs.source, inputs.mode)?)
 }
 
 /// Resolved inputs shared by every command that reads the pinned models.

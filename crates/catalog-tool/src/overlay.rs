@@ -71,6 +71,7 @@
 //! key; that combination is invalid. The example places it on a denied operation.
 #![doc = concat!("```toml\n", include_str!("../tests/fixtures/overlay/complete.toml"), "\n```\n")]
 
+mod check;
 mod directory;
 mod error;
 mod fields;
@@ -81,11 +82,15 @@ mod plan;
 mod raw;
 mod types;
 
+pub use check::{
+    CallableOperation, CheckError, CheckedOverlays, EffectiveClass, ReviewedService, Violation,
+    ViolationRule, build_report, check, run,
+};
 pub use directory::load_dir;
 pub use error::{NameError, OverlayError, Rule};
 pub use types::{
-    Batch, Binding, FixedValue, Identity, MemberPath, OperationName, OperationOverlay,
-    OverlayClass, Paginator, Scope, ServiceOverlay, TokenPair,
+    Batch, Binding, FixedValue, Identity, ItemSelector, MemberPath, OperationName,
+    OperationOverlay, OverlayClass, Paginator, Scope, ServiceOverlay, TokenPair,
 };
 
 /// Inclusive maximum UTF-8 bytes in one overlay, checked before TOML parsing.
