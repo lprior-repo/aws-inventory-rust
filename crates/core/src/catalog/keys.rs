@@ -1,6 +1,5 @@
 //! Catalog-only keys; member identities use `record::FieldId`, never these numbers.
 use crate::record::{FieldId, RecordError};
-
 /// Catalog map keys (a namespace separate from member IDs).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[non_exhaustive]
@@ -161,6 +160,7 @@ pub enum CatalogKey {
     MapKeyWire,
     MapValueWire,
     ErrorKind,
+    RequestCompression,
 }
 
 impl CatalogKey {
@@ -262,10 +262,10 @@ impl CatalogKey {
             Self::MapKeyWire => 87,
             Self::MapValueWire => 88,
             Self::ErrorKind => 89,
+            Self::RequestCompression => 90,
         }
     }
 }
-
 /// Shape kind codes. Position is the wire code, shared by compiler and reader.
 /// Scalars occupy codes 0..=13; containers and Smithy metadata follow them.
 pub const SHAPE_KINDS: [&str; 23] = [

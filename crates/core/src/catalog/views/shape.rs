@@ -1,7 +1,9 @@
 //! Shape and member views; targets are indexes or negative prelude kind codes.
-use super::super::{CatalogError, CatalogKey, SHAPE_KINDS, integer, number, optional_list, text};
+mod error;
+use super::super::{CatalogError, CatalogKey, SHAPE_KINDS, integer, number, text};
+use super::{optional_list, wire::WireTraits};
 use crate::record::{FieldId, MapRef, ValueRef};
-use super::wire::WireTraits;
+pub use error::{ErrorKind, ModeledError};
 
 /// A local zero-based index or a scalar/prelude kind name.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -32,22 +34,6 @@ pub(super) fn target(raw: i64, count: usize) -> Result<Target, CatalogError> {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum ErrorKind {
-    Client,
-    Server,
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct ModeledError<'a> {
-    pub kind: ErrorKind,
-    pub code: Option<&'a str>,
-    pub status: Option<u16>,
-    pub http_status: Option<u16>,
-    pub aws_query_status: Option<u16>,
-    pub retryable: bool,
-    pub throttling: bool,
-}
 /// One borrowed Smithy shape.
 #[derive(Clone, Copy, Debug)]
 pub struct Shape<'a> {
@@ -57,8 +43,18 @@ pub struct Shape<'a> {
     field_offsets: &'a [u8],
 }
 impl<'a> Shape<'a> {
-    pub(super) fn new(map: MapRef<'a>, count: usize, field_names: &'a [u8], field_offsets: &'a [u8]) -> Result<Self, CatalogError> {
-        let shape = Self { map, count, field_names, field_offsets };
+    pub(super) fn new(
+        map: MapRef<'a>,
+        count: usize,
+        field_names: &'a [u8],
+        field_offsets: &'a [u8],
+    ) -> Result<Self, CatalogError> {
+        let shape = Self {
+            map,
+            count,
+            field_names,
+            field_offsets,
+        };
         shape.name()?;
         shape.kind()?;
         Ok(shape)
@@ -81,26 +77,7 @@ impl<'a> Shape<'a> {
             .ok_or(CatalogError::Reference)
     }
     pub fn error(self) -> Result<Option<ModeledError<'a>>, CatalogError> {
-        let error_kind = optional_text(self.map, CatalogKey::ErrorKind)?;
-        let http_status = optional_status(self.map, CatalogKey::HttpError)?;
-        let aws_query_status = optional_status(self.map, CatalogKey::AwsQueryStatus)?;
-        let code = optional_text(self.map, CatalogKey::AwsQueryError)?;
-        if error_kind.is_none() && http_status.is_none()
-            && aws_query_status.is_none() && code.is_none() {
-            return Ok(None);
-        }
-        let kind = match error_kind {
-            Some("client") => ErrorKind::Client,
-            Some("server") => ErrorKind::Server,
-            None if http_status.is_some_and(|status| status < 500) => ErrorKind::Client,
-            None if http_status.is_some() => ErrorKind::Server,
-            _ => return Err(CatalogError::Reference),
-        };
-        Ok(Some(ModeledError {
-            kind, code, status: http_status.or(aws_query_status), http_status,
-            aws_query_status, retryable: optional_flag(self.map, CatalogKey::ErrorRetryable)?,
-            throttling: optional_flag(self.map, CatalogKey::ErrorThrottling)?,
-        }))
+        error::read(self.map)
     }
     pub fn wire(self) -> Result<WireTraits<'a>, CatalogError> {
         Ok(WireTraits::shape(self.map))
@@ -124,11 +101,17 @@ impl<'a> Shape<'a> {
         let mut previous = None;
         Ok(std::iter::from_fn(move || {
             let value = members.as_mut()?.next()?;
-            Some(read_member(value, self.count, self.field_names, self.field_offsets).and_then(|member| {
-                if previous.is_some_and(|id| id >= member.id) { return Err(CatalogError::Reference); }
-                *previous = Some(member.id);
-                Ok(member)
-            }))
+            Some(
+                read_member(value, self.count, self.field_names, self.field_offsets).and_then(
+                    |member| {
+                        if previous.is_some_and(|id| id >= member.id) {
+                            return Err(CatalogError::Reference);
+                        }
+                        previous = Some(member.id);
+                        Ok(member)
+                    },
+                ),
+            )
         }))
     }
     /// List element target, present only on lists.
@@ -200,7 +183,7 @@ impl<'a> Shape<'a> {
 }
 
 /// A stable member identity, bounded target, and modeled requiredness.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug)]
 pub struct Member<'a> {
     pub id: FieldId,
     pub target: Target,
@@ -211,7 +194,7 @@ pub struct Member<'a> {
 }
 impl<'a> Member<'a> {
     pub fn name(self) -> Result<&'a str, CatalogError> {
-        super::wire::field_name(self.field_names, self.field_offsets, self.id)
+        super::field_name(self.field_names, self.field_offsets, self.id)
     }
     pub fn wire(self) -> Result<WireTraits<'a>, CatalogError> {
         Ok(WireTraits::member(self.map))
@@ -226,7 +209,10 @@ fn read_member<'a>(
     let ValueRef::Map(map) = value? else {
         return Err(CatalogError::Reference);
     };
-    let id = member_id(number(map.get_field(CatalogKey::MemberId.field()?)?)?)?;
+    let id = member_id(
+        map.get_field(CatalogKey::MemberId.field()?)?
+            .ok_or(CatalogError::Reference)?,
+    )?;
     let target_value = map.get_field(CatalogKey::MemberTarget.field()?)?;
     let target_raw = number(target_value.ok_or(CatalogError::Reference)?)?;
     let target = target(target_raw, count)?;
@@ -235,41 +221,17 @@ fn read_member<'a>(
         Some(ValueRef::Bool(required)) => required,
         _ => return Err(CatalogError::Reference),
     };
-    Ok(Member { id, target, required, map, field_names, field_offsets })
+    Ok(Member {
+        id,
+        target,
+        required,
+        map,
+        field_names,
+        field_offsets,
+    })
 }
 
 fn member_id(value: ValueRef<'_>) -> Result<FieldId, CatalogError> {
     let raw = u32::try_from(number(value)?).map_err(|_| CatalogError::Reference)?;
     Ok(FieldId::new(raw)?)
-}
-
-fn next<'a>(
-    items: &mut impl Iterator<Item = Result<ValueRef<'a>, crate::record::RecordError>>,
-) -> Result<ValueRef<'a>, CatalogError> {
-    Ok(items.next().ok_or(CatalogError::Reference)??)
-}
-fn optional_text(map: MapRef<'_>, key: CatalogKey) -> Result<Option<&str>, CatalogError> {
-    match map.get_field(key.field()?)? {
-        None => Ok(None),
-        Some(ValueRef::Text(value)) => Ok(Some(value)),
-        _ => Err(CatalogError::Field(key)),
-    }
-}
-
-fn optional_status(map: MapRef<'_>, key: CatalogKey) -> Result<Option<u16>, CatalogError> {
-    let value = match map.get_field(key.field()?)? {
-        None => return Ok(None),
-        Some(ValueRef::Int(value)) => value,
-        _ => return Err(CatalogError::Field(key)),
-    };
-    let value = u16::try_from(value).map_err(|_| CatalogError::Field(key))?;
-    if (100..=599).contains(&value) { Ok(Some(value)) } else { Err(CatalogError::Field(key)) }
-}
-
-fn optional_flag(map: MapRef<'_>, key: CatalogKey) -> Result<bool, CatalogError> {
-    match map.get_field(key.field()?)? {
-        None => Ok(false),
-        Some(ValueRef::Bool(value)) => Ok(value),
-        _ => Err(CatalogError::Field(key)),
-    }
 }

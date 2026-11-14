@@ -1,5 +1,7 @@
+pub(in crate::catalog) mod field_name;
 use super::super::{CatalogError, CatalogKey};
-use crate::record::{FieldId, MapRef, ValueRef};
+use crate::record::{MapRef, ValueRef};
+pub(in crate::catalog) use field_name::field_name;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TimestampFormat {
@@ -42,19 +44,31 @@ enum WireRole {
 
 impl<'a> WireTraits<'a> {
     pub(super) const fn empty() -> Self {
-        Self { map: None, role: WireRole::Empty }
+        Self {
+            map: None,
+            role: WireRole::Empty,
+        }
     }
 
     pub(super) const fn shape(map: MapRef<'a>) -> Self {
-        Self { map: Some(map), role: WireRole::Shape }
+        Self {
+            map: Some(map),
+            role: WireRole::Shape,
+        }
     }
 
     pub(super) const fn member(map: MapRef<'a>) -> Self {
-        Self { map: Some(map), role: WireRole::Member }
+        Self {
+            map: Some(map),
+            role: WireRole::Member,
+        }
     }
 
     pub(super) const fn service(map: MapRef<'a>) -> Self {
-        Self { map: Some(map), role: WireRole::Service }
+        Self {
+            map: Some(map),
+            role: WireRole::Service,
+        }
     }
 
     pub(super) fn nested(map: MapRef<'a>, key: CatalogKey) -> Result<Self, CatalogError> {
@@ -65,22 +79,17 @@ impl<'a> WireTraits<'a> {
         }
     }
 
-    fn key(self, shape: CatalogKey, member: CatalogKey) -> Result<Option<ValueRef<'a>>, CatalogError> {
-        let key = match self.role {
-            WireRole::Shape => shape,
-            WireRole::Member => member,
-            WireRole::Service | WireRole::Empty => return Ok(None),
-        };
-        self.map.ok_or(CatalogError::Reference)?.get_field(key.field()?).map_err(Into::into)
-    }
-
     fn text(self, shape: CatalogKey, member: CatalogKey) -> Result<Option<&'a str>, CatalogError> {
         let key = match self.role {
             WireRole::Shape => shape,
             WireRole::Member => member,
             WireRole::Service | WireRole::Empty => return Ok(None),
         };
-        match self.map.ok_or(CatalogError::Reference)?.get_field(key.field()?)? {
+        match self
+            .map
+            .ok_or(CatalogError::Reference)?
+            .get_field(key.field()?)?
+        {
             None => Ok(None),
             Some(ValueRef::Text(text)) => Ok(Some(text)),
             _ => Err(CatalogError::Field(key)),
@@ -91,7 +100,11 @@ impl<'a> WireTraits<'a> {
         match self.role {
             WireRole::Empty => Ok(false),
             WireRole::Shape | WireRole::Member | WireRole::Service => {
-                match self.map.ok_or(CatalogError::Reference)?.get_field(key.field()?)? {
+                match self
+                    .map
+                    .ok_or(CatalogError::Reference)?
+                    .get_field(key.field()?)?
+                {
                     None => Ok(false),
                     Some(ValueRef::Bool(value)) => Ok(value),
                     _ => Err(CatalogError::Field(key)),
@@ -101,13 +114,21 @@ impl<'a> WireTraits<'a> {
     }
 
     pub fn json_name(self) -> Result<Option<&'a str>, CatalogError> {
-        if matches!(self.role, WireRole::Member) { self.text(CatalogKey::JsonName, CatalogKey::JsonName) } else { Ok(None) }
+        if matches!(self.role, WireRole::Member) {
+            self.text(CatalogKey::JsonName, CatalogKey::JsonName)
+        } else {
+            Ok(None)
+        }
     }
     pub fn xml_name(self) -> Result<Option<&'a str>, CatalogError> {
         self.text(CatalogKey::ShapeXmlName, CatalogKey::MemberXmlName)
     }
     pub fn ec2_query_name(self) -> Result<Option<&'a str>, CatalogError> {
-        if matches!(self.role, WireRole::Member) { self.text(CatalogKey::Ec2QueryName, CatalogKey::Ec2QueryName) } else { Ok(None) }
+        if matches!(self.role, WireRole::Member) {
+            self.text(CatalogKey::Ec2QueryName, CatalogKey::Ec2QueryName)
+        } else {
+            Ok(None)
+        }
     }
     pub fn media_type(self) -> Result<Option<&'a str>, CatalogError> {
         self.text(CatalogKey::MediaType, CatalogKey::MediaType)
@@ -122,7 +143,11 @@ impl<'a> WireTraits<'a> {
 
     fn service_namespace(self) -> Result<Option<XmlNamespace<'a>>, CatalogError> {
         let key = CatalogKey::XmlNamespace;
-        match self.map.ok_or(CatalogError::Reference)?.get_field(key.field()?)? {
+        match self
+            .map
+            .ok_or(CatalogError::Reference)?
+            .get_field(key.field()?)?
+        {
             None => Ok(None),
             Some(ValueRef::Map(map)) => {
                 let uri = match map.get_field(CatalogKey::XmlUri.field()?)? {
@@ -165,7 +190,11 @@ impl<'a> WireTraits<'a> {
             WireRole::Member => CatalogKey::TimestampFormat,
             WireRole::Service | WireRole::Empty => return Ok(None),
         };
-        match self.map.ok_or(CatalogError::Reference)?.get_field(key.field()?)? {
+        match self
+            .map
+            .ok_or(CatalogError::Reference)?
+            .get_field(key.field()?)?
+        {
             None => Ok(None),
             Some(ValueRef::Text("date-time")) => Ok(Some(TimestampFormat::DateTime)),
             Some(ValueRef::Text("http-date")) => Ok(Some(TimestampFormat::HttpDate)),
@@ -200,21 +229,41 @@ impl<'a> WireTraits<'a> {
             None => Ok(HttpBinding::Document),
             Some((CatalogKey::HttpLabel, ValueRef::Bool(true))) => Ok(HttpBinding::Label),
             Some((CatalogKey::HttpQuery, ValueRef::Text(value))) => Ok(HttpBinding::Query(value)),
-            Some((CatalogKey::HttpQueryParams, ValueRef::Bool(true))) => Ok(HttpBinding::QueryParams),
+            Some((CatalogKey::HttpQueryParams, ValueRef::Bool(true))) => {
+                Ok(HttpBinding::QueryParams)
+            }
             Some((CatalogKey::HttpHeader, ValueRef::Text(value))) => Ok(HttpBinding::Header(value)),
-            Some((CatalogKey::HttpPrefixHeaders, ValueRef::Text(value))) => Ok(HttpBinding::PrefixHeaders(value)),
+            Some((CatalogKey::HttpPrefixHeaders, ValueRef::Text(value))) => {
+                Ok(HttpBinding::PrefixHeaders(value))
+            }
             Some((CatalogKey::HttpPayload, ValueRef::Bool(true))) => Ok(HttpBinding::Payload),
-            Some((CatalogKey::HttpResponseCode, ValueRef::Bool(true))) => Ok(HttpBinding::ResponseCode),
+            Some((CatalogKey::HttpResponseCode, ValueRef::Bool(true))) => {
+                Ok(HttpBinding::ResponseCode)
+            }
             _ => Err(CatalogError::Reference),
         }
     }
-    pub fn xml_flattened(self) -> Result<bool, CatalogError> { self.flag(CatalogKey::XmlFlattened) }
-    pub fn xml_attribute(self) -> Result<bool, CatalogError> { self.flag(CatalogKey::XmlAttribute) }
-    pub fn sparse(self) -> Result<bool, CatalogError> { self.flag(CatalogKey::Sparse) }
-    pub fn streaming(self) -> Result<bool, CatalogError> { self.flag(CatalogKey::Streaming) }
-    pub fn sensitive(self) -> Result<bool, CatalogError> { self.flag(CatalogKey::Sensitive) }
-    pub fn idempotency_token(self) -> Result<bool, CatalogError> { self.flag(CatalogKey::IdempotencyToken) }
-    pub fn host_label(self) -> Result<bool, CatalogError> { self.flag(CatalogKey::MemberHostLabel) }
+    pub fn xml_flattened(self) -> Result<bool, CatalogError> {
+        self.flag(CatalogKey::XmlFlattened)
+    }
+    pub fn xml_attribute(self) -> Result<bool, CatalogError> {
+        self.flag(CatalogKey::XmlAttribute)
+    }
+    pub fn sparse(self) -> Result<bool, CatalogError> {
+        self.flag(CatalogKey::Sparse)
+    }
+    pub fn streaming(self) -> Result<bool, CatalogError> {
+        self.flag(CatalogKey::Streaming)
+    }
+    pub fn sensitive(self) -> Result<bool, CatalogError> {
+        self.flag(CatalogKey::Sensitive)
+    }
+    pub fn idempotency_token(self) -> Result<bool, CatalogError> {
+        self.flag(CatalogKey::IdempotencyToken)
+    }
+    pub fn host_label(self) -> Result<bool, CatalogError> {
+        self.flag(CatalogKey::MemberHostLabel)
+    }
     pub(super) fn validate(self) -> Result<(), CatalogError> {
         self.json_name()?;
         self.xml_name()?;
@@ -232,17 +281,4 @@ impl<'a> WireTraits<'a> {
         self.host_label()?;
         Ok(())
     }
-}
-
-pub(super) fn field_name<'a>(data: &'a [u8], offsets: &'a [u8], id: FieldId) -> Result<&'a str, CatalogError> {
-    let index = usize::try_from(id.value()).map_err(|_| CatalogError::Reference)?.checked_sub(1).ok_or(CatalogError::Reference)?;
-    let start = index.checked_mul(8).ok_or(CatalogError::Overflow)?;
-    let end = start.checked_add(8).ok_or(CatalogError::Overflow)?;
-    let pair = offsets.get(start..end).ok_or(CatalogError::Reference)?;
-    let start = u32::from_be_bytes(pair.get(..4).ok_or(CatalogError::Reference)?.try_into().map_err(|_| CatalogError::Reference)?);
-    let end = u32::from_be_bytes(pair.get(4..8).ok_or(CatalogError::Reference)?.try_into().map_err(|_| CatalogError::Reference)?);
-    let start = usize::try_from(start).map_err(|_| CatalogError::Reference)?;
-    let end = usize::try_from(end).map_err(|_| CatalogError::Reference)?;
-    let bytes = data.get(start..end).ok_or(CatalogError::Reference)?;
-    std::str::from_utf8(bytes).map_err(|_| CatalogError::Reference)
 }

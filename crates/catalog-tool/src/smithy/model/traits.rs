@@ -7,20 +7,50 @@ use serde_json::Value;
 use std::{collections::BTreeMap, fmt};
 
 const RETAIN_PAYLOADS: &[&str] = &[
-    "aws.api#arn", "aws.api#service", "aws.api#endpointPrefix", "aws.api#arnNamespace",
-    "aws.auth#sigv4", "aws.protocols#awsQueryError", "smithy.api#xmlNamespace",
-    "aws.protocols#restJson1", "aws.protocols#awsJson1_0", "aws.protocols#awsJson1_1",
-    "smithy.api#http", "smithy.api#httpError", "smithy.api#endpoint", "smithy.api#error",
-    "smithy.api#retryable", "smithy.api#range", "smithy.api#paginated", "smithy.api#readonly",
-    "smithy.api#mediaType", "smithy.api#jsonName", "smithy.api#xmlName", "aws.api#ec2QueryName",
-    "smithy.api#httpLabel", "smithy.api#httpQuery", "smithy.api#httpQueryParams",
-    "smithy.api#httpHeader", "smithy.api#httpPrefixHeaders", "smithy.api#httpPayload",
-    "smithy.api#httpResponseCode", "smithy.api#hostLabel", "smithy.api#xmlFlattened",
-    "smithy.api#xmlAttribute", "smithy.api#timestampFormat", "smithy.api#idempotencyToken",
-    "smithy.api#sparse", "smithy.api#streaming", "smithy.api#sensitive",
-    "smithy.api#httpChecksumRequired", "aws.protocols#awsQueryCompatible",
-    "aws.protocols#awsQuery", "aws.protocols#ec2Query", "aws.protocols#restXml",
-    "smithy.protocols#rpcv2Cbor", "smithy.api#required",
+    "aws.api#arn",
+    "aws.api#service",
+    "aws.api#endpointPrefix",
+    "aws.api#arnNamespace",
+    "aws.auth#sigv4",
+    "aws.protocols#awsQueryError",
+    "smithy.api#xmlNamespace",
+    "aws.protocols#restJson1",
+    "aws.protocols#awsJson1_0",
+    "aws.protocols#awsJson1_1",
+    "smithy.api#http",
+    "smithy.api#httpError",
+    "smithy.api#endpoint",
+    "smithy.api#error",
+    "smithy.api#retryable",
+    "smithy.api#range",
+    "smithy.api#paginated",
+    "smithy.api#readonly",
+    "smithy.api#mediaType",
+    "smithy.api#jsonName",
+    "smithy.api#xmlName",
+    "aws.api#ec2QueryName",
+    "smithy.api#httpLabel",
+    "smithy.api#httpQuery",
+    "smithy.api#httpQueryParams",
+    "smithy.api#httpHeader",
+    "smithy.api#httpPrefixHeaders",
+    "smithy.api#httpPayload",
+    "smithy.api#httpResponseCode",
+    "smithy.api#hostLabel",
+    "smithy.api#xmlFlattened",
+    "smithy.api#xmlAttribute",
+    "smithy.api#timestampFormat",
+    "smithy.api#idempotencyToken",
+    "smithy.api#sparse",
+    "smithy.api#streaming",
+    "smithy.api#sensitive",
+    "smithy.api#httpChecksumRequired",
+    "aws.protocols#awsQueryCompatible",
+    "aws.protocols#awsQuery",
+    "aws.protocols#ec2Query",
+    "aws.protocols#restXml",
+    "smithy.api#requestCompression",
+    "smithy.api#required",
 ];
 
 pub(super) fn read<'de, D: Deserializer<'de>>(
@@ -56,9 +86,9 @@ fn retains_payload(name: &str) -> bool {
 pub(super) fn validate_shape(shape: &super::Shape) -> Result<(), String> {
     validate_traits(&shape.traits)?;
     match &shape.kind {
-        super::ShapeKind::Structure { members } | super::ShapeKind::Union { members } => {
-            members.values().try_for_each(|member| validate_traits(&member.traits))
-        }
+        super::ShapeKind::Structure { members } | super::ShapeKind::Union { members } => members
+            .values()
+            .try_for_each(|member| validate_traits(&member.traits)),
         super::ShapeKind::List { member } => validate_traits(&member.traits),
         super::ShapeKind::Map { key, value } => {
             validate_traits(&key.traits)?;
@@ -69,56 +99,145 @@ pub(super) fn validate_shape(shape: &super::Shape) -> Result<(), String> {
 }
 
 fn validate_traits(traits: &BTreeMap<String, Value>) -> Result<(), String> {
-    traits.iter().try_for_each(|(name, value)| validate_trait(name, value))
+    traits
+        .iter()
+        .try_for_each(|(name, value)| validate_trait(name, value))
 }
 
 fn validate_trait(name: &str, value: &Value) -> Result<(), String> {
-    let valid = match name {
-        "aws.api#arn" => object_string(value, "template"),
-        "aws.api#service" => service_payload(value),
-        "aws.api#endpointPrefix" | "aws.api#arnNamespace" | "aws.api#ec2QueryName" => value.is_string(),
-        "smithy.api#endpoint" => endpoint_payload(value),
-        "aws.auth#sigv4" => object_string(value, "name"),
-        "smithy.api#jsonName" | "smithy.api#xmlName" | "smithy.api#httpQuery"
-        | "smithy.api#httpHeader" | "smithy.api#httpPrefixHeaders"
-        | "smithy.api#mediaType" => value.is_string(),
-        "smithy.api#xmlNamespace" => object_string(value, "uri")
-            && value.get("prefix").is_none_or(Value::is_string),
-        "smithy.api#http" => object_string(value, "method") && object_string(value, "uri")
-            && value.get("code").is_none_or(|code| code.as_i64().is_some_and(|n| (100..=599).contains(&n))),
-        "smithy.api#httpError" => value.as_i64().is_some_and(|n| (400..=599).contains(&n)),
-        "smithy.api#error" => value.as_str().is_some_and(|kind| matches!(kind, "client" | "server")),
-        "smithy.api#range" => value.as_object().is_some_and(|fields| {
-            ["min", "max"].iter().all(|key| fields.get(*key).is_none_or(Value::is_number))
-        }),
-        "smithy.api#paginated" => paginated_payload(value),
-        "aws.protocols#awsQueryError" => object_string(value, "code")
-            && value.get("httpResponseCode").is_none_or(Value::is_i64),
-        "smithy.api#retryable" => value.as_object().is_some_and(|fields| {
-            fields.get("throttling").is_none_or(Value::is_boolean)
-        }),
-        "smithy.api#timestampFormat" => value.as_str().is_some_and(|format| {
-            matches!(format, "date-time" | "http-date" | "epoch-seconds")
-        }),
-        "smithy.api#readonly" | "smithy.api#required" | "smithy.api#sparse"
-        | "smithy.api#streaming" | "smithy.api#sensitive" | "smithy.api#idempotencyToken"
-        | "smithy.api#httpLabel" | "smithy.api#httpPayload" | "smithy.api#httpQueryParams"
-        | "smithy.api#httpResponseCode" | "smithy.api#hostLabel" | "smithy.api#xmlFlattened"
-        | "smithy.api#xmlAttribute" | "smithy.api#httpChecksumRequired"
-        | "aws.protocols#awsQueryCompatible" => empty_object(value) || (name == "smithy.api#httpChecksumRequired" && value.is_boolean()),
-        "aws.protocols#restJson1" | "aws.protocols#awsJson1_0" | "aws.protocols#awsJson1_1"
-        | "aws.protocols#awsQuery" | "aws.protocols#ec2Query" | "aws.protocols#restXml"
-        | "smithy.protocols#rpcv2Cbor" => protocol_payload(value),
-        _ => true,
-    };
+    let valid = validate_aws_trait(name, value)
+        .or_else(|| validate_string_trait(name, value))
+        .or_else(|| validate_wire_trait(name, value))
+        .or_else(|| validate_scalar_trait(name, value))
+        .or_else(|| validate_marker_trait(name, value))
+        .or_else(|| validate_protocol_trait(name, value))
+        .unwrap_or(true);
     if valid { Ok(()) } else { Err(name.to_owned()) }
+}
+
+fn validate_aws_trait(name: &str, value: &Value) -> Option<bool> {
+    match name {
+        "aws.api#arn" => Some(object_string(value, "template")),
+        "aws.api#service" => Some(service_payload(value)),
+        "aws.api#endpointPrefix" | "aws.api#arnNamespace" | "aws.api#ec2QueryName" => {
+            Some(value.is_string())
+        }
+        "aws.auth#sigv4" => Some(object_string(value, "name")),
+        _ => None,
+    }
+}
+
+fn validate_string_trait(name: &str, value: &Value) -> Option<bool> {
+    match name {
+        "smithy.api#jsonName"
+        | "smithy.api#xmlName"
+        | "smithy.api#httpQuery"
+        | "smithy.api#httpHeader"
+        | "smithy.api#httpPrefixHeaders"
+        | "smithy.api#mediaType" => Some(value.is_string()),
+        "smithy.api#timestampFormat" => {
+            Some(value.as_str().is_some_and(|format| {
+                matches!(format, "date-time" | "http-date" | "epoch-seconds")
+            }))
+        }
+        _ => None,
+    }
+}
+
+fn validate_wire_trait(name: &str, value: &Value) -> Option<bool> {
+    match name {
+        "smithy.api#xmlNamespace" => {
+            Some(object_string(value, "uri") && value.get("prefix").is_none_or(Value::is_string))
+        }
+        "smithy.api#http" => Some(http_payload(value)),
+        "smithy.api#paginated" => Some(paginated_payload(value)),
+        "smithy.api#requestCompression" => Some(request_compression_payload(value)),
+        "smithy.api#endpoint" => Some(endpoint_payload(value)),
+        "aws.protocols#awsQueryError" => Some(
+            object_string(value, "code") && value.get("httpResponseCode").is_none_or(Value::is_i64),
+        ),
+        _ => None,
+    }
+}
+
+fn validate_scalar_trait(name: &str, value: &Value) -> Option<bool> {
+    match name {
+        "smithy.api#httpError" => Some(value.as_i64().is_some_and(|n| (400..=599).contains(&n))),
+        "smithy.api#error" => Some(
+            value
+                .as_str()
+                .is_some_and(|kind| matches!(kind, "client" | "server")),
+        ),
+        "smithy.api#range" => Some(range_payload(value)),
+        "smithy.api#retryable" => Some(
+            value
+                .as_object()
+                .is_some_and(|fields| fields.get("throttling").is_none_or(Value::is_boolean)),
+        ),
+        _ => None,
+    }
+}
+
+fn validate_marker_trait(name: &str, value: &Value) -> Option<bool> {
+    match name {
+        "smithy.api#readonly"
+        | "smithy.api#required"
+        | "smithy.api#sparse"
+        | "smithy.api#streaming"
+        | "smithy.api#sensitive"
+        | "smithy.api#idempotencyToken"
+        | "smithy.api#httpLabel"
+        | "smithy.api#httpPayload"
+        | "smithy.api#httpQueryParams"
+        | "smithy.api#httpResponseCode"
+        | "smithy.api#hostLabel"
+        | "smithy.api#xmlFlattened"
+        | "smithy.api#xmlAttribute"
+        | "smithy.api#httpChecksumRequired"
+        | "aws.protocols#awsQueryCompatible" => Some(
+            empty_object(value)
+                || (name == "smithy.api#httpChecksumRequired" && value.is_boolean()),
+        ),
+        _ => None,
+    }
+}
+
+fn validate_protocol_trait(name: &str, value: &Value) -> Option<bool> {
+    match name {
+        "aws.protocols#restJson1"
+        | "aws.protocols#awsJson1_0"
+        | "aws.protocols#awsJson1_1"
+        | "aws.protocols#awsQuery"
+        | "aws.protocols#ec2Query"
+        | "aws.protocols#restXml"
+        | "smithy.protocols#rpcv2Cbor" => Some(protocol_payload(value)),
+        _ => None,
+    }
+}
+
+fn http_payload(value: &Value) -> bool {
+    object_string(value, "method")
+        && object_string(value, "uri")
+        && value
+            .get("code")
+            .is_none_or(|code| code.as_i64().is_some_and(|n| (100..=599).contains(&n)))
+}
+
+fn range_payload(value: &Value) -> bool {
+    value.as_object().is_some_and(|fields| {
+        ["min", "max"]
+            .iter()
+            .all(|key| fields.get(*key).is_none_or(Value::is_number))
+    })
 }
 
 fn empty_object(value: &Value) -> bool {
     value.as_object().is_some_and(serde_json::Map::is_empty)
 }
 fn protocol_payload(value: &Value) -> bool {
-    value.as_object().is_some_and(|fields| fields.get("noErrorWrapping").is_none_or(Value::is_boolean))
+    value
+        .as_object()
+        .is_some_and(|fields| fields.get("noErrorWrapping").is_none_or(Value::is_boolean))
 }
 fn object_string(value: &Value, key: &str) -> bool {
     value.get(key).is_some_and(Value::is_string)
@@ -126,17 +245,49 @@ fn object_string(value: &Value, key: &str) -> bool {
 fn paginated_payload(value: &Value) -> bool {
     value.as_object().is_some_and(|fields| {
         ["inputToken", "outputToken", "items", "pageSize"]
-            .iter().all(|key| fields.get(*key).is_none_or(Value::is_string))
-            && fields.get("additionalInputTokens").is_none_or(|tokens| tokens.as_array().is_some_and(|items| items.iter().all(Value::is_string)))
-            && fields.get("stopOnDuplicateToken").is_none_or(Value::is_boolean)
+            .iter()
+            .all(|key| fields.get(*key).is_none_or(Value::is_string))
+            && fields.get("additionalInputTokens").is_none_or(|tokens| {
+                tokens
+                    .as_array()
+                    .is_some_and(|items| items.iter().all(Value::is_string))
+            })
+            && fields
+                .get("stopOnDuplicateToken")
+                .is_none_or(Value::is_boolean)
+    })
+}
+fn request_compression_payload(value: &Value) -> bool {
+    value.as_object().is_some_and(|fields| {
+        fields
+            .get("encodings")
+            .and_then(Value::as_array)
+            .is_some_and(|encodings| {
+                !encodings.is_empty()
+                    && encodings.iter().all(|encoding| {
+                        encoding
+                            .as_str()
+                            .is_some_and(|name| name.eq_ignore_ascii_case("gzip"))
+                    })
+            })
     })
 }
 fn endpoint_payload(value: &Value) -> bool {
-    value.as_object().is_some_and(|fields| fields.get("hostPrefix").is_none_or(Value::is_string))
+    value
+        .as_object()
+        .is_some_and(|fields| fields.get("hostPrefix").is_none_or(Value::is_string))
 }
 fn service_payload(value: &Value) -> bool {
     value.as_object().is_some_and(|fields| {
-        ["sdkId", "endpointPrefix", "arnNamespace", "cloudFormationName", "cloudTrailEventSource", "cloudWatchEventSource"]
-            .iter().all(|key| fields.get(*key).is_none_or(Value::is_string))
+        [
+            "sdkId",
+            "endpointPrefix",
+            "arnNamespace",
+            "cloudFormationName",
+            "cloudTrailEventSource",
+            "cloudWatchEventSource",
+        ]
+        .iter()
+        .all(|key| fields.get(*key).is_none_or(Value::is_string))
     })
 }

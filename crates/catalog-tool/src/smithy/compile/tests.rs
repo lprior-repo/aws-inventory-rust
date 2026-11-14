@@ -51,8 +51,14 @@ fn root(service: Record) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         (CatalogKey::Format, Value::Int(2)),
         (CatalogKey::ModelsCommit, Value::Text("fixture".into())),
         (CatalogKey::FieldNames, Value::Bytes(b"ZuluAlpha".to_vec())),
-        (CatalogKey::FieldNameOffsets, Value::Bytes(vec![0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0, 9])),
-        (CatalogKey::Services, Value::List(vec![Value::Bytes(service.into_bytes())])),
+        (
+            CatalogKey::FieldNameOffsets,
+            Value::Bytes(vec![0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0, 9]),
+        ),
+        (
+            CatalogKey::Services,
+            Value::List(vec![Value::Bytes(service.into_bytes())]),
+        ),
     ])?;
     Ok(Record::encode(&root)?.into_bytes())
 }

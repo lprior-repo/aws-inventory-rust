@@ -3,7 +3,7 @@ mod traits;
 
 use std::collections::BTreeMap;
 
-use serde::{Deserialize, de::IgnoredAny};
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub(super) struct ModelFile {

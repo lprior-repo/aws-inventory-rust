@@ -11,7 +11,10 @@ mod views;
 use crate::record::{FieldId, ListRef, MapRef, RecordError, ValueKind, ValueRef};
 pub use counts::Counts;
 pub use keys::{CatalogKey, SHAPE_KINDS, kind_code};
-pub use views::{ErrorKind, HttpBinding, HttpOperation, Member, ModeledError, Operation, Paginator, Service, Shape, Target, TimestampFormat, WireTraits, XmlNamespace};
+pub use views::{
+    CompressionAlgorithm, ErrorKind, HttpBinding, HttpOperation, Member, ModeledError, Operation,
+    Paginator, Service, Shape, Target, TimestampFormat, WireTraits, XmlNamespace,
+};
 
 /// Catalog schema version, independent of the underlying record format.
 pub const CATALOG_VERSION: i64 = 2;
@@ -81,7 +84,12 @@ impl<'a> Catalog<'a> {
         services
             .iter()?
             .try_for_each(|value| bytes_value(value?).map(|_| ()))?;
-        Ok(Self { root, services, field_names, field_offsets })
+        Ok(Self {
+            root,
+            services,
+            field_names,
+            field_offsets,
+        })
     }
 
     /// Return the upstream commit, borrowing the root.
@@ -114,7 +122,7 @@ impl<'a> Catalog<'a> {
         })
     }
     pub fn field_name(self, id: FieldId) -> Result<&'a str, CatalogError> {
-        views::wire::field_name(self.field_names, self.field_offsets, id)
+        views::field_name(self.field_names, self.field_offsets, id)
     }
 
     /// Compute report totals by walking embedded records, not model files or cached totals.
@@ -160,11 +168,17 @@ fn validate_field_registry(names: &[u8], offsets: &[u8]) -> Result<(), CatalogEr
     let mut previous = 0usize;
     for pair in offsets.chunks_exact(8) {
         let start = usize::try_from(u32::from_be_bytes(
-            pair.get(..4).ok_or(CatalogError::Reference)?.try_into().map_err(|_| CatalogError::Reference)?,
+            pair.get(..4)
+                .ok_or(CatalogError::Reference)?
+                .try_into()
+                .map_err(|_| CatalogError::Reference)?,
         ))
         .map_err(|_| CatalogError::Reference)?;
         let end = usize::try_from(u32::from_be_bytes(
-            pair.get(4..8).ok_or(CatalogError::Reference)?.try_into().map_err(|_| CatalogError::Reference)?,
+            pair.get(4..8)
+                .ok_or(CatalogError::Reference)?
+                .try_into()
+                .map_err(|_| CatalogError::Reference)?,
         ))
         .map_err(|_| CatalogError::Reference)?;
         if start != previous || end <= start {

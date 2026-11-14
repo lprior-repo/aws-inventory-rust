@@ -92,8 +92,9 @@ for id in aws.api#service aws.auth#sigv4 aws.protocols#awsQueryCompatible \
   smithy.api#xmlNamespace smithy.api#http smithy.api#endpoint \
   smithy.api#paginated smithy.api#httpChecksumRequired \
   smithy.api#mediaType smithy.api#sensitive smithy.api#idempotencyToken \
-  smithy.api#streaming smithy.api#sparse smithy.api#error smithy.api#httpError \
-  aws.protocols#awsQueryError smithy.api#retryable; do
+  smithy.api#streaming smithy.api#requestCompression smithy.api#sparse \
+  smithy.api#error smithy.api#httpError aws.protocols#awsQueryError \
+  smithy.api#retryable; do
   printf '%s model=%s wire-member=%s\n' "$id" \
     "$(model_trait_count "$id")" "$(wire_member_trait_count "$id")"
 done
@@ -121,11 +122,78 @@ done
 | 16 | Input | Operation input target; absent Smithy input becomes Unit |
 | 17 | Output | Operation output target; absent Smithy output becomes Unit |
 | 18 | ServiceShape | Full service shape ID, for example `com.amazonaws.ec2#AmazonEC2` |
+| 19 | SdkId | AWS service SDK ID, when present |
+| 20 | EndpointPrefix | AWS endpoint prefix, when present |
+| 21 | ArnNamespace | AWS ARN namespace, when present |
+| 22 | Sigv4Name | `aws.auth#sigv4.name`, when present |
+| 23 | ApiVersion | Smithy service shape `version` property |
+| 24 | Reserved | Preserved key assignment; not emitted |
+| 25 | Reserved | Preserved key assignment; not emitted |
+| 26 | Reserved | Preserved key assignment; not emitted |
+| 27 | XmlNamespace | Service XML namespace map (`uri`, optional `prefix`) |
+| 28 | Reserved | Service paginator defaults are merged into operations, not stored |
+| 29 | HttpMethod | Operation HTTP method |
+| 30 | HttpUri | Operation HTTP URI template |
+| 31 | HttpSuccess | Operation HTTP success status (default 200 in the reader) |
+| 32 | HostPrefix | Operation endpoint host prefix |
+| 33 | PaginatedInput | Effective paginated input-token member |
+| 34 | PaginatedOutput | Effective paginated output-token member |
+| 35 | PaginatedResult | Effective paginated `items` member |
+| 36 | PaginatedLimit | Effective maximum page size from the range constraint |
+| 37 | PaginatedPageSize | Effective paginated page-size member |
+| 38 | Errors | Stable-deduplicated service and operation error targets |
+| 39 | HttpChecksum | Operation HTTP checksum requirement |
+| 40 | JsonName | Member JSON name |
+| 41 | MemberXmlName | Member XML name |
+| 42 | Ec2QueryName | Member EC2 Query name |
+| 43 | HttpLabel | HTTP label binding marker |
+| 44 | HttpQuery | HTTP query binding name |
+| 45 | HttpQueryParams | HTTP query-params binding marker |
+| 46 | HttpHeader | HTTP header binding name |
+| 47 | HttpPrefixHeaders | HTTP prefix-header binding name |
+| 48 | HttpPayload | HTTP payload binding marker |
+| 49 | HttpResponseCode | HTTP response-code binding marker |
+| 50 | MemberHostLabel | Host-label binding marker |
+| 51 | XmlFlattened | XML flattened marker |
+| 52 | XmlAttribute | XML attribute marker |
+| 53 | Reserved | Preserved key assignment; not emitted |
+| 54 | TimestampFormat | Member timestamp format |
+| 55 | IdempotencyToken | Idempotency-token marker |
+| 56 | MediaType | Smithy media type |
+| 57 | Sensitive | Sensitive marker |
+| 58 | ShapeXmlName | Shape XML name |
+| 59 | ShapeXmlNamespace | Shape XML namespace URI |
+| 60 | ShapeTimestampFormat | Shape timestamp format |
+| 61 | Reserved | Preserved key assignment; not emitted |
+| 62 | Reserved | Preserved key assignment; not emitted |
+| 63 | Reserved | Preserved key assignment; not emitted |
+| 64 | Sparse | Sparse collection marker |
+| 65 | Streaming | Streaming marker |
+| 66 | HttpError | Smithy HTTP error status |
+| 67 | AwsQueryError | AWS Query error code |
+| 68 | ErrorRetryable | Retryable error marker |
+| 69 | MemberId | Member-name registry ID |
+| 70 | MemberTarget | Member target reference |
+| 71 | MemberRequired | Required-member marker |
+| 72 | FieldNames | Concatenated UTF-8 member-name data |
+| 73 | FieldNameOffsets | Fixed-width indexed offsets into `FieldNames` |
+| 74 | XmlPrefix | Service XML namespace prefix |
+| 75 | XmlUri | Service XML namespace URI |
+| 76 | AwsQueryStatus | AWS Query error response status |
+| 77 | ErrorThrottling | Retryable throttling marker |
+| 78 | MemberXmlUri | Member XML namespace URI |
+| 79 | MemberXmlPrefix | Member XML namespace prefix |
+| 80 | ShapeXmlPrefix | Shape XML namespace prefix |
+| 81 | Reserved | Preserved key assignment; version is stored at key 23 |
+| 82 | NoErrorWrapping | Protocol IDs with `noErrorWrapping` enabled |
+| 83 | AwsQueryCompatible | AWS Query-compatible marker |
+| 84 | Reserved | Service errors are merged into each operation |
+| 85 | Reserved | Maximum page size is stored at key 36 |
 | 86 | ElementWire | Optional wire metadata for a list pseudo-member |
 | 87 | MapKeyWire | Optional wire metadata for a map key pseudo-member |
 | 88 | MapValueWire | Optional wire metadata for a map value pseudo-member |
 | 89 | ErrorKind | Modeled client/server error kind |
-
+| 90 | RequestCompression | Canonical, ordered request `encodings` list |
 
 Kind codes, in order starting at zero:
 `blob boolean string byte short integer long float double bigInteger bigDecimal
@@ -162,7 +230,10 @@ exposes `name`, `kind`, `members`, collection targets, optional `arn`, modeled
 error metadata, and wire traits. Missing `Members` is an empty iterator; missing
 `Arn` is `None`, while malformed present values are errors. `Operation` exposes
 HTTP method/URI/status, host prefix, checksum requirement, merged paginator data,
-and common plus operation-local modeled errors. `Member` exposes its indexed
+request compression algorithm, and common plus operation-local modeled errors.
+`Operation::request_compression()` checks the ordered encoding list, returning
+`Some(CompressionAlgorithm::Gzip)` when supported and `None` when absent.
+Malformed or unsupported serialized values are typed errors.
 `FieldId`, borrowed indexed name, target, requiredness, and wire traits. Lists,
 maps, and structures retain pseudo-member wire metadata. All views borrow the
 catalog bytes; metadata does not grant callability.

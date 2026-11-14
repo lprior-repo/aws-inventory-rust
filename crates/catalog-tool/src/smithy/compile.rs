@@ -1,11 +1,11 @@
 //! Deterministic model compiler; only one parsed JSON model survives at a time.
 mod encode;
+mod input;
 mod metadata;
 mod operation;
-mod service;
-mod input;
 mod provenance;
 mod registry_wire;
+mod service;
 mod shapes;
 #[cfg(test)]
 mod tests;
@@ -143,11 +143,18 @@ pub fn build_catalog(
 }
 
 /// Encode the root record and prove the independent reader accepts it.
-fn encode_root(models_commit: &str, registry: &Registry, services: Vec<Value>) -> Result<Vec<u8>, Error> {
+fn encode_root(
+    models_commit: &str,
+    registry: &Registry,
+    services: Vec<Value>,
+) -> Result<Vec<u8>, Error> {
     let (names, offsets) = registry_wire::encode(registry)?;
     let root = encode::map([
         (CatalogKey::Format, Value::Int(CATALOG_VERSION)),
-        (CatalogKey::ModelsCommit, Value::Text(models_commit.to_owned())),
+        (
+            CatalogKey::ModelsCommit,
+            Value::Text(models_commit.to_owned()),
+        ),
         (CatalogKey::FieldNames, names),
         (CatalogKey::FieldNameOffsets, offsets),
         (CatalogKey::Services, Value::List(services)),
