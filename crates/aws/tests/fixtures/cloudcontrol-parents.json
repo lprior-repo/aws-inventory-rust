@@ -2172,7 +2172,7 @@
       "type_name": "AWS::AppConfig::ExperimentDefinition",
       "provider": {
         "Name": "inventory-parent-app-experiment-a-1",
-        "ApplicationId": "app00a1",
+        "ApplicationIdentifier": "app00a1",
         "ExperimentId": "inventory-parent-app-experiment-a-1",
         "TreatmentConfigurations": [
           {
@@ -2192,7 +2192,7 @@
       },
       "expected_provider": {
         "Name": "inventory-parent-app-experiment-a-1",
-        "ApplicationId": "app00a1",
+        "ApplicationIdentifier": "app00a1",
         "ExperimentId": "inventory-parent-app-experiment-a-1",
         "TreatmentConfigurations": [
           {
@@ -2211,7 +2211,7 @@
         "PercentageSplitPolicy": "PROPORTIONAL"
       },
       "expected_model": {
-        "ApplicationId": "app00a1"
+        "ApplicationIdentifier": "app00a1"
       },
       "expected_resource_id": null,
       "expected_kind": "aws_app_config_experiment_definition",
@@ -2223,7 +2223,7 @@
       "type_name": "AWS::AppConfig::ExperimentDefinition",
       "provider": {
         "Name": "inventory-parent-app-experiment-a-2",
-        "ApplicationId": "app00a1",
+        "ApplicationIdentifier": "app00a1",
         "ExperimentId": "inventory-parent-app-experiment-a-2",
         "TreatmentConfigurations": [
           {
@@ -2249,7 +2249,7 @@
       },
       "expected_provider": {
         "Name": "inventory-parent-app-experiment-a-2",
-        "ApplicationId": "app00a1",
+        "ApplicationIdentifier": "app00a1",
         "ExperimentId": "inventory-parent-app-experiment-a-2",
         "TreatmentConfigurations": [
           {
@@ -2274,7 +2274,7 @@
         "PercentageSplitPolicy": "PROPORTIONAL"
       },
       "expected_model": {
-        "ApplicationId": "app00a1"
+        "ApplicationIdentifier": "app00a1"
       },
       "expected_resource_id": null,
       "expected_kind": "aws_app_config_experiment_definition",
@@ -2347,7 +2347,7 @@
       "type_name": "AWS::AppConfig::ExperimentDefinition",
       "provider": {
         "Name": "inventory-parent-app-experiment-b-1",
-        "ApplicationId": "app00b1",
+        "ApplicationIdentifier": "app00b1",
         "ExperimentId": "inventory-parent-app-experiment-b-1",
         "TreatmentConfigurations": [
           {
@@ -2367,7 +2367,7 @@
       },
       "expected_provider": {
         "Name": "inventory-parent-app-experiment-b-1",
-        "ApplicationId": "app00b1",
+        "ApplicationIdentifier": "app00b1",
         "ExperimentId": "inventory-parent-app-experiment-b-1",
         "TreatmentConfigurations": [
           {
@@ -2386,7 +2386,7 @@
         "PercentageSplitPolicy": "PROPORTIONAL"
       },
       "expected_model": {
-        "ApplicationId": "app00b1"
+        "ApplicationIdentifier": "app00b1"
       },
       "expected_resource_id": null,
       "expected_kind": "aws_app_config_experiment_definition",

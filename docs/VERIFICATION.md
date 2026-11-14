@@ -21,7 +21,13 @@ failed because Moon's Rust installer did not provide the pinned toolchain's
 The Linux prerequisites include `libpulse-dev` and `libdrm-dev`: Makepad links
 PulseAudio and DRM when the workspace UI test target is built.
 
-The current generated checks do not prove a generated collection-plan catalog or binary API-catalog parity: no dedicated checked-in generator/check command for either exists in the current Rust CLI. Collection-plan behavior and catalog access are covered by ordinary workspace tests, but are not universal inventory proof. The ignored live FalkorDB test verifies graph delivery behavior, and the ignored prepared-emulator snapshot tests verify specific collector components against a frozen snapshot. Both opt-in Moon tasks require their explicit service/environment prerequisites and neither is a universal AWS E2E pipeline. Universal resource coverage, real AWS semantics, and universal live-emulator collection remain unfinished; see [CLOUDCONTROL_COVERAGE](CLOUDCONTROL_COVERAGE.md) and [UNIVERSAL_COVERAGE](UNIVERSAL_COVERAGE.md).
+Run [43606088788](https://github.com/lprior-repo/aws-inventory-rust/actions/runs/43606088788)
+passed toolchain/native setup and 15 Moon tasks, then failed the literal AppConfig
+experiment fixture: its parent selector used `ApplicationId` instead of the
+reviewed `ApplicationIdentifier`. The correction retains the recorded nested
+provider properties; the targeted parent/architecture-edge regression passes.
+
+The generated collection-plan and binary API-catalog checks verify deterministic artifacts against the pinned inputs, not live collection parity. The ignored live FalkorDB test verifies graph delivery behavior, and the ignored prepared-emulator snapshot tests verify specific collector components against a frozen snapshot. Both opt-in Moon tasks require their explicit service/environment prerequisites and neither is a universal AWS E2E pipeline. Universal resource coverage, real AWS semantics, and universal live-emulator collection remain unfinished; see [CLOUDCONTROL_COVERAGE](CLOUDCONTROL_COVERAGE.md) and [UNIVERSAL_COVERAGE](UNIVERSAL_COVERAGE.md).
 
 Local verification commands:
 
