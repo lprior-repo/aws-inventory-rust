@@ -335,9 +335,11 @@ Status from the coordinator, 2026-11-13.
   (folded headers, a literal space in the URI, a session token left out of
   signing). Black Hat review: two findings (Host length checked after use,
   six parameters), closed; test review: three gaps, closed. Rust lines:
-  1,270 added, none deleted; production 349. Still open under M2.2: the
-  emulator accepting a signed request per serializer and rejecting one with
-  a changed signature byte, which needs M2.1 and M2.4.
+  1,270 added, none deleted; production 349. The seven-serializer live request
+  smoke now passes: each signed read-only request returned HTTP 200 and its
+  altered-signature control returned HTTP 403 against the authenticated local
+  emulator. This closes that request/authentication smoke, not response decoding
+  or the complete universal inventory pipeline; see [VERIFICATION](VERIFICATION.md).
 
 Packages that can run at the same time: M1 with M3.1 and M4.3; M2.1a to M2.1c,
 M2.2 and M2.3 with each other; M2.4a with M2.4b; the M5 services

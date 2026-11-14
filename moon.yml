@@ -72,10 +72,18 @@ tasks:
       cache: false
       mutex: cargo-workspace
       runInCI: always
+  overlay-check:
+    command: cargo run -q -p catalog-tool --locked -- overlay --source .local/aws-models --root . --check
+    deps:
+      - collection-plans
+    options:
+      cache: false
+      mutex: cargo-workspace
+      runInCI: always
   binary-catalog:
     command: cargo run -q -p catalog-tool --locked -- models compile --check
     deps:
-      - collection-plans
+      - overlay-check
     options:
       cache: false
       mutex: cargo-workspace
