@@ -7,6 +7,7 @@ use serde_json::Value;
 use std::collections::BTreeMap;
 use thiserror::Error;
 
+pub mod record;
 mod selection;
 pub use selection::{ResourceType, Selection, SelectionError};
 
