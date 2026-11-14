@@ -49,7 +49,10 @@ fn member_wire_names_flags_and_shape_wire_traits_survive_compilation() -> TestRe
     assert_eq!(member.wire()?.ec2_query_name()?, Some("wireEc2"));
     assert_eq!(member.wire()?.binding()?, HttpBinding::Label);
     assert_eq!(
-        member.wire()?.xml_namespace()?.map(|ns| (ns.uri, ns.prefix)),
+        member
+            .wire()?
+            .xml_namespace()?
+            .map(|ns| (ns.uri, ns.prefix)),
         Some(("urn:member", Some("m")))
     );
     assert_eq!(
@@ -94,7 +97,9 @@ fn member_wire_names_flags_and_shape_wire_traits_survive_compilation() -> TestRe
         .ok_or("secret member missing")?;
     assert_eq!(secret.wire()?.sensitive()?, false);
     assert_eq!(
-        named_shape(service, "example#Secret")?.wire()?.sensitive()?,
+        named_shape(service, "example#Secret")?
+            .wire()?
+            .sensitive()?,
         true
     );
     assert_eq!(
@@ -106,7 +111,10 @@ fn member_wire_names_flags_and_shape_wire_traits_survive_compilation() -> TestRe
     let packet = named_shape(service, "example#Packet")?;
     assert_eq!(packet.wire()?.xml_name()?, Some("PacketWire"));
     assert_eq!(
-        packet.wire()?.xml_namespace()?.map(|ns| (ns.uri, ns.prefix)),
+        packet
+            .wire()?
+            .xml_namespace()?
+            .map(|ns| (ns.uri, ns.prefix)),
         Some(("urn:shape", Some("p")))
     );
     assert_eq!(
