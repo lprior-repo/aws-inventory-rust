@@ -8,6 +8,7 @@ pub mod assertions;
 pub mod audit;
 pub mod catalog;
 pub mod emulator;
+mod files;
 pub mod install;
 pub mod json;
 pub mod package;

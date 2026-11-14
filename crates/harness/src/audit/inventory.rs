@@ -5,9 +5,10 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::HarnessError;
+use crate::files::read_bytes;
 
 use super::calls::{CallSite, MAX_CALLS, calls_in_source_with_hint};
-use super::files::{MAX_INPUT_BYTES, decode_utf8, read_bytes, slash_path};
+use super::files::{MAX_INPUT_BYTES, decode_utf8, slash_path};
 use super::mask::mask;
 use super::resolve::module_services;
 

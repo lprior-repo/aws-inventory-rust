@@ -1,39 +1,18 @@
 //! Bounded byte, digest and path helpers shared by both audit commands.
 
 use std::fs;
-use std::io::Read;
 use std::path::{Component, Path, PathBuf};
 
 use serde_json::Value;
 
 use crate::HarnessError;
+use crate::files::read_bytes;
 use crate::provenance::sha256_hex;
 
 /// Maximum bytes accepted for one audited input document (the Python tool).
 pub const MAX_INPUT_BYTES: usize = 8 * 1024 * 1024;
 /// Maximum bytes accepted for one coverage evidence document.
 pub const MAX_DOCUMENT_BYTES: usize = 32 * 1024 * 1024;
-
-/// Read at most `limit` bytes, refusing inputs that are one byte larger.
-///
-/// The error carries the path because the Python tool surfaces the failing
-/// input, not a bare operating-system errno.
-pub fn read_bytes(path: &Path, limit: usize) -> Result<Vec<u8>, HarnessError> {
-    let file = fs::File::open(path)
-        .map_err(|error| HarnessError::invalid(format!("{}: {error}", path.display())))?;
-    let budget = u64::try_from(limit)
-        .map_err(|_| HarnessError::invalid("input byte budget is not representable"))?
-        .saturating_add(1);
-    let mut value = Vec::new();
-    file.take(budget).read_to_end(&mut value)?;
-    if value.len() > limit {
-        return Err(HarnessError::invalid(format!(
-            "input byte budget exceeded: {}",
-            path.display()
-        )));
-    }
-    Ok(value)
-}
 
 /// Read one bounded audit document and the digest of its raw bytes.
 pub fn read_json_audit(path: &Path) -> Result<(Value, String), HarnessError> {

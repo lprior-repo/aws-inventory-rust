@@ -9,12 +9,13 @@ use std::path::{Path, PathBuf};
 use serde_json::Value;
 
 use crate::HarnessError;
+use crate::files::read_bytes;
 use crate::provenance::sha256_hex;
 
 use super::super::calls::CallSite;
 use super::super::files::{
-    MAX_INPUT_BYTES, array_field, decode_utf8, object_field, read_bytes, read_json_audit,
-    slash_path, text_field,
+    MAX_INPUT_BYTES, array_field, decode_utf8, object_field, read_json_audit, slash_path,
+    text_field,
 };
 use super::super::inventory::source_inventory;
 use super::{CRATE_PREFIX, Claim, INVENTORY, Inventory, OperationKey, OperationRow};

@@ -11,7 +11,7 @@ use super::jhelpers::{array, field, integer, object, text};
 
 /// Read the ordered capability matrix and its raw-byte digest.
 pub(super) fn read_ordered(path: &Path) -> Result<(Json, String), HarnessError> {
-    let bytes = super::files::read_bytes(path, super::files::MAX_DOCUMENT_BYTES)
+    let bytes = crate::files::read_bytes(path, super::files::MAX_DOCUMENT_BYTES)
         .map_err(super::files::budget_message)?;
     let digest = crate::provenance::sha256_hex(&bytes);
     let content = String::from_utf8(bytes)

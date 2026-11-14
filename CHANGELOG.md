@@ -91,6 +91,14 @@
   lookup by ID returned one of them. A resource's identity is its ID: the
   first observation in input order is kept and every listed row is found by
   lookup. Rust lines: 245 added, 6 deleted.
+- Fixed, found by the architecture audit, in the harness: the emulator
+  process was a bare handle between spawn and readiness, so an early error
+  could leave it running; `Emulator::stop` always returned success; snapshot
+  documents were read without a size bound. One guard now owns the process
+  from spawn to drop and kills and reaps it exactly once, `stop` returns the
+  real error, readiness reads only complete log lines within a byte and
+  attempt bound, and one bounded reader serves the snapshot and audit code.
+  Rust lines: 742 added, 85 deleted.
 - Project agents in `.omp/agents/` include the local GPU builders and
   `aws-build-sol` (ChatGPT Sol). Builders implement independent packages in
   parallel; the coordinator owns serialized compilation, formatting and tests.

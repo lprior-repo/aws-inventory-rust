@@ -11,11 +11,15 @@ mod db;
 mod publish;
 mod summary;
 
+#[cfg(test)]
+mod tests;
+
 use std::path::Path;
 
 use serde_json::{Map, Value};
 
 use crate::HarnessError;
+use crate::files::{ReadError, read_limited};
 use crate::provenance::sha256_hex;
 
 pub use binding::{Baseline, execution_binding};
@@ -35,19 +39,33 @@ pub const CASES: [(&str, &str); 5] = [
     ("parents", "parents"),
 ];
 
-/// Read one bounded JSON document and its raw-byte digest.
+/// Read one JSON document of at most 16 MiB and its raw-byte digest.
+///
+/// Oversized documents return `HarnessError::Invalid`; filesystem and JSON
+/// failures retain their corresponding error variants.
 pub fn read_json(path: &Path) -> Result<(Value, String), HarnessError> {
-    let bytes = std::fs::read(path)?;
-    if bytes.len() > MAX_DOCUMENT_BYTES {
-        return Err(HarnessError::invalid(format!(
-            "JSON document exceeds its byte budget: {}",
-            path.file_name()
-                .map(|name| name.to_string_lossy().into_owned())
-                .unwrap_or_default()
-        )));
-    }
+    read_json_with_limit(path, MAX_DOCUMENT_BYTES)
+}
+
+fn read_json_with_limit(path: &Path, limit: usize) -> Result<(Value, String), HarnessError> {
+    let file = std::fs::File::open(path)?;
+    let bytes = read_limited(file, limit).map_err(|error| document_error(path, error))?;
     let digest = sha256_hex(&bytes);
     Ok((serde_json::from_slice(&bytes)?, digest))
+}
+
+fn document_error(path: &Path, error: ReadError) -> HarnessError {
+    match error {
+        ReadError::Io(error) => HarnessError::Io(error),
+        ReadError::TooLarge => {
+            let name = match path.file_name() {
+                Some(name) => name.to_string_lossy(),
+                None => std::borrow::Cow::Borrowed(""),
+            };
+            HarnessError::invalid(format!("JSON document exceeds its byte budget: {name}"))
+        }
+        ReadError::InvalidBudget => HarnessError::invalid("input byte budget is not representable"),
+    }
 }
 
 pub(crate) fn field<'a>(value: &'a Value, key: &str) -> Result<&'a Value, HarnessError> {

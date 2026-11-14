@@ -7,9 +7,10 @@ use std::path::{Path, PathBuf};
 use serde_json::{Map, Value, json};
 
 use crate::HarnessError;
+use crate::files::read_bytes;
 use crate::provenance::file_sha256;
 
-use super::files::{MAX_INPUT_BYTES, array_field, read_bytes, text_field};
+use super::files::{MAX_INPUT_BYTES, array_field, text_field};
 use super::operations::additions::{AdditionRow, Additions};
 
 /// Slack allowed on Cargo registry source roots.
