@@ -1,0 +1,43 @@
+[package]
+name = "decoder-bench"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+publish = false
+
+[workspace]
+
+[dependencies]
+inventory-core = { path = "../../crates/core" }
+aws-smithy-json = "=0.65.1"
+aws-smithy-xml = "=0.64.1"
+jiter = { version = "=0.19.0", default-features = false }
+struson = "=0.8.0"
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.154"
+quick-xml = "=0.42.0"
+xmlparser = "=0.13.6"
+xml = "=1.4.0"
+json-event-parser = "=0.2.3"
+allocation-counter = "=0.8.1"
+base64 = "=0.22.1"
+time = { version = "=0.3.47", features = ["parsing"] }
+thiserror = "=2.0.21"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+
+[lints.rust]
+unsafe_code = "forbid"
+unused_must_use = "deny"
+
+[lints.clippy]
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
+arithmetic_side_effects = "deny"
+as_conversions = "deny"

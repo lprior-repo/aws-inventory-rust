@@ -62,6 +62,13 @@
 - Added seven classifier regressions for exact inclusive entry/byte limits,
   invalid operation keys and nonempty classification results. All seven
   public-behavior tests pass. Rust lines: 111 added, none deleted.
+- Added standalone decoder-selection evidence under `evidence/decoder-bench`.
+  The comparison recommends jiter and quick-xml for further protocol work;
+  it does not claim a production decoder exists. Coordinator verification:
+  locked Clippy and release scenarios pass, including cross-decoder binary
+  parity, typed fields, retained-document bounds and chunked-reader parity.
+  Recorded throughput measurements are from the benchmark worker.
+  Rust lines: 2,054 added, none deleted after formatting.
 - `crates/aws-wire` is scaffolded, and Smithy's AWS protocol test suites
   (Smithy 1.75.0, seven protocols, 901 HTTP cases) are committed as JSON ASTs
   under `crates/aws-wire/tests/fixtures/protocol-tests/` with the conversion
