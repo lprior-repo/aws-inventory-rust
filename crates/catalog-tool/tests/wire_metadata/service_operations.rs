@@ -12,12 +12,20 @@ const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 "example#Cursor":{"type":"structure","members":{"Token":{"target":"smithy.api#String"}}},
 "example#Problem":{"type":"structure","traits":{"smithy.api#error":"client"},"members":{"Message":{"target":"smithy.api#String"}}}
 }}"#;
-fn shape_index(service: inventory_core::catalog::Service<'_>, expected: &str) -> Result<usize, Box<dyn std::error::Error>> {
-    service.shapes()?.enumerate().find_map(|(index, shape)| match shape {
-        Ok(shape) if shape.name().ok() == Some(expected) => Some(Ok(index)),
-        Ok(_) => None,
-        Err(error) => Some(Err(error)),
-    }).transpose()?.ok_or_else(|| format!("shape {expected} missing").into())
+fn shape_index(
+    service: inventory_core::catalog::Service<'_>,
+    expected: &str,
+) -> Result<usize, Box<dyn std::error::Error>> {
+    service
+        .shapes()?
+        .enumerate()
+        .find_map(|(index, shape)| match shape {
+            Ok(shape) if shape.name().ok() == Some(expected) => Some(Ok(index)),
+            Ok(_) => None,
+            Err(error) => Some(Err(error)),
+        })
+        .transpose()?
+        .ok_or_else(|| format!("shape {expected} missing").into())
 }
 
 #[test]
@@ -30,11 +38,32 @@ fn service_protocol_and_identity_metadata_is_borrowed_from_compiled_catalog() ->
     assert_eq!(service.arn_namespace()?, Some("fixture-arn"));
     assert_eq!(service.aws_query_compatible()?, true);
     assert_eq!(service.no_error_wrapping("aws.protocols#restJson1")?, true);
-    assert_eq!(service.no_error_wrapping("aws.protocols#awsJson1_1")?, false);
-    assert_eq!(service.wire()?.xml_namespace()?.map(|ns| (ns.uri, ns.prefix)), Some(("urn:service", Some("svc"))));
-    assert_eq!(service.field_name(inventory_core::record::FieldId::new(2)?)?, "Id");
-    assert_eq!(service.field_name(inventory_core::record::FieldId::new(5)?)?, "Token");
-    assert_eq!(service.protocols()?.collect::<Result<Vec<_>, _>>()?, ["aws.protocols#awsQueryCompatible", "aws.protocols#restJson1"]);
+    assert_eq!(
+        service.no_error_wrapping("aws.protocols#awsJson1_1")?,
+        false
+    );
+    assert_eq!(
+        service
+            .wire()?
+            .xml_namespace()?
+            .map(|ns| (ns.uri, ns.prefix)),
+        Some(("urn:service", Some("svc")))
+    );
+    assert_eq!(
+        service.field_name(inventory_core::record::FieldId::new(2)?)?,
+        "Id"
+    );
+    assert_eq!(
+        service.field_name(inventory_core::record::FieldId::new(5)?)?,
+        "Token"
+    );
+    assert_eq!(
+        service.protocols()?.collect::<Result<Vec<_>, _>>()?,
+        [
+            "aws.protocols#awsQueryCompatible",
+            "aws.protocols#restJson1"
+        ]
+    );
     Ok(())
 }
 
@@ -45,7 +74,14 @@ fn operation_metadata_merges_service_defaults_and_keeps_operation_overrides() ->
     let mut operations = service.operations()?;
     let operation = operations.next().ok_or("operation missing")??;
     assert_eq!(operation.name()?, "Fetch");
-    assert_eq!(operation.http()?, Some(HttpOperation { method: "POST", uri: "/things/{Id}", code: 202 }));
+    assert_eq!(
+        operation.http()?,
+        Some(HttpOperation {
+            method: "POST",
+            uri: "/things/{Id}",
+            code: 202
+        })
+    );
     assert_eq!(operation.host_prefix()?, Some("{Region}."));
     assert_eq!(operation.checksum_required()?, true);
     let paginator = operation.paginator()?.ok_or("merged paginator missing")?;
@@ -56,7 +92,10 @@ fn operation_metadata_merges_service_defaults_and_keeps_operation_overrides() ->
     assert_eq!(paginator.max_page_size, Some(37));
     let errors = operation.errors()?.collect::<Result<Vec<_>, _>>()?;
     assert_eq!(errors.len(), 1);
-    assert_eq!(errors.first().ok_or("error reference missing")?, &Target::Shape(shape_index(service, "example#Problem")?));
+    assert_eq!(
+        errors.first().ok_or("error reference missing")?,
+        &Target::Shape(shape_index(service, "example#Problem")?)
+    );
     Ok(())
 }
 

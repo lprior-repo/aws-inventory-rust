@@ -1,48 +1,125 @@
 use super::{TestResult, compile_model, fixture_service};
 
 fn malformed_model(shape_kind: &str, trait_id: &str, payload: &str) -> String {
-    format!(r#"{{"smithy":"2.0","shapes":{{"example#Service":{{"type":"service","version":"1"}},"example#Bad":{{"type":"{shape_kind}","traits":{{"{trait_id}":{payload}}}}},"example#Input":{{"type":"structure","members":{{"Name":{{"target":"smithy.api#String"}}}}}}}}}}"#)
+    r#"{"smithy":"2.0","shapes":{"example#Service":{"type":"service","version":"1"},"example#Bad":{"type":"__SHAPE_KIND__","traits":{"__TRAIT__":__PAYLOAD__}},"example#Input":{"type":"structure","members":{"Name":{"target":"smithy.api#String"}}}}}"#
+        .replace("__SHAPE_KIND__", shape_kind)
+        .replace("__TRAIT__", trait_id)
+        .replace("__PAYLOAD__", payload)
 }
-
 #[test]
-fn known_service_operation_member_and_shape_traits_reject_wrong_json_types_with_context() -> TestResult {
+fn known_service_operation_member_and_shape_traits_reject_wrong_json_types_with_context()
+-> TestResult {
     let cases = [
-        ("service", "aws.api#service", "\"not-an-object\"", "example#Service"),
-        ("service", "aws.auth#sigv4", "\"not-an-object\"", "example#Service"),
-        ("service", "aws.protocols#restJson1", "\"not-an-object\"", "example#Service"),
-        ("service", "aws.protocols#awsQueryCompatible", "17", "example#Service"),
-        ("service", "smithy.api#xmlNamespace", "{\"uri\":17}", "example#Service"),
-        ("service", "smithy.api#paginated", "{\"inputToken\":17}", "example#Service"),
-        ("service", "aws.protocols#restJson1", "{\"noErrorWrapping\":\"yes\"}", "example#Service"),
+        (
+            "service",
+            "aws.api#service",
+            "\"not-an-object\"",
+            "example#Service",
+        ),
+        (
+            "service",
+            "aws.auth#sigv4",
+            "\"not-an-object\"",
+            "example#Service",
+        ),
+        (
+            "service",
+            "aws.protocols#restJson1",
+            "\"not-an-object\"",
+            "example#Service",
+        ),
+        (
+            "service",
+            "aws.protocols#awsQueryCompatible",
+            "17",
+            "example#Service",
+        ),
+        (
+            "service",
+            "smithy.api#xmlNamespace",
+            "{\"uri\":17}",
+            "example#Service",
+        ),
+        (
+            "service",
+            "smithy.api#paginated",
+            "{\"inputToken\":17}",
+            "example#Service",
+        ),
+        (
+            "service",
+            "aws.protocols#restJson1",
+            "{\"noErrorWrapping\":\"yes\"}",
+            "example#Service",
+        ),
         ("operation", "smithy.api#http", "17", "example#Bad"),
-        ("operation", "smithy.api#endpoint", "{\"hostPrefix\":17}", "example#Bad"),
+        (
+            "operation",
+            "smithy.api#endpoint",
+            "{\"hostPrefix\":17}",
+            "example#Bad",
+        ),
         ("operation", "smithy.api#paginated", "[]", "example#Bad"),
-        ("operation", "smithy.api#httpChecksumRequired", "\"true\"", "example#Bad"),
+        (
+            "operation",
+            "smithy.api#httpChecksumRequired",
+            "\"true\"",
+            "example#Bad",
+        ),
         ("member", "smithy.api#jsonName", "17", "example#Input"),
         ("member", "smithy.api#httpHeader", "false", "example#Input"),
         ("member", "smithy.api#sensitive", "false", "example#Input"),
         ("member", "smithy.api#mediaType", "false", "example#Input"),
         ("member", "smithy.api#xmlNamespace", "17", "example#Input"),
-        ("member", "smithy.api#timestampFormat", "17", "example#Input"),
+        (
+            "member",
+            "smithy.api#timestampFormat",
+            "17",
+            "example#Input",
+        ),
         ("member", "smithy.api#streaming", "\"yes\"", "example#Input"),
-        ("member", "smithy.api#idempotencyToken", "17", "example#Input"),
+        (
+            "member",
+            "smithy.api#idempotencyToken",
+            "17",
+            "example#Input",
+        ),
         ("member", "smithy.api#hostLabel", "17", "example#Input"),
         ("member", "smithy.api#xmlFlattened", "17", "example#Input"),
         ("member", "smithy.api#xmlAttribute", "17", "example#Input"),
         ("structure", "smithy.api#error", "17", "example#Bad"),
-        ("structure", "smithy.api#httpError", "\"409\"", "example#Bad"),
+        (
+            "structure",
+            "smithy.api#httpError",
+            "\"409\"",
+            "example#Bad",
+        ),
         ("structure", "smithy.api#xmlNamespace", "17", "example#Bad"),
         ("structure", "smithy.api#mediaType", "false", "example#Bad"),
         ("structure", "smithy.api#sensitive", "17", "example#Bad"),
-        ("structure", "aws.protocols#awsQueryError", "[]", "example#Bad"),
-        ("structure", "smithy.api#retryable", "\"yes\"", "example#Bad"),
+        (
+            "structure",
+            "aws.protocols#awsQueryError",
+            "[]",
+            "example#Bad",
+        ),
+        (
+            "structure",
+            "smithy.api#retryable",
+            "\"yes\"",
+            "example#Bad",
+        ),
     ];
     for (kind, trait_id, payload, shape) in cases {
         let owner = "example#Service";
         let model = if kind == "service" {
-            format!(r#"{{"smithy":"2.0","shapes":{{"example#Service":{{"type":"service","version":"1","traits":{{"{trait_id}":{payload}}}}},"example#Bad":{{"type":"structure"}}}}}}"#)
+            r#"{"smithy":"2.0","shapes":{"example#Service":{"type":"service","version":"1","traits":{"__TRAIT__":__PAYLOAD__}},"example#Bad":{"type":"structure"}}}"#
+                .replace("__TRAIT__", trait_id)
+                .replace("__PAYLOAD__", payload)
         } else if kind == "member" {
-            format!(r#"{{"smithy":"2.0","shapes":{{"example#Service":{{"type":"service","version":"1"}},"example#Input":{{"type":"structure","members":{{"Name":{{"target":"smithy.api#String","traits":{{"{trait_id}":{payload}}}}}}}}}}}}}}"#)
+            r#"{"smithy":"2.0","shapes":{"example#Service":{"type":"service","version":"1"},"example#Input":{"type":"structure","members":{"Name":{"target":"smithy.api#String","traits":{"__TRAIT__":__PAYLOAD__}}}}}}"#
+                .replace("__TRAIT__", trait_id)
+                .replace("__PAYLOAD__", payload)
         } else {
             malformed_model(kind, trait_id, payload)
         };
@@ -72,11 +149,23 @@ fn unknown_traits_are_ignored_and_known_absent_metadata_stays_absent() -> TestRe
     let mut operations = service.operations()?;
     let operation = operations.next().ok_or("operation missing")??;
     assert_eq!(operation.http()?, None);
-    let input = service.shapes()?.find_map(|shape| match shape {
-        Ok(shape) if shape.name().ok() == Some("example#Input") => Some(Ok(shape)),
-        Ok(_) => None,
-        Err(error) => Some(Err(error)),
-    }).transpose()?.ok_or("input missing")?;
-    assert_eq!(input.members()?.next().ok_or("member missing")??.wire().json_name()?, None);
+    let input = service
+        .shapes()?
+        .find_map(|shape| match shape {
+            Ok(shape) if shape.name().ok() == Some("example#Input") => Some(Ok(shape)),
+            Ok(_) => None,
+            Err(error) => Some(Err(error)),
+        })
+        .transpose()?
+        .ok_or("input missing")?;
+    assert_eq!(
+        input
+            .members()?
+            .next()
+            .ok_or("member missing")??
+            .wire()?
+            .json_name()?,
+        None
+    );
     Ok(())
 }

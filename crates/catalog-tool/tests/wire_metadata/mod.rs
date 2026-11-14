@@ -1,7 +1,9 @@
+mod compression;
 mod corruption;
-mod trait_validation;
+mod errors_registry;
 mod member_shapes;
 mod service_operations;
+mod trait_validation;
 
 use catalog_tool::smithy::{Registry, build_catalog};
 use inventory_core::catalog::Catalog;
@@ -24,7 +26,10 @@ pub fn catalog(bytes: &[u8]) -> Result<Catalog<'_>, Box<dyn Error>> {
     Ok(Catalog::borrow(bytes)?)
 }
 
-pub fn fixture_service(bytes: &[u8]) -> Result<inventory_core::catalog::Service<'_>, Box<dyn Error>> {
-    catalog(bytes)?.service("example")?.ok_or_else(|| "example service missing".into())
+pub fn fixture_service(
+    bytes: &[u8],
+) -> Result<inventory_core::catalog::Service<'_>, Box<dyn Error>> {
+    catalog(bytes)?
+        .service("example")?
+        .ok_or_else(|| "example service missing".into())
 }
-

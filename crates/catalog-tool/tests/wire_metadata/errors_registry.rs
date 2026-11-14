@@ -13,19 +13,34 @@ const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 "example#Output":{"type":"structure","members":{"Value":{"target":"smithy.api#String"}}}
 }}"#;
 
-fn named_shape<'a>(service: inventory_core::catalog::Service<'a>, expected: &str) -> Result<inventory_core::catalog::Shape<'a>, Box<dyn std::error::Error>> {
-    service.shapes()?.find_map(|shape| match shape {
-        Ok(shape) if shape.name().ok() == Some(expected) => Some(Ok(shape)),
-        Ok(_) => None,
-        Err(error) => Some(Err(error)),
-    }).transpose()?.ok_or_else(|| format!("shape {expected} missing").into())
+fn named_shape<'a>(
+    service: inventory_core::catalog::Service<'a>,
+    expected: &str,
+) -> Result<inventory_core::catalog::Shape<'a>, Box<dyn std::error::Error>> {
+    service
+        .shapes()?
+        .find_map(|shape| match shape {
+            Ok(shape) if shape.name().ok() == Some(expected) => Some(Ok(shape)),
+            Ok(_) => None,
+            Err(error) => Some(Err(error)),
+        })
+        .transpose()?
+        .ok_or_else(|| format!("shape {expected} missing").into())
 }
-fn shape_index(service: inventory_core::catalog::Service<'_>, expected: &str) -> Result<usize, Box<dyn std::error::Error>> {
-    service.shapes()?.enumerate().find_map(|(index, shape)| match shape {
-        Ok(shape) if shape.name().ok() == Some(expected) => Some(Ok(index)),
-        Ok(_) => None,
-        Err(error) => Some(Err(error)),
-    }).transpose()?.ok_or_else(|| format!("shape {expected} missing").into())
+fn shape_index(
+    service: inventory_core::catalog::Service<'_>,
+    expected: &str,
+) -> Result<usize, Box<dyn std::error::Error>> {
+    service
+        .shapes()?
+        .enumerate()
+        .find_map(|(index, shape)| match shape {
+            Ok(shape) if shape.name().ok() == Some(expected) => Some(Ok(index)),
+            Ok(_) => None,
+            Err(error) => Some(Err(error)),
+        })
+        .transpose()?
+        .ok_or_else(|| format!("shape {expected} missing").into())
 }
 
 #[test]
@@ -35,8 +50,16 @@ fn operation_errors_merge_local_and_service_common_references() -> TestResult {
     let mut operations = service.operations()?;
     let operation = operations.next().ok_or("operation missing")??;
     let errors = operation.errors()?.collect::<Result<Vec<_>, _>>()?;
-    assert_eq!(errors, [Target::Shape(shape_index(service, "example#SharedFailure")?), Target::Shape(shape_index(service, "example#ClientFailure")?)]);
-    let client = named_shape(service, "example#ClientFailure")?.error()?.ok_or("client error missing")?;
+    assert_eq!(
+        errors,
+        [
+            Target::Shape(shape_index(service, "example#SharedFailure")?),
+            Target::Shape(shape_index(service, "example#ClientFailure")?)
+        ]
+    );
+    let client = named_shape(service, "example#ClientFailure")?
+        .error()?
+        .ok_or("client error missing")?;
     assert_eq!(client.kind, ErrorKind::Client);
     assert_eq!(client.code, Some("ConflictException"));
     assert_eq!(client.status, Some(409));
@@ -44,7 +67,9 @@ fn operation_errors_merge_local_and_service_common_references() -> TestResult {
     assert_eq!(client.aws_query_status, Some(422));
     assert_eq!(client.retryable, true);
     assert_eq!(client.throttling, true);
-    let server = named_shape(service, "example#ServerFailure")?.error()?.ok_or("server error missing")?;
+    let server = named_shape(service, "example#ServerFailure")?
+        .error()?
+        .ok_or("server error missing")?;
     assert_eq!(server.kind, ErrorKind::Server);
     assert_eq!(server.code, None);
     assert_eq!(server.status, Some(503));
@@ -59,14 +84,26 @@ fn registry_ids_remain_registry_ordered_and_shared_field_names_resolve() -> Test
     let (_source, bytes) = compile_model(MODEL, FIELDS)?;
     let service = fixture_service(&bytes)?;
     let mut shapes = service.shapes()?;
-    let input = shapes.find_map(|shape| match shape {
-        Ok(shape) if shape.name().ok() == Some("example#Input") => Some(Ok(shape)),
-        Ok(_) => None,
-        Err(error) => Some(Err(error)),
-    }).transpose()?.ok_or("input missing")?;
+    let input = shapes
+        .find_map(|shape| match shape {
+            Ok(shape) if shape.name().ok() == Some("example#Input") => Some(Ok(shape)),
+            Ok(_) => None,
+            Err(error) => Some(Err(error)),
+        })
+        .transpose()?
+        .ok_or("input missing")?;
     let members = input.members()?.collect::<Result<Vec<_>, _>>()?;
-    assert_eq!(members.iter().map(|member| member.id).collect::<Vec<_>>(), [FieldId::new(1)?, FieldId::new(2)?]);
-    assert_eq!(members.iter().map(|member| member.name()).collect::<Result<Vec<_>, _>>()?, ["First", "Second"]);
+    assert_eq!(
+        members.iter().map(|member| member.id).collect::<Vec<_>>(),
+        [FieldId::new(1)?, FieldId::new(2)?]
+    );
+    assert_eq!(
+        members
+            .iter()
+            .map(|member| member.name())
+            .collect::<Result<Vec<_>, _>>()?,
+        ["First", "Second"]
+    );
     assert_eq!(service.field_name(FieldId::new(1)?)?, "First");
     assert_eq!(service.field_name(FieldId::new(2)?)?, "Second");
     assert_eq!(service.field_name(FieldId::new(3)?)?, "Value");
@@ -82,18 +119,28 @@ fn absent_error_and_wire_traits_return_empty_or_none_without_invented_ids() -> T
     let member = shape.members()?.next().ok_or("member missing")??;
     assert_eq!(member.id, FieldId::new(1)?);
     assert_eq!(member.name()?, "Anything");
-    assert_eq!(member.wire().json_name()?, None);
-    assert_eq!(member.wire().xml_name()?, None);
-    assert_eq!(member.wire().ec2_query_name()?, None);
-    assert_eq!(member.wire().media_type()?, None);
-    assert_eq!(member.wire().binding()?, inventory_core::catalog::HttpBinding::Document);
-    assert_eq!(member.wire().xml_flattened()?, false);
-    assert_eq!(member.wire().xml_attribute()?, false);
-    assert_eq!(member.wire().streaming()?, false);
-    assert_eq!(member.wire().sensitive()?, false);
-    assert_eq!(member.wire().idempotency_token()?, false);
-    assert_eq!(shape.element_wire().xml_name()?, None);
+    assert_eq!(member.wire()?.json_name()?, None);
+    assert_eq!(member.wire()?.xml_name()?, None);
+    assert_eq!(member.wire()?.ec2_query_name()?, None);
+    assert_eq!(member.wire()?.media_type()?, None);
+    assert_eq!(
+        member.wire()?.binding()?,
+        inventory_core::catalog::HttpBinding::Document
+    );
+    assert_eq!(member.wire()?.xml_flattened()?, false);
+    assert_eq!(member.wire()?.xml_attribute()?, false);
+    assert_eq!(member.wire()?.streaming()?, false);
+    assert_eq!(member.wire()?.sensitive()?, false);
+    assert_eq!(member.wire()?.idempotency_token()?, false);
+    assert_eq!(shape.element_wire()?.xml_name()?, None);
     let mut operations = service.operations()?;
-    assert_eq!(operations.next().ok_or("operation missing")??.errors()?.count(), 0);
+    assert_eq!(
+        operations
+            .next()
+            .ok_or("operation missing")??
+            .errors()?
+            .count(),
+        0
+    );
     Ok(())
 }
