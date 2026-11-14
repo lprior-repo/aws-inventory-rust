@@ -50,6 +50,11 @@
 - M2.2a: `aws_wire::sign`, SigV4 request signing as a thin wrapper over the
   `aws-sigv4` library, proven with 37 of AWS's published test vectors. Rust
   lines: 1,270 added, none deleted.
+- M3.1c, fixed: `Record::from_bytes` and `MapRef::from_bytes` accepted maps
+  with unsorted or duplicate keys, for which lookups could report a present
+  field as absent. Validation now rejects them (`KeyOutOfOrder`,
+  `DuplicateKey`) and rejects unsupported key types up front. Bytes written
+  by the encoder are unaffected. Rust lines: 644 added, 102 deleted.
 - Fixed, found by an adversarial run against the built `inventory-harness`
   binary (41 commands, 2 defects): `assert cloud-control` exited 0 while
   printing failed checks (missing, empty, corrupt and wrong-schema databases

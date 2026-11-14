@@ -1,8 +1,8 @@
 //! Binary record encoding as CBOR.
 //!
 //! Encoding follows the fixed forms below; equal values produce equal bytes.
-//! `from_bytes` checks generic CBOR structure, not supported forms or depth.
-//! Readers reject unsupported forms; lookups rely on the encoder's sorted keys.
+//! `from_bytes` checks CBOR framing and strictly ascending supported keys in
+//! reader-reachable maps. Unknown values remain skippable; readers check their forms.
 //! The depth bound includes timestamp arrays, but not their tag headers.
 //!
 //! # Encoding table
@@ -53,7 +53,7 @@ pub const MAX_DEPTH: usize = 32;
 /// Record encoding format version. Version 1 is the bare CBOR root map.
 pub const FORMAT_VERSION: u8 = 1;
 
-/// Owned bytes containing exactly one structurally valid CBOR map.
+/// Owned CBOR map bytes with supported, strictly ascending keys in reachable maps.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Record(Vec<u8>);
 
@@ -67,9 +67,10 @@ impl Record {
         }
         encode::encode(value).map(Self)
     }
-    /// Validate generic CBOR, deferring supported-form checks to readers.
+    /// Validate CBOR framing and supported, strictly ascending reachable map keys.
+    /// Tags and indefinite containers remain opaque; readers check selected value forms.
     /// # Errors
-    /// Rejects oversized, malformed, non-map, or trailing input.
+    /// Rejects oversized, malformed, non-map, trailing input, or invalid reachable keys.
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, RecordError> {
         validate(&bytes)?;
         Ok(Self(bytes))

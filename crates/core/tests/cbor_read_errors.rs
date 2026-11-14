@@ -126,42 +126,24 @@ fn tag_two_is_well_formed_but_reading_names_the_unsupported_tag() -> TestResult 
 }
 
 #[test]
-fn boolean_map_key_is_well_formed_but_reading_names_the_key_type() -> TestResult {
-    // Given valid generic CBOR with a boolean key.
-    let record = Record::from_bytes(vec![0xA1, 0xF5, 0])?;
-    // When lookup or full conversion reads keys. Then bool is not silently accepted.
-    assert!(matches!(
-        read_field_one(&record),
+fn boolean_map_key_is_rejected_during_validation() {
+    // Given generic CBOR with a boolean key, when validated, then reject its key type.
+    assert_eq!(
+        Record::from_bytes(vec![0xA1, 0xF5, 0]),
         Err(RecordError::KeyType {
             found: minicbor::data::Type::Bool,
-            ..
+            offset: 1
         })
-    ));
-    assert!(matches!(
-        owned(&record),
-        Err(RecordError::KeyType {
-            found: minicbor::data::Type::Bool,
-            ..
-        })
-    ));
-    Ok(())
+    );
 }
 
 #[test]
-fn zero_field_id_is_well_formed_but_reading_rejects_the_invalid_identifier() -> TestResult {
-    // Given valid generic CBOR with unsigned key zero.
-    let record = Record::from_bytes(vec![0xA1, 0, 0])?;
-    // When lookup or full conversion parses the field identifier.
-    // Then the domain error is FieldIdZero, not absence or a generic parse error.
-    assert!(matches!(
-        read_field_one(&record),
-        Err(RecordError::FieldIdZero { .. })
-    ));
-    assert!(matches!(
-        owned(&record),
-        Err(RecordError::FieldIdZero { .. })
-    ));
-    Ok(())
+fn zero_field_id_is_rejected_during_validation() {
+    // Given generic CBOR with key zero, when validated, then retain the domain error.
+    assert_eq!(
+        Record::from_bytes(vec![0xA1, 0, 0]),
+        Err(RecordError::FieldIdZero { offset: 1 })
+    );
 }
 
 #[test]

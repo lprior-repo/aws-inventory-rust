@@ -220,23 +220,21 @@ fn read_refuses_tag_2() -> TestResult {
     Ok(())
 }
 #[test]
-fn read_refuses_bool_key() -> TestResult {
+fn validation_refuses_bool_key() {
     assert_eq!(
-        read_error(vec![0xA1, 0xF5, 0])?,
-        RecordError::KeyType {
+        Record::from_bytes(vec![0xA1, 0xF5, 0]),
+        Err(RecordError::KeyType {
             found: minicbor::data::Type::Bool,
             offset: 1
-        }
+        })
     );
-    Ok(())
 }
 #[test]
-fn read_refuses_field_id_zero() -> TestResult {
+fn validation_refuses_field_id_zero() {
     assert_eq!(
-        read_error(vec![0xA1, 0, 0])?,
-        RecordError::FieldIdZero { offset: 1 }
+        Record::from_bytes(vec![0xA1, 0, 0]),
+        Err(RecordError::FieldIdZero { offset: 1 })
     );
-    Ok(())
 }
 #[test]
 fn read_refuses_large_nanos() -> TestResult {
@@ -266,12 +264,14 @@ fn read_refuses_invalid_utf8() -> TestResult {
     Ok(())
 }
 #[test]
-fn lookup_stops_before_invalid_keys_after_the_requested_sorted_position() -> TestResult {
-    // Given a larger valid key followed by an unsupported key.
-    let record = Record::from_bytes(vec![0xA2, 2, 0, 0xF5, 0])?;
-    // When seeking a smaller field, then no later key or value is interpreted.
+fn lookup_stops_before_unsupported_values_after_the_requested_sorted_position() -> TestResult {
+    // Given valid sorted keys with unsupported values on the first greater key and its sibling.
+    let record = Record::from_bytes(vec![0xA2, 2, 0xFA, 0, 0, 0, 0, 3, 0xFA, 0, 0, 0, 0])?;
+    // When seeking a smaller key, then no unselected value is interpreted.
     assert!(record.root().get_field(FieldId::new(1)?)?.is_none());
-    let record = Record::from_bytes(vec![0xA2, 0x61, b'z', 0, 0xF5, 0])?;
+    let record = Record::from_bytes(vec![
+        0xA2, 0x61, b'y', 0xFA, 0, 0, 0, 0, 0x61, b'z', 0xFA, 0, 0, 0, 0,
+    ])?;
     assert!(record.root().get_name("a")?.is_none());
     Ok(())
 }

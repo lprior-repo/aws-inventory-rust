@@ -160,16 +160,16 @@ fn list_field(record: &Record) -> TestResult<ListRef<'_>> {
     }
 }
 #[test]
-fn map_iteration_terminates_after_reporting_an_unsupported_key() -> TestResult {
-    // Given an unsupported key followed by a valid field.
-    let record = Record::from_bytes(vec![0xA2, 0xF5, 0, 1, 0])?;
-    // When iterating, then the error is reported exactly once.
+fn map_iteration_terminates_after_reporting_an_unsupported_value() -> TestResult {
+    // Given a supported key with an unsupported f32 value followed by a valid field.
+    let record = Record::from_bytes(vec![0xA2, 1, 0xFA, 0, 0, 0, 0, 2, 0])?;
+    // When iterating, then the value error is reported exactly once.
     let mut entries = record.root().iter()?;
     assert!(matches!(
         entries.next(),
-        Some(Err(RecordError::KeyType {
-            found: minicbor::data::Type::Bool,
-            ..
+        Some(Err(RecordError::FloatType {
+            type_name: "f32",
+            offset: 2
         }))
     ));
     assert!(entries.next().is_none());

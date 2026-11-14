@@ -147,6 +147,21 @@ Status from the coordinator, 2026-11-13.
   Independent code review: no findings; independent test review: four gaps,
   all closed. Rust lines: 1,350 added, 19 deleted; production 326 added, 18
   deleted.
+- **M3.1c is done: a validated record now carries the invariant its lookups
+  use.** An architecture audit found that `Record::from_bytes` and
+  `MapRef::from_bytes` accepted any well-framed CBOR while lookup stops at
+  the first greater key, so `{2: 0, 1: "x"}` reported field 1 absent.
+  Validation now proves, in the same single pass and with no allocation
+  beyond the frame stack, that every map a reader can reach (the root, and
+  every definite-length map found as a map value or list item) has field-ID
+  or name keys in strictly ascending order; `KeyOutOfOrder` and
+  `DuplicateKey` carry the offending key's offset. Content inside a tag or an
+  indefinite-length container stays opaque, so version 1 still skips value
+  kinds it does not know. Non-shortest integer encodings remain accepted
+  (order and equality are by decoded value; the hash normalizes widths).
+  `cargo test -p inventory-core --locked` passes 193 tests, 21 of them new.
+  Black Hat review: no findings; test review: three gaps, closed. Rust lines:
+  644 added, 102 deleted; production 158 added, 51 deleted.
 - **The M2 crate exists and its protocol oracle is in the tree.** `crates/aws-wire`
   is scaffolded (`ac75ec1`). Smithy's published protocol test suites are
   committed as complete JSON ASTs under

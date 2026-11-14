@@ -40,6 +40,12 @@ pub enum RecordError {
     /// Unsupported map key type.
     #[error("map key {found} not allowed at {offset}")]
     KeyType { found: Type, offset: usize },
+    /// A reachable map key is smaller than its predecessor; offset starts this key.
+    #[error("map key out of order at {offset}")]
+    KeyOutOfOrder { offset: usize },
+    /// A reachable map repeats its predecessor's key; offset starts the repeated key.
+    #[error("duplicate map key at {offset}")]
+    DuplicateKey { offset: usize },
     /// Unsupported value type.
     #[error("value type {found} not allowed at {offset}")]
     ValueType { found: Type, offset: usize },

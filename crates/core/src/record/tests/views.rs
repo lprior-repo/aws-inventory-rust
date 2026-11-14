@@ -90,23 +90,15 @@ fn narrow_floats_are_skipped_unselected_but_rejected_selected() -> TestResult {
 }
 
 #[test]
-fn generic_nested_keys_are_skipped_but_rejected_when_converted() -> TestResult {
-    let record = target_after([0xA1, 0xF5, 0])?;
-    // Given an unselected boolean-keyed map, when skipped then the sibling is readable.
-    assert_target(&record)?;
-    // When converting that selected map, then its unsupported key is reported.
-    let selected = record
-        .root()
-        .get_field(FieldId::new(1)?)?
-        .ok_or("missing map")?;
-    assert!(matches!(
-        selected.to_value(),
+fn generic_nested_keys_are_rejected_before_a_view_can_be_created() {
+    // Given a reachable boolean-keyed map, when validating, then reject before any lookup.
+    assert_eq!(
+        Record::from_bytes(vec![0xA2, 1, 0xA1, 0xF5, 0, 2, 3]),
         Err(RecordError::KeyType {
             found: Type::Bool,
-            ..
+            offset: 3
         })
-    ));
-    Ok(())
+    );
 }
 
 #[test]

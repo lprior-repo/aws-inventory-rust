@@ -14,7 +14,8 @@ pub struct MapRef<'a> {
     pub(super) bytes: &'a [u8],
 }
 impl<'a> MapRef<'a> {
-    /// Validate borrowed bytes as one record without copying them.
+    /// Validate framing and supported, strictly ascending reachable map keys without copying.
+    /// Tags and indefinite containers remain opaque; readers check selected value forms.
     /// # Errors
     /// Exactly the errors of `Record::from_bytes`.
     pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, RecordError> {
@@ -22,19 +23,20 @@ impl<'a> MapRef<'a> {
         Ok(Self { bytes })
     }
 
-    /// Find a field, stopping once sorted keys pass it.
+    /// Find a field, stopping once validation-established sorted keys pass it.
     /// # Errors
     /// Rejects unsupported keys or selected values.
     pub fn get_field(self, id: FieldId) -> Result<Option<ValueRef<'a>>, RecordError> {
         self.get_key(KeyRef::Field(id))
     }
-    /// Find a name, stopping once sorted keys pass it.
+    /// Find a name, stopping once validation-established sorted keys pass it.
     /// # Errors
     /// Rejects unsupported keys or selected values.
     pub fn get_name(self, name: &str) -> Result<Option<ValueRef<'a>>, RecordError> {
         self.get_key(KeyRef::Name(name))
     }
     fn get_key(self, key: KeyRef<'_>) -> Result<Option<ValueRef<'a>>, RecordError> {
+        // Validation proves strict key order in every map a reader can expose.
         let mut decoder = Decoder::new(self.bytes);
         let count = readers::definite(decoder.map()?, 0)?;
         let Some(result) = (0..count).find_map(|_| {
