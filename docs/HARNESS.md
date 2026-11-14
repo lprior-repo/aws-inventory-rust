@@ -55,11 +55,10 @@ catalog digests are resolved against.
 
 ### Historical live coverage on emulator 1.0.336
 
-The results below were captured on 1.0.336 (`f5155815`), not the current
-1.0.348 pin. The new package's SHA-256 and AWS GPG signature were verified;
-its standalone and embedded runtime gates have not been run for this upgrade.
-The Rust harness installs the current pin in `.local/runtime`; its
-`emulator_live` tests run without Python.
+The table below preserves results captured on 1.0.336 (`f5155815`), not the
+current 1.0.348 pin. It is not a claim that the current release's full standalone
+and embedded runtime gates pass. The Rust harness installs the current pin in
+`.local/runtime`; its `emulator_live` tests run without Python.
 
 | Check | Result |
 | --- | --- |
@@ -83,16 +82,38 @@ by agreeing with itself: 1,881 total, 1,291 list-capable, 410 parent-required
 skips, 180 unsupported-handler skips, 1,291 attempted, 999 succeeded, 292
 provider-unsupported, 0 failed, `/api/in_flight == 0`.
 
-The 292 `TypeNotFoundException` names are compared as an exact set against
-`crates/harness/fixtures/universal-unsupported-aws-emulator-1.0.336.json`, which
-records the historical 1.0.336 version and commit. It is a regression baseline,
-not evidence for 1.0.348. Metadata, exact type-set and partition assertions
-remain unchanged: the live gate must capture the new release's outcomes before
-the fixture or literals can be refreshed. The recorded capture command is
+### Current universal capture on emulator 1.0.348
+
+A separate CLI capture on 2026-11-13 used binary-reported version 1.0.348,
+commit `7461ab1bbe540afe8063ce03ee5477ebb649df48`, with a fresh owned process:
+`--port 0 --bind 127.0.0.1 --auth on --telemetry off --idle-timeout 900`.
+The collector used that process's generated credentials and CA over HTTPS,
+with inherited AWS configuration cleared and EC2 metadata disabled.
+
+The command was
 `aws-inventory scan --db universal.sqlite --region us-east-1 --attempts 1 --max-pages 2 --page-size 2 --service cloud-control --cloud-control --resource-type all`.
-Extract types from `collection_failures.scope_key.parent_id` only after checking
-every failure has category `unsupported_type` and message `TypeNotFoundException`;
-`unsupported_types` in `tests/emulator_live/coverage.rs` is the checked extraction.
+It exited 0 with `status: complete`, `/api/in_flight == 0`, and the same
+partition literals listed above: 1,881 total, 1,291 attempted/list-capable,
+999 succeeded, 292 unsupported, 0 failed, and 590 explicit skips (410 + 180).
+No numeric assertion was changed.
+
+All 292 SQLite `collection_failures` rows had category `unsupported_type`,
+a `TypeNotFoundException` message, and a string `scope_key.parent_id`.
+The 292 distinct names extracted from that new database exactly match the
+historical set: no additions or removals. The live scenario now compares against
+`crates/harness/fixtures/universal-unsupported-aws-emulator-1.0.348.json`,
+which records the new version/commit, observed partition, capture provenance,
+and binary/report/database SHA-256 values. The
+`universal-unsupported-aws-emulator-1.0.336.json` fixture remains untouched
+historical evidence, not relabelled evidence for the current pin.
+
+Raw capture files are retained locally under
+`.local/runs/universal-1.0.348-20261113T235853Z` (not shipped in a clone).
+`unsupported_types` in `tests/emulator_live/coverage.rs` performs the live
+checked extraction. This manual capture does not establish a full six-scenario
+live-suite pass or embedded-mode acceptance.
+
+### Historical reviewed-set and pagination details
 
 The 11 reviewed-set gaps are not collector defects: they are the emulator's
 Cloud Control type registry, and they match the committed `list_error` set in

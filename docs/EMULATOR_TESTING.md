@@ -28,7 +28,8 @@ The resource types exercise different providers through the same two Cloud Contr
 
 The current source and binary pin is the latest stable upstream release,
 v1.0.348. Its downloaded package checksum and detached AWS signature were
-verified during the dependency upgrade; runtime integration is not yet verified.
+verified during the dependency upgrade. The universal capture described below
+is a separate runtime observation, not full integration-suite acceptance.
 
 | Item | Value |
 | --- | --- |
@@ -49,8 +50,20 @@ The retained [package verification](../artifacts/emulator-package-verification-v
 and [checkout verification](../artifacts/emulator-upstream-checkout-v04.json) are
 historical 1.0.336 evidence, not proof for the current pin. Legacy Python runner
 and snapshot commands below retain that older pin and must not be used to claim
-1.0.348 coverage. The universal unsupported-type fixture likewise remains an
-unmodified historical baseline pending a real capture; see [HARNESS.md](HARNESS.md).
+1.0.348 coverage. The original
+`crates/harness/fixtures/universal-unsupported-aws-emulator-1.0.336.json`
+also remains untouched historical evidence.
+
+A separate authenticated CLI capture on 2026-11-13 against version 1.0.348,
+commit `7461ab1bbe540afe8063ce03ee5477ebb649df48`, produced
+`crates/harness/fixtures/universal-unsupported-aws-emulator-1.0.348.json`.
+Its 292 names were extracted from the new SQLite database and exactly match the
+older set; the complete partition also remains unchanged (1,291 attempted,
+999 succeeded, 292 unsupported, 0 failed). The new fixture includes capture
+provenance and binary/report/database SHA-256 values. See
+[HARNESS.md](HARNESS.md#current-universal-capture-on-emulator-10348) for the
+command and isolation details. This is not a full six-scenario live-suite pass
+or embedded-mode verification.
 
 The reproducible commands below use `/tmp/aws-inventory-emulator`. Choose a filesystem with sufficient free space for the clone, downloaded package and extracted executable; these paths are examples, not required workspace locations.
 

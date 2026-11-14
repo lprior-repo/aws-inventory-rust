@@ -4,7 +4,7 @@
 //! not against the catalog the scan was generated from: a bug that stops the
 //! scan early must fail even when the catalog agrees with itself. The 292
 //! provider boundaries are compared as an exact type-name set from committed
-//! evidence pinned to aws-emulator 1.0.336.
+//! evidence captured independently on aws-emulator 1.0.348.
 
 use std::collections::BTreeSet;
 
@@ -20,7 +20,7 @@ const EXPECTED_ATTEMPTED: u64 = 1_291;
 const EXPECTED_SUCCEEDED: u64 = 999;
 const EXPECTED_UNSUPPORTED: u64 = 292;
 const EXPECTED_FAILED: u64 = 0;
-const FIXTURE: &str = "crates/harness/fixtures/universal-unsupported-aws-emulator-1.0.336.json";
+const FIXTURE: &str = "crates/harness/fixtures/universal-unsupported-aws-emulator-1.0.348.json";
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 #[ignore = "requires the pinned emulator binary and a collector build"]
