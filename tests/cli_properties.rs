@@ -111,10 +111,6 @@ fn entrypoint_version_catalog_and_error_exit_are_real() -> Result<()> {
         Some(&json!(421))
     );
     assert_eq!(catalog.get("sqlite_schema_version"), Some(&json!(13)));
-    assert_eq!(
-        catalog.pointer("/sdk_catalog/service_crates"),
-        Some(&json!(437))
-    );
     assert!(command(&arguments(&["unsupported-command-fixture"]), 2)?.is_empty());
     assert!(
         command(

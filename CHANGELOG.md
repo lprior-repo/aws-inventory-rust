@@ -5,7 +5,7 @@
 - M1.7: removed redundant typed-SDK inventories and their generated data,
   commands, reconciliation/audit consumers and unused dependencies. Existing
   typed collectors and independent Cloud Control/delivery evidence remain.
-  All-target/all-feature workspace check, 19 retained behavior tests,
+  All-target/all-feature workspace check, 26 retained behavior tests,
   warnings-denied production Clippy and both source guards pass.
 - M1.4b: bounded reviewed-overlay parser with typed values, strict unknown-key
   rejection, Gregorian review dates and iterative binding-cycle checks.
