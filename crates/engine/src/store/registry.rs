@@ -4,16 +4,22 @@ use std::collections::BTreeMap;
 
 use super::*;
 
+mod records;
+use records::*;
+
 /// Explicit onboarding state for an account.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum AccountStatus {
+    /// Account is registered for collection.
     Onboarded,
+    /// Account remains registered but has a suspended onboarding state.
     Suspended,
+    /// Account is marked removed; the registry row and inventory are retained.
     Removed,
 }
 
 impl AccountStatus {
-    pub const fn as_str(self) -> &'static str {
+    pub(crate) const fn as_str(self) -> &'static str {
         match self {
             Self::Onboarded => "onboarded",
             Self::Suspended => "suspended",
@@ -34,17 +40,24 @@ impl AccountStatus {
 /// Coverage result for one account/region/collector scope.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CoverageState {
+    /// No coverage outcome is known.
     Unknown,
+    /// Collection is in progress for this scope.
     Running,
+    /// Scope is explicitly recorded as successfully enumerated.
     Complete,
+    /// Only incomplete coverage is recorded.
     Partial,
+    /// Collection was refused by authorization.
     Denied,
+    /// Provider capability does not support collecting the scope.
     Unsupported,
+    /// Collection failed for a reason other than the explicit denied/unsupported states.
     Failed,
 }
 
 impl CoverageState {
-    pub const fn as_str(self) -> &'static str {
+    pub(crate) const fn as_str(self) -> &'static str {
         match self {
             Self::Unknown => "unknown",
             Self::Running => "running",
@@ -68,44 +81,60 @@ impl CoverageState {
             _ => Err(StoreError::InvalidInput("unknown coverage state")),
         }
     }
-
-    pub const fn is_terminal_success(self) -> bool {
-        matches!(self, Self::Complete)
-    }
 }
 
 /// One registered account.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct AccountRecord {
+    /// Registered account identity, ordered lexically by `list_accounts`.
     pub account_id: String,
+    /// Caller-supplied validated partition spelling.
     pub partition: String,
+    /// Optional collection-role ARN; `None` means no role was registered.
     pub role_arn: Option<String>,
+    /// Explicit onboarding state; changing it does not delete inventory.
     pub status: AccountStatus,
+    /// Original nonnegative caller timestamp, retained across re-registration.
     pub created_at: i64,
+    /// Last supplied update timestamp; the store does not enforce monotonicity here.
     pub updated_at: i64,
 }
 
 /// One coverage-registry row.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CoverageRecord {
+    /// Registered owning account; persistence requires its account row to exist.
     pub account_id: String,
+    /// Validated region identity, including caller-defined global scopes.
     pub region: String,
+    /// Validated collector identity; part of the registry's composite key.
     pub collector: String,
+    /// Caller-reported outcome; not derived from scan observations.
     pub state: CoverageState,
+    /// Last related scan identity, or `None` if not supplied.
     pub last_scan_id: Option<String>,
+    /// Last nonnegative caller attempt timestamp, or `None` if unknown.
     pub last_attempt_at: Option<i64>,
+    /// Last nonnegative caller success timestamp, or `None` if unknown.
     pub last_success_at: Option<i64>,
+    /// Optional failure-category text; `None` means no category was supplied.
     pub last_error_category: Option<String>,
 }
 
 /// Coverage counts by state.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct CoverageSummary {
+    /// Counts keyed by stored lowercase state; absent keys represent zero rows.
     pub by_state: BTreeMap<String, usize>,
+    /// Checked total across every stored coverage row.
     pub total: usize,
 }
 
 impl Store {
+    /// Upsert and onboard an account, retaining its original creation timestamp.
+    /// `now` is nonnegative caller time; re-registration replaces partition/role.
+    /// # Errors
+    /// Rejects invalid identifiers, empty/NUL/over-512-byte roles, negative time or SQL failures.
     pub async fn register_account(
         &self,
         account_id: &str,
@@ -132,6 +161,9 @@ impl Store {
         Ok(())
     }
 
+    /// Change onboarding state without deleting the account or its inventory.
+    /// # Errors
+    /// Rejects invalid account IDs, negative caller time, missing accounts or SQL failures.
     pub async fn set_account_status(
         &self,
         account_id: &str,
@@ -154,6 +186,9 @@ impl Store {
         Ok(())
     }
 
+    /// Registered accounts in account-ID order; empty means no rows are registered.
+    /// # Errors
+    /// Returns SQL/decoding errors or an invalid stored onboarding-state error.
     pub async fn list_accounts(&self) -> Result<Vec<AccountRecord>, StoreError> {
         let rows = sqlx::query(
             "SELECT account_id,partition,role_arn,status,created_at,updated_at
@@ -164,6 +199,9 @@ impl Store {
         rows.into_iter().map(account_record).collect()
     }
 
+    /// Replace coverage for the exact account/region/collector composite key.
+    /// # Errors
+    /// Rejects invalid IDs/optional text, negative times or SQL errors, including unknown accounts.
     pub async fn record_coverage(&self, record: &CoverageRecord) -> Result<(), StoreError> {
         validate_coverage(record)?;
         sqlx::query(
@@ -187,6 +225,9 @@ impl Store {
         Ok(())
     }
 
+    /// Coverage rows for one account in region/collector order; no rows yields empty.
+    /// # Errors
+    /// Rejects invalid account IDs, invalid stored states or SQL/decoding failures.
     pub async fn coverage(&self, account_id: &str) -> Result<Vec<CoverageRecord>, StoreError> {
         validate_identifier(account_id, "account id")?;
         let rows = sqlx::query(
@@ -200,6 +241,9 @@ impl Store {
         rows.into_iter().map(coverage_record).collect()
     }
 
+    /// Count all registry rows by stored state; no rows yields a zero total.
+    /// # Errors
+    /// Returns SQL/decoding errors or a count-conversion/total-overflow error.
     pub async fn coverage_summary(&self) -> Result<CoverageSummary, StoreError> {
         let rows = sqlx::query("SELECT state,count(*) FROM coverage_registry GROUP BY state")
             .fetch_all(&self.reader)
@@ -217,59 +261,4 @@ impl Store {
         }
         Ok(summary)
     }
-}
-
-fn validate_coverage(record: &CoverageRecord) -> Result<(), StoreError> {
-    validate_identifier(&record.account_id, "account id")?;
-    validate_identifier(&record.region, "region")?;
-    validate_identifier(&record.collector, "collector")?;
-    validate_optional_text(record.last_scan_id.as_deref(), "scan id")?;
-    validate_optional_text(record.last_error_category.as_deref(), "error category")?;
-    for value in [record.last_attempt_at, record.last_success_at]
-        .into_iter()
-        .flatten()
-    {
-        validate_time(value, "coverage time")?;
-    }
-    Ok(())
-}
-
-fn validate_optional_text(value: Option<&str>, field: &'static str) -> Result<(), StoreError> {
-    if let Some(value) = value
-        && (value.is_empty() || value.len() > 512 || value.contains('\0'))
-    {
-        return Err(StoreError::InvalidInput(field));
-    }
-    Ok(())
-}
-
-fn validate_time(value: i64, field: &'static str) -> Result<(), StoreError> {
-    if value < 0 {
-        return Err(StoreError::InvalidInput(field));
-    }
-    Ok(())
-}
-
-fn account_record(row: SqliteRow) -> Result<AccountRecord, StoreError> {
-    Ok(AccountRecord {
-        account_id: row.try_get(0)?,
-        partition: row.try_get(1)?,
-        role_arn: row.try_get(2)?,
-        status: AccountStatus::parse(&row.try_get::<String, _>(3)?)?,
-        created_at: row.try_get(4)?,
-        updated_at: row.try_get(5)?,
-    })
-}
-
-fn coverage_record(row: SqliteRow) -> Result<CoverageRecord, StoreError> {
-    Ok(CoverageRecord {
-        account_id: row.try_get(0)?,
-        region: row.try_get(1)?,
-        collector: row.try_get(2)?,
-        state: CoverageState::parse(&row.try_get::<String, _>(3)?)?,
-        last_scan_id: row.try_get(4)?,
-        last_attempt_at: row.try_get(5)?,
-        last_success_at: row.try_get(6)?,
-        last_error_category: row.try_get(7)?,
-    })
 }

@@ -4,6 +4,10 @@ use super::*;
 impl JobStore {
     /// The first submission owns scheduling time. Repeated identical IDs return
     /// that immutable job; a different payload/kind/initial attempt budget fails.
+    /// `now` is nonnegative caller time in milliseconds; the persisted row is returned.
+    /// # Errors
+    /// Rejects invalid/oversized specifications, conflicting replays, the 10,000-job
+    /// capacity bound, or JSON/SQL/persisted-row decoding failures.
     #[tracing::instrument(skip_all, fields(job_id = %spec.job_id))]
     pub async fn submit(&self, spec: JobSpec, now: i64) -> Result<JobRecord, JobError> {
         validate_spec(&spec, now)?;
@@ -36,6 +40,10 @@ impl JobStore {
 
     /// Claims are serialized by SQLite, including reclaiming expired attempts.
     /// Every later write is fenced by job ID, attempt number, owner and token.
+    /// `now` and `lease_ms` are milliseconds; `None` means no eligible queued job.
+    /// # Errors
+    /// Rejects invalid worker/token keys, negative time, leases outside 10 seconds
+    /// through one hour, timestamp overflow or SQL/persisted-row decoding failures.
     #[tracing::instrument(skip_all, fields(worker = owner))]
     pub async fn claim(
         &self,
@@ -72,6 +80,9 @@ impl JobStore {
 
     /// A cancellation request is returned while ownership is still retained so
     /// the worker can stop intake, drain, and acknowledge cancellation.
+    /// Millisecond times must remain within the live lease; returns its cancel flag.
+    /// # Errors
+    /// Rejects invalid lease duration/time, overflow, SQL failures or stale/fenced leases.
     #[tracing::instrument(skip_all, fields(job_id = %lease.job_id, attempt = lease.attempt))]
     pub async fn heartbeat(
         &self,
@@ -96,6 +107,11 @@ impl JobStore {
         Ok(cancel)
     }
 
+    /// Finish a live, exactly matching lease; a persisted cancellation wins over `state`.
+    /// Millisecond `now` must precede expiry. Results are bounded to 1 MiB; error
+    /// text is truncated to 8 KiB at a UTF-8 boundary.
+    /// # Errors
+    /// Fails on negative time, oversized/invalid JSON results, stale leases or SQL/decode errors.
     #[tracing::instrument(skip_all, fields(job_id = %lease.job_id, attempt = lease.attempt))]
     pub async fn complete(
         &self,

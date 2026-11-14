@@ -15,12 +15,19 @@ pub const MAX_PAGE_LIMIT: usize = 10_000;
 /// deliberately not retained.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ResourceView {
+    /// Wire identity used for lookup, deduplication and edge endpoints.
     pub id: String,
+    /// Producer's owning-account identity, used for exact filtering.
     pub account_id: String,
+    /// Producer's region spelling, including global scopes.
     pub region: String,
+    /// Producer's resource-kind spelling, used without normalization.
     pub kind: String,
+    /// Optional display name; `None` means the record supplied none.
     pub name: Option<String>,
+    /// Tag keys and values in key order; empty means no tags were supplied.
     pub tags: BTreeMap<String, String>,
+    /// Compact-JSON property byte count; no property values are retained.
     pub properties_bytes: usize,
 }
 
@@ -94,6 +101,9 @@ pub struct PageRequest {
 
 impl PageRequest {
     /// Validate a page request; `limit` must be in `1..=MAX_PAGE_LIMIT`.
+    ///
+    /// # Errors
+    /// Returns `InvalidPageLimit` when the limit is zero or exceeds 10,000.
     pub fn new(offset: usize, limit: usize) -> Result<Self, ViewError> {
         if !(1..=MAX_PAGE_LIMIT).contains(&limit) {
             return Err(ViewError::InvalidPageLimit);
@@ -101,17 +111,10 @@ impl PageRequest {
         Ok(Self { offset, limit })
     }
 
-    /// Number of matching resources skipped before the page.
-    pub const fn offset(self) -> usize {
-        self.offset
-    }
-
-    /// Maximum resources in the page.
-    pub const fn limit(self) -> usize {
-        self.limit
-    }
-
     /// Resume a page at an opaque cursor's offset.
+    ///
+    /// # Errors
+    /// Returns `InvalidCursor` for an invalid offset or `InvalidPageLimit`.
     pub fn after(cursor: &PageCursor, limit: usize) -> Result<Self, ViewError> {
         Self::new(cursor.offset()?, limit)
     }
@@ -123,6 +126,9 @@ pub struct PageCursor(String);
 
 impl PageCursor {
     /// Parse a cursor spelling persisted by a UI.
+    ///
+    /// # Errors
+    /// Returns `InvalidCursor` for empty, over-20-byte or non-`usize` spellings.
     pub fn parse(value: &str) -> Result<Self, ViewError> {
         if value.is_empty() || value.len() > 20 {
             return Err(ViewError::InvalidCursor);
@@ -142,6 +148,9 @@ impl PageCursor {
     }
 
     /// Parse the opaque spelling back into an offset.
+    ///
+    /// # Errors
+    /// Returns `InvalidCursor` if the stored spelling cannot parse as `usize`.
     pub fn offset(&self) -> Result<usize, ViewError> {
         self.0
             .parse::<usize>()
@@ -255,12 +264,16 @@ impl Snapshot {
     }
 
     /// Look up one resource by its wire id.
+    /// Returns `None` when no retained resource has that exact identity.
     pub fn resource(&self, id: &str) -> Option<&ResourceView> {
         let position = *self.resource_index.get(id)?;
         self.resources.get(position)
     }
 
     /// One filtered, deterministically ordered page.
+    ///
+    /// # Errors
+    /// Returns `SizeOverflow` if offset-plus-limit or page accounting overflows.
     pub fn page<'a>(
         &'a self,
         filter: &ResourceFilter,

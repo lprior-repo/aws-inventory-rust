@@ -21,6 +21,7 @@ impl ApiExecutor {
         self.cancellation.cancelled().await;
     }
 
+    /// Snapshot cumulative counters and current admission occupancy; reads are not transactional.
     #[must_use]
     pub fn stats(&self) -> ExecutorStats {
         self.counters.snapshot()
@@ -30,6 +31,9 @@ impl ApiExecutor {
     /// be disabled. Tokio timeouts cannot preempt blocking future polling.
     /// This function does not buffer `T`; payload limits belong to the adapter.
     /// Dropping this future releases every reservation and counts cancellation.
+    /// # Errors
+    /// Returns terminal adapter errors, cancellation, invalid/bounded quota-key
+    /// admission, rejected retry hints or exhausted retry/deadline budgets.
     #[tracing::instrument(skip(self, operation), fields(quota_bucket = bucket))]
     pub async fn execute<T, F, Fut>(&self, bucket: &str, operation: F) -> Result<T, ApiError>
     where

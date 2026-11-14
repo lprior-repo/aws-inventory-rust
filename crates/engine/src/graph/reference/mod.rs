@@ -76,7 +76,9 @@ pub struct ReferenceSummary {
 /// Derived edges plus their accounting.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 pub struct ReferenceResolution {
+    /// Bounded resolution counters, including skipped/ambiguous candidates.
     pub summary: ReferenceSummary,
+    /// Deterministically ordered, deduplicated derived edges; empty means none resolved.
     pub edges: Vec<Edge>,
 }
 
@@ -189,6 +191,8 @@ impl ResolutionState {
 ///
 /// Resources are streamed twice instead of collected, so the resolver is not
 /// bounded by the export snapshot budget.
+/// # Errors
+/// Propagates invalid/missing scan, SQL, resource decoding/validation or stream-bound errors.
 pub async fn resolve_scan(
     store: &Store,
     scan_id: &str,

@@ -30,6 +30,7 @@
 //! 500,000 each and flagged truncated beyond that. Pages, graph neighborhoods
 //! and LOD summaries report their own caps.
 
+#![deny(missing_docs)]
 #![forbid(unsafe_code)]
 #![deny(unused_must_use)]
 

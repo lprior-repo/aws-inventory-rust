@@ -2,6 +2,10 @@
 use super::*;
 
 impl JobStore {
+    /// Open/create a dedicated SQLite queue, migrating its supported schema.
+    /// File-backed queues use WAL and FULL synchronization; `:memory:` is isolated.
+    /// # Errors
+    /// Rejects an empty path, another application's database, unsupported schema or SQL failure.
     #[tracing::instrument(skip(path))]
     pub async fn open(path: impl AsRef<Path>) -> Result<Self, JobError> {
         let path = path.as_ref();
@@ -29,6 +33,7 @@ impl JobStore {
         Ok(Self { pool })
     }
 
+    /// Close the queue pool; callers must first stop and drain their workers.
     #[tracing::instrument(skip(self))]
     pub async fn close(self) {
         self.pool.close().await;

@@ -30,6 +30,10 @@ impl Snapshot {
     ///
     /// The document must carry `header.artifact = "aws-inventory.snapshot"` and
     /// `header.version = 1`; any other artifact or version is rejected.
+    ///
+    /// # Errors
+    /// Rejects input above 1 GiB, malformed wire data, unsupported headers,
+    /// more than 2,000,000 resource or 5,000,000 edge records, or size overflow.
     pub fn parse(bytes: &[u8]) -> Result<Self, ViewError> {
         if bytes.len() > build::MAX_SNAPSHOT_BYTES {
             return Err(ViewError::InputLimit("snapshot bytes"));

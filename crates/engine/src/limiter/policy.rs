@@ -1,14 +1,20 @@
 //! Validated executor configuration and exact bucket policies.
 use super::*;
 
+/// Defaults for unconfigured quota keys; constructors validate every bound.
 #[derive(Clone, Copy, Debug, Serialize)]
 pub struct ExecutorConfig {
+    /// Simultaneous attempts across all keys, in `1..=4096`.
     pub global_concurrency: usize,
+    /// Per-key simultaneous attempts, in `1..=global_concurrency`.
     pub per_bucket_concurrency: usize,
     /// Maximum starts per second per bucket, including retries.
     pub requests_per_second: u32,
+    /// Total starts per execution, including the initial attempt, in `1..=10`.
     pub max_attempts: u32,
+    /// Deadline per attempt in milliseconds, in `1..=300000`.
     pub attempt_timeout_ms: u64,
+    /// Maximum jittered retry backoff in milliseconds, in `1..=300000`.
     pub max_backoff_ms: u64,
 }
 
@@ -57,7 +63,9 @@ impl ExecutorConfig {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct BucketLimits {
+    /// Maximum evenly paced starts per second, in `1..=100000`.
     pub requests_per_second: u32,
+    /// Simultaneous attempts for this key, in `1..=global_concurrency`.
     pub concurrency: usize,
 }
 
@@ -86,8 +94,11 @@ impl BucketLimits {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct PeriodLimits {
+    /// Starts per period, in `1..=100000`; the ratio may not exceed 100,000 RPS.
     pub requests: u32,
+    /// Rate window in milliseconds, in `1..=300000`.
     pub period_ms: u64,
+    /// Simultaneous attempts for this key, in `1..=global_concurrency`.
     pub concurrency: usize,
 }
 
@@ -96,7 +107,9 @@ pub struct PeriodLimits {
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum BucketPolicy {
+    /// Integer requests-per-second policy using evenly spaced starts.
     PerSecond(BucketLimits),
+    /// Rational requests-per-period policy, including rates below one RPS.
     PerPeriod(PeriodLimits),
 }
 

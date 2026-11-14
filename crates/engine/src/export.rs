@@ -25,21 +25,29 @@ use tokio::fs::File;
 use tokio::io::{AsyncWriteExt, BufWriter};
 use tokio_util::sync::CancellationToken;
 
+/// Artifact discriminator shared by JSON and JSONL snapshot headers.
 pub const EXPORT_ARTIFACT: &str = "aws-inventory.snapshot";
+/// Portable snapshot wire version, independent of SQLite's schema version.
 pub const EXPORT_VERSION: u16 = 1;
+/// Maximum data records per artifact; header and summary envelopes do not count.
 pub const MAX_EXPORT_RECORDS: usize = MAX_STREAM_RECORDS;
+/// Maximum complete artifact size in bytes (1 TiB).
 pub const MAX_EXPORT_BYTES: u64 = 1_099_511_627_776;
-pub const MAX_EXPORT_RECORD_BYTES: usize = 2_359_296;
+pub(crate) const MAX_EXPORT_RECORD_BYTES: usize = 2_359_296;
 const FILE_BUFFER_BYTES: usize = 65_536;
 
+/// Container shape for the same ordered snapshot data records.
 #[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ExportFormat {
+    /// One JSON object containing header, records array and summary.
     Json,
+    /// Newline-delimited tagged records, beginning with header and ending with summary.
     #[default]
     Jsonl,
 }
 
+/// Choose preferred values or preserve every persisted source observation.
 #[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 pub enum ProvenanceMode {
@@ -71,15 +79,20 @@ impl ReferenceMode {
         }
     }
 
+    /// Whether publication must derive and persist universal reference edges.
     pub const fn is_enabled(self) -> bool {
         matches!(self, Self::Derive)
     }
 }
 
+/// Publication options; record/byte budgets are validated before creating a file.
 #[derive(Clone, Copy, Debug)]
 pub struct ExportOptions {
+    /// Container format; defaults to newline-delimited JSON.
     pub format: ExportFormat,
+    /// Observation selection; defaults to one preferred value per identity.
     pub provenance: ProvenanceMode,
+    /// Permit finalized partial/cancelled scans; running scans are always rejected.
     pub allow_partial: bool,
     /// Derive and persist universal `REFERENCES` edges before writing the
     /// snapshot. Default: disabled, so existing exports keep their edge set.
@@ -117,127 +130,67 @@ impl ExportOptions {
     }
 }
 
+/// Export, publication and recovery failures; cleanup variants retain their cause.
 #[derive(Debug, Error)]
 pub enum ExportError {
+    /// Inventory reads or reference-edge persistence/restoration failed.
     #[error("inventory: {0}")]
     Store(#[from] StoreError),
+    /// Direct SQLx reading of persisted export metadata or records failed.
     #[error("SQLx inventory read: {0}")]
     Sql(#[from] sqlx::Error),
+    /// Output inspection, creation, writing, syncing or no-clobber linking failed.
     #[error("file I/O: {0}")]
     Io(#[from] std::io::Error),
+    /// Persisted JSON decoding or output serialization failed.
     #[error("JSON: {0}")]
     Json(#[from] serde_json::Error),
+    /// A scan identifier or persisted inventory value failed validation.
     #[error("inventory validation: {0}")]
     Validation(#[from] ValidationError),
+    /// Invalid budgets, output path, scan status or persisted observation metadata.
     #[error("export validation: {0}")]
     Invalid(&'static str),
+    /// A record, record count or output byte budget was exceeded.
     #[error("export bound exceeded: {0}")]
     Limit(&'static str),
+    /// Cancellation was observed before the final publication link began.
     #[error("export cancelled before publication")]
     Cancelled,
+    /// An earlier failure was accompanied by partial-file drain/removal failure.
     #[error("{cause}; partial-file cleanup failed (drain: {drain:?}, removal: {removal:?})")]
     Cleanup {
+        /// Failure that initiated cleanup.
         #[source]
         cause: Box<Self>,
+        /// Write-drain failure, or `None` if draining did not fail.
         drain: Option<std::io::Error>,
+        /// Partial-file removal failure, or `None` if removal did not fail.
         removal: Option<std::io::Error>,
     },
+    /// Output exists successfully, but its additional partial-file link remains.
     #[error(
         "export was published at {output:?}, but its partial-file link could not be removed: {source}"
     )]
     PublishedCleanup {
+        /// Published output path; callers must not treat it as unpublished.
         output: PathBuf,
+        /// Error removing the now-redundant partial-file link.
         #[source]
         source: std::io::Error,
     },
+    /// Export failed and the previous synthetic reference edges could not be restored.
     #[error("{cause}; restoring the pre-export reference edges failed: {restore}")]
     Restore {
+        /// Original export/publication failure.
         #[source]
         cause: Box<Self>,
+        /// Failure while restoring the pre-export synthetic edge set.
         restore: Box<StoreError>,
     },
 }
 
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-pub struct ExportHeader {
-    pub artifact: String,
-    pub version: u16,
-    pub provenance: ProvenanceMode,
-    pub scan: ExportScan,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-pub struct ExportScan {
-    #[serde(flatten)]
-    pub summary: ScanSummary,
-    pub status: ScanStatus,
-    pub started_at: i64,
-    pub finished_at: i64,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-pub struct ObservationProvenance {
-    pub scope: CollectionScope,
-    pub page_number: u32,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-pub struct ExportResource {
-    pub resource: Resource,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub observation: Option<ObservationProvenance>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-pub struct ExportEdge {
-    pub edge: Edge,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub observation: Option<ObservationProvenance>,
-}
-
-/// Coverage evidence without opaque continuation tokens or page fingerprints.
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-pub struct ExportScope {
-    pub scope: CollectionScope,
-    pub last_page: u32,
-    pub complete: bool,
-    pub failed: bool,
-}
-
-#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
-pub struct ExportCounts {
-    pub resources: u64,
-    pub edges: u64,
-    pub scopes: u64,
-    pub failures: u64,
-    /// Data records only; JSONL also has a header and a summary record.
-    pub records: u64,
-}
-
-/// JSONL lines use this tagged envelope. JSON's records array contains only
-/// Resource, Edge, Scope and Failure, with header/summary in top-level fields.
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-#[serde(tag = "record", content = "data", rename_all = "snake_case")]
-pub enum ExportRecord {
-    Header(ExportHeader),
-    Resource(ExportResource),
-    Edge(ExportEdge),
-    Scope(ExportScope),
-    Failure(CollectionFailure),
-    Summary(ExportCounts),
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-pub struct ExportSummary {
-    pub scan_id: String,
-    pub status: ScanStatus,
-    pub format: ExportFormat,
-    pub provenance: ProvenanceMode,
-    #[serde(flatten)]
-    pub counts: ExportCounts,
-    pub bytes: u64,
-    pub sha256: String,
-}
-
+mod model;
+pub use model::*;
 mod publication;
 pub use publication::*;

@@ -12,11 +12,14 @@ use crate::graph::reference::{
 /// file created by this call. Once the final no-clobber link begins, publication
 /// wins a concurrent cancellation; callers must retain the successful result.
 ///
-/// Universal reference edges are derived and persisted before the snapshot is
-/// written because the artifact streams those persisted edges and its header
-/// counts describe the post-persistence scan. The pre-export synthetic edge set
-/// is captured first; any write, cancellation, or publication failure restores
-/// it, so a failed export leaves `store.edges()` unchanged.
+/// When enabled, universal reference edges are persisted before writing so the
+/// artifact and its header counts describe the post-persistence scan. Prior
+/// synthetic edges are captured first and restored on pre-publication failure.
+/// # Errors
+/// Rejects disallowed scan status, invalid identities, existing output/partial
+/// paths, cancellation before publication, record/byte bounds or persistence/I/O
+/// failures. Cleanup and restore failures are explicit; `PublishedCleanup` means
+/// the final artifact exists despite the returned error.
 #[tracing::instrument(skip(store, output, cancellation), fields(scan_id))]
 pub async fn export_snapshot(
     store: &Store,

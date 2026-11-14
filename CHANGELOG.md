@@ -24,6 +24,13 @@
   Both size guards pass after integration (778 Rust files); the isolated
   benchmark's locked release run passes both fixtures and its cross-codec
   field assertions. Original result tables remain unchanged.
+- M0.7a: `inventory-engine` and `cmdb-view` deny `missing_docs`. 378 public
+  items are documented from their bodies, 22 are narrowed to crate visibility,
+  and unused public functions are deleted (`Store::visit_edges`,
+  `CoverageState::is_terminal_success`, three `LodLimits` getters and two
+  `PageRequest` getters). An independent review found six comments that
+  stated behavior the code does not have; all were corrected. Rust lines: 727
+  added, 207 deleted.
 - Project agents in `.omp/agents/` include the local GPU builders and
   `aws-build-sol` (ChatGPT Sol). Builders implement independent packages in
   parallel; the coordinator owns serialized compilation, formatting and tests.

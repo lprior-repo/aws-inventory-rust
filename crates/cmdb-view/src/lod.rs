@@ -20,6 +20,9 @@ pub struct LodLimits {
 
 impl LodLimits {
     /// Validate each cap against its global maximum.
+    ///
+    /// # Errors
+    /// Rejects zero caps, kind/account caps above 1,024 or degree caps above 1,000.
     pub fn new(
         max_kinds: usize,
         max_accounts: usize,
@@ -37,21 +40,6 @@ impl LodLimits {
             max_top_degree,
         })
     }
-
-    /// Per-kind bucket cap.
-    pub const fn max_kinds(self) -> usize {
-        self.max_kinds
-    }
-
-    /// Per-account bucket cap.
-    pub const fn max_accounts(self) -> usize {
-        self.max_accounts
-    }
-
-    /// Top-degree entry cap.
-    pub const fn max_top_degree(self) -> usize {
-        self.max_top_degree
-    }
 }
 
 impl Default for LodLimits {
@@ -67,14 +55,18 @@ impl Default for LodLimits {
 /// One `(key, count)` bucket.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CountBucket {
+    /// Resource kind or account spelling for the summary axis.
     pub key: String,
+    /// Number of retained resource views in this bucket.
     pub count: usize,
 }
 
 /// One node plus its incident-edge count.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct DegreeEntry<'a> {
+    /// Identity of a retained resource with at least one incident edge.
     pub id: &'a str,
+    /// Kind copied from the retained resource view.
     pub kind: &'a str,
     /// Incident edge records; a self-loop counts once.
     pub degree: usize,
@@ -83,6 +75,7 @@ pub struct DegreeEntry<'a> {
 /// Compact summary used for high-level rendering of large views.
 #[derive(Clone, Debug)]
 pub struct LodSummary<'a> {
+    /// Retained resource count, independent of the requested summary caps.
     pub total_resources: usize,
     /// Sorted by count descending, then key ascending.
     pub kinds: Vec<CountBucket>,
@@ -90,8 +83,11 @@ pub struct LodSummary<'a> {
     pub accounts: Vec<CountBucket>,
     /// Nodes with at least one incident edge, degree descending then id ascending.
     pub top_degree: Vec<DegreeEntry<'a>>,
+    /// More kind buckets exist than the requested cap.
     pub truncated_kinds: bool,
+    /// More account buckets exist than the requested cap.
     pub truncated_accounts: bool,
+    /// More present resources have incident edges than the requested cap.
     pub truncated_top_degree: bool,
 }
 

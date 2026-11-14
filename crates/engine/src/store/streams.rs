@@ -2,15 +2,24 @@
 use super::*;
 
 impl Store {
+    /// Preferred resources in ID order, capped at 100,000 rows and 64 MiB of stored JSON.
+    /// # Errors
+    /// Fails for invalid/missing scans, SQL/decoding/validation errors or exceeded bounds.
     pub async fn resources(&self, scan_id: &str) -> Result<Vec<Resource>, StoreError> {
         collect_export(self.resource_stream(scan_id), MAX_EXPORT_RESOURCES).await
     }
 
+    /// Preferred edges in endpoint/relation order, capped at 250,000 rows and 64 MiB.
+    /// # Errors
+    /// Fails for invalid/missing scans, SQL/decoding/validation errors or exceeded bounds.
     pub async fn edges(&self, scan_id: &str) -> Result<Vec<Edge>, StoreError> {
         collect_export(self.edge_stream(scan_id), MAX_EXPORT_EDGES).await
     }
 
     /// Deterministically ordered, one buffered row at a time; no complete snapshot allocation.
+    /// At most 10,000,000 records; an existing empty scan yields no records.
+    /// # Errors
+    /// Yields invalid/missing-scan, SQL, decode, validation or record-count errors.
     pub fn resource_stream<'a>(&'a self, scan_id: &'a str) -> ResourceStream<'a> {
         self.json_stream(
             scan_id,
@@ -18,6 +27,10 @@ impl Store {
         )
     }
 
+    /// Preferred edges in `(from_id, to_id, relation)` order, one buffered row at a time.
+    /// An existing empty scan yields no records; the stream caps at 10,000,000.
+    /// # Errors
+    /// Yields invalid/missing-scan, SQL, decode, validation or record-count errors.
     pub fn edge_stream<'a>(&'a self, scan_id: &'a str) -> EdgeStream<'a> {
         self.json_stream(
             scan_id,
@@ -25,22 +38,15 @@ impl Store {
         )
     }
 
+    /// Invoke a synchronous visitor in resource-ID order without collecting the scan.
+    /// # Errors
+    /// Propagates the first resource-stream error or visitor failure and stops visiting.
     pub async fn visit_resources(
         &self,
         scan_id: &str,
         mut visitor: impl FnMut(Resource) -> Result<(), StoreError>,
     ) -> Result<(), StoreError> {
         self.resource_stream(scan_id)
-            .try_for_each(|item| future::ready(visitor(item)))
-            .await
-    }
-
-    pub async fn visit_edges(
-        &self,
-        scan_id: &str,
-        mut visitor: impl FnMut(Edge) -> Result<(), StoreError>,
-    ) -> Result<(), StoreError> {
-        self.edge_stream(scan_id)
             .try_for_each(|item| future::ready(visitor(item)))
             .await
     }

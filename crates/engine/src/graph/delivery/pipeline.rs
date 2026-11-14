@@ -3,6 +3,11 @@ use super::*;
 
 /// Validate the complete plan, bind immutable contents, then deliver serially.
 /// Retries own no detached task and never wrap the SQLx acknowledgement commit.
+/// Returns newly applied/skipped batches and executor counters; cancellation
+/// stops admission while already committed acknowledgements remain replayable.
+/// # Errors
+/// Rejects invalid options/plans or changed checkpoint binding; propagates file/
+/// checkpoint/transport failures, cancellation, deadline, retry or cleanup errors.
 #[tracing::instrument(skip_all, fields(input=%input.display()))]
 pub async fn push_file_with_options(
     input: PathBuf,

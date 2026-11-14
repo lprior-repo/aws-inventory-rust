@@ -2,6 +2,9 @@
 use super::*;
 
 impl Store {
+    /// Begin a running scan at nonnegative caller time; exact running replay is idempotent.
+    /// # Errors
+    /// Rejects invalid identities/time, a conflicting start, finalized replay or SQL failures.
     #[tracing::instrument(skip(self))]
     pub async fn begin_scan(&self, scan_id: &str, started_at: i64) -> Result<(), StoreError> {
         validate_identifier(scan_id, "scan id")?;
@@ -30,6 +33,12 @@ impl Store {
         Ok(())
     }
 
+    /// Validate and atomically commit a one-based collection page and its checkpoint.
+    /// Exact fingerprint/content replay is idempotent; full-scope identity and page
+    /// ordering are enforced before normalized resources and edges are updated.
+    /// # Errors
+    /// Rejects invalid/oversized pages, closed preparation admission, preparation
+    /// task/allocation failures, missing/finalized scans, conflicting replay/order or SQL errors.
     #[tracing::instrument(skip(self, page))]
     pub async fn apply_page(&self, scan_id: &str, page: CollectionPage) -> Result<(), StoreError> {
         validate_identifier(scan_id, "scan id")?;
@@ -60,6 +69,9 @@ impl Store {
         }
     }
 
+    /// Persist a diagnostic transactionally; mark its scope failed unless the category is `unsupported_type`.
+    /// # Errors
+    /// Rejects invalid/oversized diagnostics, missing/finalized scans or SQL failures.
     #[tracing::instrument(skip(self, failure))]
     pub async fn record_failure(
         &self,
@@ -76,6 +88,12 @@ impl Store {
         Ok(())
     }
 
+    /// Finalize a scan at caller time no earlier than its start.
+    /// Requested success becomes partial for zero, incomplete or failed scopes.
+    /// Repeating the same effective terminal status/time is idempotent.
+    /// # Errors
+    /// Rejects running terminal requests, invalid identity/time, conflicting replay,
+    /// missing scans or SQL/persisted-state decoding failures.
     #[tracing::instrument(skip(self))]
     pub async fn finish_scan(
         &self,
@@ -92,15 +110,20 @@ impl Store {
         Ok(summary)
     }
 
+    /// Read normalized resource/edge totals and persisted scope completion counts.
+    /// # Errors
+    /// Rejects invalid/missing scans, invalid persisted state/counts or SQL failures.
     pub async fn summary(&self, scan_id: &str) -> Result<ScanSummary, StoreError> {
         let mut connection = self.reader.acquire().await?;
         reset_progress(&mut connection).await?;
         scan_summary(&mut connection, scan_id).await
     }
 
-    /// Cloud Control drain accounting for one scan. List scopes are unique per
-    /// type and region; unsupported capability boundaries stay visible even
-    /// though they do not make the scan partial.
+    /// Cloud Control drain accounting for one scan's persisted list scopes.
+    /// Unsupported-type diagnostics remain visible without marking their scopes failed.
+    /// An unknown valid scan identity returns zero counts.
+    /// # Errors
+    /// Rejects invalid scan identities, failed count conversion or SQL/row-decoding failures.
     pub async fn universal_outcomes(&self, scan_id: &str) -> Result<UniversalOutcomes, StoreError> {
         validate_identifier(scan_id, "scan id")?;
         let mut connection = self.reader.acquire().await?;
@@ -137,12 +160,19 @@ impl Store {
         })
     }
 
+    /// Read the stored lifecycle state; this does not infer success from resource presence.
+    /// # Errors
+    /// Rejects invalid/missing scan identities, invalid persisted states or SQL failures.
     pub async fn scan_status(&self, scan_id: &str) -> Result<ScanStatus, StoreError> {
         let mut connection = self.reader.acquire().await?;
         reset_progress(&mut connection).await?;
         Ok(scan_state(&mut connection, scan_id).await?.status())
     }
 
+    /// Load continuation evidence for the exact scan and full collection scope.
+    /// `None` means no committed checkpoint, including for an otherwise unknown scan.
+    /// # Errors
+    /// Rejects invalid identities/scopes, SQL failures or malformed stored checkpoint values.
     pub async fn checkpoint(
         &self,
         scan_id: &str,

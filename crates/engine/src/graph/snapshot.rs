@@ -2,6 +2,9 @@
 use super::*;
 
 /// Export an immutable scan through bounded SQLx streams and async file writes.
+/// # Errors
+/// Rejects invalid names, running scans, exceeded plan bounds, record/SQL errors
+/// or plan-file write/sync/publication and cleanup failures.
 #[tracing::instrument(skip(store, output))]
 pub async fn export_snapshot(
     store: &Store,
@@ -14,6 +17,9 @@ pub async fn export_snapshot(
 }
 
 /// Cancel an owned export and remove its incomplete temporary file before returning.
+/// # Errors
+/// Returns invalid input/scan state, cancellation, bounded-plan/record errors,
+/// file/database failures or cleanup failures; callers must inspect the result.
 #[tracing::instrument(skip(store, output, cancellation))]
 pub async fn export_snapshot_with_cancellation(
     store: &Store,

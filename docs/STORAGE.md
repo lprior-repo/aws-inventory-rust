@@ -327,7 +327,7 @@ consume streams sequentially and avoid nested Store queries from a stream
 consumer. Competing reads wait up to the pool acquisition deadline. The separate
 writer can continue during a file-backed WAL read. They avoid loading the inventory into a vector and
 allow an asynchronous consumer to await file or network output. `visit_resources`
-and `visit_edges` are convenience wrappers for lightweight synchronous callbacks.
+is a convenience wrapper for lightweight synchronous callbacks.
 Large or blocking consumer work belongs in the consumer's own async/blocking shell.
 
 `resources` and `edges` are bounded vector conveniences for small fixtures and

@@ -94,7 +94,7 @@ All the following operations are async and return the indicated result:
 
 `resource_stream` and `edge_stream` return borrowed boxed Send streams of typed
 results in deterministic order. Graph projection uses these instead of complete
-snapshot vectors. `visit_resources`/`visit_edges` are async visitor conveniences.
+snapshot vectors. `visit_resources` is an async visitor convenience.
 Graph export checkpoint read/write methods are also async.
 
 The page is owned so bounded preparation can move into a tracked worker without

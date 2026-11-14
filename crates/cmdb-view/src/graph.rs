@@ -18,8 +18,11 @@ pub const MAX_GRAPH_EDGES: usize = 20_000;
 /// The UI-facing projection of one `edge` record.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EdgeView {
+    /// Directed source identity copied from the edge record.
     pub from_id: String,
+    /// Directed target identity; it need not have a resource record.
     pub to_id: String,
+    /// Producer's relation label, retained without normalization.
     pub relation: String,
 }
 
@@ -40,6 +43,9 @@ pub struct GraphLimits {
 
 impl GraphLimits {
     /// Validate depth (`1..=2`) and caps (`1..=MAX_GRAPH_*`).
+    ///
+    /// # Errors
+    /// Rejects depth outside `1..=2`, or zero/above-maximum node or edge caps.
     pub fn new(depth: u8, max_nodes: usize, max_edges: usize) -> Result<Self, ViewError> {
         if !(1..=MAX_GRAPH_DEPTH).contains(&depth) {
             return Err(ViewError::InvalidGraphDepth);
@@ -79,7 +85,9 @@ impl GraphLimits {
 /// never dropped.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct GraphNode<'a> {
+    /// Wire identity, including an unknown caller-supplied root.
     pub id: &'a str,
+    /// Matching resource view, or `None` for an identity absent from the snapshot.
     pub resource: Option<&'a ResourceView>,
 }
 
@@ -93,6 +101,7 @@ impl GraphNode<'_> {
 /// A bounded, deterministically ordered subgraph.
 #[derive(Clone, Debug)]
 pub struct Subgraph<'a> {
+    /// Requested root even when it has no resource record or incident edges.
     pub root: GraphNode<'a>,
     /// Included nodes, sorted by id; includes the root and dangling targets.
     pub nodes: Vec<GraphNode<'a>>,

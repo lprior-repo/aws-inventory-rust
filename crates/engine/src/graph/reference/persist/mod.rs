@@ -22,6 +22,9 @@ const COLLECTOR: &str = "universal_reference";
 ///
 /// Resources are streamed for resolution and again for the provenance of edge
 /// sources; the scan is never materialized, so this is not export-budget bound.
+/// # Errors
+/// Returns resource-stream/resolution errors, invalid synthetic scope/counts,
+/// serialization errors or transactional persistence failures.
 pub async fn persist_scan(
     store: &Store,
     scan_id: &str,
