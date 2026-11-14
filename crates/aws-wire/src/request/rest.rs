@@ -3,14 +3,17 @@ mod body;
 mod timestamp;
 mod uri;
 
-use super::common::finish;
+use super::common::{ensure_service_protocol, finish};
 use super::{EncodeError, Protocol, RequestContext};
 use http::header::{CONTENT_TYPE, HeaderMap, HeaderName, HeaderValue};
 use inventory_core::{catalog::Member, record::ValueRef};
 pub fn encode(context: RequestContext<'_>) -> Result<http::Request<bytes::Bytes>, EncodeError> {
-    if !matches!(context.protocol, Protocol::RestJson1 | Protocol::RestXml) {
-        return Err(EncodeError::Unsupported("non-REST protocol"));
-    }
+    let protocol = match context.protocol {
+        Protocol::RestJson1 => "aws.protocols#restJson1",
+        Protocol::RestXml => "aws.protocols#restXml",
+        _ => return Err(EncodeError::Unsupported("non-REST protocol")),
+    };
+    ensure_service_protocol(context, protocol)?;
     let operation = context
         .operation
         .http()?

@@ -2,6 +2,7 @@ mod assertions;
 #[path = "input.rs"]
 mod input;
 mod model;
+mod protocol;
 mod runner;
 #[path = "xml_infoset.rs"]
 mod xml_infoset;

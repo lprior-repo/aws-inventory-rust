@@ -216,5 +216,23 @@ pub(super) fn check_headers(headers: &HeaderMap, limit: usize) -> Result<usize, 
     Ok(bytes)
 }
 
+pub(super) fn ensure_service_protocol(
+    context: RequestContext<'_>,
+    expected: &str,
+) -> Result<(), EncodeError> {
+    let found = context
+        .service
+        .protocols()?
+        .try_fold(false, |found, protocol| {
+            Ok::<bool, EncodeError>(found || protocol? == expected)
+        })?;
+    if found {
+        return Ok(());
+    }
+    Err(EncodeError::Unsupported(
+        "protocol does not match service metadata",
+    ))
+}
+
 #[cfg(test)]
 mod tests;

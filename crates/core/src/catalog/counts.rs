@@ -3,6 +3,8 @@ use crate::record::FieldId;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Write;
 
+const AWS_QUERY_COMPATIBLE: &str = "aws.protocols#awsQueryCompatible";
+
 const FIELDS: [&str; 15] = [
     "services",
     "operations",
@@ -115,23 +117,33 @@ impl<'a> Counts<'a> {
         self.add("list_describe_root", usize::from(flags & 12 == 12))
     }
     fn add_protocols(&mut self, service: Service<'a>) -> Result<(), CatalogError> {
+        let mut compatible = service.aws_query_compatible()?;
         let (json, cbor, xml) =
             service
                 .protocols()?
                 .try_fold((false, false, false), |(j, c, x), name| {
                     let name = name?;
-                    let previous = match self.protocols.get(name) {
-                        Some(n) => *n,
-                        None => 0usize,
-                    };
-                    self.protocols
-                        .insert(name, previous.checked_add(1).ok_or(CatalogError::Overflow)?);
+                    if name == AWS_QUERY_COMPATIBLE {
+                        compatible = true;
+                        return Ok::<_, CatalogError>((j, c, x));
+                    }
+                    self.add_protocol(name)?;
                     let (json, cbor, xml) = protocol_kind(name);
-                    Ok::<_, CatalogError>((j || json, c || cbor, x || xml))
+                    Ok((j || json, c || cbor, x || xml))
                 })?;
+        if compatible {
+            self.add_protocol(AWS_QUERY_COMPATIBLE)?;
+        }
         self.add("json_services", usize::from(json))?;
         self.add("cbor_services", usize::from(cbor))?;
         self.add("xml_only_services", usize::from(xml && !json && !cbor))
+    }
+
+    fn add_protocol(&mut self, name: &'a str) -> Result<(), CatalogError> {
+        let count = self.protocols.get(name).copied().unwrap_or_default();
+        self.protocols
+            .insert(name, count.checked_add(1).ok_or(CatalogError::Overflow)?);
+        Ok(())
     }
 }
 

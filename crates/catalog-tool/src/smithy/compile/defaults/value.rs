@@ -1,5 +1,7 @@
 use super::super::CompileError;
+use base64::Engine;
 use inventory_core::record::{Float, Key, Time, Value};
+use num_traits::ToPrimitive;
 use serde_json::{Number, Value as Json};
 
 pub(super) fn normalize(value: &Json, kind: Option<&str>) -> Result<Value, CompileError> {
@@ -152,9 +154,9 @@ fn integer(value: &Number, kind: Option<&str>) -> Result<Value, CompileError> {
         };
     };
     let range = match kind {
-        Some("byte") => i8::MIN as i64..=i8::MAX as i64,
-        Some("short") => i16::MIN as i64..=i16::MAX as i64,
-        Some("integer") => i32::MIN as i64..=i32::MAX as i64,
+        Some("byte") => i64::from(i8::MIN)..=i64::from(i8::MAX),
+        Some("short") => i64::from(i16::MIN)..=i64::from(i16::MAX),
+        Some("integer") => i64::from(i32::MIN)..=i64::from(i32::MAX),
         _ => i64::MIN..=i64::MAX,
     };
     if range.contains(&value) {
@@ -177,94 +179,32 @@ fn timestamp(value: &Json) -> Result<Value, CompileError> {
         .filter(|value| value.is_finite())
         .ok_or_else(|| invalid("timestamp default must be finite seconds"))?;
     let whole = seconds.floor();
-    if whole < i64::MIN as f64 || whole >= i64::MAX as f64 {
-        return Err(invalid("timestamp seconds out of range"));
-    }
     timestamp_parts(whole, seconds)
 }
 
-fn timestamp_parts(mut whole: f64, seconds: f64) -> Result<Value, CompileError> {
+fn timestamp_parts(whole: f64, seconds: f64) -> Result<Value, CompileError> {
     let rounded_nanos = ((seconds - whole) * 1_000_000_000.0).round();
-    let carry = rounded_nanos >= 1_000_000_000.0;
-    if carry {
-        whole += 1.0;
+    let mut seconds = whole
+        .to_i64()
+        .ok_or_else(|| invalid("timestamp seconds out of range"))?;
+    let mut nanos = rounded_nanos
+        .to_u32()
+        .ok_or_else(|| invalid("timestamp nanos out of range"))?;
+    if nanos == 1_000_000_000 {
+        seconds = seconds
+            .checked_add(1)
+            .ok_or_else(|| invalid("timestamp seconds out of range"))?;
+        nanos = 0;
     }
-    if whole < i64::MIN as f64 || whole >= i64::MAX as f64 {
-        return Err(invalid("timestamp seconds out of range"));
-    }
-    let nanos = if carry {
-        0
-    } else {
-        u32::try_from(rounded_nanos as u64).map_err(|_| invalid("timestamp nanos out of range"))?
-    };
-    let time =
-        Time::new(whole as i64, nanos).map_err(|_| invalid("timestamp nanos out of range"))?;
-    Ok(Value::Time(time))
+    Time::new(seconds, nanos)
+        .map(Value::Time)
+        .map_err(|_| invalid("timestamp nanos out of range"))
 }
 
 fn decode_base64(text: &str) -> Result<Vec<u8>, CompileError> {
-    let bytes = text.as_bytes();
-    if bytes.len() % 4 != 0 {
-        return Err(invalid("invalid base64 length"));
-    }
-    let mut output = Vec::with_capacity(bytes.len().saturating_mul(3) / 4);
-    for (index, block) in bytes.chunks_exact(4).enumerate() {
-        decode_block(block, index + 1 == bytes.len() / 4, &mut output)?;
-    }
-    Ok(output)
-}
-
-fn decode_block(block: &[u8], final_block: bool, output: &mut Vec<u8>) -> Result<(), CompileError> {
-    let padding = if block[3] == b'=' { 1 } else { 0 } + if block[2] == b'=' { 1 } else { 0 };
-    if (padding > 0 && !final_block) || (block[2] == b'=' && block[3] != b'=') {
-        return Err(invalid("invalid base64 padding"));
-    }
-    let digits = decode_digits(block)?;
-    validate_padding(digits, padding)?;
-    decoded_bytes(digits, padding, output);
-    Ok(())
-}
-
-fn validate_padding([_, b, c, _]: [u8; 4], padding: usize) -> Result<(), CompileError> {
-    if (padding == 2 && b & 15 != 0) || (padding == 1 && c & 3 != 0) {
-        return Err(invalid("invalid base64 padding bits"));
-    }
-    Ok(())
-}
-
-fn decode_digits(block: &[u8]) -> Result<[u8; 4], CompileError> {
-    let mut digits = [0; 4];
-    for (index, byte) in block.iter().copied().enumerate() {
-        if byte == b'=' {
-            if index < 2 {
-                return Err(invalid("invalid base64 padding"));
-            }
-        } else {
-            digits[index] = base64_digit(byte).ok_or_else(|| invalid("invalid base64 default"))?;
-        }
-    }
-    Ok(digits)
-}
-
-fn decoded_bytes([a, b, c, d]: [u8; 4], padding: usize, output: &mut Vec<u8>) {
-    output.push((a << 2) | (b >> 4));
-    if padding < 2 {
-        output.push((b << 4) | (c >> 2));
-    }
-    if padding == 0 {
-        output.push((c << 6) | d);
-    }
-}
-
-fn base64_digit(byte: u8) -> Option<u8> {
-    match byte {
-        b'A'..=b'Z' => Some(byte - b'A'),
-        b'a'..=b'z' => Some(byte - b'a' + 26),
-        b'0'..=b'9' => Some(byte - b'0' + 52),
-        b'+' => Some(62),
-        b'/' => Some(63),
-        _ => None,
-    }
+    base64::engine::general_purpose::STANDARD
+        .decode(text)
+        .map_err(|_| invalid("invalid base64 default"))
 }
 
 fn invalid(message: &str) -> CompileError {

@@ -1,7 +1,7 @@
 use super::{form, serialize};
 use crate::request::{
     EncodeError, Protocol, RequestContext,
-    common::{BoundedBody, finish},
+    common::{BoundedBody, ensure_service_protocol, finish},
 };
 use http::{
     HeaderMap,
@@ -42,19 +42,4 @@ fn protocol_name(protocol: Protocol) -> Result<&'static str, EncodeError> {
             "protocol is not AWS Query or EC2 Query",
         )),
     }
-}
-
-fn ensure_service_protocol(context: RequestContext<'_>, expected: &str) -> Result<(), EncodeError> {
-    let found = context
-        .service
-        .protocols()?
-        .try_fold(false, |found, protocol| {
-            Ok::<bool, EncodeError>(found || protocol? == expected)
-        })?;
-    if found {
-        return Ok(());
-    }
-    Err(EncodeError::Unsupported(
-        "protocol does not match service metadata",
-    ))
 }

@@ -28,10 +28,10 @@ fn paginator_fields(
     out: &mut Vec<(CatalogKey, Value)>,
 ) -> Result<(), CompileError> {
     paginator_names(operation, defaults, out)?;
-    if let Some(path) = paginator_value(operation, defaults, "pageSize").and_then(Json::as_str) {
-        if let Some(max) = range_max(model, input, path)? {
-            out.push((CatalogKey::PaginatedLimit, Value::Int(max)));
-        }
+    if let Some(path) = paginator_value(operation, defaults, "pageSize").and_then(Json::as_str)
+        && let Some(max) = range_max(model, input, path)?
+    {
+        out.push((CatalogKey::PaginatedLimit, Value::Int(max)));
     }
     Ok(())
 }

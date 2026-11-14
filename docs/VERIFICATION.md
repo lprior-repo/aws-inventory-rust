@@ -31,6 +31,48 @@ Commit `9841354b2b61ad470c5b8adffaddf4a2baefee35` passed hosted `moon ci`
 in [run 43609151434](https://github.com/lprior-repo/aws-inventory-rust/actions/runs/43609151434).
 The complete CI job finished successfully in 18m3s, including Makepad native linking.
 
+### Request and streaming-record integration — 2026-11-14
+
+Coordinator-executed checks in the isolated `request-landing` worktree:
+
+- `cargo test -p aws-wire --locked --offline --lib request::`: 38 passed.
+  This includes both Query fixture runners, 142 REST JSON and 109 REST XML
+  client cases, seven adversarial XML-comparator scenarios, and rejection of
+  a selected REST protocol absent from the service metadata. Expected request
+  URIs, resolved hosts, headers and bodies are not rewritten by the runner.
+- `cargo test -p aws-wire --test request_body_fixtures`: 18 passed for the
+  body-only encoders and their numeric/semantic comparisons.
+- `cargo test -p inventory-core --lib record::builder`: five passed, covering
+  canonical byte parity with the existing encoder, ordered collections,
+  duplicate/state rejection, terminal failure, and byte/node/depth limits.
+  This is not an allocation, throughput or independent hash benchmark.
+- `cargo test -p catalog-tool --locked --offline --lib smithy::compile::defaults`:
+  seven passed after replacing unchecked numeric conversions and handwritten
+  base64 parsing. Source Clippy for `catalog-tool` passed with warnings denied.
+- `cargo test -p aws-inventory --locked --offline --test catalog_models`:
+  passed against the independent committed model report. The dedicated
+  `awsQueryCompatible` flag contributes to report counts without becoming a
+  selectable wire protocol.
+- Warnings-denied source Clippy passed across the workspace; after the protocol
+  and report repairs, it also passed for the changed `aws-wire` and
+  `inventory-core` libraries. Both source guards passed: 1,104 Rust files,
+  none over 300 lines. The function guard covers its configured paths, not
+  every workspace function.
+
+Generated-data checks passed for the pinned 436 models, 49,069 field IDs,
+endpoint cases, operation classes, collection plans, reviewed overlays,
+10,995,359-byte binary catalog and SQL views. The overlay report currently
+contains zero reviewed services and zero callable operations; passing its
+validator does not authorize unreviewed enumeration.
+
+Independent record-builder review reported no concrete defects. Request
+review found the REST protocol-metadata mismatch above; the production fix
+and public encoding regression passed coordinator execution. Reviews are
+static input, not substitutes for the command evidence.
+
+Response decoders and the universal emulator-to-SQLite-to-FalkorDB-to-Makepad
+pipeline are not proved by this request/record landing.
+
 ### Universal request transport smoke
 
 The model-driven request encoders, SigV4 signer and pooled HTTPS client were

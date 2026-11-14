@@ -7,6 +7,8 @@ rust-version.workspace = true
 
 [dependencies]
 inventory-core = { path = "../core", default-features = false }
+base64 = "0.23.1"
+num-traits = "0.2.19"
 serde.workspace = true
 serde_json.workspace = true
 sha2.workspace = true

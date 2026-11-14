@@ -112,7 +112,8 @@ fn request_compression(
             Ok(Value::Text("gzip".to_owned()))
         })
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(out.push((CatalogKey::RequestCompression, Value::List(values))))
+    out.push((CatalogKey::RequestCompression, Value::List(values)));
+    Ok(())
 }
 
 fn operation_errors(

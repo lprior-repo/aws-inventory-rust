@@ -6,6 +6,10 @@
   retain exact URI, resolved-host, header and body expectations, including S3
   addressing settings. XML comparison follows modeled structures, maps and
   ordered lists rather than inferring collection semantics from element counts.
+  REST and Query reject protocol selections absent from service metadata.
+- Catalog defaults use checked numeric conversions and strict base64 decoding.
+  Embedded model reports retain `awsQueryCompatible` counts from the dedicated
+  wire flag without treating the compatibility trait as a selectable protocol.
 - `inventory_core::record::RecordBuilder` accepts bounded map/list/scalar events
   without an intermediate `Value` tree. It emits the existing canonical CBOR
   representation and rejects invalid state transitions, duplicate keys and

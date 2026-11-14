@@ -121,12 +121,15 @@ fn schedule(
         return Err(format!("mixin cycle includes {id}"));
     }
     stack.push((id.to_owned(), true, depth));
+    let next_depth = depth
+        .checked_add(1)
+        .ok_or_else(|| "mixin depth overflow".to_owned())?;
     for mixin in shape.mixins.iter().rev() {
         count_step(steps)?;
         if active.contains(&mixin.target) {
             return Err(format!("mixin cycle includes {}", mixin.target));
         }
-        stack.push((mixin.target.clone(), false, depth + 1));
+        stack.push((mixin.target.clone(), false, next_depth));
     }
     Ok(())
 }
