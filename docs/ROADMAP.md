@@ -96,6 +96,26 @@ Status from the coordinator, 2026-11-13.
 - **M1.2a is done**, `cde710a`: the real pinned source reproduces the model
   totals in `catalog/aws-models.report`. `catalog-tool models report --check`
   passes; all 43 catalog-tool tests and all-target Clippy pass.
+- **M1.2b is done.** `catalog/field-ids.txt` has 49,069 lines and equals an
+  independent `jq` extraction of every structure and union member name;
+  `catalog-tool models fields --write` run twice prints `field-ids 49069 (+0)`
+  the second time with identical bytes, and `--check` is in the gate with the
+  M1.2a report check and the submodule check. The registry is append-only:
+  new names are appended in sorted order after all existing lines, a removed
+  member keeps its line, and `Registry::verify_prefix` rejects a file that is
+  not an extension of the previous one. A swapped but well-formed committed
+  file cannot be detected by the command alone, since it has no history; the
+  prefix check is for the reviewer of a change. Publication is an exclusive
+  temporary file used as a lock, a comparison with the bytes read at the
+  start, and an atomic rename; reads are bounded at 16 MiB. Independent code
+  review: five findings (lost update between two writers, temporary path
+  reuse through a symlink, unbounded read, temporary file left behind,
+  output larger than its own read bound), all closed. Independent test
+  review: six gaps, closed. Mutation testing (cargo-mutants, 62 mutants):
+  51 caught, 9 not buildable, 2 missed, both closed by tests. 100
+  catalog-tool tests pass. Rust lines: 1,525 added, 17 deleted; production
+  560 added, 17 deleted, above the 300-line target because of the
+  publication safeguards the review required.
 - **O1 is settled as V34**: records are CBOR through the `minicbor` library.
   The coordinator first wrote its own format (1,054 lines), then ran the codec
   benchmark at the owner's prompting; CBOR was faster to build and smaller, so

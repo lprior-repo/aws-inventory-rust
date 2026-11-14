@@ -7,7 +7,7 @@ use std::process::ExitCode;
 
 use catalog_tool::{package, smithy};
 
-const USAGE: &str = "usage:\n  catalog-tool parent-candidates [--root <dir>] [--write | --check]\n  catalog-tool package --destination <zip path> [--root <dir>]\n  catalog-tool models report [--source <dir>] [--root <dir>] [--check | --write]";
+const USAGE: &str = "usage:\n  catalog-tool parent-candidates [--root <dir>] [--write | --check]\n  catalog-tool package --destination <zip path> [--root <dir>]\n  catalog-tool models report [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool models fields [--source <dir>] [--root <dir>] [--check | --write]";
 
 fn main() -> ExitCode {
     match run(std::env::args().skip(1).collect()) {
@@ -75,18 +75,28 @@ fn models_arguments(
         .next()
         .map(String::as_str)
         .ok_or_else(|| format!("expected 'report' subcommand; {USAGE}"))?;
-    if subcommand != "report" {
-        return Err(format!("unexpected '{subcommand}'; {USAGE}").into());
-    }
     let flags = parse_models_flags(arguments)?;
     let root = flags.root.map_or_else(default_root, PathBuf::from);
     let source = flags
         .source
         .map_or_else(|| root.join(".local/aws-models"), PathBuf::from);
     let Some(mode) = flags.mode else {
-        return Ok(smithy::run(&root, &source, smithy::ReportMode::Print)?);
+        return run_models(subcommand, &root, &source, smithy::ReportMode::Print);
     };
-    Ok(smithy::run(&root, &source, mode)?)
+    run_models(subcommand, &root, &source, mode)
+}
+
+fn run_models(
+    command: &str,
+    root: &std::path::Path,
+    source: &std::path::Path,
+    mode: smithy::ReportMode,
+) -> Result<(), Box<dyn std::error::Error>> {
+    match command {
+        "report" => Ok(smithy::run(root, source, mode)?),
+        "fields" => Ok(smithy::fields(root, source, mode)?),
+        other => Err(format!("unexpected '{other}'; {USAGE}").into()),
+    }
 }
 
 #[derive(Default)]

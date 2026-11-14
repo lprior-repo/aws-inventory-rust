@@ -7,6 +7,10 @@ scripts/check-source-size.sh
 scripts/check-function-size.sh
 cargo fmt --all --check
 cargo run -q -p catalog-tool -- parent-candidates --root . --check
+# The model checks read the pinned submodule .local/aws-models.
+scripts/check-models.sh
+cargo run -q -p catalog-tool --locked -- models report --check >/dev/null
+cargo run -q -p catalog-tool --locked -- models fields --check
 cargo run -p inventory-engine --example resource_views --locked -- --check
 cargo check --workspace --exclude inventory-sdk-catalog --all-targets --all-features --locked -j1
 cargo check -p inventory-sdk-catalog --no-default-features --locked

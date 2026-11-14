@@ -21,6 +21,14 @@ pub(super) struct Totals {
     pub protocol_counts: BTreeMap<String, usize>,
 }
 
+/// Extract member names from a model. Shared by totals and registry.
+pub(super) fn member_names(model: ModelFile) -> impl Iterator<Item = String> {
+    model
+        .shapes
+        .into_values()
+        .flat_map(|shape| shape.into_members().into_keys())
+}
+
 impl Totals {
     pub fn add_model(&mut self, model: ModelFile, file: &Path) -> Result<(), Error> {
         self.add_protocols(service(&model, file)?);
@@ -30,13 +38,9 @@ impl Totals {
             .services_with_root
             .saturating_add(usize::from(stats.list_describe_root > 0));
         self.add_counts(stats);
-        model
-            .shapes
-            .into_values()
-            .flat_map(|shape| shape.into_members().into_keys())
-            .for_each(|name| {
-                self.distinct_member_names.insert(name);
-            });
+        member_names(model).for_each(|name| {
+            self.distinct_member_names.insert(name);
+        });
         Ok(())
     }
 

@@ -42,6 +42,11 @@
   `MapRef::from_bytes`, and typed reads (`ValueKind`, `MapRef::get_typed`).
   The hash is computed in one pass without allocation. 50 new tests. Rust
   lines: 1,350 added, 19 deleted.
+- M1.2b: the append-only field-ID registry `catalog/field-ids.txt` (49,069
+  member names; the line number is the ID) and `catalog-tool models fields
+  [--check | --write]`. The gate now also runs the submodule check, the
+  model report check and the registry check. Rust lines: 1,525 added, 17
+  deleted.
 - Fixed, found by an adversarial run against the built `inventory-harness`
   binary (41 commands, 2 defects): `assert cloud-control` exited 0 while
   printing failed checks (missing, empty, corrupt and wrong-schema databases

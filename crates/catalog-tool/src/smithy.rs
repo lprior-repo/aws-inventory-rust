@@ -3,10 +3,15 @@
 //! prefixes and exact input targets. Only the global member-name set survives
 //! between models. No report is printed or overwritten until all models load.
 
+mod fields;
 mod model;
+mod registry;
 mod report;
 mod stats;
 mod totals;
+
+pub use fields::fields;
+pub use registry::{Error as RegistryError, Registry};
 
 use std::fs;
 use std::io::{self, Write};
@@ -48,6 +53,35 @@ pub enum Error {
     /// Formatting a canonical report or line comparison failed.
     #[error("report formatting failed: {0}")]
     Formatting(#[from] std::fmt::Error),
+    /// The field-ID registry is invalid or inconsistent.
+    #[error(transparent)]
+    Registry(#[from] RegistryError),
+    /// New names are not in the registry.
+    #[error(
+        "{new_names} member names are not in the registry, first: {first}; run `catalog-tool models fields --write`"
+    )]
+    RegistryStale {
+        path: PathBuf,
+        new_names: usize,
+        first: String,
+    },
+    /// Another writer changed the registry after this run read it.
+    #[error("registry changed during the run; rerun")]
+    RegistryChanged { path: PathBuf },
+    /// A temporary publication file already exists and must be removed by its owner.
+    #[error("{path}: another run is writing or a previous run crashed; remove the temporary file")]
+    WriteInProgress { path: PathBuf },
+    /// Registry input exceeds the bounded reader's byte limit.
+    #[error("{path}: registry exceeds {limit} bytes")]
+    RegistryTooLarge { path: PathBuf, limit: u64 },
+    /// Publication failed and removing its owned temporary file also failed.
+    #[error("{original}; failed to remove temporary {path}: {cleanup}")]
+    PublicationCleanup {
+        #[source]
+        original: Box<Error>,
+        path: PathBuf,
+        cleanup: io::Error,
+    },
 }
 
 /// Optional persistence or verification after printing a complete report.
@@ -69,10 +103,7 @@ pub enum ReportMode {
 /// Returns a named input error, output I/O error, or all differing report lines.
 pub fn run(root: &Path, source: &Path, mode: ReportMode) -> Result<(), Error> {
     let text = build_report(source)?;
-    io::stdout()
-        .lock()
-        .write_all(text.as_bytes())
-        .map_err(|source| io_error(Path::new("<stdout>"), source))?;
+    write_stdout(&text)?;
     let path = root.join(REPORT_PATH);
     match mode {
         ReportMode::Print => Ok(()),
@@ -111,6 +142,13 @@ pub fn build_report(source: &Path) -> Result<String, Error> {
         },
     )?;
     Ok(report::render_report(&totals)?)
+}
+
+fn write_stdout(text: &str) -> Result<(), Error> {
+    io::stdout()
+        .lock()
+        .write_all(text.as_bytes())
+        .map_err(|source| io_error(Path::new("<stdout>"), source))
 }
 
 fn read_model_file(file: &Path) -> Result<model::ModelFile, Error> {
