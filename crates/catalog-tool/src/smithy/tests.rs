@@ -1,0 +1,195 @@
+use std::path::Path;
+
+use super::{
+    model::ModelFile,
+    report::{differences, render_report},
+    stats::{ModelStats, compute_stats},
+    totals::Totals,
+};
+
+const MODEL: &str = r#"{"smithy":"2.0","shapes":{
+ "n#Svc":{"type":"service","traits":{"aws.protocols#restJson1":{},"smithy.protocols#rpcv2Cbor":{}}},
+ "n#ListThings":{"type":"operation","traits":{"smithy.api#readonly":{},"smithy.api#paginated":{}}},
+ "n#DescribeThing":{"type":"operation","input":{"target":"n#Input"}},
+ "n#GetThing":{"type":"operation","traits":{"smithy.api#readonly":{}}},"n#DeleteThing":{"type":"operation"},
+ "n#Input":{"type":"structure","members":{"Id":{"target":"smithy.api#String","traits":{"smithy.api#required":{}}}}},
+ "n#Choice":{"type":"union","members":{"Id":{"target":"smithy.api#String"},"Name":{"target":"smithy.api#String"}}},
+ "n#Resource":{"type":"resource"},"n#Arn":{"type":"string","traits":{"aws.api#arn":"arn:test"}},
+ "n#Unknown":{"type":"futureType","futureField":{"ignored":true}}
+}}"#;
+
+#[test]
+fn every_per_model_counter_matches_the_contract() -> Result<(), Box<dyn std::error::Error>> {
+    // Given a service, all counted shapes, and unknown data.
+    let model: ModelFile = serde_json::from_str(MODEL)?;
+    // When pure statistics are computed.
+    let stats = compute_stats(&model);
+    // Then every counter, not just a subset, is exact.
+    assert_eq!(
+        stats,
+        ModelStats {
+            operations: 4,
+            read_named: 3,
+            readonly: 2,
+            list_describe: 2,
+            list_describe_root: 1,
+            paginated: 1,
+            resources: 1,
+            arn_templates: 1,
+            members: 3,
+        }
+    );
+    let mut totals = Totals::default();
+    totals.add_model(model, Path::new("test.json"))?;
+    assert_eq!(
+        totals.protocol_counts,
+        [
+            ("aws.protocols#restJson1".into(), 1),
+            ("smithy.protocols#rpcv2Cbor".into(), 1)
+        ]
+        .into()
+    );
+    assert_eq!(
+        totals.distinct_member_names,
+        ["Id".into(), "Name".into()].into()
+    );
+    Ok(())
+}
+
+#[test]
+fn roots_require_an_exact_structure_target() -> Result<(), Box<dyn std::error::Error>> {
+    // Given every root case plus deceptive suffix and nonstructure matches.
+    let model: ModelFile = serde_json::from_str(
+        r#"{"shapes":{
+      "n#Svc":{"type":"service"},"n#ListAbsent":{"type":"operation"},
+      "n#ListUnit":{"type":"operation","input":{"target":"smithy.api#Unit"}},
+      "n#ListMissing":{"type":"operation","input":{"target":"missing#Required"}},
+      "n#ListSuffix":{"type":"operation","input":{"target":"Required"}},
+      "n#ListOptional":{"type":"operation","input":{"target":"n#Optional"}},
+      "n#DescribeUnion":{"type":"operation","input":{"target":"n#Union"}},
+      "n#DescribeRequired":{"type":"operation","input":{"target":"other#Required"}},
+      "other#Required":{"type":"structure","members":{"Id":{"traits":{"smithy.api#required":{}}}}},
+      "smithy.api#Unit":{"type":"structure","members":{"Id":{"traits":{"smithy.api#required":{}}}}},
+      "n#Optional":{"type":"structure","members":{"Id":{}}},
+      "n#Union":{"type":"union","members":{"Id":{"traits":{"smithy.api#required":{}}}}}
+    }}"#,
+    )?;
+    // When targets are resolved, only the exact required structure excludes a root.
+    let stats = compute_stats(&model);
+    // Then missing namespaces, Unit, and unions remain roots.
+    assert_eq!(
+        (
+            stats.operations,
+            stats.list_describe,
+            stats.list_describe_root
+        ),
+        (7, 7, 6)
+    );
+    Ok(())
+}
+
+#[test]
+fn read_prefixes_are_case_sensitive() -> Result<(), Box<dyn std::error::Error>> {
+    // Given all exact prefixes and lowercase/uppercase impostors.
+    let model: ModelFile = serde_json::from_str(
+        r#"{"shapes":{
+      "n#Svc":{"type":"service"},"n#ListA":{"type":"operation"},"n#DescribeA":{"type":"operation"},
+      "n#GetA":{"type":"operation"},"n#BatchGetA":{"type":"operation"},"n#SearchA":{"type":"operation"},
+      "n#ScanA":{"type":"operation"},"n#QueryA":{"type":"operation"},"n#LookupA":{"type":"operation"},
+      "n#SelectA":{"type":"operation"},"n#listA":{"type":"operation"},"n#LIST_A":{"type":"operation"},
+      "n#describeA":{"type":"operation"},"n#getA":{"type":"operation"},"n#BatchgetA":{"type":"operation"}
+    }}"#,
+    )?;
+    // When names are counted without case normalization.
+    let stats = compute_stats(&model);
+    // Then only the nine specified prefixes match.
+    assert_eq!(
+        (
+            stats.operations,
+            stats.read_named,
+            stats.list_describe,
+            stats.list_describe_root
+        ),
+        (14, 9, 2, 2)
+    );
+    Ok(())
+}
+
+#[test]
+fn unknown_shapes_and_fields_do_not_add_counters() -> Result<(), Box<dyn std::error::Error>> {
+    // Given an unknown shape and metadata.
+    let model: ModelFile = serde_json::from_str(
+        r#"{"unknown":42,"shapes":{
+      "n#Svc":{"type":"service","future":true},"n#X":{"type":"future","future":{"x":1}}
+    }}"#,
+    )?;
+    // When only accepted kinds are counted, then no counter changes.
+    assert_eq!(compute_stats(&model), ModelStats::default());
+    Ok(())
+}
+
+#[test]
+fn rendering_is_the_complete_fixed_literal() -> Result<(), Box<dyn std::error::Error>> {
+    // Given distinct values for every rendered counter and unequal protocol counts.
+    let totals = Totals {
+        services: 1,
+        services_with_root: 7,
+        counts: ModelStats {
+            operations: 2,
+            read_named: 3,
+            readonly: 4,
+            list_describe: 5,
+            list_describe_root: 6,
+            paginated: 8,
+            resources: 9,
+            arn_templates: 10,
+            members: 11,
+        },
+        distinct_member_names: (0..12).map(|index| index.to_string()).collect(),
+        json_services: 13,
+        xml_only_services: 14,
+        cbor_services: 15,
+        protocol_counts: [
+            ("smithy.protocols#rpcv2Cbor".into(), 19),
+            ("aws.protocols#restJson1".into(), 17),
+        ]
+        .into(),
+    };
+    // When rendered, then every field and sorted protocol line is exact.
+    assert_eq!(
+        render_report(&totals)?,
+        concat!(
+            "services 1\noperations 2\nread_named 3\nreadonly 4\nlist_describe 5\n",
+            "list_describe_root 6\nservices_with_root 7\npaginated 8\nresources 9\narn_templates 10\n",
+            "members 11\ndistinct_member_names 12\njson_services 13\nxml_only_services 14\ncbor_services 15\n",
+            "protocol aws.protocols#restJson1 17\nprotocol smithy.protocols#rpcv2Cbor 19\n"
+        )
+    );
+    Ok(())
+}
+
+#[test]
+fn comparison_preserves_every_line_and_terminator() -> Result<(), Box<dyn std::error::Error>> {
+    // Given changed whitespace, CRLF, missing final newline, and extra lines.
+    // When compared, then all differing lines retain their raw contents.
+    assert_eq!(
+        differences("a\nb\nc\n", "a \nb\r\nc\nextra\n")?,
+        concat!(
+            "line 1 differs: expected Some(\"a\\n\"), got Some(\"a \\n\")\n",
+            "line 2 differs: expected Some(\"b\\n\"), got Some(\"b\\r\\n\")\n",
+            "line 4 differs: expected None, got Some(\"extra\\n\")\n"
+        )
+    );
+    assert_eq!(
+        differences("a\nb\n", "a")?,
+        concat!(
+            "line 1 differs: expected Some(\"a\\n\"), got Some(\"a\")\n",
+            "line 2 differs: expected Some(\"b\\n\"), got None\n"
+        )
+    );
+    Ok(())
+}
+
+mod totals;
+
+mod fields;
