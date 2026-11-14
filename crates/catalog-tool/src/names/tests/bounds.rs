@@ -1,0 +1,149 @@
+use super::super::{MAX_EXCEPTIONS_BYTES, MAX_EXCEPTIONS_ROWS, MAX_TYPE_NAME_BYTES};
+use super::{Exceptions, MAX_SQL_NAME_BYTES, NameError, TestResult, sql_name, sql_name_used};
+
+#[test]
+fn type_name_byte_bound_accepts_256_and_rejects_257_before_copying() -> TestResult {
+    // Given a compressible type at the input limit, when naming, then only one byte beyond fails.
+    let spelling = "B".repeat(253);
+    let exceptions = Exceptions::parse(&format!("{spelling}\tb\n"))?;
+    let bounded = format!("A::{spelling}");
+    assert_eq!(bounded.len(), MAX_TYPE_NAME_BYTES);
+    assert_eq!(sql_name(&bounded, &exceptions)?.as_str(), "a_b");
+    assert_eq!(
+        sql_name(&format!("{bounded}B"), &exceptions),
+        Err(NameError::TypeTooLong {
+            length: 257,
+            limit: MAX_TYPE_NAME_BYTES
+        })
+    );
+    Ok(())
+}
+
+#[test]
+fn exception_file_byte_bound_accepts_65536_and_rejects_65537() -> TestResult {
+    // Given a valid row at the file limit, when parsing, then its output cannot bypass growth checks.
+    let bounded = format!("X\t{}\n", "a".repeat(65_533));
+    assert_eq!(bounded.len(), MAX_EXCEPTIONS_BYTES);
+    let exceptions = Exceptions::parse(&bounded)?;
+    assert_eq!(
+        sql_name("A::X", &exceptions),
+        Err(NameError::TooLong {
+            type_name: "A::X".to_owned(),
+            limit: MAX_SQL_NAME_BYTES,
+        })
+    );
+    let oversized = format!("X\t{}\n", "a".repeat(65_534));
+    assert_eq!(
+        Exceptions::parse(&oversized),
+        Err(NameError::ExceptionsTooLarge {
+            length: 65_537,
+            limit: MAX_EXCEPTIONS_BYTES,
+        })
+    );
+    Ok(())
+}
+
+#[test]
+fn exception_row_bound_accepts_1024_and_rejects_1025_before_copying() -> TestResult {
+    // Given distinct valid rows at the limit, when adding one more, then row capacity fails explicitly.
+    let bounded: String = (0..1_024).map(|index| format!("X{index}\tx\n")).collect();
+    let exceptions = Exceptions::parse(&bounded)?;
+    assert_eq!(sql_name("A::X1023", &exceptions)?.as_str(), "a_x");
+    assert_eq!(
+        Exceptions::parse(&format!("{bounded}Extra\tx\n")),
+        Err(NameError::TooManyExceptions {
+            rows: 1_025,
+            limit: MAX_EXCEPTIONS_ROWS
+        })
+    );
+    Ok(())
+}
+
+#[test]
+fn oversized_exception_files_fail_before_row_validation() -> TestResult {
+    // Given oversized malformed text, when parsing, then the byte bound wins without copying rows.
+    let text = "!".repeat(65_537);
+    assert_eq!(
+        Exceptions::parse(&text),
+        Err(NameError::ExceptionsTooLarge {
+            length: 65_537,
+            limit: MAX_EXCEPTIONS_BYTES,
+        })
+    );
+    Ok(())
+}
+
+#[test]
+fn excess_exception_rows_fail_before_row_validation() -> TestResult {
+    // Given excess malformed rows, when parsing, then the row bound wins before parsing any row.
+    assert_eq!(
+        Exceptions::parse(&"!\n".repeat(1_025)),
+        Err(NameError::TooManyExceptions {
+            rows: 1_025,
+            limit: MAX_EXCEPTIONS_ROWS
+        })
+    );
+    Ok(())
+}
+
+#[test]
+fn expansion_stops_before_later_exception_matches_are_visited() -> TestResult {
+    // Given a failing expansion followed by another match, when naming, then later work is skipped.
+    let exceptions = Exceptions::parse(&format!("X\t{}\nY\ty\n", "a".repeat(127)))?;
+    let mut used = Vec::new();
+    assert_eq!(
+        sql_name_used("A::XY", &exceptions, &mut used),
+        Err(NameError::TooLong {
+            type_name: "A::XY".to_owned(),
+            limit: MAX_SQL_NAME_BYTES,
+        })
+    );
+    assert_eq!(used, [true, false]);
+    Ok(())
+}
+
+#[test]
+fn plain_output_stops_before_later_exception_matches_are_visited() -> TestResult {
+    // Given an overlong plain span, when naming, then a later exception is never visited.
+    let exceptions = Exceptions::parse("Y\ty\n")?;
+    let kind = format!("A::{}Y", "B".repeat(127));
+    let mut used = Vec::new();
+    assert_eq!(
+        sql_name_used(&kind, &exceptions, &mut used),
+        Err(NameError::TooLong {
+            type_name: kind,
+            limit: MAX_SQL_NAME_BYTES,
+        })
+    );
+    assert_eq!(used, [false]);
+    Ok(())
+}
+
+#[test]
+fn repeated_large_replacements_return_a_bounded_failure() -> TestResult {
+    // Given a large replacement repeated within the type bound, when naming, then output is capped.
+    let exceptions = Exceptions::parse(&format!("X\t{}\n", "a".repeat(32_768)))?;
+    let kind = format!("A::{}", "X".repeat(128));
+    assert_eq!(
+        sql_name(&kind, &exceptions),
+        Err(NameError::TooLong {
+            type_name: kind,
+            limit: MAX_SQL_NAME_BYTES,
+        })
+    );
+    Ok(())
+}
+
+#[test]
+fn plain_word_boundaries_cannot_grow_output_past_the_limit() -> TestResult {
+    // Given short CamelCase input with many boundaries, when naming, then separators are bounded too.
+    let kind = format!("A::{}", "aB".repeat(64));
+    assert_eq!(
+        sql_name(&kind, &Exceptions::none()),
+        Err(NameError::TooLong {
+            type_name: kind,
+            limit: MAX_SQL_NAME_BYTES,
+        })
+    );
+    Ok(())
+}

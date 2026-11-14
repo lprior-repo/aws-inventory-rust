@@ -3,5 +3,6 @@
 //! The library surface lets callers drive packaging and the AWS model report
 //! using the same implementations as the `catalog-tool` binary.
 
+pub mod names;
 pub mod package;
 pub mod smithy;

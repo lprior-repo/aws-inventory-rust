@@ -116,6 +116,25 @@ Status from the coordinator, 2026-11-13.
   catalog-tool tests pass. Rust lines: 1,525 added, 17 deleted; production
   560 added, 17 deleted, above the 300-line target because of the
   publication safeguards the review required.
+- **M1.5a is done: the SQL naming rule, as a library.** `catalog_tool::names`
+  derives a kind's SQL table name from a type name by one written rule
+  (digits and a final `V2` stay attached, acronym runs split before the last
+  capital) and a committed, sorted exceptions file,
+  `catalog/name-exceptions.tsv` (11 reviewed spellings: `ACMPCA`, `B2BI`,
+  `FSx`, `IPv4`, `IoT`, `OAuth`, `OAuth2`, `OTel`, `SMSVOICE`, `VPCDHCP`,
+  `WAFv2`). Applied to all 1,881 CloudFormation type names with no
+  exceptions, the rule equals an independent `jq`/`sed` derivation with zero
+  differences; with exceptions the 1,881 names are distinct and at most 69
+  bytes. A name is made only through one constructor that enforces
+  `[a-z][a-z0-9_]*`, two words or more, 128 bytes, no `sqlite_` prefix and
+  no SQLite keyword; output growth is checked before each append and the
+  inputs are bounded. `cargo test -p catalog-tool --locked names` passes 55
+  tests. Black Hat review: two findings (unsafe SQL identifiers reachable
+  through an exception, limit checked after allocation), closed and
+  confirmed; test review: six gaps, closed. Rust lines: 1,368 added, none
+  deleted. Still open in M1.5: the type-to-kind map and `catalog/kinds.tsv`
+  (needs M1.4). Its gate must compare against the committed file, because
+  adding an exception after a kind is published renames its table.
 - **O1 is settled as V34**: records are CBOR through the `minicbor` library.
   The coordinator first wrote its own format (1,054 lines), then ran the codec
   benchmark at the owner's prompting; CBOR was faster to build and smaller, so

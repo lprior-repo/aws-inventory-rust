@@ -50,6 +50,11 @@
 - M2.2a: `aws_wire::sign`, SigV4 request signing as a thin wrapper over the
   `aws-sigv4` library, proven with 37 of AWS's published test vectors. Rust
   lines: 1,270 added, none deleted.
+- M1.5a: `catalog_tool::names`, the rule that turns a type name into a SQL
+  table name (`AWS::EC2::VPCDHCPOptionsAssociation` is
+  `aws_ec2_vpc_dhcp_options_association`), with the reviewed exceptions in
+  `catalog/name-exceptions.tsv`. No command yet; `catalog/kinds.tsv` follows
+  with M1.4. Rust lines: 1,368 added, none deleted.
 - M3.1c, fixed: `Record::from_bytes` and `MapRef::from_bytes` accepted maps
   with unsorted or duplicate keys, for which lookups could report a present
   field as absent. Validation now rejects them (`KeyOutOfOrder`,
