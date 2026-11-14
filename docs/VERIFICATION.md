@@ -21,7 +21,11 @@ failed because Moon's Rust installer did not provide the pinned toolchain's
 The Linux prerequisites include `libpulse-dev` and `libdrm-dev`: Makepad links
 PulseAudio and DRM when the workspace UI test target is built.
 
-The generated collection-plan and binary API-catalog checks verify deterministic artifacts against the pinned inputs, not live collection parity. The ignored live FalkorDB test verifies graph delivery behavior, and the ignored prepared-emulator snapshot tests verify specific collector components against a frozen snapshot. Both opt-in Moon tasks require their explicit service/environment prerequisites and neither is a universal AWS E2E pipeline. Universal resource coverage, real AWS semantics, and universal live-emulator collection remain unfinished; see [CLOUDCONTROL_COVERAGE](CLOUDCONTROL_COVERAGE.md) and [UNIVERSAL_COVERAGE](UNIVERSAL_COVERAGE.md).
+Run [43606088788](https://github.com/lprior-repo/aws-inventory-rust/actions/runs/43606088788)
+passed toolchain/native setup and 15 Moon tasks, then failed the literal AppConfig
+experiment fixture: its parent selector used `ApplicationId` instead of the
+reviewed `ApplicationIdentifier`. The correction retains the recorded nested
+provider properties; the targeted parent/architecture-edge regression passes.
 
 Commit `9841354b2b61ad470c5b8adffaddf4a2baefee35` passed hosted `moon ci`
 in [run 43609151434](https://github.com/lprior-repo/aws-inventory-rust/actions/runs/43609151434).
@@ -40,6 +44,8 @@ The request guard rejected endpoints outside that explicit emulator address;
 no resources were mutated. The local log is `.oracles/wire-emulator-v39.log`.
 This proves request serialization, authentication and transport, not response
 decoding or the universal SQLite → FalkorDB → Makepad collection pipeline.
+
+The generated collection-plan and binary API-catalog checks verify deterministic artifacts against the pinned inputs, not live collection parity. The ignored live FalkorDB test verifies graph delivery behavior, and the ignored prepared-emulator snapshot tests verify specific collector components against a frozen snapshot. Both opt-in Moon tasks require their explicit service/environment prerequisites and neither is a universal AWS E2E pipeline. Universal resource coverage, real AWS semantics, and universal live-emulator collection remain unfinished; see [CLOUDCONTROL_COVERAGE](CLOUDCONTROL_COVERAGE.md) and [UNIVERSAL_COVERAGE](UNIVERSAL_COVERAGE.md).
 
 Local verification commands:
 
