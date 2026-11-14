@@ -69,6 +69,16 @@
   parity, typed fields, retained-document bounds and chunked-reader parity.
   Recorded throughput measurements are from the benchmark worker.
   Rust lines: 2,054 added, none deleted after formatting.
+- Isolated the old JSON model behind inventory-core's default `legacy`
+  feature. Binary consumers disable default features; their normal dependency
+  graph contains no serde or serde_json. Existing root imports and JSON
+  behavior remain on the old scan path. Both independent reviews approve.
+  Verification: 200 binary-only core tests, 227 legacy core tests and
+  164 catalog-tool unit tests pass; both feature-specific Clippy runs and
+  source guards pass. Rust lines: 397 added, 389 deleted, mostly relocation.
+- Owner policy supersedes the missing-docs gate: remove Rust comments,
+  including Rustdoc, and keep contracts in external Markdown. Removal is
+  in progress.
 - `crates/aws-wire` is scaffolded, and Smithy's AWS protocol test suites
   (Smithy 1.75.0, seven protocols, 901 HTTP cases) are committed as JSON ASTs
   under `crates/aws-wire/tests/fixtures/protocol-tests/` with the conversion

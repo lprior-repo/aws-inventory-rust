@@ -1,224 +1,203 @@
-//! Legacy JSON collection observations and explicit boundary checks.
+//! Synchronous inventory model. No runtime, network, database, or ambient clock.
+//!
+//! The JSON collection types and their string identity fields are legacy representations
+//! to be replaced by the record-based resource model. Their public fields and derived
+//! deserialization do not enforce bounds: callers must invoke the explicit validation
+//! methods. Identity text checks enforce only nonempty, NUL-free text of at most
+//! [`MAX_IDENTIFIER_BYTES`] bytes, not domain-specific syntax.
+#![deny(missing_docs)]
+#![forbid(unsafe_code)]
+#![deny(unused_must_use)]
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::BTreeMap;
+use thiserror::Error;
 
-use super::{
-    MAX_PAGE_BYTES, MAX_PAGE_EDGES, MAX_PAGE_RESOURCES, MAX_PAGES, MAX_TOKEN_BYTES, Source,
-    ValidationError, validate_identifier, validate_json_size, validate_serialized_size,
-    validate_text,
+mod observations;
+
+mod selection;
+pub use selection::{ResourceType, Selection, SelectionError};
+
+/// Maximum resource observations accepted by [`CollectionPage::validate`], inclusive.
+pub const MAX_PAGE_RESOURCES: usize = 10_000;
+/// Maximum relationship observations accepted by [`CollectionPage::validate`], inclusive.
+pub const MAX_PAGE_EDGES: usize = 100_000;
+/// Maximum serialized JSON bytes of the whole `properties` value of one resource or edge, inclusive.
+pub const MAX_PROPERTY_BYTES: usize = 1_048_576;
+/// Maximum UTF-8 bytes in identifier text and optional display/tag text, inclusive.
+pub const MAX_IDENTIFIER_BYTES: usize = 4_096;
+/// Maximum serialized JSON bytes for an entire collection page, inclusive.
+pub const MAX_PAGE_BYTES: usize = 16_777_216;
+/// Maximum UTF-8 bytes in a present continuation cursor, inclusive.
+pub(crate) const MAX_TOKEN_BYTES: usize = 8_192;
+/// Largest one-based page number accepted by [`CollectionPage::validate`].
+pub const MAX_PAGES: u32 = 100_000;
+
+/// A legacy model boundary check failed; string payloads name the rejected field or budget.
+#[derive(Debug, Error)]
+pub enum ValidationError {
+    /// A field violates its text contract or a timestamp is negative.
+    #[error("invalid {0}")]
+    InvalidField(&'static str),
+    /// A count or byte budget is exceeded, or a page number is outside its bounds.
+    #[error("resource bound exceeded: {0}")]
+    Limit(&'static str),
+    /// JSON serialization failed for a reason other than the counting writer's byte budget.
+    #[error("JSON serialization: {0}")]
+    Json(#[from] serde_json::Error),
+}
+
+/// Legacy provenance labels, ordered by declaration rather than [`Self::priority`].
+/// Hint labels do not authorize treating hints as direct service facts in the record model.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[serde(rename_all = "snake_case")]
+pub enum Source {
+    /// Observation labelled as coming from a service API.
+    Direct,
+    /// Observation labelled as coming from the legacy Cloud Control path.
+    CloudControl,
+    /// Observation labelled as coming from the legacy AWS Config path.
+    AwsConfig,
+    /// Observation labelled as coming from the legacy Resource Explorer path.
+    ResourceExplorer,
+}
+
+impl Source {
+    /// Return the snake-case label also used by serde serialization.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Direct => "direct",
+            Self::CloudControl => "cloud_control",
+            Self::AwsConfig => "aws_config",
+            Self::ResourceExplorer => "resource_explorer",
+        }
+    }
+
+    /// Legacy precedence: direct 4, Cloud Control 3, Config 2, Resource Explorer 1.
+    /// Larger numbers have higher priority; this is the reverse of derived enum ordering.
+    pub const fn priority(self) -> u8 {
+        match self {
+            Self::Direct => 4,
+            Self::CloudControl => 3,
+            Self::AwsConfig => 2,
+            Self::ResourceExplorer => 1,
+        }
+    }
+}
+
+pub use observations::{
+    CollectionEvent, CollectionFailure, CollectionPage, CollectionScope, Edge, Resource,
 };
 
-/// A legacy JSON observation; construction and deserialization do not run [`Self::validate`].
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-pub struct Resource {
-    /// Opaque resource identity; validation requires nonempty, NUL-free text of at most
-    /// [`super::MAX_IDENTIFIER_BYTES`] bytes.
-    pub id: String,
-    /// Account label; validation requires nonempty, NUL-free text of at most
-    /// [`super::MAX_IDENTIFIER_BYTES`] bytes.
-    pub account_id: String,
-    /// Region label; validation requires nonempty, NUL-free text of at most
-    /// [`super::MAX_IDENTIFIER_BYTES`] bytes.
-    pub region: String,
-    /// Kind label; validation requires nonempty, NUL-free text of at most
-    /// [`super::MAX_IDENTIFIER_BYTES`] bytes.
-    pub kind: String,
-    /// Optional display name; `None` is absent, while empty text is allowed by validation.
-    /// When present, validation rejects NUL or more than [`super::MAX_IDENTIFIER_BYTES`] bytes.
-    pub name: Option<String>,
-    /// Arbitrary JSON value, limited by validation to [`super::MAX_PROPERTY_BYTES`] serialized bytes.
-    pub properties: Value,
-    /// Tags ordered by key; empty means no tags. Validation permits at most 100 entries,
-    /// nonempty keys, and empty values; keys and values are NUL-free and at most
-    /// [`super::MAX_IDENTIFIER_BYTES`] bytes.
-    pub tags: BTreeMap<String, String>,
-    /// Legacy provenance label, not an authorization to use hints as direct facts.
-    pub source: Source,
-    /// Producer-supplied observation time; the collectors write Unix milliseconds,
-    /// but validation only rejects negative values.
-    pub observed_at: i64,
+/// Legacy scan lifecycle label; this enum alone does not enforce state transitions.
+#[derive(Clone, Copy, Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ScanStatus {
+    /// Collection has not been finalized.
+    Running,
+    /// Collection was finalized as complete.
+    Complete,
+    /// Collection was finalized as partial: requested by the finisher, or downgraded from complete
+    /// because no scope was recorded or a scope was incomplete or failed.
+    Partial,
+    /// Collection was finalized as cancelled.
+    Cancelled,
 }
 
-impl Resource {
-    /// Check the legacy text, tag, timestamp and serialized-property bounds explicitly.
-    ///
-    /// # Errors
-    /// Returns `InvalidField` for empty ID/account/region/kind/tag keys; for NUL or more
-    /// than [`super::MAX_IDENTIFIER_BYTES`] bytes in those fields, a present name or tag values;
-    /// or for negative time.
-    /// Returns `Limit` for more than 100 tags or properties exceeding `MAX_PROPERTY_BYTES`,
-    /// and `Json` if property serialization fails.
-    pub fn validate(&self) -> Result<(), ValidationError> {
-        validate_identifier(&self.id, "resource id")?;
-        validate_identifier(&self.account_id, "account id")?;
-        validate_identifier(&self.region, "region")?;
-        validate_identifier(&self.kind, "resource kind")?;
-        if let Some(name) = &self.name {
-            validate_text(name, "resource name")?;
+impl ScanStatus {
+    /// Return the snake-case label also used by serde serialization.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Running => "running",
+            Self::Complete => "complete",
+            Self::Partial => "partial",
+            Self::Cancelled => "cancelled",
         }
-        validate_json_size(&self.properties)?;
-        if self.tags.len() > 100 {
-            return Err(ValidationError::Limit("tags"));
-        }
-        if self.observed_at < 0 {
-            return Err(ValidationError::InvalidField("observed_at"));
-        }
-        self.tags.iter().try_for_each(|(key, value)| {
-            validate_identifier(key, "tag key")?;
-            validate_text(value, "tag value")
-        })?;
-        Ok(())
     }
 }
 
-/// A directed legacy relationship; construction and deserialization do not check its bounds.
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-pub struct Edge {
-    /// Source resource identity; validation requires nonempty, NUL-free text of at most
-    /// [`super::MAX_IDENTIFIER_BYTES`] bytes.
-    pub from_id: String,
-    /// Target resource identity; validation requires nonempty, NUL-free text of at most
-    /// [`super::MAX_IDENTIFIER_BYTES`] bytes.
-    pub to_id: String,
-    /// Relation label; validation requires nonempty, NUL-free text of at most
-    /// [`super::MAX_IDENTIFIER_BYTES`] bytes.
-    pub relation: String,
-    /// Legacy provenance label for the relationship observation.
-    pub source: Source,
-    /// Producer-supplied observation time; the collectors write Unix milliseconds,
-    /// but validation only rejects negative values.
-    pub observed_at: i64,
-    /// Arbitrary JSON value, limited by validation to [`super::MAX_PROPERTY_BYTES`] serialized bytes.
-    pub properties: Value,
-}
-
-impl Edge {
-    /// Check text, timestamp and serialized-property bounds; endpoint existence is not checked.
-    ///
-    /// # Errors
-    /// Returns `InvalidField` for empty or NUL-containing endpoint/relation text, or text
-    /// exceeding [`super::MAX_IDENTIFIER_BYTES`] bytes, or negative time; `Limit` for properties
-    /// exceeding `MAX_PROPERTY_BYTES`;
-    /// `Json` if property serialization fails.
-    pub fn validate(&self) -> Result<(), ValidationError> {
-        validate_identifier(&self.from_id, "edge source")?;
-        validate_identifier(&self.to_id, "edge target")?;
-        validate_identifier(&self.relation, "edge relation")?;
-        if self.observed_at < 0 {
-            return Err(ValidationError::InvalidField("edge observed_at"));
-        }
-        validate_json_size(&self.properties)
-    }
-}
-
-/// A legacy collection boundary; public fields and deserialization bypass [`Self::validate`].
+/// Legacy per-scan totals; core imposes no construction-time identity or count checks.
 #[derive(Clone, Debug, Deserialize, Serialize, PartialEq, Eq)]
-pub struct CollectionScope {
-    /// Account label; validation requires nonempty, NUL-free text of at most
-    /// [`super::MAX_IDENTIFIER_BYTES`] bytes.
-    pub account_id: String,
-    /// Region label; validation requires nonempty, NUL-free text of at most
-    /// [`super::MAX_IDENTIFIER_BYTES`] bytes.
-    pub region: String,
-    /// Collector label, not necessarily a service name; the same text bounds apply.
-    pub collector: String,
-    /// Optional parent label; `None` means no parent, otherwise the same text bounds apply.
-    pub parent_id: Option<String>,
-    /// Legacy provenance component of the scope key.
-    pub source: Source,
+pub struct ScanSummary {
+    /// Opaque scan label; the summary itself does not check its text bounds.
+    pub scan_id: String,
+    /// Number of resources associated with the scan, not pages or source observations.
+    pub resources: u64,
+    /// Number of relationships associated with the scan.
+    pub edges: u64,
+    /// Number of scopes recorded as complete and not failed.
+    pub completed_scopes: u64,
+    /// Number of scopes recorded as failed, whether or not their pagination completed.
+    pub failed_scopes: u64,
 }
 
-impl CollectionScope {
-    /// Check only the bounded-text contract of scope labels.
-    ///
-    /// # Errors
-    /// Returns `InvalidField` if account, region, collector or a present parent is empty,
-    /// contains NUL, or exceeds [`super::MAX_IDENTIFIER_BYTES`] bytes.
-    /// No domain-specific syntax is checked.
-    pub fn validate(&self) -> Result<(), ValidationError> {
-        validate_identifier(&self.account_id, "scope account")?;
-        validate_identifier(&self.region, "scope region")?;
-        validate_identifier(&self.collector, "scope collector")?;
-        if let Some(parent) = &self.parent_id {
-            validate_identifier(parent, "scope parent")?;
+/// Check only nonempty, bounded, NUL-free text; `field` labels a rejection.
+///
+/// # Errors
+/// Returns `InvalidField(field)` if `value` is empty, exceeds [`MAX_IDENTIFIER_BYTES`]
+/// UTF-8 bytes, or contains NUL. No domain-specific syntax or normalization is applied.
+pub fn validate_identifier(value: &str, field: &'static str) -> Result<(), ValidationError> {
+    if value.is_empty() || value.len() > MAX_IDENTIFIER_BYTES || value.contains('\0') {
+        return Err(ValidationError::InvalidField(field));
+    }
+    Ok(())
+}
+
+fn validate_json_size(value: &Value) -> Result<(), ValidationError> {
+    validate_serialized_size(value, MAX_PROPERTY_BYTES, "properties JSON bytes")
+}
+
+fn validate_text(value: &str, field: &'static str) -> Result<(), ValidationError> {
+    if value.len() > MAX_IDENTIFIER_BYTES || value.contains('\0') {
+        return Err(ValidationError::InvalidField(field));
+    }
+    Ok(())
+}
+
+struct CountingWriter {
+    used: usize,
+    limit: usize,
+    exceeded: bool,
+}
+
+impl std::io::Write for CountingWriter {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        match self.used.checked_add(bytes.len()) {
+            Some(total) if total <= self.limit => {
+                self.used = total;
+                Ok(bytes.len())
+            }
+            _ => {
+                self.exceeded = true;
+                Err(std::io::Error::other("serialized byte limit"))
+            }
         }
+    }
+
+    fn flush(&mut self) -> std::io::Result<()> {
         Ok(())
     }
+}
 
-    /// Return the scope's JSON serialization after checking its text bounds.
-    /// All fields, including source and an absent parent, participate in the key.
-    ///
-    /// # Errors
-    /// Returns the errors of [`Self::validate`], or `Json` if serialization fails.
-    pub fn key(&self) -> Result<String, ValidationError> {
-        self.validate()?;
-        Ok(serde_json::to_string(self)?)
+/// Check a serialized byte budget without first allocating the serialized output.
+/// `limit` counts JSON bytes including escaping; equality is accepted and `label` names the budget.
+///
+/// # Errors
+/// Returns `Limit(label)` when serialization would exceed `limit` or the byte counter
+/// overflows; otherwise returns `Json` if the serializer fails.
+pub fn validate_serialized_size<T: Serialize>(
+    value: &T,
+    limit: usize,
+    label: &'static str,
+) -> Result<(), ValidationError> {
+    let mut counter = CountingWriter {
+        used: 0,
+        limit,
+        exceeded: false,
+    };
+    let result = serde_json::to_writer(&mut counter, value);
+    if counter.exceeded {
+        return Err(ValidationError::Limit(label));
     }
-}
-
-/// A legacy page whose bounds are checked only by explicitly calling [`Self::validate`].
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-pub struct CollectionPage {
-    /// Collection boundary shared by this page; validation checks its text bounds only.
-    pub scope: CollectionScope,
-    /// One-based page number, accepted by validation through [`super::MAX_PAGES`] inclusive.
-    pub page_number: u32,
-    /// Continuation cursor; `None` marks the last page. Validation requires a present
-    /// cursor to be nonempty, NUL-free and at most 8,192 bytes.
-    pub next_token: Option<String>,
-    /// Resource observations in supplied order; empty is allowed, even with a continuation.
-    pub resources: Vec<Resource>,
-    /// Relationship observations in supplied order; empty is allowed.
-    pub edges: Vec<Edge>,
-}
-
-impl CollectionPage {
-    /// Check scope, records, page number, cursor and the aggregate serialized JSON budget.
-    /// Record identities need not be unique, and records need not match the scope.
-    ///
-    /// # Errors
-    /// Returns scope/resource/edge validation errors; `Limit` if record counts exceed
-    /// `MAX_PAGE_RESOURCES`/`MAX_PAGE_EDGES`, page number is outside `1..=MAX_PAGES`, or
-    /// serialized bytes exceed `MAX_PAGE_BYTES`; `InvalidField` for an empty, NUL-containing
-    /// or oversized cursor; `Json` if aggregate serialization fails.
-    pub fn validate(&self) -> Result<(), ValidationError> {
-        self.scope.validate()?;
-        if self.resources.len() > MAX_PAGE_RESOURCES || self.edges.len() > MAX_PAGE_EDGES {
-            return Err(ValidationError::Limit("page records"));
-        }
-        if self.page_number == 0 || self.page_number > MAX_PAGES {
-            return Err(ValidationError::Limit("page number"));
-        }
-        if self.next_token.as_ref().is_some_and(|token| {
-            token.is_empty() || token.len() > MAX_TOKEN_BYTES || token.contains('\0')
-        }) {
-            return Err(ValidationError::InvalidField("continuation token"));
-        }
-        self.resources.iter().try_for_each(Resource::validate)?;
-        self.edges.iter().try_for_each(Edge::validate)?;
-        validate_serialized_size(self, MAX_PAGE_BYTES, "aggregate page bytes")
-    }
-}
-
-/// A legacy failure report with no core validation method or construction-time bounds.
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-pub struct CollectionFailure {
-    /// Scope to which the report applies; construction does not check it.
-    pub scope: CollectionScope,
-    /// Producer-supplied failure classification; core imposes no vocabulary or text bounds.
-    pub category: String,
-    /// Producer-supplied diagnostic text; core imposes no text bounds here.
-    pub message: String,
-}
-
-/// A legacy collection result; deserialization does not validate the contained value.
-#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
-#[serde(tag = "event", content = "data", rename_all = "snake_case")]
-pub enum CollectionEvent {
-    /// One page, including an empty page that can still carry a continuation cursor.
-    Page(CollectionPage),
-    /// An explicit failure report rather than evidence of an empty scope.
-    Failure(CollectionFailure),
+    result.map_err(ValidationError::Json)
 }

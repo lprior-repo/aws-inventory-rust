@@ -88,15 +88,19 @@ start in parallel. M4.3 needs only M0 and can start any time.
 
 Status from the coordinator, 2026-11-13.
 
-- **M0.7b's core/harness/benchmark half is done.** Core's public types and
-  errors are documented; core, harness and benchmark deny `missing_docs`.
-  Warnings-denied rustdoc, all-target Clippy and all 193 core tests pass.
-  Independent review found six incorrect guarantees or visibility choices;
-  the corrections were inspected by the coordinator after the review
-  service became rate-limited. The UI crate has documentation, but cannot
-  deny `missing_docs` at crate scope while Makepad's pinned `app_main!`
-  emits an undocumented public function. Catalog-tool documentation and
-  the complete workspace documentation gate remain open.
+- **M0.7 was superseded by the owner's no-comments policy.** Rust source
+  comments, including Rustdoc, are being removed together with `missing_docs`
+  gates. API contracts, bounds and verification belong in external Markdown.
+  Prior documentation-gate results are historical, not a current requirement.
+
+- **The binary-only core feature is done**, a prerequisite rather than completion
+  of M3.5. `inventory-core` with default features disabled contains `catalog`
+  and `record`, with no serde/serde_json in its normal dependency graph.
+  The default `legacy` feature preserves old scan API imports and behavior.
+  Both independent reviews approve. Verified: 200 binary-only core tests,
+  227 legacy core tests, 164 catalog-tool unit tests, both feature-specific
+  source Clippy runs and source guards. Rust lines: 397 added, 389 deleted,
+  mostly moving the old model below its feature boundary.
 
 - **M4.3 is done.** The seeded HTTP fault proxy supports every requested
   fault, latency and per-scope rate limit, with bounded state and owned task
@@ -314,7 +318,7 @@ and M9 with each other.
 | M0.4 | The catalog command reports the store's schema version. **Done**, `bbd0821`: `inventory_engine::store::SCHEMA_VERSION` is the single source; the engine migration tests bind it to the real `PRAGMA user_version`; `tests/cli_properties.rs` pins 13 through the binary. | M0.2 | `aws-inventory catalog` prints `"sqlite_schema_version": 13`; no literal schema number remains in `src/catalog.rs` |
 | M0.5 | Regenerate `MANIFEST.sha256` from tracked files only. **Partly done**, `bbd0821`: both packagers now exclude `.local`. Still open: the file itself has not been regenerated (the working copy has 82,487 lines, 81,554 under `.local/`); do it when no worker has uncommitted files in the tree. | M0.2 | Every path in the file is in `git ls-files`; none starts with `.local/` |
 | M0.6 | Push `main`. **Done**, `b5332e8`. | M0.2 | `git status -sb` shows no divergence |
-| M0.7 | Documentation gate. `missing_docs` is denied in the crates that outlive M9.5 (`inventory-core`, `inventory-engine`, `catalog-tool`, `inventory-harness`, `cmdb-view`, `cmdb-ui`, `cmdb-bench`) and in every new crate from its first commit; the gate runs `cargo doc --no-deps` with warnings denied. `inventory-aws` is exempt until M9.5. Does not block M1 or M3.1. **Partly done** (M0.7a): `inventory-engine` and `cmdb-view` carry `#![deny(missing_docs)]`; 378 public items documented from their bodies, 22 narrowed to crate visibility, and 7 unused public functions deleted. `RUSTDOCFLAGS="-D warnings" cargo doc --no-deps -p inventory-engine -p cmdb-view --locked`, all-target Clippy and the 232 tests of both crates pass. Rust lines: 727 added, 207 deleted. Still open (M0.7b): `inventory-core` (99 undocumented items), `catalog-tool` (8), `inventory-harness` (4) and the `scripts/verify.sh` gate line. | M0.3 | Adding an undocumented `pub fn` to a gated crate makes `scripts/verify.sh` fail; removing it makes the gate pass |
+| M0.7 | **Superseded by owner decision:** no Rust code comments, including Rustdoc. Remove existing comments and `missing_docs` gates; keep contracts in external Markdown. Removal is in progress. | M0.3 | Lexer-based verification finds no Rust comment tokens; format, source guards and affected compilation/tests pass without missing-docs enforcement. |
 
 ## M1 — API catalog
 
