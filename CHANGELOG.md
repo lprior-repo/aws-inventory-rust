@@ -31,6 +31,12 @@
   `PageRequest` getters). An independent review found six comments that
   stated behavior the code does not have; all were corrected. Rust lines: 727
   added, 207 deleted.
+- `crates/aws-wire` is scaffolded, and Smithy's AWS protocol test suites
+  (Smithy 1.75.0, seven protocols, 901 HTTP cases) are committed as JSON ASTs
+  under `crates/aws-wire/tests/fixtures/protocol-tests/` with the conversion
+  script `scripts/protocol-tests/convert.sh` and provenance digests. The
+  conversion uses the released Smithy CLI and `jq`; it is not part of the
+  build or the gate.
 - Project agents in `.omp/agents/` include the local GPU builders and
   `aws-build-sol` (ChatGPT Sol). Builders implement independent packages in
   parallel; the coordinator owns serialized compilation, formatting and tests.

@@ -111,6 +111,16 @@ Status from the coordinator, 2026-11-13.
   errors, generic framing validation and allocation-free borrowed skipping
   account for the overage; byte parsing remains minicbor's responsibility.
   M3.1b (content hashing and format version) remains open.
+- **The M2 crate exists and its protocol oracle is in the tree.** `crates/aws-wire`
+  is scaffolded (`ac75ec1`). Smithy's published protocol test suites are
+  committed as complete JSON ASTs under
+  `crates/aws-wire/tests/fixtures/protocol-tests/`, converted once, outside the
+  build, by `scripts/protocol-tests/convert.sh` from Smithy 1.75.0 (commit
+  `981f95a2cae567752b70749c1f04502c076a7a63`) with the released Smithy CLI
+  and `jq`; two clean conversions gave identical SHA-256 digests, recorded in
+  the fixtures' README. Seven protocols, 901 HTTP cases (478 request, 366
+  response, 57 error), 3,229,771 bytes. No Rust lines. M2.1a to M2.1c and M2.4a
+  to M2.4d prove themselves against these files.
 
 Packages that can run at the same time: M1 with M3.1 and M4.3; M2.1a to M2.1c,
 M2.2 and M2.3 with each other; M2.4a with M2.4b; the M5 services
