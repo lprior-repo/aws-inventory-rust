@@ -59,13 +59,24 @@ fn workspace_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-/// Bounded `--flag value` pairs; unknown flags are rejected.
+/// True when a receipt is a list of checks and at least one did not pass.
+fn has_failed_check(receipt: &serde_json::Value) -> bool {
+    receipt.as_array().is_some_and(|checks| {
+        checks
+            .iter()
+            .any(|check| check.get("passed").and_then(serde_json::Value::as_bool) == Some(false))
+    })
+}
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> ExitCode {
     let arguments: Vec<String> = std::env::args().skip(1).collect();
     match execute(&arguments).await {
         Ok(receipt) => match serde_json::to_string_pretty(&receipt) {
+            Ok(text) if has_failed_check(&receipt) => {
+                println!("{text}");
+                ExitCode::FAILURE
+            }
             Ok(text) => {
                 println!("{text}");
                 ExitCode::SUCCESS

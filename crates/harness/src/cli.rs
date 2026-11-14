@@ -32,7 +32,7 @@ pub(super) fn parse(arguments: &[String]) -> Result<Command, HarnessError> {
 }
 
 fn parse_freeze(arguments: &[String]) -> Result<Command, HarnessError> {
-    let options = options(arguments)?;
+    let options = options(arguments, &["--evidence", "--output", "--binary", "--root"])?;
     Ok(Command::Freeze {
         evidence: options.value("--evidence")?,
         output: options.value("--output")?,
@@ -47,7 +47,7 @@ fn parse_install(arguments: &[String]) -> Result<Command, HarnessError> {
         .filter(|value| !value.starts_with("--"))
         .map(PathBuf::from)
         .ok_or_else(|| HarnessError::invalid(USAGE))?;
-    let options = options(arguments.get(1..).unwrap_or_default())?;
+    let options = options(arguments.get(1..).unwrap_or_default(), &["--root"])?;
     Ok(Command::Install {
         destination,
         root: options.get("--root").unwrap_or_else(workspace_root),
@@ -81,7 +81,10 @@ fn parse_universal(arguments: &[String]) -> Result<Command, HarnessError> {
 }
 
 fn parse_cloud_control(arguments: &[String]) -> Result<Command, HarnessError> {
-    let options = options(arguments)?;
+    let options = options(
+        arguments,
+        &["--db", "--scan-id", "--seed-results", "--root"],
+    )?;
     let scan_id = options
         .text("--scan-id")
         .ok_or_else(|| HarnessError::invalid(USAGE))?;
@@ -94,7 +97,7 @@ fn parse_cloud_control(arguments: &[String]) -> Result<Command, HarnessError> {
 }
 
 fn parse_seed_s3(arguments: &[String]) -> Result<Command, HarnessError> {
-    let options = options(arguments)?;
+    let options = options(arguments, &["--bucket"])?;
     let bucket = options
         .text("--bucket")
         .filter(|name| !name.is_empty())
@@ -103,7 +106,7 @@ fn parse_seed_s3(arguments: &[String]) -> Result<Command, HarnessError> {
 }
 
 fn parse_seed_cloud_control(arguments: &[String]) -> Result<Command, HarnessError> {
-    let options = options(arguments)?;
+    let options = options(arguments, &["--prefix", "--count"])?;
     let prefix = options
         .text("--prefix")
         .filter(|value| !value.is_empty())
@@ -189,7 +192,7 @@ impl CoverageFlags {
     }
 }
 
-/// Bounded `--flag value` pairs; unknown flags are rejected.
+/// Bounded `--flag value` pairs; a flag outside the command's list, or given twice, is rejected.
 struct Options {
     pairs: Vec<(String, String)>,
 }
@@ -214,11 +217,12 @@ impl Options {
     }
 }
 
-fn options(arguments: &[String]) -> Result<Options, HarnessError> {
-    let mut pairs = Vec::new();
+fn options(arguments: &[String], allowed: &[&str]) -> Result<Options, HarnessError> {
+    let mut pairs: Vec<(String, String)> = Vec::new();
     let mut remaining = arguments.iter();
     while let Some(flag) = remaining.next() {
-        if !flag.starts_with("--") {
+        let repeated = pairs.iter().any(|(name, _)| name == flag);
+        if repeated || !allowed.contains(&flag.as_str()) {
             return Err(HarnessError::invalid(format!("unexpected {flag}; {USAGE}")));
         }
         let value = remaining

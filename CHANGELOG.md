@@ -42,6 +42,14 @@
   `MapRef::from_bytes`, and typed reads (`ValueKind`, `MapRef::get_typed`).
   The hash is computed in one pass without allocation. 50 new tests. Rust
   lines: 1,350 added, 19 deleted.
+- Fixed, found by an adversarial run against the built `inventory-harness`
+  binary (41 commands, 2 defects): `assert cloud-control` exited 0 while
+  printing failed checks (missing, empty, corrupt and wrong-schema databases
+  all "succeeded"), and the commands that take `--flag value` pairs accepted
+  unknown and repeated flags, so `install <dir> --unexpected x` created the
+  destination before failing elsewhere. A failed check now exits 1 after
+  printing the checks; an unknown or repeated flag is rejected before any
+  work. Three tests run the binary.
 - Project agents in `.omp/agents/` include the local GPU builders and
   `aws-build-sol` (ChatGPT Sol). Builders implement independent packages in
   parallel; the coordinator owns serialized compilation, formatting and tests.
