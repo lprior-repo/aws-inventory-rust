@@ -2,7 +2,10 @@
 
 use std::ffi::OsStr;
 use std::fs;
+use std::io;
 use std::path::{Path, PathBuf};
+
+use super::limits::{Limits, exceeded};
 
 /// Directories excluded at any depth.
 const EXCLUDED_DIRECTORIES: [&str; 6] = [
@@ -40,46 +43,115 @@ const CREDENTIAL_NAMES: [&str; 5] = [
 /// Manifest file name written beside the sources.
 pub(super) const MANIFEST_NAME: &str = "MANIFEST.sha256";
 
-/// Recursively collect included files without following symlinked entries.
-pub(super) fn walk(dir: &Path, root: &Path, out: &mut Vec<PathBuf>) -> std::io::Result<()> {
-    for entry in fs::read_dir(dir)? {
-        let entry = entry?;
-        let file_type = entry.file_type()?;
-        if file_type.is_symlink() {
-            continue;
-        }
-        let path = entry.path();
-        if file_type.is_dir() {
-            walk(&path, root, out)?;
-        } else if file_type.is_file() {
-            let relative = path.strip_prefix(root).map_err(|_| {
-                std::io::Error::new(
-                    std::io::ErrorKind::InvalidInput,
-                    "discovered path is outside the payload root",
-                )
-            })?;
-            if included(relative) {
-                out.push(relative.to_path_buf());
-            }
-        }
+/// Walk bounded directory levels without recursion or following symlink entries.
+pub(super) fn walk(root: &Path, limits: Limits) -> io::Result<Vec<PathBuf>> {
+    let mut scanner = Scanner {
+        root,
+        limits,
+        paths: Vec::new(),
+        entries: 0,
+    };
+    let mut directories = vec![root.to_path_buf()];
+    (0..=limits.depth).try_for_each(|depth| {
+        directories = scanner.read_level(&directories, depth)?;
+        Ok::<_, io::Error>(())
+    })?;
+    Ok(scanner.paths)
+}
+
+/// Traversal state is bounded by the named entry and directory-depth ceilings.
+struct Scanner<'a> {
+    root: &'a Path,
+    limits: Limits,
+    paths: Vec<PathBuf>,
+    entries: usize,
+}
+
+impl Scanner<'_> {
+    /// Read one depth level, pruning excluded directories before opening them.
+    fn read_level(&mut self, directories: &[PathBuf], depth: usize) -> io::Result<Vec<PathBuf>> {
+        directories
+            .iter()
+            .try_fold(Vec::new(), |mut next, directory| {
+                fs::read_dir(directory)?
+                    .try_for_each(|entry| self.visit(entry?, depth, &mut next))?;
+                Ok(next)
+            })
     }
+
+    /// Retain included regular files or queue allowed child directories.
+    fn visit(
+        &mut self,
+        entry: fs::DirEntry,
+        depth: usize,
+        next: &mut Vec<PathBuf>,
+    ) -> io::Result<()> {
+        let path = entry.path();
+        self.count_entry(&path)?;
+        let relative = path
+            .strip_prefix(self.root)
+            .map_err(|_| io::Error::other("discovered path is outside the payload root"))?;
+        let kind = entry.file_type()?;
+        if kind.is_dir() && !excluded_directory(relative) {
+            return self.queue_directory(path, depth, next);
+        }
+        if kind.is_file() && included(relative) {
+            store_path(&mut self.paths, relative.to_path_buf())?;
+        }
+        Ok(())
+    }
+
+    /// Check the traversal budget before retaining another path.
+    fn count_entry(&mut self, path: &Path) -> io::Result<()> {
+        self.entries = self
+            .entries
+            .checked_add(1)
+            .ok_or_else(|| exceeded(path, "visited entries", self.limits.entries))?;
+        if self.entries > self.limits.entries {
+            return Err(exceeded(path, "visited entries", self.limits.entries));
+        }
+        Ok(())
+    }
+
+    /// A child directory would have depth one greater than its containing level.
+    fn queue_directory(
+        &self,
+        path: PathBuf,
+        depth: usize,
+        next: &mut Vec<PathBuf>,
+    ) -> io::Result<()> {
+        if depth >= self.limits.depth {
+            return Err(exceeded(&path, "directory depth", self.limits.depth));
+        }
+        store_path(next, path)
+    }
+}
+
+/// Growth is fallible and can occur at most once per checked traversal entry.
+fn store_path(paths: &mut Vec<PathBuf>, path: PathBuf) -> io::Result<()> {
+    paths.try_reserve(1).map_err(io::Error::other)?;
+    paths.push(path);
     Ok(())
 }
 
 /// Selection rules of the original `included()`, applied to a relative path.
 fn included(relative: &Path) -> bool {
-    let parts: Vec<&OsStr> = relative.iter().collect();
-    if parts.iter().any(|part| {
-        EXCLUDED_DIRECTORIES
-            .iter()
-            .any(|name| part == &OsStr::new(name))
-    }) {
+    if excluded_directory(relative) {
         return false;
     }
     let Some(name) = relative.file_name() else {
         return false;
     };
-    !excluded_name(name) && !excluded_artifact_tree(&parts) && !excluded_database(relative, name)
+    !excluded_name(name) && !excluded_database(relative, name)
+}
+
+/// Prune both cache/VCS components and excluded development artifact subtrees.
+fn excluded_directory(relative: &Path) -> bool {
+    relative.iter().any(|part| {
+        EXCLUDED_DIRECTORIES
+            .iter()
+            .any(|name| part == OsStr::new(name))
+    }) || excluded_artifact_tree(&relative.iter().collect::<Vec<_>>())
 }
 
 /// Names never distributed: manifest, compiled artifacts and credentials.

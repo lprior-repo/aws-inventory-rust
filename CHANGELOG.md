@@ -72,6 +72,19 @@
   binary (72 scenarios, 1 defect): a scan that ends `partial` or `cancelled`
   exited 2 with nothing on standard error. It now prints one line there
   saying the report on standard output lists what failed.
+- Fixed, found by an adversarial run against the built `catalog-tool`
+  binary (160 commands, 5 defects, all in `package`): the archive was
+  written through a predictable sibling name, so a symlink or a file already
+  at that name was overwritten or destroyed; a destination inside the
+  packaged root packaged itself; a `MANIFEST.sha256` that was a link to a
+  payload truncated it. The archive, the manifest and generated SDK files
+  are now published through an exclusively created temporary file and a
+  rename, with the mode `File::create` would give; a destination inside the
+  root is rejected; excluded directories are not entered; file count, depth
+  and bytes are bounded before reading. The harness's second copy of the
+  packager is deleted and re-exports this one. The destination directory
+  must not be writable by untrusted users (the check is not atomic with
+  publication). Rust lines: 1,069 added, 652 deleted.
 - Project agents in `.omp/agents/` include the local GPU builders and
   `aws-build-sol` (ChatGPT Sol). Builders implement independent packages in
   parallel; the coordinator owns serialized compilation, formatting and tests.

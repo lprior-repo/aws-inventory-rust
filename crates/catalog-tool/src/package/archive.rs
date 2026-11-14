@@ -1,8 +1,7 @@
 //! Deterministic ZIP writing and read-back verification.
 
 use std::fs::File;
-use std::io::{self, Read, Write};
-use std::path::Path;
+use std::io::{self, Read, Seek, Write};
 
 use zip::write::SimpleFileOptions;
 use zip::{CompressionMethod, DateTime, ZipArchive, ZipWriter};
@@ -31,38 +30,46 @@ fn zip_error(error: impl std::fmt::Display) -> Box<dyn std::error::Error> {
 
 /// Write the payload set and manifest, sorted by the caller.
 pub(super) fn write(
-    path: &Path,
+    file: &mut File,
     payloads: &[Payload],
     manifest: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let file = File::create(path)?;
     let mut writer = ZipWriter::new(file);
     let options = SimpleFileOptions::default()
         .compression_method(CompressionMethod::Deflated)
         .compression_level(Some(COMPRESSION_LEVEL))
         .last_modified_time(fixed_timestamp()?)
         .unix_permissions(0o644);
-    for (name, data) in payloads {
-        writer
-            .start_file(format!("{ARCHIVE_PREFIX}{name}"), options)
-            .map_err(zip_error)?;
-        writer.write_all(data)?;
-    }
-    writer
-        .start_file(format!("{ARCHIVE_PREFIX}{MANIFEST_NAME}"), options)
-        .map_err(zip_error)?;
-    writer.write_all(manifest.as_bytes())?;
+    payloads
+        .iter()
+        .try_for_each(|(name, data)| write_entry(&mut writer, name, data, options))?;
+    write_entry(&mut writer, MANIFEST_NAME, manifest.as_bytes(), options)?;
     writer.finish().map_err(zip_error)?;
+    Ok(())
+}
+
+/// Write one entry through the already exclusively opened archive handle.
+fn write_entry(
+    writer: &mut ZipWriter<&mut File>,
+    name: &str,
+    data: &[u8],
+    options: SimpleFileOptions,
+) -> Result<(), Box<dyn std::error::Error>> {
+    writer
+        .start_file(format!("{ARCHIVE_PREFIX}{name}"), options)
+        .map_err(zip_error)?;
+    writer.write_all(data)?;
     Ok(())
 }
 
 /// Re-read the archive, checking entry count, payload hashes and manifest bytes.
 pub(super) fn verify(
-    path: &Path,
+    file: &mut File,
     payloads: &[Payload],
     manifest: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut archive = ZipArchive::new(File::open(path)?).map_err(zip_error)?;
+    file.rewind()?;
+    let mut archive = ZipArchive::new(file).map_err(zip_error)?;
     let expected = payloads
         .len()
         .checked_add(1)
@@ -70,15 +77,25 @@ pub(super) fn verify(
     if archive.len() != expected {
         return Err(invalid("ZIP entry count mismatch"));
     }
-    for (name, data) in payloads {
-        let bytes = read_entry(&mut archive, &format!("{ARCHIVE_PREFIX}{name}"))?;
-        if sha256_hex(&bytes) != sha256_hex(data) {
-            return Err(invalid(format!("packaged content hash mismatch: {name}")));
-        }
-    }
+    payloads
+        .iter()
+        .try_for_each(|(name, data)| verify_entry(&mut archive, name, data))?;
     let manifest_bytes = read_entry(&mut archive, &format!("{ARCHIVE_PREFIX}{MANIFEST_NAME}"))?;
     if manifest_bytes != manifest.as_bytes() {
         return Err(invalid("packaged manifest mismatch"));
+    }
+    Ok(())
+}
+
+/// Compare one archived payload with the input snapshot.
+fn verify_entry(
+    archive: &mut ZipArchive<&mut File>,
+    name: &str,
+    data: &[u8],
+) -> Result<(), Box<dyn std::error::Error>> {
+    let bytes = read_entry(archive, &format!("{ARCHIVE_PREFIX}{name}"))?;
+    if sha256_hex(&bytes) != sha256_hex(data) {
+        return Err(invalid(format!("packaged content hash mismatch: {name}")));
     }
     Ok(())
 }

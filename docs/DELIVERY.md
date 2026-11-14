@@ -149,10 +149,40 @@ non-published databases exactly as the former Python packager did, writes
 the sorted slash-separated relative path, and every entry carries a fixed
 1980-01-01 ZIP timestamp and deterministic deflate settings, so repeated runs
 over an unchanged tree produce byte-identical archives (the retired Python tool
-embedded the current time instead). The archive is written to a temporary
-sibling, re-read to verify the entry count, every payload hash and the manifest,
-then atomically renamed. The command prints a JSON receipt with `path`, `files`,
-`bytes` and `sha256` for the finished archive.
+embedded the current time instead). The archive is written through an exclusively
+created temporary file in the destination directory, re-read to verify the entry
+count, every payload hash and the manifest, then atomically renamed. Failed
+publication removes the temporary file and preserves an existing destination.
+Pre-existing sibling files are never reused. Destination symlinks are replaced
+themselves by rename, never followed.
+
+`MANIFEST.sha256` is also published by exclusive temporary-file replacement,
+at the same point after payload collection and with the same manifest bytes.
+Manifest symlinks and hard links therefore cannot truncate their targets.
+On Unix, all shared-writer outputs request mode `0666` during exclusive creation;
+the kernel applies the current umask, just as for `File::create`.
+
+Choose a destination outside the packaged root: destinations whose canonical
+parent is inside the canonical root are rejected as invalid input before any
+writes, with both paths in the error. This also applies through directory
+symlinks and prevents output self-inclusion or replacement of selected sources.
+An existing external destination (for example yesterday's ZIP) is still replaced.
+The command prints a JSON receipt with `path`, `files`, `bytes` and `sha256` for
+the finished archive. `inventory-harness` uses this same implementation; SDK
+generated files use its shared exclusive atomic-file writer.
+
+The destination directory must not be writable by untrusted users: pathname
+validation is not atomic with publication, and hostile concurrent directory
+replacement is outside this developer tool's threat model.
+
+Packaging prunes excluded directories before descent and rejects inputs beyond
+64 directory levels, 100,000 visited entries, 64 MiB per included file, or 1 GiB
+of total included payload bytes. Byte budgets are checked from metadata before
+reading and reserving file buffers; a growing file cannot enlarge its reserved
+snapshot. Limit errors are typed invalid-input failures naming the path and
+maximum. These ceilings are provisional: no real release-package size receipt
+was found in the documentation. The completed archive digest is streamed through
+a fixed 8 KiB buffer rather than loading the archive into memory again.
 
 ## Verification boundaries
 

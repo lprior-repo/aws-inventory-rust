@@ -1,7 +1,7 @@
 //! Deterministic generation of the SDK catalog crate from the snapshot.
 
 use std::collections::BTreeSet;
-use std::fs;
+use std::io::{self, Write};
 use std::path::{Path, PathBuf};
 
 use serde_json::Value;
@@ -30,17 +30,16 @@ pub fn outputs(
     Ok(generated)
 }
 
-/// Write one generated file atomically, as Python's `write()` does.
+/// Write one generated file through the shared exclusive atomic-file writer.
 pub fn write(path: &Path, text: &str) -> Result<(), HarnessError> {
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent)?;
-    }
-    let mut temporary = path.as_os_str().to_os_string();
-    temporary.push(".tmp");
-    let temporary = PathBuf::from(temporary);
-    fs::write(&temporary, text.as_bytes())?;
-    fs::rename(&temporary, path)?;
-    Ok(())
+    catalog_tool::package::atomic_write(path, |file| {
+        file.write_all(text.as_bytes())?;
+        Ok(())
+    })
+    .map_err(|error| match error.downcast::<io::Error>() {
+        Ok(error) => HarnessError::Io(*error),
+        Err(error) => HarnessError::invalid(error.to_string()),
+    })
 }
 
 /// Snapshot services array, already validated by the caller.
@@ -217,3 +216,6 @@ fn service_library(first: char, services: &[Value]) -> Result<String, HarnessErr
     }
     Ok(format!("{}\n", lines.join("\n")))
 }
+
+#[cfg(test)]
+mod atomic_tests;

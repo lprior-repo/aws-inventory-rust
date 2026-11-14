@@ -12,6 +12,7 @@ name = "inventory-harness"
 path = "src/main.rs"
 
 [dependencies]
+catalog-tool = { path = "../catalog-tool" }
 serde_json.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
@@ -26,7 +27,6 @@ toml.workspace = true
 zip.workspace = true
 
 [dev-dependencies]
-catalog-tool = { path = "../catalog-tool" }
 tempfile = "3.27.0"
 
 [lints]

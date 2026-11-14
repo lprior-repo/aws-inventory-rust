@@ -7,7 +7,7 @@ use std::path::Path;
 
 use zip::{DateTime, ZipArchive};
 
-use super::{file_sha256, package, sha256_hex};
+use super::{package, sha256_hex};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -105,7 +105,7 @@ fn given_tree_with_exclusions_when_packaged_then_payload_and_manifest_are_exact(
     assert_eq!(manifest, expected_manifest(tree.path())?);
     assert_eq!(receipt.files, 5);
     assert_eq!(receipt.bytes, fs::metadata(&destination)?.len());
-    assert_eq!(receipt.sha256, file_sha256(&destination)?);
+    assert_eq!(receipt.sha256, sha256_hex(&fs::read(&destination)?));
     assert_eq!(entry_names(&destination)?, expected_entry_names());
     for name in INCLUDED {
         assert_eq!(
