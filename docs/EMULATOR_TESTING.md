@@ -28,8 +28,10 @@ The resource types exercise different providers through the same two Cloud Contr
 
 The current source and binary pin is the latest stable upstream release,
 v1.0.348. Its downloaded package checksum and detached AWS signature were
-verified during the dependency upgrade. The universal capture described below
-is a separate runtime observation, not full integration-suite acceptance.
+verified during the dependency upgrade. The coordinator's standalone live
+gate passes all six scenarios; see [HARNESS.md](HARNESS.md#current-standalone-live-gate-on-emulator-10348)
+for its command and scope. The separate authenticated embedded gate also passes
+both scenarios; its command and compatibility constraint are in the same guide.
 
 | Item | Value |
 | --- | --- |
@@ -62,8 +64,8 @@ older set; the complete partition also remains unchanged (1,291 attempted,
 999 succeeded, 292 unsupported, 0 failed). The new fixture includes capture
 provenance and binary/report/database SHA-256 values. See
 [HARNESS.md](HARNESS.md#current-universal-capture-on-emulator-10348) for the
-command and isolation details. This is not a full six-scenario live-suite pass
-or embedded-mode verification.
+command and isolation details. This manual capture alone does not establish
+full-suite or embedded-mode acceptance.
 
 The reproducible commands below use `/tmp/aws-inventory-emulator`. Choose a filesystem with sufficient free space for the clone, downloaded package and extracted executable; these paths are examples, not required workspace locations.
 

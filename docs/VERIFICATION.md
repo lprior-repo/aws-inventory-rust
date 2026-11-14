@@ -1,12 +1,12 @@
 # Verification and delivery boundaries — 0.6.0
 
-> Status: Historical evidence. It is the verification record of the baseline
-> collector, version 0.6.0; the counts below were recorded on 2026-11-13 and
-> the test suites have not been re-run since commit `b5332e8` (ROADMAP M0.2).
+> Status: Historical baseline evidence for collector version 0.6.0.
+> The counts below precede the dependency refresh. Current package gates are
+> recorded in [ROADMAP](ROADMAP.md), and current runtime gates in [HARNESS](HARNESS.md).
 > Links into `artifacts/` point to an ignored local directory and do not resolve
 > in a clone. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
 
-## Current development tree (2026-11-13)
+## Historical development tree (earlier 2026-11-13)
 
 - **781 Rust tests passed, zero failures, 15 ignored** across the workspace
   (`cargo test --workspace --all-targets`).

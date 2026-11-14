@@ -53,6 +53,22 @@ catalog digests are resolved against.
 | Delivery verification | `scripts/emulator/verify_delivery.py` (477) | not started | — |
 | Mutation gate | `scripts/mutation/*.py` (3,688) | not started | — |
 
+### Current standalone live gate on emulator 1.0.348
+
+The coordinator built the collector and ran all six authenticated scenarios
+against the verified 1.0.348 executable: **6 passed, 0 failed** (56.85 s).
+These cover seeded S3, SNS pagination, all native services, all 421 reviewed
+Cloud Control types, all universal types, and combined native/universal scans.
+Each scenario owns its emulator process and uses its credentials and CA.
+
+```sh
+cargo build --bin aws-inventory --features aws --locked -j1
+INVENTORY_EMULATOR_BINARY="$(pwd)/.local/runtime-1.0.348/unpacked/opt/aws-emulator/bin/aws-emulator" cargo test -p inventory-harness --test emulator_live --locked -- --ignored --test-threads=1
+```
+
+The historical table and separate universal capture below remain distinct
+evidence. Embedded-mode execution has its own passing gate below.
+
 ### Historical live coverage on emulator 1.0.336
 
 The table below preserves results captured on 1.0.336 (`f5155815`), not the
@@ -182,15 +198,26 @@ build with a `target/` footprint on the order of 100 GB. Ordinary
 `cargo test --workspace` must never pay that cost.
 
 ```sh
-cd harness/embedded && cargo test        # explicit, heavy build
+CARGO_PROFILE_DEV_DEBUG=0 CARGO_PROFILE_TEST_DEBUG=0 cargo test --manifest-path harness/embedded/Cargo.toml --test s3_round_trip --locked -j1 -- --test-threads=1
 ```
 
 Pinned to stable upstream release **v1.0.348**, commit
 `7461ab1bbe540afe8063ce03ee5477ebb649df48` — the same commit as
 `scripts/emulator/upstream.json` (package 1.0.348), so the in-process and
-standalone fixtures cannot drift apart. The upstream embedded facade source
-is unchanged from 1.0.336; this is API inspection, not runtime verification.
-Both harnesses require execution against the new pin before acceptance.
+standalone fixtures cannot drift apart. The coordinator executed the command
+above: **2 passed, 0 failed**. Authentication was enabled; the tests prove a
+created bucket's exact list identity and isolation between emulator instances.
+Both standalone and embedded runtime gates have now passed on this pin.
+
+The dependency refresh exposed an upstream public-type constraint:
+RustPython 0.6 uses `malachite-bigint` 0.12, while pymath 0.2 declares `"0"`
+and otherwise resolves 0.14. Their `BigInt` types are incompatible. The
+committed lockfile unifies both at 0.12; no registry source is patched.
+After a deliberate full lockfile refresh, preserve that compatibility with:
+
+```sh
+cargo update --manifest-path harness/embedded/Cargo.toml -p malachite-bigint@0.14.0 --precise 0.12.0
+```
 
 The frozen legacy Python runner and snapshot scripts still hardcode 1.0.336;
 they are not a current-release verification path. Use the Rust harness for

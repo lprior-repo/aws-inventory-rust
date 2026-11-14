@@ -39,9 +39,9 @@ pass. The universal partition is pinned literally against the pinned emulator:
 1,881 schema types, 1,291 list-capable, 410 parent-required, 180 without list
 handlers, and 999 listed / 292 provider-unsupported / 0 failed.
 
-These results were recorded on that date. The test suites have not been re-run
-since commit `b5332e8` (ROADMAP M0.2), and `cargo fmt --all --check` now
-reports drift that ROADMAP M0.3 still has open.
+These figures are historical baselines, not dependency-refresh results.
+Current package verification is in `docs/ROADMAP.md`; upgraded-emulator
+commands and results are in `docs/HARNESS.md`.
 
 The completed v0.6 local run remains recorded for release context: it passed
 **530 Rust tests with zero failures and zero
@@ -155,8 +155,10 @@ implemented.
 
 The complete official AWS Emulator source checkout is pinned to commit
 `7461ab1bbe540afe8063ce03ee5477ebb649df48` (release 1.0.348). Its package hash
-and AWS signature are verified; runtime integration on this pin is not yet
-verified. Existing 1.0.336 receipts and fixtures remain historical evidence.
+and AWS signature are verified; all six authenticated standalone live scenarios
+and both authenticated embedded scenarios pass on this pin. Existing 1.0.336
+receipts and fixtures remain historical; current commands and dependency
+compatibility details are in `docs/HARNESS.md`.
 The native graph installer pins Redis 8.10.3 and FalkorDB 6.0.4 with SHA-256
 checksums. Both are local synthetic fixtures.
 

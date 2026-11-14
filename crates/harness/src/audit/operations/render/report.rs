@@ -250,7 +250,7 @@ fn exercised(out: &mut String, report: &CoverageReport) {
             row.service,
             row.module,
             row.api_operation,
-            row.status.as_deref().unwrap_or("not recorded"),
+            *row.status.as_deref().get_or_insert("not recorded"),
             row.evidence.join(", ")
         ));
     }

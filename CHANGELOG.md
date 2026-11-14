@@ -12,6 +12,11 @@
   source of the SQLite schema version and `aws-inventory catalog` reports it
   (it reported a stale 12); both packagers exclude `.local`; `scripts/verify.sh`
   no longer invokes Python and runs the function-size check.
+- M0.2/M0.3 verification after the dependency upgrade: the all-target workspace
+  check and the full `bash scripts/verify.sh` gate pass. The gate ran with
+  neither Python nor Python3 on `PATH`: source/function size guards, formatting,
+  generated-data checks, split SDK-facade checks, Clippy, tests, doctests and
+  the final build all passed.
 - Project agents in `.omp/agents/` include the local GPU builders and
   `aws-build-sol` (ChatGPT Sol). Builders implement independent packages in
   parallel; the coordinator owns serialized compilation, formatting and tests.
@@ -28,6 +33,14 @@
   `catalog-tool models report`; commit `catalog/aws-models.report` and support
   exact `--write`/`--check` workflows. The actual pinned source matches all
   expected model totals; 43 catalog-tool tests and all-target Clippy pass.
+  Rust footprint: 1,494 lines added, 4 deleted.
+- M3.1a (`5910de1`): canonical CBOR records through minicbor, validated scalar
+  types, allocation-free borrowed lookup/iteration, generic framing validation,
+  32-container ownership limits and a writer capped at 16 MiB before copying.
+  122 core tests and all-target Clippy pass; independent reviews are closed.
+  Rust footprint: 2,808 added including tests; 941 production physical lines,
+  above the 500-line reporting target because validation and typed errors are
+  retained. Content hashing and format version remain M3.1b.
 - Every document now carries a status line (plan, kept and extended, baseline
   being replaced, or historical evidence) and `docs/README.md` indexes them by
   class. Statements the owner's decisions superseded are marked with the
@@ -45,6 +58,7 @@
   `cmdb-view` still parses one JSON export and `cmdb-ui` still renders a
   synthetic fixture. In-process SQLite/FalkorDB reads and UI integration remain
   planned in M6.2/M6.3; unrelated transitive HTTP dependencies are retained.
+  Rust footprint: 1,528 lines deleted.
 - Refresh external Rust dependencies to the latest non-yanked stable registry
   releases, including all 437 existing exact-pinned AWS SDK crates; add
   `minicbor` 2.3.1 with `std` for `inventory-core` and regenerate all three Cargo
@@ -60,7 +74,9 @@
 - Pair embedded and standalone AWS Emulator pins at stable `v1.0.348`, commit
   `7461ab1bbe540afe8063ce03ee5477ebb649df48`. Verify the downloaded package's
   detached AWS signature and SHA-256. All six authenticated standalone live
-  tests pass on this pin; the embedded runtime has not been executed. Keep
+  tests and both authenticated embedded tests pass on this pin. Unify the embedded
+  BigInt dependency at 0.12 after the initial upstream 0.12/0.14 type mismatch;
+  no registry source was patched. Keep
   1.0.336 evidence historical and add the actual 1.0.348 universal capture:
   1,291 attempted, 999 listed, 292 unsupported, zero failed.
   Legacy baseline compatibility fixes retain SNS's authoritative provider

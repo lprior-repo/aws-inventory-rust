@@ -101,8 +101,16 @@ Status from the coordinator, 2026-11-13.
   benchmark at the owner's prompting; CBOR was faster to build and smaller, so
   the own format was deleted before it landed. It and the benchmark are kept
   on the branch `evidence/o1-record-codec`.
-- M3.1a is in final CBOR contract repair with ChatGPT Sol; the coordinator
-  runs its checks in the serialized Cargo lane.
+- **M3.1a is done**, `5910de1`: `cargo test -p inventory-core --tests --locked`
+  passes 122 tests; all-target Clippy passes. Encoding is canonical, capped
+  before copying beyond 16 MiB, and bounded to 32 containers. Borrowed lookup
+  skips generic unselected values without allocation; malformed framing and
+  selected unsupported forms retain distinct errors. Both reviews are closed.
+  Rust footprint: 2,808 added, none deleted, including tests; production is
+  941 physical lines, above the 500-line stop/report target. Typed domain
+  errors, generic framing validation and allocation-free borrowed skipping
+  account for the overage; byte parsing remains minicbor's responsibility.
+  M3.1b (content hashing and format version) remains open.
 
 Packages that can run at the same time: M1 with M3.1 and M4.3; M2.1a to M2.1c,
 M2.2 and M2.3 with each other; M2.4a with M2.4b; the M5 services
@@ -114,8 +122,8 @@ and M9 with each other.
 | ID | Work | Needs | Exit evidence |
 | --- | --- | --- | --- |
 | M0.1 | Commit the working tree as the baseline. **Done**, `78d3ac2`. | | `git log` |
-| M0.2 | All targets compile. **Done**, `b5332e8`: the Cloud Control parent tests that failed at `78d3ac2` were repaired. The test suites themselves have not been re-run since. | M0.1 | `cargo check --workspace --all-targets` is clean |
-| M0.3 | One gate command, `scripts/verify.sh`: format, clippy, tests, file size (`scripts/check-source-size.sh`) and function size (`scripts/check-function-size.sh`). It must not invoke Python. **Partly done**, `bbd0821`: the script has no Python and runs both size checks. Still open: `cargo fmt --all --check` reports drift in six Cloud Control test files and `crates/engine/tests/parent_catalog_upgrade.rs`, and the whole script has not been run end to end. | M0.2 | `bash scripts/verify.sh` exits 0 with a `PATH` that has no `python` or `python3`; `grep -ci python scripts/verify.sh` prints 0 |
+| M0.2 | All targets compile. **Done**, `b5332e8`; reverified after the dependency upgrade with the current workspace tests and final gate. | M0.1 | `cargo check --workspace --all-targets --locked -j1` passes |
+| M0.3 | One gate command, `scripts/verify.sh`: format, clippy, tests, file size (`scripts/check-source-size.sh`) and function size (`scripts/check-function-size.sh`). **Done**: the full gate passes with a Python-free `PATH`; 775 Rust source files pass the 300-line limit, and the function-size guard passes. Generated-data checks, application all-target/all-feature checks, the separate minimal SDK-catalog check, Clippy, tests, doctests and the final build pass. | M0.2 | `bash scripts/verify.sh` exits 0 with no `python` or `python3` on `PATH`; `grep -ci python scripts/verify.sh` prints 0 |
 | M0.4 | The catalog command reports the store's schema version. **Done**, `bbd0821`: `inventory_engine::store::SCHEMA_VERSION` is the single source; the engine migration tests bind it to the real `PRAGMA user_version`; `tests/cli_properties.rs` pins 13 through the binary. | M0.2 | `aws-inventory catalog` prints `"sqlite_schema_version": 13`; no literal schema number remains in `src/catalog.rs` |
 | M0.5 | Regenerate `MANIFEST.sha256` from tracked files only. **Partly done**, `bbd0821`: both packagers now exclude `.local`. Still open: the file itself has not been regenerated (the working copy has 82,487 lines, 81,554 under `.local/`); do it when no worker has uncommitted files in the tree. | M0.2 | Every path in the file is in `git ls-files`; none starts with `.local/` |
 | M0.6 | Push `main`. **Done**, `b5332e8`. | M0.2 | `git status -sb` shows no divergence |
@@ -237,7 +245,7 @@ Crates: `inventory-engine`, `cmdb-view`, `cmdb-ui`. There is no HTTP read API
 | M6.2 | `cmdb-view` becomes the in-process query layer (V32). It opens the SQLite file read-only and returns binary record and edge pages with cursors and limits. Its traversal calls (neighbors, path, blast radius) run bounded Cypher on FalkorDB and return keys (V14). | M3.2 for tables, M6.1 for traversal | No JSON export file is involved and `cmdb-view` no longer depends on `serde_json`; a query over a swept emulator account returns the stored records while a sweep is writing; traversal over a seeded graph returns exactly the seeded neighbors and paths; with FalkorDB stopped the table calls still answer and the traversal calls return a distinct "graph unavailable" result |
 | M6.3 | `cmdb-ui` calls `cmdb-view` in process, off the UI thread; table and detail on real records; the DAG opens on the hierarchy account, region, service, resources, and expanding a node shows what it connects to (V28); level of detail. The UI shows and does not edit. | M6.2 | A sweep of the emulator opens in the UI; the counts shown at each hierarchy level equal SQL counts; expanding a seeded resource shows exactly its seeded neighbors; frame times are recorded for the largest generated graph the laptop holds; the UI process opens no listening socket |
 | M6.4 | One documented path from an empty directory to the DAG. | M6.3, M5.7 | The walkthrough runs as written, by an agent that has read nothing else |
-| M6.5 | Delete the HTTP read API (V32): `crates/cmdb-api`, its workspace member entry, and the workspace dependencies `axum`, `tower` and `tower-http`, which nothing else uses. It can land at any time. | M0.2 | The directory is gone; `Cargo.toml` names none of the three dependencies; `cargo metadata` lists no `cmdb-api`; `Cargo.lock` has no `axum`; `cargo check --workspace --all-targets` and the gate pass |
+| M6.5 | Delete the HTTP read API (V32). **Done**, `7122e07`, `a228731`: removed `crates/cmdb-api`, its workspace member, unused HTTP dependencies and operational references; retained the exact-tag-map regression through the public `cmdb-view::Snapshot` reader. | M0.2 | Directory absent; no `axum`, `tower` or `tower-http` workspace dependency; no `cmdb-api` package in `cargo metadata`; no `axum` in `Cargo.lock`. `cargo check --workspace --all-targets --locked -j1` and the Python-free full gate pass |
 
 ## M7 — Continuous on a laptop
 

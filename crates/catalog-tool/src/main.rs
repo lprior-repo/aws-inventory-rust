@@ -83,7 +83,9 @@ fn models_arguments(
     let source = flags
         .source
         .map_or_else(|| root.join(".local/aws-models"), PathBuf::from);
-    let mode = flags.mode.unwrap_or(smithy::ReportMode::Print);
+    let Some(mode) = flags.mode else {
+        return Ok(smithy::run(&root, &source, smithy::ReportMode::Print)?);
+    };
     Ok(smithy::run(&root, &source, mode)?)
 }
 
