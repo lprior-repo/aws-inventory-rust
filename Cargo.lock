@@ -11375,6 +11375,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "aws-wire"
+version = "0.6.0"
+dependencies = [
+ "thiserror",
+]
+
+[[package]]
 name = "base16ct"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

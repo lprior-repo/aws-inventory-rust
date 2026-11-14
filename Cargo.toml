@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/core", "crates/engine", "crates/aws", "crates/sdk-catalog", "crates/harness", "crates/sdk-operations", "crates/catalog-tool", "crates/cmdb-bench", "crates/cmdb-ui", "crates/cmdb-view"]
+members = ["crates/core", "crates/engine", "crates/aws", "crates/aws-wire", "crates/sdk-catalog", "crates/harness", "crates/sdk-operations", "crates/catalog-tool", "crates/cmdb-bench", "crates/cmdb-ui", "crates/cmdb-view"]
 resolver = "3"
 
 [workspace.package]
