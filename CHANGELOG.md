@@ -58,6 +58,13 @@
   customer content, are billed, or have side effects). A class is a
   candidate: nothing is callable without a reviewed service overlay. The
   gate runs `classes --check`. Rust lines: 1,869 added, 11 deleted.
+- M1.6a: `catalog-tool models endpoints [--check | --write]` evaluates every
+  model's endpoint rule set and writes `catalog/aws-endpoints.report`: URL
+  template, signing name and signing region for 436 services (28 global,
+  401 regional, 5 needing an overlay, 2 unsupported), proven on the 4,109
+  published endpoint cases in scope, with three explicit per-region
+  exceptions. The gate runs `models endpoints --check`. Rust lines: 4,138
+  added, 2 deleted.
 - M1.5a: `catalog_tool::names`, the rule that turns a type name into a SQL
   table name (`AWS::EC2::VPCDHCPOptionsAssociation` is
   `aws_ec2_vpc_dhcp_options_association`), with the reviewed exceptions in

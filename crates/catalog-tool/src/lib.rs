@@ -4,6 +4,7 @@
 //! using the same implementations as the `catalog-tool` binary.
 
 pub mod classes;
+pub mod endpoints;
 pub mod names;
 pub mod package;
 pub mod smithy;

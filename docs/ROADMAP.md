@@ -162,6 +162,35 @@ Status from the coordinator, 2026-11-13.
   deleted. Still open in M1.5: the type-to-kind map and `catalog/kinds.tsv`
   (needs M1.4). Its gate must compare against the committed file, because
   adding an exception after a kind is published renames its table.
+- **M1.6a is done: every service's endpoint is derived from its own rule
+  set and proven on the models' own cases.** `catalog-tool models endpoints
+  [--check | --write]` evaluates each model's endpoint rules with a small
+  interpreter (seven of the standard functions; the rest are typed
+  "unsupported" and reached only behind request-time parameters) and writes
+  `catalog/aws-endpoints.report`. Of the 14,115 published endpoint cases,
+  4,109 are in this package's scope (a commercial region, FIPS and
+  dual-stack off, no other parameter) and all 4,109 pass; the other 10,006
+  are counted by exclusive reason (other partition 5,631, FIPS 1,809,
+  dual-stack 908, custom endpoint 844, operation inputs 538, other
+  parameters 276) and not executed. Per service the report gives a URL
+  template, signing name and signing region: 28 global, 401 regional, 5
+  needing an overlay (`acm`, `cloudfront-keyvaluestore` and `neptune-graph`
+  need a request parameter; `simpledbv2` and `eventbridgev2` have a template
+  no published case confirms), 2 unsupported (no SigV4: `codecatalyst`,
+  `account-access-runtime`). Every passing case is compared with its
+  service's template; the three that differ are explicit exception rows
+  (`health` and `sts` at `aws-global`, `simpledbv2` at `us-east-1`). A Black
+  Hat review found the first version published `sdb.{region}` although the
+  model's own case says `sdb.amazonaws.com`; that check now exists because
+  of it. `cargo test -p catalog-tool --locked` passes 302 tests; the gate
+  runs `models endpoints --check`. Black Hat: five findings, three closed
+  and confirmed against 99 expectations in 12 services, one closed by
+  amending the scope (skipped cases are executed by the wire engine's
+  request-time resolution, not here), one deferred with the shared reader
+  bounds; test review: 13 gaps and 5 later survivors, closed. Rust lines:
+  4,138 added, 2 deleted; production 1,783 against a 1,200 estimate. Still
+  open in M1.6: overlay templates for the five services and storing the
+  result in the binary catalog.
 - **O1 is settled as V34**: records are CBOR through the `minicbor` library.
   The coordinator first wrote its own format (1,054 lines), then ran the codec
   benchmark at the owner's prompting; CBOR was faster to build and smaller, so

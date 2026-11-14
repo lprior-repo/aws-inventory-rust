@@ -5,9 +5,9 @@ mod parent;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use catalog_tool::{classes, package, smithy};
+use catalog_tool::{classes, endpoints, package, smithy};
 
-const USAGE: &str = "usage:\n  catalog-tool parent-candidates [--root <dir>] [--write | --check]\n  catalog-tool package --destination <zip path> [--root <dir>]\n  catalog-tool models report [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool models fields [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool classes [--source <dir>] [--root <dir>] [--check | --write]";
+const USAGE: &str = "usage:\n  catalog-tool parent-candidates [--root <dir>] [--write | --check]\n  catalog-tool package --destination <zip path> [--root <dir>]\n  catalog-tool models report [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool models fields [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool models endpoints [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool classes [--source <dir>] [--root <dir>] [--check | --write]";
 
 fn main() -> ExitCode {
     match run(std::env::args().skip(1).collect()) {
@@ -118,6 +118,7 @@ fn run_models(
     match command {
         "report" => Ok(smithy::run(root, source, mode)?),
         "fields" => Ok(smithy::fields(root, source, mode)?),
+        "endpoints" => Ok(endpoints::run(root, source, mode)?),
         other => Err(format!("unexpected '{other}'; {USAGE}").into()),
     }
 }
