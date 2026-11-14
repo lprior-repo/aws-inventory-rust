@@ -3,7 +3,6 @@
 //! The shipped collector never depends on this crate. Every module here
 //! reproduces a previously Python-held development contract in Rust so the
 //! verification path and the application share one toolchain.
-#![deny(missing_docs)]
 
 pub mod assertions;
 pub mod audit;

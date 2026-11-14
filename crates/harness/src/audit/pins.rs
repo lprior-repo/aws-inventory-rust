@@ -216,4 +216,3 @@ pub fn dependency_evidence(
     let evidence = provider_evidence(provider_source(matrix)?, &versions)?;
     Ok((rows, evidence))
 }
-

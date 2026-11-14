@@ -115,17 +115,6 @@ fn parse_seed_cloud_control(arguments: &[String]) -> Result<Command, HarnessErro
     Ok(Command::SeedCloudControl { prefix, count })
 }
 
-fn flag_value<'a>(
-    remaining: &mut impl Iterator<Item = &'a String>,
-    flag: &str,
-) -> Result<&'a str, HarnessError> {
-    remaining
-        .next()
-        .map(String::as_str)
-        .ok_or_else(|| HarnessError::invalid(format!("{flag} requires a value; {USAGE}")))
-}
-
-
 /// Bounded `--flag value` pairs; a flag outside the command's list, or given twice, is rejected.
 struct Options {
     pairs: Vec<(String, String)>,

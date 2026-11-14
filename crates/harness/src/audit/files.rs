@@ -1,7 +1,7 @@
 //! Bounded byte, digest and path helpers shared by both audit commands.
 
 use std::fs;
-use std::path::{Component, Path, PathBuf};
+use std::path::Path;
 
 use serde_json::Value;
 
@@ -60,63 +60,6 @@ pub fn relative_slash(root: &Path, path: &Path) -> Result<String, HarnessError> 
     Ok(slash_path(relative))
 }
 
-/// Resolve a possibly nonexistent output path without requiring the file.
-///
-/// Existing components are canonicalized; the remainder is normalised
-/// lexically, matching `Path.resolve()` on a path that is about to be created.
-pub fn resolve_target(path: &Path) -> Result<PathBuf, HarnessError> {
-    if let Ok(resolved) = fs::canonicalize(path) {
-        return Ok(resolved);
-    }
-    let absolute = absolute_path(path)?;
-    Ok(canonical_ancestor(&lexical_normalise(&absolute)))
-}
-
-/// Join a relative path onto the working directory.
-fn absolute_path(path: &Path) -> Result<PathBuf, HarnessError> {
-    if path.is_absolute() {
-        return Ok(path.to_path_buf());
-    }
-    Ok(std::env::current_dir()?.join(path))
-}
-
-/// Drop `.` components and resolve `..` lexically.
-fn lexical_normalise(absolute: &Path) -> PathBuf {
-    let mut normalised = PathBuf::new();
-    for component in absolute.components() {
-        match component {
-            Component::ParentDir => {
-                normalised.pop();
-            }
-            Component::CurDir => {}
-            other => normalised.push(other.as_os_str()),
-        }
-    }
-    normalised
-}
-
-/// Canonicalize the longest existing prefix and re-append the tail.
-fn canonical_ancestor(normalised: &Path) -> PathBuf {
-    let mut existing = normalised;
-    let mut tail: Vec<std::ffi::OsString> = Vec::new();
-    loop {
-        if let Ok(base) = fs::canonicalize(existing) {
-            let mut resolved = base;
-            for part in tail.iter().rev() {
-                resolved.push(part);
-            }
-            return resolved;
-        }
-        match (existing.parent(), existing.file_name()) {
-            (Some(parent), Some(name)) => {
-                tail.push(name.to_os_string());
-                existing = parent;
-            }
-            _ => return normalised.to_path_buf(),
-        }
-    }
-}
-
 /// Render a JSON scalar with Python's `str()` semantics.
 pub fn python_str(value: &Value) -> String {
     match value {
@@ -126,12 +69,6 @@ pub fn python_str(value: &Value) -> String {
         Value::String(text) => text.clone(),
         other => serde_json::to_string(other).unwrap_or_default(),
     }
-}
-
-/// Decode a source file, refusing invalid UTF-8 the way Python's `decode` does.
-pub fn decode_utf8(bytes: Vec<u8>, path: &Path) -> Result<String, HarnessError> {
-    String::from_utf8(bytes)
-        .map_err(|_| HarnessError::invalid(format!("{}: source is not UTF-8", path.display())))
 }
 
 /// Borrow a JSON object member with a concrete reason on absence.
@@ -152,15 +89,5 @@ pub(crate) fn text_field<'a>(value: &'a Value, key: &str) -> Result<&'a str, Har
 pub(crate) fn array_field<'a>(value: &'a Value, key: &str) -> Result<&'a Vec<Value>, HarnessError> {
     value_field(value, key)?
         .as_array()
-        .ok_or_else(|| HarnessError::invalid(format!("invalid {key}")))
-}
-
-/// Borrow an object member.
-pub(crate) fn object_field<'a>(
-    value: &'a Value,
-    key: &str,
-) -> Result<&'a serde_json::Map<String, Value>, HarnessError> {
-    value_field(value, key)?
-        .as_object()
         .ok_or_else(|| HarnessError::invalid(format!("invalid {key}")))
 }

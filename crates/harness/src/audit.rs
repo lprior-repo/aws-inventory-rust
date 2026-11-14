@@ -1,4 +1,3 @@
-
 mod bind;
 mod binding;
 mod coverage;
@@ -16,7 +15,6 @@ mod pins;
 mod refresh;
 mod rollup;
 mod validate;
-
 
 pub use bind::bind_emulator;
 pub use coverage::apply_verification;

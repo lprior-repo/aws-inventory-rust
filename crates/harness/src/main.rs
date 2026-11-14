@@ -3,7 +3,7 @@
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use inventory_harness::{HarnessError, assertions, audit, catalog, install, seed, snapshot};
+use inventory_harness::{HarnessError, assertions, catalog, install, seed, snapshot};
 
 mod cli;
 
