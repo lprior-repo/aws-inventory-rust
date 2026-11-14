@@ -56,7 +56,9 @@ fn given_only_requested_name_listed_when_reported_then_provider_id_is_missing() 
     // Then the report fails rather than falling back to that name.
     assert_eq!(
         error.as_deref(),
-        Some("seeded topic inventory-page-topic-0 (opaque-provider-id) is not listed by the emulator")
+        Some(
+            "seeded topic inventory-page-topic-0 (opaque-provider-id) is not listed by the emulator"
+        )
     );
 }
 
