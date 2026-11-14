@@ -37,6 +37,11 @@
   script `scripts/protocol-tests/convert.sh` and provenance digests. The
   conversion uses the released Smithy CLI and `jq`; it is not part of the
   build or the gate.
+- M3.1b: `Record::content_hash` (BLAKE3 through the `blake3` library) with
+  field-ID exclusion paths, `FORMAT_VERSION = 1`, the borrowed validated view
+  `MapRef::from_bytes`, and typed reads (`ValueKind`, `MapRef::get_typed`).
+  The hash is computed in one pass without allocation. 50 new tests. Rust
+  lines: 1,350 added, 19 deleted.
 - Project agents in `.omp/agents/` include the local GPU builders and
   `aws-build-sol` (ChatGPT Sol). Builders implement independent packages in
   parallel; the coordinator owns serialized compilation, formatting and tests.

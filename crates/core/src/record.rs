@@ -30,6 +30,8 @@
 mod containers;
 mod encode;
 mod error;
+mod exclusions;
+mod hash;
 mod iter;
 mod readers;
 mod skip;
@@ -40,12 +42,16 @@ mod value;
 
 pub use containers::{ListRef, MapRef};
 pub use error::RecordError;
-pub use value::{FieldId, Float, Key, KeyRef, Time, Value, ValueRef};
+pub use exclusions::Exclusions;
+pub use hash::ContentHash;
+pub use value::{FieldId, Float, Key, KeyRef, Time, Value, ValueKind, ValueRef};
 
 /// Maximum record size: 16 MiB, inclusive.
 pub const MAX_RECORD_BYTES: usize = 16_777_216;
 /// Maximum nested containers, including the root map.
 pub const MAX_DEPTH: usize = 32;
+/// Record encoding format version. Version 1 is the bare CBOR root map.
+pub const FORMAT_VERSION: u8 = 1;
 
 /// Owned bytes containing exactly one structurally valid CBOR map.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -65,22 +71,7 @@ impl Record {
     /// # Errors
     /// Rejects oversized, malformed, non-map, or trailing input.
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, RecordError> {
-        if bytes.len() > MAX_RECORD_BYTES {
-            return Err(RecordError::SizeLimit);
-        }
-        let mut decoder = minicbor::Decoder::new(&bytes);
-        if !matches!(
-            decoder.datatype()?,
-            minicbor::data::Type::Map | minicbor::data::Type::MapIndef
-        ) {
-            return Err(RecordError::NotMap);
-        }
-        structure::validate(&mut decoder)?;
-        if decoder.position() != bytes.len() {
-            return Err(RecordError::NotOneItem {
-                offset: decoder.position(),
-            });
-        }
+        validate(&bytes)?;
         Ok(Self(bytes))
     }
     /// Borrow the encoded bytes.
@@ -95,6 +86,19 @@ impl Record {
     pub fn root(&self) -> MapRef<'_> {
         MapRef { bytes: &self.0 }
     }
+
+    /// Compute the BLAKE3 content hash, excluding the given field-ID paths.
+    /// Two records that differ only inside excluded entries, or in whether an
+    /// excluded entry is present, have equal hashes. Equal values give equal
+    /// hashes whatever integer widths their bytes use; key order is as stored.
+    /// # Errors
+    /// Returns a reader error for unsupported forms or `DepthLimit` past 32.
+    /// The value of an excluded entry is still read once: an unsupported
+    /// scalar there is an error, while the inside of an excluded container
+    /// is skipped unread.
+    pub fn content_hash(&self, exclusions: &Exclusions) -> Result<ContentHash, RecordError> {
+        hash::compute(self, exclusions)
+    }
 }
 
 fn container_depth(depth: usize) -> Result<usize, RecordError> {
@@ -102,4 +106,24 @@ fn container_depth(depth: usize) -> Result<usize, RecordError> {
         .checked_add(1)
         .filter(|next| *next <= MAX_DEPTH)
         .ok_or(RecordError::DepthLimit)
+}
+
+fn validate(bytes: &[u8]) -> Result<(), RecordError> {
+    if bytes.len() > MAX_RECORD_BYTES {
+        return Err(RecordError::SizeLimit);
+    }
+    let mut decoder = minicbor::Decoder::new(bytes);
+    if !matches!(
+        decoder.datatype()?,
+        minicbor::data::Type::Map | minicbor::data::Type::MapIndef
+    ) {
+        return Err(RecordError::NotMap);
+    }
+    structure::validate(&mut decoder)?;
+    if decoder.position() != bytes.len() {
+        return Err(RecordError::NotOneItem {
+            offset: decoder.position(),
+        });
+    }
+    Ok(())
 }

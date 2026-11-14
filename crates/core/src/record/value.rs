@@ -161,12 +161,50 @@ pub enum ValueRef<'a> {
     Map(MapRef<'a>),
 }
 
+/// The kind of a record value, without its content.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ValueKind {
+    /// CBOR null.
+    Null,
+    /// Boolean.
+    Bool,
+    /// Signed 64-bit integer.
+    Int,
+    /// Canonical 64-bit float.
+    Float,
+    /// UTF-8 text.
+    Text,
+    /// Uninterpreted bytes.
+    Bytes,
+    /// Timestamp.
+    Time,
+    /// Ordered sequence.
+    List,
+    /// Map.
+    Map,
+}
+
 impl ValueRef<'_> {
     /// Rebuild an owned value, refusing more than 32 nested containers.
     /// # Errors
     /// Returns a read error for unsupported forms or `DepthLimit` past 32 containers.
     pub fn to_value(&self) -> Result<Value, RecordError> {
         self.to_value_at_depth(0)
+    }
+
+    /// Return the value's kind without its content.
+    pub fn kind(&self) -> ValueKind {
+        match self {
+            Self::Null => ValueKind::Null,
+            Self::Bool(_) => ValueKind::Bool,
+            Self::Int(_) => ValueKind::Int,
+            Self::Float(_) => ValueKind::Float,
+            Self::Text(_) => ValueKind::Text,
+            Self::Bytes(_) => ValueKind::Bytes,
+            Self::Time(_) => ValueKind::Time,
+            Self::List(_) => ValueKind::List,
+            Self::Map(_) => ValueKind::Map,
+        }
     }
 
     fn to_value_at_depth(self, depth: usize) -> Result<Value, RecordError> {

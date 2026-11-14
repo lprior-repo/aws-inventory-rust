@@ -110,7 +110,23 @@ Status from the coordinator, 2026-11-13.
   941 physical lines, above the 500-line stop/report target. Typed domain
   errors, generic framing validation and allocation-free borrowed skipping
   account for the overage; byte parsing remains minicbor's responsibility.
-  M3.1b (content hashing and format version) remains open.
+- **M3.1b is done; M3.1 is complete.** `cargo test -p inventory-core --locked`
+  passes 172 tests, 50 of them new (`content_hash`, `record_evolution`).
+  `Record::content_hash(&Exclusions)` is BLAKE3 (the `blake3` library, 32
+  bytes) over one format-version byte followed by the record written again
+  with indefinite-length containers, so an excluded entry is dropped during
+  one pass with no buffer and no allocation; a path of field IDs is anchored
+  at the root, and lists and name-keyed entries do not add path steps. The
+  proof includes one record whose hash input is written out by hand, the
+  32/33 nesting bound for lists, maps and timestamps, and a record written
+  under one registry and read under a longer one. `FORMAT_VERSION = 1` is
+  the bare root map, so no byte is added to stored records; a later format
+  must begin with a CBOR tag, which version 1 readers reject. Also added,
+  for the catalog (M1.2c) and typed column reads (M3.2): the borrowed
+  validated view `MapRef::from_bytes`, `ValueKind` and `MapRef::get_typed`.
+  Independent code review: no findings; independent test review: four gaps,
+  all closed. Rust lines: 1,350 added, 19 deleted; production 326 added, 18
+  deleted.
 - **The M2 crate exists and its protocol oracle is in the tree.** `crates/aws-wire`
   is scaffolded (`ac75ec1`). Smithy's published protocol test suites are
   committed as complete JSON ASTs under

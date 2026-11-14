@@ -1,5 +1,5 @@
 //! Allocation-free, bounded container views.
-use super::{FieldId, KeyRef, RecordError, ValueRef, iter, readers, skip};
+use super::{FieldId, KeyRef, RecordError, ValueKind, ValueRef, iter, readers, skip};
 use minicbor::Decoder;
 use std::cmp::Ordering;
 
@@ -14,6 +14,14 @@ pub struct MapRef<'a> {
     pub(super) bytes: &'a [u8],
 }
 impl<'a> MapRef<'a> {
+    /// Validate borrowed bytes as one record without copying them.
+    /// # Errors
+    /// Exactly the errors of `Record::from_bytes`.
+    pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, RecordError> {
+        super::validate(bytes)?;
+        Ok(Self { bytes })
+    }
+
     /// Find a field, stopping once sorted keys pass it.
     /// # Errors
     /// Rejects unsupported keys or selected values.
@@ -43,6 +51,28 @@ impl<'a> MapRef<'a> {
             return Ok(None);
         };
         result
+    }
+
+    /// Look up a field and check its value kind.
+    /// # Errors
+    /// Returns `KindMismatch` if the field is present with a different kind.
+    pub fn get_typed(
+        self,
+        id: FieldId,
+        expected: ValueKind,
+    ) -> Result<Option<ValueRef<'a>>, RecordError> {
+        let Some(value) = self.get_field(id)? else {
+            return Ok(None);
+        };
+        let found = value.kind();
+        if found == expected {
+            return Ok(Some(value));
+        }
+        Err(RecordError::KindMismatch {
+            field: id,
+            expected,
+            found,
+        })
     }
     /// Iterate entries once, ending after the first error.
     /// # Errors

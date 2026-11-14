@@ -2,6 +2,8 @@
 use minicbor::data::Type;
 use std::error::Error;
 
+use super::{FieldId, ValueKind};
+
 /// A record operation failed; offsets are relative to the current borrowed view.
 #[derive(Clone, Copy, Debug, thiserror::Error, PartialEq, Eq)]
 pub enum RecordError {
@@ -71,6 +73,16 @@ pub enum RecordError {
     /// A non-writer minicbor encoding failure.
     #[error("in-memory CBOR encoding failed")]
     Encode,
+    /// An exclusion path is too short or too long.
+    #[error("exclusion path length {length} outside 1..=32")]
+    ExclusionPath { length: usize },
+    /// A field has a different value kind than expected.
+    #[error("field {} expected {expected:?}, found {found:?}", field.value())]
+    KindMismatch {
+        field: FieldId,
+        expected: ValueKind,
+        found: ValueKind,
+    },
 }
 
 impl From<minicbor::decode::Error> for RecordError {
@@ -99,5 +111,11 @@ impl From<minicbor::encode::Error<RecordError>> for RecordError {
             return Self::Encode;
         };
         error
+    }
+}
+
+impl From<minicbor::encode::Error<std::convert::Infallible>> for RecordError {
+    fn from(_: minicbor::encode::Error<std::convert::Infallible>) -> Self {
+        Self::Encode
     }
 }
