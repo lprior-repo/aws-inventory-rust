@@ -12582,13 +12582,18 @@ dependencies = [
  "aws-sdk-s3",
  "base16ct",
  "catalog-tool",
+ "httparse",
+ "minicbor",
  "regex",
+ "rustls-pki-types",
  "serde_json",
  "sha2",
  "sqlx",
  "tempfile",
  "thiserror",
  "tokio",
+ "tokio-rustls",
+ "tokio-util",
  "toml",
  "zip",
 ]
@@ -14227,6 +14232,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "48e13bd8c0e9365c43cfa5c9e8f9ad49d3c8444926c9aac819e0e4dc503c8fdf"
 dependencies = [
  "aws-lc-rs",
+ "log",
  "once_cell",
  "rustls-pki-types",
  "rustls-webpki",

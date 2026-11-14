@@ -40,6 +40,15 @@
   suppressing its diagnostic; this exception is documented at the macro.
   Catalog-tool documentation and the complete M0.7 gate remain open.
   Rust lines: 381 added, 149 deleted.
+- M4.3: bounded deterministic HTTP/1.1 fault proxy with all thirteen fault,
+  latency and rate-limit behaviors, TLS upstream forwarding, scoped replay,
+  keep-alive and supervised shutdown. Independent code and test reviews closed
+  after protocol, timing, scope and lifecycle repairs. All 52 proxy tests,
+  179 harness tests and seven explicitly enabled live emulator tests passed;
+  the live S3 test observes TLS forwarding and scheduled throttling.
+  Snapshot eviction is arrival-ordered; retained-log replay equality applies
+  before overflow. Unsupported `Expect` is rejected with 417 before body reads.
+  Rust lines: 4,909 added, none deleted; production 2,483.
 - `crates/aws-wire` is scaffolded, and Smithy's AWS protocol test suites
   (Smithy 1.75.0, seven protocols, 901 HTTP cases) are committed as JSON ASTs
   under `crates/aws-wire/tests/fixtures/protocol-tests/` with the conversion

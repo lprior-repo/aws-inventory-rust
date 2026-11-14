@@ -6,6 +6,7 @@
 //! built with `--features aws`. No Python, no prepared external stack.
 
 mod coverage;
+mod proxy;
 
 use std::error::Error;
 use std::io::{self, Read};

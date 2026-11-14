@@ -98,6 +98,16 @@ Status from the coordinator, 2026-11-13.
   emits an undocumented public function. Catalog-tool documentation and
   the complete workspace documentation gate remain open.
 
+- **M4.3 is done.** The seeded HTTP fault proxy supports every requested
+  fault, latency and per-scope rate limit, with bounded state and owned task
+  shutdown. Independent code and test reviews closed their findings after
+  protocol, timing and architecture repairs. All 52 proxy tests and 179
+  harness tests pass. All seven ignored live emulator tests were explicitly
+  enabled and passed, including S3 through the proxy's TLS upstream and a
+  scheduled throttle. Main integration also passes Clippy, the 52 proxy
+  tests and both size guards. Rust lines: 4,909 added, none deleted;
+  production 2,483, above the original estimate without omitting bounds.
+
 - **M1.1 is done**, as a git submodule and not as our own code. A local worker
   built lock, verify and fetch commands (1,181 lines); the coordinator found
   the stored digests were hashes of hashes, and the two reviewers found 14

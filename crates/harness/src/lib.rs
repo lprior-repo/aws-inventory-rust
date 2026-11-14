@@ -14,6 +14,7 @@ pub mod install;
 pub mod json;
 pub mod package;
 pub mod provenance;
+pub mod proxy;
 pub mod seed;
 pub mod snapshot;
 
