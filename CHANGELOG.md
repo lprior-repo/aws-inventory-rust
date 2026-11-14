@@ -50,6 +50,14 @@
 - M2.2a: `aws_wire::sign`, SigV4 request signing as a thin wrapper over the
   `aws-sigv4` library, proven with 37 of AWS's published test vectors. Rust
   lines: 1,270 added, none deleted.
+- M1.3a: `catalog-tool classes [--check | --write]` classifies all 19,641
+  model operations (enumerate 2,197, expand 2,940, denied 11,370,
+  unclassified 3,134) into `catalog/aws-classes.report`, using the must-deny
+  list `catalog/overlay/must-deny.txt` (85 entries, 70 of them
+  service-scoped `List`/`Describe` operations that return secrets or
+  customer content, are billed, or have side effects). A class is a
+  candidate: nothing is callable without a reviewed service overlay. The
+  gate runs `classes --check`. Rust lines: 1,869 added, 11 deleted.
 - M1.5a: `catalog_tool::names`, the rule that turns a type name into a SQL
   table name (`AWS::EC2::VPCDHCPOptionsAssociation` is
   `aws_ec2_vpc_dhcp_options_association`), with the reviewed exceptions in

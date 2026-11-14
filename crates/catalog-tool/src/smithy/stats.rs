@@ -7,7 +7,8 @@ use super::{
     model::{ModelFile, Shape, ShapeKind},
 };
 
-const READ_PREFIXES: [&str; 9] = [
+/// Operation-name prefixes that mark a read by name.
+pub(crate) const READ_PREFIXES: [&str; 9] = [
     "List", "Describe", "Get", "BatchGet", "Search", "Scan", "Query", "Lookup", "Select",
 ];
 
@@ -96,9 +97,16 @@ fn input_has_no_required(model: &ModelFile, operation: &Shape) -> bool {
         .and_then(|input| model.shapes.get(&input.target))
         .map(|shape| &shape.kind)
     {
-        Some(ShapeKind::Structure { members }) => members
-            .values()
-            .all(|member| !member.traits.contains_key("smithy.api#required")),
+        Some(ShapeKind::Structure { members }) => no_required(
+            members
+                .values()
+                .map(|member| member.traits.contains_key("smithy.api#required")),
+        ),
         _ => true,
     }
+}
+
+/// True when no member of an operation's input is required.
+pub(crate) fn no_required(mut required: impl Iterator<Item = bool>) -> bool {
+    !required.any(std::convert::identity)
 }

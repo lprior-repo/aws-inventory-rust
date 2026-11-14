@@ -12,6 +12,8 @@ mod totals;
 
 pub use fields::fields;
 pub use registry::{Error as RegistryError, Registry};
+pub(crate) use report::differences as report_differences;
+pub(crate) use stats::{READ_PREFIXES, no_required as input_has_no_required};
 
 use std::fs;
 use std::io::{self, Write};
@@ -152,6 +154,11 @@ fn write_stdout(text: &str) -> Result<(), Error> {
 }
 
 fn read_model_file(file: &Path) -> Result<model::ModelFile, Error> {
+    read_json(file)
+}
+
+/// Read one JSON file of at most 64 MiB into `T`.
+pub(crate) fn read_json<T: serde::de::DeserializeOwned>(file: &Path) -> Result<T, Error> {
     let metadata = fs::metadata(file).map_err(|source| io_error(file, source))?;
     if metadata.len() > MAX_FILE_SIZE {
         return Err(Error::FileTooLarge(file.to_path_buf()));
@@ -163,7 +170,8 @@ fn read_model_file(file: &Path) -> Result<model::ModelFile, Error> {
     })
 }
 
-fn find_model_files(models: &Path) -> Result<Vec<PathBuf>, Error> {
+/// Every `.json` file under `models`, sorted by path; symlinks are not followed.
+pub(crate) fn find_model_files(models: &Path) -> Result<Vec<PathBuf>, Error> {
     let mut pending = vec![models.to_path_buf()];
     let mut files = Vec::new();
     // Each real directory is removed once; symlinks are not followed.

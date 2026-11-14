@@ -37,7 +37,7 @@ fn fields(totals: &Totals) -> [(&'static str, usize); 15] {
     ]
 }
 
-pub(super) fn differences(expected: &str, actual: &str) -> Result<String, fmt::Error> {
+pub(crate) fn differences(expected: &str, actual: &str) -> Result<String, fmt::Error> {
     let mut expected = expected.split_inclusive('\n');
     let mut actual = actual.split_inclusive('\n');
     std::iter::from_fn(|| match (expected.next(), actual.next()) {

@@ -11,6 +11,7 @@ cargo run -q -p catalog-tool -- parent-candidates --root . --check
 scripts/check-models.sh
 cargo run -q -p catalog-tool --locked -- models report --check >/dev/null
 cargo run -q -p catalog-tool --locked -- models fields --check
+cargo run -q -p catalog-tool --locked -- classes --check >/dev/null
 cargo run -p inventory-engine --example resource_views --locked -- --check
 cargo check --workspace --exclude inventory-sdk-catalog --all-targets --all-features --locked -j1
 cargo check -p inventory-sdk-catalog --no-default-features --locked
