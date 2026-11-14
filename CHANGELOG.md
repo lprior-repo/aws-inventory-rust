@@ -31,6 +31,15 @@
   `PageRequest` getters). An independent review found six comments that
   stated behavior the code does not have; all were corrected. Rust lines: 727
   added, 207 deleted.
+- M0.7b (core/harness/benchmark half): documented the remaining public core
+  types and errors; core, harness and benchmark deny `missing_docs`. Legacy
+  JSON types moved to a private module without changing their root API.
+  Review corrected six misleading or overexposed declarations. Core's 193
+  tests, all-target Clippy and warnings-denied rustdoc for these crates pass.
+  The Makepad macro-generated entry point prevents a UI-wide deny without
+  suppressing its diagnostic; this exception is documented at the macro.
+  Catalog-tool documentation and the complete M0.7 gate remain open.
+  Rust lines: 381 added, 149 deleted.
 - `crates/aws-wire` is scaffolded, and Smithy's AWS protocol test suites
   (Smithy 1.75.0, seven protocols, 901 HTTP cases) are committed as JSON ASTs
   under `crates/aws-wire/tests/fixtures/protocol-tests/` with the conversion

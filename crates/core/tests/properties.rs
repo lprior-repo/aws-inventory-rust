@@ -2,8 +2,8 @@
 
 use inventory_core::{
     CollectionEvent, CollectionPage, CollectionScope, Edge, MAX_IDENTIFIER_BYTES, MAX_PAGE_EDGES,
-    MAX_PAGE_RESOURCES, MAX_PAGES, MAX_PROPERTY_BYTES, MAX_TOKEN_BYTES, Resource, ScanStatus,
-    Source, ValidationError, validate_identifier, validate_serialized_size,
+    MAX_PAGE_RESOURCES, MAX_PAGES, MAX_PROPERTY_BYTES, Resource, ScanStatus, Source,
+    ValidationError, validate_identifier, validate_serialized_size,
 };
 use proptest::prelude::*;
 use proptest::test_runner::RngSeed;
@@ -114,9 +114,9 @@ fn exact_identifier_text_token_and_record_boundaries() {
         assert!(tagged.validate().is_err());
     }
     let mut observation = page();
-    observation.next_token = Some("x".repeat(MAX_TOKEN_BYTES));
+    observation.next_token = Some("x".repeat(8_192));
     assert!(observation.validate().is_ok());
-    observation.next_token = Some("x".repeat(MAX_TOKEN_BYTES.saturating_add(1)));
+    observation.next_token = Some("x".repeat(8_193));
     assert!(observation.validate().is_err());
     observation.next_token = None;
     observation.page_number = MAX_PAGES;

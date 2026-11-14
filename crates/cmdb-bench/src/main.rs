@@ -1,4 +1,5 @@
 //! Deterministic fleet workload generator and oracle checker.
+#![deny(missing_docs)]
 
 mod deletions;
 mod dist;

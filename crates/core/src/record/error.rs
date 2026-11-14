@@ -18,61 +18,120 @@ pub enum RecordError {
     SizeLimit,
     /// A second item or trailing bytes.
     #[error("trailing input at {offset}")]
-    NotOneItem { offset: usize },
+    NotOneItem {
+        /// Byte offset where the trailing input begins in the current borrowed view.
+        offset: usize,
+    },
     /// Truncated input.
     #[error("missing value at {offset}")]
-    Missing { offset: usize },
+    Missing {
+        /// Byte offset in the current borrowed view; 0 if the decoder supplies none.
+        offset: usize,
+    },
     /// Invalid generic CBOR.
     #[error("malformed CBOR at {offset}")]
-    Malformed { offset: usize },
+    Malformed {
+        /// Byte offset in the current borrowed view; 0 if the decoder supplies none.
+        offset: usize,
+    },
     /// Unsigned value exceeds its domain.
     #[error("unsigned integer out of range at {offset}")]
-    UnsignedOutOfRange { offset: usize },
+    UnsignedOutOfRange {
+        /// Byte offset of the unsigned value in the current borrowed view.
+        offset: usize,
+    },
     /// Negative value exceeds i64.
     #[error("signed integer out of range at {offset}")]
-    SignedOutOfRange { offset: usize },
+    SignedOutOfRange {
+        /// Byte offset of the signed value in the current borrowed view.
+        offset: usize,
+    },
     /// Unsupported float width.
     #[error("float {type_name} not allowed at {offset}")]
     FloatType {
+        /// Rejected floating-point width label: `f16` or `f32`.
         type_name: &'static str,
+        /// Byte offset of the float in the current borrowed view.
         offset: usize,
     },
     /// Unsupported map key type.
     #[error("map key {found} not allowed at {offset}")]
-    KeyType { found: Type, offset: usize },
+    KeyType {
+        /// CBOR type encountered where a supported map key was required.
+        found: Type,
+        /// Byte offset of the key in the current borrowed view.
+        offset: usize,
+    },
     /// A reachable map key is smaller than its predecessor; offset starts this key.
     #[error("map key out of order at {offset}")]
-    KeyOutOfOrder { offset: usize },
+    KeyOutOfOrder {
+        /// Byte offset of the out-of-order key in the current borrowed view.
+        offset: usize,
+    },
     /// A reachable map repeats its predecessor's key; offset starts the repeated key.
     #[error("duplicate map key at {offset}")]
-    DuplicateKey { offset: usize },
+    DuplicateKey {
+        /// Byte offset of the repeated key in the current borrowed view.
+        offset: usize,
+    },
     /// Unsupported value type.
     #[error("value type {found} not allowed at {offset}")]
-    ValueType { found: Type, offset: usize },
+    ValueType {
+        /// CBOR type encountered where a supported value was required.
+        found: Type,
+        /// Byte offset of the value in the current borrowed view.
+        offset: usize,
+    },
     /// Zero cannot identify a field.
     #[error("field ID zero at {offset}")]
-    FieldIdZero { offset: usize },
+    FieldIdZero {
+        /// Byte offset of the key, or 0 when constructing a field ID without input bytes.
+        offset: usize,
+    },
     /// Nanoseconds must be below one billion.
     #[error("nanoseconds {nanos} out of range at {offset}")]
-    NanosOutOfRange { nanos: u64, offset: usize },
+    NanosOutOfRange {
+        /// Rejected fractional-second value in nanoseconds, at least one billion.
+        nanos: u64,
+        /// Byte offset of the fraction, or 0 when constructing a time without input bytes.
+        offset: usize,
+    },
     /// Invalid text, retaining the library's actual UTF-8 cause.
     #[error("text is not UTF-8 at {offset}: {source}")]
     NotUtf8 {
+        /// Byte offset in the current borrowed view; 0 if the decoder supplies none.
         offset: usize,
+        /// UTF-8 decoding failure retained from minicbor, not a synthesized replacement.
         source: std::str::Utf8Error,
     },
     /// Unsupported tag.
     #[error("tag {tag} not allowed at {offset}")]
-    Tag { tag: u64, offset: usize },
+    Tag {
+        /// Unsupported CBOR tag number.
+        tag: u64,
+        /// Byte offset of the tag header in the current borrowed view.
+        offset: usize,
+    },
     /// Unsupported indefinite-length form.
     #[error("indefinite length at {offset}")]
-    IndefiniteLength { offset: usize },
+    IndefiniteLength {
+        /// Byte offset of the indefinite-length header in the current borrowed view.
+        offset: usize,
+    },
     /// Tag 1 did not contain a two-element array.
     #[error("invalid time representation at {offset}")]
-    TimeShape { offset: usize },
+    TimeShape {
+        /// Byte offset of the time tag header in the current borrowed view.
+        offset: usize,
+    },
     /// Nanoseconds were negative, not malformed CBOR.
     #[error("negative nanoseconds {nanos} at {offset}")]
-    NegativeNanos { nanos: i128, offset: usize },
+    NegativeNanos {
+        /// Rejected negative fractional-second value in nanoseconds.
+        nanos: i128,
+        /// Byte offset of the fraction in the current borrowed view.
+        offset: usize,
+    },
     /// Structural validation could not reserve its input-bounded stack.
     #[error("CBOR validation stack allocation failed")]
     Allocation,
@@ -81,12 +140,18 @@ pub enum RecordError {
     Encode,
     /// An exclusion path is too short or too long.
     #[error("exclusion path length {length} outside 1..=32")]
-    ExclusionPath { length: usize },
+    ExclusionPath {
+        /// Rejected number of field IDs in the path, outside `1..=32`.
+        length: usize,
+    },
     /// A field has a different value kind than expected.
     #[error("field {} expected {expected:?}, found {found:?}", field.value())]
     KindMismatch {
+        /// Field requested by the typed lookup.
         field: FieldId,
+        /// Value kind required by the caller.
         expected: ValueKind,
+        /// Value kind actually read from the field.
         found: ValueKind,
     },
 }

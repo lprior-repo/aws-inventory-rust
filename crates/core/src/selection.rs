@@ -17,10 +17,12 @@ use thiserror::Error;
 pub struct ResourceType(String);
 
 impl ResourceType {
+    /// Store the supplied text unchanged, without syntax, length or catalog checks.
     pub fn new(name: impl Into<String>) -> Self {
         Self(name.into())
     }
 
+    /// Borrow the stored text unchanged, including any empty or noncanonical name.
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -45,6 +47,12 @@ impl Selection {
     /// Parse resource-type selectors at the CLI boundary.
     ///
     /// `all` selects the universal catalog and must be the only selector.
+    /// Other names retain their order, duplicates and text unchanged; an empty slice
+    /// selects the pinned catalog default.
+    ///
+    /// # Errors
+    /// Returns [`SelectionError::MixedUniversal`] if an exact `all` selector appears
+    /// alongside any other entry, including another `all`.
     pub fn parse(values: &[String]) -> Result<Self, SelectionError> {
         if !values.iter().any(|value| value == "all") {
             return Ok(Self::Types(
@@ -68,10 +76,12 @@ impl Selection {
         }
     }
 
+    /// Whether this is [`Self::Universal`], not the empty named-type default.
     pub fn is_universal(&self) -> bool {
         matches!(self, Self::Universal)
     }
 
+    /// Whether there are no explicit names: true for both universal and empty named selections.
     pub fn is_empty(&self) -> bool {
         self.types().is_empty()
     }
@@ -80,6 +90,7 @@ impl Selection {
 /// A resource-type selector that cannot be interpreted safely.
 #[derive(Clone, Copy, Debug, Error, PartialEq, Eq)]
 pub enum SelectionError {
+    /// An exact `all` selector was supplied with at least one additional entry.
     #[error("`all` must be the only Cloud Control resource-type selector")]
     MixedUniversal,
 }

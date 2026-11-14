@@ -88,6 +88,16 @@ start in parallel. M4.3 needs only M0 and can start any time.
 
 Status from the coordinator, 2026-11-13.
 
+- **M0.7b's core/harness/benchmark half is done.** Core's public types and
+  errors are documented; core, harness and benchmark deny `missing_docs`.
+  Warnings-denied rustdoc, all-target Clippy and all 193 core tests pass.
+  Independent review found six incorrect guarantees or visibility choices;
+  the corrections were inspected by the coordinator after the review
+  service became rate-limited. The UI crate has documentation, but cannot
+  deny `missing_docs` at crate scope while Makepad's pinned `app_main!`
+  emits an undocumented public function. Catalog-tool documentation and
+  the complete workspace documentation gate remain open.
+
 - **M1.1 is done**, as a git submodule and not as our own code. A local worker
   built lock, verify and fetch commands (1,181 lines); the coordinator found
   the stored digests were hashes of hashes, and the two reviewers found 14
