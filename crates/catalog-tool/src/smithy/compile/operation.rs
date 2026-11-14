@@ -53,6 +53,9 @@ fn append_metadata(
     paginator(shape, input, model, fields)?;
     operation_errors(shape, model, indexes, fields)?;
     checksum(shape, fields);
+    if find(&shape.traits, "aws.customizations#s3UnwrappedXmlOutput").is_some() {
+        fields.push((CatalogKey::S3UnwrappedXmlOutput, Value::Bool(true)));
+    }
     request_compression(shape, fields)?;
     media_type(shape, fields)
 }

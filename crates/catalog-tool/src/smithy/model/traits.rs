@@ -54,6 +54,7 @@ const RETAIN_PAYLOADS: &[&str] = &[
     "smithy.protocols#rpcv2Cbor",
     "smithy.api#requestCompression",
     "smithy.api#required",
+    "aws.customizations#s3UnwrappedXmlOutput",
 ];
 
 pub(super) fn read<'de, D: Deserializer<'de>>(
@@ -197,6 +198,7 @@ fn validate_marker_trait(name: &str, value: &Value) -> Option<bool> {
         | "smithy.api#hostLabel"
         | "smithy.api#xmlFlattened"
         | "smithy.api#xmlAttribute"
+        | "aws.customizations#s3UnwrappedXmlOutput"
         | "smithy.api#httpChecksumRequired" => Some(
             empty_object(value)
                 || (name == "smithy.api#httpChecksumRequired" && value.is_boolean()),

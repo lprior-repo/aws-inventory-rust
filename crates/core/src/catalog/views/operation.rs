@@ -88,6 +88,9 @@ impl<'a> Operation<'a> {
     pub fn checksum_required(self) -> Result<bool, CatalogError> {
         bool_field(self.map, CatalogKey::HttpChecksum)
     }
+    pub fn s3_unwrapped_xml_output(self) -> Result<bool, CatalogError> {
+        bool_field(self.map, CatalogKey::S3UnwrappedXmlOutput)
+    }
     pub fn paginator(self) -> Result<Option<Paginator<'a>>, CatalogError> {
         if self.flags()? & 2 == 0 {
             return Ok(None);
@@ -124,6 +127,7 @@ impl<'a> Operation<'a> {
         self.http()?;
         self.host_prefix()?;
         self.checksum_required()?;
+        self.s3_unwrapped_xml_output()?;
         self.paginator()?;
         self.errors()?.try_for_each(|item| item.map(|_| ()))?;
         self.request_compression()?;

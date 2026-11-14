@@ -161,6 +161,7 @@ pub enum CatalogKey {
     RequestCompression,
     DefaultValue,
     ClientOptional,
+    S3UnwrappedXmlOutput,
 }
 
 impl CatalogKey {
@@ -262,6 +263,7 @@ impl CatalogKey {
             Self::RequestCompression => 90,
             Self::DefaultValue => 91,
             Self::ClientOptional => 92,
+            Self::S3UnwrappedXmlOutput => 93,
         }
     }
 }

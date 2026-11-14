@@ -30,13 +30,14 @@ rustls-pki-types = "1.16.0"
 rustls-native-certs = "0.8.5"
 tokio.workspace = true
 tower-service = "0.3.3"
+quick-xml = "0.42"
+minicbor = { workspace = true, features = ["half"] }
+jiter = { version = "=0.19.0", default-features = false }
 
 [dev-dependencies]
 catalog-tool = { path = "../catalog-tool" }
 serde_json = { workspace = true, features = ["arbitrary_precision"] }
 tempfile = "3.27.0"
-quick-xml = "0.42"
-minicbor = { workspace = true, features = ["half"] }
 hyper = { version = "1.12.0", features = ["server"] }
 tokio-rustls = { version = "0.26.6", default-features = false, features = ["aws_lc_rs", "tls12"] }
 rcgen = { version = "0.14.10", default-features = false, features = ["aws_lc_rs", "pem"] }
