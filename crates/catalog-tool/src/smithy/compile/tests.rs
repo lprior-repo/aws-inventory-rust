@@ -4,7 +4,7 @@ use inventory_core::catalog::{Catalog, Target};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 const MODEL: &str = r#"{"shapes":{
- "n#Svc":{"type":"service","traits":{"aws.protocols#restJson1":{}}},
+ "n#Svc":{"type":"service","version":"2020-01-01","traits":{"aws.protocols#restJson1":{}}},
  "n#ListThings":{"type":"operation","input":{"target":"n#Input"},"output":{"target":"n#Things"},
    "traits":{"smithy.api#readonly":{},"smithy.api#paginated":{}}},
  "n#Input":{"type":"structure","members":{"Zulu":{"target":"smithy.api#String"},"Alpha":{"target":"n#Choice"}}},
@@ -48,12 +48,11 @@ fn service_failure(
 }
 fn root(service: Record) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let root = encode::map([
-        (CatalogKey::Format, Value::Int(1)),
+        (CatalogKey::Format, Value::Int(2)),
         (CatalogKey::ModelsCommit, Value::Text("fixture".into())),
-        (
-            CatalogKey::Services,
-            Value::List(vec![Value::Bytes(service.into_bytes())]),
-        ),
+        (CatalogKey::FieldNames, Value::Bytes(b"ZuluAlpha".to_vec())),
+        (CatalogKey::FieldNameOffsets, Value::Bytes(vec![0, 0, 0, 0, 0, 0, 0, 4, 0, 0, 0, 4, 0, 0, 0, 9])),
+        (CatalogKey::Services, Value::List(vec![Value::Bytes(service.into_bytes())])),
     ])?;
     Ok(Record::encode(&root)?.into_bytes())
 }

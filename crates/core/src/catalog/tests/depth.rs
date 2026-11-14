@@ -3,9 +3,12 @@ use super::*;
 fn unknown_at_depth_32() -> Result<Vec<u8>, RecordError> {
     let unknown =
         std::iter::repeat_n((), 31).fold(Value::Null, |value, ()| Value::List(vec![value]));
+    let (field_names, field_offsets) = field_registry_values();
     let Value::Map(mut fields) = map([
-        (CatalogKey::Format, Value::Int(1)),
+        (CatalogKey::Format, Value::Int(CATALOG_VERSION)),
         (CatalogKey::ModelsCommit, Value::Text("depth".into())),
+        (CatalogKey::FieldNames, field_names),
+        (CatalogKey::FieldNameOffsets, field_offsets),
         (CatalogKey::Services, Value::List(vec![])),
     ])?
     else {

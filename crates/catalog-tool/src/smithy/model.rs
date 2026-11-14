@@ -12,8 +12,12 @@ pub(super) struct ModelFile {
 
 #[derive(Debug, Deserialize)]
 pub(super) struct Shape {
+    #[serde(default)]
+    pub version: Option<String>,
     #[serde(default, deserialize_with = "traits::read")]
     pub traits: BTreeMap<String, serde_json::Value>,
+    #[serde(default)]
+    pub errors: Vec<Target>,
     #[serde(flatten)]
     pub kind: ShapeKind,
 }
@@ -76,11 +80,16 @@ impl Shape {
 #[derive(Debug, Deserialize)]
 pub(super) struct Member {
     pub target: Option<String>,
-    #[serde(default)]
-    pub traits: BTreeMap<String, IgnoredAny>,
+    #[serde(default, deserialize_with = "traits::read")]
+    pub traits: BTreeMap<String, serde_json::Value>,
 }
 
 #[derive(Debug, Deserialize)]
 pub(super) struct Target {
     pub target: String,
+    #[serde(default, deserialize_with = "traits::read")]
+    pub traits: BTreeMap<String, serde_json::Value>,
+}
+pub(super) fn validate_shape_traits(shape: &Shape) -> Result<(), String> {
+    traits::validate_shape(shape)
 }

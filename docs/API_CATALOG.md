@@ -1,4 +1,4 @@
-# Binary AWS API catalog (M1.2c)
+# Binary AWS API catalog (M1.2d)
 
 `catalog/aws-api.catalog` is generated from the pinned Smithy checkout and
 `catalog/field-ids.txt`. The product embeds it with `include_bytes!`; it never
@@ -14,10 +14,10 @@ with that command instead of skipping the test.
 ## Encoding and identity
 
 Every map and record is encoded through `inventory_core::record::Record::encode`.
-There is no JSON in the catalog. The root record contains format version 1, the
-40-character source Git commit, and a list of byte strings. Each byte string is
-an independently encoded service record. Map keys are ascending `FieldId`s.
-
+There is no JSON in the runtime catalog. The v2 root record contains schema
+version 2, the 40-character source Git commit, the shared field-name bytes and
+fixed-width offsets, and a list of independently encoded service records.
+The reader rejects v1 catalogs; there is no lossy compatibility path.
 Before reading the models, compilation requires the canonical source directory
 to equal Git's repository root and rejects tracked or untracked changes beneath
 `models`, including ignored files hidden by `.git/info/exclude` or other ignore
@@ -41,11 +41,69 @@ across services and structure/union shapes. It is compiler input only. Registry
 parallel public number type. Missing members name the required `models fields
 --write` repair. Enum values are not structure/union fields.
 
+The v2 root field-name registry stores each bare member name once in
+`FieldNames`; `FieldNameOffsets` is a sequence of big-endian 32-bit start/end
+pairs indexed by nonzero `FieldId`. Root validation checks contiguous bounds and
+UTF-8 before any service view is returned. Member lookup is O(1), borrowed, and
+does not allocate or copy names into member records.
+
+Service, shape, member, pseudo-member, and operation records retain typed
+protocol metadata only when modeled. The public views expose HTTP bindings,
+timestamp formats, XML namespaces, names, sparse/streaming/sensitive and
+idempotency flags, checksum requirements, error metadata, and merged paginator
+data. Missing optional traits remain absent; malformed known trait payloads or
+references fail compilation or catalog validation. Metadata is descriptive
+only and does not make an operation callable.
+
+The compiler recognizes traits by their complete Smithy IDs; unknown namespaces
+and same-suffix traits do not create catalog metadata. Service version comes from
+the service shape's `version` property, signing name from
+`aws.auth#sigv4.name`, and host prefix from `smithy.api#endpoint.hostPrefix`.
+Service pagination defaults use `smithy.api#paginated` and are merged with
+operation values while compiling. Service `errors` and operation `errors` are
+merged, deduplicated in stable order, and stored only on each operation.
+Checksums use `smithy.api#httpChecksumRequired`. Present known traits with
+malformed payloads fail compilation with service, owning shape, and full trait
+ID context.
+
+Independent source-model count oracles (run from the Smithy checkout):
+
+```sh
+find models -type f -name '*.json' -print0 | xargs -0 jq -s '[.[] | (.shapes // {} | length)] | add'
+find models -type f -name '*.json' -print0 | xargs -0 jq -r '.shapes[]? | (.members // {}) | keys[]' | sort -u | wc -l
+```
+
+Independent trait-count oracle helpers expose source counts for compiler
+comparisons without reading the generated catalog:
+
+```sh
+model_trait_count() {
+  find models -type f -name '*.json' -print0 |
+    xargs -0 jq -s --arg id "$1" '[.[] | .shapes[]? | select((.traits // {}) | has($id))] | length'
+}
+wire_member_trait_count() {
+  find models -type f -name '*.json' -print0 |
+    xargs -0 jq -s --arg id "$1" \
+      '[.[] | .shapes[]? as $shape |
+        [($shape.members // {} | .[]?), $shape.member?, $shape.key?, $shape.value?][] |
+        select(. != null) | select((.traits // {}) | has($id))] | length'
+}
+for id in aws.api#service aws.auth#sigv4 aws.protocols#awsQueryCompatible \
+  smithy.api#xmlNamespace smithy.api#http smithy.api#endpoint \
+  smithy.api#paginated smithy.api#httpChecksumRequired \
+  smithy.api#mediaType smithy.api#sensitive smithy.api#idempotencyToken \
+  smithy.api#streaming smithy.api#sparse smithy.api#error smithy.api#httpError \
+  aws.protocols#awsQueryError smithy.api#retryable; do
+  printf '%s model=%s wire-member=%s\n' "$id" \
+    "$(model_trait_count "$id")" "$(wire_member_trait_count "$id")"
+done
+```
+
 ### `CatalogKey`
 
 | ID | Variant | Value and meaning |
 |---:|---|---|
-| 1 | Format | Root integer schema version, currently 1 |
+| 1 | Format | Root integer schema version, currently 2 |
 | 2 | ModelsCommit | Root source Git commit text |
 | 3 | Services | Root list of independently encoded service record bytes |
 | 4 | Name | Service directory name, or unqualified shape/operation name |
@@ -54,15 +112,20 @@ parallel public number type. Missing members name the required `models fields
 | 7 | Shapes | Service list of shape maps, indexed by list position |
 | 8 | Resources | Service list of unqualified resource names |
 | 9 | Kind | Shape integer kind code below |
-| 10 | Members | Shape list of `[field_id, target, required]` triples, ordered by field ID |
+| 10 | Members | Shape list of member maps, ordered by field ID |
 | 11 | Element | List shape element target |
 | 12 | MapKey | Map shape key target |
 | 13 | MapValue | Map shape value target |
-| 14 | Arn | Shape ARN template text, or null |
+| 14 | Arn | Shape ARN template text, omitted when absent |
 | 15 | Flags | Operation bitset: readonly=1, paginated=2, List/Describe=4, input-free=8, read-named=16 |
 | 16 | Input | Operation input target; absent Smithy input becomes Unit |
 | 17 | Output | Operation output target; absent Smithy output becomes Unit |
 | 18 | ServiceShape | Full service shape ID, for example `com.amazonaws.ec2#AmazonEC2` |
+| 86 | ElementWire | Optional wire metadata for a list pseudo-member |
+| 87 | MapKeyWire | Optional wire metadata for a map key pseudo-member |
+| 88 | MapValueWire | Optional wire metadata for a map value pseudo-member |
+| 89 | ErrorKind | Modeled client/server error kind |
+
 
 Kind codes, in order starting at zero:
 `blob boolean string byte short integer long float double bigInteger bigDecimal
@@ -92,12 +155,17 @@ Counts::get(&self, name: &str) -> Option<usize>
 Counts::render(&self) -> Result<String, CatalogError>
 ```
 
-`Service` exposes `name`, `shape_id`, `protocols`, `resources`, `operations`,
-`shape_count`, `shapes`, and indexed `shape`. `Shape` exposes `name`, `kind`,
-`members`, `element`, `map_key`, `map_value`, and `arn`. `Operation` exposes
-`name`, `flags`, `input`, and `output`. `Member` contains a `FieldId`, a `Target`,
-and requiredness. `Target` distinguishes local indexes from prelude kinds.
-All fallible view accessors return `CatalogError`.
+`Service` exposes `name`, `shape_id`, `version`, service identity/protocol metadata,
+`wire` and protocol metadata. Service paginator defaults are merged into each
+paginated operation at compile time; no service-default record is stored. `Shape`
+exposes `name`, `kind`, `members`, collection targets, optional `arn`, modeled
+error metadata, and wire traits. Missing `Members` is an empty iterator; missing
+`Arn` is `None`, while malformed present values are errors. `Operation` exposes
+HTTP method/URI/status, host prefix, checksum requirement, merged paginator data,
+and common plus operation-local modeled errors. `Member` exposes its indexed
+`FieldId`, borrowed indexed name, target, requiredness, and wire traits. Lists,
+maps, and structures retain pseudo-member wire metadata. All views borrow the
+catalog bytes; metadata does not grant callability.
 
 Opening and service access allocate nothing: structural validation uses a
 caller-owned inline array of 32 optional frames, never a heap-backed stack.
@@ -133,14 +201,10 @@ No throughput or latency benchmark claim is made.
 ## Size estimate and decisions
 
 The pinned models contain 142,767 shapes and 238,070 structure/union members.
-The design estimate is approximately **7–9 MiB**, not a generated measurement:
-unqualified shape names contribute about 3 MiB instead of roughly 6.7 MiB for
-full IDs, member triples about 2.1–2.4 MiB, shape maps/kinds/empty lists about
-1.5–2 MiB, and operation references/protocols/resources less than 1 MiB. Small
-CBOR integer indexes avoid repeating target strings. The coordinator measured
-**6,951,532 bytes**, compiled twice byte-identically. That observed size is below
-the estimate and the unchanged 16 MiB root limit. Review repairs do not change
-the encoding, so regeneration from the same inputs should preserve those bytes.
+The 7–9 MiB design estimate and 6,951,532-byte measurement belong to the earlier
+format, before v2 wire metadata. No v2 size has been measured in this worktree.
+Regenerate the binary and stats from the pinned source models before publishing
+a v2 size measurement; the 16 MiB root limit is unchanged.
 
 The coordinator's identity clarification replaces ambiguous short service names
 with model directories and adds key 18 for the full service ID. The optional
@@ -152,15 +216,15 @@ deep-unknown-value compatibility. No other frozen decision is intentionally chan
 
 ## Coordinator commands
 
-Run from `/home/lewis/src/aws-inventory-worktrees/m1.2c`. The worker does not run
-Cargo or a formatter. Generate before testing the embedded product.
+Run from `/home/lewis/src/aws-inventory-worktrees/m1.2d`. Regenerate before
+testing the embedded product.
 
 ```sh
 SOURCE=/home/lewis/src/aws-inventory-rust/.local/aws-models
 cargo run -p catalog-tool -- models compile --source "$SOURCE" --root . --write
-cp catalog/aws-api.catalog /tmp/aws-api.catalog.m1.2c.first
+cp catalog/aws-api.catalog /tmp/aws-api.catalog.m1.2d.first
 cargo run -p catalog-tool -- models compile --source "$SOURCE" --root . --write
-cmp /tmp/aws-api.catalog.m1.2c.first catalog/aws-api.catalog
+cmp /tmp/aws-api.catalog.m1.2d.first catalog/aws-api.catalog
 cargo run -p catalog-tool -- models compile --source "$SOURCE" --root . --check
 wc -c catalog/aws-api.catalog
 cargo fmt --all

@@ -5,12 +5,14 @@ pub(super) fn bytes() -> Result<Vec<u8>, RecordError> {
         .into_iter()
         .map(encoded_service)
         .collect::<Result<Vec<_>, _>>()?;
+    let (field_names, field_offsets) = super::super::field_registry_values();
     let root = map([
-        (CatalogKey::Format, Value::Int(1)),
+        (CatalogKey::Format, Value::Int(CATALOG_VERSION)),
         (CatalogKey::ModelsCommit, Value::Text("rich-fixture".into())),
+        (CatalogKey::FieldNames, field_names),
+        (CatalogKey::FieldNameOffsets, field_offsets),
         (CatalogKey::Services, Value::List(services)),
     ])?;
-    Ok(Record::encode(&root)?.into_bytes())
 }
 
 fn encoded_service(name: &str) -> Result<Value, RecordError> {
@@ -79,11 +81,11 @@ fn fixture_shape(
     map(fields.into_iter().chain(extra))
 }
 
-fn member(id: i64, target: i64, required: bool) -> Value {
-    Value::List(vec![
-        Value::Int(id),
-        Value::Int(target),
-        Value::Bool(required),
+fn member(id: i64, target: i64, required: bool) -> Result<Value, RecordError> {
+    map([
+        (CatalogKey::MemberId, Value::Int(id)),
+        (CatalogKey::MemberTarget, Value::Int(target)),
+        (CatalogKey::MemberRequired, Value::Bool(required)),
     ])
 }
 
@@ -91,7 +93,7 @@ fn recursive() -> Result<Value, RecordError> {
     fixture_shape(
         "Recursive",
         14,
-        vec![(CatalogKey::Members, Value::List(vec![member(7, 0, false)]))],
+        vec![(CatalogKey::Members, Value::List(vec![member(7, 0, false)?]))],
     )
 }
 
@@ -116,7 +118,7 @@ fn union() -> Result<Value, RecordError> {
         15,
         vec![(
             CatalogKey::Members,
-            Value::List(vec![member(7, 2, true), member(8, -3, false)]),
+            Value::List(vec![member(7, 2, true)?, member(8, -3, false)?]),
         )],
     )
 }

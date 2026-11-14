@@ -1,7 +1,11 @@
 //! Deterministic model compiler; only one parsed JSON model survives at a time.
 mod encode;
+mod metadata;
+mod operation;
+mod service;
 mod input;
 mod provenance;
+mod registry_wire;
 mod shapes;
 #[cfg(test)]
 mod tests;
@@ -31,10 +35,10 @@ pub enum CompileError {
     /// A future unsupported Smithy shape kind was encountered.
     #[error("unsupported Smithy shape kind")]
     Kind,
-    /// ARN trait must hold a string.
     #[error("invalid ARN template on {0}")]
     Arn(String),
-    /// Source Git provenance could not be read.
+    #[error("invalid known trait payload: {0}")]
+    Trait(String),
     #[error("cannot read model Git commit: {0}")]
     Commit(String),
     /// Committed bytes differ from a fresh compile.
@@ -135,17 +139,17 @@ pub fn build_catalog(
         .try_fold(input::Compilation::default(), |state, file| {
             state.add(file, registry, &models)
         })?;
-    encode_root(models_commit, state.services)
+    encode_root(models_commit, registry, state.services)
 }
 
 /// Encode the root record and prove the independent reader accepts it.
-fn encode_root(models_commit: &str, services: Vec<Value>) -> Result<Vec<u8>, Error> {
+fn encode_root(models_commit: &str, registry: &Registry, services: Vec<Value>) -> Result<Vec<u8>, Error> {
+    let (names, offsets) = registry_wire::encode(registry)?;
     let root = encode::map([
         (CatalogKey::Format, Value::Int(CATALOG_VERSION)),
-        (
-            CatalogKey::ModelsCommit,
-            Value::Text(models_commit.to_owned()),
-        ),
+        (CatalogKey::ModelsCommit, Value::Text(models_commit.to_owned())),
+        (CatalogKey::FieldNames, names),
+        (CatalogKey::FieldNameOffsets, offsets),
         (CatalogKey::Services, Value::List(services)),
     ])?;
     let bytes = Record::encode(&root)

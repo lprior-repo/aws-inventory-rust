@@ -8,13 +8,13 @@ mod keys;
 mod tests;
 mod views;
 
-use crate::record::{ListRef, MapRef, RecordError, ValueKind, ValueRef};
+use crate::record::{FieldId, ListRef, MapRef, RecordError, ValueKind, ValueRef};
 pub use counts::Counts;
 pub use keys::{CatalogKey, SHAPE_KINDS, kind_code};
-pub use views::{Member, Operation, Service, Shape, Target};
+pub use views::{ErrorKind, HttpBinding, HttpOperation, Member, ModeledError, Operation, Paginator, Service, Shape, Target, TimestampFormat, WireTraits, XmlNamespace};
 
 /// Catalog schema version, independent of the underlying record format.
-pub const CATALOG_VERSION: i64 = 1;
+pub const CATALOG_VERSION: i64 = 2;
 
 /// Malformed or unsupported catalog data.
 #[derive(Debug, thiserror::Error)]
@@ -43,11 +43,12 @@ pub enum CatalogError {
     Formatting(#[from] std::fmt::Error),
 }
 
-/// Allocation-free borrowed root catalog view with inline, depth-bounded validation.
 #[derive(Clone, Copy, Debug)]
 pub struct Catalog<'a> {
     root: MapRef<'a>,
     services: ListRef<'a>,
+    field_names: &'a [u8],
+    field_offsets: &'a [u8],
 }
 
 impl Catalog<'static> {
@@ -73,11 +74,14 @@ impl<'a> Catalog<'a> {
             return Err(CatalogError::Version(version));
         }
         text(root, CatalogKey::ModelsCommit)?;
+        let field_names = bytes_field(root, CatalogKey::FieldNames)?;
+        let field_offsets = bytes_field(root, CatalogKey::FieldNameOffsets)?;
+        validate_field_registry(field_names, field_offsets)?;
         let services = list(root, CatalogKey::Services)?;
         services
             .iter()?
             .try_for_each(|value| bytes_value(value?).map(|_| ()))?;
-        Ok(Self { root, services })
+        Ok(Self { root, services, field_names, field_offsets })
     }
 
     /// Return the upstream commit, borrowing the root.
@@ -87,18 +91,13 @@ impl<'a> Catalog<'a> {
         text(self.root, CatalogKey::ModelsCommit)
     }
 
-    /// Validate each service on first access. Retaining its view avoids revalidation.
-    /// # Errors
-    /// Iterator entries report malformed service records, independently of the root.
     pub fn services(
         self,
     ) -> Result<impl Iterator<Item = Result<Service<'a>, CatalogError>>, CatalogError> {
-        Ok(self
-            .services
-            .iter()?
-            .map(|value| Service::open(bytes_value(value?)?)))
+        Ok(self.services.iter()?.map(move |value| {
+            Service::open(bytes_value(value?)?, self.field_names, self.field_offsets)
+        }))
     }
-
     /// Find a service by its unique model directory name, e.g. `ec2`.
     /// # Errors
     /// Returns the first malformed service encountered, never silently skipping it.
@@ -113,6 +112,9 @@ impl<'a> Catalog<'a> {
             }
             Ok(Some(service))
         })
+    }
+    pub fn field_name(self, id: FieldId) -> Result<&'a str, CatalogError> {
+        views::wire::field_name(self.field_names, self.field_offsets, id)
     }
 
     /// Compute report totals by walking embedded records, not model files or cached totals.
@@ -144,6 +146,38 @@ fn list(map: MapRef<'_>, key: CatalogKey) -> Result<ListRef<'_>, CatalogError> {
         ValueRef::List(list) => Ok(list),
         _ => Err(CatalogError::Field(key)),
     }
+}
+fn bytes_field(map: MapRef<'_>, key: CatalogKey) -> Result<&[u8], CatalogError> {
+    match value(map, key, ValueKind::Bytes)? {
+        ValueRef::Bytes(bytes) => Ok(bytes),
+        _ => Err(CatalogError::Field(key)),
+    }
+}
+fn validate_field_registry(names: &[u8], offsets: &[u8]) -> Result<(), CatalogError> {
+    if offsets.len() % 8 != 0 {
+        return Err(CatalogError::Reference);
+    }
+    let mut previous = 0usize;
+    for pair in offsets.chunks_exact(8) {
+        let start = usize::try_from(u32::from_be_bytes(
+            pair.get(..4).ok_or(CatalogError::Reference)?.try_into().map_err(|_| CatalogError::Reference)?,
+        ))
+        .map_err(|_| CatalogError::Reference)?;
+        let end = usize::try_from(u32::from_be_bytes(
+            pair.get(4..8).ok_or(CatalogError::Reference)?.try_into().map_err(|_| CatalogError::Reference)?,
+        ))
+        .map_err(|_| CatalogError::Reference)?;
+        if start != previous || end <= start {
+            return Err(CatalogError::Reference);
+        }
+        let name = names.get(start..end).ok_or(CatalogError::Reference)?;
+        std::str::from_utf8(name).map_err(|_| CatalogError::Reference)?;
+        previous = end;
+    }
+    if previous != names.len() {
+        return Err(CatalogError::Reference);
+    }
+    Ok(())
 }
 fn bytes_value(value: ValueRef<'_>) -> Result<&[u8], CatalogError> {
     match value {
