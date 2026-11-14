@@ -106,6 +106,12 @@
   lookup by ID returned one of them. A resource's identity is its ID: the
   first observation in input order is kept and every listed row is found by
   lookup. Rust lines: 245 added, 6 deleted.
+- Fixed, found by two Black Hat reviews: every `catalog-tool` command that
+  reads the models walked the whole source tree before applying its file
+  limit, and checked a model's size from metadata before reading it without
+  a bound. Discovery now stops with `TooManyEntries` after 65,536 directory
+  entries, and a file is read through a 64 MiB bound that holds even if it
+  grows. Rust lines: 130 added, 19 deleted.
 - Fixed, found by the architecture audit, in the harness: the emulator
   process was a bare handle between spawn and readiness, so an early error
   could leave it running; `Emulator::stop` always returned success; snapshot

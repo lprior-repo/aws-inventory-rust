@@ -16,12 +16,14 @@ pub(crate) use report::differences as report_differences;
 pub(crate) use stats::{READ_PREFIXES, no_required as input_has_no_required};
 
 use std::fs;
-use std::io::{self, Write};
+use std::io::{self, Read, Write};
 use std::path::{Path, PathBuf};
 
 use thiserror::Error;
 
 const MAX_FILE_SIZE: u64 = 67_108_864;
+/// Directory entries one model discovery may visit before it stops.
+const MAX_MODEL_ENTRIES: usize = 65_536;
 const REPORT_PATH: &str = "catalog/aws-models.report";
 
 /// Failures from model input, report persistence, comparison, or command syntax.
@@ -34,6 +36,9 @@ pub enum Error {
     /// The file is too large to read.
     #[error("file exceeds {MAX_FILE_SIZE} bytes: {0}")]
     FileTooLarge(PathBuf),
+    /// Model discovery visited more directory entries than its bound.
+    #[error("more than {limit} directory entries under {directory}")]
+    TooManyEntries { directory: PathBuf, limit: usize },
     /// JSON syntax or required model fields are invalid.
     #[error("invalid JSON in {file}: {source}")]
     InvalidJson {
@@ -159,49 +164,80 @@ fn read_model_file(file: &Path) -> Result<model::ModelFile, Error> {
 
 /// Read one JSON file of at most 64 MiB into `T`.
 pub(crate) fn read_json<T: serde::de::DeserializeOwned>(file: &Path) -> Result<T, Error> {
-    let metadata = fs::metadata(file).map_err(|source| io_error(file, source))?;
-    if metadata.len() > MAX_FILE_SIZE {
-        return Err(Error::FileTooLarge(file.to_path_buf()));
-    }
-    let bytes = fs::read(file).map_err(|source| io_error(file, source))?;
+    let bytes = read_bounded(file, MAX_FILE_SIZE)?;
     serde_json::from_slice(&bytes).map_err(|source| Error::InvalidJson {
         file: file.to_path_buf(),
         source,
     })
 }
 
-/// Every `.json` file under `models`, sorted by path; symlinks are not followed.
-pub(crate) fn find_model_files(models: &Path) -> Result<Vec<PathBuf>, Error> {
-    let mut pending = vec![models.to_path_buf()];
-    let mut files = Vec::new();
-    // Each real directory is removed once; symlinks are not followed.
-    std::iter::from_fn(|| {
-        pending
-            .pop()
-            .map(|dir| scan_directory(&dir, &mut pending, &mut files))
-    })
-    .try_for_each(std::convert::identity)?;
-    files.sort();
-    Ok(files)
+/// Read at most `limit` bytes; one byte more is read to detect a larger or growing file.
+fn read_bounded(file: &Path, limit: u64) -> Result<Vec<u8>, Error> {
+    let handle = fs::File::open(file).map_err(|source| io_error(file, source))?;
+    let mut bytes = Vec::new();
+    handle
+        .take(limit.saturating_add(1))
+        .read_to_end(&mut bytes)
+        .map_err(|source| io_error(file, source))?;
+    let length = u64::try_from(bytes.len()).map_err(|_| Error::FileTooLarge(file.to_path_buf()))?;
+    if length > limit {
+        return Err(Error::FileTooLarge(file.to_path_buf()));
+    }
+    Ok(bytes)
 }
 
-fn scan_directory(
-    dir: &Path,
-    pending: &mut Vec<PathBuf>,
-    files: &mut Vec<PathBuf>,
-) -> Result<(), Error> {
+/// Every `.json` file under `models`, sorted by path; symlinks are not followed.
+///
+/// Stops with `TooManyEntries` once 65,536 directory entries have been visited.
+pub(crate) fn find_model_files(models: &Path) -> Result<Vec<PathBuf>, Error> {
+    find_model_files_within(models, MAX_MODEL_ENTRIES)
+}
+
+struct Walk {
+    pending: Vec<PathBuf>,
+    files: Vec<PathBuf>,
+    remaining: usize,
+    limit: usize,
+}
+
+fn find_model_files_within(models: &Path, limit: usize) -> Result<Vec<PathBuf>, Error> {
+    let mut walk = Walk {
+        pending: vec![models.to_path_buf()],
+        files: Vec::new(),
+        remaining: limit,
+        limit,
+    };
+    // Each real directory is removed once; symlinks are not followed.
+    std::iter::from_fn(|| {
+        walk.pending
+            .pop()
+            .map(|dir| scan_directory(&dir, &mut walk))
+    })
+    .try_for_each(std::convert::identity)?;
+    walk.files.sort();
+    Ok(walk.files)
+}
+
+fn scan_directory(dir: &Path, walk: &mut Walk) -> Result<(), Error> {
     fs::read_dir(dir)
         .map_err(|source| io_error(dir, source))?
         .try_for_each(|entry| {
             let entry = entry.map_err(|source| io_error(dir, source))?;
+            walk.remaining =
+                walk.remaining
+                    .checked_sub(1)
+                    .ok_or_else(|| Error::TooManyEntries {
+                        directory: dir.to_path_buf(),
+                        limit: walk.limit,
+                    })?;
             let path = entry.path();
             let kind = entry
                 .file_type()
                 .map_err(|source| io_error(&path, source))?;
             if kind.is_dir() {
-                pending.push(path);
+                walk.pending.push(path);
             } else if kind.is_file() && path.extension().is_some_and(|ext| ext == "json") {
-                files.push(path);
+                walk.files.push(path);
             }
             Ok(())
         })
@@ -214,5 +250,7 @@ fn io_error(file: &Path, source: io::Error) -> Error {
     }
 }
 
+#[cfg(test)]
+mod bounds_tests;
 #[cfg(test)]
 mod tests;

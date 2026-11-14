@@ -139,8 +139,8 @@ Status from the coordinator, 2026-11-13.
   report equals an independent `jq` derivation; `classes --check` is in the
   gate. `cargo test -p catalog-tool --locked` passes 225 tests. Black Hat
   review: four findings, two closed and confirmed, two (bounds inside the
-  shared model discovery and reader) deferred to one change after the
-  packages that share them land; test review: eight gaps, closed. Rust
+  shared model discovery and reader) closed afterwards in one change for
+  every command that reads the models; test review: eight gaps, closed. Rust
   lines: 1,869 added, 11 deleted; production 713. Still open in M1.3: the
   callable handle and its proof (needs the overlay, M1.4).
 - **M1.5a is done: the SQL naming rule, as a library.** `catalog_tool::names`
@@ -186,8 +186,8 @@ Status from the coordinator, 2026-11-13.
   runs `models endpoints --check`. Black Hat: five findings, three closed
   and confirmed against 99 expectations in 12 services, one closed by
   amending the scope (skipped cases are executed by the wire engine's
-  request-time resolution, not here), one deferred with the shared reader
-  bounds; test review: 13 gaps and 5 later survivors, closed. Rust lines:
+  request-time resolution, not here), one closed afterwards with the shared
+  reader bounds; test review: 13 gaps and 5 later survivors, closed. Rust lines:
   4,138 added, 2 deleted; production 1,783 against a 1,200 estimate. Still
   open in M1.6: overlay templates for the five services and storing the
   result in the binary catalog.
