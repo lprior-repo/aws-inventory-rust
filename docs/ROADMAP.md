@@ -108,6 +108,18 @@ Status from the coordinator, 2026-11-13.
   tests and both size guards. Rust lines: 4,909 added, none deleted;
   production 2,483, above the original estimate without omitting bounds.
 
+- **M1.2c is done.** The committed binary catalog is 6,951,532 bytes;
+  compile/write followed by compile/check yields identical bytes and SHA-256
+  `4ccb385a0d57ff48d8b957114ddbe27db4537d726368e0cc3d10b13a231bce3b`.
+  `aws-inventory catalog --models` reads the embedded bytes and reproduces
+  the model counts without JSON. Catalog structural validation allocates no
+  heap storage and rejects container depth above 32; generic record readers
+  preserve deep-value compatibility. Clean source provenance includes
+  ignored untracked models. Independent code and test reviews closed their
+  findings; 571 core/catalog tests and the product CLI test pass after
+  integration rebase, with Clippy and both size guards clean. The gate checks
+  regenerated catalog bytes. Rust lines: 3,456 added, 69 deleted.
+
 - **M1.1 is done**, as a git submodule and not as our own code. A local worker
   built lock, verify and fetch commands (1,181 lines); the coordinator found
   the stored digests were hashes of hashes, and the two reviewers found 14

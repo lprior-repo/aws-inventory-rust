@@ -1,9 +1,9 @@
-use std::num::NonZeroU32;
+use inventory_core::record::FieldId;
 
 use super::{Error, Registry};
 
-fn nz(n: u32) -> Option<NonZeroU32> {
-    NonZeroU32::new(n)
+fn nz(n: u32) -> Option<FieldId> {
+    FieldId::new(n).ok()
 }
 
 fn invalid(line: usize, name: &str) -> Error {
@@ -217,8 +217,8 @@ fn unknown_names_and_out_of_range_ids_have_no_mapping() -> Result<(), Box<dyn st
     // Given one entry, when looking beyond it, then no name or ID is invented.
     let registry = Registry::parse("a\n")?;
     assert_eq!(registry.id("missing"), None);
-    assert_eq!(registry.name(NonZeroU32::new(2).ok_or("nonzero")?), None);
-    assert_eq!(registry.name(NonZeroU32::MAX), None);
+    assert_eq!(registry.name(FieldId::new(2)?), None);
+    assert_eq!(registry.name(FieldId::new(u32::MAX)?), None);
     assert_eq!(registry.render(), "a\n");
     Ok(())
 }

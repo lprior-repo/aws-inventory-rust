@@ -15,6 +15,7 @@ use thiserror::Error;
 
 mod legacy;
 
+pub mod catalog;
 pub mod record;
 mod selection;
 pub use selection::{ResourceType, Selection, SelectionError};

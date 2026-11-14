@@ -1,5 +1,5 @@
 use super::{Record, RecordError, TestResult};
-use crate::record::ValueRef;
+use crate::record::{MapRef, ValueRef};
 
 #[test]
 fn misplaced_breaks_never_complete_definite_items_or_unmatched_map_keys() {
@@ -71,4 +71,26 @@ fn every_prefix_of_generic_indefinite_cbor_is_missing_an_item_or_terminator() ->
         ));
         Ok(())
     })
+}
+
+#[test]
+fn tag_prefixes_cannot_turn_breaks_into_complete_items() {
+    // Given tagged breaks in values, indefinite arrays and opaque map keys or values.
+    [
+        vec![0xA1, 1, 0xC1, 0xC2, 0xFF],
+        vec![0xA1, 1, 0x9F, 0xC1, 0xFF, 0xFF],
+        vec![0xA1, 1, 0xBF, 0xC1, 0xFF, 0, 0xFF],
+        vec![0xA1, 1, 0xBF, 1, 0xC1, 0xFF, 0xFF],
+    ]
+    .into_iter()
+    .for_each(|bytes| {
+        assert!(matches!(
+            MapRef::from_bytes_bounded(&bytes),
+            Err(RecordError::Malformed { .. })
+        ));
+        assert!(matches!(
+            Record::from_bytes(bytes),
+            Err(RecordError::Malformed { .. })
+        ));
+    });
 }

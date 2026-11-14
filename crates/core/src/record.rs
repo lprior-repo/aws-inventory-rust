@@ -3,7 +3,7 @@
 //! Encoding follows the fixed forms below; equal values produce equal bytes.
 //! `from_bytes` checks CBOR framing and strictly ascending supported keys in
 //! reader-reachable maps. Unknown values remain skippable; readers check their forms.
-//! The depth bound includes timestamp arrays, but not their tag headers.
+//! The writer's depth bound includes timestamp arrays, but not their tag headers.
 //!
 //! # Encoding table
 //!
@@ -26,6 +26,9 @@
 //!
 //! - Nesting depth at most 32 containers.
 //! - A record at most 16 MiB (16,777,216 bytes).
+//!
+//! Generic structural readers retain deep unknown values. `MapRef::from_bytes_bounded`
+//! additionally enforces 32 container frames, including containers inside opaque values.
 
 mod containers;
 mod encode;
@@ -110,6 +113,10 @@ fn container_depth(depth: usize) -> Result<usize, RecordError> {
 }
 
 fn validate(bytes: &[u8]) -> Result<(), RecordError> {
+    validate_with_depth(bytes, None)
+}
+
+fn validate_with_depth(bytes: &[u8], limit: Option<usize>) -> Result<(), RecordError> {
     if bytes.len() > MAX_RECORD_BYTES {
         return Err(RecordError::SizeLimit);
     }
@@ -120,7 +127,7 @@ fn validate(bytes: &[u8]) -> Result<(), RecordError> {
     ) {
         return Err(RecordError::NotMap);
     }
-    structure::validate(&mut decoder)?;
+    structure::validate(&mut decoder, limit)?;
     if decoder.position() != bytes.len() {
         return Err(RecordError::NotOneItem {
             offset: decoder.position(),

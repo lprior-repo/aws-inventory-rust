@@ -12,6 +12,7 @@ mod coverage;
 mod delivery;
 mod demo;
 mod jobs;
+mod models_catalog;
 mod plan;
 mod report;
 #[cfg(feature = "aws")]
@@ -19,8 +20,7 @@ mod scan;
 mod targets;
 
 use anyhow::{Context, Result};
-use clap::Parser;
-use cli::{Cli, Command};
+use cli::Command;
 use futures_util::future::BoxFuture;
 use inventory_engine::{graph, store::Store};
 use serde_json::Value;
@@ -28,8 +28,8 @@ use std::io::Write;
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
-    match execute() {
-        Ok(value) => output(value),
+    match models_catalog::run() {
+        Ok(code) => code,
         Err(error) => {
             eprintln!("aws-inventory: {error:#}");
             ExitCode::FAILURE
@@ -37,8 +37,7 @@ fn main() -> ExitCode {
     }
 }
 
-fn execute() -> Result<Value> {
-    let cli = Cli::parse();
+fn execute(command: Command) -> Result<Value> {
     tracing_subscriber::fmt()
         .with_writer(std::io::stderr)
         .with_env_filter(
@@ -49,7 +48,7 @@ fn execute() -> Result<Value> {
     let runtime = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .build()?;
-    runtime.block_on(dispatch(cli.command))
+    runtime.block_on(dispatch(command))
 }
 
 fn output(value: Value) -> ExitCode {
@@ -72,7 +71,7 @@ fn output(value: Value) -> ExitCode {
 
 fn dispatch(command: Command) -> BoxFuture<'static, Result<Value>> {
     match command {
-        Command::Catalog => Box::pin(std::future::ready(plan::full_catalog())),
+        Command::Catalog { .. } => Box::pin(std::future::ready(plan::full_catalog())),
         Command::Coverage {
             service,
             type_name,

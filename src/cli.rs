@@ -15,7 +15,11 @@ pub struct Cli {
 #[derive(Subcommand, Debug)]
 pub enum Command {
     /// List implemented resource tables and API operations.
-    Catalog,
+    Catalog {
+        /// Print model statistics from the embedded binary catalog as text.
+        #[arg(long)]
+        models: bool,
+    },
     /// Inspect reviewed collection coverage and exclusions for all pinned AWS schemas.
     Coverage {
         /// Match either the CloudFormation family or its normalized service name.

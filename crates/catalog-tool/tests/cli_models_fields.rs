@@ -269,8 +269,8 @@ fn generated_lines_have_exact_bidirectional_ids() -> Result<(), Box<dyn std::err
     let root = field_fixture()?;
     success(&fields(root.path(), &["--write"])?, "field-ids 3 (+3)\n");
     let registry = catalog_tool::smithy::Registry::parse(&read_registry(root.path())?)?;
-    let first = std::num::NonZeroU32::new(1).ok_or("first ID")?;
-    let last = std::num::NonZeroU32::new(3).ok_or("last ID")?;
+    let first = inventory_core::record::FieldId::new(1)?;
+    let last = inventory_core::record::FieldId::new(3)?;
     assert_eq!(registry.id("Age"), Some(first));
     assert_eq!(registry.id("Name"), Some(last));
     assert_eq!(registry.name(first), Some("Age"));

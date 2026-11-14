@@ -3,6 +3,7 @@
 //! prefixes and exact input targets. Only the global member-name set survives
 //! between models. No report is printed or overwritten until all models load.
 
+mod compile;
 mod fields;
 mod model;
 mod registry;
@@ -10,6 +11,7 @@ mod report;
 mod stats;
 mod totals;
 
+pub use compile::{CompileError, build_catalog, compile};
 pub use fields::fields;
 pub use registry::{Error as RegistryError, Registry};
 pub(crate) use report::differences as report_differences;
@@ -54,6 +56,9 @@ pub enum Error {
     /// The models directory contains no JSON files.
     #[error("no models found")]
     NoModels,
+    /// Catalog encoding or input schema failure.
+    #[error(transparent)]
+    Compile(#[from] compile::CompileError),
     /// Every differing line, including whitespace and line terminators.
     #[error("{0}")]
     ReportMismatch(String),

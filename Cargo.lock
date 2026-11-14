@@ -11516,6 +11516,7 @@ dependencies = [
 name = "catalog-tool"
 version = "0.6.0"
 dependencies = [
+ "inventory-core",
  "proptest",
  "serde",
  "serde_json",

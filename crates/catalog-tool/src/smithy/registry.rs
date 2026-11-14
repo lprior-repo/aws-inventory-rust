@@ -5,8 +5,8 @@
 //! bytewise. Regeneration preserves existing order and appends only unseen
 //! names in sorted order. Previous registries must be prefixes of new ones.
 
+use inventory_core::record::FieldId;
 use std::collections::{BTreeSet, HashMap};
-use std::num::NonZeroU32;
 
 #[cfg(test)]
 mod tests;
@@ -42,7 +42,7 @@ pub enum Error {
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Registry {
     names: Vec<String>,
-    ids: HashMap<String, NonZeroU32>,
+    ids: HashMap<String, FieldId>,
 }
 
 impl Registry {
@@ -76,13 +76,13 @@ impl Registry {
     }
 
     /// Look up the stable 1-based ID of a name.
-    pub fn id(&self, name: &str) -> Option<NonZeroU32> {
+    pub fn id(&self, name: &str) -> Option<FieldId> {
         self.ids.get(name).copied()
     }
 
     /// Return the name at a 1-based ID.
-    pub fn name(&self, id: NonZeroU32) -> Option<&str> {
-        let index = usize::try_from(id.get()).ok()?.checked_sub(1)?;
+    pub fn name(&self, id: FieldId) -> Option<&str> {
+        let index = usize::try_from(id.value()).ok()?.checked_sub(1)?;
         self.names.get(index).map(String::as_str)
     }
 
@@ -159,8 +159,8 @@ impl Registry {
     fn push_name(&mut self, name: String) -> Result<(), Error> {
         let line = next_line(self.len())?;
         validate_name(&name, line)?;
-        let id = NonZeroU32::new(u32::try_from(line).map_err(|_| Error::IdOverflow)?)
-            .ok_or(Error::IdOverflow)?;
+        let id = FieldId::new(u32::try_from(line).map_err(|_| Error::IdOverflow)?)
+            .map_err(|_| Error::IdOverflow)?;
         if self.ids.contains_key(&name) {
             return Err(Error::Duplicate { line, name });
         }

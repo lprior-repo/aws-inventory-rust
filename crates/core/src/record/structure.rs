@@ -4,8 +4,11 @@
 //! through map values and list items. Tags and indefinite containers make their
 //! entire contents opaque: only generic framing is checked there, so version 1
 //! can still skip unknown value kinds. Minicbor decodes every header and scalar.
+//! Tags require a complete item; breaks close only their matching indefinite container.
+mod stack;
 use super::{KeyRef, RecordError, readers};
 use minicbor::{Decoder, data::Type};
+use stack::Frames;
 use std::cmp::Ordering;
 
 #[derive(Clone, Copy)]
@@ -44,9 +47,20 @@ impl Frame<'_> {
     }
 }
 
-pub(super) fn validate(d: &mut Decoder<'_>) -> Result<(), RecordError> {
-    let mut frames = Vec::new();
-    push(&mut frames, Frame::Items(1, Reachability::Reachable))?;
+pub(super) fn validate(d: &mut Decoder<'_>, limit: Option<usize>) -> Result<(), RecordError> {
+    match limit {
+        Some(limit) => validate_bounded(d, limit),
+        None => validate_frames(d, Frames::dynamic()),
+    }
+}
+
+fn validate_bounded(d: &mut Decoder<'_>, limit: usize) -> Result<(), RecordError> {
+    let mut storage = [None; super::MAX_DEPTH];
+    validate_frames(d, Frames::inline(&mut storage, limit)?)
+}
+
+fn validate_frames<'a>(d: &mut Decoder<'a>, mut frames: Frames<'a, '_>) -> Result<(), RecordError> {
+    read_item(d, &mut frames, Reachability::Reachable)?;
     // Each step consumes a byte, pops a previously pushed frame, or finishes.
     let steps = d
         .input()
@@ -66,7 +80,7 @@ pub(super) fn validate(d: &mut Decoder<'_>) -> Result<(), RecordError> {
     result
 }
 
-fn step<'a>(d: &mut Decoder<'a>, frames: &mut Vec<Frame<'a>>) -> Result<bool, RecordError> {
+fn step<'a>(d: &mut Decoder<'a>, frames: &mut Frames<'a, '_>) -> Result<bool, RecordError> {
     let Some(frame) = frames.last().copied() else {
         return Ok(true);
     };
@@ -85,7 +99,7 @@ fn step<'a>(d: &mut Decoder<'a>, frames: &mut Vec<Frame<'a>>) -> Result<bool, Re
 
 fn read_next<'a>(
     d: &mut Decoder<'a>,
-    frames: &mut Vec<Frame<'a>>,
+    frames: &mut Frames<'a, '_>,
     frame: Frame<'a>,
 ) -> Result<bool, RecordError> {
     let error = RecordError::Malformed {
@@ -147,7 +161,7 @@ fn advance(frame: &mut Frame<'_>, offset: usize) -> Result<(), RecordError> {
 
 fn close(
     d: &mut Decoder<'_>,
-    frames: &mut Vec<Frame<'_>>,
+    frames: &mut Frames<'_, '_>,
     frame: Frame<'_>,
 ) -> Result<bool, RecordError> {
     if !matches!(frame, Frame::Array | Frame::IndefMapKey) {
@@ -164,25 +178,48 @@ fn close(
 
 fn read_item<'a>(
     d: &mut Decoder<'a>,
-    frames: &mut Vec<Frame<'a>>,
+    frames: &mut Frames<'a, '_>,
     reachability: Reachability,
 ) -> Result<(), RecordError> {
+    let reachability = if read_tags(d)? {
+        Reachability::Opaque
+    } else {
+        reachability
+    };
     let frame = match d.datatype()? {
         Type::Array | Type::ArrayIndef => match d.array()? {
             Some(n) => Frame::Items(n, reachability),
             None => Frame::Array,
         },
         Type::Map | Type::MapIndef => map_frame(d.map()?, d.position(), reachability)?,
-        Type::Tag => {
-            d.tag()?;
-            Frame::Items(1, Reachability::Opaque)
-        }
         _ => {
             d.skip()?;
             return Ok(());
         }
     };
-    push(frames, frame)
+    frames.push(frame)
+}
+
+fn read_tags(d: &mut Decoder<'_>) -> Result<bool, RecordError> {
+    let mut tagged = false;
+    // Every tag consumes a nonempty header; tags are not container-depth frames.
+    for _ in 0..d.input().len() {
+        match d.datatype()? {
+            Type::Tag => {
+                d.tag()?;
+                tagged = true;
+            }
+            Type::Break => {
+                return Err(RecordError::Malformed {
+                    offset: d.position(),
+                });
+            }
+            _ => return Ok(tagged),
+        }
+    }
+    Err(RecordError::Malformed {
+        offset: d.position(),
+    })
 }
 
 fn map_frame(
@@ -206,10 +243,4 @@ fn map_frame(
             .ok_or(RecordError::Malformed { offset }),
         (None, _) => Ok(Frame::IndefMapKey),
     }
-}
-
-fn push<'a>(frames: &mut Vec<Frame<'a>>, frame: Frame<'a>) -> Result<(), RecordError> {
-    frames.try_reserve(1).map_err(|_| RecordError::Allocation)?;
-    frames.push(frame);
-    Ok(())
 }

@@ -49,6 +49,16 @@
   Snapshot eviction is arrival-ordered; retained-log replay equality applies
   before overflow. Unsupported `Expect` is rejected with 417 before body reads.
   Rust lines: 4,909 added, none deleted; production 2,483.
+- M1.2c: generated and embedded the 6,951,532-byte binary API catalog.
+  Compilation and exact comparison reproduce SHA-256
+  `4ccb385a0d57ff48d8b957114ddbe27db4537d726368e0cc3d10b13a231bce3b`.
+  Borrowed catalog access uses an inline bounded validation stack, without
+  heap allocation; generic record readers retain deep-value compatibility.
+  Compilation rejects dirty models, including ignored untracked files, and
+  retains service/shape error context. Independent code and test reviews
+  closed their findings. Rebased core/catalog tests: 571 passed; the product
+  CLI test reports embedded counts without JSON. Rust lines: 3,456 added,
+  69 deleted.
 - `crates/aws-wire` is scaffolded, and Smithy's AWS protocol test suites
   (Smithy 1.75.0, seven protocols, 901 HTTP cases) are committed as JSON ASTs
   under `crates/aws-wire/tests/fixtures/protocol-tests/` with the conversion

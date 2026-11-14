@@ -1,4 +1,4 @@
-//! Allocation-free, bounded container views.
+//! Borrowed container views; bounded validation is allocation-free, generic validation uses a Vec.
 use super::{FieldId, KeyRef, RecordError, ValueKind, ValueRef, iter, readers, skip};
 use minicbor::Decoder;
 use std::cmp::Ordering;
@@ -20,6 +20,14 @@ impl<'a> MapRef<'a> {
     /// Exactly the errors of `Record::from_bytes`.
     pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, RecordError> {
         super::validate(bytes)?;
+        Ok(Self { bytes })
+    }
+    /// Validate with at most `MAX_DEPTH` structural frames, including opaque values.
+    /// Uses an inline 32-frame array without allocation; generic `from_bytes` is depth-unbounded.
+    /// # Errors
+    /// Returns `DepthLimit` beyond 32 frames, or the errors of `Record::from_bytes`.
+    pub fn from_bytes_bounded(bytes: &'a [u8]) -> Result<Self, RecordError> {
+        super::validate_with_depth(bytes, Some(super::MAX_DEPTH))?;
         Ok(Self { bytes })
     }
 

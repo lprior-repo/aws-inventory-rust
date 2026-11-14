@@ -1,4 +1,5 @@
-//! Only the Smithy fields needed by the statistics reader.
+//! Shared tolerant Smithy inputs for reporting, registry extraction and compilation.
+mod traits;
 
 use std::collections::BTreeMap;
 
@@ -11,8 +12,8 @@ pub(super) struct ModelFile {
 
 #[derive(Debug, Deserialize)]
 pub(super) struct Shape {
-    #[serde(default)]
-    pub traits: BTreeMap<String, IgnoredAny>,
+    #[serde(default, deserialize_with = "traits::read")]
+    pub traits: BTreeMap<String, serde_json::Value>,
     #[serde(flatten)]
     pub kind: ShapeKind,
 }
@@ -23,6 +24,7 @@ pub(super) enum ShapeKind {
     Service,
     Operation {
         input: Option<Target>,
+        output: Option<Target>,
     },
     Structure {
         #[serde(default)]
@@ -33,6 +35,31 @@ pub(super) enum ShapeKind {
         members: BTreeMap<String, Member>,
     },
     Resource,
+    List {
+        member: Target,
+    },
+    Map {
+        key: Target,
+        value: Target,
+    },
+    Blob,
+    Boolean,
+    String,
+    Byte,
+    Short,
+    Integer,
+    Long,
+    Float,
+    Double,
+    #[serde(rename = "bigInteger")]
+    BigInteger,
+    #[serde(rename = "bigDecimal")]
+    BigDecimal,
+    Timestamp,
+    Document,
+    Enum,
+    #[serde(rename = "intEnum")]
+    IntEnum,
     #[serde(other)]
     Other,
 }
@@ -48,6 +75,7 @@ impl Shape {
 
 #[derive(Debug, Deserialize)]
 pub(super) struct Member {
+    pub target: Option<String>,
     #[serde(default)]
     pub traits: BTreeMap<String, IgnoredAny>,
 }

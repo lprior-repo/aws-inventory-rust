@@ -1,12 +1,12 @@
 //! Append-only field IDs. All models load before any publication or directory creation.
 //! Valid existing order is authoritative; comparing historical revisions is the caller's job.
 
-mod publish;
+pub(super) mod publish;
 
+use inventory_core::record::FieldId;
 use std::collections::BTreeSet;
 use std::fs;
 use std::io::{self, Read};
-use std::num::NonZeroU32;
 use std::path::{Path, PathBuf};
 
 use super::{
@@ -76,6 +76,13 @@ fn read_registry(path: &Path, limit: u64) -> Result<Snapshot, Error> {
         Ok(file) => read_open_registry(path, file, limit),
         Err(source) if source.kind() == io::ErrorKind::NotFound => Ok(Snapshot::Missing(source)),
         Err(source) => Err(io_error(path, source)),
+    }
+}
+
+pub(super) fn load_registry(path: &Path) -> Result<Registry, Error> {
+    match read_registry(path, MAX_REGISTRY_BYTES)? {
+        Snapshot::Present(text) => Ok(Registry::parse(&text)?),
+        Snapshot::Missing(source) => Err(io_error(path, source)),
     }
 }
 
@@ -171,7 +178,7 @@ fn stale_error(
         .checked_add(1)
         .ok_or(RegistryError::IdOverflow)?;
     let raw = u32::try_from(line).map_err(|_| RegistryError::IdOverflow)?;
-    let id = NonZeroU32::new(raw).ok_or(RegistryError::IdOverflow)?;
+    let id = FieldId::new(raw).map_err(|_| RegistryError::IdOverflow)?;
     let first = next.name(id).ok_or(RegistryError::IdOverflow)?.to_owned();
     Ok(Error::RegistryStale {
         path: path.to_path_buf(),

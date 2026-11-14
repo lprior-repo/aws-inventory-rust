@@ -87,7 +87,7 @@ fn increment(counter: &mut usize, condition: bool) {
 }
 
 fn input_has_no_required(model: &ModelFile, operation: &Shape) -> bool {
-    let ShapeKind::Operation { input } = &operation.kind else {
+    let ShapeKind::Operation { input, .. } = &operation.kind else {
         return true;
     };
     let target = input
