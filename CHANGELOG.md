@@ -59,6 +59,9 @@
   closed their findings. Rebased core/catalog tests: 571 passed; the product
   CLI test reports embedded counts without JSON. Rust lines: 3,456 added,
   69 deleted.
+- Added seven classifier regressions for exact inclusive entry/byte limits,
+  invalid operation keys and nonempty classification results. All seven
+  public-behavior tests pass. Rust lines: 111 added, none deleted.
 - `crates/aws-wire` is scaffolded, and Smithy's AWS protocol test suites
   (Smithy 1.75.0, seven protocols, 901 HTTP cases) are committed as JSON ASTs
   under `crates/aws-wire/tests/fixtures/protocol-tests/` with the conversion
