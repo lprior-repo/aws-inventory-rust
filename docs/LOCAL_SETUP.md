@@ -103,12 +103,12 @@ The archive remains unchanged in Downloads. The repository retains the upstream
 source, pinned catalogs, fixtures and documentation; historical artifacts and
 generated credentials are excluded by `.gitignore`.
 
-Use `scripts/verify.sh` for the upstream canonical checks. In an agent shell
-with compiler wrappers, explicitly clear them for the mutation helper tests:
+Use `moon ci` for the canonical checks. To clear explicit environment
+compiler-wrapper overrides:
 
 ```bash
 env -u RUSTC_WRAPPER -u RUSTC_WORKSPACE_WRAPPER \
-  bash scripts/verify.sh
+  moon ci
 ```
 
 Operational local integration and strict Rust assurance have separate results.

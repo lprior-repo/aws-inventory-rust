@@ -6,7 +6,28 @@
 > Links into `artifacts/` point to an ignored local directory and do not resolve
 > in a clone. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
 
+## Current Moon CI contract
+
+The canonical CI entrypoint is `moon ci`, configured for the root Cargo workspace as one Moon project. CI runs formatting, source/function size guards, pinned AWS model provenance, generated parent/model/field/endpoint/operation-class/SQL-view checks, all-target/all-feature workspace `cargo check`, source-only Clippy, all-target/all-feature tests, and the workspace build. Cargo tasks share the `cargo-workspace` mutex and form an explicit dependency chain, so generated checks and compilation cannot overlap. The pinned Rust channel remains `nightly-2026-11-11`; Moon toolchain synchronization is disabled.
+
+GitHub Actions checks out the AWS model submodule recursively and installs the native Linux packages required by Makepad before `moon ci`. A `v*` tag runs the same CI gate and uploads the resulting Linux `aws-inventory` and `cmdb-ui` debug binaries as build artifacts; it does not deploy or publish a release.
+
+The current generated checks do not prove a generated collection-plan catalog or binary API-catalog parity: no dedicated checked-in generator/check command for either exists in the current Rust CLI. Collection-plan behavior and catalog access are covered by ordinary workspace tests, but are not universal inventory proof. The ignored live FalkorDB test verifies graph delivery behavior, and the ignored prepared-emulator snapshot tests verify specific collector components against a frozen snapshot. Both opt-in Moon tasks require their explicit service/environment prerequisites and neither is a universal AWS E2E pipeline. Universal resource coverage, real AWS semantics, and universal live-emulator collection remain unfinished; see [CLOUDCONTROL_COVERAGE](CLOUDCONTROL_COVERAGE.md) and [UNIVERSAL_COVERAGE](UNIVERSAL_COVERAGE.md).
+
+Local verification commands:
+
+```sh
+moon query tasks
+moon task-graph
+moon ci
+moon run :live-falkordb-component
+moon run :live-emulator-component
+```
+
+The live commands are opt-in and fail preflight when required prerequisites are absent. FalkorDB requires `FALKORDB_TEST_URL` pointing to an isolated disposable graph service. Emulator snapshot execution requires a locally prepared, authenticated emulator, its generated endpoint/credentials/configuration/CA, explicit `INVENTORY_EMULATOR_TEST=1`, and the independently verified snapshot and baseline-summary paths and SHA-256 values required by the test. Never provide ambient AWS credentials or use a production account.
+
 ## Historical development tree (earlier 2026-11-13)
+
 
 - **781 Rust tests passed, zero failures, 15 ignored** across the workspace
   (`cargo test --workspace --all-targets`).
@@ -348,3 +369,46 @@ ordinary Clippy invocation passed. All 437 SDK archives were inspected; all
 [EMULATOR_TESTING.md](EMULATOR_TESTING.md) provides the complete owned-lifetime
 integration command. The wrapper is named `mutate.py`, but invoking the ordinary
 workspace/delivery verifier through it is **not a mutation campaign**.
+
+## Moon CI and artifact delivery
+
+`moon ci` is the canonical current maintainer gate. Earlier results in this
+document remain historical evidence, not a pass for the current source.
+Moon 2.2.4 and nightly-2026-11-11 are pinned in `.moon/`.
+
+The single Cargo workspace project runs formatting, source and function
+bounds, model provenance, generated parent candidates, model statistics,
+field IDs, endpoints, operation classes, collection plans, the binary catalog
+and SQL views. It then checks the binary-only core configuration, all
+workspace targets and features, production-only Clippy with warnings denied,
+workspace tests and the final build. Cargo tasks share one mutex; quality
+tasks do not reuse cached pass results.
+
+On 2026-11-14 the integration checkout ran the gate after SDK cleanup
+`68ad572`: exit 0, all 17 CI tasks completed in 8m 1s 236ms. This includes
+the generated-data checks, both core feature configurations, the workspace
+checks and tests, warnings-denied source Clippy and the Makepad build.
+The two opt-in live tasks were not part of that run.
+
+```sh
+moon ci
+moon run :lint-src
+```
+
+GitHub pull requests and pushes to `main` run this gate after recursive
+submodule checkout and native Makepad dependency installation. Tags matching
+`v*` also upload the built Linux debug collector and Makepad binaries. This
+is artifact delivery, not deployment or a release-profile build.
+
+The two live component tasks are opt-in and reject missing fixture settings:
+
+```sh
+moon run :live-falkordb-component
+moon run :live-emulator-component
+```
+
+They exercise existing graph replay and frozen emulator snapshots. Neither
+establishes the new model-driven sweep → binary SQLite → FalkorDB → Makepad
+pipeline. That complete end-to-end proof remains pending until the runtime,
+binary persistence, graph projection and viewer integration are implemented
+and exercised together.

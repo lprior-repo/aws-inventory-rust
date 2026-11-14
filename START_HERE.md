@@ -113,9 +113,9 @@ catalog digests. New service and operation metadata comes from the pinned AWS
 API model catalog, while typed service adapters remain for the differential
 proof.
 
-The maintainer gate is `scripts/verify.sh`. It needs no Python; the Python
-scripts in the tree are frozen legacy tooling, deleted in ROADMAP M2.10. Ordinary tests
-leave 15 integration cases ignored until their local servers are prepared.
+The canonical maintainer gate is `moon ci`. It needs no Python; remaining
+Python scripts are frozen legacy tooling retired in ROADMAP M2.10. Live
+component tests remain opt-in until their documented fixtures are prepared.
 
 ## Collect, export and project
 

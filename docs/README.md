@@ -16,15 +16,14 @@ says which in a status line under its title.
 
 State on 2026-11-13: the baseline collector works as the baseline documents
 describe (39 native kinds through typed SDK adapters, 421 reviewed Cloud
-Control types, SQLite schema 13, FalkorDB projection, emulator harness). Toward
-the plan, `scripts/verify.sh` no longer uses Python,
-`inventory_engine::store::SCHEMA_VERSION` is the single schema-version source
-and both packagers exclude `.local`. The AWS API models are pinned as a git
-submodule at `.local/aws-models` (V23, ROADMAP M1.1). The binary record module
-(CBOR through the `minicbor` library, V34, ROADMAP M3.1a) was being built, not
-landed. Nothing else of
-the new architecture exists yet; [ROADMAP.md](ROADMAP.md) records what has
-landed since.
+Control types, SQLite schema 13, FalkorDB projection, emulator harness).
+The current maintainer gate is `moon ci`; it uses Rust and shell, not Python.
+`inventory_engine::store::SCHEMA_VERSION` is the single schema-version source,
+and both packagers exclude `.local`. The pinned API models, field registry,
+binary record codec and hashing, binary catalog, endpoint evaluator, signing
+and pooled transport foundations have landed. The new universal sweep,
+binary persistence and live Makepad path remain unfinished.
+[ROADMAP.md](ROADMAP.md) records the package evidence.
 
 Many historical and baseline documents link into `artifacts/`. That directory
 is ignored by git and is not in a clone, so those links resolve only on a

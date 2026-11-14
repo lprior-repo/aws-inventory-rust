@@ -2,6 +2,11 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Moon 2.2.4 CI cutover: `moon ci` replaces the old verification script.
+  All 17 CI tasks pass locally, including generated-data freshness, binary-only
+  core coverage, workspace checks/tests, warnings-denied source Clippy and the
+  Makepad build. GitHub runs the gate on pull requests and main; version tags
+  also publish Linux debug binaries. Live component tasks remain opt-in.
 - M1.7: removed redundant typed-SDK inventories and their generated data,
   commands, reconciliation/audit consumers and unused dependencies. Existing
   typed collectors and independent Cloud Control/delivery evidence remain.

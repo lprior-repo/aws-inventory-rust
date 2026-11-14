@@ -1,0 +1,10 @@
+$schema: 'https://moonrepo.dev/schemas/workspace.json'
+versionConstraint: '=2.2.4'
+vcs:
+  client: git
+  provider: github
+  defaultBranch: main
+projects:
+  aws-inventory: '.'
+defaultProject: aws-inventory
+telemetry: false

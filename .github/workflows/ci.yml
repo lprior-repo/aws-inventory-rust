@@ -1,0 +1,24 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ci:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - name: Install Makepad Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes pkg-config libasound2-dev libgl1-mesa-dev libudev-dev libvulkan-dev libwayland-dev libx11-dev libxcb-shape0-dev libxcb-xfixes0-dev libxcursor-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libxrandr-dev
+      - uses: moonrepo/setup-toolchain@v0
+        with:
+          moon-version: '2.2.4'
+      - run: moon ci

@@ -170,7 +170,7 @@ scripts/check-source-size.sh
 scripts/check-function-size.sh
 ```
 
-`scripts/verify.sh` also checks that the catalog is current. The standalone test
+`moon ci` also checks that the catalog is current. The standalone test
 commands above include the core corruption/property tests, compiler fixtures,
 real CLI publication checks, migrated registry tests, and embedded product golden
 report test. Independent code and test review remain coordinator acceptance gates.

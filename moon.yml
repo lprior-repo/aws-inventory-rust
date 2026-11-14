@@ -1,0 +1,152 @@
+$schema: 'https://moonrepo.dev/schemas/project.json'
+language: rust
+layer: application
+project:
+  title: AWS Inventory
+  description: Rust AWS inventory collection, catalog, storage, graph, and viewer workspace.
+tasks:
+  fmt:
+    command: cargo fmt --all --check
+    options:
+      cache: false
+      mutex: cargo-workspace
+      runInCI: always
+  source-size:
+    command: scripts/check-source-size.sh
+    options:
+      cache: false
+      runInCI: always
+  function-size:
+    command: scripts/check-function-size.sh
+    options:
+      cache: false
+      runInCI: always
+  model-provenance:
+    command: scripts/check-models.sh
+    options:
+      cache: false
+      runInCI: always
+  parent-catalog:
+    command: cargo run -q -p catalog-tool --locked -- parent-candidates --root . --check
+    options:
+      cache: false
+      mutex: cargo-workspace
+      runInCI: always
+  model-report:
+    command: cargo run -q -p catalog-tool --locked -- models report --check
+    deps:
+      - parent-catalog
+    options:
+      cache: false
+      mutex: cargo-workspace
+      runInCI: always
+  field-registry:
+    command: cargo run -q -p catalog-tool --locked -- models fields --check
+    deps:
+      - model-report
+    options:
+      cache: false
+      mutex: cargo-workspace
+      runInCI: always
+  model-endpoints:
+    command: cargo run -q -p catalog-tool --locked -- models endpoints --check
+    deps:
+      - field-registry
+    options:
+      cache: false
+      mutex: cargo-workspace
+      runInCI: always
+  operation-classes:
+    command: cargo run -q -p catalog-tool --locked -- classes --check
+    deps:
+      - model-endpoints
+    options:
+      cache: false
+      mutex: cargo-workspace
+      runInCI: always
+  collection-plans:
+    command: cargo run -q -p catalog-tool --locked -- plans --check
+    deps:
+      - operation-classes
+    options:
+      cache: false
+      mutex: cargo-workspace
+      runInCI: always
+  binary-catalog:
+    command: cargo run -q -p catalog-tool --locked -- models compile --check
+    deps:
+      - collection-plans
+    options:
+      cache: false
+      mutex: cargo-workspace
+      runInCI: always
+  sql-views:
+    command: cargo run -p inventory-engine --example resource_views --locked -- --check
+    deps:
+      - binary-catalog
+    options:
+      cache: false
+      mutex: cargo-workspace
+      runInCI: always
+  binary-core:
+    command: cargo test -p inventory-core --no-default-features --locked -j1
+    deps:
+      - sql-views
+    options:
+      cache: false
+      mutex: cargo-workspace
+      runInCI: always
+  check:
+    command: cargo check --workspace --all-targets --all-features --locked -j1
+    deps:
+      - binary-core
+    options:
+      cache: false
+      mutex: cargo-workspace
+      runInCI: always
+  lint-src:
+    command: cargo clippy --workspace --lib --bins --examples --all-features --locked -j1 -- -D warnings -W clippy::all
+    deps:
+      - check
+    options:
+      cache: false
+      mutex: cargo-workspace
+      runInCI: always
+  test:
+    command: cargo test --workspace --all-targets --all-features --locked -j1
+    deps:
+      - lint-src
+    options:
+      cache: false
+      mutex: cargo-workspace
+      runInCI: always
+  build:
+    command: cargo build --workspace --all-targets --all-features --locked -j1
+    deps:
+      - test
+    options:
+      cache: false
+      mutex: cargo-workspace
+      runInCI: always
+  live-falkordb-component:
+    script: |
+      set -eu
+      test -n "${FALKORDB_TEST_URL:-}"
+      cargo test -p inventory-engine --test graph --locked live_falkordb_replay_and_parameter_round_trip -- --ignored --exact
+    options:
+      cache: false
+      mutex: cargo-workspace
+      runInCI: false
+  live-emulator-component:
+    script: |
+      set -eu
+      test "${INVENTORY_EMULATOR_TEST:-}" = 1
+      test "${AWS_EC2_METADATA_DISABLED:-}" = true
+      test "${AWS_REGION:-}" = us-east-1 && test "${AWS_DEFAULT_REGION:-}" = us-east-1
+      test -n "${AWS_ENDPOINT_URL:-}" && test -n "${AWS_SHARED_CREDENTIALS_FILE:-}" && test -n "${AWS_CONFIG_FILE:-}" && test -n "${SSL_CERT_FILE:-}"
+      test -n "${INVENTORY_EMULATOR_SNAPSHOT_PATH:-}" && test -n "${INVENTORY_EMULATOR_SNAPSHOT_SHA256:-}" && test -n "${INVENTORY_EMULATOR_BASELINE_SUMMARY:-}" && test -n "${INVENTORY_EMULATOR_BASELINE_SUMMARY_SHA256:-}"
+      cargo test -p inventory-aws --test emulator_snapshot --locked -- --ignored
+    options:
+      cache: false
+      mutex: cargo-workspace
+      runInCI: false

@@ -1,0 +1,4 @@
+$schema: 'https://moonrepo.dev/schemas/toolchains.json'
+rust:
+  version: 'nightly-2026-11-11'
+  syncToolchainConfig: false

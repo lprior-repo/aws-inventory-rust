@@ -514,10 +514,10 @@ Every package uses `scott-ddd-refactor` (domain types), `holzman-rust`
 
 Makepad work follows the `makepad-2.0-*` skills.
 
-Documentation is part of the gate. A change that alters behavior updates this
-document's status, the roadmap and the affected design document in the same
-commit. Every crate states its contract in its crate-level documentation.
-Undocumented public items do not fail the build today; M0.7 makes them fail.
+Behavior changes update the roadmap and affected design and verification
+documents in the same commit. Rust source contains no comments or Rustdoc.
+Contracts, bounds and error semantics live in external Markdown;
+`missing_docs` gates are not permitted.
 When this architecture is implemented, `ARCHITECTURE.md` and
 `CMDB_ARCHITECTURE.md` are replaced by one document that describes what
 exists.

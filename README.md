@@ -184,15 +184,14 @@ cargo build --locked
 cargo build --locked --features aws --jobs 1
 ```
 
-Normal builds do not enable all 437 SDK features. Selected collectors compile
-only the SDK crates they use; all-service SDK inventory generation was removed
-in M1.7. The pinned API model catalog is the source for service and operation
-metadata.
+Selected collectors compile only the SDK crates they use. All-service SDK
+inventory generation was removed in M1.7; the pinned API model catalog is
+the source for service and operation metadata.
 
-The maintainer gate is Rust and shell only and needs no Python:
+The canonical maintainer gate is Moon 2.2.4 and needs no Python:
 
 ```bash
-bash scripts/verify.sh
+moon ci
 ```
 
 Live emulator/FalkorDB tests require the explicit local fixture setup described
