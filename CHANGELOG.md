@@ -85,6 +85,12 @@
   packager is deleted and re-exports this one. The destination directory
   must not be writable by untrusted users (the check is not atomic with
   publication). Rust lines: 1,069 added, 652 deleted.
+- Fixed, found by the architecture audit: `cmdb-view` removed duplicate
+  resource IDs only when they were adjacent after sorting by account, region
+  and kind, so the same ID seen under two scopes was listed twice while
+  lookup by ID returned one of them. A resource's identity is its ID: the
+  first observation in input order is kept and every listed row is found by
+  lookup. Rust lines: 245 added, 6 deleted.
 - Project agents in `.omp/agents/` include the local GPU builders and
   `aws-build-sol` (ChatGPT Sol). Builders implement independent packages in
   parallel; the coordinator owns serialized compilation, formatting and tests.

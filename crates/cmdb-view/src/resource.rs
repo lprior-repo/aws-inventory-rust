@@ -15,7 +15,9 @@ pub const MAX_PAGE_LIMIT: usize = 10_000;
 /// deliberately not retained.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ResourceView {
-    /// Wire identity used for lookup, deduplication and edge endpoints.
+    /// Sole wire identity for lookup, deduplication and edge endpoints.
+    ///
+    /// The first input record wins; account, region and kind are attributes.
     pub id: String,
     /// Producer's owning-account identity, used for exact filtering.
     pub account_id: String,

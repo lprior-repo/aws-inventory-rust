@@ -113,10 +113,10 @@ fn push_failure(coverage: &mut Coverage, record: RawFailureRecord) {
     });
 }
 
-/// Sort and deduplicate by identity, keeping the first record.
+/// Deduplicate resources by ID in input order, then sort the retained records.
 ///
-/// All-observations exports repeat identities; the read model is normalized, so
-/// the export's own ordering decides which observation survives.
+/// All-observations exports repeat identities; account, region and kind are
+/// attributes, not identity components. Display ordering cannot select a winner.
 pub(crate) fn finalize(collected: Collected) -> Finalized {
     let Collected {
         mut resources,
@@ -133,6 +133,9 @@ pub(crate) fn finalize(collected: Collected) -> Finalized {
 }
 
 fn sort_resources(resources: &mut Vec<ResourceView>) {
+    // Stable ID sorting preserves input precedence within each identity.
+    resources.sort_by(|left, right| left.id.cmp(&right.id));
+    resources.dedup_by(|left, right| left.id == right.id);
     resources.sort_by(|left, right| {
         (&left.account_id, &left.region, &left.kind, &left.id).cmp(&(
             &right.account_id,
@@ -141,7 +144,6 @@ fn sort_resources(resources: &mut Vec<ResourceView>) {
             &right.id,
         ))
     });
-    resources.dedup_by(|kept, candidate| kept.id == candidate.id);
 }
 
 fn sort_edges(edges: &mut Vec<EdgeView>) {

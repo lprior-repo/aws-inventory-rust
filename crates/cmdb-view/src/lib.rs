@@ -21,7 +21,9 @@
 //!
 //! Unknown fields are ignored; unknown record tags, missing identities and
 //! unsupported artifacts/versions are typed errors. All-observations exports
-//! repeat identities; the first record wins, matching export ordering.
+//! repeat identities; the first input record for each resource ID wins, even
+//! when its account, region or kind differs from a later observation. Resources
+//! are then displayed in `(account, region, kind, id)` order; lookup uses ID alone.
 //!
 //! # Bounds
 //!
