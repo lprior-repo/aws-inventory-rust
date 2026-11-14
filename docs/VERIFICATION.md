@@ -33,6 +33,13 @@ The complete CI job finished successfully in 18m3s, including Makepad native lin
 
 ### Request and streaming-record integration — 2026-11-14
 
+The completed integration gate passed formatting and
+`cargo test --workspace --all-targets --all-features --locked --offline -j1 --no-fail-fast`:
+1,712 tests passed across 128 test runs, zero failed, 17 ignored.
+`cargo build --workspace --all-targets --all-features --locked --offline -j1`
+then passed, including Makepad native linking. Ignored live component tests
+are not counted as executed coverage.
+
 Coordinator-executed checks in the isolated `request-landing` worktree:
 
 - `cargo test -p aws-wire --locked --offline --lib request::`: 38 passed.
