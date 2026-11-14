@@ -39,9 +39,7 @@ fn add_protocols(shape: &Shape, out: &mut Vec<(CatalogKey, Value)>) {
         .filter(|id| shape.traits.contains_key(**id))
         .map(|id| Value::Text((*id).to_owned()))
         .collect::<Vec<_>>();
-    if !values.is_empty() {
-        out.push((CatalogKey::Protocols, Value::List(values)));
-    }
+    out.push((CatalogKey::Protocols, Value::List(values)));
 }
 
 fn known_protocols() -> &'static [&'static str] {
@@ -63,9 +61,7 @@ fn add_resources(model: &ModelFile, out: &mut Vec<(CatalogKey, Value)>) {
         .filter(|(_, shape)| matches!(&shape.kind, ShapeKind::Resource))
         .map(|(id, _)| name(id))
         .collect::<Vec<_>>();
-    if !values.is_empty() {
-        out.push((CatalogKey::Resources, Value::List(values)));
-    }
+    out.push((CatalogKey::Resources, Value::List(values)));
 }
 
 pub(super) fn service_shape(model: &ModelFile) -> Result<(&str, &Shape), CompileError> {

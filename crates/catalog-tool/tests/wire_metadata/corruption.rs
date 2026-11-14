@@ -51,6 +51,8 @@ fn service_with_shape(
         ),
         (CatalogKey::ApiVersion, Value::Text("1".to_owned())),
         (CatalogKey::Operations, Value::List(Vec::new())),
+        (CatalogKey::Protocols, Value::List(Vec::new())),
+        (CatalogKey::Resources, Value::List(Vec::new())),
         (CatalogKey::Shapes, Value::List(vec![Value::Bytes(shape)])),
     ])?;
     root(&[

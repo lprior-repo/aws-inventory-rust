@@ -1,7 +1,7 @@
 use super::{TestResult, compile_model, fixture_service};
 use inventory_core::catalog::{HttpOperation, Target};
 
-const FIELDS: &str = "Entries\nId\nNext\nPageSize\nToken\nValue\n";
+const FIELDS: &str = "Entries\nId\nNext\nPageSize\nToken\nValue\nNextPage\nResults\nItems\nMessage\n";
 
 const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 "example#Service":{"type":"service","version":"2025-04-03","traits":{"aws.api#service":{"sdkId":"Fixture SDK","endpointPrefix":"fixture-prefix","arnNamespace":"fixture-arn"},"aws.auth#sigv4":{"name":"fixture-signing"},"aws.protocols#restJson1":{"noErrorWrapping":true},"aws.protocols#awsQueryCompatible":{},"smithy.api#xmlNamespace":{"uri":"urn:service","prefix":"svc"},"smithy.api#paginated":{"inputToken":"Token","outputToken":"Next","items":"Results.Entries","pageSize":"PageSize"}}},

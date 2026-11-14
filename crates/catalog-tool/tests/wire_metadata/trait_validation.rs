@@ -111,7 +111,7 @@ fn known_service_operation_member_and_shape_traits_reject_wrong_json_types_with_
         ),
     ];
     for (kind, trait_id, payload, shape) in cases {
-        let owner = "example#Service";
+        let owner = "service example";
         let model = if kind == "service" {
             r#"{"smithy":"2.0","shapes":{"example#Service":{"type":"service","version":"1","traits":{"__TRAIT__":__PAYLOAD__}},"example#Bad":{"type":"structure"}}}"#
                 .replace("__TRAIT__", trait_id)
