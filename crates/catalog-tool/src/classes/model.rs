@@ -2,16 +2,16 @@ use super::{Error, OperationFacts};
 use serde::{Deserialize, de::IgnoredAny};
 use std::{collections::BTreeMap, path::Path};
 
-type Traits = BTreeMap<String, IgnoredAny>;
+pub(crate) type Traits = BTreeMap<String, IgnoredAny>;
 
 #[derive(Debug, Deserialize)]
-pub(super) struct Model {
-    shapes: BTreeMap<String, Shape>,
+pub(crate) struct Model {
+    pub(crate) shapes: BTreeMap<String, Shape>,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
-enum Shape {
+pub(crate) enum Shape {
     Service,
     Operation {
         input: Option<Target>,
@@ -29,12 +29,12 @@ enum Shape {
 }
 
 #[derive(Debug, Deserialize)]
-struct Target {
+pub(crate) struct Target {
     target: String,
 }
 
 #[derive(Debug, Deserialize)]
-struct Member {
+pub(crate) struct Member {
     #[serde(default)]
     traits: Traits,
 }
@@ -65,7 +65,7 @@ impl Model {
         })
     }
 
-    fn facts<'a>(
+    pub(crate) fn facts<'a>(
         &'a self,
         service: &'a str,
         id: &'a str,
@@ -127,7 +127,7 @@ fn operation_name(id: &str) -> &str {
     name
 }
 
-pub(super) fn service<'a>(models: &Path, file: &'a Path) -> Result<&'a str, Error> {
+pub(crate) fn service<'a>(models: &Path, file: &'a Path) -> Result<&'a str, Error> {
     file.strip_prefix(models)
         .ok()
         .and_then(|p| p.parent())

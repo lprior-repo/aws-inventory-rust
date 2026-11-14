@@ -88,6 +88,14 @@
   eviction, so another host can wait until its deadline; HTTP/2 checkout-age
   expiry can retire a sender while an active stream retains its permit.
   Rust lines: 3,313 added, none deleted; production 766.
+- M1.4a: model-derived collection-plan reports, without granting callability.
+  The pinned models yield 2,197 enumeration candidates, 2,940 expansions
+  (337 modeled, 2,603 needing overlays), and 440 suspected missing paginators.
+  An independently executed jq oracle matches all measured totals and splits.
+  Both reviews approve; 392 catalog-tool tests pass after integration rebase,
+  including the 512-example fixed-seed property. Regeneration comparison,
+  source Clippy and source guards pass; the gate checks the committed report.
+  Rust lines: 2,374 added, 21 deleted.
 - `crates/aws-wire` is scaffolded, and Smithy's AWS protocol test suites
   (Smithy 1.75.0, seven protocols, 901 HTTP cases) are committed as JSON ASTs
   under `crates/aws-wire/tests/fixtures/protocol-tests/` with the conversion

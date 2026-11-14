@@ -8,8 +8,8 @@
 
 mod counts;
 mod deny;
-mod model;
-mod report;
+pub(crate) mod model;
+pub(crate) mod report;
 
 use std::path::{Path, PathBuf};
 

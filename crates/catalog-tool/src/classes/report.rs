@@ -89,19 +89,43 @@ impl Report {
 
 pub(super) fn run(root: &Path, source: &Path, mode: ReportMode) -> Result<(), Error> {
     let text = build(root, source)?;
+    publish(root, REPORT, &text, mode)
+}
+
+pub(crate) fn publish(
+    root: &Path,
+    relative: &str,
+    text: &str,
+    mode: ReportMode,
+) -> Result<(), Error> {
     io::stdout()
         .lock()
         .write_all(text.as_bytes())
         .map_err(|source| io_error(Path::new("<stdout>"), source))?;
-    let path = root.join(REPORT);
+    let path = root.join(relative);
     match mode {
         ReportMode::Print => Ok(()),
-        ReportMode::Check => check(&path, &text),
-        ReportMode::Write => {
-            fs::create_dir_all(root.join("catalog")).map_err(|source| io_error(&path, source))?;
-            fs::write(&path, text).map_err(|source| io_error(&path, source))
-        }
+        ReportMode::Check => check(&path, text),
+        ReportMode::Write => write_report(&path, text),
     }
+}
+
+fn write_report(path: &Path, text: &str) -> Result<(), Error> {
+    let parent = path.parent().ok_or(Error::Limit)?;
+    fs::create_dir_all(parent).map_err(|source| io_error(path, source))?;
+    let mut temporary =
+        tempfile::NamedTempFile::new_in(parent).map_err(|source| io_error(path, source))?;
+    temporary
+        .write_all(text.as_bytes())
+        .map_err(|source| io_error(path, source))?;
+    temporary
+        .as_file()
+        .sync_all()
+        .map_err(|source| io_error(path, source))?;
+    temporary
+        .persist(path)
+        .map_err(|error| io_error(path, error.error))?;
+    Ok(())
 }
 
 fn check(path: &Path, expected: &str) -> Result<(), Error> {
@@ -114,7 +138,7 @@ fn check(path: &Path, expected: &str) -> Result<(), Error> {
     }
 }
 
-fn read_text(path: &Path) -> Result<String, Error> {
+pub(crate) fn read_text(path: &Path) -> Result<String, Error> {
     let file = fs::File::open(path).map_err(|source| io_error(path, source))?;
     let mut text = String::new();
     text.try_reserve(4_194_305).map_err(|_| Error::Limit)?;

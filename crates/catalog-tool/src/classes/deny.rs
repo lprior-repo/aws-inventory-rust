@@ -36,7 +36,7 @@ pub enum ParseErrorKind {
 }
 
 #[derive(Debug)]
-pub(super) struct Entry<'a> {
+pub(crate) struct Entry<'a> {
     pub key: &'a str,
     pub reason: DenyReason,
     pub line: usize,
@@ -53,7 +53,7 @@ impl Entry<'_> {
 
 /// Validated, borrowed entries; parsing allocates only the bounded entry vector.
 #[derive(Debug)]
-pub struct DenyList<'a>(pub(super) Vec<Entry<'a>>);
+pub struct DenyList<'a>(pub(crate) Vec<Entry<'a>>);
 
 impl<'a> DenyList<'a> {
     /// Parse strict LF text, ignoring `#` comments; empty text is an empty list.
