@@ -1,12 +1,39 @@
 //! Strict bounded graph plan validation and replay.
 use super::*;
 
+/// The declaration order is the wire protocol's monotonic stage order.
+/// Completion is a stage, never a separate flag that can disagree with it.
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+enum PlanStage {
+    Index,
+    Begin,
+    Resources,
+    Edges,
+    End,
+}
+
+impl PlanStage {
+    fn parse(value: &str) -> Result<Self, GraphError> {
+        match value {
+            "index" => Ok(Self::Index),
+            "begin" => Ok(Self::Begin),
+            "resources" => Ok(Self::Resources),
+            "edges" => Ok(Self::Edges),
+            "end" => Ok(Self::End),
+            _ => Err(GraphError::Invalid("invalid projection stage".into())),
+        }
+    }
+
+    fn is_metadata(self) -> bool {
+        matches!(self, Self::Index | Self::Begin | Self::End)
+    }
+}
+
 pub(super) struct PlanReader {
-    pub(super) reader: BufReader<File>,
-    pub(super) identity: Option<(String, String)>,
-    pub(super) sequence: u64,
-    pub(super) stage: u8,
-    pub(super) ended: bool,
+    reader: BufReader<File>,
+    identity: Option<(String, String)>,
+    sequence: u64,
+    stage: PlanStage,
 }
 
 impl PlanReader {
@@ -15,8 +42,7 @@ impl PlanReader {
             reader: BufReader::new(file),
             identity: None,
             sequence: 0,
-            stage: 0,
-            ended: false,
+            stage: PlanStage::Index,
         }
     }
 
@@ -24,14 +50,32 @@ impl PlanReader {
         validate_name(&batch.graph)?;
         validate_name(&batch.scan_id)?;
         let pair = (batch.graph.clone(), batch.scan_id.clone());
-        if self.identity.as_ref().is_some_and(|old| old != &pair)
+        self.validate_identity(batch, &pair)?;
+        self.validate_bounds(batch)?;
+        let next = self.next_stage(batch)?;
+        self.identity = Some(pair);
+        self.stage = next;
+        self.sequence = self.sequence.saturating_add(1);
+        Ok(())
+    }
+
+    fn validate_identity(
+        &self,
+        batch: &GraphBatch,
+        pair: &(String, String),
+    ) -> Result<(), GraphError> {
+        if self.identity.as_ref().is_some_and(|old| old != pair)
             || self.sequence != batch.sequence
-            || self.ended
+            || self.stage == PlanStage::End
         {
             return Err(GraphError::Invalid(
                 "mixed identities, noncontiguous sequence, or data after end marker".into(),
             ));
         }
+        Ok(())
+    }
+
+    fn validate_bounds(&self, batch: &GraphBatch) -> Result<(), GraphError> {
         if batch.version != 1
             || batch.query.len() > MAX_QUERY_BYTES
             || self.sequence >= MAX_BATCHES
@@ -41,32 +85,25 @@ impl PlanReader {
                 "unsupported or oversized projection batch".into(),
             ));
         }
-        let next = match batch.stage.as_str() {
-            "index" => 0,
-            "begin" => 1,
-            "resources" => 2,
-            "edges" => 3,
-            "end" => 4,
-            _ => return Err(GraphError::Invalid("invalid projection stage".into())),
-        };
+        Ok(())
+    }
+
+    fn next_stage(&self, batch: &GraphBatch) -> Result<PlanStage, GraphError> {
+        let next = PlanStage::parse(&batch.stage)?;
         let allowed = match self.sequence {
-            0 => next == 0,
-            1 => next == 1,
-            _ => next >= 2 && next >= self.stage,
+            0 => next == PlanStage::Index,
+            1 => next == PlanStage::Begin,
+            _ => next >= PlanStage::Resources && next >= self.stage,
         };
         if !allowed {
             return Err(GraphError::Invalid("projection stages out of order".into()));
         }
-        if (next < 2 || next == 4) && batch.rows != 0 {
+        if next.is_metadata() && batch.rows != 0 {
             return Err(GraphError::Invalid(
                 "metadata batch contains row count".into(),
             ));
         }
-        self.identity = Some(pair);
-        self.stage = next;
-        self.ended = next == 4;
-        self.sequence = self.sequence.saturating_add(1);
-        Ok(())
+        Ok(next)
     }
 }
 
@@ -82,7 +119,7 @@ pub(super) async fn next_batch(
         .read_until(b'\n', &mut bytes)
         .await?;
     if bytes.is_empty() {
-        if !plan.ended {
+        if plan.stage != PlanStage::End {
             return Err(GraphError::Invalid(
                 "projection is empty or lacks a final end marker".into(),
             ));
@@ -96,3 +133,6 @@ pub(super) async fn next_batch(
     plan.accept(&batch)?;
     Ok(Some((batch, plan)))
 }
+
+#[cfg(test)]
+mod tests;
