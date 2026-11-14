@@ -30,20 +30,21 @@ Cloud Control has **421 configured resource types across 76 service families**, 
 
 The merged descriptors define **4,309 provider columns**, **968 property relationship rules across 255 types**, and **24 runtime `CHILD_OF` workflows**. In total, **268 distinct types** have a property rule or a parent workflow. SQLite schema 13 contains the 421 source-specific provider views. These are implemented schema and mapping counts; they do not establish that every relationship rule or every real AWS provider was exercised. [Root catalog](../catalog/cloudcontrol-resources.json) · [Parent catalog](../catalog/cloudcontrol-parent-resources.json) · [Parent workflow contract](PARENT_COLLECTIONS.md)
 
-## Reviewed additive operations
+## Historical reviewed additive operations
 
-The five native KMS callsites (`ListKeys`, `DescribeKey`, `GetKeyRotationStatus`, `ListResourceTags`, `ListAliases`) and the five native Step Functions callsites (`ListStateMachines`, `DescribeStateMachine`, `ListTagsForResource`, `ListActivities`, `DescribeActivity`) were reviewed after the frozen 79-operation matrix. They are recorded in [the additive overlay](../catalog/aws-operation-additions.json), which binds the historical matrix digest, the published SDK inventory digest, exact source callsites and source hashes, and the pinned `aws-sdk-kms` and `aws-sdk-sfn` operation-module hashes. The historical `catalog/aws-operations.json` and its v0.4/v0.5/v0.6 receipts are unchanged.
+The original source review recorded five native KMS operations (`ListKeys`,
+`DescribeKey`, `GetKeyRotationStatus`, `ListResourceTags`, `ListAliases`) and
+five Step Functions operations (`ListStateMachines`, `DescribeStateMachine`,
+`ListTagsForResource`, `ListActivities`, `DescribeActivity`) after the frozen
+79-operation matrix. Their former overlay bound source locations, hashes and
+SDK module fingerprints; M1.7 removed that overlay with the typed-SDK-derived
+inventory. Historical v0.4/v0.5/v0.6 receipts remain unchanged.
 
-Additions are reported separately as `pending_execution` or `unexercised`; they never enter the exercised counts and never claim an emulator outcome. The current source therefore has **89 explicit operations at 91 callsites**, of which 79/80 remain the historical reviewed matrix and ten operations at 11 callsites are reviewed additive rows. The coverage document is regenerated from the Rust scanner and overlay; the Python `--check-additions` command remains a source-only, fail-closed validator.
-
-## Reproduce the source audit
-
-From the repository root, with the pinned SDK sources present in Cargo's cache, choose a fresh output filename:
-
-```bash
-python3 scripts/catalog/reconcile_aws_operations.py \
-  --output artifacts/aws-operation-source-reconciliation-local.json
-```
+The former 89-operation / 91-callsite total (79 baseline operations at 80
+callsites plus 10 reviewed additions at 11 callsites) is historical, not a
+current inventory or proof that every operation was exercised. The Rust
+operation scanner and its SDK-inventory audit were removed in M1.7. This
+document no longer provides a reproduction command for that retired audit.
 
 A source-only receipt has `emulator_evidence.status = "pending"` and `current_run_bound = false`. It must not replace an execution-bound receipt as though both had the same scope. The auditor protects `catalog/aws-operations.json` and the historical v0.4/v0.5 reconciliation files from overwrite.
 

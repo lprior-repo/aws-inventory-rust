@@ -15,9 +15,7 @@ inventory-harness catalog universal --root <dir> [--check]\n  \
 inventory-harness seed s3 --bucket <name>\n  \
 inventory-harness seed cloud-control --prefix <inventory-page-...> --count <n>\n  \
 inventory-harness assert cloud-control --db <file> --scan-id <id> [--seed-results <file>] \
-[--root <dir>]\n  \
-inventory-harness coverage operations [--root <dir>] [--format json] [--write <file>] \
-[--check]";
+[--root <dir>]";
 
 /// Supported harness operations.
 enum Command {
@@ -47,11 +45,6 @@ enum Command {
     SeedCloudControl {
         prefix: String,
         count: usize,
-    },
-    CoverageOperations {
-        root: PathBuf,
-        write: Option<PathBuf>,
-        check: bool,
     },
 }
 
@@ -124,9 +117,6 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, HarnessError> {
         Command::SeedS3 { bucket } => seed::s3_bucket(&bucket).await,
         Command::SeedCloudControl { prefix, count } => {
             seed::cloud_control_topics(&prefix, count).await
-        }
-        Command::CoverageOperations { root, write, check } => {
-            audit::run_operation_coverage(&root, write.as_deref(), check)
         }
     }
 }

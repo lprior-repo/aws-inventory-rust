@@ -20,8 +20,6 @@ unchecked indexing, lossy as casts, or silently ignored fallible results.
 - `inventory-core`: synchronous model, identity, validation only.
 - `inventory-engine`: rate/retry executor, SQLite store, graph projection.
 - `inventory-aws`: official AWS Rust SDK collectors, no SDK nested retries.
-- `inventory-sdk-catalog`, `sdk-operations`: all pinned official service SDK
-  dependencies, provenance and the operation inventory. Deleted in ROADMAP M1.7.
 - `inventory-harness`: emulator installation, seeding, assertions and audits;
   never linked into the collector.
 - `catalog-tool`: catalog maintenance and source packaging.

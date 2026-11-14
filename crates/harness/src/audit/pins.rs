@@ -11,7 +11,6 @@ use crate::files::read_bytes;
 use crate::provenance::file_sha256;
 
 use super::files::{MAX_INPUT_BYTES, array_field, text_field};
-use super::operations::additions::{AdditionRow, Additions};
 
 /// Slack allowed on Cargo registry source roots.
 const MAX_REGISTRY_ROOTS: usize = 32;
@@ -218,38 +217,3 @@ pub fn dependency_evidence(
     Ok((rows, evidence))
 }
 
-/// Verify pinned SDK operation modules for reviewed additive operations.
-pub fn addition_evidence(root: &Path, additions: &Additions) -> Result<Vec<Value>, HarnessError> {
-    if !additions.is_present() {
-        return Ok(Vec::new());
-    }
-    let versions = lock_versions(root)?;
-    additions
-        .rows
-        .iter()
-        .map(|row| addition_row(row, &versions))
-        .collect()
-}
-
-fn addition_row(
-    addition: &AdditionRow,
-    versions: &BTreeMap<String, BTreeSet<String>>,
-) -> Result<Value, HarnessError> {
-    let version = &addition.key.1;
-    require_pinned(versions, &addition.crate_name, version)?;
-    let module = format!("src/operation/{}.rs", addition.module);
-    let digest = file_sha256(&registry_file(&addition.crate_name, version, &module)?)?;
-    if digest != addition.module_sha256 {
-        return Err(HarnessError::invalid(format!(
-            "pinned SDK operation module changed: {}",
-            addition.id
-        )));
-    }
-    Ok(json!({
-        "id": addition.id,
-        "sdk_crate": addition.crate_name,
-        "sdk_version": version,
-        "api_operation": addition.api_operation,
-        "module_sha256": digest,
-    }))
-}

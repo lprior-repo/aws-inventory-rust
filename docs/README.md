@@ -53,10 +53,10 @@ machine that kept the files.
 | [DELIVERY.md](DELIVERY.md) | Export and FalkorDB delivery after a scan, or from an existing snapshot. | Mostly kept. Replaced: delivery tied to the old `scan` and to whole snapshots (M6.1, M9.5). |
 | [EXPORT.md](EXPORT.md) | The JSON and JSONL export format, provenance modes, bounds and atomic publication. | Kept as the one explicit place JSON is produced (V03). Its snapshot and provenance model follows schema 13; no roadmap package redefines it yet. |
 | [EMULATOR_TESTING.md](EMULATOR_TESTING.md) | The pinned AWS Emulator harness: installation, fixtures, what the evidence proves. | Kept as the proof environment. Replaced: Python seeding and recording (M2.9, M2.10) and the Cloud Control scans and assertions (M9.5). Its v0.4 and v0.5 sections are historical evidence. |
-| [HARNESS.md](HARNESS.md) | `inventory-harness`: commands and the port of Python tooling to Rust. | Gains the data-driven seeder (M2.9) and the fault proxy (M4.3). The "Python kept until byte parity" rule is superseded by V21 and M2.10. |
-| [LOCAL_SETUP.md](LOCAL_SETUP.md) | The local emulator and FalkorDB stack and its wrapper script. | Python prerequisites go in M2.10; the all-SDK build step goes with the SDK catalog in M1.7. |
+| [HARNESS.md](HARNESS.md) | `inventory-harness`: commands and the port of Python tooling to Rust. | Gains the data-driven seeder (M2.9) and the fault proxy (M4.3). Typed-SDK inventory reproduction and its operation audit were removed in M1.7; independent Cloud Control audit components remain. |
+| [LOCAL_SETUP.md](LOCAL_SETUP.md) | The local emulator and FalkorDB stack and its wrapper script. | Python prerequisites go in M2.10; the obsolete typed-SDK inventory build step was removed in M1.7. |
 | [PROPERTY_TESTING.md](PROPERTY_TESTING.md) | Property tests of the executor, store, jobs and CLI. | Kept. The emulator oracle section depends on Python scripts (M2.10) and Cloud Control descriptors (M9.5). |
-| [SOURCES.md](SOURCES.md) | Primary sources, attribution and licensing. | Kept. Does not yet list the pinned AWS API models; its Cloud Control and SDK references describe the baseline. |
+| [SOURCES.md](SOURCES.md) | Primary sources, attribution and licensing. | Kept. Historical SDK source-audit evidence remains; the pinned AWS API model catalog is the current source of service and operation metadata. |
 
 ## Baseline being replaced
 
@@ -73,10 +73,8 @@ machine that kept the files.
 | [TASK_DEFINITIONS.md](TASK_DEFINITIONS.md) | The `ecs` and `task_definitions` adapters. | M5.5. |
 | [DISCOVERY.md](DISCOVERY.md) | Organizations, Config aggregator and Resource Explorer discovery, and role assumption. | M5.2 for the calls. Accounts come from local profiles in the first version (V09); Organizations discovery is after 1.0. |
 | [AWS_CALL_MATRIX.md](AWS_CALL_MATRIX.md) | Every typed SDK operation the baseline calls, by callsite. | M5 and M9.5; M2.6 uses it as the differential-proof list. |
-| [OPERATION_COVERAGE.md](OPERATION_COVERAGE.md) | Generated report of exercised operations against the SDK operation inventory. Generated and byte-checked by `inventory-harness coverage operations`, so it carries no status line. | M1.7 deletes the inventory it is generated from. |
 | [AWS_PROPERTY_TESTS.md](AWS_PROPERTY_TESTS.md) | Property tests and oracles of the typed adapters and their SDK retry configuration. | M5 and M9.5, with the adapters. |
-| [SDK_CATALOG.md](SDK_CATALOG.md) | The catalog of pinned typed SDK crates and its Python generator. | M1.7; the generator in M2.10. |
-| [SDK_RETRY_AUDIT.md](SDK_RETRY_AUDIT.md) | Source audit of the SDK crates' retry behavior. Its conclusion, one retry owner, is kept. | M1.7. |
+| [SDK_RETRY_AUDIT.md](SDK_RETRY_AUDIT.md) | Historical source audit of SDK retry behavior. Its independent conclusion, one retry owner, remains relevant to the typed adapters. | Kept as historical evidence; M1.7 deletes the SDK-derived inventory, not the adapters. |
 | [CLOUDCONTROL_COVERAGE.md](CLOUDCONTROL_COVERAGE.md) | The Cloud Control catalog, the full schema partition and selection rules. | M9.5. The type list survives as a checklist (M1.5, M9.4). |
 | [COLLECTION_PLAN.md](COLLECTION_PLAN.md) | Plan and evidence for the 421 Cloud Control types and their relationship rules. | M9.5. The reviewed rules are carried over in M5. |
 | [PARENT_COLLECTIONS.md](PARENT_COLLECTIONS.md) | Parent-dependent Cloud Control collection. | M9.5; bindings come from the models and overlay (M1.4). |

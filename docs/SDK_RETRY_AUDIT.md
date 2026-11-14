@@ -1,13 +1,15 @@
 # AWS SDK source and retry audit
 
-> Status: Baseline being replaced. It audits the typed SDK crates that ROADMAP
-> M1.7 removes from the workspace; its conclusion, one retry owner outside the
-> SDK, is kept, and the wire engine has no internal retries at all (VISION
-> 5.3). The audit report it cites lives under the ignored `artifacts/`
-> directory. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+> Status: Historical source-audit evidence. The typed-SDK-derived inventory
+> and its reproduction crate were removed in M1.7; the typed service adapters
+> and the independent conclusion of one retry owner remain. This document is
+> not a current inventory, build recipe or claim about untested SDK releases.
+> See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
 
-This audit examines the 437 exact service SDK versions in `crates/sdk-catalog/sdk-services.json`, pinned to AWS's `release-2026-11-11` catalog. The reproducible machine report is `artifacts/sdk-capabilities-v03.json`; the auditor is `crates/sdk-catalog/examples/audit.rs`. It does not load credentials, construct service clients, or make AWS requests.
-
+This historical audit examined the 437 service SDK versions pinned at the time
+to AWS's `release-2026-11-11` snapshot. Its archived machine report is
+`artifacts/sdk-capabilities-v03.json`. It did not load credentials, construct
+service clients, or make AWS requests.
 The SDK already provides request classification, bounded retries, exponential backoff, jitter, retry budgets, and service-specific retry behavior. Those are preferable to duplicate application implementations when they can be integrated without breaking the application's quota and timeout contract. The inspected public interfaces do not provide a direct asynchronous admission point before both signing and attempt timeout. For the current strict contract, retaining one outer retry owner with SDK attempts set to one is the verified baseline; native retry migration remains conditional on an explicit timing-policy change or a suitable upstream hook. A retry budget is not a service's requests-per-second quota.
 
 This document records SDK capabilities and integration constraints. It does not, by itself, assert that the inventory application has adopted every proposed integration change.
@@ -24,18 +26,10 @@ The Rust auditor parses every local package manifest and checks its name and ver
 
 Public configuration methods are detected from their declaration lines. Classifier registrations and the long-polling retry marker are lexical source checks. The JSON records the exact patterns through the field names and the implementation, plus the auditor's own source hash. This is source evidence, not compilation or execution evidence for all service crates. No inference is made that an operation is safe to call, suitable for inventory, authorized by an account policy, available in every region, or implemented by this application.
 
-Run from the repository root after fetching the catalog dependencies:
-
-```sh
-cargo run -p inventory-sdk-catalog --example audit --locked -- \
-  --catalog crates/sdk-catalog/sdk-services.json \
-  --registry-src /path/to/cargo/registry/src/index.crates.io-1949cf8c6b5b557f \
-  --output /path/to/new-sdk-capabilities.json
-```
-
-The cache directory defaults to the sibling `registry/cache/<index-directory>`; `--registry-cache DIR` overrides it. Output uses `create_new`, so an existing file is never overwritten. The output contains no wall-clock timestamp or machine-specific source root; identical catalog, auditor, and audited sources produce identical bytes. Run again with another new output path and compare the files to check reproducibility.
-
-The catalog's 437 optional SDK features and generated library remain unchanged. The example uses only JSON, TOML, and SHA-256 libraries as development dependencies. Do not enable `all-services` to run this audit.
+The original source-audit executable and typed-SDK inventory were removed in
+M1.7. Reproduction commands are intentionally omitted; the archived report and
+verification notes are historical evidence only. This note does not provide a
+current inventory of SDK releases or a way to regenerate the report.
 
 Explicit bounds are 1,024 services, 16,384 entries per scanned directory, 100,000 operation modules and 100,000 waiter modules in total, 16 MiB per source/input file, 64 MiB per archive, 2 GiB of source reads, 1 GiB of archive reads, and 32 MiB of serialized output. Every source and archive read is capped even if a file grows after its initial size check. Processing is sequential; there are no spawned tasks or unbounded recursive directory walks.
 

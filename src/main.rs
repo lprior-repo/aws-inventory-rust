@@ -84,9 +84,6 @@ fn dispatch(command: Command) -> BoxFuture<'static, Result<Value>> {
             limit,
         ))),
         Command::Plan(options) => Box::pin(std::future::ready(plan_command(options))),
-        Command::SdkCatalog { service } => {
-            Box::pin(std::future::ready(catalog::sdk_catalog(service)))
-        }
         Command::Demo { db } => Box::pin(demo::create(db)),
         Command::Ingest { db, input, scan_id } => Box::pin(demo::ingest(db, input, scan_id)),
         Command::Export(options) => Box::pin(delivery::export_command(options)),

@@ -11,8 +11,8 @@ SDK. It streams pages to the caller's bounded event channel. It does not invoke
 the AWS CLI, enable services, create indexes or recorders, change IAM, or retain an account-sized resource vector. Existing roles can be
 selected explicitly or through bounded Organizations account discovery.
 
-This file describes implemented collectors. An SDK dependency in the optional
-SDK catalog does not, by itself, implement a resource collector. The current
+The pinned AWS API model catalog records service and operation metadata. A
+modeled operation does not, by itself, implement a resource collector. The
 native coverage is **39 resource/component kinds**: the original 13 compute,
 container and data kinds, six VPC networking kinds, five ELBv2 kinds, and
 ACTIVE ECS task-definition revisions, plus seven S3/IAM/Route 53/CloudFront

@@ -62,7 +62,6 @@ pub fn catalog() -> Value {
             "Step Functions ASSUMES_ROLE edges require an exact IAM role ARN in the scan partition and account; ENCRYPTED_BY edges require an exact KMS key ARN in the scan partition, region and account. Aliases, bare key IDs and foreign keys stay properties, and logging destinations produce no CloudWatch edge."],
         "optional_sources":[{"source":"aws_config","operation":"SelectAggregateResourceConfig","requires":"existing explicit or unambiguously discovered aggregator"},
         {"source":"resource_explorer","operation":"ListResources","requires":"existing explicit or validated discovered view"}],
-        "sdk_catalog":{"service_crates":inventory_sdk_catalog::SERVICE_COUNT,"inspect_command":"sdk-catalog","meaning":"pinned SDK availability; not implemented collector coverage"},
         "bounds":{"max_pages_per_scope":10000,"max_items_per_scope":100000,"max_in_flight_requests":4096,
             "max_unpaginated_target_health_memberships":10000},
         "not_claimed":["all AWS resource types","full Steampipe schemas or PostgreSQL syntax","full Cartography schema compatibility",
@@ -143,27 +142,6 @@ fn scope(table: &str) -> &'static str {
         }
         _ => "account + region",
     }
-}
-
-pub fn sdk_catalog(service: Option<String>) -> anyhow::Result<Value> {
-    let manifest: Value = serde_json::from_str(inventory_sdk_catalog::SERVICE_MANIFEST_JSON)?;
-    let Some(service) = service else {
-        return Ok(manifest);
-    };
-    let services = manifest
-        .get("services")
-        .and_then(Value::as_array)
-        .ok_or_else(|| anyhow::anyhow!("invalid embedded SDK catalog"))?;
-    services
-        .iter()
-        .find(|entry| {
-            entry.get("name").and_then(Value::as_str) == Some(&service)
-                || entry.get("feature").and_then(Value::as_str) == Some(&service)
-        })
-        .cloned()
-        .ok_or_else(|| {
-            anyhow::anyhow!("SDK service is not present in the pinned catalog: {service}")
-        })
 }
 
 #[cfg(test)]

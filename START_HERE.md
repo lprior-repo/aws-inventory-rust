@@ -28,18 +28,18 @@ read model, and a Makepad table/DAG viewer over a synthetic fixture. **Full univ
 coverage (parent workflows and native breadth) and the whole-project 95% mutation
 target remain open.**
 
-On 2026-11-13 the development tree passed **781 Rust tests with zero failures** (15
-ignored by default). The native live emulator phase passes (263 attempts, 168
-resources, 344 edges, SQS/SNS/KMS/Step Functions assertions included). The
-prepared live baseline passes **2,664 checks with zero failures**, including
-the Config freeze and parent pagination gates. `cargo clippy
---workspace --exclude inventory-sdk-catalog --all-targets --all-features` is
-clean, formatting passes, and the 300-line source and 25-line function gates
-pass. The universal partition is pinned literally against the pinned emulator:
-1,881 schema types, 1,291 list-capable, 410 parent-required, 180 without list
-handlers, and 999 listed / 292 provider-unsupported / 0 failed.
+The 2026-11-13 figures below are historical baselines, not verification of this
+post-M1.7 tree: the prior development tree passed 781 Rust tests, the native
+emulator phase recorded 263 attempts, 168 resources and 344 edges, and its
+prepared baseline recorded 2,664 checks. These figures predate removal of the
+typed-SDK inventories and their harness audit. They do not imply fresh checks
+after this change.
 
-These figures are historical baselines, not dependency-refresh results.
+The universal partition was pinned against the emulator at 1,881 schema types,
+1,291 list-capable, 410 parent-required, 180 without list handlers, and
+999 listed / 292 provider-unsupported / 0 failed. Current verification is owned
+by the parent change and recorded results remain in the historical verification
+documents.
 Current package verification is in `docs/ROADMAP.md`; upgraded-emulator
 commands and results are in `docs/HARNESS.md`.
 
@@ -82,10 +82,8 @@ can exceed a small memory-backed `/tmp` filesystem.
 
 ```sh
 cargo fetch --locked
-# Optional, legacy Python (deleted in ROADMAP M2.10): check the SDK catalog.
-# python3 scripts/generate_sdk_catalog.py --check --verify-cache
 cargo build --locked --features aws -j1
-cargo test --workspace --exclude inventory-sdk-catalog --all-features --locked -j1
+cargo test --workspace --all-features --locked -j1
 
 # Synthetic local demo; no AWS calls.
 cargo run --locked -- demo --db demo.sqlite
@@ -108,12 +106,12 @@ The obsolete `cmdb-api` HTTP server has been removed (V32, ROADMAP M6.5).
 `cmdb-view` still reads one JSON export; the UI still uses a synthetic fixture.
 In-process SQLite/FalkorDB reads and UI integration are planned in M6.2/M6.3.
 
-The SDK catalog's `all-services` feature is a separate, expensive build of all
-437 clients. It does not implement new collectors. The embedded `coverage`
-evidence deliberately retains source-bound historical root results; current
-parent execution evidence is a separate artifact referenced by
-`docs/VERIFICATION.md`. A recorded `not_run` in that historical matrix is not
-rewritten as a current pass merely because a descriptor is now selected.
+The SDK-derived source inventory and its executable audit were removed in M1.7.
+Historical SDK retry evidence and emulator results remain historical; the
+embedded Cloud Control coverage evidence remains bound to its prior source and
+catalog digests. New service and operation metadata comes from the pinned AWS
+API model catalog, while typed service adapters remain for the differential
+proof.
 
 The maintainer gate is `scripts/verify.sh`. It needs no Python; the Python
 scripts in the tree are frozen legacy tooling, deleted in ROADMAP M2.10. Ordinary tests

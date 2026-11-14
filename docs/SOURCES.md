@@ -1,14 +1,13 @@
 # Primary sources and attribution
 
-> Status: Kept and extended. Attribution and licensing stay current
-> obligations; the Cloud Control and typed-SDK references describe the baseline,
-> and the pinned AWS API models the plan builds on (VISION section 3) are not
-> listed here yet. Links into `artifacts/` point to an ignored local directory
-> and do not resolve in a clone. See [VISION](VISION.md) and
-> [ROADMAP](ROADMAP.md).
+> Status: Kept and extended. Attribution and licensing stay current obligations.
+> The pinned AWS API model catalog is the service and operation metadata source;
+> typed-SDK references below describe the baseline adapters. Links into
+> `artifacts/` point to an ignored local directory and do not resolve in a clone.
+> See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
 
-Research and SDK snapshot date: November 12, 2026. The SDK catalog records its
-exact immutable revision, registry checksums and check timestamp separately.
+Research and SDK snapshot date: November 12, 2026. Historical SDK source-audit
+records retain their exact immutable revision and registry checksums separately.
 
 ## Design influences
 

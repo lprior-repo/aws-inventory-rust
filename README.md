@@ -82,9 +82,6 @@ handoff see [START_HERE.md](START_HERE.md).
   credential-assumption failures. Global services run once per target scan.
 - A **SQLx durable scan queue** with transactional claims, attempt history,
   renewable fenced leases, cancellation and recovery after worker crashes.
-- **437 official AWS service SDK crates** (to be removed in ROADMAP M1.7), pinned to the November 12, 2026 SDK
-  release, available as optional features in a generated catalog. Package
-  checksums and source/model fingerprints are retained.
 - An offline `plan` command exposes APIs, dependencies, quota groups, known
   request-count formulas, architecture evidence, and execution bounds before
   credentials are loaded.
@@ -177,7 +174,7 @@ resolved the EC2 build's memory failure in the delivery environment. The setting
 respects upstream crate hints rather than applying the flag to every dependency.
 
 ```bash
-# Fetch the locked SDK catalog and all other workspace dependencies.
+# Fetch the locked workspace dependencies.
 cargo fetch --locked
 
 # Local ingestion, SQLite SQL, and FalkorDB export; no AWS clients compiled.
@@ -185,17 +182,12 @@ cargo build --locked
 
 # Include the implemented native AWS collectors.
 cargo build --locked --features aws --jobs 1
-
-# Audit every downloaded SDK source without compiling every service SDK.
-cargo run -p inventory-sdk-catalog --example audit --locked -- \
-  --catalog crates/sdk-catalog/sdk-services.json \
-  --registry-src /PATH/TO/registry/src/index.crates.io-1949cf8c6b5b557f \
-  --output sdk-capabilities.json
 ```
 
-Normal builds do not enable all 437 SDK features. Full-catalog compilation is
-an explicit, separate operation with a substantial resource cost. Selected
-collectors compile the SDK crates they use.
+Normal builds do not enable all 437 SDK features. Selected collectors compile
+only the SDK crates they use; all-service SDK inventory generation was removed
+in M1.7. The pinned API model catalog is the source for service and operation
+metadata.
 
 The maintainer gate is Rust and shell only and needs no Python:
 
@@ -480,24 +472,19 @@ specify exactly which fields and relationships are collected.
 ## Retry primitives and workflow engines
 
 The historical SDK source audit covered 437 pinned service crates and counted
-19,617 operations, 3,779 paginators and 407 waiters; that report is under the
-ignored `artifacts/` directory. The current source-only inventory
-`catalog/aws-sdk-operations.json` counts 24,720 operation rows in 468 cached
-crate versions across 437 service namespaces, including every SDK version in
-`Cargo.lock`. Cached older versions remain in the universe but do not receive
-current-version exercise credit. Regeneration is not a new emulator execution
-or a rerun of the historical SDK audit. AWS already supplies retry classifiers,
-backoff, timeouts, and duplicate-token controls. A service SDK does not supply
-this scanner's account/region quota coordination, durable page commits, or
-resource-to-architecture mapping.
+19,617 operations, 3,779 paginators and 407 waiters. Those results remain
+historical evidence under ignored `artifacts/`; M1.7 removed the derived SDK
+operation inventory. The pinned AWS API model catalog is the source of service
+and operation metadata. Typed service adapters remain for collection and
+differential proof, but are not a second metadata inventory.
 
 This version keeps **one retry owner**: the shared executor, with each explicit
 service SDK request configured for one attempt. Every retry re-enters admission.
 Enabling a second five-attempt SDK loop inside the outer five-attempt loop can
-produce 25 attempts and invalidate the configured accounting. The audited public
-SDK hooks do not provide a proven drop-in asynchronous quota wait before signing
-and before the SDK's attempt timeout. The source-backed decision is in
-[SDK retry audit](docs/SDK_RETRY_AUDIT.md).
+produce 25 attempts and invalidate configured accounting. The audited public
+SDK hooks did not provide a proven drop-in asynchronous quota wait before
+signing and before the SDK's attempt timeout. The retained retry decision and
+current behavior are in [retries and workflows](docs/RETRY_AND_WORKFLOWS.md).
 
 The local SQLx queue supplies durable scan submission, worker-crash recovery,
 fenced ownership, cancellation and explicit retry without an additional server.
@@ -553,15 +540,12 @@ RETURN a.kind, a.id, b.id;
 
 ```bash
 cargo run --locked -- catalog
-cargo run --locked -- sdk-catalog --service ec2
-cargo check -p inventory-sdk-catalog --features sts
 ```
 
 Start with [architecture](docs/ARCHITECTURE.md), [storage](docs/STORAGE.md),
-[collectors](docs/COLLECTORS.md), [scheduler](docs/SCHEDULER.md), and
-[SDK catalog](docs/SDK_CATALOG.md); these describe the baseline, and
-[docs/README.md](docs/README.md) says which of them the plan keeps.
-[The roadmap](docs/ROADMAP.md) is the build plan for what replaces it.
+[collectors](docs/COLLECTORS.md), and [scheduler](docs/SCHEDULER.md);
+[docs/README.md](docs/README.md) describes which baseline documents remain.
+[The roadmap](docs/ROADMAP.md) is the build plan for what replaces the baseline.
 The [collection plan](docs/COLLECTION_PLAN.md) specifies the shared 421-type
 adapter, schema evidence, architecture relationships, and query generation.
 [Parent collection design](docs/PARENT_COLLECTIONS.md) explains prerequisite

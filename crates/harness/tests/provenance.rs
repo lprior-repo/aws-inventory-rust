@@ -48,7 +48,6 @@ fn given_workspace_root_when_fingerprinted_then_sources_and_manifests_are_covere
         .collect();
     assert!(names.contains(&"Cargo.lock"));
     assert!(names.contains(&".cargo/config.toml"));
-    assert!(names.contains(&"crates/sdk-catalog/sdk-services.json"));
     assert!(names.iter().any(|name| name.starts_with("src/")));
     assert!(
         names

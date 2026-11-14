@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/core", "crates/engine", "crates/aws", "crates/aws-wire", "crates/sdk-catalog", "crates/harness", "crates/sdk-operations", "crates/catalog-tool", "crates/cmdb-bench", "crates/cmdb-ui", "crates/cmdb-view"]
+members = ["crates/core", "crates/engine", "crates/aws", "crates/aws-wire", "crates/harness", "crates/catalog-tool", "crates/cmdb-bench", "crates/cmdb-ui", "crates/cmdb-view"]
 resolver = "3"
 
 [workspace.package]
@@ -62,7 +62,6 @@ aws = ["dep:inventory-aws"]
 inventory-core.workspace = true
 inventory-engine.workspace = true
 inventory-aws = { path = "crates/aws", optional = true }
-inventory-sdk-catalog = { path = "crates/sdk-catalog", default-features = false }
 serde.workspace = true
 serde_json.workspace = true
 tokio.workspace = true

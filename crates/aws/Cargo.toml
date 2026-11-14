@@ -37,8 +37,7 @@ aws-sdk-iam = { version = "1.136.0", default-features = false, features = ["defa
 aws-sdk-route53 = { version = "1.135.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-cloudfront = { version = "1.143.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-organizations = { version = "1.140.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
-# Exact pin matches crates/sdk-catalog's manifest so the collector and the
-# optional catalog cannot resolve different aws-sdk-sqs builds.
+# Keep the collector's SQS SDK version explicit for reproducible builds.
 aws-sdk-sqs = { version = "=1.121.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-sns = { version = "=1.123.0", default-features = false, features = ["default-https-client", "rt-tokio"] }
 aws-sdk-kms = { version = "=1.131.0", default-features = false, features = ["default-https-client", "rt-tokio"] }

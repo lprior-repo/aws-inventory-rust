@@ -2,7 +2,7 @@
 
 > Status: Kept and extended. The local emulator and FalkorDB stack stays the
 > proof environment (VISION section 9); its Python prerequisites go when ROADMAP
-> M2.10 lands, and the all-SDK build step goes with the SDK catalog in M1.7.
+> M2.10 lands. The obsolete typed-SDK inventory build step was removed in M1.7.
 > See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
 
 This checkout has an authenticated AWS Emulator and a real FalkorDB server.

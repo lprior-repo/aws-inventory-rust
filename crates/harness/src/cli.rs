@@ -24,9 +24,6 @@ pub(super) fn parse(arguments: &[String]) -> Result<Command, HarnessError> {
         Some("seed") if arguments.get(1).map(String::as_str) == Some("cloud-control") => {
             parse_seed_cloud_control(arguments.get(2..).unwrap_or_default())
         }
-        Some("coverage") if arguments.get(1).map(String::as_str) == Some("operations") => {
-            parse_coverage_operations(arguments.get(2..).unwrap_or_default())
-        }
         _ => Err(HarnessError::invalid(USAGE)),
     }
 }
@@ -128,69 +125,6 @@ fn flag_value<'a>(
         .ok_or_else(|| HarnessError::invalid(format!("{flag} requires a value; {USAGE}")))
 }
 
-fn require_json(value: &str) -> Result<(), HarnessError> {
-    if value != "json" {
-        return Err(HarnessError::invalid(format!(
-            "unsupported --format {value}; only json is supported"
-        )));
-    }
-    Ok(())
-}
-
-fn parse_coverage_operations(arguments: &[String]) -> Result<Command, HarnessError> {
-    let flags = CoverageFlags::parse(arguments)?;
-    if flags.check && flags.write.is_some() {
-        return Err(HarnessError::invalid(
-            "--check and --write are mutually exclusive",
-        ));
-    }
-    Ok(Command::CoverageOperations {
-        root: flags.root.unwrap_or_else(workspace_root),
-        write: flags.write,
-        check: flags.check,
-    })
-}
-
-/// Flags accepted by `coverage operations`.
-struct CoverageFlags {
-    root: Option<PathBuf>,
-    write: Option<PathBuf>,
-    check: bool,
-}
-
-impl CoverageFlags {
-    fn parse(arguments: &[String]) -> Result<Self, HarnessError> {
-        let mut parsed = Self {
-            root: None,
-            write: None,
-            check: false,
-        };
-        let mut remaining = arguments.iter();
-        while let Some(flag) = remaining.next() {
-            parsed.apply(flag, &mut remaining)?;
-        }
-        Ok(parsed)
-    }
-
-    fn apply(
-        &mut self,
-        flag: &str,
-        remaining: &mut std::slice::Iter<'_, String>,
-    ) -> Result<(), HarnessError> {
-        match flag {
-            "--check" => self.check = true,
-            "--root" => self.root = Some(PathBuf::from(flag_value(remaining, "--root")?)),
-            "--write" => self.write = Some(PathBuf::from(flag_value(remaining, "--write")?)),
-            "--format" => require_json(flag_value(remaining, "--format")?)?,
-            other => {
-                return Err(HarnessError::invalid(format!(
-                    "unexpected {other}; {USAGE}"
-                )));
-            }
-        }
-        Ok(())
-    }
-}
 
 /// Bounded `--flag value` pairs; a flag outside the command's list, or given twice, is rejected.
 struct Options {

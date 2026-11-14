@@ -2,8 +2,8 @@
 //! and persisted reads.
 use inventory_harness::HarnessError;
 use inventory_harness::audit::{
-    Json, catalogs, dependency_evidence, dumps_default, output_path, persisted_reads, reconcile,
-    registry_file, write_rollup,
+    Json, catalogs, dependency_evidence, dumps_default, persisted_reads, registry_file,
+    write_rollup,
 };
 use inventory_harness::provenance::file_sha256;
 use serde_json::{Value, json};
@@ -34,27 +34,8 @@ fn contain(text: &str, needle: &str) -> TestResult {
     Ok(())
 }
 #[test]
-fn historical_artifacts_and_outputs_are_protected() -> TestResult {
-    contain(
-        &failure(reconcile(&workspace()))?,
-        "aws-operation-source-reconciliation-v04.json",
-    )?;
+fn frozen_cloud_control_catalogs_are_bound() -> TestResult {
     assert_eq!(catalogs(&workspace())?.catalog_sha256.len(), 64);
-    let directory = tempfile::tempdir()?;
-    let root = directory.path();
-    for name in [
-        "catalog/aws-operations.json",
-        "catalog/aws-operation-additions.json",
-        "artifacts/aws-operation-source-reconciliation-v04.json",
-        "artifacts/aws-operation-source-reconciliation-v05.json",
-    ] {
-        contain(
-            &failure(output_path(root, &root.join(name)))?,
-            "historical evidence",
-        )?;
-    }
-    let allowed = root.join("artifacts/aws-operation-source-reconciliation-v06.json");
-    assert_eq!(output_path(root, &allowed)?, allowed);
     Ok(())
 }
 #[test]

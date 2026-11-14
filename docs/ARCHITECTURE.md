@@ -8,9 +8,9 @@
 > marked below with the decision ID. See [VISION](VISION.md) and
 > [ROADMAP](ROADMAP.md).
 
-Implementation coverage of the baseline is in `COLLECTORS.md`; dependency
-availability is `SDK_CATALOG.md`; recorded validation results are
-`VERIFICATION.md`.
+Implementation coverage of the baseline is in `COLLECTORS.md`; the pinned
+service and operation metadata source is `catalog/aws-api.catalog`. Recorded
+validation results are in `VERIFICATION.md`.
 
 ## 1. Product boundary
 
@@ -74,7 +74,6 @@ completed files and contributes an explicit incomplete overall outcome.
 | `inventory-engine::export` | Versioned JSON/JSONL snapshots, provenance modes, counts, hashing and atomic file publication | AWS requests or database backup/restore |
 | `inventory-engine::graph` | Graph plans, bounded replay-safe retries, transport and SQLx delivery ACKs | Discovery or inferred deletion |
 | `inventory-aws` | Operations, pages, enrichment, normalization and relationships | Whole-scan accumulation or detached workers |
-| `inventory-sdk-catalog` | Exact versions, optional features, re-exports and provenance | Collectors for every SDK |
 | CLI | Profiles, snapshots, bounded routing, one writer, shutdown, reporting and explicit scan/delivery workflows | Hidden deployment or provisioning |
 
 ## 3. Scan scope and identity

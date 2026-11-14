@@ -35,11 +35,6 @@ pub enum Command {
     },
     /// Inspect the collection stages and bounds without loading AWS credentials.
     Plan(PlanArgs),
-    /// Inspect pinned official SDK versions; this is separate from collector coverage.
-    SdkCatalog {
-        #[arg(long)]
-        service: Option<String>,
-    },
     /// Create a clearly synthetic, reproducible local demonstration.
     Demo {
         #[arg(long, default_value = "inventory.sqlite")]
