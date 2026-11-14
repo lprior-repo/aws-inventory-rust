@@ -63,6 +63,10 @@
   destination before failing elsewhere. A failed check now exits 1 after
   printing the checks; an unknown or repeated flag is rejected before any
   work. Three tests run the binary.
+- Fixed, found by an adversarial run against the built `aws-inventory`
+  binary (72 scenarios, 1 defect): a scan that ends `partial` or `cancelled`
+  exited 2 with nothing on standard error. It now prints one line there
+  saying the report on standard output lists what failed.
 - Project agents in `.omp/agents/` include the local GPU builders and
   `aws-build-sol` (ChatGPT Sol). Builders implement independent packages in
   parallel; the coordinator owns serialized compilation, formatting and tests.

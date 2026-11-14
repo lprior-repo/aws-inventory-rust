@@ -62,7 +62,10 @@ fn output(value: Value) -> ExitCode {
         return ExitCode::FAILURE;
     }
     match value.get("status").and_then(Value::as_str) {
-        Some("partial" | "cancelled") => ExitCode::from(2),
+        Some(status @ ("partial" | "cancelled")) => {
+            eprintln!("scan status is {status}: the report on standard output lists what failed");
+            ExitCode::from(2)
+        }
         _ => ExitCode::SUCCESS,
     }
 }
