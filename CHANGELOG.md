@@ -111,7 +111,7 @@
   limit, and checked a model's size from metadata before reading it without
   a bound. Discovery now stops with `TooManyEntries` after 65,536 directory
   entries, and a file is read through a 64 MiB bound that holds even if it
-  grows. Rust lines: 130 added, 19 deleted.
+  grows. Rust lines: 128 added, 19 deleted.
 - Fixed, found by the architecture audit, in the harness: the emulator
   process was a bare handle between spawn and readiness, so an early error
   could leave it running; `Emulator::stop` always returned success; snapshot
