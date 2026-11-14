@@ -157,6 +157,20 @@ Status from the coordinator, 2026-11-13.
   the fixtures' README. Seven protocols, 901 HTTP cases (478 request, 366
   response, 57 error), 3,229,771 bytes. No Rust lines. M2.1a to M2.1c and M2.4a
   to M2.4d prove themselves against these files.
+- **M2.2a is done: the signing library half of M2.2.** `aws_wire::sign` is a
+  wrapper over `aws-sigv4` 1.6.5 with typed scope values, redacted
+  credentials, caller-supplied time, body bytes or a precomputed SHA-256,
+  standard and S3 path modes, and size bounds checked before any work; it
+  re-implements no canonicalization. `cargo test -p aws-wire --locked` passes
+  35 tests: 37 of AWS's published SigV4 vectors, byte-identical copies of the
+  files shipped in the `aws-sigv4` crate, are compared with their full
+  published `Authorization` value. Three vectors are excluded with reasons
+  (folded headers, a literal space in the URI, a session token left out of
+  signing). Black Hat review: two findings (Host length checked after use,
+  six parameters), closed; test review: three gaps, closed. Rust lines:
+  1,270 added, none deleted; production 349. Still open under M2.2: the
+  emulator accepting a signed request per serializer and rejecting one with
+  a changed signature byte, which needs M2.1 and M2.4.
 
 Packages that can run at the same time: M1 with M3.1 and M4.3; M2.1a to M2.1c,
 M2.2 and M2.3 with each other; M2.4a with M2.4b; the M5 services

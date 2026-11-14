@@ -5,3 +5,5 @@
 //! responses from the compiled API catalog. It owns no retry policy; the
 //! executor in `inventory-engine` is the only retry owner.
 #![deny(missing_docs)]
+
+pub mod sign;

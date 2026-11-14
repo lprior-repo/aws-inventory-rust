@@ -11384,6 +11384,10 @@ dependencies = [
 name = "aws-wire"
 version = "0.6.0"
 dependencies = [
+ "aws-credential-types",
+ "aws-sigv4",
+ "aws-smithy-runtime-api",
+ "http",
  "thiserror",
 ]
 

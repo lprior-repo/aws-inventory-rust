@@ -47,6 +47,9 @@
   [--check | --write]`. The gate now also runs the submodule check, the
   model report check and the registry check. Rust lines: 1,525 added, 17
   deleted.
+- M2.2a: `aws_wire::sign`, SigV4 request signing as a thin wrapper over the
+  `aws-sigv4` library, proven with 37 of AWS's published test vectors. Rust
+  lines: 1,270 added, none deleted.
 - Fixed, found by an adversarial run against the built `inventory-harness`
   binary (41 commands, 2 defects): `assert cloud-control` exited 0 while
   printing failed checks (missing, empty, corrupt and wrong-schema databases
