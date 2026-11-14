@@ -102,6 +102,17 @@ Status from the coordinator, 2026-11-13.
   source Clippy runs and source guards. Rust lines: 397 added, 389 deleted,
   mostly moving the old model below its feature boundary.
 
+- **M2.3 is done.** The pooled HTTP client supports HTTP/1.1 keep-alive and HTTP/2,
+  bounded response bodies and a global socket cap. Request and connector
+  deadlines are independent; connector time includes admission, bounded DNS,
+  TCP and TLS, including abandoned connection attempts. Public timed-out sends
+  are counted once. Review findings on lifecycle, error classification, bounds
+  and trust tests are closed; after integration rebase all 98 wire tests,
+  source Clippy and both source guards pass. Accepted limits: idle sockets keep
+  permits until eviction, and checkout-age expiry may retire an HTTP/2 sender
+  while active streams keep their permits. Rust lines: 3,313 added, none
+  deleted; production 766. Serializers and decoders remain open.
+
 - **M4.3 is done.** The seeded HTTP fault proxy supports every requested
   fault, latency and per-scope rate limit, with bounded state and owned task
   shutdown. Independent code and test reviews closed their findings after

@@ -79,6 +79,15 @@
 - Owner policy supersedes the missing-docs gate: remove Rust comments,
   including Rustdoc, and keep contracts in external Markdown. Removal is
   in progress.
+- M2.3: pooled HTTP transport with keep-alive, HTTP/2, global socket bounds,
+  cumulative request deadlines and independent connector deadlines covering
+  admission, bounded DNS, TCP and TLS. Response limits apply before and during
+  body collection; TLS errors and retryable HTTP/2 shutdowns remain typed.
+  Code/test review findings are closed. After integration rebase, all 98 wire
+  tests, source Clippy and source guards pass. Idle sockets retain permits until
+  eviction, so another host can wait until its deadline; HTTP/2 checkout-age
+  expiry can retire a sender while an active stream retains its permit.
+  Rust lines: 3,313 added, none deleted; production 766.
 - `crates/aws-wire` is scaffolded, and Smithy's AWS protocol test suites
   (Smithy 1.75.0, seven protocols, 901 HTTP cases) are committed as JSON ASTs
   under `crates/aws-wire/tests/fixtures/protocol-tests/` with the conversion
