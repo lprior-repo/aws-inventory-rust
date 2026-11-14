@@ -12,6 +12,12 @@ The canonical CI entrypoint is `moon ci`, configured for the root Cargo workspac
 
 GitHub Actions checks out the AWS model submodule recursively and installs the native Linux packages required by Makepad before `moon ci`. A `v*` tag runs the same CI gate and uploads the resulting Linux `aws-inventory` and `cmdb-ui` debug binaries as build artifacts; it does not deploy or publish a release.
 
+Both hosted workflows bootstrap `rust-toolchain.toml` with `rustup show` and
+verify `cargo --version` before Moon setup. The first pushed Moon run
+([43582215000](https://github.com/lprior-repo/aws-inventory-rust/actions/runs/43582215000))
+failed because Moon's Rust installer did not provide the pinned toolchain's
+`cargo`; the bootstrap makes that runner prerequisite explicit.
+
 The current generated checks do not prove a generated collection-plan catalog or binary API-catalog parity: no dedicated checked-in generator/check command for either exists in the current Rust CLI. Collection-plan behavior and catalog access are covered by ordinary workspace tests, but are not universal inventory proof. The ignored live FalkorDB test verifies graph delivery behavior, and the ignored prepared-emulator snapshot tests verify specific collector components against a frozen snapshot. Both opt-in Moon tasks require their explicit service/environment prerequisites and neither is a universal AWS E2E pipeline. Universal resource coverage, real AWS semantics, and universal live-emulator collection remain unfinished; see [CLOUDCONTROL_COVERAGE](CLOUDCONTROL_COVERAGE.md) and [UNIVERSAL_COVERAGE](UNIVERSAL_COVERAGE.md).
 
 Local verification commands:

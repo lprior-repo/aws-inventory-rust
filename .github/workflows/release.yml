@@ -16,6 +16,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes pkg-config libasound2-dev libgl1-mesa-dev libudev-dev libvulkan-dev libwayland-dev libx11-dev libxcb-shape0-dev libxcb-xfixes0-dev libxcursor-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libxrandr-dev
+      - name: Install the repository-pinned Rust toolchain
+        run: |
+          rustup show
+          cargo --version
       - uses: moonrepo/setup-toolchain@v0
         with:
           moon-version: '2.2.4'
