@@ -44,12 +44,12 @@ fn counts_mean(
     out.push_str(&format!(
         "The source universe is every operation in the published SDK inventory \
 [{INVENTORY}](../{INVENTORY}): **{total} operations across {} crates**. An operation is \
-*exercised* when an empty-argument `.send()` callsite resolved to that crate and module at the \
-`Cargo.lock`-pinned version is proven by the live source scan; a scan that cannot resolve the \
-current source makes the count unavailable instead of falling back to reviewed claims. Recorded \
-emulator evidence must not classify an operation as a decode failure. The join is on `(crate, \
-version, module)`, never on a module name alone; the same method name in two services remains \
-two operations.\n\n",
+*exercised* only when an empty-argument `.send()` callsite at the `Cargo.lock`-pinned version \
+is proven by the live source scan and has a qualifying recorded emulator outcome at that exact \
+SDK version. The separate callsite scan counts lexical invocations, including operations without \
+current-version execution evidence. A scan that cannot resolve current source makes the exercised \
+count unavailable. Historical outcomes are never transferred to another SDK version. The join \
+is on `(crate, version, module)`, never on a module name alone.\n\n",
         report.crates
     ));
     coverage_notes(out, exercised, unexercised, total, report)
@@ -64,8 +64,8 @@ fn coverage_notes(
 ) -> Result<(), HarnessError> {
     out.push_str(&format!(
         "**This document does not claim that all operations are invoked. {exercised} of {total} \
-({}) are exercised; {unexercised} are not.** An unexercised operation is unimplemented by this \
-collector, not necessarily unsupported by AWS or the SDK.\n\n",
+({}) are exercised; {unexercised} are not.** An unexercised operation lacks qualifying \
+current-version execution evidence; it may still have a collector callsite or historical outcome.\n\n",
         percent(exercised, total)?
     ));
     provider_notes(out, report);
@@ -278,18 +278,18 @@ exercised.\n\n| Service | SDK method | API operation | Status | Source |\n\
 
 fn limits(out: &mut String, report: &CoverageReport) -> Result<(), HarnessError> {
     out.push_str(&format!(
-        "## Unexercised operations\n\n{} operations are not invoked by this collector. \
-The JSON report samples the first {SAMPLE_LIMIT} in sorted order in `unexercised_sample`; the \
-sample is not a complete listing. Use `inventory-harness coverage operations` for the full \
-service rollup.\n\n## Limits\n\n\
+        "## Unexercised operations\n\n{} operations lack qualifying current-version execution \
+evidence. The JSON report samples the first {SAMPLE_LIMIT} in sorted order in \
+`unexercised_sample`; the sample is not a complete listing. Use `inventory-harness coverage \
+operations` for the full service rollup.\n\n## Limits\n\n\
 - A lexical callsite proves the collector invokes the operation; it does not prove every \
 branch, request shape, IAM permission, or live AWS response.\n\
 - The emulator status records the pinned local emulator outcome, not live AWS behavior.\n\
 - Cloud Control descriptor breadth is resource-type coverage, not SDK operation coverage.\n\
 - This report does not establish that every exercised operation succeeded.\n\
-- The inventory counts every generated crate directory. Three crate names appear at two \
-versions, so 440 crates cover 437 service namespaces; the version not pinned by `Cargo.lock` \
-stays unexercised.\n",
+- The inventory counts every cached generated crate version, not just active versions. \
+Rows from versions not pinned by `Cargo.lock` remain unexercised; historical execution \
+outcomes do not establish that an upgraded SDK version was exercised.\n",
         report.unexercised()?
     ));
     Ok(())

@@ -1,5 +1,7 @@
 //! Recorded emulator outcomes used to qualify operation coverage claims.
 
+mod receipt;
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
@@ -60,6 +62,14 @@ fn operation_claims(row: &Value) -> Result<BTreeSet<String>, HarnessError> {
     Ok(callsites)
 }
 
+fn recorded_version(row: &Value) -> Result<&str, HarnessError> {
+    // Versionless fixture rows can match only versionless inventory rows, never an active SDK.
+    match row.get("sdk_version") {
+        Some(_) => text_field(row, "sdk_version"),
+        None => Ok(""),
+    }
+}
+
 /// Inventory row and key for one recorded matrix operation.
 fn recorded_key<'a>(
     row: &Value,
@@ -68,13 +78,14 @@ fn recorded_key<'a>(
     let id = text_field(row, "id")?;
     let crate_name = text_field(row, "sdk_crate")?;
     let module = text_field(row, "sdk_operation")?;
-    let (service, version) = inventory.by_crate.get(crate_name).ok_or_else(|| {
+    let (service, _) = inventory.by_crate.get(crate_name).ok_or_else(|| {
         HarnessError::invalid(format!("recorded operation {id} names an unknown crate"))
     })?;
-    let key = (crate_name.to_owned(), version.clone(), module.to_owned());
+    let version = recorded_version(row)?;
+    let key = (crate_name.to_owned(), version.to_owned(), module.to_owned());
     let operation = inventory.rows.get(&key).ok_or_else(|| {
         HarnessError::invalid(format!(
-            "recorded operation {id} is absent from {INVENTORY}"
+            "recorded operation {id} at {crate_name} {version} is absent from {INVENTORY}"
         ))
     })?;
     if format!("{service}.{}", operation.module) != id {
@@ -91,6 +102,24 @@ fn provider_boundary(row: &Value) -> bool {
         == Some(true)
 }
 
+/// Source review follows the active callsite; execution evidence keeps its recorded version.
+fn current_claim_key(
+    key: &OperationKey,
+    inventory: &Inventory,
+) -> Result<OperationKey, HarnessError> {
+    let (_, version) = inventory
+        .by_crate
+        .get(&key.0)
+        .ok_or_else(|| HarnessError::invalid("reviewed callsite names an unknown SDK crate"))?;
+    let current = (key.0.clone(), version.clone(), key.2.clone());
+    if !inventory.rows.contains_key(&current) {
+        return Err(HarnessError::invalid(
+            "reviewed callsite has no active SDK operation",
+        ));
+    }
+    Ok(current)
+}
+
 fn record_operation(
     row: &Value,
     inventory: &Inventory,
@@ -99,7 +128,7 @@ fn record_operation(
 ) -> Result<(), HarnessError> {
     let (key, _operation) = recorded_key(row, inventory)?;
     claims
-        .entry(key.clone())
+        .entry(current_claim_key(&key, inventory)?)
         .or_default()
         .extend(operation_claims(row)?);
     let Some(coverage) = row.get("emulator_coverage") else {
@@ -164,73 +193,6 @@ fn matrix_statuses(
     ))
 }
 
-fn closure_matches(
-    document: &Value,
-    sources: &BTreeMap<String, String>,
-) -> Result<bool, HarnessError> {
-    let rows = array_field(document, "aws_source_files")?;
-    let mut seen: BTreeSet<&str> = BTreeSet::new();
-    for row in rows {
-        let path = text_field(row, "path")?;
-        let digest = text_field(row, "sha256")?;
-        let current = sources
-            .get(path)
-            .map(|source| sha256_hex(source.as_bytes()));
-        if current.as_deref() != Some(digest) {
-            return Ok(false);
-        }
-        seen.insert(path);
-    }
-    Ok(seen.len() == sources.len() && sources.keys().all(|path| seen.contains(path.as_str())))
-}
-
-/// One recorded receipt outcome, or `None` for a provider-boundary read.
-fn receipt_row(
-    row: &Value,
-    inventory: &Inventory,
-) -> Result<Option<(OperationKey, String)>, HarnessError> {
-    if provider_boundary(row) {
-        return Ok(None);
-    }
-    let id = text_field(row, "id")?;
-    let (service, module) = id
-        .split_once('.')
-        .ok_or_else(|| HarnessError::invalid(format!("invalid operation identity {id}")))?;
-    let (crate_name, version) = inventory
-        .active
-        .get(service)
-        .ok_or_else(|| HarnessError::invalid(format!("unknown SDK service namespace {service}")))?;
-    let key = (crate_name.clone(), version.clone(), module.to_owned());
-    if !inventory.rows.contains_key(&key) {
-        return Err(HarnessError::invalid(format!(
-            "recorded operation {id} is absent from {INVENTORY}"
-        )));
-    }
-    Ok(Some((key, text_field(row, "status")?.to_owned())))
-}
-
-fn receipt_statuses(
-    document: &Value,
-    inventory: &Inventory,
-) -> Result<BTreeMap<OperationKey, String>, HarnessError> {
-    let results = document
-        .pointer("/emulator_evidence/operation_results")
-        .and_then(Value::as_array)
-        .ok_or_else(|| HarnessError::invalid("reconciliation receipt lacks operation results"))?;
-    let mut statuses: BTreeMap<OperationKey, String> = BTreeMap::new();
-    for row in results {
-        if let Some((key, status)) = receipt_row(row, inventory)? {
-            statuses.insert(key, status);
-        }
-    }
-    if statuses.is_empty() {
-        return Err(HarnessError::invalid(
-            "reconciliation receipt records no operation outcomes",
-        ));
-    }
-    Ok(statuses)
-}
-
 fn reconciliation_evidence(
     statuses: BTreeMap<OperationKey, String>,
     sha256: String,
@@ -257,15 +219,26 @@ fn reconciliation_statuses(
         return Ok(fallback);
     }
     let (document, sha256) = read_json_audit(&path)?;
-    if !closure_matches(&document, sources)? {
-        return Ok(StatusEvidence {
-            reconciliation_status: "stale_source_closure".to_owned(),
-            reconciliation_sha256: Some(sha256),
-            ..fallback
-        });
+    if !receipt::source_matches(&document, sources)? {
+        return Ok(stale_reconciliation(
+            fallback,
+            sha256,
+            "stale_source_closure",
+        ));
     }
-    let statuses = receipt_statuses(&document, inventory)?;
+    if !receipt::sdk_matches(root, &document, inventory)? {
+        return Ok(stale_reconciliation(fallback, sha256, "stale_sdk_closure"));
+    }
+    let statuses = receipt::statuses(&document, inventory)?;
     Ok(reconciliation_evidence(statuses, sha256, fallback))
+}
+
+fn stale_reconciliation(fallback: StatusEvidence, sha256: String, status: &str) -> StatusEvidence {
+    StatusEvidence {
+        reconciliation_status: status.to_owned(),
+        reconciliation_sha256: Some(sha256),
+        ..fallback
+    }
 }
 
 fn additions_evidence(

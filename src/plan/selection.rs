@@ -28,10 +28,8 @@ fn validate_bounds(options: &PlanArgs) -> Result<()> {
         options.profile.len() <= 128 && options.region.len() <= 64,
         "profile or region bound exceeded"
     );
-    ensure!(
-        options.service.len() <= 32 && options.resource_type.len() <= 418,
-        "selector bound exceeded"
-    );
+    // Explicit resource types are bounded by catalog membership in requested_types.
+    ensure!(options.service.len() <= 32, "selector bound exceeded");
     ensure!(
         options.cloud_control || options.resource_type.is_empty(),
         "--resource-type requires --cloud-control"

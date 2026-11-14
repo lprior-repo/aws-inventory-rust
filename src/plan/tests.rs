@@ -257,3 +257,23 @@ fn source_discovery_allows_source_selectors_without_loading_credentials() -> Res
     assert_eq!(array(&plan, "supplemental")?.len(), 1);
     Ok(())
 }
+
+#[test]
+fn every_reviewed_type_can_be_selected_explicitly_without_a_stale_snapshot_ceiling() -> Result<()> {
+    let catalog = full_catalog()?;
+    let cloud = catalog
+        .get("cloud_control")
+        .context("missing Cloud Control catalog")?;
+    let mut args = options();
+    args.service = vec!["cloud-control".to_owned()];
+    args.resource_type = array(cloud, "resource_types")?
+        .iter()
+        .map(|row| string(row, "type_name").map(str::to_owned))
+        .collect::<Result<_>>()?;
+    let plan = build(args)?;
+    assert_eq!(
+        plan.pointer("/coverage/cloud_control_resource_types"),
+        Some(&json!(421))
+    );
+    Ok(())
+}

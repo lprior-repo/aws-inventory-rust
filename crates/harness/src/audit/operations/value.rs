@@ -6,14 +6,14 @@ use crate::HarnessError;
 
 use super::{CoverageReport, INVENTORY, OPERATION_ADDITIONS, OPERATION_MATRIX, SAMPLE_LIMIT};
 
-const METHOD: &str = "Join every operation row in the published SDK inventory by (crate, version, module) with current empty-argument .send() callsites under crates/aws/src, resolving each service to the crate version pinned by Cargo.lock. Never join on a module name alone: the crate identity comes from the resolved SDK client namespace. Qualify claims with recorded emulator outcomes; sdk_decode_failure operations are not exercised. Count Cloud Control ListResources/GetResource once each, not per descriptor type. Reviewed additions are admitted from catalog/aws-operation-additions.json only when bound to this matrix, this inventory, exact current callsites and pinned SDK modules; they are reported separately and never counted as exercised.";
+const METHOD: &str = "Join every operation row in the published SDK inventory by (crate, version, module) with current empty-argument .send() callsites under crates/aws/src, resolving each service to the crate version pinned by Cargo.lock. The callsite scan separately reports lexical invocations. Exercise credit additionally requires a qualifying recorded emulator outcome at the exact same SDK version; historical outcomes are never transferred to upgraded versions. sdk_decode_failure operations are not exercised. Count Cloud Control ListResources/GetResource once each, not per descriptor type. Reviewed additions are admitted from catalog/aws-operation-additions.json only when bound to this matrix, this inventory, exact current callsites and pinned SDK modules; they are reported separately and never counted as exercised.";
 
 const LIMITS: [&str; 6] = [
     "A lexical callsite proves the collector invokes the operation; it does not prove every branch, request shape, IAM permission, or live AWS response.",
     "Cloud Control descriptor breadth is resource-type coverage, not SDK operation coverage.",
-    "Operations absent from the exercised set are unsupported by this collector, not necessarily unsupported by AWS or the SDK.",
-    "The emulator status column records the pinned local emulator outcome, not live AWS behavior.",
-    "The inventory counts every generated crate directory. Three crate names appear at two versions, so 440 crates cover 437 distinct service namespaces; rows from the version not pinned by Cargo.lock remain unexercised.",
+    "Operations absent from the exercised set lack qualifying current-version execution evidence; they may still have collector callsites or historical outcomes.",
+    "The emulator status column records only an outcome for the exact active SDK version, not live AWS behavior or an outcome inherited from an older SDK.",
+    "The inventory counts every cached generated crate version, not just active versions. Rows from versions not pinned by Cargo.lock remain unexercised; historical execution outcomes do not establish that an upgraded SDK version was exercised.",
     "A reviewed addition is not an emulator outcome: its status is unexercised or pending_execution, it carries no execution receipt, and reviewed_additions_exercised is always zero in this report.",
 ];
 

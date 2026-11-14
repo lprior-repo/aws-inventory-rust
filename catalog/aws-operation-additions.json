@@ -8,7 +8,7 @@
     },
     "operation_inventory": {
       "path": "catalog/aws-sdk-operations.json",
-      "sha256": "d63093c9fd3b4f75066ec7e0acfb45484ebbf9f900dd92d6c507f8557a8c1e38"
+      "sha256": "a5328b555e005edce8c06c29a4b3021a29b7249c4faf0188ebe03fbf51c24dbb"
     }
   },
   "review": {

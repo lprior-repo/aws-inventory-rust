@@ -65,25 +65,36 @@ cargo run -p inventory-harness -- catalog universal --root . --check
 
 ## SDK operation map
 
-Every generated AWS SDK crate in the pinned registry is inventoried offline:
+Every generated AWS SDK crate version in the local registry is inventoried offline:
 
 | Artifact | Value |
 | --- | --- |
-| Crates | 440 |
-| Operations | 20,537 |
-| Largest service | EC2, 815 operations |
+| Cached crate versions / service namespaces | 468 / 437 |
+| Operation rows across cached versions | 24,720 |
+| Largest active service | EC2 1.280.0, 823 operations |
 | Output | `catalog/aws-sdk-operations.json` |
 
 The inventory is a completeness gate, not a claim that every operation is
 invoked: a crate pinned in `Cargo.lock` but missing from the registry fails the
-command by name. Modules are the SDK's stable operation modules, converted to
-API operation names.
+command by name. The universe includes cached older versions as well as the
+437 currently locked service crates; repeated crate versions are not additional
+services. Modules are the SDK's stable operation modules, converted to API names.
 
 ```sh
 cargo run -p sdk-operations -- inventory \
   --registry /cache/cargo-shared/registry/src/index.crates.io-1949cf8c6b5b557f \
-  --out catalog/aws-sdk-operations.json --check
+  --lockfile Cargo.lock --out catalog/aws-sdk-operations.json --check
 ```
+
+The dependency-refresh inventory SHA-256 is
+`a5328b555e005edce8c06c29a4b3021a29b7249c4faf0188ebe03fbf51c24dbb`.
+This is source enumeration, not execution evidence. Historical emulator outcomes
+in `catalog/aws-operations.json` retain their original SDK versions; upgrading
+EC2, IAM, Lambda or Organizations does not verify those newer versions.
+The additive review's inventory binding was retargeted only after comparing
+its five collector-source digests and ten KMS/Step Functions operation-module
+digests unchanged. Its reviewed SDK versions, review timestamp and
+`pending_execution` statuses are preserved; no historical evidence is relabelled.
 
 ```sh
 # native adapters plus every listable Cloud Control type in one scan

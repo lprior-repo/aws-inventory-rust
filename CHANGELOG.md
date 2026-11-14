@@ -12,9 +12,9 @@
   source of the SQLite schema version and `aws-inventory catalog` reports it
   (it reported a stale 12); both packagers exclude `.local`; `scripts/verify.sh`
   no longer invokes Python and runs the function-size check.
-- Project agents in `.omp/agents/` (`aws-build-5090`, `aws-build-3090`,
-  `aws-black-hat`, `aws-test-review`) preload the required skills, and builders
-  compile in their own git worktrees.
+- Project agents in `.omp/agents/` include the local GPU builders and
+  `aws-build-sol` (ChatGPT Sol). Builders implement independent packages in
+  parallel; the coordinator owns serialized compilation, formatting and tests.
 - Decision V34: records are CBOR through the `minicbor` library. A codec
   benchmark (`docs/performance-evidence/record-codec-2026-11-13.md`) found it
   faster to build and smaller than our own format, `rkyv`, `postcard` and
@@ -24,6 +24,10 @@
   `.local/aws-models` (commit `46135f8`, 436 files), checked by
   `scripts/check-models.sh`. Lock, verify and fetch commands of our own were
   built and discarded after review (decision V23 as changed).
+- M1.2a (`cde710a`): stream the pinned Smithy JSON model files through
+  `catalog-tool models report`; commit `catalog/aws-models.report` and support
+  exact `--write`/`--check` workflows. The actual pinned source matches all
+  expected model totals; 43 catalog-tool tests and all-target Clippy pass.
 - Every document now carries a status line (plan, kept and extended, baseline
   being replaced, or historical evidence) and `docs/README.md` indexes them by
   class. Statements the owner's decisions superseded are marked with the
@@ -55,9 +59,18 @@
   registry's latest 1.0.0.
 - Pair embedded and standalone AWS Emulator pins at stable `v1.0.348`, commit
   `7461ab1bbe540afe8063ce03ee5477ebb649df48`. Verify the downloaded package's
-  detached AWS signature and SHA-256; runtime gates remain pending. Preserve the
-  recorded 1.0.336 fixture and evidence as historical baselines, not proof of the
-  upgraded emulator, until a real owned capture refreshes them.
+  detached AWS signature and SHA-256. All six authenticated standalone live
+  tests pass on this pin; the embedded runtime has not been executed. Keep
+  1.0.336 evidence historical and add the actual 1.0.348 universal capture:
+  1,291 attempted, 999 listed, 292 unsupported, zero failed.
+  Legacy baseline compatibility fixes retain SNS's authoritative provider
+  identifiers and replace the stale 418-type selector ceiling with catalog
+  membership validation; no Cloud Control collectors were added.
+- Regenerate the SDK operation inventory from the actual registry and lockfile:
+  24,720 operations across 468 cached versions and 437 services. Historical
+  execution evidence never transfers SDK versions; receipts require matching
+  source, version and module fingerprints. Current exact-version evidence
+  credits 47 operations, not the former 76 cross-version rollup.
 
 ## Unreleased — Universal listable coverage, reference graph and Rust evidence harness
 

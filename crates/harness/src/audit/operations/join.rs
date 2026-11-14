@@ -143,6 +143,7 @@ fn claims_by_operation(
             excluded.push(row);
         }
     }
+    claims.retain(|_, claim| claim.status.is_some());
     excluded
         .sort_by(|left, right| (&left.service, &left.module).cmp(&(&right.service, &right.module)));
     Ok(excluded)

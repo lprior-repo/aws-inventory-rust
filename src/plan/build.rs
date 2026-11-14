@@ -82,22 +82,24 @@ fn universal_plan(selection: &Selection) -> Result<Option<UniversalPlan>> {
 
 /// Validate explicit names against the pinned catalog, deduplicating them.
 fn requested_types(cloud: &Value, selection: &Selection) -> Result<BTreeSet<String>> {
-    let requested: BTreeSet<String> = selection
-        .types()
-        .iter()
-        .map(|value| value.as_str().to_owned())
-        .collect();
     let known: BTreeSet<&str> = array(cloud, "resource_types")?
         .iter()
         .map(|entry| string(entry, "type_name"))
         .collect::<Result<_>>()?;
-    for name in &requested {
-        ensure!(
-            known.contains(name.as_str()),
-            "resource type is not in the pinned collection catalog: {name}"
-        );
-    }
-    Ok(requested)
+    selection
+        .types()
+        .iter()
+        .try_fold(BTreeSet::new(), |mut requested, kind| {
+            let name = kind.as_str();
+            ensure!(
+                known.contains(name),
+                "resource type is not in the pinned collection catalog: {name}"
+            );
+            if !requested.contains(name) {
+                requested.insert(name.to_owned());
+            }
+            Ok(requested)
+        })
 }
 
 /// Add the parent types selected children require, preserving plan output.

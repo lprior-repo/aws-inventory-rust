@@ -93,13 +93,16 @@ Status from the coordinator, 2026-11-13.
   the stored digests were hashes of hashes, and the two reviewers found 14
   blocking defects, one of which would have run `git checkout` on this
   repository. It was discarded for the submodule, which needs no code (V23).
+- **M1.2a is done**, `cde710a`: the real pinned source reproduces the model
+  totals in `catalog/aws-models.report`. `catalog-tool models report --check`
+  passes; all 43 catalog-tool tests and all-target Clippy pass.
 - **O1 is settled as V34**: records are CBOR through the `minicbor` library.
   The coordinator first wrote its own format (1,054 lines), then ran the codec
   benchmark at the owner's prompting; CBOR was faster to build and smaller, so
   the own format was deleted before it landed. It and the benchmark are kept
   on the branch `evidence/o1-record-codec`.
-- M3.1a, the record module over `minicbor`, is with a compiling worker in its
-  own worktree.
+- M3.1a is in final CBOR contract repair with ChatGPT Sol; the coordinator
+  runs its checks in the serialized Cargo lane.
 
 Packages that can run at the same time: M1 with M3.1 and M4.3; M2.1a to M2.1c,
 M2.2 and M2.3 with each other; M2.4a with M2.4b; the M5 services
@@ -126,7 +129,7 @@ tooling, not the data path.
 | ID | Work | Needs | Exit evidence |
 | --- | --- | --- | --- |
 | M1.1 | Pin the models (V23). Done: `.local/aws-models` is a shallow git submodule of `github.com/aws/api-models-aws` at commit `46135f8468cd5cb60d983b97290c9f6661e359c6`. `git submodule update --init --depth 1 .local/aws-models` fetches it; `scripts/check-models.sh` fails unless the checkout is at the pinned commit with no file changed or added. | M0.2 | On a fresh clone the update then the check exits 0 and prints 436 files; changing one byte or adding a file makes the check exit non-zero and name the file; a checkout at another commit, or none, fails the check |
-| M1.2a | Model reader and report. `catalog-tool models report` parses the 436 files into services, protocols, operations, shapes, paginators, page-size limits and error traits. | M1.1 | The report prints the model rows of VISION section 3 exactly: 436 services; 19,641 operations; 8,366 read-named; 2,736 `readonly`; 5,207 List/Describe, 2,209 of them input-free in 359 services; 3,787 paginators; 44 rpcv2Cbor services; 413 JSON; 20 XML-only; 238,070 members and 49,069 distinct names. A difference is reported as a finding against VISION, not tuned away |
+| M1.2a | **Done**, `cde710a`: model reader and report. `catalog-tool models report` streams the 436 files and counts services, protocols, operations, shapes, members, paginators and classification traits. Detailed collection planning remains M1.4. | M1.1 | Actual `models report --check`, 43 tests and all-target Clippy pass. The committed report matches VISION section 3: 436 services; 19,641 operations; 8,366 read-named; 2,736 `readonly`; 5,207 List/Describe, 2,209 input-free in 359 services; 3,787 paginators; 44 rpcv2Cbor; 413 JSON; 20 XML-only; 238,070 members and 49,069 distinct names. No expected totals were tuned |
 | M1.2b | Field-ID registry `catalog/field-ids.txt`, committed: one member name per line; the line number is the ID; lines are only ever appended. | M1.2a | The file has 49,069 lines; regenerating it changes nothing; a test fails when the committed file is not a prefix of the regenerated one; removing a member from a test model leaves its line in place |
 | M1.2c | Binary catalog `catalog/aws-api.catalog`, committed (V23), embedded with `include_bytes!` and read in place through a validated safe accessor. It is encoded as CBOR with the M3.1a record module (V34). | M1.2b, M3.1 | Recompiling is byte-identical; the gate fails when the committed catalog differs from a recompile; `aws-inventory catalog` reports the M1.2a counts from the embedded bytes; a corrupted catalog gives an error, never a panic; no `unsafe` |
 | M1.3 | Classify every operation as enumerate, expand, denied (content, secret, paid, mutating, reference data) or unclassified, as in VISION 5.1. Deny rules run first and win. Only List and Describe names can be classed by rule; every other read name stays unclassified until an overlay entry reviews it. A committed must-deny list, `catalog/overlay/must-deny.txt`, starts with `GetId`, `ReceiveMessage`, `GetCostAndUsage`, `GetSecretValue`, `GetFunction`, `GetObject`, `Scan`, `Query`, `GetParameter`, `GetPasswordData`, `GetLogEvents`, `GetMetricData`, `GetAuthorizationToken`, `GetSessionToken` and `GetRecords`. | M1.2c | `catalog-tool classes` prints counts per class that sum to 19,641; all 11,275 operations whose name starts with no read verb are denied; every must-deny entry is denied; a test proves no callable handle can be obtained for a denied or unclassified operation, or for a service with no reviewed overlay file |

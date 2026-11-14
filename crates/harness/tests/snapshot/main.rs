@@ -2,6 +2,7 @@
 //! provenance break, and must freeze exactly the asserted observations.
 
 mod fixture;
+mod provenance;
 
 use serde_json::{Value, json};
 use sqlx::sqlite::SqliteConnectOptions;

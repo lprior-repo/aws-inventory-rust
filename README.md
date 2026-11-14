@@ -479,11 +479,14 @@ specify exactly which fields and relationships are collected.
 
 ## Retry primitives and workflow engines
 
-The SDK source audit covers all 437 pinned service crates. Its report counts
+The historical SDK source audit covered 437 pinned service crates and counted
 19,617 operations, 3,779 paginators and 407 waiters; that report is under the
-ignored `artifacts/` directory, and the tracked inventory
-`catalog/aws-sdk-operations.json` counts 20,537 operations in 440 crates. AWS
-already supplies retry classifiers,
+ignored `artifacts/` directory. The current source-only inventory
+`catalog/aws-sdk-operations.json` counts 24,720 operation rows in 468 cached
+crate versions across 437 service namespaces, including every SDK version in
+`Cargo.lock`. Cached older versions remain in the universe but do not receive
+current-version exercise credit. Regeneration is not a new emulator execution
+or a rerun of the historical SDK audit. AWS already supplies retry classifiers,
 backoff, timeouts, and duplicate-token controls. A service SDK does not supply
 this scanner's account/region quota coordination, durable page commits, or
 resource-to-architecture mapping.

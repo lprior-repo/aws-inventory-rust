@@ -10,6 +10,10 @@ mod real_workspace;
 mod reviewed_additions;
 #[path = "operations/unavailable_callsite_scan_refuses_to_publish_or_check.rs"]
 mod unavailable_callsite_scan_refuses_to_publish_or_check;
+#[path = "operations/version_fixture.rs"]
+mod version_fixture;
+#[path = "operations/version_provenance.rs"]
+mod version_provenance;
 
 type BoxError = Box<dyn std::error::Error>;
 type TestResult = Result<(), BoxError>;
