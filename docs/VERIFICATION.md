@@ -31,6 +31,66 @@ Commit `9841354b2b61ad470c5b8adffaddf4a2baefee35` passed hosted `moon ci`
 in [run 43609151434](https://github.com/lprior-repo/aws-inventory-rust/actions/runs/43609151434).
 The complete CI job finished successfully in 18m3s, including Makepad native linking.
 
+### Response-decoder integration — 2026-11-14
+
+`aws_wire::response::decode` routes all seven protocols into bounded canonical
+records or classified, display-redacted service errors. Coordinator execution
+of the library plus the three response fixture targets passed 64 tests.
+Warnings-denied `aws-wire` source Clippy also passed.
+
+Published successful-response accounting:
+
+| Protocol | Client cases decoded and compared | Server-only cases excluded |
+| --- | ---: | ---: |
+| awsJson1.0 | 25 | 2 |
+| awsJson1.1 | 48 | 1 |
+| restJson1 | 94 | 8 |
+| awsQuery | 36 | 0 |
+| ec2Query | 27 | 0 |
+| restXml | 81 | 2 |
+| rpcv2Cbor | 40 | 2 |
+
+All 351 client cases invoke the public root decoder and compare recursive
+record values against the published parameters through real compiled fixture
+catalogs. Separately, 57 published client modeled-error cases assert exact
+codes and classes through the public root decoder. Optional unset structure
+members normalize to absence; sparse collection and document nulls do not.
+Additional regressions cover malformed input, resource bounds, XML union
+cardinality/defaults and decimal/negative/floating timestamp precision.
+
+The pinned real-model catalog was regenerated with S3 unwrapped-output metadata:
+10,995,362 bytes. This does not add reviewed overlays or callable operations.
+These checks do not establish fuzz coverage, cross-format byte/hash parity,
+allocation/throughput results or the universal emulator-to-SQLite-to-FalkorDB-
+to-Makepad collection pipeline.
+
+Static review inputs were adjudicated against source and coordinator evidence,
+not accepted as execution proof:
+
+- Recursive mismatch suppression: no action; `compare_value` returns `()` and
+  asserts every recursive result, so callers cannot discard a failing boolean.
+- Same-sized unexpected keys: no action; expected members require their exact
+  field ID or map name, in addition to the exact entry count.
+- Overlapping error accounting or malformed fixture statuses: no action for
+  this pinned corpus. Coordinator Bun enumeration found 57 client error cases,
+  zero invalid statuses and zero IDs shared between error and non-error owners
+  across all seven files.
+- S3 unwrapped-root rejection: no action; the published
+  `GetBucketLocationUnwrappedOutput` case supplies output `xmlName` equal to
+  `LocationConstraint`, which root validation honors. That case passes within
+  the 81 REST XML client cases.
+
+The first canonical gate exposed a 302-line trait module and stale generated
+catalog. The retained-trait list was extracted without changing its entries;
+the catalog was written with `models compile --write`. The focused source-size
+and binary-catalog checks then passed: 1,164 Rust files at most 300 lines and
+10,995,362 catalog bytes.
+
+Final coordinator execution of `moon ci --force` passed all 18 tasks, including
+generated-data checks, binary-only core tests, all-target/all-feature workspace
+check/tests/build, warnings-denied source Clippy and Makepad native linking.
+Ignored live component tests are not counted as executed coverage.
+
 ### Request and streaming-record integration — 2026-11-14
 
 The completed integration gate passed formatting and

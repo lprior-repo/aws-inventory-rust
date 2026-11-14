@@ -2,6 +2,13 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Public `aws_wire::response::decode` handles successful responses and modeled
+  errors for all seven AWS wire protocols, writing directly into bounded
+  canonical records. Published client coverage is 351 successful responses and
+  57 modeled errors; 15 server-only responses are explicitly excluded.
+  Shared decoding preserves bindings, defaults, sparse values and timestamps.
+  XML includes modeled namespaces, flattened collections and S3 unwrapped
+  output metadata; malformed inputs and resource limits have regressions.
 - Request encoding covers all seven AWS wire protocols. Published REST tests
   retain exact URI, resolved-host, header and body expectations, including S3
   addressing settings. XML comparison follows modeled structures, maps and
