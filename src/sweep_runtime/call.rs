@@ -90,6 +90,10 @@ fn decode_response(
     plan: &CallablePlan<'_>,
     response: Response,
 ) -> Result<DecodedResponse, SweepError> {
+    let limits = aws_wire::response::DecodeLimits::default();
+    let limits = if matches!(plan.purpose(),inventory_core::catalog::runtime::PlanPurpose::TagEndpoint(_)) {
+        limits.preserve_field_presence()
+    } else { limits };
     let context = aws_wire::response::ResponseContext {
         service: plan.service(),
         operation: plan.operation(),
@@ -97,7 +101,7 @@ fn decode_response(
         body: &response.body,
         headers: &response.headers,
         status: response.status,
-        limits: aws_wire::response::DecodeLimits::default(),
+        limits,
     };
     let record = aws_wire::response::decode(context).map_err(SweepError::from)?;
     Ok(DecodedResponse {

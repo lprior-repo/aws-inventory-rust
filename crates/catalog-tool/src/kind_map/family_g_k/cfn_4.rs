@@ -1,0 +1,25 @@
+use crate::kind_map::CfnMapping;
+
+pub(super) const ENTRIES: &[CfnMapping<'static>] = &[
+    CfnMapping::canonical("AWS::IoT::SecurityProfile"),
+    CfnMapping::canonical("AWS::IoTTwinMaker::Entity"),
+    CfnMapping::canonical("AWS::MSK::Cluster"),
+    CfnMapping::canonical("AWS::MSK::ServerlessCluster"),
+    CfnMapping::canonical("AWS::IoTWireless::WirelessDevice"),
+    CfnMapping::canonical("AWS::IoTWireless::WirelessGateway"),
+    CfnMapping::canonical("AWS::KafkaConnect::Connector"),
+    CfnMapping::canonical("AWS::KafkaConnect::CustomPlugin"),
+    CfnMapping::canonical("AWS::KafkaConnect::WorkerConfiguration"),
+    CfnMapping::canonical("AWS::Kendra::Index"),
+    CfnMapping::canonical("AWS::KendraRanking::ExecutionPlan"),
+    CfnMapping::canonical("AWS::Kinesis::Channel"),
+    CfnMapping::canonical("AWS::Kinesis::Stream"),
+    CfnMapping::canonical("AWS::Kinesis::StreamConsumer"),
+    CfnMapping::canonical("AWS::KinesisAnalyticsV2::Application"),
+    CfnMapping::canonical("AWS::KinesisAnalyticsV2::Snapshot"),
+    CfnMapping::canonical("AWS::KinesisVideo::SignalingChannel"),
+    CfnMapping::canonical("AWS::KinesisVideo::Stream"),
+    CfnMapping::canonical("AWS::MSK::Configuration"),
+    CfnMapping::canonical("AWS::MSK::Replicator"),
+    CfnMapping::canonical("AWS::MSK::VpcConnection"),
+];

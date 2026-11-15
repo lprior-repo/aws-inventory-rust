@@ -13,13 +13,16 @@ fn invalid_fixed_paths_remain_distinct_in_the_aggregate() -> Result<(), Box<dyn 
             "\"n#Input\":{\"type\":\"structure\",\"members\":{\"Id\":{\"target\":\"smithy.api#String\"}}},\"n#Output\":",
         );
     let root = fixture(&model, "")?;
-    overlay(
-        root.path(),
-        &format!(
-            "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\n[operation.ListThings.fixed]\nMissingOne='a'\nMissingTwo='b'\n[operation.ListThings.paginator]\nkind='none'\n[operation.ListThings.identity]\nkey=['Id']\n"
-        ),
-    )?;
-    let errors = violations(root.path())?;
+    let mut plan = complete()?;
+    plan.fixed.insert(
+        overlay::MemberPath::new("MissingOne")?,
+        overlay::FixedValue::String("a".to_owned()),
+    );
+    plan.fixed.insert(
+        overlay::MemberPath::new("MissingTwo")?,
+        overlay::FixedValue::String("b".to_owned()),
+    );
+    let errors = violations(&root, vec![("ListThings", plan)])?;
     assert_eq!(
         errors
             .iter()

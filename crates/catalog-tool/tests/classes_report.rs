@@ -2,18 +2,22 @@ mod classes_support;
 
 use catalog_tool::{
     ReportMode,
-    classes::{Error, build_report, run},
+    classes::{Error, build_report_with_policy, run_with_policy},
 };
-use classes_support::{REPORT, fixture, write};
+use classes_support::{REPORT, fixture, policy, write};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 const COMMITTED: &str = "catalog/aws-classes.report";
 
+fn run(root: &std::path::Path, source: &std::path::Path, mode: ReportMode) -> Result<(), Error> {
+    run_with_policy(root, source, mode, &policy()?)
+}
+
 #[test]
 fn two_service_report_matches_hand_counted_text() -> TestResult {
     let dir = fixture()?;
-    assert_eq!(build_report(dir.path(), dir.path())?, REPORT);
-    assert_eq!(build_report(dir.path(), dir.path())?, REPORT);
+    assert_eq!(build_report_with_policy(dir.path(), &policy()?)?, REPORT);
+    assert_eq!(build_report_with_policy(dir.path(), &policy()?)?, REPORT);
     Ok(())
 }
 
@@ -66,12 +70,8 @@ fn check_reports_all_byte_sensitive_differences_without_writing() -> TestResult 
 #[test]
 fn unmatched_deny_name_is_a_typed_error_with_its_line() -> TestResult {
     let dir = fixture()?;
-    write(
-        dir.path(),
-        "catalog/overlay/must-deny.txt",
-        "# reason\nGetTypo\tsecret\n",
-    )?;
-    let error = build_report(dir.path(), dir.path()).err();
+    let deny = catalog_tool::classes::DenyList::parse("# reason\nGetTypo\tsecret\n")?;
+    let error = build_report_with_policy(dir.path(), &deny).err();
     assert!(matches!(error, Some(Error::UnmatchedEntry { line: 2, key }) if key == "GetTypo"));
     Ok(())
 }
@@ -79,12 +79,8 @@ fn unmatched_deny_name_is_a_typed_error_with_its_line() -> TestResult {
 #[test]
 fn unmatched_scoped_entry_cannot_be_satisfied_by_another_service() -> TestResult {
     let dir = fixture()?;
-    write(
-        dir.path(),
-        "catalog/overlay/must-deny.txt",
-        "alpha/ListBlocked\tcontent\n",
-    )?;
-    assert!(matches!(build_report(dir.path(), dir.path()),
+    let deny = catalog_tool::classes::DenyList::parse("alpha/ListBlocked\tcontent\n")?;
+    assert!(matches!(build_report_with_policy(dir.path(), &deny),
         Err(Error::UnmatchedEntry { line: 1, key }) if key == "alpha/ListBlocked"));
     Ok(())
 }
@@ -110,13 +106,9 @@ fn model_error_leaves_a_preexisting_report_intact() -> TestResult {
 fn unmatched_entry_leaves_a_preexisting_report_intact() -> TestResult {
     let dir = fixture()?;
     write(dir.path(), COMMITTED, "preserve\n")?;
-    write(
-        dir.path(),
-        "catalog/overlay/must-deny.txt",
-        "GetTypo\tsecret\n",
-    )?;
+    let deny = catalog_tool::classes::DenyList::parse("GetTypo\tsecret\n")?;
     assert!(matches!(
-        run(dir.path(), dir.path(), ReportMode::Write),
+        run_with_policy(dir.path(), dir.path(), ReportMode::Write, &deny),
         Err(Error::UnmatchedEntry { line: 1, .. })
     ));
     assert_eq!(
@@ -140,16 +132,12 @@ fn missing_report_is_a_named_io_error() -> TestResult {
 }
 
 #[test]
-fn root_policy_is_used_when_source_policy_is_absent() -> TestResult {
+fn explicit_policy_is_independent_of_source_and_output_roots() -> TestResult {
     let source = fixture()?;
-    std::fs::remove_file(source.path().join("catalog/overlay/must-deny.txt"))?;
     let root = tempfile::tempdir()?;
-    write(
-        root.path(),
-        "catalog/overlay/must-deny.txt",
-        classes_support::DENY,
-    )?;
-    assert_eq!(build_report(root.path(), source.path())?, REPORT);
+    run_with_policy(root.path(), source.path(), ReportMode::Write, &policy()?)?;
+    assert_eq!(std::fs::read_to_string(root.path().join(COMMITTED))?, REPORT);
+    assert!(!source.path().join("catalog").exists());
     Ok(())
 }
 
@@ -157,9 +145,8 @@ fn root_policy_is_used_when_source_policy_is_absent() -> TestResult {
 fn no_models_is_not_a_successful_empty_inventory() -> TestResult {
     let dir = tempfile::tempdir()?;
     std::fs::create_dir_all(dir.path().join("models"))?;
-    write(dir.path(), "catalog/overlay/must-deny.txt", "")?;
     assert!(matches!(
-        build_report(dir.path(), dir.path()),
+        build_report_with_policy(dir.path(), &catalog_tool::classes::DenyList::parse("")?),
         Err(Error::ModelSource(_))
     ));
     Ok(())
@@ -170,7 +157,7 @@ fn missing_service_shape_is_rejected() -> TestResult {
     let dir = fixture()?;
     write(dir.path(), "models/z/service/v1/z.json", r#"{"shapes":{}}"#)?;
     assert!(matches!(
-        build_report(dir.path(), dir.path()),
+        build_report_with_policy(dir.path(), &policy()?),
         Err(Error::Model(catalog_tool::smithy::Error::NoService(_)))
     ));
     Ok(())
@@ -185,7 +172,7 @@ fn two_service_shapes_are_rejected() -> TestResult {
         r#"{"shapes":{"n#A":{"type":"service"},"n#B":{"type":"service"}}}"#,
     )?;
     assert!(matches!(
-        build_report(dir.path(), dir.path()),
+        build_report_with_policy(dir.path(), &policy()?),
         Err(Error::Model(catalog_tool::smithy::Error::SeveralServices(
             _
         )))

@@ -44,7 +44,14 @@ fn schema(
     name_path: Option<&str>,
     context: &Context<'_, '_>,
 ) -> Result<Value, RuntimeCatalogCompileError> {
-    let mut columns = text_columns(context.kinds, kind, name_path, context.services)?;
+    let active = context.checked.is_none_or(|checked| super::model_path::active_kind(
+        &super::model_path::ValidationContext { kinds: context.kinds, checked, services: context.services }, kind));
+    let name_path = name_path.filter(|_| active);
+    let mut columns = if active {
+        text_columns(context, kind, name_path)?
+    } else {
+        Vec::new()
+    };
     if let Some(column) = selected::column(context, kind)? {
         columns.push(column);
     }
@@ -64,19 +71,22 @@ fn schema(
 }
 
 fn text_columns(
-    kinds: &KindMap,
+    context: &Context<'_, '_>,
     kind: &str,
     name_path: Option<&str>,
-    services: &ServiceIndex<'_>,
 ) -> Result<Vec<Value>, RuntimeCatalogCompileError> {
-    let targets = kinds
+    let targets = context.kinds
         .relations()
         .iter()
-        .filter(|relation| relation.target_kind == kind);
+        .filter(|relation| relation.target_kind == kind || context.kinds.relation_target_kinds(relation)
+            .is_some_and(|targets| targets.iter().any(|target| target == kind)))
+        .filter(|relation| context.checked.is_none_or(|checked| super::model_path::active_kind(
+            &super::model_path::ValidationContext { kinds: context.kinds, checked, services: context.services },
+            &relation.source_kind)));
     let paths = targets.map(|relation| relation.target_path.as_str());
     let text_paths = name_path.into_iter().chain(paths).collect::<BTreeSet<_>>();
     text_paths
         .into_iter()
-        .map(|path| encode::map([(1, encode::path(services, path)?), (2, Value::Int(3))]))
+        .map(|path| encode::map([(1, encode::path(context.services, path)?), (2, Value::Int(3))]))
         .collect()
 }

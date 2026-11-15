@@ -30,7 +30,7 @@ fn add_payload(
     context: ResponseContext<'_>,
 ) -> Result<(), DecodeError> {
     if context.body.is_empty() {
-        return defaults::apply_member(builder, payload, context.service);
+        return defaults::apply_member(builder, payload, context.service, context.limits);
     }
     let (kind, _) = http::scalar_target(context, payload.target)?;
     let key = Some(KeyRef::Field(payload.id));

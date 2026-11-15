@@ -2,43 +2,36 @@ use super::support::*;
 use inventory_core::{
     catalog::runtime::RuntimeCatalog,
     inventory::{Observation, ScalarType},
-    record::{Exclusions, FieldId, Key, Record, Value, ValueRef, scalar_item, scalar_record},
+    record::{Exclusions, Record, Value, ValueRef, scalar_item, scalar_record},
 };
 use inventory_engine::inventory::{BinaryStore, SchemaRegistry, SweepId};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 
-fn field(value: &mut Value, id: u32) -> TestResult<&mut Value> {
-    match value {
-        Value::Map(fields) => fields.get_mut(&Key::Field(FieldId::new(id)?)).ok_or_else(|| "field missing".into()),
-        _ => Err("expected metadata map".into()),
+#[test]
+fn given_native_scalar_catalogs_when_checked_then_self_identity_and_typed_root_column_are_preserved() -> TestResult {
+    use inventory_core::catalog::runtime::{IdentityPlan, RelationSource};
+    for scalar in [ScalarType::Text, ScalarType::Integer, ScalarType::Bool] {
+        let bytes = scalar_catalog_bytes(scalar)?;
+        let runtime = RuntimeCatalog::from_bytes(&bytes)?;
+        let plan = runtime.lookup("example", "ListThings").ok_or("scalar plan")?;
+        let IdentityPlan::Key(paths) = plan.identity() else { return Err("expected scalar key identity".into()); };
+        assert_eq!(paths.len(), 1);
+        assert!(paths.first().ok_or("scalar self path")?.is_empty());
+        let column = runtime.schemas().first().ok_or("scalar schema")?.columns().first().ok_or("scalar column")?;
+        assert!(column.path().is_empty());
+        assert_eq!(column.scalar(), scalar);
+        if scalar == ScalarType::Text {
+            assert_eq!(runtime.relationships().len(), 2);
+            assert!(runtime.relationships().iter().all(|relation|
+                relation.source == RelationSource::Request && relation.target_path.is_empty()));
+        }
     }
-}
-
-fn first(value: &mut Value) -> TestResult<&mut Value> {
-    match value {
-        Value::List(values) => values.first_mut().ok_or_else(|| "entry missing".into()),
-        _ => Err("expected metadata list".into()),
-    }
-}
-
-fn scalar_catalog(scalar: ScalarType) -> TestResult<Vec<u8>> {
-    let record = Record::from_bytes(catalog_bytes()?)?;
-    let mut root = ValueRef::Map(record.root()).to_value()?;
-    let schema = first(field(field(&mut root, 60_000)?, 3)?)?;
-    let column = first(field(schema, 3)?)?;
-    *field(column, 1)? = Value::List(Vec::new());
-    *field(column, 2)? = Value::Int(match scalar {
-        ScalarType::Bool => 0,
-        ScalarType::Integer => 1,
-        ScalarType::Text => 3,
-        _ => return Err("unsupported scenario scalar".into()),
-    });
-    Ok(Record::encode(&root)?.into_bytes())
+    Ok(())
 }
 
 async fn given_store(scalar: ScalarType) -> TestResult<(tempfile::TempDir, BinaryStore)> {
     let directory = tempfile::tempdir()?;
-    let catalog = scalar_catalog(scalar)?;
+    let catalog = scalar_catalog_bytes(scalar)?;
     let runtime = RuntimeCatalog::from_bytes(&catalog)?;
     let registry = SchemaRegistry::new(&catalog, runtime.schemas().to_vec())?;
     let store = BinaryStore::create(&directory.path().join("inventory.sqlite"), registry).await?;

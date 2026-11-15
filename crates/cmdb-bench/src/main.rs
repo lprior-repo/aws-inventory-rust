@@ -1,19 +1,28 @@
 use cmdb_view::{Database, PageRequest, ResourceFilter};
 use inventory_core::record::{Exclusions, KeyRef, RecordBuilder, ValueRef};
+#[cfg(test)]
+mod pipeline_test_catalog;
+#[cfg(test)]
+mod pipeline_tests;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use sqlx::{SqlitePool, query};
 use std::error::Error;
 use std::path::{Path, PathBuf};
 use std::time::Instant;
 
+mod pipeline;
+mod pipeline_fixture;
+mod pipeline_native;
+mod pipeline_oracle;
 #[cfg(test)]
 mod tests;
 
-const USAGE: &str = "usage: cmdb-bench generate <synthetic-reader-db> <accounts> <resources-per-account> | measure <database>";
+const USAGE: &str = "usage: cmdb-bench generate <synthetic-reader-db> <accounts> <resources-per-account> | measure <database> | pipeline <fresh-db> <compiled-catalog> <pages-per-scope> <rows-per-page:0..1000> <concurrency:1..64> [<loopback-redis-url> <fresh-cmdb_bench_graph>]";
 const MAX_RESOURCES: usize = 10_000_000;
 
 #[derive(Debug)]
 enum Command {
+    Pipeline(pipeline::Workload),
     Generate {
         path: PathBuf,
         accounts: usize,
@@ -40,6 +49,7 @@ fn parse_command(mut args: impl Iterator<Item = String>) -> Result<Command, Box<
     match required(&mut args)?.as_str() {
         "generate" => parse_generate(&mut args),
         "measure" => parse_measure(&mut args),
+        "pipeline" => parse_pipeline(&mut args),
         _ => Err(USAGE.into()),
     }
 }
@@ -73,6 +83,21 @@ fn parse_measure(args: &mut impl Iterator<Item = String>) -> Result<Command, Box
     Ok(Command::Measure { path })
 }
 
+fn parse_pipeline(args: &mut impl Iterator<Item = String>) -> Result<Command, Box<dyn Error>> {
+    let path = PathBuf::from(required(args)?);
+    let catalog = PathBuf::from(required(args)?);
+    let pages = parse_count(&required(args)?)?;
+    let rows = required(args)?.parse::<usize>()?;
+    let concurrency = parse_count(&required(args)?)?;
+    let graph = args.next().map(|endpoint| -> Result<_, Box<dyn Error>> {
+        Ok(pipeline_native::Target { endpoint, graph: required(args)? })
+    }).transpose()?;
+    if args.next().is_some() { return Err(USAGE.into()); }
+    let workload = pipeline::Workload { path, catalog, pages, rows, concurrency, graph };
+    workload.validate().map_err(|error| error.to_string())?;
+    Ok(Command::Pipeline(workload))
+}
+
 async fn connect_writer(path: &std::path::Path) -> Result<SqlitePool, sqlx::Error> {
     let options = SqliteConnectOptions::new()
         .filename(path)
@@ -95,7 +120,7 @@ fn ensure_fresh(path: &Path) -> Result<(), Box<dyn Error>> {
 async fn execute_schema(pool: &SqlitePool) -> Result<(), sqlx::Error> {
     query("PRAGMA foreign_keys=ON").execute(pool).await?;
     query("PRAGMA journal_mode=WAL").execute(pool).await?;
-    query("PRAGMA user_version=14").execute(pool).await?;
+    query("PRAGMA user_version=15").execute(pool).await?;
     query("CREATE TABLE metadata(key TEXT PRIMARY KEY,value BLOB NOT NULL) WITHOUT ROWID")
         .execute(pool)
         .await?;
@@ -105,6 +130,8 @@ async fn execute_schema(pool: &SqlitePool) -> Result<(), sqlx::Error> {
     .execute(pool)
     .await?;
     query("CREATE TABLE resources(account TEXT,region TEXT,kind TEXT,id TEXT,name TEXT NULL,content_hash BLOB NOT NULL,first_seen INTEGER NOT NULL,last_changed INTEGER NOT NULL,PRIMARY KEY(account,region,kind,id)) WITHOUT ROWID").execute(pool).await?;
+    query("CREATE TABLE tags(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,tag_key TEXT NOT NULL,tag_value TEXT NOT NULL,PRIMARY KEY(account,region,kind,id,tag_key),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID").execute(pool).await?;
+    query("CREATE TABLE tag_observations(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,coverage TEXT NOT NULL CHECK(coverage IN('complete','partial','failed','unobserved')),observed_at INTEGER NOT NULL CHECK(observed_at>=0),last_complete_at INTEGER CHECK(last_complete_at>=0),PRIMARY KEY(account,region,kind,id),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID").execute(pool).await?;
     query("CREATE TABLE ec2_instances(account TEXT,region TEXT,id TEXT,content_hash BLOB NOT NULL,first_seen INTEGER NOT NULL,last_changed INTEGER NOT NULL,record BLOB NOT NULL,PRIMARY KEY(account,region,id)) WITHOUT ROWID").execute(pool).await?;
     query("CREATE TABLE iam_roles(account TEXT,region TEXT,id TEXT,content_hash BLOB NOT NULL,first_seen INTEGER NOT NULL,last_changed INTEGER NOT NULL,record BLOB NOT NULL,PRIMARY KEY(account,region,id)) WITHOUT ROWID").execute(pool).await?;
     query("CREATE TABLE edges(from_account TEXT,from_region TEXT,from_kind TEXT,from_id TEXT,to_account TEXT,to_region TEXT,to_kind TEXT,to_id TEXT,relation TEXT,source TEXT,PRIMARY KEY(from_account,from_region,from_kind,from_id,to_account,to_region,to_kind,to_id,relation,source),FOREIGN KEY(from_account,from_region,from_kind,from_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE,FOREIGN KEY(to_account,to_region,to_kind,to_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID").execute(pool).await?;
@@ -244,7 +271,7 @@ async fn generate(
     pool.close().await;
     let total = accounts.checked_mul(per_account).ok_or(USAGE)?;
     println!(
-        "created_synthetic_reader_fixture schema_version=14 resources={total} database={}",
+        "created_synthetic_reader_fixture schema_version=15 resources={total} database={}",
         path.display()
     );
     Ok(())
@@ -278,6 +305,7 @@ async fn measure(path: PathBuf) -> Result<(), Box<dyn Error>> {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     match parse_command(std::env::args().skip(1))? {
+        Command::Pipeline(workload) => pipeline::run(workload).await.map_err(|error| -> Box<dyn Error> { error }),
         Command::Generate {
             path,
             accounts,

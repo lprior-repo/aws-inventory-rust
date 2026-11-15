@@ -89,7 +89,7 @@ fn single_header(
     builder: &mut RecordBuilder,
 ) -> Result<(), DecodeError> {
     if !context.headers.contains_key(name) {
-        return defaults::apply_member(builder, member, context.service);
+        return defaults::apply_member(builder, member, context.service, context.limits);
     }
     let model = values::model(
         context.service,

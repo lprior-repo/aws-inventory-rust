@@ -6,7 +6,7 @@ pub(super) async fn validate_lease(
     now_ms: i64,
 ) -> Result<(), StoreError> {
     let row = sqlx::query(
-        "SELECT state,generation,lease_until FROM work_queue WHERE sweep_id=?1 AND scope_key=?2",
+        "SELECT state,generation,authority_generation,lease_until FROM work_queue WHERE sweep_id=?1 AND scope_key=?2",
     )
     .bind(lease.sweep.as_str())
     .bind(encode_scope(&lease.scope)?)
@@ -17,9 +17,11 @@ pub(super) async fn validate_lease(
     };
     let state: i64 = row.try_get("state")?;
     let generation: i64 = row.try_get("generation")?;
+    let authority_generation: i64 = row.try_get("authority_generation")?;
     let deadline: i64 = row.try_get("lease_until")?;
     if (state != 1 && state != 2)
         || generation != lease.generation
+        || authority_generation != generation
         || deadline <= now_ms
         || deadline != lease.lease_until_ms
     {
@@ -54,8 +56,8 @@ pub(super) async fn persist_children(
     for child in &page.children {
         validate_work(store, child)?;
         let key = encode_scope(&child.scope)?;
-        sqlx::query("INSERT OR IGNORE INTO work_queue(sweep_id,scope_key,token,bindings,state,generation,lease_until) VALUES(?1,?2,?3,?4,0,0,0)")
-            .bind(child.sweep.as_str()).bind(key).bind(&child.token).bind(&child.bindings).execute(&mut **tx).await?;
+        sqlx::query("INSERT OR IGNORE INTO work_queue(sweep_id,scope_key,token,bindings,state,generation,lease_until,context) VALUES(?1,?2,?3,?4,0,0,0,?5)")
+            .bind(child.sweep.as_str()).bind(key).bind(&child.token).bind(&child.bindings).bind(&child.context).execute(&mut **tx).await?;
     }
     Ok(())
 }
@@ -72,7 +74,7 @@ pub(super) async fn persist_page_state(
             .bind(page.lease.sweep.as_str()).bind(&scope).bind(page.observed_at_ms).execute(&mut **tx).await?;
         sqlx::query("UPDATE work_queue SET state=2,token=NULL,lease_until=0 WHERE sweep_id=?1 AND scope_key=?2 AND generation=?3")
             .bind(page.lease.sweep.as_str()).bind(&scope).bind(page.lease.generation).execute(&mut **tx).await?;
-        return Ok(ChangeStats::default());
+        return super::super::completion::drain_sweep(store, tx, page.lease.sweep(), page.observed_at_ms).await;
     }
     if page.done {
         return finalize_page(store, tx, page, &scope).await;
@@ -90,12 +92,9 @@ pub(super) async fn finalize_page(
 ) -> Result<ChangeStats, StoreError> {
     sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES(?1,?2,'complete',?3) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome='complete',observed_at=excluded.observed_at")
         .bind(page.lease.sweep.as_str()).bind(scope).bind(page.observed_at_ms).execute(&mut **tx).await?;
-    let completed =
-        super::super::completion::complete_scope(store, tx, &page.lease, page.observed_at_ms)
-            .await?;
     sqlx::query("UPDATE work_queue SET state=2,token=NULL,lease_until=0 WHERE sweep_id=?1 AND scope_key=?2 AND generation=?3")
         .bind(page.lease.sweep.as_str()).bind(scope).bind(page.lease.generation).execute(&mut **tx).await?;
-    Ok(completed)
+    super::super::completion::drain_sweep(store, tx, page.lease.sweep(), page.observed_at_ms).await
 }
 
 pub(in super::super) async fn resume_sweep(
@@ -125,6 +124,21 @@ pub(in super::super) async fn resume_sweep(
 }
 
 pub(super) fn encode_scope(scope: &ScopeKey) -> Result<Vec<u8>, StoreError> {
+    encode_scope_context(scope, scope.context())
+}
+
+pub(in super::super) fn ownership_scope_bytes(scope: &ScopeKey, bindings: &[u8]) -> Result<Vec<u8>, StoreError> {
+    use sha2::Digest;
+    let context = if scope.context().is_some() || scope.parent().is_some() {
+        let mut hash = sha2::Sha256::new();
+        hash.update(b"aws-inventory/semantic-authority/v1\0");
+        hash.update(bindings);
+        Some(inventory_core::record::ContentHash::from_bytes(hash.finalize().into()))
+    } else { None };
+    encode_scope_context(scope, context)
+}
+
+fn encode_scope_context(scope: &ScopeKey, context: Option<inventory_core::record::ContentHash>) -> Result<Vec<u8>, StoreError> {
     let mut bytes = Vec::new();
     put_text(&mut bytes, scope.account().as_str())?;
     put_text(&mut bytes, scope.region().as_str())?;
@@ -136,6 +150,14 @@ pub(super) fn encode_scope(scope: &ScopeKey) -> Result<Vec<u8>, StoreError> {
             put_resource(&mut bytes, parent)?;
         }
         None => bytes.push(0),
+    }
+    if scope.branch().is_some() || context.is_some() {
+        bytes.push(1);
+        put_text(&mut bytes, scope.branch().map_or("", |branch| branch))?;
+        match context {
+            Some(context) => { bytes.push(1); bytes.extend_from_slice(context.as_bytes()); }
+            None => bytes.push(0),
+        }
     }
     if bytes.len() > MAX_SCOPE_BYTES {
         return Err(StoreError::Invalid("scope key exceeds bounds"));
@@ -154,10 +176,26 @@ pub(super) fn decode_scope(bytes: &[u8]) -> Result<ScopeKey, StoreError> {
         1 => Some(decode_resource_from(&mut cursor)?),
         _ => return Err(StoreError::Invalid("scope parent marker")),
     };
+    let mut scope = ScopeKey::new(account, region, service, operation, parent)?;
     if !cursor.finished() {
-        return Err(StoreError::Invalid("trailing scope bytes"));
+        if cursor.byte()? != 1 { return Err(StoreError::Invalid("scope extension version")); }
+        let branch = cursor.text()?;
+        if !branch.is_empty() { scope = scope.with_branch(branch.to_owned())?; }
+        match cursor.byte()? {
+            0 => {}
+            1 => {
+                let end = cursor.offset.checked_add(32).ok_or(StoreError::Invalid("scope context offset overflow"))?;
+                let digest = cursor.bytes.get(cursor.offset..end).ok_or(StoreError::Invalid("truncated scope context"))?
+                    .try_into().map_err(|_| StoreError::Invalid("invalid scope context digest"))?;
+                cursor.offset = end;
+                scope = scope.with_context(inventory_core::record::ContentHash::from_bytes(digest));
+            }
+            _ => return Err(StoreError::Invalid("scope context marker")),
+        }
+        if scope.branch().is_none() && scope.context().is_none() { return Err(StoreError::Invalid("empty scope extension")); }
     }
-    Ok(ScopeKey::new(account, region, service, operation, parent)?)
+    if !cursor.finished() { return Err(StoreError::Invalid("trailing scope bytes")); }
+    Ok(scope)
 }
 
 pub(in super::super) fn encode_resource(key: &ResourceKey) -> Result<Vec<u8>, StoreError> {
@@ -238,9 +276,6 @@ impl<'a> Cursor<'a> {
     }
 }
 
-pub(in super::super) fn scope_bytes(scope: &ScopeKey) -> Result<Vec<u8>, StoreError> {
-    encode_scope(scope)
-}
 pub(in super::super) fn resource_bytes(key: &ResourceKey) -> Result<Vec<u8>, StoreError> {
     encode_resource(key)
 }

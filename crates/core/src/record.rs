@@ -16,8 +16,8 @@ mod value;
 pub use builder::{BuildError, RecordBuilder};
 pub use containers::{ListRef, MapRef};
 pub use error::RecordError;
-pub use exclusions::Exclusions;
-pub use hash::ContentHash;
+pub use exclusions::{Exclusions, MapKeyExclusion};
+pub use hash::{ContentHash, selected_content_hash};
 pub use value::{FieldId, Float, Key, KeyRef, Time, Value, ValueKind, ValueRef};
 pub use selected::{SCALAR_ITEM_NAME, scalar_item, scalar_record};
 

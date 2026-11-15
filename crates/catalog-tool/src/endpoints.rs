@@ -8,7 +8,9 @@ mod output;
 mod partition;
 mod report;
 mod report_text;
+mod routing;
 mod scope;
+mod static_context;
 mod template;
 
 pub use cases::{Case, CaseFailure, CaseRun, SkipReason, UnsupportedCase, classify_case};

@@ -1,6 +1,15 @@
+mod state;
+mod widget;
+
+use state::{
+    apply_filter_enqueue_result, apply_graph_data, apply_selection_enqueue_result,
+    apply_snapshot_data,
+};
+use widget::draw_empty;
+
 use makepad_widgets::*;
 
-use crate::data::{Data, Row};
+use crate::data::{Data, Filter, Row};
 
 script_mod! {
     use mod.prelude.widgets.*
@@ -77,36 +86,23 @@ pub struct ResourceTable {
 }
 
 impl ResourceTable {
-    pub fn set_account(&mut self, cx: &mut Cx, account: Option<&str>) {
-        self.data.set_account(account);
+    pub fn apply_filter_result(
+        &mut self,
+        cx: &mut Cx,
+        filter: Filter,
+        result: Result<(), String>,
+    ) -> bool {
+        let accepted = apply_filter_enqueue_result(&mut self.data, filter, result);
         self.view.redraw(cx);
+        accepted
     }
 
-    pub fn set_region(&mut self, cx: &mut Cx, region: Option<&str>) {
-        self.data.set_region(region);
-        self.view.redraw(cx);
-    }
-
-    pub fn set_kind(&mut self, cx: &mut Cx, kind: Option<&str>) {
-        self.data.set_kind(kind);
-        self.view.redraw(cx);
-    }
-
-    pub fn set_query(&mut self, cx: &mut Cx, query: &str) {
-        self.data.set_query(query);
-        self.view.redraw(cx);
-    }
-
-    pub fn apply_actions(&mut self, cx: &mut Cx, actions: &Actions) -> bool {
+    pub fn clicked_row(&mut self, cx: &mut Cx, actions: &Actions) -> Option<Row> {
         self.track_hover(cx, actions);
-        let Some(index) = self.click_index(cx, actions) else {
-            return false;
-        };
-        if !self.data.select_visible(index) {
-            return false;
-        }
-        self.view.redraw(cx);
-        true
+        let index = self.click_index(cx, actions)?;
+        let row = self.data.visible_row(index)?;
+        (!self.data.selected_row().is_some_and(|selected| selected.key == row.key))
+            .then(|| row.clone())
     }
 
     fn click_index(&mut self, cx: &mut Cx, actions: &Actions) -> Option<usize> {
@@ -191,34 +187,52 @@ impl ResourceTable {
         self.data.visual_graph()
     }
 
-    pub fn apply_page(&mut self, cx: &mut Cx, rows: Vec<Row>, total_matching: u64) {
-        self.data.replace_page(rows, total_matching);
+    pub fn apply_snapshot(
+        &mut self,
+        cx: &mut Cx,
+        counts: crate::data::Counts,
+        rows: Vec<Row>,
+        total_matching: u64,
+        error: Option<String>,
+    ) {
+        apply_snapshot_data(&mut self.data, counts, rows, total_matching, error);
+        self.pressed = None;
+        self.hover = None;
         self.view.redraw(cx);
     }
 
-    pub fn apply_graph(&mut self, cx: &mut Cx, graph: crate::data::Graph, error: Option<String>) {
-        self.data.set_graph(graph, error);
-        self.view.redraw(cx);
+
+    pub fn apply_graph(&mut self, cx: &mut Cx, graph: crate::data::Graph, error: Option<String>) -> bool {
+        let accepted = apply_graph_data(&mut self.data, graph, error);
+        if accepted {
+            self.view.redraw(cx);
+        }
+        accepted
     }
 
-    pub fn set_counts(&mut self, counts: crate::data::Counts) {
-        self.data.set_counts(counts);
-    }
-
-    pub fn set_error(&mut self, error: Option<String>) {
-        self.data.set_error(error);
-    }
 
     pub fn set_loading(&mut self, loading: bool) {
         self.data.set_loading(loading);
     }
 
-    pub fn select_id(&mut self, cx: &mut Cx, id: &str) -> bool {
-        if !self.data.select_key(id) {
-            return false;
-        }
+    pub fn row_for_id(&self, id: &str) -> Option<Row> {
+        self.data.row_for_key(id).cloned()
+    }
+
+    pub fn apply_selection_result(
+        &mut self,
+        cx: &mut Cx,
+        row: Row,
+        result: Result<(), String>,
+    ) -> bool {
+        let changed = apply_selection_enqueue_result(&mut self.data, row, result);
         self.view.redraw(cx);
-        true
+        changed
+    }
+
+    pub fn graph_request_failed(&mut self, cx: &mut Cx, error: String) {
+        self.data.set_graph_error(Some(error));
+        self.view.redraw(cx);
     }
 
     pub fn clear_selection(&mut self, cx: &mut Cx) -> bool {
@@ -275,26 +289,4 @@ impl ResourceTable {
     }
 }
 
-fn draw_empty(cx: &mut Cx2d, list: &mut PortalList, status: &str) {
-    list.set_item_range(cx, 0, 1);
-    while let Some(item_id) = list.next_visible_item(cx) {
-        let item = list.item(cx, item_id, id!(Empty));
-        item.label(cx, ids!(empty_text)).set_text(cx, status);
-        item.draw_all_unscoped(cx);
-    }
-}
 
-impl Widget for ResourceTable {
-    fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
-        while let Some(step) = self.view.draw_walk(cx, scope, walk).step() {
-            if let Some(mut list) = step.as_portal_list().borrow_mut() {
-                self.draw_list(cx, &mut list);
-            }
-        }
-        DrawStep::done()
-    }
-
-    fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
-        self.view.handle_event(cx, event, scope);
-    }
-}

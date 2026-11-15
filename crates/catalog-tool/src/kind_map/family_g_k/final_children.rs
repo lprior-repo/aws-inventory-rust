@@ -1,0 +1,84 @@
+use crate::kind_map::{ApiOnlyMapping, CfnMapping, OperationMapping, RelationMapping, RelationTargetsMapping, RelationPath, RelationSource, RelationTarget};
+
+pub(super) const CFN: &[CfnMapping<'static>] = &[
+    CfnMapping::canonical("AWS::GuardDuty::Filter"),
+    CfnMapping::canonical("AWS::GuardDuty::PublishingDestination"),
+    CfnMapping::canonical("AWS::IdentityStore::Group"),
+    CfnMapping::canonical("AWS::Greengrass::ConnectorDefinitionVersion"),
+    CfnMapping::canonical("AWS::Greengrass::CoreDefinitionVersion"),
+    CfnMapping::canonical("AWS::Greengrass::DeviceDefinitionVersion"),
+    CfnMapping::canonical("AWS::Greengrass::FunctionDefinitionVersion"),
+    CfnMapping::canonical("AWS::Greengrass::LoggerDefinitionVersion"),
+    CfnMapping::canonical("AWS::Greengrass::ResourceDefinitionVersion"),
+    CfnMapping::canonical("AWS::Greengrass::SubscriptionDefinitionVersion"),
+    CfnMapping::canonical("AWS::Greengrass::GroupVersion"),
+    CfnMapping::canonical("AWS::Cassandra::Type"),
+    CfnMapping::canonical("AWS::MSK::Topic"),
+    CfnMapping::canonical("AWS::MSK::Channel"),
+    CfnMapping::canonical("AWS::Kendra::DataSource"),
+    CfnMapping::canonical("AWS::Kendra::Faq"),
+    CfnMapping::canonical("AWS::Kendra::QuerySuggestionsBlockList"),
+    CfnMapping::canonical("AWS::Kendra::Thesaurus"),
+    CfnMapping::canonical("AWS::Kendra::FeaturedResultsSet"),
+];
+
+pub(super) const API_ONLY: &[ApiOnlyMapping<'static>] = &[
+    ApiOnlyMapping { kind: "AWS::ApiOnly::MSKConfigurationRevision", reason: "A revision is immutable metadata within a configuration, not another CFN Configuration; the pinned CFN registry has no configuration revision type." },
+    ApiOnlyMapping { kind: "AWS::ApiOnly::KendraExperience", reason: "Index-bound hosted experience configuration has no exact type in the pinned CFN registry; endpoint metadata is not indexed search content." },
+    ApiOnlyMapping { kind: "AWS::ApiOnly::KendraAccessControlConfiguration", reason: "Pinned CFN registry has no access-control configuration kind. An index-qualified metadata identifier is not document ACL contents or a user/group profile." },
+];
+
+pub(super) const OPERATIONS: &[OperationMapping<'static>] = &[
+    OperationMapping { service: "guardduty", operation: "ListFilters", kind: "AWS::GuardDuty::Filter" },
+    OperationMapping { service: "guardduty", operation: "ListPublishingDestinations", kind: "AWS::GuardDuty::PublishingDestination" },
+    OperationMapping { service: "identitystore", operation: "ListGroups", kind: "AWS::IdentityStore::Group" },
+    OperationMapping { service: "greengrass", operation: "ListConnectorDefinitionVersions", kind: "AWS::Greengrass::ConnectorDefinitionVersion" },
+    OperationMapping { service: "greengrass", operation: "ListCoreDefinitionVersions", kind: "AWS::Greengrass::CoreDefinitionVersion" },
+    OperationMapping { service: "greengrass", operation: "ListDeviceDefinitionVersions", kind: "AWS::Greengrass::DeviceDefinitionVersion" },
+    OperationMapping { service: "greengrass", operation: "ListFunctionDefinitionVersions", kind: "AWS::Greengrass::FunctionDefinitionVersion" },
+    OperationMapping { service: "greengrass", operation: "ListLoggerDefinitionVersions", kind: "AWS::Greengrass::LoggerDefinitionVersion" },
+    OperationMapping { service: "greengrass", operation: "ListResourceDefinitionVersions", kind: "AWS::Greengrass::ResourceDefinitionVersion" },
+    OperationMapping { service: "greengrass", operation: "ListSubscriptionDefinitionVersions", kind: "AWS::Greengrass::SubscriptionDefinitionVersion" },
+    OperationMapping { service: "greengrass", operation: "ListGroupVersions", kind: "AWS::Greengrass::GroupVersion" },
+    OperationMapping { service: "keyspaces", operation: "ListTypes", kind: "AWS::Cassandra::Type" },
+    OperationMapping { service: "kafka", operation: "ListTopics", kind: "AWS::MSK::Topic" },
+    OperationMapping { service: "kafka", operation: "ListChannels", kind: "AWS::MSK::Channel" },
+    OperationMapping { service: "kafka", operation: "ListConfigurationRevisions", kind: "AWS::ApiOnly::MSKConfigurationRevision" },
+    OperationMapping { service: "kendra", operation: "ListDataSources", kind: "AWS::Kendra::DataSource" },
+    OperationMapping { service: "kendra", operation: "ListFaqs", kind: "AWS::Kendra::Faq" },
+    OperationMapping { service: "kendra", operation: "ListExperiences", kind: "AWS::ApiOnly::KendraExperience" },
+    OperationMapping { service: "kendra", operation: "ListQuerySuggestionsBlockLists", kind: "AWS::Kendra::QuerySuggestionsBlockList" },
+    OperationMapping { service: "kendra", operation: "ListThesauri", kind: "AWS::Kendra::Thesaurus" },
+    OperationMapping { service: "kendra", operation: "ListFeaturedResultsSets", kind: "AWS::Kendra::FeaturedResultsSet" },
+    OperationMapping { service: "kendra", operation: "ListAccessControlConfigurations", kind: "AWS::ApiOnly::KendraAccessControlConfiguration" },
+];
+
+pub(super) const REQUEST_RELATIONS: &[RelationMapping<'static>] = &[
+    RelationMapping { source_kind: "AWS::GuardDuty::Filter", source: RelationSource::Request(RelationPath::Fields("DetectorId")), target_kind: "AWS::GuardDuty::Detector", target: RelationTarget::SelectedOutput(RelationPath::RootText), relation: "IN_DETECTOR", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::GuardDuty::PublishingDestination", source: RelationSource::Request(RelationPath::Fields("DetectorId")), target_kind: "AWS::GuardDuty::Detector", target: RelationTarget::SelectedOutput(RelationPath::RootText), relation: "IN_DETECTOR", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::IdentityStore::Group", source: RelationSource::Request(RelationPath::Fields("IdentityStoreId")), target_kind: "AWS::ApiOnly::IdentityStore", target: RelationTarget::SelectedOutput(RelationPath::Fields("IdentityStoreId")), relation: "IN_IDENTITY_STORE", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::Greengrass::ConnectorDefinitionVersion", source: RelationSource::Request(RelationPath::Fields("ConnectorDefinitionId")), target_kind: "AWS::Greengrass::ConnectorDefinition", target: RelationTarget::SelectedOutput(RelationPath::Fields("Id")), relation: "VERSION_OF", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::Greengrass::CoreDefinitionVersion", source: RelationSource::Request(RelationPath::Fields("CoreDefinitionId")), target_kind: "AWS::Greengrass::CoreDefinition", target: RelationTarget::SelectedOutput(RelationPath::Fields("Id")), relation: "VERSION_OF", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::Greengrass::DeviceDefinitionVersion", source: RelationSource::Request(RelationPath::Fields("DeviceDefinitionId")), target_kind: "AWS::Greengrass::DeviceDefinition", target: RelationTarget::SelectedOutput(RelationPath::Fields("Id")), relation: "VERSION_OF", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::Greengrass::FunctionDefinitionVersion", source: RelationSource::Request(RelationPath::Fields("FunctionDefinitionId")), target_kind: "AWS::Greengrass::FunctionDefinition", target: RelationTarget::SelectedOutput(RelationPath::Fields("Id")), relation: "VERSION_OF", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::Greengrass::LoggerDefinitionVersion", source: RelationSource::Request(RelationPath::Fields("LoggerDefinitionId")), target_kind: "AWS::Greengrass::LoggerDefinition", target: RelationTarget::SelectedOutput(RelationPath::Fields("Id")), relation: "VERSION_OF", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::Greengrass::ResourceDefinitionVersion", source: RelationSource::Request(RelationPath::Fields("ResourceDefinitionId")), target_kind: "AWS::Greengrass::ResourceDefinition", target: RelationTarget::SelectedOutput(RelationPath::Fields("Id")), relation: "VERSION_OF", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::Greengrass::SubscriptionDefinitionVersion", source: RelationSource::Request(RelationPath::Fields("SubscriptionDefinitionId")), target_kind: "AWS::Greengrass::SubscriptionDefinition", target: RelationTarget::SelectedOutput(RelationPath::Fields("Id")), relation: "VERSION_OF", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::Greengrass::GroupVersion", source: RelationSource::Request(RelationPath::Fields("GroupId")), target_kind: "AWS::Greengrass::Group", target: RelationTarget::SelectedOutput(RelationPath::Fields("Id")), relation: "VERSION_OF", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::Cassandra::Type", source: RelationSource::Request(RelationPath::Fields("keyspaceName")), target_kind: "AWS::Cassandra::Keyspace", target: RelationTarget::SelectedOutput(RelationPath::Fields("keyspaceName")), relation: "IN_KEYSPACE", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::MSK::Topic", source: RelationSource::Request(RelationPath::Fields("ClusterArn")), target_kind: "AWS::MSK::Cluster", target: RelationTarget::SelectedOutput(RelationPath::Fields("ClusterArn")), relation: "IN_CLUSTER", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::MSK::Channel", source: RelationSource::Request(RelationPath::Fields("ClusterArn")), target_kind: "AWS::MSK::Cluster", target: RelationTarget::SelectedOutput(RelationPath::Fields("ClusterArn")), relation: "IN_CLUSTER", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::ApiOnly::MSKConfigurationRevision", source: RelationSource::Request(RelationPath::Fields("Arn")), target_kind: "AWS::MSK::Configuration", target: RelationTarget::SelectedOutput(RelationPath::Fields("Arn")), relation: "VERSION_OF", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::Kendra::DataSource", source: RelationSource::Request(RelationPath::Fields("IndexId")), target_kind: "AWS::Kendra::Index", target: RelationTarget::SelectedOutput(RelationPath::Fields("Id")), relation: "IN_INDEX", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::Kendra::Faq", source: RelationSource::Request(RelationPath::Fields("IndexId")), target_kind: "AWS::Kendra::Index", target: RelationTarget::SelectedOutput(RelationPath::Fields("Id")), relation: "IN_INDEX", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::ApiOnly::KendraExperience", source: RelationSource::Request(RelationPath::Fields("IndexId")), target_kind: "AWS::Kendra::Index", target: RelationTarget::SelectedOutput(RelationPath::Fields("Id")), relation: "IN_INDEX", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::Kendra::QuerySuggestionsBlockList", source: RelationSource::Request(RelationPath::Fields("IndexId")), target_kind: "AWS::Kendra::Index", target: RelationTarget::SelectedOutput(RelationPath::Fields("Id")), relation: "IN_INDEX", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::Kendra::Thesaurus", source: RelationSource::Request(RelationPath::Fields("IndexId")), target_kind: "AWS::Kendra::Index", target: RelationTarget::SelectedOutput(RelationPath::Fields("Id")), relation: "IN_INDEX", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::Kendra::FeaturedResultsSet", source: RelationSource::Request(RelationPath::Fields("IndexId")), target_kind: "AWS::Kendra::Index", target: RelationTarget::SelectedOutput(RelationPath::Fields("Id")), relation: "IN_INDEX", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::ApiOnly::KendraAccessControlConfiguration", source: RelationSource::Request(RelationPath::Fields("IndexId")), target_kind: "AWS::Kendra::Index", target: RelationTarget::SelectedOutput(RelationPath::Fields("Id")), relation: "IN_INDEX", scope: "account_region", guard: None },
+];
+
+pub(super) const RELATION_TARGETS: &[RelationTargetsMapping<'static>] = &[
+    RelationTargetsMapping { source_kind: "AWS::MSK::Topic", source: RelationSource::Request(RelationPath::Fields("ClusterArn")), relation: "IN_CLUSTER", target_kinds: &["AWS::MSK::Cluster", "AWS::MSK::ServerlessCluster"] },
+    RelationTargetsMapping { source_kind: "AWS::MSK::Channel", source: RelationSource::Request(RelationPath::Fields("ClusterArn")), relation: "IN_CLUSTER", target_kinds: &["AWS::MSK::Cluster", "AWS::MSK::ServerlessCluster"] },
+];

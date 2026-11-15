@@ -19,6 +19,7 @@ impl QuerySession {
             region: filter.region,
             kind: filter.kind,
             text: (!filter.query.is_empty()).then_some(filter.query),
+            tag: filter.tag,
         };
         let page = self.snapshot.page(&filter, PageRequest { limit: PAGE_LIMIT, after: None })
             .await.map_err(|error| error.to_string())?;

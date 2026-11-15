@@ -8,6 +8,11 @@ mod graph_offline;
 mod graph_live;
 #[path = "database/cursors.rs"]
 mod cursors;
+#[path = "database/tags.rs"]
+mod tags;
+#[cfg(feature = "native-graph-integration")]
+#[path = "database/tag_graph_live.rs"]
+mod tag_graph_live;
 use cmdb_view::{Database, PageRequest, ResourceFilter};
 use inventory_core::record::{KeyRef, RecordBuilder, ValueRef};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
@@ -71,11 +76,11 @@ fn record_bytes() -> Result<Vec<u8>, Box<dyn Error>> {
     Ok(builder.finish()?.into_bytes())
 }
 
-async fn schema14(path: &Path) -> Result<SqlitePool, Box<dyn Error>> {
+async fn schema15(path: &Path) -> Result<SqlitePool, Box<dyn Error>> {
     let pool = writer(path).await?;
     query("PRAGMA foreign_keys=ON").execute(&pool).await?;
     query("PRAGMA journal_mode=WAL").execute(&pool).await?;
-    query("PRAGMA user_version=14").execute(&pool).await?;
+    query("PRAGMA user_version=15").execute(&pool).await?;
     query("CREATE TABLE metadata(key TEXT PRIMARY KEY,value BLOB NOT NULL) WITHOUT ROWID")
         .execute(&pool)
         .await?;
@@ -88,6 +93,8 @@ async fn schema14(path: &Path) -> Result<SqlitePool, Box<dyn Error>> {
     query("CREATE TABLE bucket_records(account TEXT,region TEXT,id TEXT,content_hash BLOB NOT NULL,first_seen INTEGER NOT NULL,last_changed INTEGER NOT NULL,record BLOB NOT NULL,PRIMARY KEY(account,region,id)) WITHOUT ROWID").execute(&pool).await?;
     query("CREATE TABLE instance_records(account TEXT,region TEXT,id TEXT,content_hash BLOB NOT NULL,first_seen INTEGER NOT NULL,last_changed INTEGER NOT NULL,record BLOB NOT NULL,PRIMARY KEY(account,region,id)) WITHOUT ROWID").execute(&pool).await?;
     query("CREATE TABLE edges(from_account TEXT,from_region TEXT,from_kind TEXT,from_id TEXT,to_account TEXT,to_region TEXT,to_kind TEXT,to_id TEXT,relation TEXT,source TEXT,PRIMARY KEY(from_account,from_region,from_kind,from_id,to_account,to_region,to_kind,to_id,relation,source),FOREIGN KEY(from_account,from_region,from_kind,from_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE,FOREIGN KEY(to_account,to_region,to_kind,to_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID").execute(&pool).await?;
+    query("CREATE TABLE tags(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,tag_key TEXT NOT NULL,tag_value TEXT NOT NULL,PRIMARY KEY(account,region,kind,id,tag_key),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID").execute(&pool).await?;
+    query("CREATE TABLE tag_observations(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,coverage TEXT NOT NULL,observed_at INTEGER NOT NULL,last_complete_at INTEGER NULL,PRIMARY KEY(account,region,kind,id),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID").execute(&pool).await?;
     Ok(pool)
 }
 
@@ -109,7 +116,7 @@ async fn seed_edge(pool: &SqlitePool, edge: &cmdb_view::GraphEdge) -> Result<(),
 }
 
 async fn populated(path: &Path) -> Result<Database, Box<dyn Error>> {
-    let pool = schema14(path).await?;
+    let pool = schema15(path).await?;
     let bytes = record_bytes()?;
     seed(
         &pool,
@@ -253,6 +260,7 @@ async fn filters_combine_identity_and_case_insensitive_text() -> TestResult {
         region: Some("eu-west-1".to_owned()),
         kind: Some("AWS::S3::Bucket".to_owned()),
         text: Some("SHARED".to_owned()),
+        tag: None,
     };
     let page = db
         .page(
@@ -275,7 +283,7 @@ async fn filters_combine_identity_and_case_insensitive_text() -> TestResult {
 async fn counts_are_database_derived_and_version_mismatch_fails_closed() -> TestResult {
     let dir = tempdir()?;
     let path = dir.path().join("inventory.sqlite");
-    let pool = schema14(&path).await?;
+    let pool = schema15(&path).await?;
     pool.close().await;
     let db = Database::open(&path).await?;
     assert_eq!(db.counts().await?.resources, 0);

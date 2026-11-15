@@ -36,6 +36,11 @@ use tokio::sync::mpsc::Sender;
 
 use common::{Context, MAX_SCAN_PAGES, required, sdk_error};
 
+/// Bounded pure IAM trust metadata; document and condition values are never returned.
+pub fn iam_trust_summary(document: Option<&str>) -> Result<Vec<serde_json::Value>, AwsScanError> {
+    global_inventory::iam::trust::trust_summary(document)
+}
+
 const MAX_REGIONS: usize = 64;
 const NATIVE_SERVICES: [&str; 12] = [
     "ec2",

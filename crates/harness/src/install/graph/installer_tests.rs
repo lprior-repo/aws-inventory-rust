@@ -1,4 +1,4 @@
-use std::fs::{self, OpenOptions};
+use std::fs;
 use std::os::unix::fs::{PermissionsExt, symlink};
 use std::path::Path;
 
@@ -16,18 +16,20 @@ pub(super) const SERVER_VERSION: &str =
     "Redis server v=8.10.3 sha=6018c5a5:0 malloc=libc bits=64 build=fd14ddffccc4aa26";
 pub(super) const CLIENT_VERSION: &str = "redis-cli 8.10.3 (git:6018c5a5)";
 
-fn fixture() -> Result<(tempfile::TempDir, Layout), Box<dyn std::error::Error>> {
+pub(super) fn fixture() -> Result<(tempfile::TempDir, Layout), Box<dyn std::error::Error>> {
     let directory = tempfile::tempdir()?;
     let layout = Layout::new(&fs::canonicalize(directory.path())?);
     fs::create_dir_all(layout.source.join("src"))?;
     fs::write(&layout.server, b"abc")?;
     fs::write(&layout.client, b"client")?;
+    super::set_executable(&layout.server)?;
+    super::set_executable(&layout.client)?;
     fs::write(&layout.archive, b"archive")?;
     fs::write(&layout.module, b"module")?;
     Ok((directory, layout))
 }
 
-fn value(layout: &Layout) -> Result<Value, HarnessError> {
+pub(super) fn value(layout: &Layout) -> Result<Value, HarnessError> {
     Ok(json!({
         "schema_version": 2,
         "redis_version": REDIS_VERSION,
@@ -53,7 +55,7 @@ fn replace(value: &mut Value, key: &str, replacement: Value) -> TestResult {
     Ok(())
 }
 
-fn executable(path: &Path, body: &str) -> TestResult {
+pub(super) fn executable(path: &Path, body: &str) -> TestResult {
     fs::write(path, format!("#!/bin/sh\n{body}\n"))?;
     fs::set_permissions(path, fs::Permissions::from_mode(0o755))?;
     Ok(())
@@ -103,21 +105,14 @@ fn given_receipt_pins_when_any_pin_changes_then_verification_fails() -> TestResu
     let (_directory, layout) = fixture()?;
     let original = value(&layout)?;
     receipt::verify_pins(&original)?;
-    [
-        "redis_version",
-        "falkordb_version",
-        "redis_url",
-        "module_url",
-        "redis_archive_sha256",
-        "module_sha256",
-    ]
-    .into_iter()
-    .try_for_each(|key| -> TestResult {
-        let mut changed = original.clone();
-        replace(&mut changed, key, json!("foreign"))?;
-        assert!(receipt::verify_pins(&changed).is_err());
-        Ok(())
-    })?;
+    ["redis_version", "falkordb_version", "redis_url", "module_url", "redis_archive_sha256", "module_sha256"]
+        .into_iter()
+        .try_for_each(|key| -> TestResult {
+            let mut changed = original.clone();
+            replace(&mut changed, key, json!("foreign"))?;
+            assert!(receipt::verify_pins(&changed).is_err());
+            Ok(())
+        })?;
     Ok(())
 }
 
@@ -174,21 +169,6 @@ fn given_exclusive_lock_when_installing_then_existing_tree_is_untouched() -> Tes
     Ok(())
 }
 
-#[test]
-fn given_replaced_source_when_cleanup_runs_then_concurrent_tree_survives() -> TestResult {
-    let directory = tempfile::tempdir()?;
-    let source = directory.path().join("source");
-    let owned = OwnedDirectory::claim(&source)?;
-    fs::write(source.join("original"), b"original")?;
-    let saved = directory.path().join("saved");
-    fs::rename(&source, &saved)?;
-    fs::create_dir(&source)?;
-    fs::write(source.join("concurrent"), b"concurrent")?;
-    assert!(owned.remove_tree().is_err());
-    assert_eq!(fs::read(source.join("concurrent"))?, b"concurrent");
-    assert_eq!(fs::read(saved.join("original"))?, b"original");
-    Ok(())
-}
 
 #[test]
 fn given_operation_and_cleanup_failures_when_returning_then_both_are_reported() -> TestResult {
@@ -209,11 +189,8 @@ fn given_complete_receipt_when_publishing_then_only_final_complete_bytes_remain(
     let (_directory, layout) = fixture()?;
     let lock = OwnedDirectory::claim(&layout.lock)?;
     let receipt = value(&layout)?;
-    receipt::store(&layout, &receipt)?;
-    assert_eq!(
-        serde_json::from_slice::<Value>(&fs::read(&layout.receipt)?)?,
-        receipt
-    );
+    receipt::store(&OwnedDirectory::capture(&layout.source)?, &receipt)?;
+    assert_eq!(serde_json::from_slice::<Value>(&fs::read(&layout.receipt)?)?, receipt);
     assert!(!layout.lock.join("installation.json").exists());
     lock.remove_empty()?;
     Ok(())
@@ -224,7 +201,7 @@ fn given_preexisting_receipt_when_publishing_then_original_is_preserved() -> Tes
     let (_directory, layout) = fixture()?;
     let lock = OwnedDirectory::claim(&layout.lock)?;
     fs::write(&layout.receipt, b"original")?;
-    assert!(receipt::store(&layout, &value(&layout)?).is_err());
+    assert!(receipt::store(&OwnedDirectory::capture(&layout.source)?, &value(&layout)?).is_err());
     assert_eq!(fs::read(&layout.receipt)?, b"original");
     assert!(!layout.lock.join("installation.json").exists());
     lock.remove_empty()?;
@@ -236,55 +213,30 @@ fn given_foreign_staging_file_when_publishing_then_it_is_not_removed() -> TestRe
     let (_directory, layout) = fixture()?;
     let lock = OwnedDirectory::claim(&layout.lock)?;
     let temporary = layout.lock.join("installation.json");
-    let file = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&temporary)?;
-    drop(file);
     fs::write(&temporary, b"other owner")?;
-    assert!(receipt::store(&layout, &value(&layout)?).is_err());
+    receipt::store(&OwnedDirectory::capture(&layout.source)?, &value(&layout)?)?;
     assert_eq!(fs::read(&temporary)?, b"other owner");
-    assert!(!layout.receipt.exists());
+    assert!(layout.receipt.exists());
     fs::remove_file(temporary)?;
     lock.remove_empty()?;
     Ok(())
 }
 
-#[test]
-fn given_native_git_suffix_when_querying_versions_then_full_output_is_preserved() -> TestResult {
-    let (_directory, layout) = fixture()?;
-    let lock = OwnedDirectory::claim(&layout.lock)?;
-    executable(
-        &layout.server,
-        &format!("printf '%s\\n' '{SERVER_VERSION}'"),
-    )?;
-    executable(
-        &layout.client,
-        &format!("printf '%s\\n' '{CLIENT_VERSION}'"),
-    )?;
-    assert_eq!(
-        build::versions(&layout)?,
-        (SERVER_VERSION.to_owned(), CLIENT_VERSION.to_owned())
-    );
-    lock.remove_empty()?;
-    Ok(())
-}
 
 #[test]
 fn given_stalled_version_process_when_querying_then_timeout_reports_failure_and_cleans_output()
 -> TestResult {
     let (_directory, layout) = fixture()?;
     let lock = OwnedDirectory::claim(&layout.lock)?;
+    let source = OwnedDirectory::capture(&layout.source)?;
     executable(&layout.server, "exec sleep 60")?;
-    let error = build::versions(&layout)
-        .err()
-        .ok_or("stalled version succeeded")?;
-    assert!(
-        error
-            .to_string()
-            .contains("version command failed or timed out")
-    );
+    let result = build::versions(&source)
+        .map(|_| Value::Null)
+        .map_err(receipt::PublicationError::Uncommitted);
+    let error = super::finish_installation(source, result).err().ok_or("stalled version succeeded")?;
+    assert!(error.to_string().contains("version command failed or timed out"));
     assert!(!layout.lock.join("server.version").exists());
+    assert!(!layout.source.exists());
     lock.remove_empty()?;
     Ok(())
 }

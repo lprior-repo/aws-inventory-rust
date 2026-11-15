@@ -1,3 +1,6 @@
+#[path = "download_race_tests.rs"]
+pub(super) mod races;
+
 use std::io::{Read, Write};
 use std::net::{TcpListener, TcpStream};
 use std::path::{Path, PathBuf};
@@ -57,7 +60,7 @@ fn given_foreign_source_digest_when_pinned_then_nothing_is_published() -> TestRe
     let output = directory.path().join("published");
     std::fs::write(&source, b"foreign source")?;
     let result = pinned(&file_url(&source)?, &output, &sha256_hex(b"wanted"));
-    assert!(result.is_err());
+    assert!(matches!(result, Err(crate::HarnessError::Invalid(error)) if error == "pinned download digest mismatch"));
     assert!(!output.try_exists()?);
     assert_eq!(entries(directory.path())?, vec![source]);
     directory.close()?;
@@ -102,15 +105,15 @@ fn read_request(stream: &mut TcpStream) -> std::io::Result<()> {
 
 fn accept(listener: &TcpListener) -> std::io::Result<TcpStream> {
     listener.set_nonblocking(true)?;
-    let result = (0..500).find_map(|_| match listener.accept() {
-        Ok((stream, _)) => Some(Ok(stream)),
-        Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-            std::thread::sleep(std::time::Duration::from_millis(10));
-            None
-        }
-        Err(error) => Some(Err(error)),
-    });
-    result.ok_or_else(|| std::io::Error::other("fixture connection deadline exceeded"))?
+    let mut descriptors = [rustix::event::PollFd::new(listener, rustix::event::PollFlags::IN)];
+    let deadline = rustix::event::Timespec { tv_sec: 5, tv_nsec: 0 };
+    let ready = rustix::event::poll(&mut descriptors, Some(&deadline))
+        .map_err(std::io::Error::from)?;
+    if ready != 1 || !descriptors.first()
+        .is_some_and(|descriptor| descriptor.revents().contains(rustix::event::PollFlags::IN)) {
+        return Err(std::io::Error::other("fixture connection deadline exceeded"));
+    }
+    listener.accept().map(|(stream, _)| stream)
 }
 
 fn serve_once<F>(action: F) -> Result<(String, JoinHandle<std::io::Result<()>>), std::io::Error>
@@ -264,6 +267,31 @@ fn given_destination_symlink_when_pinned_then_target_and_symlink_remain_unchange
     assert_eq!(std::fs::read(&victim)?, b"wanted");
     assert_eq!(std::fs::read_link(&output)?, victim);
     assert_eq!(entries(directory.path())?.len(), 2);
+    directory.close()?;
+    Ok(())
+}
+
+#[test]
+fn given_open_cache_when_path_is_replaced_and_inode_grows_then_reads_remain_owned_and_bounded() -> TestResult {
+    use std::io::Seek;
+    let directory = tempfile::tempdir()?;
+    let path = directory.path().join("cached");
+    let victim = directory.path().join("victim");
+    std::fs::write(&victim, b"foreign")?;
+    let mut writer = std::fs::File::create_new(&path)?;
+    writer.write_all(b"wanted")?;
+    let mut reader = super::open_cached(&path)?
+        .ok_or_else(|| std::io::Error::other("cache missing"))?;
+    std::fs::remove_file(&path)?;
+    std::os::unix::fs::symlink(&victim, &path)?;
+    assert_eq!(super::copy_body(&mut reader, &mut std::io::sink(), 6)?, sha256_hex(b"wanted"));
+    writer.write_all(b"grew")?;
+    reader.rewind()?;
+    let result = super::copy_body(&mut reader, &mut std::io::sink(), 6);
+    let error = result.err().ok_or_else(|| std::io::Error::other("cache growth accepted"))?;
+    assert_eq!(error.to_string(), "fixture download size limit exceeded");
+    assert_eq!(std::fs::read(&victim)?, b"foreign");
+    assert_eq!(std::fs::read_link(&path)?, victim);
     directory.close()?;
     Ok(())
 }

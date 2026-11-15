@@ -1,74 +1,5 @@
 use super::*;
 
-pub(super) async fn unresolved_for(
-    tx: &mut Transaction<'_, Sqlite>,
-    scope: &[u8],
-    key: &ResourceKey,
-    path: &[u8],
-    value: &str,
-) -> Result<Vec<sqlx::sqlite::SqliteRow>, StoreError> {
-    Ok(sqlx::query("SELECT from_account,from_region,from_kind,from_id,relation,source FROM unresolved_refs WHERE target_scope=?1 AND target_kind=?2 AND target_path=?3 AND target_value=?4")
-        .bind(scope).bind(key.kind.as_str()).bind(path).bind(value).fetch_all(&mut **tx).await?)
-}
-
-pub(super) struct ReferenceMatch<'a> {
-    pub(super) table: &'a str,
-    pub(super) column: &'a str,
-    pub(super) target: &'a ResourceKey,
-    pub(super) value: &'a str,
-}
-
-pub(super) async fn retract_ambiguous_edges(
-    tx: &mut Transaction<'_, Sqlite>,
-    refs: &[sqlx::sqlite::SqliteRow],
-    matched: ReferenceMatch<'_>,
-) -> Result<(), StoreError> {
-    for row in refs {
-        let from = source_key(row)?;
-        let relation = row.try_get::<String, _>("relation")?;
-        let source = row.try_get::<String, _>("source")?;
-        let mut query = QueryBuilder::<Sqlite>::new("DELETE FROM edges WHERE from_account=");
-        query
-            .push_bind(from.account.as_str())
-            .push(" AND from_region=")
-            .push_bind(from.region.as_str())
-            .push(" AND from_kind=")
-            .push_bind(from.kind.as_str());
-        query
-            .push(" AND from_id=")
-            .push_bind(from.id.as_str())
-            .push(" AND relation=")
-            .push_bind(&relation)
-            .push(" AND source=")
-            .push_bind(&source);
-        query
-            .push(" AND to_account=")
-            .push_bind(matched.target.account.as_str())
-            .push(" AND to_region=")
-            .push_bind(matched.target.region.as_str());
-        query
-            .push(" AND to_kind=")
-            .push_bind(matched.target.kind.as_str())
-            .push(" AND to_id IN(SELECT id FROM ")
-            .push(quote(matched.table));
-        query
-            .push(" WHERE account=")
-            .push_bind(matched.target.account.as_str())
-            .push(" AND region=")
-            .push_bind(matched.target.region.as_str());
-        query
-            .push(" AND ")
-            .push(quote(matched.column))
-            .push("=")
-            .push_bind(matched.value)
-            .push(")");
-        if query.build().execute(&mut **tx).await?.rows_affected() > 0 {
-            enqueue(tx, &from, false).await?;
-        }
-    }
-    Ok(())
-}
-
 pub(in super::super) fn source_key(
     row: &sqlx::sqlite::SqliteRow,
 ) -> Result<ResourceKey, StoreError> {
@@ -84,42 +15,7 @@ pub(in super::super) fn source_key(
     })
 }
 
-pub(super) async fn resolve_one(
-    tx: &mut Transaction<'_, Sqlite>,
-    row: sqlx::sqlite::SqliteRow,
-    target: &ResourceKey,
-) -> Result<(), StoreError> {
-    let from = ResourceKey {
-        account: inventory_core::inventory::AccountId::parse(
-            &row.try_get::<String, _>("from_account")?,
-        )?,
-        region: inventory_core::inventory::Region::parse(
-            &row.try_get::<String, _>("from_region")?,
-        )?,
-        kind: inventory_core::inventory::Kind::parse(&row.try_get::<String, _>("from_kind")?)?,
-        id: inventory_core::inventory::ResourceId::parse(&row.try_get::<String, _>("from_id")?)?,
-    };
-    let relation =
-        inventory_core::inventory::Relation::parse(&row.try_get::<String, _>("relation")?)?;
-    let source = edge_source(&row.try_get::<String, _>("source")?)?;
-    if persist_edge(
-        tx,
-        &Edge {
-            from: from.clone(),
-            to: target.clone(),
-            relation,
-            source,
-        },
-    )
-    .await?
-    {
-        enqueue(tx, &from, false).await?;
-        enqueue(tx, target, false).await?;
-    }
-    Ok(())
-}
-
-pub(super) fn edge_source(value: &str) -> Result<EdgeSource, StoreError> {
+pub(in super::super) fn edge_source(value: &str) -> Result<EdgeSource, StoreError> {
     match value {
         "model" => Ok(EdgeSource::Model),
         "reviewed-rule" => Ok(EdgeSource::ReviewedRule),
@@ -170,13 +66,63 @@ pub(in super::super) fn reference_path(path: &[FieldId]) -> Vec<u8> {
         .collect()
 }
 
-pub(super) async fn persist_tag(
+pub(super) async fn persist_tags(
     tx: &mut Transaction<'_, Sqlite>,
-    tag: &super::super::Tag,
+    observation: &super::super::TagObservation,
+    refresh: bool,
+    observed_at: i64,
 ) -> Result<(), StoreError> {
-    sqlx::query("INSERT INTO tags(account,region,kind,id,tag_key,tag_value) VALUES(?1,?2,?3,?4,?5,?6) ON CONFLICT(account,region,kind,id,tag_key) DO UPDATE SET tag_value=excluded.tag_value")
-        .bind(tag.resource.account.as_str()).bind(tag.resource.region.as_str()).bind(tag.resource.kind.as_str()).bind(tag.resource.id.as_str())
-        .bind(&tag.key).bind(&tag.value).execute(&mut **tx).await?;
+    let resource = observation.resource();
+    let exists: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM resources WHERE account=?1 AND region=?2 AND kind=?3 AND id=?4)")
+        .bind(resource.account.as_str()).bind(resource.region.as_str())
+        .bind(resource.kind.as_str()).bind(resource.id.as_str()).fetch_one(&mut **tx).await?;
+    if !exists {
+        return Err(StoreError::Invalid("tag observation has no persisted resource"));
+    }
+    persist_tag_coverage(tx, observation, observed_at).await?;
+    if observation.coverage() != super::super::TagCoverage::Complete {
+        return Ok(());
+    }
+    let existing = sqlx::query("SELECT tag_key,tag_value FROM tags WHERE account=?1 AND region=?2 AND kind=?3 AND id=?4 ORDER BY tag_key LIMIT 101")
+        .bind(resource.account.as_str()).bind(resource.region.as_str())
+        .bind(resource.kind.as_str()).bind(resource.id.as_str()).fetch_all(&mut **tx).await?
+        .into_iter().map(|row| Ok((row.try_get::<String, _>("tag_key")?, row.try_get::<String, _>("tag_value")?)))
+        .collect::<Result<Vec<_>, sqlx::Error>>()?;
+    if existing.iter().map(|(key, value)| (key.as_str(), value.as_str()))
+        .eq(observation.tags().iter().map(|tag| (tag.key(), tag.value()))) {
+        return Ok(());
+    }
+    sqlx::query("DELETE FROM tags WHERE account=?1 AND region=?2 AND kind=?3 AND id=?4")
+        .bind(resource.account.as_str()).bind(resource.region.as_str())
+        .bind(resource.kind.as_str()).bind(resource.id.as_str()).execute(&mut **tx).await?;
+    if !observation.tags().is_empty() {
+        let mut insert = QueryBuilder::<Sqlite>::new(
+            "INSERT INTO tags(account,region,kind,id,tag_key,tag_value) ",
+        );
+        insert.push_values(observation.tags(), |mut row, tag| {
+            row.push_bind(resource.account.as_str()).push_bind(resource.region.as_str())
+                .push_bind(resource.kind.as_str()).push_bind(resource.id.as_str())
+                .push_bind(tag.key()).push_bind(tag.value());
+        });
+        insert.build().execute(&mut **tx).await?;
+    }
+    if refresh {
+        enqueue(tx, resource, false).await?;
+    }
+    Ok(())
+}
+
+async fn persist_tag_coverage(
+    tx: &mut Transaction<'_, Sqlite>,
+    observation: &super::super::TagObservation,
+    observed_at: i64,
+) -> Result<(), StoreError> {
+    let key = observation.resource();
+    let complete_at = (observation.coverage() == super::super::TagCoverage::Complete).then_some(observed_at);
+    sqlx::query("INSERT INTO tag_observations(account,region,kind,id,coverage,observed_at,last_complete_at) VALUES(?1,?2,?3,?4,?5,?6,?7) ON CONFLICT(account,region,kind,id) DO UPDATE SET coverage=excluded.coverage,observed_at=excluded.observed_at,last_complete_at=COALESCE(excluded.last_complete_at,tag_observations.last_complete_at)")
+        .bind(key.account.as_str()).bind(key.region.as_str()).bind(key.kind.as_str()).bind(key.id.as_str())
+        .bind(observation.coverage().as_str()).bind(observed_at).bind(complete_at)
+        .execute(&mut **tx).await?;
     Ok(())
 }
 

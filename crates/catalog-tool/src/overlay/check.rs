@@ -22,7 +22,7 @@ const MAX_SERVICES: usize = 4096;
 #[non_exhaustive]
 pub enum CheckError {
     #[error(transparent)]
-    Overlay(Box<super::OverlayError>),
+    Policy(#[from] super::NameError),
     #[error(transparent)]
     Decode(#[from] serde_json::Error),
     #[error(transparent)]
@@ -60,11 +60,6 @@ pub enum CheckError {
     CountOverflow,
 }
 
-impl From<super::OverlayError> for CheckError {
-    fn from(error: super::OverlayError) -> Self {
-        Self::Overlay(Box::new(error))
-    }
-}
 
 impl From<plans::Error> for CheckError {
     fn from(error: plans::Error) -> Self {
@@ -213,6 +208,16 @@ impl CheckedOverlays {
 
 pub fn check(root: &Path, source: &Path) -> Result<CheckedOverlays, CheckError> {
     orchestration::check(root, source)
+}
+
+/// Checks typed policies against the pinned model, always retaining mandatory built-in denials.
+/// The supplied list may add denial rules; an empty list cannot authorize prohibited calls.
+pub fn check_policies(
+    source: &Path,
+    overlays: &[super::ServiceOverlay],
+    deny: &DenyList<'_>,
+) -> Result<CheckedOverlays, CheckError> {
+    orchestration::check_policies(source, overlays, deny)
 }
 
 fn classifier(

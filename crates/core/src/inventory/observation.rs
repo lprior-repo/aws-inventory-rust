@@ -8,6 +8,8 @@ pub struct Observation {
     record: Record,
     content_hash: ContentHash,
     name: Option<Arc<str>>,
+    exclusions: Exclusions,
+    facet_precedence: u16,
 }
 
 impl Observation {
@@ -26,6 +28,8 @@ impl Observation {
             record,
             content_hash,
             name,
+            exclusions: exclusions.clone(),
+            facet_precedence: 0,
         })
     }
 
@@ -41,6 +45,21 @@ impl Observation {
     pub fn name(&self) -> Option<&str> {
         self.name.as_deref()
     }
+
+    /// Assigns the catalog-validated precedence of this operation's replaceable facet.
+    pub fn with_facet_precedence(mut self, precedence: u16) -> Self {
+        self.facet_precedence = precedence;
+        self
+    }
+
+    pub fn facet_precedence(&self) -> u16 {
+        self.facet_precedence
+    }
+
+    pub fn hash_exclusions(&self) -> &Exclusions {
+        &self.exclusions
+    }
+
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

@@ -1,11 +1,41 @@
 use super::{FieldId, MAX_DEPTH, RecordError};
 
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct MapKeyExclusion {
+    path: Box<[FieldId]>,
+    key: Box<str>,
+}
+
+impl MapKeyExclusion {
+    pub fn new(path: Vec<FieldId>, key: impl Into<Box<str>>) -> Result<Self, RecordError> {
+        if path.is_empty() || path.len() > MAX_DEPTH {
+            return Err(RecordError::ExclusionPath { length: path.len() });
+        }
+        let key = key.into();
+        if key.is_empty() || key.len() > 4096 {
+            return Err(RecordError::ExclusionKey { length: key.len() });
+        }
+        Ok(Self { path: path.into_boxed_slice(), key })
+    }
+
+    pub fn path(&self) -> &[FieldId] {
+        &self.path
+    }
+
+    pub fn key(&self) -> &str {
+        &self.key
+    }
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct Exclusions(Vec<Box<[FieldId]>>);
+pub struct Exclusions {
+    paths: Vec<Box<[FieldId]>>,
+    map_keys: Vec<MapKeyExclusion>,
+}
 
 impl Exclusions {
     pub fn none() -> Self {
-        Self(Vec::new())
+        Self::default()
     }
 
     pub fn new(paths: impl IntoIterator<Item = Vec<FieldId>>) -> Result<Self, RecordError> {
@@ -18,10 +48,26 @@ impl Exclusions {
             .collect::<Result<Vec<_>, RecordError>>()?;
         paths.sort_unstable();
         paths.dedup();
-        Ok(Self(paths))
+        Ok(Self { paths, map_keys: Vec::new() })
     }
 
-    pub(super) fn paths(&self) -> &[Box<[FieldId]>] {
-        &self.0
+    pub fn paths(&self) -> &[Box<[FieldId]>] {
+        &self.paths
+    }
+
+    pub fn with_map_keys(mut self, mut map_keys: Vec<MapKeyExclusion>) -> Result<Self, RecordError> {
+        if map_keys.len() > 64 {
+            return Err(RecordError::ExclusionCount { length: map_keys.len() });
+        }
+        map_keys.sort_unstable();
+        if map_keys.windows(2).any(|pair| pair.first() == pair.last()) {
+            return Err(RecordError::DuplicateExclusion);
+        }
+        self.map_keys = map_keys;
+        Ok(self)
+    }
+
+    pub fn map_keys(&self) -> &[MapKeyExclusion] {
+        &self.map_keys
     }
 }

@@ -15,7 +15,7 @@ use super::support::*;
 async fn given_a_late_unique_reference_when_target_becomes_ambiguous_then_edges_are_retracted()
 -> TestResult {
     let (directory, store, _) = fixture().await?;
-    store.seed_work(work("source", "us-east-1")?).await?;
+    store.seed_work(relationship_work("source", "us-east-1", Some("target-name"), None)?).await?;
     let source_lease = store
         .claim(&SweepId::new("source".to_owned())?, 100, 20)
         .await?

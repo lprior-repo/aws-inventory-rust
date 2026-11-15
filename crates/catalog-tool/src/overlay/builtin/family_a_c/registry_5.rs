@@ -1,0 +1,44 @@
+use super::support::{NameError, ServiceOverlay, service};
+
+pub(super) fn overlays() -> Result<Vec<ServiceOverlay>, NameError> {
+    Ok(vec![
+        service("bedrock-agentcore-control", [
+            super::bedrock_agentcore_control_0::part_0()?,
+            super::bedrock_agentcore_control_0::part_1()?,
+            super::bedrock_agentcore_control_0::part_2()?,
+            super::bedrock_agentcore_control_0::part_3()?,
+            super::bedrock_agentcore_control_0::part_4()?,
+            super::bedrock_agentcore_control_1::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("bedrock-data-automation", [
+            super::bedrock_data_automation_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("bedrock-data-automation-runtime", [
+            super::bedrock_data_automation_runtime_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("bedrock-runtime", [
+            super::bedrock_runtime_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("billing", [
+            super::billing_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("billingconductor", [
+            super::billingconductor_0::part_0()?,
+            super::billingconductor_0::part_1()?,
+        ].into_iter().flatten().collect())?,
+        service("braket", [
+            super::braket_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("budgets", [
+            super::budgets_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("chatbot", [
+            super::chatbot_0::part_0()?,
+            super::chatbot_0::part_1()?,
+        ].into_iter().flatten().collect())?,
+        service("chime", [
+            super::chime_0::part_0()?,
+            super::chime_0::part_1()?,
+        ].into_iter().flatten().collect())?,
+    ])
+}

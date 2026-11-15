@@ -44,6 +44,9 @@ fn given_workspace_root_when_fingerprinted_then_sources_and_manifests_are_covere
         .collect();
     assert!(names.contains(&"Cargo.lock"));
     assert!(names.contains(&".cargo/config.toml"));
+    assert!(names.contains(&"catalog/aws-api.catalog"));
+    assert!(names.contains(&"catalog/cloudcontrol-capabilities.json"));
+    assert!(names.contains(&"catalog/cloudcontrol-universal.json"));
     assert!(names.iter().any(|name| name.starts_with("src/")));
     assert!(
         names
@@ -87,6 +90,25 @@ fn given_changed_file_when_fingerprinted_then_digest_changes() -> TestResult {
         before.get("sha256").and_then(Value::as_str),
         after.get("sha256").and_then(Value::as_str)
     );
+    Ok(())
+}
+
+#[test]
+fn given_changed_embedded_catalog_when_fingerprinted_then_digest_binds_exact_bytes() -> TestResult {
+    let root = tempfile::tempdir()?;
+    let root = root.path();
+    std::fs::create_dir_all(root.join("catalog"))?;
+    for name in ["Cargo.toml", "Cargo.lock", "rust-toolchain.toml"] {
+        std::fs::write(root.join(name), "frozen\n")?;
+    }
+    let catalog = root.join("catalog/aws-api.catalog");
+    std::fs::write(&catalog, b"catalog-first")?;
+    let before = source_fingerprint(root)?;
+    std::fs::write(&catalog, b"catalog-second")?;
+    let changed = source_fingerprint(root)?;
+    assert_ne!(before, changed);
+    std::fs::write(&catalog, b"catalog-first")?;
+    assert_eq!(before, source_fingerprint(root)?);
     Ok(())
 }
 

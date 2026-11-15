@@ -7,7 +7,12 @@ mod graph;
 
 pub use database::{
     Database, DatabaseCounts, DatabaseSnapshot, EdgeCursor, EdgePage, EdgePageRequest, LodSummary, MAX_PAGE_LIMIT,
-    PageCursor, PageRequest, ResourceFilter, ResourcePage, StoredResource,
+    PageCursor, PageRequest, ResourceFilter, ResourcePage, ResourceTag, StoredResource,
+    StoredTagObservation, TagFilter,
 };
 pub use error::ViewError;
-pub use graph::{GraphConnection, GraphEdge, GraphLimits, GraphNeighborhood, GraphNode};
+pub use graph::{
+    GraphConnection, GraphEdge, GraphLimits, GraphNeighborhood, GraphNode,
+    ScopedTag, TagAffiliation, TagAffiliations,
+};
+pub use inventory_core::inventory::TagCoverage;

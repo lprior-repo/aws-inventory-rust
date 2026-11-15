@@ -12,13 +12,12 @@ fn invalid_binding_paths_remain_distinct_in_the_aggregate() -> Result<(), Box<dy
 "n#Things":{"type":"list","member":{"target":"n#Thing"}},
 "n#Thing":{"type":"structure","members":{"Id":{"target":"smithy.api#String"}}}}}"#;
     let root = fixture(model, "")?;
-    overlay(
-        root.path(),
-        &format!(
-            "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\n[operation.ListThings.bind]\nMissingOne={{from='GetThing',path='Id'}}\nMissingTwo={{from='GetThing',path='Id'}}\n[operation.ListThings.paginator]\nkind='none'\n[operation.ListThings.identity]\nkey=['Id']\n[operation.GetThing]\nclass='expand'\nitems='Items'\n[operation.GetThing.paginator]\nkind='none'\n[operation.GetThing.identity]\nkey=['Id']\n"
-        ),
-    )?;
-    let errors = violations(root.path())?;
+    let mut plan = complete()?;
+    plan.bind.insert(overlay::MemberPath::new("MissingOne")?, binding("GetThing", "Id")?);
+    plan.bind.insert(overlay::MemberPath::new("MissingTwo")?, binding("GetThing", "Id")?);
+    let mut child = complete()?;
+    child.class = Some(OverlayClass::Expand);
+    let errors = violations(&root, vec![("ListThings", plan), ("GetThing", child)])?;
     assert_eq!(
         errors
             .iter()

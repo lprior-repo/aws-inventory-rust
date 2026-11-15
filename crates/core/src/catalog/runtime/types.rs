@@ -1,4 +1,17 @@
 mod plan;
+mod fixed_input;
+mod provenance;
+mod routing;
+mod capabilities;
+mod selection;
+mod row_policy;
+pub use row_policy::{RowPolicyPlan, RowPredicatePlan, RowOperandPlan, RowValueType, MissingSelected, ChildEligibilityPlan};
+pub use selection::{SelectionKind, Emission, ContextSource, IdentityFieldPlan, IdentityLeafPlan,
+    IdentityPredicatePlan, IdentityBranchPlan, IdentityChoicePlan, ContextProjectionPlan, BindingAlternativePlan};
+pub use fixed_input::BindingValue;
+pub use provenance::{CatalogSourceProvenance, ModelSourceProvenance};
+pub use routing::{ExecutionBranch, RequestRouting};
+pub use capabilities::{ArnOwnerRule, ArnRegionRule, ReferenceOwnerRule, ResourceProjectionPlan, KindClassificationPlan};
 use crate::{inventory::Kind, record::FieldId};
 pub use plan::CallablePlan;
 pub(crate) use plan::{EndpointTemplate, PlanParts};
@@ -32,14 +45,23 @@ pub enum RelationScope {
     HomeRegion,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RelationSource {
+    SelectedOutput,
+    Request,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RelationshipPlan {
     pub source_kind: Kind,
+    pub source: RelationSource,
     pub source_path: Box<[FieldId]>,
     pub target_kind: Kind,
+    pub target_kinds: Box<[Kind]>,
     pub target_path: Box<[FieldId]>,
     pub relation: crate::inventory::Relation,
     pub scope: RelationScope,
+    pub owner: ReferenceOwnerRule,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RuntimeProtocol {
@@ -63,12 +85,15 @@ pub enum PlanPurpose {
         region_name_path: Box<[FieldId]>,
         opt_in_status_path: Option<Box<[FieldId]>>,
     },
+    EndpointDiscovery,
+    TagEndpoint(super::TagEndpointPlan),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ItemPlan {
     Root,
     Path(Box<[FieldId]>),
+    Select { path: Box<[FieldId]>, kind: SelectionKind },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -85,19 +110,39 @@ pub enum IdentityPlan {
     Arn(Box<[FieldId]>),
     Template(Box<[IdentityPart]>),
     Key(Box<[Box<[FieldId]>]>),
+    Choice(IdentityChoicePlan),
+    CorrelatedKey(Box<[IdentityFieldPlan]>),
+    MapArn { path: Box<[FieldId]>, key: String, resource_kind: ArnResourceKind,
+        request_url: Option<Box<[FieldId]>> },
 }
 
+/// Numeric tag extraction relative to the selected resource item.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum BindingValue {
-    String(String),
-    Integer(i64),
-    Boolean(bool),
-    Strings(Box<[String]>),
+#[non_exhaustive]
+pub enum TagPlan {
+    List {
+        path: Box<[FieldId]>,
+        key: FieldId,
+        value: FieldId,
+    },
+    Map {
+        path: Box<[FieldId]>,
+    },
 }
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum BindingSource {
     Account,
     Region,
+    RegionList,
+    Alternatives(Box<[BindingAlternativePlan]>),
+    ContextFromBranch {
+        service: Box<str>,
+        operation: Box<str>,
+        branch: Box<str>,
+        source: ContextSource,
+        path: Box<[FieldId]>,
+    },
     Fixed(BindingValue),
     ParentIdentity {
         path: Box<[FieldId]>,
@@ -107,6 +152,46 @@ pub enum BindingSource {
         operation: Box<str>,
         path: Box<[FieldId]>,
     },
+    OperationArn {
+        service: Box<str>,
+        operation: Box<str>,
+        path: Box<[FieldId]>,
+        arn_service: Box<str>,
+        resource_kind: ArnResourceKind,
+    },
+    OperationUrl {
+        service: Box<str>,
+        operation: Box<str>,
+        path: Box<[FieldId]>,
+        resource_kind: UrlResourceKind,
+    },
+    Context {
+        service: Box<str>,
+        operation: Box<str>,
+        source: ContextSource,
+        path: Box<[FieldId]>,
+    },
+    Transformed {
+        source: Box<BindingSource>,
+        transform: BindingTransform,
+    },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ArnResourceKind {
+    SnsSubscription,
+    SqsQueue,
+    SnsTopic,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum UrlResourceKind {
+    SqsQueue,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum BindingTransform {
+    StripPrefix(Box<str>),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -130,6 +215,12 @@ pub enum TokenPlacement {
     Body(Box<[FieldId]>),
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum TokenSelection {
+    Value,
+    LastListItem,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TokenBinding {
     pub request_path: Box<[FieldId]>,
@@ -138,13 +229,30 @@ pub struct TokenBinding {
     pub request_placement: TokenPlacement,
     pub response_placement: TokenPlacement,
     pub optional: bool,
+    pub selection: TokenSelection,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PageSizeType {
+    String,
+    Integer,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PageSizeBinding {
     pub path: Box<[FieldId]>,
     pub max: u32,
+    pub value_type: PageSizeType,
     pub placement: TokenPlacement,
+}
+
+impl PageSizeBinding {
+    pub fn value(&self) -> crate::record::Value {
+        match self.value_type {
+            PageSizeType::String => crate::record::Value::Text(self.max.to_string()),
+            PageSizeType::Integer => crate::record::Value::Int(i64::from(self.max)),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

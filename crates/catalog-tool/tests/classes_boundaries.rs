@@ -1,5 +1,7 @@
 use catalog_tool::ReportMode;
-use catalog_tool::classes::{DenyList, Error, ParseError, ParseErrorKind, build_report, run};
+use catalog_tool::classes::{
+    DenyList, Error, ParseError, ParseErrorKind, build_report_with_policy, run_with_policy,
+};
 use std::{fs, path::Path};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -17,16 +19,14 @@ const EMPTY_REPORT: &str = concat!(
 fn model_fixture(count: usize) -> Result<tempfile::TempDir, Box<dyn std::error::Error>> {
     let root = tempfile::tempdir()?;
     let models = root.path().join("models/sample/service/v1");
-    let overlay = root.path().join("catalog/overlay");
     fs::create_dir_all(&models)?;
-    fs::create_dir_all(&overlay)?;
-    fs::write(overlay.join("must-deny.txt"), "")?;
     (0..count)
         .try_for_each(|index| fs::write(models.join(format!("model-{index:04}.json")), MODEL))?;
     Ok(root)
 }
 
 fn write_stale_report(root: &Path, bytes: usize) -> std::io::Result<()> {
+    fs::create_dir_all(root.join("catalog"))?;
     fs::write(root.join(COMMITTED), vec![b'x'; bytes])
 }
 
@@ -63,7 +63,7 @@ fn later_invalid_deny_key_byte_is_rejected() {
 #[test]
 fn classifier_accepts_exactly_4096_model_files() -> TestResult {
     let root = model_fixture(4096)?;
-    let actual = build_report(root.path(), root.path())?;
+    let actual = build_report_with_policy(root.path(), &DenyList::parse("")?)?;
     assert_eq!(actual, EMPTY_REPORT);
     Ok(())
 }
@@ -71,7 +71,7 @@ fn classifier_accepts_exactly_4096_model_files() -> TestResult {
 #[test]
 fn classifier_rejects_4097_model_files() -> TestResult {
     let root = model_fixture(4097)?;
-    let actual = build_report(root.path(), root.path());
+    let actual = build_report_with_policy(root.path(), &DenyList::parse("")?);
     assert!(matches!(actual, Err(Error::Limit)));
     Ok(())
 }
@@ -80,7 +80,12 @@ fn classifier_rejects_4097_model_files() -> TestResult {
 fn report_text_accepts_exactly_4_mib() -> TestResult {
     let root = model_fixture(1)?;
     write_stale_report(root.path(), 4_194_304)?;
-    let actual = run(root.path(), root.path(), ReportMode::Check);
+    let actual = run_with_policy(
+        root.path(),
+        root.path(),
+        ReportMode::Check,
+        &DenyList::parse("")?,
+    );
     assert!(matches!(
         actual,
         Err(Error::Report(catalog_tool::ReportError::Mismatch(_)))
@@ -93,7 +98,12 @@ fn report_text_accepts_exactly_4_mib() -> TestResult {
 fn report_text_rejects_one_byte_over_4_mib() -> TestResult {
     let root = model_fixture(1)?;
     write_stale_report(root.path(), 4_194_305)?;
-    let actual = run(root.path(), root.path(), ReportMode::Check);
+    let actual = run_with_policy(
+        root.path(),
+        root.path(),
+        ReportMode::Check,
+        &DenyList::parse("")?,
+    );
     assert!(matches!(
         actual,
         Err(Error::Report(catalog_tool::ReportError::TooLarge { file, limit }))

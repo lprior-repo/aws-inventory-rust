@@ -1,5 +1,9 @@
-use super::{TestResult, paginated, replace, super_write, write_model};
+use super::{TestResult, paginated, replace, write_model};
 use serde_json::{Value, json};
+
+pub fn policy() -> Result<catalog_tool::classes::DenyList<'static>, catalog_tool::classes::ParseError> {
+    catalog_tool::classes::DenyList::parse("ListBlocked\tcontent\n")
+}
 
 pub const EXPECTED: &str = concat!(
     "# derivations from the pinned models; nothing here makes an operation callable (VISION 5.1).\n",
@@ -91,18 +95,13 @@ fn object(shapes: Value) -> serde_json::Map<String, Value> {
 pub fn fixture() -> Result<tempfile::TempDir, Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir()?;
     write_model(dir.path(), "alpha", &rich_model()?)?;
-    super_write(
-        dir.path(),
-        "catalog/overlay/must-deny.txt",
-        "ListBlocked\tcontent\n",
-    )?;
     Ok(dir)
 }
 
 pub fn assert_fixture_report() -> TestResult {
     let dir = fixture()?;
     assert_eq!(
-        catalog_tool::plans::build_report(dir.path(), dir.path())?,
+        catalog_tool::plans::build_report_with_policy(dir.path(), &policy()?)?,
         EXPECTED
     );
     Ok(())

@@ -1,21 +1,36 @@
-use std::fs::{File, OpenOptions};
-use std::path::Path;
-use std::process::{Command, Stdio};
+use std::ops::ControlFlow;
+use std::os::unix::process::CommandExt;
+use std::process::{Child, Command, ExitStatus, Stdio};
+use std::time::{Duration, Instant};
 
-use super::{Layout, complete, receipt};
+use rustix::process::{Pid, Signal, WaitId, WaitIdOptions};
+
+use super::{OwnedDirectory, complete};
+pub(super) use super::build_cleanup::clear_owned;
+pub(super) use super::build_version::version;
 use crate::HarnessError;
 
-const BUILD_TIMEOUT: &str = "1800s";
-const VERSION_TIMEOUT: &str = "5s";
+const BUILD_TIMEOUT: Duration = Duration::from_secs(1_800);
 
-pub(super) fn compile(layout: &Layout, jobs: usize) -> Result<(), HarnessError> {
-    let status = timeout(BUILD_TIMEOUT)
-        .arg("make")
-        .arg("-C")
-        .arg(&layout.source)
-        .arg(format!("-j{jobs}"))
-        .args(["MALLOC=libc", "OPT=-O2", "redis-server", "redis-cli"])
-        .status()?;
+pub(super) fn compile(source: &OwnedDirectory, jobs: usize) -> Result<(), HarnessError> {
+    run_compile(compile_command(source, jobs), BUILD_TIMEOUT)
+}
+
+fn compile_command(source: &OwnedDirectory, jobs: usize) -> Command {
+    let mut command = Command::new("make");
+    command.arg("-C").arg(source.anchor()).arg(format!("-j{jobs}"))
+        .args(["MALLOC=libc", "OPT=-O2", "redis-server", "redis-cli"]);
+    command
+}
+
+fn run_compile(mut command: Command, timeout: Duration) -> Result<(), HarnessError> {
+    let mut child = command.process_group(0).stdin(Stdio::null()).spawn()?;
+    let result = wait_compile(Pid::from_child(&child), timeout);
+    let cleanup = terminate_and_reap(&mut child).and_then(compile_status);
+    complete(result, cleanup)
+}
+
+fn compile_status(status: ExitStatus) -> Result<(), HarnessError> {
     if status.success() {
         return Ok(());
     }
@@ -24,47 +39,57 @@ pub(super) fn compile(layout: &Layout, jobs: usize) -> Result<(), HarnessError> 
     )))
 }
 
-fn timeout(duration: &str) -> Command {
-    let mut command = Command::new("timeout");
-    command.args(["--signal=KILL", duration]);
-    command.stdin(Stdio::null());
-    command
+fn wait_compile(pid: Pid, timeout: Duration) -> Result<(), HarnessError> {
+    let deadline = Instant::now().checked_add(timeout)
+        .ok_or_else(|| HarnessError::invalid("invalid compilation deadline"))?;
+    match (0..1_000_000).try_for_each(|_| match compile_step(pid, deadline) {
+        Ok(true) => ControlFlow::Break(Ok(())),
+        Ok(false) => ControlFlow::Continue(()),
+        Err(error) => ControlFlow::Break(Err(error)),
+    }) {
+        ControlFlow::Break(result) => result,
+        ControlFlow::Continue(()) => Err(HarnessError::invalid("Redis compilation polling exceeds iteration limit")),
+    }
 }
 
-pub(super) fn versions(layout: &Layout) -> Result<(String, String), HarnessError> {
-    let server = version(layout, &layout.server, "server.version")?;
-    let client = version(layout, &layout.client, "client.version")?;
+fn compile_step(pid: Pid, deadline: Instant) -> Result<bool, HarnessError> {
+    let remaining = deadline.checked_duration_since(Instant::now())
+        .ok_or_else(|| HarnessError::invalid("Redis compilation failed or timed out: wall deadline expired"))?;
+    if exited(pid)? {
+        return Ok(true);
+    }
+    let timeout = rustix::event::Timespec::try_from(remaining.min(Duration::from_millis(10)))
+        .map_err(|error| HarnessError::invalid(format!("invalid compilation poll duration: {error}")))?;
+    match rustix::event::poll(&mut [], Some(&timeout)) {
+        Ok(_) | Err(rustix::io::Errno::INTR) => Ok(false),
+        Err(error) => Err(std::io::Error::from(error).into()),
+    }
+}
+
+pub(super) fn exited(pid: Pid) -> Result<bool, HarnessError> {
+    // Retain the unreaped leader until group signalling, preventing PID/PGID reuse.
+    let flags = WaitIdOptions::EXITED | WaitIdOptions::NOHANG | WaitIdOptions::NOWAIT;
+    rustix::process::waitid(WaitId::Pid(pid), flags)
+        .map(|status| status.is_some())
+        .map_err(|error| std::io::Error::from(error).into())
+}
+
+pub(super) fn terminate_and_reap(child: &mut Child) -> Result<ExitStatus, HarnessError> {
+    // Always kill the owned group, including descendants that closed output.
+    let killed = match rustix::process::kill_process_group(Pid::from_child(child), Signal::KILL) {
+        Ok(()) | Err(rustix::io::Errno::SRCH) => Ok(()),
+        Err(error) => Err(std::io::Error::from(error).into()),
+    };
+    let waited = child.wait().map_err(HarnessError::from);
+    complete(waited, killed)
+}
+
+#[cfg(test)]
+pub(super) fn versions(source: &OwnedDirectory) -> Result<(String, String), HarnessError> {
+    let server = version(&source.open_binary("redis-server")?)?;
+    let client = version(&source.open_binary("redis-cli")?)?;
     validate_versions(&server, &client)?;
     Ok((server, client))
-}
-
-fn version(layout: &Layout, binary: &Path, name: &str) -> Result<String, HarnessError> {
-    receipt::regular(layout, binary)?;
-    let path = layout.lock.join(name);
-    let file = OpenOptions::new()
-        .write(true)
-        .create_new(true)
-        .open(&path)?;
-    let result = version_output(binary, file, &path);
-    complete(result, std::fs::remove_file(path).map_err(Into::into))
-}
-
-fn version_output(binary: &Path, file: File, path: &Path) -> Result<String, HarnessError> {
-    let status = timeout(VERSION_TIMEOUT)
-        .arg(binary)
-        .arg("--version")
-        .stdout(file)
-        .stderr(Stdio::null())
-        .status()?;
-    if !status.success() {
-        return Err(HarnessError::invalid(format!(
-            "Redis version command failed or timed out: {status}"
-        )));
-    }
-    let bytes = receipt::read_bounded(path, 4_096)?;
-    let version = std::str::from_utf8(&bytes)
-        .map_err(|error| HarnessError::invalid(format!("invalid Redis version UTF-8: {error}")))?;
-    Ok(version.trim().to_owned())
 }
 
 pub(super) fn validate_versions(server: &str, client: &str) -> Result<(), HarnessError> {
@@ -90,8 +115,6 @@ pub(super) fn validate_versions(server: &str, client: &str) -> Result<(), Harnes
 
 #[cfg(test)]
 mod tests {
-    use std::fs;
-
     use super as build;
     use super::super::installer_tests::{CLIENT_VERSION, SERVER_VERSION, TestResult};
 
@@ -99,55 +122,16 @@ mod tests {
     fn given_native_versions_when_parsed_then_exact_pins_are_accepted() -> TestResult {
         build::validate_versions(SERVER_VERSION, CLIENT_VERSION)?;
         build::validate_versions(SERVER_VERSION, "redis-cli 8.10.3")?;
-        [
-            "redis-cli 8.10.30",
-            "redis-cli 8.10.3evil",
-            "prefix redis-cli 8.10.3",
-        ]
-        .into_iter()
-        .for_each(|client| assert!(build::validate_versions(SERVER_VERSION, client).is_err()));
-        [
-            "Redis server v=8.10.30 sha=x",
-            "Redis server v=8.10.3evil",
-            "Redis server v=8.10.3\nextra",
-        ]
-        .into_iter()
-        .for_each(|server| assert!(build::validate_versions(server, CLIENT_VERSION).is_err()));
-        Ok(())
-    }
-
-    fn terminated(pid: u32) -> std::io::Result<bool> {
-        match fs::read_to_string(format!("/proc/{pid}/status")) {
-            Ok(state) => Ok(state
-                .lines()
-                .any(|line| line.starts_with("State:") && line.contains("Z"))),
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(true),
-            Err(error) => Err(error),
-        }
-    }
-
-    fn wait_for_exit(pid: u32) -> std::io::Result<bool> {
-        (0..100).try_fold(false, |exited, _| {
-            if exited {
-                return Ok(true);
-            }
-            std::thread::sleep(std::time::Duration::from_millis(10));
-            terminated(pid)
-        })
-    }
-
-    #[test]
-    fn given_process_group_when_deadline_expires_then_descendants_are_killed() -> TestResult {
-        let directory = tempfile::tempdir()?;
-        let pid_file = directory.path().join("child.pid");
-        let script = "sleep 60 & printf '%s' \"$!\" > \"$1\"; wait";
-        let status = build::timeout("1s")
-            .args(["sh", "-c", script, "group"])
-            .arg(&pid_file)
-            .status()?;
-        assert!(!status.success());
-        let pid = fs::read_to_string(pid_file)?.parse::<u32>()?;
-        assert!(wait_for_exit(pid)?);
+        ["redis-cli 8.10.30", "redis-cli 8.10.3evil", "prefix redis-cli 8.10.3"]
+            .into_iter()
+            .for_each(|client| assert!(build::validate_versions(SERVER_VERSION, client).is_err()));
+        ["Redis server v=8.10.30 sha=x", "Redis server v=8.10.3evil", "Redis server v=8.10.3\nextra"]
+            .into_iter()
+            .for_each(|server| assert!(build::validate_versions(server, CLIENT_VERSION).is_err()));
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "build_process_tests.rs"]
+mod process_tests;

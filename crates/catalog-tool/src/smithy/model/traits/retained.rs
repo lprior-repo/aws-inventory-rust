@@ -1,5 +1,7 @@
 pub(super) const RETAIN_PAYLOADS: &[&str] = &[
     "smithy.api#default",
+    "smithy.api#enumValue",
+    "smithy.api#enum",
     "smithy.api#clientOptional",
     "smithy.api#mixin",
     "aws.api#arn",

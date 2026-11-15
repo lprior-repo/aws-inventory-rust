@@ -8,6 +8,12 @@ rust-version.workspace = true
 [dependencies]
 cmdb-view = { path = "../cmdb-view" }
 inventory-core.workspace = true
+inventory-engine = { workspace = true, default-features = false }
+aws-wire = { path = "../aws-wire" }
+http = "1.5.0"
+sha2.workspace = true
+futures-util.workspace = true
+redis = { version = "1.8.1", features = ["tokio-rustls-comp"] }
 sqlx.workspace = true
 tokio.workspace = true
 

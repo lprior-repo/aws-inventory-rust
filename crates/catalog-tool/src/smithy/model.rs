@@ -64,9 +64,15 @@ pub(super) enum ShapeKind {
     BigDecimal,
     Timestamp,
     Document,
-    Enum,
+    Enum {
+        #[serde(default, deserialize_with = "crate::model_source::unique_map")]
+        members: BTreeMap<String, Member>,
+    },
     #[serde(rename = "intEnum")]
-    IntEnum,
+    IntEnum {
+        #[serde(default, deserialize_with = "crate::model_source::unique_map")]
+        members: BTreeMap<String, Member>,
+    },
     #[serde(other)]
     Other,
 }

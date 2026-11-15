@@ -14,12 +14,13 @@ use std::{
 
 pub(super) async fn run(options: SweepArgs) -> Result<std::process::ExitCode> {
     let (store, mut summary) = collect(&options).await?;
+    let unattributed_resources = store.unattributed_authority_count().await?;
     if let Some(endpoint) = &options.graph_url {
         project(&store, endpoint, &options.graph_name).await?;
     }
     summary.graph_pending = store.projection_state().await?.pending;
-    let code = exit_code(&summary.outcomes);
-    print_summary(summary)?;
+    let code = exit_code(&summary.outcomes, unattributed_resources);
+    print_summary(summary, unattributed_resources)?;
     Ok(code)
 }
 
@@ -33,8 +34,8 @@ async fn collect(options: &SweepArgs) -> Result<(BinaryStore, SweepSummary)> {
     Ok((store, summary))
 }
 
-fn exit_code(outcomes: &sweep_runtime::ScopeOutcomes) -> std::process::ExitCode {
-    if outcomes.partial > 0
+fn exit_code(outcomes: &sweep_runtime::ScopeOutcomes, unattributed_resources: u64) -> std::process::ExitCode {
+    if unattributed_resources > 0 || outcomes.partial > 0
         || outcomes.inaccessible > 0
         || outcomes.unsupported > 0
         || outcomes.failed > 0
@@ -56,9 +57,7 @@ fn read_catalog(path: &Path) -> Result<Vec<u8>> {
 
 async fn open_store(options: &SweepArgs, catalog: &RuntimeCatalog<'_>) -> Result<BinaryStore> {
     if std::fs::metadata(&options.database).is_ok_and(|metadata| metadata.len() > 0) {
-        let store = BinaryStore::open(&options.database).await?;
-        store.validate_catalog(catalog.raw_bytes()).await?;
-        return Ok(store);
+        return Ok(BinaryStore::open_with_catalog(&options.database, catalog.raw_bytes()).await?);
     }
     anyhow::ensure!(!options.resume, "cannot resume a missing database");
     let registry = SchemaRegistry::new(catalog.raw_bytes(), catalog.schemas().to_vec())?;
@@ -89,11 +88,11 @@ async fn project(store: &BinaryStore, endpoint: &str, graph: &str) -> Result<()>
     }
 }
 
-fn print_summary(summary: SweepSummary) -> Result<()> {
+fn print_summary(summary: SweepSummary, unattributed_resources: u64) -> Result<()> {
     let outcomes = summary.outcomes;
     writeln!(
         std::io::stdout().lock(),
-        "resource_writes_scope=invocation resource_writes={} rows={} scopes={} complete={} partial={} inaccessible={} unsupported={} failed={} unobserved={} graph_pending={}",
+        "resource_writes_scope=invocation resource_writes={} rows={} scopes={} complete={} partial={} inaccessible={} unsupported={} failed={} unobserved={} graph_pending={} unattributed_resources={}",
         summary.resource_writes,
         summary.rows,
         summary.scopes,
@@ -103,7 +102,23 @@ fn print_summary(summary: SweepSummary) -> Result<()> {
         outcomes.unsupported,
         outcomes.failed,
         outcomes.unobserved,
-        summary.graph_pending
+        summary.graph_pending,
+        unattributed_resources
     )?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{exit_code, sweep_runtime::ScopeOutcomes};
+    use std::process::ExitCode;
+
+    #[test]
+    fn given_complete_fresh_scopes_when_legacy_authority_is_unresolved_then_exit_is_incomplete() {
+        let outcomes = ScopeOutcomes { complete: 7, ..ScopeOutcomes::default() };
+        assert_eq!(exit_code(&outcomes, 1), ExitCode::from(2));
+        assert_eq!(exit_code(&outcomes, 0), ExitCode::SUCCESS);
+        let partial = ScopeOutcomes { partial: 1, ..outcomes };
+        assert_eq!(exit_code(&partial, 0), ExitCode::from(2));
+    }
 }

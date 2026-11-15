@@ -35,7 +35,7 @@ pub(super) async fn drain_projection(
 pub(super) async fn ack_projection(
     store: &BinaryStore,
     ack: ProjectionAck,
-) -> Result<(), StoreError> {
+) -> Result<u64, StoreError> {
     let key = match ack.key.as_ref() {
         Some(key) => encode_resource(key)?,
         None => vec![0_u8],
@@ -50,7 +50,7 @@ pub(super) async fn ack_projection(
         acknowledge_revision(&mut tx, ack.key.is_none()).await?;
     }
     tx.commit().await?;
-    Ok(())
+    Ok(result.rows_affected())
 }
 
 async fn acknowledge_revision(

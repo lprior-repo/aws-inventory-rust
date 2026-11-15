@@ -1,0 +1,237 @@
+// Pinned Smithy source: .local/aws-models/models/odb/service/2024-08-20/odb-2024-08-20.json
+use super::policy::{Group, Id, Resource, compile};
+use crate::overlay::Scope;
+use crate::{classes::DenyReason, overlay::{NameError, OverlayClass, ServiceOverlay}};
+
+const GROUPS: &[Group] = &[
+    Group {
+        operations: &[
+            "AcceptMarketplaceRegistration", "AssociateIamRoleToResource", 
+            "AssociateVirtualMachinesToCloudVmCluster", 
+            "AssociateVirtualMachinesToExadbVmCluster", "CreateAutonomousDatabase", 
+            "CreateAutonomousDatabaseBackup", "CreateAutonomousDatabaseWallet", 
+            "CreateCloudAutonomousVmCluster", "CreateCloudExadataInfrastructure", 
+            "CreateCloudVmCluster", "CreateExadbVmCluster", "CreateExascaleDbStorageVault", 
+            "CreateOdbNetwork", "CreateOdbPeeringConnection", "DeleteAutonomousDatabase", 
+            "DeleteAutonomousDatabaseBackup", "DeleteCloudAutonomousVmCluster", 
+            "DeleteCloudExadataInfrastructure", "DeleteCloudVmCluster", "DeleteExadbVmCluster", 
+            "DeleteExascaleDbStorageVault", "DeleteOdbNetwork", "DeleteOdbPeeringConnection", 
+            "DisassociateIamRoleFromResource", "DisassociateVirtualMachinesFromCloudVmCluster", 
+            "DisassociateVirtualMachinesFromExadbVmCluster", "FailoverAutonomousDatabase", 
+            "InitializeService", "RebootAutonomousDatabase", "RebootDbNode", 
+            "RestoreAutonomousDatabase", "ShrinkAutonomousDatabase", "StartAutonomousDatabase", 
+            "StartDbNode", "StopAutonomousDatabase", "StopDbNode", 
+            "SwitchoverAutonomousDatabase", "TagResource", "UntagResource", 
+            "UpdateAutonomousDatabase", "UpdateAutonomousDatabaseBackup", 
+            "UpdateCloudAutonomousVmCluster", "UpdateCloudExadataInfrastructure", 
+            "UpdateCloudExadataInfrastructureStorageCapacity", "UpdateCloudVmCluster", 
+            "UpdateExadbVmCluster", "UpdateExascaleCloudExadataInfrastructure", 
+            "UpdateExascaleDbStorageVault", "UpdateOdbNetwork", "UpdateOdbPeeringConnection",
+        ],
+        class: OverlayClass::Deny(DenyReason::Mutating),
+        reason: None,
+    },
+    Group {
+        operations: &[
+            "GetAutonomousDatabase", "ListAutonomousDatabaseBackups", 
+            "ListAutonomousDatabaseClones", "ListAutonomousDatabasePeers",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (autonomousDatabaseId); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+    Group {
+        operations: &[
+            "GetAutonomousDatabaseBackup",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (autonomousDatabaseBackupId); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+    Group {
+        operations: &[
+            "GetAutonomousDatabaseWalletDetails",
+        ],
+        class: OverlayClass::Deny(DenyReason::Secret),
+        reason: None,
+    },
+    Group {
+        operations: &[
+            "GetCloudAutonomousVmCluster", "ListAutonomousVirtualMachines",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (cloudAutonomousVmClusterId); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+    Group {
+        operations: &[
+            "GetCloudExadataInfrastructure", 
+            "GetCloudExadataInfrastructureUnallocatedResources", "ListDbServers",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (cloudExadataInfrastructureId); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+    Group {
+        operations: &[
+            "GetCloudVmCluster",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (cloudVmClusterId); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+    Group {
+        operations: &[
+            "GetDbNode",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (dbNodeId); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+    Group {
+        operations: &[
+            "GetDbServer",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (cloudExadataInfrastructureId, dbServerId); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+    Group {
+        operations: &[
+            "GetExadbVmCluster",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (exadbVmClusterId); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+    Group {
+        operations: &[
+            "GetExascaleDbStorageVault",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (exascaleDbStorageVaultId); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+    Group {
+        operations: &[
+            "GetOciOnboardingStatus", "ListAutonomousDatabaseCharacterSets", 
+            "ListAutonomousDatabaseVersions", "ListDbNodes", "ListDbSystemShapes", 
+            "ListFlexComponents", "ListGiVersions",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("The authorized metadata summaries are collected separately; this operation has no complete resource identity, safety and discovery contract."),
+    },
+    Group {
+        operations: &[
+            "GetOdbNetwork",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (odbNetworkId); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+    Group {
+        operations: &[
+            "GetOdbPeeringConnection",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (odbPeeringConnectionId); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+    Group {
+        operations: &[
+            "ListGiMinorVersions",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (giVersion); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+    Group {
+        operations: &[
+            "ListSystemVersions",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (giVersion, shape); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+    Group {
+        operations: &[
+            "ListTagsForResource",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (resourceArn); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+];
+
+const RESOURCES: &[Resource] = &[
+    // Lists all Autonomous VM clusters in a specified Cloud Exadata infrastructure.
+    Resource {
+        operation: "ListCloudAutonomousVmClusters",
+        items: "cloudAutonomousVmClusters", id: Id::Arn("cloudAutonomousVmClusterArn"),
+        scope: Scope::Region, tokens: Some(("nextToken", "nextToken")),
+        query: &["cloudAutonomousVmClusterArn", "cloudAutonomousVmClusterId", "odbNetworkId", "odbNetworkArn", "ociResourceAnchorName", "displayName", "status", "cloudExadataInfrastructureId", "cloudExadataInfrastructureArn", "hostname", "ocid"],
+        tags: None,
+        bindings: &[],
+        fixed: &[],
+    },
+    // Returns information about the Exadata infrastructures owned by your Amazon Web Services account.
+    Resource {
+        operation: "ListCloudExadataInfrastructures",
+        items: "cloudExadataInfrastructures", id: Id::Arn("cloudExadataInfrastructureArn"),
+        scope: Scope::Region, tokens: Some(("nextToken", "nextToken")),
+        query: &["cloudExadataInfrastructureArn", "cloudExadataInfrastructureId", "displayName", "status", "availabilityZoneId", "lastMaintenanceRunId", "nextMaintenanceRunId", "ociResourceAnchorName", "ocid", "databaseServerType", "storageServerType"],
+        tags: None,
+        bindings: &[],
+        fixed: &[],
+    },
+    // Returns information about the VM clusters owned by your Amazon Web Services account or only the ones on the specified Exadata infrastructure.
+    Resource {
+        operation: "ListCloudVmClusters",
+        items: "cloudVmClusters", id: Id::Arn("cloudVmClusterArn"),
+        scope: Scope::Region, tokens: Some(("nextToken", "nextToken")),
+        query: &["cloudVmClusterArn", "cloudVmClusterId", "displayName", "status", "cloudExadataInfrastructureId", "cloudExadataInfrastructureArn", "exascaleDbStorageVaultId", "exascaleDbStorageVaultArn", "storageManagementType", "vmFileSystemStorageType", "vmBackupStorageType", "clusterName", "hostname", "lastUpdateHistoryEntryId", "ocid", "ociResourceAnchorName", "scanDnsName", "scanDnsRecordId", "odbNetworkId", "odbNetworkArn"],
+        tags: None,
+        bindings: &[],
+        fixed: &[],
+    },
+    // Returns information about the ODB networks owned by your Amazon Web Services account.
+    Resource {
+        operation: "ListOdbNetworks",
+        items: "odbNetworks", id: Id::Arn("odbNetworkArn"),
+        scope: Scope::Region, tokens: Some(("nextToken", "nextToken")),
+        query: &["odbNetworkArn", "odbNetworkId", "displayName", "status", "availabilityZoneId", "customDomainName", "ociNetworkAnchorId", "ociResourceAnchorName", "ociVcnId"],
+        tags: None,
+        bindings: &[],
+        fixed: &[],
+    },
+    // Lists all ODB peering connections or those associated with a specific ODB network.
+    Resource {
+        operation: "ListOdbPeeringConnections",
+        items: "odbPeeringConnections", id: Id::Arn("odbPeeringConnectionArn"),
+        scope: Scope::Region, tokens: Some(("nextToken", "nextToken")),
+        query: &["odbPeeringConnectionArn", "odbPeeringConnectionId", "displayName", "status", "odbNetworkArn", "peerNetworkArn", "odbPeeringConnectionType"],
+        tags: None,
+        bindings: &[],
+        fixed: &[],
+    },
+    // Returns information about the Autonomous Databases owned by your Amazon Web Services account in the current Amazon Web Services Region.
+    Resource {
+        operation: "ListAutonomousDatabases",
+        items: "autonomousDatabases", id: Id::Arn("autonomousDatabaseArn"),
+        scope: Scope::Region, tokens: Some(("nextToken", "nextToken")),
+        query: &["autonomousDatabaseArn", "autonomousDatabaseId", "ociResourceAnchorName", "ocid", "displayName", "dbName", "sourceId", "status", "databaseType", "autonomousMaintenanceScheduleType", "dataSafeStatus", "databaseManagementStatus", "operationsInsightsStatus", "availabilityZoneId", "resourcePoolLeaderId", "odbNetworkId", "odbNetworkArn", "localDisasterRecoveryType", "refreshableStatus"],
+        tags: None,
+        bindings: &[],
+        fixed: &[],
+    },
+    // Returns information about the Exascale VM clusters owned by your Amazon Web Services account.
+    Resource {
+        operation: "ListExadbVmClusters",
+        items: "exadbVmClusters", id: Id::Arn("exadbVmClusterArn"),
+        scope: Scope::Region, tokens: Some(("nextToken", "nextToken")),
+        query: &["exadbVmClusterArn", "exadbVmClusterId", "clusterName", "displayName", "exascaleDbStorageVaultArn", "exascaleDbStorageVaultId", "gridImageId", "gridImageType", "hostname", "lastUpdateHistoryEntryId", "ocid", "ociResourceAnchorName", "odbNetworkArn", "odbNetworkId", "scanDnsName", "scanDnsRecordId", "status"],
+        tags: None,
+        bindings: &[],
+        fixed: &[],
+    },
+    // Returns information about the Exascale storage vaults owned by your Amazon Web Services account.
+    Resource {
+        operation: "ListExascaleDbStorageVaults",
+        items: "exascaleDbStorageVaults", id: Id::Arn("exascaleDbStorageVaultArn"),
+        scope: Scope::Region, tokens: Some(("nextToken", "nextToken")),
+        query: &["exascaleDbStorageVaultArn", "exascaleDbStorageVaultId", "availabilityZoneId", "cloudExadataInfrastructureArn", "cloudExadataInfrastructureId", "displayName", "ocid", "ociResourceAnchorName", "status", "vaultType"],
+        tags: None,
+        bindings: &[],
+        fixed: &[],
+    },
+];
+
+pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
+    compile("odb", GROUPS, RESOURCES)
+}

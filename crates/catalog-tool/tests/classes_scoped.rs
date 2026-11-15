@@ -2,7 +2,6 @@ use DenyReason::{Content, Mutating, Paid, ReferenceData, Secret};
 use catalog_tool::classes::{Class, DenyList, DenyReason, OperationFacts, classify};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-const POLICY: &str = include_str!("../../../catalog/overlay/must-deny.txt");
 const VERIFIED: &[(&str, &str, DenyReason)] = &[
     ("bedrock-agent-runtime", "ListFlowExecutionEvents", Content),
     ("bedrock-agentcore", "ListEvents", Content),
@@ -98,7 +97,7 @@ const NOT_DENIED: &[(&str, &str)] = &[
 ];
 
 fn assert_denials(entries: &[(&str, &str, DenyReason)]) -> TestResult {
-    let deny = DenyList::parse(POLICY)?;
+    let deny = DenyList::builtin();
     entries.iter().for_each(|(service, name, reason)| {
         let facts = OperationFacts {
             service,
@@ -147,7 +146,7 @@ fn unverified_credential_shaped_outputs_stay_denied_pending_overlay_review() -> 
 
 #[test]
 fn reviewed_metadata_false_positives_and_customer_images_remain_candidates() -> TestResult {
-    let deny = DenyList::parse(POLICY)?;
+    let deny = DenyList::builtin();
     NOT_DENIED.iter().for_each(|(service, name)| {
         let facts = OperationFacts {
             service,

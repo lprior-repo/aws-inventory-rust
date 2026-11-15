@@ -10,13 +10,23 @@ pub(super) struct InputField {
 }
 
 pub(super) fn requires_parent(plan: &inventory_core::catalog::runtime::CallablePlan<'_>) -> bool {
+    plan.bindings().iter().any(|binding| dependent(&binding.source))
+}
+
+pub(in crate::sweep_runtime) fn requires_parent_branch(plan: &inventory_core::catalog::runtime::CallablePlan<'_>,
+    branch: Option<&inventory_core::catalog::runtime::ExecutionBranch>) -> bool {
+    plan.effective_bindings(branch).any(|binding| dependent(&binding.source))
+}
+
+fn dependent(source: &inventory_core::catalog::runtime::BindingSource) -> bool {
     use inventory_core::catalog::runtime::BindingSource;
-    plan.bindings().iter().any(|binding| {
-        matches!(
-            binding.source,
-            BindingSource::ParentIdentity { .. } | BindingSource::Operation { .. }
-        )
-    })
+    match source {
+        BindingSource::ParentIdentity { .. } | BindingSource::Operation { .. }
+        | BindingSource::OperationArn { .. } | BindingSource::OperationUrl { .. } | BindingSource::Context { .. }
+        | BindingSource::Alternatives(_) | BindingSource::ContextFromBranch { .. } => true,
+        BindingSource::Transformed { source,.. } => dependent(source),
+        BindingSource::Account | BindingSource::Region | BindingSource::RegionList | BindingSource::Fixed(_) => false,
+    }
 }
 
 pub(super) fn root_bindings(
@@ -24,9 +34,18 @@ pub(super) fn root_bindings(
     account: Option<&inventory_core::inventory::AccountId>,
     region: Option<&inventory_core::inventory::Region>,
 ) -> Result<Record, SweepError> {
+    root_bindings_branch(plan, None, account, region)
+}
+
+pub(in crate::sweep_runtime) fn root_bindings_branch(
+    plan: &inventory_core::catalog::runtime::CallablePlan<'_>,
+    branch: Option<&inventory_core::catalog::runtime::ExecutionBranch>,
+    account: Option<&inventory_core::inventory::AccountId>,
+    region: Option<&inventory_core::inventory::Region>,
+) -> Result<Record, SweepError> {
     let mut fields = Vec::new();
-    fields.try_reserve(plan.bindings().len())?;
-    for binding in plan.bindings() {
+    fields.try_reserve(plan.bindings().len() + branch.map_or(0, |branch| branch.bindings.len()))?;
+    for binding in plan.effective_bindings(branch) {
         let value = binding_value(&binding.source, account, region)?.ok_or(
             SweepError::Operation("dependent input binding requires a reviewed parent"),
         )?;
@@ -47,7 +66,7 @@ fn binding_value(
     account: Option<&inventory_core::inventory::AccountId>,
     region: Option<&inventory_core::inventory::Region>,
 ) -> Result<Option<Value>, SweepError> {
-    use inventory_core::catalog::runtime::{BindingSource, BindingValue};
+    use inventory_core::catalog::runtime::BindingSource;
     match source {
         BindingSource::Account => account
             .map(|value| Value::Text(value.as_str().to_owned()))
@@ -61,16 +80,32 @@ fn binding_value(
             .ok_or(SweepError::Operation(
                 "region binding unavailable during bootstrap",
             )),
-        BindingSource::Fixed(value) => Ok(Some(match value {
-            BindingValue::String(value) => Value::Text(value.clone()),
-            BindingValue::Integer(value) => Value::Int(*value),
-            BindingValue::Boolean(value) => Value::Bool(*value),
-            BindingValue::Strings(values) => {
-                Value::List(values.iter().cloned().map(Value::Text).collect())
-            }
-        })),
-        BindingSource::ParentIdentity { .. } | BindingSource::Operation { .. } => Ok(None),
+        BindingSource::RegionList => match region {
+            Some(inventory_core::inventory::Region::Regional(region)) =>
+                Ok(Some(Value::List(vec![Value::Text(region.as_str().to_owned())]))),
+            _ => Err(SweepError::Operation("region list binding requires the routed request region")),
+        },
+        BindingSource::Fixed(value) => super::request::fixed_input::value(value).map(Some),
+        BindingSource::ParentIdentity { .. } | BindingSource::Operation { .. } | BindingSource::OperationArn { .. } | BindingSource::OperationUrl { .. } | BindingSource::Context { .. } | BindingSource::Alternatives(_) | BindingSource::ContextFromBranch { .. } => Ok(None),
+        BindingSource::Transformed { source,transform } => binding_value(source,account,region)?
+            .map(|value| transform_value(value,transform)).transpose(),
     }
+}
+
+pub(in crate::sweep_runtime) fn transform_value(
+    value: Value, transform: &inventory_core::catalog::runtime::BindingTransform,
+) -> Result<Value,SweepError> {
+    use inventory_core::catalog::runtime::BindingTransform;
+    let Value::Text(mut text) = value else { return Err(SweepError::Operation("reviewed binding transform requires text")); };
+    match transform {
+        BindingTransform::StripPrefix(prefix) => {
+            if text.starts_with(prefix.as_ref()) { text.drain(..prefix.len()); }
+        }
+    }
+    if text.is_empty() || text.contains('/') {
+        return Err(SweepError::Operation("reviewed binding transform requires a nonempty bare identifier"));
+    }
+    Ok(Value::Text(text))
 }
 pub(super) fn merge_input(base: &Record, fields: &[InputField]) -> Result<Record, SweepError> {
     let mut root = std::collections::BTreeMap::new();
@@ -116,4 +151,23 @@ fn insert_path(
         return Err(SweepError::Operation("duplicate input binding path"));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod transform_tests {
+    use super::*;
+    use inventory_core::catalog::runtime::BindingTransform;
+
+    #[test]
+    fn reviewed_prefix_removes_only_one_exact_type_prefix() -> Result<(),SweepError> {
+        let transform = BindingTransform::StripPrefix("/hostedzone/".to_owned());
+        for text in ["Z123","/hostedzone/Z123"] {
+            assert_eq!(transform_value(Value::Text(text.to_owned()),&transform)?,Value::Text("Z123".to_owned()));
+        }
+        for text in ["","/hostedzone/","/hostedzone//Z123","/delegationset/N123","Z/123"] {
+            assert!(transform_value(Value::Text(text.to_owned()),&transform).is_err(),"{text}");
+        }
+        assert!(transform_value(Value::Int(1),&transform).is_err());
+        Ok(())
+    }
 }

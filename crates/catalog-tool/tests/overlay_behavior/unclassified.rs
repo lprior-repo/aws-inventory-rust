@@ -13,11 +13,10 @@ fn unclassified_candidate_requires_explicit_disposition() -> Result<(), Box<dyn 
             "\"n#GetThing\":{\"type\":\"operation\",\"output\":{\"target\":\"n#Output\"}},\"n#ListThings\":{\"type\":\"operation\"",
         );
     let root = fixture(&model, "")?;
-    overlay(
-        root.path(),
-        &format!("{HEADER}{COMPLETE}[operation.GetThing]\n"),
-    )?;
-    let errors = violations(root.path())?;
+    let errors = violations(&root, vec![
+        ("ListThings", complete()?),
+        ("GetThing", OperationOverlay::default()),
+    ])?;
     assert!(errors.iter().any(|error| error.operation() == "GetThing"
         && error.key() == "review"
         && error.value() == "non-callable candidate"
@@ -36,15 +35,16 @@ fn an_unclassified_operation_can_be_reviewed_as_expand() -> Result<(), Box<dyn s
             "\"n#ListThings\":{\"type\":\"operation\"",
             "\"n#GetThing\":{\"type\":\"operation\",\"output\":{\"target\":\"n#Output\"}},\"n#ListDenied\":{\"type\":\"operation\",\"output\":{\"target\":\"n#Output\"}},\"n#ListThings\":{\"type\":\"operation\"",
         );
-    let text = format!(
-        "{HEADER}[operation.ListDenied]\nclass='deny'\ndeny_reason='content'\n[operation.ListThings]\nclass='defer'\ndefer_reason='Requires a separate reviewed inventory plan'\n{}",
-        COMPLETE
-            .replace("ListThings", "GetThing")
-            .replace("enumerate", "expand")
-    );
     let root = fixture(&model, "")?;
-    overlay(root.path(), &text)?;
-    let checked = overlay::check(root.path(), &source(root.path()))?;
+    let mut denied = OperationOverlay::default();
+    denied.class = Some(OverlayClass::Deny(catalog_tool::classes::DenyReason::Content));
+    let mut child = complete()?;
+    child.class = Some(OverlayClass::Expand);
+    let checked = checked(&root, vec![
+        ("ListDenied", denied),
+        ("ListThings", deferred()),
+        ("GetThing", child),
+    ])?;
     let callable = checked
         .services()
         .first()

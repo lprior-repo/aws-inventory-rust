@@ -43,7 +43,7 @@ impl GraphAccess {
     }
 
     pub fn status(&self) -> WorkerEvent {
-        WorkerEvent::Graph { graph: Graph::default(), error: self.error.clone() }
+        WorkerEvent::GraphStatus { error: self.error.clone() }
     }
     pub async fn refresh(&mut self) -> WorkerEvent {
         self.reconnect();
@@ -62,11 +62,13 @@ impl GraphAccess {
         let Some(connection) = &self.connection else {
             return self.status();
         };
-        let result = tokio::time::timeout(
-            Duration::from_secs(8), connection.neighbors(&node, GRAPH_LIMITS),
-        ).await;
+        let result = tokio::time::timeout(Duration::from_secs(8), async {
+            let neighborhood = connection.neighbors(&node, GRAPH_LIMITS).await?;
+            let tags = connection.tag_affiliations(&node, TAG_LIMIT).await?;
+            Ok::<_, cmdb_view::ViewError>((neighborhood, tags))
+        }).await;
         let event = match result {
-            Ok(Ok(neighborhood)) => neighborhood_event(neighborhood),
+            Ok(Ok((neighborhood, tags))) => neighborhood_event(&node, neighborhood, tags),
             Ok(Err(error)) => graph_failure(classify_graph_error(error)),
             Err(_) => graph_failure("connection/query timed out after 8 seconds".to_owned()),
         };
@@ -94,12 +96,20 @@ fn classify_graph_error(error: cmdb_view::ViewError) -> String {
     }
 }
 
-fn neighborhood_event(neighborhood: cmdb_view::GraphNeighborhood) -> WorkerEvent {
-    match graph_from_edges(neighborhood.edges) {
-        Ok(mut graph) => {
-            graph.truncated = neighborhood.truncated;
-            WorkerEvent::Graph { graph, error: None }
-        }
+fn neighborhood_event(
+    node: &GraphNode,
+    neighborhood: cmdb_view::GraphNeighborhood,
+    tags: cmdb_view::TagAffiliations,
+) -> WorkerEvent {
+    let result = graph_from_edges(neighborhood.edges).and_then(|mut graph| {
+        graph.tag_root = Some(projection::graph_node_key(node)?);
+        graph.truncated = neighborhood.truncated;
+        graph.tag_affiliations = tags.affiliations;
+        graph.tags_truncated = tags.truncated;
+        Ok(graph)
+    });
+    match result {
+        Ok(graph) => WorkerEvent::Graph { graph, error: None },
         Err(error) => graph_failure(format!("invalid graph identity · {error}")),
     }
 }
@@ -130,9 +140,9 @@ mod tests {
         assert!(access.connection.is_none());
         access.reconnect();
         assert!(access.connection.is_some());
-        assert!(matches!(access.status(), WorkerEvent::Graph { error: Some(error), .. } if error == "connection refused"));
+        assert!(matches!(access.status(), WorkerEvent::GraphStatus { error: Some(error) } if error == "connection refused"));
         access.record(&WorkerEvent::Graph { graph: Graph::default(), error: None });
-        assert!(matches!(access.status(), WorkerEvent::Graph { error: None, .. }));
+        assert!(matches!(access.status(), WorkerEvent::GraphStatus { error: None }));
     }
 
     #[tokio::test]
@@ -140,7 +150,7 @@ mod tests {
         let mut access = GraphAccess::new(
             Some("redis://127.0.0.1:6379".to_owned()), Some("inventory".to_owned()),
         );
-        assert!(matches!(access.refresh().await, WorkerEvent::Graph { error: Some(error), .. } if error == "connection not yet checked"));
+        assert!(matches!(access.refresh().await, WorkerEvent::GraphStatus { error: Some(error) } if error == "connection not yet checked"));
     }
 
     #[test]

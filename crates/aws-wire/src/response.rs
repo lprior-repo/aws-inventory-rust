@@ -21,6 +21,7 @@ pub struct DecodeLimits {
     body_bytes: usize,
     nodes: usize,
     depth: usize,
+    preserve_fields: bool,
 }
 
 impl DecodeLimits {
@@ -38,6 +39,7 @@ impl DecodeLimits {
             body_bytes,
             nodes,
             depth,
+            preserve_fields: false,
         })
     }
 
@@ -52,6 +54,13 @@ impl DecodeLimits {
     pub fn depth(self) -> usize {
         self.depth
     }
+
+    /// Retains absent fields as absent instead of synthesizing SDK defaults.
+    /// Inventory snapshots require observed tag values and pagination evidence.
+    pub fn preserve_field_presence(mut self) -> Self {
+        self.preserve_fields = true;
+        self
+    }
 }
 
 impl Default for DecodeLimits {
@@ -60,6 +69,7 @@ impl Default for DecodeLimits {
             body_bytes: MAX_RECORD_BYTES,
             nodes: MAX_NODES,
             depth: MAX_DEPTH,
+            preserve_fields: false,
         }
     }
 }

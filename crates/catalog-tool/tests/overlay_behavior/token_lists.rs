@@ -15,13 +15,9 @@ fn nested_list_token_values_must_have_compatible_element_types()
 "n#Things":{"type":"list","member":{"target":"n#Thing"}},
 "n#Thing":{"type":"structure","members":{"Id":{"target":"smithy.api#String"}}}}}"#;
     let root = fixture(model, "")?;
-    overlay(
-        root.path(),
-        &format!(
-            "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\n[operation.ListThings.paginator]\nkind='token'\ninput='Next'\noutput='Next'\n[operation.ListThings.identity]\nkey=['Id']\n"
-        ),
-    )?;
-    let errors = violations(root.path())?;
+    let mut plan = complete()?;
+    plan.paginator = Some(token("Next", "Next")?);
+    let errors = violations(&root, vec![("ListThings", plan)])?;
     assert!(errors.iter().any(|error| error.key() == "paginator.token"
         && error.value() == "Next"
         && error.rule() == ViolationRule::InvalidValue));

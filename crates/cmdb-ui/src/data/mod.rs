@@ -8,6 +8,9 @@ pub struct Row {
     pub key: String,
     pub record_bytes: Option<usize>,
     pub content_hash: Option<String>,
+    pub tags: Vec<cmdb_view::ResourceTag>,
+    pub tags_truncated: bool,
+    pub tag_observation: Option<cmdb_view::StoredTagObservation>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -23,6 +26,9 @@ pub struct Graph {
     pub nodes: Vec<Row>,
     pub edges: Vec<Edge>,
     pub truncated: bool,
+    pub tag_root: Option<String>,
+    pub tag_affiliations: Vec<cmdb_view::TagAffiliation>,
+    pub tags_truncated: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -31,6 +37,7 @@ pub struct Filter {
     pub region: Option<String>,
     pub kind: Option<String>,
     pub query: String,
+    pub tag: Option<cmdb_view::TagFilter>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -71,6 +78,7 @@ impl Data {
             .and_then(|key| self.rows.iter().find(|row| row.key == key).cloned())
             .or_else(|| self.rows.first().cloned());
         self.graph = Graph::default();
+        self.graph_error = None;
     }
 
     pub fn set_counts(&mut self, counts: Counts) {
@@ -87,6 +95,10 @@ impl Data {
 
     pub fn set_graph(&mut self, graph: Graph, error: Option<String>) {
         self.graph = graph;
+        self.graph_error = error;
+    }
+
+    pub fn set_graph_error(&mut self, error: Option<String>) {
         self.graph_error = error;
     }
 
@@ -113,20 +125,18 @@ impl Data {
         self.select_row(row)
     }
 
+    pub fn row_for_key(&self, key: &str) -> Option<&Row> {
+        self.rows.iter().chain(self.graph.nodes.iter()).find(|row| row.key == key)
+    }
+
     pub fn select_key(&mut self, key: &str) -> bool {
-        let Some(row) = self
-            .rows
-            .iter()
-            .chain(self.graph.nodes.iter())
-            .find(|row| row.key == key)
-            .cloned()
-        else {
+        let Some(row) = self.row_for_key(key).cloned() else {
             return false;
         };
         self.select_row(row)
     }
 
-    fn select_row(&mut self, row: Row) -> bool {
+    pub fn select_row(&mut self, row: Row) -> bool {
         if self
             .selected
             .as_ref()
@@ -136,12 +146,14 @@ impl Data {
         }
         self.selected = Some(row);
         self.graph = Graph::default();
+        self.graph_error = None;
         true
     }
 
     pub fn clear_selection(&mut self) -> bool {
         let changed = self.selected.take().is_some();
         self.graph = Graph::default();
+        self.graph_error = None;
         changed
     }
 
@@ -161,6 +173,10 @@ impl Data {
         &self.filter
     }
 
+    pub fn set_filter(&mut self, filter: Filter) {
+        self.filter = filter;
+    }
+
     pub fn set_account(&mut self, value: Option<&str>) {
         self.filter.account = value.map(str::to_owned);
     }
@@ -177,13 +193,22 @@ impl Data {
         self.filter.query = value.trim().to_owned();
     }
 
+    pub fn set_tag(&mut self, value: Option<cmdb_view::TagFilter>) {
+        self.filter.tag = value;
+    }
+
     pub fn graph_status(&self) -> String {
         let status = match &self.graph_error {
             Some(error) => format!("Graph offline · {error}"),
             None => self.graph_summary(),
         };
-        if self.graph.truncated {
+        let status = if self.graph.truncated {
             format!("{status} · neighborhood truncated by query limits")
+        } else {
+            status
+        };
+        if self.graph.tags_truncated {
+            format!("{status} · tag affiliations truncated by query limits")
         } else {
             status
         }

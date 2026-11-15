@@ -45,6 +45,13 @@ fn write_counts(ui: &WidgetRef, cx: &mut Cx, graph: &Graph) {
     } else {
         format!("{nodes} visual nodes · {edges} visual edges · {status}")
     };
+    if let Some(affiliation) = graph.tag_affiliations.first() {
+        text.push_str(&format!(
+            " · {} live tag affiliations · provenance: {}",
+            graph.tag_affiliations.len(),
+            affiliation.provenance,
+        ));
+    }
     if back > 0 {
         text.push_str(&format!(" · {back} back edges"));
     }
@@ -72,13 +79,3 @@ pub(crate) fn click_id(ui: &WidgetRef, cx: &mut Cx, actions: &Actions) -> Option
     Some(item.cast::<DagSelectAction>().id)
 }
 
-pub(crate) fn apply_selection(ui: &WidgetRef, cx: &mut Cx, id: Option<&str>) -> bool {
-    let table_ref = ui.widget(cx, ids!(table));
-    let Some(mut table) = table_ref.borrow_mut::<ResourceTable>() else {
-        return false;
-    };
-    match id {
-        Some(id) => table.select_id(cx, id),
-        None => table.clear_selection(cx),
-    }
-}

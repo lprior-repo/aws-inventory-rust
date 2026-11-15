@@ -3,6 +3,7 @@ mod evaluation;
 mod identity;
 mod pagination;
 mod paths;
+mod row_policy;
 
 pub(super) use evaluation::{StateArgs, operation};
 

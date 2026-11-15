@@ -5,7 +5,7 @@ mod protocol;
 mod queries;
 mod runner;
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;
 
 use crate::data::{Counts, Filter, Graph, Row};
 use cmdb_view::{Database, DatabaseSnapshot, GraphConnection, GraphLimits, GraphNode, PageRequest, ResourceFilter};
@@ -24,6 +24,7 @@ use tokio::runtime::Builder;
 use tokio::sync::mpsc::{Receiver as CommandReceiver, Sender as CommandSender};
 
 const PAGE_LIMIT: usize = 500;
+const TAG_LIMIT: usize = 256;
 const GRAPH_LIMITS: GraphLimits = GraphLimits {
     depth: 2,
     nodes: 200,
@@ -85,6 +86,10 @@ fn set_argument(config: &mut WorkerConfig, flag: &str, value: &str) -> Result<()
 
 #[derive(Debug)]
 pub enum WorkerEvent {
+    /// Connection/configuration status, independent of a selected resource.
+    GraphStatus {
+        error: Option<String>,
+    },
     Snapshot {
         counts: Counts,
         rows: Vec<Row>,
@@ -121,17 +126,25 @@ impl DataWorker {
     }
 
     pub fn refresh(&self, filter: Filter) -> Result<(), String> {
-        let revision = self.revisions.refresh()?;
         let permit = self.commands.try_reserve().map_err(command_error)?;
+        let revision = self.revisions.refresh()?;
         permit.send(Command::Refresh { revision, filter });
         Ok(())
     }
 
     pub fn expand(&self, node: GraphNode) -> Result<(), String> {
-        let revision = self.revisions.expand()?;
         let permit = self.commands.try_reserve().map_err(command_error)?;
+        let revision = self.revisions.expand()?;
         permit.send(Command::Expand { revision, node });
         Ok(())
+    }
+
+    pub fn invalidate_graph(&self) -> Result<(), String> {
+        self.revisions.expand().map(|_| ())
+    }
+
+    pub fn is_closed(&self) -> bool {
+        self.commands.is_closed()
     }
 
     pub fn drain(&self) -> Vec<WorkerEvent> {

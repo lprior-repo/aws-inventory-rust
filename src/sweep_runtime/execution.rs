@@ -1,14 +1,16 @@
 #[path = "execution/draining.rs"]
 mod draining;
 use draining::*;
-mod page;
+pub(in crate::sweep_runtime) mod page;
+pub(in crate::sweep_runtime) mod routing;
+pub(in crate::sweep_runtime) mod discovery;
 #[cfg(test)]
 mod tests;
 
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use aws_wire::transport::{Client, Config as TransportConfig};
-use futures_util::{StreamExt, stream};
+use futures_util::{StreamExt, future::BoxFuture, stream};
 use inventory_aws::model_credentials::ProfileCredentials;
 use inventory_core::{
     catalog::runtime::{CallablePlan, PlanPurpose, PlanScope, RuntimeCatalog},
@@ -37,6 +39,8 @@ pub(super) struct RuntimeContext<'a, 'catalog> {
     pub store: &'a BinaryStore,
     pub account: AccountId,
     pub lease_ms: i64,
+    pub endpoints: discovery::EndpointCache,
+    pub consumers: page::consumer_index::ConsumerIndex<'a,'catalog>,
 }
 
 pub(crate) async fn run(
@@ -62,16 +66,8 @@ pub(crate) async fn run(
         home: &home,
         config: &config,
     };
-    let collection = collect(&bootstrap, store, &sweep, lease_ms);
-    tokio::pin!(collection);
-    tokio::select! {
-        signal = tokio::signal::ctrl_c() => {
-            executor.cancel();
-            if signal.is_err() { return Err(SweepError::Operation("Ctrl-C cancellation handler failed")); }
-            Err(SweepError::Api(inventory_engine::limiter::ApiError::Cancelled))
-        }
-        result = &mut collection => result,
-    }
+    let collection: BoxFuture<'_,Result<SweepSummary,SweepError>> = Box::pin(collect(&bootstrap,store,&sweep,lease_ms));
+    supervise(&executor,collection,tokio::signal::ctrl_c()).await
 }
 
 async fn collect(
@@ -81,6 +77,10 @@ async fn collect(
     lease_ms: i64,
 ) -> Result<SweepSummary, SweepError> {
     let account = bootstrap_account(bootstrap).await?;
+    let consumers = page::consumer_index::ConsumerIndex::build(bootstrap.catalog).map_err(|error| {
+        tracing::error!(%error,"reviewed consumer index construction failed");
+        SweepError::Operation("reviewed consumer index construction failed")
+    })?;
     let context = RuntimeContext {
         bootstrap: BootstrapContext {
             catalog: bootstrap.catalog,
@@ -93,6 +93,8 @@ async fn collect(
         store,
         account,
         lease_ms,
+        endpoints: discovery::EndpointCache::default(),
+        consumers,
     };
     let regions = discover_regions(&context).await?;
     seed_enumerations(&context, sweep, &regions).await?;
@@ -118,34 +120,52 @@ fn executor_config(concurrency: usize) -> Result<ExecutorConfig, SweepError> {
 }
 
 fn lease_budget(settings: ExecutorConfig) -> Result<i64, SweepError> {
+    // A leased batch is a barrier: no further pages enter this executor until it
+    // drains. Bound its entire workload serially, including DescribeEndpoints
+    // before each target call, queued permits, adaptive pacing and server hints.
+    let calls = u64::try_from(settings.global_concurrency).ok()
+        .and_then(|pages| pages.checked_mul(2))
+        .ok_or(SweepError::Operation("executor page-call budget overflow"))?;
     let attempts = u64::from(settings.max_attempts);
-    let attempt_time = settings
-        .attempt_timeout_ms
-        .checked_mul(attempts)
-        .ok_or(SweepError::Operation("executor attempt budget overflow"))?;
-    let retry_count = attempts.saturating_sub(1);
-    let backoff = settings
-        .max_backoff_ms
-        .checked_mul(retry_count)
-        .ok_or(SweepError::Operation("executor backoff budget overflow"))?;
-    let rate = u64::from(settings.requests_per_second);
-    let concurrent = u64::try_from(settings.global_concurrency)
-        .map_err(|_| SweepError::Operation("executor concurrency exceeds lease budget range"))?;
-    let admissions = concurrent
-        .checked_add(rate.saturating_sub(1))
-        .and_then(|value| value.checked_div(rate))
-        .ok_or(SweepError::Operation("executor admission budget overflow"))?;
-    let pacing = admissions
-        .checked_mul(1_000)
+    let attempt_time = settings.attempt_timeout_ms
+        .checked_add(inventory_engine::limiter::MAX_RETRY_AFTER_MS)
+        .and_then(|value| value.checked_add(1_000))
         .and_then(|value| value.checked_mul(attempts))
-        .ok_or(SweepError::Operation("executor pacing budget overflow"))?;
-    let total = attempt_time
-        .checked_add(backoff)
-        .and_then(|value| value.checked_add(pacing))
+        .ok_or(SweepError::Operation("executor attempt budget overflow"))?;
+    let backoff = settings.max_backoff_ms.checked_mul(attempts.saturating_sub(1))
+        .ok_or(SweepError::Operation("executor backoff budget overflow"))?;
+    let total = attempt_time.checked_add(backoff)
+        .and_then(|value| value.checked_mul(calls))
+        // A previous batch/bootstrap call may leave an accepted server cooldown.
+        .and_then(|value| value.checked_add(inventory_engine::limiter::MAX_RETRY_AFTER_MS))
         .and_then(|value| value.checked_add(LEASE_MARGIN_MS))
         .ok_or(SweepError::Operation("executor lease budget overflow"))?;
     i64::try_from(total)
         .map_err(|_| SweepError::Operation("executor lease budget exceeds storage range"))
+}
+
+async fn supervise(
+    executor: &ApiExecutor,
+    collection: impl Future<Output = Result<SweepSummary, SweepError>>,
+    signal: impl Future<Output = std::io::Result<()>>,
+) -> Result<SweepSummary, SweepError> {
+    tokio::pin!(collection);
+    tokio::select! {
+        result = &mut collection => result,
+        signal = signal => {
+            executor.cancel();
+            // The collection owns its admitted pages and SQL transactions. Its
+            // bounded batch drain settles them before this supervisor returns.
+            let drained = collection.await;
+            match drained {
+                Err(SweepError::Api(inventory_engine::limiter::ApiError::Cancelled)) | Ok(_) => {
+                    signal.map_err(|_| SweepError::Operation("Ctrl-C cancellation handler failed"))?;
+                    Err(inventory_engine::limiter::ApiError::Cancelled.into())
+                }
+                Err(error) => Err(error),
+            }
+        }
+    }
 }
 
 async fn sweep_id(store: &BinaryStore, config: &SweepConfig) -> Result<SweepId, SweepError> {

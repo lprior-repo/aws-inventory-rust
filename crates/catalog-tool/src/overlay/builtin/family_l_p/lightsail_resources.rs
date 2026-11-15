@@ -1,0 +1,205 @@
+use super::super::policy::{Id, Resource, Input};
+use crate::overlay::Scope;
+
+pub(super) const RESOURCES: &[Resource] = &[
+    // Returns information about all Amazon Lightsail virtual private servers, or instances .
+    Resource {
+        operation: "GetInstances",
+        items: "instances", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: Some(("pageToken", "nextPageToken")),
+        query: &["arn", "name", "resourceType", "blueprintId", "blueprintName", "bundleId", "ipAddressType", "username", "sshKeyName"],
+        tags: Some("tags"),
+        bindings: &[],
+        fixed: &[],
+    },
+    // Returns information about all block storage disks in your AWS account and region.
+    Resource {
+        operation: "GetDisks",
+        items: "disks", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: Some(("pageToken", "nextPageToken")),
+        query: &["arn", "name", "resourceType", "state", "attachmentState", "autoMountStatus"],
+        tags: Some("tags"),
+        bindings: &[],
+        fixed: &[],
+    },
+    // Returns information about all block storage disk snapshots in your AWS account and region.
+    Resource {
+        operation: "GetDiskSnapshots",
+        items: "diskSnapshots", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: Some(("pageToken", "nextPageToken")),
+        query: &["arn", "name", "resourceType", "state", "fromDiskName", "fromDiskArn", "fromInstanceName", "fromInstanceArn"],
+        tags: Some("tags"),
+        bindings: &[],
+        fixed: &[],
+    },
+    // Returns all instance snapshots for the user's account.
+    Resource {
+        operation: "GetInstanceSnapshots",
+        items: "instanceSnapshots", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: Some(("pageToken", "nextPageToken")),
+        query: &["arn", "name", "resourceType", "state", "fromInstanceName", "fromInstanceArn", "fromBlueprintId", "fromBundleId"],
+        tags: Some("tags"),
+        bindings: &[],
+        fixed: &[],
+    },
+    // Returns information about all load balancers in an account.
+    Resource {
+        operation: "GetLoadBalancers",
+        items: "loadBalancers", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: Some(("pageToken", "nextPageToken")),
+        query: &["arn", "name", "resourceType", "dnsName", "state", "ipAddressType", "tlsPolicyName"],
+        tags: Some("tags"),
+        bindings: &[],
+        fixed: &[],
+    },
+    // Returns information about all of your database snapshots in Amazon Lightsail.
+    Resource {
+        operation: "GetRelationalDatabaseSnapshots",
+        items: "relationalDatabaseSnapshots", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: Some(("pageToken", "nextPageToken")),
+        query: &["arn", "name", "resourceType", "state", "fromRelationalDatabaseName", "fromRelationalDatabaseArn", "fromRelationalDatabaseBundleId", "fromRelationalDatabaseBlueprintId"],
+        tags: Some("tags"),
+        bindings: &[],
+        fixed: &[],
+    },
+    // Returns information about all static IPs in the user's account.
+    Resource {
+        operation: "GetStaticIps",
+        items: "staticIps", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: Some(("pageToken", "nextPageToken")),
+        query: &["arn", "name", "resourceType"],
+        tags: None,
+        bindings: &[],
+        fixed: &[],
+    },
+    // Returns a list of all domains in the user's account.
+    Resource {
+        operation: "GetDomains",
+        items: "domains", id: Id::Arn("arn"),
+        scope: Scope::Account, tokens: Some(("pageToken", "nextPageToken")),
+        query: &["arn", "name", "resourceType"],
+        tags: Some("tags"),
+        bindings: &[],
+        fixed: &[],
+    },
+    // Returns information about one or more of your Amazon Lightsail content delivery network (CDN) distributions. The defaultRootObject and customErrorResponses values are returned only
+    Resource {
+        operation: "GetDistributions",
+        items: "distributions", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: Some(("pageToken", "nextPageToken")),
+        query: &["arn", "name", "resourceType", "status", "domainName", "bundleId", "certificateName", "ipAddressType"],
+        tags: Some("tags"),
+        bindings: &[],
+        fixed: &[],
+    },
+    // Returns information about one or more Amazon Lightsail buckets. The information returned includes the synchronization status of the Amazon Simple Storage Service (Amazon S3) accoun
+    Resource {
+        operation: "GetBuckets",
+        items: "buckets", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: Some(("pageToken", "nextPageToken")),
+        query: &["arn", "resourceType", "bundleId", "name"],
+        tags: Some("tags"),
+        bindings: &[],
+        fixed: &[],
+    },
+    // Returns information about one or more Amazon Lightsail SSL/TLS certificates. To get a summary of a certificate, omit includeCertificateDetails from your request. The response will 
+    Resource {
+        operation: "GetCertificates",
+        items: "certificates", id: Id::Arn("certificateArn"),
+        scope: Scope::Region, tokens: Some(("pageToken", "nextPageToken")),
+        query: &["certificateArn", "certificateName", "domainName"],
+        tags: Some("tags"),
+        bindings: &[],
+        fixed: &[Input::Boolean("includeCertificateDetails", false)],
+    },
+    // Returns information about the configured alarms. Specify an alarm name in your request to return information about a specific alarm, or specify a monitored resource name to return 
+    Resource {
+        operation: "GetAlarms",
+        items: "alarms", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: Some(("pageToken", "nextPageToken")),
+        query: &["arn", "name", "resourceType", "metricName", "state"],
+        tags: Some("tags"),
+        bindings: &[],
+        fixed: &[],
+    },
+    // Same pinned response resource shape as GetDisks; no content-bearing expansion.
+    Resource {
+        operation: "GetDisk",
+        items: "disk", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: None,
+        query: &["arn", "name", "resourceType", "state", "attachmentState", "autoMountStatus"],
+        tags: Some("tags"),
+        bindings: &[("diskName", "GetDisks", "name")],
+        fixed: &[],
+    },
+    // Same pinned response resource shape as GetDiskSnapshots; no content-bearing expansion.
+    Resource {
+        operation: "GetDiskSnapshot",
+        items: "diskSnapshot", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: None,
+        query: &["arn", "name", "resourceType", "state", "fromDiskName", "fromDiskArn", "fromInstanceName", "fromInstanceArn"],
+        tags: Some("tags"),
+        bindings: &[("diskSnapshotName", "GetDiskSnapshots", "name")],
+        fixed: &[],
+    },
+    // Same pinned response resource shape as GetDomains; no content-bearing expansion.
+    Resource {
+        operation: "GetDomain",
+        items: "domain", id: Id::Arn("arn"),
+        scope: Scope::Account, tokens: None,
+        query: &["arn", "name", "resourceType"],
+        tags: Some("tags"),
+        bindings: &[("domainName", "GetDomains", "name")],
+        fixed: &[],
+    },
+    // Same pinned response resource shape as GetInstances; no content-bearing expansion.
+    Resource {
+        operation: "GetInstance",
+        items: "instance", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: None,
+        query: &["arn", "name", "resourceType", "blueprintId", "blueprintName", "bundleId", "ipAddressType", "username", "sshKeyName"],
+        tags: Some("tags"),
+        bindings: &[("instanceName", "GetInstances", "name")],
+        fixed: &[],
+    },
+    // Same pinned response resource shape as GetInstanceSnapshots; no content-bearing expansion.
+    Resource {
+        operation: "GetInstanceSnapshot",
+        items: "instanceSnapshot", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: None,
+        query: &["arn", "name", "resourceType", "state", "fromInstanceName", "fromInstanceArn", "fromBlueprintId", "fromBundleId"],
+        tags: Some("tags"),
+        bindings: &[("instanceSnapshotName", "GetInstanceSnapshots", "name")],
+        fixed: &[],
+    },
+    // Same pinned response resource shape as GetLoadBalancers; no content-bearing expansion.
+    Resource {
+        operation: "GetLoadBalancer",
+        items: "loadBalancer", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: None,
+        query: &["arn", "name", "resourceType", "dnsName", "state", "ipAddressType", "tlsPolicyName"],
+        tags: Some("tags"),
+        bindings: &[("loadBalancerName", "GetLoadBalancers", "name")],
+        fixed: &[],
+    },
+    // Same pinned response resource shape as GetRelationalDatabaseSnapshots; no content-bearing expansion.
+    Resource {
+        operation: "GetRelationalDatabaseSnapshot",
+        items: "relationalDatabaseSnapshot", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: None,
+        query: &["arn", "name", "resourceType", "state", "fromRelationalDatabaseName", "fromRelationalDatabaseArn", "fromRelationalDatabaseBundleId", "fromRelationalDatabaseBlueprintId"],
+        tags: Some("tags"),
+        bindings: &[("relationalDatabaseSnapshotName", "GetRelationalDatabaseSnapshots", "name")],
+        fixed: &[],
+    },
+    // Same pinned response resource shape as GetStaticIps; no content-bearing expansion.
+    Resource {
+        operation: "GetStaticIp",
+        items: "staticIp", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: None,
+        query: &["arn", "name", "resourceType"],
+        tags: None,
+        bindings: &[("staticIpName", "GetStaticIps", "name")],
+        fixed: &[],
+    },
+];

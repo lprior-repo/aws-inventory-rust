@@ -5,7 +5,7 @@ pub(in crate::response::json) fn decode_payload(
     builder: &mut RecordBuilder,
 ) -> Result<(), DecodeError> {
     if context.body.is_empty() {
-        return crate::response::defaults::apply_member(builder, member, context.service);
+        return crate::response::defaults::apply_member(builder, member, context.service, context.limits);
     }
     let target = member.target;
     let key = Key::Field(member.id, member.wire()?.timestamp_format()?, false);

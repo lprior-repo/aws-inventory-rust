@@ -108,8 +108,10 @@ pub fn compile(root: &Path, source: &Path, mode: ReportMode) -> Result<(), Error
     let path = root.join("catalog/aws-api.catalog");
     let limit = u64::try_from(MAX_RECORD_BYTES).map_err(|_| CompileError::Kind)?;
     let original = fields::publish::read_bytes(&path, limit)?;
-    let bytes = build_catalog(source, &registry, &provenance::commit(source)?)?;
-    let bytes = runtime_inputs::augment(root, source, &bytes).map_err(CompileError::from)?;
+    let source_pin = provenance::capture(source)?;
+    let bytes = build_catalog(source, &registry, &source_pin.commit)?;
+    let bytes = runtime_inputs::augment(root, source, &bytes, &source_pin).map_err(CompileError::from)?;
+    provenance::verify(source, &source_pin)?;
     match mode {
         ReportMode::Write => {
             fields::publish::publish_bytes(&path, original.as_deref(), &bytes, limit)?

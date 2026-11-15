@@ -232,8 +232,11 @@ fn insert_existing(root: &Path, names: &[&str], files: &mut BTreeSet<PathBuf>) {
 
 const ROOT_FILES: [&str; 3] = ["Cargo.toml", "Cargo.lock", "rust-toolchain.toml"];
 
-const EMBEDDED_FILES: [&str; 4] = [
+const EMBEDDED_FILES: [&str; 7] = [
     ".cargo/config.toml",
+    "catalog/aws-api.catalog",
+    "catalog/cloudcontrol-capabilities.json",
+    "catalog/cloudcontrol-universal.json",
     "catalog/cloudcontrol-resources.json",
     "catalog/cloudcontrol-parent-resources.json",
     "catalog/cloudcontrol-v04-types.json",

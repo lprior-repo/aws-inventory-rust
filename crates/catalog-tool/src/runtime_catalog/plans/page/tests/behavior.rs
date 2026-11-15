@@ -16,18 +16,20 @@ fn given_no_modeled_paginator_when_reviewed_tuple_compiles_then_all_components_s
 fn given_modeled_first_pair_when_reviewed_tuple_extends_it_then_compilation_succeeds() -> TestResult {
     let model = MODEL.replace("\"smithy.api#readonly\":{}", "\"smithy.api#readonly\":{},\"smithy.api#paginated\":{\"inputToken\":\"StartName\",\"outputToken\":\"NextName\",\"items\":\"Items\"}");
     assert_eq!(tokens(&compile_fixture(&model, PAIRS)?)?.len(), 3);
-    let wrong = "[{input='StartName',output='NextId'}, {input='StartId',output='NextName'}]";
-    assert!(compile_fixture(&model, wrong).is_err());
+    let wrong = [("StartName", "NextId", false), ("StartId", "NextName", false)];
+    assert!(compile_fixture(&model, &wrong).is_err());
     Ok(())
 }
 
 #[test]
 fn given_invalid_token_path_or_type_when_compiling_then_review_is_rejected() -> TestResult {
-    for pairs in ["[{input='Missing',output='NextName'}]",
-        "[{input='StartName',output='IsTruncated'}]",
-        "[{input='StartName',output='Items'}]",
-        "[{input='StartName',output='NextName'}, {input='StartType',output='NextName'}]"] {
-        assert!(compile_fixture(MODEL, pairs).is_err());
+    for pairs in [
+        vec![("Missing", "NextName", false)],
+        vec![("StartName", "IsTruncated", false)],
+        vec![("StartName", "Items", false)],
+        vec![("StartName", "NextName", false), ("StartType", "NextName", false)],
+    ] {
+        assert!(compile_fixture(MODEL, &pairs).is_err());
     }
     Ok(())
 }
@@ -48,19 +50,17 @@ fn given_wrong_truncated_type_when_compiling_then_review_is_rejected() -> TestRe
 }
 
 #[test]
-fn given_invalid_optional_schema_when_parsing_then_review_is_rejected() -> TestResult {
-    for pairs in ["[{input='StartName',output='NextName',optional='true'}]",
-        "[{input='StartName',output='NextName',optional=1}]",
-        "[{input='StartName',output='NextName',optional=true}]",
-        "[]"] {
-        assert!(compile_fixture(MODEL, pairs).is_err());
+fn given_all_optional_or_empty_typed_schema_when_reviewed_then_review_is_rejected() -> TestResult {
+    // Non-boolean optional flags are unrepresentable in the typed Rust policy.
+    for pairs in [vec![("StartName", "NextName", true)], vec![]] {
+        assert!(compile_fixture(MODEL, &pairs).is_err());
     }
     Ok(())
 }
 
 #[test]
 fn given_overlay_only_marker_when_compiling_then_single_pair_is_preserved() -> TestResult {
-    assert_eq!(tokens(&compile_fixture(MODEL, "[{input='StartName',output='NextName'}]")?)?.len(), 1);
+    assert_eq!(tokens(&compile_fixture(MODEL, &[("StartName", "NextName", false)])?)?.len(), 1);
     Ok(())
 }
 
@@ -84,15 +84,16 @@ fn given_one_through_eight_reviewed_components_when_compiling_then_every_pair_su
     let registry = format!("{}\n", names.join("\n"));
     let paths = ["Name", "Type", "Id", "4", "5", "6", "7", "8"];
     for count in 1..=8 {
-        let pairs = paths.iter().take(count)
-            .map(|suffix| format!("{{input='Start{suffix}',output='Next{suffix}'}}"))
-            .collect::<Vec<_>>().join(",");
-        let compiled = compile_fixture_with_registry(&model, &format!("[{pairs}]"), &registry)?;
+        let paths = paths.iter().take(count)
+            .map(|suffix| (format!("Start{suffix}"), format!("Next{suffix}")))
+            .collect::<Vec<_>>();
+        let pairs = paths.iter().map(|(input, output)| (input.as_str(), output.as_str(), false)).collect::<Vec<_>>();
+        let compiled = compile_fixture_with_registry(&model, &pairs, &registry)?;
         assert_eq!(tokens(&compiled)?.len(), count);
     }
-    let ninth = format!("[{},{{input='Start9',output='Next9'}}]", paths.iter()
-        .map(|suffix| format!("{{input='Start{suffix}',output='Next{suffix}'}}"))
-        .collect::<Vec<_>>().join(","));
+    let paths = paths.iter().chain(std::iter::once(&"9"))
+        .map(|suffix| (format!("Start{suffix}"), format!("Next{suffix}"))).collect::<Vec<_>>();
+    let ninth = paths.iter().map(|(input, output)| (input.as_str(), output.as_str(), false)).collect::<Vec<_>>();
     assert!(compile_fixture_with_registry(&model, &ninth, &registry).is_err());
     Ok(())
 }

@@ -26,6 +26,10 @@ pub const DENY: &str = concat!(
     "beta/DescribeReference\treference-data\n"
 );
 
+pub fn policy() -> Result<catalog_tool::classes::DenyList<'static>, catalog_tool::classes::ParseError> {
+    catalog_tool::classes::DenyList::parse(DENY)
+}
+
 pub const REPORT: &str = concat!(
     "# enumerate and expand are candidates; ",
     "callable only with a reviewed service overlay (VISION 5.1).\n",
@@ -48,6 +52,5 @@ pub fn fixture() -> io::Result<tempfile::TempDir> {
     let dir = tempfile::tempdir()?;
     write(dir.path(), "models/beta/service/v1/beta.json", BETA)?;
     write(dir.path(), "models/alpha/service/v1/alpha.json", ALPHA)?;
-    write(dir.path(), "catalog/overlay/must-deny.txt", DENY)?;
     Ok(dir)
 }

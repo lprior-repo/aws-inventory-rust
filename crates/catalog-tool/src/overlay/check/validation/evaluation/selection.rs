@@ -5,19 +5,39 @@ use crate::{
 };
 
 pub(super) fn select_items(state: &mut State<'_, '_, '_>) {
+    normalize_discovery(state);
     state.pagination = plans::pagination(state.model, state.operation_id, state.vocabulary).ok();
     state.inferred_page_size = state
         .item
         .page_size
         .is_none()
         .then(|| paths::modeled_page_size(state.model, state.name, state.pagination.as_ref()))
-        .flatten();
+        .flatten()
+        .filter(|_| !page_size_overridden(state));
     let selected = match state.item.items.clone() {
         Some(ItemSelector::Root) => select_root(state),
         Some(ItemSelector::Member(path)) => select_member(state, path.as_str()),
+        Some(ItemSelector::Explicit { path, kind }) => paths::explicit_selected(state.model, state.name, path.as_str(), kind)
+            .or_else(|| invalid_items(state, path.as_str(), ViolationRule::InvalidPath)),
         None => select_inferred(state),
     };
     state.selected = selected;
+}
+
+fn normalize_discovery(state: &mut State<'_, '_, '_>) {
+    if state.item.endpoint_discovery {
+        state.item.items.get_or_insert(ItemSelector::Root);
+        state.item.paginator.get_or_insert(crate::overlay::Paginator::None);
+    }
+}
+
+fn page_size_overridden(state: &State<'_, '_, '_>) -> bool {
+    let Some(Pagination::Modeled { page_size: Some(path), .. }) = &state.pagination else {
+        return false;
+    };
+    state.item.fixed.keys().chain(state.item.bind.keys())
+        .any(|input| input.as_str() == *path
+            || path.strip_prefix(input.as_str()).is_some_and(|suffix| suffix.starts_with('.')))
 }
 
 fn select_root<'a, 'm, 'd>(state: &mut State<'a, 'm, 'd>) -> Option<ShapeRef<'m>> {

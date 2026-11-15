@@ -5,7 +5,8 @@ use crate::{
     overlay::{FixedValue, ItemSelector, OperationOverlay},
     plans::{self, Model, Pagination, Vocabulary},
 };
-pub(super) use page_size::{modeled_page_size, range_bound, validate_page_size};
+pub(super) use page_size::{modeled_page_size, validate_page_size};
+use crate::overlay::fixed_input::range as range_matches;
 use std::collections::BTreeSet;
 
 pub(super) fn mark_provided(provided: &mut BTreeSet<String>, path: &str) {
@@ -39,6 +40,9 @@ pub(super) fn selected_for_parent<'m>(
     vocabulary: &Vocabulary,
 ) -> Option<crate::plans::model::ShapeRef<'m>> {
     let explicit = overlay.and_then(|overlay| overlay.items.as_ref());
+    if let Some(ItemSelector::Explicit { path, kind }) = explicit {
+        return explicit_selected(model, operation, path.as_str(), *kind);
+    }
     if matches!(explicit, Some(ItemSelector::Root)) {
         return root_selection(model, operation);
     }
@@ -111,9 +115,12 @@ pub(super) fn validate_output_paths(
     };
     validate("exclude_from_hash", &item.exclude_from_hash);
     validate("queryable", &item.queryable);
-    item.tags
-        .iter()
-        .for_each(|path| validate("tags", std::slice::from_ref(path)));
+    item.tags.iter().filter(|path| {
+        path.as_str() != "$"
+            || selected.as_ref().is_none_or(|shape| {
+                !matches!(plans::model::shape_type(shape.value), Some("list" | "map"))
+            })
+    }).for_each(|path| validate("tags", std::slice::from_ref(path)));
 }
 
 fn check_paths(
@@ -144,7 +151,7 @@ fn invalid_item_path(
     selected: Option<&crate::plans::model::ShapeRef<'_>>,
     path: &crate::overlay::MemberPath,
 ) -> bool {
-    selected.is_none_or(|selected| model.resolve_path_from(*selected, path.as_str()).is_err())
+    selected.is_none_or(|selected| resolve_selected(model, *selected, path.as_str()).is_none())
 }
 
 pub(super) fn validate_batch(
@@ -177,84 +184,9 @@ pub(super) fn fixed_matches(
     value: &FixedValue,
     model: &Model<'_>,
 ) -> bool {
-    match (plans::model::shape_type(target.value), value) {
-        (Some("string"), FixedValue::String(text)) => {
-            length_matches(member, text.len()) && length_matches(target.value, text.len())
-        }
-        (Some("enum"), FixedValue::String(text)) => enum_value_matches(target.value, text),
-        (Some("integer"), FixedValue::Integer(number)) => {
-            range_matches(member, *number) && range_matches(target.value, *number)
-        }
-        (Some("boolean"), FixedValue::Boolean(_)) => true,
-        (Some("list"), FixedValue::Strings(items)) => {
-            fixed_string_list(target, member, items, model)
-        }
-        _ => false,
-    }
+    crate::overlay::fixed_input::matches(model, member, *target, value)
 }
 
-fn enum_value_matches(shape: &serde_json::Value, text: &str) -> bool {
-    shape
-        .get("members")
-        .and_then(serde_json::Value::as_object)
-        .is_some_and(|members| {
-            members.values().any(|member| {
-                member
-                    .get("traits")
-                    .and_then(|traits| traits.get("smithy.api#enumValue"))
-                    .and_then(serde_json::Value::as_str)
-                    == Some(text)
-            })
-        })
-}
-
-fn fixed_string_list(
-    target: &crate::plans::model::ShapeRef<'_>,
-    member: &serde_json::Value,
-    items: &[String],
-    model: &Model<'_>,
-) -> bool {
-    let element = target
-        .value
-        .get("member")
-        .and_then(crate::plans::model::target)
-        .and_then(|id| model.shape(id));
-    element.is_some_and(|element| {
-        match plans::model::shape_type(element.value) {
-            Some("string") => items.iter()
-                .all(|item| length_matches(element.value, item.len())),
-            Some("enum") => items.iter()
-                .all(|item| enum_value_matches(element.value, item)),
-            _ => false,
-        }
-    }) && length_matches(member, items.len())
-        && length_matches(target.value, items.len())
-}
-
-fn range_matches(shape: &serde_json::Value, value: i64) -> bool {
-    range_bound(shape, "min").is_none_or(|min| value >= min)
-        && range_bound(shape, "max").is_none_or(|max| value <= max)
-}
-
-fn length_matches(shape: &serde_json::Value, value: usize) -> bool {
-    let value = i64::try_from(value).ok();
-    let (min, max) = length_bounds(shape);
-    value.is_some_and(|value| {
-        min.is_none_or(|min| value >= min) && max.is_none_or(|max| value <= max)
-    })
-}
-
-fn length_bounds(shape: &serde_json::Value) -> (Option<i64>, Option<i64>) {
-    let range = shape
-        .get("traits")
-        .and_then(|traits| traits.get("smithy.api#length"));
-    let bound = |name| {
-        range
-            .and_then(|range| range.get(name))
-            .and_then(serde_json::Value::as_i64)
-    };
-    (bound("min"), bound("max"))
-}
 
 pub(in crate::overlay::check) fn violation(
     service: &str,
@@ -270,4 +202,24 @@ pub(in crate::overlay::check) fn violation(
         value: value.to_owned(),
         rule,
     }
+}
+
+pub(in crate::overlay::check::validation) fn explicit_selected<'m>(
+    model: &Model<'m>, operation: &str, path: &str, kind: crate::overlay::SelectionKind,
+) -> Option<crate::plans::model::ShapeRef<'m>> {
+    use crate::overlay::SelectionKind;
+    let selected = if path == "$" { model.side_root(operation, "output")? } else { model.resolve_path(operation, "output", path).ok()?? };
+    match (kind, plans::model::shape_type(selected.value)?) {
+        (SelectionKind::Structure, "structure") => Some(selected),
+        (SelectionKind::Scalar, "string" | "enum" | "byte" | "short" | "integer" | "long" | "boolean") => Some(selected),
+        (SelectionKind::List, "list") => aggregate_member(model, selected, "member"),
+        (SelectionKind::MapKeys, "map") => aggregate_member(model, selected, "key"),
+        (SelectionKind::MapEntries | SelectionKind::MapValues, "map") => aggregate_member(model, selected, "value"),
+        _ => None,
+    }
+}
+
+fn aggregate_member<'m>(model: &Model<'m>, shape: crate::plans::model::ShapeRef<'m>, name: &str) -> Option<crate::plans::model::ShapeRef<'m>> {
+    let target = shape.value.get(name)?.get("target")?.as_str()?;
+    model.shape(target)
 }

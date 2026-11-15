@@ -1,4 +1,5 @@
 mod bounds;
+mod exact_bounds;
 mod malformed;
 mod scalars;
 mod tuples;

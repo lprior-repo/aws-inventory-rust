@@ -39,7 +39,7 @@ pub(super) async fn open(path: &Path) -> Result<BinaryStore, StoreError> {
         .fetch_one(&writer)
         .await?
         .try_get(0)?;
-    if version != 14 {
+    if !matches!(version, 14..=16) {
         writer.close().await;
         return Err(StoreError::SchemaVersion { found: version });
     }
@@ -50,6 +50,10 @@ pub(super) async fn open(path: &Path) -> Result<BinaryStore, StoreError> {
             return Err(error);
         }
     };
+    if let Err(error) = super::schema::migrate_inventory(&writer).await {
+        writer.close().await;
+        return Err(error);
+    }
     let reader = reader_pool(path, &writer).await?;
     Ok(BinaryStore {
         writer,
@@ -88,8 +92,15 @@ fn options(path: &Path, create: bool) -> Result<SqliteConnectOptions, StoreError
     if name.is_empty() || name.starts_with("file:") || name.contains('\0') {
         return Err(StoreError::Invalid("invalid database path"));
     }
-    Ok(SqliteConnectOptions::new()
-        .filename(path)
+    // Pool options are also the immutable delivery-lock path capability. Resolve
+    // relative disk paths at open, but retain SQLite's special in-memory name.
+    let options = SqliteConnectOptions::new();
+    let options = if path == Path::new(":memory:") {
+        options.filename(path)
+    } else {
+        options.filename(std::path::absolute(path).map_err(sqlx::Error::Io)?)
+    };
+    Ok(options
         .create_if_missing(create)
         .foreign_keys(true)
         .synchronous(SqliteSynchronous::Full)

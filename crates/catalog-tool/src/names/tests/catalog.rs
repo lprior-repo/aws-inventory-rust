@@ -5,7 +5,6 @@ use super::{
 };
 
 const ORACLE: &str = include_str!("../../../tests/fixtures/names-plain.tsv");
-const EXCEPTIONS: &str = include_str!("../../../../../catalog/name-exceptions.tsv");
 const CATALOG: &str = include_str!("../../../../../catalog/cloudcontrol-universal.json");
 
 #[derive(serde::Deserialize)]
@@ -60,7 +59,7 @@ fn reviewed_exceptions_render_1881_unique_bounded_names_in_type_order() -> TestR
         .collect();
     let mut expected: Vec<_> = oracle_rows()?.into_iter().map(|(kind, _)| kind).collect();
     expected.sort_unstable();
-    let rows = render_names(&types, &Exceptions::parse(EXCEPTIONS)?)?;
+    let rows = render_names(&types, &Exceptions::builtin())?;
     assert_eq!(
         rows.iter().map(|(kind, _)| *kind).collect::<Vec<_>>(),
         expected
@@ -127,7 +126,7 @@ fn rendering_reports_colliding_plain_names_with_both_types() -> TestResult {
 
 #[test]
 fn rendering_reports_collisions_introduced_by_exceptions() -> TestResult {
-    let exceptions = Exceptions::parse("X\tsame\nY\tsame\n")?;
+    let exceptions = Exceptions::from_entries(&[("X", "same"), ("Y", "same")])?;
     assert_eq!(
         render_names(&["AWS::X", "AWS::Y"], &exceptions),
         Err(NameError::DuplicateSqlName {
@@ -154,7 +153,7 @@ fn rendering_rejects_repeated_types_instead_of_dropping_rows() -> TestResult {
 
 #[test]
 fn rendering_reports_first_unused_exception_in_original_line_order() -> TestResult {
-    let exceptions = Exceptions::parse("IoT\tiot\nZ\tz\nA\ta\n")?;
+    let exceptions = Exceptions::from_entries(&[("IoT", "iot"), ("Z", "z"), ("A", "a")])?;
     assert_eq!(
         render_names(&["AWS::IoT"], &exceptions),
         Err(NameError::UnusedException {
@@ -167,7 +166,7 @@ fn rendering_reports_first_unused_exception_in_original_line_order() -> TestResu
 
 #[test]
 fn rendering_does_not_count_shadowed_shorter_exceptions_as_used() -> TestResult {
-    let exceptions = Exceptions::parse("IP\tip\nIPv6\tipv6\n")?;
+    let exceptions = Exceptions::from_entries(&[("IP", "ip"), ("IPv6", "ipv6")])?;
     assert_eq!(
         render_names(&["AWS::IPv6"], &exceptions),
         Err(NameError::UnusedException {
@@ -180,7 +179,7 @@ fn rendering_does_not_count_shadowed_shorter_exceptions_as_used() -> TestResult 
 
 #[test]
 fn rendering_accumulates_exception_usage_across_types() -> TestResult {
-    let exceptions = Exceptions::parse("IoT\tiot\nIP\tip\n")?;
+    let exceptions = Exceptions::from_entries(&[("IoT", "iot"), ("IP", "ip")])?;
     let rows = render_names(&["AWS::IoT", "AWS::IP"], &exceptions)?;
     assert_eq!(
         rows.iter()
@@ -195,7 +194,7 @@ fn rendering_accumulates_exception_usage_across_types() -> TestResult {
 fn rendering_empty_input_requires_an_empty_exception_list() -> TestResult {
     let rows = render_names(&[], &Exceptions::none())?;
     assert_eq!(rows.len(), 0);
-    let exceptions = Exceptions::parse("IoT\tiot\n")?;
+    let exceptions = Exceptions::from_entries(&[("IoT", "iot")])?;
     assert_eq!(
         render_names(&[], &exceptions),
         Err(NameError::UnusedException {
@@ -208,7 +207,7 @@ fn rendering_empty_input_requires_an_empty_exception_list() -> TestResult {
 
 #[test]
 fn rendering_propagates_overlong_names_before_unused_exception_errors() -> TestResult {
-    let exceptions = Exceptions::parse("IoT\tiot\n")?;
+    let exceptions = Exceptions::from_entries(&[("IoT", "iot")])?;
     assert_eq!(
         render_names(&[&format!("A::{}", "B".repeat(127))], &exceptions),
         Err(NameError::TooLong {
@@ -250,7 +249,7 @@ const COMMITTED_EXCEPTION_CASES: [(&str, &str); 11] = [
 
 #[test]
 fn committed_exceptions_preserve_each_reviewed_real_type_name() -> TestResult {
-    let exceptions = Exceptions::parse(EXCEPTIONS)?;
+    let exceptions = Exceptions::builtin();
     COMMITTED_EXCEPTION_CASES
         .iter()
         .try_for_each(|(kind, expected)| {

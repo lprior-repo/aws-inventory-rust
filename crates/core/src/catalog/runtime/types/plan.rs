@@ -1,7 +1,9 @@
 use super::super::RuntimeCatalogError;
 use super::{
     BindingPlan, EndpointClass, EndpointPathMode, IdentityPlan, ItemPlan, PagePlan, PlanPurpose,
-    PlanScope, ResolvedEndpoint, ReviewProvenance, RuntimeProtocol,
+    PlanScope, ResolvedEndpoint, ReviewProvenance, RuntimeProtocol, TagPlan,
+    RequestRouting, ExecutionBranch, ResourceProjectionPlan, KindClassificationPlan,
+    Emission, ContextProjectionPlan, RowPolicyPlan,
 };
 use crate::{
     inventory::{Kind, RegionId},
@@ -62,6 +64,7 @@ pub(crate) struct PlanParts<'a> {
     pub(crate) scope: PlanScope,
     pub(crate) items: ItemPlan,
     pub(crate) identity: IdentityPlan,
+    pub(crate) tags: Option<TagPlan>,
     pub(crate) bindings: Box<[BindingPlan]>,
     pub(crate) pagination: PagePlan,
     pub(crate) exclusions: Exclusions,
@@ -69,6 +72,14 @@ pub(crate) struct PlanParts<'a> {
     pub(crate) review: ReviewProvenance,
     pub(crate) purpose: PlanPurpose,
     pub(crate) protocol: RuntimeProtocol,
+    pub(crate) facet_precedence: u16,
+    pub(crate) routing: RequestRouting,
+    pub(crate) branches: Box<[ExecutionBranch]>,
+    pub(crate) projection: Option<ResourceProjectionPlan>,
+    pub(crate) classification: Option<KindClassificationPlan>,
+    pub(crate) emission: Emission,
+    pub(crate) row_policy: RowPolicyPlan,
+    pub(crate) context_projection: ContextProjectionPlan,
 }
 
 pub struct CallablePlan<'a> {
@@ -76,8 +87,54 @@ pub struct CallablePlan<'a> {
 }
 
 impl<'a> CallablePlan<'a> {
+    /// Effective reviewed stage inputs, with exact-path overrides replacing common inputs.
+    pub fn effective_bindings<'p>(&'p self, branch: Option<&'p ExecutionBranch>) -> impl Iterator<Item = &'p BindingPlan> {
+        self.bindings().iter().filter(move |binding| !branch.is_some_and(|stage|
+            stage.bindings.iter().any(|overridden| overridden.path == binding.path)))
+            .chain(branch.into_iter().flat_map(|stage| stage.bindings.iter()))
+    }
+
+    pub fn effective_emission(&self, branch: Option<&ExecutionBranch>) -> Emission {
+        branch.and_then(|stage| stage.emission).map_or(self.emission(), |emission| emission)
+    }
     pub(crate) fn new(parts: PlanParts<'a>) -> Self {
         Self { parts }
+    }
+
+    pub fn facet_precedence(&self) -> u16 {
+        self.parts.facet_precedence
+    }
+
+    pub(crate) fn set_facet_precedence(&mut self, precedence: u16) {
+        self.parts.facet_precedence = precedence;
+    }
+
+    pub fn routing(&self) -> &RequestRouting {
+        &self.parts.routing
+    }
+
+    pub fn branches(&self) -> &[ExecutionBranch] {
+        &self.parts.branches
+    }
+
+    pub fn projection(&self) -> Option<&ResourceProjectionPlan> {
+        self.parts.projection.as_ref()
+    }
+
+    pub fn classification(&self) -> Option<&KindClassificationPlan> {
+        self.parts.classification.as_ref()
+    }
+
+    pub fn emission(&self) -> Emission {
+        self.parts.emission
+    }
+    pub fn row_policy(&self) -> &RowPolicyPlan {
+        &self.parts.row_policy
+    }
+
+
+    pub fn context_projection(&self) -> &ContextProjectionPlan {
+        &self.parts.context_projection
     }
 
     pub fn service(&self) -> crate::catalog::Service<'a> {
@@ -102,6 +159,11 @@ impl<'a> CallablePlan<'a> {
 
     pub fn identity(&self) -> &IdentityPlan {
         &self.parts.identity
+    }
+
+    /// `None` means tags were not observed, not a complete empty snapshot.
+    pub fn tags(&self) -> Option<&TagPlan> {
+        self.parts.tags.as_ref()
     }
 
     pub fn bindings(&self) -> &[BindingPlan] {

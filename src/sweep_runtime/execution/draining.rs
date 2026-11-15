@@ -1,3 +1,5 @@
+pub(super) mod admission;
+
 use super::*;
 
 pub(super) fn narrow_regions(
@@ -29,9 +31,7 @@ pub(super) async fn seed_enumerations(
         .iter()
         .filter(|plan| matches!(plan.purpose(), PlanPurpose::Enumeration))
     {
-        if !input::requires_parent(plan) {
-            append_plan_work(context, sweep, plan, regions, &mut work)?;
-        }
+        append_plan_work(&context.account, context.bootstrap.home, sweep, plan, regions, &mut work)?;
     }
     context.store.seed_works(&work).await?;
     Ok(())
@@ -40,23 +40,32 @@ pub(super) async fn seed_enumerations(
 pub(super) const MAX_ROOT_SCOPES: usize = 100_000;
 
 pub(super) fn append_plan_work(
-    context: &RuntimeContext<'_, '_>,
+    account: &AccountId,
+    home: &RegionId,
     sweep: &SweepId,
     plan: &CallablePlan<'_>,
     regions: &[Region],
     work: &mut Vec<WorkSpec>,
 ) -> Result<(), SweepError> {
-    for region in plan_regions(plan.scope(), regions, context.bootstrap.home) {
-        if work.len() >= MAX_ROOT_SCOPES {
-            return Err(SweepError::Operation(
-                "root enumeration scope count exceeds bound",
-            ));
+    for branch in plan.branches().iter().map(Some)
+        .chain(std::iter::once(None).filter(|_| plan.branches().is_empty())) {
+        if input::requires_parent_branch(plan, branch) {
+            continue;
         }
-        work.try_reserve(1)?;
-        let scope = scope_key(plan, &context.account, region.scope)?;
-        let bindings =
-            input::root_bindings(plan, Some(&context.account), Some(&region.request))?.into_bytes();
-        work.push(WorkSpec::new(sweep.clone(), scope, None, bindings)?);
+        let scope_kind = branch.map_or(plan.scope(), |branch| branch.scope);
+        for region in plan_regions(scope_kind, regions, home) {
+            if work.len() >= MAX_ROOT_SCOPES {
+                return Err(SweepError::Operation("root enumeration scope count exceeds bound"));
+            }
+            let mut scope = scope_key(plan, account, region.scope)?;
+            if let Some(branch) = branch { scope = scope.with_branch(branch.discriminator.clone())?; }
+            let request_region = super::routing::request_region(plan, scope.region(), home, scope.branch())?;
+            let request_region = Region::Regional(request_region);
+            let bindings = input::root_bindings_branch(plan, branch, Some(account), Some(&request_region))?
+                .into_bytes();
+            work.try_reserve(1)?;
+            work.push(WorkSpec::new(sweep.clone(), scope, None, bindings)?);
+        }
     }
     Ok(())
 }
@@ -106,37 +115,94 @@ pub(super) async fn drain_work(
     sweep: &SweepId,
 ) -> Result<SweepSummary, SweepError> {
     let mut summary = SweepSummary::default();
+    let mut leases = Vec::new();
     loop {
-        let mut leases = Vec::new();
-        while leases.len() < context.bootstrap.config.concurrency {
-            let lease = context
-                .store
-                .claim(sweep, now_ms()?, context.lease_ms)
-                .await?;
-            let Some(lease) = lease else {
-                break;
-            };
-            leases.try_reserve(1)?;
-            leases.push(lease);
-        }
+        admission::claim_batch(context.store,context.bootstrap.executor,context.bootstrap.config.concurrency,
+            &mut leases,|| async {
+                context.store.claim(sweep,now_ms()?,context.lease_ms).await.map_err(SweepError::from)
+            }).await?;
         if leases.is_empty() {
             break;
         }
+        // Retain ownership credentials for bounded cancellation recovery; page
+        // futures otherwise consume their lease when dispatching a transaction.
+        let owned = leases.clone();
         let work = stream::iter(
             leases
-                .into_iter()
+                .drain(..)
                 .map(|lease| page::process(context, lease)),
         )
-        .buffer_unordered(context.bootstrap.config.concurrency)
-        .collect::<Vec<_>>();
-        let results = work.await;
-        for result in results {
-            add_writes(&mut summary, result?)?;
-        }
+        .buffer_unordered(context.bootstrap.config.concurrency);
+        summary = settle_batch(context.store,context.bootstrap.executor,owned,summarize_batch(work,summary)).await?;
+    }
+    if context.bootstrap.executor.is_cancelled() {
+        return Err(inventory_engine::limiter::ApiError::Cancelled.into());
     }
     apply_persisted_summary(context.store, sweep, &mut summary).await?;
     summary.graph_pending = context.store.projection_state().await?.pending;
     Ok(summary)
+}
+
+async fn summarize_batch(
+    results: impl futures_util::Stream<Item = Result<SweepSummary, SweepError>>,
+    summary: SweepSummary,
+) -> Result<SweepSummary, SweepError> {
+    // Unlike try_fold, fold keeps polling every admitted page after an error.
+    // Preserve the first completion-order error without retaining all summaries.
+    results
+        .fold(Ok(summary), |summary, result| async move {
+            let mut summary = summary?;
+            add_writes(&mut summary, result?)?;
+            Ok(summary)
+        })
+        .await
+}
+
+pub(super) async fn settle_batch(
+    store: &BinaryStore,
+    executor: &ApiExecutor,
+    owned: Vec<inventory_engine::inventory::WorkLease>,
+    work: impl Future<Output = Result<SweepSummary,SweepError>>,
+) -> Result<SweepSummary,SweepError> {
+    let result = {
+        let work = work;
+        tokio::pin!(work);
+        tokio::select! {
+            result = &mut work => result,
+            () = executor.cancelled() => {
+                match tokio::time::timeout(std::time::Duration::from_millis(LEASE_MARGIN_MS),&mut work).await {
+                    Ok(result) => result,
+                    Err(_) => Err(inventory_engine::limiter::ApiError::Exhausted(
+                        "cancelled page drain deadline exceeded; owned leases finalized".to_owned()).into()),
+                }
+            }
+        }
+    };
+    if !executor.is_cancelled() { return result; }
+    // The dropped batch can have dispatched COMMIT/ROLLBACK to SQLite. Each
+    // finish acquires the sole writer after those commands and is therefore a
+    // durable barrier, not merely an in-memory cancellation acknowledgement.
+    settle_owned(store,owned.into_iter()).await?;
+    match result {
+        Ok(_) | Err(SweepError::Api(inventory_engine::limiter::ApiError::Cancelled)) =>
+            Err(inventory_engine::limiter::ApiError::Cancelled.into()),
+        Err(error) => Err(error),
+    }
+}
+
+async fn settle_owned(
+    store: &BinaryStore,
+    owned: impl ExactSizeIterator<Item = inventory_engine::inventory::WorkLease>,
+) -> Result<(),SweepError> {
+    let admitted = owned.len();
+    let result = stream::iter(owned).then(|lease| async move {
+        match store.finish_scope(lease,inventory_core::inventory::ScopeOutcome::Partial,now_ms()?).await {
+            Ok(_) | Err(inventory_engine::inventory::StoreError::StaleLease) => Ok(()),
+            Err(error) => Err(SweepError::Store(error)),
+        }
+    }).fold(Ok(()),|prior,next| async move { prior.and(next) }).await;
+    tracing::info!(admitted,settled=result.is_ok(),"cancelled batch durable finalization completed");
+    result
 }
 
 pub(super) fn add_writes(
@@ -198,3 +264,6 @@ pub(super) fn now_ms() -> Result<i64, SweepError> {
     i64::try_from(duration.as_millis())
         .map_err(|_| SweepError::Operation("system time exceeds timestamp bound"))
 }
+
+#[cfg(test)]
+mod tests;

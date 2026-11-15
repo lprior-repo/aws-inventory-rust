@@ -61,23 +61,8 @@ fn resolved_mixin_required_members_are_used_by_classification()
     let dir = tempfile::tempdir()?;
     let model = r#"{"shapes":{"n#Service":{"type":"service"},"n#ListThings":{"type":"operation","input":{"target":"n#Input"}},"n#Input":{"type":"structure","mixins":[{"target":"n#Base"}]},"n#Base":{"type":"structure","members":{"Required":{"target":"smithy.api#String","traits":{"smithy.api#required":{}}}}}}}"#;
     write_fixture(dir.path(), "models/service/deep/model.json", model)?;
-    write_fixture(dir.path(), "catalog/overlay/must-deny.txt", "")?;
-    let output = tool(&[
-        "classes",
-        "--root",
-        dir.path().to_str().ok_or("invalid root")?,
-        "--source",
-        dir.path().to_str().ok_or("invalid source")?,
-        "--write",
-    ])?;
-    assert_eq!(
-        output.status.code(),
-        Some(0),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    assert_eq!(output.stdout, b"");
-    let report_text = std::fs::read_to_string(dir.path().join("catalog/aws-classes.report"))?;
+    let report_text = catalog_tool::classes::build_report_with_policy(
+        dir.path(), &catalog_tool::classes::DenyList::default())?;
     assert!(report_text.lines().any(|line| line == "expand 1"));
     assert!(report_text.lines().any(|line| line == "enumerate 0"));
     Ok(())

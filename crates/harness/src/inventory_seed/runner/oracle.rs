@@ -1,6 +1,23 @@
 use super::*;
 
+#[cfg(test)]
+mod tests;
+
 impl SeedState {
+    pub(super) fn generic_oracle(
+        self,
+        relationships: &[PreparedRelationship],
+    ) -> Result<ScenarioSeedOracle, SeedError> {
+        let edges = relationships.iter().map(|relationship| self.edge(relationship))
+            .collect::<Result<Vec<_>, _>>()?;
+        Ok(ScenarioSeedOracle {
+            resources: self.resources(),
+            account_id: self.account,
+            region: self.region,
+            edges,
+        })
+    }
+
     pub(super) fn oracle(
         self,
         relationships: &[PreparedRelationship],
@@ -23,29 +40,21 @@ impl SeedState {
     }
 
     fn resources(&self) -> Vec<super::super::SeedResourceIdentity> {
-        self.outputs
-            .iter()
-            .map(|output| super::super::SeedResourceIdentity {
-                step: output.step,
-                kind: output.kind.clone(),
-                id: output.identity.clone(),
-                key: output.key.clone(),
-            })
-            .collect()
+        self.outputs.iter().filter_map(|output| output.resource.clone()).collect()
     }
 
     pub(super) fn edge(&self, relationship: &PreparedRelationship) -> Result<Edge, SeedError> {
         let source = self.output(relationship.source)?;
-        let target = self.output(relationship.target)?;
-        if text_path(source.record.root(), &relationship.observed_path)?
-            != target.identity.to_string()
+        let from = self.resource(relationship.source)?;
+        let target = self.resource(relationship.target)?;
+        if text_path(source.record.root(), &relationship.observed_path)? != target.id.as_str()
         {
             return Err(SeedError::Invalid(
                 "response did not confirm the modeled relationship",
             ));
         }
         Ok(Edge {
-            from: source.key.clone(),
+            from: from.key.clone(),
             to: target.key.clone(),
             relation: relationship.relation.clone(),
             source: EdgeSource::ReviewedRule,
@@ -56,8 +65,8 @@ impl SeedState {
         &self,
         relationship: &PreparedRelationship,
     ) -> Result<Option<SeedResourcePair>, SeedError> {
-        let source = self.output(relationship.source)?;
-        let target = self.output(relationship.target)?;
+        let source = self.resource(relationship.source)?;
+        let target = self.resource(relationship.target)?;
         let subnet_kind = Kind::parse("AWS::EC2::Subnet")?;
         let vpc_kind = Kind::parse("AWS::EC2::VPC")?;
         if source.kind != subnet_kind
@@ -68,13 +77,18 @@ impl SeedState {
         }
         let edge = self.edge(relationship)?;
         Ok(Some(SeedResourcePair {
-            vpc_id: target.identity.clone(),
-            subnet_id: source.identity.clone(),
+            vpc_id: target.id.clone(),
+            subnet_id: source.id.clone(),
             vpc_key: target.key.clone(),
             subnet_key: source.key.clone(),
             relationship: relationship.relation.clone(),
             edge,
         }))
+    }
+
+    pub(super) fn resource(&self, step: super::super::StepId) -> Result<&SeedResourceIdentity, SeedError> {
+        self.output(step)?.resource.as_ref()
+            .ok_or(SeedError::Invalid("relationship endpoint must be a resource step"))
     }
 
     pub(super) fn output(
@@ -123,8 +137,8 @@ pub(super) fn validate_oracle_plan(models: &SeedModels<'_>) -> Result<(), SeedEr
     let found = models.relationships.iter().any(|relationship| {
         let source = models.steps.get(usize::from(relationship.source.0));
         let target = models.steps.get(usize::from(relationship.target.0));
-        source.is_some_and(|step| step.kind == subnet_kind)
-            && target.is_some_and(|step| step.kind == vpc_kind)
+        source.is_some_and(|step| step.resource.as_ref().is_some_and(|resource| resource.kind == subnet_kind))
+            && target.is_some_and(|step| step.resource.as_ref().is_some_and(|resource| resource.kind == vpc_kind))
             && relationship.relation.as_str() == "IN_VPC"
     });
     if !found {
@@ -135,7 +149,7 @@ pub(super) fn validate_oracle_plan(models: &SeedModels<'_>) -> Result<(), SeedEr
     Ok(())
 }
 
-pub(super) fn text_path(map: MapRef<'_>, path: &[FieldId]) -> Result<String, SeedError> {
+pub(super) fn text_path(map: MapRef<'_>, path: &[super::super::model::Selector]) -> Result<String, SeedError> {
     match value_path(map, path)? {
         ValueRef::Text(text) => Ok(text.to_owned()),
         _ => Err(SeedError::Invalid("modeled identity output is not text")),
@@ -144,19 +158,17 @@ pub(super) fn text_path(map: MapRef<'_>, path: &[FieldId]) -> Result<String, See
 
 pub(super) fn value_path<'a>(
     root: MapRef<'a>,
-    path: &[FieldId],
+    path: &[super::super::model::Selector],
 ) -> Result<ValueRef<'a>, SeedError> {
-    let mut value = None;
-    for field in path {
-        let map = match value {
-            None => root,
-            Some(ValueRef::Map(map)) => map,
-            _ => return Err(SeedError::Invalid("modeled output path is not a structure")),
+    use super::super::model::Selector;
+    if path.is_empty() { return Err(SeedError::Invalid("modeled output path is empty")); }
+    path.iter().try_fold(ValueRef::Map(root), |value, selector| {
+        let value = match (value, selector) {
+            (ValueRef::Map(map), Selector::Field(field)) => map.get_field(*field)?,
+            (ValueRef::Map(map), Selector::Name(name)) => map.get_name(name)?,
+            (ValueRef::List(list), Selector::Index(index)) => list.get(*index)?,
+            _ => return Err(SeedError::Invalid("modeled output selector has the wrong container type")),
         };
-        value = Some(
-            map.get_field(*field)?
-                .ok_or(SeedError::Invalid("modeled output field is missing"))?,
-        );
-    }
-    value.ok_or(SeedError::Invalid("modeled output path is empty"))
+        value.ok_or(SeedError::Invalid("modeled output field or element is missing"))
+    })
 }

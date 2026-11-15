@@ -251,6 +251,7 @@ dependencies = [
  "rustls-pki-types",
  "serde",
  "serde_json",
+ "sha2",
  "sqlx",
  "tempfile",
  "thiserror",
@@ -1276,14 +1277,17 @@ version = "0.6.0"
 dependencies = [
  "base64 0.23.1",
  "inventory-core",
+ "inventory-engine",
  "num-traits",
  "proptest",
+ "regex",
  "serde",
  "serde_json",
  "sha2",
+ "sqlx",
  "tempfile",
  "thiserror",
- "toml",
+ "tokio",
  "zip",
 ]
 
@@ -1375,8 +1379,14 @@ dependencies = [
 name = "cmdb-bench"
 version = "0.6.0"
 dependencies = [
+ "aws-wire",
  "cmdb-view",
+ "futures-util",
+ "http",
  "inventory-core",
+ "inventory-engine",
+ "redis",
+ "sha2",
  "sqlx",
  "tempfile",
  "tokio",
@@ -1388,7 +1398,11 @@ version = "0.6.0"
 dependencies = [
  "cmdb-view",
  "inventory-core",
+ "inventory-engine",
  "makepad-widgets",
+ "redis",
+ "sqlx",
+ "tempfile",
  "tokio",
  "tracing",
 ]
@@ -1398,6 +1412,7 @@ name = "cmdb-view"
 version = "0.6.0"
 dependencies = [
  "inventory-core",
+ "inventory-engine",
  "redis",
  "sqlx",
  "tempfile",
@@ -2454,6 +2469,7 @@ dependencies = [
  "proptest",
  "serde",
  "serde_json",
+ "sha2",
  "thiserror",
 ]
 
@@ -2488,12 +2504,16 @@ dependencies = [
  "base16ct",
  "bytes",
  "catalog-tool",
+ "cmdb-view",
  "futures-util",
  "http",
  "httparse",
  "inventory-core",
+ "inventory-engine",
  "libc",
  "minicbor",
+ "rcgen",
+ "redis",
  "rustix",
  "rustls-pki-types",
  "serde_json",
@@ -3810,6 +3830,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ed2bf2547551a7053d6fdfafda3f938979645c44812fbfcda098faae3f1a362d"
 dependencies = [
  "bitflags 2.13.2",
+]
+
+[[package]]
+name = "regex"
+version = "1.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f020237b6c8eed93db2e2cb53c00c60a8e1bc73da7d073199a1180401450218d"
+dependencies = [
+ "aho-corasick",
+ "memchr",
+ "regex-automata",
+ "regex-syntax",
 ]
 
 [[package]]

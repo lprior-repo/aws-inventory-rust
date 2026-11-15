@@ -32,6 +32,7 @@ pub(super) async fn validate_active_sweep(
 }
 
 pub(super) fn validate_work(store: &BinaryStore, work: &WorkSpec) -> Result<(), StoreError> {
+    work.validate_context()?;
     if !store.registry.allows(work.scope()) {
         return Err(StoreError::Invalid(
             "work scope is not present in the bound catalog",
@@ -82,12 +83,28 @@ pub(super) fn validate_page(store: &BinaryStore, page: &PageCommit) -> Result<()
         reference.from.account.as_str() != scope.account().as_str()
             || reference.from.region.as_str() != scope.region().as_str()
     }) || page.tags.iter().any(|tag| {
-        tag.resource.account.as_str() != scope.account().as_str()
-            || tag.resource.region.as_str() != scope.region().as_str()
+        tag.resource().account.as_str() != scope.account().as_str()
+            || tag.resource().region.as_str() != scope.region().as_str()
     }) {
         return Err(StoreError::Invalid(
             "page contains data outside its leased account and region",
         ));
+    }
+    validate_tags(page)?;
+    store.registry.permissions.validate_page(page)?;
+    Ok(())
+}
+
+fn validate_tags(page: &PageCommit) -> Result<(), StoreError> {
+    let unique = page.tags.iter().map(|tags| tags.resource()).collect::<std::collections::BTreeSet<_>>();
+    if unique.len() != page.tags.len() {
+        return Err(StoreError::Invalid("page contains duplicate resource tag observations"));
+    }
+    let count = page.tags.iter().try_fold(0_usize, |count, tags| {
+        count.checked_add(tags.tags().len()).ok_or(StoreError::Invalid("tag count overflow"))
+    })?;
+    if count > 50_000 {
+        return Err(StoreError::Invalid("page exceeds tag pair storage bound"));
     }
     Ok(())
 }

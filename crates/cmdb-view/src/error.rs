@@ -8,7 +8,7 @@ pub enum ViewError {
     Identity(#[from] inventory_core::inventory::InventoryError),
     #[error(transparent)]
     Record(#[from] inventory_core::record::RecordError),
-    #[error("unsupported schema version {0}; expected 14")]
+    #[error("unsupported schema version {0}; expected 15 or 16 (open with the writer to migrate schema 14)")]
     Version(i64),
     #[error("invalid stored resource row")]
     StoredRow,

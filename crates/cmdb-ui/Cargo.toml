@@ -16,5 +16,11 @@ inventory-core = { workspace = true, default-features = false }
 tokio.workspace = true
 tracing.workspace = true
 
+[dev-dependencies]
+inventory-engine = { workspace = true, default-features = false }
+sqlx.workspace = true
+redis = { version = "1.8.1", features = ["tokio-rustls-comp"] }
+tempfile = "3.27.0"
+
 [lints]
 workspace = true

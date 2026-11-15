@@ -1,5 +1,5 @@
 use super::{RuntimeCatalogCompileError, model_path};
-use crate::overlay::{Binding, FixedValue, Identity, ItemSelector, OperationOverlay, Paginator};
+use crate::overlay::{Binding, Identity, ItemSelector, OperationOverlay, Paginator};
 use inventory_core::catalog::{Operation, Service, Target};
 
 pub(super) fn validate(
@@ -10,7 +10,9 @@ pub(super) fn validate(
     let output = operation.output()?;
     let input = operation.input()?;
     let item = item_target(service, output, overlay.items.as_ref())?;
-    validate_identity(service, item, overlay.identity.as_ref())?;
+    if overlay.emission == crate::overlay::Emission::EmitMetadata && overlay.tag_endpoint.is_none() && !overlay.endpoint_discovery {
+        validate_identity(service, operation, item, overlay.identity.as_ref())?;
+    }
     validate_bindings(service, input, overlay)?;
     validate_page(service, operation, overlay)?;
     overlay
@@ -26,22 +28,12 @@ fn item_target(
     output: Target,
     selector: Option<&ItemSelector>,
 ) -> Result<Target, RuntimeCatalogCompileError> {
-    match selector {
-        Some(ItemSelector::Root) => Ok(output),
-        Some(ItemSelector::Member(path)) => {
-            let target = model_path::resolve(service, output, &path.to_string())?.1;
-            match model_path::kind(service, target)? {
-                "structure" => Ok(target),
-                "list" => model_path::list_element(service, target),
-                _ => Err(RuntimeCatalogCompileError::Capability),
-            }
-        }
-        None => Err(RuntimeCatalogCompileError::Capability),
-    }
+    super::selection::target(service, output, selector)
 }
 
 fn validate_identity(
     service: Service<'_>,
+    operation: Operation<'_>,
     item: Target,
     identity: Option<&Identity>,
 ) -> Result<(), RuntimeCatalogCompileError> {
@@ -55,6 +47,7 @@ fn validate_identity(
             .try_for_each(|path| scalar_target(service, item, path.as_str())),
         Some(Identity::Template(template)) => super::plans::identity::fields(template)
             .try_for_each(|path| scalar_target(service, item, path)),
+        Some(value @ (Identity::Choice(_) | Identity::CorrelatedKey(_) | Identity::MapArn { .. })) => super::selection::validate_identity(service, operation, item, value),
         _ => Err(RuntimeCatalogCompileError::Capability),
     }
 }
@@ -97,36 +90,34 @@ fn validate_bindings(
     input: Target,
     overlay: &OperationOverlay,
 ) -> Result<(), RuntimeCatalogCompileError> {
-    overlay.bind.iter().try_for_each(|(path, binding)| {
+    overlay.bind.iter().chain(overlay.branches.iter().flat_map(|branch| branch.bind.iter())).try_for_each(|(path, binding)| {
         let target = model_path::resolve(service, input, &path.to_string())?.1;
         match binding {
             Binding::Region | Binding::Account => model_path::string_target(service, target),
-            Binding::From { .. } => Ok(()),
+            Binding::RegionList => {
+                model_path::string_target(service, model_path::list_element(service, target)?)
+            }
+            Binding::FromAny(alternatives) => {
+                if alternatives.is_empty() || alternatives.len() > 8
+                    || alternatives.iter().enumerate().any(|(index, alternative)| alternatives.iter().take(index)
+                        .any(|prior| prior.operation == alternative.operation)) {
+                    return Err(RuntimeCatalogCompileError::Capability);
+                }
+                Ok(())
+            }
+            Binding::From { .. } | Binding::Context { .. } | Binding::FromArn { .. } | Binding::FromUrl { .. } | Binding::FromService { .. }
+                | Binding::FromBranch { .. } | Binding::ContextFromBranch { .. } => Ok(()),
+            Binding::Transformed { binding, transform: crate::overlay::BindingTransform::StripPrefix(prefix) } => {
+                if prefix.is_empty() || prefix.len() > 256 || prefix.chars().any(char::is_control)
+                    || !matches!(binding.as_ref(), Binding::From { .. } | Binding::Context { .. } | Binding::FromArn { .. } | Binding::FromService { .. }) {
+                    return Err(RuntimeCatalogCompileError::Capability);
+                }
+                model_path::string_target(service, target)
+            }
         }
-    })?;
-    overlay.fixed.iter().try_for_each(|(path, value)| {
-        let kind = model_path::kind(
-            service,
-            model_path::resolve(service, input, &path.to_string())?.1,
-        )?;
-        fixed_matches(value, kind)
     })
 }
 
-fn fixed_matches(value: &FixedValue, kind: &str) -> Result<(), RuntimeCatalogCompileError> {
-    let matched = match value {
-        // CheckedOverlays has already checked the literal against Smithy enumValue traits.
-        FixedValue::String(_) => matches!(kind, "string" | "enum"),
-        FixedValue::Strings(_) => kind == "list",
-        FixedValue::Integer(_) => kind.starts_with("integer") || kind.starts_with("long"),
-        FixedValue::Boolean(_) => kind == "boolean",
-    };
-    if matched {
-        Ok(())
-    } else {
-        Err(RuntimeCatalogCompileError::Capability)
-    }
-}
 
 fn validate_page(
     service: Service<'_>,

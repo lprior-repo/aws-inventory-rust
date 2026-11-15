@@ -72,6 +72,7 @@ pub(super) fn entry_graph_error(error: GraphError) -> EntryError {
             EntryError::Projection(ProjectionError::Query)
         }
         GraphError::Store(error) => EntryError::Projection(ProjectionError::Store(error)),
+        GraphError::OwnershipLost => EntryError::Projection(ProjectionError::OwnershipLost),
         GraphError::Timeout => EntryError::Offline,
     }
 }
@@ -87,6 +88,7 @@ pub(super) async fn failed_delivery(
     match error {
         GraphError::Redis(_) | GraphError::Query(_) => Err(ProjectionError::Query),
         GraphError::Store(error) => Err(ProjectionError::Store(error)),
+        GraphError::OwnershipLost => Err(ProjectionError::OwnershipLost),
         GraphError::Timeout => pending_report(store, acknowledged, true, false).await,
     }
 }
@@ -99,4 +101,63 @@ pub(super) enum EntryError {
     Projection(#[from] ProjectionError),
     #[error(transparent)]
     Store(#[from] StoreError),
+}
+
+pub(super) async fn rebuild_graph(
+    store: &BinaryStore,
+    client: &mut GraphClient,
+    marker: &PendingProjection,
+    batch_limit: u16,
+) -> Result<Option<u64>, GraphError> {
+    client.clear().await?;
+    let mut snapshot = store
+        .begin_projection_snapshot()
+        .await
+        .map_err(GraphError::Store)?;
+    let resources_done = rebuild_resources(&mut snapshot, client, batch_limit).await?;
+    let edges_done = if resources_done {
+        rebuild_edges(&mut snapshot, client, batch_limit).await?
+    } else {
+        false
+    };
+    snapshot.finish().await.map_err(GraphError::Store)?;
+    if resources_done && edges_done {
+        store
+            .ack_projection(
+                ProjectionAck::full_rebuild(marker.revision).map_err(GraphError::Store)?,
+            )
+            .await
+            .map(Some)
+            .map_err(GraphError::Store)
+    } else {
+        Ok(None)
+    }
+}
+
+async fn rebuild_resources(
+    snapshot: &mut ProjectionSnapshot,
+    client: &mut GraphClient,
+    limit: u16,
+) -> Result<bool, GraphError> {
+    let mut after: Option<ResourceKey> = None;
+    for _ in 0..MAX_REBUILD_PAGES {
+        let page = snapshot
+            .resources(after.take(), limit)
+            .await
+            .map_err(GraphError::Store)?;
+        let count = page.len();
+        after = page.last().map(|resource| resource.key.clone());
+        for resource in page {
+            client.upsert(&resource).await?;
+            project_tags(snapshot, client, &resource.key, limit).await?;
+        }
+        if count < usize::from(limit) {
+            return Ok(true);
+        }
+    }
+    snapshot
+        .resources(after, 1)
+        .await
+        .map(|page| page.is_empty())
+        .map_err(GraphError::Store)
 }

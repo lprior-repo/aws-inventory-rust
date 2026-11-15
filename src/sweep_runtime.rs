@@ -9,6 +9,8 @@ mod execution;
 mod input;
 mod record;
 mod request;
+mod resource_projection;
+mod row_policy;
 
 pub(crate) use execution::run;
 

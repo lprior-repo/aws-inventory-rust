@@ -67,6 +67,12 @@ impl<'a> MapRef<'a> {
         })
     }
 
+    pub fn count(self) -> Result<usize, RecordError> {
+        let mut decoder = Decoder::new(self.bytes);
+        let count = readers::definite(decoder.map()?, 0)?;
+        usize::try_from(count).map_err(|_| RecordError::SizeLimit)
+    }
+
     pub fn iter(
         self,
     ) -> Result<impl Iterator<Item = Result<(KeyRef<'a>, ValueRef<'a>), RecordError>>, RecordError>

@@ -37,11 +37,15 @@ pub(super) async fn count_filtered(
     tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
     filter: &ResourceFilter,
 ) -> Result<u64, ViewError> {
-    let value = sqlx::query_scalar::<_, i64>("SELECT count(*) FROM resources WHERE (? IS NULL OR account=?) AND (? IS NULL OR region=?) AND (? IS NULL OR kind=?) AND (? IS NULL OR instr(lower(coalesce(name,'') || ' ' || id || ' ' || kind),lower(?))>0)")
+    let value = sqlx::query_scalar::<_, i64>("SELECT count(*) FROM resources WHERE (? IS NULL OR account=?) AND (? IS NULL OR region=?) AND (? IS NULL OR kind=?) AND (? IS NULL OR instr(lower(coalesce(name,'') || ' ' || id || ' ' || kind),lower(?))>0) AND (? IS NULL OR EXISTS(SELECT 1 FROM tags t WHERE t.account=resources.account AND t.region=resources.region AND t.kind=resources.kind AND t.id=resources.id AND t.tag_key=? AND (? IS NULL OR t.tag_value=?)))")
         .bind(filter.account.as_deref()).bind(filter.account.as_deref())
         .bind(filter.region.as_deref()).bind(filter.region.as_deref())
         .bind(filter.kind.as_deref()).bind(filter.kind.as_deref())
         .bind(filter.text.as_deref()).bind(filter.text.as_deref())
+        .bind(filter.tag.as_ref().map(|tag| tag.key.as_str()))
+        .bind(filter.tag.as_ref().map(|tag| tag.key.as_str()))
+        .bind(filter.tag.as_ref().and_then(|tag| tag.value.as_deref()))
+        .bind(filter.tag.as_ref().and_then(|tag| tag.value.as_deref()))
         .fetch_one(&mut **tx).await?;
     u64::try_from(value).map_err(|_| ViewError::StoredRow)
 }
@@ -54,7 +58,7 @@ pub(super) async fn fetch_page(
     let limit = i64::try_from(request.limit.checked_add(1).ok_or(ViewError::PageLimit)?).map_err(|_| ViewError::PageLimit)?;
     let cursor = request.after.as_ref();
     let query = sqlx::query(
-        "SELECT account,region,kind,id,name,content_hash FROM resources WHERE (? IS NULL OR account=?) AND (? IS NULL OR region=?) AND (? IS NULL OR kind=?) AND (? IS NULL OR instr(lower(coalesce(name,'') || ' ' || id || ' ' || kind),lower(?))>0) AND (? IS NULL OR (account,region,kind,id)>(?,?,?,?)) ORDER BY account,region,kind,id LIMIT ?",
+        "SELECT account,region,kind,id,name,content_hash FROM resources WHERE (? IS NULL OR account=?) AND (? IS NULL OR region=?) AND (? IS NULL OR kind=?) AND (? IS NULL OR instr(lower(coalesce(name,'') || ' ' || id || ' ' || kind),lower(?))>0) AND (? IS NULL OR EXISTS(SELECT 1 FROM tags t WHERE t.account=resources.account AND t.region=resources.region AND t.kind=resources.kind AND t.id=resources.id AND t.tag_key=? AND (? IS NULL OR t.tag_value=?))) AND (? IS NULL OR (account,region,kind,id)>(?,?,?,?)) ORDER BY account,region,kind,id LIMIT ?",
     );
     let rows = bind_filter(query, filter)
         .bind(cursor.map(|_| 1_i64))
@@ -80,6 +84,10 @@ fn bind_filter<'q>(query: SqliteQuery<'q>, filter: &'q ResourceFilter) -> Sqlite
         .bind(filter.kind.as_deref())
         .bind(filter.text.as_deref())
         .bind(filter.text.as_deref())
+        .bind(filter.tag.as_ref().map(|tag| tag.key.as_str()))
+        .bind(filter.tag.as_ref().map(|tag| tag.key.as_str()))
+        .bind(filter.tag.as_ref().and_then(|tag| tag.value.as_deref()))
+        .bind(filter.tag.as_ref().and_then(|tag| tag.value.as_deref()))
 }
 
 fn bind_node<'q>(query: SqliteQuery<'q>, node: &'q GraphNode) -> SqliteQuery<'q> {

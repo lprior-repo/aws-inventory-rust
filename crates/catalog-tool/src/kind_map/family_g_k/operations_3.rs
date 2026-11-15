@@ -1,0 +1,27 @@
+use crate::kind_map::OperationMapping;
+
+pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
+    OperationMapping { service: "iot", operation: "ListPolicies", kind: "AWS::IoT::Policy" },
+    OperationMapping { service: "iot", operation: "ListBillingGroups", kind: "AWS::IoT::BillingGroup" },
+    OperationMapping { service: "iot", operation: "ListRoleAliases", kind: "AWS::IoT::RoleAlias" },
+    OperationMapping { service: "iot", operation: "ListDomainConfigurations", kind: "AWS::IoT::DomainConfiguration" },
+    OperationMapping { service: "iot", operation: "ListCustomMetrics", kind: "AWS::IoT::CustomMetric" },
+    OperationMapping { service: "iot", operation: "DescribeCustomMetric", kind: "AWS::IoT::CustomMetric" },
+    OperationMapping { service: "iot", operation: "ListDimensions", kind: "AWS::IoT::Dimension" },
+    OperationMapping { service: "iot-managed-integrations", operation: "ListManagedThings", kind: "AWS::ApiOnly::IoTManagedIntegrationsManagedThing" },
+    OperationMapping { service: "iot-managed-integrations", operation: "ListCredentialLockers", kind: "AWS::ApiOnly::IoTManagedIntegrationsCredentialLocker" },
+    OperationMapping { service: "iot-managed-integrations", operation: "ListCloudConnectors", kind: "AWS::ApiOnly::IoTManagedIntegrationsCloudConnector" },
+    OperationMapping { service: "iot-managed-integrations", operation: "ListConnectorDestinations", kind: "AWS::ApiOnly::IoTManagedIntegrationsConnectorDestination" },
+    OperationMapping { service: "iot-managed-integrations", operation: "ListProvisioningProfiles", kind: "AWS::ApiOnly::IoTManagedIntegrationsProvisioningProfile" },
+    OperationMapping { service: "iot-wireless", operation: "ListWirelessDevices", kind: "AWS::IoTWireless::WirelessDevice" },
+    OperationMapping { service: "iot-wireless", operation: "ListWirelessGateways", kind: "AWS::IoTWireless::WirelessGateway" },
+    OperationMapping { service: "iot-wireless", operation: "ListDeviceProfiles", kind: "AWS::IoTWireless::DeviceProfile" },
+    OperationMapping { service: "iot-wireless", operation: "ListServiceProfiles", kind: "AWS::IoTWireless::ServiceProfile" },
+    OperationMapping { service: "iot-wireless", operation: "ListDestinations", kind: "AWS::IoTWireless::Destination" },
+    OperationMapping { service: "iot-wireless", operation: "ListMulticastGroups", kind: "AWS::IoTWireless::MulticastGroup" },
+    OperationMapping { service: "iot-wireless", operation: "ListFuotaTasks", kind: "AWS::IoTWireless::FuotaTask" },
+    OperationMapping { service: "iotdeviceadvisor", operation: "ListSuiteDefinitions", kind: "AWS::IoTCoreDeviceAdvisor::SuiteDefinition" },
+    OperationMapping { service: "iotfleetwise", operation: "ListFleets", kind: "AWS::IoTFleetWise::Fleet" },
+    OperationMapping { service: "iotfleetwise", operation: "ListSignalCatalogs", kind: "AWS::IoTFleetWise::SignalCatalog" },
+    OperationMapping { service: "iotfleetwise", operation: "ListModelManifests", kind: "AWS::IoTFleetWise::ModelManifest" },
+];

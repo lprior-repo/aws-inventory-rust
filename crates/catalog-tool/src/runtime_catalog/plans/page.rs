@@ -59,7 +59,7 @@ fn validate_items(
 ) -> Result<(), RuntimeCatalogCompileError> {
     match descriptor.and_then(|page| page.items) {
         Some(expected) => match overlay.items.as_ref() {
-            Some(crate::overlay::ItemSelector::Member(actual))
+            Some(crate::overlay::ItemSelector::Member(actual) | crate::overlay::ItemSelector::Explicit { path: actual, .. })
                 if expected == actual.to_string() =>
             {
                 Ok(())
@@ -146,11 +146,18 @@ fn page_size_value(
     let member = model_path::terminal_member(inputs.service, inputs.operation.input()?, path)?;
     let kind = model_path::kind(inputs.service, member.1.target)?;
     let max = validated_max(value, kind, descriptor)?;
+    let literal = if matches!(kind, "string" | "enum") {
+        crate::overlay::FixedValue::String(value.to_string())
+    } else {
+        crate::overlay::FixedValue::Integer(value)
+    };
+    super::fixed_input::compile(inputs.service, member.1.target, &literal)?;
     let placement = placement(member.1, member.0, inputs.protocol)?;
     let fields = [
         (1, encode::path(inputs.services, path)?),
         (2, Value::Int(i64::from(max))),
         (3, placement),
+        (4, Value::Int(if matches!(kind, "string" | "enum") { 0 } else { 1 })),
     ];
     Ok(Some(encode::map(fields)?))
 }
@@ -160,9 +167,9 @@ fn validated_max(
     kind: &str,
     descriptor: &Descriptor<'_>,
 ) -> Result<u32, RuntimeCatalogCompileError> {
-    let integer = matches!(kind, "integer" | "long" | "short" | "byte");
+    let supported = matches!(kind, "integer" | "long" | "short" | "byte" | "string" | "enum");
     let max = u32::try_from(value).map_err(|_| RuntimeCatalogCompileError::Capability)?;
-    if !integer || max == 0 || exceeds_modeled(max, descriptor)? {
+    if !supported || max == 0 || exceeds_modeled(max, descriptor)? {
         return Err(RuntimeCatalogCompileError::Capability);
     }
     Ok(max)

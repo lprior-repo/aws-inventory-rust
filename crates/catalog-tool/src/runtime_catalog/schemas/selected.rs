@@ -1,6 +1,6 @@
 use super::{Context, RuntimeCatalogCompileError, Value, encode};
 use crate::{
-    overlay::{CallableOperation, CheckedOverlays, ItemSelector},
+    overlay::{CallableOperation, CheckedOverlays},
     runtime_catalog::{model_path, plans},
 };
 use std::collections::BTreeSet;
@@ -43,7 +43,8 @@ fn callable<'a>(
     checked.services().iter()
         .find(|review| review.service() == row.service)
         .and_then(|review| review.callable().iter()
-            .find(|call| call.operation() == row.operation))
+            .find(|call| call.operation() == row.operation && call.plan().emission == crate::overlay::Emission::EmitMetadata
+                && call.plan().tag_endpoint.is_none() && !call.plan().endpoint_discovery))
 }
 
 fn item_type(
@@ -53,11 +54,7 @@ fn item_type(
 ) -> Result<Option<i64>, RuntimeCatalogCompileError> {
     let service = plans::catalog_service(context.services, service_name)?;
     let operation = plans::catalog_operation(service, call.operation())?;
-    let target = match call.plan().items.as_ref() {
-        Some(ItemSelector::Root) => operation.output()?,
-        Some(ItemSelector::Member(path)) => model_path::item_target(service, operation, path.as_str())?,
-        None => return Err(RuntimeCatalogCompileError::Capability),
-    };
+    let target = crate::runtime_catalog::selection::target(service, operation.output()?, call.plan().items.as_ref())?;
     scalar_code(model_path::kind(service, target)?)
 }
 

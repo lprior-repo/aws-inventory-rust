@@ -14,8 +14,18 @@ const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 "n#Input":{"type":"structure","members":{"Id":{"target":"smithy.api#SCALAR","traits":{"smithy.api#required":{}}}}},
 "n#Thing":{"type":"structure","members":{"Id":{"target":"smithy.api#SCALAR"}}}
 }}"#;
-const OVERLAY: &str = "format=1\nreviewed='2026-11-15'\nreviewer='fixture'\n[operation.ListThings]\nclass='enumerate'\nscope='region'\nitems='Items'\n[operation.ListThings.paginator]\nkind='none'\n[operation.ListThings.identity]\nkey=['$']\n[operation.GetThing]\nclass='expand'\nscope='region'\nitems='$'\nbind={Id={from='ListThings',path='$'}}\n[operation.GetThing.paginator]\nkind='none'\n[operation.GetThing.identity]\nkey=['Id']\n";
-const KINDS: &str = "meta\tversion\t1\nmeta\treviewed\t2026-11-15\nmeta\treviewer\tfixture\napi\tAWS::ApiOnly::Scalar\tkind\tScalar fixture\napi\tAWS::ApiOnly::Detail\tkind\tDetail fixture\noperation\tthings\tListThings\tAWS::ApiOnly::Scalar\noperation\tthings\tGetThing\tAWS::ApiOnly::Detail\ndefault-unmapped\tFixture only\n";
+const KINDS: kind_map::MappingSource<'static> = kind_map::MappingSource {
+    version: 1, reviewed: "2026-11-15", reviewer: "Scalar fixture", default_unmapped_reason: None,
+    cfn: &[], relations: &[], parent_relations: &[], compound_relations: &[], additional_emissions: &[], relation_targets: &[], bootstraps: &[],
+    api_only: &[
+        kind_map::ApiOnlyMapping { kind: "AWS::ApiOnly::Scalar", reason: "Scalar fixture" },
+        kind_map::ApiOnlyMapping { kind: "AWS::ApiOnly::Detail", reason: "Detail fixture" },
+    ],
+    operations: &[
+        kind_map::OperationMapping { service: "things", operation: "ListThings", kind: "AWS::ApiOnly::Scalar" },
+        kind_map::OperationMapping { service: "things", operation: "GetThing", kind: "AWS::ApiOnly::Detail" },
+    ],
+};
 
 fn endpoint() -> Result<endpoints::VerifiedEndpoint, Box<dyn std::error::Error>> {
     let properties = json!({"authSchemes":[{"name":"sigv4","signingName":"things","signingRegion":"us-east-1"}]});
@@ -26,19 +36,32 @@ fn endpoint() -> Result<endpoints::VerifiedEndpoint, Box<dyn std::error::Error>>
         .map_err(|_| "fixture endpoint evidence failed".into())
 }
 
-fn compiled(shape: &str, identity: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+fn compiled(shape: &str, identity: overlay::Identity) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let root = tempfile::tempdir()?;
     let source = root.path().join("source");
     let model_dir = source.join("models/things/service/2020-01-01");
     fs::create_dir_all(&model_dir)?;
-    fs::create_dir_all(root.path().join("catalog/overlay"))?;
     fs::write(model_dir.join("model.json"), MODEL.replace("SCALAR", shape))?;
-    fs::write(root.path().join("catalog/overlay/must-deny.txt"), "")?;
-    fs::write(root.path().join("catalog/overlay/things.toml"), OVERLAY.replace("key=['$']", identity))?;
-    let checked = overlay::check(root.path(), &source)?;
+    let mut list = overlay::OperationOverlay::default();
+    list.class = Some(overlay::OverlayClass::Enumerate);
+    list.scope = Some(overlay::Scope::Region);
+    list.items = Some(overlay::ItemSelector::parse("Items")?);
+    list.paginator = Some(overlay::Paginator::None);
+    list.identity = Some(identity);
+    let mut detail = overlay::OperationOverlay::default();
+    detail.class = Some(overlay::OverlayClass::Expand);
+    detail.scope = Some(overlay::Scope::Region);
+    detail.items = Some(overlay::ItemSelector::Root);
+    detail.paginator = Some(overlay::Paginator::None);
+    detail.identity = Some(overlay::Identity::Key(vec![overlay::MemberPath::new("Id")?]));
+    detail.bind.insert(overlay::MemberPath::new("Id")?,
+        overlay::Binding::From { operation: overlay::OperationName::new("ListThings")?,
+            path: overlay::MemberPath::selected("$")? });
+    let policies = [overlay::ServiceOverlay::new("things", vec![("ListThings", list), ("GetThing", detail)])?];
+    let checked = overlay::check_policies(&source, &policies, &catalog_tool::classes::DenyList::builtin())?;
     let fields = smithy::Registry::parse("Id\nItems\n")?;
     let base = smithy::build_catalog(&source, &fields, "scalar-fixture")?;
-    let kinds = kind_map::load(KINDS.as_bytes(), &names::Exceptions::none())?;
+    let kinds = KINDS.compile(&names::Exceptions::none())?;
     let endpoints = BTreeMap::from([("things".to_owned(), endpoint()?)]);
     Ok(runtime_catalog::augment(&base, &checked, &kinds, &endpoints)?)
 }
@@ -48,7 +71,7 @@ fn given_scalar_review_when_compiled_and_loaded_then_self_paths_and_typed_column
     [("String", ScalarType::Text), ("Boolean", ScalarType::Bool), ("Byte", ScalarType::Integer),
         ("Short", ScalarType::Integer), ("Integer", ScalarType::Integer), ("Long", ScalarType::Integer)]
         .into_iter().try_for_each(|(shape, scalar)| {
-            let given = compiled(shape, "key=['$']")?;
+            let given = compiled(shape, overlay::Identity::Key(vec![overlay::MemberPath::selected("$")?]))?;
             let when = RuntimeCatalog::from_bytes(&given)?;
             let parent = when.lookup("things", "ListThings").ok_or("parent missing")?;
             assert!(matches!(parent.identity(), IdentityPlan::Key(paths) if paths.len() == 1 && paths.first().is_some_and(|path| path.is_empty())));
@@ -64,7 +87,7 @@ fn given_scalar_review_when_compiled_and_loaded_then_self_paths_and_typed_column
 
 #[test]
 fn given_scalar_arn_review_when_compiled_then_arn_and_root_structure_paths_stay_distinct() -> TestResult {
-    let given = compiled("String", "arn='$'")?;
+    let given = compiled("String", overlay::Identity::Arn(overlay::MemberPath::selected("$")?))?;
     let when = RuntimeCatalog::from_bytes(&given)?;
     assert!(matches!(when.lookup("things", "ListThings").ok_or("parent missing")?.identity(), IdentityPlan::Arn(path) if path.is_empty()));
     assert!(matches!(when.lookup("things", "GetThing").ok_or("child missing")?.identity(), IdentityPlan::Key(paths) if paths.first().is_some_and(|path| !path.is_empty())));

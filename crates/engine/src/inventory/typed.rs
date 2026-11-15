@@ -9,7 +9,7 @@ pub(super) async fn upsert_kind(
     tx: &mut Transaction<'_, Sqlite>,
     observation: &Observation,
     now: i64,
-) -> Result<(), StoreError> {
+) -> Result<bool, StoreError> {
     let schema = store
         .registry
         .schemas()
@@ -59,8 +59,8 @@ pub(super) async fn upsert_kind(
     for column in schema.columns() {
         append_column_update(&mut query, column.name(), column.scalar());
     }
-    query.build().execute(&mut **tx).await?;
-    Ok(())
+    query.push(" WHERE record<>excluded.record OR content_hash<>excluded.content_hash OR last_changed<>excluded.last_changed");
+    Ok(query.build().execute(&mut **tx).await?.rows_affected() != 0)
 }
 
 fn append_column_name(query: &mut QueryBuilder<Sqlite>, name: &str, scalar: ScalarType) {

@@ -1,5 +1,10 @@
 #[path = "scenario/validation.rs"]
 mod validation;
+mod identity;
+mod template;
+mod defaults;
+pub use identity::{SeedIdentity, SeedIdentityEvidence, SeedScope};
+pub use template::{SeedNestedBinding, SeedTemplate, SeedValuePart};
 use super::config::SeedError;
 use validation::*;
 
@@ -48,6 +53,8 @@ pub enum SeedInputValue {
     Boolean(bool),
     Integer(i64),
     PreviousOutput { step: StepId, path: FieldPath },
+    Literal(inventory_core::record::Value),
+    Template(SeedTemplate),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -83,9 +90,11 @@ pub struct SeedStep {
     pub service: String,
     pub operation: String,
     pub kind: String,
-    pub identity: FieldPath,
+    pub identity: Option<SeedIdentity>,
     pub inputs: Vec<SeedInput>,
     pub response_checks: Vec<SeedOutputCheck>,
+    pub expected_identity: Option<String>,
+    pub scope: SeedScope,
 }
 
 impl SeedStep {
@@ -94,7 +103,7 @@ impl SeedStep {
         service: String,
         operation: String,
         kind: String,
-        identity: FieldPath,
+        identity: impl Into<SeedIdentity>,
         inputs: Vec<SeedInput>,
     ) -> Self {
         Self {
@@ -102,15 +111,34 @@ impl SeedStep {
             service,
             operation,
             kind,
-            identity,
+            identity: Some(identity.into()),
             inputs,
             response_checks: Vec::new(),
+            expected_identity: None,
+            scope: SeedScope::Regional,
         }
     }
 
     pub fn with_response_checks(mut self, checks: Vec<SeedOutputCheck>) -> Self {
         self.response_checks = checks;
         self
+    }
+
+    pub fn with_expected_identity(mut self, identity: String) -> Self {
+        self.expected_identity = Some(identity);
+        self
+    }
+
+    pub fn with_scope(mut self, scope: SeedScope) -> Self {
+        self.scope = scope;
+        self
+    }
+
+    pub fn auxiliary(id: StepId, service: String, operation: String, inputs: Vec<SeedInput>) -> Self {
+        Self {
+            id, service, operation, inputs, kind: String::new(), identity: None,
+            response_checks: Vec::new(), expected_identity: None, scope: SeedScope::Regional,
+        }
     }
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -167,90 +195,15 @@ impl SeedScenario {
     }
 }
 
-pub fn default_scenario() -> SeedScenario {
-    let pairs = [
-        (0, 1, "10.88.1.0/24"),
-        (2, 3, "10.88.2.0/24"),
-        (4, 5, "10.88.3.0/24"),
-        (6, 7, "10.88.4.0/24"),
-        (8, 9, "10.88.5.0/24"),
-        (10, 11, "10.88.6.0/24"),
-    ];
-    let steps = pairs.into_iter().flat_map(default_pair_steps).collect();
-    let relationships = pairs.into_iter().map(default_relationship).collect();
-    SeedScenario {
-        steps,
-        relationships,
-    }
-}
-
-fn default_pair_steps((vpc, subnet, cidr): (u8, u8, &'static str)) -> [SeedStep; 2] {
-    [
-        default_vpc_step(vpc),
-        default_subnet_step(vpc, subnet, cidr),
-    ]
-}
-
-fn default_vpc_step(vpc: u8) -> SeedStep {
-    let cidr = SeedInputValue::Text(String::from("10.88.0.0/16"));
-    SeedStep::new(
-        StepId(vpc),
-        String::from("ec2"),
-        String::from("CreateVpc"),
-        String::from("AWS::EC2::VPC"),
-        path(&["Vpc", "VpcId"]),
-        vec![input(&["CidrBlock"], cidr)],
-    )
-    .with_response_checks(vec![SeedOutputCheck::new(
-        path(&["Vpc", "CidrBlock"]),
-        path(&["CidrBlock"]),
-    )])
-}
-
-fn default_subnet_step(vpc: u8, subnet: u8, cidr: &'static str) -> SeedStep {
-    let vpc_id = SeedInputValue::PreviousOutput {
-        step: StepId(vpc),
-        path: path(&["Vpc", "VpcId"]),
-    };
-    SeedStep::new(
-        StepId(subnet),
-        String::from("ec2"),
-        String::from("CreateSubnet"),
-        String::from("AWS::EC2::Subnet"),
-        path(&["Subnet", "SubnetId"]),
-        vec![
-            input(&["VpcId"], vpc_id),
-            input(&["CidrBlock"], SeedInputValue::Text(String::from(cidr))),
-        ],
-    )
-    .with_response_checks(vec![
-        SeedOutputCheck::new(path(&["Subnet", "VpcId"]), path(&["VpcId"])),
-        SeedOutputCheck::new(path(&["Subnet", "CidrBlock"]), path(&["CidrBlock"])),
-    ])
-}
-
-fn default_relationship((vpc, subnet, _): (u8, u8, &'static str)) -> SeedRelationship {
-    SeedRelationship::new(
-        StepId(subnet),
-        StepId(vpc),
-        String::from("IN_VPC"),
-        path(&["Subnet", "VpcId"]),
-    )
-}
-
-fn path(parts: &[&str]) -> FieldPath {
-    FieldPath(parts.iter().map(|part| (*part).to_owned()).collect())
-}
-
-fn input(field: &[&str], value: SeedInputValue) -> SeedInput {
-    SeedInput::new(path(field), value)
+pub fn default_scenario() -> Result<SeedScenario, SeedError> {
+    defaults::scenario()
 }
 
 fn validate_limits(
     steps: &[SeedStep],
     relationships: &[SeedRelationship],
 ) -> Result<(), SeedError> {
-    if !(2..=MAX_STEPS).contains(&steps.len()) || relationships.len() > 6 {
+    if !(1..=MAX_STEPS).contains(&steps.len()) || relationships.len() > 6 {
         return Err(SeedError::Invalid(
             "seed scenario exceeds its step or relationship limit",
         ));

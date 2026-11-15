@@ -9,6 +9,7 @@ pub(super) fn apply(
     target: Option<Target>,
     seen: &[FieldId],
     service: Service<'_>,
+    limits: super::DecodeLimits,
 ) -> Result<(), DecodeError> {
     let Some(Target::Shape(index)) = target else {
         return Ok(());
@@ -22,7 +23,7 @@ pub(super) fn apply(
     for entry in shape.members()? {
         let member = entry?;
         if !seen.contains(&member.id) && is_document(member.wire()?.binding()?) {
-            apply_member(builder, member, service)?;
+            apply_member(builder, member, service, limits)?;
         }
     }
     Ok(())
@@ -42,7 +43,11 @@ pub(super) fn apply_member(
     builder: &mut RecordBuilder,
     member: Member<'_>,
     service: Service<'_>,
+    limits: super::DecodeLimits,
 ) -> Result<(), DecodeError> {
+    if limits.preserve_fields {
+        return Ok(());
+    }
     let wire = member.wire()?;
     if wire.client_optional()? || wire.streaming()? || streaming(member.target, service)? {
         return Ok(());

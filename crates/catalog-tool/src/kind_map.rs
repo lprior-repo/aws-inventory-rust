@@ -1,11 +1,23 @@
-#[path = "kind_map/parse.rs"]
-mod parse;
-use parse::*;
+mod source;
+mod construct;
+mod fingerprint;
+mod builtin;
+mod merge;
+mod relation_targets;
+pub use source::{ApiOnlyMapping, BootstrapMapping, CfnMapping, MappingSource, OperationMapping};
+mod relation_selectors;
+mod target_kinds;
+mod relation_modes;
+mod relation_fingerprint;
+mod emissions;
+pub use relation_selectors::{RelationGuardMapping, RelationMapping, RelationPath, RelationSource, RelationTarget, RelationTargetsMapping, ReviewedRelation, ReviewedRelationGuard, ReviewedRelationSource, ReviewedRelationTarget, ReviewedValuePath};
+pub use target_kinds::ReviewedTargetKinds;
+pub use relation_modes::{CompoundRelationMapping, ParentRelationMapping, RelationComponentMapping, ReviewedCompoundRelation, ReviewedParentRelation, ReviewedRelationComponent};
+pub use emissions::{AdditionalEmissionMapping, ReviewedEmission};
+pub use builtin::embedded;
 #[path = "kind_map/rows.rs"]
 mod rows;
-use crate::names::{Exceptions, NameError, SqlName, sql_name_used};
-use rows::*;
-use sha2::{Digest, Sha256};
+use crate::names::{Exceptions, NameError, SqlName};
 use std::collections::BTreeSet;
 use thiserror::Error;
 mod bootstrap;
@@ -22,12 +34,10 @@ pub enum KindMapError {
     TooLarge,
     #[error("kind map exceeds the {MAX_ROWS}-row bound")]
     TooManyRows,
-    #[error("invalid kind map row {line}: {reason}")]
+    #[error("invalid typed kind mapping entry {line}: {reason}")]
     InvalidRow { line: usize, reason: &'static str },
     #[error("duplicate kind map entry: {0}")]
     Duplicate(String),
-    #[error("missing required kind map metadata: {0}")]
-    MissingMetadata(&'static str),
     #[error("CFN source type is not accounted for: {0}")]
     MissingType(String),
     #[error("kind map contains a CFN type absent from its source: {0}")]
@@ -87,15 +97,6 @@ pub struct ApiOnlyKind {
     pub reason: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ReviewedRelation {
-    pub source_kind: String,
-    pub source_path: String,
-    pub target_kind: String,
-    pub target_path: String,
-    pub relation: String,
-    pub scope: String,
-}
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum BootstrapPurpose {
@@ -128,6 +129,9 @@ pub struct KindMap {
     entries: Vec<KindEntry>,
     api_only: Vec<ApiOnlyKind>,
     relations: Vec<ReviewedRelation>,
+    parent_relations: Vec<ReviewedParentRelation>,
+    compound_relations: Vec<ReviewedCompoundRelation>,
+    additional_emissions: Vec<ReviewedEmission>,
     bootstraps: Vec<bootstrap::BootstrapEntry>,
     operations: Vec<RuntimeOperation>,
 }
@@ -141,6 +145,18 @@ impl KindMap {
     }
     pub fn relations(&self) -> &[ReviewedRelation] {
         &self.relations
+    }
+    pub fn parent_relations(&self) -> &[ReviewedParentRelation] {
+        &self.parent_relations
+    }
+    pub fn compound_relations(&self) -> &[ReviewedCompoundRelation] {
+        &self.compound_relations
+    }
+    pub fn additional_emissions(&self) -> &[ReviewedEmission] {
+        &self.additional_emissions
+    }
+    pub fn additional_emission_kind(&self, service: &str, operation: &str, emitter_key: &str) -> Option<&str> {
+        emissions::lookup(&self.additional_emissions, service, operation, emitter_key)
     }
     pub fn bootstrap_for(&self, service: &str, operation: &str) -> Option<&BootstrapPurpose> {
         self.bootstraps
@@ -171,29 +187,10 @@ impl KindMap {
     }
 }
 
-pub fn load(bytes: &[u8], exceptions: &Exceptions) -> Result<KindMap, KindMapError> {
-    if bytes.len() > MAX_BYTES {
-        return Err(KindMapError::TooLarge);
-    }
-    let text = std::str::from_utf8(bytes).map_err(|_| KindMapError::InvalidRow {
-        line: 0,
-        reason: "invalid UTF-8",
-    })?;
-    let rows: Vec<&str> = text.lines().collect();
-    if rows.len() > MAX_ROWS {
-        return Err(KindMapError::TooManyRows);
-    }
-    parse_rows(bytes, &rows, exceptions)
-}
-pub fn load_with_cfn(
-    bytes: &[u8],
-    cfn_source: &[u8],
-    exceptions: &Exceptions,
-) -> Result<KindMap, KindMapError> {
+fn complete_cfn(map: &mut KindMap, cfn_source: &[u8]) -> Result<(), KindMapError> {
     if cfn_source.len() > MAX_BYTES {
         return Err(KindMapError::TooLarge);
     }
-    let mut map = load(bytes, exceptions)?;
     let expected = cfn_types(cfn_source)?;
     let actual: BTreeSet<String> = map
         .entries
@@ -204,10 +201,10 @@ pub fn load_with_cfn(
         return Err(KindMapError::ExtraType(extra.clone()));
     }
     let missing: Vec<String> = expected.difference(&actual).cloned().collect();
-    fill_unmapped(&mut map, missing)?;
+    fill_unmapped(map, missing)?;
     map.entries
         .sort_by(|left, right| left.cfn_type.cmp(&right.cfn_type));
-    Ok(map)
+    Ok(())
 }
 
 fn fill_unmapped(map: &mut KindMap, missing: Vec<String>) -> Result<(), KindMapError> {

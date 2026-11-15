@@ -16,6 +16,7 @@ pub enum NodeKind {
     Rds,
     Lambda,
     Other,
+    Tag,
 }
 
 impl NodeKind {
@@ -40,6 +41,7 @@ impl NodeKind {
             Self::Rds => 0xc08be0,
             Self::Lambda => 0xe0b05a,
             Self::Other => 0x8f98a8,
+            Self::Tag => 0x60bda5,
         }
     }
 

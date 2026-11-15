@@ -10,7 +10,7 @@ pub use counts::Counts;
 pub use keys::{CatalogKey, SHAPE_KINDS, kind_code};
 pub use views::{
     CompressionAlgorithm, ErrorKind, HttpBinding, HttpOperation, Member, ModeledError, Operation,
-    Paginator, Service, Shape, Target, TimestampFormat, WireTraits, XmlNamespace,
+    Paginator, Service, Shape, Target, TimestampFormat, ValueConstraints, WireTraits, XmlNamespace,
 };
 
 pub const CATALOG_VERSION: i64 = 3;

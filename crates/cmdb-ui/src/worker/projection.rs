@@ -10,13 +10,13 @@ pub(super) fn row_from_resource(resource: &StoredResource) -> Result<Row, String
         region: key.region.as_str().to_owned(),
         kind: key.kind.as_str().to_owned(),
         id: key.id.as_str().to_owned(),
-        name: resource
-            .name
-            .clone()
-            .unwrap_or_else(|| key.id.as_str().to_owned()),
+        name: resource.name.clone().map_or_else(|| key.id.as_str().to_owned(), |name| name),
         key: resource_key_text(key)?,
         record_bytes: Some(resource.record.as_bytes().len()),
         content_hash: Some(hash),
+        tags: resource.tags.clone(),
+        tags_truncated: resource.tags_truncated,
+        tag_observation: resource.tag_observation,
     })
 }
 
@@ -47,11 +47,14 @@ fn insert_graph_node(graph: &mut Graph, node: &GraphNode, key: String) {
             key,
             record_bytes: None,
             content_hash: None,
+            tags: Vec::new(),
+            tags_truncated: false,
+            tag_observation: None,
         });
     }
 }
 
-fn graph_node_key(node: &GraphNode) -> Result<String, String> {
+pub(super) fn graph_node_key(node: &GraphNode) -> Result<String, String> {
     let key = ResourceKey {
         account: AccountId::parse(&node.account).map_err(|error| error.to_string())?,
         region: Region::parse(&node.region).map_err(|error| error.to_string())?,

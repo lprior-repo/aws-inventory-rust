@@ -76,6 +76,16 @@ pub struct Emulator {
     ca_bundle: PathBuf,
 }
 
+fn command(binary: &Path) -> Command {
+    let mut command = Command::new(binary);
+    command
+        .env_clear()
+        .env("PATH", "/usr/bin:/bin")
+        .env("EMULATOR_TELEMETRY", "off")
+        .stdin(Stdio::null());
+    command
+}
+
 fn spawn(
     binary: &Path,
     log: &Path,
@@ -83,7 +93,7 @@ fn spawn(
     idle_timeout_seconds: u64,
 ) -> Result<ChildOwner, HarnessError> {
     let handle = std::fs::File::create(log)?;
-    let child = Command::new(binary)
+    let child = command(binary)
         .args(ARGUMENTS)
         .arg(idle_timeout_seconds.to_string())
         .env("HOME", home)
@@ -174,7 +184,7 @@ impl Emulator {
 }
 
 pub fn verify_binary(binary: &Path) -> Result<(), HarnessError> {
-    let output = Command::new(binary).arg("--version").output()?;
+    let output = command(binary).arg("--version").output()?;
     if !output.status.success() {
         return Err(HarnessError::invalid(
             "emulator binary did not report its version",

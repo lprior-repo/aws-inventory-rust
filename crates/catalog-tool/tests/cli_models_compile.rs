@@ -30,23 +30,12 @@ fn source() -> Result<tempfile::TempDir, Box<dyn std::error::Error>> {
 fn root() -> Result<tempfile::TempDir, Box<dyn std::error::Error>> {
     let root = tempfile::tempdir()?;
     let catalog = root.path().join("catalog");
-    fs::create_dir_all(catalog.join("overlay"))?;
+    fs::create_dir_all(&catalog)?;
     fs::write(catalog.join("field-ids.txt"), "Name\n")?;
-    fs::write(catalog.join("name-exceptions.tsv"), "")?;
-    fs::write(
-        catalog.join("kinds.tsv"),
-        concat!(
-            "meta\tversion\t1\n",
-            "meta\treviewed\t2026-11-14\n",
-            "meta\treviewer\tCatalog-tool compile fixture\n",
-            "default-unmapped\tNo individually validated mapping exists\n"
-        ),
-    )?;
     fs::write(
         catalog.join("cloudcontrol-universal.json"),
-        br#"{"resource_types":[{"type_name":"AWS::Example::Item"}]}"#,
+        include_bytes!("../../../catalog/cloudcontrol-universal.json"),
     )?;
-    fs::write(catalog.join("overlay/must-deny.txt"), "")?;
     Ok(root)
 }
 fn compile(source: &Path, root: &Path, flags: &[&str]) -> std::io::Result<Output> {

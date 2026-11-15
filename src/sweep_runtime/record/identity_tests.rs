@@ -4,6 +4,7 @@ mod fixture;
 use super::*;
 use fixture::{TestResult, compiled};
 use inventory_core::{catalog::runtime::RuntimeCatalog, record::{Key, Value}};
+use catalog_tool::overlay::{Identity, MemberPath};
 use std::collections::BTreeMap;
 
 fn row() -> TestResult<Record> {
@@ -18,7 +19,7 @@ fn row() -> TestResult<Record> {
 
 #[test]
 fn given_compiled_s3_template_when_extracted_then_bucket_arn_uses_commercial_context() -> TestResult {
-    let bytes = compiled("template='arn:{partition}:s3:::{Name}'", "active-wire", false)?;
+    let bytes = compiled(Identity::Template("arn:{partition}:s3:::{Name}".to_owned()), "active-wire", false)?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = catalog.lookup("things", "ListThings").ok_or("plan absent")?;
     let account = AccountId::parse("123456789012")?;
@@ -30,7 +31,7 @@ fn given_compiled_s3_template_when_extracted_then_bucket_arn_uses_commercial_con
 
 #[test]
 fn given_compiled_context_template_when_extracted_then_request_scope_overrides_record_spoofs() -> TestResult {
-    let bytes = compiled("template='arn:{partition}:things:{region}:{account}:{Name}/{Count}/{Flag}'", "active-wire", false)?;
+    let bytes = compiled(Identity::Template("arn:{partition}:things:{region}:{account}:{Name}/{Count}/{Flag}".to_owned()), "active-wire", false)?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = catalog.lookup("things", "ListThings").ok_or("plan absent")?;
     let account = AccountId::parse("123456789012")?;
@@ -43,7 +44,7 @@ fn given_compiled_context_template_when_extracted_then_request_scope_overrides_r
 
 #[test]
 fn given_compiled_template_when_context_is_noncommercial_then_extraction_fails_closed() -> TestResult {
-    let bytes = compiled("template='arn:{partition}:things:{region}:{account}:{Name}'", "active-wire", false)?;
+    let bytes = compiled(Identity::Template("arn:{partition}:things:{region}:{account}:{Name}".to_owned()), "active-wire", false)?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = catalog.lookup("things", "ListThings").ok_or("plan absent")?;
     let account = AccountId::parse("123456789012")?;
@@ -56,7 +57,7 @@ fn given_compiled_template_when_context_is_noncommercial_then_extraction_fails_c
 
 #[test]
 fn given_compiled_scalar_template_when_extracted_then_selected_value_matches_describe_arn() -> TestResult {
-    let bytes = compiled("template='arn:{partition}:dynamodb:{region}:{account}:table/{$}'", "active-wire", true)?;
+    let bytes = compiled(Identity::Template("arn:{partition}:dynamodb:{region}:{account}:table/{$}".to_owned()), "active-wire", true)?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = catalog.lookup("things", "ListThings").ok_or("plan absent")?;
     let account = AccountId::parse("123456789012")?;
@@ -71,7 +72,7 @@ fn given_compiled_scalar_template_when_extracted_then_selected_value_matches_des
 
 #[test]
 fn given_compiled_template_when_required_field_is_missing_or_oversized_then_extraction_fails() -> TestResult {
-    let bytes = compiled("template='bucket/{Name}'", "active-wire", false)?;
+    let bytes = compiled(Identity::Template("bucket/{Name}".to_owned()), "active-wire", false)?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = catalog.lookup("things", "ListThings").ok_or("plan absent")?;
     let empty = Record::encode(&Value::Map(BTreeMap::new()))?;
@@ -85,7 +86,7 @@ fn given_compiled_template_when_required_field_is_missing_or_oversized_then_extr
 
 #[test]
 fn given_compiled_singleton_structure_when_selected_then_one_relative_identity_is_extracted() -> TestResult {
-    let bytes = fixture::compiled_singleton("key=['Name']")?;
+    let bytes = fixture::compiled_singleton(fixture::key("Name")?)?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = catalog.lookup("things", "ListThings").ok_or("plan absent")?;
     let response = Record::encode(&Value::Map(BTreeMap::from([
@@ -99,4 +100,71 @@ fn given_compiled_singleton_structure_when_selected_then_one_relative_identity_i
     ])))?;
     assert!(item_records(&null_response, plan.items())?.is_empty());
     Ok(())
+}
+
+#[test]
+fn given_enum_member_identity_when_compiled_then_each_plan_extracts_exact_resource_text() -> TestResult {
+    [
+        (fixture::key("Name")?, "active-wire"),
+        (fixture::arn("Name")?, "active-wire"),
+        (Identity::Template("name/{Name}".to_owned()), "name/active-wire"),
+    ].into_iter().try_for_each(|(identity, expected)| -> TestResult {
+        let bytes = compiled(identity, "active-wire", false)?;
+        let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+        let plan = catalog.lookup("things", "ListThings").ok_or("plan absent")?;
+        assert_eq!(resource_id(&row()?, plan.identity(), None)?.as_str(), expected);
+        Ok(())
+    })
+}
+
+#[test]
+fn given_enum_scalar_identity_when_compiled_then_self_extraction_preserves_exact_text() -> TestResult {
+    [
+        (fixture::key("$")?, "second-wire"),
+        (fixture::arn("$")?, "second-wire"),
+        (Identity::Template("prefix/{$}".to_owned()), "prefix/second-wire"),
+    ].into_iter().try_for_each(|(identity, expected)| -> TestResult {
+        let bytes = compiled(identity, "second-wire", true)?;
+        let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+        let plan = catalog.lookup("things", "ListThings").ok_or("plan absent")?;
+        let scalar = scalar_record(ValueRef::Text("second-wire"))?;
+        assert_eq!(resource_id(&scalar, plan.identity(), None)?.as_str(), expected);
+        Ok(())
+    })
+}
+
+#[test]
+fn compiled_composite_identity_accepts_exact_bound_and_rejects_oversize_components() -> TestResult {
+    let bytes = compiled(
+        Identity::Key(vec![MemberPath::new("Name")?, MemberPath::new("OtherName")?]),
+        "active-wire",
+        false,
+    )?;
+    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+    let plan = catalog.lookup("things", "ListThings").ok_or("plan absent")?;
+    let encode = |first: &str, second: &str| -> TestResult<Record> {
+        Ok(Record::encode(&Value::Map(BTreeMap::from([
+            (Key::Field(FieldId::new(6)?), Value::Text(first.to_owned())),
+            (Key::Field(FieldId::new(7)?), Value::Text(second.to_owned())),
+        ])))?)
+    };
+    let first = "a".repeat(2044);
+    let second = "b".repeat(2045);
+    let accepted = resource_id(&encode(&first, &second)?, plan.identity(), None)?;
+    assert_eq!(accepted.as_str(), format!("2044:{first}|2045:{second}"));
+    assert_eq!(accepted.as_str().len(), 4096);
+    [(2045, 2045), (1_048_576, 1), (1, 1_048_576)]
+        .into_iter()
+        .try_for_each(|(first, second)| -> TestResult {
+            let result = resource_id(
+                &encode(&"a".repeat(first), &"b".repeat(second))?,
+                plan.identity(),
+                None,
+            );
+            assert!(matches!(
+                result,
+                Err(SweepError::Operation("modeled resource identity is too long"))
+            ));
+            Ok(())
+        })
 }

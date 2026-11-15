@@ -9,7 +9,7 @@ use std::{
 pub enum SeedError {
     #[error("invalid emulator seed configuration: {0}")]
     Invalid(&'static str),
-    #[error("trusted CA bundle could not be read")]
+    #[error("emulator seed file could not be read")]
     Io(#[from] std::io::Error),
     #[error(transparent)]
     Catalog(#[from] inventory_core::catalog::CatalogError),

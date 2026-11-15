@@ -1,0 +1,15 @@
+use crate::kind_map::ApiOnlyMapping;
+
+pub(super) const ENTRIES: &[ApiOnlyMapping<'static>] = &[
+    ApiOnlyMapping { kind: "AWS::ApiOnly::PartnerSolution", reason: "PartnerSolution is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
+    ApiOnlyMapping { kind: "AWS::ApiOnly::PinpointRecommenderConfiguration", reason: "PinpointRecommenderConfiguration is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
+    ApiOnlyMapping { kind: "AWS::ApiOnly::PollyLexicon", reason: "PollyLexicon is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
+    ApiOnlyMapping { kind: "AWS::ApiOnly::ProtonComponent", reason: "ProtonComponent is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
+    ApiOnlyMapping { kind: "AWS::ApiOnly::ProtonEnvironment", reason: "ProtonEnvironment is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
+    ApiOnlyMapping { kind: "AWS::ApiOnly::ProtonRepository", reason: "ProtonRepository is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
+    ApiOnlyMapping { kind: "AWS::ApiOnly::ProtonService", reason: "ProtonService is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
+    ApiOnlyMapping { kind: "AWS::ApiOnly::ProtonServiceInstance", reason: "ProtonServiceInstance is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
+    ApiOnlyMapping { kind: "AWS::ApiOnly::UserSubscriptionIdentityProvider", reason: "UserSubscriptionIdentityProvider is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
+    ApiOnlyMapping { kind: "AWS::ApiOnly::UserSubscriptionInstance", reason: "UserSubscriptionInstance is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
+    ApiOnlyMapping { kind: "AWS::ApiOnly::UserSubscriptionLicenseServerEndpoint", reason: "UserSubscriptionLicenseServerEndpoint is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
+];

@@ -1,3 +1,8 @@
+pub(crate) mod real;
+pub(crate) mod support;
+pub(crate) mod isolation;
+mod shutdown;
+
 use super::*;
 use std::error::Error;
 
@@ -58,13 +63,13 @@ fn given_new_filter_when_old_page_finishes_last_then_only_latest_page_is_deliver
 }
 
 #[test]
-fn given_full_queue_when_new_filter_is_rejected_then_old_page_cannot_replace_it() -> TestResult {
+fn given_full_queue_when_new_filter_is_rejected_then_accepted_page_is_preserved() -> TestResult {
     let (worker, mut commands, events, _cancellation) = harness(1);
     worker.refresh(Filter::default())?;
     let rejection = worker.refresh(Filter { query: "rejected".to_owned(), ..Filter::default() });
     assert_eq!(rejection, Err("inventory worker queue is full".to_owned()));
     events.send(page(revision(commands.try_recv()?)?, 3))?;
-    assert!(worker.drain().is_empty());
+    assert!(matches!(worker.drain().first(), Some(WorkerEvent::Snapshot { total: 3, error: None, .. })));
     Ok(())
 }
 
@@ -199,23 +204,23 @@ fn given_full_results_when_ui_drains_then_critical_output_is_preserved() -> Test
 fn given_unconfigured_graph_when_retried_then_configuration_error_remains_visible() {
     let mut access = GraphAccess::new(None, None);
     access.reconnect();
-    assert!(matches!(access.status(), WorkerEvent::Graph { error: Some(error), .. } if error.contains("not configured")));
+    assert!(matches!(access.status(), WorkerEvent::GraphStatus { error: Some(error) } if error.contains("not configured")));
 }
 
 #[test]
 fn given_invalid_graph_name_when_refreshed_then_configuration_failure_is_classified() {
     let mut access = GraphAccess::new(Some("redis://127.0.0.1:6379".to_owned()), Some(String::new()));
     access.reconnect();
-    assert!(matches!(access.status(), WorkerEvent::Graph { error: Some(error), .. } if error == "invalid graph configuration · graph name"));
+    assert!(matches!(access.status(), WorkerEvent::GraphStatus { error: Some(error) } if error == "invalid graph configuration · graph name"));
 }
 
 #[test]
-fn given_full_queue_when_new_selection_rejected_then_prior_graph_cannot_replace_it() -> TestResult {
+fn given_full_queue_when_new_selection_rejected_then_accepted_graph_is_preserved() -> TestResult {
     let (worker, mut commands, events, _cancellation) = harness(1);
     worker.expand(node("vpc-old"))?;
     assert_eq!(worker.expand(node("vpc-new")), Err("inventory worker queue is full".to_owned()));
     events.send(graph(revision(commands.try_recv()?)?, "old selection"))?;
-    assert!(worker.drain().is_empty());
+    assert!(matches!(worker.drain().first(), Some(WorkerEvent::Graph { error: Some(error), .. }) if error == "old selection"));
     Ok(())
 }
 
@@ -228,13 +233,18 @@ async fn given_unconfigured_graph_when_user_refreshes_then_sqlite_counts_stay_us
     events.send(Output { revision: Some(request), event: access.refresh().await })?;
     events.send(page(request, 12))?;
     let mut data = crate::data::Data::default();
+    let mut pending_graph = None;
     worker.drain().into_iter().for_each(|event| match event {
-        WorkerEvent::Graph { graph, error } => data.set_graph(graph, error),
         WorkerEvent::Snapshot { counts, rows, total, .. } => {
             data.set_counts(counts);
             data.replace_page(rows, total);
         }
+        WorkerEvent::Graph { graph, error } => pending_graph = Some((graph, error)),
+        WorkerEvent::GraphStatus { error } => pending_graph = Some((Graph::default(), error)),
     });
+    if let Some((graph, error)) = pending_graph {
+        data.set_graph(graph, error);
+    }
     assert_eq!(data.total_len(), 12);
     assert!(data.graph_status().contains("not configured"));
     Ok(())
@@ -274,7 +284,7 @@ fn resp_command(reader: &mut std::io::BufReader<std::net::TcpStream>) -> Result<
     }).collect()
 }
 
-fn serve_graph_connection(socket: std::net::TcpStream, fail: bool) -> Result<(), String> {
+fn serve_graph_connection(socket: std::net::TcpStream, fail: bool, neighborhood: bool) -> Result<(), String> {
     use std::io::Write;
     socket.set_read_timeout(Some(Duration::from_secs(5))).map_err(|error| error.to_string())?;
     socket.set_write_timeout(Some(Duration::from_secs(5))).map_err(|error| error.to_string())?;
@@ -287,12 +297,13 @@ fn serve_graph_connection(socket: std::net::TcpStream, fail: bool) -> Result<(),
             Some("GRAPH.RO_QUERY") if fail => "-ERR temporarily unavailable\r\n".to_owned(),
             Some("GRAPH.RO_QUERY") => {
                 queries += 1;
-                graph_reply(queries == 1)
+                graph_reply(neighborhood && queries == 1)
             }
             other => return Err(format!("unexpected command {other:?}")),
         };
         reader.get_mut().write_all(response.as_bytes()).map_err(|error| error.to_string())?;
-        if (fail && command.first().is_some_and(|name| name == "GRAPH.RO_QUERY")) || queries == 2 {
+        if (fail && command.first().is_some_and(|name| name == "GRAPH.RO_QUERY"))
+            || queries == if neighborhood { 2 } else { 1 } {
             return Ok(());
         }
     }
@@ -305,9 +316,9 @@ async fn given_graph_query_failure_when_refreshing_then_recovered_neighborhood_i
     let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
     let endpoint = format!("redis://{}", listener.local_addr()?);
     let server = thread::spawn(move || {
-        for fail in [true, false] {
+        for (fail, neighborhood) in [(true, true), (false, true), (false, false)] {
             let (socket, _) = listener.accept().map_err(|error| error.to_string())?;
-            serve_graph_connection(socket, fail)?;
+            serve_graph_connection(socket, fail, neighborhood)?;
         }
         Ok::<_, String>(())
     });
@@ -323,5 +334,17 @@ async fn given_graph_query_failure_when_refreshing_then_recovered_neighborhood_i
     assert_eq!(graph.edges.len(), 1);
     assert_eq!(graph.edges.first().map(|edge| edge.provenance.as_str()), Some("catalog"));
     server.join().map_err(|_| "graph peer panicked")??;
+    Ok(())
+}
+
+#[test]
+fn given_full_or_disconnected_intake_when_checking_worker_then_only_disconnection_is_closed() -> TestResult {
+    let (worker, commands, _events, _cancellation) = harness(1);
+    assert!(!worker.is_closed());
+    worker.refresh(Filter::default())?;
+    assert_eq!(worker.refresh(Filter::default()), Err("inventory worker queue is full".to_owned()));
+    assert!(!worker.is_closed());
+    drop(commands);
+    assert!(worker.is_closed());
     Ok(())
 }

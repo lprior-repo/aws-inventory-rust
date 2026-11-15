@@ -2,6 +2,13 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Reviewed identity recipes support bounded integer operands, collision-safe
+  required string lists, and structural selected-value digests without
+  converting typed values or copying complete selected trees. ARN operands
+  retain trusted request account, partition, and region validation.
+  Mandatory selected/request scalar identity components reject empty text
+  before framing; typed zero and explicitly empty namespace lists remain valid.
+
 - The ignored `sweep_e2e` suite is self-contained: it spawns the pinned
   emulator (with an isolated `HOME`) and a native `redis-server` with the
   FalkorDB module on a free loopback port, builds an isolated profile from the

@@ -1,3 +1,6 @@
+mod tags;
+pub use tags::{ProjectionTag, ProjectionTagCursor, ProjectionTagPage};
+
 use super::{BinaryStore, StoreError};
 use inventory_core::inventory::{AccountId, Kind, Region, Relation, ResourceId, ResourceKey};
 use sqlx::{Row, Sqlite, Transaction};
@@ -6,6 +9,16 @@ pub struct ProjectionSnapshot {
 }
 
 impl ProjectionSnapshot {
+    /// Reads only persisted tags in this resource's exact account/region scope.
+    pub async fn tags_for(
+        &mut self,
+        key: &ResourceKey,
+        after: Option<ProjectionTagCursor>,
+        limit: u16,
+    ) -> Result<ProjectionTagPage, StoreError> {
+        tags::read(&mut self.tx, key, after, limit).await
+    }
+
     pub async fn resources(
         &mut self,
         after: Option<ResourceKey>,

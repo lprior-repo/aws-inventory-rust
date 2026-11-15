@@ -2,6 +2,8 @@
 mod queries;
 #[path = "database/snapshot.rs"]
 mod snapshot;
+#[path = "database/tags.rs"]
+mod tags;
 use crate::ViewError;
 use crate::graph::{GraphEdge, GraphNode};
 use inventory_core::inventory::{AccountId, Kind, Region, ResourceId, ResourceKey, SqlName};
@@ -19,6 +21,27 @@ pub struct ResourceFilter {
     pub region: Option<String>,
     pub kind: Option<String>,
     pub text: Option<String>,
+    pub tag: Option<TagFilter>,
+}
+
+/// Exact tag key, optionally restricted to an exact value (including empty).
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct TagFilter {
+    pub key: String,
+    pub value: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ResourceTag {
+    pub key: String,
+    pub value: String,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct StoredTagObservation {
+    pub coverage: inventory_core::inventory::TagCoverage,
+    pub observed_at_ms: i64,
+    pub last_complete_at_ms: Option<i64>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -27,6 +50,13 @@ pub struct StoredResource {
     pub name: Option<String>,
     pub content_hash: ContentHash,
     pub record: Record,
+    /// Last known persisted pairs; an empty set does not imply a complete scan.
+    pub tags: Vec<ResourceTag>,
+    /// The persisted tag set exceeded the reader's `MAX_PAGE_LIMIT` cap.
+    pub tags_truncated: bool,
+    /// Latest tag observation, independent of the retained last-known pairs.
+    /// `None` means no persisted observation; it does not mean complete-empty.
+    pub tag_observation: Option<StoredTagObservation>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -105,7 +135,7 @@ impl Database {
         let version = sqlx::query_scalar::<_, i64>("PRAGMA user_version")
             .fetch_one(&pool)
             .await?;
-        if version != 14 {
+        if !matches!(version, 15 | 16) {
             return Err(ViewError::Version(version));
         }
         Ok(Self { pool })
@@ -174,11 +204,15 @@ async fn decode_row(
     let expected: Vec<u8> = row.try_get("content_hash")?;
     let table = table_for(tx, &kind).await?;
     let detail = read_detail(tx, &table, &account, &region, &id).await?;
+    let tags = tags::read(tx, [&account, &region, &kind, &id]).await?;
     Ok(StoredResource {
         key: resource_key([&account, &region, &kind, &id])?,
         name: row.try_get("name")?,
         content_hash: ContentHash::from_bytes(stored_hash(&expected)?),
         record: verified_record(&detail, &expected)?,
+        tags: tags.tags,
+        tags_truncated: tags.truncated,
+        tag_observation: tags.observation,
     })
 }
 

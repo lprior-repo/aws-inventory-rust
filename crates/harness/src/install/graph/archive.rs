@@ -1,19 +1,28 @@
 use std::collections::BTreeSet;
-use std::fs::{File, Metadata};
-use std::io::{Read, Seek, Write};
-use std::os::unix::fs::MetadataExt;
+use std::fs::{File, OpenOptions};
+use std::os::unix::fs::OpenOptionsExt;
 use std::path::Path;
-use std::process::{Child, Command, ExitStatus, Stdio};
+use std::process::Command;
+#[cfg(not(test))]
 use std::time::Duration;
 
-use sha2::{Digest, Sha256};
+#[path = "archive_snapshot.rs"]
+mod snapshot;
+#[path = "archive_process.rs"]
+mod process;
 
-use super::{EXPECTED_LINKS, MAX_DOWNLOAD, MAX_EXTRACT, MAX_MEMBERS, REDIS_ROOT, REDIS_SHA256};
+#[cfg(test)]
+use snapshot::verify;
+#[cfg(test)]
+pub(super) use tests::lifecycle::{download_program, download_timeout};
+
+use super::{
+    EXPECTED_LINKS, MAX_DOWNLOAD, MAX_EXTRACT, MAX_MEMBERS, OwnedDirectory, REDIS_ROOT, REDIS_SHA256,
+};
 use crate::HarnessError;
 
 const MAX_LISTING: usize = 16 * 1024 * 1024;
 const MAX_NAME: usize = 4096;
-const POLLS: usize = 3000;
 
 #[derive(Debug, Eq, PartialEq)]
 pub(super) enum Kind {
@@ -33,141 +42,75 @@ fn reject(reason: &str) -> HarnessError {
     HarnessError::invalid(format!("unexpected Redis archive {reason}"))
 }
 
-pub(super) fn extract(archive: &Path, source: &Path) -> Result<(), HarnessError> {
-    let mut file = File::open(archive)?;
-    verify(&mut file, REDIS_SHA256)?;
-    extract_open(&mut file, source)
+pub(super) fn extract(
+    archive: &Path,
+    source: &Path,
+) -> Result<OwnedDirectory, HarnessError> {
+    extract_pinned(archive, source, REDIS_SHA256)
 }
 
-fn extract_open(file: &mut File, source: &Path) -> Result<(), HarnessError> {
-    std::fs::create_dir(source)?;
-    let owned = std::fs::symlink_metadata(source)?;
-    let result = extract_claimed(file, source);
-    match result {
-        Ok(()) => Ok(()),
-        Err(error) => match cleanup(source, &owned) {
+fn extract_pinned(
+    archive: &Path,
+    source: &Path,
+    expected: &str,
+) -> Result<OwnedDirectory, HarnessError> {
+    let input = OpenOptions::new().read(true)
+        .custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW).open(archive)?;
+    let mut file = snapshot::capture(input)?;
+    snapshot::verify(&mut file, expected)?;
+    #[cfg(test)]
+    tests::acquisition::checkpoint(&file)?;
+    extract_claimed(&mut file, OwnedDirectory::claim(source)?)
+}
+
+#[cfg(test)]
+fn extract_open(file: &mut File, source: &Path) -> Result<OwnedDirectory, HarnessError> {
+    extract_claimed(file, OwnedDirectory::claim(source)?)
+}
+
+fn extract_claimed(
+    file: &mut File,
+    owned: OwnedDirectory,
+) -> Result<OwnedDirectory, HarnessError> {
+    match extract_into(file, &owned) {
+        Ok(()) => Ok(owned),
+        Err(error) => match owned.remove_tree() {
             Ok(()) => Err(error),
             Err(cleanup) => Err(reject(&format!("{error}; cleanup failed: {cleanup}"))),
         },
     }
 }
 
-fn cleanup(source: &Path, owned: &Metadata) -> Result<(), HarnessError> {
-    let current = std::fs::symlink_metadata(source)?;
-    if !current.is_dir() || (current.dev(), current.ino()) != (owned.dev(), owned.ino()) {
-        return Err(reject("source ownership changed"));
-    }
-    Ok(std::fs::remove_dir_all(source)?)
-}
-
-fn extract_claimed(file: &mut File, source: &Path) -> Result<(), HarnessError> {
-    let listed = run(
-        Command::new("bsdtar").args(["-tvf", "-", "--numeric-owner"]),
-        file,
-    )?;
+fn extract_into(file: &mut File, owned: &OwnedDirectory) -> Result<(), HarnessError> {
+    let listed = run(tar().args(["-tvf", "-", "--numeric-owner"]), file)?;
     let listing = std::str::from_utf8(&listed).map_err(|_| reject("listing encoding"))?;
     validate(&parse(listing)?)?;
+    #[cfg(test)]
+    tests::acquisition::checkpoint(file)?;
     run(
-        Command::new("bsdtar")
-            .args([
-                "-xf",
-                "-",
-                "--strip-components",
-                "1",
-                "--no-same-owner",
-                "-C",
-            ])
-            .arg(source),
+        tar()
+            .args(["-xf", "-", "--strip-components", "1", "--no-same-owner"])
+            .current_dir(owned.anchor()),
         file,
     )?;
     Ok(())
 }
 
-struct HashWriter(Sha256);
 
-impl Write for HashWriter {
-    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
-        self.0.update(bytes);
-        Ok(bytes.len())
-    }
-    fn flush(&mut self) -> std::io::Result<()> {
-        Ok(())
-    }
-}
-
-fn verify(file: &mut File, expected: &str) -> Result<(), HarnessError> {
-    if !file.metadata()?.is_file() {
-        return Err(reject("input type"));
-    }
-    file.rewind()?;
-    let mut hash = HashWriter(Sha256::new());
-    let size = std::io::copy(&mut file.take(MAX_DOWNLOAD.saturating_add(1)), &mut hash)?;
-    let digest = format!("{:x}", base16ct::HexDisplay(&hash.0.finalize()));
-    if size > MAX_DOWNLOAD || digest != expected {
-        return Err(reject("digest or download byte bound"));
-    }
-    Ok(())
+fn tar() -> Command {
+    #[cfg(test)]
+    let program = tests::lifecycle::archive_program();
+    #[cfg(not(test))]
+    let program = "bsdtar";
+    Command::new(program)
 }
 
 fn run(command: &mut Command, file: &mut File) -> Result<Vec<u8>, HarnessError> {
-    file.rewind()?;
-    let mut child = command
-        .env("LC_ALL", "C")
-        .stdin(Stdio::from(file.try_clone()?))
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()?;
-    let Some(stdout) = child.stdout.take() else {
-        return stop(&mut child, reject("missing listing pipe"));
-    };
-    std::thread::scope(|scope| {
-        let reader = scope.spawn(|| read_output(stdout));
-        let status = wait(&mut child);
-        let output = reader.join().map_err(|_| reject("listing reader failed"))?;
-        if !status?.success() {
-            return Err(reject("bsdtar failed"));
-        }
-        output
-    })
-}
-
-fn read_output(output: impl Read) -> Result<Vec<u8>, HarnessError> {
-    let mut bytes = Vec::new();
-    bytes
-        .try_reserve_exact(MAX_LISTING.saturating_add(1))
-        .map_err(|_| reject("listing allocation"))?;
-    let limit =
-        u64::try_from(MAX_LISTING.saturating_add(1)).map_err(|_| reject("listing bound"))?;
-    output.take(limit).read_to_end(&mut bytes)?;
-    if bytes.len() > MAX_LISTING {
-        return Err(reject("listing byte bound"));
-    }
-    Ok(bytes)
-}
-
-fn wait(child: &mut Child) -> Result<ExitStatus, HarnessError> {
-    let result = (0..POLLS).find_map(|_| match child.try_wait() {
-        Ok(Some(status)) => Some(Ok(status)),
-        Err(error) => Some(Err(HarnessError::from(error))),
-        Ok(None) => {
-            std::thread::sleep(Duration::from_millis(10));
-            None
-        }
-    });
-    match result {
-        Some(Ok(status)) => Ok(status),
-        Some(Err(error)) => stop(child, error),
-        None => stop(child, reject("bsdtar deadline")),
-    }
-}
-
-fn stop<T>(child: &mut Child, error: HarnessError) -> Result<T, HarnessError> {
-    let killed = child.kill();
-    let reaped = child.wait();
-    match (killed, reaped) {
-        (Ok(()), Ok(_)) => Err(error),
-        (kill, reap) => Err(reject(&format!("{error}; kill: {kill:?}; reap: {reap:?}"))),
-    }
+    #[cfg(test)]
+    let timeout = tests::lifecycle::archive_timeout();
+    #[cfg(not(test))]
+    let timeout = Duration::from_secs(30);
+    process::run(command, file, timeout)
 }
 
 pub(super) fn parse(listing: &str) -> Result<Vec<Entry>, HarnessError> {
@@ -222,10 +165,7 @@ fn entry(mode: &str, size: u64, listed: &str) -> Result<Entry, HarnessError> {
     }
     let (kind, name) = match mode.chars().next() {
         Some('-') => (Kind::File, listed),
-        Some('d') => (
-            Kind::Directory,
-            listed.strip_suffix('/').map_or(listed, |s| s),
-        ),
+        Some('d') => (Kind::Directory, listed.strip_suffix('/').map_or(listed, |s| s)),
         Some('l') => {
             let (name, target) = listed
                 .split_once(" -> ")
@@ -234,11 +174,7 @@ fn entry(mode: &str, size: u64, listed: &str) -> Result<Entry, HarnessError> {
         }
         _ => return Err(reject("member type")),
     };
-    Ok(Entry {
-        kind,
-        size,
-        name: name.to_owned(),
-    })
+    Ok(Entry { kind, size, name: name.to_owned() })
 }
 
 pub(super) fn validate(entries: &[Entry]) -> Result<(), HarnessError> {
@@ -279,12 +215,8 @@ fn kind_allowed(entry: &Entry) -> bool {
         return false;
     }
     match &entry.kind {
-        Kind::Symlink(target) => {
-            entry.size == 0
-                && EXPECTED_LINKS
-                    .iter()
-                    .any(|(link, expected)| *link == entry.name && expected == target)
-        }
+        Kind::Symlink(target) => entry.size == 0 && EXPECTED_LINKS
+            .iter().any(|(link, expected)| *link == entry.name && expected == target),
         Kind::Directory => entry.size == 0,
         Kind::File => true,
     }

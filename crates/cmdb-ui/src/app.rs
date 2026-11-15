@@ -1,5 +1,7 @@
 #[path = "app/actions.rs"]
 mod actions;
+#[path = "app/requests.rs"]
+mod requests;
 use actions::*;
 use makepad_widgets::makepad_platform::thread::SignalToUI;
 use makepad_widgets::*;
@@ -24,7 +26,17 @@ pub struct App {
     #[rust]
     worker: Option<DataWorker>,
     #[rust]
+    worker_config: Option<WorkerConfig>,
+    #[rust]
+    graph_access_error: Option<String>,
+    #[rust]
     signal: SignalToUI,
+    #[rust]
+    completion_poll: Timer,
+    #[rust]
+    retry_worker: bool,
+    #[rust]
+    shutting_down: bool,
 }
 
 impl App {
@@ -39,76 +51,35 @@ impl App {
     }
 
     fn set_account(&mut self, cx: &mut Cx, account: Option<String>) {
-        let table = self.table(cx);
-        if let Some(mut table) = table.borrow_mut::<ResourceTable>() {
-            table.set_account(cx, account.as_deref());
-        }
-        self.request_page(cx);
+        let mut filter = self.filter(cx);
+        filter.account = account;
+        self.request_filter(cx, filter);
     }
 
     fn set_region(&mut self, cx: &mut Cx, region: Option<String>) {
-        let table = self.table(cx);
-        if let Some(mut table) = table.borrow_mut::<ResourceTable>() {
-            table.set_region(cx, region.as_deref());
-        }
-        self.request_page(cx);
+        let mut filter = self.filter(cx);
+        filter.region = region;
+        self.request_filter(cx, filter);
     }
 
     fn set_kind(&mut self, cx: &mut Cx, kind: Option<String>) {
-        let table = self.table(cx);
-        if let Some(mut table) = table.borrow_mut::<ResourceTable>() {
-            table.set_kind(cx, kind.as_deref());
-        }
-        self.request_page(cx);
+        let mut filter = self.filter(cx);
+        filter.kind = kind;
+        self.request_filter(cx, filter);
     }
 
     fn set_query(&mut self, cx: &mut Cx, query: &str) {
-        let table = self.table(cx);
-        if let Some(mut table) = table.borrow_mut::<ResourceTable>() {
-            table.set_query(cx, query);
-        }
-        self.request_page(cx);
+        let mut filter = self.filter(cx);
+        filter.query = query.trim().to_owned();
+        self.request_filter(cx, filter);
     }
 
-    fn request_page(&mut self, cx: &mut Cx) {
-        let filter = self.filter(cx);
-        let table = self.table(cx);
-        if let Some(mut table) = table.borrow_mut::<ResourceTable>() {
-            table.set_loading(true);
-        }
-        let result = match &self.worker {
-            Some(worker) => worker.refresh(filter),
-            None => Err("inventory worker is not running".to_owned()),
-        };
-        if let Err(error) = result
-            && let Some(mut table) = table.borrow_mut::<ResourceTable>()
-        {
-            table.set_loading(false);
-            table.set_error(Some(error));
-        }
-        self.refresh(cx);
+    fn set_tag(&mut self, cx: &mut Cx, tag: Option<cmdb_view::TagFilter>) {
+        let mut filter = self.filter(cx);
+        filter.tag = tag;
+        self.request_filter(cx, filter);
     }
 
-    fn request_expansion(&mut self, cx: &mut Cx) {
-        let Some(row) = self
-            .table(cx)
-            .borrow::<ResourceTable>()
-            .and_then(|table| table.selected_row())
-        else {
-            return;
-        };
-        if let Some(worker) = &self.worker {
-            let request = cmdb_view::GraphNode {
-                account: row.account,
-                region: row.region,
-                kind: row.kind,
-                id: row.id,
-            };
-            if let Err(error) = worker.expand(request) {
-                self.apply_graph_event(cx, crate::data::Graph::default(), Some(error));
-            }
-        }
-    }
 
     fn refresh(&mut self, cx: &mut Cx) {
         crate::chrome::sync_chrome(&self.ui, cx);
@@ -173,34 +144,13 @@ impl App {
     }
 
     fn reset_filters(&mut self, cx: &mut Cx) {
-        self.ui.text_input(cx, ids!(search_input)).set_text(cx, "");
-        self.ui
-            .text_input(cx, ids!(account_filter_input))
-            .set_text(cx, "");
-        self.ui
-            .text_input(cx, ids!(region_filter_input))
-            .set_text(cx, "");
-        self.ui
-            .text_input(cx, ids!(kind_filter_input))
-            .set_text(cx, "");
-        let table = self.table(cx);
-        if let Some(mut table) = table.borrow_mut::<ResourceTable>() {
-            table.set_account(cx, None);
-            table.set_region(cx, None);
-            table.set_kind(cx, None);
-            table.set_query(cx, "");
-        }
-        self.request_page(cx);
+        let filter = Filter::default();
+        self.sync_filter_inputs(cx, &filter);
+        self.request_filter(cx, filter);
     }
     fn start_worker(&mut self, cx: &mut Cx) {
-        self.worker = Some(DataWorker::start(
-            WorkerConfig::from_process_args(),
-            self.signal.clone(),
-        ));
-        if let Some(mut table) = self.table(cx).borrow_mut::<ResourceTable>() {
-            table.set_loading(true);
-        }
-        self.refresh(cx);
+        let config = self.worker_config.as_ref().map_or_else(WorkerConfig::from_process_args, Clone::clone);
+        self.start_worker_with_config(cx, config);
     }
 
     fn drain_worker(&mut self, cx: &mut Cx) {
@@ -221,8 +171,15 @@ impl App {
                 total,
                 error,
             } => self.apply_snapshot(cx, counts, rows, total, error),
+            WorkerEvent::GraphStatus { error } => {
+                self.graph_access_error = error.clone();
+                self.apply_graph_event(cx, crate::data::Graph::default(), error);
+            }
             WorkerEvent::Graph { graph, error } => {
-                self.apply_graph_event(cx, graph, error);
+                let successful = error.is_none();
+                if self.apply_graph_event(cx, graph, error) && successful {
+                    self.graph_access_error = None;
+                }
             }
         }
         self.refresh(cx);
@@ -236,23 +193,29 @@ impl App {
         total: u64,
         error: Option<String>,
     ) {
+        self.retry_worker = error.is_some();
         if let Some(mut table) = self.table(cx).borrow_mut::<ResourceTable>() {
-            table.set_loading(false);
-            table.set_error(error.clone());
-            if error.is_none() {
-                table.set_counts(counts);
-                table.apply_page(cx, rows, total);
-            }
+            table.apply_snapshot(cx, counts, rows, total, error.clone());
         }
-        if error.is_none() {
-            self.request_expansion(cx);
+        match error {
+            Some(error) => {
+                self.apply_graph_event(
+                    cx,
+                    crate::data::Graph::default(),
+                    Some(format!("database unavailable · {error}")),
+                );
+            }
+            None => {
+                self.apply_graph_event(cx, crate::data::Graph::default(), self.graph_access_error.clone());
+                self.request_expansion(cx);
+            }
         }
     }
 
-    fn apply_graph_event(&mut self, cx: &mut Cx, graph: crate::data::Graph, error: Option<String>) {
-        if let Some(mut table) = self.table(cx).borrow_mut::<ResourceTable>() {
-            table.apply_graph(cx, graph, error);
-        }
+    fn apply_graph_event(&mut self, cx: &mut Cx, graph: crate::data::Graph, error: Option<String>) -> bool {
+        self.table(cx).borrow_mut::<ResourceTable>().is_some_and(|mut table| {
+            table.apply_graph(cx, graph, error)
+        })
     }
 
     fn handle_accounts(&mut self, cx: &mut Cx, actions: &Actions) {
@@ -292,13 +255,10 @@ impl App {
     }
 
     fn handle_row_clicks(&mut self, cx: &mut Cx, actions: &Actions) {
-        let changed = self
-            .table(cx)
-            .borrow_mut::<ResourceTable>()
-            .is_some_and(|mut table| table.apply_actions(cx, actions));
-        if changed {
-            self.request_expansion(cx);
-            self.refresh(cx);
+        let row = self.table(cx).borrow_mut::<ResourceTable>()
+            .and_then(|mut table| table.clicked_row(cx, actions));
+        if let Some(row) = row {
+            self.request_selection(cx, row);
         }
     }
 }

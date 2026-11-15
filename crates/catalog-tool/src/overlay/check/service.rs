@@ -1,4 +1,5 @@
 mod flow;
+mod stages;
 use super::{CallableOperation, ReviewedService, Violation, ViolationRule};
 use crate::{
     classes::{Class, DenyList},
@@ -53,75 +54,9 @@ fn binding_cycle_operations<'a>(
     overlay: &'a ServiceOverlay,
     callable: &'a [CallableOperation],
 ) -> BTreeSet<String> {
-    let mut edges = overlay_binding_edges(overlay);
-    add_callable_edges(&mut edges, callable);
-    find_cycle_operations(&edges)
+    stages::cycles(overlay, callable)
 }
 
-fn overlay_binding_edges(overlay: &ServiceOverlay) -> BTreeMap<&str, Vec<&str>> {
-    overlay
-        .operations()
-        .iter()
-        .map(|(name, plan)| (name.as_str(), binding_parents(plan.bind.values())))
-        .collect()
-}
-
-fn add_callable_edges<'a>(
-    edges: &mut BTreeMap<&'a str, Vec<&'a str>>,
-    callable: &'a [CallableOperation],
-) {
-    for handle in callable {
-        edges.insert(
-            handle.operation(),
-            binding_parents(handle.plan.bind.values()),
-        );
-    }
-}
-
-fn binding_parents<'a>(bindings: impl Iterator<Item = &'a Binding>) -> Vec<&'a str> {
-    bindings
-        .filter_map(|binding| match binding {
-            Binding::From { operation, .. } => Some(operation.as_str()),
-            _ => None,
-        })
-        .collect()
-}
-
-fn find_cycle_operations(edges: &BTreeMap<&str, Vec<&str>>) -> BTreeSet<String> {
-    let mut cycle = BTreeSet::new();
-    for (start, targets) in edges {
-        for target in targets {
-            insert_cycle_if_reachable(&mut cycle, edges, start, target);
-        }
-    }
-    cycle
-}
-
-fn insert_cycle_if_reachable(
-    cycle: &mut BTreeSet<String>,
-    edges: &BTreeMap<&str, Vec<&str>>,
-    start: &str,
-    target: &str,
-) {
-    if reaches(edges, target, start) {
-        cycle.insert(start.to_owned());
-        cycle.insert(target.to_owned());
-    }
-}
-
-fn reaches(edges: &BTreeMap<&str, Vec<&str>>, start: &str, goal: &str) -> bool {
-    let mut pending = vec![start];
-    let mut seen = BTreeSet::new();
-    while let Some(current) = pending.pop() {
-        if current == goal {
-            return true;
-        }
-        if seen.insert(current) {
-            pending.extend(edges.get(current).into_iter().flatten().copied());
-        }
-    }
-    false
-}
 
 pub(super) fn violation(
     service: &str,

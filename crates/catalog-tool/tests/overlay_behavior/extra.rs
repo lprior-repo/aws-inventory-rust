@@ -15,11 +15,10 @@ fn skip_and_batch_cannot_target_a_deferred_operation() -> Result<(), Box<dyn std
         "\"n#Service\":{\"type\":\"service\",\"operations\":[{\"target\":\"n#ListThings\"},{\"target\":\"n#ListOther\"},{\"target\":\"n#GetThing\"}]}",
     );
     let root = fixture(&model, "")?;
-    let text = format!(
-        "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\nskip=['ListOther']\n[operation.ListThings.batch]\nmember='Ids'\nmax=10\nreplaces='ListOther'\n[operation.ListThings.paginator]\nkind='none'\n[operation.ListThings.identity]\nkey=['Id']\n[operation.ListOther]\nclass='defer'\ndefer_reason='Requires a separate reviewed inventory plan'\n"
-    );
-    overlay(root.path(), &text)?;
-    let errors = violations(root.path())?;
+    let mut plan = complete()?;
+    plan.skip = vec![overlay::OperationName::new("ListOther")?];
+    plan.batch = Some(batch("ListOther")?);
+    let errors = violations(&root, vec![("ListThings", plan), ("ListOther", deferred())])?;
     for key in ["skip", "batch.replaces"] {
         assert!(
             errors.iter().any(|error| error.key() == key
@@ -28,11 +27,16 @@ fn skip_and_batch_cannot_target_a_deferred_operation() -> Result<(), Box<dyn std
             "{key}: {errors:?}"
         );
     }
-    let valid = format!(
-        "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\nskip=['GetThing']\n[operation.ListThings.batch]\nmember='Ids'\nmax=10\nreplaces='GetThing'\n[operation.ListThings.paginator]\nkind='none'\n[operation.ListThings.identity]\nkey=['Id']\n[operation.GetThing]\nclass='expand'\nitems='Items'\n[operation.GetThing.paginator]\nkind='none'\n[operation.GetThing.identity]\nkey=['Id']\n[operation.ListOther]\nclass='defer'\ndefer_reason='Requires a separate reviewed inventory plan'\n"
-    );
-    overlay(root.path(), &valid)?;
-    let checked = overlay::check(root.path(), &source(root.path()))?;
+    let mut plan = complete()?;
+    plan.skip = vec![overlay::OperationName::new("GetThing")?];
+    plan.batch = Some(batch("GetThing")?);
+    let mut child = complete()?;
+    child.class = Some(OverlayClass::Expand);
+    let checked = checked(&root, vec![
+        ("ListThings", plan),
+        ("GetThing", child),
+        ("ListOther", deferred()),
+    ])?;
     assert_eq!(
         checked
             .services()
@@ -59,11 +63,9 @@ fn incompatible_map_token_value_types_are_rejected() -> Result<(), Box<dyn std::
 "n#Things":{"type":"list","member":{"target":"n#Thing"}},
 "n#Thing":{"type":"structure","members":{"Id":{"target":"smithy.api#String"}}}}}"#;
     let root = fixture(model, "")?;
-    let text = format!(
-        "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\n[operation.ListThings.paginator]\nkind='token'\ninput='Next'\noutput='Next'\n[operation.ListThings.identity]\nkey=['Id']\n"
-    );
-    overlay(root.path(), &text)?;
-    let errors = violations(root.path())?;
+    let mut plan = complete()?;
+    plan.paginator = Some(token("Next", "Next")?);
+    let errors = violations(&root, vec![("ListThings", plan)])?;
     assert!(
         errors.iter().any(|error| error.key() == "paginator.token"
             && error.value() == "Next"
@@ -76,13 +78,12 @@ fn incompatible_map_token_value_types_are_rejected() -> Result<(), Box<dyn std::
 #[test]
 fn item_metadata_paths_must_resolve_on_selected_items() -> Result<(), Box<dyn std::error::Error>> {
     let root = fixture(BASIC, "")?;
-    overlay(
-        root.path(),
-        &format!(
-            "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\nexclude_from_hash=['Absent']\nqueryable=['Absent']\ntags='Absent'\n[operation.ListThings.paginator]\nkind='none'\n[operation.ListThings.identity]\nkey=['Absent']\n"
-        ),
-    )?;
-    let errors = violations(root.path())?;
+    let mut plan = complete()?;
+    plan.exclude_from_hash = vec![overlay::MemberPath::new("Absent")?];
+    plan.queryable = vec![overlay::MemberPath::new("Absent")?];
+    plan.tags = Some(overlay::MemberPath::new("Absent")?);
+    plan.identity = Some(overlay::Identity::Key(vec![overlay::MemberPath::new("Absent")?]));
+    let errors = violations(&root, vec![("ListThings", plan)])?;
     let actual: Vec<_> = errors
         .iter()
         .map(|error| (error.key(), error.value(), error.rule()))
@@ -102,32 +103,19 @@ fn item_metadata_paths_must_resolve_on_selected_items() -> Result<(), Box<dyn st
 #[test]
 fn each_missing_plan_component_reports_its_exact_incomplete_plan()
 -> Result<(), Box<dyn std::error::Error>> {
-    for (text, key, value) in [
-        (
-            format!(
-                "{HEADER}[operation.ListThings]\nclass='enumerate'\n[operation.ListThings.paginator]\nkind='none'\n[operation.ListThings.identity]\nkey=['Id']\n"
-            ),
-            "items",
-            "missing",
-        ),
-        (
-            format!(
-                "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\n[operation.ListThings.identity]\nkey=['Id']\n"
-            ),
-            "paginator",
-            "missing explicit none",
-        ),
-        (
-            format!(
-                "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\n[operation.ListThings.paginator]\nkind='none'\n"
-            ),
-            "identity",
-            "missing",
-        ),
+    let mut missing_items = complete()?;
+    missing_items.items = None;
+    let mut missing_paginator = complete()?;
+    missing_paginator.paginator = None;
+    let mut missing_identity = complete()?;
+    missing_identity.identity = None;
+    for (plan, key, value) in [
+        (missing_items, "items", "missing"),
+        (missing_paginator, "paginator", "missing explicit none"),
+        (missing_identity, "identity", "missing"),
     ] {
         let root = fixture(BASIC, "")?;
-        overlay(root.path(), &text)?;
-        let errors = violations(root.path())?;
+        let errors = violations(&root, vec![("ListThings", plan)])?;
         assert!(
             errors.iter().any(|error| error.key() == key
                 && error.value() == value
@@ -142,14 +130,11 @@ fn each_missing_plan_component_reports_its_exact_incomplete_plan()
 fn identity_template_skips_known_placeholders_and_checks_later_item_fields()
 -> Result<(), Box<dyn std::error::Error>> {
     let root = fixture(BASIC, "")?;
-    let prefix = format!(
-        "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\n[operation.ListThings.paginator]\nkind='none'\n[operation.ListThings.identity]\n"
-    );
-    overlay(
-        root.path(),
-        &format!("{prefix}template='{{region}}/{{account}}/{{partition}}'\n"),
-    )?;
-    let checked = overlay::check(root.path(), &source(root.path()))?;
+    let mut plan = complete()?;
+    plan.identity = Some(overlay::Identity::Template(
+        "{region}/{account}/{partition}".to_owned(),
+    ));
+    let checked = checked(&root, vec![("ListThings", plan.clone())])?;
     assert_eq!(
         checked
             .services()
@@ -159,11 +144,8 @@ fn identity_template_skips_known_placeholders_and_checks_later_item_fields()
             .len(),
         1
     );
-    overlay(
-        root.path(),
-        &format!("{prefix}template='{{region}}/{{Nope}}'\n"),
-    )?;
-    let errors = violations(root.path())?;
+    plan.identity = Some(overlay::Identity::Template("{region}/{Nope}".to_owned()));
+    let errors = violations(&root, vec![("ListThings", plan)])?;
     assert_eq!(
         errors
             .iter()
@@ -185,13 +167,7 @@ fn callable_plan_materializes_model_derived_items_and_paginator()
 "n#Things":{"type":"list","member":{"target":"n#Thing"}},
 "n#Thing":{"type":"structure","members":{"Id":{"target":"smithy.api#String"}}}}}"#;
     let root = fixture(model, "")?;
-    overlay(
-        root.path(),
-        &format!(
-            "{HEADER}[operation.ListThings]\nclass='enumerate'\n[operation.ListThings.identity]\nkey=['Id']\n"
-        ),
-    )?;
-    let checked = overlay::check(root.path(), &source(root.path()))?;
+    let checked = checked(&root, vec![("ListThings", inferred()?)])?;
     let callable = checked
         .services()
         .first()
@@ -230,11 +206,17 @@ fn references_reject_unknown_and_deferred_operations() -> Result<(), Box<dyn std
             "\"n#ListOther\":{\"type\":\"operation\",\"output\":{\"target\":\"n#Output\"}},\"n#Input\":{\"type\":\"structure\",\"members\":{\"Ids\":{\"target\":\"n#Ids\"}}},\"n#Ids\":{\"type\":\"list\",\"member\":{\"target\":\"smithy.api#String\"}},\"n#Output\":",
         );
     let root = fixture(&model, "")?;
-    let text = format!(
-        "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\nskip=['MissingSkip']\n[operation.ListThings.batch]\nmember='Ids'\nmax=10\nreplaces='MissingBatch'\n[operation.ListThings.paginator]\nkind='none'\n[operation.ListThings.identity]\nkey=['Id']\n[operation.ListOther]\nclass='defer'\ndefer_reason='Requires a separate reviewed inventory plan'\n[operation.GetThing]\nclass='expand'\nitems='Items'\n[operation.GetThing.bind]\nId={{from='ListOther',path='Id'}}\n[operation.GetThing.paginator]\nkind='none'\n[operation.GetThing.identity]\nkey=['Id']\n"
-    );
-    overlay(root.path(), &text)?;
-    let errors = violations(root.path())?;
+    let mut plan = complete()?;
+    plan.skip = vec![overlay::OperationName::new("MissingSkip")?];
+    plan.batch = Some(batch("MissingBatch")?);
+    let mut child = complete()?;
+    child.class = Some(OverlayClass::Expand);
+    child.bind.insert(overlay::MemberPath::new("Id")?, binding("ListOther", "Id")?);
+    let errors = violations(&root, vec![
+        ("ListThings", plan),
+        ("ListOther", deferred()),
+        ("GetThing", child),
+    ])?;
     for (key, target) in [("skip", "MissingSkip"), ("batch.replaces", "MissingBatch")] {
         assert!(
             errors.iter().any(|error| error.key() == key

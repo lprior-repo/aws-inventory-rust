@@ -5,12 +5,16 @@ use std::borrow::Cow;
 pub(crate) mod addressing;
 mod host;
 mod overrides;
+mod routing;
 
 pub(super) fn resolve<'a>(context: RequestContext<'a>) -> Result<Cow<'a, str>, EncodeError> {
     let endpoint = overrides::resolve(context)?.unwrap_or(context.endpoint);
     let endpoint = addressing::resolve(context, endpoint)?;
     if endpoint.len() > context.limits.uri_bytes() {
         return Err(EncodeError::Limit("URI"));
+    }
+    if routing::suppress_prefix(context)? {
+        return Ok(endpoint);
     }
     let Some(template) = context
         .operation

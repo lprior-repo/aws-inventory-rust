@@ -1,3 +1,5 @@
+mod builtin;
+
 use super::{DenyReason, OperationFacts};
 use thiserror::Error;
 
@@ -31,7 +33,7 @@ pub enum ParseErrorKind {
     Limit,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub(crate) struct Entry<'a> {
     pub key: &'a str,
     pub reason: DenyReason,
@@ -47,10 +49,19 @@ impl Entry<'_> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct DenyList<'a>(pub(crate) Vec<Entry<'a>>);
 
 impl<'a> DenyList<'a> {
+    #[must_use]
+    pub fn builtin() -> DenyList<'static> {
+        builtin::list()
+    }
+
+    pub(crate) fn with_builtin(&self) -> Self {
+        Self(self.0.iter().copied().chain(builtin::list().0).collect())
+    }
+
     pub fn parse(text: &'a str) -> Result<Self, ParseError> {
         validate_text(text)?;
         text.split_terminator('\n')

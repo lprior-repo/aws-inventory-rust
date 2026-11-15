@@ -28,6 +28,8 @@ struct Traits {
     tests: Option<Tests>,
     #[serde(rename = "aws.auth#sigv4")]
     signing: Option<Signing>,
+    #[serde(rename = "smithy.rules#staticContextParams")]
+    static_context: Option<super::static_context::Context>,
 }
 #[derive(Deserialize)]
 struct Tests {
@@ -70,7 +72,14 @@ pub fn verified_endpoints(source: &Path) -> Result<BTreeMap<String, VerifiedEndp
             }
             let rules = RuleSet::parse(file, &evidence.rules)?;
             let run = rules.run_cases(&evidence.cases)?;
-            if let Ok(verified) = run.verified_endpoint(evidence.signing_name.as_deref()) {
+            if let Ok(mut verified) = run.verified_endpoint(evidence.signing_name.as_deref()) {
+                for (operation, context) in evidence.operations {
+                    let endpoint = super::static_context::compile(
+                        file, &evidence.rules, &evidence.cases, &context,
+                        evidence.signing_name.as_deref(),
+                    ).ok();
+                    verified.bind_operation(operation, endpoint);
+                }
                 endpoints.insert(evidence.name, verified);
             }
             Ok(endpoints)
@@ -93,10 +102,11 @@ struct ServiceEvidence {
     rules: Value,
     cases: Vec<Case>,
     signing_name: Option<String>,
+    operations: BTreeMap<String, super::static_context::Context>,
 }
 
 fn read_evidence(file: &Path, models: &Path) -> Result<ServiceEvidence, Error> {
-    let traits = read_traits(file)?;
+    let (traits, operations) = read_traits(file)?;
     let rules = traits
         .rules
         .ok_or_else(|| malformed(file, "missing rules"))?;
@@ -109,6 +119,7 @@ fn read_evidence(file: &Path, models: &Path) -> Result<ServiceEvidence, Error> {
         rules,
         cases: tests.cases,
         signing_name: traits.signing.map(|signing| signing.name),
+        operations,
     })
 }
 
@@ -157,16 +168,27 @@ fn load_services(
     )
 }
 
-fn read_traits(file: &Path) -> Result<Traits, Error> {
+fn read_traits(file: &Path) -> Result<(Traits, BTreeMap<String, super::static_context::Context>), Error> {
     let model: Model = crate::model_source::read_model(file)?;
-    let mut services = model.shapes.into_values().filter(|s| s.kind == "service");
-    let shape = services
-        .next()
-        .ok_or_else(|| malformed(file, "no service"))?;
-    if services.next().is_some() {
-        return Err(malformed(file, "several services"));
+    let mut service = None;
+    let mut operations = BTreeMap::new();
+    for (id, shape) in model.shapes {
+        if shape.kind == "service" {
+            if service.replace(shape.traits).is_some() {
+                return Err(malformed(file, "several services"));
+            }
+        } else if shape.kind == "operation" {
+            if let Some(context) = shape.traits.static_context {
+                let (_, name) = id.rsplit_once('#')
+                    .ok_or_else(|| malformed(file, "invalid operation shape identifier"))?;
+                if operations.insert(name.to_owned(), context).is_some() {
+                    return Err(malformed(file, "duplicate operation endpoint context"));
+                }
+            }
+        }
     }
-    Ok(shape.traits)
+    let traits = service.ok_or_else(|| malformed(file, "no service"))?;
+    Ok((traits, operations))
 }
 
 fn malformed(file: &Path, message: &str) -> Error {

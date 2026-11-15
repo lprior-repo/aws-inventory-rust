@@ -1,11 +1,15 @@
-mod child;
+pub(in crate::sweep_runtime) mod child;
 mod cursor;
-mod rows;
+pub(in crate::sweep_runtime) mod rows;
+mod tag_endpoint;
+mod preparation;
+mod assembly;
+pub(in crate::sweep_runtime) mod consumer_index;
 
 use inventory_core::{
-    catalog::runtime::{CallablePlan, PlanPurpose, ResolvedEndpoint},
-    inventory::{Region, ScopeOutcome as StoredOutcome},
-    record::{Record, Value},
+    catalog::runtime::{CallablePlan, PlanPurpose},
+    inventory::ScopeOutcome as StoredOutcome,
+    record::Record,
 };
 use inventory_engine::inventory::{BinaryStore, PageCommit, StoreError, WorkLease};
 
@@ -16,6 +20,9 @@ pub(super) async fn process(
     context: &RuntimeContext<'_, '_>,
     lease: WorkLease,
 ) -> Result<SweepSummary, SweepError> {
+    if context.bootstrap.executor.is_cancelled() {
+        return finish_error(context.store,lease,inventory_engine::limiter::ApiError::Cancelled.into()).await;
+    }
     if lease.scope().account() != &context.account {
         return finish_error(
             context.store,
@@ -35,15 +42,26 @@ async fn process_lease(
         Ok(plan) => plan,
         Err(error) => return finish_error(context.store, lease, error).await,
     };
-    let cursor = match cursor::Cursor::decode(lease.token()) {
+    let ancestry = match preparation::ancestry(lease.context(),lease.scope().context()) {
+        Ok(ancestry) => ancestry,
+        Err(error) => return finish_error(context.store,lease,error).await,
+    };
+    let decoded = if matches!(plan.purpose(), PlanPurpose::TagEndpoint(_)) {
+        tag_endpoint::decode_cursor(lease.token())
+    } else { cursor::Cursor::decode(lease.token()) };
+    let cursor = match decoded {
         Ok(cursor) => cursor,
         Err(error) => return finish_error(context.store, lease, error).await,
     };
     if cursor.partial || cursor.pages >= context.bootstrap.config.max_pages {
         return finalize(context.store, lease, StoredOutcome::Partial).await;
     }
-    let (endpoint, url, base, fields) = match prepare(context, &lease, plan, &cursor) {
+    let (endpoint, url, base, fields, request_region) = match preparation::prepare(context, &lease, plan, &cursor).await {
         Ok(prepared) => prepared,
+        Err(error) => return finish_error(context.store, lease, error).await,
+    };
+    let request = match input::merge_input(&base,&fields) {
+        Ok(request) => request,
         Err(error) => return finish_error(context.store, lease, error).await,
     };
     let call = call::Call {
@@ -60,7 +78,8 @@ async fn process_lease(
         Ok(response) => response,
         Err(error) => return finish_error(context.store, lease, error).await,
     };
-    commit_response(context, lease, plan, cursor, response).await
+    let request = PageRequest { record:request, region:request_region };
+    commit_response(context, lease, plan, cursor, response, request, &ancestry).await
 }
 
 fn lookup_plan<'a, 'catalog>(
@@ -75,49 +94,27 @@ fn lookup_plan<'a, 'catalog>(
         .ok_or(SweepError::Operation(
             "persisted work refers to an unknown reviewed operation",
         ))?;
-    if !matches!(plan.purpose(), PlanPurpose::Enumeration) {
+    if !matches!(plan.purpose(), PlanPurpose::Enumeration | PlanPurpose::TagEndpoint(_)) {
         return Err(SweepError::Operation(
             "persisted work is not a reviewed enumeration",
         ));
     }
+    super::routing::execution_branch(plan, scope.branch())?;
     Ok(plan)
 }
 
-fn prepare(
-    context: &RuntimeContext<'_, '_>,
-    lease: &WorkLease,
-    plan: &CallablePlan<'_>,
-    cursor: &cursor::Cursor,
-) -> Result<(ResolvedEndpoint, String, Record, Vec<input::InputField>), SweepError> {
-    let region = match lease.scope().region() {
-        Region::Global => context.bootstrap.home.clone(),
-        Region::Regional(region) => region.clone(),
-    };
-    let endpoint = plan.endpoint(&region)?;
-    let url = context
-        .bootstrap
-        .config
-        .endpoint_override()?
-        .unwrap_or(&endpoint.url)
-        .to_owned();
-    let base = Record::from_bytes(lease.bindings().to_vec())?;
-    let mut fields = cursor.request_fields(plan.pagination())?;
-    if let Some(size) = plan.pagination().page_size.as_ref() {
-        fields.push(input::InputField {
-            path: size.path.clone(),
-            value: Value::Int(i64::from(size.max)),
-        });
-    }
-    Ok((endpoint, url, base, fields))
-}
 
+#[derive(Default)]
 struct PageParts {
     observations: Vec<inventory_core::inventory::Observation>,
     references: Vec<inventory_core::inventory::UnresolvedReference>,
+    tags: Vec<inventory_core::inventory::TagObservation>,
     children: Vec<inventory_engine::inventory::WorkSpec>,
     next: Option<cursor::Advance>,
     rows: u64,
 }
+
+struct PageRequest { record:Record, region:inventory_core::inventory::RegionId }
 
 async fn commit_response(
     context: &RuntimeContext<'_, '_>,
@@ -125,59 +122,28 @@ async fn commit_response(
     plan: &CallablePlan<'_>,
     cursor: cursor::Cursor,
     response: call::DecodedResponse,
+    request: PageRequest,
+    ancestry: &inventory_core::inventory::DiscoveryContext,
 ) -> Result<SweepSummary, SweepError> {
-    let parts = match prepare_response(context, &lease, plan, cursor, response) {
+    let assembly = assembly::Context { catalog:context.bootstrap.catalog, account:&context.account,
+        home:context.bootstrap.home,executor:context.bootstrap.executor,consumers:&context.consumers,
+        max_pages:context.bootstrap.config.max_pages };
+    let parts = match assembly::prepare(&assembly, &lease, plan, cursor, response, &request, ancestry).await {
         Ok(parts) => parts,
         Err(error) => return finish_error(context.store, lease, error).await,
     };
     commit_parts(context, lease, parts).await
 }
 
-fn prepare_response(
-    context: &RuntimeContext<'_, '_>,
-    lease: &WorkLease,
-    plan: &CallablePlan<'_>,
-    cursor: cursor::Cursor,
-    response: call::DecodedResponse,
-) -> Result<PageParts, SweepError> {
-    let items = rows::items(plan, &response.record)?;
-    let observations = rows::observations(context, plan, lease.scope().region(), &items)?;
-    let references = rows::references(
-        context.bootstrap.catalog,
-        context.bootstrap.home,
-        &items,
-        &observations,
-    )?;
-    let children_context = child::Context::new(
-        context.bootstrap.catalog,
-        plan,
-        lease.sweep(),
-        &context.account,
-        context.bootstrap.home,
-    );
-    let children = child::work(&children_context, &items, &observations)?;
-    let next = cursor.next(
-        plan.pagination(),
-        &response.record,
-        &response.headers,
-        context.bootstrap.config.max_pages,
-    )?;
-    let rows = u64::try_from(observations.len())
-        .map_err(|_| SweepError::Operation("row count exceeds summary range"))?;
-    Ok(PageParts {
-        observations,
-        references,
-        children,
-        next,
-        rows,
-    })
-}
 
 async fn commit_parts(
     context: &RuntimeContext<'_, '_>,
     lease: WorkLease,
     parts: PageParts,
 ) -> Result<SweepSummary, SweepError> {
+    if let Err(error) = assembly::checkpoint(context.bootstrap.executor).await {
+        return finish_error(context.store,lease,error).await;
+    }
     let done = parts.next.is_none();
     let continuation_digest = parts
         .next
@@ -188,7 +154,7 @@ async fn commit_parts(
         observations: parts.observations,
         edges: Vec::new(),
         unresolved: parts.references,
-        tags: Vec::new(),
+        tags: parts.tags,
         next_token: parts.next.map(|advance| advance.cursor.into_bytes()),
         continuation_digest,
         children: parts.children,
@@ -249,7 +215,10 @@ async fn finish_error(
         SweepError::Api(inventory_engine::limiter::ApiError::UnsupportedType(_)) => {
             StoredOutcome::Unsupported
         }
-        SweepError::Api(inventory_engine::limiter::ApiError::Cancelled) => return Err(error),
+        SweepError::Api(inventory_engine::limiter::ApiError::Cancelled) => {
+            finalize(store,lease,StoredOutcome::Partial).await?;
+            return Err(error);
+        }
         _ => StoredOutcome::Failed,
     };
     finalize(store, lease, outcome).await

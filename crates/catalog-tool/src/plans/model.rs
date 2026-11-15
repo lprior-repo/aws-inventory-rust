@@ -115,8 +115,8 @@ impl<'a> Model<'a> {
     ) -> Result<ShapeRef<'a>, &'static str> {
         for segment in path.split('.') {
             current = self.unwrap_aggregates(current)?;
-            if shape_type(current.value) != Some("structure") {
-                return Err("path traverses a non-structure");
+            if !matches!(shape_type(current.value), Some("structure" | "union")) {
+                return Err("path traverses neither a structure nor a union");
             }
             let member = current
                 .value
@@ -246,8 +246,8 @@ fn resolve_member_segment<'a>(
     current: ShapeRef<'a>,
     segment: &str,
 ) -> Result<(&'a Value, ShapeRef<'a>), &'static str> {
-    if shape_type(current.value) != Some("structure") {
-        return Err("path traverses a non-structure");
+    if !matches!(shape_type(current.value), Some("structure" | "union")) {
+        return Err("path traverses neither a structure nor a union");
     }
     let member = current
         .value

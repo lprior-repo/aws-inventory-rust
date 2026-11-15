@@ -90,11 +90,29 @@ pub(super) fn relations(
 
 fn relation(value: ValueRef<'_>) -> Result<super::super::RelationshipPlan, RuntimeCatalogError> {
     let fields = map(value)?;
+    let target_kind = crate::inventory::Kind::parse(&text(fields, 3)?)?;
+    let target_kinds = match fields.get_field(FieldId::new(9)?)? {
+        None => vec![target_kind.clone()],
+        Some(ValueRef::List(values)) => bounded(values, |value| {
+            crate::inventory::Kind::parse(&super::text_value(value)?).map_err(RuntimeCatalogError::from)
+        }, 64)?,
+        Some(_) => return Err(RuntimeCatalogError::Capability),
+    };
+    if target_kinds.is_empty() || !target_kinds.contains(&target_kind)
+        || target_kinds.iter().enumerate().any(|(index, kind)| target_kinds.iter().take(index).any(|prior| prior == kind)) {
+        return Err(RuntimeCatalogError::Capability);
+    }
     let result = super::super::RelationshipPlan {
         source_kind: crate::inventory::Kind::parse(&text(fields, 1)?)?,
         source_path: id_path(list(fields, 2)?)?,
-        target_kind: crate::inventory::Kind::parse(&text(fields, 3)?)?,
-        target_path: id_path(list(fields, 4)?)?,
+        source: match fields.get_field(FieldId::new(10)?)? {
+            None | Some(ValueRef::Int(0)) => super::super::RelationSource::SelectedOutput,
+            Some(ValueRef::Int(1)) => super::super::RelationSource::Request,
+            Some(_) => return Err(RuntimeCatalogError::Capability),
+        },
+        target_kind,
+        target_kinds: target_kinds.into_boxed_slice(),
+        target_path: selected_path(list(fields, 4)?)?,
         relation: crate::inventory::Relation::parse(&text(fields, 5)?)?,
         scope: match integer(fields, 6)? {
             0 => super::super::RelationScope::AccountRegion,
@@ -102,8 +120,9 @@ fn relation(value: ValueRef<'_>) -> Result<super::super::RelationshipPlan, Runti
             2 => super::super::RelationScope::HomeRegion,
             _ => return Err(RuntimeCatalogError::Capability),
         },
+        owner: super::owners::read_owner(fields)?,
     };
-    only_fields(fields, &[1, 2, 3, 4, 5, 6])?;
+    only_fields(fields, &[1, 2, 3, 4, 5, 6, 8, 9, 10])?;
     Ok(result)
 }
 
@@ -292,3 +311,6 @@ mod tests {
         ));
     }
 }
+
+#[cfg(test)]
+mod relationship_source_tests;

@@ -46,7 +46,7 @@ impl Revisions {
     pub fn accepts(&self, output: &Output) -> bool {
         let Some(revision) = output.revision else { return true; };
         let latest = match &output.event {
-            WorkerEvent::Snapshot { .. } => &self.page,
+            WorkerEvent::Snapshot { .. } | WorkerEvent::GraphStatus { .. } => &self.page,
             WorkerEvent::Graph { .. } => &self.graph,
         };
         latest.load(Ordering::Acquire) == revision
@@ -65,10 +65,15 @@ pub(super) fn current_events(
     outputs: impl Iterator<Item = Output>,
     revisions: &Revisions,
 ) -> Vec<WorkerEvent> {
-    let (graph, page) = outputs.take(EVENT_CAPACITY).filter(|output| revisions.accepts(output))
-        .fold((None, None), |(graph, page), output| match output.event {
-            event @ WorkerEvent::Graph { .. } => (Some(event), page),
-            event @ WorkerEvent::Snapshot { .. } => (graph, Some(event)),
+    let (status, graph, page) = outputs.take(EVENT_CAPACITY).filter(|output| revisions.accepts(output))
+        .fold((None, None, None), |(status, graph, page), output| match output.event {
+            event @ WorkerEvent::GraphStatus { .. } => (Some(event), graph, page),
+            event @ WorkerEvent::Graph { .. } => (status, Some(event), page),
+            event @ WorkerEvent::Snapshot { .. } => (status, graph, Some(event)),
         });
-    graph.into_iter().chain(page).collect()
+    status.into_iter().chain(graph).chain(page).collect()
 }
+
+#[cfg(test)]
+#[path = "protocol/tests.rs"]
+mod tests;

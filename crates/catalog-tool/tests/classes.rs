@@ -1,6 +1,5 @@
 use catalog_tool::classes::{Class, DenyList, DenyReason, OperationFacts, classify};
 
-const DENY: &str = include_str!("../../../catalog/overlay/must-deny.txt");
 const MUTATING: &[&str] = &[
     "CreateQueue",
     "DeleteBucket",
@@ -54,7 +53,7 @@ fn facts(name: &str, required: bool, readonly: bool) -> OperationFacts<'_> {
 #[test]
 fn list_describe_candidates_depend_on_required_members_not_readonly()
 -> Result<(), Box<dyn std::error::Error>> {
-    let deny = DenyList::parse(DENY)?;
+    let deny = DenyList::builtin();
     ["ListQueues", "DescribeInstances", "ListObjectsV2"]
         .iter()
         .for_each(|name| {
@@ -97,7 +96,7 @@ fn literal_list_describe_prefixes_allow_empty_and_lowercase_suffixes()
 #[test]
 fn nonread_names_are_denied_mutating_even_when_readonly() -> Result<(), Box<dyn std::error::Error>>
 {
-    let deny = DenyList::parse(DENY)?;
+    let deny = DenyList::builtin();
     MUTATING.iter().for_each(|name| {
         assert_eq!(
             classify(&facts(name, false, true), &deny),
@@ -109,7 +108,7 @@ fn nonread_names_are_denied_mutating_even_when_readonly() -> Result<(), Box<dyn 
 
 #[test]
 fn every_seed_denial_keeps_its_hand_reviewed_reason() -> Result<(), Box<dyn std::error::Error>> {
-    let deny = DenyList::parse(DENY)?;
+    let deny = DenyList::builtin();
     assert_eq!(deny.len(), 85);
     MUST_DENY.iter().for_each(|(name, reason)| {
         assert_eq!(
@@ -127,7 +126,7 @@ fn every_seed_denial_keeps_its_hand_reviewed_reason() -> Result<(), Box<dyn std:
 #[test]
 fn other_read_prefixes_stay_unclassified_even_when_input_free_and_readonly()
 -> Result<(), Box<dyn std::error::Error>> {
-    let deny = DenyList::parse(DENY)?;
+    let deny = DenyList::builtin();
     UNCLASSIFIED.iter().for_each(|name| {
         assert_eq!(
             classify(&facts(name, false, true), &deny),

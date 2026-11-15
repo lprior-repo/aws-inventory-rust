@@ -1,10 +1,11 @@
 use super::derive::{DerivedEndpoint, signing_override};
 use super::{CaseRun, Endpoint, Error};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VerifiedEndpoint {
     service: DerivedService,
+    operations: BTreeMap<String, Option<DerivedService>>,
 }
 
 impl VerifiedEndpoint {
@@ -13,6 +14,18 @@ impl VerifiedEndpoint {
     }
     pub fn exceptions(&self) -> &[EndpointException] {
         &self.service.exceptions
+    }
+    /// Missing evidence for an explicitly modeled operation never falls back to
+    /// the service route. Operations without static context retain that route.
+    pub fn operation_endpoint(&self, operation: &str) -> Option<&DerivedEndpoint> {
+        match self.operations.get(operation) {
+            Some(endpoint) => endpoint.as_ref().map(DerivedService::endpoint),
+            None => Some(self.endpoint()),
+        }
+    }
+
+    pub(super) fn bind_operation(&mut self, operation: String, endpoint: Option<Self>) {
+        self.operations.insert(operation, endpoint.map(|endpoint| endpoint.service));
     }
 }
 
@@ -41,7 +54,7 @@ impl CaseRun<'_> {
         let service =
             derive_run(self, signing_name).map_err(|_| VerificationFailure::UnresolvedCandidate)?;
         if matches!(&service.endpoint, DerivedEndpoint::Resolved { .. }) {
-            Ok(VerifiedEndpoint { service })
+            Ok(VerifiedEndpoint { service, operations: BTreeMap::new() })
         } else {
             Err(VerificationFailure::UnresolvedCandidate)
         }

@@ -67,8 +67,8 @@ fn shape_kind<'a>(target: &str, shapes: &'a BTreeMap<String, Shape>) -> Option<&
             ShapeKind::BigInteger => Some("bigInteger"),
             ShapeKind::BigDecimal => Some("bigDecimal"),
             ShapeKind::Timestamp => Some("timestamp"),
-            ShapeKind::Enum => Some("string"),
-            ShapeKind::IntEnum => Some("integer"),
+            ShapeKind::Enum { .. } => Some("string"),
+            ShapeKind::IntEnum { .. } => Some("integer"),
             _ => None,
         })
         .or_else(|| prelude_scalar(target))

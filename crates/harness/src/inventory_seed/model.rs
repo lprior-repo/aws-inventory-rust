@@ -1,5 +1,17 @@
 #[path = "model/members.rs"]
-mod members;
+pub(super) mod members;
+mod operation;
+pub(super) use operation::locate;
+mod identity;
+mod output;
+#[cfg(test)]
+mod tests;
+mod template;
+pub(super) use identity::{PreparedIdentity, PreparedResource};
+pub(super) use output::{Selector, output_path};
+pub(super) use template::PreparedTemplate;
+#[cfg(test)]
+pub(super) use template::PreparedNestedBinding;
 use aws_wire::request::Protocol;
 use inventory_core::{
     catalog::runtime::RuntimeCatalog,
@@ -29,7 +41,7 @@ pub(super) struct PreparedInput {
 #[derive(Clone)]
 pub(super) struct PreparedCheck {
     pub input_path: Vec<FieldId>,
-    pub output_path: Vec<FieldId>,
+    pub output_path: Vec<Selector>,
 }
 
 #[derive(Clone)]
@@ -37,13 +49,14 @@ pub(super) enum PreparedInputValue {
     Text(String),
     Boolean(bool),
     Integer(i64),
-    PreviousOutput { step: StepId, path: Vec<FieldId> },
+    PreviousOutput { step: StepId, path: Vec<Selector> },
+    Literal(inventory_core::record::Value),
+    Template(PreparedTemplate),
 }
 pub(super) struct PreparedStep<'a> {
     pub id: StepId,
-    pub kind: Kind,
+    pub resource: Option<PreparedResource>,
     pub operation: SeedOperation<'a>,
-    pub identity: Vec<FieldId>,
     pub inputs: Vec<PreparedInput>,
     pub checks: Vec<PreparedCheck>,
 }
@@ -52,12 +65,13 @@ pub(super) struct PreparedRelationship {
     pub source: StepId,
     pub target: StepId,
     pub relation: Relation,
-    pub observed_path: Vec<FieldId>,
+    pub observed_path: Vec<Selector>,
 }
 
 pub(super) struct SeedModels<'a> {
     pub caller: SeedOperation<'a>,
-    pub caller_account: Vec<FieldId>,
+    pub caller_account: Vec<Selector>,
+    pub caller_arn: Vec<Selector>,
     pub steps: Vec<PreparedStep<'a>>,
     pub relationships: Vec<PreparedRelationship>,
 }
@@ -66,7 +80,8 @@ impl<'a> SeedModels<'a> {
     pub fn load(runtime: &RuntimeCatalog<'a>, scenario: &SeedScenario) -> Result<Self, SeedError> {
         let catalog = runtime.catalog();
         let caller = locate(catalog, "sts", "GetCallerIdentity")?;
-        let caller_account = field_path(caller.service, caller.operation.output()?, &["Account"])?;
+        let caller_account = output_path(caller.service, caller.operation.output()?, &FieldPath::new(&["Account"])?)?;
+        let caller_arn = output_path(caller.service, caller.operation.output()?, &FieldPath::new(&["Arn"])?)?;
         let steps = scenario
             .steps()
             .iter()
@@ -80,6 +95,7 @@ impl<'a> SeedModels<'a> {
         Ok(Self {
             caller,
             caller_account,
+            caller_arn,
             steps,
             relationships,
         })
@@ -92,14 +108,12 @@ fn prepare_step<'a>(
     step: &SeedStep,
 ) -> Result<PreparedStep<'a>, SeedError> {
     let operation = locate(catalog, &step.service, &step.operation)?;
-    let output = operation.operation.output()?;
-    let identity = modeled_path(operation.service, output, &step.identity)?;
+    let resource = identity::resource(operation, step)?;
     let (inputs, checks) = step_parts(catalog, scenario, operation, step)?;
     Ok(PreparedStep {
         id: step.id,
-        kind: Kind::parse(&step.kind)?,
         operation,
-        identity,
+        resource,
         inputs,
         checks,
     })
@@ -138,6 +152,11 @@ fn prepare_input<'a>(
         SeedInputValue::Text(text) => PreparedInputValue::Text(text.clone()),
         SeedInputValue::Boolean(value) => PreparedInputValue::Boolean(*value),
         SeedInputValue::Integer(value) => PreparedInputValue::Integer(*value),
+        SeedInputValue::Literal(value) => {
+            let target = members::path_target(operation.service, operation.operation.input()?, field)?;
+            PreparedInputValue::Literal(super::literal::resolve(operation.service, target, value)?)
+        }
+        SeedInputValue::Template(value) => template::prepare(catalog, scenario, operation, field, value)?,
         SeedInputValue::PreviousOutput { step, path } => {
             previous_output(catalog, scenario, *step, path)?
         }
@@ -156,7 +175,7 @@ fn previous_output(
         .get(usize::from(step.0))
         .ok_or(SeedError::Invalid("seed binding source is missing"))?;
     let operation = locate(catalog, &source.service, &source.operation)?;
-    let path = modeled_path(operation.service, operation.operation.output()?, path)?;
+    let path = output_path(operation.service, operation.operation.output()?, path)?;
     Ok(PreparedInputValue::PreviousOutput { step, path })
 }
 
@@ -166,7 +185,7 @@ fn prepare_check(
     input: &FieldPath,
 ) -> Result<PreparedCheck, SeedError> {
     let input_path = modeled_path(operation.service, operation.operation.input()?, input)?;
-    let output_path = modeled_path(operation.service, operation.operation.output()?, output)?;
+    let output_path = output_path(operation.service, operation.operation.output()?, output)?;
     Ok(PreparedCheck {
         input_path,
         output_path,
@@ -181,10 +200,12 @@ fn prepare_relationship(
 ) -> Result<PreparedRelationship, SeedError> {
     let source = prepared(steps, spec.source, "seed relationship source is missing")?;
     let target = prepared(steps, spec.target, "seed relationship target is missing")?;
+    let source_kind = &source.resource.as_ref().ok_or(SeedError::Invalid("relationship source must be a resource"))?.kind;
+    let target_kind = &target.resource.as_ref().ok_or(SeedError::Invalid("relationship target must be a resource"))?.kind;
     Ok(PreparedRelationship {
         source: spec.source,
         target: spec.target,
-        relation: read_relation(runtime, &source.kind, &target.kind, &spec.relation)?,
+        relation: read_relation(runtime, source_kind, target_kind, &spec.relation)?,
         observed_path: observed_path(runtime, scenario, spec)?,
     })
 }
@@ -193,7 +214,7 @@ fn observed_path(
     runtime: &RuntimeCatalog<'_>,
     scenario: &SeedScenario,
     spec: &SeedRelationship,
-) -> Result<Vec<FieldId>, SeedError> {
+) -> Result<Vec<Selector>, SeedError> {
     let missing = SeedError::Invalid("seed relationship source descriptor is missing");
     let source = scenario
         .steps()
@@ -201,7 +222,7 @@ fn observed_path(
         .ok_or(missing)?;
     let operation = locate(runtime.catalog(), &source.service, &source.operation)?;
     let output = operation.operation.output()?;
-    modeled_path(operation.service, output, &spec.observed_path)
+    output_path(operation.service, output, &spec.observed_path)
 }
 
 fn prepared<'s, 'a>(
@@ -241,51 +262,3 @@ fn read_relation(
         .ok_or(SeedError::Invalid("modeled seed relationship is missing"))
 }
 
-pub(super) fn locate<'a>(
-    catalog: Catalog<'a>,
-    service_name: &str,
-    operation_name: &str,
-) -> Result<SeedOperation<'a>, SeedError> {
-    let service = catalog.service(service_name)?.ok_or(SeedError::Invalid(
-        "modeled service is missing from catalog",
-    ))?;
-    let operation = find_operation(service, operation_name)?;
-    let protocol = protocol(service)?;
-    Ok(SeedOperation {
-        service,
-        operation,
-        protocol,
-    })
-}
-
-fn find_operation<'a>(service: Service<'a>, name: &str) -> Result<Operation<'a>, SeedError> {
-    service
-        .operations()?
-        .try_fold(None, |found, candidate| {
-            let candidate = candidate?;
-            if candidate.name()? == name {
-                Ok::<Option<Operation<'a>>, inventory_core::catalog::CatalogError>(Some(candidate))
-            } else {
-                Ok(found)
-            }
-        })?
-        .ok_or(SeedError::Invalid(
-            "modeled operation is missing from catalog",
-        ))
-}
-
-fn protocol(service: Service<'_>) -> Result<Protocol, SeedError> {
-    service
-        .protocols()?
-        .try_fold(None, |found, candidate| {
-            let protocol = match candidate? {
-                "aws.protocols#awsQuery" => Some(Protocol::AwsQuery),
-                "aws.protocols#ec2Query" => Some(Protocol::Ec2Query),
-                _ => None,
-            };
-            Ok::<_, SeedError>(found.or(protocol))
-        })?
-        .ok_or(SeedError::Invalid(
-            "seed operation service has no supported query protocol",
-        ))
-}

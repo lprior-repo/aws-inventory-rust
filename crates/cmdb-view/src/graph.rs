@@ -4,6 +4,9 @@ mod response;
 mod query;
 #[path = "graph/path.rs"]
 mod path;
+#[path = "graph/tags.rs"]
+mod tags;
+pub use tags::{ScopedTag, TagAffiliation, TagAffiliations};
 use crate::ViewError;
 use inventory_core::inventory::{AccountId, Kind, Region, ResourceId, ResourceKey};
 
@@ -51,6 +54,18 @@ impl GraphConnection {
             client,
             graph: graph.to_owned(),
         })
+    }
+    /// Live native tag membership, separate from AWS dependency traversal.
+    /// This does not share SQLite's retained snapshot or pin a native revision.
+    pub async fn tag_affiliations(
+        &self,
+        node: &GraphNode,
+        limit: usize,
+    ) -> Result<TagAffiliations, ViewError> {
+        if limit == 0 || limit > crate::MAX_PAGE_LIMIT {
+            return Err(ViewError::PageLimit);
+        }
+        tags::read(&self.client, &self.graph, node, limit).await
     }
 
     pub async fn neighbors(

@@ -135,6 +135,7 @@ fn check_references(
     errors: &mut Vec<Violation>,
 ) {
     let callable_names = callable_names(callable);
+    super::stages::references(overlay, callable, errors);
     for (operation, plan) in overlay.operations() {
         check_plan_references(
             overlay.service(),
@@ -196,7 +197,7 @@ fn check_plan_bindings(
     callable: &BTreeSet<&str>,
     errors: &mut Vec<Violation>,
 ) {
-    plan.bind.values().for_each(|binding| {
+    plan.bind.values().chain(plan.branches.iter().flat_map(|branch| branch.bind.values())).for_each(|binding| {
         check_binding_reference(service, operation, binding, names, callable, errors)
     });
 }
@@ -229,7 +230,7 @@ fn check_handle_references(
     callable: &BTreeSet<&str>,
     errors: &mut Vec<Violation>,
 ) {
-    for binding in handle.plan.bind.values() {
+    for binding in handle.plan.bind.values().chain(handle.plan.branches.iter().flat_map(|branch| branch.bind.values())) {
         check_binding_reference(
             service,
             handle.operation(),
@@ -249,10 +250,15 @@ fn check_binding_reference(
     callable: &BTreeSet<&str>,
     errors: &mut Vec<Violation>,
 ) {
-    if let Binding::From {
-        operation: parent, ..
-    } = binding
-    {
+    let binding = if let Binding::Transformed { binding, .. } = binding { binding.as_ref() } else { binding };
+    if let Binding::FromAny(alternatives) = binding {
+        alternatives.iter().for_each(|alternative| validate_reference(
+            service, operation, "bind.from_any", alternative.operation.as_str(), names, callable, errors,
+        ));
+        return;
+    }
+    if let Binding::From { operation: parent, .. } | Binding::FromArn { operation: parent, .. } | Binding::FromUrl { operation: parent, .. }
+        | Binding::Context { operation: parent, .. } | Binding::FromBranch { operation: parent, .. } | Binding::ContextFromBranch { operation: parent, .. } = binding {
         validate_reference(
             service,
             operation,

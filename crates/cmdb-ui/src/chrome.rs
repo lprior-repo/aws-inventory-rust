@@ -7,6 +7,7 @@ struct ChromeState {
     summary: String,
     status: String,
     visible_len: usize,
+    filters_clear: bool,
     selected: Option<Row>,
     account: Option<String>,
     region: Option<String>,
@@ -19,10 +20,16 @@ struct ChromeState {
 fn read_state(ui: &WidgetRef, cx: &mut Cx) -> Option<ChromeState> {
     let table_widget = ui.widget(cx, ids!(table));
     let table = table_widget.borrow::<ResourceTable>()?;
+    let filter = table.filter();
     Some(ChromeState {
         summary: table.summary(),
         status: table.status_line(),
         visible_len: table.visible_len(),
+        filters_clear: filter.account.is_none()
+            && filter.region.is_none()
+            && filter.kind.is_none()
+            && filter.query.is_empty()
+            && filter.tag.is_none(),
         selected: table.selected_row(),
         account: table.account_filter().map(str::to_owned),
         region: table.region_filter().map(str::to_owned),
@@ -48,8 +55,7 @@ pub(crate) fn sync_chrome(ui: &WidgetRef, cx: &mut Cx) {
 fn write_summary(ui: &WidgetRef, cx: &mut Cx, state: &ChromeState) {
     ui.label(cx, ids!(summary)).set_text(cx, &state.summary);
     ui.label(cx, ids!(table_status)).set_text(cx, &state.status);
-    let filters_clear = state.account.is_none() && state.region.is_none() && state.kind.is_none();
-    ui.label(cx, ids!(all_mark)).set_visible(cx, filters_clear);
+    ui.label(cx, ids!(all_mark)).set_visible(cx, state.filters_clear);
     [
         ids!(ec2_count),
         ids!(s3_count),
@@ -172,9 +178,58 @@ fn show_details(ui: &WidgetRef, cx: &mut Cx, row: Row) {
     );
     detail.label(cx, ids!(detail_record)).set_text(cx, &record);
     detail.label(cx, ids!(detail_hash)).set_text(cx, &hash);
+    ui.label(cx, ids!(detail_tags)).set_text(cx, &tag_summary(&row));
 }
 
 fn hide_details(ui: &WidgetRef, cx: &mut Cx) {
     ui.view(cx, ids!(detail_body)).set_visible(cx, false);
     ui.label(cx, ids!(detail_empty)).set_visible(cx, true);
+    ui.label(cx, ids!(detail_tags)).set_text(cx, "");
+}
+
+fn tag_summary(row: &Row) -> String {
+    use std::fmt::Write;
+
+    if row.record_bytes.is_none() {
+        return "Tags not loaded from SQLite".to_owned();
+    }
+    let mut text = tag_observation_summary(row);
+    if row.tags.is_empty() && !row.tags_truncated {
+        text.push_str("\nNo known persisted tag associations");
+        return text;
+    }
+    text.push('\n');
+    let result = row.tags.iter().take(8).try_for_each(|tag| {
+        writeln!(&mut text, "{:?} = {:?}", tag.key, tag.value)
+    });
+    if let Err(error) = result {
+        return format!("Tag display unavailable · {error}");
+    }
+    let remaining = row.tags.len().saturating_sub(8);
+    if remaining > 0 {
+        text.push_str(&format!("… {remaining} more tags\n"));
+    }
+    if row.tags_truncated {
+        text.push_str("Tag list truncated by SQLite read limit\n");
+    }
+    text
+}
+
+fn tag_observation_summary(row: &Row) -> String {
+    let Some(observation) = row.tag_observation else {
+        return "Observation completeness unknown".to_owned();
+    };
+    let coverage = match observation.coverage {
+        cmdb_view::TagCoverage::Complete => "Complete tag observation",
+        cmdb_view::TagCoverage::Partial => "Partial observation · retained known tags",
+        cmdb_view::TagCoverage::Failed => "Failed observation · retained known tags",
+        cmdb_view::TagCoverage::Unobserved => "Not observed · retained known tags",
+    };
+    let mut text = format!("{coverage} · at {} ms UTC", observation.observed_at_ms);
+    if observation.coverage != cmdb_view::TagCoverage::Complete
+        && let Some(last_complete) = observation.last_complete_at_ms
+    {
+        text.push_str(&format!("\nLast complete at {last_complete} ms UTC"));
+    }
+    text
 }

@@ -51,18 +51,6 @@ fn terminal_member_segments<'a>(
     Ok((std::iter::once(current.id).chain(path).collect(), terminal))
 }
 
-pub(super) fn item_target(
-    service: Service<'_>,
-    operation: Operation<'_>,
-    selector_path: &str,
-) -> Result<Target, RuntimeCatalogCompileError> {
-    let (_, selected) = resolve(service, operation.output()?, selector_path)?;
-    match kind(service, selected)? {
-        "structure" => Ok(selected),
-        "list" => list_element(service, selected),
-        _ => Err(RuntimeCatalogCompileError::Capability),
-    }
-}
 pub(super) struct ValidationContext<'p, 'a> {
     pub(super) kinds: &'p crate::kind_map::KindMap,
     pub(super) checked: &'p crate::overlay::CheckedOverlays,
@@ -82,7 +70,7 @@ fn validate_display_paths(
 ) -> Result<(), RuntimeCatalogCompileError> {
     context.kinds.entries().iter().try_for_each(|entry| {
         match (&entry.target, entry.display_name_path.as_deref()) {
-            (crate::kind_map::KindTarget::Mapped { kind, .. }, Some(path)) => {
+            (crate::kind_map::KindTarget::Mapped { kind, .. }, Some(path)) if active_kind(context, kind) => {
                 validate_kind_path(context, kind, path, true)
             }
             _ => Ok(()),
@@ -93,8 +81,10 @@ fn validate_display_paths(
 fn validate_relations(
     context: &ValidationContext<'_, '_>,
 ) -> Result<(), RuntimeCatalogCompileError> {
-    context.kinds.relations().iter().try_for_each(|relation| {
-        validate_kind_path(context, &relation.source_kind, &relation.source_path, true)?;
+    context.kinds.relations().iter()
+        .filter(|relation| active_kind(context, &relation.source_kind) && active_kind(context, &relation.target_kind))
+        .try_for_each(|relation| {
+        validate_kind_origin_path(context, &relation.source_kind, &relation.source_path, true, relation.source)?;
         validate_kind_path(context, &relation.target_kind, &relation.target_path, true)
     })
 }
@@ -106,6 +96,7 @@ fn validate_bootstrap_paths(
         .kinds
         .operations()
         .iter()
+        .filter(|row| active_operation(context, &row.service, &row.operation))
         .try_for_each(|row| validate_bootstrap(context, &row.service, &row.operation))
 }
 
@@ -158,24 +149,47 @@ fn validate_kind_path(
     path: &str,
     require_string: bool,
 ) -> Result<(), RuntimeCatalogCompileError> {
-    let row = context
-        .kinds
-        .operations()
-        .iter()
-        .find(|row| row.kind == kind)
-        .ok_or(RuntimeCatalogCompileError::Capability)?;
+    validate_kind_origin_path(context, kind, path, require_string, crate::kind_map::RelationSource::SelectedOutput)
+}
+
+fn validate_kind_origin_path(
+    context: &ValidationContext<'_, '_>,
+    kind: &str,
+    path: &str,
+    require_string: bool,
+    source: crate::kind_map::RelationSource,
+) -> Result<(), RuntimeCatalogCompileError> {
+    let found = context.kinds.operations().iter()
+        .filter(|row| operation_has_kind(context, row, kind) && active_operation(context, &row.service, &row.operation))
+        .try_fold(false, |found, row| {
+            validate_operation_path(context, row, path, require_string, source).map(|present| found || present)
+        })?;
+    if found { Ok(()) } else { Err(RuntimeCatalogCompileError::Capability) }
+}
+
+fn validate_operation_path(
+    context: &ValidationContext<'_, '_>,
+    row: &crate::kind_map::RuntimeOperation,
+    path: &str,
+    require_string: bool,
+    source: crate::kind_map::RelationSource,
+) -> Result<bool, RuntimeCatalogCompileError> {
     let (service, operation) = operation_for(context, &row.service, &row.operation)?;
-    let selector = operation_for_checked(context, &row.service, &row.operation)?
-        .plan()
-        .items
-        .as_ref();
-    let target = item_target_for_selector(service, operation, selector)?;
-    let terminal = resolve(service, target, path)?.1;
+    let target = match source {
+        crate::kind_map::RelationSource::SelectedOutput => {
+            let selector = operation_for_checked(context, &row.service, &row.operation)?
+                .plan()
+                .items
+                .as_ref();
+            item_target_for_selector(service, operation, selector)?
+        }
+        crate::kind_map::RelationSource::Request => operation.input()?,
+    };
+    let Some(terminal) = optional_resolve(service, target, path)? else { return Ok(false) };
     if require_string {
-        string_target(service, terminal)
-    } else {
-        Ok(())
+        string_target(service, terminal)?;
     }
+    Ok(true)
 }
 
 fn item_target_for_selector(
@@ -183,13 +197,7 @@ fn item_target_for_selector(
     operation: Operation<'_>,
     selector: Option<&crate::overlay::ItemSelector>,
 ) -> Result<Target, RuntimeCatalogCompileError> {
-    match selector {
-        Some(crate::overlay::ItemSelector::Root) => Ok(operation.output()?),
-        Some(crate::overlay::ItemSelector::Member(items)) => {
-            item_target(service, operation, &items.to_string())
-        }
-        None => Err(RuntimeCatalogCompileError::Capability),
-    }
+    super::selection::target(service, operation.output()?, selector)
 }
 
 fn string_target_for_path(
@@ -231,6 +239,40 @@ fn operation_for_checked<'p, 'a>(
         })
         .ok_or(RuntimeCatalogCompileError::Capability)
 }
+
+pub(super) fn active_operation(context: &ValidationContext<'_, '_>, service: &str, operation: &str) -> bool {
+    operation_for_checked(context, service, operation).is_ok_and(|call| {
+        let plan = call.plan();
+        plan.emission == crate::overlay::Emission::EmitMetadata && plan.tag_endpoint.is_none() && !plan.endpoint_discovery
+    })
+}
+
+pub(super) fn active_kind(context: &ValidationContext<'_, '_>, kind: &str) -> bool {
+    context.kinds.operations().iter().any(|row| operation_has_kind(context, row, kind)
+        && active_operation(context, &row.service, &row.operation))
+}
+
+fn operation_has_kind(context: &ValidationContext<'_, '_>, row: &crate::kind_map::RuntimeOperation, kind: &str) -> bool {
+    row.kind == kind || operation_for_checked(context, &row.service, &row.operation).is_ok_and(|call| {
+        call.plan().classification.as_ref().is_some_and(|classification| {
+            classification.variants.values().any(|candidate| candidate == kind)
+        })
+    })
+}
+
+pub(super) fn optional_resolve(service: Service<'_>, target: Target, path: &str) -> Result<Option<Target>, RuntimeCatalogCompileError> {
+    path.split('.').try_fold(Some(target), |target, segment| {
+        let Some(target) = target else { return Ok(None) };
+        let shape = shape_for(service, target)?;
+        if !matches!(shape.kind()?, "structure" | "union") {
+            return Err(RuntimeCatalogCompileError::Capability);
+        }
+        shape.members()?.try_fold(None, |found, candidate| {
+            let candidate = candidate?;
+            if candidate.name()? == segment { Ok(Some(candidate.target)) } else { Ok(found) }
+        }).map_err(RuntimeCatalogCompileError::Catalog)
+    })
+}
 pub(super) fn list_element(
     service: Service<'_>,
     target: Target,
@@ -263,7 +305,7 @@ pub(super) fn string_target(
         Target::Shape(_) => kind(service, target)?,
         _ => return Err(RuntimeCatalogCompileError::Capability),
     };
-    if kind == "string" {
+    if matches!(kind, "string" | "enum") {
         Ok(())
     } else {
         Err(RuntimeCatalogCompileError::Capability)

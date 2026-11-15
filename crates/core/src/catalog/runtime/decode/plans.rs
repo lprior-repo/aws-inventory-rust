@@ -9,6 +9,25 @@ mod metadata_fields;
 use metadata_fields::*;
 mod bounds;
 mod protocol_check;
+mod tags;
+mod validation;
+mod dependencies;
+mod fixed_input;
+mod routing;
+mod capabilities;
+mod tag_endpoint;
+mod selection;
+mod context;
+mod model_links;
+mod map_exclusions;
+mod page_codec;
+mod binding_alternatives;
+mod stages;
+mod row_policy;
+use page_codec::page;
+#[cfg(test)]
+use page_codec::token;
+pub(super) use model_links::validate as validate_model_links;
 #[cfg(test)]
 mod tests;
 use super::super::types::{
@@ -28,7 +47,9 @@ pub(super) fn read<'a>(
     catalog: Catalog<'a>,
     list: crate::record::ListRef<'_>,
 ) -> Result<Vec<CallablePlan<'a>>, RuntimeCatalogError> {
-    metadata::bounded(list, |value| plan(catalog, value), metadata::MAX_ITEMS)
+    let mut plans = metadata::bounded(list, |value| plan(catalog, value), metadata::MAX_ITEMS)?;
+    dependencies::validate(&mut plans)?;
+    Ok(plans)
 }
 
 fn plan<'a>(
@@ -36,7 +57,7 @@ fn plan<'a>(
     value: ValueRef<'_>,
 ) -> Result<CallablePlan<'a>, RuntimeCatalogError> {
     let fields = map(value)?;
-    metadata::only_fields(fields, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])?;
+    metadata::only_fields(fields, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])?;
     let service_name = metadata::text(fields, 1)?;
     let operation_name = metadata::text(fields, 2)?;
     let (service, operation) = catalog_operation(catalog, &service_name, &operation_name)?;
@@ -52,17 +73,27 @@ fn decode_plan<'a>(
 ) -> Result<CallablePlan<'a>, RuntimeCatalogError> {
     let kind = Kind::parse(&metadata::text(fields, 3)?)?;
     let scope = scope(metadata::integer(fields, 4)?)?;
-    let items = item_plan(metadata::map_field(fields, 5)?)?;
-    let identity = identity(metadata::map_field(fields, 6)?)?;
+    let items = selection::item(metadata::map_field(fields, 5)?)?;
+    let tags = tags::read(fields, service, operation, &items)?;
+    let purpose_fields = metadata::map_field(fields, 12)?;
+    let purpose = if metadata::integer(purpose_fields, 1)? == 3 {
+        PlanPurpose::TagEndpoint(tag_endpoint::read(purpose_fields, service, operation)?)
+    } else {
+        purpose(purpose_fields)?
+    };
+    let emission = selection::emission(fields)?;
+    let identity = identity_for(metadata::map_field(fields, 6)?, &purpose, emission)?;
     let bindings = bindings(metadata::list(fields, 7)?)?;
     let pagination = page(metadata::map_field(fields, 8)?)?;
-    let exclusions = exclusions(metadata::list(fields, 9)?)?;
+    validation::exclusions(service, operation, &items, metadata::list(fields, 9)?)?;
+    let exclusions = map_exclusions::read(fields, service, operation, &items,
+        exclusions(metadata::list(fields, 9)?)?)?;
     let endpoint = endpoint(metadata::map_field(fields, 10)?)?;
     let review = review(metadata::map_field(fields, 11)?)?;
-    let purpose = purpose(metadata::map_field(fields, 12)?)?;
     let protocol = protocol(metadata::integer(fields, 13)?)?;
+    let (projection, classification) = capabilities::read(fields, service, operation, &items)?;
     protocol_check::validate(service, protocol)?;
-    Ok(CallablePlan::new(PlanParts {
+    let parts = PlanParts {
         service_name: service_name.into_boxed_str(),
         operation_name: operation_name.into_boxed_str(),
         service,
@@ -71,6 +102,7 @@ fn decode_plan<'a>(
         scope,
         items,
         identity,
+        tags,
         bindings: bindings.into_boxed_slice(),
         pagination,
         exclusions,
@@ -78,7 +110,29 @@ fn decode_plan<'a>(
         review,
         purpose,
         protocol,
-    }))
+        facet_precedence: 0,
+        routing: routing::read(fields)?,
+        branches: routing::branches(fields)?,
+        projection,
+        classification,
+        emission,
+        row_policy: row_policy::read(fields)?,
+        context_projection: selection::projection(fields)?,
+    };
+    validation::validate(&parts)?;
+    Ok(CallablePlan::new(parts))
+}
+
+fn identity_for(fields: crate::record::MapRef<'_>, purpose: &PlanPurpose, emission: super::super::Emission) -> Result<IdentityPlan, RuntimeCatalogError> {
+    if matches!(purpose, PlanPurpose::TagEndpoint(_) | PlanPurpose::EndpointDiscovery)
+        || emission == super::super::Emission::DiscoveryOnly {
+        metadata::only_fields(fields, &[1, 2])?;
+        if metadata::integer(fields, 1)? != 2 || metadata::list(fields, 2)?.count()? != 0 {
+            return Err(RuntimeCatalogError::Capability);
+        }
+        return Ok(IdentityPlan::Key(Box::new([])));
+    }
+    selection::identity(fields)
 }
 
 fn scope(value: i64) -> Result<PlanScope, RuntimeCatalogError> {
@@ -113,17 +167,24 @@ fn identity(map_value: crate::record::MapRef<'_>) -> Result<IdentityPlan, Runtim
         0 => Ok(IdentityPlan::Arn(metadata::selected_path(metadata::list(
             map_value, 2,
         )?)?)),
-        1 => Ok(IdentityPlan::Template(
-            metadata::bounded(metadata::list(map_value, 2)?, identity_part, 64)?.into_boxed_slice(),
-        )),
-        2 => Ok(IdentityPlan::Key(
-            metadata::bounded(
+        1 => {
+            let parts = metadata::bounded(metadata::list(map_value, 2)?, identity_part, 64)?;
+            if parts.is_empty() {
+                return Err(RuntimeCatalogError::Capability);
+            }
+            Ok(IdentityPlan::Template(parts.into_boxed_slice()))
+        }
+        2 => {
+            let paths = metadata::bounded(
                 metadata::list(map_value, 2)?,
                 |entry| metadata::selected_path(list_value(entry)?),
                 8,
-            )?
-            .into_boxed_slice(),
-        )),
+            )?;
+            if paths.is_empty() {
+                return Err(RuntimeCatalogError::Capability);
+            }
+            Ok(IdentityPlan::Key(paths.into_boxed_slice()))
+        }
         _ => Err(RuntimeCatalogError::Capability),
     }
 }
@@ -187,113 +248,57 @@ fn binding(value: ValueRef<'_>) -> Result<BindingPlan, RuntimeCatalogError> {
                 path: metadata::selected_path(metadata::list(fields, 5)?)?,
             }
         }
+        5..=7 => selection::binding(fields)?,
+        8 => {
+            metadata::only_fields(fields, &[1, 2, 3, 4, 5, 6, 7])?;
+            let arn_service = metadata::text(fields, 6)?;
+            let resource_kind = match (arn_service.as_str(), metadata::integer(fields, 7)?) {
+                ("sns", 0) => super::super::ArnResourceKind::SnsSubscription,
+                ("sqs", 1) => super::super::ArnResourceKind::SqsQueue,
+                ("sns", 2) => super::super::ArnResourceKind::SnsTopic,
+                _ => return Err(RuntimeCatalogError::Capability),
+            };
+            BindingSource::OperationArn {
+                service: metadata::text(fields, 3)?.into_boxed_str(),
+                operation: metadata::text(fields, 4)?.into_boxed_str(),
+                path: metadata::selected_path(metadata::list(fields, 5)?)?,
+                arn_service: arn_service.into_boxed_str(),
+                resource_kind,
+            }
+        }
+        9 => selection::transformed(fields)?,
+        10 => selection::url_binding(fields)?,
+        11 => {
+            metadata::only_fields(fields, &[1, 2])?;
+            BindingSource::RegionList
+        }
+        12 => binding_alternatives::decode(fields)?,
+        13 => {
+            metadata::only_fields(fields, &[1, 2, 3, 4, 5, 6, 7])?;
+            let branch = metadata::text(fields, 6)?;
+            if !routing::valid_branch_name(&branch) { return Err(RuntimeCatalogError::Capability); }
+            BindingSource::ContextFromBranch {
+                service: metadata::text(fields, 3)?.into_boxed_str(),
+                operation: metadata::text(fields, 4)?.into_boxed_str(),
+                branch: branch.into_boxed_str(),
+                source: match metadata::integer(fields, 7)? {
+                    5 => crate::catalog::runtime::ContextSource::SelectedItem,
+                    6 => crate::catalog::runtime::ContextSource::Response,
+                    7 => crate::catalog::runtime::ContextSource::Request,
+                    _ => return Err(RuntimeCatalogError::Capability),
+                },
+                path: metadata::selected_path(metadata::list(fields, 5)?)?,
+            }
+        }
         _ => return Err(RuntimeCatalogError::Capability),
     };
     Ok(BindingPlan { path, source })
 }
 
 fn binding_value(value: ValueRef<'_>) -> Result<BindingValue, RuntimeCatalogError> {
-    match value {
-        ValueRef::Text(value) => Ok(BindingValue::String(value.to_owned())),
-        ValueRef::Int(value) => Ok(BindingValue::Integer(value)),
-        ValueRef::Bool(value) => Ok(BindingValue::Boolean(value)),
-        ValueRef::List(values) => Ok(BindingValue::Strings(
-            metadata::bounded(values, super::text_value, 16)?.into_boxed_slice(),
-        )),
-        _ => Err(RuntimeCatalogError::Capability),
-    }
+    fixed_input::decode(value)
 }
 
-fn page(map_value: crate::record::MapRef<'_>) -> Result<PagePlan, RuntimeCatalogError> {
-    let items = item_plan(metadata::map_field(map_value, 1)?)?;
-    let tokens = page_tokens(map_value)?;
-    let page_size = match map_value.get_field(crate::record::FieldId::new(3)?)? {
-        Some(value) => Some(page_size(map(value)?)?),
-        None => None,
-    };
-    let max_page_size = optional_u32(map_value, 4)?;
-    let truncated_path = match map_value.get_field(crate::record::FieldId::new(5)?)? {
-        Some(ValueRef::List(path)) => Some(metadata::id_path(path)?),
-        Some(ValueRef::Null) | None => None,
-        _ => return Err(RuntimeCatalogError::Capability),
-    };
-    metadata::only_fields(map_value, &[1, 2, 3, 4, 5])?;
-    Ok(PagePlan {
-        items,
-        tokens: tokens.into_boxed_slice(),
-        page_size,
-        max_page_size,
-        truncated_path,
-    })
-}
-
-fn token(value: ValueRef<'_>) -> Result<TokenBinding, RuntimeCatalogError> {
-    let fields = map(value)?;
-    let request_path = metadata::id_path(metadata::list(fields, 1)?)?;
-    let response_path = metadata::id_path(metadata::list(fields, 2)?)?;
-    let value_type = token_type(metadata::integer(fields, 3)?)?;
-    let request_placement = placement(metadata::map_field(fields, 4)?)?;
-    let response_placement = placement(metadata::map_field(fields, 5)?)?;
-    let optional = token_optional(fields)?;
-    metadata::only_fields(fields, &[1, 2, 3, 4, 5, 6])?;
-    Ok(TokenBinding {
-        request_path,
-        response_path,
-        value_type,
-        request_placement,
-        response_placement,
-        optional,
-    })
-}
-
-fn token_optional(fields: crate::record::MapRef<'_>) -> Result<bool, RuntimeCatalogError> {
-    match fields.get_field(crate::record::FieldId::new(6)?)? {
-        None => Ok(false),
-        Some(ValueRef::Bool(value)) => Ok(value),
-        _ => Err(RuntimeCatalogError::Capability),
-    }
-}
-
-fn page_tokens(fields: crate::record::MapRef<'_>) -> Result<Vec<TokenBinding>, RuntimeCatalogError> {
-    let tokens = metadata::bounded(metadata::list(fields, 2)?, token, 8)?;
-    if !tokens.is_empty() && tokens.iter().all(|token| token.optional) {
-        return Err(RuntimeCatalogError::Capability);
-    }
-    Ok(tokens)
-}
-
-fn page_size(map_value: crate::record::MapRef<'_>) -> Result<PageSizeBinding, RuntimeCatalogError> {
-    let path = metadata::id_path(metadata::list(map_value, 1)?)?;
-    let max = positive_u32(metadata::integer(map_value, 2)?)?;
-    let placement = placement(metadata::map_field(map_value, 3)?)?;
-    metadata::only_fields(map_value, &[1, 2, 3])?;
-    Ok(PageSizeBinding {
-        path,
-        max,
-        placement,
-    })
-}
-
-fn token_type(value: i64) -> Result<TokenType, RuntimeCatalogError> {
-    match value {
-        0 => Ok(TokenType::String),
-        1 => Ok(TokenType::Integer),
-        2 => Ok(TokenType::Boolean),
-        _ => Err(RuntimeCatalogError::Capability),
-    }
-}
-
-fn placement(map_value: crate::record::MapRef<'_>) -> Result<TokenPlacement, RuntimeCatalogError> {
-    let placement = match metadata::integer(map_value, 1)? {
-        0 => TokenPlacement::Path(metadata::text(map_value, 2)?),
-        1 => TokenPlacement::Query(metadata::text(map_value, 2)?),
-        2 => TokenPlacement::Header(metadata::text(map_value, 2)?),
-        3 => TokenPlacement::Body(metadata::id_path(metadata::list(map_value, 2)?)?),
-        _ => return Err(RuntimeCatalogError::Capability),
-    };
-    metadata::only_fields(map_value, &[1, 2])?;
-    Ok(placement)
-}
 
 fn exclusions(list: crate::record::ListRef<'_>) -> Result<Exclusions, RuntimeCatalogError> {
     let paths = metadata::bounded(

@@ -133,6 +133,21 @@ pub fn build_report(root: &Path, source: &Path) -> Result<String, Error> {
     report::build(root, source)
 }
 
+pub fn build_report_with_policy(source: &Path, deny: &DenyList<'_>) -> Result<String, Error> {
+    report::build_with_policy(source, deny)
+}
+
 pub fn run(root: &Path, source: &Path, mode: crate::ReportMode) -> Result<(), Error> {
     report::run(root, source, mode)
+}
+
+pub fn run_with_policy(
+    root: &Path,
+    source: &Path,
+    mode: crate::ReportMode,
+    deny: &DenyList<'_>,
+) -> Result<(), Error> {
+    let text = build_report_with_policy(source, deny)?;
+    crate::report::publish(&root.join("catalog/aws-classes.report"), &text, mode)?;
+    Ok(())
 }

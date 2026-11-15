@@ -1,0 +1,45 @@
+use super::support::{NameError, ServiceOverlay, service};
+
+pub(super) fn overlays() -> Result<Vec<ServiceOverlay>, NameError> {
+    Ok(vec![
+        service("backupsearch", [
+            super::backupsearch_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("batch", [
+            super::batch_0::part_0()?,
+            super::batch_0::part_1()?,
+        ].into_iter().flatten().collect())?,
+        service("bcm-dashboards", [
+            super::bcm_dashboards_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("bcm-data-exports", [
+            super::bcm_data_exports_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("bcm-pricing-calculator", [
+            super::bcm_pricing_calculator_0::part_0()?,
+            super::bcm_pricing_calculator_0::part_1()?,
+        ].into_iter().flatten().collect())?,
+        service("bcm-recommended-actions", [
+            super::bcm_recommended_actions_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("bedrock", [
+            super::bedrock_0::part_0()?,
+            super::bedrock_0::part_1()?,
+            super::bedrock_0::part_2()?,
+            super::bedrock_0::part_3()?,
+            super::bedrock_0::part_4()?,
+        ].into_iter().flatten().collect())?,
+        service("bedrock-agent", [
+            super::bedrock_agent_0::part_0()?,
+            super::bedrock_agent_0::part_1()?,
+            super::bedrock_agent_0::part_2()?,
+        ].into_iter().flatten().collect())?,
+        service("bedrock-agent-runtime", [
+            super::bedrock_agent_runtime_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("bedrock-agentcore", [
+            super::bedrock_agentcore_0::part_0()?,
+            super::bedrock_agentcore_0::part_1()?,
+        ].into_iter().flatten().collect())?,
+    ])
+}

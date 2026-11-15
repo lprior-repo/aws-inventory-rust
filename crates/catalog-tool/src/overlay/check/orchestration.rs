@@ -7,7 +7,6 @@ use crate::{
 use serde_json::Value;
 use std::{
     collections::{BTreeMap, BTreeSet},
-    fs,
     path::Path,
 };
 
@@ -19,20 +18,39 @@ struct Accumulation {
     unreviewed: [usize; 3],
 }
 
-pub(super) fn check(root: &Path, source: &Path) -> Result<CheckedOverlays, CheckError> {
-    let overlays = super::super::load_dir(root)?;
-    let deny_text = read_deny(root)?;
-    let deny = DenyList::parse(&deny_text)?;
+pub(super) fn check(_root: &Path, source: &Path) -> Result<CheckedOverlays, CheckError> {
     let values = read_model_values(source)?;
-    let models = parse_models(&values)?;
+    let mut overlays = super::super::embedded()?;
+    validate_policy_services(&overlays)?;
+    overlays.retain(|overlay| values.contains_key(overlay.service()));
+    check_model_policies(&values, &overlays, &DenyList::default())
+}
+
+pub(super) fn check_policies(
+    source: &Path,
+    overlays: &[crate::overlay::ServiceOverlay],
+    deny: &DenyList<'_>,
+) -> Result<CheckedOverlays, CheckError> {
+    validate_policy_services(overlays)?;
+    let values = read_model_values(source)?;
+    check_model_policies(&values, overlays, deny)
+}
+
+fn check_model_policies(
+    values: &BTreeMap<String, Value>,
+    overlays: &[crate::overlay::ServiceOverlay],
+    deny: &DenyList<'_>,
+) -> Result<CheckedOverlays, CheckError> {
+    let deny = deny.with_builtin();
+    let models = parse_models(values)?;
     enforce_model_limit(models.len())?;
     let vocabulary = model_vocabulary(&models)?;
     let mut accumulation = Accumulation::default();
-    unknown_overlay_services(&overlays, &values, &mut accumulation.violations);
+    unknown_overlay_services(overlays, values, &mut accumulation.violations);
     process_models(
-        &values,
+        values,
         &models,
-        &overlays,
+        overlays,
         &deny,
         &vocabulary,
         &mut accumulation,
@@ -40,14 +58,30 @@ pub(super) fn check(root: &Path, source: &Path) -> Result<CheckedOverlays, Check
     finish(overlays.len(), models.len(), accumulation)
 }
 
-fn read_deny(root: &Path) -> Result<String, CheckError> {
-    let path = root.join("catalog/overlay/must-deny.txt");
-    fs::read_to_string(&path).map_err(|source| CheckError::Io { file: path, source })
+fn validate_policy_services(overlays: &[crate::overlay::ServiceOverlay]) -> Result<(), CheckError> {
+    enforce_model_limit(overlays.len())?;
+    overlays.iter().try_fold(BTreeSet::new(), |mut names, overlay| {
+        if !names.insert(overlay.service()) {
+            return Err(CheckError::Invalid {
+                service: overlay.service().to_owned(),
+                operation: String::new(),
+                key: "service".to_owned(),
+                value: overlay.service().to_owned(),
+                rule: "duplicate service policy",
+            });
+        }
+        Ok(names)
+    })?;
+    Ok(())
 }
+
 
 fn read_model_values(source: &Path) -> Result<BTreeMap<String, Value>, CheckError> {
     let models = source.join("models");
     let files = model_source::discover_models(&models)?;
+    if files.is_empty() {
+        return Err(model_source::Error::NoModels.into());
+    }
     let mut values = BTreeMap::new();
     for file in files {
         let (service, value) = read_model_value(&models, &file)?;

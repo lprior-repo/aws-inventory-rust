@@ -1,7 +1,7 @@
 mod behavior;
 use super::*;
 use inventory_core::record::{FieldId, ValueRef};
-use crate::overlay::ServiceOverlay;
+use crate::overlay::{Identity, ItemSelector, MemberPath, OperationOverlay, OverlayClass, Paginator, Scope, ServiceOverlay, TokenPair};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
@@ -19,14 +19,15 @@ const MODEL: &str = r#"{"shapes":{
 "n#Rows":{"type":"list","member":{"target":"n#Row"}},
 "n#Row":{"type":"structure","members":{"Id":{"target":"smithy.api#String"}}}
 }}"#;
-const PAIRS: &str = "[{input='StartName',output='NextName'}, {input='StartType',output='NextType'}, {input='StartId',output='NextId',optional=true}]";
+type Pair<'a> = (&'a str, &'a str, bool);
+const PAIRS: &[Pair<'_>] = &[("StartName", "NextName", false), ("StartType", "NextType", false), ("StartId", "NextId", true)];
 const REGISTRY: &str = "A\nId\nIsTruncated\nItems\nNextId\nNextName\nNextType\nStartId\nStartName\nStartType\n";
 
-fn compile_fixture(model: &str, pairs: &str) -> Result<Value, Box<dyn std::error::Error>> {
+fn compile_fixture(model: &str, pairs: &[Pair<'_>]) -> Result<Value, Box<dyn std::error::Error>> {
     compile_fixture_with_registry(model, pairs, REGISTRY)
 }
 
-fn compile_fixture_with_registry(model: &str, pairs: &str, registry: &str) -> Result<Value, Box<dyn std::error::Error>> {
+fn compile_fixture_with_registry(model: &str, pairs: &[Pair<'_>], registry: &str) -> Result<Value, Box<dyn std::error::Error>> {
     let directory = tempfile::tempdir()?;
     let service_dir = directory.path().join("models/example/service/2020-01-01");
     std::fs::create_dir_all(&service_dir)?;
@@ -37,9 +38,17 @@ fn compile_fixture_with_registry(model: &str, pairs: &str, registry: &str) -> Re
     let services = crate::runtime_catalog::ServiceIndex::build(catalog)?;
     let service = catalog.service("example")?.ok_or("service")?;
     let operation = service.operations()?.next().ok_or("operation")??;
-    let overlay = ServiceOverlay::parse("example", &format!(
-        "format=1\nreviewed='2026-11-15'\nreviewer='pagination'\n[operation.ListThings]\nclass='enumerate'\nscope='account'\nitems='Items'\nidentity={{key=['Id']}}\npaginator={{kind='tokens',pairs={pairs},truncated='IsTruncated'}}\n"
-    ))?;
+    let pairs = pairs.iter().map(|(input, output, optional)| Ok(TokenPair {
+        input: MemberPath::new(input)?, output: MemberPath::new(output)?, optional: *optional,
+    })).collect::<Result<Vec<_>, crate::overlay::NameError>>()?;
+    let overlay = ServiceOverlay::new("example", vec![("ListThings", OperationOverlay {
+        class: Some(OverlayClass::Enumerate),
+        scope: Some(Scope::Account),
+        items: Some(ItemSelector::parse("Items")?),
+        identity: Some(Identity::Key(vec![MemberPath::new("Id")?])),
+        paginator: Some(Paginator::Tokens { pairs, truncated: Some(MemberPath::new("IsTruncated")?) }),
+        ..OperationOverlay::default()
+    })])?;
     let plan = overlay.operations().values().next().ok_or("review")?;
     Ok(compile(plan, service, operation, 6, &services)?)
 }

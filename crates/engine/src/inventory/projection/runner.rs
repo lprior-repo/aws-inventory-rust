@@ -1,5 +1,9 @@
+#[path = "runner/ownership.rs"]
+mod ownership;
 #[path = "runner/rebuild.rs"]
 mod rebuild;
+#[path = "runner/tags.rs"]
+mod tags;
 use super::client::{GraphClient, GraphError};
 use super::cypher::QueryError;
 use crate::inventory::{
@@ -8,6 +12,7 @@ use crate::inventory::{
 };
 use inventory_core::inventory::ResourceKey;
 use rebuild::*;
+use tags::project_tags;
 use thiserror::Error;
 
 const MAX_BATCH: u16 = 1000;
@@ -29,6 +34,12 @@ pub enum ProjectionError {
     Query,
     #[error("projection graph name or batch limit is invalid")]
     InvalidConfiguration,
+    #[error("another projector owns this inventory database")]
+    DeliveryBusy,
+    #[error("projection delivery ownership was superseded")]
+    OwnershipLost,
+    #[error("projection ownership file operation failed: {0}")]
+    OwnershipIo(#[from] std::io::Error),
 }
 
 impl From<QueryError> for ProjectionError {
@@ -37,6 +48,26 @@ impl From<QueryError> for ProjectionError {
     }
 }
 
+/// Delivers one bounded batch to the graph owned by this inventory database.
+///
+/// One database must own one target graph; the outbox is not a multi-target fanout.
+/// All projectors (including rebuilds) must use this entrypoint. A persistent
+/// `.projection-lock.sqlite` sidecar serializes handles and processes for the
+/// entire snapshot/effects/ack interval, conservatively across all graph names.
+/// Preserve/restore the sidecar with its inventory; never reset its generation
+/// while the target graph exists, even with no open handles. Contention fails
+/// immediately with `DeliveryBusy`; ordinary inventory writers do not acquire it.
+///
+/// Redis CLIENT ID/SET/WATCH/GET/MULTI/EXEC, Lua EVAL and synchronous FalkorDB
+/// GRAPH.QUERY inside EXEC are required. Durable generations reject delayed older
+/// claims; WATCH fences effects from cancelled/crashed predecessors. Ownership
+/// keys must not be externally mutated/evicted. Quiesce old projector versions
+/// before upgrading. No expiring lease or unfenced fallback exists. Client deadline is 10s per
+/// request; dropped callers leave unfinished delivery pending for successor repair.
+/// EXEC runs each native query on Redis's main thread, temporarily serializing
+/// other graphs/Redis commands too. A timed-out query may still finish remotely,
+/// but its transaction cannot escape the successor's native ownership fence.
+/// This is delivery serialization, not an atomic multi-query graph snapshot.
 pub async fn run_projection(
     store: &BinaryStore,
     endpoint: &str,
@@ -44,11 +75,24 @@ pub async fn run_projection(
     batch_limit: u16,
 ) -> Result<ProjectionReport, ProjectionError> {
     validate(graph, endpoint, batch_limit)?;
+    let ownership = ownership::acquire(store).await?;
+    let result = run_owned_projection(store, endpoint, graph, batch_limit, ownership.generation()).await;
+    ownership.release().await?;
+    result
+}
+
+async fn run_owned_projection(
+    store: &BinaryStore,
+    endpoint: &str,
+    graph: &str,
+    batch_limit: u16,
+    generation: i64,
+) -> Result<ProjectionReport, ProjectionError> {
     let state = store.projection_state().await?;
     if state.pending == 0 {
         return Ok(report(state.pending, 0, false, false));
     }
-    let mut client = match GraphClient::connect(endpoint, graph).await {
+    let mut client = match GraphClient::connect(endpoint, graph, generation).await {
         Ok(client) => client,
         Err(error) => return failed_delivery(store, error, 0).await,
     };
@@ -68,14 +112,16 @@ async fn deliver_batch(
         return pending_report(store, 0, false, false).await;
     }
     let rebuild = pending.iter().find(|entry| entry.full_rebuild);
-    if let Some(entry) = rebuild {
+    let acknowledged = if let Some(entry) = rebuild {
         match rebuild_graph(store, client, entry, batch_limit).await {
-            Ok(true) => (),
-            Ok(false) => return pending_report(store, 0, false, true).await,
+            Ok(Some(acknowledged)) => acknowledged,
+            Ok(None) => return pending_report(store, 0, false, true).await,
             Err(error) => return failed_delivery(store, error, 0).await,
         }
-    }
-    deliver_entries(store, client, pending, batch_limit).await
+    } else {
+        0
+    };
+    deliver_entries(store, client, pending, batch_limit, acknowledged).await
 }
 
 async fn deliver_entries(
@@ -83,19 +129,15 @@ async fn deliver_entries(
     client: &mut GraphClient,
     pending: Vec<PendingProjection>,
     batch_limit: u16,
+    mut acknowledged: u64,
 ) -> Result<ProjectionReport, ProjectionError> {
-    let mut acknowledged = if pending.iter().any(|entry| entry.full_rebuild) {
-        1_u64
-    } else {
-        0_u64
-    };
     let mut offline = false;
     for entry in pending {
         if entry.full_rebuild {
             continue;
         }
         match deliver_entry(store, client, &entry, batch_limit).await {
-            Ok(()) => acknowledged = acknowledged.saturating_add(1),
+            Ok(applied) => acknowledged = acknowledged.saturating_add(applied),
             Err(EntryError::Offline) => {
                 offline = true;
                 break;
@@ -112,7 +154,7 @@ async fn deliver_entry(
     client: &mut GraphClient,
     entry: &PendingProjection,
     batch_limit: u16,
-) -> Result<(), EntryError> {
+) -> Result<u64, EntryError> {
     let key = entry.key.as_ref().ok_or(EntryError::Projection(
         ProjectionError::InvalidConfiguration,
     ))?;
@@ -123,8 +165,8 @@ async fn deliver_entry(
     }
     store
         .ack_projection(ProjectionAck::new(key.clone(), entry.revision)?)
-        .await?;
-    Ok(())
+        .await
+        .map_err(EntryError::Store)
 }
 
 async fn deliver_resource(
@@ -133,24 +175,31 @@ async fn deliver_resource(
     key: &ResourceKey,
     batch_limit: u16,
 ) -> Result<(), EntryError> {
-    match store.projection_resource(key).await? {
+    let mut snapshot = store.begin_projection_snapshot().await?;
+    match snapshot.resource(key).await? {
         Some(resource) => client.upsert(&resource).await.map_err(entry_graph_error)?,
         None => return client.delete(key).await.map_err(entry_graph_error),
     }
+    client.clear_tags(key).await.map_err(entry_graph_error)?;
+    project_tags(&mut snapshot, client, key, batch_limit)
+        .await
+        .map_err(entry_graph_error)?;
     client.clear_edges(key).await.map_err(entry_graph_error)?;
-    deliver_incident_edges(store, client, key, batch_limit).await
+    deliver_incident_edges(&mut snapshot, client, key, batch_limit).await?;
+    snapshot.finish().await?;
+    Ok(())
 }
 
 async fn deliver_incident_edges(
-    store: &BinaryStore,
+    snapshot: &mut ProjectionSnapshot,
     client: &mut GraphClient,
     key: &ResourceKey,
     batch_limit: u16,
 ) -> Result<(), EntryError> {
     let mut cursor: Option<ProjectionEdgeCursor> = None;
     for _ in 0..MAX_REBUILD_PAGES {
-        let page = store
-            .projection_edges_for(key, cursor.take(), batch_limit)
+        let page = snapshot
+            .edges_for(key, cursor.take(), batch_limit)
             .await?;
         for edge in page.edges {
             client.edge(&edge).await.map_err(entry_graph_error)?;
@@ -163,60 +212,6 @@ async fn deliver_incident_edges(
     Err(EntryError::Projection(
         ProjectionError::InvalidConfiguration,
     ))
-}
-
-async fn rebuild_graph(
-    store: &BinaryStore,
-    client: &mut GraphClient,
-    marker: &PendingProjection,
-    batch_limit: u16,
-) -> Result<bool, GraphError> {
-    client.clear().await?;
-    let mut snapshot = store
-        .begin_projection_snapshot()
-        .await
-        .map_err(GraphError::Store)?;
-    let resources_done = rebuild_resources(&mut snapshot, client, batch_limit).await?;
-    let edges_done = if resources_done {
-        rebuild_edges(&mut snapshot, client, batch_limit).await?
-    } else {
-        false
-    };
-    snapshot.finish().await.map_err(GraphError::Store)?;
-    if resources_done && edges_done {
-        store
-            .ack_projection(
-                ProjectionAck::full_rebuild(marker.revision).map_err(GraphError::Store)?,
-            )
-            .await
-            .map_err(GraphError::Store)?;
-        Ok(true)
-    } else {
-        Ok(false)
-    }
-}
-
-async fn rebuild_resources(
-    snapshot: &mut ProjectionSnapshot,
-    client: &mut GraphClient,
-    limit: u16,
-) -> Result<bool, GraphError> {
-    let mut after: Option<ResourceKey> = None;
-    for _ in 0..MAX_REBUILD_PAGES {
-        let page = snapshot
-            .resources(after.clone(), limit)
-            .await
-            .map_err(GraphError::Store)?;
-        let count = page.len();
-        after = page.last().map(|resource| resource.key.clone());
-        for resource in page {
-            client.upsert(&resource).await?;
-        }
-        if count < usize::from(limit) {
-            return Ok(true);
-        }
-    }
-    Ok(false)
 }
 
 #[cfg(test)]

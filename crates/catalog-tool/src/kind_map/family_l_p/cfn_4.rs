@@ -1,0 +1,24 @@
+use crate::kind_map::CfnMapping;
+
+pub(super) const ENTRIES: &[CfnMapping<'static>] = &[
+    CfnMapping::canonical("AWS::MemoryDB::SubnetGroup"),
+    CfnMapping::canonical("AWS::MemoryDB::User"),
+    CfnMapping::canonical("AWS::Neptune::DBCluster"),
+    CfnMapping::canonical("AWS::Neptune::DBClusterParameterGroup"),
+    CfnMapping::canonical("AWS::Neptune::DBParameterGroup"),
+    CfnMapping::canonical("AWS::Neptune::DBSubnetGroup"),
+    CfnMapping::canonical("AWS::Neptune::EventSubscription"),
+    CfnMapping::canonical("AWS::Neptune::GlobalCluster"),
+    CfnMapping::canonical("AWS::NeptuneGraph::Graph"),
+    CfnMapping::canonical("AWS::NeptuneGraph::GraphSnapshot"),
+    CfnMapping::canonical("AWS::NetworkFirewall::Firewall"),
+    CfnMapping::canonical("AWS::NetworkFirewall::FirewallPolicy"),
+    CfnMapping::canonical("AWS::NetworkFirewall::RuleGroup"),
+    CfnMapping::canonical("AWS::NetworkFirewall::TLSInspectionConfiguration"),
+    CfnMapping::canonical("AWS::NetworkFirewall::VpcEndpointAssociation"),
+    CfnMapping::canonical("AWS::NetworkFlowMonitor::Monitor"),
+    CfnMapping::canonical("AWS::NetworkFlowMonitor::Scope"),
+    CfnMapping::canonical("AWS::NetworkManager::ConnectPeer"),
+    CfnMapping::canonical("AWS::NetworkManager::CoreNetwork"),
+    CfnMapping::canonical("AWS::NetworkManager::Device"),
+];

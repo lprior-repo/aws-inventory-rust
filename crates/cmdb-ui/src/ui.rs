@@ -126,6 +126,10 @@ script_mod! {
                             account_filter_input := TextInput{width: Fill height: 32 empty_text: "Account ID"}
                             region_filter_input := TextInput{width: Fill height: 32 empty_text: "Region"}
                             kind_filter_input := TextInput{width: Fill height: 32 empty_text: "Resource kind"}
+                            SectionLabel{text: "EXACT TAG FILTER"}
+                            tag_key_input := TextInput{width: Fill height: 32 empty_text: "Tag key"}
+                            tag_value_input := TextInput{width: Fill height: 32 empty_text: "Tag value (can be empty)"}
+                            tag_value_exact := CheckBox{width: Fill height: 26 text: "Match value"}
 
                             Filler{}
                             Label{
@@ -154,16 +158,16 @@ script_mod! {
                                     draw_text.text_style: theme.font_title_s
                                 }
                                 table_status := Label{
-                                    height: Fit
-                                    max_lines: 1
+                                    width: Fill height: Fit
+                                    max_lines: 2
                                     text_overflow: Ellipsis
                                     text: ""
                                     draw_text.color: theme.color_text_meta
                                     draw_text.text_style: theme.font_body_s
                                 }
-                                Filler{}
                                 table_tab := ViewTab{text: "Table"}
                                 graph_tab := ViewTab{text: "Graph"}
+                                refresh_button := ViewTab{text: "Refresh"}
                                 search_input := TextInput{
                                     width: 180 height: 28
                                     padding: Inset{left: 10 right: 10 top: 6 bottom: 0}
@@ -230,8 +234,15 @@ script_mod! {
                                     width: Fill height: Fill
                                     flow: Down spacing: theme.space_2
                                     graph_counts := Label{
-                                        height: Fit
+                                        width: Fill height: Fit
+                                        max_lines: 3
                                         text: ""
+                                        draw_text.color: theme.color_text_meta
+                                        draw_text.text_style: theme.font_body_s
+                                    }
+                                    Label{
+                                        width: Fill height: Fit
+                                        text: "Hierarchy = grouping · tag links = affiliation, not AWS dependency"
                                         draw_text.color: theme.color_text_meta
                                         draw_text.text_style: theme.font_body_s
                                     }
@@ -253,11 +264,20 @@ script_mod! {
                             SolidView{width: Fill height: 1 draw_bg.color: theme.color_u_1}
 
                             detail_body := mod.widgets.DetailFields{}
+                            SectionLabel{text: "TAGS · SQLITE SNAPSHOT"}
+                            detail_tags := Label{
+                                width: Fill height: Fit
+                                max_lines: 12
+                                text_overflow: Ellipsis
+                                text: ""
+                                draw_text.color: theme.color_text
+                                draw_text.text_style: theme.font_body_s
+                            }
 
                             detail_empty := Label{
                                 width: Fill height: Fit
                                 visible: false
-                                text: "No resource matches these filters."
+                                text: "Select a resource to inspect."
                                 draw_text.color: theme.color_text_meta
                                 draw_text.text_style: theme.font_body_s
                             }
@@ -265,7 +285,7 @@ script_mod! {
                             Filler{}
                             Label{
                                 width: Fill height: Fit
-                                text: "Schema14 inventory · read-only"
+                                text: "Retained inventory snapshot · read-only"
                                 draw_text.color: theme.color_text_placeholder
                                 draw_text.text_style: theme.font_body_s
                             }

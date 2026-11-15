@@ -1,8 +1,11 @@
 mod error;
+mod enum_values;
+mod value_constraints;
 use super::super::{CatalogError, CatalogKey, SHAPE_KINDS, integer, number, text};
 use super::{optional_list, wire::WireTraits};
 use crate::record::{FieldId, MapRef, ValueRef};
 pub use error::{ErrorKind, ModeledError};
+pub use value_constraints::ValueConstraints;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[non_exhaustive]
@@ -67,6 +70,31 @@ impl<'a> Shape<'a> {
             .get(code)
             .copied()
             .ok_or(CatalogError::Reference)
+    }
+    /// Tests a scalar against retained modeled enum wire values.
+    ///
+    /// # Errors
+    /// Returns an error when enum metadata is malformed or exceeds its bounds.
+    pub fn accepts_enum_value(self, value: ValueRef<'_>) -> Result<bool, CatalogError> {
+        enum_values::accepts(self.map, self.kind()?, value)
+    }
+    /// Borrows the retained Smithy length and pattern constraints.
+    ///
+    /// Missing metadata fails closed; explicit null means unconstrained.
+    pub fn value_constraints(self) -> Result<ValueConstraints<'a>, CatalogError> {
+        value_constraints::read(self.map)
+    }
+    /// Constraints on a list's modeled member, separate from the member target.
+    pub fn element_constraints(self) -> Result<ValueConstraints<'a>, CatalogError> {
+        value_constraints::nested(self.map, CatalogKey::ElementWire)
+    }
+    /// Constraints on a map's modeled key member.
+    pub fn map_key_constraints(self) -> Result<ValueConstraints<'a>, CatalogError> {
+        value_constraints::nested(self.map, CatalogKey::MapKeyWire)
+    }
+    /// Constraints on a map's modeled value member.
+    pub fn map_value_constraints(self) -> Result<ValueConstraints<'a>, CatalogError> {
+        value_constraints::nested(self.map, CatalogKey::MapValueWire)
     }
     pub fn error(self) -> Result<Option<ModeledError<'a>>, CatalogError> {
         error::read(self.map)
@@ -137,6 +165,11 @@ impl<'a> Shape<'a> {
         self.arn()?;
         self.error()?;
         self.wire()?.validate()?;
+        enum_values::validate(self.map, kind)?;
+        value_constraints::validate(self.map)?;
+        for key in [CatalogKey::ElementWire, CatalogKey::MapKeyWire, CatalogKey::MapValueWire] {
+            value_constraints::validate_nested(self.map, key)?;
+        }
         self.validate_members(kind)?;
         let element = self.element()?;
         let key = self.map_key()?;
@@ -157,6 +190,7 @@ impl<'a> Shape<'a> {
             let member = member?;
             member.name()?;
             member.wire()?.validate()?;
+            value_constraints::validate(member.map)?;
             if !matches!(kind, "structure" | "union") {
                 return Err(CatalogError::Field(CatalogKey::Members));
             }
@@ -183,6 +217,10 @@ impl<'a> Member<'a> {
     }
     pub fn default_value(self) -> Result<Option<ValueRef<'a>>, CatalogError> {
         self.wire()?.default_value()
+    }
+    /// Borrows constraints attached to this member, independently of its target.
+    pub fn value_constraints(self) -> Result<ValueConstraints<'a>, CatalogError> {
+        value_constraints::read(self.map)
     }
     pub fn client_optional(self) -> Result<bool, CatalogError> {
         self.wire()?.client_optional()

@@ -3,6 +3,7 @@ use state::State;
 pub(in crate::overlay::check) use state::StateArgs;
 mod inputs;
 mod selection;
+mod special_inputs;
 use super::derived;
 use super::{OperationResult, Violation, ViolationRule, identity, pagination, paths};
 use crate::{
@@ -104,6 +105,8 @@ fn validate_complete_plan(state: &mut State<'_, '_, '_>) {
     check_required_inputs(state);
     validate_pagination(state);
     validate_identity(state);
+    super::row_policy::validate(state.service,state.name,&state.item,state.model,state.vocabulary,
+        state.overlays,&mut state.violations);
     paths::validate_output_paths(
         state.service,
         state.name,
@@ -154,6 +157,18 @@ fn validate_pagination(state: &mut State<'_, '_, '_>) {
 }
 
 fn validate_identity(state: &mut State<'_, '_, '_>) {
+    let discovery_only = if state.item.branches.is_empty() {
+        state.item.emission == crate::overlay::Emission::DiscoveryOnly
+    } else {
+        state.item.branches.iter().all(|branch| {
+            branch.emission.as_ref().map_or(&state.item.emission, |emission| emission)
+                == &crate::overlay::Emission::DiscoveryOnly
+        })
+    };
+    if discovery_only || state.item.tag_endpoint.is_some() || state.item.endpoint_discovery {
+        state.identity_valid = state.selected.is_some();
+        return;
+    }
     if state.candidate || state.item.identity.is_some() {
         state.identity_valid = identity::validate_identity(
             state.service,

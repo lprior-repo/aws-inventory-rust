@@ -1,0 +1,86 @@
+// Pinned operation purposes: .local/aws-models/models/resiliencehubv2/service/2026-02-17/resiliencehubv2-2026-02-17.json
+use super::super::construction::Decision;
+use crate::classes::DenyReason;
+
+pub(super) const DECISIONS: &[(&str, Decision)] = &[
+    // Changes service state rather than reading inventory. Pinned purpose: Creates a resilience assertion for a service.
+    ("CreateAssertion", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Creates an input source for a service.
+    ("CreateInputSource", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Creates a resilience policy that defines availability and disaster recovery requirements.
+    ("CreatePolicy", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: On-demand report creation. Idempotent — duplicate requests with same clientToken return existing result.
+    ("CreateReport", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Creates a service.
+    ("CreateService", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Creates a service function within a service.
+    ("CreateServiceFunction", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Associates resources with a service function.
+    ("CreateServiceFunctionResources", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Creates a system that represents a logical grouping of services.
+    ("CreateSystem", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Creates a test for a service by configuring a test template. Each service has one test per template.
+    ("CreateTest", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Creates a user journey within a system.
+    ("CreateUserJourney", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Deletes a resilience assertion from a service.
+    ("DeleteAssertion", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Deletes an input source.
+    ("DeleteInputSource", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Deletes a resilience policy.
+    ("DeletePolicy", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Deletes a service.
+    ("DeleteService", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Deletes a service function.
+    ("DeleteServiceFunction", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Removes resources from a service function.
+    ("DeleteServiceFunctionResources", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Deletes a system.
+    ("DeleteSystem", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Deletes a test.
+    ("DeleteTest", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Removes monitoring sources from a test. The operation is transactional and idempotent — removing a source that is not attached is a no-op.
+    ("DeleteTestSources", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Deletes a user journey.
+    ("DeleteUserJourney", Decision::Denied(DenyReason::Mutating)),
+    ("GetDependencyInsights", Decision::Deferred("Required selectors serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members overview, insights, status, createdAt, errorCode, errorMessage. Pinned purpose: Retrieves the dependency insights generated for a service. The response reports the current generation status; insights are populated once generation has completed. If generation failed, the response includes an error code, whose possible values are ")),
+    ("GetFailureModeFinding", Decision::Deferred("Required selectors findingId, serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members finding. Pinned purpose: Retrieves a finding by findingId.")),
+    ("GetPolicy", Decision::Deferred("Required selectors policyArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members policy. Pinned purpose: Retrieves a resilience policy by ARN.")),
+    ("GetService", Decision::Deferred("Required selectors serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members service. Pinned purpose: Retrieves a service by ARN.")),
+    ("GetSystem", Decision::Deferred("Required selectors systemArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members system. Pinned purpose: Retrieves a system by ARN.")),
+    ("GetTest", Decision::Deferred("Required selectors testId, serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members test. Pinned purpose: Retrieves a test by ID.")),
+    ("GetTestRun", Decision::Deferred("Required selectors testRunId, serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members testRun. Pinned purpose: Retrieves a test run by ID, including its status, results, and the configuration snapshotted when the run started.")),
+    ("GetTestTemplate", Decision::Deferred("Required selectors testTemplateArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members testTemplate. Pinned purpose: Retrieves a resilience test template by ARN, including the parameters it accepts and the fault actions it runs.")),
+    ("GetUserJourney", Decision::Deferred("Required selectors systemArn, userJourneyId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members userJourney. Pinned purpose: Retrieves a user journey.")),
+    // Changes service state rather than reading inventory. Pinned purpose: Imports a V1 app into the V2 resource model, creating a service with the same name.
+    ("ImportApp", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Imports a V1 policy into V2, mapping RTO/RPO values from V1 scenarios.
+    ("ImportPolicy", Decision::Denied(DenyReason::Mutating)),
+    ("ListAssertions", Decision::Deferred("Required selectors serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members assertions, nextToken. Pinned purpose: Lists resilience assertions for a service.")),
+    ("ListFailureModeAssessments", Decision::Deferred("Required selectors serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members assessmentSummaries, nextToken. Pinned purpose: Lists failure mode assessments.")),
+    ("ListFailureModeFindings", Decision::Deferred("Required selectors serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members findingsSummary, nextToken. Pinned purpose: List findings.")),
+    ("ListInputSources", Decision::Deferred("Required selectors serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members inputSourceSummaries, nextToken. Pinned purpose: Lists input sources for a service.")),
+    ("ListPolicyEvents", Decision::Deferred("Required selectors policyArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members events, nextToken. Pinned purpose: Lists events for a resilience policy, including services that started or stopped using it, changes to cross-account sharing, and deletion of the policy.")),
+    ("ListReports", Decision::Deferred("The optional-input response does not establish an immutable locally scoped owned-resource identity. Response members reportGenerationResults, nextToken. Pinned request/ownership contract: List reports for a service, or all reports owned by the account if serviceArn is not provided.")),
+    ("ListResolvedTestRunTargetResources", Decision::Deferred("Required selectors testRunId, serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members resolvedTargetResources, nextToken. Pinned purpose: Lists the AWS resources that AWS Fault Injection Service (AWS FIS) resolved as targets for a test run.")),
+    ("ListResources", Decision::Deferred("Required selectors serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members serviceFunctionId, serviceResources, nextToken. Pinned purpose: List resources.")),
+    ("ListServiceEvents", Decision::Deferred("Required selectors serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members events, nextToken. Pinned purpose: Lists events for a service.")),
+    ("ListServiceFunctions", Decision::Deferred("Required selectors serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members serviceFunctions, nextToken. Pinned purpose: Lists service functions for a service.")),
+    ("ListServiceTopologyEdges", Decision::Deferred("Required selectors serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members serviceTopologyEdgeSummaries, nextToken. Pinned purpose: Lists topology edges for a service.")),
+    ("ListSystemEvents", Decision::Deferred("Required selectors systemArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members events, nextToken. Pinned purpose: Lists events for a system.")),
+    ("ListTagsForResource", Decision::Deferred("Tag-only observation must join the originating resource identity with complete-snapshot semantics, not be persisted as a separate resource. Required request members: resourceArn. Pinned purpose: Lists the tags for a resource.")),
+    ("ListTestRunDependencies", Decision::Deferred("Required selectors testRunId, serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members dependencies, nextToken. Pinned purpose: Lists the dependencies that a test run blocked. Each dependency reflects the discovered classification captured when the run started, so results do not change if a dependency is reclassified after the run.")),
+    ("ListTestRunEvents", Decision::Deferred("Required selectors testRunId, serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members events, nextToken. Pinned purpose: Lists the events in a test run's timeline.")),
+    ("ListTestRunSourceEvents", Decision::Deferred("Required selectors testRunId, serviceArn, sourceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members testRunSourceEvents, nextToken. Pinned purpose: Lists the state-change events observed for a test run monitoring source. Events are returned for one source per call, in chronological order.")),
+    ("ListTestRunSources", Decision::Deferred("Required selectors testRunId, serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members testRunSources, nextToken. Pinned purpose: Lists the monitoring source snapshots captured for a test run, optionally filtered by type.")),
+    ("ListTestRuns", Decision::Deferred("Required selectors serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members testRuns, nextToken. Pinned purpose: Lists the runs of a test, or all test runs for a service.")),
+    ("ListTestSources", Decision::Deferred("Required selectors testId, serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members testSources, nextToken. Pinned purpose: Lists the monitoring sources attached to a test, optionally filtered by type.")),
+    // Public/service reference catalog or supported-capability enumeration, not account-owned resource inventory. Pinned purpose: Lists the available resilience test templates. A test template is a pre-configured, AWS recommended test that defines which resilience capability to validate.
+    ("ListTestTemplates", Decision::Denied(DenyReason::ReferenceData)),
+    ("ListTests", Decision::Deferred("Required selectors serviceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members tests, nextToken. Pinned purpose: Lists the tests configured for a service.")),
+    ("ListUserJourneys", Decision::Deferred("Required selectors systemArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members userJourneySummaries, nextToken. Pinned purpose: Lists user journeys for a system.")),
+    // Changes service state rather than reading inventory. Pinned purpose: Adds or updates the monitoring sources on a test. The operation is transactional — either every source is written or the call fails and nothing is written.
+    ("PutTestSources", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Starts generating dependency insights for a service. Generation runs asynchronously; the response returns the initial status, and you retrieve the results with GetDependencyInsights. To use this operation, you must have the resiliencehub:StartDependencyInsights permission on the service.
+    ("StartDependencyInsights", Decision::Denied(DenyReason::Mutating)),
+];

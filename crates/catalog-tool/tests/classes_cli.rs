@@ -1,6 +1,10 @@
 mod classes_support;
 
-use classes_support::{REPORT, fixture, write};
+use catalog_tool::{
+    ReportMode,
+    classes::{build_report_with_policy, run_with_policy},
+};
+use classes_support::{REPORT, fixture, policy, write};
 use std::{io, path::Path, process::Output};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -16,50 +20,69 @@ fn classes(root: &Path, flags: &[&str]) -> io::Result<Output> {
         .output()
 }
 
-fn silent_success(output: &Output) {
-    assert_eq!(
-        output.status.code(),
-        Some(0),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    assert_eq!(output.stdout, b"");
-    assert_eq!(output.stderr, b"");
-}
-
-fn success(output: &Output) {
-    assert_eq!(
-        output.status.code(),
-        Some(0),
-        "{}",
-        String::from_utf8_lossy(&output.stderr)
-    );
-    assert_eq!(output.stdout, REPORT.as_bytes());
-    assert_eq!(output.stderr, b"");
-}
-
 #[test]
-fn cli_print_emits_exact_report_without_creating_an_artifact() -> TestResult {
+fn explicit_policy_print_preserves_exact_report_without_creating_an_artifact() -> TestResult {
+    // Given a model fixture and an explicitly injected classifier policy.
     let dir = fixture()?;
-    success(&classes(dir.path(), &[])?);
+    // When the public report and publication boundaries run.
+    assert_eq!(build_report_with_policy(dir.path(), &policy()?)?, REPORT);
+    run_with_policy(dir.path(), dir.path(), ReportMode::Print, &policy()?)?;
+    // Then printing cannot create an artifact.
     assert!(!dir.path().join(COMMITTED).exists());
     Ok(())
 }
 
 #[test]
-fn cli_check_emits_exact_report_and_preserves_the_artifact() -> TestResult {
+fn explicit_policy_check_preserves_the_exact_artifact() -> TestResult {
     let dir = fixture()?;
     write(dir.path(), COMMITTED, REPORT)?;
-    silent_success(&classes(dir.path(), &["--check"])?);
+    run_with_policy(dir.path(), dir.path(), ReportMode::Check, &policy()?)?;
     assert_eq!(std::fs::read_to_string(dir.path().join(COMMITTED))?, REPORT);
     Ok(())
 }
 
 #[test]
-fn cli_write_emits_exact_report_and_replaces_stale_bytes() -> TestResult {
+fn explicit_policy_write_replaces_stale_bytes() -> TestResult {
     let dir = fixture()?;
     write(dir.path(), COMMITTED, "stale\n")?;
-    silent_success(&classes(dir.path(), &["--write"])?);
+    run_with_policy(dir.path(), dir.path(), ReportMode::Write, &policy()?)?;
     assert_eq!(std::fs::read_to_string(dir.path().join(COMMITTED))?, REPORT);
+    Ok(())
+}
+
+#[test]
+fn cli_builtin_policy_failure_never_prints_or_replaces_partial_reports() -> TestResult {
+    let dir = fixture()?;
+    write(dir.path(), COMMITTED, "preserve\n")?;
+    [vec![], vec!["--write"]].into_iter().try_for_each(|flags| -> TestResult {
+        let output = classes(dir.path(), &flags)?;
+        assert_eq!(output.status.code(), Some(1));
+        assert_eq!(output.stdout, b"");
+        assert!(String::from_utf8(output.stderr)?.contains("matches no operation"));
+        assert_eq!(std::fs::read_to_string(dir.path().join(COMMITTED))?, "preserve\n");
+        Ok(())
+    })?;
+    Ok(())
+}
+
+#[test]
+fn cli_conflicting_modes_fail_without_creating_an_artifact() -> TestResult {
+    let dir = fixture()?;
+    let output = classes(dir.path(), &["--check", "--write"])?;
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(output.stdout, b"");
+    assert!(String::from_utf8(output.stderr)?.contains("conflicting flag"));
+    assert!(!dir.path().join(COMMITTED).exists());
+    Ok(())
+}
+
+#[test]
+fn cli_missing_models_fail_without_creating_an_artifact() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let output = classes(dir.path(), &["--write"])?;
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(output.stdout, b"");
+    assert!(!output.stderr.is_empty());
+    assert!(!dir.path().join(COMMITTED).exists());
     Ok(())
 }

@@ -12,13 +12,9 @@ fn map_token_paths_remain_typed_and_callable() -> Result<(), Box<dyn std::error:
 "n#Thing":{"type":"structure","members":{"Id":{"target":"smithy.api#String"}}}
 }}"#;
     let root = fixture(model, "")?;
-    overlay(
-        root.path(),
-        &format!(
-            "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\n[operation.ListThings.paginator]\nkind='token'\ninput='Next'\noutput='Next'\n[operation.ListThings.identity]\nkey=['Id']\n"
-        ),
-    )?;
-    let checked = overlay::check(root.path(), &source(root.path()))?;
+    let mut plan = complete()?;
+    plan.paginator = Some(token("Next", "Next")?);
+    let checked = checked(&root, vec![("ListThings", plan)])?;
     let service = checked.services().first().ok_or("missing service")?;
     let callable = service
         .callable()
@@ -45,13 +41,11 @@ fn item_identity_paths_traverse_nested_lists_and_map_values()
 "n#Thing":{"type":"structure","members":{"Id":{"target":"smithy.api#String"}}}
 }}"#;
     let root = fixture(model, "")?;
-    overlay(
-        root.path(),
-        &format!(
-            "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\nexclude_from_hash=['Id']\nqueryable=['Id']\ntags='Id'\n[operation.ListThings.paginator]\nkind='none'\n[operation.ListThings.identity]\nkey=['Id']\n"
-        ),
-    )?;
-    let checked = overlay::check(root.path(), &source(root.path()))?;
+    let mut plan = complete()?;
+    plan.exclude_from_hash = vec![overlay::MemberPath::new("Id")?];
+    plan.queryable = vec![overlay::MemberPath::new("Id")?];
+    plan.tags = Some(overlay::MemberPath::new("Id")?);
+    let checked = checked(&root, vec![("ListThings", plan)])?;
     let callable = checked
         .services()
         .first()

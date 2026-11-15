@@ -6,6 +6,8 @@ mod boundaries;
 mod changes;
 #[path = "content_hash/exclusions.rs"]
 mod exclusions;
+#[path = "content_hash/map_keys.rs"]
+mod map_keys;
 #[path = "content_hash/properties.rs"]
 mod properties;
 #[path = "content_hash/support.rs"]

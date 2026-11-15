@@ -1,0 +1,26 @@
+use crate::kind_map::OperationMapping;
+
+pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
+    OperationMapping { service: "accessanalyzer", operation: "GetAnalyzer", kind: "AWS::AccessAnalyzer::Analyzer" },
+    OperationMapping { service: "accessanalyzer", operation: "ListAnalyzers", kind: "AWS::AccessAnalyzer::Analyzer" },
+    OperationMapping { service: "accessanalyzer", operation: "ListArchiveRules", kind: "AWS::AccessAnalyzer::ArchiveRule" },
+    OperationMapping { service: "accessanalyzer", operation: "GetArchiveRule", kind: "AWS::AccessAnalyzer::ArchiveRule" },
+    OperationMapping { service: "account-access", operation: "ListApplications", kind: "AWS::ApiOnly::AccountAccessApplication" },
+    OperationMapping { service: "account", operation: "GetAccountInformation", kind: "AWS::ApiOnly::AccountAccountInformation" },
+    OperationMapping { service: "account", operation: "GetGovCloudAccountInformation", kind: "AWS::ApiOnly::AccountGovCloudAccount" },
+    OperationMapping { service: "account", operation: "ListRegions", kind: "AWS::ApiOnly::AccountRegion" },
+    OperationMapping { service: "acm-pca", operation: "DescribeCertificateAuthority", kind: "AWS::ACMPCA::CertificateAuthority" },
+    OperationMapping { service: "acm-pca", operation: "ListCertificateAuthorities", kind: "AWS::ACMPCA::CertificateAuthority" },
+    OperationMapping { service: "acm", operation: "DescribeCertificate", kind: "AWS::CertificateManager::Certificate" },
+    OperationMapping { service: "acm", operation: "ListAcmeDomainValidations", kind: "AWS::ApiOnly::ACMAcmeDomainValidation" },
+    OperationMapping { service: "acm", operation: "ListAcmeEndpoints", kind: "AWS::ApiOnly::ACMAcmeEndpoint" },
+    OperationMapping { service: "acm", operation: "ListAcmeExternalAccountBindings", kind: "AWS::ApiOnly::ACMAcmeExternalAccountBinding" },
+    OperationMapping { service: "acm", operation: "ListCertificates", kind: "AWS::CertificateManager::Certificate" },
+    OperationMapping { service: "agent-registry-control", operation: "ListRegistries", kind: "AWS::ApiOnly::AgentRegistryRegistry" },
+    OperationMapping { service: "aiops", operation: "GetInvestigationGroup", kind: "AWS::AIOps::InvestigationGroup" },
+    OperationMapping { service: "aiops", operation: "ListInvestigationGroups", kind: "AWS::AIOps::InvestigationGroup" },
+    OperationMapping { service: "amp", operation: "DescribeScraper", kind: "AWS::APS::Scraper" },
+    OperationMapping { service: "amp", operation: "DescribeWorkspace", kind: "AWS::APS::Workspace" },
+    OperationMapping { service: "amp", operation: "ListScrapers", kind: "AWS::APS::Scraper" },
+    OperationMapping { service: "amp", operation: "ListWorkspaces", kind: "AWS::APS::Workspace" },
+];

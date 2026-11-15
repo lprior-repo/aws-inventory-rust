@@ -3,7 +3,7 @@ use super::{Exceptions, NameError, TestResult, render_names, sql_name, sql_name_
 
 #[test]
 fn exceptions_cannot_create_a_digit_initial_sql_identifier() -> TestResult {
-    let exceptions = Exceptions::parse("AWS\t1\n")?;
+    let exceptions = Exceptions::from_entries(&[("AWS", "1")])?;
     assert_eq!(
         sql_name("AWS::EC2::Instance", &exceptions),
         Err(NameError::InvalidSqlName {

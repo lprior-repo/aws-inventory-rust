@@ -11,17 +11,17 @@ proptest! {
 
     #[test]
     fn classifier_denials_never_become_callable_under_valid_overrides(
-        class in prop_oneof![Just("enumerate"), Just("expand")],
+        class in prop_oneof![Just(OverlayClass::Enumerate), Just(OverlayClass::Expand)],
         items in prop_oneof![Just("Items"), Just("$")],
     ) {
         let root = fixture(BASIC, "ListThings\tcontent\n")
             .map_err(|error| TestCaseError::fail(error.to_string()))?;
-        let text = format!(
-            "{HEADER}[operation.ListThings]\nclass='{class}'\nitems='{items}'\n[operation.ListThings.paginator]\nkind='none'\n[operation.ListThings.identity]\nkey=['Id']\n"
-        );
-        overlay(root.path(), &text)
+        let mut plan = complete()
             .map_err(|error| TestCaseError::fail(error.to_string()))?;
-        match overlay::check(root.path(), &source(root.path())) {
+        plan.class = Some(class);
+        plan.items = Some(ItemSelector::parse(items)
+            .map_err(|error| TestCaseError::fail(error.to_string()))?);
+        match checked(&root, vec![("ListThings", plan)]) {
             Ok(checked) => {
                 prop_assert!(checked.services().iter()
                     .flat_map(|service| service.callable())

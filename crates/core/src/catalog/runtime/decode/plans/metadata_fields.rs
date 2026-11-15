@@ -66,6 +66,10 @@ pub(super) fn purpose(
                 opt_in_status_path: optional_path(map_value, 4)?,
             })
         }
+        4 => {
+            metadata::only_fields(map_value, &[1])?;
+            Ok(PlanPurpose::EndpointDiscovery)
+        }
         _ => Err(RuntimeCatalogError::Capability),
     }
 }

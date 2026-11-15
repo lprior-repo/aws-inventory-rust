@@ -43,6 +43,8 @@ pub struct ScopeKey {
     service: ServiceId,
     operation: OperationId,
     parent: Option<ResourceKey>,
+    branch: Option<String>,
+    context: Option<[u8; 32]>,
 }
 
 impl ScopeKey {
@@ -60,6 +62,8 @@ impl ScopeKey {
             service,
             operation,
             parent,
+            branch: None,
+            context: None,
         })
     }
 
@@ -77,6 +81,25 @@ impl ScopeKey {
     }
     pub fn parent(&self) -> Option<&ResourceKey> {
         self.parent.as_ref()
+    }
+    pub fn branch(&self) -> Option<&str> {
+        self.branch.as_deref()
+    }
+    pub fn with_branch(mut self, branch: String) -> Result<Self, InventoryError> {
+        if branch.is_empty() || branch.len() > 64
+            || !branch.bytes().all(|byte| byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'-')
+        {
+            return Err(InventoryError::Branch);
+        }
+        self.branch = Some(branch);
+        Ok(self)
+    }
+    pub fn context(&self) -> Option<crate::record::ContentHash> {
+        self.context.map(crate::record::ContentHash::from_bytes)
+    }
+    pub fn with_context(mut self, context: crate::record::ContentHash) -> Self {
+        self.context = Some(*context.as_bytes());
+        self
     }
 }
 

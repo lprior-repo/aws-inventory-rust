@@ -161,6 +161,8 @@ pub enum CatalogKey {
     ClientOptional,
     S3UnwrappedXmlOutput,
     ShapeOffsets,
+    EnumValues,
+    ValueConstraints,
 }
 
 impl CatalogKey {
@@ -264,6 +266,8 @@ impl CatalogKey {
             Self::ClientOptional => 92,
             Self::S3UnwrappedXmlOutput => 93,
             Self::ShapeOffsets => 94,
+            Self::EnumValues => 95,
+            Self::ValueConstraints => 96,
         }
     }
 }

@@ -1,0 +1,47 @@
+use super::support::{NameError, ServiceOverlay, service};
+
+pub(super) fn overlays() -> Result<Vec<ServiceOverlay>, NameError> {
+    Ok(vec![
+        service("cloudformation", [
+            super::cloudformation_0::part_0()?,
+            super::cloudformation_0::part_1()?,
+            super::cloudformation_0::part_2()?,
+        ].into_iter().flatten().collect())?,
+        service("cloudfront-keyvaluestore", [
+            super::cloudfront_keyvaluestore_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("cloudhsm", [
+            super::cloudhsm_0::part_0()?,
+            super::cloudhsm_0::part_1()?,
+        ].into_iter().flatten().collect())?,
+        service("cloudhsm-v2", [
+            super::cloudhsm_v2_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("cloudsearch", [
+            super::cloudsearch_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("cloudsearch-domain", [
+            super::cloudsearch_domain_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("cloudtrail", [
+            super::cloudtrail_0::part_0()?,
+            super::cloudtrail_0::part_1()?,
+            super::cloudtrail_0::part_2()?,
+        ].into_iter().flatten().collect())?,
+        service("cloudtrail-data", [
+            super::cloudtrail_data_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("cloudwatch-events", [
+            super::cloudwatch_events_0::part_0()?,
+            super::cloudwatch_events_0::part_1()?,
+            super::cloudwatch_events_0::part_2()?,
+        ].into_iter().flatten().collect())?,
+        service("cloudwatch-logs", [
+            super::cloudwatch_logs_0::part_0()?,
+            super::cloudwatch_logs_0::part_1()?,
+            super::cloudwatch_logs_0::part_2()?,
+            super::cloudwatch_logs_0::part_3()?,
+            super::cloudwatch_logs_0::part_4()?,
+        ].into_iter().flatten().collect())?,
+    ])
+}

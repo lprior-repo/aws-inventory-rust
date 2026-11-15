@@ -15,14 +15,16 @@ fn required_enum_inputs_accept_only_declared_fixed_values() -> Result<(), Box<dy
         .into_iter()
         .try_for_each(|(value, valid)| -> Result<(), Box<dyn std::error::Error>> {
             let root = fixture(model, "")?;
-            overlay(root.path(), &format!(
-                "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\n[operation.ListThings.fixed]\nScope='{value}'\n[operation.ListThings.paginator]\nkind='none'\n[operation.ListThings.identity]\nkey=['Id']\n"
-            ))?;
+            let mut plan = complete()?;
+            plan.fixed.insert(
+                overlay::MemberPath::new("Scope")?,
+                overlay::FixedValue::String(value.to_owned()),
+            );
             if valid {
-                let checked = overlay::check(root.path(), &source(root.path()))?;
+                let checked = checked(&root, vec![("ListThings", plan)])?;
                 assert_eq!(checked.services().first().ok_or("missing service")?.callable().len(), 1);
             } else {
-                let errors = violations(root.path())?;
+                let errors = violations(&root, vec![("ListThings", plan)])?;
                 assert!(errors.iter().any(|error| error.key() == "fixed"
                     && error.value() == "Scope"
                     && error.rule() == ViolationRule::InvalidValue));

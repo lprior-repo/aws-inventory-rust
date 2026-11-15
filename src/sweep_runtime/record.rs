@@ -1,7 +1,45 @@
+pub(in crate::sweep_runtime) mod trusted_arn;
+#[cfg(test)]
+mod selection_tests;
 #[cfg(test)]
 mod scalar_tests;
 #[cfg(test)]
 mod identity_tests;
+#[cfg(test)]
+mod policy_ac_tests;
+#[cfg(test)]
+mod policy_qstz_tests;
+#[cfg(test)]
+pub(crate) mod policy_lp_tests;
+#[cfg(test)]
+pub(in crate::sweep_runtime) mod policy_dfgk_tests;
+#[cfg(test)]
+mod policy_gk_iot_iam_tests;
+#[cfg(test)]
+mod policy_gk_root_tests;
+#[cfg(test)]
+mod policy_gk_gamelift_fleets_tests;
+#[cfg(test)]
+mod policy_gk_ivs_roots_tests;
+mod tags;
+mod selection;
+mod identity_choice;
+pub(super) use tags::tag_observation;
+#[cfg(test)]
+#[path = "../../tests/sweep_record_exact_bounds.rs"]
+mod exact_bounds;
+
+#[cfg(test)]
+#[test]
+fn compiled_page_preserves_exactly_100000_scalar_rows() -> Result<(), Box<dyn std::error::Error>> {
+    exact_bounds::accepts_exact_page(item_records)
+}
+
+#[cfg(test)]
+#[test]
+fn compiled_page_rejects_100001_scalar_rows_atomically() -> Result<(), Box<dyn std::error::Error>> {
+    exact_bounds::rejects_oversized_page(item_records)
+}
 
 const MAX_PAGE_ITEMS: usize = 100_000;
 use std::{borrow::Cow, fmt::Write};
@@ -18,6 +56,12 @@ pub(super) fn path_value<'a>(
     root: MapRef<'a>,
     path: &[FieldId],
 ) -> Result<Option<ValueRef<'a>>, SweepError> {
+    let root = match root.get_name("$value")? {
+        Some(value) if path.is_empty() => return Ok(Some(value)),
+        Some(ValueRef::Map(selected)) => selected,
+        Some(_) => return Ok(None),
+        None => root,
+    };
     let Some(leaf) = path.last().copied() else {
         return scalar_item(root).map_err(SweepError::from);
     };
@@ -36,31 +80,19 @@ pub(super) fn path_value<'a>(
 }
 
 pub(super) fn item_records(record: &Record, plan: &ItemPlan) -> Result<Vec<Record>, SweepError> {
-    match plan {
-        ItemPlan::Root => Ok(vec![record.clone()]),
-        ItemPlan::Path(path) => item_records_at(record, path),
-    }
+    let (count, selected) = item_selection(record, plan)?;
+    let mut records = Vec::new();
+    records.try_reserve(count)?;
+    for item in selected { records.push(item?); }
+    Ok(records)
 }
 
-fn item_records_at(record: &Record, path: &[FieldId]) -> Result<Vec<Record>, SweepError> {
-    match path_value(record.root(), path)? {
-        None | Some(ValueRef::Null) => Ok(Vec::new()),
-        Some(value @ ValueRef::Map(_)) => Ok(vec![item_record(value)?]),
-        Some(ValueRef::List(list)) => list.iter()?.try_fold(Vec::new(), |mut records, item| {
-            if records.len() >= MAX_PAGE_ITEMS {
-                return Err(SweepError::Operation(
-                    "page exceeds the atomic observation bound",
-                ));
-            }
-            records.try_reserve(1)?;
-            records.push(item_record(item?)?);
-            Ok(records)
-        }),
-        _ => Err(SweepError::Operation(
-            "compiled enumeration item path is neither a list nor a structure",
-        )),
-    }
+pub(super) fn item_selection<'a>(
+    record: &'a Record, plan: &ItemPlan,
+) -> Result<(usize, impl Iterator<Item = Result<Record, SweepError>> + 'a + use<'a>), SweepError> {
+    selection::items(record, plan)
 }
+
 
 fn item_record(value: ValueRef<'_>) -> Result<Record, SweepError> {
     match value {
@@ -83,12 +115,34 @@ pub(super) fn resource_id(
     context: Option<IdentityContext<'_>>,
 ) -> Result<ResourceId, SweepError> {
     let text = match plan {
-        IdentityPlan::Arn(path) => required_text(record, path)?,
+        IdentityPlan::Arn(path) => {
+            let text = required_text(record, path)?;
+            trusted_arn::validate_arn(&text, context.as_ref())?;
+            text
+        }
         IdentityPlan::Template(parts) => Cow::Owned(template_text(record, parts, context.as_ref())?),
         IdentityPlan::Key(paths) => key_text(record, paths)?,
+        IdentityPlan::Choice(_) | IdentityPlan::CorrelatedKey(_) | IdentityPlan::MapArn { .. } => {
+            return identity_choice::resource_id(record, plan, context.as_ref(), None, None);
+        }
     };
     ResourceId::parse(&text)
         .map_err(|_| SweepError::Operation("modeled resource identity is invalid"))
+}
+
+pub(super) fn resource_id_with_context(
+    record: &Record,
+    plan: &IdentityPlan,
+    trusted: Option<IdentityContext<'_>>,
+    discovery: &inventory_core::inventory::DiscoveryContext,
+    current_request: &Record,
+) -> Result<ResourceId, SweepError> {
+    match plan {
+        IdentityPlan::Choice(_) | IdentityPlan::CorrelatedKey(_) | IdentityPlan::MapArn { .. } => {
+            identity_choice::resource_id(record, plan, trusted.as_ref(), Some(discovery), Some(current_request))
+        }
+        _ => resource_id(record, plan, trusted),
+    }
 }
 fn required_text<'a>(record: &'a Record, path: &[FieldId]) -> Result<Cow<'a, str>, SweepError> {
     path_value(record.root(), path)?
@@ -157,6 +211,17 @@ fn key_text<'a>(record: &'a Record, paths: &[Box<[FieldId]>]) -> Result<Cow<'a, 
         .enumerate()
         .try_fold(String::new(), |mut text, (position, path)| {
             let component = required_text(record, path)?;
+            let digits = if component.is_empty() { 1 } else { component.len().ilog10().saturating_add(1) };
+            let digits = usize::try_from(digits)
+                .map_err(|_| SweepError::Operation("identity length overflow"))?;
+            let additional = component.len().checked_add(digits)
+                .and_then(|length| length.checked_add(1))
+                .and_then(|length| length.checked_add(usize::from(position > 0)))
+                .ok_or(SweepError::Operation("identity length overflow"))?;
+            if text.len().checked_add(additional).is_none_or(|length| length > 4096) {
+                return Err(SweepError::Operation("modeled resource identity is too long"));
+            }
+            text.try_reserve(additional)?;
             if position > 0 {
                 text.push('|');
             }

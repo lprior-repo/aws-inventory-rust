@@ -1,0 +1,46 @@
+use super::support::{NameError, ServiceOverlay, service};
+
+pub(super) fn overlays() -> Result<Vec<ServiceOverlay>, NameError> {
+    Ok(vec![
+        service("appflow", [
+            super::appflow_0::part_0()?,
+            super::appflow_0::part_1()?,
+        ].into_iter().flatten().collect())?,
+        service("appintegrations", [
+            super::appintegrations_0::part_0()?,
+            super::appintegrations_0::part_1()?,
+        ].into_iter().flatten().collect())?,
+        service("application-auto-scaling", [
+            super::application_auto_scaling_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("application-discovery-service", [
+            super::application_discovery_service_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("application-insights", [
+            super::application_insights_0::part_0()?,
+            super::application_insights_0::part_1()?,
+        ].into_iter().flatten().collect())?,
+        service("application-signals", [
+            super::application_signals_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("applicationcostprofiler", [
+            super::applicationcostprofiler_0::part_0()?,
+        ].into_iter().flatten().collect())?,
+        service("apprunner", [
+            super::apprunner_0::part_0()?,
+            super::apprunner_0::part_1()?,
+            super::apprunner_0::part_2()?,
+        ].into_iter().flatten().collect())?,
+        service("appstream", [
+            super::appstream_0::part_0()?,
+            super::appstream_0::part_1()?,
+            super::appstream_0::part_2()?,
+            super::appstream_0::part_3()?,
+        ].into_iter().flatten().collect())?,
+        service("appsync", [
+            super::appsync_0::part_0()?,
+            super::appsync_0::part_1()?,
+            super::appsync_0::part_2()?,
+        ].into_iter().flatten().collect())?,
+    ])
+}

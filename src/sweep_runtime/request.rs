@@ -1,3 +1,8 @@
+pub(super) mod fixed_input;
+#[cfg(test)]
+mod fixed_input_tests;
+#[cfg(test)]
+mod page_size_tests;
 use bytes::Bytes;
 use inventory_core::{
     catalog::runtime::{CallablePlan, RuntimeProtocol},

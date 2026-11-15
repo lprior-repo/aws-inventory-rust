@@ -3,6 +3,7 @@ use crate::smithy::model::{Member, Shape};
 use inventory_core::{catalog::CatalogKey, record::Value};
 use serde_json::Value as Json;
 use std::collections::BTreeMap;
+mod value_constraints;
 
 pub(super) fn shape_fields(
     traits: &BTreeMap<String, Json>,
@@ -10,6 +11,7 @@ pub(super) fn shape_fields(
     let mut fields = wire_fields(traits, false)?;
     shape_names(traits, &mut fields)?;
     shape_error_metadata(traits, &mut fields)?;
+    fields.push(value_constraints::field(traits)?);
     Ok(fields)
 }
 
@@ -78,18 +80,17 @@ pub(super) fn member_fields(
 ) -> Result<Vec<(CatalogKey, Value)>, CompileError> {
     let mut fields = wire_fields(&member.traits, true)?;
     fields.extend(super::defaults::fields(&member.traits, target, shapes)?);
+    fields.push(value_constraints::field(&member.traits)?);
     Ok(fields)
 }
 
 pub(super) fn pseudo_field(
     traits: &BTreeMap<String, Json>,
     key: CatalogKey,
-) -> Result<Option<(CatalogKey, Value)>, CompileError> {
-    let fields = wire_fields(traits, true)?;
-    if fields.is_empty() {
-        return Ok(None);
-    }
-    Ok(Some((key, map(fields)?)))
+) -> Result<(CatalogKey, Value), CompileError> {
+    let mut fields = wire_fields(traits, true)?;
+    fields.push(value_constraints::field(traits)?);
+    Ok((key, map(fields)?))
 }
 
 fn wire_fields(

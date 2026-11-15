@@ -1,5 +1,6 @@
-use super::super::projection_read::{ProjectionEdgeHeader, ProjectionResource};
+use super::super::projection_read::{ProjectionEdgeHeader, ProjectionResource, ProjectionTag};
 use inventory_core::inventory::ResourceKey;
+use sha2::{Digest, Sha256};
 use std::fmt::Write;
 
 const MAX_QUERY_BYTES: usize = 1_048_576;
@@ -55,7 +56,58 @@ pub(super) fn clear_edges(key: &ResourceKey) -> Result<String, QueryError> {
     let identity = hex(key.digest().as_bytes())?;
     let mut query = String::with_capacity(192);
     parameters(&mut query, &[("key", Some(&identity))])?;
-    query.push_str(" MATCH (n:Resource {key:$key})-[r]-() DELETE r");
+    query.push_str(" MATCH (n:Resource {key:$key})-[r]-(other:Resource) DELETE r");
+    bounded(query)
+}
+
+pub(super) fn tag(key: &ResourceKey, tag: &ProjectionTag) -> Result<String, QueryError> {
+    let resource = hex(key.digest().as_bytes())?;
+    let identity = tag_identity(key, tag)?;
+    let mut query = String::with_capacity(768);
+    parameters(
+        &mut query,
+        &[
+            ("resource", Some(&resource)),
+            ("tag", Some(&identity)),
+            ("account", Some(key.account.as_str())),
+            ("region", Some(key.region.as_str())),
+            ("tag_key", Some(&tag.key)),
+            ("tag_value", Some(&tag.value)),
+            ("provenance", Some("inventory.tags")),
+        ],
+    )?;
+    query.push_str(" MATCH (r:Resource {key:$resource}) MERGE (t:Tag {key:$tag}) SET t.account=$account,t.region=$region,t.tag_key=$tag_key,t.tag_value=$tag_value MERGE (r)-[:HAS_TAG {provenance:$provenance}]->(t)");
+    bounded(query)
+}
+
+fn tag_identity(key: &ResourceKey, tag: &ProjectionTag) -> Result<String, QueryError> {
+    let mut digest = Sha256::new();
+    [key.account.as_str(), key.region.as_str(), &tag.key, &tag.value]
+        .into_iter()
+        .try_for_each(|value| {
+            let length = u64::try_from(value.len()).map_err(|_| QueryError::TooLarge)?;
+            digest.update(length.to_be_bytes());
+            digest.update(value.as_bytes());
+            Ok::<_, QueryError>(())
+        })?;
+    hex(&digest.finalize())
+}
+
+/// Removes this resource's affiliations and their now-unreferenced vertices.
+/// One query prevents interrupted replay from leaving orphan tag vertices.
+pub(super) fn clear_tags(key: &ResourceKey) -> Result<String, QueryError> {
+    let resource = hex(key.digest().as_bytes())?;
+    let mut query = String::with_capacity(384);
+    parameters(&mut query, &[("resource", Some(&resource))])?;
+    query.push_str(" MATCH (r:Resource {key:$resource})-[link:HAS_TAG]->(t:Tag) WITH link,t LIMIT 1000 DELETE link WITH DISTINCT t WHERE NOT (:Resource)-[:HAS_TAG]->(t) DELETE t");
+    bounded(query)
+}
+
+pub(super) fn tags_exist(key: &ResourceKey) -> Result<String, QueryError> {
+    let resource = hex(key.digest().as_bytes())?;
+    let mut query = String::with_capacity(192);
+    parameters(&mut query, &[("resource", Some(&resource))])?;
+    query.push_str(" MATCH (:Resource {key:$resource})-[:HAS_TAG]->(:Tag) RETURN 1 LIMIT 1");
     bounded(query)
 }
 
@@ -121,6 +173,8 @@ pub(super) enum QueryError {
     InvalidIdentifier,
     #[error("projection query exceeds its byte bound")]
     TooLarge,
+    #[error("projection response is malformed or cleanup exceeds its page bound")]
+    InvalidResponse,
 }
 #[cfg(test)]
 mod tests {
@@ -180,8 +234,42 @@ mod tests {
         let resource = key("123456789012", "vpc-a")?;
         let replacement = super::clear_edges(&resource)?;
         let deletion = super::delete(&resource)?;
-        assert!(replacement.contains("MATCH (n:Resource {key:$key})-[r]-() DELETE r"));
+        assert!(replacement.contains("MATCH (n:Resource {key:$key})-[r]-(other:Resource) DELETE r"));
         assert!(deletion.contains("DETACH DELETE n"));
+        Ok(())
+    }
+
+    #[test]
+    fn scoped_tag_pairs_are_shared_without_resource_cliques()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let resource = key("123456789012", "vpc-a")?;
+        let other = key("123456789012", "vpc-b")?;
+        let pair = super::ProjectionTag { key: "team".into(), value: "platform".into() };
+        assert_eq!(super::tag_identity(&resource, &pair)?, super::tag_identity(&other, &pair)?);
+        assert_ne!(super::tag_identity(&resource, &pair)?, super::tag_identity(&key("000000000000", "vpc-a")?, &pair)?);
+        let mut other_region = resource.clone();
+        other_region.region = Region::parse("us-west-2")?;
+        assert_ne!(super::tag_identity(&resource, &pair)?, super::tag_identity(&other_region, &pair)?);
+        let query = super::tag(&resource, &pair)?;
+        assert!(query.contains("MERGE (t:Tag {key:$tag})"));
+        assert!(query.contains("MERGE (r)-[:HAS_TAG {provenance:$provenance}]->(t)"));
+        assert!(query.contains("provenance='inventory.tags'"));
+        assert!(!query.contains("(other:Resource)"));
+        Ok(())
+    }
+
+    #[test]
+    fn tag_data_is_bound_and_orphans_are_only_deleted_after_last_owner()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let resource = key("123456789012", "vpc-a")?;
+        let pair = super::ProjectionTag { key: "quote'\\\\".into(), value: "line\\n\\t'".into() };
+        let query = super::tag(&resource, &pair)?;
+        assert!(query.contains("tag_key='quote\\'\\\\\\\\'"));
+        assert!(query.contains("t.tag_key=$tag_key,t.tag_value=$tag_value"));
+        let cleanup = super::clear_tags(&resource)?;
+        assert!(cleanup.contains("DELETE link WITH DISTINCT t"));
+        assert!(cleanup.contains("WHERE NOT (:Resource)-[:HAS_TAG]->(t) DELETE t"));
+        assert!(cleanup.contains("WITH link,t LIMIT 1000"));
         Ok(())
     }
 }

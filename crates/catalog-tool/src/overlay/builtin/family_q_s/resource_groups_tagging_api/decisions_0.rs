@@ -1,0 +1,18 @@
+// Pinned operation purposes: .local/aws-models/models/resource-groups-tagging-api/service/2017-01-26/resource-groups-tagging-api-2017-01-26.json
+use super::super::construction::Decision;
+use crate::classes::DenyReason;
+
+pub(super) const DECISIONS: &[(&str, Decision)] = &[
+    ("DescribeReportCreation", Decision::Deferred("The optional-input response does not establish an immutable locally scoped owned-resource identity. Response members Status, S3Location, StartDate, ErrorMessage. Pinned request/ownership contract: Describes the status of the StartReportCreation operation. You can call this operation only from the organization's management account and from the us-east-1 Region.")),
+    ("GetComplianceSummary", Decision::Deferred("ComplianceSummary aggregates by optional target, Region and resource type, rather than identifying an account-owned resource. Cross-account/Region aggregation cannot be given the caller request scope.")),
+    ("GetResources", Decision::Deferred("Heterogeneous ResourceTagMapping.ResourceARN rows have no single canonical resource kind. This is a tag-observation source, not a new AWS resource type; static per-operation kind mapping cannot attach each row to its existing canonical resource identity.")),
+    ("GetTagKeys", Decision::Deferred("Unique tag-key vocabulary is tag metadata, not independently owned AWS resource inventory.")),
+    ("GetTagValues", Decision::Deferred("Required selectors Key are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members PaginationToken, TagValues. Pinned purpose: Returns all tag values for the specified key that are used in the specified Amazon Web Services Region for the calling account. This operation supports pagination, where the response can be sent in multiple pages. You should check the PaginationToken")),
+    ("ListRequiredTags", Decision::Deferred("Required-tag policy aggregates span organization targets and report output; not an account-owned resource root with a stable ARN.")),
+    // Changes service state rather than reading inventory. Pinned purpose: Generates a report that lists all tagged resources in the accounts across your organization and tells whether each resource is compliant with the effective tag policy. Compliance data is refreshed daily. The report is generated asynchronously. The generated report is saved to the following location: s3://amzn-s3-demo-bucket/AwsTagPolicies/o-exampleorgid/YYYY-MM-ddTHH:mm:ssZ/report.csv For more inf
+    ("StartReportCreation", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Applies one or more tags to the specified resources. Note the following: Not all resources can have tags. For a list of services with resources that support tagging using this operation, see Services that support the Resource Groups Tagging API . If the resource doesn't yet support this operation, the resource's service might support tagging using its own API operations. For more information, refe
+    ("TagResources", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Removes the specified tags from the specified resources. When you specify a tag key, the action removes both that key and its associated value. The operation succeeds even if you attempt to remove tags from a resource that were already removed. Note the following: To remove tags from a resource, you need the necessary permissions for the service that the resource belongs to as well as permissions 
+    ("UntagResources", Decision::Denied(DenyReason::Mutating)),
+];

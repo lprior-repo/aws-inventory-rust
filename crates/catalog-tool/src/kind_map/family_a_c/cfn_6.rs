@@ -1,0 +1,24 @@
+use crate::kind_map::CfnMapping;
+
+pub(super) const ENTRIES: &[CfnMapping<'static>] = &[
+    CfnMapping::canonical("AWS::CloudFormation::StackSet"),
+    CfnMapping::canonical("AWS::CloudTrail::Channel"),
+    CfnMapping::canonical("AWS::CloudTrail::Dashboard"),
+    CfnMapping::canonical("AWS::CloudTrail::EventDataStore"),
+    CfnMapping::canonical("AWS::CloudTrail::Trail"),
+    CfnMapping::canonical("AWS::CodeArtifact::Domain"),
+    CfnMapping::canonical("AWS::CodeArtifact::Repository"),
+    CfnMapping::canonical("AWS::CodeBuild::Fleet"),
+    CfnMapping::canonical("AWS::CodeBuild::Project"),
+    CfnMapping::canonical("AWS::CodeBuild::ReportGroup"),
+    CfnMapping::canonical("AWS::CodeCommit::Repository"),
+    CfnMapping::canonical("AWS::CodeDeploy::Application"),
+    CfnMapping::canonical("AWS::CodeDeploy::DeploymentConfig"),
+    CfnMapping::canonical("AWS::CodeGuruProfiler::ProfilingGroup"),
+    CfnMapping::canonical("AWS::CodeGuruReviewer::RepositoryAssociation"),
+    CfnMapping::canonical("AWS::CodePipeline::Pipeline"),
+    CfnMapping::canonical("AWS::CodePipeline::Webhook"),
+    CfnMapping::canonical("AWS::CodeStarConnections::Connection"),
+    CfnMapping::canonical("AWS::CodeStarConnections::RepositoryLink"),
+    CfnMapping::canonical("AWS::CodeStarNotifications::NotificationRule"),
+];

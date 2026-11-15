@@ -1,7 +1,11 @@
 #[path = "runner/oracle.rs"]
 mod oracle;
+mod identity;
+mod materialize;
+#[cfg(test)]
+mod tests;
 use super::{
-    SeedResourcePair, TypedSeedOracle,
+    ScenarioSeedOracle, SeedResourceIdentity, SeedResourcePair, TypedSeedOracle,
     config::{MutationPermit, SeedConfig, SeedError},
     model::{PreparedInput, PreparedInputValue, PreparedRelationship, PreparedStep, SeedModels},
     scenario::{SeedScenario, default_scenario},
@@ -24,7 +28,7 @@ pub async fn run_seed(
     config: SeedConfig,
     credentials: &Credentials,
 ) -> Result<TypedSeedOracle, SeedError> {
-    run_scenario(catalog, config, credentials, default_scenario()).await
+    run_scenario(catalog, config, credentials, default_scenario()?).await
 }
 
 pub async fn run_scenario(
@@ -33,17 +37,30 @@ pub async fn run_scenario(
     credentials: &Credentials,
     scenario: SeedScenario,
 ) -> Result<TypedSeedOracle, SeedError> {
-    let scenario = SeedScenario::with_relationships(
-        scenario.steps().to_vec(),
-        scenario.relationships().to_vec(),
-    )?;
     let models = SeedModels::load(catalog, &scenario)?;
     validate_oracle_plan(&models)?;
-    let client = Client::new(TransportConfig {
+    let client = seed_client(&config)?;
+    execute_scenario(&models, &config, credentials, &client).await?
+        .oracle(&models.relationships)
+}
+
+pub async fn run_data_scenario(
+    catalog: &RuntimeCatalog<'_>,
+    config: SeedConfig,
+    credentials: &Credentials,
+    scenario: SeedScenario,
+) -> Result<ScenarioSeedOracle, SeedError> {
+    let models = SeedModels::load(catalog, &scenario)?;
+    let client = seed_client(&config)?;
+    execute_scenario(&models, &config, credentials, &client).await?
+        .generic_oracle(&models.relationships)
+}
+
+fn seed_client(config: &SeedConfig) -> Result<Client, SeedError> {
+    Ok(Client::new(TransportConfig {
         extra_ca_bundle: Some(config.ca_bundle.clone()),
         ..TransportConfig::default()
-    })?;
-    execute_scenario(&models, &config, credentials, &client).await
+    })?)
 }
 
 async fn execute_scenario(
@@ -51,7 +68,7 @@ async fn execute_scenario(
     config: &SeedConfig,
     credentials: &Credentials,
     client: &Client,
-) -> Result<TypedSeedOracle, SeedError> {
+) -> Result<SeedState, SeedError> {
     let context = SeedContext {
         models,
         client,
@@ -59,16 +76,15 @@ async fn execute_scenario(
         config,
         mutation_permit: config.mutation_permit(),
     };
-    let account = caller_account(&context).await?;
-    let state = SeedState::new(account, config.region.clone());
+    let (account, partition) = caller_account(&context).await?;
+    let state = SeedState::new(account, config.region.clone(), partition);
     let steps = models.steps.iter().map(Ok::<_, SeedError>);
-    let completed = futures_util::stream::iter(steps)
+    futures_util::stream::iter(steps)
         .try_fold(state, |mut state, step| async {
             execute_step(&mut state, step, &context).await?;
             Ok(state)
         })
-        .await?;
-    completed.oracle(&models.relationships)
+        .await
 }
 
 struct SeedContext<'c, 'm> {
@@ -81,29 +97,29 @@ struct SeedContext<'c, 'm> {
 
 struct SeedOutput {
     step: super::scenario::StepId,
-    kind: Kind,
-    identity: ResourceId,
-    key: ResourceKey,
+    resource: Option<SeedResourceIdentity>,
     record: Record,
 }
 
 struct SeedState {
     account: AccountId,
     region: Region,
+    partition: String,
     outputs: Vec<SeedOutput>,
 }
 
 impl SeedState {
-    fn new(account: AccountId, region: Region) -> Self {
+    fn new(account: AccountId, region: Region, partition: String) -> Self {
         Self {
             account,
             region,
+            partition,
             outputs: Vec::with_capacity(12),
         }
     }
 }
 
-async fn caller_account(context: &SeedContext<'_, '_>) -> Result<AccountId, SeedError> {
+async fn caller_account(context: &SeedContext<'_, '_>) -> Result<(AccountId, String), SeedError> {
     let input = wire::input_record(std::iter::empty::<(Vec<FieldId>, Value)>())?;
     let response = wire::call(
         context.client,
@@ -116,8 +132,10 @@ async fn caller_account(context: &SeedContext<'_, '_>) -> Result<AccountId, Seed
         },
     )
     .await?;
-    AccountId::parse(&text_path(response.root(), &context.models.caller_account)?)
-        .map_err(SeedError::from)
+    identity::caller_identity(
+        &text_path(response.root(), &context.models.caller_account)?,
+        &text_path(response.root(), &context.models.caller_arn)?,
+    )
 }
 
 async fn execute_step(
@@ -132,8 +150,9 @@ async fn execute_step(
         .collect::<Result<Vec<_>, _>>()?;
     let response = call_step(step, context, &inputs).await?;
     validate_response(&response, step, &inputs)?;
-    let identity = ResourceId::parse(&text_path(response.root(), &step.identity)?)?;
-    record_output(state, step, identity, response)
+    let resource = step.resource.as_ref().map(|resource|
+        identity::resource(state, step.id, resource, &response, &inputs)).transpose()?;
+    record_output(state, step.id, resource, response)
 }
 
 async fn call_step(
@@ -159,27 +178,22 @@ async fn call_step(
 
 fn record_output(
     state: &mut SeedState,
-    step: &PreparedStep<'_>,
-    identity: ResourceId,
+    step: super::StepId,
+    resource: Option<SeedResourceIdentity>,
     record: Record,
 ) -> Result<(), SeedError> {
-    if state
-        .outputs
-        .iter()
-        .any(|output| output.identity == identity)
-    {
-        let message = "seed operation returned a duplicate resource identity";
-        return Err(SeedError::Invalid(message));
+    if resource.as_ref().is_some_and(|resource| state.outputs.iter()
+        .filter_map(|output| output.resource.as_ref()).any(|prior| prior.key == resource.key)) {
+        return Err(SeedError::Invalid("seed operation returned a duplicate resource identity"));
     }
-    let key = resource_key(state, step, identity.clone());
-    let (step, kind) = (step.id, step.kind.clone());
-    state.outputs.push(SeedOutput {
-        step,
-        kind,
-        identity,
-        key,
-        record,
-    });
+    state.outputs.push(SeedOutput { step, resource, record });
+    Ok(())
+}
+
+fn validate_exact_identity(expected: Option<&str>, identity: &ResourceId) -> Result<(), SeedError> {
+    if expected.is_some_and(|expected| expected != identity.as_str()) {
+        return Err(SeedError::Invalid("seed operation returned an unexpected exact identity"));
+    }
     Ok(())
 }
 
@@ -191,14 +205,9 @@ fn materialize_input(
         PreparedInputValue::Text(text) => Value::Text(text.clone()),
         PreparedInputValue::Boolean(value) => Value::Bool(*value),
         PreparedInputValue::Integer(value) => Value::Int(*value),
-        PreparedInputValue::PreviousOutput { step, path } => {
-            let output = state
-                .outputs
-                .get(usize::from(step.0))
-                .filter(|output| output.step == *step)
-                .ok_or(SeedError::Invalid("seed binding output is not available"))?;
-            value_path(output.record.root(), path)?.to_value()?
-        }
+        PreparedInputValue::Literal(value) => value.clone(),
+        PreparedInputValue::Template(template) => materialize::template(state, template)?,
+        PreparedInputValue::PreviousOutput { step, path } => materialize::output_value(state, *step, path)?,
     };
     Ok((input.path.clone(), value))
 }
@@ -223,11 +232,3 @@ fn validate_response(
     })
 }
 
-fn resource_key(state: &SeedState, step: &PreparedStep<'_>, identity: ResourceId) -> ResourceKey {
-    ResourceKey {
-        account: state.account.clone(),
-        region: state.region.clone(),
-        kind: step.kind.clone(),
-        id: identity,
-    }
-}

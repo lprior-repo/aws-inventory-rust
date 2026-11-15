@@ -1,4 +1,4 @@
-use super::{TestResult, model, paginated, super_write, write_model};
+use super::{TestResult, model, paginated, write_model};
 use proptest::{prelude::*, test_runner::RngSeed};
 use serde_json::{Value, json};
 use std::collections::BTreeMap;
@@ -136,13 +136,15 @@ fn verify_splits(t: &BTreeMap<&str, u64>) -> TestResult {
 }
 fn verify(services: &[Vec<Flags>]) -> TestResult {
     let dir = tempfile::tempdir()?;
-    super_write(dir.path(), "catalog/overlay/must-deny.txt", "")?;
     write_model(dir.path(), "vocab", &paginated())?;
     services
         .iter()
         .enumerate()
         .try_for_each(|(i, ops)| write_model(dir.path(), &format!("svc{i}"), &generated(ops)))?;
-    let text = catalog_tool::plans::build_report(dir.path(), dir.path())?;
+    let text = catalog_tool::plans::build_report_with_policy(
+        dir.path(),
+        &catalog_tool::classes::DenyList::parse("")?,
+    )?;
     let totals = totals(&text)?;
     verify_columns(&text, &totals)?;
     verify_splits(&totals)

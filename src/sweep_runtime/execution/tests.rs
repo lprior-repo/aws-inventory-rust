@@ -1,3 +1,8 @@
+mod admission;
+mod support;
+mod lease_budget;
+mod shutdown;
+
 use super::*;
 
 #[test]

@@ -13,6 +13,8 @@ pub enum InventoryError {
     Service,
     #[error("invalid modeled operation name")]
     Operation,
+    #[error("work branch must contain 1..64 ASCII alphanumeric, underscore or hyphen bytes")]
+    Branch,
     #[error("invalid relationship name")]
     Relation,
     #[error("invalid SQL identifier")]
@@ -25,6 +27,8 @@ pub enum InventoryError {
     Name,
     #[error("field path must contain one to eight field IDs")]
     Path,
+    #[error("reference requires one to 64 unique candidate kinds including its declared kind")]
+    ReferenceKinds,
     #[error("kind contains duplicate column paths")]
     DuplicateColumn,
     #[error("kind exceeds SQLite's 2000-column bound")]
@@ -35,6 +39,14 @@ pub enum InventoryError {
     PageSize,
     #[error("search text contains NUL or exceeds 256 bytes")]
     Search,
+    #[error("tag key must be nonempty, contain no controls, and fit in 128 bytes")]
+    TagKey,
+    #[error("tag value contains NUL or exceeds 256 bytes")]
+    TagValue,
+    #[error("resource tag observation exceeds 100 pairs")]
+    TagCount,
+    #[error("resource tag observation contains a duplicate key")]
+    DuplicateTag,
     #[error(transparent)]
     Record(#[from] crate::record::RecordError),
     #[error(transparent)]

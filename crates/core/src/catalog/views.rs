@@ -4,7 +4,7 @@ mod wire;
 use super::{CatalogError, CatalogKey, integer, list, map_value, text};
 use crate::record::{ListRef, MapRef, ValueRef, read_one};
 pub use operation::{CompressionAlgorithm, HttpOperation, Operation, Paginator};
-pub use shape::{ErrorKind, Member, ModeledError, Shape, Target};
+pub use shape::{ErrorKind, Member, ModeledError, Shape, Target, ValueConstraints};
 pub(super) use wire::field_name;
 pub use wire::{HttpBinding, TimestampFormat, WireTraits, XmlNamespace};
 

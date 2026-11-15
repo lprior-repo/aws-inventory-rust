@@ -1,4 +1,4 @@
-use catalog_tool::classes::{Error, build_report};
+use catalog_tool::classes::{DenyList, Error, build_report, build_report_with_policy};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 const MODEL: &str = r#"{"shapes":{
@@ -27,8 +27,6 @@ const EXPECTED: &str = concat!(
 fn fixture() -> Result<tempfile::TempDir, Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir()?;
     std::fs::create_dir_all(dir.path().join("models/sample/service/v1"))?;
-    std::fs::create_dir_all(dir.path().join("catalog/overlay"))?;
-    std::fs::write(dir.path().join("catalog/overlay/must-deny.txt"), "")?;
     std::fs::write(
         dir.path().join("models/sample/service/v1/sample.json"),
         MODEL,
@@ -39,7 +37,10 @@ fn fixture() -> Result<tempfile::TempDir, Box<dyn std::error::Error>> {
 #[test]
 fn absent_unit_empty_optional_and_required_inputs_are_classified() -> TestResult {
     let dir = fixture()?;
-    assert_eq!(build_report(dir.path(), dir.path())?, EXPECTED);
+    assert_eq!(
+        build_report_with_policy(dir.path(), &DenyList::parse("")?)?,
+        EXPECTED
+    );
     Ok(())
 }
 
@@ -59,7 +60,10 @@ fn mixed_optional_and_required_members_are_one_expansion() -> TestResult {
         dir.path().join("models/sample/service/v1/sample.json"),
         model,
     )?;
-    assert_eq!(build_report(dir.path(), dir.path())?, EXPECTED);
+    assert_eq!(
+        build_report_with_policy(dir.path(), &DenyList::parse("")?)?,
+        EXPECTED
+    );
     Ok(())
 }
 
@@ -68,17 +72,15 @@ fn model_without_a_service_directory_is_rejected() -> TestResult {
     let dir = fixture()?;
     let path = dir.path().join("models/model.json");
     std::fs::write(&path, MODEL)?;
-    assert!(matches!(build_report(dir.path(), dir.path()),
+    assert!(matches!(build_report_with_policy(dir.path(), &DenyList::parse("")?),
         Err(Error::ModelSource(source)) if source.to_string() == format!("invalid model path: {}", path.display())));
     Ok(())
 }
 #[test]
-fn missing_deny_file_is_not_treated_as_an_empty_policy() -> TestResult {
+fn production_report_rejects_missing_builtin_denials_without_a_policy_file() -> TestResult {
     let dir = fixture()?;
-    let path = dir.path().join("catalog/overlay/must-deny.txt");
-    std::fs::remove_file(&path)?;
     assert!(matches!(build_report(dir.path(), dir.path()),
-        Err(Error::Report(catalog_tool::ReportError::Io { file, source }))
-        if file == path && source.kind() == std::io::ErrorKind::NotFound));
+        Err(Error::UnmatchedEntry { line: 21, key }) if key == "GetAuthorizationToken"));
+    assert!(!dir.path().join("catalog").exists());
     Ok(())
 }

@@ -12,6 +12,7 @@ use inventory_core::{
     record::Value,
 };
 use std::collections::BTreeMap;
+mod enum_values;
 
 pub(super) fn encode(
     id: &str,
@@ -27,11 +28,16 @@ pub(super) fn encode(
     }
     fields.extend(targets(&shape.kind, indexes)?);
     fields.extend(metadata::shape_fields(&shape.traits)?);
+    fields.extend(enum_values::field(shape)?);
     map(fields)
 }
 
 fn base_fields(id: &str, shape: &Shape) -> Result<Vec<(CatalogKey, Value)>, CompileError> {
-    let code = kind_code(kind(&shape.kind)?).ok_or(CompileError::Kind)?;
+    let wire_kind = match &shape.kind {
+        ShapeKind::String if shape.traits.contains_key("smithy.api#enum") => "enum",
+        otherwise => kind(otherwise)?,
+    };
+    let code = kind_code(wire_kind).ok_or(CompileError::Kind)?;
     let mut fields = vec![
         (CatalogKey::Name, name(id)),
         (
@@ -108,9 +114,7 @@ fn targets(
     match kind {
         ShapeKind::List { member } => {
             let mut fields = vec![(CatalogKey::Element, reference(&member.target, indexes)?)];
-            if let Some(wire) = metadata::pseudo_field(&member.traits, CatalogKey::ElementWire)? {
-                fields.push(wire);
-            }
+            fields.push(metadata::pseudo_field(&member.traits, CatalogKey::ElementWire)?);
             Ok(fields)
         }
         ShapeKind::Map { key, value } => map_targets(key, value, indexes),
@@ -127,12 +131,8 @@ fn map_targets(
         (CatalogKey::MapKey, reference(&key.target, indexes)?),
         (CatalogKey::MapValue, reference(&value.target, indexes)?),
     ];
-    if let Some(wire) = metadata::pseudo_field(&key.traits, CatalogKey::MapKeyWire)? {
-        fields.push(wire);
-    }
-    if let Some(wire) = metadata::pseudo_field(&value.traits, CatalogKey::MapValueWire)? {
-        fields.push(wire);
-    }
+    fields.push(metadata::pseudo_field(&key.traits, CatalogKey::MapKeyWire)?);
+    fields.push(metadata::pseudo_field(&value.traits, CatalogKey::MapValueWire)?);
     Ok(fields)
 }
 
@@ -161,8 +161,8 @@ fn aggregate_kind(kind: &ShapeKind) -> Result<&'static str, CompileError> {
         ShapeKind::Union { .. } => Ok("union"),
         ShapeKind::List { .. } => Ok("list"),
         ShapeKind::Map { .. } => Ok("map"),
-        ShapeKind::Enum => Ok("enum"),
-        ShapeKind::IntEnum => Ok("intEnum"),
+        ShapeKind::Enum { .. } => Ok("enum"),
+        ShapeKind::IntEnum { .. } => Ok("intEnum"),
         ShapeKind::Service => Ok("service"),
         ShapeKind::Operation { .. } => Ok("operation"),
         ShapeKind::Resource => Ok("resource"),

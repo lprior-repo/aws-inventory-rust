@@ -1,0 +1,66 @@
+// Pinned model: .local/aws-models/models/securityagent/service/2025-09-06/securityagent-2025-09-06.json
+use super::super::construction::{Inventory, ResourceIdentity};
+use crate::overlay::Scope;
+
+pub(super) const CALLS: &[Inventory] = &[
+    Inventory {
+        operation: "ListAgentSpaces",
+        items: "agentSpaceSummaries",
+        identity: ResourceIdentity::Key(&["agentSpaceId"]),
+        token: Some(("nextToken", "nextToken")),
+        scope: Scope::Region,
+        input: &[],
+        tags: None,
+        queryable: &[],
+    },
+    Inventory {
+        operation: "ListApplications",
+        items: "applicationSummaries",
+        identity: ResourceIdentity::Key(&["applicationId"]),
+        token: Some(("nextToken", "nextToken")),
+        scope: Scope::Region,
+        input: &[],
+        tags: None,
+        queryable: &[],
+    },
+    Inventory {
+        operation: "ListIntegrations",
+        items: "integrationSummaries",
+        identity: ResourceIdentity::Key(&["integrationId"]),
+        token: Some(("nextToken", "nextToken")),
+        scope: Scope::Region,
+        input: &[],
+        tags: None,
+        queryable: &[],
+    },
+    Inventory {
+        operation: "ListPrivateConnections",
+        items: "privateConnections",
+        identity: ResourceIdentity::Key(&["name"]),
+        token: Some(("nextToken", "nextToken")),
+        scope: Scope::Region,
+        input: &[],
+        tags: Some("tags"),
+        queryable: &[],
+    },
+    Inventory {
+        operation: "ListSecurityRequirementPacks",
+        items: "securityRequirementPackSummaries",
+        identity: ResourceIdentity::Key(&["packId"]),
+        token: Some(("nextToken", "nextToken")),
+        scope: Scope::Region,
+        input: &[],
+        tags: None,
+        queryable: &[],
+    },
+    Inventory {
+        operation: "ListTargetDomains",
+        items: "targetDomainSummaries",
+        identity: ResourceIdentity::Key(&["targetDomainId"]),
+        token: Some(("nextToken", "nextToken")),
+        scope: Scope::Region,
+        input: &[],
+        tags: None,
+        queryable: &[],
+    },
+];

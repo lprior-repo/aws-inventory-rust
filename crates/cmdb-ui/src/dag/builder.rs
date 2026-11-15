@@ -17,6 +17,7 @@ pub fn from_data_graph(source: &DataGraph) -> DagGraph {
         add_row(&mut dag, row);
     }
     add_resource_edges(&mut dag, source);
+    add_tag_affiliations(&mut dag, source);
     dag
 }
 
@@ -60,4 +61,34 @@ fn add_resource_edges(dag: &mut DagGraph, source: &DataGraph) {
             dag.add_overlay_edge(from, to);
         }
     }
+}
+
+fn add_tag_affiliations(dag: &mut DagGraph, source: &DataGraph) {
+    let Some(root) = source.tag_root.as_deref().and_then(|key| {
+        source.nodes.iter().find(|row| row.key == key)
+    }) else {
+        return;
+    };
+    let Some(resource) = dag.index_of(&root.key) else {
+        return;
+    };
+    source.tag_affiliations.iter()
+        .filter(|entry| entry.tag.account == root.account && entry.tag.region == root.region)
+        .for_each(|entry| {
+            let tag = &entry.tag;
+            let label = truncate_label(&format!("tag: {:?}={:?}", tag.key, tag.value));
+            if let Some(node) = dag.add_node(NodeKind::Tag, tag_id(tag), label) {
+                dag.add_edge(resource, node);
+            }
+        });
+}
+
+fn tag_id(tag: &cmdb_view::ScopedTag) -> String {
+    format!(
+        "tag:{}:{}:{}:{}:{}:{}:{}:{}",
+        tag.account.len(), tag.account,
+        tag.region.len(), tag.region,
+        tag.key.len(), tag.key,
+        tag.value.len(), tag.value,
+    )
 }

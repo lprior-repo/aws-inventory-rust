@@ -1,10 +1,15 @@
+mod authority;
+mod legacy;
 mod commit;
 mod completion;
 mod connection;
+mod facets;
 mod projection;
 mod projection_outbox;
 mod projection_read;
 mod references;
+mod reference_candidates;
+mod relation_permissions;
 mod schema;
 mod typed;
 mod validation;
@@ -13,6 +18,7 @@ use inventory_core::catalog::runtime::RuntimeCatalog;
 use inventory_core::inventory::{
     Edge, KindSchema, Observation, ScopeKey, ScopeOutcome, UnresolvedReference,
 };
+pub use inventory_core::inventory::{Tag, TagCoverage, TagObservation};
 pub use projection::{ProjectionError, ProjectionReport, run_projection};
 use sha2::{Digest, Sha256};
 use sqlx::{Row, SqlitePool};
@@ -23,7 +29,7 @@ use thiserror::Error;
 
 pub use projection_read::{
     ProjectionEdgeCursor, ProjectionEdgeHeader, ProjectionEdgePage, ProjectionResource,
-    ProjectionSnapshot, ProjectionState,
+    ProjectionSnapshot, ProjectionState, ProjectionTag, ProjectionTagCursor, ProjectionTagPage,
 };
 pub use work::{
     ChangeStats, CommitResult, PendingProjection, ProjectionAck, SweepId, SweepSummary, WorkLease,
@@ -45,7 +51,7 @@ pub enum StoreError {
     Catalog(#[from] inventory_core::catalog::CatalogError),
     #[error("runtime catalog capability metadata is invalid: {0}")]
     RuntimeCatalog(#[from] inventory_core::catalog::runtime::RuntimeCatalogError),
-    #[error("database uses schema version {found}; expected schema14")]
+    #[error("database uses schema version {found}; expected schema16 (schema14/15 upgrade on open)")]
     SchemaVersion { found: i64 },
     #[error("catalog digest differs from the immutable database catalog")]
     CatalogMismatch,
@@ -68,6 +74,7 @@ pub struct SchemaRegistry {
     schemas: Arc<[Arc<KindSchema>]>,
     digest: [u8; 32],
     operations: Arc<BTreeSet<(String, String)>>,
+    permissions: relation_permissions::Permissions,
 }
 
 impl SchemaRegistry {
@@ -86,7 +93,8 @@ impl SchemaRegistry {
                 )
             })
             .collect();
-        let registry = Self::stored(Sha256::digest(catalog).into(), schemas, operations)?;
+        let permissions = relation_permissions::Permissions::new(catalog, &runtime)?;
+        let registry = Self::stored(Sha256::digest(catalog).into(), schemas, operations, permissions)?;
         if !schema_sets_match(&registry.schemas, runtime.schemas()) {
             return Err(StoreError::Invalid(
                 "kind schemas differ from checked runtime catalog",
@@ -95,10 +103,11 @@ impl SchemaRegistry {
         Ok(registry)
     }
 
-    pub(crate) fn stored(
+    fn stored(
         digest: [u8; 32],
         schemas: Vec<Arc<KindSchema>>,
         operations: BTreeSet<(String, String)>,
+        permissions: relation_permissions::Permissions,
     ) -> Result<Self, StoreError> {
         let mut ordered = schemas;
         ordered.sort_unstable_by(|left, right| left.kind().cmp(right.kind()));
@@ -113,11 +122,28 @@ impl SchemaRegistry {
             schemas: ordered.into(),
             digest,
             operations: Arc::new(operations),
+            permissions,
         })
     }
 
     pub fn schemas(&self) -> &[Arc<KindSchema>] {
         &self.schemas
+    }
+    fn reference_target(
+        &self,
+        account: inventory_core::inventory::AccountId,
+        region: inventory_core::inventory::Region,
+        kind: inventory_core::inventory::Kind,
+        path: Vec<inventory_core::record::FieldId>,
+        value: inventory_core::inventory::ResourceId,
+    ) -> Result<inventory_core::inventory::ReferenceTarget, StoreError> {
+        if path.is_empty() {
+            let schema = self.schemas.iter().find(|schema| schema.kind() == &kind)
+                .ok_or(StoreError::Invalid("reference target kind is absent from schema registry"))?;
+            Ok(inventory_core::inventory::ReferenceTarget::root_text(account, region, schema, value)?)
+        } else {
+            Ok(inventory_core::inventory::ReferenceTarget::new(account, region, kind, path, value)?)
+        }
     }
     pub fn digest(&self) -> &[u8; 32] {
         &self.digest
@@ -143,7 +169,7 @@ pub struct PageCommit {
     pub observations: Vec<Observation>,
     pub edges: Vec<Edge>,
     pub unresolved: Vec<UnresolvedReference>,
-    pub tags: Vec<Tag>,
+    pub tags: Vec<TagObservation>,
     pub next_token: Option<Vec<u8>>,
     pub continuation_digest: Option<[u8; 32]>,
     pub children: Vec<WorkSpec>,
@@ -151,12 +177,6 @@ pub struct PageCommit {
     pub observed_at_ms: i64,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Tag {
-    pub resource: inventory_core::inventory::ResourceKey,
-    pub key: String,
-    pub value: String,
-}
 
 impl BinaryStore {
     pub async fn create(path: &Path, registry: SchemaRegistry) -> Result<Self, StoreError> {
@@ -165,6 +185,14 @@ impl BinaryStore {
 
     pub async fn open(path: &Path) -> Result<Self, StoreError> {
         connection::open(path).await
+    }
+
+    pub async fn open_with_catalog(path: &Path, catalog: &[u8]) -> Result<Self, StoreError> {
+        relation_permissions::open_with_catalog(path, catalog).await
+    }
+
+    pub async fn unattributed_authority_count(&self) -> Result<u64, StoreError> {
+        legacy::count(&self.writer).await
     }
 
     pub async fn seed_work(&self, work: WorkSpec) -> Result<(), StoreError> {
@@ -200,7 +228,8 @@ impl BinaryStore {
         projection_outbox::drain_projection(self, limit).await
     }
 
-    pub async fn ack_projection(&self, ack: ProjectionAck) -> Result<(), StoreError> {
+    /// Returns the number of durable outbox rows actually acknowledged (0 or 1).
+    pub async fn ack_projection(&self, ack: ProjectionAck) -> Result<u64, StoreError> {
         projection_outbox::ack_projection(self, ack).await
     }
     pub async fn projection_state(&self) -> Result<ProjectionState, StoreError> {

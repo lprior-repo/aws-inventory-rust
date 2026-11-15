@@ -1,0 +1,156 @@
+// Pinned Smithy source: .local/aws-models/models/macie2/service/2020-01-01/macie2-2020-01-01.json
+use super::policy::{Group, Id, Input, Resource, compile};
+use crate::overlay::Scope;
+use crate::{classes::DenyReason, overlay::{NameError, OverlayClass, ServiceOverlay}};
+
+const GROUPS: &[Group] = &[
+    Group {
+        operations: &[
+            "AcceptInvitation", "BatchGetCustomDataIdentifiers", 
+            "BatchUpdateAutomatedDiscoveryAccounts", "CreateAllowList", 
+            "CreateClassificationJob", "CreateCustomDataIdentifier", "CreateFindingsFilter", 
+            "CreateInvitations", "CreateMember", "CreateSampleFindings", "DeclineInvitations", 
+            "DeleteAllowList", "DeleteCustomDataIdentifier", "DeleteFindingsFilter", 
+            "DeleteInvitations", "DeleteMember", "DisableMacie", 
+            "DisableOrganizationAdminAccount", "DisassociateFromAdministratorAccount", 
+            "DisassociateFromMasterAccount", "DisassociateMember", "EnableMacie", 
+            "EnableOrganizationAdminAccount", "PutClassificationExportConfiguration", 
+            "PutFindingsPublicationConfiguration", "TagResource", "UntagResource", 
+            "UpdateAllowList", "UpdateAutomatedDiscoveryConfiguration", 
+            "UpdateClassificationJob", "UpdateClassificationScope", "UpdateFindingsFilter", 
+            "UpdateMacieSession", "UpdateMemberSession", "UpdateOrganizationConfiguration", 
+            "UpdateResourceProfile", "UpdateResourceProfileDetections", 
+            "UpdateRevealConfiguration", "UpdateSensitivityInspectionTemplate",
+        ],
+        class: OverlayClass::Deny(DenyReason::Mutating),
+        reason: None,
+    },
+    Group {
+        operations: &[
+            "DescribeBuckets", "DescribeOrganizationConfiguration", "GetAdministratorAccount", 
+            "GetAutomatedDiscoveryConfiguration", "GetBucketStatistics", 
+            "GetClassificationExportConfiguration", "GetFindingsPublicationConfiguration", 
+            "GetInvitationsCount", "GetMacieSession", "GetMasterAccount", 
+            "GetRevealConfiguration", "GetUsageStatistics", "GetUsageTotals", 
+            "ListAutomatedDiscoveryAccounts", "ListFindings", "ListInvitations",
+            "ListManagedDataIdentifiers", "ListOrganizationAdminAccounts",
+            "SearchResources",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("The authorized metadata summaries are collected separately; this operation has no complete resource identity, safety and discovery contract."),
+    },
+    Group {
+        operations: &[
+            "DescribeClassificationJob",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (jobId); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+    Group {
+        operations: &[
+            "GetAllowList", "GetClassificationScope", "GetCustomDataIdentifier", 
+            "GetFindingsFilter", "GetMember", "GetSensitivityInspectionTemplate",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (id); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+    Group {
+        operations: &[
+            "GetFindingStatistics",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (groupBy); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+    Group {
+        operations: &[
+            "GetFindings", "GetSensitiveDataOccurrences",
+        ],
+        class: OverlayClass::Deny(DenyReason::Content),
+        reason: None,
+    },
+    Group {
+        operations: &[
+            "GetResourceProfile", "ListResourceProfileArtifacts", 
+            "ListResourceProfileDetections", "ListTagsForResource",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (resourceArn); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+    Group {
+        operations: &[
+            "GetSensitiveDataOccurrencesAvailability",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (findingId); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+    Group {
+        operations: &[
+            "TestCustomDataIdentifier",
+        ],
+        class: OverlayClass::Defer,
+        reason: Some("Expansion requires request context (regex, sampleText); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+    },
+];
+
+const RESOURCES: &[Resource] = &[
+    // Retrieves a subset of information about all the allow lists for an account.
+    Resource {
+        operation: "ListAllowLists",
+        items: "allowLists", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: Some(("nextToken", "nextToken")),
+        query: &["arn", "id", "name"],
+        tags: None,
+        bindings: &[],
+        fixed: &[],
+    },
+    // Retrieves a subset of information about one or more classification jobs.
+    Resource {
+        operation: "ListClassificationJobs",
+        items: "items", id: Id::Key(&["jobId"]),
+        scope: Scope::Region, tokens: Some(("nextToken", "nextToken")),
+        query: &["jobId", "jobStatus", "jobType", "name"],
+        tags: None,
+        bindings: &[],
+        fixed: &[],
+    },
+    // Retrieves a subset of information about the custom data identifiers for an account.
+    Resource {
+        operation: "ListCustomDataIdentifiers",
+        items: "items", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: Some(("nextToken", "nextToken")),
+        query: &["arn", "id", "name"],
+        tags: None,
+        bindings: &[],
+        fixed: &[],
+    },
+    // Retrieves a subset of information about all the findings filters for an account.
+    Resource {
+        operation: "ListFindingsFilters",
+        items: "findingsFilterListItems", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: Some(("nextToken", "nextToken")),
+        query: &["arn", "id", "name"],
+        tags: Some("tags"),
+        bindings: &[],
+        fixed: &[],
+    },
+    Resource {
+        operation: "ListMembers", items: "members", id: Id::Arn("arn"),
+        scope: Scope::Region, tokens: Some(("nextToken", "nextToken")),
+        query: &["arn", "accountId", "relationshipStatus"], tags: Some("tags"),
+        bindings: &[], fixed: &[Input::String("onlyAssociated", "false")],
+    },
+    Resource {
+        operation: "ListClassificationScopes", items: "classificationScopes", id: Id::Key(&["id"]),
+        scope: Scope::Region, tokens: Some(("nextToken", "nextToken")),
+        query: &["id", "name"], tags: None, bindings: &[], fixed: &[],
+    },
+    Resource {
+        operation: "ListSensitivityInspectionTemplates", items: "sensitivityInspectionTemplates", id: Id::Key(&["id"]),
+        scope: Scope::Region, tokens: Some(("nextToken", "nextToken")),
+        query: &["id", "name"], tags: None, bindings: &[], fixed: &[],
+    },
+];
+
+pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
+    compile("macie2", GROUPS, RESOURCES)
+}

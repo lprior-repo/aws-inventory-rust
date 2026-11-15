@@ -1,6 +1,6 @@
 use catalog_tool::{
     ReportMode,
-    classes::{Error, build_report, run},
+    classes::{DenyList, Error, build_report_with_policy, run, run_with_policy},
 };
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -25,8 +25,6 @@ const MIXINS: &str = r#"{"shapes":{
 fn fixture(model: &str) -> Result<tempfile::TempDir, Box<dyn std::error::Error>> {
     let dir = tempfile::tempdir()?;
     std::fs::create_dir_all(dir.path().join("models/sample/service/v1"))?;
-    std::fs::create_dir_all(dir.path().join("catalog/overlay"))?;
-    std::fs::write(dir.path().join("catalog/overlay/must-deny.txt"), "")?;
     std::fs::write(
         dir.path().join("models/sample/service/v1/sample.json"),
         model,
@@ -38,7 +36,7 @@ fn fixture(model: &str) -> Result<tempfile::TempDir, Box<dyn std::error::Error>>
 fn missing_input_target_names_the_service_operation_and_target() -> TestResult {
     let dir = fixture(MISSING)?;
     assert!(matches!(
-        build_report(dir.path(), dir.path()),
+        build_report_with_policy(dir.path(), &DenyList::parse("")?),
         Err(Error::InvalidInput { file, source })
             if file.ends_with("sample.json")
                 && source.to_string().contains("MissingShape")
@@ -51,7 +49,7 @@ fn missing_input_target_names_the_service_operation_and_target() -> TestResult {
 fn non_structure_input_target_names_the_service_operation_and_target() -> TestResult {
     let dir = fixture(NON_STRUCTURE)?;
     assert!(matches!(
-        build_report(dir.path(), dir.path()),
+        build_report_with_policy(dir.path(), &DenyList::parse("")?),
         Err(Error::InvalidInput { file, source })
             if file.ends_with("sample.json")
                 && source.to_string().contains("NonStructure")
@@ -64,7 +62,7 @@ fn non_structure_input_target_names_the_service_operation_and_target() -> TestRe
 fn invalid_input_is_rejected_even_for_a_mutating_operation() -> TestResult {
     let dir = fixture(&MISSING.replace("ListBad", "PutBad"))?;
     assert!(matches!(
-        build_report(dir.path(), dir.path()),
+        build_report_with_policy(dir.path(), &DenyList::parse("")?),
         Err(Error::InvalidInput { file, source: _ })
             if file.ends_with("sample.json")
     ));
@@ -74,7 +72,7 @@ fn invalid_input_is_rejected_even_for_a_mutating_operation() -> TestResult {
 #[test]
 fn resolved_mixins_contribute_required_input_members() -> TestResult {
     let dir = fixture(MIXINS)?;
-    run(dir.path(), dir.path(), ReportMode::Write)?;
+    run_with_policy(dir.path(), dir.path(), ReportMode::Write, &DenyList::parse("")?)?;
     let report = std::fs::read_to_string(dir.path().join("catalog/aws-classes.report"))?;
     assert!(report.lines().any(|line| line == "expand 1"));
     assert!(report.lines().any(|line| line == "enumerate 0"));
@@ -91,6 +89,7 @@ fn a_dangling_mixin_reference_is_rejected_like_a_resolvable_one() -> TestResult 
 }}"#;
     let dir = fixture(model)?;
     let path = dir.path().join("catalog/aws-classes.report");
+    std::fs::create_dir_all(dir.path().join("catalog"))?;
     std::fs::write(&path, "preserve\n")?;
     let error = run(dir.path(), dir.path(), ReportMode::Write).err();
     assert!(matches!(

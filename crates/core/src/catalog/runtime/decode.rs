@@ -1,6 +1,9 @@
 mod metadata;
 mod plans;
 mod schemas;
+mod provenance;
+mod owners;
+pub(super) use provenance::compiled_inputs_sha256;
 
 use super::{CallablePlan, RuntimeCatalogError};
 use crate::{
@@ -17,6 +20,7 @@ pub(crate) struct Decoded<'a> {
     pub(crate) relations: Vec<super::RelationshipPlan>,
     pub(crate) coverage: Vec<super::KindCoverage>,
     pub(crate) decisions: Vec<super::ReviewDecision>,
+    pub(crate) provenance: super::CatalogSourceProvenance,
 }
 
 pub(crate) fn read<'a>(
@@ -31,7 +35,7 @@ pub(crate) fn read<'a>(
         None => return Err(RuntimeCatalogError::MissingExtension),
     };
     let version = metadata::integer(extension, 1)?;
-    if version != 1 {
+    if version != 2 {
         return Err(RuntimeCatalogError::ExtensionVersion(version));
     }
     let plans = plans::read(catalog, metadata::list(extension, 2)?)?;
@@ -39,12 +43,21 @@ pub(crate) fn read<'a>(
     let relations = metadata::relations(metadata::list(extension, 4)?)?;
     let coverage = metadata::coverage(metadata::list(extension, 5)?)?;
     let decisions = metadata::decisions(metadata::list(extension, 6)?, &plans, catalog)?;
-    metadata::only_fields(extension, &[1, 2, 3, 4, 5, 6])?;
+    let provenance = provenance::read(metadata::map_field(extension, 7)?)?;
+    provenance::validate_inputs(extension, &provenance)?;
+    provenance::validate_models(bytes, catalog, &provenance)?;
+    metadata::only_fields(extension, &[1, 2, 3, 4, 5, 6, 7])?;
     let schemas = schema_data.schemas;
+    if plans.iter().any(|plan| !schemas.iter().any(|schema| schema.kind() == plan.kind())
+        || !coverage.iter().any(|entry| entry.mapped && entry.kind.as_ref() == Some(plan.kind()))) {
+        return Err(RuntimeCatalogError::Capability);
+    }
     validate_links(&schemas, &schema_data.name_paths, &relations, &coverage)?;
+    plans::validate_model_links(&plans, &schemas, &schema_data.name_paths, &relations, &coverage)?;
     Ok(Decoded {
         plans,
         schemas,
+        provenance,
         name_paths: schema_data.name_paths,
         relations,
         coverage,
@@ -75,7 +88,7 @@ fn validate_links(
         .any(|entry| !schema_kinds.contains(entry.kind.as_str()))
         || relations.iter().any(|entry| {
             !schema_kinds.contains(entry.source_kind.as_str())
-                || !schema_kinds.contains(entry.target_kind.as_str())
+                || entry.target_kinds.iter().any(|kind| !schema_kinds.contains(kind.as_str()))
         })
     {
         return Err(RuntimeCatalogError::Capability);

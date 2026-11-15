@@ -1,0 +1,28 @@
+use crate::kind_map::OperationMapping;
+
+pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
+    OperationMapping { service: "s3-control", operation: "ListStorageLensConfigurations", kind: "AWS::S3::StorageLens" },
+    OperationMapping { service: "s3-control", operation: "ListStorageLensGroups", kind: "AWS::S3::StorageLensGroup" },
+    OperationMapping { service: "s3-control", operation: "GetStorageLensGroup", kind: "AWS::S3::StorageLensGroup" },
+    OperationMapping { service: "s3-control", operation: "GetAccessGrantsInstance", kind: "AWS::S3::AccessGrantsInstance" },
+    OperationMapping { service: "s3-control", operation: "GetAccessGrant", kind: "AWS::S3::AccessGrant" },
+    OperationMapping { service: "s3-control", operation: "GetAccessGrantsLocation", kind: "AWS::S3::AccessGrantsLocation" },
+    OperationMapping { service: "s3-control", operation: "ListAccessGrantsInstances", kind: "AWS::S3::AccessGrantsInstance" },
+    OperationMapping { service: "s3-control", operation: "ListAccessGrantsLocations", kind: "AWS::S3::AccessGrantsLocation" },
+    OperationMapping { service: "s3-control", operation: "ListJobs", kind: "AWS::ApiOnly::S3BatchJob" },
+    OperationMapping { service: "s3-control", operation: "ListRegionalBuckets", kind: "AWS::S3Outposts::Bucket" },
+    OperationMapping { service: "s3-control", operation: "ListAccessGrants", kind: "AWS::S3::AccessGrant" },
+    OperationMapping { service: "s3files", operation: "ListFileSystems", kind: "AWS::ApiOnly::S3FileSystem" },
+    OperationMapping { service: "s3files", operation: "ListMountTargets", kind: "AWS::ApiOnly::S3FileSystemMountTarget" },
+    OperationMapping { service: "s3outposts", operation: "ListEndpoints", kind: "AWS::S3Outposts::Endpoint" },
+    OperationMapping { service: "s3outposts", operation: "ListOutpostsWithS3", kind: "AWS::ApiOnly::S3Outpost" },
+    OperationMapping { service: "s3tables", operation: "ListTableBuckets", kind: "AWS::S3Tables::TableBucket" },
+    OperationMapping { service: "s3tables", operation: "ListTables", kind: "AWS::S3Tables::Table" },
+    OperationMapping { service: "s3tables", operation: "ListTableMigrations", kind: "AWS::ApiOnly::S3TableMigration" },
+    OperationMapping { service: "s3vectors", operation: "ListVectorBuckets", kind: "AWS::S3Vectors::VectorBucket" },
+    OperationMapping { service: "s3vectors", operation: "ListIndexes", kind: "AWS::S3Vectors::Index" },
+    OperationMapping { service: "sagemaker", operation: "ListEndpoints", kind: "AWS::SageMaker::Endpoint" },
+    OperationMapping { service: "sagemaker", operation: "ListEndpointConfigs", kind: "AWS::SageMaker::EndpointConfig" },
+    OperationMapping { service: "sagemaker", operation: "ListModels", kind: "AWS::SageMaker::Model" },
+    OperationMapping { service: "sagemaker", operation: "ListNotebookInstances", kind: "AWS::SageMaker::NotebookInstance" },
+];

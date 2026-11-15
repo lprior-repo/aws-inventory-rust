@@ -52,7 +52,7 @@ use policies::*;
 mod mapping;
 use mapping::*;
 
-mod trust;
+pub(crate) mod trust;
 use trust::*;
 
 #[cfg(test)]

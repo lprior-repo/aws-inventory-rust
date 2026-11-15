@@ -1,6 +1,7 @@
 use super::NameError;
 use crate::classes::DenyReason;
 use std::{collections::BTreeMap, fmt};
+use super::FixedValue;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct MemberPath(String);
@@ -15,7 +16,7 @@ impl MemberPath {
         Ok(Self(value.to_owned()))
     }
 
-    pub(super) fn selected(value: &str) -> Result<Self, NameError> {
+    pub fn selected(value: &str) -> Result<Self, NameError> {
         if value == "$" {
             return Ok(Self(value.to_owned()));
         }
@@ -70,6 +71,13 @@ pub struct ServiceOverlay {
 }
 
 impl ServiceOverlay {
+    pub fn new(
+        service: &str,
+        operations: Vec<(&str, OperationOverlay)>,
+    ) -> Result<Self, NameError> {
+        super::builtin::service(service, operations)
+    }
+
     #[must_use]
     pub fn service(&self) -> &str {
         &self.service
@@ -118,9 +126,17 @@ pub enum Scope {
     HomeRegion,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 #[non_exhaustive]
 pub struct OperationOverlay {
+    pub row_policy: super::RowPolicy,
+    pub tag_endpoint: Option<super::TagEndpoint>,
+    pub emission: super::Emission,
+    pub projection: Option<super::ResourceProjection>,
+    pub classification: Option<super::KindClassification>,
+    pub routing: super::RequestRouting,
+    pub branches: Vec<super::ExecutionBranch>,
+    pub endpoint_discovery: bool,
     pub class: Option<OverlayClass>,
     pub defer_reason: Option<String>,
 
@@ -131,6 +147,7 @@ pub struct OperationOverlay {
     pub page_size: Option<i64>,
 
     pub exclude_from_hash: Vec<MemberPath>,
+    pub exclude_map_keys: Vec<super::MapKeyExclusion>,
 
     pub skip: Vec<OperationName>,
 
@@ -155,6 +172,7 @@ pub struct OperationOverlay {
 pub enum ItemSelector {
     Root,
     Member(MemberPath),
+    Explicit { path: MemberPath, kind: super::SelectionKind },
 }
 
 impl ItemSelector {
@@ -166,17 +184,6 @@ impl ItemSelector {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum FixedValue {
-    String(String),
-
-    Integer(i64),
-
-    Boolean(bool),
-
-    Strings(Vec<String>),
-}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
@@ -185,7 +192,29 @@ pub struct TokenPair {
 
     pub output: MemberPath,
 
+    /// Only a typed boolean is accepted; textual and numeric flags cannot construct policy.
+    /// ```compile_fail
+    /// # use catalog_tool::overlay::{MemberPath, TokenPair};
+    /// # fn policy() -> Result<(), catalog_tool::overlay::NameError> {
+    /// let mut pair = TokenPair::new(MemberPath::new("Start")?, MemberPath::new("Next")?);
+    /// pair.optional = "true";
+    /// # Ok(()) }
+    /// ```
+    /// ```compile_fail
+    /// # use catalog_tool::overlay::{MemberPath, TokenPair};
+    /// # fn policy() -> Result<(), catalog_tool::overlay::NameError> {
+    /// let mut pair = TokenPair::new(MemberPath::new("Start")?, MemberPath::new("Next")?);
+    /// pair.optional = 1;
+    /// # Ok(()) }
+    /// ```
     pub optional: bool,
+}
+
+impl TokenPair {
+    #[must_use]
+    pub const fn new(input: MemberPath, output: MemberPath) -> Self {
+        Self { input, output, optional: false }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -196,6 +225,12 @@ pub enum Paginator {
     Tokens {
         pairs: Vec<TokenPair>,
         truncated: Option<MemberPath>,
+    },
+
+    LastListItem {
+        input: MemberPath,
+        output: MemberPath,
+        truncated: MemberPath,
     },
 
     None,
@@ -209,19 +244,33 @@ pub enum Identity {
     Template(String),
 
     Key(Vec<MemberPath>),
+    Choice(super::IdentityChoice),
+    CorrelatedKey(Vec<super::IdentityField>),
+    MapArn { path: MemberPath, key: String, resource_kind: super::ArnResourceKind, request_url: Option<MemberPath> },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Binding {
+    Context { operation: OperationName, source: super::ContextSource, path: MemberPath },
+    FromBranch { operation: OperationName, branch: String, path: MemberPath },
+    ContextFromBranch { operation: OperationName, branch: String, source: super::ContextSource, path: MemberPath },
     From {
         operation: OperationName,
         path: MemberPath,
     },
+    FromArn { operation: OperationName, path: MemberPath, arn_service: String, resource_kind: super::ArnResourceKind },
+    FromUrl { operation: OperationName, path: MemberPath, resource_kind: super::UrlResourceKind },
+    FromService { service: String, operation: OperationName, path: MemberPath },
+    /// One value from the current producer, never a cross-product of producers.
+    FromAny(Vec<super::BindingAlternative>),
+    Transformed { binding: Box<Binding>, transform: super::BindingTransform },
 
     Account,
 
     Region,
+    /// Singleton list containing the actual routed request region.
+    RegionList,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -232,4 +281,11 @@ pub struct Batch {
     pub max: i64,
 
     pub replaces: OperationName,
+}
+
+impl Batch {
+    #[must_use]
+    pub const fn new(member: MemberPath, max: i64, replaces: OperationName) -> Self {
+        Self { member, max, replaces }
+    }
 }

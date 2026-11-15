@@ -56,3 +56,35 @@ fn given_all_optional_tuple_when_decoding_then_catalog_is_rejected() -> TestResu
     assert!(page(record.root()).is_err());
     Ok(())
 }
+
+fn page_with_size(value_type: Option<Value>, maximum: i64) -> Result<Record, crate::record::RecordError> {
+    let path = Value::List(vec![Value::Int(1)]);
+    let placement = map([(1, Value::Int(3)), (2, path.clone())])?;
+    let size = map([(1, path), (2, Value::Int(maximum)), (3, placement)].into_iter()
+        .chain(value_type.map(|kind| (4, kind))))?;
+    Record::encode(&map([(1, map([(1, Value::Int(0))])?),
+        (2, Value::List(Vec::new())), (3, size)])?)
+}
+
+#[test]
+fn given_typed_page_limits_when_decoded_then_only_string_and_integer_are_serializable() -> TestResult {
+    use crate::catalog::runtime::PageSizeType;
+    for (kind, expected, literal) in [
+        (None, PageSizeType::Integer, Value::Int(100)),
+        (Some(Value::Int(1)), PageSizeType::Integer, Value::Int(100)),
+        (Some(Value::Int(0)), PageSizeType::String, Value::Text("100".into())),
+    ] {
+        let record = page_with_size(kind, 100)?;
+        let page = page(record.root())?;
+        let size = page.page_size.ok_or("page size")?;
+        assert_eq!(size.value_type, expected);
+        assert_eq!(size.value(), literal);
+    }
+    for kind in [Value::Int(-1), Value::Int(2), Value::Int(3), Value::Null, Value::Bool(true)] {
+        assert!(page(page_with_size(Some(kind), 100)?.root()).is_err());
+    }
+    for maximum in [-1, 0, i64::MAX] {
+        assert!(page(page_with_size(Some(Value::Int(0)), maximum)?.root()).is_err());
+    }
+    Ok(())
+}

@@ -1,3 +1,4 @@
+mod choice;
 use super::paths::violation;
 use super::{Violation, ViolationRule};
 use crate::{
@@ -45,10 +46,15 @@ fn identity_paths(
     identity: &Identity,
     violations: &mut Vec<Violation>,
 ) -> bool {
+    if matches!(identity, Identity::Choice(_) | Identity::CorrelatedKey(_) | Identity::MapArn { .. }) {
+        return if choice::valid(origin.1, model, item, identity) { true }
+            else { identity_failure(origin.0, origin.1, "conditional identity source", violations) };
+    }
     let paths = match identity {
         Identity::Arn(path) => vec![path.as_str()],
         Identity::Key(paths) => paths.iter().map(|path| path.as_str()).collect(),
         Identity::Template(template) => template_paths(template),
+        Identity::Choice(_) | Identity::CorrelatedKey(_) | Identity::MapArn { .. } => return false,
     };
     let context = IdentityContext { model, item, identity };
     paths.iter().fold(true, |valid, path| {

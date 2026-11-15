@@ -23,9 +23,11 @@ struct Report {
     matched: BTreeSet<usize>,
 }
 
-pub(super) fn build(root: &Path, source: &Path) -> Result<String, Error> {
-    let text = crate::report::read_text(&root.join("catalog/overlay/must-deny.txt"))?;
-    let deny = DenyList::parse(&text).map_err(classes::Error::from)?;
+pub(super) fn build(_root: &Path, source: &Path) -> Result<String, Error> {
+    build_with_policy(source, &DenyList::builtin())
+}
+
+pub(crate) fn build_with_policy(source: &Path, deny: &DenyList<'_>) -> Result<String, Error> {
     let models = source.join("models");
     let files = input_files(&models)?;
     let mut vocabulary = Vocabulary::default();

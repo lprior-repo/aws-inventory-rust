@@ -82,6 +82,15 @@ pub enum RecordError {
     #[error("exclusion path length {length} outside 1..=32")]
     ExclusionPath { length: usize },
 
+    #[error("literal map exclusion key length {length} outside 1..=4096")]
+    ExclusionKey { length: usize },
+
+    #[error("literal map exclusion count {length} exceeds 64")]
+    ExclusionCount { length: usize },
+
+    #[error("duplicate literal map exclusion")]
+    DuplicateExclusion,
+
     #[error("field {} expected {expected:?}, found {found:?}", field.value())]
     KindMismatch {
         field: FieldId,

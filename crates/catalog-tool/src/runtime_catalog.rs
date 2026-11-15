@@ -3,6 +3,9 @@ mod model_path;
 mod plan_validation;
 mod plans;
 mod schemas;
+mod provenance;
+mod selection;
+pub use provenance::CatalogSources;
 
 use inventory_core::record::{FieldId, Key, Record, Value};
 use std::collections::BTreeMap;
@@ -115,11 +118,22 @@ pub fn augment(
     kind_map: &crate::kind_map::KindMap,
     verified_endpoints: &BTreeMap<String, crate::endpoints::VerifiedEndpoint>,
 ) -> Result<Vec<u8>, RuntimeCatalogCompileError> {
+    augment_with_sources(base_bytes, checked, kind_map, verified_endpoints, &CatalogSources::compiled(base_bytes))
+}
+
+pub fn augment_with_sources(
+    base_bytes: &[u8],
+    checked: &crate::overlay::CheckedOverlays,
+    kind_map: &crate::kind_map::KindMap,
+    verified_endpoints: &BTreeMap<String, crate::endpoints::VerifiedEndpoint>,
+    sources: &CatalogSources,
+) -> Result<Vec<u8>, RuntimeCatalogCompileError> {
     let mut root = decode_root(base_bytes)?;
     if root.contains_key(&Key::Field(FieldId::new(60_000)?)) {
         return Err(RuntimeCatalogCompileError::Capability);
     }
     let catalog = inventory_core::catalog::Catalog::borrow(base_bytes)?;
+    sources.validate(catalog)?;
     let services = ServiceIndex::build(catalog)?;
     model_path::validate_reviewed_paths(&model_path::ValidationContext {
         kinds: kind_map,
@@ -127,9 +141,12 @@ pub fn augment(
         services: &services,
     })?;
     let plans = plans::compile(checked, kind_map, verified_endpoints, &services)?;
-    let extension = compile_extension(checked, kind_map, &services, plans)?;
+    let extension = compile_extension(checked, kind_map, &services, plans, sources)?;
     root.insert(Key::Field(FieldId::new(60_000)?), extension);
-    Ok(Record::encode(&Value::Map(root))?.into_bytes())
+    let bytes = Record::encode(&Value::Map(root))?.into_bytes();
+    inventory_core::catalog::runtime::RuntimeCatalog::from_bytes(&bytes)
+        .map_err(|_| RuntimeCatalogCompileError::Capability)?;
+    Ok(bytes)
 }
 fn decode_root(bytes: &[u8]) -> Result<BTreeMap<Key, Value>, RuntimeCatalogCompileError> {
     inventory_core::record::MapRef::from_bytes_bounded(bytes)?
@@ -147,20 +164,22 @@ fn compile_extension(
     kinds: &crate::kind_map::KindMap,
     services: &ServiceIndex<'_>,
     plans: Vec<Value>,
+    sources: &CatalogSources,
 ) -> Result<Value, RuntimeCatalogCompileError> {
     encode::extension(
         plans,
         schemas::compile(kinds, services, Some(checked))?,
-        encode::relations(kinds, services)?,
+        encode::relations(kinds, services, checked)?,
         encode::coverage(kinds)?,
         plans::decisions(checked, services)?,
+        sources,
+        kinds,
     )
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::names::Exceptions;
     use inventory_core::catalog::runtime::RelationScope;
     use inventory_core::record::{MapRef, ValueRef};
 
@@ -169,11 +188,8 @@ mod tests {
     #[test]
     fn real_kind_map_relation_roundtrips_through_runtime_reader()
     -> Result<(), Box<dyn std::error::Error>> {
-        let exceptions = Exceptions::parse(include_str!("../../../catalog/name-exceptions.tsv"))?;
-        let kinds = crate::kind_map::load_with_cfn(
-            include_bytes!("../../../catalog/kinds.tsv"),
+        let kinds = crate::kind_map::embedded(
             include_bytes!("../../../catalog/cloudcontrol-universal.json"),
-            &exceptions,
         )?;
         let bytes = catalog_with_extension(&kinds)?;
         let runtime = inventory_core::catalog::runtime::RuntimeCatalog::from_bytes(&bytes)?;

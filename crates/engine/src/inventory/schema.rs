@@ -3,6 +3,8 @@ use inventory_core::inventory::{KindSchema, ScalarType};
 use sqlx::{Row, SqlitePool};
 use std::sync::Arc;
 
+const TAG_OBSERVATIONS_SQL: &str = "CREATE TABLE tag_observations(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,coverage TEXT NOT NULL CHECK(coverage IN('complete','partial','failed','unobserved')),observed_at INTEGER NOT NULL CHECK(observed_at>=0),last_complete_at INTEGER CHECK(last_complete_at>=0),PRIMARY KEY(account,region,kind,id),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID";
+
 pub(super) async fn initialize(
     pool: &SqlitePool,
     registry: &SchemaRegistry,
@@ -16,9 +18,12 @@ pub(super) async fn initialize(
         return Err(StoreError::SchemaVersion { found: version });
     }
     create_shared_tables(&mut tx).await?;
-    sqlx::query("INSERT INTO metadata(key,value) VALUES('catalog_digest',?1),('projection_rebuild',?2),('projection_revision',0),('projection_pending',0)")
+    super::legacy::create(&mut tx).await?;
+    super::relation_permissions::initialize_provenance(&mut tx).await?;
+    sqlx::query("INSERT INTO metadata(key,value) VALUES('catalog_digest',?1),('projection_rebuild',?2),('projection_revision',0),('projection_pending',0),('canonical_facet_dependencies_v3',X'01')")
         .bind(registry.digest().as_slice()).bind(vec![0_u8])
         .execute(&mut *tx).await?;
+    super::authority::mark(&mut tx).await?;
     for (service, operation) in registry.operations() {
         sqlx::query("INSERT INTO catalog_operations(service,operation) VALUES(?1,?2)")
             .bind(service)
@@ -29,9 +34,67 @@ pub(super) async fn initialize(
     for schema in registry.schemas() {
         create_kind(&mut tx, schema).await?;
     }
-    sqlx::query("PRAGMA user_version=14")
+    super::relation_permissions::persist(&mut tx, registry).await?;
+    sqlx::query("PRAGMA user_version=16")
         .execute(&mut *tx)
         .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreError> {
+    let mut tx = pool.begin().await?;
+    let version: i64 = sqlx::query_scalar("PRAGMA user_version").fetch_one(&mut *tx).await?;
+    if !matches!(version, 14..=16) {
+        return Err(StoreError::SchemaVersion { found: version });
+    }
+    sqlx::query("DROP TRIGGER IF EXISTS delete_resource_children").execute(&mut *tx).await?;
+    if version == 14 {
+        sqlx::query(TAG_OBSERVATIONS_SQL).execute(&mut *tx).await?;
+    }
+    if version < 16 {
+        sqlx::query(super::facets::CREATE_SQL).execute(&mut *tx).await?;
+        sqlx::query("ALTER TABLE work_queue ADD COLUMN context BLOB NOT NULL DEFAULT X''")
+            .execute(&mut *tx).await?;
+        sqlx::query("ALTER TABLE unresolved_refs ADD COLUMN target_kinds BLOB NOT NULL DEFAULT X''")
+            .execute(&mut *tx).await?;
+        sqlx::query("ALTER TABLE unresolved_refs ADD COLUMN resolution TEXT NOT NULL DEFAULT 'unresolved' CHECK(resolution IN('unresolved','resolved','ambiguous'))")
+            .execute(&mut *tx).await?;
+        sqlx::query("PRAGMA user_version=16").execute(&mut *tx).await?;
+    }
+    super::legacy::create(&mut tx).await?;
+    let work_columns = sqlx::query("PRAGMA table_info(work_queue)").fetch_all(&mut *tx).await?;
+    let has_epoch = work_columns.iter().try_fold(false, |found, row| {
+        Ok::<_, sqlx::Error>(found || row.try_get::<&str, _>("name")? == "authority_generation")
+    })?;
+    if !has_epoch {
+        sqlx::query("ALTER TABLE work_queue ADD COLUMN authority_generation INTEGER NOT NULL DEFAULT 0 CHECK(authority_generation>=0)").execute(&mut *tx).await?;
+    }
+    let has_prefix = work_columns.iter().try_fold(false, |found, row| {
+        Ok::<_, sqlx::Error>(found || row.try_get::<&str, _>("name")? == "authority_complete")
+    })?;
+    if !has_prefix {
+        sqlx::query("ALTER TABLE work_queue ADD COLUMN authority_complete INTEGER NOT NULL DEFAULT 0 CHECK(authority_complete IN(0,1))").execute(&mut *tx).await?;
+    }
+    super::relation_permissions::initialize_provenance(&mut tx).await?;
+    super::authority::migrate(&mut tx).await?;
+    let facet_columns = sqlx::query("PRAGMA table_info(resource_facets)").fetch_all(&mut *tx).await?;
+    let attributed = facet_columns.iter().try_fold(false, |found, row| {
+        Ok::<_, sqlx::Error>(found || row.try_get::<String, _>("name")? == "source_key")
+    })?;
+    let source_authority = facet_columns.iter().try_fold(false, |found, row| {
+        Ok::<_, sqlx::Error>(found || row.try_get::<&str, _>("name")? == "source_authority")
+    })?;
+    let checked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM metadata WHERE key='canonical_facet_dependencies_v3' AND value=X'01')").fetch_one(&mut *tx).await?;
+    if version < 16 || !attributed || !source_authority || !has_epoch || !has_prefix || !checked {
+        // Catalog equality cannot certify a dependency written under the old
+        // stage/input proof domain. Preserve its data, never promote its proof.
+        super::legacy::demote_facets(&mut tx, attributed).await?;
+        super::relation_permissions::invalidate_prior_authority(&mut tx).await?;
+        sqlx::query("DROP TABLE resource_facets").execute(&mut *tx).await?;
+        sqlx::query(super::facets::CREATE_SQL).execute(&mut *tx).await?;
+    }
+    sqlx::query("INSERT INTO metadata(key,value) VALUES('canonical_facet_dependencies_v3',X'01') ON CONFLICT(key) DO UPDATE SET value=excluded.value").execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(())
 }
@@ -44,14 +107,15 @@ async fn create_shared_tables(
         "CREATE TABLE kinds(kind TEXT PRIMARY KEY,table_name TEXT NOT NULL UNIQUE) WITHOUT ROWID",
         "CREATE TABLE kind_schemas(kind TEXT PRIMARY KEY,table_name TEXT NOT NULL,definition BLOB NOT NULL) WITHOUT ROWID",
         "CREATE TABLE resources(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,name TEXT,content_hash BLOB NOT NULL,first_seen INTEGER NOT NULL,last_changed INTEGER NOT NULL,PRIMARY KEY(account,region,kind,id)) WITHOUT ROWID",
-        "CREATE TABLE resource_scopes(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,scope_key BLOB NOT NULL,last_seen INTEGER NOT NULL,missing_complete INTEGER NOT NULL DEFAULT 0,observed_sweep TEXT NOT NULL,PRIMARY KEY(account,region,kind,id,scope_key),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID",
+        super::facets::CREATE_SQL,
+        "CREATE TABLE resource_scopes(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,scope_key BLOB NOT NULL,last_seen INTEGER NOT NULL,missing_complete INTEGER NOT NULL DEFAULT 0,observed_sweep TEXT NOT NULL,completed_sweep TEXT NOT NULL DEFAULT '',PRIMARY KEY(account,region,kind,id,scope_key),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID",
         "CREATE TABLE tags(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,tag_key TEXT NOT NULL,tag_value TEXT NOT NULL,PRIMARY KEY(account,region,kind,id,tag_key),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID",
+        TAG_OBSERVATIONS_SQL,
         "CREATE TABLE edges(from_account TEXT NOT NULL,from_region TEXT NOT NULL,from_kind TEXT NOT NULL,from_id TEXT NOT NULL,to_account TEXT NOT NULL,to_region TEXT NOT NULL,to_kind TEXT NOT NULL,to_id TEXT NOT NULL,relation TEXT NOT NULL,source TEXT NOT NULL,PRIMARY KEY(from_account,from_region,from_kind,from_id,to_account,to_region,to_kind,to_id,relation,source),FOREIGN KEY(from_account,from_region,from_kind,from_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE,FOREIGN KEY(to_account,to_region,to_kind,to_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID",
-        "CREATE TABLE unresolved_refs(from_account TEXT NOT NULL,from_region TEXT NOT NULL,from_kind TEXT NOT NULL,from_id TEXT NOT NULL,target_scope BLOB NOT NULL,target_kind TEXT NOT NULL,target_path BLOB NOT NULL,target_value TEXT NOT NULL,relation TEXT NOT NULL,source TEXT NOT NULL,PRIMARY KEY(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source),FOREIGN KEY(from_account,from_region,from_kind,from_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID",
+        "CREATE TABLE unresolved_refs(from_account TEXT NOT NULL,from_region TEXT NOT NULL,from_kind TEXT NOT NULL,from_id TEXT NOT NULL,target_scope BLOB NOT NULL,target_kind TEXT NOT NULL,target_path BLOB NOT NULL,target_value TEXT NOT NULL,relation TEXT NOT NULL,source TEXT NOT NULL,target_kinds BLOB NOT NULL DEFAULT X'',resolution TEXT NOT NULL DEFAULT 'unresolved' CHECK(resolution IN('unresolved','resolved','ambiguous')),PRIMARY KEY(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source),FOREIGN KEY(from_account,from_region,from_kind,from_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID",
         "CREATE TABLE resource_parents(parent_account TEXT NOT NULL,parent_region TEXT NOT NULL,parent_kind TEXT NOT NULL,parent_id TEXT NOT NULL,child_account TEXT NOT NULL,child_region TEXT NOT NULL,child_kind TEXT NOT NULL,child_id TEXT NOT NULL,scope_key BLOB NOT NULL,PRIMARY KEY(parent_account,parent_region,parent_kind,parent_id,child_account,child_region,child_kind,child_id,scope_key),FOREIGN KEY(parent_account,parent_region,parent_kind,parent_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE,FOREIGN KEY(child_account,child_region,child_kind,child_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID",
-        "CREATE TRIGGER delete_resource_children AFTER DELETE ON resources BEGIN DELETE FROM resources WHERE (account,region,kind,id) IN (SELECT child_account,child_region,child_kind,child_id FROM resource_parents WHERE parent_account=OLD.account AND parent_region=OLD.region AND parent_kind=OLD.kind AND parent_id=OLD.id); END",
         "CREATE TABLE scope_outcomes(sweep_id TEXT NOT NULL,scope_key BLOB NOT NULL,outcome TEXT NOT NULL,observed_at INTEGER NOT NULL,PRIMARY KEY(sweep_id,scope_key)) WITHOUT ROWID",
-        "CREATE TABLE work_queue(sweep_id TEXT NOT NULL,scope_key BLOB NOT NULL,token BLOB,bindings BLOB NOT NULL,state INTEGER NOT NULL,generation INTEGER NOT NULL,lease_until INTEGER NOT NULL,PRIMARY KEY(sweep_id,scope_key)) WITHOUT ROWID",
+        "CREATE TABLE work_queue(sweep_id TEXT NOT NULL,scope_key BLOB NOT NULL,token BLOB,bindings BLOB NOT NULL,context BLOB NOT NULL DEFAULT X'',state INTEGER NOT NULL,generation INTEGER NOT NULL,authority_generation INTEGER NOT NULL DEFAULT 0 CHECK(authority_generation>=0),authority_complete INTEGER NOT NULL DEFAULT 0 CHECK(authority_complete IN(0,1)),lease_until INTEGER NOT NULL,PRIMARY KEY(sweep_id,scope_key)) WITHOUT ROWID",
         "CREATE TABLE work_tokens(sweep_id TEXT NOT NULL,scope_key BLOB NOT NULL,digest BLOB NOT NULL CHECK(length(digest)=32),PRIMARY KEY(sweep_id,scope_key,digest),FOREIGN KEY(sweep_id,scope_key) REFERENCES work_queue(sweep_id,scope_key) ON DELETE CASCADE) WITHOUT ROWID",
         "CREATE TABLE catalog_operations(service TEXT NOT NULL,operation TEXT NOT NULL,PRIMARY KEY(service,operation)) WITHOUT ROWID",
         "CREATE TABLE projection_outbox(resource_key BLOB PRIMARY KEY,revision INTEGER NOT NULL,deleted INTEGER NOT NULL,full_rebuild INTEGER NOT NULL DEFAULT 0) WITHOUT ROWID",
@@ -134,7 +198,7 @@ pub(super) async fn load_registry(pool: &SqlitePool) -> Result<SchemaRegistry, S
         .into_iter()
         .map(|row| Ok((row.try_get("service")?, row.try_get("operation")?)))
         .collect::<Result<std::collections::BTreeSet<(String, String)>, StoreError>>()?;
-    SchemaRegistry::stored(digest, load_schemas(pool).await?, operations)
+    super::relation_permissions::load_registry(pool, digest, load_schemas(pool).await?, operations).await
 }
 
 async fn load_schemas(pool: &SqlitePool) -> Result<Vec<Arc<KindSchema>>, StoreError> {

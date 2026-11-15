@@ -120,10 +120,25 @@ tasks:
       cache: false
       mutex: cargo-workspace
       runInCI: always
-  test:
-    command: cargo test --workspace --all-targets --all-features --locked -j1
+  native-test-inputs:
+    command: bash scripts/provision-native-tests.sh
     deps:
       - lint-src
+    options:
+      cache: false
+      mutex: cargo-workspace
+      runInCI: always
+  test:
+    script: |
+      set -eu
+      export AWS_INVENTORY_GRAPH_ARTIFACTS="$PWD/.local/native-tests/graph"
+      export INVENTORY_EMULATOR_BINARY="$PWD/.local/native-tests/emulator/unpacked/opt/aws-emulator/bin/aws-emulator"
+      export INVENTORY_COLLECTOR_BINARY="$PWD/target/debug/aws-inventory"
+      unset CARGO_BUILD_TARGET
+      export CARGO_TARGET_DIR="$PWD/target"
+      cargo test --workspace --all-targets --all-features --locked -j1
+    deps:
+      - native-test-inputs
     options:
       cache: false
       mutex: cargo-workspace

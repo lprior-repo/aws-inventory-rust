@@ -1,3 +1,5 @@
+use std::fs::File;
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use serde_json::Value;
@@ -6,10 +8,17 @@ use crate::HarnessError;
 
 mod archive;
 mod build;
+mod build_cleanup;
+mod build_version;
 mod download;
+mod receipt;
+mod ownership;
+
+use ownership::{DIRECTORY_FLAGS, OwnedDirectory, descriptor_path};
+#[cfg(all(test, feature = "native-graph-integration"))]
+mod native_tests;
 #[cfg(test)]
 mod installer_tests;
-mod receipt;
 #[cfg(test)]
 mod tests;
 
@@ -86,13 +95,25 @@ fn install_locked(layout: &Layout, jobs: usize) -> Result<Value, HarnessError> {
     download::pinned(MODULE_URL, &layout.module, MODULE_SHA256)?;
     receipt::regular(layout, &layout.archive)?;
     receipt::regular(layout, &layout.module)?;
-    set_executable(&layout.module)?;
-    archive::extract(&layout.archive, &layout.source)?;
-    let source = OwnedDirectory::capture(&layout.source)?;
-    if let Err(error) = build::compile(layout, jobs) {
-        return complete(Err(error), source.remove_tree());
+    set_module_executable(&layout.module)?;
+    let source = archive::extract(&layout.archive, &layout.source)?;
+    let result = build::compile(&source, jobs)
+        .map_err(receipt::PublicationError::Uncommitted)
+        .and_then(|()| receipt::publish(layout, &source));
+    finish_installation(source, result)
+}
+
+fn finish_installation(
+    source: OwnedDirectory,
+    result: Result<Value, receipt::PublicationError>,
+) -> Result<Value, HarnessError> {
+    match result {
+        Ok(value) => Ok(value),
+        Err(receipt::PublicationError::Committed(error)) => Err(error),
+        Err(receipt::PublicationError::Uncommitted(error)) => {
+            complete(Err(error), source.remove_tree())
+        }
     }
-    receipt::publish(layout)
 }
 
 fn require_platform() -> Result<(), HarnessError> {
@@ -104,12 +125,25 @@ fn require_platform() -> Result<(), HarnessError> {
     ))
 }
 
+fn set_module_executable(path: &Path) -> Result<(), HarnessError> {
+    let file = open_regular(path)?;
+    if receipt::digest_file(&file)? != MODULE_SHA256 {
+        return Err(HarnessError::invalid("module changed before executable permission update"));
+    }
+    make_executable(&file)
+}
+
+#[cfg(test)]
 fn set_executable(path: &Path) -> Result<(), HarnessError> {
-    use std::os::unix::fs::PermissionsExt;
-    Ok(std::fs::set_permissions(
-        path,
-        std::fs::Permissions::from_mode(0o755),
-    )?)
+    make_executable(&open_regular(path)?)
+}
+
+fn make_executable(file: &File) -> Result<(), HarnessError> {
+    use std::os::unix::fs::{MetadataExt, PermissionsExt};
+    if file.metadata()?.nlink() != 1 {
+        return Err(HarnessError::invalid("refusing executable permission change on aliased inode"));
+    }
+    Ok(file.set_permissions(std::fs::Permissions::from_mode(0o755))?)
 }
 
 fn require_absent(path: &Path) -> Result<(), HarnessError> {
@@ -136,47 +170,47 @@ fn complete<T>(
     }
 }
 
-struct OwnedDirectory {
-    path: PathBuf,
-    identity: std::fs::Metadata,
+pub(super) fn executable(file: &File) -> Result<(), HarnessError> {
+    match rustix::fs::accessat(
+        rustix::fs::CWD,
+        descriptor_path(file),
+        rustix::fs::Access::EXEC_OK,
+        rustix::fs::AtFlags::EACCESS,
+    ) {
+        Ok(()) => Ok(()),
+        Err(rustix::io::Errno::ACCESS) => {
+            Err(HarnessError::invalid("Redis binary has no executable permissions"))
+        }
+        Err(error) => Err(std::io::Error::from(error).into()),
+    }
+}
+pub(super) fn regular_file(metadata: &std::fs::Metadata) -> Result<(), HarnessError> {
+    if !metadata.is_file() || metadata.len() > MAX_DOWNLOAD {
+        return Err(HarnessError::invalid("installation file is not a bounded regular file"));
+    }
+    Ok(())
 }
 
-impl OwnedDirectory {
-    fn claim(path: &Path) -> Result<Self, HarnessError> {
-        std::fs::create_dir(path)?;
-        Self::capture(path)
+pub(super) fn read_bounded(path: &Path, maximum: u64) -> Result<Vec<u8>, HarnessError> {
+    let bound = maximum
+        .checked_add(1)
+        .ok_or_else(|| HarnessError::invalid("file read limit overflow"))?;
+    let mut bytes = Vec::new();
+    open_regular(path)?.take(bound).read_to_end(&mut bytes)?;
+    if u64::try_from(bytes.len()).map_err(|error| HarnessError::invalid(error.to_string()))?
+        > maximum
+    {
+        return Err(HarnessError::invalid("installation file exceeds read limit"));
     }
-
-    fn capture(path: &Path) -> Result<Self, HarnessError> {
-        let identity = std::fs::symlink_metadata(path)?;
-        if !identity.file_type().is_dir() {
-            return Err(HarnessError::invalid("owned directory is not a directory"));
-        }
-        Ok(Self {
-            path: path.to_owned(),
-            identity,
-        })
-    }
-
-    fn verify(&self) -> Result<(), HarnessError> {
-        use std::os::unix::fs::MetadataExt;
-        let current = std::fs::symlink_metadata(&self.path)?;
-        if current.file_type().is_dir()
-            && current.dev() == self.identity.dev()
-            && current.ino() == self.identity.ino()
-        {
-            return Ok(());
-        }
-        Err(HarnessError::invalid("owned directory identity changed"))
-    }
-
-    fn remove_empty(self) -> Result<(), HarnessError> {
-        self.verify()?;
-        Ok(std::fs::remove_dir(self.path)?)
-    }
-
-    fn remove_tree(self) -> Result<(), HarnessError> {
-        self.verify()?;
-        Ok(std::fs::remove_dir_all(self.path)?)
-    }
+    Ok(bytes)
+}
+fn open_regular(path: &Path) -> Result<File, HarnessError> {
+    let flags = rustix::fs::OFlags::RDONLY | rustix::fs::OFlags::NOFOLLOW
+        | rustix::fs::OFlags::NONBLOCK | rustix::fs::OFlags::CLOEXEC;
+    let file = File::from(
+        rustix::fs::open(path, flags, rustix::fs::Mode::empty())
+            .map_err(std::io::Error::from)?,
+    );
+    regular_file(&file.metadata()?)?;
+    Ok(file)
 }

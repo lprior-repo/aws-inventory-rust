@@ -1,5 +1,5 @@
 mod cloudfront;
-mod iam;
+pub(crate) mod iam;
 mod route53;
 mod s3;
 

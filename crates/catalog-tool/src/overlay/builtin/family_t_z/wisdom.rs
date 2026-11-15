@@ -1,0 +1,50 @@
+use super::{defer, deny, wisdom_plans_1};
+use super::super::service;
+use crate::{classes::DenyReason, overlay::{NameError, ServiceOverlay}};
+
+// Reviewed against pinned Smithy documentation, not operation-name read approval.
+pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
+    service("wisdom", vec![
+        ("CreateAssistant", deny(DenyReason::Mutating)),
+        ("CreateAssistantAssociation", deny(DenyReason::Mutating)),
+        ("CreateContent", deny(DenyReason::Mutating)),
+        ("CreateKnowledgeBase", deny(DenyReason::Mutating)),
+        ("CreateQuickResponse", deny(DenyReason::Mutating)),
+        ("CreateSession", deny(DenyReason::Mutating)),
+        ("DeleteAssistant", deny(DenyReason::Mutating)),
+        ("DeleteAssistantAssociation", deny(DenyReason::Mutating)),
+        ("DeleteContent", deny(DenyReason::Mutating)),
+        ("DeleteImportJob", deny(DenyReason::Mutating)),
+        ("DeleteKnowledgeBase", deny(DenyReason::Mutating)),
+        ("DeleteQuickResponse", deny(DenyReason::Mutating)),
+        ("GetAssistant", wisdom_plans_1::get_assistant()?),
+        ("GetAssistantAssociation", wisdom_plans_1::get_assistant_association()?),
+        ("GetContent", deny(DenyReason::Content)),
+        ("GetContentSummary", deny(DenyReason::Content)),
+        ("GetImportJob", defer("Missing executable inventory binding for importJobId, knowledgeBaseId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
+        ("GetKnowledgeBase", wisdom_plans_1::get_knowledge_base()?),
+        ("GetQuickResponse", deny(DenyReason::Content)),
+        ("GetRecommendations", deny(DenyReason::Content)),
+        ("GetSession", deny(DenyReason::Content)),
+        ("ListAssistantAssociations", wisdom_plans_1::list_assistant_associations()?),
+        ("ListAssistants", wisdom_plans_1::list_assistants()?),
+        ("ListContents", deny(DenyReason::Content)),
+        ("ListImportJobs", defer("Missing executable inventory binding for knowledgeBaseId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
+        ("ListKnowledgeBases", wisdom_plans_1::list_knowledge_bases()?),
+        ("ListQuickResponses", deny(DenyReason::Content)),
+        ("ListTagsForResource", defer("Tag-only response omits the resource identity; the runtime does not yet merge bound-parent identity into complete tag-only observations.")),
+        ("NotifyRecommendationsReceived", deny(DenyReason::Mutating)),
+        ("QueryAssistant", deny(DenyReason::Content)),
+        ("RemoveKnowledgeBaseTemplateUri", deny(DenyReason::Mutating)),
+        ("SearchContent", deny(DenyReason::Content)),
+        ("SearchQuickResponses", deny(DenyReason::Content)),
+        ("SearchSessions", deny(DenyReason::Content)),
+        ("StartContentUpload", deny(DenyReason::Mutating)),
+        ("StartImportJob", deny(DenyReason::Mutating)),
+        ("TagResource", deny(DenyReason::Mutating)),
+        ("UntagResource", deny(DenyReason::Mutating)),
+        ("UpdateContent", deny(DenyReason::Mutating)),
+        ("UpdateKnowledgeBaseTemplateUri", deny(DenyReason::Mutating)),
+        ("UpdateQuickResponse", deny(DenyReason::Mutating)),
+    ])
+}

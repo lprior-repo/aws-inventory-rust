@@ -21,6 +21,9 @@ impl Engine<'_, '_> {
 
     fn array_child(&self, array: &Array, next: Peek) -> Result<Value, DecodeError> {
         let target = if next == Peek::Null && !schema::preserves_null(self.context, array.target)? {
+            if self.context.limits.preserve_fields && array.target.is_some() {
+                return Err(DecodeError::Invalid("null collection element has no inventory value"));
+            }
             None
         } else {
             element_target(self.context, array.target)?

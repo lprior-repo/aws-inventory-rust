@@ -84,3 +84,44 @@ fn resource_queries_cannot_request_zero_or_unbounded_pages() {
     assert!(matches!(PageSize::new(0), Err(InventoryError::PageSize)));
     assert!(matches!(PageSize::new(1001), Err(InventoryError::PageSize)));
 }
+
+#[test]
+fn tag_validation_uses_owned_values_not_disagreeing_borrowed_views() -> TestResult {
+    use inventory_core::inventory::Tag;
+
+    struct DisagreeingText {
+        borrowed: &'static str,
+        owned: String,
+    }
+    impl AsRef<str> for DisagreeingText {
+        fn as_ref(&self) -> &str {
+            self.borrowed
+        }
+    }
+    impl From<DisagreeingText> for String {
+        fn from(value: DisagreeingText) -> Self {
+            value.owned
+        }
+    }
+    assert!(matches!(
+        Tag::new(
+            DisagreeingText { borrowed: "valid", owned: String::new() },
+            "value",
+        ),
+        Err(InventoryError::TagKey)
+    ));
+    assert!(matches!(
+        Tag::new(
+            "key",
+            DisagreeingText { borrowed: "valid", owned: "\0".to_owned() },
+        ),
+        Err(InventoryError::TagValue)
+    ));
+    let tag = Tag::new(
+        DisagreeingText { borrowed: "", owned: "actual-key".to_owned() },
+        DisagreeingText { borrowed: "\0", owned: "actual-value".to_owned() },
+    )?;
+    assert_eq!(tag.key(), "actual-key");
+    assert_eq!(tag.value(), "actual-value");
+    Ok(())
+}

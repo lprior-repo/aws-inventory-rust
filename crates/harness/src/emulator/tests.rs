@@ -208,3 +208,19 @@ fn given_unterminated_endpoint_when_newline_arrives_then_endpoint_becomes_ready(
     drop(owner);
     assert_reaped(identity)
 }
+
+#[test]
+fn given_ambient_environment_when_child_runs_then_only_allowed_variables_reach_it() -> TestResult {
+    let output = super::command(Path::new("/usr/bin/env")).output()?;
+    assert!(output.status.success());
+    let environment = std::str::from_utf8(&output.stdout)?;
+    let variables: std::collections::BTreeSet<_> = environment.lines().collect();
+    assert_eq!(
+        variables,
+        std::collections::BTreeSet::from([
+            "EMULATOR_TELEMETRY=off",
+            "PATH=/usr/bin:/bin",
+        ]),
+    );
+    Ok(())
+}

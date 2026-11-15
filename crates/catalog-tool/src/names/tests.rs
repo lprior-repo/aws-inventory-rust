@@ -101,7 +101,7 @@ const INVALID_TYPES: [&str; 13] = [
 
 #[test]
 fn exceptions_replace_longest_spelling_at_each_position() -> TestResult {
-    let exceptions = Exceptions::parse("IP\tip\nIPv6\tipv6\nIoT\tiot\n")?;
+    let exceptions = Exceptions::from_entries(&[("IP", "ip"), ("IPv6", "ipv6"), ("IoT", "iot")])?;
     LONGEST_CASES.iter().try_for_each(|(kind, expected)| {
         let name = sql_name(kind, &exceptions)?;
         assert_eq!(name.as_str(), *expected, "{kind}");
@@ -112,7 +112,7 @@ fn exceptions_replace_longest_spelling_at_each_position() -> TestResult {
 #[test]
 fn exceptions_preserve_replacement_words_and_split_unmatched_digits() -> TestResult {
     let exceptions =
-        Exceptions::parse("VPCDHCP\tvpc_dhcp\nWAFv2\twafv2\nOAuth\toauth\nIoT\tiot\n")?;
+        Exceptions::from_entries(&[("VPCDHCP", "vpc_dhcp"), ("WAFv2", "wafv2"), ("OAuth", "oauth"), ("IoT", "iot")])?;
     EXCEPTION_CASES.iter().try_for_each(|(kind, expected)| {
         let name = sql_name(kind, &exceptions)?;
         assert_eq!(name.as_str(), *expected, "{kind}");
@@ -150,7 +150,7 @@ fn names_accept_exactly_128_bytes_and_reject_129_bytes() -> TestResult {
 
 #[test]
 fn exception_expansion_obeys_the_same_byte_limit() -> TestResult {
-    let exceptions = Exceptions::parse(&format!("X\t{}\n", "a".repeat(127)))?;
+    let exceptions = Exceptions::from_entries(&[("X", &"a".repeat(127))])?;
     assert_eq!(
         sql_name("A::X", &exceptions),
         Err(NameError::TooLong {
@@ -163,7 +163,7 @@ fn exception_expansion_obeys_the_same_byte_limit() -> TestResult {
 
 #[test]
 fn used_flags_follow_original_line_order_and_reset_each_call() -> TestResult {
-    let exceptions = Exceptions::parse("IP\tip\nIPv6\tipv6\nIoT\tiot\n")?;
+    let exceptions = Exceptions::from_entries(&[("IP", "ip"), ("IPv6", "ipv6"), ("IoT", "iot")])?;
     let mut used = vec![true; 9];
     let first = sql_name_used("AWS::IoTIPv6::IPv6Pool", &exceptions, &mut used)?;
     assert_eq!(first.as_str(), "aws_iot_ipv6_ipv6_pool");
@@ -176,7 +176,7 @@ fn used_flags_follow_original_line_order_and_reset_each_call() -> TestResult {
 
 #[test]
 fn used_flags_clear_even_when_type_validation_fails() -> TestResult {
-    let exceptions = Exceptions::parse("IoT\tiot\n")?;
+    let exceptions = Exceptions::from_entries(&[("IoT", "iot")])?;
     let mut used = vec![true];
     assert_eq!(
         sql_name_used("AWS", &exceptions, &mut used),
@@ -202,7 +202,7 @@ fn sql_name_display_and_value_traits_preserve_the_identifier() -> TestResult {
 
 #[test]
 fn repeated_exception_spelling_is_replaced_every_time_in_one_part() -> TestResult {
-    let exceptions = Exceptions::parse("IoT\tiot\n")?;
+    let exceptions = Exceptions::from_entries(&[("IoT", "iot")])?;
     let mut used = Vec::new();
     let name = sql_name_used("AWS::IoTIoT", &exceptions, &mut used)?;
     assert_eq!(name.as_str(), "aws_iot_iot");
@@ -213,7 +213,7 @@ fn repeated_exception_spelling_is_replaced_every_time_in_one_part() -> TestResul
 #[test]
 fn exception_expansion_accepts_exactly_128_output_bytes() -> TestResult {
     let replacement = "a".repeat(126);
-    let exceptions = Exceptions::parse(&format!("X\t{replacement}\n"))?;
+    let exceptions = Exceptions::from_entries(&[("X", &replacement)])?;
     let name = sql_name("A::X", &exceptions)?;
     assert_eq!(name.as_str(), format!("a_{replacement}"));
     assert_eq!(name.as_str().len(), 128);
@@ -229,7 +229,7 @@ fn lowercase_initial_letters_are_valid_in_every_type_part() -> TestResult {
 
 #[test]
 fn exceptions_cannot_make_a_digit_initial_type_part_valid() -> TestResult {
-    let exceptions = Exceptions::parse("1X\tone_x\n")?;
+    let exceptions = Exceptions::from_entries(&[("1X", "one_x")])?;
     assert_eq!(
         sql_name("AWS::1X", &exceptions),
         Err(NameError::InvalidType {

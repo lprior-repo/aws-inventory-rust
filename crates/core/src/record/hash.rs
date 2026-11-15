@@ -1,5 +1,5 @@
 use super::{
-    Exclusions, FORMAT_VERSION, FieldId, KeyRef, ListRef, MapRef, Record, RecordError, Time,
+    Exclusions, FORMAT_VERSION, FieldId, KeyRef, ListRef, MapKeyExclusion, MapRef, Record, RecordError, Time,
     ValueRef, container_depth,
 };
 use minicbor::{Encoder, data::Tag, encode::Write};
@@ -34,12 +34,13 @@ type Sink = Encoder<HashWriter>;
 #[derive(Clone, Copy)]
 struct Scope<'p> {
     paths: &'p [Box<[FieldId]>],
+    map_keys: &'p [MapKeyExclusion],
     level: usize,
 }
 
 impl Scope<'_> {
     fn enter(self, id: FieldId) -> Result<Option<Self>, RecordError> {
-        if self.paths.is_empty() {
+        if self.paths.is_empty() && self.map_keys.is_empty() {
             return Ok(Some(self));
         }
         let at = |path: &[FieldId]| path.get(self.level).copied();
@@ -50,9 +51,12 @@ impl Scope<'_> {
             .paths
             .partition_point(|path| at(path.as_ref()) <= Some(id));
         let paths = self.paths.get(start..end).ok_or(RecordError::Encode)?;
+        let start = self.map_keys.partition_point(|mask| at(mask.path()) < Some(id));
+        let end = self.map_keys.partition_point(|mask| at(mask.path()) <= Some(id));
+        let map_keys = self.map_keys.get(start..end).ok_or(RecordError::Encode)?;
         let level = self.level.checked_add(1).ok_or(RecordError::DepthLimit)?;
         let ends_here = paths.first().is_some_and(|path| path.len() == level);
-        Ok((!ends_here).then_some(Scope { paths, level }))
+        Ok((!ends_here).then_some(Scope { paths, map_keys, level }))
     }
 }
 
@@ -65,10 +69,38 @@ pub(super) fn compute(
     let mut sink = Encoder::new(HashWriter(hasher));
     let scope = Scope {
         paths: exclusions.paths(),
+        map_keys: exclusions.map_keys(),
         level: 0,
     };
     hash_map(&mut sink, record.root(), scope, container_depth(0)?)?;
     Ok(ContentHash(*sink.into_writer().0.finalize().as_bytes()))
+}
+
+/// Hash a selected typed value as the existing `{\"$\": value}` envelope,
+/// borrowing its validated representation instead of copying its full tree.
+pub fn selected_content_hash(value: ValueRef<'_>) -> Result<ContentHash, RecordError> {
+    validate_selected(value)?;
+    let mut hasher = blake3::Hasher::new();
+    hasher.update(&[FORMAT_VERSION]);
+    let mut sink = Encoder::new(HashWriter(hasher));
+    let scope = Scope { paths: &[], map_keys: &[], level: 0 };
+    sink.begin_map()?.str(super::SCALAR_ITEM_NAME)?;
+    hash_value(&mut sink, value, scope, container_depth(0)?)?;
+    sink.end()?;
+    Ok(ContentHash(*sink.into_writer().0.finalize().as_bytes()))
+}
+
+fn validate_selected(value: ValueRef<'_>) -> Result<(), RecordError> {
+    let bytes = match value {
+        ValueRef::Map(map) => map.bytes,
+        ValueRef::List(list) => list.bytes,
+        ValueRef::Text(text) if text.len() > super::MAX_RECORD_BYTES => return Err(RecordError::SizeLimit),
+        ValueRef::Bytes(bytes) if bytes.len() > super::MAX_RECORD_BYTES => return Err(RecordError::SizeLimit),
+        _ => return Ok(()),
+    };
+    if bytes.len() > super::MAX_RECORD_BYTES { return Err(RecordError::SizeLimit) }
+    let mut decoder = minicbor::Decoder::new(bytes);
+    super::structure::validate(&mut decoder, Some(super::MAX_DEPTH.saturating_sub(1)))
 }
 
 fn hash_map(
@@ -95,8 +127,13 @@ fn hash_entry(
 ) -> Result<(), RecordError> {
     let inner = match key {
         KeyRef::Name(name) => {
+            if scope.map_keys.iter().any(|mask| {
+                mask.path().len() == scope.level && mask.key() == name
+            }) {
+                return Ok(());
+            }
             sink.str(name)?;
-            scope
+            Scope { map_keys: &[], ..scope }
         }
         KeyRef::Field(id) => {
             let Some(inner) = scope.enter(id)? else {

@@ -77,6 +77,9 @@ impl Engine<'_, '_> {
         if self.parser.peek().map_err(syntax)? == Peek::Null
             && !schema::preserves_null(self.context, parent)?
         {
+            if self.context.limits.preserve_fields && target.is_some() {
+                return Err(DecodeError::Invalid("null modeled member has no inventory value"));
+            }
             Ok((None, Key::Ignore))
         } else {
             Ok((target, key))
@@ -92,6 +95,7 @@ impl Engine<'_, '_> {
             object.target,
             &object.fields,
             self.context.service,
+            self.context.limits,
         )?;
         if matches!(object.role, MapRole::Nested) && object.target.is_some() {
             self.builder.end()?;

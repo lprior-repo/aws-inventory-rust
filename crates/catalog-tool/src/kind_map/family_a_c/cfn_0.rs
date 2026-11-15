@@ -1,0 +1,25 @@
+use crate::kind_map::CfnMapping;
+
+pub(super) const ENTRIES: &[CfnMapping<'static>] = &[
+    CfnMapping::canonical("AWS::ACMPCA::CertificateAuthority"),
+    CfnMapping::canonical("AWS::AIOps::InvestigationGroup"),
+    CfnMapping::canonical("AWS::APS::Scraper"),
+    CfnMapping::canonical("AWS::APS::Workspace"),
+    CfnMapping::canonical("AWS::ARCRegionSwitch::Plan"),
+    CfnMapping::canonical("AWS::AccessAnalyzer::Analyzer"),
+    CfnMapping::canonical("AWS::AccessAnalyzer::ArchiveRule"),
+    CfnMapping::canonical("AWS::ApiGateway::Account"),
+    CfnMapping::canonical("AWS::ApiGateway::ApiKey"),
+    CfnMapping::canonical("AWS::ApiGateway::ClientCertificate"),
+    CfnMapping::canonical("AWS::ApiGateway::DomainName"),
+    CfnMapping::canonical("AWS::ApiGateway::DomainNameAccessAssociation"),
+    CfnMapping::canonical("AWS::ApiGateway::RestApi"),
+    CfnMapping::canonical("AWS::ApiGateway::UsagePlan"),
+    CfnMapping::canonical("AWS::ApiGateway::VpcLink"),
+    CfnMapping::canonical("AWS::ApiGatewayV2::Api"),
+    CfnMapping::canonical("AWS::ApiGatewayV2::DomainName"),
+    CfnMapping::canonical("AWS::ApiGatewayV2::VpcLink"),
+    CfnMapping::canonical("AWS::AppConfig::Application"),
+    CfnMapping::canonical("AWS::AppConfig::ConfigurationProfile"),
+    CfnMapping::canonical("AWS::AppConfig::DeploymentStrategy"),
+];

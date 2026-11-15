@@ -13,7 +13,15 @@ pub(super) fn field_path(
     })
 }
 
-pub(super) fn member<'a>(
+pub(super) fn path_target(
+    service: Service<'_>,
+    target: Target,
+    path: &FieldPath,
+) -> Result<Target, SeedError> {
+    path.parts().iter().try_fold(target, |target, name| Ok(member(service, target, name)?.target))
+}
+
+pub(in crate::inventory_seed) fn member<'a>(
     service: Service<'a>,
     target: Target,
     name: &str,

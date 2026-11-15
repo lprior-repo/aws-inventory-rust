@@ -1,0 +1,26 @@
+use crate::kind_map::CfnMapping;
+
+pub(super) const ENTRIES: &[CfnMapping<'static>] = &[
+    CfnMapping::canonical("AWS::Cassandra::Keyspace"),
+    CfnMapping::canonical("AWS::Cassandra::Table"),
+    CfnMapping::canonical("AWS::GameLift::Alias"),
+    CfnMapping::canonical("AWS::GameLift::Build"),
+    CfnMapping::canonical("AWS::GameLift::Fleet"),
+    CfnMapping::canonical("AWS::GameLift::GameServerGroup"),
+    CfnMapping::canonical("AWS::GlobalAccelerator::Accelerator"),
+    CfnMapping::canonical("AWS::GlobalAccelerator::CrossAccountAttachment"),
+    CfnMapping::canonical("AWS::GlobalAccelerator::Listener"),
+    CfnMapping::canonical("AWS::GlobalAccelerator::EndpointGroup"),
+    CfnMapping::canonical("AWS::Glue::Crawler"),
+    CfnMapping::canonical("AWS::Glue::Job"),
+    CfnMapping::canonical("AWS::Glue::Registry"),
+    CfnMapping::canonical("AWS::Glue::Schema"),
+    CfnMapping::canonical("AWS::Glue::Workflow"),
+    CfnMapping::canonical("AWS::Greengrass::ConnectorDefinition"),
+    CfnMapping::canonical("AWS::Greengrass::CoreDefinition"),
+    CfnMapping::canonical("AWS::Greengrass::DeviceDefinition"),
+    CfnMapping::canonical("AWS::Greengrass::FunctionDefinition"),
+    CfnMapping::canonical("AWS::Greengrass::Group"),
+    CfnMapping::canonical("AWS::Greengrass::LoggerDefinition"),
+    CfnMapping::canonical("AWS::Greengrass::ResourceDefinition"),
+];

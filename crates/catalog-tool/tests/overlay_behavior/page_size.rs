@@ -17,12 +17,10 @@ fn modeled_page_size_obeys_member_range_at_and_inside_its_boundary()
         .into_iter()
         .try_for_each(|(size, valid)| -> Result<(), Box<dyn std::error::Error>> {
             let root = fixture(model, "")?;
-            let text = format!(
-                "{HEADER}[operation.ListThings]\nclass='enumerate'\npage_size={size}\n[operation.ListThings.identity]\nkey=['Id']\n"
-            );
-            overlay(root.path(), &text)?;
+            let mut plan = inferred()?;
+            plan.page_size = Some(size.parse::<i64>()?);
             if valid {
-                let checked = overlay::check(root.path(), &source(root.path()))?;
+                let checked = checked(&root, vec![("ListThings", plan)])?;
                 let callable = checked.services().first().ok_or("missing service")?.callable().first().ok_or("missing callable")?;
                 assert_eq!(callable.plan().page_size, Some(size.parse::<i64>()?));
                 assert_eq!(callable.plan().items, Some(ItemSelector::Member(overlay::MemberPath::new("Items")?)));
@@ -32,7 +30,7 @@ fn modeled_page_size_obeys_member_range_at_and_inside_its_boundary()
                 assert_eq!(pair.input, overlay::MemberPath::new("Next")?);
                 assert_eq!(pair.output, overlay::MemberPath::new("Next")?);
             } else {
-                let errors = violations(root.path())?;
+                let errors = violations(&root, vec![("ListThings", plan)])?;
                 assert!(errors.iter().any(|error| error.key() == "page_size"
                     && error.value() == size
                     && error.rule() == ViolationRule::InvalidValue));
@@ -49,15 +47,11 @@ fn wider_member_range_precedes_narrower_target_range() -> Result<(), Box<dyn std
         .ok_or("missing member range maximum")?;
     *member_max = serde_json::json!(1000);
     let model = serde_json::to_string(&model)?;
-    for (page_size, expected) in [("page_size=500\n", 500), ("", 1000)] {
+    for (page_size, expected) in [(Some(500), 500), (None, 1000)] {
         let root = fixture(&model, "")?;
-        overlay(
-            root.path(),
-            &format!(
-                "{HEADER}[operation.ListThings]\nclass='enumerate'\n{page_size}[operation.ListThings.identity]\nkey=['Id']\n"
-            ),
-        )?;
-        let checked = overlay::check(root.path(), &source(root.path()))?;
+        let mut plan = inferred()?;
+        plan.page_size = page_size;
+        let checked = checked(&root, vec![("ListThings", plan)])?;
         let callable = checked
             .services()
             .first()
@@ -78,13 +72,7 @@ fn inferred_page_size_satisfies_required_input_without_override()
         "\"Limit\":{\"target\":\"n#Size\",\"traits\":{\"smithy.api#required\":{},\"smithy.api#range\":{\"min\":1,\"max\":10}}}",
     );
     let root = fixture(&model, "")?;
-    overlay(
-        root.path(),
-        &format!(
-            "{HEADER}[operation.ListThings]\nclass='enumerate'\n[operation.ListThings.identity]\nkey=['Id']\n"
-        ),
-    )?;
-    let checked = overlay::check(root.path(), &source(root.path()))?;
+    let checked = checked(&root, vec![("ListThings", inferred()?)])?;
     let callable = checked
         .services()
         .first()
@@ -93,5 +81,36 @@ fn inferred_page_size_satisfies_required_input_without_override()
         .first()
         .ok_or("missing callable")?;
     assert_eq!(callable.plan().page_size, Some(10));
+    Ok(())
+}
+
+#[test]
+fn given_explicit_fixed_page_limit_when_model_infers_default_then_only_explicit_value_is_written()
+-> Result<(), Box<dyn std::error::Error>> {
+    let root = fixture(PAGE_SIZE_MODEL, "")?;
+    let mut plan = inferred()?;
+    plan.fixed.insert(overlay::MemberPath::new("Limit")?, overlay::FixedValue::Integer(5));
+    let reviewed = checked(&root, vec![("ListThings", plan)])?;
+    let plan = reviewed.services().first().ok_or("service")?.callable().first().ok_or("callable")?.plan();
+    assert_eq!(plan.page_size, None);
+    assert_eq!(plan.fixed.get(&overlay::MemberPath::new("Limit")?), Some(&overlay::FixedValue::Integer(5)));
+    Ok(())
+}
+
+#[test]
+fn given_modeled_string_page_limit_when_explicit_then_decimal_text_constraints_and_positive_bounds_apply()
+-> Result<(), Box<dyn std::error::Error>> {
+    let model = PAGE_SIZE_MODEL.replace("\"type\":\"integer\"", "\"type\":\"string\"");
+    for (value, accepted) in [(0, false), (1, true), (10, true), (11, false), (i64::MAX, false)] {
+        let root = fixture(&model, "")?;
+        let mut plan = inferred()?;
+        plan.page_size = Some(value);
+        if accepted {
+            checked(&root, vec![("ListThings", plan)])?;
+        } else {
+            assert!(violations(&root, vec![("ListThings", plan)])?.iter()
+                .any(|error| error.key() == "page_size" && error.rule() == ViolationRule::InvalidValue));
+        }
+    }
     Ok(())
 }

@@ -42,6 +42,7 @@ fn empty(context: ResponseContext<'_>, mut builder: RecordBuilder) -> Result<Rec
         Some(context.operation.output()?),
         &[],
         context.service,
+        context.limits,
     )?;
     builder.end()?;
     builder.finish().map_err(DecodeError::Builder)

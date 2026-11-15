@@ -1,0 +1,26 @@
+use crate::kind_map::CfnMapping;
+
+pub(super) const ENTRIES: &[CfnMapping<'static>] = &[
+    CfnMapping::canonical("AWS::ImageBuilder::ImagePipeline"),
+    CfnMapping::canonical("AWS::ImageBuilder::ImageRecipe"),
+    CfnMapping::canonical("AWS::ImageBuilder::InfrastructureConfiguration"),
+    CfnMapping::canonical("AWS::ImageBuilder::LifecyclePolicy"),
+    CfnMapping::canonical("AWS::Inspector::AssessmentTarget"),
+    CfnMapping::canonical("AWS::Inspector::AssessmentTemplate"),
+    CfnMapping::canonical("AWS::InspectorV2::CisScanConfiguration"),
+    CfnMapping::canonical("AWS::InspectorV2::CodeSecurityIntegration"),
+    CfnMapping::canonical("AWS::InspectorV2::CodeSecurityScanConfiguration"),
+    CfnMapping::canonical("AWS::InspectorV2::Filter"),
+    CfnMapping::canonical("AWS::Interconnect::Connection"),
+    CfnMapping::canonical("AWS::InternetMonitor::Monitor"),
+    CfnMapping::canonical("AWS::Invoicing::InvoiceUnit"),
+    CfnMapping::canonical("AWS::IoT::BillingGroup"),
+    CfnMapping::canonical("AWS::IoT::CustomMetric"),
+    CfnMapping::canonical("AWS::IoT::Dimension"),
+    CfnMapping::canonical("AWS::IoT::DomainConfiguration"),
+    CfnMapping::canonical("AWS::IoT::Policy"),
+    CfnMapping::canonical("AWS::IoT::RoleAlias"),
+    CfnMapping::canonical("AWS::IoT::ThingGroup"),
+    CfnMapping::canonical("AWS::IoT::ThingType"),
+    CfnMapping::canonical("AWS::IoTCoreDeviceAdvisor::SuiteDefinition"),
+];
