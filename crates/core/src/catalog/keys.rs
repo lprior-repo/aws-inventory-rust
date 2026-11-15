@@ -4,9 +4,7 @@ use crate::record::{FieldId, RecordError};
 #[non_exhaustive]
 pub enum CatalogKey {
     Format,
-
     ModelsCommit,
-
     Services,
 
     Name,
@@ -162,6 +160,7 @@ pub enum CatalogKey {
     DefaultValue,
     ClientOptional,
     S3UnwrappedXmlOutput,
+    ShapeOffsets,
 }
 
 impl CatalogKey {
@@ -264,6 +263,7 @@ impl CatalogKey {
             Self::DefaultValue => 91,
             Self::ClientOptional => 92,
             Self::S3UnwrappedXmlOutput => 93,
+            Self::ShapeOffsets => 94,
         }
     }
 }
@@ -293,7 +293,6 @@ pub const SHAPE_KINDS: [&str; 23] = [
     "operation",
     "resource",
 ];
-
 pub fn kind_code(name: &str) -> Option<usize> {
     SHAPE_KINDS.iter().position(|kind| *kind == name)
 }

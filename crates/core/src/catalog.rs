@@ -1,5 +1,6 @@
 mod counts;
 mod keys;
+pub mod runtime;
 #[cfg(test)]
 mod tests;
 mod views;
@@ -12,7 +13,7 @@ pub use views::{
     Paginator, Service, Shape, Target, TimestampFormat, WireTraits, XmlNamespace,
 };
 
-pub const CATALOG_VERSION: i64 = 2;
+pub const CATALOG_VERSION: i64 = 3;
 
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
@@ -92,16 +93,19 @@ impl<'a> Catalog<'a> {
     }
 
     pub fn service(self, name: &str) -> Result<Option<Service<'a>>, CatalogError> {
-        self.services()?.try_fold(None, |found, service| {
-            let service = service?;
-            if service.name()? != name {
+        let found = self.services.iter()?.try_fold(None, |found, value| {
+            let bytes = bytes_value(value?)?;
+            if text(MapRef::from_bytes_bounded(bytes)?, CatalogKey::Name)? != name {
                 return Ok(found);
             }
             if found.is_some() {
                 return Err(CatalogError::Reference);
             }
-            Ok(Some(service))
-        })
+            Ok(Some(bytes))
+        })?;
+        found
+            .map(|bytes| Service::open(bytes, self.field_names, self.field_offsets))
+            .transpose()
     }
     pub fn field_name(self, id: FieldId) -> Result<&'a str, CatalogError> {
         views::field_name(self.field_names, self.field_offsets, id)

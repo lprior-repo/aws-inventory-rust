@@ -26,18 +26,21 @@ fn correctly_expected_fips_case_contributes_neither_template_matches_nor_excepti
     assert_eq!(parsed.evaluate(&first.params)?, first.expect);
 
     let counts = parsed.run_cases(&cases)?;
-    assert_eq!((counts.in_scope, counts.passed, counts.failed), (0, 0, 0));
-    assert_eq!(counts.skipped.get(&SkipReason::Fips), Some(&1));
-    let derived = counts.derive(&parsed, Some("svc"))?;
+    assert_eq!(
+        (counts.in_scope(), counts.passed(), counts.failed()),
+        (0, 0, 0)
+    );
+    assert_eq!(counts.skipped().get(&SkipReason::Fips), Some(&1));
+    let derived = counts.derive(Some("svc"))?;
     assert!(matches!(
-        derived.endpoint,
+        derived.endpoint(),
         DerivedEndpoint::NeedsOverlayRouting {
             matches: 0,
             exceptions: 0,
             ..
         }
     ));
-    assert!(derived.exceptions.is_empty());
+    assert!(derived.exceptions().is_empty());
     Ok(())
 }
 
@@ -64,7 +67,7 @@ fn a_region_routed_like_us_west_2_is_an_exact_exception_not_a_probe_fallback() -
     ]);
     let derived = verified(&document, cases.clone(), "fallback-sign")?;
     assert_eq!(
-        derived.exceptions,
+        derived.exceptions().to_vec(),
         vec![EndpointException {
             region: "eu-central-1".into(),
             url: "https://svc.us-west-2.test".into(),

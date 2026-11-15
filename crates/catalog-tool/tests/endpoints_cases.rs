@@ -28,16 +28,19 @@ fn excluded_cases_are_never_interpreted_and_have_one_reason() -> TestResult {
 
     let counts = rules.run_cases(&cases)?;
 
-    assert_eq!((counts.in_scope, counts.passed, counts.failed), (0, 0, 0));
-    assert_eq!(counts.skipped.len(), 4);
-    assert!(counts.unsupported.is_empty());
+    assert_eq!(
+        (counts.in_scope(), counts.passed(), counts.failed()),
+        (0, 0, 0)
+    );
+    assert_eq!(counts.skipped().len(), 4);
+    assert!(counts.unsupported().is_empty());
     for reason in [
         SkipReason::OtherPartition,
         SkipReason::Fips,
         SkipReason::CustomEndpoint,
         SkipReason::OperationInputs,
     ] {
-        assert_eq!(counts.skipped.get(&reason), Some(&1));
+        assert_eq!(counts.skipped().get(&reason), Some(&1));
     }
     Ok(())
 }
@@ -53,12 +56,15 @@ fn reached_request_time_function_is_a_named_skipped_case() -> TestResult {
     );
     let rules = RuleSet::parse(Path::new("request-time.json"), &document)?;
     let counts = rules.run_cases(&[case(json!({}), json!([]))?])?;
-    assert_eq!((counts.in_scope, counts.passed, counts.failed), (0, 0, 0));
     assert_eq!(
-        counts.skipped.get(&SkipReason::RequestTimeFunction),
+        (counts.in_scope(), counts.passed(), counts.failed()),
+        (0, 0, 0)
+    );
+    assert_eq!(
+        counts.skipped().get(&SkipReason::RequestTimeFunction),
         Some(&1)
     );
-    let Some(unsupported) = counts.unsupported.first() else {
+    let Some(unsupported) = counts.unsupported().first() else {
         return Err("missing request-time diagnostic".into());
     };
     assert_eq!(

@@ -1,7 +1,8 @@
 pub mod endpoints_support;
 
 use catalog_tool::endpoints::{
-    Case, DerivedEndpoint, DerivedService, EndpointException, Outcome, RuleSet, build_report,
+    Case, DerivedEndpoint, DerivedService, EndpointException, Outcome, RuleSet,
+    VerificationFailure, build_report,
 };
 use endpoints_support::exceptions::{REPORT, case, fixtures, route};
 use endpoints_support::report::write_service;
@@ -15,9 +16,9 @@ fn every_passing_fixture_case_is_reproduced_by_its_template_or_an_exact_exceptio
         let parsed = RuleSet::parse(Path::new(fixture.name), &fixture.document)?;
         let cases: Vec<Case> = serde_json::from_value(fixture.cases)?;
         let counts = parsed.run_cases(&cases)?;
-        assert_eq!((counts.passed, counts.failed), (cases.len(), 0));
+        assert_eq!((counts.passed(), counts.failed()), (cases.len(), 0));
         let name = format!("{}-sign", fixture.name);
-        let derived = counts.derive(&parsed, Some(&name))?;
+        let derived = counts.derive(Some(&name))?;
         for case in cases {
             reproduced(&derived, &case, &name)?;
         }
@@ -42,7 +43,7 @@ fn reproduced(derived: &DerivedService, case: &Case, name: &str) -> TestResult {
         .and_then(|scheme| scheme.get("signingRegion"))
         .and_then(serde_json::Value::as_str)
         .ok_or("signing region")?;
-    let matched = match &derived.endpoint {
+    let matched = match derived.endpoint() {
         DerivedEndpoint::Resolved {
             url_template,
             signing_name,
@@ -64,7 +65,7 @@ fn reproduced(derived: &DerivedService, case: &Case, name: &str) -> TestResult {
     assert!(
         matched
             || derived
-                .exceptions
+                .exceptions()
                 .iter()
                 .any(|exception| exception.region == region
                     && exception.url == expected.url
@@ -110,12 +111,12 @@ fn exceptions_outnumbering_matches_require_overlay_and_are_sorted_by_region() ->
         case("us-west-2", "https://svc.us-west-2.test", "us-west-2"),
         case("af-south-1", "https://africa.test", "us-east-1")
     ]))?;
-    let derived = parsed.run_cases(&cases)?.derive(&parsed, Some("svc"))?;
-    assert!(matches!(&derived.endpoint,
+    let derived = parsed.run_cases(&cases)?.derive(Some("svc"))?;
+    assert!(matches!(derived.endpoint(),
         DerivedEndpoint::NeedsOverlayRouting { matches: 1, exceptions: 2, url_template, .. }
             if url_template == "https://svc.{region}.test"));
     assert_eq!(
-        derived.exceptions,
+        derived.exceptions().to_vec(),
         vec![
             EndpointException {
                 region: "af-south-1".into(),
@@ -156,10 +157,10 @@ fn no_published_endpoint_case_retains_candidate_but_requires_overlay() -> TestRe
         json!([route("https://svc.{Region}.test", json!([]), "{Region}")]),
     );
     let parsed = RuleSet::parse(Path::new("unconfirmed.json"), &document)?;
-    let derived = parsed.run_cases(&[])?.derive(&parsed, Some("svc"))?;
+    let derived = parsed.run_cases(&[])?.derive(Some("svc"))?;
     assert_eq!(
-        derived.endpoint,
-        DerivedEndpoint::NeedsOverlayRouting {
+        derived.endpoint(),
+        &DerivedEndpoint::NeedsOverlayRouting {
             url_template: "https://svc.{region}.test".into(),
             signing_name: "svc".into(),
             signing_region: "{region}".into(),
@@ -167,7 +168,35 @@ fn no_published_endpoint_case_retains_candidate_but_requires_overlay() -> TestRe
             exceptions: 0,
         }
     );
-    assert!(derived.exceptions.is_empty());
+    assert!(derived.exceptions().is_empty());
+    Ok(())
+}
+
+#[test]
+fn checked_endpoint_requires_and_carries_passed_case_evidence() -> TestResult {
+    let document = rules(
+        json!({"Region":{"type":"string"}}),
+        json!([route("https://global.test", json!([]), "us-east-1")]),
+    );
+    let parsed = RuleSet::parse(Path::new("verified.json"), &document)?;
+    let run = parsed.run_cases(&serde_json::from_value::<Vec<Case>>(json!([case(
+        "us-west-2",
+        "https://global.test",
+        "us-east-1"
+    )]))?)?;
+    let verified = run
+        .verified_endpoint(Some("svc"))
+        .map_err(|_| "valid endpoint evidence was rejected")?;
+    assert_eq!(
+        verified.endpoint(),
+        &DerivedEndpoint::Resolved {
+            class: catalog_tool::endpoints::ServiceClass::Global,
+            url_template: "https://global.test".into(),
+            signing_name: "svc".into(),
+            signing_region: "us-east-1".into(),
+        }
+    );
+    assert!(verified.exceptions().is_empty());
     Ok(())
 }
 
@@ -183,16 +212,35 @@ fn failed_and_skipped_cases_do_not_confirm_a_template_or_create_exceptions() -> 
         {"params":{"Region":"us-west-2","UseFIPS":true},"expect":{"endpoint":{"url":"wrong"}}}
     ]))?;
     let counts = parsed.run_cases(&cases)?;
-    assert_eq!((counts.passed, counts.failed), (0, 1));
-    let derived = counts.derive(&parsed, Some("svc"))?;
+    assert_eq!((counts.passed(), counts.failed()), (0, 1));
+    assert_eq!(
+        counts.verified_endpoint(Some("svc")),
+        Err(VerificationFailure::FailedCases(1))
+    );
+    let derived = counts.derive(Some("svc"))?;
     assert!(matches!(
-        derived.endpoint,
+        derived.endpoint(),
         DerivedEndpoint::NeedsOverlayRouting {
             matches: 0,
             exceptions: 0,
             ..
         }
     ));
-    assert!(derived.exceptions.is_empty());
+    assert!(derived.exceptions().is_empty());
+    let dir = tempfile::tempdir()?;
+    write_service(
+        dir.path(),
+        "evidence",
+        document,
+        json!([
+            {"params":{"Region":"us-west-2"},"expect":{"endpoint":{"url":"wrong"}}},
+            {"params":{"Region":"us-west-2","UseFIPS":true},
+                "expect":{"endpoint":{"url":"wrong"}}}
+        ]),
+    )?;
+    assert!(
+        build_report(dir.path())?
+            .contains("case_failure evidence 0 \"actual outcome differs from expected outcome\"")
+    );
     Ok(())
 }

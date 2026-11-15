@@ -25,6 +25,18 @@ pub(super) fn encode(value: &Value) -> Result<Vec<u8>, RecordError> {
     Ok(encoder.into_writer().0)
 }
 
+pub(super) fn encode_list_record(items: &[Value]) -> Result<Vec<u8>, RecordError> {
+    let mut encoder = Encoder::new(Bounded::default());
+    encode_list_value(&mut encoder, items, 0)?;
+    Ok(encoder.into_writer().0)
+}
+fn encode_list_value(
+    e: &mut Encoder<Bounded>,
+    items: &[Value],
+    depth: usize,
+) -> Result<(), RecordError> {
+    encode_list(e, items, container_depth(depth)?)
+}
 fn encode_value(e: &mut Encoder<Bounded>, value: &Value, depth: usize) -> Result<(), RecordError> {
     match value {
         Value::Null => e.null(),

@@ -1,9 +1,13 @@
 use super::super::super::{report, validation};
 use super::*;
-use crate::overlay::OperationOverlay;
+use crate::{
+    classes::{Class, DenyReason},
+    overlay::{OperationOverlay, OverlayClass},
+};
 
 type OperationOutput = (
     Option<CallableOperation>,
+    ReviewedDecision,
     (String, String, String, String),
     Vec<Violation>,
 );
@@ -55,15 +59,19 @@ struct OperationContext<'a, 'm, 'd> {
     plan: Option<&'a OperationOverlay>,
 }
 
+type PackageRow = (String, String, String, String);
+
 fn package_operation(
     context: OperationContext<'_, '_, '_>,
     result: validation::OperationResult,
 ) -> (
     Option<CallableOperation>,
-    (String, String, String, String),
+    ReviewedDecision,
+    PackageRow,
     Vec<Violation>,
 ) {
     let callable = result.callable;
+    let decision = reviewed_decision(&context, result.effective, callable.is_some());
     let errors = package_errors(
         &context,
         result.effective,
@@ -71,7 +79,68 @@ fn package_operation(
         callable.is_some(),
     );
     let row = package_row(&context, result.effective);
-    (callable, row, errors)
+    (callable, decision, row, errors)
+}
+
+fn reviewed_decision(
+    context: &OperationContext<'_, '_, '_>,
+    effective: &str,
+    callable: bool,
+) -> ReviewedDecision {
+    let disposition = if callable {
+        ReviewDisposition::Callable
+    } else if effective == "deferred" {
+        deferred_disposition(context)
+    } else if effective == "denied" {
+        denied_disposition(context)
+    } else {
+        ReviewDisposition::Unclassified
+    };
+    ReviewedDecision {
+        operation: context.name.to_owned(),
+        disposition,
+    }
+}
+
+fn deferred_disposition(context: &OperationContext<'_, '_, '_>) -> ReviewDisposition {
+    context
+        .plan
+        .and_then(|plan| plan.defer_reason.as_ref())
+        .map_or(ReviewDisposition::Unclassified, |reason| {
+            ReviewDisposition::Deferred {
+                reason: reason.clone(),
+            }
+        })
+}
+
+fn denied_disposition(context: &OperationContext<'_, '_, '_>) -> ReviewDisposition {
+    deny_reason(context).map_or(ReviewDisposition::Unclassified, |reason| {
+        ReviewDisposition::Denied { reason }
+    })
+}
+
+fn deny_reason(context: &OperationContext<'_, '_, '_>) -> Option<String> {
+    let reason = context.plan.and_then(|plan| match plan.class {
+        Some(OverlayClass::Deny(reason)) => Some(reason),
+        _ => None,
+    });
+    reason
+        .or(match context.class {
+            Class::Denied(reason) => Some(reason),
+            _ => None,
+        })
+        .map(deny_reason_text)
+}
+
+fn deny_reason_text(reason: DenyReason) -> String {
+    match reason {
+        DenyReason::Content => "content",
+        DenyReason::Secret => "secret",
+        DenyReason::Paid => "paid",
+        DenyReason::Mutating => "mutating",
+        DenyReason::ReferenceData => "reference-data",
+    }
+    .to_owned()
 }
 
 fn package_errors(

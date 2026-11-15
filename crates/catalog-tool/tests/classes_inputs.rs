@@ -66,19 +66,19 @@ fn mixed_optional_and_required_members_are_one_expansion() -> TestResult {
 #[test]
 fn model_without_a_service_directory_is_rejected() -> TestResult {
     let dir = fixture()?;
-    std::fs::write(dir.path().join("models/direct.json"), MODEL)?;
+    let path = dir.path().join("models/model.json");
+    std::fs::write(&path, MODEL)?;
     assert!(matches!(build_report(dir.path(), dir.path()),
-        Err(Error::InvalidModelPath(path)) if path == dir.path().join("models/direct.json")));
+        Err(Error::ModelSource(source)) if source.to_string() == format!("invalid model path: {}", path.display())));
     Ok(())
 }
-
 #[test]
 fn missing_deny_file_is_not_treated_as_an_empty_policy() -> TestResult {
     let dir = fixture()?;
     let path = dir.path().join("catalog/overlay/must-deny.txt");
     std::fs::remove_file(&path)?;
     assert!(matches!(build_report(dir.path(), dir.path()),
-        Err(Error::Io { file, source })
+        Err(Error::Report(catalog_tool::ReportError::Io { file, source }))
         if file == path && source.kind() == std::io::ErrorKind::NotFound));
     Ok(())
 }

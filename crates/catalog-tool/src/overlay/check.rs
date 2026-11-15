@@ -3,15 +3,14 @@ mod report;
 mod service;
 mod validation;
 use crate::{
+    ReportMode,
     classes::{self, Class, DenyList},
     plans,
-    smithy::{self, ReportMode},
 };
 use serde::Deserialize;
 use serde_json::Value;
 use std::{
     collections::BTreeMap,
-    fs,
     path::{Path, PathBuf},
 };
 use thiserror::Error;
@@ -23,15 +22,17 @@ const MAX_SERVICES: usize = 4096;
 #[non_exhaustive]
 pub enum CheckError {
     #[error(transparent)]
-    Overlay(#[from] super::OverlayError),
-    #[error(transparent)]
-    Models(#[from] smithy::Error),
+    Overlay(Box<super::OverlayError>),
     #[error(transparent)]
     Decode(#[from] serde_json::Error),
     #[error(transparent)]
-    Plans(#[from] plans::Error),
+    ModelSource(#[from] crate::model_source::Error),
+    #[error(transparent)]
+    Plans(Box<plans::Error>),
     #[error(transparent)]
     Classes(#[from] classes::Error),
+    #[error(transparent)]
+    Report(#[from] crate::report::ReportError),
     #[error(transparent)]
     DenyList(#[from] classes::ParseError),
     #[error("{service}: no model directory")]
@@ -48,8 +49,6 @@ pub enum CheckError {
     IncompleteReview { service: String, operations: String },
     #[error("overlay validation failed: {}", report::format_violations(.0))]
     Violations(Vec<Violation>),
-    #[error("{file}: committed overlay report differs")]
-    Drift { file: PathBuf },
     #[error("{file}: {source}")]
     Io {
         file: PathBuf,
@@ -59,6 +58,18 @@ pub enum CheckError {
     Formatting(#[from] std::fmt::Error),
     #[error("overlay candidate count overflowed")]
     CountOverflow,
+}
+
+impl From<super::OverlayError> for CheckError {
+    fn from(error: super::OverlayError) -> Self {
+        Self::Overlay(Box::new(error))
+    }
+}
+
+impl From<plans::Error> for CheckError {
+    fn from(error: plans::Error) -> Self {
+        Self::Plans(Box::new(error))
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -130,19 +141,58 @@ pub enum EffectiveClass {
     Enumerate,
     Expand,
 }
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ReviewDisposition {
+    Callable,
+    Denied { reason: String },
+    Deferred { reason: String },
+    Unclassified,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReviewedDecision {
+    operation: String,
+    disposition: ReviewDisposition,
+}
+
+impl ReviewedDecision {
+    pub fn operation(&self) -> &str {
+        &self.operation
+    }
+
+    pub fn disposition(&self) -> &ReviewDisposition {
+        &self.disposition
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReviewedService {
     service: String,
+    reviewer: String,
+    reviewed: String,
     callable: Vec<CallableOperation>,
+    decisions: Vec<ReviewedDecision>,
 }
 
 impl ReviewedService {
     pub fn service(&self) -> &str {
         &self.service
     }
+
+    pub fn reviewer(&self) -> &str {
+        &self.reviewer
+    }
+
+    pub fn reviewed(&self) -> &str {
+        &self.reviewed
+    }
+
     pub fn callable(&self) -> &[CallableOperation] {
         &self.callable
+    }
+
+    pub fn decisions(&self) -> &[ReviewedDecision] {
+        &self.decisions
     }
 }
 
@@ -187,16 +237,6 @@ pub fn build_report(root: &Path, source: &Path) -> Result<String, CheckError> {
 
 pub fn run(root: &Path, source: &Path, mode: ReportMode) -> Result<(), CheckError> {
     let report = build_report(root, source)?;
-    if mode == ReportMode::Check {
-        let path = root.join(REPORT_PATH);
-        let current = fs::read_to_string(&path).map_err(|source| CheckError::Io {
-            file: path.clone(),
-            source,
-        })?;
-        if current != report {
-            return Err(CheckError::Drift { file: path });
-        }
-    }
-    classes::report::publish(root, REPORT_PATH, &report, mode)?;
+    crate::report::publish(&root.join(REPORT_PATH), &report, mode)?;
     Ok(())
 }

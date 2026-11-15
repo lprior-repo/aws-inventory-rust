@@ -2,7 +2,7 @@ use std::path::Path;
 
 use super::{
     model::ModelFile,
-    report::{differences, render_report},
+    report::render_report,
     stats::{ModelStats, compute_stats},
     totals::Totals,
 };
@@ -22,7 +22,7 @@ const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 fn every_per_model_counter_matches_the_contract() -> Result<(), Box<dyn std::error::Error>> {
     let model: ModelFile = serde_json::from_str(MODEL)?;
 
-    let stats = compute_stats(&model);
+    let stats = compute_stats(&model)?;
 
     assert_eq!(
         stats,
@@ -56,7 +56,7 @@ fn every_per_model_counter_matches_the_contract() -> Result<(), Box<dyn std::err
 }
 
 #[test]
-fn roots_require_an_exact_structure_target() -> Result<(), Box<dyn std::error::Error>> {
+fn malformed_operation_inputs_fail_before_stats() -> Result<(), Box<dyn std::error::Error>> {
     let model: ModelFile = serde_json::from_str(
         r#"{"shapes":{
       "n#Svc":{"type":"service"},"n#ListAbsent":{"type":"operation"},
@@ -73,16 +73,13 @@ fn roots_require_an_exact_structure_target() -> Result<(), Box<dyn std::error::E
     }}"#,
     )?;
 
-    let stats = compute_stats(&model);
-
-    assert_eq!(
-        (
-            stats.operations,
-            stats.list_describe,
-            stats.list_describe_root
-        ),
-        (7, 7, 6)
-    );
+    let result = super::stats::validate_inputs(&model, Path::new("service.json"));
+    assert!(matches!(
+        result,
+        Err(super::Error::InvalidInput { source, .. })
+            if source.target == "n#Union"
+                && source.kind == crate::model_source::InputFailure::NonStructure
+    ));
     Ok(())
 }
 
@@ -98,7 +95,7 @@ fn read_prefixes_are_case_sensitive() -> Result<(), Box<dyn std::error::Error>> 
     }}"#,
     )?;
 
-    let stats = compute_stats(&model);
+    let stats = compute_stats(&model)?;
 
     assert_eq!(
         (
@@ -120,7 +117,7 @@ fn unknown_shapes_and_fields_do_not_add_counters() -> Result<(), Box<dyn std::er
     }}"#,
     )?;
 
-    assert_eq!(compute_stats(&model), ModelStats::default());
+    assert_eq!(compute_stats(&model)?, ModelStats::default());
     Ok(())
 }
 
@@ -158,26 +155,6 @@ fn rendering_is_the_complete_fixed_literal() -> Result<(), Box<dyn std::error::E
             "list_describe_root 6\nservices_with_root 7\npaginated 8\nresources 9\narn_templates 10\n",
             "members 11\ndistinct_member_names 12\njson_services 13\nxml_only_services 14\ncbor_services 15\n",
             "protocol aws.protocols#restJson1 17\nprotocol smithy.protocols#rpcv2Cbor 19\n"
-        )
-    );
-    Ok(())
-}
-
-#[test]
-fn comparison_preserves_every_line_and_terminator() -> Result<(), Box<dyn std::error::Error>> {
-    assert_eq!(
-        differences("a\nb\nc\n", "a \nb\r\nc\nextra\n")?,
-        concat!(
-            "line 1 differs: expected Some(\"a\\n\"), got Some(\"a \\n\")\n",
-            "line 2 differs: expected Some(\"b\\n\"), got Some(\"b\\r\\n\")\n",
-            "line 4 differs: expected None, got Some(\"extra\\n\")\n"
-        )
-    );
-    assert_eq!(
-        differences("a\nb\n", "a")?,
-        concat!(
-            "line 1 differs: expected Some(\"a\\n\"), got Some(\"a\")\n",
-            "line 2 differs: expected Some(\"b\\n\"), got None\n"
         )
     );
     Ok(())

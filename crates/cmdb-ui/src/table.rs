@@ -42,11 +42,11 @@ script_mod! {
     let TableEmpty = View{
         width: Fill height: 96
         align: Center
-        Label{
-            text: "No resources match the current filters"
-            draw_text.color: theme.color_text_meta
-            draw_text.text_style: theme.font_body_s
-        }
+            empty_text := Label{
+                text: "Loading inventory…"
+                draw_text.color: theme.color_text_meta
+                draw_text.text_style: theme.font_body_s
+            }
     }
 
     mod.widgets.ResourceTableBase = #(ResourceTable::register_widget(vm))
@@ -77,17 +77,17 @@ pub struct ResourceTable {
 }
 
 impl ResourceTable {
-    pub fn set_account(&mut self, cx: &mut Cx, account: Option<&'static str>) {
+    pub fn set_account(&mut self, cx: &mut Cx, account: Option<&str>) {
         self.data.set_account(account);
         self.view.redraw(cx);
     }
 
-    pub fn set_region(&mut self, cx: &mut Cx, region: Option<&'static str>) {
+    pub fn set_region(&mut self, cx: &mut Cx, region: Option<&str>) {
         self.data.set_region(region);
         self.view.redraw(cx);
     }
 
-    pub fn set_kind(&mut self, cx: &mut Cx, kind: Option<&'static str>) {
+    pub fn set_kind(&mut self, cx: &mut Cx, kind: Option<&str>) {
         self.data.set_kind(kind);
         self.view.redraw(cx);
     }
@@ -148,6 +148,9 @@ impl ResourceTable {
         }
     }
 
+    pub fn filter(&self) -> crate::data::Filter {
+        self.data.filter().clone()
+    }
     pub fn summary(&self) -> String {
         self.data.summary()
     }
@@ -156,39 +159,62 @@ impl ResourceTable {
         self.data.status_line()
     }
 
+    pub fn graph_status(&self) -> String {
+        self.data.graph_status()
+    }
+
     pub fn visible_len(&self) -> usize {
         self.data.visible_len()
     }
 
     pub fn selected_row(&self) -> Option<Row> {
-        self.data.selected_row().copied()
+        self.data.selected_row().cloned()
     }
 
-    pub fn account_filter(&self) -> Option<&'static str> {
+    pub fn account_filter(&self) -> Option<&str> {
         self.data.account_filter()
     }
 
-    pub fn region_filter(&self) -> Option<&'static str> {
+    pub fn region_filter(&self) -> Option<&str> {
         self.data.region_filter()
     }
 
-    pub fn kind_filter(&self) -> Option<&'static str> {
+    pub fn kind_filter(&self) -> Option<&str> {
         self.data.kind_filter()
     }
 
-    pub fn count(&self, kind: &str) -> usize {
-        self.data.kind_count(kind)
+    pub fn options(&self, facet: crate::data::Facet) -> Vec<String> {
+        self.data.options(facet)
     }
 
     pub fn graph(&self) -> crate::data::Graph {
-        self.data.graph()
+        self.data.visual_graph()
+    }
+
+    pub fn apply_page(&mut self, cx: &mut Cx, rows: Vec<Row>, total_matching: u64) {
+        self.data.replace_page(rows, total_matching);
+        self.view.redraw(cx);
+    }
+
+    pub fn apply_graph(&mut self, cx: &mut Cx, graph: crate::data::Graph, error: Option<String>) {
+        self.data.set_graph(graph, error);
+        self.view.redraw(cx);
+    }
+
+    pub fn set_counts(&mut self, counts: crate::data::Counts) {
+        self.data.set_counts(counts);
+    }
+
+    pub fn set_error(&mut self, error: Option<String>) {
+        self.data.set_error(error);
+    }
+
+    pub fn set_loading(&mut self, loading: bool) {
+        self.data.set_loading(loading);
     }
 
     pub fn select_id(&mut self, cx: &mut Cx, id: &str) -> bool {
-        let Some(index) = self.data.visible_index_of(id) else {
-            return false;
-        };
-        if !self.data.select_visible(index) {
+        if !self.data.select_key(id) {
             return false;
         }
         self.view.redraw(cx);
@@ -205,7 +231,7 @@ impl ResourceTable {
 
     fn draw_list(&mut self, cx: &mut Cx2d, list: &mut PortalList) {
         if self.data.visible_len() == 0 {
-            draw_empty(cx, list);
+            draw_empty(cx, list, &self.data.status_line());
         } else {
             self.draw_rows(cx, list);
         }
@@ -224,13 +250,13 @@ impl ResourceTable {
     }
 
     fn fill_row(&self, cx: &mut Cx2d, item: &WidgetRef, index: usize, row: &Row) {
-        item.label(cx, ids!(account)).set_text(cx, row.account);
-        item.label(cx, ids!(region)).set_text(cx, row.region);
-        item.label(cx, ids!(kind)).set_text(cx, row.kind);
-        item.label(cx, ids!(res_id)).set_text(cx, row.id);
-        item.label(cx, ids!(name)).set_text(cx, row.name);
+        item.label(cx, ids!(account)).set_text(cx, &row.account);
+        item.label(cx, ids!(region)).set_text(cx, &row.region);
+        item.label(cx, ids!(kind)).set_text(cx, &row.kind);
+        item.label(cx, ids!(res_id)).set_text(cx, &row.id);
+        item.label(cx, ids!(name)).set_text(cx, &row.name);
 
-        let selected = self.data.selected_row().is_some_and(|it| it.id == row.id);
+        let selected = self.data.selected_row().is_some_and(|it| it.key == row.key);
         let hovered = self.hover == Some(index) && !selected;
         item.view(cx, ids!(sel_mark)).set_visible(cx, selected);
         item.view(cx, ids!(hover_mark)).set_visible(cx, hovered);
@@ -249,10 +275,11 @@ impl ResourceTable {
     }
 }
 
-fn draw_empty(cx: &mut Cx2d, list: &mut PortalList) {
+fn draw_empty(cx: &mut Cx2d, list: &mut PortalList, status: &str) {
     list.set_item_range(cx, 0, 1);
     while let Some(item_id) = list.next_visible_item(cx) {
         let item = list.item(cx, item_id, id!(Empty));
+        item.label(cx, ids!(empty_text)).set_text(cx, status);
         item.draw_all_unscoped(cx);
     }
 }

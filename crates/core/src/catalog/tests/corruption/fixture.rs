@@ -31,6 +31,8 @@ fn service_fields(name: &str) -> Result<BTreeMap<Key, Value>, RecordError> {
     let Value::Map(mut fields) = service()? else {
         return Err(RecordError::NotMap);
     };
+    let shapes = shapes()?;
+    let shape_offsets = super::super::shape_offsets(&shapes)?;
     fields.insert(
         Key::Field(CatalogKey::Name.field()?),
         Value::Text(name.into()),
@@ -39,10 +41,8 @@ fn service_fields(name: &str) -> Result<BTreeMap<Key, Value>, RecordError> {
         Key::Field(CatalogKey::ServiceShape.field()?),
         Value::Text(format!("n#{name}")),
     );
-    fields.insert(
-        Key::Field(CatalogKey::Shapes.field()?),
-        Value::List(shapes()?),
-    );
+    fields.insert(Key::Field(CatalogKey::Shapes.field()?), Value::List(shapes));
+    fields.insert(Key::Field(CatalogKey::ShapeOffsets.field()?), shape_offsets);
     fields.insert(
         Key::Field(CatalogKey::Resources.field()?),
         Value::List(vec![Value::Text("Thing".into())]),

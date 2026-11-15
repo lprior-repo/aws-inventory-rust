@@ -6,14 +6,14 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-base16ct.workspace = true
-serde.workspace = true
-serde_json.workspace = true
-sha2.workspace = true
+inventory-core = { workspace = true, default-features = false }
+redis = { version = "1.8.1", features = ["tokio-rustls-comp"] }
+sqlx.workspace = true
 thiserror.workspace = true
+tokio.workspace = true
 
 [dev-dependencies]
-proptest.workspace = true
+tempfile = "3.27.0"
 
 [lints]
 workspace = true

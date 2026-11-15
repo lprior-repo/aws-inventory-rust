@@ -1,7 +1,12 @@
+#[path = "app/actions.rs"]
+mod actions;
+use actions::*;
+use makepad_widgets::makepad_platform::thread::SignalToUI;
 use makepad_widgets::*;
 
-use crate::data::{ACCOUNTS, KINDS, REGIONS};
+use crate::data::{Facet, Filter};
 use crate::table::ResourceTable;
+use crate::worker::{DataWorker, WorkerConfig, WorkerEvent};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 enum ViewMode {
@@ -16,6 +21,10 @@ pub struct App {
     ui: WidgetRef,
     #[rust]
     view_mode: ViewMode,
+    #[rust]
+    worker: Option<DataWorker>,
+    #[rust]
+    signal: SignalToUI,
 }
 
 impl App {
@@ -23,99 +32,78 @@ impl App {
         self.ui.widget(cx, ids!(table))
     }
 
-    fn set_account(&mut self, cx: &mut Cx, account: Option<&'static str>) {
-        let table_ref = self.table(cx);
-        {
-            let Some(mut table) = table_ref.borrow_mut::<ResourceTable>() else {
-                return;
-            };
-            table.set_account(cx, account);
-        }
-        self.refresh(cx);
+    fn filter(&self, cx: &mut Cx) -> Filter {
+        self.table(cx)
+            .borrow::<ResourceTable>()
+            .map_or_else(Filter::default, |table| table.filter())
     }
 
-    fn set_region(&mut self, cx: &mut Cx, region: Option<&'static str>) {
-        let table_ref = self.table(cx);
-        {
-            let Some(mut table) = table_ref.borrow_mut::<ResourceTable>() else {
-                return;
-            };
-            table.set_region(cx, region);
+    fn set_account(&mut self, cx: &mut Cx, account: Option<String>) {
+        let table = self.table(cx);
+        if let Some(mut table) = table.borrow_mut::<ResourceTable>() {
+            table.set_account(cx, account.as_deref());
         }
-        self.refresh(cx);
+        self.request_page(cx);
     }
 
-    fn set_kind(&mut self, cx: &mut Cx, kind: Option<&'static str>) {
-        let table_ref = self.table(cx);
-        {
-            let Some(mut table) = table_ref.borrow_mut::<ResourceTable>() else {
-                return;
-            };
-            table.set_kind(cx, kind);
+    fn set_region(&mut self, cx: &mut Cx, region: Option<String>) {
+        let table = self.table(cx);
+        if let Some(mut table) = table.borrow_mut::<ResourceTable>() {
+            table.set_region(cx, region.as_deref());
         }
-        self.refresh(cx);
+        self.request_page(cx);
+    }
+
+    fn set_kind(&mut self, cx: &mut Cx, kind: Option<String>) {
+        let table = self.table(cx);
+        if let Some(mut table) = table.borrow_mut::<ResourceTable>() {
+            table.set_kind(cx, kind.as_deref());
+        }
+        self.request_page(cx);
     }
 
     fn set_query(&mut self, cx: &mut Cx, query: &str) {
-        let table_ref = self.table(cx);
-        {
-            let Some(mut table) = table_ref.borrow_mut::<ResourceTable>() else {
-                return;
-            };
+        let table = self.table(cx);
+        if let Some(mut table) = table.borrow_mut::<ResourceTable>() {
             table.set_query(cx, query);
         }
-        self.refresh(cx);
+        self.request_page(cx);
     }
 
-    fn account_filter(&self, cx: &mut Cx) -> Option<&'static str> {
-        let table_ref = self.table(cx);
-        table_ref
-            .borrow::<ResourceTable>()
-            .and_then(|table| table.account_filter())
-    }
-
-    fn region_filter(&self, cx: &mut Cx) -> Option<&'static str> {
-        let table_ref = self.table(cx);
-        table_ref
-            .borrow::<ResourceTable>()
-            .and_then(|table| table.region_filter())
-    }
-
-    fn kind_filter(&self, cx: &mut Cx) -> Option<&'static str> {
-        let table_ref = self.table(cx);
-        table_ref
-            .borrow::<ResourceTable>()
-            .and_then(|table| table.kind_filter())
-    }
-
-    fn toggle_account(&mut self, cx: &mut Cx, account: &'static str) {
-        let active = self.account_filter(cx) == Some(account);
-        self.set_account(cx, if active { None } else { Some(account) });
-    }
-
-    fn toggle_region(&mut self, cx: &mut Cx, region: &'static str) {
-        let active = self.region_filter(cx) == Some(region);
-        self.set_region(cx, if active { None } else { Some(region) });
-    }
-
-    fn toggle_kind(&mut self, cx: &mut Cx, kind: &'static str) {
-        let active = self.kind_filter(cx) == Some(kind);
-        self.set_kind(cx, if active { None } else { Some(kind) });
-    }
-
-    fn reset_filters(&mut self, cx: &mut Cx) {
-        self.ui.text_input(cx, ids!(search_input)).set_text(cx, "");
-        let table_ref = self.table(cx);
+    fn request_page(&mut self, cx: &mut Cx) {
+        let filter = self.filter(cx);
+        let table = self.table(cx);
+        if let Some(mut table) = table.borrow_mut::<ResourceTable>() {
+            table.set_loading(true);
+        }
+        if let Some(worker) = &self.worker
+            && let Err(error) = worker.refresh(filter)
+            && let Some(mut table) = table.borrow_mut::<ResourceTable>()
         {
-            let Some(mut table) = table_ref.borrow_mut::<ResourceTable>() else {
-                return;
-            };
-            table.set_account(cx, None);
-            table.set_region(cx, None);
-            table.set_kind(cx, None);
-            table.set_query(cx, "");
+            table.set_error(Some(error));
         }
         self.refresh(cx);
+    }
+
+    fn request_expansion(&self, cx: &mut Cx) {
+        let Some(row) = self
+            .table(cx)
+            .borrow::<ResourceTable>()
+            .and_then(|table| table.selected_row())
+        else {
+            return;
+        };
+        if let Some(worker) = &self.worker {
+            let request = cmdb_view::GraphNode {
+                account: row.account,
+                region: row.region,
+                kind: row.kind,
+                id: row.id,
+            };
+            if let Err(error) = worker.expand(request) {
+                tracing::warn!(error = %error, "Unable to queue graph expansion");
+            }
+        }
     }
 
     fn refresh(&mut self, cx: &mut Cx) {
@@ -148,110 +136,165 @@ impl App {
         script_eval!(cx, { mod.state.graph_view = #(graph_flag) });
     }
 
+    fn facet_value(&self, cx: &mut Cx, facet: Facet, index: usize) -> Option<String> {
+        self.table(cx)
+            .borrow::<ResourceTable>()?
+            .options(facet)
+            .get(index)
+            .cloned()
+    }
+
+    fn toggle_account(&mut self, cx: &mut Cx, index: usize) {
+        let Some(account) = self.facet_value(cx, Facet::Account, index) else {
+            return;
+        };
+        let active = self.filter(cx).account == Some(account.clone());
+        self.set_account(cx, (!active).then_some(account));
+    }
+
+    fn toggle_region(&mut self, cx: &mut Cx, index: usize) {
+        let Some(region) = self.facet_value(cx, Facet::Region, index) else {
+            return;
+        };
+        let active = self.filter(cx).region == Some(region.clone());
+        self.set_region(cx, (!active).then_some(region));
+    }
+
+    fn toggle_kind(&mut self, cx: &mut Cx, index: usize) {
+        let Some(kind) = self.facet_value(cx, Facet::Kind, index) else {
+            return;
+        };
+        let active = self.filter(cx).kind == Some(kind.clone());
+        self.set_kind(cx, (!active).then_some(kind));
+    }
+
+    fn reset_filters(&mut self, cx: &mut Cx) {
+        self.ui.text_input(cx, ids!(search_input)).set_text(cx, "");
+        self.ui
+            .text_input(cx, ids!(account_filter_input))
+            .set_text(cx, "");
+        self.ui
+            .text_input(cx, ids!(region_filter_input))
+            .set_text(cx, "");
+        self.ui
+            .text_input(cx, ids!(kind_filter_input))
+            .set_text(cx, "");
+        let table = self.table(cx);
+        if let Some(mut table) = table.borrow_mut::<ResourceTable>() {
+            table.set_account(cx, None);
+            table.set_region(cx, None);
+            table.set_kind(cx, None);
+            table.set_query(cx, "");
+        }
+        self.request_page(cx);
+    }
+    fn start_worker(&mut self, cx: &mut Cx) {
+        self.worker = Some(DataWorker::start(
+            WorkerConfig::from_process_args(),
+            self.signal.clone(),
+        ));
+        if let Some(mut table) = self.table(cx).borrow_mut::<ResourceTable>() {
+            table.set_loading(true);
+        }
+        self.refresh(cx);
+    }
+
+    fn drain_worker(&mut self, cx: &mut Cx) {
+        let events = match &self.worker {
+            Some(worker) => worker.drain(),
+            None => Vec::new(),
+        };
+        events
+            .into_iter()
+            .for_each(|event| self.apply_worker_event(cx, event));
+    }
+
+    fn apply_worker_event(&mut self, cx: &mut Cx, event: WorkerEvent) {
+        match event {
+            WorkerEvent::Snapshot {
+                counts,
+                rows,
+                total,
+                error,
+            } => self.apply_snapshot(cx, counts, rows, total, error),
+            WorkerEvent::Graph { graph, error } => {
+                self.apply_graph_event(cx, graph, error);
+            }
+        }
+        self.refresh(cx);
+    }
+
+    fn apply_snapshot(
+        &mut self,
+        cx: &mut Cx,
+        counts: crate::data::Counts,
+        rows: Vec<crate::data::Row>,
+        total: u64,
+        error: Option<String>,
+    ) {
+        if let Some(mut table) = self.table(cx).borrow_mut::<ResourceTable>() {
+            table.set_loading(false);
+            table.set_error(error.clone());
+            if error.is_none() {
+                table.set_counts(counts);
+                table.apply_page(cx, rows, total);
+            }
+        }
+        if error.is_none() {
+            self.request_expansion(cx);
+        }
+    }
+
+    fn apply_graph_event(&mut self, cx: &mut Cx, graph: crate::data::Graph, error: Option<String>) {
+        if let Some(mut table) = self.table(cx).borrow_mut::<ResourceTable>() {
+            table.apply_graph(cx, graph, error);
+        }
+    }
+
     fn handle_accounts(&mut self, cx: &mut Cx, actions: &Actions) {
-        let [prod, staging, sandbox] = ACCOUNTS;
         if self.ui.button(cx, ids!(prod_button)).clicked(actions) {
-            self.toggle_account(cx, prod);
+            self.toggle_account(cx, 0);
         }
         if self.ui.button(cx, ids!(staging_button)).clicked(actions) {
-            self.toggle_account(cx, staging);
+            self.toggle_account(cx, 1);
         }
         if self.ui.button(cx, ids!(sandbox_button)).clicked(actions) {
-            self.toggle_account(cx, sandbox);
+            self.toggle_account(cx, 2);
         }
     }
 
     fn handle_regions(&mut self, cx: &mut Cx, actions: &Actions) {
-        let [us_east, eu_west] = REGIONS;
         if self.ui.button(cx, ids!(useast_button)).clicked(actions) {
-            self.toggle_region(cx, us_east);
+            self.toggle_region(cx, 0);
         }
         if self.ui.button(cx, ids!(euwest_button)).clicked(actions) {
-            self.toggle_region(cx, eu_west);
+            self.toggle_region(cx, 1);
         }
     }
 
     fn handle_kinds(&mut self, cx: &mut Cx, actions: &Actions) {
-        let [ec2, s3, rds, lambda] = KINDS;
         if self.ui.button(cx, ids!(ec2_button)).clicked(actions) {
-            self.toggle_kind(cx, ec2);
+            self.toggle_kind(cx, 0);
         }
         if self.ui.button(cx, ids!(s3_button)).clicked(actions) {
-            self.toggle_kind(cx, s3);
+            self.toggle_kind(cx, 1);
         }
         if self.ui.button(cx, ids!(rds_button)).clicked(actions) {
-            self.toggle_kind(cx, rds);
+            self.toggle_kind(cx, 2);
         }
         if self.ui.button(cx, ids!(lambda_button)).clicked(actions) {
-            self.toggle_kind(cx, lambda);
+            self.toggle_kind(cx, 3);
         }
     }
 
     fn handle_row_clicks(&mut self, cx: &mut Cx, actions: &Actions) {
-        let table_ref = self.table(cx);
-        let changed = match table_ref.borrow_mut::<ResourceTable>() {
-            Some(mut table) => table.apply_actions(cx, actions),
-            None => false,
-        };
+        let changed = self
+            .table(cx)
+            .borrow_mut::<ResourceTable>()
+            .is_some_and(|mut table| table.apply_actions(cx, actions));
         if changed {
+            self.request_expansion(cx);
             self.refresh(cx);
         }
     }
-}
-
-impl MatchEvent for App {
-    fn handle_startup(&mut self, cx: &mut Cx) {
-        self.refresh(cx);
-    }
-
-    fn handle_actions(&mut self, cx: &mut Cx, actions: &Actions) {
-        if self.ui.button(cx, ids!(table_tab)).clicked(actions) {
-            self.set_view_mode(cx, ViewMode::Table);
-        }
-        if self.ui.button(cx, ids!(graph_tab)).clicked(actions) {
-            self.set_view_mode(cx, ViewMode::Graph);
-        }
-        if self.ui.button(cx, ids!(all_button)).clicked(actions) {
-            self.reset_filters(cx);
-        }
-        self.handle_accounts(cx, actions);
-        self.handle_regions(cx, actions);
-        self.handle_kinds(cx, actions);
-
-        if let Some(text) = self.ui.text_input(cx, ids!(search_input)).changed(actions) {
-            self.set_query(cx, &text);
-        }
-        self.handle_row_clicks(cx, actions);
-
-        if let Some(id) = crate::graph_view::click_id(&self.ui, cx, actions) {
-            crate::graph_view::apply_selection(&self.ui, cx, id.as_deref());
-            self.refresh(cx);
-        }
-    }
-}
-
-impl AppMain for App {
-    fn script_mod(vm: &mut ScriptVm) -> ScriptValue {
-        crate::makepad_widgets::script_mod(vm);
-        crate::table::script_mod(vm);
-        crate::dag::script_mod(vm);
-        crate::templates::script_mod(vm);
-        if !vm.is_reload() {
-            script_eval!(vm, { mod.state = {visible_count: 0 graph_view: 0} true });
-        }
-        crate::ui::script_mod(vm)
-    }
-
-    fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
-        self.match_event(cx, event);
-        self.ui.handle_event(cx, event, &mut Scope::empty());
-    }
-}
-
-fn highlight_tab(cx: &mut Cx, mut button: ButtonRef) {
-    script_apply_eval!(cx, button, { draw_text +: { color: mod.theme.color_text_hl } });
-}
-
-fn dim_tab(cx: &mut Cx, mut button: ButtonRef) {
-    script_apply_eval!(cx, button, { draw_text +: { color: mod.theme.color_text_meta } });
 }

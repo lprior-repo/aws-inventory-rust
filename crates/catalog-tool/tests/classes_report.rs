@@ -1,6 +1,9 @@
 mod classes_support;
 
-use catalog_tool::classes::{Error, ReportMode, build_report, run};
+use catalog_tool::{
+    ReportMode,
+    classes::{Error, build_report, run},
+};
 use classes_support::{REPORT, fixture, write};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -92,10 +95,10 @@ fn model_error_leaves_a_preexisting_report_intact() -> TestResult {
     write(dir.path(), COMMITTED, "preserve\n")?;
     write(dir.path(), "models/z-last/service/v1/bad.json", "{")?;
     let error = run(dir.path(), dir.path(), ReportMode::Write).err();
-    assert!(
-        matches!(error, Some(Error::Model(catalog_tool::smithy::Error::InvalidJson { file, .. }))
-        if file.ends_with("bad.json"))
-    );
+    assert!(matches!(
+        error,
+        Some(Error::ModelSource(source)) if source.to_string().contains("bad.json")
+    ));
     assert_eq!(
         std::fs::read_to_string(dir.path().join(COMMITTED))?,
         "preserve\n"
@@ -127,8 +130,12 @@ fn unmatched_entry_leaves_a_preexisting_report_intact() -> TestResult {
 fn missing_report_is_a_named_io_error() -> TestResult {
     let dir = fixture()?;
     let error = run(dir.path(), dir.path(), ReportMode::Check).err();
-    assert!(matches!(error, Some(Error::Io { file, source })
-        if file == dir.path().join(COMMITTED) && source.kind() == std::io::ErrorKind::NotFound));
+    assert!(matches!(
+        error,
+        Some(Error::Report(catalog_tool::ReportError::Io { file, source }))
+            if file == dir.path().join(COMMITTED)
+                && source.kind() == std::io::ErrorKind::NotFound
+    ));
     Ok(())
 }
 
@@ -153,7 +160,7 @@ fn no_models_is_not_a_successful_empty_inventory() -> TestResult {
     write(dir.path(), "catalog/overlay/must-deny.txt", "")?;
     assert!(matches!(
         build_report(dir.path(), dir.path()),
-        Err(Error::Model(catalog_tool::smithy::Error::NoModels))
+        Err(Error::ModelSource(_))
     ));
     Ok(())
 }
@@ -193,7 +200,8 @@ fn check_rejects_a_single_changed_byte_without_writing() -> TestResult {
     write(dir.path(), COMMITTED, &changed)?;
     assert!(matches!(
         run(dir.path(), dir.path(), ReportMode::Check),
-        Err(Error::ReportMismatch(_))
+        Err(Error::Report(catalog_tool::ReportError::Mismatch(actual)))
+            if actual == "line 2 differs: expected Some(\"operations 10\\n\"), got Some(\"operations 11\\n\")\n"
     ));
     assert_eq!(
         std::fs::read_to_string(dir.path().join(COMMITTED))?,
@@ -211,7 +219,8 @@ fn check_rejects_a_missing_final_newline_without_writing() -> TestResult {
     write(dir.path(), COMMITTED, changed)?;
     assert!(matches!(
         run(dir.path(), dir.path(), ReportMode::Check),
-        Err(Error::ReportMismatch(_))
+        Err(Error::Report(catalog_tool::ReportError::Mismatch(actual)))
+            if actual == "line 17 differs: expected Some(\"service beta 1 0 4 0\\n\"), got Some(\"service beta 1 0 4 0\")\n"
     ));
     assert_eq!(
         std::fs::read_to_string(dir.path().join(COMMITTED))?,

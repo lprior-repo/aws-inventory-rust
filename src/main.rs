@@ -8,6 +8,8 @@ mod analysis;
 mod architecture;
 mod catalog;
 mod cli;
+mod command_output;
+use command_output::{CommandOutput, execute, output};
 mod coverage;
 mod delivery;
 mod demo;
@@ -17,6 +19,9 @@ mod plan;
 mod report;
 #[cfg(feature = "aws")]
 mod scan;
+mod sweep_command;
+#[cfg(feature = "aws")]
+mod sweep_runtime;
 mod targets;
 
 use anyhow::{Context, Result};
@@ -24,7 +29,6 @@ use cli::Command;
 use futures_util::future::BoxFuture;
 use inventory_engine::{graph, store::Store};
 use serde_json::Value;
-use std::io::Write;
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
@@ -37,40 +41,8 @@ fn main() -> ExitCode {
     }
 }
 
-fn execute(command: Command) -> Result<Value> {
-    tracing_subscriber::fmt()
-        .with_writer(std::io::stderr)
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "warn".into()),
-        )
-        .try_init()
-        .map_err(|error| anyhow::anyhow!("logging initialization: {error}"))?;
-    let runtime = tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()?;
-    runtime.block_on(dispatch(command))
-}
-
-fn output(value: Value) -> ExitCode {
-    let mut stdout = std::io::stdout().lock();
-    let result = serde_json::to_writer_pretty(&mut stdout, &value)
-        .map_err(std::io::Error::other)
-        .and_then(|()| stdout.write_all(b"\n"));
-    if let Err(error) = result {
-        eprintln!("output error: {error}");
-        return ExitCode::FAILURE;
-    }
-    match value.get("status").and_then(Value::as_str) {
-        Some(status @ ("partial" | "cancelled")) => {
-            eprintln!("scan status is {status}: the report on standard output lists what failed");
-            ExitCode::from(2)
-        }
-        _ => ExitCode::SUCCESS,
-    }
-}
-
-fn dispatch(command: Command) -> BoxFuture<'static, Result<Value>> {
-    match command {
+fn dispatch(command: Command) -> BoxFuture<'static, Result<CommandOutput>> {
+    let legacy: BoxFuture<'static, Result<Value>> = match command {
         Command::Catalog { .. } => Box::pin(std::future::ready(plan::full_catalog())),
         Command::Coverage {
             service,
@@ -137,7 +109,14 @@ fn dispatch(command: Command) -> BoxFuture<'static, Result<Value>> {
             attempts,
         } => Box::pin(push_graph(input, checkpoint, url_env, attempts)),
         Command::Scan(options) => Box::pin(run_scan(options)),
-    }
+        Command::Sweep(options) => {
+            return Box::pin(async move {
+                let code = sweep_command::run(options).await?;
+                Ok(CommandOutput::Native(code))
+            });
+        }
+    };
+    Box::pin(async move { legacy.await.map(CommandOutput::Legacy) })
 }
 
 fn plan_command(options: cli::PlanArgs) -> Result<Value> {

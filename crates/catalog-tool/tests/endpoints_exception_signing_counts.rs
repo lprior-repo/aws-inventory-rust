@@ -33,7 +33,7 @@ fn signing_name_only_and_signing_region_only_differences_are_each_exceptions() -
     ]);
     let derived = verified(&document, cases, "svc-sign")?;
     assert_eq!(
-        derived.exceptions,
+        derived.exceptions().to_vec(),
         vec![
             EndpointException {
                 region: "af-south-1".into(),
@@ -62,7 +62,7 @@ fn duplicate_exception_cases_outvote_one_match_but_emit_exactly_one_exception_ro
     ]);
     let derived = verified(&document, cases.clone(), "repeated-sign")?;
     assert!(matches!(
-        derived.endpoint,
+        derived.endpoint(),
         DerivedEndpoint::NeedsOverlayRouting {
             matches: 1,
             exceptions: 2,
@@ -70,7 +70,7 @@ fn duplicate_exception_cases_outvote_one_match_but_emit_exactly_one_exception_ro
         }
     ));
     assert_eq!(
-        derived.exceptions,
+        derived.exceptions().to_vec(),
         vec![EndpointException {
             region: "af-south-1".into(),
             url: "https://special.test".into(),

@@ -23,6 +23,7 @@ shape!(Root {
 shape!(Operation {
     class,
     deny_reason,
+    defer_reason,
     scope,
     items,
     page_size,

@@ -9,7 +9,7 @@ script_mod! {
     startup() do #(App::script_component(vm)){
         ui: Root{
             main_window := Window{
-                window.title: "CMDB Viewer — synthetic fleet"
+                window.title: "CMDB Inventory Viewer"
                 window.inner_size: vec2(1440, 900)
                 pass.clear_color: theme.color_bg_app
                 body +: {
@@ -39,7 +39,7 @@ script_mod! {
                                 height: Fit
                                 max_lines: 1
                                 text_overflow: Ellipsis
-                                text: "3 accounts · 24 resources · 2 regions · 4 kinds · synthetic fixture"
+                                text: "Loading inventory…"
                                 draw_text.color: theme.color_text_meta
                                 draw_text.text_style: theme.font_body_s
                             }
@@ -121,11 +121,16 @@ script_mod! {
                                 lambda_button := FilterChip{text: "lambda"}
                                 lambda_count := Label{width: 16 height: Fit text: "" draw_text.color: theme.color_text_meta draw_text.text_style: theme.font_code}
                             }
+                            View{width: Fill height: theme.space_3}
+                            SectionLabel{text: "EXACT FILTERS"}
+                            account_filter_input := TextInput{width: Fill height: 32 empty_text: "Account ID"}
+                            region_filter_input := TextInput{width: Fill height: 32 empty_text: "Region"}
+                            kind_filter_input := TextInput{width: Fill height: 32 empty_text: "Resource kind"}
 
                             Filler{}
                             Label{
                                 width: Fill height: Fit
-                                text: "Embedded fixture · no AWS calls"
+                                text: "Read-only inventory · graph expansion optional"
                                 draw_text.color: theme.color_text_placeholder
                                 draw_text.text_style: theme.font_body_s
                             }
@@ -260,7 +265,7 @@ script_mod! {
                             Filler{}
                             Label{
                                 width: Fill height: Fit
-                                text: "Embedded synthetic fixture · no AWS calls"
+                                text: "Schema14 inventory · read-only"
                                 draw_text.color: theme.color_text_placeholder
                                 draw_text.text_style: theme.font_body_s
                             }

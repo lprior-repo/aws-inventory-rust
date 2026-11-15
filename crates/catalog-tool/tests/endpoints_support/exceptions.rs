@@ -87,10 +87,10 @@ pub fn verified(
     let cases: Vec<Case> = serde_json::from_value(cases)?;
     let counts = parsed.run_cases(&cases)?;
     assert_eq!(
-        (counts.in_scope, counts.passed, counts.failed),
+        (counts.in_scope(), counts.passed(), counts.failed()),
         (cases.len(), cases.len(), 0)
     );
-    Ok(counts.derive(&parsed, Some(name))?)
+    Ok(counts.derive(Some(name))?)
 }
 
 pub const REPORT: &str = concat!(

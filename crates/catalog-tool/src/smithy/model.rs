@@ -7,6 +7,7 @@ use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 pub(super) struct ModelFile {
+    #[serde(deserialize_with = "crate::model_source::unique_map")]
     pub shapes: BTreeMap<String, Shape>,
 }
 
@@ -33,11 +34,11 @@ pub(super) enum ShapeKind {
         output: Option<Target>,
     },
     Structure {
-        #[serde(default)]
+        #[serde(default, deserialize_with = "crate::model_source::unique_map")]
         members: BTreeMap<String, Member>,
     },
     Union {
-        #[serde(default)]
+        #[serde(default, deserialize_with = "crate::model_source::unique_map")]
         members: BTreeMap<String, Member>,
     },
     Resource,
@@ -94,4 +95,30 @@ pub(super) struct Target {
 }
 pub(super) fn validate_shape_traits(shape: &Shape) -> Result<(), String> {
     traits::validate_shape(shape)
+}
+
+impl crate::model_source::InputModel for ModelFile {
+    fn structure(&self, target: &str) -> Option<bool> {
+        self.shapes
+            .get(target)
+            .map(|shape| matches!(&shape.kind, ShapeKind::Structure { .. }))
+    }
+
+    fn mixins<'a>(&'a self, target: &str, visit: &mut dyn FnMut(&'a str)) {
+        if let Some(shape) = self.shapes.get(target) {
+            shape.mixins.iter().for_each(|mixin| visit(&mixin.target));
+        }
+    }
+
+    fn members<'a>(&'a self, target: &str, visit: &mut dyn FnMut(&'a str, bool)) {
+        if let Some(Shape {
+            kind: ShapeKind::Structure { members },
+            ..
+        }) = self.shapes.get(target)
+        {
+            members.iter().for_each(|(name, member)| {
+                visit(name, member.traits.contains_key("smithy.api#required"));
+            });
+        }
+    }
 }

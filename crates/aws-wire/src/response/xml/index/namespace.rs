@@ -107,7 +107,7 @@ impl Query<'_> {
     }
 
     fn check(&self, uri: &str) -> Result<(), DecodeError> {
-        if uri == self.expected {
+        if uri.trim_end_matches('/') == self.expected.trim_end_matches('/') {
             Ok(())
         } else {
             Err(DecodeError::Invalid("XML namespace"))

@@ -48,8 +48,8 @@ fn bootstrap_deduplicates_structure_union_and_reversed_models()
     write_fixture(second.path(), "models/a.json", MODEL_B)?;
     write_fixture(second.path(), "models/z.json", MODEL_A)?;
 
-    success(&fields(first.path(), &["--write"])?, "field-ids 3 (+3)\n");
-    success(&fields(second.path(), &["--write"])?, "field-ids 3 (+3)\n");
+    success_silent(&fields(first.path(), &["--write"])?);
+    success_silent(&fields(second.path(), &["--write"])?);
     assert_eq!(read_registry(first.path())?, "Age\nEmail\nName\n");
     assert_eq!(read_registry(second.path())?, "Age\nEmail\nName\n");
     Ok(())
@@ -58,7 +58,7 @@ fn bootstrap_deduplicates_structure_union_and_reversed_models()
 #[test]
 fn second_write_preserves_bytes_and_modification_time() -> Result<(), Box<dyn std::error::Error>> {
     let root = field_fixture()?;
-    success(&fields(root.path(), &["--write"])?, "field-ids 3 (+3)\n");
+    success_silent(&fields(root.path(), &["--write"])?);
     let file = std::fs::File::open(registry_path(root.path()))?;
     let old = std::time::UNIX_EPOCH
         .checked_add(std::time::Duration::from_secs(1))
@@ -66,20 +66,20 @@ fn second_write_preserves_bytes_and_modification_time() -> Result<(), Box<dyn st
     file.set_times(std::fs::FileTimes::new().set_modified(old))?;
     let before = file.metadata()?.modified()?;
 
-    success(&fields(root.path(), &["--write"])?, "field-ids 3 (+0)\n");
+    success_silent(&fields(root.path(), &["--write"])?);
     assert_eq!(read_registry(root.path())?, "Age\nEmail\nName\n");
     assert_eq!(
         std::fs::metadata(registry_path(root.path()))?.modified()?,
         before
     );
-    success(&fields(root.path(), &["--check"])?, "field-ids 3 (+0)\n");
+    success_silent(&fields(root.path(), &["--check"])?);
     Ok(())
 }
 
 #[test]
 fn check_names_new_member_without_writing() -> Result<(), Box<dyn std::error::Error>> {
     let root = field_fixture()?;
-    success(&fields(root.path(), &["--write"])?, "field-ids 3 (+3)\n");
+    success_silent(&fields(root.path(), &["--write"])?);
     write_fixture(root.path(), "models/a.json", ADDED)?;
 
     failure(
@@ -98,25 +98,25 @@ fn check_names_new_member_without_writing() -> Result<(), Box<dyn std::error::Er
 fn write_appends_earlier_name_and_subsequent_writes_preserve_history()
 -> Result<(), Box<dyn std::error::Error>> {
     let root = field_fixture()?;
-    success(&fields(root.path(), &["--write"])?, "field-ids 3 (+3)\n");
+    success_silent(&fields(root.path(), &["--write"])?);
     write_fixture(root.path(), "models/a.json", ADDED)?;
 
-    success(&fields(root.path(), &["--write"])?, "field-ids 4 (+1)\n");
+    success_silent(&fields(root.path(), &["--write"])?);
     assert_eq!(read_registry(root.path())?, "Age\nEmail\nName\nAardvark\n");
-    success(&fields(root.path(), &["--write"])?, "field-ids 4 (+0)\n");
-    success(&fields(root.path(), &["--check"])?, "field-ids 4 (+0)\n");
+    success_silent(&fields(root.path(), &["--write"])?);
+    success_silent(&fields(root.path(), &["--check"])?);
     Ok(())
 }
 
 #[test]
 fn removing_member_retains_its_line_and_check_passes() -> Result<(), Box<dyn std::error::Error>> {
     let root = field_fixture()?;
-    success(&fields(root.path(), &["--write"])?, "field-ids 3 (+3)\n");
+    success_silent(&fields(root.path(), &["--write"])?);
     write_fixture(root.path(), "models/a.json", MODEL_B)?;
 
-    success(&fields(root.path(), &["--write"])?, "field-ids 3 (+0)\n");
+    success_silent(&fields(root.path(), &["--write"])?);
     assert_eq!(read_registry(root.path())?, "Age\nEmail\nName\n");
-    success(&fields(root.path(), &["--check"])?, "field-ids 3 (+0)\n");
+    success_silent(&fields(root.path(), &["--check"])?);
     Ok(())
 }
 
@@ -253,7 +253,7 @@ fn print_extends_existing_history_without_mutating_it() -> Result<(), Box<dyn st
 #[test]
 fn generated_lines_have_exact_bidirectional_ids() -> Result<(), Box<dyn std::error::Error>> {
     let root = field_fixture()?;
-    success(&fields(root.path(), &["--write"])?, "field-ids 3 (+3)\n");
+    success_silent(&fields(root.path(), &["--write"])?);
     let registry = catalog_tool::smithy::Registry::parse(&read_registry(root.path())?)?;
     let first = inventory_core::record::FieldId::new(1)?;
     let last = inventory_core::record::FieldId::new(3)?;

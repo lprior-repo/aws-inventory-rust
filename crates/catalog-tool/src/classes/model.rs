@@ -6,6 +6,7 @@ pub(crate) type Traits = BTreeMap<String, IgnoredAny>;
 
 #[derive(Debug, Deserialize)]
 pub(crate) struct Model {
+    #[serde(deserialize_with = "crate::model_source::unique_map")]
     pub(crate) shapes: BTreeMap<String, Shape>,
 }
 
@@ -19,7 +20,7 @@ pub(crate) enum Shape {
         traits: Traits,
     },
     Structure {
-        #[serde(default)]
+        #[serde(default, deserialize_with = "crate::model_source::unique_map")]
         members: BTreeMap<String, Member>,
         #[serde(default)]
         mixins: Vec<Target>,
@@ -47,12 +48,20 @@ impl Model {
             .filter(|s| matches!(s, Shape::Service))
             .count()
         {
-            0 => Err(crate::smithy::Error::NoService(file.to_path_buf()).into()),
-            1 => Ok(()),
-            _ => Err(crate::smithy::Error::SeveralServices(file.to_path_buf()).into()),
+            0 => return Err(crate::smithy::Error::NoService(file.to_path_buf()).into()),
+            1 => {}
+            _ => return Err(crate::smithy::Error::SeveralServices(file.to_path_buf()).into()),
         }
+        self.operations("")
+            .try_for_each(|facts| facts.map(|_| ()))
+            .map_err(|error| match error {
+                Error::InputResolution(source) => Error::InvalidInput {
+                    file: file.to_path_buf(),
+                    source,
+                },
+                other => other,
+            })
     }
-
     pub fn operations<'a>(
         &'a self,
         service: &'a str,
@@ -81,42 +90,21 @@ impl Model {
         })
     }
 
-    fn required(&self, input: &Option<Target>, service: &str, name: &str) -> Result<bool, Error> {
-        let Some(input) = input.as_ref().filter(|i| i.target != "smithy.api#Unit") else {
-            return Ok(false);
-        };
-        let members = self.input_members(&input.target, service, name)?;
-        Ok(!crate::smithy::input_has_no_required(
-            members
-                .values()
-                .map(|m| m.traits.contains_key("smithy.api#required")),
-        ))
-    }
-
-    fn input_members(
+    fn required(
         &self,
-        target: &str,
+        input: &Option<Target>,
         service: &str,
-        name: &str,
-    ) -> Result<&BTreeMap<String, Member>, Error> {
-        let Some(Shape::Structure { members, mixins }) = self.shapes.get(target) else {
-            return Err(invalid_input(service, name, target));
-        };
-        if !mixins.is_empty() {
-            return Err(Error::MixinsNotResolved {
-                service: service.to_owned(),
-                operation: name.to_owned(),
-            });
-        }
-        Ok(members)
-    }
-}
-
-fn invalid_input(service: &str, name: &str, target: &str) -> Error {
-    Error::InvalidInput {
-        service: service.to_owned(),
-        operation: name.to_owned(),
-        target: target.to_owned(),
+        operation: &str,
+    ) -> Result<bool, Error> {
+        crate::model_source::resolve_input(
+            self,
+            crate::model_source::InputSpec {
+                service,
+                operation,
+                target: input.as_ref().map(|input| input.target.as_str()),
+            },
+        )
+        .map_err(Error::InputResolution)
     }
 }
 
@@ -128,11 +116,27 @@ fn operation_name(id: &str) -> &str {
 }
 
 pub(crate) fn service<'a>(models: &Path, file: &'a Path) -> Result<&'a str, Error> {
-    file.strip_prefix(models)
-        .ok()
-        .and_then(|p| p.parent())
-        .filter(|p| !p.as_os_str().is_empty())
-        .and_then(|p| p.components().next())
-        .and_then(|c| c.as_os_str().to_str())
-        .ok_or_else(|| Error::InvalidModelPath(file.to_path_buf()))
+    crate::model_source::service_name(models, file).map_err(Error::from)
+}
+
+impl crate::model_source::InputModel for Model {
+    fn structure(&self, target: &str) -> Option<bool> {
+        self.shapes
+            .get(target)
+            .map(|shape| matches!(shape, Shape::Structure { .. }))
+    }
+
+    fn mixins<'a>(&'a self, target: &str, visit: &mut dyn FnMut(&'a str)) {
+        if let Some(Shape::Structure { mixins, .. }) = self.shapes.get(target) {
+            mixins.iter().for_each(|mixin| visit(&mixin.target));
+        }
+    }
+
+    fn members<'a>(&'a self, target: &str, visit: &mut dyn FnMut(&'a str, bool)) {
+        if let Some(Shape::Structure { members, .. }) = self.shapes.get(target) {
+            members.iter().for_each(|(name, member)| {
+                visit(name, member.traits.contains_key("smithy.api#required"));
+            });
+        }
+    }
 }

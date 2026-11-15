@@ -1,7 +1,6 @@
 use std::fs;
 
-use super::{Error, find_model_files_within, read_bounded};
-
+use crate::model_source::{self, Error};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 #[test]
@@ -10,7 +9,7 @@ fn a_file_of_exactly_the_limit_is_read_whole() -> TestResult {
     let path = dir.path().join("model.json");
     fs::write(&path, b"12345678")?;
 
-    assert_eq!(read_bounded(&path, 8)?, b"12345678");
+    assert_eq!(model_source::read_json::<u64>(&path, 8)?, 12_345_678);
     Ok(())
 }
 
@@ -20,7 +19,10 @@ fn one_byte_past_the_limit_is_rejected_by_the_read_itself() -> TestResult {
     let path = dir.path().join("model.json");
     fs::write(&path, b"123456789")?;
 
-    assert!(matches!(read_bounded(&path, 8), Err(Error::FileTooLarge(file)) if file == path));
+    assert!(matches!(
+        model_source::read_json::<u64>(&path, 8),
+        Err(Error::TooLarge { file, limit: 8 }) if file == path
+    ));
     Ok(())
 }
 
@@ -33,7 +35,7 @@ fn discovery_visits_exactly_its_entry_budget_and_sorts_the_models() -> TestResul
     fs::write(dir.path().join("nested/c.json"), "{}")?;
     fs::write(dir.path().join("notes.txt"), "")?;
 
-    let files = find_model_files_within(dir.path(), 5)?;
+    let files = model_source::discover(dir.path(), 5)?;
     assert_eq!(
         files,
         vec![
@@ -44,7 +46,7 @@ fn discovery_visits_exactly_its_entry_budget_and_sorts_the_models() -> TestResul
     );
 
     assert!(matches!(
-        find_model_files_within(dir.path(), 4),
+        model_source::discover(dir.path(), 4),
         Err(Error::TooManyEntries { limit: 4, .. })
     ));
     Ok(())
@@ -58,10 +60,10 @@ fn empty_directories_consume_the_budget_too() -> TestResult {
         .try_for_each(|name| fs::create_dir(dir.path().join(name)))?;
 
     assert!(matches!(
-        find_model_files_within(dir.path(), 2),
+        model_source::discover(dir.path(), 2),
         Err(Error::TooManyEntries { directory, limit: 2 }) if directory == dir.path()
     ));
 
-    assert!(find_model_files_within(dir.path(), 3)?.is_empty());
+    assert!(model_source::discover(dir.path(), 3)?.is_empty());
     Ok(())
 }

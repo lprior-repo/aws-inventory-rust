@@ -11,7 +11,8 @@ pub const REPORT: &str = concat!(
     "services_with_exceptions 0\nexceptions 0\n",
     "service global global https://global.example global-sign us-east-1\n",
     "service regional regional https://regional.{region}.example regional-sign {region}\n",
-    "unsupported_case regional 8 parseURL\n"
+    "unsupported_case regional 8 parseURL\n",
+    "case_failure regional 1 \"actual outcome differs from expected outcome\"\n"
 );
 
 pub fn fixture() -> Result<tempfile::TempDir, Box<dyn std::error::Error>> {

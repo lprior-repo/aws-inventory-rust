@@ -64,14 +64,20 @@ fn case_comparison_protects_url_properties_headers_and_error_text_independently(
     ];
     for mismatch in mismatches {
         let counts = parsed.run_cases(&comparison_cases(expected.clone(), mismatch, false)?)?;
-        assert_eq!((counts.in_scope, counts.passed, counts.failed), (2, 1, 1));
+        assert_eq!(
+            (counts.in_scope(), counts.passed(), counts.failed()),
+            (2, 1, 1)
+        );
     }
     let counts = parsed.run_cases(&comparison_cases(
         json!({"error":"actual error"}),
         json!({"error":"wrong error"}),
         true,
     )?)?;
-    assert_eq!((counts.in_scope, counts.passed, counts.failed), (2, 1, 1));
+    assert_eq!(
+        (counts.in_scope(), counts.passed(), counts.failed()),
+        (2, 1, 1)
+    );
     Ok(())
 }
 

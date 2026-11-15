@@ -2,7 +2,7 @@ mod operation;
 mod shape;
 mod wire;
 use super::{CatalogError, CatalogKey, integer, list, map_value, text};
-use crate::record::{ListRef, MapRef, ValueRef};
+use crate::record::{ListRef, MapRef, ValueRef, read_one};
 pub use operation::{CompressionAlgorithm, HttpOperation, Operation, Paginator};
 pub use shape::{ErrorKind, Member, ModeledError, Shape, Target};
 pub(super) use wire::field_name;
@@ -12,6 +12,8 @@ pub use wire::{HttpBinding, TimestampFormat, WireTraits, XmlNamespace};
 pub struct Service<'a> {
     map: MapRef<'a>,
     shape_count: usize,
+    shapes_bytes: &'a [u8],
+    shape_offsets: &'a [u8],
     field_names: &'a [u8],
     field_offsets: &'a [u8],
 }
@@ -22,15 +24,19 @@ impl<'a> Service<'a> {
         field_offsets: &'a [u8],
     ) -> Result<Self, CatalogError> {
         let map = MapRef::from_bytes_bounded(bytes)?;
-        let shape_count = list(map, CatalogKey::Shapes)?
-            .iter()?
-            .try_fold(0usize, |n, item| {
-                item?;
-                n.checked_add(1).ok_or(CatalogError::Overflow)
-            })?;
+        let shapes = list(map, CatalogKey::Shapes)?;
+        let shapes_storage = shapes.encoded_storage();
+        let offsets = match map.get_field(CatalogKey::ShapeOffsets.field()?)? {
+            Some(ValueRef::Bytes(bytes)) => bytes,
+            _ => return Err(CatalogError::Field(CatalogKey::ShapeOffsets)),
+        };
+        let (shape_count, shapes_bytes) =
+            validate_shapes(shapes, shapes_storage, offsets, field_names, field_offsets)?;
         let service = Self {
             map,
             shape_count,
+            shapes_bytes,
+            shape_offsets: offsets,
             field_names,
             field_offsets,
         };
@@ -50,7 +56,6 @@ impl<'a> Service<'a> {
         self.wire()?.validate()?;
         self.aws_query_compatible()?;
         self.operations()?.try_for_each(|item| item?.validate())?;
-        self.shapes()?.try_for_each(|item| item?.validate())?;
         Ok(())
     }
 
@@ -134,19 +139,118 @@ impl<'a> Service<'a> {
     }
 
     pub fn shape(self, index: usize) -> Result<Option<Shape<'a>>, CatalogError> {
-        list(self.map, CatalogKey::Shapes)?
-            .get(index)?
-            .map(|value| {
-                Shape::new(
-                    map_value(value)?,
-                    self.shape_count,
-                    self.field_names,
-                    self.field_offsets,
-                )
-            })
-            .transpose()
+        let Some(encoded) = indexed_shape_bytes(
+            self.shape_offsets,
+            self.shapes_bytes,
+            self.shape_count,
+            index,
+        )?
+        else {
+            return Ok(None);
+        };
+        let (value, consumed) = read_one(encoded)?;
+        if consumed != encoded.len() {
+            return Err(CatalogError::Reference);
+        }
+        Shape::new(
+            map_value(value)?,
+            self.shape_count,
+            self.field_names,
+            self.field_offsets,
+        )
+        .map(Some)
     }
 }
+fn indexed_shape_bytes<'a>(
+    offsets: &[u8],
+    shapes: &'a [u8],
+    count: usize,
+    index: usize,
+) -> Result<Option<&'a [u8]>, CatalogError> {
+    if index >= count {
+        return Ok(None);
+    }
+    let table_start = index.checked_mul(4).ok_or(CatalogError::Overflow)?;
+    let table_end = table_start.checked_add(4).ok_or(CatalogError::Overflow)?;
+    let start = decode_offset(
+        offsets
+            .get(table_start..table_end)
+            .ok_or(CatalogError::Reference)?,
+    )?;
+    let end = offsets
+        .get(table_end..)
+        .and_then(|tail| tail.get(..4))
+        .map(decode_offset)
+        .transpose()?
+        .unwrap_or(shapes.len());
+    shapes
+        .get(start..end)
+        .map(Some)
+        .ok_or(CatalogError::Reference)
+}
+fn validate_shapes<'a>(
+    shapes: ListRef<'a>,
+    encoded: &'a [u8],
+    offsets: &[u8],
+    field_names: &[u8],
+    field_offsets: &[u8],
+) -> Result<(usize, &'a [u8]), CatalogError> {
+    let count = shapes.count()?;
+    if offsets.len() != count.checked_mul(4).ok_or(CatalogError::Overflow)? {
+        return Err(CatalogError::Reference);
+    }
+    let end = scan_shapes(
+        count,
+        shapes.header_len()?,
+        encoded,
+        offsets,
+        (field_names, field_offsets),
+    )?;
+    Ok((count, encoded.get(..end).ok_or(CatalogError::Reference)?))
+}
+fn scan_shapes(
+    count: usize,
+    header: usize,
+    encoded: &[u8],
+    offsets: &[u8],
+    field_registry: (&[u8], &[u8]),
+) -> Result<usize, CatalogError> {
+    (0..count).try_fold(header, |end, index| {
+        let start = offset_at(offsets, index)?;
+        if start != end {
+            return Err(CatalogError::Reference);
+        }
+        validate_shape_item(encoded, start, count, field_registry)
+    })
+}
+
+fn offset_at(offsets: &[u8], index: usize) -> Result<usize, CatalogError> {
+    let start = index.checked_mul(4).ok_or(CatalogError::Overflow)?;
+    let end = start.checked_add(4).ok_or(CatalogError::Overflow)?;
+    decode_offset(offsets.get(start..end).ok_or(CatalogError::Reference)?)
+}
+
+fn validate_shape_item(
+    encoded: &[u8],
+    start: usize,
+    count: usize,
+    field_registry: (&[u8], &[u8]),
+) -> Result<usize, CatalogError> {
+    let suffix = encoded.get(start..).ok_or(CatalogError::Reference)?;
+    let (value, consumed) = read_one(suffix)?;
+    let end = start.checked_add(consumed).ok_or(CatalogError::Overflow)?;
+    Shape::new(map_value(value)?, count, field_registry.0, field_registry.1)?.validate()?;
+    if consumed == 0 || end > encoded.len() {
+        return Err(CatalogError::Reference);
+    }
+    Ok(end)
+}
+
+fn decode_offset(bytes: &[u8]) -> Result<usize, CatalogError> {
+    let offset = u32::from_be_bytes(bytes.try_into().map_err(|_| CatalogError::Reference)?);
+    usize::try_from(offset).map_err(|_| CatalogError::Reference)
+}
+
 pub(super) fn texts(
     list: ListRef<'_>,
 ) -> Result<impl Iterator<Item = Result<&str, CatalogError>>, CatalogError> {

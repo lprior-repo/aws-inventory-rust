@@ -13,8 +13,8 @@ skipped request_time_function 0
 services 436
 global 28
 regional 401
-needs_overlay 5
-unsupported 2
+needs_overlay 4
+unsupported 3
 services_with_exceptions 3
 exceptions 3
 service accessanalyzer regional https://access-analyzer.{region}.amazonaws.com access-analyzer {region}
@@ -89,7 +89,7 @@ service cloudcontrol regional https://cloudcontrolapi.{region}.amazonaws.com clo
 service clouddirectory regional https://clouddirectory.{region}.amazonaws.com clouddirectory {region}
 service cloudformation regional https://cloudformation.{region}.amazonaws.com cloudformation {region}
 service cloudfront global https://cloudfront.amazonaws.com cloudfront us-east-1
-service cloudfront-keyvaluestore needs-overlay - - - missing:KvsARN
+service cloudfront-keyvaluestore unsupported - - - "KVS ARN must be provided to use this service"
 service cloudhsm regional https://cloudhsm.{region}.amazonaws.com cloudhsm {region}
 service cloudhsm-v2 regional https://cloudhsmv2.{region}.amazonaws.com cloudhsm {region}
 service cloudsearch regional https://cloudsearch.{region}.amazonaws.com cloudsearch {region}

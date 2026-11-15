@@ -1,9 +1,12 @@
 pub mod endpoints_support;
 
-use catalog_tool::endpoints::{DerivedEndpoint, RuleSet, ServiceClass, build_report};
+use catalog_tool::endpoints::{
+    DerivedEndpoint, Error, Fault, OverlayNeed, RuleSet, ServiceClass, build_report,
+};
 use endpoints_support::report::{fixture, write_service};
 use endpoints_support::{TestResult, rules};
 use serde_json::{Value, json};
+use std::collections::BTreeMap;
 use std::path::Path;
 
 #[test]
@@ -79,21 +82,44 @@ fn resolved(url: &str, name: &str, region: &str) -> DerivedEndpoint {
 }
 
 #[test]
-fn modeled_errors_classify_optional_missing_parameters_and_unrelated_failures() -> TestResult {
+fn modeled_error_text_is_not_typed_missing_parameter() -> TestResult {
     let overlay = error_rules("Bucket is required");
     let parsed = RuleSet::parse(Path::new("overlay.json"), &overlay)?;
     assert_eq!(
         parsed.derive(Some("svc"))?,
-        DerivedEndpoint::NeedsOverlay {
-            parameter: "Bucket".into()
+        DerivedEndpoint::Unsupported {
+            reason: "Bucket is required".into()
         }
     );
-    let unrelated = error_rules("unrelated modeled failure");
-    let parsed = RuleSet::parse(Path::new("unsupported.json"), &unrelated)?;
+    let misleading = error_rules("Not a Bucket problem");
+    let parsed = RuleSet::parse(Path::new("unsupported.json"), &misleading)?;
     assert_eq!(
         parsed.derive(Some("svc"))?,
         DerivedEndpoint::Unsupported {
-            reason: "unrelated modeled failure".into()
+            reason: "Not a Bucket problem".into()
+        }
+    );
+    Ok(())
+}
+
+#[test]
+fn evaluator_missing_parameter_remains_a_typed_overlay_requirement() -> TestResult {
+    let missing = rules(
+        json!({"Bucket":{"type":"string","required":true}}),
+        json!([endpoints_support::endpoint(
+            json!({"ref":"Bucket"}),
+            json!([])
+        )]),
+    );
+    let parsed = RuleSet::parse(Path::new("missing.json"), &missing)?;
+    assert!(matches!(
+        parsed.evaluate(&BTreeMap::new()),
+        Err(Error::Model { kind: Fault::MissingParameter(name), .. }) if name == "Bucket"
+    ));
+    assert_eq!(
+        parsed.derive(Some("svc"))?,
+        DerivedEndpoint::NeedsOverlay {
+            need: OverlayNeed::Parameter("Bucket".into())
         }
     );
     Ok(())
@@ -128,12 +154,13 @@ fn four_service_report_pins_non_resolved_rows_and_totals() -> TestResult {
             "skipped other_partition 1\nskipped fips 1\nskipped dual_stack 1\n",
             "skipped custom_endpoint 1\nskipped other_parameters 1\nskipped operation_inputs 1\n",
             "skipped request_time_function 1\nservices 4\nglobal 1\nregional 1\n",
-            "needs_overlay 1\nunsupported 1\n",
+            "needs_overlay 0\nunsupported 2\n",
             "services_with_exceptions 0\nexceptions 0\n",
             "service global global https://global.example global-sign us-east-1\n",
-            "service overlay needs-overlay - - - missing:Bucket\n",
+            "service overlay unsupported - - - \"Bucket is required\"\n",
             "service regional regional https://regional.{region}.example regional-sign {region}\n",
             "unsupported_case regional 8 parseURL\n",
+            "case_failure regional 1 \"actual outcome differs from expected outcome\"\n",
             "service unsupported unsupported - - - \"unrelated modeled failure\"\n"
         )
     );

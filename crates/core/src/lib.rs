@@ -2,6 +2,7 @@
 #![deny(unused_must_use)]
 
 pub mod catalog;
+pub mod inventory;
 pub mod record;
 
 #[cfg(feature = "legacy")]

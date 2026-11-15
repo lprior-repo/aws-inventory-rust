@@ -2,6 +2,32 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- End-to-end collection path works against the live emulator:
+  `aws-inventory sweep` loads the compiled runtime catalog, resolves profile
+  credentials, bootstraps account identity (STS `GetCallerIdentity`) and
+  enabled regions (EC2 `DescribeRegions`), enumerates the reviewed EC2 VPC and
+  subnet plans through `aws-wire`, commits pages atomically into SQLite schema
+  14 with fenced leases, resumable checkpoints and SQLite-indexed repeated-token
+  detection, resolves reviewed `IN_VPC` relationships, and projects resources
+  and edges into FalkorDB through a revision-safe outbox. Exit codes: 0
+  complete, 2 degraded scopes, 1 fatal. The native Makepad viewer reads the same
+  database and graph read-only.
+- The ignored `sweep_e2e` suite passes against the emulator with real TLS: typed
+  seeding, persisted counts and relationships, offline-then-online graph drain,
+  unchanged rerun, interrupted-and-resumed sweep through a checkpoint barrier
+  proxy, repeated partial runs, and a separate signed TLS 403 peer proving
+  denied scopes write nothing and delete nothing.
+- Catalog format 3: each service carries `ShapeOffsets` (key 94), making shape
+  lookup O(1). A 16-resource debug sweep went from 31.5 s to 12.8 s (64
+  resources). `models compile` builds a one-pass service index (over 10 minutes
+  to 28 s) and refuses to publish a catalog the runtime reader rejects. Runtime
+  extension field 60000 is documented in `docs/API_CATALOG.md`.
+- The inventory database stores the catalog digest and allowed operations
+  rather than the 11 MB catalog blob, which exceeded the deliberate 8 MiB
+  `SQLITE_MAX_LENGTH`.
+- Query-protocol XML namespace comparison ignores a trailing `/`; real EC2
+  responses use `http://ec2.amazonaws.com/doc/2016-11-15/` while the model omits
+  the slash.
 - Public `aws_wire::response::decode` handles successful responses and modeled
   errors for all seven AWS wire protocols, writing directly into bounded
   canonical records. Published client coverage is 351 successful responses and

@@ -57,7 +57,7 @@ fn clean_repository_is_accepted_and_its_own_commit_is_embedded() -> TestResult {
     let head = git::command(source.path(), &["rev-parse", "HEAD"])?;
     let output = compile(source.path(), root.path(), &["--write"])?;
     let bytes = fs::read(root.path().join("catalog/aws-api.catalog"))?;
-    success(&output, bytes.len());
+    success(&output);
     assert_eq!(Catalog::borrow(&bytes)?.models_commit()?, head.trim());
     Ok(())
 }

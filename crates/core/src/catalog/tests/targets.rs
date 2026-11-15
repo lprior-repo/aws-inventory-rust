@@ -25,13 +25,13 @@ fn with_container(kind: i64, targets: &[(CatalogKey, i64)]) -> Result<Vec<u8>, R
         .iter()
         .map(|(key, value)| (*key, Value::Int(*value)));
     let shape = map(fields.into_iter().chain(targets))?;
+    let shapes = vec![shape];
+    let offsets = shape_offsets(&shapes)?;
     let Value::Map(mut fields) = service()? else {
         return Err(RecordError::NotMap);
     };
-    fields.insert(
-        Key::Field(CatalogKey::Shapes.field()?),
-        Value::List(vec![shape]),
-    );
+    fields.insert(Key::Field(CatalogKey::Shapes.field()?), Value::List(shapes));
+    fields.insert(Key::Field(CatalogKey::ShapeOffsets.field()?), offsets);
     root(Value::Map(fields), CATALOG_VERSION)
 }
 

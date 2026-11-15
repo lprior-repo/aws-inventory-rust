@@ -1,6 +1,5 @@
-use catalog_tool::classes::{
-    DenyList, Error, ParseError, ParseErrorKind, ReportMode, build_report, run,
-};
+use catalog_tool::ReportMode;
+use catalog_tool::classes::{DenyList, Error, ParseError, ParseErrorKind, build_report, run};
 use std::{fs, path::Path};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -82,7 +81,10 @@ fn report_text_accepts_exactly_4_mib() -> TestResult {
     let root = model_fixture(1)?;
     write_stale_report(root.path(), 4_194_304)?;
     let actual = run(root.path(), root.path(), ReportMode::Check);
-    assert!(matches!(actual, Err(Error::ReportMismatch(_))));
+    assert!(matches!(
+        actual,
+        Err(Error::Report(catalog_tool::ReportError::Mismatch(_)))
+    ));
     assert_eq!(fs::metadata(root.path().join(COMMITTED))?.len(), 4_194_304);
     Ok(())
 }
@@ -92,7 +94,11 @@ fn report_text_rejects_one_byte_over_4_mib() -> TestResult {
     let root = model_fixture(1)?;
     write_stale_report(root.path(), 4_194_305)?;
     let actual = run(root.path(), root.path(), ReportMode::Check);
-    assert!(matches!(actual, Err(Error::Limit)));
+    assert!(matches!(
+        actual,
+        Err(Error::Report(catalog_tool::ReportError::TooLarge { file, limit }))
+            if file == root.path().join(COMMITTED) && limit == 4_194_304
+    ));
     assert_eq!(fs::metadata(root.path().join(COMMITTED))?.len(), 4_194_305);
     Ok(())
 }

@@ -16,7 +16,7 @@ fn irrelevant_fields_are_ignored_for_unknown_and_known_kinds()
     )?;
 
     assert_eq!(
-        compute_stats(&model),
+        compute_stats(&model)?,
         ModelStats {
             operations: 1,
             read_named: 1,
@@ -51,7 +51,7 @@ fn required_members_exclude_roots_regardless_of_member_position()
     )?;
 
     assert_eq!(
-        compute_stats(&model),
+        compute_stats(&model)?,
         ModelStats {
             operations: 2,
             read_named: 2,
@@ -60,14 +60,5 @@ fn required_members_exclude_roots_regardless_of_member_position()
             ..ModelStats::default()
         }
     );
-    Ok(())
-}
-
-#[test]
-fn identical_reports_have_no_differences() -> Result<(), Box<dyn std::error::Error>> {
-    let report = "services 1 \r\noperations 2\n";
-
-    assert_eq!(differences(report, report)?, "");
-    assert_eq!(differences("", "")?, "");
     Ok(())
 }

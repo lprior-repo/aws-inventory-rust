@@ -2,10 +2,10 @@ use std::fs::{self, File};
 use std::io::{self, Write};
 use std::path::{Component, Path, PathBuf};
 
-pub fn atomic_write<T>(
+pub fn atomic_write<T, E: From<io::Error>>(
     destination: &Path,
-    write: impl FnOnce(&mut File) -> Result<T, Box<dyn std::error::Error>>,
-) -> Result<T, Box<dyn std::error::Error>> {
+    write: impl FnOnce(&mut File) -> Result<T, E>,
+) -> Result<T, E> {
     let absolute = std::path::absolute(destination)?;
     let parent = absolute
         .parent()
@@ -14,9 +14,7 @@ pub fn atomic_write<T>(
     let mut temporary = temporary_file(parent)?;
     let value = write(temporary.as_file_mut())?;
     temporary.as_file_mut().flush()?;
-    temporary
-        .persist(&absolute)
-        .map_err(|error| io::Error::new(error.error.kind(), error.to_string()))?;
+    temporary.persist(&absolute).map_err(|error| error.error)?;
     Ok(value)
 }
 

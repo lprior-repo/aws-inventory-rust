@@ -55,11 +55,14 @@ pub fn package(
     let (root, destination) = destination::validate(root, destination)?;
     let payloads = collect_payloads(&root, limits::DEFAULT)?;
     let manifest = build_manifest(&payloads);
-    atomic_write(&root.join(MANIFEST_NAME), |file| {
-        use std::io::Write;
-        file.write_all(manifest.as_bytes())?;
-        Ok(())
-    })?;
+    atomic_write(
+        &root.join(MANIFEST_NAME),
+        |file| -> Result<(), Box<dyn std::error::Error>> {
+            use std::io::Write;
+            file.write_all(manifest.as_bytes())?;
+            Ok(())
+        },
+    )?;
     atomic_write(&destination, |file| {
         archive::write(file, &payloads, &manifest)?;
         archive::verify(file, &payloads, &manifest)?;

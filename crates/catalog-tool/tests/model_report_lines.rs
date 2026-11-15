@@ -10,7 +10,7 @@ fn check_detects_a_missing_final_newline() -> Result<(), Box<dyn std::error::Err
 
     let output = report(dir.path(), &["--check"])?;
     assert_eq!(output.status.code(), Some(1));
-    assert_eq!(output.stdout, REPORT.as_bytes());
+    assert_eq!(output.stdout, b"");
     assert_eq!(
         String::from_utf8(output.stderr)?,
         concat!(
@@ -30,7 +30,7 @@ fn check_reports_each_missing_line_not_only_a_line_count() -> Result<(), Box<dyn
 
     let output = report(dir.path(), &["--check"])?;
     assert_eq!(output.status.code(), Some(1));
-    assert_eq!(output.stdout, REPORT.as_bytes());
+    assert_eq!(output.stdout, b"");
     assert_eq!(
         String::from_utf8(output.stderr)?,
         concat!(

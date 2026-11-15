@@ -2,36 +2,28 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum ViewError {
-    #[error("snapshot input exceeds the {0} limit")]
-    InputLimit(&'static str),
-
-    #[error("snapshot JSON: {0}")]
-    Json(#[from] serde_json::Error),
-
-    #[error("unsupported snapshot artifact {0:?}; expected aws-inventory.snapshot")]
-    UnsupportedArtifact(String),
-
-    #[error("unsupported snapshot version {0}; expected 1")]
-    UnsupportedVersion(u16),
-
-    #[error("snapshot record bound exceeded: {0}")]
-    RecordLimit(&'static str),
-
-    #[error("page limit must be in 1..=10000")]
-    InvalidPageLimit,
-
-    #[error("page cursor is not a valid offset")]
-    InvalidCursor,
-
-    #[error("graph depth must be in 1..=2")]
-    InvalidGraphDepth,
-
-    #[error("graph node or edge cap is out of range")]
-    InvalidGraphLimit,
-
-    #[error("LOD bucket cap is out of range")]
-    InvalidLodLimit,
-
-    #[error("snapshot size accounting overflowed")]
-    SizeOverflow,
+    #[error(transparent)]
+    Sql(#[from] sqlx::Error),
+    #[error(transparent)]
+    Identity(#[from] inventory_core::inventory::InventoryError),
+    #[error(transparent)]
+    Record(#[from] inventory_core::record::RecordError),
+    #[error("unsupported schema version {0}; expected 14")]
+    Version(i64),
+    #[error("invalid stored resource row")]
+    StoredRow,
+    #[error("page limit must be in 1..=1000")]
+    PageLimit,
+    #[error("FalkorDB command failed")]
+    Graph(#[source] redis::RedisError),
+    #[error("FalkorDB operation timed out")]
+    GraphTimeout,
+    #[error("invalid FalkorDB graph name")]
+    GraphName,
+    #[error("FalkorDB response is malformed")]
+    GraphResponse,
+    #[error("graph traversal limits are out of range")]
+    GraphLimits,
+    #[error("stored SQL table name is invalid")]
+    SqlName,
 }

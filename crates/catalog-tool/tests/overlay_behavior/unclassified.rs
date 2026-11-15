@@ -37,7 +37,7 @@ fn an_unclassified_operation_can_be_reviewed_as_expand() -> Result<(), Box<dyn s
             "\"n#GetThing\":{\"type\":\"operation\",\"output\":{\"target\":\"n#Output\"}},\"n#ListDenied\":{\"type\":\"operation\",\"output\":{\"target\":\"n#Output\"}},\"n#ListThings\":{\"type\":\"operation\"",
         );
     let text = format!(
-        "{HEADER}[operation.ListDenied]\nclass='deny'\ndeny_reason='content'\n[operation.ListThings]\nclass='defer'\n{}",
+        "{HEADER}[operation.ListDenied]\nclass='deny'\ndeny_reason='content'\n[operation.ListThings]\nclass='defer'\ndefer_reason='Requires a separate reviewed inventory plan'\n{}",
         COMPLETE
             .replace("ListThings", "GetThing")
             .replace("enumerate", "expand")

@@ -10,8 +10,8 @@ mod raw;
 mod types;
 
 pub use check::{
-    CallableOperation, CheckError, CheckedOverlays, EffectiveClass, ReviewedService, Violation,
-    ViolationRule, build_report, check, run,
+    CallableOperation, CheckError, CheckedOverlays, EffectiveClass, ReviewDisposition,
+    ReviewedDecision, ReviewedService, Violation, ViolationRule, build_report, check, run,
 };
 pub use directory::load_dir;
 pub use error::{NameError, OverlayError, Rule};

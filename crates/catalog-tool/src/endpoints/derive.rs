@@ -10,33 +10,36 @@ pub enum ServiceClass {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub enum OverlayNeed {
+    Parameter(String),
+    UnsupportedFunction(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ProbeOutcome {
+    Evaluated(Outcome),
+    MissingParameter(String),
+    ModeledError(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DerivedEndpoint {
     Resolved {
         class: ServiceClass,
-
         url_template: String,
-
         signing_name: String,
-
         signing_region: String,
     },
-
     NeedsOverlay {
-        parameter: String,
+        need: OverlayNeed,
     },
-
     NeedsOverlayRouting {
         url_template: String,
-
         signing_name: String,
-
         signing_region: String,
-
         matches: usize,
-
         exceptions: usize,
     },
-
     Unsupported {
         reason: String,
     },
@@ -54,30 +57,16 @@ impl RuleSet {
         Ok(self.derive_outcomes((first, second), name))
     }
 
-    fn probe(&self, region: &str) -> Result<Outcome, Error> {
+    fn probe(&self, region: &str) -> Result<ProbeOutcome, Error> {
         let input = self.region_inputs(region);
         match self.evaluate(&input) {
             Err(Error::Model {
                 kind: Fault::MissingParameter(name),
                 ..
-            }) => Ok(Outcome::Error(format!("Missing {name}"))),
-            result => result,
-        }
-    }
-
-    fn overlay(&self, message: String) -> DerivedEndpoint {
-        let normalized = normalize(&message);
-        let missing = self.document.parameters.keys().find(|name| {
-            !matches!(
-                name.as_str(),
-                "Region" | "UseFIPS" | "UseDualStack" | "Endpoint"
-            ) && normalized.contains(&normalize(name))
-        });
-        let Some(name) = missing else {
-            return DerivedEndpoint::Unsupported { reason: message };
-        };
-        DerivedEndpoint::NeedsOverlay {
-            parameter: name.clone(),
+            }) => Ok(ProbeOutcome::MissingParameter(name)),
+            Ok(Outcome::Error(message)) => Ok(ProbeOutcome::ModeledError(message)),
+            Ok(outcome) => Ok(ProbeOutcome::Evaluated(outcome)),
+            Err(error) => Err(error),
         }
     }
 
@@ -94,24 +83,54 @@ impl RuleSet {
             .collect()
     }
 
-    fn derive_outcomes(&self, outcomes: (Outcome, Outcome), name: &str) -> DerivedEndpoint {
+    fn derive_outcomes(
+        &self,
+        outcomes: (ProbeOutcome, ProbeOutcome),
+        name: &str,
+    ) -> DerivedEndpoint {
         match outcomes {
-            (Outcome::Endpoint(a), Outcome::Endpoint(b)) => resolved(&a, &b, name),
-            (Outcome::UnsupportedFunction { name }, _)
-            | (_, Outcome::UnsupportedFunction { name }) => DerivedEndpoint::NeedsOverlay {
-                parameter: format!("function:{name}"),
-            },
-            (Outcome::Error(message), _) | (_, Outcome::Error(message)) => self.overlay(message),
+            (
+                ProbeOutcome::Evaluated(Outcome::Endpoint(a)),
+                ProbeOutcome::Evaluated(Outcome::Endpoint(b)),
+            ) => resolved(&a, &b, name),
+            (ProbeOutcome::MissingParameter(a), ProbeOutcome::MissingParameter(b)) if a == b => {
+                DerivedEndpoint::NeedsOverlay {
+                    need: OverlayNeed::Parameter(a),
+                }
+            }
+            outcomes => failed_outcomes(outcomes),
         }
     }
 }
 
-fn normalize(value: &str) -> String {
-    value
-        .chars()
-        .filter(char::is_ascii_alphanumeric)
-        .flat_map(char::to_lowercase)
-        .collect()
+fn failed_outcomes(outcomes: (ProbeOutcome, ProbeOutcome)) -> DerivedEndpoint {
+    match outcomes {
+        (ProbeOutcome::Evaluated(Outcome::UnsupportedFunction { name }), _)
+        | (_, ProbeOutcome::Evaluated(Outcome::UnsupportedFunction { name })) => {
+            unsupported_function(name)
+        }
+        (ProbeOutcome::ModeledError(reason), _) | (_, ProbeOutcome::ModeledError(reason)) => {
+            DerivedEndpoint::Unsupported { reason }
+        }
+        (ProbeOutcome::MissingParameter(name), _) | (_, ProbeOutcome::MissingParameter(name)) => {
+            missing_parameter(name)
+        }
+        _ => DerivedEndpoint::Unsupported {
+            reason: "probe did not resolve endpoint".into(),
+        },
+    }
+}
+
+fn unsupported_function(name: String) -> DerivedEndpoint {
+    DerivedEndpoint::NeedsOverlay {
+        need: OverlayNeed::UnsupportedFunction(name),
+    }
+}
+
+fn missing_parameter(name: String) -> DerivedEndpoint {
+    DerivedEndpoint::NeedsOverlay {
+        need: OverlayNeed::Parameter(name),
+    }
 }
 
 pub(super) fn signing_override<'a>(endpoint: &'a Endpoint, key: &str) -> Option<&'a str> {

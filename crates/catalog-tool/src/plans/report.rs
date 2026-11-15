@@ -4,8 +4,8 @@ use super::{
     tally,
 };
 use crate::{
+    ReportMode,
     classes::{self, DenyList},
-    smithy::{self, ReportMode},
 };
 use serde_json::Value;
 use std::{
@@ -24,13 +24,13 @@ struct Report {
 }
 
 pub(super) fn build(root: &Path, source: &Path) -> Result<String, Error> {
-    let text = classes::report::read_text(&root.join("catalog/overlay/must-deny.txt"))?;
+    let text = crate::report::read_text(&root.join("catalog/overlay/must-deny.txt"))?;
     let deny = DenyList::parse(&text).map_err(classes::Error::from)?;
     let models = source.join("models");
     let files = input_files(&models)?;
     let mut vocabulary = Vocabulary::default();
     files.iter().try_for_each(|file| {
-        let value: Value = smithy::read_json(file)?;
+        let value = read_value(file)?;
         let service = classes::model::service(&models, file)?;
         vocabulary.record(&Model::parse(&value, service)?)
     })?;
@@ -43,14 +43,18 @@ pub(super) fn build(root: &Path, source: &Path) -> Result<String, Error> {
 }
 
 fn input_files(models: &Path) -> Result<Vec<PathBuf>, Error> {
-    let files = smithy::find_model_files(models)?;
+    let files = crate::model_source::discover_models(models)?;
     if files.is_empty() {
-        return Err(smithy::Error::NoModels.into());
+        return Err(crate::model_source::Error::NoModels.into());
     }
     if files.len() > 4096 {
         return Err(Error::Limit);
     }
     Ok(files)
+}
+
+fn read_value(file: &Path) -> Result<Value, Error> {
+    crate::model_source::read_value(file).map_err(Error::from)
 }
 
 impl Report {
@@ -61,7 +65,7 @@ impl Report {
         vocab: &Vocabulary,
         deny: &DenyList<'_>,
     ) -> Result<(), Error> {
-        let value: Value = smithy::read_json(file)?;
+        let value = read_value(file)?;
         let service = classes::model::service(models, file)?;
         let model = Model::parse(&value, service)?;
         let counts = tally::collect(&model, vocab, deny, &mut self.matched)?;
@@ -128,12 +132,8 @@ fn render_service(text: &mut String, service: &str, counts: &Counts) -> Result<(
 
 pub(super) fn run(root: &Path, source: &Path, mode: ReportMode) -> Result<(), Error> {
     let text = build(root, source)?;
-    Ok(classes::report::publish(
-        root,
-        "catalog/aws-plans.report",
-        &text,
-        mode,
-    )?)
+    crate::report::publish(&root.join("catalog/aws-plans.report"), &text, mode)?;
+    Ok(())
 }
 
 #[cfg(test)]

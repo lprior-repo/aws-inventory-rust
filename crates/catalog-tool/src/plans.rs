@@ -33,6 +33,11 @@ pub enum Error {
     Model(#[from] crate::smithy::Error),
 
     #[error(transparent)]
+    ModelSource(#[from] crate::model_source::Error),
+
+    #[error(transparent)]
+    Report(#[from] crate::report::ReportError),
+    #[error(transparent)]
     Decode(#[from] serde_json::Error),
 
     #[error(transparent)]
@@ -69,6 +74,6 @@ pub fn build_report(root: &Path, source: &Path) -> Result<String, Error> {
     report::build(root, source)
 }
 
-pub fn run(root: &Path, source: &Path, mode: crate::smithy::ReportMode) -> Result<(), Error> {
+pub fn run(root: &Path, source: &Path, mode: crate::ReportMode) -> Result<(), Error> {
     report::run(root, source, mode)
 }

@@ -1,23 +1,33 @@
 include!("smithy_helpers.rs");
+fn silent_success(output: &std::process::Output) {
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(output.stdout, b"");
+    assert_eq!(output.stderr, b"");
+}
 
 #[test]
-fn write_regenerates_and_check_prints_the_complete_report() -> Result<(), Box<dyn std::error::Error>>
-{
+fn write_and_check_are_silent_while_preserving_exact_report_bytes()
+-> Result<(), Box<dyn std::error::Error>> {
     let dir = fixture()?;
 
-    success(&report(dir.path(), &["--write"])?, REPORT);
+    silent_success(&report(dir.path(), &["--write"])?);
     assert_eq!(
         std::fs::read_to_string(dir.path().join("catalog/aws-models.report"))?,
         REPORT
     );
 
     write_fixture(dir.path(), "catalog/aws-models.report", "stale\n")?;
-    success(&report(dir.path(), &["--write"])?, REPORT);
+    silent_success(&report(dir.path(), &["--write"])?);
     assert_eq!(
         std::fs::read_to_string(dir.path().join("catalog/aws-models.report"))?,
         REPORT
     );
-    success(&report(dir.path(), &["--check"])?, REPORT);
+    silent_success(&report(dir.path(), &["--check"])?);
     Ok(())
 }
 
@@ -51,7 +61,7 @@ fn check_reports_every_changed_line_and_preserves_whitespace()
 
     let output = report(dir.path(), &["--check"])?;
     assert_eq!(output.status.code(), Some(1));
-    assert_eq!(output.stdout, REPORT.as_bytes());
+    assert_eq!(output.stdout, b"");
     assert_eq!(
         String::from_utf8(output.stderr)?,
         concat!(
@@ -64,13 +74,12 @@ fn check_reports_every_changed_line_and_preserves_whitespace()
 }
 
 #[test]
-fn missing_report_still_prints_and_names_the_missing_path() -> Result<(), Box<dyn std::error::Error>>
-{
+fn missing_report_is_silent_and_names_the_missing_path() -> Result<(), Box<dyn std::error::Error>> {
     let dir = fixture()?;
 
     let output = report(dir.path(), &["--check"])?;
     assert_eq!(output.status.code(), Some(1));
-    assert_eq!(output.stdout, REPORT.as_bytes());
+    assert_eq!(output.stdout, b"");
     let path = dir.path().join("catalog/aws-models.report");
     assert_eq!(
         String::from_utf8(output.stderr)?,

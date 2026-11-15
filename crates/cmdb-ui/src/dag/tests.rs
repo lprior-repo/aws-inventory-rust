@@ -124,52 +124,89 @@ fn node_cap_truncates_explicitly() {
     assert_eq!(layout.node_count(), MAX_NODES);
 }
 
-#[test]
-fn fixture_builder_matches_the_projection() {
-    let data = Data::synthetic();
-    let source = data.graph();
-    let graph = builder::from_data_graph(&source);
-
-    assert_eq!(graph.len(), 56);
-
-    assert_eq!(graph.edges().len(), 69);
-    assert_eq!(graph.dropped_nodes(), 0);
-    assert_eq!(graph.dropped_edges(), 0);
-    let mut ids = std::collections::BTreeSet::new();
-    for index in 0..graph.len() {
-        assert!(graph.node(index).is_some(), "missing node");
-        if let Some(node) = graph.node(index) {
-            assert!(ids.insert(node.id().to_owned()));
-            assert!(node.label().chars().count() <= MAX_LABEL_CHARS);
-        }
-    }
-    let layout = DagLayout::compute(&graph);
-    assert_eq!(layout.node_count(), 56);
-    assert_eq!(layout.back_edges(), 0);
-    let account = graph.index_of("account:prod");
-    let region = graph.index_of("region:prod/us-east-1");
-    let kind = graph.index_of("kind:prod/us-east-1/ec2");
-    let resource = graph.index_of("i-0a1b2c3d4e5f60001");
-    assert_eq!(account.and_then(|i| layout.layer(i)), Some(0));
-    assert_eq!(region.and_then(|i| layout.layer(i)), Some(1));
-    assert_eq!(kind.and_then(|i| layout.layer(i)), Some(2));
-    assert_eq!(resource.and_then(|i| layout.layer(i)), Some(3));
-    for row in &source.nodes {
-        let layer = graph.index_of(row.id).and_then(|i| layout.layer(i));
-        assert_eq!(layer, Some(3));
+fn projected_row(account: &str, region: &str, kind: &str, id: &str, key: &str) -> crate::data::Row {
+    crate::data::Row {
+        account: account.to_owned(),
+        region: region.to_owned(),
+        kind: kind.to_owned(),
+        id: id.to_owned(),
+        name: id.to_owned(),
+        key: key.to_owned(),
+        record_bytes: Some(1),
+        content_hash: Some(String::new()),
     }
 }
 
 #[test]
-fn filtered_projection_keeps_only_visible_endpoints() {
-    let mut data = Data::synthetic();
-    data.set_account(Some("prod"));
-    let graph = builder::from_data_graph(&data.graph());
+fn live_neighbor_projection_uses_full_resource_keys_and_hierarchy() {
+    let mut data = Data::default();
+    let source_row = projected_row(
+        "111111111111",
+        "us-east-1",
+        "AWS::EC2::VPC",
+        "vpc-a",
+        "key-vpc",
+    );
+    let target_row = projected_row(
+        "111111111111",
+        "us-east-1",
+        "AWS::EC2::Subnet",
+        "subnet-a",
+        "key-subnet",
+    );
+    data.replace_page(vec![source_row.clone(), target_row.clone()], 2);
+    data.set_graph(
+        crate::data::Graph {
+            nodes: vec![source_row, target_row],
+            edges: vec![crate::data::Edge {
+                from: "key-vpc".to_owned(),
+                to: "key-subnet".to_owned(),
+                label: "CONTAINS".to_owned(),
+                provenance: "collector".to_owned(),
+            }],
+            truncated: false,
+        },
+        None,
+    );
+    let graph = builder::from_data_graph(&data.visual_graph());
+    assert_eq!(graph.len(), 6);
+    assert_eq!(graph.edges().len(), 6);
+    assert_eq!(graph.dropped_nodes(), 0);
+    assert_eq!(graph.dropped_edges(), 0);
+    let layout = DagLayout::compute(&graph);
+    assert_eq!(layout.node_count(), 6);
+    assert_eq!(
+        graph
+            .index_of("key-vpc")
+            .and_then(|index| layout.layer(index)),
+        Some(3)
+    );
+    assert_eq!(
+        graph
+            .index_of("key-subnet")
+            .and_then(|index| layout.layer(index)),
+        Some(3)
+    );
+    assert!(graph.edges().iter().any(|edge| edge.overlay));
+}
 
-    assert_eq!(graph.len(), 20);
-
-    assert_eq!(graph.edges().len(), 26);
-    assert_eq!(DagLayout::compute(&graph).node_count(), 20);
+#[test]
+fn empty_neighbor_projection_keeps_selected_row_containment() {
+    let mut data = Data::default();
+    data.replace_page(
+        vec![projected_row(
+            "111111111111",
+            "us-east-1",
+            "AWS::EC2::VPC",
+            "vpc-a",
+            "key-vpc",
+        )],
+        1,
+    );
+    let graph = builder::from_data_graph(&data.visual_graph());
+    assert_eq!(graph.len(), 4);
+    assert_eq!(graph.edges().len(), 3);
+    assert_eq!(graph.index_of("key-vpc"), Some(3));
 }
 
 #[test]

@@ -1,13 +1,23 @@
-use super::super::{CallableOperation, ReviewedService, Violation, ViolationRule};
+#[path = "flow/rows.rs"]
+mod rows;
+use super::super::{
+    CallableOperation, ReviewDisposition, ReviewedDecision, ReviewedService, Violation,
+    ViolationRule,
+};
 use super::{ReportRow, ServiceCheck, binding_cycle_operations, validate_reference};
 use crate::{
     classes::{Class, DenyList},
     overlay::{Binding, ServiceOverlay},
     plans::{self, Model},
 };
+use rows::*;
 use std::collections::{BTreeMap, BTreeSet};
 mod operation;
-type OperationRows = (Vec<CallableOperation>, Vec<ReportRow>);
+type OperationRows = (
+    Vec<CallableOperation>,
+    Vec<ReviewedDecision>,
+    Vec<ReportRow>,
+);
 
 pub(super) fn check_service(
     overlay: &ServiceOverlay,
@@ -18,17 +28,26 @@ pub(super) fn check_service(
 ) -> ServiceCheck {
     let names: BTreeSet<&str> = model.operation_names().collect();
     let (plans, mut errors) = review_data(overlay, &names);
-    let (callable, rows) = check_operations(
+    let inputs = OperationInputs {
         overlay,
         model,
         classes,
         deny,
         vocabulary,
-        &plans,
-        &mut errors,
-    );
+        plan_map: &plans,
+    };
+    let (callable, decisions, rows) = check_operations(&inputs, &mut errors);
     check_references_and_cycles(overlay, &callable, &names, &mut errors);
-    finish(overlay.service(), callable, rows, errors)
+    finish(overlay, callable, decisions, rows, errors)
+}
+
+struct OperationInputs<'r, 'm> {
+    overlay: &'r ServiceOverlay,
+    model: &'r Model<'m>,
+    classes: &'r BTreeMap<String, Class>,
+    deny: &'r DenyList<'m>,
+    vocabulary: &'r plans::Vocabulary,
+    plan_map: &'r BTreeMap<String, super::super::super::OperationOverlay>,
 }
 fn review_data(
     overlay: &ServiceOverlay,
@@ -77,27 +96,36 @@ fn unknown_operations(overlay: &ServiceOverlay, names: &BTreeSet<&str>) -> Vec<V
 }
 
 fn check_operations(
-    overlay: &ServiceOverlay,
-    model: &Model<'_>,
-    classes: &BTreeMap<String, Class>,
-    deny: &DenyList<'_>,
-    vocabulary: &plans::Vocabulary,
-    plan_map: &BTreeMap<String, super::super::super::OperationOverlay>,
+    inputs: &OperationInputs<'_, '_>,
     errors: &mut Vec<Violation>,
 ) -> OperationRows {
-    let mut callable = Vec::new();
-    let mut rows = Vec::new();
-    for name in model.operation_names() {
-        let class = classes.get(name).copied().unwrap_or(Class::Unclassified);
-        let result =
-            operation::check_operation(overlay, model, deny, vocabulary, name, class, plan_map);
-        errors.extend(result.2);
-        if let Some(handle) = result.0 {
-            callable.push(handle);
-        }
-        rows.push(result.1);
+    let mut rows = (Vec::new(), Vec::new(), Vec::new());
+    for name in inputs.model.operation_names() {
+        append_operation(inputs, errors, name, &mut rows);
     }
-    (callable, rows)
+    rows
+}
+
+fn append_operation(
+    inputs: &OperationInputs<'_, '_>,
+    errors: &mut Vec<Violation>,
+    name: &str,
+    (callable, decisions, rows): &mut OperationRows,
+) {
+    let class = inputs.classes.get(name).copied();
+    let result = operation::check_operation(
+        inputs.overlay,
+        inputs.model,
+        inputs.deny,
+        inputs.vocabulary,
+        name,
+        class.unwrap_or(Class::Unclassified),
+        inputs.plan_map,
+    );
+    errors.extend(result.3);
+    callable.extend(result.0);
+    decisions.push(result.1);
+    rows.push(result.2);
 }
 
 fn check_references(
@@ -235,39 +263,4 @@ fn check_binding_reference(
             errors,
         );
     }
-}
-
-fn append_cycles(
-    overlay: &ServiceOverlay,
-    callable: &[CallableOperation],
-    errors: &mut Vec<Violation>,
-) {
-    for operation in binding_cycle_operations(overlay, callable) {
-        errors.push(super::violation(
-            overlay.service(),
-            &operation,
-            "bind",
-            &operation,
-            ViolationRule::BindingCycle,
-        ));
-    }
-}
-
-fn finish(
-    service: &str,
-    mut callable: Vec<CallableOperation>,
-    rows: Vec<ReportRow>,
-    mut errors: Vec<Violation>,
-) -> ServiceCheck {
-    callable.sort_by(|left, right| left.operation.cmp(&right.operation));
-    errors.sort();
-    errors.dedup();
-    (
-        ReviewedService {
-            service: service.to_owned(),
-            callable,
-        },
-        rows,
-        errors,
-    )
 }

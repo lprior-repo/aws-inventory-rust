@@ -1,4 +1,7 @@
-use catalog_tool::classes::{Error, ReportMode, build_report, run};
+use catalog_tool::{
+    ReportMode,
+    classes::{Error, build_report, run},
+};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 const MISSING: &str = r#"{"shapes":{
@@ -34,45 +37,47 @@ fn fixture(model: &str) -> Result<tempfile::TempDir, Box<dyn std::error::Error>>
 #[test]
 fn missing_input_target_names_the_service_operation_and_target() -> TestResult {
     let dir = fixture(MISSING)?;
-    assert!(matches!(build_report(dir.path(), dir.path()),
-        Err(Error::InvalidInput { service, operation, target })
-        if service == "sample" && operation == "ListBad" && target == "n#Missing"));
+    assert!(matches!(
+        build_report(dir.path(), dir.path()),
+        Err(Error::InvalidInput { file, source })
+            if file.ends_with("sample.json")
+                && source.to_string().contains("MissingShape")
+                && source.to_string().contains("n#Missing")
+    ));
     Ok(())
 }
 
 #[test]
 fn non_structure_input_target_names_the_service_operation_and_target() -> TestResult {
     let dir = fixture(NON_STRUCTURE)?;
-    assert!(matches!(build_report(dir.path(), dir.path()),
-        Err(Error::InvalidInput { service, operation, target })
-        if service == "sample" && operation == "ListBad" && target == "n#String"));
+    assert!(matches!(
+        build_report(dir.path(), dir.path()),
+        Err(Error::InvalidInput { file, source })
+            if file.ends_with("sample.json")
+                && source.to_string().contains("NonStructure")
+                && source.to_string().contains("n#String")
+    ));
     Ok(())
 }
 
 #[test]
 fn invalid_input_is_rejected_even_for_a_mutating_operation() -> TestResult {
     let dir = fixture(&MISSING.replace("ListBad", "PutBad"))?;
-    assert!(matches!(build_report(dir.path(), dir.path()),
-        Err(Error::InvalidInput { service, operation, target })
-        if service == "sample" && operation == "PutBad" && target == "n#Missing"));
+    assert!(matches!(
+        build_report(dir.path(), dir.path()),
+        Err(Error::InvalidInput { file, source: _ })
+            if file.ends_with("sample.json")
+    ));
     Ok(())
 }
 
 #[test]
-fn input_mixins_return_a_named_error_without_overwriting_the_report() -> TestResult {
+fn resolved_mixins_contribute_required_input_members() -> TestResult {
     let dir = fixture(MIXINS)?;
-    let path = dir.path().join("catalog/aws-classes.report");
-    std::fs::write(&path, "preserve\n")?;
-    let error = run(dir.path(), dir.path(), ReportMode::Write).err();
-    assert_eq!(
-        error.as_ref().map(ToString::to_string),
-        Some("sample/ListBad: mixins are not resolved".to_owned())
-    );
-    assert!(
-        matches!(error, Some(Error::MixinsNotResolved { service, operation })
-        if service == "sample" && operation == "ListBad")
-    );
-    assert_eq!(std::fs::read_to_string(path)?, "preserve\n");
+    run(dir.path(), dir.path(), ReportMode::Write)?;
+    let report = std::fs::read_to_string(dir.path().join("catalog/aws-classes.report"))?;
+    assert!(report.lines().any(|line| line == "expand 1"));
+    assert!(report.lines().any(|line| line == "enumerate 0"));
     Ok(())
 }
 
@@ -88,10 +93,13 @@ fn a_dangling_mixin_reference_is_rejected_like_a_resolvable_one() -> TestResult 
     let path = dir.path().join("catalog/aws-classes.report");
     std::fs::write(&path, "preserve\n")?;
     let error = run(dir.path(), dir.path(), ReportMode::Write).err();
-    assert!(
-        matches!(error, Some(Error::MixinsNotResolved { service, operation })
-        if service == "sample" && operation == "ListBad")
-    );
+    assert!(matches!(
+        error,
+        Some(Error::InvalidInput { file, source })
+            if file.ends_with("sample.json")
+                && source.to_string().contains("MissingShape")
+                && source.to_string().contains("n#Base")
+    ));
     assert_eq!(std::fs::read_to_string(path)?, "preserve\n");
     Ok(())
 }

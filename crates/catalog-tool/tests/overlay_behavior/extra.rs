@@ -16,7 +16,7 @@ fn skip_and_batch_cannot_target_a_deferred_operation() -> Result<(), Box<dyn std
     );
     let root = fixture(&model, "")?;
     let text = format!(
-        "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\nskip=['ListOther']\n[operation.ListThings.batch]\nmember='Ids'\nmax=10\nreplaces='ListOther'\n[operation.ListThings.paginator]\nkind='none'\n[operation.ListThings.identity]\nkey=['Id']\n[operation.ListOther]\nclass='defer'\n"
+        "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\nskip=['ListOther']\n[operation.ListThings.batch]\nmember='Ids'\nmax=10\nreplaces='ListOther'\n[operation.ListThings.paginator]\nkind='none'\n[operation.ListThings.identity]\nkey=['Id']\n[operation.ListOther]\nclass='defer'\ndefer_reason='Requires a separate reviewed inventory plan'\n"
     );
     overlay(root.path(), &text)?;
     let errors = violations(root.path())?;
@@ -29,7 +29,7 @@ fn skip_and_batch_cannot_target_a_deferred_operation() -> Result<(), Box<dyn std
         );
     }
     let valid = format!(
-        "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\nskip=['GetThing']\n[operation.ListThings.batch]\nmember='Ids'\nmax=10\nreplaces='GetThing'\n[operation.ListThings.paginator]\nkind='none'\n[operation.ListThings.identity]\nkey=['Id']\n[operation.GetThing]\nclass='expand'\nitems='Items'\n[operation.GetThing.paginator]\nkind='none'\n[operation.GetThing.identity]\nkey=['Id']\n[operation.ListOther]\nclass='defer'\n"
+        "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\nskip=['GetThing']\n[operation.ListThings.batch]\nmember='Ids'\nmax=10\nreplaces='GetThing'\n[operation.ListThings.paginator]\nkind='none'\n[operation.ListThings.identity]\nkey=['Id']\n[operation.GetThing]\nclass='expand'\nitems='Items'\n[operation.GetThing.paginator]\nkind='none'\n[operation.GetThing.identity]\nkey=['Id']\n[operation.ListOther]\nclass='defer'\ndefer_reason='Requires a separate reviewed inventory plan'\n"
     );
     overlay(root.path(), &valid)?;
     let checked = overlay::check(root.path(), &source(root.path()))?;
@@ -231,7 +231,7 @@ fn references_reject_unknown_and_deferred_operations() -> Result<(), Box<dyn std
         );
     let root = fixture(&model, "")?;
     let text = format!(
-        "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\nskip=['MissingSkip']\n[operation.ListThings.batch]\nmember='Ids'\nmax=10\nreplaces='MissingBatch'\n[operation.ListThings.paginator]\nkind='none'\n[operation.ListThings.identity]\nkey=['Id']\n[operation.ListOther]\nclass='defer'\n[operation.GetThing]\nclass='expand'\nitems='Items'\n[operation.GetThing.bind]\nId={{from='ListOther',path='Id'}}\n[operation.GetThing.paginator]\nkind='none'\n[operation.GetThing.identity]\nkey=['Id']\n"
+        "{HEADER}[operation.ListThings]\nclass='enumerate'\nitems='Items'\nskip=['MissingSkip']\n[operation.ListThings.batch]\nmember='Ids'\nmax=10\nreplaces='MissingBatch'\n[operation.ListThings.paginator]\nkind='none'\n[operation.ListThings.identity]\nkey=['Id']\n[operation.ListOther]\nclass='defer'\ndefer_reason='Requires a separate reviewed inventory plan'\n[operation.GetThing]\nclass='expand'\nitems='Items'\n[operation.GetThing.bind]\nId={{from='ListOther',path='Id'}}\n[operation.GetThing.paginator]\nkind='none'\n[operation.GetThing.identity]\nkey=['Id']\n"
     );
     overlay(root.path(), &text)?;
     let errors = violations(root.path())?;

@@ -3,6 +3,7 @@ use super::{
     error::Context, fields, pagination, plan, raw,
 };
 use toml::Value;
+mod deferred;
 
 pub(super) fn parse(context: &Context<'_>, value: Value) -> Result<OperationOverlay, OverlayError> {
     let raw: raw::Operation = raw::decode(context, value)?;
@@ -41,6 +42,7 @@ fn simple(
 ) -> Result<OperationOverlay, OverlayError> {
     Ok(OperationOverlay {
         class,
+        defer_reason: deferred::reason(context, raw.defer_reason.as_ref(), class)?,
         scope: scope(context, raw.scope.as_ref())?,
         items: item_selector(context, raw.items.as_ref())?,
         page_size: page_size(context, raw.page_size.as_ref())?,

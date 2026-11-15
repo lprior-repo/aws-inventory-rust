@@ -1,22 +1,86 @@
-use super::derive::signing_override;
-use super::{CaseCounts, DerivedEndpoint, Endpoint, Error, RuleSet};
+use super::derive::{DerivedEndpoint, signing_override};
+use super::{CaseRun, Endpoint, Error};
 use std::collections::BTreeSet;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DerivedService {
-    pub endpoint: DerivedEndpoint,
+pub struct VerifiedEndpoint {
+    service: DerivedService,
+}
 
-    pub exceptions: Vec<EndpointException>,
+impl VerifiedEndpoint {
+    pub fn endpoint(&self) -> &DerivedEndpoint {
+        &self.service.endpoint
+    }
+    pub fn exceptions(&self) -> &[EndpointException] {
+        &self.service.exceptions
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum VerificationFailure {
+    FailedCases(usize),
+    NoInScopeCases,
+    NoEndpointEvidence,
+    UnresolvedCandidate,
+}
+
+impl CaseRun<'_> {
+    pub fn verified_endpoint(
+        &self,
+        signing_name: Option<&str>,
+    ) -> Result<VerifiedEndpoint, VerificationFailure> {
+        if self.failed() > 0 {
+            return Err(VerificationFailure::FailedCases(self.failed()));
+        }
+        if self.in_scope() == 0 {
+            return Err(VerificationFailure::NoInScopeCases);
+        }
+        if self.endpoints.is_empty() {
+            return Err(VerificationFailure::NoEndpointEvidence);
+        }
+        let service =
+            derive_run(self, signing_name).map_err(|_| VerificationFailure::UnresolvedCandidate)?;
+        if matches!(&service.endpoint, DerivedEndpoint::Resolved { .. }) {
+            Ok(VerifiedEndpoint { service })
+        } else {
+            Err(VerificationFailure::UnresolvedCandidate)
+        }
+    }
+}
+
+pub(super) fn derive_run(
+    run: &CaseRun<'_>,
+    signing_name: Option<&str>,
+) -> Result<DerivedService, Error> {
+    let endpoint = run.rules.derive(signing_name)?;
+    let Some(name) = signing_name else {
+        return Ok(DerivedService {
+            endpoint,
+            exceptions: Vec::new(),
+        });
+    };
+    Ok(verify(endpoint, &run.endpoints, name))
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DerivedService {
+    endpoint: DerivedEndpoint,
+    exceptions: Vec<EndpointException>,
+}
+
+impl DerivedService {
+    pub fn endpoint(&self) -> &DerivedEndpoint {
+        &self.endpoint
+    }
+    pub fn exceptions(&self) -> &[EndpointException] {
+        &self.exceptions
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct EndpointException {
     pub region: String,
-
     pub url: String,
-
     pub signing_name: String,
-
     pub signing_region: String,
 }
 
@@ -76,23 +140,6 @@ impl EndpointCase {
             return "-";
         };
         region
-    }
-}
-
-impl CaseCounts {
-    pub fn derive(
-        &self,
-        rules: &RuleSet,
-        signing_name: Option<&str>,
-    ) -> Result<DerivedService, Error> {
-        let endpoint = rules.derive(signing_name)?;
-        let Some(name) = signing_name else {
-            return Ok(DerivedService {
-                endpoint,
-                exceptions: Vec::new(),
-            });
-        };
-        Ok(verify(endpoint, &self.endpoints, name))
     }
 }
 

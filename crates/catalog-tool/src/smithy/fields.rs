@@ -6,10 +6,8 @@ use std::fs;
 use std::io::{self, Read};
 use std::path::{Path, PathBuf};
 
-use super::{
-    Error, Registry, RegistryError, ReportMode, find_model_files, io_error, read_model_file,
-    totals::member_names, write_stdout,
-};
+use super::{Error, Registry, RegistryError, io_error, read_model_file, totals::member_names};
+use crate::{ReportMode, report::write_stdout};
 
 const FIELD_IDS_PATH: &str = "catalog/field-ids.txt";
 
@@ -37,15 +35,15 @@ struct PreparedRegistry {
 }
 
 pub fn fields(root: &Path, source: &Path, mode: ReportMode) -> Result<(), Error> {
-    let files = find_model_files(&source.join("models"))?;
+    let files = crate::model_source::discover_models(&source.join("models"))?;
     if files.is_empty() {
-        return Err(Error::NoModels);
+        return Err(crate::model_source::Error::NoModels.into());
     }
     let names = collect_names(&files)?;
     let path = root.join(FIELD_IDS_PATH);
     let prepared = prepare_registry(&path, names, MAX_REGISTRY_BYTES)?;
     match mode {
-        ReportMode::Print => write_stdout(&prepared.next.render()),
+        ReportMode::Print => write_stdout(&prepared.next.render()).map_err(Error::from),
         ReportMode::Write => write_fields(&path, &prepared),
         ReportMode::Check => check_fields(&path, prepared),
     }
@@ -152,7 +150,7 @@ fn check_fields(path: &Path, prepared: PreparedRegistry) -> Result<(), Error> {
             &prepared.next,
         )?);
     }
-    print_summary(prepared.next.len(), prepared.added)
+    Ok(())
 }
 
 fn stale_error(
@@ -181,9 +179,5 @@ fn write_fields(path: &Path, prepared: &PreparedRegistry) -> Result<(), Error> {
         &prepared.next.render(),
         MAX_REGISTRY_BYTES,
     )?;
-    print_summary(prepared.next.len(), prepared.added)
-}
-
-fn print_summary(total: usize, added: usize) -> Result<(), Error> {
-    write_stdout(&format!("field-ids {total} (+{added})\n"))
+    Ok(())
 }

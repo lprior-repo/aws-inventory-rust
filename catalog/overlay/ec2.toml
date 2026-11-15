@@ -1,0 +1,871 @@
+format = 1
+reviewed = "2026-11-14"
+reviewer = "Automated model review; no human approval"
+
+[operation.DescribeVpcs]
+class = "enumerate"
+scope = "region"
+items = "Vpcs"
+page_size = 5
+[operation.DescribeVpcs.identity]
+key = ["VpcId"]
+[operation.DescribeVpcs.paginator]
+kind = "token"
+input = "NextToken"
+output = "NextToken"
+
+[operation.DescribeSubnets]
+class = "enumerate"
+scope = "region"
+items = "Subnets"
+page_size = 5
+[operation.DescribeSubnets.identity]
+key = ["SubnetId"]
+[operation.DescribeSubnets.paginator]
+kind = "token"
+input = "NextToken"
+output = "NextToken"
+
+[operation.DescribeRegions]
+class = "enumerate"
+scope = "account"
+items = "Regions"
+[operation.DescribeRegions.fixed]
+AllRegions = false
+[operation.DescribeRegions.identity]
+key = ["RegionName"]
+[operation.DescribeRegions.paginator]
+kind = "none"
+
+[operation.DescribeInstances]
+class = "defer"
+defer_reason = "Output schema, stable identity, and relationship fields are not yet individually reviewed."
+[operation.DescribeInternetGateways]
+class = "defer"
+defer_reason = "Output schema, stable identity, and relationship fields are not yet individually reviewed."
+[operation.DescribeNatGateways]
+class = "defer"
+defer_reason = "Output schema, stable identity, and relationship fields are not yet individually reviewed."
+[operation.DescribeNetworkAcls]
+class = "defer"
+defer_reason = "Output schema, stable identity, and relationship fields are not yet individually reviewed."
+[operation.DescribeNetworkInterfaces]
+class = "defer"
+defer_reason = "Output schema, stable identity, and relationship fields are not yet individually reviewed."
+[operation.DescribeRouteTables]
+class = "defer"
+defer_reason = "Output schema, stable identity, and relationship fields are not yet individually reviewed."
+[operation.DescribeSecurityGroups]
+class = "defer"
+defer_reason = "Output schema, stable identity, and relationship fields are not yet individually reviewed."
+[operation.DescribeVolumes]
+class = "defer"
+defer_reason = "Output schema, stable identity, and relationship fields are not yet individually reviewed."
+[operation.DescribeVpcEndpoints]
+class = "defer"
+defer_reason = "Output schema, stable identity, and relationship fields are not yet individually reviewed."
+[operation.DescribeVpcPeeringConnections]
+class = "defer"
+defer_reason = "Output schema, stable identity, and relationship fields are not yet individually reviewed."
+
+[operation.DescribeAccountAttributes]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeAccountVpcEncryptionControl]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeAddressTransfers]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeAddresses]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeAddressesAttribute]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeAggregateIdFormat]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeApplicationStatus]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeApplicationStatusCheckAssociations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeApplicationStatusChecks]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeAvailabilityZones]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeAwsNetworkPerformanceMetricSubscriptions]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeBundleTasks]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeByoipCidrs]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeCapacityBlockExtensionHistory]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeCapacityBlockExtensionOfferings]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeCapacityBlockOfferings]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeCapacityBlockStatus]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeCapacityBlocks]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeCapacityManagerDataExports]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeCapacityReservationBillingRequests]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeCapacityReservationCancellationQuotes]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeCapacityReservationDateChangeQuotes]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeCapacityReservationFleets]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeCapacityReservationTopology]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeCapacityReservations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeCarrierGateways]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeClassicLinkInstances]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeClientVpnAuthorizationRules]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeClientVpnConnections]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeClientVpnEndpoints]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeClientVpnRoutes]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeClientVpnTargetNetworks]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeCoipPools]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeCustomerGateways]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeDeclarativePoliciesReports]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeDhcpOptions]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeEgressOnlyInternetGateways]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeElasticGpus]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeExportImageTasks]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeExportTasks]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeFastLaunchImages]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeFastSnapshotRestores]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeFleetHistory]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeFleetInstances]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeFleets]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeFlowLogs]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeFpgaImageAttribute]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeFpgaImages]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeHostReservationOfferings]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeHostReservations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeHosts]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeIamInstanceProfileAssociations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeIdFormat]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeIdentityIdFormat]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeImageAttribute]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeImageReferences]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeImageUsageReportEntries]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeImageUsageReports]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeImages]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeImportImageTasks]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeImportSnapshotTasks]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeInstanceAttribute]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeInstanceConnectEndpoints]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeInstanceCreditSpecifications]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeInstanceEventNotificationAttributes]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeInstanceEventWindows]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeInstanceImageMetadata]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeInstanceSqlHaHistoryStates]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeInstanceSqlHaStates]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeInstanceStatus]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeInstanceTopology]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeInstanceTypeOfferings]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeIpamByoasn]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeIpamExternalResourceVerificationTokens]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeIpamInternetRegistryAssociations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeIpamPolicies]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeIpamPoolAllocations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeIpamPools]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeIpamPrefixListResolverTargets]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeIpamPrefixListResolvers]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeIpamResourceDiscoveries]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeIpamResourceDiscoveryAssociations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeIpamScopes]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeIpams]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeIpv6Pools]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeKeyPairs]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeLaunchTemplateVersions]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeLaunchTemplates]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeLocalGatewayRouteTableVirtualInterfaceGroupAssociations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeLocalGatewayRouteTableVpcAssociations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeLocalGatewayRouteTables]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeLocalGatewayVirtualInterfaceGroups]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeLocalGatewayVirtualInterfaces]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeLocalGateways]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeLockedSnapshots]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeMacHosts]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeMacModificationTasks]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeManagedPrefixLists]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeMetricCategories]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeMovingAddresses]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeNetworkInsightsAccessScopeAnalyses]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeNetworkInsightsAccessScopes]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeNetworkInsightsAnalyses]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeNetworkInsightsPaths]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeNetworkInterfaceAttribute]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeNetworkInterfacePermissions]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeNetworkingFlexCostAllocationPolicies]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeNetworkingFlexCostAllocationPolicyAssociations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeOutpostLags]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribePlacementGroups]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribePrefixLists]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribePrincipalIdFormat]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribePublicIpv4Pools]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeReplaceRootVolumeTasks]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeReservedInstances]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeReservedInstancesListings]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeReservedInstancesModifications]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeReservedInstancesOfferings]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeRouteServerEndpoints]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeRouteServerPeers]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeRouteServers]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeScheduledInstanceAvailability]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeScheduledInstances]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeSecondaryInterfaces]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeSecondaryNetworks]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeSecondarySubnets]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeSecurityGroupReferences]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeSecurityGroupRules]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeSecurityGroupVpcAssociations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeServiceLinkVirtualInterfaces]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeSnapshotAttribute]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeSnapshotTierStatus]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeSnapshots]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeSpotDatafeedSubscription]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeSpotFleetInstances]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeSpotFleetRequestHistory]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeSpotFleetRequests]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeSpotInstanceRequests]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeSpotPriceHistory]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeStaleSecurityGroups]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeStoreImageTasks]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeTags]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeTrafficMirrorFilterRules]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeTrafficMirrorFilters]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeTrafficMirrorSessions]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeTrafficMirrorTargets]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeTransitGatewayAttachments]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeTransitGatewayConnectPeers]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeTransitGatewayConnects]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeTransitGatewayMeteringPolicies]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeTransitGatewayMulticastDomains]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeTransitGatewayPeeringAttachments]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeTransitGatewayPolicyTables]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeTransitGatewayRouteTableAnnouncements]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeTransitGatewayRouteTables]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeTransitGatewayVpcAttachments]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeTransitGateways]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeTrunkInterfaceAssociations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVerifiedAccessEndpoints]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVerifiedAccessGroups]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVerifiedAccessInstanceLoggingConfigurations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVerifiedAccessInstances]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVolumeAttribute]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVolumeStatus]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVolumesModifications]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVpcAttribute]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVpcBlockPublicAccessExclusions]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVpcBlockPublicAccessOptions]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVpcClassicLink]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVpcClassicLinkDnsSupport]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVpcEncryptionControls]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVpcEndpointAssociations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVpcEndpointConnectionNotifications]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVpcEndpointConnections]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVpcEndpointServiceConfigurations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVpcEndpointServicePermissions]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVpcEndpointServices]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVpnConcentrators]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVpnConnections]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.DescribeVpnGateways]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetActiveVpnTunnelStatus]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetAllowedImagesSettings]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetAssociatedEnclaveCertificateIamRoles]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetAssociatedIpv6PoolCidrs]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetAwsNetworkPerformanceData]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetCapacityManagerAttributes]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetCapacityManagerMetricData]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetCapacityManagerMetricDimensions]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetCapacityManagerMonitoredTagKeys]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetCapacityManagerSupportabilityScores]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetCapacityReservationUsage]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetClientVpnEndpointAuthorizationPolicy]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetCoipPoolUsage]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetConsoleOutput]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetConsoleScreenshot]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetDeclarativePoliciesReportSummary]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetDefaultCreditSpecification]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetEbsDefaultKmsKeyId]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetEbsEncryptionByDefault]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetEnabledIpamPolicy]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetFlowLogsIntegrationTemplate]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetGroupsForCapacityReservation]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetHostReservationPurchasePreview]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetImageAncestry]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetImageBlockPublicAccessState]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetImageFindings]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetInstanceMetadataDefaults]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetInstanceTpmEkPub]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetInstanceTypesFromInstanceRequirements]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetInstanceUefiData]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetIpamAddressHistory]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetIpamDiscoveredAccounts]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetIpamDiscoveredPublicAddresses]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetIpamDiscoveredResourceCidrs]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetIpamDiscoveredRoutes]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetIpamInternetRegistryAssociationAsns]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetIpamInternetRegistryAssociationCidrs]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetIpamPolicyAllocationRules]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetIpamPolicyOrganizationTargets]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetIpamPoolAllocations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetIpamPoolCidrs]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetIpamPrefixListResolverRules]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetIpamPrefixListResolverVersionEntries]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetIpamPrefixListResolverVersions]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetIpamResourceCidrs]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetIpamRouteOriginAuthorizations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetIpamRouteProtectionFindings]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetIpamRoutingPolicyRegistrationDeltas]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetIpamRoutingPolicyRegistrations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetLaunchTemplateData]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetManagedPrefixListAssociations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetManagedPrefixListEntries]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetManagedResourceVisibility]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetNetworkInsightsAccessScopeAnalysisFindings]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetNetworkInsightsAccessScopeContent]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetNetworkingFlexCostAllocationPolicyVersions]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetReservedInstancesExchangeQuote]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetRouteServerAssociations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetRouteServerPropagations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetRouteServerRoutingDatabase]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetSecurityGroupsForVpc]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetSerialConsoleAccessStatus]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetSnapshotBlockPublicAccessState]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetSpotPlacementScores]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetSubnetCidrReservations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetTransitGatewayAttachmentNatConfiguration]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetTransitGatewayAttachmentPropagations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetTransitGatewayMeteringPolicyEntries]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetTransitGatewayMulticastDomainAssociations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetTransitGatewayPolicyTableAssociations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetTransitGatewayPolicyTableEntries]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetTransitGatewayPrefixListReferences]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetTransitGatewayRouteTableAssociations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetTransitGatewayRouteTablePropagations]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetVerifiedAccessEndpointPolicy]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetVerifiedAccessEndpointTargets]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetVerifiedAccessGroupPolicy]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetVpcResourcesBlockingEncryptionEnforcement]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetVpnConnectionDeviceSampleConfiguration]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetVpnConnectionDeviceTypes]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.GetVpnTunnelReplacementStatus]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.ListImagesInRecycleBin]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.ListSnapshotsInRecycleBin]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.ListVolumesInRecycleBin]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.SearchLocalGatewayRoutes]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.SearchTransitGatewayMulticastGroups]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."
+[operation.SearchTransitGatewayRoutes]
+class = "defer"
+defer_reason = "Output schema, stable identity, required inputs, and relationship fields are not yet individually reviewed."

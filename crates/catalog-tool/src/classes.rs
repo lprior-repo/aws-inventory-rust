@@ -5,7 +5,6 @@ pub(crate) mod report;
 
 use std::path::{Path, PathBuf};
 
-pub use crate::smithy::ReportMode;
 pub use deny::{DenyList, ParseError, ParseErrorKind};
 use thiserror::Error;
 
@@ -90,6 +89,10 @@ pub enum Error {
 
     #[error(transparent)]
     Model(#[from] crate::smithy::Error),
+    #[error(transparent)]
+    ModelSource(#[from] crate::model_source::Error),
+    #[error(transparent)]
+    Report(#[from] crate::report::ReportError),
 
     #[error("{file}: {source}")]
     Io {
@@ -103,15 +106,15 @@ pub enum Error {
     #[error("invalid model service path: {0}")]
     InvalidModelPath(PathBuf),
 
-    #[error("{service}/{operation}: input {target} does not resolve to a structure")]
+    #[error("{file}: {source}")]
     InvalidInput {
-        service: String,
-        operation: String,
-        target: String,
+        file: PathBuf,
+        #[source]
+        source: crate::model_source::InputError,
     },
 
-    #[error("{service}/{operation}: mixins are not resolved")]
-    MixinsNotResolved { service: String, operation: String },
+    #[error(transparent)]
+    InputResolution(#[from] crate::model_source::InputError),
 
     #[error("classification resource limit exceeded")]
     Limit,
@@ -130,6 +133,6 @@ pub fn build_report(root: &Path, source: &Path) -> Result<String, Error> {
     report::build(root, source)
 }
 
-pub fn run(root: &Path, source: &Path, mode: ReportMode) -> Result<(), Error> {
+pub fn run(root: &Path, source: &Path, mode: crate::ReportMode) -> Result<(), Error> {
     report::run(root, source, mode)
 }

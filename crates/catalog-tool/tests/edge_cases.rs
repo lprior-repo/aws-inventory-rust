@@ -1,6 +1,7 @@
 include!("smithy_helpers.rs");
 
-use catalog_tool::smithy::{Error, ReportMode, build_report, run};
+use catalog_tool::ReportMode;
+use catalog_tool::smithy::{Error, build_report, run};
 
 #[test]
 fn no_service_has_its_own_filename_bearing_variant() -> Result<(), Box<dyn std::error::Error>> {
@@ -43,12 +44,15 @@ fn invalid_json_retains_filename_and_parser_error() -> Result<(), Box<dyn std::e
         .err()
         .ok_or("missing InvalidJson error")?;
     match error {
-        Error::InvalidJson { file, source } => {
-            assert_eq!(file, dir.path().join("models/broken.json"));
-            assert_eq!(source.classify(), serde_json::error::Category::Eof);
-            assert_eq!((source.line(), source.column()), (1, 1));
+        Error::ModelSource(source) => {
+            assert!(source.to_string().contains("models/broken.json"));
+            let parser_error = std::error::Error::source(&source)
+                .and_then(|source| source.downcast_ref::<serde_json::Error>())
+                .ok_or("missing parser source")?;
+            assert_eq!(parser_error.classify(), serde_json::error::Category::Eof);
+            assert_eq!((parser_error.line(), parser_error.column()), (1, 1));
         }
-        other => return Err(format!("expected InvalidJson, got {other:?}").into()),
+        other => return Err(format!("expected ModelSource, got {other:?}").into()),
     }
     Ok(())
 }
@@ -64,8 +68,11 @@ fn sparse_oversized_json_is_refused_before_parsing() -> Result<(), Box<dyn std::
         .err()
         .ok_or("missing FileTooLarge error")?;
     match error {
-        Error::FileTooLarge(file) => assert_eq!(file, path),
-        other => return Err(format!("expected FileTooLarge, got {other:?}").into()),
+        Error::ModelSource(source) => assert_eq!(
+            source.to_string(),
+            format!("file exceeds 67108864 bytes: {}", path.display())
+        ),
+        other => return Err(format!("expected ModelSource, got {other:?}").into()),
     }
     Ok(())
 }
@@ -84,14 +91,14 @@ fn command_error_contains_every_modified_line() -> Result<(), Box<dyn std::error
         .err()
         .ok_or("missing mismatch")?;
     match error {
-        Error::ReportMismatch(lines) => assert_eq!(
+        Error::Report(catalog_tool::ReportError::Mismatch(lines)) => assert_eq!(
             lines,
             concat!(
                 "line 1 differs: expected Some(\"services 1\\n\"), got Some(\"services 9\\n\")\n",
                 "line 2 differs: expected Some(\"operations 1\\n\"), got Some(\"operations 8\\n\")\n"
             )
         ),
-        other => return Err(format!("expected ReportMismatch, got {other:?}").into()),
+        other => return Err(format!("expected Report(Mismatch), got {other:?}").into()),
     }
     Ok(())
 }
@@ -101,18 +108,24 @@ fn missing_models_and_empty_models_are_distinct() -> Result<(), Box<dyn std::err
     let dir = tempfile::tempdir()?;
     let error = build_report(dir.path()).err().ok_or("missing I/O error")?;
     match error {
-        Error::Io { file, source } => {
-            assert_eq!(file, dir.path().join("models"));
-            assert_eq!(source.kind(), std::io::ErrorKind::NotFound);
+        Error::ModelSource(source) => {
+            assert!(source.to_string().contains("models"));
+            let io_error = std::error::Error::source(&source)
+                .and_then(|source| source.downcast_ref::<std::io::Error>())
+                .ok_or("missing filesystem source")?;
+            assert_eq!(io_error.kind(), std::io::ErrorKind::NotFound);
         }
-        other => return Err(format!("expected Io, got {other:?}").into()),
+        other => return Err(format!("expected ModelSource, got {other:?}").into()),
     }
 
     std::fs::create_dir(dir.path().join("models"))?;
     let error = build_report(dir.path())
         .err()
         .ok_or("missing NoModels error")?;
-    assert!(matches!(error, Error::NoModels), "{error:?}");
+    assert!(matches!(
+        error,
+        Error::ModelSource(source) if source.to_string() == "no models found"
+    ));
     Ok(())
 }
 
@@ -127,12 +140,15 @@ fn exactly_sixty_four_mib_reaches_the_json_reader() -> Result<(), Box<dyn std::e
         .err()
         .ok_or("missing InvalidJson error")?;
     match error {
-        Error::InvalidJson { file, source } => {
-            assert_eq!(file, path);
-            assert_eq!(source.classify(), serde_json::error::Category::Syntax);
-            assert_eq!((source.line(), source.column()), (1, 1));
+        Error::ModelSource(source) => {
+            assert!(source.to_string().contains(&path.display().to_string()));
+            let parser_error = std::error::Error::source(&source)
+                .and_then(|source| source.downcast_ref::<serde_json::Error>())
+                .ok_or("missing parser source")?;
+            assert_eq!(parser_error.classify(), serde_json::error::Category::Syntax);
+            assert_eq!((parser_error.line(), parser_error.column()), (1, 1));
         }
-        other => return Err(format!("expected InvalidJson at size limit, got {other:?}").into()),
+        other => return Err(format!("expected ModelSource at size limit, got {other:?}").into()),
     }
     Ok(())
 }

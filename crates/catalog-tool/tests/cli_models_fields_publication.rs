@@ -1,6 +1,7 @@
 include!("smithy_helpers.rs");
 
-use catalog_tool::smithy::{self, Error, ReportMode};
+use catalog_tool::ReportMode;
+use catalog_tool::smithy::{self, Error};
 use std::path::{Path, PathBuf};
 use std::time::SystemTime;
 
@@ -51,7 +52,7 @@ fn write_replaces_registry_without_mutating_its_old_hard_link()
     std::fs::hard_link(registry_path(root.path()), &previous)?;
     write_fixture(root.path(), "models/added.json", ADDED)?;
 
-    success(&fields(root.path(), "--write")?, "field-ids 2 (+1)\n");
+    success_silent(&fields(root.path(), "--write")?);
     assert_eq!(
         std::fs::read(registry_path(root.path()))?,
         b"Shared\nAardvark\n"
@@ -66,7 +67,7 @@ fn successful_check_preserves_registry_bytes_and_modification_time()
     let root = registry_fixture()?;
     let before = set_old_modified(root.path())?;
 
-    success(&fields(root.path(), "--check")?, "field-ids 1 (+0)\n");
+    success_silent(&fields(root.path(), "--check")?);
     assert_unchanged(root.path(), before)?;
     Ok(())
 }

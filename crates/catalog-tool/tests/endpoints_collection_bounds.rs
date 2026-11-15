@@ -22,10 +22,10 @@ fn case_count_exactly_20000_succeeds_and_20001_fails() -> TestResult {
         .collect();
     let counts = parsed.run_cases(&cases)?;
     assert_eq!(
-        (counts.in_scope, counts.passed, counts.failed),
+        (counts.in_scope(), counts.passed(), counts.failed()),
         (20_000, 20_000, 0)
     );
-    assert!(counts.skipped.is_empty());
+    assert!(counts.skipped().is_empty());
     cases.push(Case {
         params: BTreeMap::new(),
         expect: result("https://bounds.test"),

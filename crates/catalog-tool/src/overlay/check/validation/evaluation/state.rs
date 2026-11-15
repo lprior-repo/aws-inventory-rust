@@ -70,6 +70,7 @@ impl<'a, 'm, 'd> State<'a, 'm, 'd> {
 fn empty_overlay() -> OperationOverlay {
     OperationOverlay {
         class: None,
+        defer_reason: None,
         scope: None,
         items: None,
         page_size: None,

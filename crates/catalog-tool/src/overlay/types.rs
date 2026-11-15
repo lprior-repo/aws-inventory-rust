@@ -115,6 +115,7 @@ pub enum Scope {
 #[non_exhaustive]
 pub struct OperationOverlay {
     pub class: Option<OverlayClass>,
+    pub defer_reason: Option<String>,
 
     pub scope: Option<Scope>,
 

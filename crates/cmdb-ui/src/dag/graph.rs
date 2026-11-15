@@ -20,7 +20,8 @@ pub enum NodeKind {
 
 impl NodeKind {
     pub fn from_facet(facet: &str) -> Self {
-        match facet {
+        let service = facet.split("::").nth(1).map_or("", |value| value);
+        match service.to_ascii_lowercase().as_str() {
             "ec2" => Self::Ec2,
             "s3" => Self::S3,
             "rds" => Self::Rds,

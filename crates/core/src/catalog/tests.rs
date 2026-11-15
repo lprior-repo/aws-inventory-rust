@@ -1,5 +1,5 @@
 use super::*;
-use crate::record::{Key, Record, Value};
+use crate::record::{Key, ListRef, Record, Value, encode_list};
 use proptest::prelude::*;
 use std::collections::BTreeMap;
 
@@ -21,7 +21,19 @@ fn field_registry_values() -> (Value, Value) {
         ]),
     )
 }
+fn shape_offsets(shapes: &[Value]) -> Result<Value, RecordError> {
+    let bytes = encode_list(shapes)?;
+    let offsets = ListRef::from_bytes(&bytes)?.encoded_item_offsets()?;
+    Ok(Value::Bytes(
+        offsets
+            .iter()
+            .flat_map(|offset| offset.to_be_bytes())
+            .collect(),
+    ))
+}
 fn service() -> Result<Value, RecordError> {
+    let shapes = vec![shape()?];
+    let offsets = shape_offsets(&shapes)?;
     map([
         (CatalogKey::Name, Value::Text("Example".into())),
         (CatalogKey::ApiVersion, Value::Text("1".into())),
@@ -31,7 +43,8 @@ fn service() -> Result<Value, RecordError> {
             Value::List(vec![Value::Text("aws.protocols#restJson1".into())]),
         ),
         (CatalogKey::Operations, Value::List(vec![operation()?])),
-        (CatalogKey::Shapes, Value::List(vec![shape()?])),
+        (CatalogKey::Shapes, Value::List(shapes)),
+        (CatalogKey::ShapeOffsets, offsets),
         (CatalogKey::Resources, Value::List(vec![])),
     ])
 }

@@ -1,12 +1,17 @@
+use super::cases::CaseCounts;
 use super::report_text::render;
-use super::{Case, CaseCounts, DerivedEndpoint, EndpointException, Error, Fault, RuleSet};
+use super::{Case, DerivedEndpoint, EndpointException, Error, Fault, RuleSet, VerifiedEndpoint};
 use serde::Deserialize;
 use serde_json::Value;
-use std::{collections::BTreeMap, path::Path};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::Path,
+};
 
 #[derive(Deserialize)]
 struct Model {
-    shapes: BTreeMap<String, Shape>,
+    #[serde(deserialize_with = "crate::model_source::unique_map")]
+    shapes: std::collections::BTreeMap<String, Shape>,
 }
 #[derive(Deserialize)]
 struct Shape {
@@ -38,43 +43,95 @@ pub(super) struct Service {
     pub(super) endpoint: DerivedEndpoint,
     pub(super) unsupported: Vec<super::UnsupportedCase>,
     pub(super) exceptions: Vec<EndpointException>,
+    pub(super) failures: Vec<(usize, String)>,
 }
 
 pub fn build_report(source: &Path) -> Result<String, Error> {
     let models = source.join("models");
-    let files = crate::smithy::find_model_files(&models)?;
-    if files.is_empty() {
-        return Err(crate::smithy::Error::NoModels.into());
-    }
-    if files.len() > 1024 {
-        return Err(model_error(&models, Fault::Bound("services")));
-    }
+    let files = model_files(&models)?;
     let (counts, mut services) = load_services(&files, &models)?;
     services.sort_by(|a, b| a.name.cmp(&b.name));
     render(&counts, &services)
 }
 
-fn read_service(file: &Path, models: &Path) -> Result<(Service, CaseCounts), Error> {
+pub fn verified_endpoints(source: &Path) -> Result<BTreeMap<String, VerifiedEndpoint>, Error> {
+    let models = source.join("models");
+    let files = model_files(&models)?;
+    let mut seen = BTreeSet::new();
+    files
+        .iter()
+        .try_fold(BTreeMap::new(), |mut endpoints, file| {
+            let evidence = read_evidence(file, &models)?;
+            if !seen.insert(evidence.name.clone()) {
+                return Err(model_error(
+                    file,
+                    Fault::Malformed("duplicate service directory".into()),
+                ));
+            }
+            let rules = RuleSet::parse(file, &evidence.rules)?;
+            let run = rules.run_cases(&evidence.cases)?;
+            if let Ok(verified) = run.verified_endpoint(evidence.signing_name.as_deref()) {
+                endpoints.insert(evidence.name, verified);
+            }
+            Ok(endpoints)
+        })
+}
+
+fn model_files(models: &Path) -> Result<Vec<std::path::PathBuf>, Error> {
+    let files = crate::model_source::discover_models(models)?;
+    if files.is_empty() {
+        return Err(crate::model_source::Error::NoModels.into());
+    }
+    if files.len() > 1024 {
+        return Err(model_error(models, Fault::Bound("services")));
+    }
+    Ok(files)
+}
+
+struct ServiceEvidence {
+    name: String,
+    rules: Value,
+    cases: Vec<Case>,
+    signing_name: Option<String>,
+}
+
+fn read_evidence(file: &Path, models: &Path) -> Result<ServiceEvidence, Error> {
     let traits = read_traits(file)?;
-    let value = traits
+    let rules = traits
         .rules
         .ok_or_else(|| malformed(file, "missing rules"))?;
-    let rules = RuleSet::parse(file, &value)?;
     let tests = traits
         .tests
         .ok_or_else(|| malformed(file, "missing tests"))?;
-    let mut counts = rules.run_cases(&tests.cases)?;
-    let derived = counts.derive(&rules, traits.signing.as_ref().map(|s| s.name.as_str()))?;
-    let name = service_name(file, models)?;
-    let unsupported = std::mem::take(&mut counts.unsupported);
+    let name = crate::model_source::service_name(models, file)?.to_owned();
+    Ok(ServiceEvidence {
+        name,
+        rules,
+        cases: tests.cases,
+        signing_name: traits.signing.map(|signing| signing.name),
+    })
+}
+
+fn read_service(file: &Path, models: &Path) -> Result<(Service, CaseCounts), Error> {
+    let evidence = read_evidence(file, models)?;
+    let rules = RuleSet::parse(file, &evidence.rules)?;
+    let run = rules.run_cases(&evidence.cases)?;
+    let derived = run.derive(evidence.signing_name.as_deref())?;
+    let failures = run
+        .failures()
+        .iter()
+        .map(|failure| (failure.index(), failure.reason().to_owned()))
+        .collect();
+    let unsupported = run.unsupported().to_vec();
     Ok((
         Service {
-            name,
-            endpoint: derived.endpoint,
-            exceptions: derived.exceptions,
+            name: evidence.name,
+            endpoint: derived.endpoint().clone(),
             unsupported,
+            exceptions: derived.exceptions().to_vec(),
+            failures,
         },
-        counts,
+        run.totals(),
     ))
 }
 
@@ -101,7 +158,7 @@ fn load_services(
 }
 
 fn read_traits(file: &Path) -> Result<Traits, Error> {
-    let model: Model = crate::smithy::read_json(file)?;
+    let model: Model = crate::model_source::read_model(file)?;
     let mut services = model.shapes.into_values().filter(|s| s.kind == "service");
     let shape = services
         .next()
@@ -110,15 +167,6 @@ fn read_traits(file: &Path) -> Result<Traits, Error> {
         return Err(malformed(file, "several services"));
     }
     Ok(shape.traits)
-}
-
-fn service_name(file: &Path, models: &Path) -> Result<String, Error> {
-    file.strip_prefix(models)
-        .ok()
-        .and_then(|p| p.components().next())
-        .and_then(|p| p.as_os_str().to_str())
-        .map(str::to_owned)
-        .ok_or_else(|| malformed(file, "invalid service directory"))
 }
 
 fn malformed(file: &Path, message: &str) -> Error {

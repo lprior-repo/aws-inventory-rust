@@ -16,7 +16,7 @@ fn check_rejects_same_length_one_byte_drift_without_output_or_rewrite() -> TestR
     let path = root.path().join("catalog/aws-api.catalog");
     let output = compile(source.path(), root.path(), &["--write"])?;
     let mut bytes = fs::read(&path)?;
-    success(&output, bytes.len());
+    success(&output);
     *bytes.first_mut().ok_or("generated catalog is empty")? ^= 1;
     fs::write(&path, &bytes)?;
     let output = compile(source.path(), root.path(), &["--check"])?;

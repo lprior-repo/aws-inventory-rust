@@ -3,7 +3,7 @@ mod parent;
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use catalog_tool::{classes, endpoints, overlay, package, plans, smithy};
+use catalog_tool::{ReportMode, classes, endpoints, overlay, package, plans, smithy};
 
 const USAGE: &str = "usage:\n  catalog-tool parent-candidates [--root <dir>] [--write | --check]\n  catalog-tool package --destination <zip path> [--root <dir>]\n  catalog-tool models <report|fields|compile|endpoints> [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool classes [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool plans [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool overlay [--source <dir>] [--root <dir>] [--check | --write]";
 
@@ -103,7 +103,7 @@ fn overlay_arguments(
 struct ReportInputs {
     root: PathBuf,
     source: PathBuf,
-    mode: smithy::ReportMode,
+    mode: ReportMode,
 }
 
 fn report_inputs(
@@ -116,7 +116,7 @@ fn report_inputs(
         .map_or_else(|| root.join(".local/aws-models"), PathBuf::from);
     let mode = match flags.mode {
         Some(mode) => mode,
-        None => smithy::ReportMode::Print,
+        None => ReportMode::Print,
     };
     Ok(ReportInputs { root, source, mode })
 }
@@ -125,7 +125,7 @@ fn run_models(
     command: &str,
     root: &std::path::Path,
     source: &std::path::Path,
-    mode: smithy::ReportMode,
+    mode: ReportMode,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match command {
         "report" => Ok(smithy::run(root, source, mode)?),
@@ -140,7 +140,7 @@ fn run_models(
 struct ModelsFlags<'a> {
     root: Option<&'a str>,
     source: Option<&'a str>,
-    mode: Option<smithy::ReportMode>,
+    mode: Option<ReportMode>,
     pending: Option<&'static str>,
 }
 
@@ -183,9 +183,9 @@ fn apply_models_flag(
         "--source" if flags.source.is_none() => flags.pending = Some("--source"),
         "--check" | "--write" if flags.mode.is_none() => {
             flags.mode = Some(if value == "--check" {
-                smithy::ReportMode::Check
+                ReportMode::Check
             } else {
-                smithy::ReportMode::Write
+                ReportMode::Write
             });
         }
         "--root" | "--source" | "--check" | "--write" => {

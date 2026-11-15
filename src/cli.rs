@@ -155,6 +155,7 @@ pub enum Command {
     },
 
     Scan(ScanArgs),
+    Sweep(SweepArgs),
 }
 
 impl From<TraversalArgs> for crate::analysis::TraversalOptions {
@@ -186,3 +187,6 @@ pub use jobs::JobCommand;
 
 mod traversal;
 pub use traversal::TraversalArgs;
+
+mod sweep;
+pub use sweep::SweepArgs;

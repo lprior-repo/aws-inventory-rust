@@ -49,7 +49,10 @@ fn service_failure(
 }
 fn root(service: Record) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let root = encode::map([
-        (CatalogKey::Format, Value::Int(2)),
+        (
+            CatalogKey::Format,
+            Value::Int(inventory_core::catalog::CATALOG_VERSION),
+        ),
         (CatalogKey::ModelsCommit, Value::Text("fixture".into())),
         (CatalogKey::FieldNames, Value::Bytes(b"ZuluAlpha".to_vec())),
         (

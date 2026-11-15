@@ -14,10 +14,11 @@ with that command instead of skipping the test.
 ## Encoding and identity
 
 Every map and record is encoded through `inventory_core::record::Record::encode`.
-There is no JSON in the runtime catalog. The v2 root record contains schema
-version 2, the 40-character source Git commit, the shared field-name bytes and
+There is no JSON in the runtime catalog. The v3 root record contains schema
+version 3, the 40-character source Git commit, the shared field-name bytes and
 fixed-width offsets, and a list of independently encoded service records.
-The reader rejects v1 catalogs; there is no lossy compatibility path.
+Each service stores a fixed-width ShapeOffsets byte string so shape lookup is
+constant-time. The reader rejects older catalogs; there is no lossy compatibility path.
 Before reading the models, compilation requires the canonical source directory
 to equal Git's repository root and rejects tracked or untracked changes beneath
 `models`, including ignored files hidden by `.git/info/exclude` or other ignore
@@ -41,7 +42,7 @@ across services and structure/union shapes. It is compiler input only. Registry
 parallel public number type. Missing members name the required `models fields
 --write` repair. Enum values are not structure/union fields.
 
-The v2 root field-name registry stores each bare member name once in
+The v3 root field-name registry stores each bare member name once in
 `FieldNames`; `FieldNameOffsets` is a sequence of big-endian 32-bit start/end
 pairs indexed by nonzero `FieldId`. Root validation checks contiguous bounds and
 UTF-8 before any service view is returned. Member lookup is O(1), borrowed, and
@@ -104,7 +105,7 @@ done
 
 | ID | Variant | Value and meaning |
 |---:|---|---|
-| 1 | Format | Root integer schema version, currently 2 |
+| 1 | Format | Root integer schema version, currently 3 |
 | 2 | ModelsCommit | Root source Git commit text |
 | 3 | Services | Root list of independently encoded service record bytes |
 | 4 | Name | Service directory name, or unqualified shape/operation name |
@@ -196,6 +197,8 @@ done
 | 90 | RequestCompression | Canonical, ordered request `encodings` list |
 | 91 | DefaultValue | Optional target-normalized canonical member default; null differs from absence |
 | 92 | ClientOptional | Whether client-side member defaults are suppressed |
+| 93 | S3UnwrappedXmlOutput | Whether the S3 XML output wrapper is omitted |
+| 94 | ShapeOffsets | Per-shape big-endian 32-bit offsets into the encoded Shapes list |
 
 Defaults are compiled once: blob trait strings become decoded bytes and
 timestamp defaults become canonical `Time` values. `WireTraits::default_value`
@@ -460,6 +463,34 @@ an operation denied by the global list, service policy or no-read-verb rule.
 Validation reports all sorted diagnostics with their offending paths and does
 not publish a partial report.
 
-The current pinned baseline contains 436 unreviewed services and no callable
-operations. This gate proves offline plan validation, not AWS execution or the
-emulator-to-storage-to-viewer pipeline.
+Deferred operations carry a mandatory `defer_reason` (at most 1,024 bytes);
+denied overrides carry a typed `deny_reason` (`content`, `secret`, `paid`,
+`mutating`, `reference-data`). Reviewed services are currently `ec2` and `sts`:
+four callable operations (EC2 `DescribeVpcs`, `DescribeSubnets`,
+`DescribeRegions`; STS `GetCallerIdentity`), three STS credential-minting
+operations denied as `secret`, and every other candidate deferred. All other
+services remain unreviewed and uncallable.
+
+## Runtime catalog extension
+
+`catalog-tool models compile --write` appends root field 60000 after the
+overlay gate passes, then loads the result through
+`inventory_core::catalog::runtime::RuntimeCatalog::from_bytes` and refuses to
+publish a catalog the runtime reader rejects. The runtime never links
+catalog-tool.
+
+| Field | Content |
+| ---: | --- |
+| 1 | Extension version, currently 1 |
+| 2 | Callable plans: service, operation, kind, scope, items, identity, bindings, page plan, relations, verified endpoint, review, purpose, protocol (fields 1–13) |
+| 3 | Kind schemas: kind, SQL table, typed text columns (display name path and every reviewed relation target path), optional name path |
+| 4 | Reviewed relations: source kind/path, target kind/path, relation, scope (0 account-region, 1 account, 2 home region) |
+| 5 | Kind coverage for every CloudFormation type: mapped, API-only or unmapped with reason |
+| 6 | Review decisions: service, operation, disposition (0 callable, 1 denied, 2 deferred, 3 unclassified), reason |
+
+Every map is closed: the reader rejects unknown fields, out-of-range enums and
+absent optional fields encoded as anything other than omission. Callable
+decisions and plans form an exact bijection by `(service, operation)`, and each
+referenced operation must exist once in its service. Bootstrap roles
+(account identity, region discovery) are explicit `kinds.tsv` rows matched by
+exact `(service, operation)` and never authorize a call on their own.

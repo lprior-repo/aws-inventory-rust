@@ -9,17 +9,17 @@ script_mod! {
         flow: Right spacing: 6
         align: Align{y: 0.5}
         padding: Inset{left: 10 right: 10 top: 4 bottom: 4}
-        draw_bg.color: theme.color_warning_container
+        draw_bg.color: theme.color_info_container
         draw_bg.border_radius: theme.radius_full
         RoundedView{
             width: 6 height: 6
-            draw_bg.color: theme.color_warning
+            draw_bg.color: theme.color_on_info_container
             draw_bg.border_radius: theme.radius_full
         }
         Label{
             height: Fit
-            text: "SYNTHETIC"
-            draw_text.color: theme.color_warning
+            text: "READ ONLY"
+            draw_text.color: theme.color_on_info_container
             draw_text.text_style: theme.font_bold{font_size: theme.type_label_s_size}
         }
     }
@@ -108,13 +108,13 @@ script_mod! {
         }
         View{
             width: Fill height: Fit flow: Down spacing: 1
-            mod.widgets.FieldKey{text: "TAGS"}
-            detail_tags := mod.widgets.FieldValue{text: ""}
+            mod.widgets.FieldKey{text: "RECORD"}
+            detail_record := mod.widgets.FieldValue{text: ""}
         }
         View{
             width: Fill height: Fit flow: Down spacing: 1
-            mod.widgets.FieldKey{text: "SIZE"}
-            detail_size := mod.widgets.FieldValue{text: ""}
+            mod.widgets.FieldKey{text: "CONTENT HASH"}
+            detail_hash := mod.widgets.FieldValue{text: ""}
         }
     }
 }

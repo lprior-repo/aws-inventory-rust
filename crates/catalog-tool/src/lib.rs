@@ -1,7 +1,12 @@
+pub(crate) mod model_source;
+pub(crate) mod report;
+pub use report::{ReportError, ReportMode};
 pub mod classes;
 pub mod endpoints;
+pub mod kind_map;
 pub mod names;
 pub mod overlay;
 pub mod package;
 pub mod plans;
+pub mod runtime_catalog;
 pub mod smithy;

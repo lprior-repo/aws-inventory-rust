@@ -34,23 +34,3 @@ fn fields(totals: &Totals) -> [(&'static str, usize); 15] {
         ("cbor_services", totals.cbor_services),
     ]
 }
-
-pub(crate) fn differences(expected: &str, actual: &str) -> Result<String, fmt::Error> {
-    let mut expected = expected.split_inclusive('\n');
-    let mut actual = actual.split_inclusive('\n');
-    std::iter::from_fn(|| match (expected.next(), actual.next()) {
-        (None, None) => None,
-        pair => Some(pair),
-    })
-    .enumerate()
-    .try_fold(String::new(), |mut text, (index, (left, right))| {
-        if left != right {
-            writeln!(
-                text,
-                "line {} differs: expected {left:?}, got {right:?}",
-                index.saturating_add(1)
-            )?;
-        }
-        Ok(text)
-    })
-}

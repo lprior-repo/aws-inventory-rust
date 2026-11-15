@@ -5,11 +5,13 @@ mod metadata;
 mod operation;
 mod provenance;
 mod registry_wire;
+mod runtime_inputs;
 mod service;
 mod shapes;
 #[cfg(test)]
 mod tests;
-use super::{Error, Registry, ReportMode, fields, find_model_files, write_stdout};
+use super::{Error, Registry, fields, write_stdout};
+use crate::ReportMode;
 use inventory_core::{
     catalog::{CATALOG_VERSION, Catalog, CatalogKey},
     record::{MAX_RECORD_BYTES, Record, Value},
@@ -24,6 +26,9 @@ pub enum CompileError {
 
     #[error(transparent)]
     Catalog(#[from] inventory_core::catalog::CatalogError),
+
+    #[error(transparent)]
+    RuntimeInputs(Box<runtime_inputs::RuntimeInputsError>),
 
     #[error("member {0:?} is missing; run `catalog-tool models fields --write`")]
     MissingMember(String),
@@ -77,6 +82,12 @@ pub enum CompileError {
     },
 }
 
+impl From<runtime_inputs::RuntimeInputsError> for CompileError {
+    fn from(source: runtime_inputs::RuntimeInputsError) -> Self {
+        Self::RuntimeInputs(Box::new(source))
+    }
+}
+
 impl CompileError {
     fn in_service(self, service: &str) -> Self {
         Self::Service {
@@ -98,6 +109,7 @@ pub fn compile(root: &Path, source: &Path, mode: ReportMode) -> Result<(), Error
     let limit = u64::try_from(MAX_RECORD_BYTES).map_err(|_| CompileError::Kind)?;
     let original = fields::publish::read_bytes(&path, limit)?;
     let bytes = build_catalog(source, &registry, &provenance::commit(source)?)?;
+    let bytes = runtime_inputs::augment(root, source, &bytes).map_err(CompileError::from)?;
     match mode {
         ReportMode::Write => {
             fields::publish::publish_bytes(&path, original.as_deref(), &bytes, limit)?
@@ -107,7 +119,10 @@ pub fn compile(root: &Path, source: &Path, mode: ReportMode) -> Result<(), Error
         }
         _ => {}
     }
-    write_stdout(&format!("catalog {} bytes\n", bytes.len()))
+    if mode == ReportMode::Print {
+        write_stdout(&format!("catalog {} bytes\n", bytes.len()))?;
+    }
+    Ok(())
 }
 
 pub fn build_catalog(
@@ -116,9 +131,9 @@ pub fn build_catalog(
     models_commit: &str,
 ) -> Result<Vec<u8>, Error> {
     let models = source.join("models");
-    let files = find_model_files(&models)?;
+    let files = crate::model_source::discover_models(&models)?;
     if files.is_empty() {
-        return Err(Error::NoModels);
+        return Err(crate::model_source::Error::NoModels.into());
     }
     let state = files
         .iter()

@@ -59,18 +59,18 @@ fn empty_overlay_check_builds_a_non_callable_baseline() -> Result<(), Box<dyn st
 }
 
 #[test]
-fn successful_cli_prints_report_and_drift_preserves_report_bytes()
+fn successful_write_and_matching_check_are_silent_and_drift_preserves_report_bytes()
 -> Result<(), Box<dyn std::error::Error>> {
     let root = fixture()?;
     let report = root.path().join("catalog/aws-overlay.report");
     let expected = overlay::build_report(root.path(), &source(root.path()))?;
     let written = command(root.path(), "--write")?;
     assert!(written.status.success());
-    assert_eq!(written.stdout, expected.as_bytes());
+    assert_eq!(written.stdout, b"");
     assert_eq!(fs::read(&report)?, expected.as_bytes());
     let matching = command(root.path(), "--check")?;
     assert!(matching.status.success());
-    assert_eq!(matching.stdout, expected.as_bytes());
+    assert_eq!(matching.stdout, b"");
     let report_len = expected.len();
     let mut drift = expected.into_bytes();
     assert_eq!(drift.len(), report_len);

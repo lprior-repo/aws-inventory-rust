@@ -11,8 +11,16 @@ use std::{
     process::{Command, Output},
 };
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-const MODEL: &str = r#"{"shapes":{
- "n#Svc":{"type":"service","version":"2020-01-01","traits":{"smithy.protocols#rpcv2Cbor":{}}},
+const MODEL: &str = r#"{"smithy":"2.0","shapes":{
+ "n#Svc":{"type":"service","version":"2020-01-01","traits":{
+   "smithy.protocols#rpcv2Cbor":{},
+   "smithy.rules#endpointRuleSet":{"version":"1.0","parameters":{},"rules":[
+     {"type":"endpoint","conditions":[],"endpoint":{"url":"https://example.test"}}
+   ]},
+   "smithy.rules#endpointTests":{"testCases":[
+     {"params":{},"expect":{"endpoint":{"url":"https://example.test"}}}
+   ]},
+   "aws.auth#sigv4":{"name":"example"}}},
  "n#ListItems":{"type":"operation"},
  "n#Item":{"type":"structure","members":{"Name":{"target":"smithy.api#String"}}}
 }}"#;
@@ -21,8 +29,24 @@ fn source() -> Result<tempfile::TempDir, Box<dyn std::error::Error>> {
 }
 fn root() -> Result<tempfile::TempDir, Box<dyn std::error::Error>> {
     let root = tempfile::tempdir()?;
-    fs::create_dir(root.path().join("catalog"))?;
-    fs::write(root.path().join("catalog/field-ids.txt"), "Name\n")?;
+    let catalog = root.path().join("catalog");
+    fs::create_dir_all(catalog.join("overlay"))?;
+    fs::write(catalog.join("field-ids.txt"), "Name\n")?;
+    fs::write(catalog.join("name-exceptions.tsv"), "")?;
+    fs::write(
+        catalog.join("kinds.tsv"),
+        concat!(
+            "meta\tversion\t1\n",
+            "meta\treviewed\t2026-11-14\n",
+            "meta\treviewer\tCatalog-tool compile fixture\n",
+            "default-unmapped\tNo individually validated mapping exists\n"
+        ),
+    )?;
+    fs::write(
+        catalog.join("cloudcontrol-universal.json"),
+        br#"{"resource_types":[{"type_name":"AWS::Example::Item"}]}"#,
+    )?;
+    fs::write(catalog.join("overlay/must-deny.txt"), "")?;
     Ok(root)
 }
 fn compile(source: &Path, root: &Path, flags: &[&str]) -> std::io::Result<Output> {
@@ -36,7 +60,7 @@ fn compile(source: &Path, root: &Path, flags: &[&str]) -> std::io::Result<Output
         .args(flags)
         .output()
 }
-fn success(output: &Output, length: usize) {
+fn success(output: &Output) {
     assert_eq!(
         output.status.code(),
         Some(0),
@@ -44,10 +68,7 @@ fn success(output: &Output, length: usize) {
         String::from_utf8_lossy(&output.stderr)
     );
     assert_eq!(output.stderr, b"");
-    assert_eq!(
-        output.stdout,
-        format!("catalog {length} bytes\n").as_bytes()
-    );
+    assert_eq!(output.stdout, b"");
 }
 #[test]
 fn write_twice_and_check_publish_identical_reader_visible_bytes() -> TestResult {
@@ -56,16 +77,10 @@ fn write_twice_and_check_publish_identical_reader_visible_bytes() -> TestResult 
     let path = root.path().join("catalog/aws-api.catalog");
     let first = compile(source.path(), root.path(), &["--write"])?;
     let bytes = fs::read(&path)?;
-    success(&first, bytes.len());
-    success(
-        &compile(source.path(), root.path(), &["--write"])?,
-        bytes.len(),
-    );
+    success(&first);
+    success(&compile(source.path(), root.path(), &["--write"])?);
     assert_eq!(fs::read(&path)?, bytes);
-    success(
-        &compile(source.path(), root.path(), &["--check"])?,
-        bytes.len(),
-    );
+    success(&compile(source.path(), root.path(), &["--check"])?);
     Ok(())
 }
 #[test]
@@ -75,7 +90,7 @@ fn written_catalog_is_readable_without_changing_the_source_or_registry() -> Test
     let output = compile(source.path(), root.path(), &["--write"])?;
     let path = root.path().join("catalog/aws-api.catalog");
     let bytes = fs::read(&path)?;
-    success(&output, bytes.len());
+    success(&output);
     let counts = Catalog::borrow(&bytes)?.counts()?;
     assert_eq!(counts.get("services"), Some(1));
     assert_eq!(counts.get("operations"), Some(1));

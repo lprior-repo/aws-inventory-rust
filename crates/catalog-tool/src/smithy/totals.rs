@@ -29,7 +29,7 @@ pub(super) fn member_names(model: ModelFile) -> impl Iterator<Item = String> {
 impl Totals {
     pub fn add_model(&mut self, model: ModelFile, file: &Path) -> Result<(), Error> {
         self.add_protocols(service(&model, file)?);
-        let stats = compute_stats(&model);
+        let stats = compute_stats(&model)?;
         self.services = self.services.saturating_add(1);
         self.services_with_root = self
             .services_with_root

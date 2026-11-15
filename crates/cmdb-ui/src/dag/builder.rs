@@ -5,7 +5,14 @@ use super::graph::{DagGraph, NodeKind, truncate_label};
 pub fn from_data_graph(source: &DataGraph) -> DagGraph {
     let mut dag = DagGraph::default();
     let mut rows: Vec<&Row> = source.nodes.iter().collect();
-    rows.sort_by_key(|row| (row.account, row.region, row.kind, row.id));
+    rows.sort_by(|left, right| {
+        (&left.account, &left.region, &left.kind, &left.id).cmp(&(
+            &right.account,
+            &right.region,
+            &right.kind,
+            &right.id,
+        ))
+    });
     for row in rows {
         add_row(&mut dag, row);
     }
@@ -17,8 +24,8 @@ fn add_row(dag: &mut DagGraph, row: &Row) {
     let Some((_, _, kind)) = add_containment(dag, row) else {
         return;
     };
-    let label = truncate_label(row.name);
-    let Some(resource) = dag.add_node(NodeKind::from_facet(row.kind), row.id, label) else {
+    let label = truncate_label(&row.name);
+    let Some(resource) = dag.add_node(NodeKind::from_facet(&row.kind), &row.key, label) else {
         return;
     };
     dag.add_edge(kind, resource);
@@ -28,17 +35,17 @@ fn add_containment(dag: &mut DagGraph, row: &Row) -> Option<(usize, usize, usize
     let account = dag.add_node(
         NodeKind::Account,
         format!("account:{}", row.account),
-        row.account,
+        row.account.clone(),
     )?;
     let region = dag.add_node(
         NodeKind::Region,
         format!("region:{}/{}", row.account, row.region),
-        row.region,
+        row.region.clone(),
     )?;
     let kind = dag.add_node(
         NodeKind::Kind,
         format!("kind:{}/{}/{}", row.account, row.region, row.kind),
-        row.kind,
+        row.kind.clone(),
     )?;
     dag.add_edge(account, region);
     dag.add_edge(region, kind);
@@ -47,8 +54,8 @@ fn add_containment(dag: &mut DagGraph, row: &Row) -> Option<(usize, usize, usize
 
 fn add_resource_edges(dag: &mut DagGraph, source: &DataGraph) {
     for edge in &source.edges {
-        let from = dag.index_of(edge.from);
-        let to = dag.index_of(edge.to);
+        let from = dag.index_of(&edge.from);
+        let to = dag.index_of(&edge.to);
         if let (Some(from), Some(to)) = (from, to) {
             dag.add_overlay_edge(from, to);
         }

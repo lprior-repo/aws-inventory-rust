@@ -1,5 +1,6 @@
+use super::cases::CaseCounts;
 use super::report::Service;
-use super::{CaseCounts, DerivedEndpoint, Error, ServiceClass, SkipReason};
+use super::{DerivedEndpoint, Error, OverlayNeed, ServiceClass, SkipReason};
 use std::fmt::Write as _;
 
 pub(super) fn render(counts: &CaseCounts, services: &[Service]) -> Result<String, Error> {
@@ -74,14 +75,26 @@ fn unresolved_line(
     endpoint: &DerivedEndpoint,
 ) -> Result<(), std::fmt::Error> {
     match endpoint {
-        DerivedEndpoint::NeedsOverlay { parameter } => writeln!(
-            text,
-            "service {name} needs-overlay - - - missing:{parameter}"
-        ),
+        DerivedEndpoint::NeedsOverlay { need } => overlay_line(text, name, need),
         DerivedEndpoint::Unsupported { reason } => {
             writeln!(text, "service {name} unsupported - - - {reason:?}")
         }
         _ => Err(std::fmt::Error),
+    }
+}
+
+fn overlay_line(text: &mut String, name: &str, need: &OverlayNeed) -> Result<(), std::fmt::Error> {
+    match need {
+        OverlayNeed::Parameter(parameter) => {
+            writeln!(
+                text,
+                "service {name} needs-overlay - - - missing:{parameter}"
+            )
+        }
+        OverlayNeed::UnsupportedFunction(function) => writeln!(
+            text,
+            "service {name} needs-overlay - - - unsupported-function:{function}"
+        ),
     }
 }
 
@@ -154,6 +167,9 @@ fn service_lines(text: &mut String, service: &Service) -> Result<(), std::fmt::E
             "unsupported_case {} {} {}",
             service.name, case.index, case.name
         )
+    })?;
+    service.failures.iter().try_for_each(|(index, reason)| {
+        writeln!(text, "case_failure {} {index} {reason:?}", service.name)
     })?;
     exception_lines(text, service)
 }

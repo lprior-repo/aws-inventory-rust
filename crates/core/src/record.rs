@@ -25,6 +25,15 @@ pub const MAX_DEPTH: usize = 32;
 
 pub const FORMAT_VERSION: u8 = 1;
 
+pub(crate) fn read_one(bytes: &[u8]) -> Result<(ValueRef<'_>, usize), RecordError> {
+    let mut decoder = minicbor::Decoder::new(bytes);
+    let value = readers::read_value(&mut decoder)?;
+    Ok((value, decoder.position()))
+}
+pub fn encode_list(items: &[Value]) -> Result<Vec<u8>, RecordError> {
+    encode::encode_list_record(items)
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Record(Vec<u8>);
 

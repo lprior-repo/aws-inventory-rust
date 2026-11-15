@@ -4,6 +4,7 @@ pub mod catalog;
 pub mod emulator;
 mod files;
 pub mod install;
+pub mod inventory_seed;
 pub mod json;
 pub mod package;
 pub mod provenance;

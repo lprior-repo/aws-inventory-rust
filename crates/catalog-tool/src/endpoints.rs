@@ -11,13 +11,12 @@ mod report_text;
 mod scope;
 mod template;
 
-pub use crate::smithy::ReportMode;
-pub use cases::{Case, CaseCounts, SkipReason, UnsupportedCase, classify_case};
-pub use derive::{DerivedEndpoint, ServiceClass};
-pub use exceptions::{DerivedService, EndpointException};
+pub use cases::{Case, CaseFailure, CaseRun, SkipReason, UnsupportedCase, classify_case};
+pub use derive::{DerivedEndpoint, OverlayNeed, ProbeOutcome, ServiceClass};
+pub use exceptions::{DerivedService, EndpointException, VerificationFailure, VerifiedEndpoint};
 pub use model::RuleSet;
 pub use output::run;
-pub use report::build_report;
+pub use report::{build_report, verified_endpoints};
 
 use serde::Deserialize;
 use serde_json::Value;
@@ -58,6 +57,8 @@ pub enum Outcome {
 pub enum Error {
     #[error(transparent)]
     Input(#[from] crate::smithy::Error),
+    #[error(transparent)]
+    Source(#[from] crate::model_source::Error),
 
     #[error("{file}: {kind}")]
     Model { file: PathBuf, kind: Fault },
@@ -68,8 +69,8 @@ pub enum Error {
         source: std::io::Error,
     },
 
-    #[error("endpoint report differs: {0}")]
-    ReportMismatch(PathBuf),
+    #[error(transparent)]
+    Report(#[from] crate::report::ReportError),
 
     #[error(transparent)]
     Formatting(#[from] std::fmt::Error),

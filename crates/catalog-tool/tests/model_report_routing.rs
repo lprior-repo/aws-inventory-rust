@@ -15,7 +15,7 @@ fn explicit_source_and_root_route_reads_and_writes_independently()
             .arg(flag)
             .output()?;
 
-        success(&output, REPORT);
+        success_silent(&output);
         assert_eq!(
             std::fs::read_to_string(root.path().join("catalog/aws-models.report"))?,
             REPORT

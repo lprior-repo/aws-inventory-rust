@@ -16,6 +16,17 @@ fn classes(root: &Path, flags: &[&str]) -> io::Result<Output> {
         .output()
 }
 
+fn silent_success(output: &Output) {
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(output.stdout, b"");
+    assert_eq!(output.stderr, b"");
+}
+
 fn success(output: &Output) {
     assert_eq!(
         output.status.code(),
@@ -39,7 +50,7 @@ fn cli_print_emits_exact_report_without_creating_an_artifact() -> TestResult {
 fn cli_check_emits_exact_report_and_preserves_the_artifact() -> TestResult {
     let dir = fixture()?;
     write(dir.path(), COMMITTED, REPORT)?;
-    success(&classes(dir.path(), &["--check"])?);
+    silent_success(&classes(dir.path(), &["--check"])?);
     assert_eq!(std::fs::read_to_string(dir.path().join(COMMITTED))?, REPORT);
     Ok(())
 }
@@ -48,7 +59,7 @@ fn cli_check_emits_exact_report_and_preserves_the_artifact() -> TestResult {
 fn cli_write_emits_exact_report_and_replaces_stale_bytes() -> TestResult {
     let dir = fixture()?;
     write(dir.path(), COMMITTED, "stale\n")?;
-    success(&classes(dir.path(), &["--write"])?);
+    silent_success(&classes(dir.path(), &["--write"])?);
     assert_eq!(std::fs::read_to_string(dir.path().join(COMMITTED))?, REPORT);
     Ok(())
 }

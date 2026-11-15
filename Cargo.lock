@@ -235,16 +235,26 @@ name = "aws-inventory"
 version = "0.6.0"
 dependencies = [
  "anyhow",
+ "aws-wire",
+ "bytes",
  "clap",
+ "cmdb-view",
  "futures-util",
+ "http",
  "inventory-aws",
  "inventory-core",
  "inventory-engine",
+ "inventory-harness",
  "proptest",
+ "rcgen",
+ "rustls-pki-types",
  "serde",
  "serde_json",
+ "sqlx",
  "tempfile",
+ "thiserror",
  "tokio",
+ "tokio-rustls",
  "tokio-util",
  "tracing",
  "tracing-subscriber",
@@ -1364,30 +1374,34 @@ dependencies = [
 name = "cmdb-bench"
 version = "0.6.0"
 dependencies = [
+ "cmdb-view",
  "inventory-core",
- "serde",
- "serde_json",
- "sha2",
+ "sqlx",
  "tempfile",
+ "tokio",
 ]
 
 [[package]]
 name = "cmdb-ui"
 version = "0.6.0"
 dependencies = [
+ "cmdb-view",
+ "inventory-core",
  "makepad-widgets",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
 name = "cmdb-view"
 version = "0.6.0"
 dependencies = [
- "base16ct",
- "proptest",
- "serde",
- "serde_json",
- "sha2",
+ "inventory-core",
+ "redis",
+ "sqlx",
+ "tempfile",
  "thiserror",
+ "tokio",
 ]
 
 [[package]]
@@ -2415,6 +2429,7 @@ dependencies = [
  "aws-sdk-sts",
  "aws-smithy-types",
  "aws-types",
+ "aws-wire",
  "base16ct",
  "futures-util",
  "inventory-core",
@@ -2468,9 +2483,14 @@ dependencies = [
  "aws-config",
  "aws-sdk-cloudcontrol",
  "aws-sdk-s3",
+ "aws-wire",
  "base16ct",
+ "bytes",
  "catalog-tool",
+ "futures-util",
+ "http",
  "httparse",
+ "inventory-core",
  "minicbor",
  "rustls-pki-types",
  "serde_json",

@@ -1,8 +1,9 @@
 pub mod endpoints_support;
+use catalog_tool::ReportMode;
 use catalog_tool::endpoints::{
-    DerivedEndpoint, Error, ReportMode, RuleSet, ServiceClass, build_report, run,
+    DerivedEndpoint, Error, OverlayNeed, RuleSet, ServiceClass, build_report, run,
 };
-use endpoints_support::report::{REPORT, fixture, global_rules, regional_rules};
+use endpoints_support::report::{REPORT, fixture, global_rules, regional_rules, write_service};
 use endpoints_support::{TestResult, call, endpoint, rules};
 use serde_json::json;
 use std::path::Path;
@@ -27,8 +28,24 @@ fn print_does_not_write_and_write_check_use_exact_report_bytes() -> TestResult {
     assert_eq!(std::fs::read_to_string(&path)?, REPORT);
     run(dir.path(), dir.path(), ReportMode::Check)?;
     std::fs::write(&path, REPORT.replace('\n', "\r\n"))?;
-    assert!(matches!(run(dir.path(),dir.path(),ReportMode::Check),
-        Err(Error::ReportMismatch(actual)) if actual==path));
+    let expected = REPORT
+        .split_inclusive('\n')
+        .enumerate()
+        .map(|(index, line)| {
+            format!(
+                "line {} differs: expected Some({line:?}), got Some({:?})\n",
+                index.saturating_add(1),
+                line.replace('\n', "\r\n")
+            )
+        })
+        .collect::<Vec<_>>()
+        .concat();
+    match run(dir.path(), dir.path(), ReportMode::Check) {
+        Err(Error::Report(catalog_tool::ReportError::Mismatch(actual))) => {
+            assert_eq!(actual, expected);
+        }
+        other => return Err(format!("expected Report(Mismatch), got {other:?}").into()),
+    }
     Ok(())
 }
 
@@ -41,9 +58,21 @@ fn malformed_later_input_never_overwrites_a_preexisting_report() -> TestResult {
     std::fs::write(dir.path().join("models/z-malformed.json"), "{")?;
     assert!(matches!(
         run(dir.path(), dir.path(), ReportMode::Write),
-        Err(Error::Input(_))
+        Err(Error::Source(_))
     ));
     assert_eq!(std::fs::read_to_string(&path)?, "preserve\n");
+    Ok(())
+}
+
+#[test]
+fn duplicate_shape_names_are_rejected_at_the_shared_model_source_boundary() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    std::fs::create_dir_all(dir.path().join("models"))?;
+    std::fs::write(
+        dir.path().join("models/duplicate.json"),
+        r#"{"shapes":{"sample#Svc":{"type":"service"},"sample#Svc":{"type":"service"}}}"#,
+    )?;
+    assert!(matches!(build_report(dir.path()), Err(Error::Source(_))));
     Ok(())
 }
 
@@ -73,8 +102,7 @@ fn two_commercial_region_probes_distinguish_global_and_regional_signing() -> Tes
 }
 
 #[test]
-fn missing_request_parameters_and_reached_request_functions_name_the_overlay_requirement()
--> TestResult {
+fn missing_request_parameters_are_typed_overlay_requirements() -> TestResult {
     let required = rules(
         json!({"Bucket":{"type":"string","required":true}}),
         json!([endpoint(json!("unused"), json!([]))]),
@@ -83,9 +111,14 @@ fn missing_request_parameters_and_reached_request_functions_name_the_overlay_req
     assert_eq!(
         parsed.derive(Some("s3"))?,
         DerivedEndpoint::NeedsOverlay {
-            parameter: "Bucket".into()
+            need: OverlayNeed::Parameter("Bucket".into())
         }
     );
+    Ok(())
+}
+
+#[test]
+fn reached_request_functions_preserve_their_typed_reason() -> TestResult {
     let request = rules(
         json!({}),
         json!([endpoint(
@@ -97,9 +130,45 @@ fn missing_request_parameters_and_reached_request_functions_name_the_overlay_req
     assert_eq!(
         parsed.derive(Some("svc"))?,
         DerivedEndpoint::NeedsOverlay {
-            parameter: "function:parseURL".into()
+            need: OverlayNeed::UnsupportedFunction("parseURL".into())
         }
     );
+    let dir = tempfile::tempdir()?;
+    write_service(dir.path(), "request", request, json!([]))?;
+    assert!(
+        build_report(dir.path())?
+            .contains("service request needs-overlay - - - unsupported-function:parseURL")
+    );
+    Ok(())
+}
+
+#[test]
+fn verified_endpoint_bridge_exports_only_case_checked_capabilities() -> TestResult {
+    let dir = tempfile::tempdir()?;
+    let passing = json!([{"params":{"Region":"us-west-2"},"expect":{"endpoint":{
+        "url":"https://global.example","properties":{"authSchemes":[{
+            "name":"sigv4","signingRegion":"us-east-1"}]}}}}]);
+    write_service(dir.path(), "checked", global_rules(), passing)?;
+    write_service(
+        dir.path(),
+        "failed",
+        global_rules(),
+        json!([{
+            "params":{"Region":"us-west-2"},"expect":{"endpoint":{"url":"wrong"}}
+        }]),
+    )?;
+    let capabilities = catalog_tool::endpoints::verified_endpoints(dir.path())?;
+    assert_eq!(capabilities.len(), 1);
+    assert!(matches!(
+        capabilities
+            .get("checked")
+            .map(|endpoint| endpoint.endpoint()),
+        Some(DerivedEndpoint::Resolved {
+            class: ServiceClass::Global,
+            ..
+        })
+    ));
+    assert!(!capabilities.contains_key("failed"));
     Ok(())
 }
 

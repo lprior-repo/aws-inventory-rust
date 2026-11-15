@@ -31,6 +31,48 @@ Commit `9841354b2b61ad470c5b8adffaddf4a2baefee35` passed hosted `moon ci`
 in [run 43609151434](https://github.com/lprior-repo/aws-inventory-rust/actions/runs/43609151434).
 The complete CI job finished successfully in 18m3s, including Makepad native linking.
 
+### Live emulator end-to-end — 2026-11-14
+
+Environment: emulator 1.0.348 at `https://127.0.0.1:47666` with its own CA,
+native FalkorDB at `redis://127.0.0.1:6379`, isolated static profile files
+(`.local/e2e-env.sh`), debug binaries, catalog format 3 with runtime extension.
+
+`cargo test --features aws --test sweep_e2e -- --ignored --test-threads 1`
+passed both tests in 158 s:
+
+- `production_sweep_persists_and_projects_real_seeded_inventory`: Rust-typed
+  VPC/subnet seeding through `aws-wire`; CLI sweep exit 0; SQLite counts,
+  identities and `IN_VPC` edges equal the oracle; first projection with an
+  unreachable graph keeps the outbox, the next CLI run drains it, and every
+  Falkor edge matches SQLite with `reviewed-rule` provenance; unchanged rerun
+  writes zero rows; an interrupted sweep held at a signed continuation by a TLS
+  barrier proxy is killed, reaped and resumed under the same sweep ID; repeated
+  one-page partial runs exit 2 and delete nothing.
+- `controlled_tls_403_preserves_existing_inventory`: a separate rcgen CA/leaf
+  peer verifies SigV4 and answers enumerations with EC2 403; two CLI runs exit 2
+  with inaccessible scopes, zero resource writes and an identical snapshot of
+  resources, edges and miss counters.
+
+A manual sweep into `.local/e2e/run1/inventory.sqlite` stored 7 VPCs and 9
+subnets with 9 resolved `IN_VPC` edges; FalkorDB graph `aws_inventory_live`
+returned 16 nodes and 9 edges, and `cmdb-ui` displayed the counts, detail panel
+and graph neighbourhood from the same stores. Debug sweep wall time fell from
+31.5 s to 12.8 s after the `ShapeOffsets` index (same scopes, 64 resources).
+
+Defects found only by the live run and fixed: catalog blob exceeding
+`SQLITE_MAX_LENGTH`; length-prefixed single-field identities; kind schemas
+without relation target columns; `Model` instead of `ReviewedRule` provenance;
+writer emitting `Null` binding fields the reader rejects; quadratic service and
+shape lookup; EC2 trailing-slash namespace; edge pages always returning a
+cursor; viewer graph worker creating a Tokio timer outside its runtime.
+
+Final gates on the landed tree: workspace all-target/all-feature tests 1,809
+passed, 0 failed, 21 ignored; warnings-denied source Clippy clean; every
+generated-data `--check` (including `models compile --check`) passes;
+`moon ci --force` completed 18/18 tasks; the live suite was rerun after the
+size refactors and passed both tests in 156 s. Files ≤300 lines and functions
+≤25 lines hold after `cargo fmt`.
+
 ### Response-decoder integration — 2026-11-14
 
 `aws_wire::response::decode` routes all seven protocols into bounded canonical

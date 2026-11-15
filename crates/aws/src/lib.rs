@@ -12,6 +12,7 @@ mod global_inventory;
 mod kms;
 mod lambda;
 mod load_balancing;
+pub mod model_credentials;
 mod network;
 mod sns;
 mod source_discovery;

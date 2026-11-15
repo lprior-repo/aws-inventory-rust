@@ -24,7 +24,7 @@ fn feed_dag(ui: &WidgetRef, cx: &mut Cx, graph: &Graph, selected: Option<Row>) {
         dag.set_graph(cx, graph);
         match selected {
             Some(row) => {
-                dag.select_id(cx, row.id);
+                dag.select_id(cx, &row.key);
             }
             None => dag.clear_selection(cx),
         }
@@ -32,17 +32,19 @@ fn feed_dag(ui: &WidgetRef, cx: &mut Cx, graph: &Graph, selected: Option<Row>) {
 }
 
 fn write_counts(ui: &WidgetRef, cx: &mut Cx, graph: &Graph) {
-    let fallback = (graph.nodes.len(), graph.edges.len(), 0, 0);
-    let (nodes, edges, back, dropped) = match ui.widget(cx, ids!(dag)).borrow::<DagView>() {
-        Some(dag) => (
-            dag.node_count(),
-            dag.edge_count(),
-            dag.back_edge_count(),
-            dag.dropped_nodes().saturating_add(dag.dropped_edges()),
-        ),
-        None => fallback,
+    let (nodes, edges, back, dropped) = dag_counts(ui, cx, graph);
+    let status = ui
+        .widget(cx, ids!(table))
+        .borrow::<ResourceTable>()
+        .map_or_else(
+            || "Graph view unavailable".to_owned(),
+            |table| table.graph_status(),
+        );
+    let mut text = if graph.nodes.is_empty() {
+        status
+    } else {
+        format!("{nodes} visual nodes · {edges} visual edges · {status}")
     };
-    let mut text = format!("{nodes} nodes · {edges} edges in the current filter");
     if back > 0 {
         text.push_str(&format!(" · {back} back edges"));
     }
@@ -50,6 +52,18 @@ fn write_counts(ui: &WidgetRef, cx: &mut Cx, graph: &Graph) {
         text.push_str(&format!(" · {dropped} truncated"));
     }
     ui.label(cx, ids!(graph_counts)).set_text(cx, &text);
+}
+
+fn dag_counts(ui: &WidgetRef, cx: &mut Cx, graph: &Graph) -> (usize, usize, usize, usize) {
+    match ui.widget(cx, ids!(dag)).borrow::<DagView>() {
+        Some(dag) => (
+            dag.node_count(),
+            dag.edge_count(),
+            dag.back_edge_count(),
+            dag.dropped_nodes().saturating_add(dag.dropped_edges()),
+        ),
+        None => (graph.nodes.len(), graph.edges.len(), 0, 0),
+    }
 }
 
 pub(crate) fn click_id(ui: &WidgetRef, cx: &mut Cx, actions: &Actions) -> Option<Option<String>> {

@@ -2,7 +2,7 @@ use super::{CompileError, Registry, operation, service, shapes};
 use crate::smithy::model::{ModelFile, Shape, ShapeKind, Target};
 use inventory_core::{
     catalog::{CatalogKey, SHAPE_KINDS},
-    record::{Key, Record, Value},
+    record::{Key, ListRef, Record, Value, encode_list},
 };
 use std::collections::BTreeMap;
 
@@ -23,13 +23,23 @@ pub(super) fn service(
 ) -> Result<Record, CompileError> {
     let indexes = indexes(model);
     let shapes = encode_shapes(model, registry, &indexes)?;
+    let shape_offsets = shape_offsets(&shapes)?;
     let operations = encode_operations(model, &indexes)?;
     let mut fields = service::fields(model, service_name, &indexes)?;
     fields.extend([
         (CatalogKey::Operations, Value::List(operations)),
         (CatalogKey::Shapes, Value::List(shapes)),
+        (CatalogKey::ShapeOffsets, Value::Bytes(shape_offsets)),
     ]);
     Ok(Record::encode(&map(fields)?)?)
+}
+fn shape_offsets(shapes: &[Value]) -> Result<Vec<u8>, CompileError> {
+    let encoded = encode_list(shapes)?;
+    let offsets = ListRef::from_bytes(&encoded)?.encoded_item_offsets()?;
+    Ok(offsets
+        .iter()
+        .flat_map(|offset| offset.to_be_bytes())
+        .collect())
 }
 
 fn indexes(model: &ModelFile) -> BTreeMap<&str, usize> {

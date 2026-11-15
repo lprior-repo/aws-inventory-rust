@@ -1,0 +1,15 @@
+meta	version	1
+meta	reviewed	2026-11-14
+meta	reviewer	Automated model review; no human approval; limited explicit scope
+cfn	AWS::EC2::VPC	map	AWS::EC2::VPC	-
+cfn	AWS::EC2::Subnet	map	AWS::EC2::Subnet	-
+api	AWS::ApiOnly::Account	kind	Account identity is bootstrap scope, not a CFN resource
+api	AWS::ApiOnly::Region	kind	Enabled region identity is bootstrap scope, not a CFN resource
+relation	AWS::EC2::Subnet	VpcId	AWS::EC2::VPC	VpcId	IN_VPC	account_region
+operation	ec2	DescribeVpcs	AWS::EC2::VPC
+operation	ec2	DescribeSubnets	AWS::EC2::Subnet
+operation	ec2	DescribeRegions	AWS::ApiOnly::Region
+operation	sts	GetCallerIdentity	AWS::ApiOnly::Account
+bootstrap	account-identity	sts	GetCallerIdentity	Account
+bootstrap	region-discovery	ec2	DescribeRegions	Regions	RegionName	OptInStatus
+default-unmapped	No individually reviewed canonical mapping; deliberately excluded from collection until a validated mapping and model schema review exists

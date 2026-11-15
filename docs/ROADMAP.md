@@ -346,6 +346,17 @@ Status from the coordinator, 2026-11-13.
   altered-signature control returned HTTP 403 against the authenticated local
   emulator. This closes that request/authentication smoke, not response decoding
   or the complete universal inventory pipeline; see [VERIFICATION](VERIFICATION.md).
+- **The first end-to-end slice runs against the emulator (M3.2, M3.3, M3.4,
+  M3.6, M3.7 and M6 for reviewed EC2/STS only).** `aws-inventory sweep`
+  executes compiled runtime plans through `aws-wire` into SQLite schema 14 and
+  FalkorDB; `cmdb-ui` reads both. The ignored `sweep_e2e` suite passes both
+  live tests (see [VERIFICATION](VERIFICATION.md)). Scope is deliberately
+  narrow: four callable operations (EC2 `DescribeVpcs`, `DescribeSubnets`,
+  `DescribeRegions`, STS `GetCallerIdentity`), one reviewed relation
+  (`Subnet.VpcId` → `VPC.VpcId`, `IN_VPC`). Universal coverage needs M5
+  overlays per service. Open in these milestones: the M3.2 open-time and
+  regeneration measurements, the M3.3 100-point kill matrix, and M3.5's gate
+  check.
 
 Packages that can run at the same time: M1 with M3.1 and M4.3; M2.1a to M2.1c,
 M2.2 and M2.3 with each other; M2.4a with M2.4b; the M5 services

@@ -131,7 +131,7 @@ fn no_plan(class: &str, plan: &str) {
     let reason = if class == "deny" {
         "deny_reason='content'\n"
     } else {
-        ""
+        "defer_reason='Requires a separate reviewed inventory plan'\n"
     };
     let split = plan.split_once('=');
     assert!(split.is_some(), "fixture `{plan}` has no `=`");

@@ -10,6 +10,7 @@ mod graph_view;
 mod table;
 mod templates;
 mod ui;
+mod worker;
 
 use crate::app::App;
 

@@ -58,3 +58,14 @@ pub fn success(output: &std::process::Output, expected: &str) {
     assert_eq!(output.stdout, expected.as_bytes());
     assert_eq!(output.stderr, b"");
 }
+
+pub fn success_silent(output: &std::process::Output) {
+    assert_eq!(
+        output.status.code(),
+        Some(0),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(output.stdout, b"");
+    assert_eq!(output.stderr, b"");
+}

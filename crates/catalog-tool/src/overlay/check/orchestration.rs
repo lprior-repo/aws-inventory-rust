@@ -1,8 +1,8 @@
 use super::{CheckError, CheckedOverlays, Violation, ViolationRule, classifier, report, service};
 use crate::{
     classes::{self, Class, DenyList},
+    model_source,
     plans::{self, Model},
-    smithy,
 };
 use serde_json::Value;
 use std::{
@@ -47,7 +47,7 @@ fn read_deny(root: &Path) -> Result<String, CheckError> {
 
 fn read_model_values(source: &Path) -> Result<BTreeMap<String, Value>, CheckError> {
     let models = source.join("models");
-    let files = smithy::find_model_files(&models)?;
+    let files = model_source::discover_models(&models)?;
     let mut values = BTreeMap::new();
     for file in files {
         let (service, value) = read_model_value(&models, &file)?;
@@ -67,7 +67,7 @@ fn read_model_values(source: &Path) -> Result<BTreeMap<String, Value>, CheckErro
 
 fn read_model_value(models: &Path, file: &Path) -> Result<(String, Value), CheckError> {
     let service = classes::model::service(models, file)?;
-    Ok((service.to_owned(), smithy::read_json(file)?))
+    Ok((service.to_owned(), model_source::read_value(file)?))
 }
 
 fn parse_models<'a>(values: &'a BTreeMap<String, Value>) -> Result<Vec<Model<'a>>, CheckError> {

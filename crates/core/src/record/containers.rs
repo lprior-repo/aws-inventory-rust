@@ -79,6 +79,17 @@ impl<'a> MapRef<'a> {
     }
 }
 impl<'a> ListRef<'a> {
+    pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, RecordError> {
+        let list = Self { bytes };
+        let encoded = list.encoded_bytes()?;
+        if encoded.len() != bytes.len() {
+            return Err(RecordError::NotOneItem {
+                offset: encoded.len(),
+            });
+        }
+        Ok(list)
+    }
+
     pub fn get(self, index: usize) -> Result<Option<ValueRef<'a>>, RecordError> {
         let mut decoder = Decoder::new(self.bytes);
         let count = readers::definite(decoder.array()?, 0)?;
@@ -96,5 +107,45 @@ impl<'a> ListRef<'a> {
         let mut decoder = Decoder::new(self.bytes);
         let count = readers::definite(decoder.array()?, 0)?;
         Ok(iter::entries(decoder, count, readers::read_value))
+    }
+
+    pub fn count(self) -> Result<usize, RecordError> {
+        let mut decoder = Decoder::new(self.bytes);
+        let count = readers::definite(decoder.array()?, 0)?;
+        usize::try_from(count).map_err(|_| RecordError::SizeLimit)
+    }
+
+    pub fn header_len(self) -> Result<usize, RecordError> {
+        let mut decoder = Decoder::new(self.bytes);
+        readers::definite(decoder.array()?, 0)?;
+        Ok(decoder.position())
+    }
+
+    pub fn encoded_storage(self) -> &'a [u8] {
+        self.bytes
+    }
+
+    pub fn encoded_bytes(self) -> Result<&'a [u8], RecordError> {
+        let mut decoder = Decoder::new(self.bytes);
+        let count = readers::definite(decoder.array()?, 0)?;
+        (0..count).try_for_each(|_| skip::value(&mut decoder))?;
+        self.bytes
+            .get(..decoder.position())
+            .ok_or(RecordError::Missing {
+                offset: decoder.position(),
+            })
+    }
+
+    pub fn encoded_item_offsets(self) -> Result<Vec<u32>, RecordError> {
+        let mut decoder = Decoder::new(self.bytes);
+        let count = readers::definite(decoder.array()?, 0)?;
+        (0..count)
+            .map(|_| {
+                let offset =
+                    u32::try_from(decoder.position()).map_err(|_| RecordError::SizeLimit)?;
+                skip::value(&mut decoder)?;
+                Ok(offset)
+            })
+            .collect()
     }
 }

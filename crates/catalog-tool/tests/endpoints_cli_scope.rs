@@ -16,7 +16,7 @@ fn cli_check_rejects_same_length_mutation_and_never_rewrites_the_report() -> Tes
     let path = dir.path().join("catalog/aws-endpoints.report");
     let written = cli(dir.path(), "--write")?;
     assert!(written.status.success());
-    assert_eq!(written.stdout, REPORT.as_bytes());
+    assert_eq!(written.stdout, b"");
     assert_eq!(fs::read(&path)?, REPORT.as_bytes());
     let mut mutation = REPORT.as_bytes().to_vec();
     let first = mutation.first_mut().ok_or("empty fixture report")?;
@@ -26,10 +26,10 @@ fn cli_check_rejects_same_length_mutation_and_never_rewrites_the_report() -> Tes
     let checked = cli(dir.path(), "--check")?;
 
     assert_eq!(checked.status.code(), Some(1));
-    assert_eq!(checked.stdout, REPORT.as_bytes());
+    assert_eq!(checked.stdout, b"");
     assert_eq!(
         String::from_utf8(checked.stderr)?,
-        format!("endpoint report differs: {}\n", path.display())
+        "line 1 differs: expected Some(\"cases 11\\n\"), got Some(\"Cases 11\\n\")\n\n"
     );
     assert_eq!(fs::read(&path)?, mutation);
     Ok(())

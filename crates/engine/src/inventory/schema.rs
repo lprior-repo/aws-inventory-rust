@@ -1,0 +1,253 @@
+use super::{SchemaRegistry, StoreError};
+use inventory_core::inventory::{KindSchema, ScalarType};
+use sqlx::{Row, SqlitePool};
+use std::sync::Arc;
+
+pub(super) async fn initialize(
+    pool: &SqlitePool,
+    registry: &SchemaRegistry,
+) -> Result<(), StoreError> {
+    let mut tx = pool.begin().await?;
+    let version: i64 = sqlx::query("PRAGMA user_version")
+        .fetch_one(&mut *tx)
+        .await?
+        .try_get(0)?;
+    if version != 0 {
+        return Err(StoreError::SchemaVersion { found: version });
+    }
+    create_shared_tables(&mut tx).await?;
+    sqlx::query("INSERT INTO metadata(key,value) VALUES('catalog_digest',?1),('projection_rebuild',?2),('projection_revision',0),('projection_pending',0)")
+        .bind(registry.digest().as_slice()).bind(vec![0_u8])
+        .execute(&mut *tx).await?;
+    for (service, operation) in registry.operations() {
+        sqlx::query("INSERT INTO catalog_operations(service,operation) VALUES(?1,?2)")
+            .bind(service)
+            .bind(operation)
+            .execute(&mut *tx)
+            .await?;
+    }
+    for schema in registry.schemas() {
+        create_kind(&mut tx, schema).await?;
+    }
+    sqlx::query("PRAGMA user_version=14")
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn create_shared_tables(
+    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+) -> Result<(), StoreError> {
+    for statement in [
+        "CREATE TABLE metadata(key TEXT PRIMARY KEY,value BLOB NOT NULL) WITHOUT ROWID",
+        "CREATE TABLE kinds(kind TEXT PRIMARY KEY,table_name TEXT NOT NULL UNIQUE) WITHOUT ROWID",
+        "CREATE TABLE kind_schemas(kind TEXT PRIMARY KEY,table_name TEXT NOT NULL,definition BLOB NOT NULL) WITHOUT ROWID",
+        "CREATE TABLE resources(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,name TEXT,content_hash BLOB NOT NULL,first_seen INTEGER NOT NULL,last_changed INTEGER NOT NULL,PRIMARY KEY(account,region,kind,id)) WITHOUT ROWID",
+        "CREATE TABLE resource_scopes(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,scope_key BLOB NOT NULL,last_seen INTEGER NOT NULL,missing_complete INTEGER NOT NULL DEFAULT 0,observed_sweep TEXT NOT NULL,PRIMARY KEY(account,region,kind,id,scope_key),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID",
+        "CREATE TABLE tags(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,tag_key TEXT NOT NULL,tag_value TEXT NOT NULL,PRIMARY KEY(account,region,kind,id,tag_key),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID",
+        "CREATE TABLE edges(from_account TEXT NOT NULL,from_region TEXT NOT NULL,from_kind TEXT NOT NULL,from_id TEXT NOT NULL,to_account TEXT NOT NULL,to_region TEXT NOT NULL,to_kind TEXT NOT NULL,to_id TEXT NOT NULL,relation TEXT NOT NULL,source TEXT NOT NULL,PRIMARY KEY(from_account,from_region,from_kind,from_id,to_account,to_region,to_kind,to_id,relation,source),FOREIGN KEY(from_account,from_region,from_kind,from_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE,FOREIGN KEY(to_account,to_region,to_kind,to_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID",
+        "CREATE TABLE unresolved_refs(from_account TEXT NOT NULL,from_region TEXT NOT NULL,from_kind TEXT NOT NULL,from_id TEXT NOT NULL,target_scope BLOB NOT NULL,target_kind TEXT NOT NULL,target_path BLOB NOT NULL,target_value TEXT NOT NULL,relation TEXT NOT NULL,source TEXT NOT NULL,PRIMARY KEY(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source),FOREIGN KEY(from_account,from_region,from_kind,from_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID",
+        "CREATE TABLE resource_parents(parent_account TEXT NOT NULL,parent_region TEXT NOT NULL,parent_kind TEXT NOT NULL,parent_id TEXT NOT NULL,child_account TEXT NOT NULL,child_region TEXT NOT NULL,child_kind TEXT NOT NULL,child_id TEXT NOT NULL,scope_key BLOB NOT NULL,PRIMARY KEY(parent_account,parent_region,parent_kind,parent_id,child_account,child_region,child_kind,child_id,scope_key),FOREIGN KEY(parent_account,parent_region,parent_kind,parent_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE,FOREIGN KEY(child_account,child_region,child_kind,child_id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID",
+        "CREATE TRIGGER delete_resource_children AFTER DELETE ON resources BEGIN DELETE FROM resources WHERE (account,region,kind,id) IN (SELECT child_account,child_region,child_kind,child_id FROM resource_parents WHERE parent_account=OLD.account AND parent_region=OLD.region AND parent_kind=OLD.kind AND parent_id=OLD.id); END",
+        "CREATE TABLE scope_outcomes(sweep_id TEXT NOT NULL,scope_key BLOB NOT NULL,outcome TEXT NOT NULL,observed_at INTEGER NOT NULL,PRIMARY KEY(sweep_id,scope_key)) WITHOUT ROWID",
+        "CREATE TABLE work_queue(sweep_id TEXT NOT NULL,scope_key BLOB NOT NULL,token BLOB,bindings BLOB NOT NULL,state INTEGER NOT NULL,generation INTEGER NOT NULL,lease_until INTEGER NOT NULL,PRIMARY KEY(sweep_id,scope_key)) WITHOUT ROWID",
+        "CREATE TABLE work_tokens(sweep_id TEXT NOT NULL,scope_key BLOB NOT NULL,digest BLOB NOT NULL CHECK(length(digest)=32),PRIMARY KEY(sweep_id,scope_key,digest),FOREIGN KEY(sweep_id,scope_key) REFERENCES work_queue(sweep_id,scope_key) ON DELETE CASCADE) WITHOUT ROWID",
+        "CREATE TABLE catalog_operations(service TEXT NOT NULL,operation TEXT NOT NULL,PRIMARY KEY(service,operation)) WITHOUT ROWID",
+        "CREATE TABLE projection_outbox(resource_key BLOB PRIMARY KEY,revision INTEGER NOT NULL,deleted INTEGER NOT NULL,full_rebuild INTEGER NOT NULL DEFAULT 0) WITHOUT ROWID",
+        "CREATE TABLE learned_rates(service TEXT NOT NULL,operation TEXT NOT NULL,rate REAL NOT NULL,sample_count INTEGER NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(service,operation)) WITHOUT ROWID",
+    ] {
+        sqlx::query(statement).execute(&mut **tx).await?;
+    }
+    Ok(())
+}
+
+async fn create_kind(
+    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+    schema: &Arc<KindSchema>,
+) -> Result<(), StoreError> {
+    let table = quote(schema.table().as_str());
+    let mut fields = vec![
+        "account TEXT NOT NULL".to_owned(),
+        "region TEXT NOT NULL".to_owned(),
+        "id TEXT NOT NULL".to_owned(),
+        "content_hash BLOB NOT NULL".to_owned(),
+        "first_seen INTEGER NOT NULL".to_owned(),
+        "last_changed INTEGER NOT NULL".to_owned(),
+        "record BLOB NOT NULL".to_owned(),
+    ];
+    schema
+        .columns()
+        .iter()
+        .for_each(|column| append_column(&mut fields, column.name(), column.scalar()));
+    fields.push("PRIMARY KEY(account,region,id)".to_owned());
+    let statement = format!("CREATE TABLE {table}({}) WITHOUT ROWID", fields.join(","));
+    sqlx::QueryBuilder::<sqlx::Sqlite>::new(statement)
+        .build()
+        .execute(&mut **tx)
+        .await?;
+    sqlx::query("INSERT INTO kinds(kind,table_name) VALUES(?1,?2)")
+        .bind(schema.kind().as_str())
+        .bind(schema.table().as_str())
+        .execute(&mut **tx)
+        .await?;
+    sqlx::query("INSERT INTO kind_schemas(kind,table_name,definition) VALUES(?1,?2,?3)")
+        .bind(schema.kind().as_str())
+        .bind(schema.table().as_str())
+        .bind(encode_schema(schema)?)
+        .execute(&mut **tx)
+        .await?;
+    Ok(())
+}
+
+fn append_column(fields: &mut Vec<String>, name: &str, scalar: ScalarType) {
+    let q = quote(name);
+    match scalar {
+        ScalarType::Bool | ScalarType::Integer => fields.push(format!("{q} INTEGER")),
+        ScalarType::Real => {
+            fields.push(format!("{q} REAL"));
+            fields.push(format!("{} INTEGER", quote(&format!("{name}__nonfinite"))));
+        }
+        ScalarType::Text => fields.push(format!("{q} TEXT")),
+        ScalarType::Blob => fields.push(format!("{q} BLOB")),
+        ScalarType::Timestamp => {
+            fields.push(format!("{} INTEGER", quote(&format!("{name}__seconds"))));
+            fields.push(format!("{} INTEGER", quote(&format!("{name}__nanos"))));
+        }
+    }
+}
+
+fn quote(name: &str) -> String {
+    format!("\"{}\"", name.replace('"', "\"\""))
+}
+pub(super) async fn load_registry(pool: &SqlitePool) -> Result<SchemaRegistry, StoreError> {
+    let digest: Vec<u8> = sqlx::query("SELECT value FROM metadata WHERE key='catalog_digest'")
+        .fetch_one(pool)
+        .await?
+        .try_get(0)?;
+    let digest: [u8; 32] = digest
+        .try_into()
+        .map_err(|_| StoreError::Invalid("stored catalog digest is not 32 bytes"))?;
+    let operations = sqlx::query("SELECT service,operation FROM catalog_operations")
+        .fetch_all(pool)
+        .await?
+        .into_iter()
+        .map(|row| Ok((row.try_get("service")?, row.try_get("operation")?)))
+        .collect::<Result<std::collections::BTreeSet<(String, String)>, StoreError>>()?;
+    SchemaRegistry::stored(digest, load_schemas(pool).await?, operations)
+}
+
+async fn load_schemas(pool: &SqlitePool) -> Result<Vec<Arc<KindSchema>>, StoreError> {
+    let rows = sqlx::query("SELECT kind,table_name,definition FROM kind_schemas ORDER BY kind")
+        .fetch_all(pool)
+        .await?;
+    rows.into_iter()
+        .map(|row| {
+            let kind: String = row.try_get("kind")?;
+            let table: String = row.try_get("table_name")?;
+            let definition: Vec<u8> = row.try_get("definition")?;
+            decode_schema(&kind, &table, &definition).map(Arc::new)
+        })
+        .collect()
+}
+
+fn encode_schema(schema: &KindSchema) -> Result<Vec<u8>, StoreError> {
+    let count = u16::try_from(schema.columns().len())
+        .map_err(|_| StoreError::Invalid("too many schema columns"))?;
+    let mut bytes = count.to_be_bytes().to_vec();
+    for column in schema.columns() {
+        bytes.push(
+            u8::try_from(column.path().len())
+                .map_err(|_| StoreError::Invalid("schema path too long"))?,
+        );
+        for field in column.path() {
+            bytes.extend_from_slice(&field.value().to_be_bytes());
+        }
+        bytes.push(scalar_code(column.scalar()));
+    }
+    Ok(bytes)
+}
+
+fn decode_schema(kind: &str, table: &str, bytes: &[u8]) -> Result<KindSchema, StoreError> {
+    let mut cursor = SchemaCursor { bytes, offset: 0 };
+    let count = usize::from(cursor.u16()?);
+    let columns = (0..count)
+        .map(|_| {
+            let len = usize::from(cursor.byte()?);
+            if len == 0 || len > 8 {
+                return Err(StoreError::Invalid("schema path exceeds bounds"));
+            }
+            let path = (0..len)
+                .map(|_| {
+                    inventory_core::record::FieldId::new(cursor.u32()?).map_err(StoreError::from)
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            inventory_core::inventory::Column::new(path, decode_scalar(cursor.byte()?)?)
+                .map_err(StoreError::from)
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    if !cursor.finished() {
+        return Err(StoreError::Invalid("trailing schema bytes"));
+    }
+    Ok(KindSchema::new(
+        inventory_core::inventory::Kind::parse(kind)?,
+        inventory_core::inventory::SqlName::parse(table)?,
+        columns,
+    )?)
+}
+
+fn scalar_code(scalar: ScalarType) -> u8 {
+    match scalar {
+        ScalarType::Bool => 0,
+        ScalarType::Integer => 1,
+        ScalarType::Real => 2,
+        ScalarType::Text => 3,
+        ScalarType::Blob => 4,
+        ScalarType::Timestamp => 5,
+    }
+}
+
+fn decode_scalar(code: u8) -> Result<ScalarType, StoreError> {
+    match code {
+        0 => Ok(ScalarType::Bool),
+        1 => Ok(ScalarType::Integer),
+        2 => Ok(ScalarType::Real),
+        3 => Ok(ScalarType::Text),
+        4 => Ok(ScalarType::Blob),
+        5 => Ok(ScalarType::Timestamp),
+        _ => Err(StoreError::Invalid("unknown schema scalar")),
+    }
+}
+
+struct SchemaCursor<'a> {
+    bytes: &'a [u8],
+    offset: usize,
+}
+impl SchemaCursor<'_> {
+    fn byte(&mut self) -> Result<u8, StoreError> {
+        let value = self
+            .bytes
+            .get(self.offset)
+            .copied()
+            .ok_or(StoreError::Invalid("truncated schema definition"))?;
+        self.offset = self
+            .offset
+            .checked_add(1)
+            .ok_or(StoreError::Invalid("schema offset overflow"))?;
+        Ok(value)
+    }
+    fn u16(&mut self) -> Result<u16, StoreError> {
+        Ok(u16::from_be_bytes([self.byte()?, self.byte()?]))
+    }
+    fn u32(&mut self) -> Result<u32, StoreError> {
+        Ok(u32::from_be_bytes([
+            self.byte()?,
+            self.byte()?,
+            self.byte()?,
+            self.byte()?,
+        ]))
+    }
+    fn finished(&self) -> bool {
+        self.offset == self.bytes.len()
+    }
+}
