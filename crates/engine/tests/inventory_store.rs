@@ -6,3 +6,5 @@ mod behavior;
 mod reference;
 #[path = "inventory_store/support.rs"]
 mod support;
+#[path = "inventory_store/scalar.rs"]
+mod scalar;

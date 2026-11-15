@@ -56,8 +56,12 @@ pub(super) fn item_target(
     operation: Operation<'_>,
     selector_path: &str,
 ) -> Result<Target, RuntimeCatalogCompileError> {
-    let (_, list) = resolve(service, operation.output()?, selector_path)?;
-    list_element(service, list)
+    let (_, selected) = resolve(service, operation.output()?, selector_path)?;
+    match kind(service, selected)? {
+        "structure" => Ok(selected),
+        "list" => list_element(service, selected),
+        _ => Err(RuntimeCatalogCompileError::Capability),
+    }
 }
 pub(super) struct ValidationContext<'p, 'a> {
     pub(super) kinds: &'p crate::kind_map::KindMap,

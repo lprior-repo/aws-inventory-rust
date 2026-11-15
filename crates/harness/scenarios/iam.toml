@@ -1,0 +1,21 @@
+format = 1
+
+# Local metadata only; no users, access keys, credentials or policy documents.
+# ListGroups inventories Group.Arn with account scope. ListRoles remains deferred
+# until generic trust-policy sanitization is available, so roles are not seeded.
+
+[[steps]]
+id = 0
+service = "iam"
+operation = "CreateGroup"
+kind = "AWS::IAM::Group"
+scope = "account"
+identity = ["Group", "Arn"]
+inputs = [
+  { field = ["GroupName"], value = "inventory-seed-group" },
+  { field = ["Path"], value = "/inventory-seed/" },
+]
+response_checks = [
+  { path = ["Group", "GroupName"], input_field = ["GroupName"] },
+  { path = ["Group", "Path"], input_field = ["Path"] },
+]

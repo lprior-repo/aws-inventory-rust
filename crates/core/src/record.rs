@@ -6,6 +6,7 @@ mod exclusions;
 mod hash;
 mod iter;
 mod readers;
+mod selected;
 mod skip;
 mod structure;
 #[cfg(test)]
@@ -18,6 +19,7 @@ pub use error::RecordError;
 pub use exclusions::Exclusions;
 pub use hash::ContentHash;
 pub use value::{FieldId, Float, Key, KeyRef, Time, Value, ValueKind, ValueRef};
+pub use selected::{SCALAR_ITEM_NAME, scalar_item, scalar_record};
 
 pub const MAX_RECORD_BYTES: usize = 16_777_216;
 

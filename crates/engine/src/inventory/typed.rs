@@ -133,6 +133,11 @@ fn bind_column(
             _ => Ok(None),
         },
     )?;
+    let value = if path.is_empty() {
+        inventory_core::record::scalar_item(observation.record().root())?
+    } else {
+        value
+    };
     match scalar {
         ScalarType::Bool => {
             let value = match value {

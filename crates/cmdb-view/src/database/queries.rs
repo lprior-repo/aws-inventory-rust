@@ -51,7 +51,7 @@ pub(super) async fn fetch_page(
     filter: &ResourceFilter,
     request: &PageRequest,
 ) -> Result<Vec<sqlx::sqlite::SqliteRow>, ViewError> {
-    let limit = i64::try_from(request.limit.saturating_add(1)).map_err(|_| ViewError::PageLimit)?;
+    let limit = i64::try_from(request.limit.checked_add(1).ok_or(ViewError::PageLimit)?).map_err(|_| ViewError::PageLimit)?;
     let cursor = request.after.as_ref();
     let query = sqlx::query(
         "SELECT account,region,kind,id,name,content_hash FROM resources WHERE (? IS NULL OR account=?) AND (? IS NULL OR region=?) AND (? IS NULL OR kind=?) AND (? IS NULL OR instr(lower(coalesce(name,'') || ' ' || id || ' ' || kind),lower(?))>0) AND (? IS NULL OR (account,region,kind,id)>(?,?,?,?)) ORDER BY account,region,kind,id LIMIT ?",
@@ -106,7 +106,7 @@ pub(super) async fn fetch_node_edges(
     node: &GraphNode,
     request: &EdgePageRequest,
 ) -> Result<Vec<sqlx::sqlite::SqliteRow>, ViewError> {
-    let limit = i64::try_from(request.limit.saturating_add(1)).map_err(|_| ViewError::PageLimit)?;
+    let limit = i64::try_from(request.limit.checked_add(1).ok_or(ViewError::PageLimit)?).map_err(|_| ViewError::PageLimit)?;
     let cursor = request.after.as_ref().map(|value| &value.edge);
     let query = sqlx::query(
         "SELECT from_account,from_region,from_kind,from_id,to_account,to_region,to_kind,to_id,relation,source FROM edges WHERE ((from_account=? AND from_region=? AND from_kind=? AND from_id=?) OR (to_account=? AND to_region=? AND to_kind=? AND to_id=?)) AND (? IS NULL OR (from_account,from_region,from_kind,from_id,to_account,to_region,to_kind,to_id,relation,source)>(?,?,?,?,?,?,?,?,?,?)) ORDER BY from_account,from_region,from_kind,from_id,to_account,to_region,to_kind,to_id,relation,source LIMIT ?",

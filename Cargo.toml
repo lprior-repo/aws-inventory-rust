@@ -81,6 +81,7 @@ proptest.workspace = true
 tempfile = "3.27.0"
 inventory-harness = { path = "crates/harness" }
 cmdb-view = { path = "crates/cmdb-view" }
+catalog-tool = { path = "crates/catalog-tool" }
 tokio-rustls = "0.26.6"
 rustls-pki-types = { version = "1.16.0", features = ["std"] }
 rcgen = { version = "0.14.10", default-features = false, features = ["aws_lc_rs", "pem"] }

@@ -1,0 +1,79 @@
+format = 1
+
+# LOCAL emulator only. Parameter-group envelopes require no database credentials.
+# These steps never create an instance/cluster, generate a managed secret, alter
+# parameter values, or read sensitive parameter/option values or database data.
+# CreateDBInstance requires a master user and password or managed-secret creation
+# for non-Aurora engines; neither is a metadata-only fixture under this policy.
+# Consequently this is parameter-group coverage, NOT instance/cluster coverage.
+# The families below are examples in the pinned RDS model documentation.
+# Distinct names share family/description to keep ARN identity independent of
+# mutable metadata. No parent relationship exists in these creation outputs.
+
+[[steps]]
+id = 0
+service = "rds"
+operation = "CreateDBParameterGroup"
+kind = "AWS::RDS::DBParameterGroup"
+identity = ["DBParameterGroup", "DBParameterGroupArn"]
+inputs = [
+  { field = ["DBParameterGroupName"], value = "inventory-seed-db-parameters-a" },
+  { field = ["DBParameterGroupFamily"], value = "mysql8.0" },
+  { field = ["Description"], value = "Inventory seed database parameter group" },
+]
+response_checks = [
+  { path = ["DBParameterGroup", "DBParameterGroupName"], input_field = ["DBParameterGroupName"] },
+  { path = ["DBParameterGroup", "DBParameterGroupFamily"], input_field = ["DBParameterGroupFamily"] },
+  { path = ["DBParameterGroup", "Description"], input_field = ["Description"] },
+]
+
+[[steps]]
+id = 1
+service = "rds"
+operation = "CreateDBParameterGroup"
+kind = "AWS::RDS::DBParameterGroup"
+identity = ["DBParameterGroup", "DBParameterGroupArn"]
+inputs = [
+  { field = ["DBParameterGroupName"], value = "inventory-seed-db-parameters-b" },
+  { field = ["DBParameterGroupFamily"], value = "mysql8.0" },
+  { field = ["Description"], value = "Inventory seed database parameter group" },
+]
+response_checks = [
+  { path = ["DBParameterGroup", "DBParameterGroupName"], input_field = ["DBParameterGroupName"] },
+  { path = ["DBParameterGroup", "DBParameterGroupFamily"], input_field = ["DBParameterGroupFamily"] },
+  { path = ["DBParameterGroup", "Description"], input_field = ["Description"] },
+]
+
+[[steps]]
+id = 2
+service = "rds"
+operation = "CreateDBClusterParameterGroup"
+kind = "AWS::RDS::DBClusterParameterGroup"
+identity = ["DBClusterParameterGroup", "DBClusterParameterGroupArn"]
+inputs = [
+  { field = ["DBClusterParameterGroupName"], value = "inventory-seed-cluster-parameters-a" },
+  { field = ["DBParameterGroupFamily"], value = "aurora-mysql8.0" },
+  { field = ["Description"], value = "Inventory seed cluster parameter group" },
+]
+response_checks = [
+  { path = ["DBClusterParameterGroup", "DBClusterParameterGroupName"], input_field = ["DBClusterParameterGroupName"] },
+  { path = ["DBClusterParameterGroup", "DBParameterGroupFamily"], input_field = ["DBParameterGroupFamily"] },
+  { path = ["DBClusterParameterGroup", "Description"], input_field = ["Description"] },
+]
+
+[[steps]]
+id = 3
+service = "rds"
+operation = "CreateDBClusterParameterGroup"
+kind = "AWS::RDS::DBClusterParameterGroup"
+identity = ["DBClusterParameterGroup", "DBClusterParameterGroupArn"]
+inputs = [
+  { field = ["DBClusterParameterGroupName"], value = "inventory-seed-cluster-parameters-b" },
+  { field = ["DBParameterGroupFamily"], value = "aurora-mysql8.0" },
+  { field = ["Description"], value = "Inventory seed cluster parameter group" },
+]
+response_checks = [
+  { path = ["DBClusterParameterGroup", "DBClusterParameterGroupName"], input_field = ["DBClusterParameterGroupName"] },
+  { path = ["DBClusterParameterGroup", "DBParameterGroupFamily"], input_field = ["DBParameterGroupFamily"] },
+  { path = ["DBClusterParameterGroup", "Description"], input_field = ["Description"] },
+]

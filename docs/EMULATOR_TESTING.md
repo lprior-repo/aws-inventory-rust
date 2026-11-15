@@ -111,10 +111,10 @@ The source commit is an immutable pin. Replacing it with an unreviewed latest re
 The graph delivery checks use a real native FalkorDB instance. On Linux x86-64, install its pinned runtime without Docker or a system service:
 
 ```bash
-python3 scripts/emulator/install_graph.py /tmp/aws-inventory-graph --jobs 2
+cargo run -p inventory-harness -- install-graph /tmp/aws-inventory-graph --jobs 2
 ```
 
-The [installer](../scripts/emulator/install_graph.py) requires `make` and a C compiler. It verifies the pinned Redis 8.10.3 archive and FalkorDB 6.0.4 module hashes, bounds extraction, builds `redis-server` and `redis-cli`, checks the resulting versions, and writes `installation.json`. Its output paths are:
+The [installer](../crates/harness/src/install/graph.rs) requires `make` and a C compiler. It verifies the pinned Redis 8.10.3 archive and FalkorDB 6.0.4 module hashes, bounds extraction, builds `redis-server` and `redis-cli`, checks the resulting versions, and writes `installation.json`. Its output paths are:
 
 | Relative path | Purpose |
 | --- | --- |

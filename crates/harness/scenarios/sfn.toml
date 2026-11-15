@@ -1,0 +1,62 @@
+format = 1
+
+# Local configuration fixtures only: no task polling or workflow executions.
+# The IAM role is real output-bound metadata, account-scoped, and has no attached
+# permissions. The generated Succeed definition contains no customer data or
+# service integrations. No role edge is guessed from CreateStateMachine inputs:
+# its output omits roleArn, so independent response evidence is unavailable.
+
+[[steps]]
+id = 0
+service = "sfn"
+operation = "CreateActivity"
+kind = "AWS::StepFunctions::Activity"
+identity = ["activityArn"]
+inputs = [{ field = ["name"], value = "inventory-seed-sfn-activity-a" }]
+
+[[steps]]
+id = 1
+service = "sfn"
+operation = "CreateActivity"
+kind = "AWS::StepFunctions::Activity"
+identity = ["activityArn"]
+inputs = [{ field = ["name"], value = "inventory-seed-sfn-activity-b" }]
+
+[[steps]]
+id = 2
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+scope = "account"
+identity = ["Role", "Arn"]
+inputs = [
+  { field = ["RoleName"], value = "inventory-seed-sfn-execution-role" },
+  { field = ["AssumeRolePolicyDocument"], value = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"states.amazonaws.com"},"Action":"sts:AssumeRole"}]}' },
+]
+response_checks = [{ path = ["Role", "RoleName"], input_field = ["RoleName"] }]
+
+[[steps]]
+id = 3
+service = "sfn"
+operation = "CreateStateMachine"
+kind = "AWS::StepFunctions::StateMachine"
+identity = ["stateMachineArn"]
+inputs = [
+  { field = ["name"], value = "inventory-seed-sfn-standard" },
+  { field = ["definition"], value = '{"StartAt":"Complete","States":{"Complete":{"Type":"Succeed"}}}' },
+  { field = ["roleArn"], from_step = 2, from_path = ["Role", "Arn"] },
+  { field = ["type"], value = "STANDARD" },
+]
+
+[[steps]]
+id = 4
+service = "sfn"
+operation = "CreateStateMachine"
+kind = "AWS::StepFunctions::StateMachine"
+identity = ["stateMachineArn"]
+inputs = [
+  { field = ["name"], value = "inventory-seed-sfn-express" },
+  { field = ["definition"], value = '{"StartAt":"Complete","States":{"Complete":{"Type":"Succeed"}}}' },
+  { field = ["roleArn"], from_step = 2, from_path = ["Role", "Arn"] },
+  { field = ["type"], value = "EXPRESS" },
+]

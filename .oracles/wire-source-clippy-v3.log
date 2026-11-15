@@ -1,0 +1,36 @@
+    Checking tap v1.0.1
+    Checking lexical-util v1.0.7
+    Checking wyz v0.5.1
+    Checking radium v0.7.0
+    Checking funty v2.0.0
+    Checking lexical-parse-integer v1.0.6
+    Checking bitvec v1.1.1
+    Checking lexical-parse-float v1.0.6
+    Checking num-traits v0.2.19
+    Checking jiter v0.19.0
+    Checking aws-wire v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/aws-wire)
+error: this `if` statement can be collapsed
+  --> crates/aws-wire/src/request/body.rs:88:5
+   |
+88 | /     if !has_input {
+89 | |         if let Some(entry) = context.input.iter()?.next() {
+90 | |             entry?;
+91 | |             return Err(EncodeError::InvalidValue {
+...  |
+96 | |     }
+   | |_____^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#collapsible_if
+   = note: `-D clippy::collapsible-if` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::collapsible_if)]`
+help: collapse nested if block
+   |
+88 ~     if !has_input
+89 ~         && let Some(entry) = context.input.iter()?.next() {
+90 |             entry?;
+...
+94 |             });
+95 ~         }
+   |
+
+error: could not compile `aws-wire` (lib) due to 1 previous error

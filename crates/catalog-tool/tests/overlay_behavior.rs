@@ -25,6 +25,8 @@ mod overlay_token_lists;
 mod overlay_token_maps;
 #[path = "overlay_behavior/unclassified.rs"]
 mod overlay_unclassified;
+#[path = "overlay_behavior/scalar_items.rs"]
+mod overlay_scalar_items;
 
 const BASIC: &str = r#"{"smithy":"2.0","shapes":{
 "n#Service":{"type":"service","operations":[{"target":"n#ListThings"}]},

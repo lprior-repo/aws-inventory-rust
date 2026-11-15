@@ -6,14 +6,16 @@ use toml::Value;
 pub(super) fn identity(context: &Context<'_>, value: Value) -> Result<Identity, OverlayError> {
     let raw: raw::Identity = raw::decode(context, value)?;
     match (raw.arn, raw.template, raw.key) {
-        (Some(value), None, None) => Ok(Identity::Arn(fields::path(context, "arn", &value)?)),
+        (Some(value), None, None) => {
+            Ok(Identity::Arn(fields::selected_path(context, "arn", &value)?))
+        }
         (None, Some(value), None) => {
             let text = fields::string(context, "template", &value)?;
             template(context, text)?;
             Ok(Identity::Template(text.to_owned()))
         }
         (None, None, Some(value)) => {
-            let paths = fields::list(context, "key", Some(&value), 1, 8, fields::path)?;
+            let paths = fields::list(context, "key", Some(&value), 1, 8, fields::selected_path)?;
             Ok(Identity::Key(paths))
         }
         _ => Err(context.error("", "arn/template/key", Rule::Identity)),
@@ -40,7 +42,9 @@ fn template_char(
 ) -> Result<(Option<usize>, bool), OverlayError> {
     match (open, character) {
         (None, '{') => Ok((Some(index.saturating_add(1)), seen)),
-        (Some(start), '}') if text.get(start..index).is_some_and(super::valid_path) => {
+        (Some(start), '}')
+            if text.get(start..index).is_some_and(|path| path == "$" || super::valid_path(path)) =>
+        {
             Ok((None, true))
         }
         (_, '{' | '}') => Err(context.error("template", text, Rule::Template)),
@@ -56,7 +60,7 @@ pub(super) fn binding(context: &Context<'_>, value: Value) -> Result<Binding, Ov
             fields::not_self(context, "from", &operation)?;
             Ok(Binding::From {
                 operation,
-                path: fields::path(context, "path", &path)?,
+                path: fields::selected_path(context, "path", &path)?,
             })
         }
         (None, None, Some(value), None) => {

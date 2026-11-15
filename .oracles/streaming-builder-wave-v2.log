@@ -1,0 +1,36 @@
+   Compiling inventory-core v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/core)
+    Finished `test` profile [unoptimized] target(s) in 0.86s
+     Running unittests src/lib.rs (/home/lewis/src/aws-inventory-rust/target/debug/build/inventory-core/ae6583a3efe4681c/out/inventory_core-ae6583a3efe4681c)
+
+running 5 tests
+test record::builder::tests::builder_rejects_invalid_contexts_and_stays_terminal ... ok
+test record::builder::tests::limits_are_inclusive_and_failures_are_terminal ... ok
+test record::builder::tests::second_root_and_unmatched_or_unfinished_containers_are_rejected ... ok
+test record::builder::tests::mixed_map_keys_are_sorted_by_record_key_order ... ok
+test record::builder::tests::nested_stream_matches_canonical_encoding_for_mixed_values ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 63 filtered out; finished in 0.00s
+
+    Checking inventory-core v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/core)
+error: expression can be simplified using `Option::unwrap_or()`
+   --> crates/core/src/record/builder/encoding.rs:123:9
+    |
+123 | /         error.into_write().map_or(
+124 | |             BuildError::Record(crate::record::RecordError::Encode),
+125 | |             std::convert::identity,
+126 | |         )
+    | |_________^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#map_or_identity
+    = note: `-D clippy::map-or-identity` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::map_or_identity)]`
+help: consider using `unwrap_or`
+    |
+123 -         error.into_write().map_or(
+124 -             BuildError::Record(crate::record::RecordError::Encode),
+125 -             std::convert::identity,
+126 -         )
+123 +         error.into_write().unwrap_or(BuildError::Record(crate::record::RecordError::Encode))
+    |
+
+error: could not compile `inventory-core` (lib) due to 1 previous error

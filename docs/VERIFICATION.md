@@ -37,6 +37,15 @@ Environment: emulator 1.0.348 at `https://127.0.0.1:47666` with its own CA,
 native FalkorDB at `redis://127.0.0.1:6379`, isolated static profile files
 (`.local/e2e-env.sh`), debug binaries, catalog format 3 with runtime extension.
 
+The suite now starts its own pinned emulator (per-test `HOME`, loopback, auth on)
+and its own `redis-server` with the FalkorDB module, writes an isolated static
+profile from the credentials the emulator issues, and stops all three on drop.
+Install the runtime once with
+`cargo run -p inventory-harness -- install .local/runtime` and
+`cargo run -p inventory-harness -- install-graph .local/runtime/graph`;
+`INVENTORY_EMULATOR_BINARY`, `INVENTORY_REDIS_SERVER` and `INVENTORY_FALKOR_MODULE`
+override the default locations.
+
 `cargo test --features aws --test sweep_e2e -- --ignored --test-threads 1`
 passed both tests in 158 s:
 

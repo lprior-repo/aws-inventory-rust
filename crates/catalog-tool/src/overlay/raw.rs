@@ -46,7 +46,7 @@ shape!(Paginator {
     pairs,
     truncated
 });
-shape!(Pair { input, output });
+shape!(Pair { input, output, optional });
 shape!(Binding {
     from,
     path,

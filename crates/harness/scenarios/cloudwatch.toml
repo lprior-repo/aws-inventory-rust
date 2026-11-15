@@ -1,0 +1,37 @@
+format = 1
+
+# LOCAL emulator only. Alarm configuration metadata, never metric values/content.
+# PutMetricAlarm and PutCompositeAlarm return Unit, not an alarm ARN.
+# identity_source records request-derived ARN provenance, not response/readback proof.
+# Actions are disabled; no action target or customer-content API is configured.
+# DescribeAlarms remains deferred in the overlay; seeding is not collection coverage.
+
+[[steps]]
+id = 0
+service = "cloudwatch"
+operation = "PutMetricAlarm"
+kind = "AWS::CloudWatch::Alarm"
+identity_source = { input_field = ["AlarmName"], template = "arn:{partition}:cloudwatch:{region}:{account}:alarm:{value}" }
+inputs = [
+  { field = ["AlarmName"], value = "inventory-seed-cpu" },
+  { field = ["AlarmDescription"], value = "Local emulator CPU alarm configuration" },
+  { field = ["ActionsEnabled"], value = false },
+  { field = ["Metrics"], value = [{ Id = "cpu", MetricStat = { Metric = { Namespace = "AWS/EC2", MetricName = "CPUUtilization" }, Period = 60, Stat = "Average" }, ReturnData = true }] },
+  { field = ["EvaluationPeriods"], value = 1 },
+  { field = ["Threshold"], value = 80.0 },
+  { field = ["ComparisonOperator"], value = "GreaterThanThreshold" },
+  { field = ["TreatMissingData"], value = "notBreaching" },
+]
+
+[[steps]]
+id = 1
+service = "cloudwatch"
+operation = "PutCompositeAlarm"
+kind = "AWS::CloudWatch::CompositeAlarm"
+identity_source = { input_field = ["AlarmName"], template = "arn:{partition}:cloudwatch:{region}:{account}:alarm:{value}" }
+inputs = [
+  { field = ["AlarmName"], value = "inventory-seed-composite" },
+  { field = ["AlarmDescription"], value = "Local emulator composite of the seeded CPU alarm" },
+  { field = ["ActionsEnabled"], value = false },
+  { field = ["AlarmRule"], value = 'ALARM("inventory-seed-cpu")' },
+]

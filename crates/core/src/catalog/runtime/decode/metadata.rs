@@ -62,6 +62,14 @@ pub(super) fn only_fields(
 }
 
 pub(super) fn id_path(list: ListRef<'_>) -> Result<Box<[FieldId]>, RuntimeCatalogError> {
+    let fields = selected_path(list)?;
+    if fields.is_empty() {
+        return Err(RuntimeCatalogError::Capability);
+    }
+    Ok(fields)
+}
+
+pub(super) fn selected_path(list: ListRef<'_>) -> Result<Box<[FieldId]>, RuntimeCatalogError> {
     let fields = bounded(
         list,
         |value| {
@@ -71,9 +79,6 @@ pub(super) fn id_path(list: ListRef<'_>) -> Result<Box<[FieldId]>, RuntimeCatalo
         },
         8,
     )?;
-    if fields.is_empty() {
-        return Err(RuntimeCatalogError::Capability);
-    }
     Ok(fields.into_boxed_slice())
 }
 

@@ -66,9 +66,12 @@ fn optional_path(
 
 fn column(value: ValueRef<'_>) -> Result<Column, RuntimeCatalogError> {
     let fields = map(value)?;
-    let path = metadata::id_path(list_value(metadata::field(fields, 1)?)?)?;
+    let path = metadata::selected_path(list_value(metadata::field(fields, 1)?)?)?;
     let scalar = scalar(metadata::integer(fields, 2)?)?;
     metadata::only_fields(fields, &[1, 2])?;
+    if path.is_empty() {
+        return Ok(Column::selected_scalar(scalar));
+    }
     Ok(Column::new(path.into_vec(), scalar)?)
 }
 

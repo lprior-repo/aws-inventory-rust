@@ -2173,42 +2173,12 @@
       "provider": {
         "Name": "inventory-parent-app-experiment-a-1",
         "ApplicationIdentifier": "app00a1",
-        "ExperimentId": "inventory-parent-app-experiment-a-1",
-        "TreatmentConfigurations": [
-          {
-            "Name": "Treatment_A",
-            "AllocationStrategy": "PROPORTIONAL",
-            "AllocationValue": 50.0,
-            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-1"
-          },
-          {
-            "Name": "Treatment_B",
-            "AllocationStrategy": "PROPORTIONAL",
-            "AllocationValue": 50.0,
-            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-2"
-          }
-        ],
-        "PercentageSplitPolicy": "PROPORTIONAL"
+        "ExperimentId": "inventory-parent-app-experiment-a-1"
       },
       "expected_provider": {
         "Name": "inventory-parent-app-experiment-a-1",
         "ApplicationIdentifier": "app00a1",
-        "ExperimentId": "inventory-parent-app-experiment-a-1",
-        "TreatmentConfigurations": [
-          {
-            "Name": "Treatment_A",
-            "AllocationStrategy": "PROPORTIONAL",
-            "AllocationValue": 50.0,
-            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-1"
-          },
-          {
-            "Name": "Treatment_B",
-            "AllocationStrategy": "PROPORTIONAL",
-            "AllocationValue": 50.0,
-            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-2"
-          }
-        ],
-        "PercentageSplitPolicy": "PROPORTIONAL"
+        "ExperimentId": "inventory-parent-app-experiment-a-1"
       },
       "expected_model": {
         "ApplicationIdentifier": "app00a1"
@@ -2224,54 +2194,12 @@
       "provider": {
         "Name": "inventory-parent-app-experiment-a-2",
         "ApplicationIdentifier": "app00a1",
-        "ExperimentId": "inventory-parent-app-experiment-a-2",
-        "TreatmentConfigurations": [
-          {
-            "Name": "Treatment_C",
-            "AllocationStrategy": "PROPORTIONAL",
-            "AllocationValue": 33.3,
-            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-1"
-          },
-          {
-            "Name": "Treatment_D",
-            "AllocationStrategy": "PROPORTIONAL",
-            "AllocationValue": 33.3,
-            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-2"
-          },
-          {
-            "Name": "Treatment_E",
-            "AllocationStrategy": "PROPORTIONAL",
-            "AllocationValue": 33.4,
-            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-1"
-          }
-        ],
-        "PercentageSplitPolicy": "PROPORTIONAL"
+        "ExperimentId": "inventory-parent-app-experiment-a-2"
       },
       "expected_provider": {
         "Name": "inventory-parent-app-experiment-a-2",
         "ApplicationIdentifier": "app00a1",
-        "ExperimentId": "inventory-parent-app-experiment-a-2",
-        "TreatmentConfigurations": [
-          {
-            "Name": "Treatment_C",
-            "AllocationStrategy": "PROPORTIONAL",
-            "AllocationValue": 33.3,
-            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-1"
-          },
-          {
-            "Name": "Treatment_D",
-            "AllocationStrategy": "PROPORTIONAL",
-            "AllocationValue": 33.3,
-            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-2"
-          },
-          {
-            "Name": "Treatment_E",
-            "AllocationStrategy": "PROPORTIONAL",
-            "AllocationValue": 33.4,
-            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-a-1"
-          }
-        ],
-        "PercentageSplitPolicy": "PROPORTIONAL"
+        "ExperimentId": "inventory-parent-app-experiment-a-2"
       },
       "expected_model": {
         "ApplicationIdentifier": "app00a1"
@@ -2348,42 +2276,12 @@
       "provider": {
         "Name": "inventory-parent-app-experiment-b-1",
         "ApplicationIdentifier": "app00b1",
-        "ExperimentId": "inventory-parent-app-experiment-b-1",
-        "TreatmentConfigurations": [
-          {
-            "Name": "Treatment_X",
-            "AllocationStrategy": "PROPORTIONAL",
-            "AllocationValue": 50.0,
-            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-b-1"
-          },
-          {
-            "Name": "Treatment_Y",
-            "AllocationStrategy": "PROPORTIONAL",
-            "AllocationValue": 50.0,
-            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-b-1"
-          }
-        ],
-        "PercentageSplitPolicy": "PROPORTIONAL"
+        "ExperimentId": "inventory-parent-app-experiment-b-1"
       },
       "expected_provider": {
         "Name": "inventory-parent-app-experiment-b-1",
         "ApplicationIdentifier": "app00b1",
-        "ExperimentId": "inventory-parent-app-experiment-b-1",
-        "TreatmentConfigurations": [
-          {
-            "Name": "Treatment_X",
-            "AllocationStrategy": "PROPORTIONAL",
-            "AllocationValue": 50.0,
-            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-b-1"
-          },
-          {
-            "Name": "Treatment_Y",
-            "AllocationStrategy": "PROPORTIONAL",
-            "AllocationValue": 50.0,
-            "ConfigurationProfileId": "inventory-parent-app-configurationprofile-b-1"
-          }
-        ],
-        "PercentageSplitPolicy": "PROPORTIONAL"
+        "ExperimentId": "inventory-parent-app-experiment-b-1"
       },
       "expected_model": {
         "ApplicationIdentifier": "app00b1"

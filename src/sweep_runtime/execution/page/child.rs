@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod scalar_tests;
+
 use inventory_core::{
     catalog::runtime::{
         BindingSource, BindingValue, CallablePlan, PlanPurpose, PlanScope, RuntimeCatalog,

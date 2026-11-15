@@ -1,0 +1,26 @@
+format = 1
+
+# Local origin-access-control configuration only; no distributions, content,
+# functions, public/private key material or origin requests are created.
+# ListOriginAccessControls inventories the exact returned control Id.
+# An unattached control has no distribution/origin relationship to assert.
+
+[[steps]]
+id = 0
+service = "cloudfront"
+operation = "CreateOriginAccessControl"
+kind = "AWS::CloudFront::OriginAccessControl"
+scope = "account"
+identity = ["OriginAccessControl", "Id"]
+inputs = [
+  { field = ["OriginAccessControlConfig", "Name"], value = "inventory-seed-origin-access-control" },
+  { field = ["OriginAccessControlConfig", "SigningProtocol"], value = "sigv4" },
+  { field = ["OriginAccessControlConfig", "SigningBehavior"], value = "always" },
+  { field = ["OriginAccessControlConfig", "OriginAccessControlOriginType"], value = "s3" },
+]
+response_checks = [
+  { path = ["OriginAccessControl", "OriginAccessControlConfig", "Name"], input_field = ["OriginAccessControlConfig", "Name"] },
+  { path = ["OriginAccessControl", "OriginAccessControlConfig", "SigningProtocol"], input_field = ["OriginAccessControlConfig", "SigningProtocol"] },
+  { path = ["OriginAccessControl", "OriginAccessControlConfig", "SigningBehavior"], input_field = ["OriginAccessControlConfig", "SigningBehavior"] },
+  { path = ["OriginAccessControl", "OriginAccessControlConfig", "OriginAccessControlOriginType"], input_field = ["OriginAccessControlConfig", "OriginAccessControlOriginType"] },
+]

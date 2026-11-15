@@ -225,5 +225,6 @@ fn modeled_paginator(state: &State<'_, '_, '_>) -> Option<Paginator> {
     Some(Paginator::Token(TokenPair {
         input: MemberPath::new(input_token).ok()?,
         output: MemberPath::new(output_token).ok()?,
+        optional: false,
     }))
 }

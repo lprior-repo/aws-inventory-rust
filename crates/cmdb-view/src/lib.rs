@@ -6,7 +6,7 @@ mod error;
 mod graph;
 
 pub use database::{
-    Database, DatabaseCounts, EdgeCursor, EdgePage, EdgePageRequest, LodSummary, MAX_PAGE_LIMIT,
+    Database, DatabaseCounts, DatabaseSnapshot, EdgeCursor, EdgePage, EdgePageRequest, LodSummary, MAX_PAGE_LIMIT,
     PageCursor, PageRequest, ResourceFilter, ResourcePage, StoredResource,
 };
 pub use error::ViewError;

@@ -4,9 +4,11 @@ use super::barrier_proxy::BarrierProxy;
 use super::denial_peer::AccessDeniedPeer;
 use super::guard::Environment;
 use super::process::{run_cli, run_cli_degraded, spawn_cli, terminate_cli};
+use super::stack::Stack;
 use super::state::{InventorySnapshot, assert_graph, database_snapshot};
 use anyhow::{Context, Result, ensure};
 use arguments::*;
+use aws_wire::sign::Credentials;
 use inventory_core::catalog::runtime::RuntimeCatalog;
 use inventory_engine::inventory::{BinaryStore, run_projection};
 use inventory_harness::inventory_seed::{SeedConfig, TypedSeedOracle, run_seed};
@@ -15,27 +17,23 @@ use std::net::TcpListener;
 use std::path::Path;
 
 pub(super) async fn run_live() -> Result<()> {
-    let environment = Environment::load()?;
-    let oracle = seed_live(&environment).await?;
-    run_pipeline(&environment, &oracle).await
+    let stack = Stack::start().await?;
+    let oracle = seed_live(stack.environment(), stack.credentials()).await?;
+    run_pipeline(stack.environment(), &oracle).await
 }
 
 pub(super) async fn run_denied() -> Result<()> {
-    let environment = Environment::load()?;
-    let oracle = seed_live(&environment).await?;
-    run_denied_pipeline(&environment, &oracle).await
+    let stack = Stack::start().await?;
+    let oracle = seed_live(stack.environment(), stack.credentials()).await?;
+    run_denied_pipeline(stack.environment(), &oracle).await
 }
 
-async fn seed_live(environment: &Environment) -> Result<TypedSeedOracle> {
+async fn seed_live(
+    environment: &Environment,
+    credentials: &Credentials,
+) -> Result<TypedSeedOracle> {
     let bytes = read_catalog(&environment.catalog)?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
-    let credentials = inventory_aws::model_credentials::ProfileCredentials::load(
-        Some(&environment.profile),
-        Some(&environment.region),
-    )
-    .await?
-    .resolve()
-    .await?;
     Ok(run_seed(
         &catalog,
         SeedConfig::new(
@@ -43,7 +41,7 @@ async fn seed_live(environment: &Environment) -> Result<TypedSeedOracle> {
             &environment.ca_bundle,
             &environment.region,
         )?,
-        &credentials,
+        credentials,
     )
     .await?)
 }

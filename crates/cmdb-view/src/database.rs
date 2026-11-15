@@ -1,5 +1,7 @@
 #[path = "database/queries.rs"]
 mod queries;
+#[path = "database/snapshot.rs"]
+mod snapshot;
 use crate::ViewError;
 use crate::graph::{GraphEdge, GraphNode};
 use inventory_core::inventory::{AccountId, Kind, Region, ResourceId, ResourceKey, SqlName};
@@ -86,6 +88,10 @@ pub struct Database {
     pool: SqlitePool,
 }
 
+pub struct DatabaseSnapshot {
+    tx: sqlx::Transaction<'static, sqlx::Sqlite>,
+}
+
 impl Database {
     pub async fn open(path: &Path) -> Result<Self, ViewError> {
         let options = SqliteConnectOptions::new()
@@ -105,20 +111,19 @@ impl Database {
         Ok(Self { pool })
     }
 
-    pub async fn counts(&self) -> Result<DatabaseCounts, ViewError> {
+    pub async fn snapshot(&self) -> Result<DatabaseSnapshot, ViewError> {
         let mut tx = self.pool.begin().await?;
-        let resources = scalar_count(&mut tx, "SELECT count(*) FROM resources").await?;
-        let accounts =
-            scalar_count(&mut tx, "SELECT count(DISTINCT account) FROM resources").await?;
-        let regions = scalar_count(&mut tx, "SELECT count(DISTINCT region) FROM resources").await?;
-        let services = scalar_count(&mut tx, "SELECT count(DISTINCT substr(kind,instr(kind,':')+2,instr(substr(kind,instr(kind,':')+2),':')-1)) FROM resources").await?;
-        tx.commit().await?;
-        Ok(DatabaseCounts {
-            accounts,
-            regions,
-            services,
-            resources,
-        })
+        sqlx::query_scalar::<_, i64>("SELECT EXISTS(SELECT 1 FROM resources)")
+            .fetch_one(&mut *tx)
+            .await?;
+        Ok(DatabaseSnapshot { tx })
+    }
+
+    pub async fn counts(&self) -> Result<DatabaseCounts, ViewError> {
+        let mut snapshot = self.snapshot().await?;
+        let counts = snapshot.counts().await?;
+        snapshot.finish().await?;
+        Ok(counts)
     }
 
     pub async fn page(
@@ -126,16 +131,10 @@ impl Database {
         filter: &ResourceFilter,
         request: PageRequest,
     ) -> Result<ResourcePage, ViewError> {
-        validate_page_limit(request.limit)?;
-        let mut tx = self.pool.begin().await?;
-        let total = count_filtered(&mut tx, filter).await?;
-        let (resources, has_more) = decode_resources(&mut tx, filter, &request).await?;
-        tx.commit().await?;
-        Ok(ResourcePage {
-            next: next_resource_cursor(&resources, has_more),
-            resources,
-            total_matching: total,
-        })
+        let mut snapshot = self.snapshot().await?;
+        let page = snapshot.page(filter, request).await?;
+        snapshot.finish().await?;
+        Ok(page)
     }
 
     pub async fn edges_page(
@@ -143,33 +142,24 @@ impl Database {
         node: &GraphNode,
         request: EdgePageRequest,
     ) -> Result<EdgePage, ViewError> {
-        validate_page_limit(request.limit)?;
-        let mut tx = self.pool.begin().await?;
-        let total = count_node_edges(&mut tx, node).await?;
-        let (edges, has_more) = decode_edges(&mut tx, node, &request).await?;
-        tx.commit().await?;
-        Ok(EdgePage {
-            next: next_edge_cursor(&edges, has_more),
-            edges,
-            total_matching: total,
-        })
+        let mut snapshot = self.snapshot().await?;
+        let page = snapshot.edges_page(node, request).await?;
+        snapshot.finish().await?;
+        Ok(page)
     }
 
     pub async fn lod_summary(&self) -> Result<LodSummary, ViewError> {
-        let mut tx = self.pool.begin().await?;
-        let resources = scalar_count(&mut tx, "SELECT count(*) FROM resources").await?;
-        let edges = scalar_count(&mut tx, "SELECT count(*) FROM edges").await?;
-        let connected = scalar_count(&mut tx, "SELECT count(*) FROM (SELECT from_account AS account,from_region AS region,from_kind AS kind,from_id AS id FROM edges UNION SELECT to_account,to_region,to_kind,to_id FROM edges)").await?;
-        let isolated = resources
-            .checked_sub(connected)
-            .ok_or(ViewError::StoredRow)?;
-        tx.commit().await?;
-        Ok(LodSummary {
-            resources,
-            edges,
-            connected_resources: connected,
-            isolated_resources: isolated,
-        })
+        let mut snapshot = self.snapshot().await?;
+        let summary = snapshot.lod_summary().await?;
+        snapshot.finish().await?;
+        Ok(summary)
+    }
+
+    pub async fn detail(&self, node: &GraphNode) -> Result<Option<StoredResource>, ViewError> {
+        let mut snapshot = self.snapshot().await?;
+        let resource = snapshot.detail(node).await?;
+        snapshot.finish().await?;
+        Ok(resource)
     }
 }
 
@@ -226,9 +216,7 @@ async fn decode_resources(
 ) -> Result<(Vec<StoredResource>, bool), ViewError> {
     let mut rows = fetch_page(tx, filter, request).await?;
     let has_more = rows.len() > request.limit;
-    if has_more {
-        rows.pop();
-    }
+    rows.truncate(request.limit);
     let mut resources = Vec::with_capacity(rows.len());
     for row in rows {
         resources.push(decode_row(tx, row).await?);
@@ -251,9 +239,7 @@ async fn decode_edges(
 ) -> Result<(Vec<GraphEdge>, bool), ViewError> {
     let mut rows = fetch_node_edges(tx, node, request).await?;
     let has_more = rows.len() > request.limit;
-    if has_more {
-        rows.pop();
-    }
+    rows.truncate(request.limit);
     let edges = rows
         .into_iter()
         .map(decode_edge)

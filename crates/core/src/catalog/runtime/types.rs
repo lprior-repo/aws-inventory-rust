@@ -75,6 +75,9 @@ pub enum ItemPlan {
 pub enum IdentityPart {
     Literal(String),
     Field(Box<[FieldId]>),
+    Partition,
+    Account,
+    Region,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -134,6 +137,7 @@ pub struct TokenBinding {
     pub value_type: TokenType,
     pub request_placement: TokenPlacement,
     pub response_placement: TokenPlacement,
+    pub optional: bool,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

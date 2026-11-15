@@ -1,0 +1,47 @@
+    Checking inventory-core v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m1.4c/crates/core)
+    Checking catalog-tool v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m1.4c/crates/catalog-tool)
+error[E0365]: `StateArgs` is private, and cannot be re-exported
+ --> crates/catalog-tool/src/overlay/check/validation.rs:7:29
+  |
+7 | pub(super) use evaluation::{StateArgs, operation};
+  |                             ^^^^^^^^^ re-export of private `StateArgs`
+  |
+  = note: consider declaring type or module `StateArgs` with `pub`
+
+error[E0603]: struct import `StateArgs` is private
+  --> crates/catalog-tool/src/overlay/check/service/flow/operation.rs:36:39
+   |
+36 |     validation::operation(validation::StateArgs {
+   |                                       ^^^^^^^^^ private struct import
+   |
+note: the struct import `StateArgs` is defined here...
+  --> crates/catalog-tool/src/overlay/check/validation.rs:7:29
+   |
+ 7 | pub(super) use evaluation::{StateArgs, operation};
+   |                             ^^^^^^^^^
+note: ...and refers to the struct import `StateArgs` which is defined here...
+  --> crates/catalog-tool/src/overlay/check/validation/evaluation.rs:3:16
+   |
+ 3 | pub(super) use state::StateArgs;
+   |                ^^^^^^^^^^^^^^^^
+note: ...and refers to the struct `StateArgs` which is defined here
+  --> crates/catalog-tool/src/overlay/check/validation/evaluation/state.rs:32:1
+   |
+32 | pub(in crate::overlay::check) struct StateArgs<'a, 'm, 'd> {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: unused imports: `DenyList`, `Model`, and `Vocabulary`
+  --> crates/catalog-tool/src/overlay/check/validation/evaluation.rs:9:22
+   |
+ 9 |     classes::{Class, DenyList},
+   |                      ^^^^^^^^
+10 |     overlay::{Binding, ItemSelector, MemberPath, OverlayClass, Paginator, TokenPair},
+11 |     plans::{Model, Pagination, Vocabulary},
+   |             ^^^^^              ^^^^^^^^^^
+   |
+   = note: `-D unused-imports` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(unused_imports)]`
+
+Some errors have detailed explanations: E0365, E0603.
+For more information about an error, try `rustc --explain E0365`.
+error: could not compile `catalog-tool` (lib) due to 3 previous errors

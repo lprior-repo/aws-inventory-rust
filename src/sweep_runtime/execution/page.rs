@@ -101,7 +101,7 @@ fn prepare(
         .unwrap_or(&endpoint.url)
         .to_owned();
     let base = Record::from_bytes(lease.bindings().to_vec())?;
-    let mut fields = cursor.request_fields(plan)?;
+    let mut fields = cursor.request_fields(plan.pagination())?;
     if let Some(size) = plan.pagination().page_size.as_ref() {
         fields.push(input::InputField {
             path: size.path.clone(),
@@ -157,7 +157,7 @@ fn prepare_response(
     );
     let children = child::work(&children_context, &items, &observations)?;
     let next = cursor.next(
-        plan,
+        plan.pagination(),
         &response.record,
         &response.headers,
         context.bootstrap.config.max_pages,

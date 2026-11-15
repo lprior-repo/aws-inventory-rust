@@ -55,7 +55,7 @@ install)
         "$PYTHON" -m pip install -r scripts/requirements.txt
     fi
     "$PYTHON" scripts/emulator/install.py "$RUNTIME/emulator"
-    "$PYTHON" scripts/emulator/install_graph.py "$RUNTIME/graph" --jobs 2
+    cargo run --locked -q -p inventory-harness -- install-graph "$RUNTIME/graph" --jobs 2
     cargo build --locked --workspace --exclude inventory-sdk-catalog --all-features --bins --examples -j1
     ;;
 sdk-build)

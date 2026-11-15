@@ -1,0 +1,27 @@
+   Compiling catalog-tool v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/catalog-tool)
+    Finished `test` profile [unoptimized] target(s) in 2.72s
+     Running tests/wire_metadata.rs (/home/lewis/src/aws-inventory-rust/target/debug/build/catalog-tool/3313e2b9a930e695/out/wire_metadata-3313e2b9a930e695)
+
+running 19 tests
+test wire_metadata::corruption::v1_catalog_is_rejected_with_the_observed_version ... ok
+test wire_metadata::corruption::field_registry_rejects_out_of_bounds_and_non_utf8_offset_ranges ... ok
+test wire_metadata::corruption::public_reader_rejects_unknown_wire_enums_and_out_of_bounds_shape_references ... ok
+test wire_metadata::errors_registry::absent_error_and_wire_traits_return_empty_or_none_without_invented_ids ... ok
+test wire_metadata::corruption::compiler_bytes_are_repeatable_and_catalog_is_exactly_v2 ... ok
+test wire_metadata::service_operations::absent_optional_service_and_operation_metadata_is_empty_or_none ... ok
+test wire_metadata::member_shapes::pseudo_member_traits_and_optional_member_metadata_are_retained ... ok
+test wire_metadata::trait_validation::unknown_traits_are_ignored_and_known_absent_metadata_stays_absent ... ok
+test wire_metadata::compression::malformed_compression_traits_name_service_shape_and_trait ... ok
+test wire_metadata::compression::modeled_compression_is_canonical_and_absent_trait_stays_absent ... ok
+test wire_metadata::errors_registry::registry_ids_remain_registry_ordered_and_shared_field_names_resolve ... ok
+test wire_metadata::errors_registry::operation_errors_merge_local_and_service_common_references ... ok
+test wire_metadata::errors_registry::modeled_error_statuses_preserve_redirects_and_http_status_boundaries ... ok
+test wire_metadata::member_shapes::member_wire_names_flags_and_shape_wire_traits_survive_compilation ... ok
+test wire_metadata::service_operations::every_supported_protocol_survives_trait_payload_retention ... ok
+test wire_metadata::service_operations::operation_metadata_merges_service_defaults_and_keeps_operation_overrides ... ok
+test wire_metadata::trait_validation::known_service_operation_member_and_shape_traits_reject_wrong_json_types_with_context ... ok
+test wire_metadata::service_operations::service_protocol_and_identity_metadata_is_borrowed_from_compiled_catalog ... ok
+test wire_metadata::member_shapes::each_http_binding_is_preserved_as_its_typed_binding ... ok
+
+test result: ok. 19 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

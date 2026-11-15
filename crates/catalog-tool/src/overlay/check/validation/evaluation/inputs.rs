@@ -199,7 +199,7 @@ fn source_binding_valid(
         overlays.get(parent.as_str()),
         vocabulary,
     )
-    .and_then(|selected| model.resolve_path_from(selected, source_path.as_str()).ok())
+    .and_then(|selected| paths::resolve_selected(model, selected, source_path.as_str()))
     .is_some_and(|source| pagination::compatible(model, &source, target))
 }
 

@@ -1,0 +1,2 @@
+crates/catalog-tool/src/overlay/check/service/flow/operation.rs:110: 27 lines: fn operation_errors(
+function-length gate failed (max 25 lines)

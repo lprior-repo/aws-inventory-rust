@@ -1,0 +1,22 @@
+   Compiling aws-wire v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/aws-wire)
+    Finished `test` profile [unoptimized] target(s) in 0.90s
+     Running unittests src/lib.rs (/home/lewis/src/aws-inventory-rust/target/debug/build/aws-wire/b7e8c2e1d8b048c8/out/aws_wire-b7e8c2e1d8b048c8)
+
+running 1 test
+test request::rest::tests::fixtures::every_published_rest_request_client_fixture_runs ... FAILED
+
+failures:
+
+---- request::rest::tests::fixtures::every_published_rest_request_client_fixture_runs stdout ----
+
+thread 'request::rest::tests::fixtures::every_published_rest_request_client_fixture_runs' (578587) panicked at crates/aws-wire/src/request/rest/tests/fixtures/assertions.rs:117:33:
+restJson1 HttpEnumPayload RestJsonEnumPayloadRequest: invalid JSON body: expected value at line 1 column 1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    request::rest::tests::fixtures::every_published_rest_request_client_fixture_runs
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 28 filtered out; finished in 0.42s
+
+error: test failed, to rerun pass `-p aws-wire --lib`

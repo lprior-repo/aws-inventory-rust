@@ -43,7 +43,11 @@ fn given_live_child_when_guard_drops_then_process_is_killed_and_reaped() -> Test
 fn given_live_child_when_endpoint_resolution_fails_then_process_is_reaped() -> TestResult {
     let owner = sleep_child("60")?;
     let identity = capture(&owner)?;
-    let result = emulator_from(owner, "invalid endpoint".to_owned());
+    let result = emulator_from(
+        owner,
+        "invalid endpoint".to_owned(),
+        Path::new("/nonexistent"),
+    );
     assert!(matches!(result, Err(HarnessError::Invalid(reason))
         if reason == "emulator endpoint is not HTTPS loopback with a port"));
     assert_reaped(identity)

@@ -17,6 +17,21 @@ pub(super) fn mark_provided(provided: &mut BTreeSet<String>, path: &str) {
         });
 }
 
+pub(super) fn resolve_selected<'a>(
+    model: &Model<'a>,
+    selected: crate::plans::model::ShapeRef<'a>,
+    path: &str,
+) -> Option<crate::plans::model::ShapeRef<'a>> {
+    if path == "$" {
+        return matches!(
+            plans::model::shape_type(selected.value),
+            Some("string" | "enum" | "byte" | "short" | "integer" | "long" | "boolean" | "float" | "double" | "blob" | "timestamp")
+        )
+        .then_some(selected);
+    }
+    model.resolve_path_from(selected, path).ok()
+}
+
 pub(super) fn selected_for_parent<'m>(
     model: &Model<'m>,
     operation: &str,
@@ -68,10 +83,11 @@ fn selected_aggregate<'m>(
     path: &str,
 ) -> Option<crate::plans::model::ShapeRef<'m>> {
     let shape = model.resolve_path(operation, "output", path).ok()??;
-    if !matches!(plans::model::shape_type(shape.value), Some("list" | "map")) {
-        return None;
+    match plans::model::shape_type(shape.value) {
+        Some("structure") => Some(shape),
+        Some("list" | "map") => model.unwrap_aggregates(shape).ok(),
+        _ => None,
     }
-    model.unwrap_aggregates(shape).ok()
 }
 
 pub(super) fn validate_output_paths(
@@ -204,10 +220,13 @@ fn fixed_string_list(
         .and_then(crate::plans::model::target)
         .and_then(|id| model.shape(id));
     element.is_some_and(|element| {
-        plans::model::shape_type(element.value) == Some("string")
-            && items
-                .iter()
-                .all(|item| length_matches(element.value, item.len()))
+        match plans::model::shape_type(element.value) {
+            Some("string") => items.iter()
+                .all(|item| length_matches(element.value, item.len())),
+            Some("enum") => items.iter()
+                .all(|item| enum_value_matches(element.value, item)),
+            _ => false,
+        }
     }) && length_matches(member, items.len())
         && length_matches(target.value, items.len())
 }

@@ -1,0 +1,103 @@
+   Compiling radium v0.7.0
+   Compiling num-traits v0.2.19
+   Compiling lexical-util v1.0.7
+   Compiling tap v1.0.1
+   Compiling wyz v0.5.1
+   Compiling funty v2.0.0
+   Compiling lexical-parse-integer v1.0.6
+   Compiling jiter v0.19.0
+   Compiling lexical-parse-float v1.0.6
+   Compiling bitvec v1.1.1
+   Compiling inventory-core v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/core)
+   Compiling catalog-tool v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/catalog-tool)
+   Compiling aws-wire v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/aws-wire)
+error: expected item after attributes
+  --> crates/aws-wire/src/request/rest/tests/../../../../tests/xml_infoset/tests.rs:72:1
+   |
+72 | #[test]
+   | ^^^^^^^ expected an item after this
+
+error[E0423]: cannot find value `bytes` in this scope
+  --> crates/aws-wire/src/request/body/wire_decimal.rs:47:22
+   |
+47 |     } = scan_decimal(bytes, field)?;
+   |                      ^^^^^ not found in this scope
+   |
+   = note: a crate named `bytes` exists in another namespace
+help: consider importing this function instead
+   |
+ 1 + use crate::request::body::cbor::bytes;
+   |
+
+error[E0423]: cannot find value `bytes` in this scope
+  --> crates/aws-wire/src/request/body/wire_decimal.rs:49:47
+   |
+49 |     let mut coefficient = decimal_coefficient(bytes, integer, fraction, field, body.remaining()?)?;
+   |                                               ^^^^^ not found in this scope
+   |
+   = note: a crate named `bytes` exists in another namespace
+help: consider importing this function instead
+   |
+ 1 + use crate::request::body::cbor::bytes;
+   |
+
+error[E0425]: cannot find type `BoundedBody` in this scope
+   --> crates/aws-wire/src/request/body/wire_member.rs:211:16
+    |
+211 |     body: &mut BoundedBody,
+    |                ^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::request::common::BoundedBody;
+    |
+
+error[E0425]: cannot find type `BoundedBody` in this scope
+   --> crates/aws-wire/src/request/body/wire_member.rs:223:16
+    |
+223 |     body: &mut BoundedBody,
+    |                ^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::request::common::BoundedBody;
+    |
+
+error[E0425]: cannot find type `BoundedBody` in this scope
+   --> crates/aws-wire/src/request/body/wire_member.rs:237:16
+    |
+237 |     body: &mut BoundedBody,
+    |                ^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+  1 + use crate::request::common::BoundedBody;
+    |
+
+error[E0425]: cannot find function `path_style` in this scope
+  --> crates/aws-wire/src/request/endpoint/addressing.rs:39:19
+   |
+39 |         return Ok(path_style(config.endpoint));
+   |                   ^^^^^^^^^^ not found in this scope
+
+error[E0004]: non-exhaustive patterns: `_` not covered
+  --> crates/aws-wire/src/request/rest/tests/../../../../tests/xml_infoset/compare.rs:99:23
+   |
+99 |     let shape = match member.target { Target::Shape(index) => service.shape(index).ok().flatten(), Target::Prelude(_) => None };
+   |                       ^^^^^^^^^^^^^ pattern `_` not covered
+   |
+note: `inventory_core::catalog::Target` defined here
+  --> crates/core/src/catalog/views/shape.rs:9:1
+   |
+ 9 | pub enum Target {
+   | ^^^^^^^^^^^^^^^
+   = note: the matched value is of type `inventory_core::catalog::Target`
+   = note: `inventory_core::catalog::Target` is marked as non-exhaustive, so a wildcard `_` is necessary to match exhaustively
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern or an explicit pattern as shown
+   |
+99 |     let shape = match member.target { Target::Shape(index) => service.shape(index).ok().flatten(), Target::Prelude(_) => None, _ => todo!() };
+   |                                                                                                                              ++++++++++++++
+
+Some errors have detailed explanations: E0004, E0423, E0425.
+For more information about an error, try `rustc --explain E0004`.
+error: could not compile `aws-wire` (lib test) due to 8 previous errors

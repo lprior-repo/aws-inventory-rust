@@ -1,0 +1,53 @@
+   Compiling aws-wire v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/aws-wire)
+    Finished `test` profile [unoptimized] target(s) in 1.04s
+     Running unittests src/lib.rs (/home/lewis/src/aws-inventory-rust/target/debug/build/aws-wire/22ebea8d2719fee5/out/aws_wire-22ebea8d2719fee5)
+
+running 24 tests
+test request::common::tests::bounded_body_accepts_exact_budget_and_rejects_next_byte_without_mutating_prefix ... ok
+test request::common::tests::request_limits_reject_zero_and_values_above_global_caps ... ok
+test request::compression::tests::thresholds_accept_inclusive_protocol_bounds ... ok
+test request::query::form::tests::encoding_checks_limit_before_exceeding_it ... ok
+test request::query::form::tests::blob_base64_is_percent_encoded_and_body_bounded ... ok
+test request::query::form::tests::pairs_use_form_encoding_and_preserve_insertion_order ... ok
+test request::rest::tests::bounded_body_rejects_output_past_the_configured_limit ... ok
+test request::query::scalar::tests::timestamps_follow_query_wire_formats_including_negative_fractional_epochs ... ok
+test request::rest::tests::rest_uri_label_encoding_rejects_oversized_output ... ok
+test request::compression::tests::projected_header_budget_uses_exact_compressed_length ... ok
+test request::rest::tests::rest_uri_labels_encode_regular_and_greedy_values_exactly ... ok
+test request::compression::tests::gzip_rejects_input_and_compressed_output_over_body_cap ... ok
+test request::compression::tests::gzip_is_deterministic_and_round_trips_within_the_output_cap ... ok
+test request::common::tests::finish_rejects_body_already_over_caller_budget ... ok
+test request::common::tests::finish_applies_aggregate_header_budget_including_host_and_header_overhead ... ok
+test request::common::tests::finish_counts_absolute_uri_scheme_authority_and_path_at_boundary ... ok
+test request::common::tests::finish_appends_operation_target_without_losing_endpoint_base_path ... ok
+test request::common::tests::finish_rejects_mismatched_or_duplicate_host_and_retains_ipv6_authority ... ok
+test request::common::tests::finish_rejects_malformed_endpoint_forms ... ok
+test transport::resolver::tests::abandoned_dns_waiters_retain_admission_until_the_blocking_jobs_finish ... ok
+test transport::trust::tests::extra_bundle_preserves_and_validates_a_distinct_native_root ... ok
+test request::query::fixture_tests::published_ec2_query_request_cases_are_encoded_or_accounted_for_as_server_cases ... FAILED
+test request::query::fixture_tests::published_aws_query_request_cases_are_encoded_or_accounted_for_as_server_cases ... FAILED
+test request::rest::tests::fixtures::every_published_rest_request_client_fixture_runs ... FAILED
+
+failures:
+
+---- request::query::fixture_tests::published_ec2_query_request_cases_are_encoded_or_accounted_for_as_server_cases stdout ----
+Error: Custom { kind: InvalidData, error: "unsupported fixture target unit" }
+
+---- request::query::fixture_tests::published_aws_query_request_cases_are_encoded_or_accounted_for_as_server_cases stdout ----
+Error: Custom { kind: InvalidData, error: "unsupported fixture target unit" }
+
+---- request::rest::tests::fixtures::every_published_rest_request_client_fixture_runs stdout ----
+
+thread 'request::rest::tests::fixtures::every_published_rest_request_client_fixture_runs' (53988) panicked at crates/aws-wire/src/request/rest/tests/fixtures.rs:126:33:
+restJson1 DocumentType DocumentTypeInputWithObject: unsupported request feature: map without value
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+
+failures:
+    request::query::fixture_tests::published_aws_query_request_cases_are_encoded_or_accounted_for_as_server_cases
+    request::query::fixture_tests::published_ec2_query_request_cases_are_encoded_or_accounted_for_as_server_cases
+    request::rest::tests::fixtures::every_published_rest_request_client_fixture_runs
+
+test result: FAILED. 21 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.26s
+
+error: test failed, to rerun pass `-p aws-wire --lib`

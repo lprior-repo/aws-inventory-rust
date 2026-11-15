@@ -12,7 +12,7 @@ use inventory_core::{
 use super::super::RuntimeContext;
 use crate::sweep_runtime::{SweepError, record};
 
-const MAX_PAGE_ROWS: usize = 1_000;
+const MAX_PAGE_ROWS: usize = 100_000;
 const MAX_PAGE_REFERENCES: usize = 10_000;
 
 pub(super) fn items(plan: &CallablePlan<'_>, response: &Record) -> Result<Vec<Record>, SweepError> {
@@ -44,7 +44,15 @@ fn observation(
     region: &Region,
     row: &Record,
 ) -> Result<Observation, SweepError> {
-    let id = record::resource_id(row, plan.identity())?;
+    let request_region = match region {
+        Region::Global => context.bootstrap.home,
+        Region::Regional(region) => region,
+    };
+    let identity_context = record::IdentityContext {
+        account: &context.account,
+        region: request_region,
+    };
+    let id = record::resource_id(row, plan.identity(), Some(identity_context))?;
     let key = ResourceKey {
         account: context.account.clone(),
         region: region.clone(),

@@ -248,7 +248,7 @@ fn invalid_token(service: &str, operation: &str, input: &str, violations: &mut V
 fn supported_token(shape: &crate::plans::model::ShapeRef<'_>) -> bool {
     matches!(
         plans::model::shape_type(shape.value),
-        Some("string" | "map")
+        Some("string" | "enum" | "map" | "boolean" | "integer" | "long" | "short" | "byte" | "intEnum")
     ) && shape
         .value
         .get("traits")

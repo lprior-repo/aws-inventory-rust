@@ -34,6 +34,19 @@ pub(super) fn validate(
             .is_some_and(|value| !value.is_empty()))
 }
 
+pub(super) fn static_keys(credentials: &str, name: &str) -> Result<(String, String)> {
+    let profile = parse(credentials, name)?
+        .ok_or_else(|| anyhow::anyhow!("emulator credentials lack the {name} profile"))?;
+    let key = |field: &str| {
+        profile
+            .get(field)
+            .filter(|value| !value.is_empty())
+            .map(|value| (*value).to_owned())
+            .ok_or_else(|| anyhow::anyhow!("emulator credentials lack {field}"))
+    };
+    Ok((key("aws_access_key_id")?, key("aws_secret_access_key")?))
+}
+
 fn parse<'a>(contents: &'a str, selected: &str) -> Result<Option<Profile<'a>>> {
     let mut profile = None;
     let mut active = false;

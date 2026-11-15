@@ -1,0 +1,600 @@
+    Checking inventory-core v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/core)
+    Checking aws-wire v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/aws-wire)
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/aws-wire/src/request/body/json.rs:90:23
+   |
+90 |         Some(b'0') => cursor + 1,
+   |                       ^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+   = note: requested on the command line with `-D clippy::arithmetic-side-effects`
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/aws-wire/src/request/body/json.rs:95:9
+   |
+95 |         cursor += 1;
+   |         ^^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/aws-wire/src/request/body/json.rs:103:9
+    |
+103 |         cursor += 1;
+    |         ^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/aws-wire/src/request/body/json.rs:105:13
+    |
+105 |             cursor += 1;
+    |             ^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/aws-wire/src/request/body/json.rs:118:9
+    |
+118 |         cursor += 1;
+    |         ^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: using `chunks_exact` with a constant chunk size
+   --> crates/aws-wire/src/request/body/json.rs:191:28
+    |
+191 |     let mut chunks = bytes.chunks_exact(3);
+    |                            ^^^^^^^^^^^^^^^
+    |
+help: consider using `as_chunks::<3>()` instead
+   --> crates/aws-wire/src/request/body/json.rs:191:28
+    |
+191 |     let mut chunks = bytes.chunks_exact(3);
+    |                            ^^^^^^^^^^^^^^^
+    = note: you can access the chunks using `chunks.0.iter()`, and the remainder using `chunks.1`
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#chunks_exact_to_as_chunks
+    = note: `-D clippy::chunks-exact-to-as-chunks` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::chunks_exact_to_as_chunks)]`
+
+error: very complex type used. Consider factoring parts into `type` definitions
+ --> crates/aws-wire/src/request/body/wire_decimal_parse.rs:8:6
+  |
+8 | ) -> Result<(bool, i128, (usize, usize), (usize, usize)), EncodeError> {
+  |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = help: for further information visit https://clippy.rust-lang.org/main/index.html#type_complexity
+  = note: `-D clippy::type-complexity` implied by `-D warnings`
+  = help: to override `-D warnings` add `#[allow(clippy::type_complexity)]`
+
+error: this function has too many arguments (9/7)
+  --> crates/aws-wire/src/request/body/wire_member.rs:21:1
+   |
+21 | / pub(super) fn push_structure<'a>(
+22 | |     body: &mut BoundedBody,
+23 | |     _service: Service<'a>,
+24 | |     protocol: Protocol,
+...  |
+30 | |     pending: &mut Vec<Task<'a>>,
+31 | | ) -> Result<(), EncodeError> {
+   | |____________________________^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#too_many_arguments
+   = note: `-D clippy::too-many-arguments` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::too_many_arguments)]`
+
+error: very complex type used. Consider factoring parts into `type` definitions
+  --> crates/aws-wire/src/request/body/wire_member.rs:94:6
+   |
+94 | ) -> Result<(usize, Vec<(&'a str, ValueTask<'a>)>), EncodeError> {
+   |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#type_complexity
+
+error: this function has too many arguments (9/7)
+  --> crates/aws-wire/src/request/body/wire_shape.rs:28:1
+   |
+28 | / pub(super) fn push_list<'a>(
+29 | |     body: &mut BoundedBody,
+30 | |     protocol: Protocol,
+31 | |     values: Vec<ValueRef<'a>>,
+...  |
+37 | |     pending: &mut Vec<Task<'a>>,
+38 | | ) -> Result<(), EncodeError> {
+   | |____________________________^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#too_many_arguments
+
+error: this function has too many arguments (11/7)
+   --> crates/aws-wire/src/request/body/wire_shape.rs:115:1
+    |
+115 | / pub(super) fn push_map<'a>(
+116 | |     body: &mut BoundedBody,
+117 | |     service: Service<'a>,
+118 | |     protocol: Protocol,
+...   |
+126 | |     pending: &mut Vec<Task<'a>>,
+127 | | ) -> Result<(), EncodeError> {
+    | |____________________________^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#too_many_arguments
+
+error: this function has too many arguments (8/7)
+   --> crates/aws-wire/src/request/body/wire_shape.rs:171:1
+    |
+171 | / fn queue_map_entry<'a>(
+172 | |     key: KeyRef<'a>,
+173 | |     value: ValueRef<'a>,
+174 | |     protocol: Protocol,
+...   |
+179 | |     pending: &mut Vec<Task<'a>>,
+180 | | ) -> Result<(), EncodeError> {
+    | |____________________________^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#too_many_arguments
+
+error: very complex type used. Consider factoring parts into `type` definitions
+   --> crates/aws-wire/src/request/body/wire_value.rs:125:6
+    |
+125 | ) -> Result<(Target, bool, Option<&'a str>, Option<&'a str>), EncodeError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#type_complexity
+
+error: this function has too many arguments (8/7)
+   --> crates/aws-wire/src/request/body/wire_value.rs:151:1
+    |
+151 | / fn write_map_value<'a>(
+152 | |     service: Service<'a>,
+153 | |     protocol: Protocol,
+154 | |     values: inventory_core::record::MapRef<'a>,
+...   |
+159 | |     pending: &mut Vec<Task<'a>>,
+160 | | ) -> Result<(), EncodeError> {
+    | |____________________________^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#too_many_arguments
+
+error: this function has too many arguments (8/7)
+   --> crates/aws-wire/src/request/body/wire_value.rs:194:1
+    |
+194 | / fn write_structure_value<'a>(
+195 | |     service: Service<'a>,
+196 | |     protocol: Protocol,
+197 | |     values: inventory_core::record::MapRef<'a>,
+...   |
+202 | |     pending: &mut Vec<Task<'a>>,
+203 | | ) -> Result<(), EncodeError> {
+    | |____________________________^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#too_many_arguments
+
+error: very complex type used. Consider factoring parts into `type` definitions
+   --> crates/aws-wire/src/request/body/wire_value.rs:224:6
+    |
+224 | ) -> Result<(Target, Target, bool, Option<&'a str>, Option<&'a str>), EncodeError> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#type_complexity
+
+error: this loop never actually loops
+  --> crates/aws-wire/src/request/body.rs:89:9
+   |
+89 | /         for entry in context.input.iter()? {
+90 | |             entry?;
+91 | |             return Err(EncodeError::InvalidValue {
+92 | |                 field: None,
+93 | |                 reason: "unit operation input contains members",
+94 | |             });
+95 | |         }
+   | |_________^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#never_loop
+   = note: `#[deny(clippy::never_loop)]` on by default
+help: if you need the first element of the iterator, try writing
+   |
+89 -         for entry in context.input.iter()? {
+89 +         if let Some(entry) = context.input.iter()?.next() {
+   |
+
+error: indexing may panic
+  --> crates/aws-wire/src/request/query/form.rs:45:13
+   |
+45 |             BASE64[usize::from(a >> 2)],
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: consider using `.get(n)` or `.get_mut(n)` instead
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#indexing_slicing
+   = note: requested on the command line with `-D clippy::indexing-slicing`
+
+error: indexing may panic
+  --> crates/aws-wire/src/request/query/form.rs:46:13
+   |
+46 |             BASE64[usize::from(((a & 0x03) << 4) | b.unwrap_or(0) >> 4)],
+   |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: consider using `.get(n)` or `.get_mut(n)` instead
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#indexing_slicing
+
+error: indexing may panic
+  --> crates/aws-wire/src/request/query/form.rs:48:32
+   |
+48 |                 Some(value) => BASE64[usize::from(((value & 0x0f) << 2) | c.unwrap_or(0) >> 6)],
+   |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: consider using `.get(n)` or `.get_mut(n)` instead
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#indexing_slicing
+
+error: indexing may panic
+  --> crates/aws-wire/src/request/query/form.rs:52:32
+   |
+52 |                 Some(value) => BASE64[usize::from(value & 0x3f)],
+   |                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: consider using `.get(n)` or `.get_mut(n)` instead
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#indexing_slicing
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/aws-wire/src/request/query/form.rs:80:18
+   |
+80 |         0..=9 => b'0' + value,
+   |                  ^^^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/aws-wire/src/request/query/form.rs:81:14
+   |
+81 |         _ => b'A' + value - 10,
+   |              ^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/aws-wire/src/request/query/scalar.rs:122:31
+    |
+122 |         fractional(&mut text, 1_000_000_000 - time.nanoseconds())?;
+    |                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/aws-wire/src/request/query/scalar.rs:143:26
+    |
+143 |     .get(usize::try_from(month - 1).map_err(|_| invalid("timestamp month is invalid"))?)
+    |                          ^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/aws-wire/src/request/query/scalar.rs:177:15
+    |
+177 |     let doe = z - era * 146_097;
+    |               ^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/aws-wire/src/request/query/scalar.rs:178:15
+    |
+178 |     let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365;
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/aws-wire/src/request/query/scalar.rs:179:16
+    |
+179 |     let year = yoe + era * 400;
+    |                ^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/aws-wire/src/request/query/scalar.rs:180:15
+    |
+180 |     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/aws-wire/src/request/query/scalar.rs:181:14
+    |
+181 |     let mp = (5 * doy + 2) / 153;
+    |              ^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/aws-wire/src/request/query/scalar.rs:182:15
+    |
+182 |     let day = doy - (153 * mp + 2) / 5 + 1;
+    |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/aws-wire/src/request/query/scalar.rs:183:17
+    |
+183 |     let month = mp + if mp < 10 { 3 } else { -9 };
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/aws-wire/src/request/query/scalar.rs:184:16
+    |
+184 |     let year = year + i64::from(month <= 2);
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: slicing may panic
+   --> crates/aws-wire/src/request/query/scalar.rs:209:30
+    |
+209 |         std::str::from_utf8(&self.bytes[..self.len])
+    |                              ^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: consider using `.get(..n)`or `.get_mut(..n)` instead
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#indexing_slicing
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/aws-wire/src/request/query/collections.rs:33:45
+   |
+33 |         let path = indexed_path(&work.path, index + 1, flattened, member_name)?;
+   |                                             ^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/aws-wire/src/request/query/collections.rs:105:47
+    |
+105 |         let prefix = indexed_path(&work.path, index + 1, flattened, "entry")?;
+    |                                               ^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: slicing may panic
+  --> crates/aws-wire/src/request/query/paths.rs:98:29
+   |
+98 |     path.extend_from_slice(&uppercase[..uppercase_len]);
+   |                             ^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: consider using `.get(..n)`or `.get_mut(..n)` instead
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#indexing_slicing
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/aws-wire/src/request/query/paths.rs:117:9
+    |
+117 |         position -= 1;
+    |         ^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/aws-wire/src/request/query/paths.rs:119:13
+    |
+119 |             b'0' + u8::try_from(value % 10).map_err(|_| EncodeError::Limit("query name"))?;
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: indexing may panic
+   --> crates/aws-wire/src/request/query/paths.rs:118:9
+    |
+118 |         digits[position] =
+    |         ^^^^^^^^^^^^^^^^
+    |
+    = help: consider using `.get(n)` or `.get_mut(n)` instead
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#indexing_slicing
+
+error: slicing may panic
+   --> crates/aws-wire/src/request/query/paths.rs:124:30
+    |
+124 |         std::str::from_utf8(&digits[position..]).map_err(|_| invalid("list index is not UTF-8"))?,
+    |                              ^^^^^^^^^^^^^^^^^^
+    |
+    = help: consider using `.get(n..)` or .get_mut(n..)` instead
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#indexing_slicing
+
+error: this function has too many arguments (8/7)
+  --> crates/aws-wire/src/request/rest/body/json.rs:69:1
+   |
+69 | / fn write_value<'a>(
+70 | |     context: RequestContext<'a>,
+71 | |     body: &mut BoundedBody,
+72 | |     tasks: &mut Vec<Task<'a>>,
+...  |
+77 | |     depth: usize,
+78 | | ) -> Result<(), EncodeError> {
+   | |____________________________^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#too_many_arguments
+
+error: this function has too many arguments (10/7)
+  --> crates/aws-wire/src/request/rest/body/xml/collections.rs:10:1
+   |
+10 | / pub(super) fn write_list<'a>(
+11 | |     context: RequestContext<'a>,
+12 | |     body: &mut BoundedBody,
+13 | |     tasks: &mut Vec<Task<'a>>,
+...  |
+20 | |     depth: usize,
+21 | | ) -> Result<(), EncodeError> {
+   | |____________________________^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#too_many_arguments
+
+error: this function has too many arguments (9/7)
+  --> crates/aws-wire/src/request/rest/body/xml/collections.rs:69:1
+   |
+69 | / pub(super) fn write_map<'a>(
+70 | |     context: RequestContext<'a>,
+71 | |     body: &mut BoundedBody,
+72 | |     tasks: &mut Vec<Task<'a>>,
+...  |
+78 | |     depth: usize,
+79 | | ) -> Result<(), EncodeError> {
+   | |____________________________^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#too_many_arguments
+
+error: this pattern reimplements `Option::unwrap_or`
+  --> crates/aws-wire/src/request/rest/body/xml/collections.rs:86:20
+   |
+86 |       let key_name = match shape.map_key_wire()?.xml_name()? {
+   |  ____________________^
+87 | |         Some(name) => name,
+88 | |         None => "key",
+89 | |     };
+   | |_____^ help: replace with: `shape.map_key_wire()?.xml_name()?.unwrap_or("key")`
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#manual_unwrap_or
+   = note: `-D clippy::manual-unwrap-or` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::manual_unwrap_or)]`
+
+error: this pattern reimplements `Option::unwrap_or`
+  --> crates/aws-wire/src/request/rest/body/xml/collections.rs:90:22
+   |
+90 |       let value_name = match shape.map_value_wire()?.xml_name()? {
+   |  ______________________^
+91 | |         Some(name) => name,
+92 | |         None => "value",
+93 | |     };
+   | |_____^ help: replace with: `shape.map_value_wire()?.xml_name()?.unwrap_or("value")`
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#manual_unwrap_or
+
+error: this function has too many arguments (8/7)
+  --> crates/aws-wire/src/request/rest/body/xml/structure.rs:9:1
+   |
+ 9 | / pub(super) fn write_structure<'a>(
+10 | |     context: RequestContext<'a>,
+11 | |     body: &mut BoundedBody,
+12 | |     tasks: &mut Vec<Task<'a>>,
+...  |
+17 | |     depth: usize,
+18 | | ) -> Result<(), EncodeError> {
+   | |____________________________^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#too_many_arguments
+
+error: this `if` statement can be collapsed
+   --> crates/aws-wire/src/request/rest/body/xml/structure.rs:118:5
+    |
+118 | /     if let Some(namespace) = element_namespace {
+119 | |         if let Some(prefix) = namespace.prefix {
+120 | |             prefixes.try_reserve(1).map_err(EncodeError::Allocation)?;
+121 | |             prefixes.push((prefix, namespace.uri));
+122 | |         }
+123 | |     }
+    | |_____^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#collapsible_if
+    = note: `-D clippy::collapsible-if` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::collapsible_if)]`
+help: collapse nested if block
+    |
+118 ~     if let Some(namespace) = element_namespace
+119 ~         && let Some(prefix) = namespace.prefix {
+120 |             prefixes.try_reserve(1).map_err(EncodeError::Allocation)?;
+121 |             prefixes.push((prefix, namespace.uri));
+122 ~         }
+    |
+
+error: this function has too many arguments (10/7)
+   --> crates/aws-wire/src/request/rest/body/xml.rs:168:1
+    |
+168 | / fn write_value<'a>(
+169 | |     context: RequestContext<'a>,
+170 | |     body: &mut BoundedBody,
+171 | |     tasks: &mut Vec<Task<'a>>,
+...   |
+178 | |     depth: usize,
+179 | | ) -> Result<(), EncodeError> {
+    | |____________________________^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#too_many_arguments
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/aws-wire/src/request/rest/timestamp.rs:38:9
+   |
+38 |         month - 1,
+   |         ^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/aws-wire/src/request/rest/timestamp.rs:62:26
+   |
+62 |         fraction(output, 1_000_000_000 - time.nanoseconds())?;
+   |                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/aws-wire/src/request/rest/timestamp.rs:89:15
+   |
+89 |     let doe = z - era * 146_097;
+   |               ^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/aws-wire/src/request/rest/timestamp.rs:90:15
+   |
+90 |     let yoe = (doe - doe / 1_460 + doe / 36_524 - doe / 146_096) / 365;
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/aws-wire/src/request/rest/timestamp.rs:91:16
+   |
+91 |     let year = yoe + era * 400;
+   |                ^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/aws-wire/src/request/rest/timestamp.rs:92:15
+   |
+92 |     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/aws-wire/src/request/rest/timestamp.rs:93:14
+   |
+93 |     let mp = (5 * doy + 2) / 153;
+   |              ^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/aws-wire/src/request/rest/timestamp.rs:94:15
+   |
+94 |     let day = doy - (153 * mp + 2) / 5 + 1;
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/aws-wire/src/request/rest/timestamp.rs:95:17
+   |
+95 |     let month = mp + if mp < 10 { 3 } else { -9 };
+   |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+  --> crates/aws-wire/src/request/rest/timestamp.rs:96:9
+   |
+96 |     Ok((year + i64::from(month <= 2), month, day))
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: could not compile `aws-wire` (lib) due to 59 previous errors

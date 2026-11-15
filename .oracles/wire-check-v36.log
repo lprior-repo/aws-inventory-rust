@@ -1,0 +1,7 @@
+   Compiling crc32fast v1.5.5
+    Checking simd-adler32 v0.3.10
+    Checking miniz_oxide v0.9.1
+    Checking inventory-core v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/core)
+    Checking flate2 v1.1.11
+    Checking aws-wire v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/aws-wire)
+    Finished `dev` profile [unoptimized] target(s) in 0.63s

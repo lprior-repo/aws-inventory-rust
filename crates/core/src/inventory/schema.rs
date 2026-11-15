@@ -44,6 +44,14 @@ impl Column {
         })
     }
 
+    pub fn selected_scalar(scalar: ScalarType) -> Self {
+        Self {
+            name: "value".to_owned(),
+            path: Box::new([]),
+            scalar,
+        }
+    }
+
     pub fn name(&self) -> &str {
         &self.name
     }

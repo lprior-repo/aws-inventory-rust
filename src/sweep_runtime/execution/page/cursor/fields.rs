@@ -41,12 +41,3 @@ pub(super) fn field(record: &Record, field_id: u32) -> Result<Option<ValueRef<'_
 pub(super) fn token_digest(request: &Record) -> Result<[u8; 32], SweepError> {
     Ok(*request.content_hash(&Exclusions::none())?.as_bytes())
 }
-pub(super) fn terminal_partial(
-    truncated: bool,
-    has_next: bool,
-    pages: u32,
-    limit: u32,
-    token_size: usize,
-) -> bool {
-    (truncated && !has_next) || pages >= limit || token_size > MAX_TOKEN_RECORD
-}

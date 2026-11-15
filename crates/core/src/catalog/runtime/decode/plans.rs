@@ -1,3 +1,9 @@
+#[cfg(test)]
+#[path = "plans/identity_tests.rs"]
+mod identity_tests;
+#[cfg(test)]
+#[path = "plans/pagination_tests.rs"]
+mod pagination_tests;
 #[path = "plans/metadata_fields.rs"]
 mod metadata_fields;
 use metadata_fields::*;
@@ -104,7 +110,7 @@ fn identity(map_value: crate::record::MapRef<'_>) -> Result<IdentityPlan, Runtim
     let identity_type = metadata::integer(map_value, 1)?;
     metadata::only_fields(map_value, &[1, 2])?;
     match identity_type {
-        0 => Ok(IdentityPlan::Arn(metadata::id_path(metadata::list(
+        0 => Ok(IdentityPlan::Arn(metadata::selected_path(metadata::list(
             map_value, 2,
         )?)?)),
         1 => Ok(IdentityPlan::Template(
@@ -113,7 +119,7 @@ fn identity(map_value: crate::record::MapRef<'_>) -> Result<IdentityPlan, Runtim
         2 => Ok(IdentityPlan::Key(
             metadata::bounded(
                 metadata::list(map_value, 2)?,
-                |entry| metadata::id_path(list_value(entry)?),
+                |entry| metadata::selected_path(list_value(entry)?),
                 8,
             )?
             .into_boxed_slice(),
@@ -125,13 +131,25 @@ fn identity(map_value: crate::record::MapRef<'_>) -> Result<IdentityPlan, Runtim
 fn identity_part(value: ValueRef<'_>) -> Result<IdentityPart, RuntimeCatalogError> {
     let fields = map(value)?;
     let kind = metadata::integer(fields, 1)?;
-    let part = match kind {
-        0 => IdentityPart::Literal(metadata::text(fields, 2)?),
-        1 => IdentityPart::Field(metadata::id_path(metadata::list(fields, 2)?)?),
-        _ => return Err(RuntimeCatalogError::Capability),
-    };
-    metadata::only_fields(fields, &[1, 2])?;
-    Ok(part)
+    match kind {
+        0 => {
+            metadata::only_fields(fields, &[1, 2])?;
+            Ok(IdentityPart::Literal(metadata::text(fields, 2)?))
+        }
+        1 => {
+            metadata::only_fields(fields, &[1, 2])?;
+            Ok(IdentityPart::Field(metadata::selected_path(metadata::list(fields, 2)?)?))
+        }
+        2..=4 => {
+            metadata::only_fields(fields, &[1])?;
+            match kind {
+                2 => Ok(IdentityPart::Partition),
+                3 => Ok(IdentityPart::Account),
+                _ => Ok(IdentityPart::Region),
+            }
+        }
+        _ => Err(RuntimeCatalogError::Capability),
+    }
 }
 
 fn bindings(list: crate::record::ListRef<'_>) -> Result<Vec<BindingPlan>, RuntimeCatalogError> {
@@ -158,7 +176,7 @@ fn binding(value: ValueRef<'_>) -> Result<BindingPlan, RuntimeCatalogError> {
         3 => {
             metadata::only_fields(fields, &[1, 2, 3])?;
             BindingSource::ParentIdentity {
-                path: metadata::id_path(metadata::list(fields, 3)?)?,
+                path: metadata::selected_path(metadata::list(fields, 3)?)?,
             }
         }
         4 => {
@@ -166,7 +184,7 @@ fn binding(value: ValueRef<'_>) -> Result<BindingPlan, RuntimeCatalogError> {
             BindingSource::Operation {
                 service: metadata::text(fields, 3)?.into_boxed_str(),
                 operation: metadata::text(fields, 4)?.into_boxed_str(),
-                path: metadata::id_path(metadata::list(fields, 5)?)?,
+                path: metadata::selected_path(metadata::list(fields, 5)?)?,
             }
         }
         _ => return Err(RuntimeCatalogError::Capability),
@@ -188,7 +206,7 @@ fn binding_value(value: ValueRef<'_>) -> Result<BindingValue, RuntimeCatalogErro
 
 fn page(map_value: crate::record::MapRef<'_>) -> Result<PagePlan, RuntimeCatalogError> {
     let items = item_plan(metadata::map_field(map_value, 1)?)?;
-    let tokens = metadata::bounded(metadata::list(map_value, 2)?, token, 8)?;
+    let tokens = page_tokens(map_value)?;
     let page_size = match map_value.get_field(crate::record::FieldId::new(3)?)? {
         Some(value) => Some(page_size(map(value)?)?),
         None => None,
@@ -216,14 +234,32 @@ fn token(value: ValueRef<'_>) -> Result<TokenBinding, RuntimeCatalogError> {
     let value_type = token_type(metadata::integer(fields, 3)?)?;
     let request_placement = placement(metadata::map_field(fields, 4)?)?;
     let response_placement = placement(metadata::map_field(fields, 5)?)?;
-    metadata::only_fields(fields, &[1, 2, 3, 4, 5])?;
+    let optional = token_optional(fields)?;
+    metadata::only_fields(fields, &[1, 2, 3, 4, 5, 6])?;
     Ok(TokenBinding {
         request_path,
         response_path,
         value_type,
         request_placement,
         response_placement,
+        optional,
     })
+}
+
+fn token_optional(fields: crate::record::MapRef<'_>) -> Result<bool, RuntimeCatalogError> {
+    match fields.get_field(crate::record::FieldId::new(6)?)? {
+        None => Ok(false),
+        Some(ValueRef::Bool(value)) => Ok(value),
+        _ => Err(RuntimeCatalogError::Capability),
+    }
+}
+
+fn page_tokens(fields: crate::record::MapRef<'_>) -> Result<Vec<TokenBinding>, RuntimeCatalogError> {
+    let tokens = metadata::bounded(metadata::list(fields, 2)?, token, 8)?;
+    if !tokens.is_empty() && tokens.iter().all(|token| token.optional) {
+        return Err(RuntimeCatalogError::Capability);
+    }
+    Ok(tokens)
 }
 
 fn page_size(map_value: crate::record::MapRef<'_>) -> Result<PageSizeBinding, RuntimeCatalogError> {

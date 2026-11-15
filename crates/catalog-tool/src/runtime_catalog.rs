@@ -150,7 +150,7 @@ fn compile_extension(
 ) -> Result<Value, RuntimeCatalogCompileError> {
     encode::extension(
         plans,
-        schemas::compile(kinds, services)?,
+        schemas::compile(kinds, services, Some(checked))?,
         encode::relations(kinds, services)?,
         encode::coverage(kinds)?,
         plans::decisions(checked, services)?,
@@ -189,7 +189,7 @@ mod tests {
         kinds: &crate::kind_map::KindMap,
     ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         let services = ServiceIndex::build(inventory_core::catalog::Catalog::borrow(BASE)?)?;
-        let schemas = schemas::compile(kinds, &services)?;
+        let schemas = schemas::compile(kinds, &services, None)?;
         let relations = encode::relations(kinds, &services)?;
         let extension = encode::extension(
             Vec::new(),

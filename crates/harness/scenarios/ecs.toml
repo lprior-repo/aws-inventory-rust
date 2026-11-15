@@ -1,0 +1,35 @@
+format = 1
+
+# Metadata-only EXTERNAL deployment controller: no task definition, image, task,
+# execution role, or network resource is required. desiredCount stays zero.
+# Both the pinned CreateService model and emulator handler explicitly permit
+# omitting taskDefinition for EXTERNAL (not the default ECS controller).
+# The ECS overlay defers ListClusters/ListServices until scalar-item discovery
+# is available; a reviewed Service -> Cluster IN_CLUSTER mapping is also absent.
+[[steps]]
+id = 0
+service = "ecs"
+operation = "CreateCluster"
+kind = "AWS::ECS::Cluster"
+identity = ["cluster", "clusterArn"]
+inputs = [{ field = ["clusterName"], value = "inventory-seed-ecs" }]
+response_checks = [{ path = ["cluster", "clusterName"], input_field = ["clusterName"] }]
+
+[[steps]]
+id = 1
+service = "ecs"
+operation = "CreateService"
+kind = "AWS::ECS::Service"
+identity = ["service", "serviceArn"]
+inputs = [
+  { field = ["cluster"], from_step = 0, from_path = ["cluster", "clusterArn"] },
+  { field = ["serviceName"], value = "inventory-seed-external-service" },
+  { field = ["deploymentController", "type"], value = "EXTERNAL" },
+  { field = ["desiredCount"], value = 0 },
+]
+response_checks = [
+  { path = ["service", "clusterArn"], input_field = ["cluster"] },
+  { path = ["service", "serviceName"], input_field = ["serviceName"] },
+  { path = ["service", "deploymentController", "type"], input_field = ["deploymentController", "type"] },
+  { path = ["service", "desiredCount"], input_field = ["desiredCount"] },
+]

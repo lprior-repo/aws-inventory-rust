@@ -1,6 +1,9 @@
+mod tokens;
+#[cfg(test)]
+mod tests;
 use super::super::{RuntimeCatalogCompileError, encode, model_path};
 use super::{OperationOverlay, item_value};
-use crate::overlay::{Paginator, TokenPair};
+use crate::overlay::Paginator;
 use inventory_core::catalog::{HttpBinding, Operation, Service};
 use inventory_core::record::Value;
 
@@ -32,7 +35,7 @@ pub(super) fn compile(
     validate_items(overlay, descriptor.as_ref())?;
     let mut fields = vec![
         (1, item_value(overlay.items.as_ref(), services)?),
-        (2, Value::List(token_values(&inputs, descriptor.as_ref())?)),
+        (2, Value::List(tokens::compile(&inputs, descriptor.as_ref())?)),
     ];
     fields.extend(page_size_value(&inputs, descriptor.as_ref())?.map(|value| (3, value)));
     fields.extend(maximum_value(descriptor.as_ref())?.map(|value| (4, value)));
@@ -67,93 +70,24 @@ fn validate_items(
     }
 }
 
-fn token_values(
-    inputs: &PageInputs<'_, '_>,
-    descriptor: Option<&Descriptor<'_>>,
-) -> Result<Vec<Value>, RuntimeCatalogCompileError> {
-    let pair = match inputs.overlay.paginator.as_ref() {
-        Some(Paginator::Token(pair)) => pair,
-        Some(Paginator::Tokens { pairs, .. }) if pairs.len() == 1 => pairs
-            .first()
-            .ok_or(RuntimeCatalogCompileError::Capability)?,
-        Some(Paginator::Tokens { .. }) => return Err(RuntimeCatalogCompileError::Capability),
-        Some(Paginator::None) | None => return untokenized(descriptor),
-    };
-    validate_descriptor_token(pair, descriptor)?;
-    Ok(vec![token_value(pair, inputs)?])
-}
-
-fn untokenized(
-    descriptor: Option<&Descriptor<'_>>,
-) -> Result<Vec<Value>, RuntimeCatalogCompileError> {
-    if descriptor.is_none_or(|page| page.input_token.is_none() && page.output_token.is_none()) {
-        Ok(Vec::new())
-    } else {
-        Err(RuntimeCatalogCompileError::Capability)
-    }
-}
-
-fn validate_descriptor_token(
-    pair: &TokenPair,
-    descriptor: Option<&inventory_core::catalog::Paginator<'_>>,
-) -> Result<(), RuntimeCatalogCompileError> {
-    let expected = descriptor.ok_or(RuntimeCatalogCompileError::Capability)?;
-    let input = pair.input.to_string();
-    let output = pair.output.to_string();
-    if expected.input_token == Some(input.as_str())
-        && expected.output_token == Some(output.as_str())
-    {
-        Ok(())
-    } else {
-        Err(RuntimeCatalogCompileError::Capability)
-    }
-}
-
-fn token_value(
-    pair: &TokenPair,
-    inputs: &PageInputs<'_, '_>,
-) -> Result<Value, RuntimeCatalogCompileError> {
-    let (service, operation) = (inputs.service, inputs.operation);
-    let (input_path, output_path) = (pair.input.to_string(), pair.output.to_string());
-    let input = model_path::terminal_member(service, operation.input()?, &input_path)?;
-    let output = model_path::terminal_member(service, operation.output()?, &output_path)?;
-    let value_type = token_type(model_path::kind(service, input.1.target)?)?;
-    let request = placement(input.1, input.0, inputs.protocol)?;
-    let response = response_placement(output.1, output.0)?;
-    encode::map([
-        (1, encode::path(inputs.services, &input_path)?),
-        (2, encode::path(inputs.services, &output_path)?),
-        (3, Value::Int(value_type)),
-        (4, request),
-        (5, response),
-    ])
-}
-
-fn token_type(kind: &str) -> Result<i64, RuntimeCatalogCompileError> {
-    match kind {
-        "string" => Ok(0),
-        "integer" | "long" | "short" | "byte" | "bigInteger" => Ok(1),
-        "boolean" => Ok(2),
-        _ => Err(RuntimeCatalogCompileError::Capability),
-    }
-}
 
 fn placement(
     member: inventory_core::catalog::Member<'_>,
     path: Vec<inventory_core::record::FieldId>,
     protocol: i64,
 ) -> Result<Value, RuntimeCatalogCompileError> {
-    let name = member.name()?.to_owned();
     let selected = match (protocol, member.wire()?.binding()?) {
-        (3 | 4, HttpBinding::Document) => Some((1, Value::Text(query_name(member, protocol)?))),
-        (_, HttpBinding::Query(value)) => Some((1, Value::Text(value.to_owned()))),
-        (_, HttpBinding::Header(value)) => Some((2, Value::Text(value.to_owned()))),
-        (_, HttpBinding::Label) => Some((0, Value::Text(name))),
-        (_, HttpBinding::Document | HttpBinding::Payload) => Some((3, path_value(path))),
-        (
-            _,
-            HttpBinding::QueryParams | HttpBinding::PrefixHeaders(_) | HttpBinding::ResponseCode,
-        ) => None,
+        (3 | 4, HttpBinding::Document) if path.len() == 1 =>
+            Some((1, Value::Text(query_name(member, protocol)?))),
+        (5 | 6, HttpBinding::Query(value)) if path.len() == 1 =>
+            Some((1, Value::Text(value.to_owned()))),
+        (5 | 6, HttpBinding::Header(value)) if path.len() == 1 =>
+            Some((2, Value::Text(value.to_owned()))),
+        (5 | 6, HttpBinding::Label) if path.len() == 1 =>
+            Some((0, Value::Text(member.name()?.to_owned()))),
+        (_, HttpBinding::Document) => Some((3, path_value(path))),
+        (5 | 6, HttpBinding::Payload) if path.len() == 1 => Some((3, path_value(path))),
+        _ => None,
     };
     let (kind, value) = selected.ok_or(RuntimeCatalogCompileError::Capability)?;
     encode::map([(1, Value::Int(kind)), (2, value)])
@@ -185,16 +119,16 @@ fn path_value(path: Vec<inventory_core::record::FieldId>) -> Value {
 fn response_placement(
     member: inventory_core::catalog::Member<'_>,
     path: Vec<inventory_core::record::FieldId>,
+    protocol: i64,
 ) -> Result<Value, RuntimeCatalogCompileError> {
-    match member.wire()?.binding()? {
-        HttpBinding::Header(_) | HttpBinding::Document | HttpBinding::Payload => {
-            placement(member, path, 0)
-        }
-        HttpBinding::Label
-        | HttpBinding::Query(_)
-        | HttpBinding::QueryParams
-        | HttpBinding::PrefixHeaders(_)
-        | HttpBinding::ResponseCode => Err(RuntimeCatalogCompileError::Capability),
+    match (protocol, member.wire()?.binding()?) {
+        (_, HttpBinding::Document) => encode::map([(1, Value::Int(3)), (2, path_value(path))]),
+        (5 | 6, HttpBinding::Payload) if path.len() == 1 =>
+            encode::map([(1, Value::Int(3)), (2, path_value(path))]),
+        (5 | 6, HttpBinding::Header(name)) if path.len() == 1 => encode::map([
+            (1, Value::Int(2)), (2, Value::Text(name.to_owned())),
+        ]),
+        _ => Err(RuntimeCatalogCompileError::Capability),
     }
 }
 
@@ -254,8 +188,10 @@ fn truncated_value(
         _ => None,
     };
     path.map(|path| {
-        let target = model_path::resolve(service, operation.output()?, &path.to_string())?.1;
-        if model_path::kind(service, target)? != "boolean" {
+        let (_, member) = model_path::terminal_member(service, operation.output()?, &path.to_string())?;
+        if model_path::kind(service, member.target)? != "boolean"
+            || !matches!(member.wire()?.binding()?, HttpBinding::Document)
+        {
             return Err(RuntimeCatalogCompileError::Capability);
         }
         encode::path(services, &path.to_string())

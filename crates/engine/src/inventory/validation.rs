@@ -44,7 +44,7 @@ pub(super) fn validate_page(store: &BinaryStore, page: &PageCommit) -> Result<()
     let token_limit = MAX_TOKEN_BYTES;
     let scope = page.lease.scope();
     if page.observed_at_ms < 0
-        || page.observations.len() > 1000
+        || page.observations.len() > 100_000
         || page.edges.len() > 10_000
         || page.unresolved.len() > 10_000
         || page.tags.len() > 50_000

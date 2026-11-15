@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use inventory_harness::HarnessError;
+use inventory_harness::{HarnessError, install};
 
 use super::{Command, USAGE, workspace_root};
 
@@ -10,6 +10,7 @@ pub(super) fn parse(arguments: &[String]) -> Result<Command, HarnessError> {
             parse_freeze(arguments.get(2..).unwrap_or_default())
         }
         Some("install") => parse_install(arguments.get(1..).unwrap_or_default()),
+        Some("install-graph") => parse_install_graph(arguments.get(1..).unwrap_or_default()),
         Some("catalog") if arguments.get(1).map(String::as_str) == Some("universal") => {
             parse_universal(arguments.get(2..).unwrap_or_default())
         }
@@ -47,6 +48,24 @@ fn parse_install(arguments: &[String]) -> Result<Command, HarnessError> {
         destination,
         root: options.get("--root").unwrap_or_else(workspace_root),
     })
+}
+
+fn parse_install_graph(arguments: &[String]) -> Result<Command, HarnessError> {
+    let destination = arguments
+        .first()
+        .filter(|value| !value.starts_with("--"))
+        .map(PathBuf::from)
+        .ok_or_else(|| HarnessError::invalid(USAGE))?;
+    let jobs = match arguments.get(1..) {
+        Some([flag, value]) if flag == "--jobs" => value
+            .parse::<usize>()
+            .ok()
+            .filter(|jobs| install::graph::valid_jobs(*jobs))
+            .ok_or_else(|| HarnessError::invalid("build jobs must be 1..8"))?,
+        None | Some([]) => install::graph::DEFAULT_JOBS,
+        _ => return Err(HarnessError::invalid(USAGE)),
+    };
+    Ok(Command::InstallGraph { destination, jobs })
 }
 
 fn parse_universal(arguments: &[String]) -> Result<Command, HarnessError> {

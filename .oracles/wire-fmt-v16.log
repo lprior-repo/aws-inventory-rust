@@ -1,0 +1,16 @@
+error: this file contains an unclosed delimiter
+   --> /home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/core/src/catalog/keys.rs:296:3
+    |
+166 | impl CatalogKey {
+    |                 - unclosed delimiter
+...
+172 |         match self {
+    |                    - this delimiter might not be properly closed...
+...
+265 |     }
+    |     - ...as it matches this but it has different indentation
+...
+296 | }
+    |  ^
+
+Error writing files: failed to resolve mod `keys`: cannot parse /home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/core/src/catalog/keys.rs

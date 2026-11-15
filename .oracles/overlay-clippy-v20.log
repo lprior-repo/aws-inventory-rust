@@ -1,0 +1,248 @@
+    Checking inventory-core v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m1.4c/crates/core)
+    Checking catalog-tool v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m1.4c/crates/catalog-tool)
+error: this `impl` can be derived
+  --> crates/catalog-tool/src/overlay/check/orchestration.rs:21:1
+   |
+21 | / impl Default for Accumulation {
+22 | |     fn default() -> Self {
+23 | |         Self {
+24 | |             checked: Vec::new(),
+...  |
+30 | | }
+   | |_^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#derivable_impls
+   = note: `-D clippy::derivable-impls` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::derivable_impls)]`
+help: replace the manual implementation with a derive attribute
+   |
+14 + #[derive(Default)]
+15 | struct Accumulation {
+   |
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/catalog-tool/src/overlay/check/orchestration.rs:188:33
+    |
+188 |             Class::Enumerate => counts[0] += 1,
+    |                                 ^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+    = note: requested on the command line with `-D clippy::arithmetic-side-effects`
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/catalog-tool/src/overlay/check/orchestration.rs:189:30
+    |
+189 |             Class::Expand => counts[1] += 1,
+    |                              ^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/catalog-tool/src/overlay/check/orchestration.rs:190:36
+    |
+190 |             Class::Unclassified => counts[2] += 1,
+    |                                    ^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: this expression creates a reference which is immediately dereferenced by the compiler
+  --> crates/catalog-tool/src/overlay/check/service/flow/operation.rs:69:9
+   |
+69 |         &result.effective,
+   |         ^^^^^^^^^^^^^^^^^ help: change this to: `result.effective`
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#needless_borrow
+   = note: `-D clippy::needless-borrow` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::needless_borrow)]`
+
+error: this expression creates a reference which is immediately dereferenced by the compiler
+  --> crates/catalog-tool/src/overlay/check/service/flow/operation.rs:73:37
+   |
+73 |     let row = package_row(&context, &result.effective);
+   |                                     ^^^^^^^^^^^^^^^^^ help: change this to: `result.effective`
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#needless_borrow
+
+error: this function has too many arguments (8/7)
+   --> crates/catalog-tool/src/overlay/check/service/flow/operation.rs:141:1
+    |
+141 | / fn operation_row(
+142 | |     service: &str,
+143 | |     name: &str,
+144 | |     effective: &str,
+...   |
+149 | |     vocabulary: &plans::Vocabulary,
+150 | | ) -> (String, String, String, String) {
+    | |_____________________________________^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#too_many_arguments
+    = note: `-D clippy::too-many-arguments` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::too_many_arguments)]`
+
+error: very complex type used. Consider factoring parts into `type` definitions
+  --> crates/catalog-tool/src/overlay/check/service/flow.rs:21:6
+   |
+21 |   ) -> (
+   |  ______^
+22 | |     ReviewedService,
+23 | |     Vec<(String, String, String, String)>,
+24 | |     Vec<Violation>,
+25 | | ) {
+   | |_^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#type_complexity
+   = note: `-D clippy::type-complexity` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::type_complexity)]`
+
+error: very complex type used. Consider factoring parts into `type` definitions
+   --> crates/catalog-tool/src/overlay/check/service/flow.rs:268:6
+    |
+268 |   ) -> (
+    |  ______^
+269 | |     ReviewedService,
+270 | |     Vec<(String, String, String, String)>,
+271 | |     Vec<Violation>,
+272 | | ) {
+    | |_^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#type_complexity
+
+error: very complex type used. Consider factoring parts into `type` definitions
+  --> crates/catalog-tool/src/overlay/check/service.rs:16:6
+   |
+16 |   ) -> (
+   |  ______^
+17 | |     ReviewedService,
+18 | |     Vec<(String, String, String, String)>,
+19 | |     Vec<Violation>,
+20 | | ) {
+   | |_^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#type_complexity
+
+error: the following explicit lifetimes could be elided: 'a
+  --> crates/catalog-tool/src/overlay/check/service.rs:62:26
+   |
+62 | fn overlay_binding_edges<'a>(overlay: &'a ServiceOverlay) -> BTreeMap<&'a str, Vec<&'a str>> {
+   |                          ^^            ^^                              ^^           ^^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#needless_lifetimes
+   = note: `-D clippy::needless-lifetimes` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::needless_lifetimes)]`
+help: elide the lifetimes
+   |
+62 - fn overlay_binding_edges<'a>(overlay: &'a ServiceOverlay) -> BTreeMap<&'a str, Vec<&'a str>> {
+62 + fn overlay_binding_edges(overlay: &ServiceOverlay) -> BTreeMap<&str, Vec<&str>> {
+   |
+
+error: this function has too many arguments (8/7)
+  --> crates/catalog-tool/src/overlay/check/validation/evaluation.rs:16:1
+   |
+16 | / pub(in crate::overlay::check) fn operation(
+17 | |     service: &str,
+18 | |     name: &str,
+19 | |     item: Option<&OperationOverlay>,
+...  |
+24 | |     overlays: &BTreeMap<String, OperationOverlay>,
+25 | | ) -> OperationResult {
+   | |____________________^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#too_many_arguments
+
+error: this `.fold` can be written more succinctly using another method
+  --> crates/catalog-tool/src/overlay/check/validation/identity.rs:54:18
+   |
+54 |       paths.iter().fold(true, |valid, path| {
+   |  __________________^
+55 | |         validate_identity_path(service, operation, model, item, path, violations) && valid
+56 | |     })
+   | |______^ help: try: `all(|path| validate_identity_path(service, operation, model, item, path, violations))`
+   |
+   = note: the `all` method is short circuiting and may change the program semantics if the iterator has side effects
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#unnecessary_fold
+   = note: `-D clippy::unnecessary-fold` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::unnecessary_fold)]`
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/catalog-tool/src/overlay/check/validation/pagination/compatibility.rs:173:55
+    |
+173 |         pending.push(Comparison::Compare(left, right, depth + 1));
+    |                                                       ^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: very complex type used. Consider factoring parts into `type` definitions
+   --> crates/catalog-tool/src/overlay/check/validation/pagination/compatibility.rs:181:6
+    |
+181 | ) -> Option<(&'a Map<String, Value>, &'a Map<String, Value>)> {
+    |      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#type_complexity
+
+error: arithmetic operation that can potentially result in unexpected side-effects
+   --> crates/catalog-tool/src/overlay/check/validation/pagination/compatibility.rs:215:81
+    |
+215 |         .for_each(|(left, right)| pending.push(Comparison::Compare(left, right, depth + 1)));
+    |                                                                                 ^^^^^^^^^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#arithmetic_side_effects
+
+error: this `.fold` can be written more succinctly using another method
+  --> crates/catalog-tool/src/overlay/check/validation/pagination.rs:72:36
+   |
+72 |       let valid_pairs = pairs.iter().fold(true, |valid, pair| {
+   |  ____________________________________^
+73 | |         validate_token_pair(
+74 | |             service,
+75 | |             operation,
+...  |
+80 | |         ) && valid
+81 | |     });
+   | |______^
+   |
+   = note: the `all` method is short circuiting and may change the program semantics if the iterator has side effects
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#unnecessary_fold
+help: try
+   |
+72 ~     let valid_pairs = pairs.iter().all(|pair| validate_token_pair(
+73 +             service,
+74 +             operation,
+75 +             model,
+76 +             pair.input.as_str(),
+77 +             pair.output.as_str(),
+78 +             violations,
+79 ~         ));
+   |
+
+error: this `map_or` can be simplified
+   --> crates/catalog-tool/src/overlay/check/validation/paths.rs:131:5
+    |
+131 | /     selected.map_or(true, |selected| {
+132 | |         model.resolve_path_from(*selected, path.as_str()).is_err()
+133 | |     })
+    | |______^
+    |
+    = help: for further information visit https://clippy.rust-lang.org/main/index.html#unnecessary_map_or
+    = note: `-D clippy::unnecessary-map-or` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::unnecessary_map_or)]`
+help: use `is_none_or` instead
+    |
+131 -     selected.map_or(true, |selected| {
+131 +     selected.is_none_or(|selected| {
+    |
+
+error: this function has too many arguments (9/7)
+  --> crates/catalog-tool/src/plans/model/required.rs:67:1
+   |
+67 | / fn visit_member<'a>(
+68 | |     model: &Model<'a>,
+69 | |     name: &str,
+70 | |     member: &'a Value,
+...  |
+76 | |     supplied: &BTreeSet<String>,
+77 | | ) -> Result<(), &'static str> {
+   | |_____________________________^
+   |
+   = help: for further information visit https://clippy.rust-lang.org/main/index.html#too_many_arguments
+
+error: could not compile `catalog-tool` (lib) due to 19 previous errors

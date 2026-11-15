@@ -1,0 +1,2 @@
+crates/catalog-tool/src/overlay/check/validation/pagination/compatibility.rs:154: 26 lines: fn schedule_members<'m>(
+function-length gate failed (max 25 lines)

@@ -6,6 +6,7 @@ use serde_json::{Value, json};
 use crate::HarnessError;
 use crate::provenance::file_sha256;
 
+pub mod graph;
 mod signature;
 
 pub use signature::signed_by;

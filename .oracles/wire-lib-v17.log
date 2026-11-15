@@ -1,0 +1,66 @@
+   Compiling catalog-tool v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/catalog-tool)
+error[E0603]: module `mixins` is private
+   --> crates/catalog-tool/src/smithy.rs:153:12
+    |
+153 |     model::mixins::expand(model).map_err(|message| Error::InvalidModel {
+    |            ^^^^^^  ------ function `expand` is not publicly re-exported
+    |            |
+    |            private module
+    |
+note: the module `mixins` is defined here
+   --> crates/catalog-tool/src/smithy/model.rs:1:1
+    |
+  1 | mod mixins;
+    | ^^^^^^^^^^^
+
+error[E0433]: cannot find module or crate `traits` in this scope
+  --> crates/catalog-tool/src/smithy/model.rs:16:41
+   |
+16 |     #[serde(default, deserialize_with = "traits::read")]
+   |                                         ^^^^^^^^^^^^^^ use of unresolved module or unlinked crate `traits`
+   |
+help: to make use of source file crates/catalog-tool/src/smithy/model/traits.rs, use `mod traits` in this file to declare the module
+  --> crates/catalog-tool/src/lib.rs:1:1
+   |
+ 1 + mod traits;
+   |
+
+error[E0433]: cannot find module or crate `traits` in this scope
+  --> crates/catalog-tool/src/smithy/model.rs:84:41
+   |
+84 |     #[serde(default, deserialize_with = "traits::read")]
+   |                                         ^^^^^^^^^^^^^^ use of unresolved module or unlinked crate `traits`
+   |
+help: to make use of source file crates/catalog-tool/src/smithy/model/traits.rs, use `mod traits` in this file to declare the module
+  --> crates/catalog-tool/src/lib.rs:1:1
+   |
+ 1 + mod traits;
+   |
+
+error[E0433]: cannot find module or crate `traits` in this scope
+  --> crates/catalog-tool/src/smithy/model.rs:91:41
+   |
+91 |     #[serde(default, deserialize_with = "traits::read")]
+   |                                         ^^^^^^^^^^^^^^ use of unresolved module or unlinked crate `traits`
+   |
+help: to make use of source file crates/catalog-tool/src/smithy/model/traits.rs, use `mod traits` in this file to declare the module
+  --> crates/catalog-tool/src/lib.rs:1:1
+   |
+ 1 + mod traits;
+   |
+
+error[E0433]: cannot find module or crate `traits` in this scope
+  --> crates/catalog-tool/src/smithy/model.rs:95:5
+   |
+95 |     traits::validate_shape(shape)
+   |     ^^^^^^ use of unresolved module or unlinked crate `traits`
+   |
+help: to make use of source file crates/catalog-tool/src/smithy/model/traits.rs, use `mod traits` in this file to declare the module
+  --> crates/catalog-tool/src/lib.rs:1:1
+   |
+ 1 + mod traits;
+   |
+
+Some errors have detailed explanations: E0433, E0603.
+For more information about an error, try `rustc --explain E0433`.
+error: could not compile `catalog-tool` (lib) due to 5 previous errors

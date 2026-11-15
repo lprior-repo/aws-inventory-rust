@@ -1,0 +1,22 @@
+format = 1
+
+# Local public-zone metadata only; no record contents or domain registration.
+# ListHostedZones and GetHostedZone key the exact returned HostedZone.Id,
+# including any /hostedzone/ prefix. ChangeInfo.Id is not the resource identity.
+# No VPC relationship is asserted: none is present in this public-zone create.
+
+[[steps]]
+id = 0
+service = "route-53"
+operation = "CreateHostedZone"
+kind = "AWS::Route53::HostedZone"
+scope = "account"
+identity = ["HostedZone", "Id"]
+inputs = [
+  { field = ["Name"], value = "inventory-seed.example.com." },
+  { field = ["CallerReference"], value = "inventory-seed-route53-public-zone-v1" },
+]
+response_checks = [
+  { path = ["HostedZone", "Name"], input_field = ["Name"] },
+  { path = ["HostedZone", "CallerReference"], input_field = ["CallerReference"] },
+]

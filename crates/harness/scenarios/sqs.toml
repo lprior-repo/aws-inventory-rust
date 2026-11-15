@@ -1,0 +1,64 @@
+format = 1
+
+# Local queue configuration only: no sends, receives, redrives or purges.
+# QueueUrl is transport input, never the canonical resource identity. Helpers
+# retain it for GetQueueAttributes, whose explicit QueueArn attribute supplies
+# each resource oracle. AttributeNames intentionally excludes message counters,
+# policies and the broad All selection. No queue relationship is inferred.
+
+[[steps]]
+id = 0
+service = "sqs"
+operation = "CreateQueue"
+resource = false
+inputs = [{ field = ["QueueName"], value = "inventory-seed-sqs-standard-a" }]
+
+[[steps]]
+id = 1
+service = "sqs"
+operation = "GetQueueAttributes"
+kind = "AWS::SQS::Queue"
+identity = ["Attributes", "QueueArn"]
+inputs = [
+  { field = ["QueueUrl"], from_step = 0, from_path = ["QueueUrl"] },
+  { field = ["AttributeNames"], value = ["QueueArn"] },
+]
+
+[[steps]]
+id = 2
+service = "sqs"
+operation = "CreateQueue"
+resource = false
+inputs = [{ field = ["QueueName"], value = "inventory-seed-sqs-standard-b" }]
+
+[[steps]]
+id = 3
+service = "sqs"
+operation = "GetQueueAttributes"
+kind = "AWS::SQS::Queue"
+identity = ["Attributes", "QueueArn"]
+inputs = [
+  { field = ["QueueUrl"], from_step = 2, from_path = ["QueueUrl"] },
+  { field = ["AttributeNames"], value = ["QueueArn"] },
+]
+
+[[steps]]
+id = 4
+service = "sqs"
+operation = "CreateQueue"
+resource = false
+inputs = [
+  { field = ["QueueName"], value = "inventory-seed-sqs-fifo.fifo" },
+  { field = ["Attributes"], value = { FifoQueue = "true", ContentBasedDeduplication = "true" } },
+]
+
+[[steps]]
+id = 5
+service = "sqs"
+operation = "GetQueueAttributes"
+kind = "AWS::SQS::Queue"
+identity = ["Attributes", "QueueArn"]
+inputs = [
+  { field = ["QueueUrl"], from_step = 4, from_path = ["QueueUrl"] },
+  { field = ["AttributeNames"], value = ["QueueArn"] },
+]

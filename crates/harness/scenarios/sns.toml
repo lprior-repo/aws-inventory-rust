@@ -1,0 +1,78 @@
+format = 1
+
+# Local metadata fixtures only: no publishing or endpoint confirmation.
+# Same-account SQS subscriptions need no confirmation delivery. Endpoint is bound
+# to an actual queue ARN read through its attribute map, never a fabricated ARN.
+# Subscribe is a helper; GetSubscriptionAttributes independently confirms its ARN.
+# No relationship is fabricated: the SNS overlay currently has no modeled
+# subscription-to-topic or subscription-to-queue relationship plan.
+
+[[steps]]
+id = 0
+service = "sns"
+operation = "CreateTopic"
+kind = "AWS::SNS::Topic"
+identity = ["TopicArn"]
+inputs = [{ field = ["Name"], value = "inventory-seed-sns-standard-a" }]
+
+[[steps]]
+id = 1
+service = "sns"
+operation = "CreateTopic"
+kind = "AWS::SNS::Topic"
+identity = ["TopicArn"]
+inputs = [{ field = ["Name"], value = "inventory-seed-sns-standard-b" }]
+
+[[steps]]
+id = 2
+service = "sns"
+operation = "CreateTopic"
+kind = "AWS::SNS::Topic"
+identity = ["TopicArn"]
+inputs = [
+  { field = ["Name"], value = "inventory-seed-sns-fifo.fifo" },
+  { field = ["Attributes"], value = { FifoTopic = "true", ContentBasedDeduplication = "true" } },
+]
+
+[[steps]]
+id = 3
+service = "sqs"
+operation = "CreateQueue"
+resource = false
+inputs = [{ field = ["QueueName"], value = "inventory-seed-sns-endpoint" }]
+
+[[steps]]
+id = 4
+service = "sqs"
+operation = "GetQueueAttributes"
+kind = "AWS::SQS::Queue"
+identity = ["Attributes", "QueueArn"]
+inputs = [
+  { field = ["QueueUrl"], from_step = 3, from_path = ["QueueUrl"] },
+  { field = ["AttributeNames"], value = ["QueueArn"] },
+]
+
+[[steps]]
+id = 5
+service = "sns"
+operation = "Subscribe"
+resource = false
+inputs = [
+  { field = ["TopicArn"], from_step = 0, from_path = ["TopicArn"] },
+  { field = ["Protocol"], value = "sqs" },
+  { field = ["Endpoint"], from_step = 4, from_path = ["Attributes", "QueueArn"] },
+  { field = ["ReturnSubscriptionArn"], value = true },
+]
+
+[[steps]]
+id = 6
+service = "sns"
+operation = "GetSubscriptionAttributes"
+kind = "AWS::SNS::Subscription"
+identity = ["Attributes", "SubscriptionArn"]
+inputs = [
+  { field = ["SubscriptionArn"], from_step = 5, from_path = ["SubscriptionArn"] },
+]
+response_checks = [
+  { path = ["Attributes", "SubscriptionArn"], input_field = ["SubscriptionArn"] },
+]

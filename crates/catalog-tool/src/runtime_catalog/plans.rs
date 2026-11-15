@@ -1,4 +1,5 @@
 mod compile;
+pub(super) mod identity;
 mod page;
 mod service;
 use super::plan_validation;
@@ -43,7 +44,7 @@ fn identity_value(
     match identity {
         Some(Identity::Arn(path)) => encode::map([
             (1, Value::Int(0)),
-            (2, encode::path(services, &path.to_string())?),
+            (2, selected_path(services, path.as_str())?),
         ]),
         Some(Identity::Key(paths)) => encode::map([
             (1, Value::Int(2)),
@@ -52,11 +53,12 @@ fn identity_value(
                 Value::List(
                     paths
                         .iter()
-                        .map(|path| encode::path(services, &path.to_string()))
+                        .map(|path| selected_path(services, path.as_str()))
                         .collect::<Result<_, _>>()?,
                 ),
             ),
         ]),
+        Some(Identity::Template(template)) => identity::compile(template, services),
         _ => Err(RuntimeCatalogCompileError::Capability),
     }
 }
@@ -199,7 +201,7 @@ fn binding_value(
             (
                 Value::Text(service.to_owned()),
                 Value::Text(operation.to_string()),
-                encode::path(services, &path.to_string())?,
+                selected_path(services, path.as_str())?,
             ),
         ),
     };
@@ -235,4 +237,14 @@ fn fixed_value(value: &FixedValue) -> Result<Value, RuntimeCatalogCompileError> 
             values.iter().cloned().map(Value::Text).collect(),
         )),
     }
+}
+
+fn selected_path(
+    services: &super::ServiceIndex<'_>,
+    path: &str,
+) -> Result<Value, RuntimeCatalogCompileError> {
+    if path == "$" {
+        return Ok(Value::List(Vec::new()));
+    }
+    encode::path(services, path)
 }

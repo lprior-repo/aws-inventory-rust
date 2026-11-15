@@ -9,6 +9,7 @@ use cli::parse;
 
 const USAGE: &str = "usage:\n  inventory-harness snapshot freeze --evidence <dir> --output <file> \
 --binary <file> [--root <dir>]\n  inventory-harness install <destination> [--root <dir>]\n  \
+inventory-harness install-graph <destination> [--jobs N]\n  \
 inventory-harness catalog universal --root <dir> [--check]\n  \
 inventory-harness seed s3 --bucket <name>\n  \
 inventory-harness seed cloud-control --prefix <inventory-page-...> --count <n>\n  \
@@ -25,6 +26,10 @@ enum Command {
     Install {
         destination: PathBuf,
         root: PathBuf,
+    },
+    InstallGraph {
+        destination: PathBuf,
+        jobs: usize,
     },
     CatalogUniversal {
         root: PathBuf,
@@ -103,6 +108,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, HarnessError> {
             root,
         } => snapshot::freeze(&evidence, &output, &binary, &root).await,
         Command::Install { destination, root } => install::install(&root, &destination),
+        Command::InstallGraph { destination, jobs } => install::graph::install(&destination, jobs),
         Command::CatalogUniversal { root, check } => universal(root, check),
         Command::AssertCloudControl {
             database,

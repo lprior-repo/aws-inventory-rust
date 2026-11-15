@@ -28,10 +28,14 @@ fn item_target(
 ) -> Result<Target, RuntimeCatalogCompileError> {
     match selector {
         Some(ItemSelector::Root) => Ok(output),
-        Some(ItemSelector::Member(path)) => model_path::list_element(
-            service,
-            model_path::resolve(service, output, &path.to_string())?.1,
-        ),
+        Some(ItemSelector::Member(path)) => {
+            let target = model_path::resolve(service, output, &path.to_string())?.1;
+            match model_path::kind(service, target)? {
+                "structure" => Ok(target),
+                "list" => model_path::list_element(service, target),
+                _ => Err(RuntimeCatalogCompileError::Capability),
+            }
+        }
         None => Err(RuntimeCatalogCompileError::Capability),
     }
 }
@@ -42,14 +46,48 @@ fn validate_identity(
     identity: Option<&Identity>,
 ) -> Result<(), RuntimeCatalogCompileError> {
     match identity {
-        Some(Identity::Arn(path)) => model_path::string_target(
-            service,
-            model_path::resolve(service, item, &path.to_string())?.1,
-        ),
+        Some(Identity::Arn(path)) => {
+            let target = selected_target(service, item, path.as_str())?;
+            text_target(service, target)
+        }
         Some(Identity::Key(paths)) => paths
             .iter()
-            .try_for_each(|path| model_path::resolve(service, item, &path.to_string()).map(|_| ())),
-        Some(Identity::Template(_)) => Err(RuntimeCatalogCompileError::Capability),
+            .try_for_each(|path| scalar_target(service, item, path.as_str())),
+        Some(Identity::Template(template)) => super::plans::identity::fields(template)
+            .try_for_each(|path| scalar_target(service, item, path)),
+        _ => Err(RuntimeCatalogCompileError::Capability),
+    }
+}
+
+fn selected_target(
+    service: Service<'_>,
+    item: Target,
+    path: &str,
+) -> Result<Target, RuntimeCatalogCompileError> {
+    if path != "$" {
+        return model_path::resolve(service, item, path).map(|(_, target)| target);
+    }
+    match model_path::kind(service, item)? {
+        "string" | "enum" | "byte" | "short" | "integer" | "long" | "boolean" => Ok(item),
+        _ => Err(RuntimeCatalogCompileError::Capability),
+    }
+}
+
+fn text_target(service: Service<'_>, target: Target) -> Result<(), RuntimeCatalogCompileError> {
+    match model_path::kind(service, target)? {
+        "string" | "enum" => Ok(()),
+        _ => Err(RuntimeCatalogCompileError::Capability),
+    }
+}
+
+fn scalar_target(
+    service: Service<'_>,
+    item: Target,
+    path: &str,
+) -> Result<(), RuntimeCatalogCompileError> {
+    let target = selected_target(service, item, path)?;
+    match model_path::kind(service, target)? {
+        "string" | "enum" | "byte" | "short" | "integer" | "long" | "boolean" => Ok(()),
         _ => Err(RuntimeCatalogCompileError::Capability),
     }
 }
@@ -77,7 +115,9 @@ fn validate_bindings(
 
 fn fixed_matches(value: &FixedValue, kind: &str) -> Result<(), RuntimeCatalogCompileError> {
     let matched = match value {
-        FixedValue::String(_) | FixedValue::Strings(_) => kind == "string" || kind == "list",
+        // CheckedOverlays has already checked the literal against Smithy enumValue traits.
+        FixedValue::String(_) => matches!(kind, "string" | "enum"),
+        FixedValue::Strings(_) => kind == "list",
         FixedValue::Integer(_) => kind.starts_with("integer") || kind.starts_with("long"),
         FixedValue::Boolean(_) => kind == "boolean",
     };

@@ -1,0 +1,43 @@
+   Compiling catalog-tool v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m1.4c/crates/catalog-tool)
+    Finished `test` profile [unoptimized] target(s) in 0.28s
+     Running tests/overlay_check.rs (/home/lewis/src/aws-inventory-rust/target/debug/build/catalog-tool/00daf2c1460b247c/out/overlay_check-00daf2c1460b247c)
+
+running 6 tests
+test item_selector_accepts_explicit_root_without_changing_member_paths ... ok
+test empty_overlay_check_builds_a_non_callable_baseline ... ok
+test reviewed_list_overlay_exposes_only_readonly_callable_plan ... FAILED
+test root_item_selector_uses_output_structure_not_item_structure ... ok
+test check_drift_compares_report_bytes_without_writing_stdout ... FAILED
+test failed_cli_write_keeps_report_and_emits_no_stdout ... FAILED
+
+failures:
+
+---- reviewed_list_overlay_exposes_only_readonly_callable_plan stdout ----
+
+thread 'reviewed_list_overlay_exposes_only_readonly_callable_plan' (3685425) panicked at crates/catalog-tool/tests/overlay_check.rs:117:5:
+assertion `left == right` failed
+  left: "totals\tservices_with_overlay=1\tcallable_enumerate=1\tcallable_expand=0\tdenied_by_overlay=0\tdeferred=0\tservices_without_overlay=0\tunreviewed_enumerate=0\tunreviewed_expand=0\tunreviewed_unclassified=0\noperation\tthings\tListThings\tenumerate\tclass=overlay,items=overlay,page_size=missing,paginator=overlay,identity=overlay,bindings=missing,scope=model,batch=model\n"
+ right: "totals\tservices_with_overlay=1\tcallable_enumerate=1\tcallable_expand=0\tdenied_by_overlay=0\tdeferred=0\tservices_without_overlay=0\tunreviewed_enumerate=0\tunreviewed_expand=0\tunreviewed_unclassified=0\noperation\tthings\tListThings\tenumerate\tclass=overlay,items=overlay,page_size=missing,paginator=overlay,identity=overlay,bindings=missing,scope=missing,batch=missing\n"
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- check_drift_compares_report_bytes_without_writing_stdout stdout ----
+
+thread 'check_drift_compares_report_bytes_without_writing_stdout' (3685421) panicked at crates/catalog-tool/tests/overlay_check.rs:69:5:
+assertion `left == right` failed
+  left: [116, 111, 116, 97, 108, 115, 9, 115, 101, 114, 118, 105, 99, 101, 115, 95, 119, 105, 116, 104, 95, 111, 118, 101, 114, 108, 97, 121, 61, 48, 9, 99, 97, 108, 108, 97, 98, 108, 101, 95, 101, 110, 117, 109, 101, 114, 97, 116, 101, 61, 48, 9, 99, 97, 108, 108, 97, 98, 108, 101, 95, 101, 120, 112, 97, 110, 100, 61, 48, 9, 100, 101, 110, 105, 101, 100, 95, 98, 121, 95, 111, 118, 101, 114, 108, 97, 121, 61, 48, 9, 100, 101, 102, 101, 114, 114, 101, 100, 61, 48, 9, 115, 101, 114, 118, 105, 99, 101, 115, 95, 119, 105, 116, 104, 111, 117, 116, 95, 111, 118, 101, 114, 108, 97, 121, 61, 49, 9, 117, 110, 114, 101, 118, 105, 101, 119, 101, 100, 95, 101, 110, 117, 109, 101, 114, 97, 116, 101, 61, 49, 9, 117, 110, 114, 101, 118, 105, 101, 119, 101, 100, 95, 101, 120, 112, 97, 110, 100, 61, 48, 9, 117, 110, 114, 101, 118, 105, 101, 119, 101, 100, 95, 117, 110, 99, 108, 97, 115, 115, 105, 102, 105, 101, 100, 61, 48, 10]
+ right: []
+
+---- failed_cli_write_keeps_report_and_emits_no_stdout stdout ----
+
+thread 'failed_cli_write_keeps_report_and_emits_no_stdout' (3685423) panicked at crates/catalog-tool/tests/overlay_check.rs:138:5:
+assertion failed: stderr.contains("identity=missing")
+
+
+failures:
+    check_drift_compares_report_bytes_without_writing_stdout
+    failed_cli_write_keeps_report_and_emits_no_stdout
+    reviewed_list_overlay_exposes_only_readonly_callable_plan
+
+test result: FAILED. 3 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+error: test failed, to rerun pass `-p catalog-tool --test overlay_check`

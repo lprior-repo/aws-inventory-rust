@@ -1,0 +1,80 @@
+format = 1
+
+# LOCAL emulator only. Create empty table schemas, never items, backups, exports,
+# imports, queries, scans, streams, or customer content. Attribute definitions
+# describe schema types; they contain no values of those types.
+# TableArn is the same canonical identity returned by DescribeTable.Table.TableArn.
+# Discovery remains dependent on the generic ListTables scalar-item binding;
+# this scenario does not promote the isolated overlay's deferred read operations.
+
+[[steps]]
+id = 0
+service = "dynamodb"
+operation = "CreateTable"
+kind = "AWS::DynamoDB::Table"
+identity = ["TableDescription", "TableArn"]
+inputs = [
+  { field = ["TableName"], value = "inventory-seed-string-key" },
+  { field = ["AttributeDefinitions"], value = [{ AttributeName = "partition_key", AttributeType = "S" }] },
+  { field = ["KeySchema"], value = [{ AttributeName = "partition_key", KeyType = "HASH" }] },
+  { field = ["BillingMode"], value = "PAY_PER_REQUEST" },
+]
+response_checks = [
+  { path = ["TableDescription", "TableName"], input_field = ["TableName"] },
+  { path = ["TableDescription", "AttributeDefinitions"], input_field = ["AttributeDefinitions"] },
+  { path = ["TableDescription", "KeySchema"], input_field = ["KeySchema"] },
+]
+
+[[steps]]
+id = 1
+service = "dynamodb"
+operation = "CreateTable"
+kind = "AWS::DynamoDB::Table"
+identity = ["TableDescription", "TableArn"]
+inputs = [
+  { field = ["TableName"], value = "inventory-seed-number-key" },
+  { field = ["AttributeDefinitions"], value = [{ AttributeName = "partition_key", AttributeType = "N" }] },
+  { field = ["KeySchema"], value = [{ AttributeName = "partition_key", KeyType = "HASH" }] },
+  { field = ["BillingMode"], value = "PAY_PER_REQUEST" },
+]
+response_checks = [
+  { path = ["TableDescription", "TableName"], input_field = ["TableName"] },
+  { path = ["TableDescription", "AttributeDefinitions"], input_field = ["AttributeDefinitions"] },
+  { path = ["TableDescription", "KeySchema"], input_field = ["KeySchema"] },
+]
+
+[[steps]]
+id = 2
+service = "dynamodb"
+operation = "CreateTable"
+kind = "AWS::DynamoDB::Table"
+identity = ["TableDescription", "TableArn"]
+inputs = [
+  { field = ["TableName"], value = "inventory-seed-binary-key" },
+  { field = ["AttributeDefinitions"], value = [{ AttributeName = "partition_key", AttributeType = "B" }] },
+  { field = ["KeySchema"], value = [{ AttributeName = "partition_key", KeyType = "HASH" }] },
+  { field = ["BillingMode"], value = "PAY_PER_REQUEST" },
+]
+response_checks = [
+  { path = ["TableDescription", "TableName"], input_field = ["TableName"] },
+  { path = ["TableDescription", "AttributeDefinitions"], input_field = ["AttributeDefinitions"] },
+  { path = ["TableDescription", "KeySchema"], input_field = ["KeySchema"] },
+]
+
+[[steps]]
+id = 3
+service = "dynamodb"
+operation = "CreateTable"
+kind = "AWS::DynamoDB::Table"
+identity = ["TableDescription", "TableArn"]
+inputs = [
+  { field = ["TableName"], value = "inventory-seed-composite-key" },
+  { field = ["AttributeDefinitions"], value = [{ AttributeName = "partition_key", AttributeType = "S" }, { AttributeName = "sort_key", AttributeType = "N" }] },
+  { field = ["KeySchema"], value = [{ AttributeName = "partition_key", KeyType = "HASH" }, { AttributeName = "sort_key", KeyType = "RANGE" }] },
+  { field = ["BillingMode"], value = "PAY_PER_REQUEST" },
+]
+response_checks = [
+  { path = ["TableDescription", "TableName"], input_field = ["TableName"] },
+  { path = ["TableDescription", "AttributeDefinitions"], input_field = ["AttributeDefinitions"] },
+  { path = ["TableDescription", "KeySchema"], input_field = ["KeySchema"] },
+]

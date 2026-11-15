@@ -20,6 +20,18 @@ const READY_POLL: Duration = Duration::from_millis(200);
 
 const READY_ATTEMPTS: usize = 150;
 
+const ARGUMENTS: [&str; 9] = [
+    "--port",
+    "0",
+    "--bind",
+    "127.0.0.1",
+    "--auth",
+    "on",
+    "--telemetry",
+    "off",
+    "--idle-timeout",
+];
+
 struct ChildOwner {
     child: Child,
 }
@@ -64,21 +76,17 @@ pub struct Emulator {
     ca_bundle: PathBuf,
 }
 
-fn spawn(binary: &Path, log: &Path, idle_timeout_seconds: u64) -> Result<ChildOwner, HarnessError> {
+fn spawn(
+    binary: &Path,
+    log: &Path,
+    home: &Path,
+    idle_timeout_seconds: u64,
+) -> Result<ChildOwner, HarnessError> {
     let handle = std::fs::File::create(log)?;
     let child = Command::new(binary)
-        .args([
-            "--port",
-            "0",
-            "--bind",
-            "127.0.0.1",
-            "--auth",
-            "on",
-            "--telemetry",
-            "off",
-            "--idle-timeout",
-        ])
+        .args(ARGUMENTS)
         .arg(idle_timeout_seconds.to_string())
+        .env("HOME", home)
         .stdout(Stdio::from(handle.try_clone()?))
         .stderr(Stdio::from(handle))
         .spawn()?;
@@ -89,17 +97,22 @@ fn launched(
     binary: &Path,
     work: &Path,
     idle_timeout_seconds: u64,
-) -> Result<(PathBuf, ChildOwner), HarnessError> {
+) -> Result<(PathBuf, PathBuf, ChildOwner), HarnessError> {
     verify_binary(binary)?;
-    std::fs::create_dir_all(work)?;
+    let home = work.join("home");
+    std::fs::create_dir_all(&home)?;
     let log = work.join("emulator.jsonl");
-    let child = spawn(binary, &log, idle_timeout_seconds)?;
-    Ok((log, child))
+    let child = spawn(binary, &log, &home, idle_timeout_seconds)?;
+    Ok((log, home, child))
 }
 
-fn emulator_from(child: ChildOwner, endpoint: String) -> Result<Emulator, HarnessError> {
+fn emulator_from(
+    child: ChildOwner,
+    endpoint: String,
+    home: &Path,
+) -> Result<Emulator, HarnessError> {
     let port = endpoint_port(&endpoint)?;
-    let directory = home()?.join(".aws/emulator").join(port.to_string());
+    let directory = home.join(".aws/emulator").join(port.to_string());
     Ok(Emulator {
         child,
         endpoint,
@@ -115,9 +128,9 @@ impl Emulator {
         work: &Path,
         idle_timeout_seconds: u64,
     ) -> Result<Self, HarnessError> {
-        let (log, mut child) = launched(binary, work, idle_timeout_seconds)?;
+        let (log, home, mut child) = launched(binary, work, idle_timeout_seconds)?;
         let endpoint = await_endpoint(&log, &mut child, READY_TIMEOUT, READY_POLL, READY_ATTEMPTS)?;
-        emulator_from(child, endpoint)
+        emulator_from(child, endpoint, &home)
     }
 
     pub fn endpoint(&self) -> &str {
@@ -247,10 +260,4 @@ fn loopback_port(endpoint: &str) -> Option<u16> {
         return None;
     }
     rest.parse::<u16>().ok().filter(|port| *port != 0)
-}
-
-fn home() -> Result<PathBuf, HarnessError> {
-    std::env::var_os("HOME").map(PathBuf::from).ok_or_else(|| {
-        HarnessError::invalid("HOME is not set; emulator credentials are unfindable")
-    })
 }

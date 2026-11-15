@@ -2,6 +2,14 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- The ignored `sweep_e2e` suite is self-contained: it spawns the pinned
+  emulator (with an isolated `HOME`) and a native `redis-server` with the
+  FalkorDB module on a free loopback port, builds an isolated profile from the
+  credentials the emulator issues, and tears both down on drop. The
+  `AWS_INVENTORY_E2E_*` variables are gone. The FalkorDB installer is now Rust
+  (`inventory-harness install-graph`); `install_graph.py` and its test are
+  deleted.
+
 - End-to-end collection path works against the live emulator:
   `aws-inventory sweep` loads the compiled runtime catalog, resolves profile
   credentials, bootstraps account identity (STS `GetCallerIdentity`) and

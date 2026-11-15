@@ -46,6 +46,14 @@ pub(super) fn path(
     let text = string(context, key, value)?;
     MemberPath::new(text).map_err(|_| context.error(key, text, Rule::MemberPath))
 }
+pub(super) fn selected_path(
+    context: &Context<'_>,
+    key: &str,
+    value: &Value,
+) -> Result<MemberPath, OverlayError> {
+    let text = string(context, key, value)?;
+    MemberPath::selected(text).map_err(|_| context.error(key, text, Rule::MemberPath))
+}
 pub(super) fn optional_path(
     context: &Context<'_>,
     key: &str,

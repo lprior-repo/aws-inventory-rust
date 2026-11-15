@@ -1,0 +1,21 @@
+   Compiling inventory-core v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/core)
+   Compiling inventory-engine v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/engine)
+   Compiling inventory-aws v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/aws)
+    Finished `test` profile [unoptimized] target(s) in 20.76s
+     Running unittests src/lib.rs (/home/lewis/src/aws-inventory-rust/target/debug/build/inventory-aws/fe2337dda83bd70a/out/inventory_aws-fe2337dda83bd70a)
+
+running 1 test
+test cloud_control::parents::tests::literal_emulator_parent_fixtures_preserve_all_sanitized_properties_and_exact_architecture_edges::literal_emulator_parent_fixtures_preserve_all_sanitized_properties_and_exact_architecture_edges ... FAILED
+
+failures:
+
+---- cloud_control::parents::tests::literal_emulator_parent_fixtures_preserve_all_sanitized_properties_and_exact_architecture_edges::literal_emulator_parent_fixtures_preserve_all_sanitized_properties_and_exact_architecture_edges stdout ----
+Error: InvalidData("child read does not match its requested parent resource model")
+
+
+failures:
+    cloud_control::parents::tests::literal_emulator_parent_fixtures_preserve_all_sanitized_properties_and_exact_architecture_edges::literal_emulator_parent_fixtures_preserve_all_sanitized_properties_and_exact_architecture_edges
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 338 filtered out; finished in 0.03s
+
+error: test failed, to rerun pass `-p inventory-aws --lib`

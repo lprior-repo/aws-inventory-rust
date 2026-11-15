@@ -76,16 +76,20 @@ impl App {
         if let Some(mut table) = table.borrow_mut::<ResourceTable>() {
             table.set_loading(true);
         }
-        if let Some(worker) = &self.worker
-            && let Err(error) = worker.refresh(filter)
+        let result = match &self.worker {
+            Some(worker) => worker.refresh(filter),
+            None => Err("inventory worker is not running".to_owned()),
+        };
+        if let Err(error) = result
             && let Some(mut table) = table.borrow_mut::<ResourceTable>()
         {
+            table.set_loading(false);
             table.set_error(Some(error));
         }
         self.refresh(cx);
     }
 
-    fn request_expansion(&self, cx: &mut Cx) {
+    fn request_expansion(&mut self, cx: &mut Cx) {
         let Some(row) = self
             .table(cx)
             .borrow::<ResourceTable>()
@@ -101,7 +105,7 @@ impl App {
                 id: row.id,
             };
             if let Err(error) = worker.expand(request) {
-                tracing::warn!(error = %error, "Unable to queue graph expansion");
+                self.apply_graph_event(cx, crate::data::Graph::default(), Some(error));
             }
         }
     }

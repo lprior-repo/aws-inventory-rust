@@ -60,6 +60,9 @@ fn aggregate_item<'a, 'm, 'd>(
     shape: ShapeRef<'m>,
     path: &str,
 ) -> Option<ShapeRef<'m>> {
+    if plans::model::shape_type(shape.value) == Some("structure") {
+        return Some(shape);
+    }
     if !matches!(plans::model::shape_type(shape.value), Some("list" | "map")) {
         return invalid_items(state, path, ViolationRule::InvalidPath);
     }

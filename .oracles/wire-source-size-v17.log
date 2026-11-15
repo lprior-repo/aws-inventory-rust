@@ -1,0 +1,3 @@
+crates/catalog-tool/src/smithy/compile/defaults.rs:312: exceeds 300-line Rust source limit
+crates/catalog-tool/src/smithy/model/mixins.rs:305: exceeds 300-line Rust source limit
+crates/core/src/catalog/views/wire.rs:302: exceeds 300-line Rust source limit

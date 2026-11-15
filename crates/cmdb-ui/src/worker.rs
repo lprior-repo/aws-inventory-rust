@@ -1,19 +1,27 @@
-#[path = "worker/graph_tasks.rs"]
 mod graph_tasks;
-use graph_tasks::*;
+mod lifecycle;
 mod projection;
+mod protocol;
+mod queries;
+mod runner;
+#[cfg(test)]
+mod tests;
 
 use crate::data::{Counts, Filter, Graph, Row};
-use cmdb_view::{Database, GraphConnection, GraphLimits, GraphNode, PageRequest, ResourceFilter};
+use cmdb_view::{Database, DatabaseSnapshot, GraphConnection, GraphLimits, GraphNode, PageRequest, ResourceFilter};
+use graph_tasks::{GraphAccess, database_error, graph_failure};
+use lifecycle::{Cancellation, Shutdown, shutdown_channel};
 use makepad_widgets::makepad_platform::thread::SignalToUI;
 use projection::{graph_from_edges, row_from_resource};
+use protocol::{COMMAND_CAPACITY, Command, EVENT_CAPACITY, Output, Revisions, current_events};
+use queries::{QuerySession, query_graph, refresh_page};
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{self, Receiver, SyncSender, TrySendError};
+use std::sync::mpsc::{self, Receiver, SyncSender};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 use tokio::runtime::Builder;
+use tokio::sync::mpsc::{Receiver as CommandReceiver, Sender as CommandSender};
 
 const PAGE_LIMIT: usize = 500;
 const GRAPH_LIMITS: GraphLimits = GraphLimits {
@@ -89,57 +97,56 @@ pub enum WorkerEvent {
     },
 }
 
-enum Command {
-    Refresh(Filter),
-    Expand(GraphNode),
-    Stop,
-}
 
 pub struct DataWorker {
-    commands: SyncSender<Command>,
-    events: Receiver<WorkerEvent>,
-    stop: Arc<AtomicBool>,
+    commands: CommandSender<Command>,
+    events: Option<Receiver<Output>>,
+    revisions: Arc<Revisions>,
+    shutdown: Shutdown,
     thread: Option<JoinHandle<()>>,
 }
 
 impl DataWorker {
     pub fn start(config: WorkerConfig, signal: SignalToUI) -> Self {
-        let (command_tx, command_rx) = mpsc::sync_channel(32);
-        let (event_tx, event_rx) = mpsc::sync_channel(64);
-        let stop = Arc::new(AtomicBool::new(false));
-        let worker_stop = Arc::clone(&stop);
-        let worker =
-            thread::spawn(move || run_worker(config, command_rx, event_tx, signal, worker_stop));
-        Self {
-            commands: command_tx,
-            events: event_rx,
-            stop,
-            thread: Some(worker),
-        }
+        let (commands, receiver) = tokio::sync::mpsc::channel(COMMAND_CAPACITY);
+        let (events, outputs) = mpsc::sync_channel(EVENT_CAPACITY);
+        let revisions = Arc::new(Revisions::default());
+        let (shutdown, cancellation) = shutdown_channel();
+        let worker_revisions = Arc::clone(&revisions);
+        let thread = thread::spawn(move || {
+            let context = runner::WorkerContext::new(receiver, events, signal, cancellation, worker_revisions);
+            runner::run_worker(config, context);
+        });
+        Self { commands, events: Some(outputs), revisions, shutdown, thread: Some(thread) }
     }
 
     pub fn refresh(&self, filter: Filter) -> Result<(), String> {
-        self.commands
-            .try_send(Command::Refresh(filter))
-            .map_err(command_error)
+        let revision = self.revisions.refresh()?;
+        let permit = self.commands.try_reserve().map_err(command_error)?;
+        permit.send(Command::Refresh { revision, filter });
+        Ok(())
     }
 
     pub fn expand(&self, node: GraphNode) -> Result<(), String> {
-        self.commands
-            .try_send(Command::Expand(node))
-            .map_err(command_error)
+        let revision = self.revisions.expand()?;
+        let permit = self.commands.try_reserve().map_err(command_error)?;
+        permit.send(Command::Expand { revision, node });
+        Ok(())
     }
 
     pub fn drain(&self) -> Vec<WorkerEvent> {
-        self.events.try_iter().collect()
+        self.events.as_ref().map_or_else(Vec::new, |events| {
+            current_events(events.try_iter(), &self.revisions)
+        })
     }
 }
 
 impl Drop for DataWorker {
     fn drop(&mut self) {
-        self.stop.store(true, Ordering::Release);
+        self.shutdown.stop();
+        drop(self.events.take());
         if let Err(error) = self.commands.try_send(Command::Stop) {
-            tracing::debug!(error = %command_error(error), "stop flag set without queued stop command");
+            tracing::debug!(error = %error, "CMDB worker stop already signaled");
         }
         if let Some(worker) = self.thread.take()
             && worker.join().is_err()
@@ -149,112 +156,27 @@ impl Drop for DataWorker {
     }
 }
 
-fn command_error(error: TrySendError<Command>) -> String {
+fn command_error(error: tokio::sync::mpsc::error::TrySendError<()>) -> String {
     match error {
-        TrySendError::Full(_) => "inventory worker queue is full".to_owned(),
-        TrySendError::Disconnected(_) => "inventory worker stopped".to_owned(),
+        tokio::sync::mpsc::error::TrySendError::Full(()) => "inventory worker queue is full".to_owned(),
+        tokio::sync::mpsc::error::TrySendError::Closed(()) => "inventory worker stopped".to_owned(),
     }
 }
 
-fn run_worker(
-    config: WorkerConfig,
-    commands: Receiver<Command>,
-    events: SyncSender<WorkerEvent>,
-    signal: SignalToUI,
-    stop: Arc<AtomicBool>,
-) {
-    let Some(runtime) = worker_runtime(&events, &signal) else {
-        return;
-    };
-    match runtime.block_on(startup(config)) {
-        Ok((state, initial)) => {
-            let context = WorkerContext {
-                commands,
-                runtime,
-                state,
-                events,
-                signal,
-                stop,
-            };
-            run_commands(context, initial);
-        }
-        Err(error) => report_failure(&events, &signal, error, "database unavailable"),
-    }
-}
-
-fn worker_runtime(
-    events: &SyncSender<WorkerEvent>,
-    signal: &SignalToUI,
-) -> Option<tokio::runtime::Runtime> {
-    match Builder::new_current_thread().enable_all().build() {
-        Ok(runtime) => Some(runtime),
-        Err(error) => {
-            let context = "database worker runtime unavailable";
-            report_failure(events, signal, error.to_string(), context);
-            None
-        }
-    }
-}
-
-fn report_failure(
-    events: &SyncSender<WorkerEvent>,
-    signal: &SignalToUI,
-    error: String,
-    context: &str,
-) {
-    send_event(events, signal, database_error(error.clone()));
-    send_event(
-        events,
-        signal,
-        graph_failure(format!("{context} · {error}")),
-    );
-}
-
-struct WorkerContext {
-    commands: Receiver<Command>,
-    runtime: tokio::runtime::Runtime,
-    state: WorkerState,
-    events: SyncSender<WorkerEvent>,
-    signal: SignalToUI,
-    stop: Arc<AtomicBool>,
-}
-
-fn run_commands(context: WorkerContext, initial: WorkerEvent) {
-    let WorkerContext {
-        commands,
-        runtime,
-        mut state,
-        events,
-        signal,
-        stop,
-    } = context;
-    send_event(&events, &signal, initial);
-    send_event(
-        &events,
-        &signal,
-        WorkerEvent::Graph {
-            graph: Graph::default(),
-            error: state.graph_error.clone(),
-        },
-    );
-    commands
-        .iter()
-        .take_while(|command| !matches!(command, Command::Stop) && !stop.load(Ordering::Acquire))
-        .for_each(|command| process_command(command, &runtime, &mut state, &events, &signal));
-}
 
 struct WorkerState {
     database: Database,
-    graph: Option<GraphConnection>,
-    graph_error: Option<String>,
+    graph: GraphAccess,
+    session: QuerySession,
 }
 async fn startup(mut config: WorkerConfig) -> Result<(WorkerState, WorkerEvent), String> {
     let path = match config.database.take() {
         Some(path) => path,
         None => {
-            return Err(config
-                .argument_error
-                .unwrap_or_else(|| "missing --database PATH".to_owned()));
+            return Err(match config.argument_error {
+                Some(error) => error,
+                None => "missing --database PATH".to_owned(),
+            });
         }
     };
     tokio::time::timeout(Duration::from_secs(10), setup(path, config))
@@ -266,19 +188,9 @@ async fn setup(path: PathBuf, config: WorkerConfig) -> Result<(WorkerState, Work
     let database = Database::open(&path)
         .await
         .map_err(|error| error.to_string())?;
-    let counts = database.counts().await.map_err(|error| error.to_string())?;
-    let (rows, total) = load_page(&database, Filter::default()).await?;
-    let (graph, graph_error) = graph_config(config.graph_url, config.graph_name);
-    let state = WorkerState {
-        database,
-        graph,
-        graph_error,
-    };
-    let initial = WorkerEvent::Snapshot {
-        counts: counts.into(),
-        rows,
-        total,
-        error: None,
-    };
+    let mut session = QuerySession::open(&database).await?;
+    let initial = session.page(Filter::default()).await?;
+    let graph = GraphAccess::new(config.graph_url, config.graph_name);
+    let state = WorkerState { database, graph, session };
     Ok((state, initial))
 }

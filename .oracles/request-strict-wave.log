@@ -1,0 +1,26 @@
+   Compiling aws-wire v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/aws-wire)
+error[E0599]: no method named `find` found for enum `Result<T, E>` in the current scope
+    --> crates/aws-wire/src/request/rest/tests/../../../../tests/xml_infoset/tests.rs:46:10
+     |
+  44 |     let Some(operation) = service
+  45 |         .operations()
+  46 |         .find(|operation| matches!(operation.name(), Ok("Inspect")))
+     |          ^^^^ method not found in `Result<impl Iterator<Item = Result<Operation<'_>, CatalogError>>, _>`
+     |
+note: the method `find` exists on the type `impl Iterator<Item = Result<inventory_core::catalog::Operation<'_>, CatalogError>>`
+    --> /home/lewis/.rustup/toolchains/nightly-2026-11-11-x86_64-unknown-linux-gnu/lib/rustlib/src/rust/library/core/src/iter/traits/iterator.rs:2971:5
+     |
+2971 | /     fn find<P>(&mut self, predicate: P) -> Option<Self::Item>
+2972 | |     where
+2973 | |         Self: Sized,
+2974 | |         P: FnMut(&Self::Item) -> bool,
+     | |______________________________________^
+     = note: the full name for the type has been written to '/home/lewis/src/aws-inventory-rust/target/debug/build/aws-wire/2d370940338fc741/out/aws_wire-2d370940338fc741.long-type-6844539358365965947.txt'
+     = note: consider using `--verbose` to print the full type name to the console
+help: consider using `Result::expect` to unwrap the `impl Iterator<Item = Result<inventory_core::catalog::Operation<'_>, CatalogError>>` value, panicking if the value is a `Result::Err`
+     |
+  45 |         .operations().expect("REASON")
+     |                      +++++++++++++++++
+
+For more information about this error, try `rustc --explain E0599`.
+error: could not compile `aws-wire` (lib test) due to 1 previous error

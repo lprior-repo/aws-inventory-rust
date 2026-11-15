@@ -1,0 +1,47 @@
+   Compiling inventory-core v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/core)
+   Compiling catalog-tool v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/catalog-tool)
+   Compiling aws-wire v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/aws-wire)
+    Finished `test` profile [unoptimized] target(s) in 3.48s
+     Running tests/request_body_fixtures.rs (/home/lewis/src/aws-inventory-rust/target/debug/build/aws-wire/1baf0c134206cf8e/out/request_body_fixtures-1baf0c134206cf8e)
+
+running 10 tests
+test published_aws_json_10_client_request_fixtures_match ... FAILED
+test published_aws_json_11_client_request_fixtures_match ... FAILED
+test request_body_numeric_values::rpc_big_decimal_honors_small_body_budget_before_conversion ... ok
+test request_body_numeric_values::rpc_big_decimal_accepts_i64_min_exponent ... ok
+test request_body_numeric_values::rpc_timestamp_integer_seconds_are_exact ... ok
+test request_body_numeric_values::exponents::rpc_decimal_rejects_normalized_exponents_outside_the_cbor_integer_range ... ok
+test request_body_numeric_values::rpc_big_numbers_use_protocol_numeric_forms ... ok
+test request_body_numeric_values::aws_json_big_numbers_remain_json_numbers ... ok
+test request_body_numeric_values::exponents::rpc_decimal_retains_exact_exponents_across_the_full_cbor_integer_range ... ok
+test published_rpc_v2_cbor_client_request_fixtures_match ... FAILED
+
+failures:
+
+---- published_aws_json_10_client_request_fixtures_match stdout ----
+
+thread 'published_aws_json_10_client_request_fixtures_match' (53890) panicked at crates/aws-wire/tests/request_body_cases/support.rs:169:41:
+awsJson1_0 EndpointOperation "AwsJson10EndpointTrait": invalid JSON body: EOF while parsing a value at line 1 column 0
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- published_aws_json_11_client_request_fixtures_match stdout ----
+
+thread 'published_aws_json_11_client_request_fixtures_match' (53891) panicked at crates/aws-wire/tests/request_body_cases/support.rs:124:36:
+awsJson1_1 EmptyOperation "sends_requests_to_slash": missing header Content-Type
+
+---- published_rpc_v2_cbor_client_request_fixtures_match stdout ----
+
+thread 'published_rpc_v2_cbor_client_request_fixtures_match' (53892) panicked at crates/aws-wire/tests/request_body_cases/support.rs:162:13:
+assertion `left == right` failed: rpcv2Cbor OperationWithDefaults "RpcV2CborClientPopulatesDefaultValuesInInput" canonical CBOR body
+  left: [191, 104, 100, 101, 102, 97, 117, 108, 116, 115, 191, 107, 100, 101, 102, 97, 117, 108, 116, 66, 108, 111, 98, 67, 97, 98, 99, 110, 100, 101, 102, 97, 117, 108, 116, 66, 111, 111, 108, 101, 97, 110, 245, 107, 100, 101, 102, 97, 117, 108, 116, 66, 121, 116, 101, 1, 109, 100, 101, 102, 97, 117, 108, 116, 68, 111, 117, 98, 108, 101, 251, 63, 240, 0, 0, 0, 0, 0, 0, 107, 100, 101, 102, 97, 117, 108, 116, 69, 110, 117, 109, 99, 70, 79, 79, 108, 100, 101, 102, 97, 117, 108, 116, 70, 108, 111, 97, 116, 250, 63, 128, 0, 0, 110, 100, 101, 102, 97, 117, 108, 116, 73, 110, 116, 69, 110, 117, 109, 1, 110, 100, 101, 102, 97, 117, 108, 116, 73, 110, 116, 101, 103, 101, 114, 10, 107, 100, 101, 102, 97, 117, 108, 116, 76, 105, 115, 116, 159, 255, 107, 100, 101, 102, 97, 117, 108, 116, 76, 111, 110, 103, 24, 100, 106, 100, 101, 102, 97, 117, 108, 116, 77, 97, 112, 191, 255, 108, 100, 101, 102, 97, 117, 108, 116, 83, 104, 111, 114, 116, 1, 109, 100, 101, 102, 97, 117, 108, 116, 83, 116, 114, 105, 110, 103, 98, 104, 105, 112, 100, 101, 102, 97, 117, 108, 116, 84, 105, 109, 101, 115, 116, 97, 109, 112, 193, 0, 105, 101, 109, 112, 116, 121, 66, 108, 111, 98, 64, 107, 101, 109, 112, 116, 121, 83, 116, 114, 105, 110, 103, 96, 108, 102, 97, 108, 115, 101, 66, 111, 111, 108, 101, 97, 110, 244, 104, 122, 101, 114, 111, 66, 121, 116, 101, 0, 106, 122, 101, 114, 111, 68, 111, 117, 98, 108, 101, 251, 0, 0, 0, 0, 0, 0, 0, 0, 105, 122, 101, 114, 111, 70, 108, 111, 97, 116, 250, 0, 0, 0, 0, 107, 122, 101, 114, 111, 73, 110, 116, 101, 103, 101, 114, 0, 104, 122, 101, 114, 111, 76, 111, 110, 103, 0, 105, 122, 101, 114, 111, 83, 104, 111, 114, 116, 0, 255, 255]
+ right: [191, 104, 100, 101, 102, 97, 117, 108, 116, 115, 191, 109, 100, 101, 102, 97, 117, 108, 116, 83, 116, 114, 105, 110, 103, 98, 104, 105, 110, 100, 101, 102, 97, 117, 108, 116, 66, 111, 111, 108, 101, 97, 110, 245, 107, 100, 101, 102, 97, 117, 108, 116, 76, 105, 115, 116, 159, 255, 112, 100, 101, 102, 97, 117, 108, 116, 84, 105, 109, 101, 115, 116, 97, 109, 112, 193, 0, 107, 100, 101, 102, 97, 117, 108, 116, 66, 108, 111, 98, 67, 97, 98, 99, 107, 100, 101, 102, 97, 117, 108, 116, 66, 121, 116, 101, 1, 108, 100, 101, 102, 97, 117, 108, 116, 83, 104, 111, 114, 116, 1, 110, 100, 101, 102, 97, 117, 108, 116, 73, 110, 116, 101, 103, 101, 114, 10, 107, 100, 101, 102, 97, 117, 108, 116, 76, 111, 110, 103, 24, 100, 108, 100, 101, 102, 97, 117, 108, 116, 70, 108, 111, 97, 116, 250, 63, 128, 0, 0, 109, 100, 101, 102, 97, 117, 108, 116, 68, 111, 117, 98, 108, 101, 250, 63, 128, 0, 0, 106, 100, 101, 102, 97, 117, 108, 116, 77, 97, 112, 191, 255, 107, 100, 101, 102, 97, 117, 108, 116, 69, 110, 117, 109, 99, 70, 79, 79, 110, 100, 101, 102, 97, 117, 108, 116, 73, 110, 116, 69, 110, 117, 109, 1, 107, 101, 109, 112, 116, 121, 83, 116, 114, 105, 110, 103, 96, 108, 102, 97, 108, 115, 101, 66, 111, 111, 108, 101, 97, 110, 244, 105, 101, 109, 112, 116, 121, 66, 108, 111, 98, 64, 104, 122, 101, 114, 111, 66, 121, 116, 101, 0, 105, 122, 101, 114, 111, 83, 104, 111, 114, 116, 0, 107, 122, 101, 114, 111, 73, 110, 116, 101, 103, 101, 114, 0, 104, 122, 101, 114, 111, 76, 111, 110, 103, 0, 105, 122, 101, 114, 111, 70, 108, 111, 97, 116, 250, 0, 0, 0, 0, 106, 122, 101, 114, 111, 68, 111, 117, 98, 108, 101, 250, 0, 0, 0, 0, 255, 255]
+
+
+failures:
+    published_aws_json_10_client_request_fixtures_match
+    published_aws_json_11_client_request_fixtures_match
+    published_rpc_v2_cbor_client_request_fixtures_match
+
+test result: FAILED. 7 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.25s
+
+error: test failed, to rerun pass `-p aws-wire --test request_body_fixtures`

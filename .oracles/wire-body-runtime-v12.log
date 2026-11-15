@@ -1,0 +1,45 @@
+   Compiling inventory-core v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/core)
+   Compiling aws-wire v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/aws-wire)
+   Compiling catalog-tool v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/catalog-tool)
+    Finished `test` profile [unoptimized] target(s) in 2.91s
+     Running tests/request_body_fixtures.rs (/home/lewis/src/aws-inventory-rust/target/debug/build/aws-wire/1baf0c134206cf8e/out/request_body_fixtures-1baf0c134206cf8e)
+
+running 10 tests
+test published_aws_json_11_client_request_fixtures_match ... FAILED
+test published_aws_json_10_client_request_fixtures_match ... FAILED
+test published_rpc_v2_cbor_client_request_fixtures_match ... FAILED
+test request_body_numeric_values::rpc_big_decimal_honors_small_body_budget_before_conversion ... ok
+test request_body_numeric_values::rpc_big_decimal_accepts_i64_min_exponent ... ok
+test request_body_numeric_values::aws_json_big_numbers_remain_json_numbers ... ok
+test request_body_numeric_values::rpc_timestamp_integer_seconds_are_exact ... ok
+test request_body_numeric_values::exponents::rpc_decimal_rejects_normalized_exponents_outside_the_cbor_integer_range ... ok
+test request_body_numeric_values::rpc_big_numbers_use_protocol_numeric_forms ... ok
+test request_body_numeric_values::exponents::rpc_decimal_retains_exact_exponents_across_the_full_cbor_integer_range ... ok
+
+failures:
+
+---- published_aws_json_11_client_request_fixtures_match stdout ----
+
+thread 'published_aws_json_11_client_request_fixtures_match' (3596301) panicked at crates/aws-wire/tests/request_body_cases/support.rs:153:9:
+awsJson1_1 EmptyOperation "sends_requests_to_slash" expected empty body
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+
+---- published_aws_json_10_client_request_fixtures_match stdout ----
+
+thread 'published_aws_json_10_client_request_fixtures_match' (3596300) panicked at crates/aws-wire/tests/request_body_fixtures.rs:137:21:
+awsJson1_0 JsonUnions "AwsJson10SerializeMapUnionValue": invalid value for Some(FieldId(185)): map key is not a string
+
+---- published_rpc_v2_cbor_client_request_fixtures_match stdout ----
+
+thread 'published_rpc_v2_cbor_client_request_fixtures_match' (3596302) panicked at crates/aws-wire/tests/request_body_cases/support.rs:136:13:
+rpcv2Cbor NonQueryCompatibleOperation "NonQueryCompatibleRpcV2CborForbidsQueryModeHeader" expected empty body
+
+
+failures:
+    published_aws_json_10_client_request_fixtures_match
+    published_aws_json_11_client_request_fixtures_match
+    published_rpc_v2_cbor_client_request_fixtures_match
+
+test result: FAILED. 7 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.10s
+
+error: test failed, to rerun pass `-p aws-wire --test request_body_fixtures`

@@ -161,13 +161,13 @@ The native graph installer pins Redis 8.10.3 and FalkorDB 6.0.4 with SHA-256
 checksums. Both are local synthetic fixtures.
 
 The emulator package can be installed without Python:
-`cargo run -p inventory-harness -- install /DISK/aws-inventory-emulator`. The
-FalkorDB installer and the fixture and recording scripts below are still
+`cargo run -p inventory-harness -- install /DISK/aws-inventory-emulator`; the graph runtime installs the same way with
+`install-graph /DISK/aws-inventory-graph`. The fixture and recording scripts below are still
 Python; they are replaced or dropped, then deleted, in ROADMAP M2.9 and M2.10.
 
 ```sh
 python3 scripts/emulator/install.py /DISK/aws-inventory-emulator
-python3 scripts/emulator/install_graph.py /DISK/aws-inventory-graph
+cargo run -p inventory-harness -- install-graph /DISK/aws-inventory-graph
 python3 -m venv /DISK/aws-inventory-checks
 /DISK/aws-inventory-checks/bin/python -m pip install -r scripts/requirements.txt
 ```

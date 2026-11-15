@@ -15,6 +15,13 @@ impl MemberPath {
         Ok(Self(value.to_owned()))
     }
 
+    pub(super) fn selected(value: &str) -> Result<Self, NameError> {
+        if value == "$" {
+            return Ok(Self(value.to_owned()));
+        }
+        Self::new(value)
+    }
+
     #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0
@@ -177,6 +184,8 @@ pub struct TokenPair {
     pub input: MemberPath,
 
     pub output: MemberPath,
+
+    pub optional: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

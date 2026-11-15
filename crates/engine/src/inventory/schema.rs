@@ -172,19 +172,7 @@ fn decode_schema(kind: &str, table: &str, bytes: &[u8]) -> Result<KindSchema, St
     let mut cursor = SchemaCursor { bytes, offset: 0 };
     let count = usize::from(cursor.u16()?);
     let columns = (0..count)
-        .map(|_| {
-            let len = usize::from(cursor.byte()?);
-            if len == 0 || len > 8 {
-                return Err(StoreError::Invalid("schema path exceeds bounds"));
-            }
-            let path = (0..len)
-                .map(|_| {
-                    inventory_core::record::FieldId::new(cursor.u32()?).map_err(StoreError::from)
-                })
-                .collect::<Result<Vec<_>, _>>()?;
-            inventory_core::inventory::Column::new(path, decode_scalar(cursor.byte()?)?)
-                .map_err(StoreError::from)
-        })
+        .map(|_| decode_column(&mut cursor))
         .collect::<Result<Vec<_>, _>>()?;
     if !cursor.finished() {
         return Err(StoreError::Invalid("trailing schema bytes"));
@@ -194,6 +182,23 @@ fn decode_schema(kind: &str, table: &str, bytes: &[u8]) -> Result<KindSchema, St
         inventory_core::inventory::SqlName::parse(table)?,
         columns,
     )?)
+}
+
+fn decode_column(
+    cursor: &mut SchemaCursor<'_>,
+) -> Result<inventory_core::inventory::Column, StoreError> {
+    let len = usize::from(cursor.byte()?);
+    if len > 8 {
+        return Err(StoreError::Invalid("schema path exceeds bounds"));
+    }
+    let path = (0..len)
+        .map(|_| inventory_core::record::FieldId::new(cursor.u32()?).map_err(StoreError::from))
+        .collect::<Result<Vec<_>, _>>()?;
+    let scalar = decode_scalar(cursor.byte()?)?;
+    if path.is_empty() {
+        return Ok(inventory_core::inventory::Column::selected_scalar(scalar));
+    }
+    inventory_core::inventory::Column::new(path, scalar).map_err(StoreError::from)
 }
 
 fn scalar_code(scalar: ScalarType) -> u8 {

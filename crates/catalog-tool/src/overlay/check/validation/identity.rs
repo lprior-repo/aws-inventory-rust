@@ -19,7 +19,7 @@ pub(super) fn validate_identity(
     let Some(identity) = identity else {
         return identity_failure(service, operation, "missing", violations);
     };
-    identity_paths(service, operation, model, item, identity, violations)
+    identity_paths((service, operation), model, item, identity, violations)
 }
 
 fn identity_failure(
@@ -39,8 +39,7 @@ fn identity_failure(
 }
 
 fn identity_paths(
-    service: &str,
-    operation: &str,
+    origin: (&str, &str),
     model: &Model<'_>,
     item: crate::plans::model::ShapeRef<'_>,
     identity: &Identity,
@@ -51,38 +50,47 @@ fn identity_paths(
         Identity::Key(paths) => paths.iter().map(|path| path.as_str()).collect(),
         Identity::Template(template) => template_paths(template),
     };
-    let mut valid = true;
-    for path in &paths {
-        let path_valid = validate_identity_path(service, operation, model, item, path, violations);
-        valid &= path_valid;
-    }
-    valid
+    let context = IdentityContext { model, item, identity };
+    paths.iter().fold(true, |valid, path| {
+        validate_identity_path(origin, &context, path, violations) & valid
+    })
+}
+
+struct IdentityContext<'a, 'm> {
+    model: &'a Model<'m>,
+    item: crate::plans::model::ShapeRef<'m>,
+    identity: &'a Identity,
 }
 
 fn validate_identity_path(
-    service: &str,
-    operation: &str,
-    model: &Model<'_>,
-    item: crate::plans::model::ShapeRef<'_>,
+    origin: (&str, &str),
+    context: &IdentityContext<'_, '_>,
     path: &str,
     violations: &mut Vec<Violation>,
 ) -> bool {
-    let valid = model.resolve_path_from(item, path).is_ok_and(|shape| {
-        matches!(
-            plans::model::shape_type(shape.value),
-            Some("string" | "integer" | "boolean")
-        )
-    });
+    let valid = identity_scalar(context, path);
     if !valid {
         violations.push(violation(
-            service,
-            operation,
+            origin.0,
+            origin.1,
             "identity",
             path,
             ViolationRule::InvalidPath,
         ));
     }
     valid
+}
+
+fn identity_scalar(context: &IdentityContext<'_, '_>, path: &str) -> bool {
+    super::paths::resolve_selected(context.model, context.item, path).is_some_and(|shape| {
+        match plans::model::shape_type(shape.value) {
+            Some("string" | "enum") => true,
+            Some("byte" | "short" | "integer" | "long" | "boolean") => {
+                !matches!(context.identity, Identity::Arn(_))
+            }
+            _ => false,
+        }
+    })
 }
 
 fn template_paths(template: &str) -> Vec<&str> {

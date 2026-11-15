@@ -1,0 +1,40 @@
+   Compiling aws-wire v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/aws-wire)
+    Finished `test` profile [unoptimized] target(s) in 0.84s
+     Running tests/request_body_fixtures.rs (/home/lewis/src/aws-inventory-rust/target/debug/build/aws-wire/9d985b8a9e1ac823/out/request_body_fixtures-9d985b8a9e1ac823)
+
+running 18 tests
+test request_body_fixtures_support::cbor_semantics::tests::integers_remain_exact_and_nan_matches_nan ... ok
+test request_body_fixtures_support::cbor_semantics::tests::accepts_order_and_container_length_variations_and_float_widths ... ok
+test request_body_fixtures_support::cbor_semantics::tests::timestamp_float_rounding_does_not_erase_adjacent_large_integers ... ok
+test request_body_fixtures_support::cbor_semantics::tests::rejects_changed_missing_extra_duplicate_tags_and_trailing_data ... ok
+test request_body_fixtures_support::json_semantics::tests::accepts_equivalent_decimals_without_rounding_large_integers ... ok
+test request_body_fixtures_support::cbor_semantics::tests::timestamps_accept_only_exact_integer_float_equivalence ... ok
+test request_body_fixtures_support::json_semantics::tests::rejects_precision_loss_and_number_kind_or_sign_changes ... ok
+test request_body_fixtures_support::json_semantics::tests::preserves_nested_keys_array_order_and_value_kinds ... ok
+test request_body_numeric_values::rpc_big_decimal_honors_small_body_budget_before_conversion ... ok
+test request_body_numeric_values::rpc_big_decimal_accepts_i64_min_exponent ... ok
+test request_body_numeric_values::aws_json_big_numbers_remain_json_numbers ... ok
+test request_body_numeric_values::rpc_timestamp_integer_seconds_are_exact ... ok
+test request_body_numeric_values::exponents::rpc_decimal_rejects_normalized_exponents_outside_the_cbor_integer_range ... ok
+test request_body_numeric_values::rpc_big_numbers_use_protocol_numeric_forms ... ok
+test request_body_numeric_values::exponents::rpc_decimal_retains_exact_exponents_across_the_full_cbor_integer_range ... ok
+test published_aws_json_10_client_request_fixtures_match ... ok
+test published_aws_json_11_client_request_fixtures_match ... FAILED
+test published_rpc_v2_cbor_client_request_fixtures_match ... ok
+
+failures:
+
+---- published_aws_json_11_client_request_fixtures_match stdout ----
+
+thread 'published_aws_json_11_client_request_fixtures_match' (531090) panicked at crates/aws-wire/tests/request_body_cases/support.rs:102:9:
+assertion `left == right` failed: awsJson1_1 Predict "MachinelearningPredictEndpoint" resolved host
+  left: Some("example.com")
+ right: Some("custom.example.com")
+
+
+failures:
+    published_aws_json_11_client_request_fixtures_match
+
+test result: FAILED. 17 passed; 1 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.59s
+
+error: test failed, to rerun pass `-p aws-wire --test request_body_fixtures`

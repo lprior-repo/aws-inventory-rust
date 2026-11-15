@@ -1,0 +1,19 @@
+    Checking inventory-core v0.6.0 (/home/lewis/src/aws-inventory-worktrees/request-landing/crates/core)
+    Checking catalog-tool v0.6.0 (/home/lewis/src/aws-inventory-worktrees/request-landing/crates/catalog-tool)
+    Finished `dev` profile [unoptimized] target(s) in 1.06s
+   Compiling proptest v1.12.0
+   Compiling catalog-tool v0.6.0 (/home/lewis/src/aws-inventory-worktrees/request-landing/crates/catalog-tool)
+    Finished `test` profile [unoptimized] target(s) in 2.99s
+     Running unittests src/lib.rs (/home/lewis/src/aws-inventory-rust/target/debug/build/catalog-tool/d5dd6aa64bed0ce9/out/catalog_tool-d5dd6aa64bed0ce9)
+
+running 7 tests
+test smithy::compile::defaults::tests::blob_defaults_reject_invalid_base64_padding ... ok
+test smithy::compile::defaults::tests::client_optional_absence_and_invalid_payload_are_distinct ... ok
+test smithy::compile::defaults::tests::nonfinite_numeric_defaults_use_text_only_for_float_targets ... ok
+test smithy::compile::defaults::tests::integer_and_decimal_defaults_retain_target_exactness ... ok
+test smithy::compile::defaults::tests::compound_defaults_preserve_empty_values_and_document_keys ... ok
+test smithy::compile::defaults::tests::target_defaults_normalize_blob_timestamp_and_null ... ok
+test smithy::compile::defaults::tests::member_metadata_retains_null_default_and_client_optional_marker ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 185 filtered out; finished in 0.00s
+

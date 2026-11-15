@@ -1,0 +1,51 @@
+   Compiling aws-wire v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/aws-wire)
+    Finished `test` profile [unoptimized] target(s) in 1.02s
+     Running tests/request_body_fixtures.rs (/home/lewis/src/aws-inventory-rust/target/debug/build/aws-wire/b2452215bdfed89e/out/request_body_fixtures-b2452215bdfed89e)
+
+running 13 tests
+test request_body_fixtures_support::cbor_semantics::tests::accepts_order_and_container_length_variations_and_float_widths ... ok
+test request_body_fixtures_support::cbor_semantics::tests::integers_remain_exact_and_nan_matches_nan ... ok
+test request_body_fixtures_support::cbor_semantics::tests::rejects_changed_missing_extra_duplicate_tags_and_trailing_data ... ok
+test request_body_numeric_values::rpc_big_decimal_honors_small_body_budget_before_conversion ... ok
+test request_body_numeric_values::rpc_big_decimal_accepts_i64_min_exponent ... ok
+test published_aws_json_10_client_request_fixtures_match ... FAILED
+test request_body_numeric_values::aws_json_big_numbers_remain_json_numbers ... ok
+test request_body_numeric_values::rpc_timestamp_integer_seconds_are_exact ... ok
+test request_body_numeric_values::exponents::rpc_decimal_rejects_normalized_exponents_outside_the_cbor_integer_range ... ok
+test request_body_numeric_values::rpc_big_numbers_use_protocol_numeric_forms ... ok
+test request_body_numeric_values::exponents::rpc_decimal_retains_exact_exponents_across_the_full_cbor_integer_range ... ok
+test published_aws_json_11_client_request_fixtures_match ... FAILED
+test published_rpc_v2_cbor_client_request_fixtures_match ... FAILED
+
+failures:
+
+---- published_aws_json_10_client_request_fixtures_match stdout ----
+
+thread 'published_aws_json_10_client_request_fixtures_match' (462159) panicked at crates/aws-wire/tests/request_body_cases/support.rs:175:13:
+assertion `left == right` failed: awsJson1_0 OperationWithDefaults "AwsJson10ClientPopulatesDefaultValuesInInput" JSON body
+  left: Object {"defaults": Object {"defaultBlob": String("YWJj"), "defaultBoolean": Bool(true), "defaultByte": Number(1), "defaultDocumentBoolean": Bool(true), "defaultDocumentList": Array [], "defaultDocumentMap": Object {}, "defaultDocumentString": String("hi"), "defaultDouble": Number(1), "defaultEnum": String("FOO"), "defaultFloat": Number(1), "defaultIntEnum": Number(1), "defaultInteger": Number(10), "defaultList": Array [], "defaultLong": Number(100), "defaultMap": Object {}, "defaultShort": Number(1), "defaultString": String("hi"), "defaultTimestamp": Number(0), "emptyBlob": String(""), "emptyString": String(""), "falseBoolean": Bool(false), "zeroByte": Number(0), "zeroDouble": Number(0), "zeroFloat": Number(0), "zeroInteger": Number(0), "zeroLong": Number(0), "zeroShort": Number(0)}}
+ right: Object {"defaults": Object {"defaultBlob": String("YWJj"), "defaultBoolean": Bool(true), "defaultByte": Number(1), "defaultDocumentBoolean": Bool(true), "defaultDocumentList": Array [], "defaultDocumentMap": Object {}, "defaultDocumentString": String("hi"), "defaultDouble": Number(1.0), "defaultEnum": String("FOO"), "defaultFloat": Number(1.0), "defaultIntEnum": Number(1), "defaultInteger": Number(10), "defaultList": Array [], "defaultLong": Number(100), "defaultMap": Object {}, "defaultShort": Number(1), "defaultString": String("hi"), "defaultTimestamp": Number(0), "emptyBlob": String(""), "emptyString": String(""), "falseBoolean": Bool(false), "zeroByte": Number(0), "zeroDouble": Number(0.0), "zeroFloat": Number(0.0), "zeroInteger": Number(0), "zeroLong": Number(0), "zeroShort": Number(0)}}
+
+---- published_aws_json_11_client_request_fixtures_match stdout ----
+
+thread 'published_aws_json_11_client_request_fixtures_match' (462160) panicked at crates/aws-wire/tests/request_body_cases/support.rs:175:13:
+assertion `left == right` failed: awsJson1_1 KitchenSinkOperation "serializes_structure_members_with_locationname_traits" JSON body
+  left: Object {"StructWithJsonName": Object {"RenamedMember": String("some-value")}}
+ right: Object {"StructWithJsonName": Object {"Value": String("some-value")}}
+
+---- published_rpc_v2_cbor_client_request_fixtures_match stdout ----
+
+thread 'published_rpc_v2_cbor_client_request_fixtures_match' (462161) panicked at crates/aws-wire/tests/request_body_cases/cbor_semantics.rs:69:5:
+assertion `left == right` failed: rpcv2Cbor OperationWithDefaults "RpcV2CborClientUsesExplicitlyProvidedMemberValuesOverDefaults" CBOR semantic equality
+  left: Map([(Text("defaults"), Map([(Text("defaultBlob"), Bytes([104, 105])), (Text("defaultBoolean"), Bool(true)), (Text("defaultByte"), Int(Int { neg: false, val: 2 })), (Text("defaultDouble"), Float(2.0)), (Text("defaultEnum"), Text("BAR")), (Text("defaultFloat"), Float(2.0)), (Text("defaultIntEnum"), Int(Int { neg: false, val: 2 })), (Text("defaultInteger"), Int(Int { neg: false, val: 20 })), (Text("defaultList"), Array([Text("a")])), (Text("defaultLong"), Int(Int { neg: false, val: 200 })), (Text("defaultMap"), Map([(Text("name"), Text("Jack"))])), (Text("defaultShort"), Int(Int { neg: false, val: 2 })), (Text("defaultString"), Text("bye")), (Text("defaultTimestamp"), Tag(1, Int(Int { neg: false, val: 1 }))), (Text("emptyBlob"), Bytes([104, 105])), (Text("emptyString"), Text("foo")), (Text("falseBoolean"), Bool(true)), (Text("zeroByte"), Int(Int { neg: false, val: 1 })), (Text("zeroDouble"), Float(1.0)), (Text("zeroFloat"), Float(1.0)), (Text("zeroInteger"), Int(Int { neg: false, val: 1 })), (Text("zeroLong"), Int(Int { neg: false, val: 1 })), (Text("zeroShort"), Int(Int { neg: false, val: 1 }))]))])
+ right: Map([(Text("defaults"), Map([(Text("defaultString"), Text("bye")), (Text("defaultBoolean"), Bool(true)), (Text("defaultList"), Array([Text("a")])), (Text("defaultTimestamp"), Tag(1, Float(1.0))), (Text("defaultBlob"), Bytes([104, 105])), (Text("defaultByte"), Int(Int { neg: false, val: 2 })), (Text("defaultShort"), Int(Int { neg: false, val: 2 })), (Text("defaultInteger"), Int(Int { neg: false, val: 20 })), (Text("defaultLong"), Int(Int { neg: false, val: 200 })), (Text("defaultFloat"), Float(2.0)), (Text("defaultDouble"), Float(2.0)), (Text("defaultMap"), Map([(Text("name"), Text("Jack"))])), (Text("defaultEnum"), Text("BAR")), (Text("defaultIntEnum"), Int(Int { neg: false, val: 2 })), (Text("emptyString"), Text("foo")), (Text("falseBoolean"), Bool(true)), (Text("emptyBlob"), Bytes([104, 105])), (Text("zeroByte"), Int(Int { neg: false, val: 1 })), (Text("zeroShort"), Int(Int { neg: false, val: 1 })), (Text("zeroInteger"), Int(Int { neg: false, val: 1 })), (Text("zeroLong"), Int(Int { neg: false, val: 1 })), (Text("zeroFloat"), Float(1.0)), (Text("zeroDouble"), Float(1.0))]))])
+
+
+failures:
+    published_aws_json_10_client_request_fixtures_match
+    published_aws_json_11_client_request_fixtures_match
+    published_rpc_v2_cbor_client_request_fixtures_match
+
+test result: FAILED. 10 passed; 3 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.27s
+
+error: test failed, to rerun pass `-p aws-wire --test request_body_fixtures`

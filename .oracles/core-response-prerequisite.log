@@ -1,0 +1,81 @@
+     Locking 9 packages to highest Rust 1.101 compatible versions
+      Adding bitvec v1.1.1
+      Adding funty v2.0.0
+      Adding jiter v0.19.0
+      Adding lexical-parse-float v1.0.6
+      Adding lexical-parse-integer v1.0.6
+      Adding lexical-util v1.0.7
+      Adding radium v0.7.0
+      Adding tap v1.0.1
+      Adding wyz v0.5.1
+   Compiling inventory-core v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/core)
+    Finished `test` profile [unoptimized] target(s) in 0.71s
+     Running unittests src/lib.rs (/home/lewis/src/aws-inventory-rust/target/debug/build/inventory-core/ae6583a3efe4681c/out/inventory_core-ae6583a3efe4681c)
+
+running 63 tests
+test catalog::tests::depth::generic_record_readers_keep_deep_unknown_value_compatibility ... ok
+test catalog::tests::depth::depth_32_in_an_unknown_catalog_key_is_accepted_at_open ... ok
+test catalog::tests::depth::depth_33_in_an_unknown_catalog_key_is_typed_at_open ... ok
+test catalog::tests::errors::flipped_root_text_bytes_are_reported_immediately ... ok
+test catalog::tests::errors::flipped_service_text_bytes_are_reported_when_that_service_is_read ... ok
+test catalog::tests::embedded_empty_placeholder_reports_generation_command ... ok
+test catalog::tests::counts_are_computed_from_members_and_operation_flags ... ok
+test catalog::tests::malformed_service_is_deferred_until_first_access ... ok
+test catalog::tests::depth::unknown_tag_headers_do_not_spend_container_depth_frames ... ok
+test catalog::tests::unsupported_root_version_is_reported ... ok
+test catalog::tests::errors::zero_member_identity_retains_the_record_error ... ok
+test legacy::selection::tests::all_alone_is_universal_and_never_mixes ... ok
+test catalog::tests::errors::invalid_shape_codes_and_references_are_reported_on_first_service_access ... ok
+test catalog::tests::errors::unexpected_container_targets_and_scalar_members_are_rejected ... ok
+test legacy::selection::tests::explicit_names_keep_their_order_and_duplicates ... ok
+test catalog::tests::errors::member_target_bound_and_invalid_preludes_are_exact_reference_errors ... ok
+test legacy::selection::tests::universal_has_no_named_types ... ok
+test catalog::tests::reader_retains_commit_and_service_identities ... ok
+test catalog::tests::targets::operation_input_and_output_equal_to_shape_count_are_exact_reference_errors ... ok
+test record::encode::tests::non_writer_encoder_failures_remain_distinct_from_size_failures ... ok
+test catalog::tests::views::member_defaults_are_absent_by_default ... ok
+test record::structure::stack::tests::bounded_stack_borrows_the_callers_inline_array ... ok
+test record::structure::stack::tests::generic_stack_remains_dynamic_and_accepts_more_than_32_frames ... ok
+test record::encode::tests::oversized_chunk_is_rejected_without_copying_any_payload ... ok
+test record::structure::stack::tests::inline_stack_accepts_32_frames_rejects_33_and_preserves_lifo ... ok
+test record::structure::stack::tests::inline_stack_rejects_capacity_above_32_and_pushes_past_zero ... ok
+test catalog::tests::views::shape_lookup_retains_kind_name_and_missing_index ... ok
+test record::tests::structure::every_prefix_of_generic_indefinite_cbor_is_missing_an_item_or_terminator ... ok
+test record::tests::structure::misplaced_breaks_never_complete_definite_items_or_unmatched_map_keys ... ok
+test record::tests::structure::legitimate_breaks_close_only_their_indefinite_containers ... ok
+test record::tests::time::extreme_native_negative_integers_retain_their_exact_nanosecond_cause ... ok
+test catalog::tests::targets::flags_above_31_are_exact_reference_errors ... ok
+test catalog::tests::targets::list_element_at_shape_count_and_invalid_negative_codes_are_exact_reference_errors ... ok
+test catalog::tests::errors::duplicate_and_descending_member_identities_are_rejected ... ok
+test record::tests::time::timestamp_integer_range_errors_remain_distinct_from_component_types ... ok
+test record::tests::views::allocation_free_skip_keeps_supported_container_headers_and_sibling_positions ... ok
+test catalog::tests::views::operations_resolve_flags_and_input_output_targets ... ok
+test catalog::tests::views::member_reads_present_null_default_and_client_optional ... ok
+test catalog::tests::targets::invalid_negative_operation_preludes_are_exact_reference_errors ... ok
+test catalog::tests::errors::out_of_range_member_targets_and_invalid_member_fields_are_not_silently_skipped ... ok
+test record::tests::views::generic_skip_preserves_boundaries_in_mixed_definite_and_indefinite_groups ... ok
+test record::structure::stack::tests::inline_stack_updates_and_reuses_its_top_slot ... ok
+test catalog::tests::targets::both_map_targets_at_shape_count_and_invalid_preludes_are_exact_reference_errors ... ok
+test legacy::selection::tests::empty_selection_is_the_default_catalog ... ok
+test record::tests::views::lookup_skips_nested_indefinite_forms_without_allocating_a_skip_stack ... ok
+test record::tests::time::timestamp_array_is_rejected_when_it_is_the_thirty_third_container ... ok
+test record::tests::time::timestamp_array_is_the_thirty_second_container_at_the_inclusive_boundary ... ok
+test record::tests::views::narrow_floats_are_skipped_unselected_but_rejected_selected ... ok
+test record::tests::views::generic_nested_keys_are_rejected_before_a_view_can_be_created ... ok
+test record::tests::views::list_access_skips_unselected_indefinite_children_but_rejects_selected_ones ... ok
+test record::tests::structure::tag_prefixes_cannot_turn_breaks_into_complete_items ... ok
+test record::tests::views::unknown_tags_are_skipped_unselected_but_rejected_selected ... ok
+test record::tests::time::timestamp_component_types_are_not_misreported_as_integer_overflow ... ok
+test record::tests::encoding::one_oversized_value_returns_the_size_error ... ok
+test catalog::tests::views::members_preserve_field_identity_target_and_requiredness ... ok
+test record::tests::views::skipped_depth_thirty_three_is_not_subject_to_conversion_depth_policy ... ok
+test record::tests::structure::generic_validation_accepts_deep_unsupported_items_without_recursive_descent ... ok
+test record::tests::encoding::one_oversized_key_returns_the_size_error ... ok
+test record::encode::tests::aggregate_writes_stop_at_the_inclusive_limit ... ok
+test record::tests::encoding::individually_valid_children_can_still_exceed_the_aggregate_encoding_budget ... ok
+test catalog::tests::arbitrary_corruption_returns_only_typed_results ... ok
+test catalog::tests::corruption::rich_catalog_mutations_traverse_every_public_accessor_and_check_local_bounds ... ok
+test catalog::tests::every_single_byte_mutation_and_truncation_is_total ... ok
+
+test result: ok. 63 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 4.77s
+

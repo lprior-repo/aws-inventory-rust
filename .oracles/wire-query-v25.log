@@ -1,0 +1,26 @@
+   Compiling inventory-core v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/core)
+   Compiling catalog-tool v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/catalog-tool)
+   Compiling aws-wire v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/aws-wire)
+    Finished `test` profile [unoptimized] target(s) in 3.34s
+     Running unittests src/lib.rs (/home/lewis/src/aws-inventory-rust/target/debug/build/aws-wire/d2d17facfe182f04/out/aws_wire-d2d17facfe182f04)
+
+running 2 tests
+test request::query::fixture_tests::published_ec2_query_request_cases_are_encoded_or_accounted_for_as_server_cases ... FAILED
+test request::query::fixture_tests::published_aws_query_request_cases_are_encoded_or_accounted_for_as_server_cases ... FAILED
+
+failures:
+
+---- request::query::fixture_tests::published_ec2_query_request_cases_are_encoded_or_accounted_for_as_server_cases stdout ----
+Error: Custom { kind: InvalidData, error: "expected structure value" }
+
+---- request::query::fixture_tests::published_aws_query_request_cases_are_encoded_or_accounted_for_as_server_cases stdout ----
+Error: Custom { kind: InvalidData, error: "expected structure value" }
+
+
+failures:
+    request::query::fixture_tests::published_aws_query_request_cases_are_encoded_or_accounted_for_as_server_cases
+    request::query::fixture_tests::published_ec2_query_request_cases_are_encoded_or_accounted_for_as_server_cases
+
+test result: FAILED. 0 passed; 2 failed; 0 ignored; 0 measured; 22 filtered out; finished in 0.18s
+
+error: test failed, to rerun pass `-p aws-wire --lib`

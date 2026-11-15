@@ -11,4 +11,5 @@ __pycache__/
 *.pyc
 /.local/
 /harness/embedded/target/
+/evidence/record-codec-bench/target/
 /.moon/cache/
