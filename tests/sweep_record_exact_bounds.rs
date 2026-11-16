@@ -1,8 +1,6 @@
 use inventory_core::{
-    catalog::runtime::{ItemPlan, RuntimeCatalog},
-    record::{FieldId, Float, Key, Record, Time, Value, ValueRef, scalar_item, scalar_record},
+    record::{Float, Record, Time, Value, ValueRef, scalar_item, scalar_record},
 };
-use std::collections::BTreeMap;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
@@ -76,104 +74,4 @@ fn scalar_decoder_refuses_extra_entries_containers_and_non_dollar_structures() -
     Ok(())
 }
 
-// These helpers are also attached to the private production record module by
-// two #[test] wrappers. The standalone integration target above needs no seam;
-// only those wrappers can call the real private extraction boundary below.
-pub(crate) fn accepts_exact_page<E>(
-    extract: impl FnOnce(&Record, &ItemPlan) -> Result<Vec<Record>, E>,
-) -> TestResult
-where
-    E: std::error::Error + 'static,
-{
-    // Given a real compiled scalar enumeration and precisely 100000 items.
-    let bytes = compiled_scalar_catalog()?;
-    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
-    let plan = catalog.lookup("bounds", "ListThings").ok_or("compiled plan missing")?;
-    let response = response(100_000)?;
-    // When the production extraction consumer uses the loaded selector.
-    let rows = extract(&response, plan.items())?;
-    // Then every accepted row is preserved in order with its full native value.
-    assert_eq!(rows.len(), 100_000);
-    for (index, row) in rows.iter().enumerate() {
-        let actual = scalar_item(row.root())?.map(|value| value.to_value()).transpose()?;
-        assert_eq!(actual, Some(Value::Int(i64::try_from(index)?)), "row {index}");
-        assert_eq!(row.root().iter()?.collect::<Result<Vec<_>, _>>()?.len(), 1);
-    }
-    Ok(())
-}
-
-pub(crate) fn rejects_oversized_page<E>(
-    extract: impl FnOnce(&Record, &ItemPlan) -> Result<Vec<Record>, E>,
-) -> TestResult
-where
-    E: std::error::Error + 'static,
-{
-    // Given the same compiled plan, with precisely one additional valid item.
-    let bytes = compiled_scalar_catalog()?;
-    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
-    let plan = catalog.lookup("bounds", "ListThings").ok_or("compiled plan missing")?;
-    let response = response(100_001)?;
-    // When extracting the page, then no successful partial Vec can escape.
-    match extract(&response, plan.items()) {
-        Err(error) => {
-            assert_eq!(format!("{error:?}"), "Operation(\"page exceeds the atomic observation bound\")");
-            assert_eq!(error.to_string(), "sweep operation failed: page exceeds the atomic observation bound");
-        }
-        Ok(rows) => return Err(format!("oversized page returned {} partial or unbounded rows", rows.len()).into()),
-    }
-    Ok(())
-}
-
-fn response(count: i64) -> TestResult<Record> {
-    Ok(Record::encode(&Value::Map(BTreeMap::from([(
-        Key::Field(FieldId::new(1)?),
-        Value::List((0..count).map(Value::Int).collect()),
-    )])))?)
-}
-
-const MODEL: &str = r#"{"smithy":"2.0","shapes":{
-"n#Service":{"type":"service","version":"1","operations":[{"target":"n#ListThings"}],"traits":{"aws.api#service":{"sdkId":"Bounds","endpointPrefix":"bounds","arnNamespace":"bounds"},"aws.auth#sigv4":{"name":"bounds"},"aws.protocols#restJson1":{}}},
-"n#ListThings":{"type":"operation","output":{"target":"n#Output"},"traits":{"smithy.api#http":{"method":"GET","uri":"/things"}}},
-"n#Output":{"type":"structure","members":{"Items":{"target":"n#Items"}}},
-"n#Items":{"type":"list","member":{"target":"smithy.api#Long"}}
-}}"#;
-
-fn compiled_scalar_catalog() -> TestResult<Vec<u8>> {
-    use catalog_tool::{classes::DenyList, endpoints, kind_map, names, overlay, runtime_catalog, smithy};
-    use serde_json::json;
-    use std::{fs, path::Path};
-
-    let root = tempfile::tempdir()?;
-    let source = root.path().join("source");
-    let models = source.join("models/bounds/service/2026-01-01");
-    fs::create_dir_all(&models)?;
-    fs::write(models.join("model.json"), MODEL)?;
-    let mut operation = overlay::OperationOverlay::default();
-    operation.class = Some(overlay::OverlayClass::Enumerate);
-    operation.scope = Some(overlay::Scope::Region);
-    operation.items = Some(overlay::ItemSelector::Member(overlay::MemberPath::new("Items")?));
-    operation.paginator = Some(overlay::Paginator::None);
-    operation.identity = Some(overlay::Identity::Key(vec![overlay::MemberPath::selected("$")?]));
-    let policies = [overlay::ServiceOverlay::new("bounds", vec![("ListThings", operation)])?];
-    let checked = overlay::check_policies(&source, &policies, &DenyList::parse("")?)?;
-    let fields = smithy::Registry::parse("Items\n")?;
-    let base = smithy::build_catalog(&source, &fields, "exact-bound-fixture")?;
-    let kinds = kind_map::MappingSource {
-        version: 1, reviewed: "2026-11-15", reviewer: "Exact-bound fixture",
-        default_unmapped_reason: None, cfn: &[], relations: &[], parent_relations: &[], compound_relations: &[], additional_emissions: &[], relation_targets: &[], bootstraps: &[],
-        api_only: &[kind_map::ApiOnlyMapping {
-            kind: "AWS::ApiOnly::ExactBound", reason: "Exact-bound scalar fixture",
-        }],
-        operations: &[kind_map::OperationMapping {
-            service: "bounds", operation: "ListThings", kind: "AWS::ApiOnly::ExactBound",
-        }],
-    }.compile(&names::Exceptions::none())?;
-    let properties = json!({"authSchemes":[{"name":"sigv4","signingName":"bounds","signingRegion":"us-east-1"}]});
-    let document = json!({"version":"1.0","parameters":{"Region":{"type":"string"}},"rules":[{"type":"endpoint","conditions":[],"endpoint":{"url":"https://bounds.test","properties":properties}}]});
-    let rules = endpoints::RuleSet::parse(Path::new("exact-bound-endpoint.json"), &document)?;
-    let cases: Vec<endpoints::Case> = serde_json::from_value(json!([{"params":{"Region":"us-east-1"},"expect":{"endpoint":{"url":"https://bounds.test","properties":properties}}}]))?;
-    let endpoint = rules.run_cases(&cases)?.verified_endpoint(Some("bounds"))
-        .map_err(|_| "fixture endpoint evidence failed")?;
-    let endpoints = BTreeMap::from([("bounds".to_owned(), endpoint)]);
-    Ok(runtime_catalog::augment(&base, &checked, &kinds, &endpoints)?)
-}
+// DEAD exact-bounds integration helpers deleted — wrappers in record.rs cover extraction; these standalone helpers never used, removed.

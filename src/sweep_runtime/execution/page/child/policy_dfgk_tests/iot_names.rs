@@ -1,10 +1,7 @@
 use super::*;
 use inventory_core::inventory::{Kind, ResourceId};
 
-static FIELDS: std::sync::LazyLock<Result<catalog_tool::smithy::Registry, String>> =
-    std::sync::LazyLock::new(|| catalog_tool::smithy::Registry::parse(
-        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/catalog/field-ids.txt"))
-    ).map_err(|error| error.to_string()));
+// DEAD FIELDS removed — unused, was only for offline smoke, not needed for tests (fixture catalog built via other path)
 
 type Node = (String, String, String, String);
 
