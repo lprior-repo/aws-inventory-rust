@@ -5,6 +5,8 @@ mod routing;
 mod capabilities;
 mod selection;
 mod row_policy;
+mod emission;
+mod emissions;
 pub use row_policy::{RowPolicyPlan, RowPredicatePlan, RowOperandPlan, RowValueType, MissingSelected, ChildEligibilityPlan};
 pub use selection::{SelectionKind, Emission, ContextSource, IdentityFieldPlan, IdentityLeafPlan,
     IdentityPredicatePlan, IdentityBranchPlan, IdentityChoicePlan, ContextProjectionPlan, BindingAlternativePlan};
@@ -13,6 +15,8 @@ pub use provenance::{CatalogSourceProvenance, ModelSourceProvenance};
 pub use routing::{ExecutionBranch, RequestRouting};
 pub use capabilities::{ArnOwnerRule, ArnRegionRule, ReferenceOwnerRule, ResourceProjectionPlan, KindClassificationPlan};
 use crate::{inventory::Kind, record::FieldId};
+pub use emission::ResourceEmissionPlan;
+pub use emissions::ResourceEmissions;
 pub use plan::CallablePlan;
 pub(crate) use plan::{EndpointTemplate, PlanParts};
 

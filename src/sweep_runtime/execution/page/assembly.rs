@@ -1,9 +1,9 @@
-use super::{PageParts, PageRequest, WorkLease, call, child, consumer_index::ConsumerIndex, cursor, rows, tag_endpoint};
+use super::{PageParts, PageRequest, WorkLease, call, child, consumer_index::ConsumerIndex, cursor, resource_emissions, rows, tag_endpoint};
 use crate::sweep_runtime::{SweepError, record, resource_projection};
 use inventory_core::{catalog::runtime::{CallablePlan, Emission, PlanPurpose, RuntimeCatalog}, inventory::{AccountId, DiscoveryContext, RegionId, TagObservation}};
 
-const ROWS_PER_CHECKPOINT: usize = 32;
-const MAX_PAGE_ROWS: usize = 100_000;
+pub(super) const ROWS_PER_CHECKPOINT: usize = 32;
+pub(super) const MAX_PAGE_ROWS: usize = 100_000;
 const MAX_PAGE_REFERENCES: usize = 10_000;
 const MAX_PAGE_CHILDREN: usize = 10_000;
 const MAX_PAGE_TAG_PAIRS: usize = 50_000;
@@ -88,13 +88,15 @@ pub(super) async fn prepare(
         append(&mut parts,PageParts { observations,references,tags,children,..PageParts::default() },&mut tag_pairs)?;
     }
     checkpoint(context.executor).await?;
+    let additional_parts = resource_emissions::additional(context, lease, plan, &response.record, request, ancestry).await?;
+    append(&mut parts, additional_parts, &mut tag_pairs)?;
     parts.next = cursor.next(plan.pagination(),&response.record,&response.headers,context.max_pages)?;
     parts.rows = u64::try_from(parts.observations.len())
         .map_err(|_| SweepError::Operation("row count exceeds summary range"))?;
     Ok(parts)
 }
 
-fn append(parts: &mut PageParts, next: PageParts, tag_pairs: &mut usize) -> Result<(),SweepError> {
+pub(super) fn append(parts: &mut PageParts, next: PageParts, tag_pairs: &mut usize) -> Result<(),SweepError> {
     let pairs = next.tags.iter().try_fold(*tag_pairs,|count,tag: &TagObservation| {
         count.checked_add(tag.tags().len()).filter(|count| *count <= MAX_PAGE_TAG_PAIRS)
             .ok_or(SweepError::Operation("page exceeds the atomic tag pair bound"))

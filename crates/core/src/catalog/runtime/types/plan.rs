@@ -3,7 +3,7 @@ use super::{
     BindingPlan, EndpointClass, EndpointPathMode, IdentityPlan, ItemPlan, PagePlan, PlanPurpose,
     PlanScope, ResolvedEndpoint, ReviewProvenance, RuntimeProtocol, TagPlan,
     RequestRouting, ExecutionBranch, ResourceProjectionPlan, KindClassificationPlan,
-    Emission, ContextProjectionPlan, RowPolicyPlan,
+    Emission, ContextProjectionPlan, RowPolicyPlan, ResourceEmissions,
 };
 use crate::{
     inventory::{Kind, RegionId},
@@ -78,6 +78,7 @@ pub(crate) struct PlanParts<'a> {
     pub(crate) projection: Option<ResourceProjectionPlan>,
     pub(crate) classification: Option<KindClassificationPlan>,
     pub(crate) emission: Emission,
+    pub(crate) resources: ResourceEmissions,
     pub(crate) row_policy: RowPolicyPlan,
     pub(crate) context_projection: ContextProjectionPlan,
 }
@@ -127,6 +128,9 @@ impl<'a> CallablePlan<'a> {
 
     pub fn emission(&self) -> Emission {
         self.parts.emission
+    }
+    pub fn resource_emissions(&self) -> &ResourceEmissions {
+        &self.parts.resources
     }
     pub fn row_policy(&self) -> &RowPolicyPlan {
         &self.parts.row_policy

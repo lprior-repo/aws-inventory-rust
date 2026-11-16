@@ -5,7 +5,8 @@ use inventory_core::inventory::Observation;
 use inventory_engine::limiter::{ApiExecutor, ExecutorConfig};
 
 const STATUS: &str = "<Status><ServeSignature>SIGNING</ServeSignature></Status>";
-const KEY: &str = "<KeySigningKeys><KeySigningKey><Name>key-a</Name><Status>ACTIVE</Status></KeySigningKey></KeySigningKeys>";
+const EMPTY_STATUS: &str = "<Status/>";
+const KEY: &str = "<KeySigningKeys><member><Name>key-a</Name><Status>ACTIVE</Status></member></KeySigningKeys>";
 
 async fn seeded<'a, 'c>(catalog: &'a RuntimeCatalog<'c>, name: &str) -> TestResult<Scenario<'a, 'c>> {
     let scenario = Scenario::new(catalog, name, "us-east-1").await?;
@@ -42,15 +43,16 @@ fn observed<'a>(parts: &'a PageParts, kind: &str) -> TestResult<&'a Observation>
 }
 
 #[tokio::test]
-async fn given_no_status_when_key_exists_then_additional_emitter_is_not_suppressed_by_empty_primary() -> TestResult {
-    // Given an actual public hosted-zone child request and no selected Status.
+async fn given_empty_status_when_key_exists_then_zone_identified_status_and_key_both_emit() -> TestResult {
+    // Given an actual public hosted-zone child request and a modeled-but-empty Status.
     let catalog = fixture::catalog()?;
     let scenario = seeded(&catalog, "multi-emission-empty-primary").await?;
     let lease = scenario.store.claim(&scenario.sweep, 1001, 10_000).await?.ok_or("DNSSEC child absent")?;
     // When the production atomic page assembler consumes one decoded response.
-    let parts = prepare(&scenario, &catalog, &lease, "", KEY).await?;
-    // Then its independent key descriptor emits without inventing a status row.
-    assert_eq!(parts.observations.len(), 1);
+    let parts = prepare(&scenario, &catalog, &lease, EMPTY_STATUS, KEY).await?;
+    // Then the status row is identified by the bound zone alone and the key still emits beside it.
+    assert_eq!(parts.observations.len(), 2);
+    assert_eq!(observed(&parts, "AWS::Route53::DNSSEC")?.key().kind.as_str(), "AWS::Route53::DNSSEC");
     assert_eq!(observed(&parts, "AWS::Route53::KeySigningKey")?.key().kind.as_str(), "AWS::Route53::KeySigningKey");
     assert_eq!(parts.children.len(), 0);
     assert_eq!(parts.next.is_none(), true);
@@ -119,7 +121,7 @@ async fn given_valid_status_and_key_when_later_key_identity_is_missing_then_atom
     let expected = atomic::snapshot(&scenario, atomic::Checkpoint::AfterFailure).await?;
     // Earlier items would change status/key-a and insert key-b if any prefix escaped.
     let status = "<Status><ServeSignature>NOT_SIGNING</ServeSignature></Status>";
-    let keys = "<KeySigningKeys><KeySigningKey><Name>key-a</Name><Status>INACTIVE</Status></KeySigningKey><KeySigningKey><Name>key-b</Name><Status>ACTIVE</Status></KeySigningKey><KeySigningKey><Status>ACTIVE</Status></KeySigningKey></KeySigningKeys>";
+    let keys = "<KeySigningKeys><member><Name>key-a</Name><Status>INACTIVE</Status></member><member><Name>key-b</Name><Status>ACTIVE</Status></member><member><Status>ACTIVE</Status></member></KeySigningKeys>";
     // When the real post-response driver encounters the later missing identity.
     let result = driver.commit(&scenario, &catalog, lease, status, keys).await?;
     assert_eq!(result, atomic::failed());

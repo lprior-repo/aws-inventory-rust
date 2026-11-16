@@ -1,6 +1,6 @@
 use super::{PageParts, PageRequest, WorkLease, assembly, rows};
 use crate::sweep_runtime::{SweepError, record, resource_projection};
-use futures_util::{TryStreamExt, stream};
+use futures_util::{stream, StreamExt, TryStreamExt};
 use inventory_core::{catalog::runtime::{CallablePlan, ContextSource, IdentityChoicePlan, IdentityFieldPlan, IdentityLeafPlan, IdentityPlan, ResourceEmissionPlan}, inventory::{DiscoveryContext, DiscoveryFrame}, record::Record};
 
 /// Every descriptor consumes this same decoded response; this module cannot make a request.
@@ -10,9 +10,8 @@ pub(super) async fn additional(
 ) -> Result<PageParts, SweepError> {
     if plan.resource_emissions().len() == 1 { return Ok(PageParts::default()); }
     let projected = if plan.resource_emissions().iter().skip(1).any(|emission| needs_current(emission.identity(), plan)) {
-        let frame = DiscoveryFrame::project_response(lease.scope().service().clone(),
-            lease.scope().operation().clone(), plan.context_projection(), response, &request.record)
-            .and_then(|frame| frame.with_branch(lease.scope().branch()))
+        let frame = DiscoveryFrame::project(lease.scope().service().clone(),
+            lease.scope().operation().clone(), 0, plan.context_projection(), response, &request.record, &request.record)
             .map_err(|_| SweepError::Operation("reviewed emitter response projection failed"))?;
         Some(ancestry.push(frame).map_err(|_| SweepError::Operation("emitter ancestry exceeds bounds"))?)
     } else { None };
@@ -52,7 +51,7 @@ pub(super) fn chunk(context: &assembly::Context<'_, '_>, lease: &WorkLease,
         record::IdentityContext { account: context.account, region: &request.region },
         plan, emission, lease.scope().region(), row, &request.record, ancestry))
         .collect::<Result<Vec<_>, _>>()?;
-    let references = rows::references(context.catalog, plan, &request.region, &items, &observations, &request.record)?;
+    let references = rows::references(context.catalog, plan, &request.region, &items, &observations, &request.record, lease.scope().parent())?;
     let tags = rows::emission_tags(emission, &items, &observations)?;
     Ok(PageParts { observations, references, tags, ..PageParts::default() })
 }

@@ -135,6 +135,8 @@ fn given_classified_emitter_when_record_selects_one_variant_then_declared_siblin
     assert!(emission.matches_observed_kind(&alpha, &row("alpha")?)?);
     assert!(!emission.matches_observed_kind(&beta, &row("alpha")?)?);
     assert!(!emission.matches_observed_kind(emission.kind(), &row("alpha")?)?);
-    assert!(matches!(emission.matches_observed_kind(&alpha, &row("unknown")?), Err(RuntimeCatalogError::Capability)));
+    // An undeclared discriminator is a typed unclassified-kind error carrying that value, never a silent mismatch.
+    assert!(matches!(emission.matches_observed_kind(&alpha, &row("unknown")?),
+        Err(RuntimeCatalogError::UnclassifiedKind { discriminator }) if discriminator == "unknown"));
     Ok(())
 }

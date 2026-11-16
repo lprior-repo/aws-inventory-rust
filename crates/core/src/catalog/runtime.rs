@@ -22,6 +22,7 @@ pub use types::{
     PlanPurpose, PlanScope, RelationScope, RelationSource, RelationshipPlan, ResolvedEndpoint, ReviewDecision,
     RelationPathMode, RelationTargetMode, RelationGuard,
     RelationshipComponentPlan,
+    ResourceEmissionPlan, ResourceEmissions,
     ReviewDisposition, ReviewProvenance, RuntimeProtocol, TagPlan, TokenBinding, TokenPlacement, TokenType,
     TokenSelection,
 };

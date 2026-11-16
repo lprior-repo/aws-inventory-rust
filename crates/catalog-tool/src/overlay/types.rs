@@ -2,6 +2,7 @@ use super::NameError;
 use crate::classes::DenyReason;
 use std::{collections::BTreeMap, fmt};
 use super::FixedValue;
+use super::ResourceEmission;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct MemberPath(String);
@@ -166,6 +167,7 @@ pub struct OperationOverlay {
     pub bind: BTreeMap<MemberPath, Binding>,
 
     pub batch: Option<Batch>,
+    pub additional_resources: Vec<ResourceEmission>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]

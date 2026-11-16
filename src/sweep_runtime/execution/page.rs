@@ -1,6 +1,7 @@
 pub(in crate::sweep_runtime) mod child;
 pub(in crate::sweep_runtime) mod cursor;
 pub(in crate::sweep_runtime) mod rows;
+mod resource_emissions;
 mod tag_endpoint;
 mod preparation;
 mod assembly;

@@ -4,6 +4,7 @@ mod children;
 mod regional;
 mod typed;
 mod firstwave;
+mod multi_emission;
 
 use super::*;
 use super::super::{assembly, consumer_index::ConsumerIndex, cursor, PageRequest};

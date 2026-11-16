@@ -54,10 +54,8 @@ impl<'lease> PageAuthority<'lease> {
 
     pub(in crate::inventory) fn validate_source(&self, source: &Observation) -> Result<(), StoreError> {
         let kind = &source.key().kind;
-        let emitted = self.rules.classification.as_ref().map_or_else(
-            || kind == &self.rules.kind,
-            |classification| classification.classify(source.record()).is_ok_and(|expected| expected == kind),
-        );
+        let emitted = self.rules.emissions.iter().any(|emission|
+            emission.matches_observed_kind(kind, source.record()).unwrap_or(false));
         if emitted { Ok(()) } else { Err(unreviewed()) }
     }
 }

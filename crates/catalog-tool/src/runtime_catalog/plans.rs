@@ -11,6 +11,7 @@ mod binding_alternatives;
 mod tag_endpoint;
 mod map_exclusions;
 mod row_policy;
+pub(super) mod emissions;
 use super::plan_validation;
 use super::{RuntimeCatalogCompileError, encode};
 use crate::{

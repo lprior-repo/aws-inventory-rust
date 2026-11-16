@@ -1,4 +1,4 @@
-use crate::overlay::{NameError, OperationOverlay, Binding, BindingTransform, Identity, IdentityField, ItemSelector, OverlayClass, Paginator, Scope, TokenPair};
+use crate::overlay::{NameError, OperationOverlay, Binding, BindingTransform, Identity, IdentityField, ItemSelector, OverlayClass, Paginator, Scope, TokenPair, ResourceEmission, RowPolicy, RowPredicate, RowOperand, RowValueType, ContextSource, ChildEligibility};
 use super::super::{empty, path, name};
 use crate::classes::DenyReason;
 
@@ -101,14 +101,33 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
 ("GetDNSSEC", OperationOverlay {
         class: Some(OverlayClass::Expand),
         scope: Some(Scope::Account),
-        items: Some(ItemSelector::parse("KeySigningKeys")?),
-        identity: Some(Identity::CorrelatedKey(vec![IdentityField::Request(path("HostedZoneId")?), IdentityField::Selected(path("Name")?)])),
+        items: Some(ItemSelector::parse("Status")?),
+        identity: Some(Identity::CorrelatedKey(vec![IdentityField::Request(path("HostedZoneId")?)])),
         bind: [(path("HostedZoneId")?, Binding::Transformed {
             binding: Box::new(Binding::From { operation: name("ListHostedZones")?, path: path("Id")? }),
             transform: BindingTransform::StripPrefix("/hostedzone/".to_owned()),
         })].into(),
-        queryable: vec![path("Name")?, path("KmsArn")?],
+        queryable: vec![path("ServeSignature")?],
+        row_policy: RowPolicy {
+            child: Some(ChildEligibility {
+                operation: name("ListHostedZones")?,
+                predicate: RowPredicate::BooleanEquals {
+                    operand: RowOperand {
+                        source: ContextSource::SelectedItem,
+                        path: path("Config.PrivateZone")?,
+                        value_type: RowValueType::Boolean,
+                    },
+                    value: false,
+                },
+            }),
+            ..RowPolicy::default()
+        },
         paginator: Some(Paginator::None),
+        additional_resources: vec![ResourceEmission::new("key_signing_keys",
+            ItemSelector::parse("KeySigningKeys")?, Identity::CorrelatedKey(vec![
+                IdentityField::Request(path("HostedZoneId")?),
+                IdentityField::Selected(path("Name")?),
+            ]))],
         ..empty()
     }),
 ("GetGeoLocation", OperationOverlay {

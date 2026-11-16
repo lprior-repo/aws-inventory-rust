@@ -1,6 +1,8 @@
 use super::{RuntimeCatalogCompileError, model_path};
 use crate::overlay::{Binding, Identity, ItemSelector, OperationOverlay, Paginator};
 use inventory_core::catalog::{Operation, Service, Target};
+mod resource;
+pub(in crate::runtime_catalog) use resource::validate_resource;
 
 pub(super) fn validate(
     service: Service<'_>,

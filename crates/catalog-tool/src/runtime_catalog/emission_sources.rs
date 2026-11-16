@@ -1,15 +1,13 @@
-use crate::{kind_map::KindMap, overlay::{CallableOperation, CheckedOverlays, Emission, ItemSelector, KindClassification, MemberPath, OperationOverlay, ResourceProjection}};
+use crate::{kind_map::KindMap, overlay::{CallableOperation, CheckedOverlays, Emission, ItemSelector, KindClassification, OperationOverlay, ResourceProjection}};
 
 /// A borrowed compiler view; discovery bindings and pagination stay on the operation.
 pub(super) struct ResourceSource<'a> {
     pub service: &'a str,
-    pub key: &'a str,
     pub operation: &'a str,
     pub kind: &'a str,
     pub items: Option<&'a ItemSelector>,
     pub projection: Option<&'a ResourceProjection>,
     pub classification: Option<&'a KindClassification>,
-    pub queryable: &'a [MemberPath],
 }
 
 impl ResourceSource<'_> {
@@ -23,16 +21,16 @@ pub(super) fn sources<'a>(kinds: &'a KindMap, checked: &'a CheckedOverlays)
     -> impl Iterator<Item = ResourceSource<'a>> + 'a {
     let primary = kinds.operations().iter().filter_map(|row| {
         let overlay = callable(checked, &row.service, &row.operation)?.plan();
-        Some(ResourceSource { key: "primary", service: &row.service, operation: &row.operation, kind: &row.kind,
+        Some(ResourceSource { service: &row.service, operation: &row.operation, kind: &row.kind,
             items: overlay.items.as_ref(), projection: overlay.projection.as_ref(),
-            classification: overlay.classification.as_ref(), queryable: &overlay.queryable })
+            classification: overlay.classification.as_ref() })
     });
     let additional = kinds.additional_emissions().iter().filter_map(|row| {
         let overlay = callable(checked, &row.service, &row.operation)?.plan();
         let emission = overlay.additional_resources.iter().find(|emission| emission.key == row.emitter_key)?;
-        Some(ResourceSource { key: &row.emitter_key, service: &row.service, operation: &row.operation, kind: &row.kind,
+        Some(ResourceSource { service: &row.service, operation: &row.operation, kind: &row.kind,
             items: Some(&emission.items), projection: emission.projection.as_ref(),
-            classification: emission.classification.as_ref(), queryable: &emission.queryable })
+            classification: emission.classification.as_ref() })
     });
     primary.chain(additional)
 }

@@ -15,6 +15,7 @@ mod dependencies;
 mod fixed_input;
 mod routing;
 mod capabilities;
+mod emissions;
 mod tag_endpoint;
 mod selection;
 mod context;
@@ -56,7 +57,7 @@ fn plan<'a>(
     value: ValueRef<'_>,
 ) -> Result<CallablePlan<'a>, RuntimeCatalogError> {
     let fields = map(value)?;
-    metadata::only_fields(fields, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])?;
+    metadata::only_fields(fields, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23])?;
     let service_name = metadata::text(fields, 1)?;
     let operation_name = metadata::text(fields, 2)?;
     let (service, operation) = services.operation(&service_name, &operation_name)?;
@@ -91,6 +92,10 @@ fn decode_plan<'a>(
     let review = review(metadata::map_field(fields, 11)?)?;
     let protocol = protocol(metadata::integer(fields, 13)?)?;
     let (projection, classification) = capabilities::read(fields, service, operation, &items)?;
+    let resources = super::super::types::ResourceEmissions::new(
+        super::super::types::ResourceEmissionPlan::primary(&kind, &items, &identity, tags.as_ref(), &exclusions,
+            projection.as_ref(), classification.as_ref()),
+        emissions::additional(fields, &service_name, service, operation)?)?;
     protocol_check::validate(service, protocol)?;
     let parts = PlanParts {
         service_name: service_name.into_boxed_str(),
@@ -115,6 +120,7 @@ fn decode_plan<'a>(
         projection,
         classification,
         emission,
+        resources,
         row_policy: row_policy::read(fields)?,
         context_projection: selection::projection(fields)?,
     };

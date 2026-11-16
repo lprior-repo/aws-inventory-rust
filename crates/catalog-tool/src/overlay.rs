@@ -2,6 +2,8 @@ mod builtin;
 mod check;
 mod error;
 mod policy;
+mod emission;
+pub use emission::{ResourceEmission, MAX_RESOURCE_EMISSIONS};
 mod fixed_input;
 mod capabilities;
 mod map_key_exclusion;

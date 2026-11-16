@@ -40,7 +40,7 @@ impl Stages {
             Selection::Branched(stages) => stages.values().any(|stage| stage.output == Output::Metadata),
         };
         let mut authority = Authority { relations: Vec::new(), trust: Vec::new(),
-            kind: plan.kind().clone(), classification: plan.classification().cloned() };
+            emissions: plan.resource_emissions().iter().cloned().collect() };
         if metadata {
             for relation in catalog.relationships() {
                 if plan.supports_relationship(relation)? { authority.relations.push(relation.clone()); }

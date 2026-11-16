@@ -13,7 +13,10 @@ use crate::sweep_runtime::{SweepError, record, resource_projection};
 const MAX_PAGE_ROWS: usize = 100_000;
 const MAX_PAGE_REFERENCES: usize = 10_000;
 
+mod emission;
 mod relations;
+
+pub(in crate::sweep_runtime) use emission::{emission_observation, emission_tags};
 
 #[cfg(test)]
 use inventory_core::{catalog::runtime::RelationSource, inventory::{ReferenceTarget, ResourceId}};

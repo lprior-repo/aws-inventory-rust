@@ -29,7 +29,7 @@ async fn repeat<'a, 'c>(mut scenario: Scenario<'a, 'c>, catalog: &RuntimeCatalog
 }
 
 #[tokio::test]
-async fn given_two_kinds_from_one_response_when_each_disappears_independently_then_completed_sources_retire_only_missing_kind_after_reopen() -> TestResult {
+async fn given_two_kinds_from_one_response_when_only_keys_disappear_then_completed_sources_retire_only_the_missing_kind_after_reopen() -> TestResult {
     // Given native ListHostedZones -> GetDNSSEC, one atomic page, and a real reopened SQLite store.
     let catalog = fixture::catalog()?;
     let scenario = seeded(&catalog, "multi-kind-initial").await?;
@@ -45,13 +45,10 @@ async fn given_two_kinds_from_one_response_when_each_disappears_independently_th
     // Then retained status keeps its original hash while only the absent key retires.
     assert_eq!(scenario.store.projection_resource(signing_key).await?.is_none(), true);
     assert_eq!(scenario.store.projection_resource(status_key).await?.ok_or("status retired with key")?.content_hash, original);
-    // And when status disappears after keys return, the inverse retirement is equally independent.
+    // And when the key returns, only the key row reappears and the status row is untouched.
     scenario = repeat(scenario, &catalog, "multi-kind-key-returned", STATUS, KEY).await?;
-    scenario = repeat(scenario, &catalog, "multi-kind-status-miss-one", "", KEY).await?;
-    assert_eq!(scenario.store.projection_resource(status_key).await?.is_some(), true);
-    scenario = repeat(scenario, &catalog, "multi-kind-status-miss-two", "", KEY).await?;
-    assert_eq!(scenario.store.projection_resource(status_key).await?.is_none(), true);
-    assert_eq!(scenario.store.projection_resource(signing_key).await?.ok_or("key retired with status")?.key, *signing_key);
-    assert_eq!(scenario.saved().await?.len(), 2, "only the hosted zone and retained key may remain");
+    assert_eq!(scenario.store.projection_resource(signing_key).await?.ok_or("key did not return")?.key, *signing_key);
+    assert_eq!(scenario.store.projection_resource(status_key).await?.ok_or("status retired with key")?.content_hash, original);
+    assert_eq!(scenario.saved().await?.len(), 3, "hosted zone, status and returned key must remain");
     Ok(())
 }

@@ -196,8 +196,12 @@ fn encode_plan(
     };
     let row_policy = super::row_policy::compile(prepared.service,prepared.operation,&overlay.row_policy,
         overlay.items.as_ref(),context.checked,callable.service(),services)?;
+    let emissions = if overlay.additional_resources.is_empty() { None } else {
+        Some((23, super::emissions::compile(callable.service(), operation, prepared.kind,
+            prepared.service, prepared.operation, overlay, kinds, services)?))
+    };
     encode::map(head.into_iter().chain(body).chain(tail).chain(tags.map(|tags| (14, tags)))
-        .chain(routing).chain(capabilities).chain(discovery).chain(map_exclusions).chain(row_policy))
+        .chain(routing).chain(capabilities).chain(discovery).chain(map_exclusions).chain(row_policy).chain(emissions))
 }
 
 fn overlay_fields(

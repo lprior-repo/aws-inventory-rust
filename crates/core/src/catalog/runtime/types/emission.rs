@@ -15,6 +15,15 @@ pub struct ResourceEmissionPlan {
 }
 
 impl ResourceEmissionPlan {
+    /// The operation's primary selection, keyed `primary`, as decoded from the plan's own fields.
+    pub(crate) fn primary(kind: &Kind, items: &ItemPlan, identity: &IdentityPlan, tags: Option<&TagPlan>,
+        exclusions: &Exclusions, projection: Option<&ResourceProjectionPlan>, classification: Option<&KindClassificationPlan>) -> Self {
+        Self {
+            key: "primary".into(), kind: kind.clone(), items: items.clone(), identity: identity.clone(),
+            tags: tags.cloned(), exclusions: exclusions.clone(), projection: projection.cloned(),
+            classification: classification.cloned(),
+        }
+    }
     pub fn key(&self) -> &str { &self.key }
     pub fn kind(&self) -> &Kind { &self.kind }
     pub fn items(&self) -> &ItemPlan { &self.items }

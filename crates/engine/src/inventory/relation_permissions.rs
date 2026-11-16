@@ -9,7 +9,7 @@ mod source_authority;
 mod typed;
 use super::{PageCommit, StoreError};
 use inventory_core::{
-    catalog::runtime::{KindClassificationPlan, ReferenceOwnerRule, RelationScope, RelationSource, RelationshipPlan, RuntimeCatalog},
+    catalog::runtime::{ReferenceOwnerRule, RelationScope, RelationSource, RelationshipPlan, ResourceEmissionPlan, RuntimeCatalog},
     inventory::{Edge, Kind, Observation, Region, ResourceKey, UnresolvedReference},
     record::{FieldId, MapRef, ValueRef},
 };
@@ -27,8 +27,7 @@ type Operations = BTreeMap<String, BTreeMap<String, stages::Stages>>;
 struct Authority {
     relations: Vec<RelationshipPlan>,
     trust: Vec<trust::TrustRule>,
-    kind: Kind,
-    classification: Option<KindClassificationPlan>,
+    emissions: Vec<ResourceEmissionPlan>,
 }
 
 #[derive(Clone, Debug)]

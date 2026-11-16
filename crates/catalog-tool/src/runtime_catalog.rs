@@ -1,3 +1,4 @@
+mod emission_sources;
 mod encode;
 mod model_path;
 mod plan_validation;

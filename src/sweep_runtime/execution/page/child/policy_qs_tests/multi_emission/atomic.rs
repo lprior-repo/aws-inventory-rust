@@ -85,7 +85,7 @@ pub(super) async fn snapshot(scenario: &Scenario<'_, '_>, checkpoint: Checkpoint
             _ => format!("quote(\"{}\")", column.replace('"', "\"\"")),
         }).collect::<Vec<_>>().join(",");
         let sql = format!("SELECT {projection} FROM \"{}\" ORDER BY {projection}", table.replace('"', "\"\""));
-        let query = sqlx::query(&sql);
+        let query = sqlx::query(sqlx::AssertSqlSafe(sql));
         let query = if finalize { query.bind(scenario.sweep.as_str()) } else { query };
         let rows = query.fetch_all(&reader).await?.into_iter().map(|row| {
             (0..row.len()).map(|index| row.try_get::<String, _>(index)).collect::<Result<Vec<_>, _>>()
