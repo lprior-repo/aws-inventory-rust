@@ -1,28 +1,19 @@
-#[path = "support/runtime_provenance.rs"]
-mod runtime_provenance;
 #[path = "support/synthetic_catalog.rs"]
 mod synthetic_catalog;
 
 use inventory_core::{
     catalog::runtime::{IdentityPart, IdentityPlan, RuntimeCatalog},
-    record::{FieldId, Key, MapRef, Value, ValueRef},
+    record::{FieldId, Key, Value},
 };
 use std::collections::BTreeMap;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 type Fields = BTreeMap<Key, Value>;
-const BASE: &[u8] = include_bytes!("../../../catalog/aws-api.catalog");
 
 fn field(id: u32) -> TestResult<Key> {
     Ok(Key::Field(FieldId::new(id)?))
 }
 
-fn fields(value: &mut Value) -> TestResult<&mut Fields> {
-    match value {
-        Value::Map(fields) => Ok(fields),
-        _ => Err("compiled catalog fixture expected a map".into()),
-    }
-}
 
 fn map(entries: impl IntoIterator<Item = (u32, Value)>) -> TestResult<Value> {
     Ok(Value::Map(entries.into_iter().map(|(id, value)| Ok((field(id)?, value)))

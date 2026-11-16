@@ -7,6 +7,11 @@
   pagination inputs and parent identifiers. FMS response fixtures use CBOR
   through the native decoder before durable node and relationship checks.
 
+- Core loader boundary fixtures carry modeled scalar-list items, eight nested
+  structure levels, full cursor tuples, matching schemas and callable decisions,
+  and hashes of the actual synthetic catalog and reviewed runtime inputs.
+  Eight identity keys and all 64 template parts survive the public loader.
+
 - Reviewed identity recipes support bounded integer operands, collision-safe
   required string lists, and structural selected-value digests without
   converting typed values or copying complete selected trees. ARN operands
