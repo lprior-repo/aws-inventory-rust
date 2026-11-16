@@ -1,5 +1,7 @@
 #[path = "support/runtime_provenance.rs"]
 mod runtime_provenance;
+#[path = "support/synthetic_catalog.rs"]
+mod synthetic_catalog;
 
 use inventory_core::{
     catalog::runtime::{IdentityPart, IdentityPlan, RuntimeCatalog, RuntimeCatalogError, TokenType},
@@ -98,15 +100,21 @@ fn rejects_bounds(bytes: &[u8]) -> TestResult {
 
 #[test]
 fn loader_preserves_scalar_self_and_each_identity_context_when_template_is_canonical() -> TestResult {
-    // Given: the actual encoded catalog with only one plan's identity replaced.
-    let bytes = template(vec![
-        map([(1, Value::Int(0)), (2, Value::Text("arn:".to_owned()))])?,
-        map([(1, Value::Int(2))])?, map([(1, Value::Int(3))])?,
-        map([(1, Value::Int(4))])?, map([(1, Value::Int(1)), (2, path([]))])?,
+    // Given: a modeled catalog whose item resolves to a scalar string,
+    // so a scalar-self identity part (empty selected path) is valid.
+    let identity = map([
+        (1, Value::Int(1)),
+        (2, Value::List(vec![
+            map([(1, Value::Int(0)), (2, Value::Text("arn:".to_owned()))])?,
+            map([(1, Value::Int(2))])?, map([(1, Value::Int(3))])?,
+            map([(1, Value::Int(4))])?, map([(1, Value::Int(1)), (2, path([]))])?,
+        ])),
     ])?;
+    let pagination = map([(1, Value::List(vec![]))])?;
+    let bytes = synthetic_catalog::scalar_item_catalog(identity, pagination)?;
     // When: loading through the production public consumer boundary.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
-    let plan = runtime.plans().iter().find(|plan| plan.operation_name() == OPERATION)
+    let plan = runtime.plans().iter().find(|plan| plan.operation_name() == "ListThings")
         .ok_or("loaded plan missing")?;
     // Then: empty selected paths stay scalar-self, never becoming context tags.
     assert_eq!(plan.identity(), &IdentityPlan::Template(vec![
@@ -210,11 +218,14 @@ fn loader_rejects_bounds_when_scalar_selected_path_has_nine_segments() -> TestRe
 
 #[test]
 fn loader_preserves_eight_segment_selected_path_at_the_exact_bound() -> TestResult {
-    // Given.
-    let bytes = replacing(6, identity(2, vec![path([1; 8]); 8])?)?;
+    // Given: a modeled catalog with eight levels of nesting,
+    // so eight-segment selected paths resolve to scalar fields.
+    let identity = identity(2, vec![path([1; 8]); 8])?;
+    let pagination = map([(1, Value::List(vec![]))])?;
+    let bytes = synthetic_catalog::nested_structure_catalog(8, identity, pagination)?;
     // When.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
-    let plan = runtime.plans().iter().find(|plan| plan.operation_name() == OPERATION)
+    let plan = runtime.plans().iter().find(|plan| plan.operation_name() == "ListThings")
         .ok_or("loaded plan missing")?;
     // Then: both tuple and path upper bounds are inclusive.
     assert_eq!(plan.identity(), &IdentityPlan::Key(
@@ -293,13 +304,21 @@ fn loader_rejects_capability_when_cursor_components_overwrite_the_same_request_p
 
 #[test]
 fn loader_preserves_required_and_optional_components_at_cursor_tuple_limit() -> TestResult {
-    // Given: the maximal tuple, with one required anchor and seven optional components.
-    let tokens = (1..=8).map(|id| token(path([id]), path([id + 10]), id != 1))
-        .collect::<TestResult<Vec<_>>>()?;
-    let bytes = pagination(tokens)?;
+    // Given: a modeled catalog with input/output members at the required field IDs,
+    // supporting an eight-component cursor tuple.
+    let input_fields: Vec<u32> = (1..=8).collect();
+    let output_fields: Vec<u32> = (11..=18).collect();
+    let tokens = (1..=8).map(|id| {
+        synthetic_catalog::pagination_token(
+            vec![Value::Int(i64::from(id))],
+            vec![Value::Int(i64::from(id + 10))],
+            id != 1, 0)
+    }).collect::<TestResult<Vec<_>>>()?;
+    let pagination = map([(1, Value::List(tokens))])?;
+    let bytes = synthetic_catalog::pagination_catalog(&input_fields, &output_fields, pagination)?;
     // When.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
-    let plan = runtime.plans().iter().find(|plan| plan.operation_name() == OPERATION)
+    let plan = runtime.plans().iter().find(|plan| plan.operation_name() == "ListThings")
         .ok_or("loaded plan missing")?;
     // Then: no component is truncated, reordered, or made required by default.
     let actual = plan.pagination().tokens.iter().map(|token| (

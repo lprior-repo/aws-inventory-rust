@@ -1,5 +1,7 @@
 #[path = "support/runtime_provenance.rs"]
 mod runtime_provenance;
+#[path = "support/synthetic_catalog.rs"]
+mod synthetic_catalog;
 
 use inventory_core::{
     catalog::runtime::{IdentityPart, IdentityPlan, RuntimeCatalog},
@@ -27,40 +29,21 @@ fn map(entries: impl IntoIterator<Item = (u32, Value)>) -> TestResult<Value> {
         .collect::<TestResult<Fields>>()?))
 }
 
-fn with_identity(kind: i64, parts: Vec<Value>) -> TestResult<Vec<u8>> {
-    let mut root = ValueRef::Map(MapRef::from_container_bytes(BASE, inventory_core::catalog::MAX_CATALOG_BYTES)?).to_value()?;
-    let extension = fields(&mut root)?.get_mut(&field(60_000)?)
-        .ok_or("compiled catalog has no runtime extension")?;
-    // The tag-aware artifact contract is version two, even when this plan has
-    // no tag observation metadata.
-    fields(extension)?.insert(field(1)?, Value::Int(2));
-    let plans = fields(extension)?.get_mut(&field(2)?)
-        .ok_or("compiled catalog has no runtime plans")?;
-    let Value::List(plans) = plans else {
-        return Err("compiled catalog expected a plan list".into());
-    };
-    let operation = field(2)?;
-    let plan = plans.iter_mut().find(|plan| match plan {
-        Value::Map(fields) => fields.get(&operation)
-            == Some(&Value::Text("DescribeVpcs".to_owned())),
-        _ => false,
-    }).ok_or("compiled catalog has no DescribeVpcs plan")?;
-    fields(plan)?.insert(field(6)?, map([
-        (1, Value::Int(kind)), (2, Value::List(parts)),
-    ])?);
-    runtime_provenance::reseal(&mut root, BASE)?;
-    Ok(inventory_core::record::encode_container(&root, inventory_core::catalog::MAX_CATALOG_BYTES)?)
-}
-
 #[test]
 fn loader_preserves_all_eight_identity_keys_at_the_exact_tuple_bound() -> TestResult {
     // Given distinct ordered paths at the accepted bound; nine is already
     // covered by runtime_plan_adversarial, so this is the missing inclusive side.
     let parts = (1..=8).map(|id| Value::List(vec![Value::Int(id)])).collect();
-    let bytes = with_identity(2, parts)?;
-    // When the public consumer loads a real compiled catalog artifact.
+    let identity = map([
+        (1, Value::Int(2)),
+        (2, Value::List(parts)),
+    ])?;
+    let output_fields: Vec<u32> = (1..=8).collect();
+    let bytes = synthetic_catalog::identity_catalog(&output_fields, identity)?;
+    // When the public consumer loads a modeled catalog artifact.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
-    let plan = runtime.lookup("ec2", "DescribeVpcs").ok_or("loaded plan missing")?;
+    let plan = runtime.plans().iter().find(|plan| plan.operation_name() == "ListThings")
+        .ok_or("loaded plan missing")?;
     // Then neither an early bound check nor truncation can lose the eighth key.
     let expected = (1..=8).map(|id| Ok(vec![FieldId::new(id)?].into_boxed_slice()))
         .collect::<TestResult<Vec<_>>>()?;
@@ -77,10 +60,16 @@ fn loader_preserves_all_sixty_four_template_parts_at_the_exact_bound() -> TestRe
             map([(1, Value::Int(1)), (2, Value::List(vec![Value::Int(id)]))])?,
         ])
     }).collect::<TestResult<Vec<_>>>()?;
-    let bytes = with_identity(1, pairs.into_iter().flatten().collect())?;
+    let identity = map([
+        (1, Value::Int(1)),
+        (2, Value::List(pairs.into_iter().flatten().collect())),
+    ])?;
+    let output_fields: Vec<u32> = (1..=32).collect();
+    let bytes = synthetic_catalog::identity_catalog(&output_fields, identity)?;
     // When loading through the public artifact decoder.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
-    let plan = runtime.lookup("ec2", "DescribeVpcs").ok_or("loaded plan missing")?;
+    let plan = runtime.plans().iter().find(|plan| plan.operation_name() == "ListThings")
+        .ok_or("loaded plan missing")?;
     // Then all 64 parts retain their kind, contents and order. The existing
     // adversarial suite supplies the complementary 65-part Bounds rejection.
     let expected = (1..=32).map(|id| -> TestResult<[IdentityPart; 2]> {
