@@ -35,11 +35,10 @@ fn validate_branch(context: &mut InputContext<'_, '_>, branch: &ExecutionBranch,
         context.violations.push(paths::violation(context.service, context.name, "branches", name,
             ViolationRule::InvalidValue));
     }
-    if let Some(region) = &branch.request_region {
-        if inventory_core::inventory::RegionId::parse(region).is_err() {
+    if let Some(region) = &branch.request_region
+        && inventory_core::inventory::RegionId::parse(region).is_err() {
             context.violations.push(paths::violation(context.service, context.name, "branches.region", region,
                 ViolationRule::InvalidValue));
-        }
     }
 }
 

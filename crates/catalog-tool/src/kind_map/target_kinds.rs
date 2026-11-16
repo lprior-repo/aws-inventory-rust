@@ -31,7 +31,7 @@ impl ReviewedTargetKinds {
     }
 
     pub fn len(&self) -> usize {
-        1 + self.additional.len()
+        self.additional.len().saturating_add(1)
     }
 
     pub fn is_empty(&self) -> bool {
@@ -79,7 +79,7 @@ fn validated_additional(primary: &str, declared: &[&str], index: usize) -> Resul
             return Err(KindMapError::Duplicate((*kind).to_owned()));
         }
     }
-    let mut additional = Vec::with_capacity(declared.len() - 1);
+    let mut additional = Vec::with_capacity(declared.len().saturating_sub(1));
     additional.extend(declared.iter().filter(|kind| **kind != primary).map(|kind| (*kind).to_owned()));
     additional.sort();
     Ok(additional)

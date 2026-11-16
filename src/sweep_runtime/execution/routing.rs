@@ -21,11 +21,10 @@ pub(in crate::sweep_runtime) fn execution_branch<'a>(
 pub(in crate::sweep_runtime) fn request_region(
     plan: &CallablePlan<'_>, scope: &Region, home: &RegionId, branch: Option<&str>,
 ) -> Result<RegionId, SweepError> {
-    if let Some(variant) = execution_branch(plan, branch)? {
-        if let Some(region) = &variant.request_region {
+    if let Some(variant) = execution_branch(plan, branch)?
+        && let Some(region) = &variant.request_region {
             return RegionId::parse(region).map_err(SweepError::from);
         }
-    }
     if let RequestRouting::FixedRegion { region } = plan.routing() {
         return RegionId::parse(region).map_err(SweepError::from);
     }
@@ -73,6 +72,7 @@ mod tests {
     }
 }
 
+#[cfg(test)]
 pub(in crate::sweep_runtime) fn branch_bindings(
     plan: &CallablePlan<'_>,
     branch: &inventory_core::catalog::runtime::ExecutionBranch,

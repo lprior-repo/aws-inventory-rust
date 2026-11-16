@@ -89,9 +89,8 @@ fn leaf_paths(paths: &mut Paths, operation: &str, leaf: &IdentityLeaf) {
 }
 fn fields_paths(paths: &mut Paths, operation: &str, fields: &[IdentityField]) {
     for field in fields {
-        if let IdentityField::Context { operation: source, source: namespace, path } = field {
-            if source.as_str() == operation { insert(paths, *namespace, path.as_str()) }
-        }
+        if let IdentityField::Context { operation: source, source: namespace, path } = field
+            && source.as_str() == operation { insert(paths, *namespace, path.as_str()) }
     }
 }
 fn insert(paths: &mut Paths, source: ContextSource, path: &str) {

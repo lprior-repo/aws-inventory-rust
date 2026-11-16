@@ -6,7 +6,9 @@ pub(in crate::sweep_runtime) mod policy_dfgk_tests;
 mod binding_tests;
 mod eligibility;
 mod context_budget;
-pub(super) use context_budget::{PageContextBudget, Rows};
+pub(super) use context_budget::PageContextBudget;
+#[cfg(test)]
+pub(super) use context_budget::Rows;
 
 use inventory_core::{
     catalog::runtime::{BindingSource, CallablePlan, ExecutionBranch, PlanPurpose, PlanScope},
@@ -51,6 +53,7 @@ pub(super) fn contexts(
     contexts_from(plan, Rows { items: rows, offset: 0 }, request, response, ancestry, scope, &mut budget)
 }
 
+#[cfg(test)]
 pub(super) fn contexts_from(
     plan: &CallablePlan<'_>, rows: Rows<'_>, request: &Record, response: &Record,
     ancestry: &DiscoveryContext, scope: &ScopeKey, budget: &mut PageContextBudget,

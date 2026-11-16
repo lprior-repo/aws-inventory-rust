@@ -184,9 +184,8 @@ fn integer(kind: &str, value: i64) -> bool {
     }
 }
 fn enum_value(service: Service<'_>, target: Target, value: ValueRef<'_>) -> Result<(), RuntimeCatalogError> {
-    if let Target::Shape(_) = target {
-        if !tags::shape(service, target)?.accepts_enum_value(value)? { return Err(RuntimeCatalogError::Capability); }
-    }
+    if let Target::Shape(_) = target
+        && !tags::shape(service, target)?.accepts_enum_value(value)? { return Err(RuntimeCatalogError::Capability); }
     Ok(())
 }
 

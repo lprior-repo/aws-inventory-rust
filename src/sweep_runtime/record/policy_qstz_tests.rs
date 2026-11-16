@@ -89,6 +89,44 @@ fn observations_with_request(plan: &CallablePlan<'_>, rows: Vec<Record>, request
     }).collect()
 }
 
+fn persist_bindings(plan: &CallablePlan<'_>) -> TestResult<Record> {
+    let account = AccountId::parse("123456789012")?;
+    let region = inventory_core::inventory::Region::Regional(RegionId::parse("us-east-1")?);
+    if !super::super::input::requires_parent(plan) {
+        return Ok(super::super::input::root_bindings(plan, Some(&account), Some(&region))?);
+    }
+    // Child plans that require a parent cannot be bootstrapped via root_bindings;
+    // produce a valid Record carrying only non-dependent (Account/Region/Fixed)
+    // bindings so Fixed validation succeeds and parent values are not invented.
+    use inventory_core::catalog::runtime::BindingSource;
+    let mut fields = Vec::new();
+    for binding in plan.bindings() {
+        let value = match &binding.source {
+            BindingSource::Account => Some(Value::Text(account.as_str().to_owned())),
+            BindingSource::Region => Some(Value::Text(region.as_str().to_owned())),
+            BindingSource::RegionList => Some(Value::List(vec![Value::Text(region.as_str().to_owned())])),
+            BindingSource::Fixed(v) => Some(crate::sweep_runtime::request::fixed_input::value(v)?),
+            BindingSource::Transformed { source, transform } => {
+                let base = match source.as_ref() {
+                    BindingSource::Fixed(v) => crate::sweep_runtime::request::fixed_input::value(v).ok(),
+                    BindingSource::Account => Some(Value::Text(account.as_str().to_owned())),
+                    BindingSource::Region => Some(Value::Text(region.as_str().to_owned())),
+                    _ => None,
+                };
+                base.and_then(|v| match v {
+                    Value::Text(_) => Some(crate::sweep_runtime::input::transform_value(v, transform).ok()?),
+                    _ => None,
+                })
+            }
+            _ => None,
+        };
+        if let Some(value) = value {
+            fields.push(super::super::input::InputField { path: binding.path.clone(), value });
+        }
+    }
+    Ok(super::super::input::merge_input(&Record::encode(&Value::Map(BTreeMap::new()))?, &fields)?)
+}
+
 async fn persist(plan: &CallablePlan<'_>, observations: Vec<Observation>) -> TestResult<(Vec<(String, String, Vec<u8>)>, Vec<(String, String)>)> {
     use inventory_core::inventory::{OperationId, Region, ScopeKey, ServiceId};
     use inventory_engine::inventory::{BinaryStore, PageCommit, SchemaRegistry, SweepId, WorkSpec};
@@ -99,7 +137,8 @@ async fn persist(plan: &CallablePlan<'_>, observations: Vec<Observation>) -> Tes
     let sweep = SweepId::new("qstz-policy-regression".to_owned())?;
     let scope = ScopeKey::new(AccountId::parse("123456789012")?, Region::Regional(RegionId::parse("us-east-1")?),
         ServiceId::parse(plan.service_name())?, OperationId::parse(plan.operation_name())?, None)?;
-    store.seed_work(WorkSpec::new(sweep.clone(), scope, None, Vec::new())?).await?;
+    let bindings = persist_bindings(plan)?;
+    store.seed_work(WorkSpec::new(sweep.clone(), scope, None, bindings.into_bytes())?).await?;
     let tags = if let Some(tags) = plan.tags() {
         observations.iter().map(|observation| tag_observation(observation.record(), observation.key(), tags))
             .collect::<Result<Vec<_>, _>>()?

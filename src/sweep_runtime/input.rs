@@ -9,6 +9,7 @@ pub(super) struct InputField {
     pub value: Value,
 }
 
+#[cfg(test)]
 pub(super) fn requires_parent(plan: &inventory_core::catalog::runtime::CallablePlan<'_>) -> bool {
     plan.bindings().iter().any(|binding| dependent(&binding.source))
 }
@@ -44,7 +45,7 @@ pub(in crate::sweep_runtime) fn root_bindings_branch(
     region: Option<&inventory_core::inventory::Region>,
 ) -> Result<Record, SweepError> {
     let mut fields = Vec::new();
-    fields.try_reserve(plan.bindings().len() + branch.map_or(0, |branch| branch.bindings.len()))?;
+    fields.try_reserve(plan.bindings().len().saturating_add(branch.map_or(0, |branch| branch.bindings.len())))?;
     for binding in plan.effective_bindings(branch) {
         let value = binding_value(&binding.source, account, region)?.ok_or(
             SweepError::Operation("dependent input binding requires a reviewed parent"),

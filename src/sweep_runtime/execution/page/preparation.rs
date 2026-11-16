@@ -10,7 +10,11 @@ pub(super) async fn prepare(
     let endpoint = super::super::routing::resolve(plan,&region)?;
     let endpoint = super::super::discovery::resolve(context,plan,endpoint).await?;
     let url = context.bootstrap.config.endpoint_override()?.unwrap_or(&endpoint.url).to_owned();
-    let base = Record::from_bytes(lease.bindings().to_vec())?;
+    let base = if lease.bindings().is_empty() {
+        Record::encode(&inventory_core::record::Value::Map(std::collections::BTreeMap::new()))?
+    } else {
+        Record::from_bytes(lease.bindings().to_vec())?
+    };
     let mut fields = cursor.request_fields(plan.pagination())?;
     if let Some(size) = plan.pagination().page_size.as_ref() {
         fields.push(input::InputField { path: size.path.clone(), value: size.value() });

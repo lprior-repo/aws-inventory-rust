@@ -118,6 +118,7 @@ impl Data {
         self.selected.as_ref()
     }
 
+    #[cfg(test)]
     pub fn select_visible(&mut self, index: usize) -> bool {
         let Some(row) = self.rows.get(index).cloned() else {
             return false;
@@ -129,6 +130,7 @@ impl Data {
         self.rows.iter().chain(self.graph.nodes.iter()).find(|row| row.key == key)
     }
 
+    #[cfg(test)]
     pub fn select_key(&mut self, key: &str) -> bool {
         let Some(row) = self.row_for_key(key).cloned() else {
             return false;
@@ -177,22 +179,27 @@ impl Data {
         self.filter = filter;
     }
 
+    #[cfg(test)]
     pub fn set_account(&mut self, value: Option<&str>) {
         self.filter.account = value.map(str::to_owned);
     }
 
+    #[cfg(test)]
     pub fn set_region(&mut self, value: Option<&str>) {
         self.filter.region = value.map(str::to_owned);
     }
 
+    #[cfg(test)]
     pub fn set_kind(&mut self, value: Option<&str>) {
         self.filter.kind = value.map(str::to_owned);
     }
 
+    #[cfg(test)]
     pub fn set_query(&mut self, value: &str) {
         self.filter.query = value.trim().to_owned();
     }
 
+    #[cfg(test)]
     pub fn set_tag(&mut self, value: Option<cmdb_view::TagFilter>) {
         self.filter.tag = value;
     }

@@ -26,10 +26,9 @@ pub(super) fn references(overlay: &ServiceOverlay, callable: &[CallableOperation
         for branch in branches(plan) {
             for binding in effective(plan,branch) {
                 if let Binding::FromBranch { operation: producer,branch,.. }
-                    | Binding::ContextFromBranch { operation: producer,branch,.. } = source(binding) {
-                    if !plans.get(producer.as_str()).is_some_and(|plan| plan.branches.iter().any(|stage| stage.discriminator == *branch)) {
+                    | Binding::ContextFromBranch { operation: producer,branch,.. } = source(binding)
+                    && !plans.get(producer.as_str()).is_some_and(|plan| plan.branches.iter().any(|stage| stage.discriminator == *branch)) {
                         errors.push(super::violation(overlay.service(),operation,"bind.from_branch",branch,ViolationRule::InvalidValue));
-                    }
                 }
             }
         }

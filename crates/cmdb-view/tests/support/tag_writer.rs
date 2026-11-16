@@ -74,7 +74,7 @@ fn wire(fields: impl IntoIterator<Item = (u32, Value)>) -> TestResult<Value> {
 }
 
 fn fields(entries: impl IntoIterator<Item = (CatalogKey, Value)>) -> TestResult<Value> {
-    wire(entries.into_iter().map(|(key, value)| Ok((key.field()?.get(), value)))
+    wire(entries.into_iter().map(|(key, value)| Ok((key.field()?.value(), value)))
         .collect::<TestResult<Vec<_>>>()?)
 }
 

@@ -95,7 +95,7 @@ impl<'a> CallablePlan<'a> {
     }
 
     pub fn effective_emission(&self, branch: Option<&ExecutionBranch>) -> Emission {
-        branch.and_then(|stage| stage.emission).map_or(self.emission(), |emission| emission)
+        branch.and_then(|stage| stage.emission).unwrap_or(self.emission())
     }
     pub(crate) fn new(parts: PlanParts<'a>) -> Self {
         Self { parts }

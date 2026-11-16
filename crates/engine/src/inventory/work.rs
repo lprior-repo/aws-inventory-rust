@@ -60,6 +60,16 @@ impl WorkSpec {
         {
             return Err(StoreError::Invalid("work token or bindings exceed bounds"));
         }
+        // Legacy callers seed empty bindings as Vec::new() for plans with no
+        // input; normalize to a valid empty Record (0xA0) so downstream
+        // MapRef::from_bytes_bounded does not fail with Missing at offset 0.
+        let bindings = if bindings.is_empty() {
+            use inventory_core::record::{Record as CoreRecord, Value as CoreValue};
+            let empty = CoreRecord::encode(&CoreValue::Map(std::collections::BTreeMap::new()))?;
+            empty.into_bytes()
+        } else {
+            bindings
+        };
         Ok(Self {
             sweep,
             scope,

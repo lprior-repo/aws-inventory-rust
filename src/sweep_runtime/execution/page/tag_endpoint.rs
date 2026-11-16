@@ -15,11 +15,10 @@ pub(super) fn decode_cursor(token: Option<&[u8]>) -> Result<cursor::Cursor, Swee
 
 pub(super) fn prepare_page(catalog: &RuntimeCatalog<'_>, account: &AccountId, max_pages: u32, lease: &WorkLease, plan: &CallablePlan<'_>, cursor: cursor::Cursor, response: call::DecodedResponse) -> Result<PageParts, SweepError> {
     let PlanPurpose::TagEndpoint(endpoint) = plan.purpose() else { return Err(SweepError::Operation("tag endpoint has no reviewed purpose")); };
-    if let Some(path) = &plan.pagination().truncated_path {
-        if !matches!(record::path_value(response.record.root(), path)?, Some(ValueRef::Bool(_))) {
+    if let Some(path) = &plan.pagination().truncated_path
+        && !matches!(record::path_value(response.record.root(), path)?, Some(ValueRef::Bool(_))) {
             return Err(SweepError::Operation("tag response omitted explicit pagination completion evidence"));
         }
-    }
     let owner = owner(catalog, account, lease, plan)?;
     let page = record::tag_observation(&response.record, owner, &endpoint.tags)?;
     let pending = Accumulation::restore(owner, lease.token())?.append(page)?;

@@ -85,7 +85,7 @@ fn fields_text<'a>(row: &'a Record, fields: &[IdentityFieldPlan], trusted: Optio
         let component = field_text(row, field, trusted, context, request)?;
         let digits = if component.is_empty() { 1 } else { component.len().ilog10().saturating_add(1) };
         let additional = component.len().checked_add(usize::try_from(digits).map_err(|_| SweepError::Operation("identity length overflow"))?)
-            .and_then(|length| length.checked_add(1 + usize::from(position > 0))).ok_or(SweepError::Operation("identity length overflow"))?;
+            .and_then(|length| length.checked_add(1usize.saturating_add(usize::from(position > 0)))).ok_or(SweepError::Operation("identity length overflow"))?;
         if result.len().checked_add(additional).is_none_or(|length| length > 4096) { return Err(SweepError::Operation("modeled resource identity is too long")) }
         result.try_reserve(additional)?;
         if position > 0 { result.push('|'); }

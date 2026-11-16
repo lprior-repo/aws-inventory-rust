@@ -38,7 +38,7 @@ impl Revisions {
 
     fn next(&self) -> Result<u64, String> {
         self.serial
-            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |value| value.checked_add(1))
+            .try_update(Ordering::AcqRel, Ordering::Acquire, |value| value.checked_add(1))
             .map(|previous| previous.saturating_add(1))
             .map_err(|_| "inventory request revision exhausted".to_owned())
     }

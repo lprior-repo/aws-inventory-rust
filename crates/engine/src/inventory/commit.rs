@@ -157,7 +157,7 @@ pub(super) async fn publish_aggregate(
     super::typed::upsert_kind(store, tx, observation, changed_at).await?;
     let incoming_edges = super::references::refresh(store, tx, key, observation).await?;
     clear_source_relations(tx, key).await?;
-    let edges_changed = incoming_edges.checked_add(restore_relations(store, tx, &aggregate).await?)
+    let edges_changed = incoming_edges.checked_add(restore_relations(store, tx, aggregate).await?)
         .ok_or(StoreError::Invalid("edge count overflow"))?;
     enqueue(tx, key, false).await?;
     Ok(ChangeStats { resources_changed: u64::from(changed), edges_changed, ..ChangeStats::default() })

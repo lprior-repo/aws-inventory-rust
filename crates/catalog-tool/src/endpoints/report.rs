@@ -220,15 +220,13 @@ fn read_traits(file: &Path) -> Result<(Traits, BTreeMap<String, Operation>), Err
             if service.replace(shape.traits).is_some() {
                 return Err(malformed(file, "several services"));
             }
-        } else if shape.kind == "operation" {
-            if let Some(context) = shape.traits.static_context {
+        } else if shape.kind == "operation" && let Some(context) = shape.traits.static_context {
                 let (_, name) = id.rsplit_once('#')
                     .ok_or_else(|| malformed(file, "invalid operation shape identifier"))?;
                 let operation = Operation { context, label: labels.remove(&id) };
                 if operations.insert(name.to_owned(), operation).is_some() {
                     return Err(malformed(file, "duplicate operation endpoint context"));
                 }
-            }
         }
     }
     let traits = service.ok_or_else(|| malformed(file, "no service"))?;

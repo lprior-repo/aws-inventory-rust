@@ -40,7 +40,7 @@ fn tag_inputs(state: &mut State<'_, '_, '_>) -> BTreeSet<String> {
             None => provided,
         })
     });
-    shared.map_or_else(BTreeSet::new, |shared| shared)
+    shared.unwrap_or_else(BTreeSet::new)
 }
 
 fn parent_valid(state: &TagContext<'_, '_>, parent: &TagEndpointParent) -> bool {

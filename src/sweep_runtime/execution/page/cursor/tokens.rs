@@ -64,7 +64,7 @@ fn response_value(
 pub(super) fn typed(value: ValueRef<'_>, token_type: TokenType) -> Result<Option<Value>, SweepError> {
     match (token_type, value) {
         (_, ValueRef::Null) => Ok(None),
-        (TokenType::String, ValueRef::Text(text)) if text.is_empty() => Ok(None),
+        (TokenType::String, ValueRef::Text("")) => Ok(None),
         (TokenType::String, ValueRef::Text(_))
         | (TokenType::Integer, ValueRef::Int(_))
         | (TokenType::Boolean, ValueRef::Bool(_)) => value.to_value().map(Some).map_err(SweepError::from),

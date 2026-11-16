@@ -25,7 +25,13 @@ pub(super) fn compile(plan: &CallablePlan<'_>, branch: Option<&ExecutionBranch>)
 
 pub(super) fn validate(bindings: &[FixedBinding], request: &[u8]) -> Result<(), StoreError> {
     if bindings.is_empty() { return Ok(()); }
-    let root = MapRef::from_bytes_bounded(request)?;
+    // Empty request bytes denote a legacy empty Record; treat as empty map so
+    // the failure is unreviewed (missing fixed) rather than Missing at offset 0.
+    let root = if request.is_empty() {
+        MapRef::from_bytes_bounded(&[0xA0])?
+    } else {
+        MapRef::from_bytes_bounded(request)?
+    };
     for binding in bindings {
         let Some(value) = scalar(root, &binding.path)? else { return Err(unreviewed()); };
         if !same(&binding.value, value)? { return Err(unreviewed()); }

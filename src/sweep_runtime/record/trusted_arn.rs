@@ -79,9 +79,8 @@ fn queue_host(host:&str,region:&str) -> bool {
     let (_,dns,dual)=partition(region);
     for service in ["sqs","sqs-fips"] {
         if let Some(suffix) = host.strip_prefix(service).and_then(|host| host.strip_prefix('.'))
-            .and_then(|host| host.strip_prefix(region)).and_then(|host| host.strip_prefix('.')) {
-            if suffix==dns || suffix==dual { return true; }
-        }
+            .and_then(|host| host.strip_prefix(region)).and_then(|host| host.strip_prefix('.'))
+            && (suffix==dns || suffix==dual) { return true; }
     }
     if region=="us-east-1" && host=="queue.amazonaws.com" { return true; }
     let legacy=matches!(region,"us-east-2" | "us-west-1" | "us-west-2" | "af-south-1" | "ap-south-1"

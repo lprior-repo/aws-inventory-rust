@@ -73,8 +73,14 @@ pub(super) fn append_plan_work(
 
 pub(super) struct PlannedRegion {
     pub(super) scope: Region,
+    #[cfg(test)]
     pub(super) request: Region,
 }
+
+#[cfg(test)]
+fn planned_region(scope: Region, request: Region) -> PlannedRegion { PlannedRegion { scope, request } }
+#[cfg(not(test))]
+fn planned_region(scope: Region, _request: Region) -> PlannedRegion { PlannedRegion { scope } }
 
 pub(super) fn plan_regions(
     scope: PlanScope,
@@ -85,19 +91,10 @@ pub(super) fn plan_regions(
         PlanScope::Region => regions
             .iter()
             .cloned()
-            .map(|region| PlannedRegion {
-                scope: region.clone(),
-                request: region,
-            })
+            .map(|region| planned_region(region.clone(), region))
             .collect(),
-        PlanScope::Account => vec![PlannedRegion {
-            scope: Region::Global,
-            request: Region::Regional(home.clone()),
-        }],
-        PlanScope::HomeRegion => vec![PlannedRegion {
-            scope: Region::Regional(home.clone()),
-            request: Region::Regional(home.clone()),
-        }],
+        PlanScope::Account => vec![planned_region(Region::Global, Region::Regional(home.clone()))],
+        PlanScope::HomeRegion => vec![planned_region(Region::Regional(home.clone()), Region::Regional(home.clone()))],
     }
 }
 

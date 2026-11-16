@@ -64,10 +64,20 @@ pub(super) fn owned(previous: Option<&Record>, current: &Fields) -> Result<Recor
 }
 
 pub(super) fn encode_paths<'a>(paths: impl IntoIterator<Item = &'a [Key]>) -> Result<Record, StoreError> {
-    let values = paths.into_iter().map(|path| Value::List(path.iter().map(|key| match key {
+    let mut set = BTreeSet::new();
+    for path in paths {
+        if path.len() > inventory_core::record::MAX_DEPTH {
+            return Err(StoreError::Invalid("facet path depth exceeds bounds"));
+        }
+        set.insert(path.to_vec());
+    }
+    if set.len() > MAX_FIELDS {
+        return Err(StoreError::Invalid("facet ownership exceeds bounds"));
+    }
+    let values = set.into_iter().map(|path| Value::List(path.iter().map(|key| match key {
         Key::Field(field) => Value::Int(i64::from(field.value())),
         Key::Name(name) => Value::Text(name.clone()),
-    }).collect())).collect();
+    }).collect())).collect::<Vec<_>>();
     Ok(Record::encode(&Value::Map(BTreeMap::from([(Key::Field(FieldId::new(1)?), Value::List(values))])))?)
 }
 

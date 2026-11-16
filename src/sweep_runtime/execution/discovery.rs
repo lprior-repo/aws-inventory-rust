@@ -9,7 +9,7 @@ const MAX_ENDPOINTS: usize = 16;
 const MAX_TTL_MINUTES: i64 = 1440;
 
 #[derive(Default)]
-pub(super) struct EndpointCache(Mutex<BTreeMap<(String, String, String), Lease>>);
+pub(in crate::sweep_runtime) struct EndpointCache(Mutex<BTreeMap<(String, String, String), Lease>>);
 struct Lease { endpoint: String, expires: Instant }
 
 impl EndpointCache {

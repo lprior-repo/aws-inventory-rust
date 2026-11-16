@@ -135,8 +135,7 @@ fn integer(kind: &str, value: i64) -> bool {
     match kind { "byte" => i8::try_from(value).is_ok(), "short" => i16::try_from(value).is_ok(), "integer" | "intEnum" => i32::try_from(value).is_ok(), "long" => true, _ => false }
 }
 fn enum_value(service: Service<'_>, target: Target, value: ValueRef<'_>) -> Result<(), RuntimeCatalogCompileError> {
-    if let Target::Shape(_) = target {
-        if !shape(service, target)?.accepts_enum_value(value)? { return Err(RuntimeCatalogCompileError::Capability); }
-    }
+    if let Target::Shape(_) = target
+        && !shape(service, target)?.accepts_enum_value(value)? { return Err(RuntimeCatalogCompileError::Capability); }
     Ok(())
 }

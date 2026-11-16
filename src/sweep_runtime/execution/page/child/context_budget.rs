@@ -1,7 +1,10 @@
-use super::{DiscoveryContext, Record, SweepError};
+use super::{DiscoveryContext, SweepError};
+#[cfg(test)]
+use super::Record;
 
 pub(in crate::sweep_runtime) const MAX_PAGE_CONTEXT_BYTES: usize = 32 * 1024 * 1024;
 
+#[cfg(test)]
 pub(in crate::sweep_runtime) struct Rows<'a> {
     pub items: &'a [Record],
     pub offset: usize,

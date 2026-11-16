@@ -19,10 +19,9 @@ impl CatalogSources {
     }
 
     pub(super) fn validate(&self, catalog: Catalog<'_>) -> Result<(), RuntimeCatalogCompileError> {
-        if let ModelSourceProvenance::Repository { commit, .. } = &self.models {
-            if commit != catalog.models_commit()? || self.cfn_sha256.is_none() {
+        if let ModelSourceProvenance::Repository { commit, .. } = &self.models
+            && (commit != catalog.models_commit()? || self.cfn_sha256.is_none()) {
                 return Err(RuntimeCatalogCompileError::Capability);
-            }
         }
         Ok(())
     }

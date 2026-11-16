@@ -11,9 +11,8 @@ impl CallablePlan<'_> {
         }
         if relation.source == crate::catalog::runtime::RelationSource::Parent { return Ok(true); }
         if !supports_source(self, relation.source, &relation.source_path, relation.components.is_empty())? { return Ok(false); }
-        if let Some(guard) = &relation.guard {
-            if !supports_source(self, guard.source, &guard.path, false)? { return Ok(false); }
-        }
+        if let Some(guard) = &relation.guard
+            && !supports_source(self, guard.source, &guard.path, false)? { return Ok(false); }
         relation.components.iter().try_fold(true, |supported, component| {
             supports_source(self, component.source, &component.source_path, false).map(|present| supported && present)
         })
@@ -169,9 +168,8 @@ fn optional_target(service: Service<'_>, mut target: Target, path: &[FieldId]) -
         let mut member = None;
         for candidate in shape.members()? {
             let candidate = candidate?;
-            if candidate.id == *id {
-                if member.replace(candidate.target).is_some() { return Err(RuntimeCatalogError::Capability); }
-            }
+            if candidate.id == *id
+                && member.replace(candidate.target).is_some() { return Err(RuntimeCatalogError::Capability); }
         }
         let Some(next) = member else { return Ok(None); };
         target = next;

@@ -71,10 +71,7 @@ impl App {
             .borrow::<ResourceTable>()
             .and_then(|table| table.selected_row())
         else {
-            let result = self.worker.as_ref().map_or_else(
-                || Ok(()),
-                DataWorker::invalidate_graph,
-            );
+            let result = self.worker.as_ref().map_or(Ok(()), DataWorker::invalidate_graph);
             if let Err(error) = result {
                 self.apply_graph_event(cx, crate::data::Graph::default(), Some(error));
             }

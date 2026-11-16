@@ -31,10 +31,8 @@ fn dynamic_paths<'a>(paginator: Option<&'a crate::overlay::Paginator>,
         }
         Some(crate::overlay::Paginator::None) => {}
     }
-    if page_size {
-        if let Some(plans::Pagination::Modeled { page_size: Some(path), .. }) = pagination {
+    if page_size && let Some(plans::Pagination::Modeled { page_size: Some(path), .. }) = pagination {
             destinations.push(*path);
-        }
     }
     destinations
 }

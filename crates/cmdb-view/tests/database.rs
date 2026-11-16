@@ -21,7 +21,7 @@ use std::error::Error;
 use std::path::Path;
 use tempfile::tempdir;
 
-type TestResult = Result<(), Box<dyn Error>>;
+type TestResult<T = ()> = Result<T, Box<dyn Error>>;
 
 struct Seed<'a> {
     table: &'a str,

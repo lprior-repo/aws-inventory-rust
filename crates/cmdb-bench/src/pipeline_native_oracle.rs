@@ -15,8 +15,8 @@ pub(super) fn query(workload: &Workload, start: usize) -> BenchResult<String> {
     query.push_str("UNWIND [");
     (start..end).try_for_each(|ordinal| -> BenchResult {
         if ordinal != start { query.push(','); }
-        let scope = super::super::pipeline_fixture::scope(ordinal / per_scope)?;
-        let name = format!("bench-{:012}", ordinal % per_scope);
+        let scope = super::super::pipeline_fixture::scope(ordinal.checked_div(per_scope).ok_or("scope index overflow")?)?;
+        let name = format!("bench-{:012}", ordinal.checked_rem(per_scope).ok_or("scope slot overflow")?);
         let id = format!("arn:aws:dynamodb:us-east-1:{}:table/{name}", scope.account().as_str());
         let key = ResourceKey { account: scope.account().clone(), region: scope.region().clone(), kind: kind.clone(), id: ResourceId::parse(&id)? };
         let record = scalar_record(ValueRef::Text(&name))?;

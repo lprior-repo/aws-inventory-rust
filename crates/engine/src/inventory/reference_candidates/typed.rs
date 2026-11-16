@@ -72,12 +72,11 @@ fn decode_term(value: ValueRef<'_>) -> Result<ReferenceComponent, StoreError> {
 
 fn legacy_path(bytes: &[u8]) -> Result<Vec<FieldId>, StoreError> {
     if bytes.len() > 32 { return Err(StoreError::Invalid("reference path exceeds bounds")); }
-    let mut chunks = bytes.chunks_exact(4);
-    let fields = chunks.by_ref().map(|chunk| {
-        let bytes: [u8; 4] = chunk.try_into().map_err(|_| StoreError::Invalid("reference path is truncated"))?;
-        Ok(FieldId::new(u32::from_be_bytes(bytes))?)
+    let (chunks, remainder) = bytes.as_chunks::<4>();
+    let fields = chunks.iter().map(|chunk| {
+        Ok(FieldId::new(u32::from_be_bytes(*chunk))?)
     }).collect::<Result<Vec<_>, StoreError>>()?;
-    if !chunks.remainder().is_empty() { return Err(StoreError::Invalid("reference path is truncated")); }
+    if !remainder.is_empty() { return Err(StoreError::Invalid("reference path is truncated")); }
     Ok(fields)
 }
 

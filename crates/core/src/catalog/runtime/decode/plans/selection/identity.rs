@@ -112,7 +112,7 @@ fn field(value: ValueRef<'_>) -> Result<IdentityFieldPlan, RuntimeCatalogError> 
             let path = metadata::selected_path(metadata::list(fields, 2)?)?;
             Ok(if tag == 8 { IdentityFieldPlan::SelectedArn(path) } else { IdentityFieldPlan::RequestArn(path) })
         }
-        5 | 6 | 7 => {
+        5..=7 => {
             metadata::only_fields(fields, &[1, 2, 3, 4])?;
             let path = metadata::selected_path(metadata::list(fields, 2)?)?;
             let lower = metadata::integer(fields, 3)?;

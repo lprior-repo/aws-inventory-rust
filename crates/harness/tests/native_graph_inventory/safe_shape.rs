@@ -8,11 +8,17 @@ use inventory_core::record::{Key, Value};
 #[derive(Clone, Copy, Debug)]
 enum Shape { Map, List, Text, Bool, Integer, Number, Timestamp }
 
+#[path = "safe_shape/ec2.rs"]
 mod ec2;
+#[path = "safe_shape/network.rs"]
 mod network;
+#[path = "safe_shape/compute.rs"]
 mod compute;
+#[path = "safe_shape/storage.rs"]
 mod storage;
+#[path = "safe_shape/global.rs"]
 mod global;
+#[path = "safe_shape/messaging.rs"]
 mod messaging;
 
 fn tree(kind: &str) -> TestResult<&'static [(&'static str, Shape)]> {

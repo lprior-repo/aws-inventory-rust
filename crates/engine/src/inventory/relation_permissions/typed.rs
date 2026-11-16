@@ -5,6 +5,13 @@ use inventory_core::{catalog::runtime::{RelationPathMode, RelationSource, Relati
     record::{FieldId, MapRef, ValueRef}};
 use std::borrow::Cow;
 
+fn request_root<'a>(bindings: &'a [u8]) -> Result<MapRef<'a>, StoreError> {
+    if bindings.is_empty() {
+        return Ok(MapRef::from_bytes_bounded(&[0xA0])?);
+    }
+    Ok(MapRef::from_bytes_bounded(bindings)?)
+}
+
 pub(super) fn source_value<'a>(
     source_mode: RelationSource, path_mode: RelationPathMode, path: &[FieldId], lease: &'a WorkLease, source: &'a Observation,
 ) -> Result<Option<Cow<'a, str>>, StoreError> {
@@ -13,7 +20,7 @@ pub(super) fn source_value<'a>(
     }
     let root = match source_mode {
         RelationSource::SelectedOutput => source.record().root(),
-        RelationSource::Request => MapRef::from_bytes_bounded(lease.bindings())?,
+        RelationSource::Request => request_root(lease.bindings())?,
         RelationSource::Parent => return Ok(None),
     };
     if (path_mode == RelationPathMode::RootText) != path.is_empty() { return Ok(None); }
@@ -29,7 +36,7 @@ fn primary_matches(rule: &RelationshipPlan, lease: &WorkLease, source: &Observat
         if (rule.source_path_mode == RelationPathMode::RootText) != rule.source_path.is_empty() { return Ok(false); }
         let root = match rule.source {
             RelationSource::SelectedOutput => source.record().root(),
-            RelationSource::Request => MapRef::from_bytes_bounded(lease.bindings())?,
+            RelationSource::Request => request_root(lease.bindings())?,
             RelationSource::Parent => return Ok(false),
         };
         if let Some(ValueRef::List(values)) = scalar(root, &rule.source_path)? {
@@ -54,9 +61,8 @@ pub(super) fn source_matches(rule: &RelationshipPlan, lease: &WorkLease, source:
     if rule.source == RelationSource::Parent && !lease.scope().parent().is_some_and(|parent|
         parent.account == *reference.target.account() && parent.region == *reference.target.region()
         && parent.kind == *reference.target.kind() && parent.id == *reference.target.value()) { return Ok(false); }
-    if let Some(guard) = &rule.guard {
-        if !source_value(guard.source, guard.path_mode, &guard.path, lease, source)?.is_some_and(|value| value == guard.equals) { return Ok(false); }
-    }
+    if let Some(guard) = &rule.guard
+        && !source_value(guard.source, guard.path_mode, &guard.path, lease, source)?.is_some_and(|value| value == guard.equals) { return Ok(false); }
     if !primary_matches(rule, lease, source, reference.target.value().as_str())? { return Ok(false); }
     rule.components.iter().zip(reference.target.components()).try_fold(true, |matches, (rule, term)| {
         if !matches { return Ok(false); }
@@ -89,7 +95,7 @@ fn target_value<'a>(mode: RelationTargetMode, path: &[FieldId], target: &'a Obse
     let root = match mode {
         RelationTargetMode::CanonicalId => return Ok(Some(target.key().id.as_str())),
         RelationTargetMode::SelectedFields | RelationTargetMode::SelectedRootText => target.record().root(),
-        RelationTargetMode::BoundContextFields | RelationTargetMode::BoundContextRootText => MapRef::from_bytes_bounded(request)?,
+        RelationTargetMode::BoundContextFields | RelationTargetMode::BoundContextRootText => request_root(request)?,
     };
     Ok(match scalar(root, path)? { Some(ValueRef::Text(value)) => Some(value), _ => None })
 }

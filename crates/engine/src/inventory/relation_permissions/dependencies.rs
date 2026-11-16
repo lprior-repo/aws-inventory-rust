@@ -13,9 +13,8 @@ pub(in crate::inventory) fn reference_dependencies(registry: &SchemaRegistry, le
         let mut group = Vec::new();
         if rule.source == RelationSource::SelectedOutput { group.push(rule.source_path.to_vec()); }
         group.extend(rule.components.iter().filter(|term| term.source == RelationSource::SelectedOutput).map(|term| term.source_path.to_vec()));
-        if let Some(guard) = &rule.guard {
-            if guard.source == RelationSource::SelectedOutput { group.push(guard.path.to_vec()); }
-        }
+        if let Some(guard) = &rule.guard
+            && guard.source == RelationSource::SelectedOutput { group.push(guard.path.to_vec()); }
         if group.is_empty() { return Ok(None); }
         group.sort_unstable(); group.dedup(); paths.push(group);
     }

@@ -39,8 +39,8 @@ pub(crate) fn build_with_policy(source: &Path, deny: &DenyList<'_>) -> Result<St
     let mut report = Report::default();
     files
         .iter()
-        .try_for_each(|file| report.add(&models, file, &vocabulary, &deny))?;
-    report.validate(&deny)?;
+        .try_for_each(|file| report.add(&models, file, &vocabulary, deny))?;
+    report.validate(deny)?;
     report.render(&vocabulary)
 }
 

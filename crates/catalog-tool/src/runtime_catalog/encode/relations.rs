@@ -72,7 +72,7 @@ pub(super) fn source(source: &ReviewedRelationSource) -> (i64, &ReviewedValuePat
 pub(super) fn target(target: &ReviewedRelationTarget) -> (i64, Option<&ReviewedValuePath>) {
     match target {
         ReviewedRelationTarget::SelectedOutput(path) => (path_mode(path), Some(path)),
-        ReviewedRelationTarget::BoundContext(path) => (2 + path_mode(path), Some(path)),
+        ReviewedRelationTarget::BoundContext(path) => (match path { ReviewedValuePath::Fields(_) => 2, ReviewedValuePath::RootText => 3 }, Some(path)),
         ReviewedRelationTarget::CanonicalId => (4, None),
     }
 }

@@ -75,18 +75,23 @@ pub(super) fn encoded_len(context: &DiscoveryContext, additional: Option<&Discov
     let count = context.frames.len().checked_add(usize::from(additional.is_some())).ok_or(ContextError::Bounds)?;
     if count > MAX_DISCOVERY_FRAMES { return Err(ContextError::Bounds); }
     // Root map has two keys, the version, and the definite-length frame list.
-    let initial = 4_usize.checked_add(argument_len(count as u64)).ok_or(ContextError::Bounds)?;
+    let count_len = u64::try_from(count).map_err(|_| ContextError::Bounds)?;
+    let initial = 4_usize.checked_add(argument_len(count_len)).ok_or(ContextError::Bounds)?;
     context.frames.iter().chain(additional).try_fold(initial, |total, frame| {
         // A six-field frame map has a one-byte map header and six one-byte keys.
         let initial = total.checked_add(7).and_then(|size| size.checked_add(argument_len(u64::from(frame.ordinal))))
             .ok_or(ContextError::Bounds)?;
         let initial = if let Some(branch) = &frame.branch {
-            initial.checked_add(1 + argument_len(branch.len() as u64) + branch.len()).ok_or(ContextError::Bounds)?
+            let branch_len = branch.len();
+            let branch_arg_len = u64::try_from(branch_len).map_err(|_| ContextError::Bounds)?;
+            initial.checked_add(1).and_then(|size| size.checked_add(argument_len(branch_arg_len)))
+                .and_then(|size| size.checked_add(branch_len)).ok_or(ContextError::Bounds)?
         } else { initial };
         [frame.service.as_str().len(), frame.operation.as_str().len(), frame.selected.as_bytes().len(),
             frame.response.as_bytes().len(), frame.request.as_bytes().len()].into_iter()
             .try_fold(initial, |size, length| {
-                size.checked_add(argument_len(length as u64)).and_then(|size| size.checked_add(length))
+                let length_arg_len = u64::try_from(length).map_err(|_| ContextError::Bounds)?;
+                size.checked_add(argument_len(length_arg_len)).and_then(|size| size.checked_add(length))
                     .filter(|size| *size <= MAX_DISCOVERY_CONTEXT_BYTES).ok_or(ContextError::Bounds)
             })
     })

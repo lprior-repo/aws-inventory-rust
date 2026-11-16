@@ -11,7 +11,7 @@ use std::collections::BTreeSet;
 
 pub(super) fn mark_provided(provided: &mut BTreeSet<String>, path: &str) {
     path.match_indices('.')
-        .map(|(offset, _)| &path[..offset])
+        .filter_map(|(offset, _)| path.get(..offset))
         .chain(std::iter::once(path))
         .for_each(|prefix| {
             provided.insert(prefix.to_owned());

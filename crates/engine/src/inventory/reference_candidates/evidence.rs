@@ -15,9 +15,8 @@ pub(in crate::inventory) async fn supports(
         let value = ResourceId::parse(&row.try_get::<String, _>("target_value")?)?;
         let reference_target = super::decode_target(target.account.clone(), target.region.clone(), kind, row.try_get("target_path")?, value)?.with_candidate_kinds(kinds)?;
         let candidate = UnresolvedReference { from: reference.from.clone(), relation: reference.relation.clone(), source: reference.source, target: reference_target };
-        if let Some(resolution) = super::current_targets(store, tx, &candidate).await? {
-            if resolution.targets.contains(target) { return Ok(true); }
-        }
+        if let Some(resolution) = super::current_targets(store, tx, &candidate).await?
+            && resolution.targets.contains(target) { return Ok(true); }
     }
     Ok(false)
 }

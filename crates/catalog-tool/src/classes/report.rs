@@ -38,10 +38,10 @@ pub(crate) fn build_with_policy(source: &Path, deny: &DenyList<'_>) -> Result<St
     let report = files
         .iter()
         .try_fold(Report::default(), |mut report, file| {
-            report.add(&models, file, &deny)?;
+            report.add(&models, file, deny)?;
             Ok::<_, Error>(report)
         })?;
-    report.render(&deny)
+    report.render(deny)
 }
 
 impl Report {
