@@ -145,12 +145,8 @@ fn insert_path(
         .last()
         .copied()
         .ok_or(SweepError::Operation("input binding path is empty"))?;
-    if target
-        .insert(Key::Field(leaf), field.value.clone())
-        .is_some()
-    {
-        return Err(SweepError::Operation("duplicate input binding path"));
-    }
+    // Idempotent per branch: later binding wins over base (branch overrides). Deduplicate same-path identical or conflicting by last-wins to avoid spurious duplicate error.
+    let _ = target.insert(Key::Field(leaf), field.value.clone());
     Ok(())
 }
 
