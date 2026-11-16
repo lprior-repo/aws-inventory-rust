@@ -324,7 +324,12 @@ fn given_s3_global_and_directory_buckets_when_routes_resolve_then_request_destin
     assert_eq!(request_region.as_str(), "us-west-2");
     assert_eq!(request(mrap, &[])?.uri().host(), Some("123456789012.s3-control.us-west-2.amazonaws.com"));
     let directory = catalog.lookup("s3-control", "ListAccessPointsForDirectoryBuckets").ok_or("directory access points absent")?;
-    assert_eq!(request(directory, &[])?.uri().host(), Some("123456789012.s3express-control.us-east-1.amazonaws.com"));
+    let dir_req = request(directory, &[])?;
+    assert_eq!(dir_req.uri().host(), Some("s3express-control.us-east-1.amazonaws.com"));
+    assert_eq!(
+        dir_req.headers().get("x-amz-account-id").ok_or("account header absent")?,
+        "123456789012"
+    );
     assert_eq!(super::super::execution::routing::resolve(directory, &RegionId::parse("us-east-1")?)?.signing_name, "s3express");
     Ok(())
 }
