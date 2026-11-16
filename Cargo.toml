@@ -79,6 +79,7 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
 
 [dev-dependencies]
 proptest.workspace = true
+minicbor.workspace = true
 tempfile = "3.27.0"
 inventory-harness = { path = "crates/harness" }
 cmdb-view = { path = "crates/cmdb-view" }

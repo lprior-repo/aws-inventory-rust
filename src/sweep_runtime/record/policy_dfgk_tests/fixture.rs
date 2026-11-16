@@ -63,6 +63,7 @@ pub(in crate::sweep_runtime) fn decode(plan: &CallablePlan<'_>, body: &[u8]) -> 
         RuntimeProtocol::AwsJson10 => Protocol::AwsJson10,
         RuntimeProtocol::AwsJson11 => Protocol::AwsJson11,
         RuntimeProtocol::AwsQuery => Protocol::AwsQuery,
+        RuntimeProtocol::RpcV2Cbor => Protocol::RpcV2Cbor,
         _ => return Err("unexpected policy fixture protocol".into()),
     };
     let headers = http::HeaderMap::new();
@@ -70,6 +71,8 @@ pub(in crate::sweep_runtime) fn decode(plan: &CallablePlan<'_>, body: &[u8]) -> 
         body, headers: &headers, status: http::StatusCode::OK, limits: DecodeLimits::default() };
     Ok(if matches!(protocol, Protocol::AwsQuery) {
         aws_wire::response::xml::decode(context)?
+    } else if matches!(protocol, Protocol::RpcV2Cbor) {
+        aws_wire::response::cbor::decode(context)?
     } else {
         aws_wire::response::json::decode(context)?
     })

@@ -246,6 +246,7 @@ dependencies = [
  "inventory-core",
  "inventory-engine",
  "inventory-harness",
+ "minicbor",
  "proptest",
  "rcgen",
  "rustls-pki-types",

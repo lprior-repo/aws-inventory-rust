@@ -2,6 +2,11 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- D–F child-collection scenarios assert native REST, AWS JSON, and RPC v2 CBOR
+  requests against the pinned service models, including operation-specific
+  pagination inputs and parent identifiers. FMS response fixtures use CBOR
+  through the native decoder before durable node and relationship checks.
+
 - Reviewed identity recipes support bounded integer operands, collision-safe
   required string lists, and structural selected-value digests without
   converting typed values or copying complete selected trees. ARN operands

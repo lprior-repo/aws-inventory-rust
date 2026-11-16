@@ -107,8 +107,13 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
 
     async fn apply(&self, catalog: &RuntimeCatalog<'_>, plan: &CallablePlan<'_>, lease: WorkLease,
         request: &Record, body: Json) -> TestResult {
-        let body = serde_json::to_vec(&body)?;
-        let response = fixture::decode(plan, &body)?;
+        use inventory_core::catalog::runtime::RuntimeProtocol;
+        let bytes = if plan.protocol() == RuntimeProtocol::RpcV2Cbor {
+            complete_df::json_to_cbor(&body)?
+        } else {
+            serde_json::to_vec(&body)?
+        };
+        let response = fixture::decode(plan, &bytes)?;
         let cursor = cursor::Cursor::decode(lease.token())?;
         let next = cursor.next(plan.pagination(), &response, &http::HeaderMap::new(), 10)?;
         let (observations, children, unresolved, tags) = match plan.purpose() {

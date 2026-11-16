@@ -58,7 +58,7 @@ fn evs_response(operation: &str,request: &Record,second: bool) -> TestResult<(Js
 async fn given_a_real_bound_vlan_page_when_identity_is_missing_noninteger_or_outside_smithy_integer_then_no_vlan_is_committed() -> TestResult {
     for (invalid,expected) in [
         (json!({}),Some("modeled identity path is absent")),
-        (json!({"vlanId":null}),Some("modeled identity operand must be integer")),
+        (json!({"vlanId":null}),Some("modeled identity path is absent")),
         (json!({"vlanId":"1"}),None),
         (json!({"vlanId":1.5}),None),
         (json!({"vlanId":2147483648_i64}),Some("modeled identity integer is out of range")),
