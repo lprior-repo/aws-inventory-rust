@@ -229,3 +229,24 @@ fn given_current_request_or_response_binding_when_compiled_then_future_context_i
     }
     Ok(())
 }
+
+#[test]
+fn given_scalar_presence_identity_when_compiled_then_integral_and_boolean_predicates_roundtrip() -> TestResult {
+    use catalog_tool::overlay::{Identity, IdentityBranch, IdentityChoice, IdentityLeaf, IdentityPredicate, MemberPath};
+    use inventory_core::catalog::runtime::{IdentityChoicePlan, IdentityPredicatePlan};
+    for (path, id) in [("Count", 1), ("Flag", 2)] {
+        let identity = Identity::Choice(IdentityChoice::Discriminated(vec![
+            IdentityBranch::new(IdentityPredicate::Present(MemberPath::new(path)?),
+                IdentityLeaf::Key(vec![MemberPath::new("Name")?]))?,
+        ]));
+        let bytes = compiled(identity, "active-wire", false)?;
+        let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+        let plan = catalog.lookup("things", "ListThings").ok_or("plan absent")?;
+        let IdentityPlan::Choice(IdentityChoicePlan::Discriminated(branches)) = plan.identity()
+            else { return Err("identity not discriminated".into()) };
+        assert_eq!(branches.len(), 1);
+        assert_eq!(branches.first().ok_or("branch absent")?.predicate,
+            IdentityPredicatePlan::Present(vec![FieldId::new(id)?].into_boxed_slice()));
+    }
+    Ok(())
+}

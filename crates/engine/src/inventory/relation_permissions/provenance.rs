@@ -77,5 +77,17 @@ pub(super) fn proof(registry: &SchemaRegistry, reference: &UnresolvedReference) 
     for field in reference.target.path() { hash.update(field.value().to_le_bytes()); }
     hash.update(reference.target.candidate_kinds().len().to_le_bytes());
     for kind in reference.target.candidate_kinds() { hash.update(kind.as_str().len().to_le_bytes()); hash.update(kind.as_str().as_bytes()); }
+    if !reference.target.components().is_empty() || !matches!(reference.target.mode(),
+        inventory_core::catalog::runtime::RelationTargetMode::SelectedFields | inventory_core::catalog::runtime::RelationTargetMode::SelectedRootText) {
+        hash.update(b"typed-reference-v4");
+        let target = &reference.target;
+        for (mode, path, value) in std::iter::once((target.mode(), target.path(), target.value()))
+            .chain(target.components().iter().map(|term| (term.mode, term.path.as_ref(), &term.value))) {
+            hash.update([crate::inventory::reference_candidates::mode_code(mode)]);
+            hash.update(path.len().to_le_bytes());
+            for field in path { hash.update(field.value().to_le_bytes()); }
+            hash.update(value.as_str().len().to_le_bytes()); hash.update(value.as_str().as_bytes());
+        }
+    }
     hash.finalize().into()
 }

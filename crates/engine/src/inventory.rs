@@ -36,7 +36,7 @@ pub use work::{
     WorkSpec,
 };
 
-const MAX_CATALOG_BYTES: usize = 16_777_216;
+const MAX_CATALOG_BYTES: usize = inventory_core::catalog::MAX_CATALOG_BYTES;
 const MAX_TOKEN_BYTES: usize = 65_536;
 const MAX_BINDING_BYTES: usize = 1_048_576;
 const MAX_PROJECTION_ROWS: i64 = 100_000;

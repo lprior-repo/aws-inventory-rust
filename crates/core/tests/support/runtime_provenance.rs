@@ -25,9 +25,10 @@ fn map(entries: impl IntoIterator<Item = (u32, Value)>) -> TestResult<Value> {
 
 /// The actual compiled input, before this fixture replaces the runtime extension.
 pub fn base_bytes(base: &[u8]) -> TestResult<Vec<u8>> {
-    let mut root = ValueRef::Map(MapRef::from_bytes_bounded(base)?).to_value()?;
+    let limit = inventory_core::catalog::MAX_CATALOG_BYTES;
+    let mut root = ValueRef::Map(MapRef::from_container_bytes(base, limit)?).to_value()?;
     fields(&mut root)?.remove(&key(60_000)?).ok_or("base catalog has no runtime extension")?;
-    Ok(Record::encode(&root)?.into_bytes())
+    Ok(inventory_core::record::encode_container(&root, limit)?)
 }
 
 /// Re-seals both valid and hostile metadata so its intended decoder is exercised.

@@ -42,7 +42,7 @@ async fn same_region_kind_id_across_accounts_and_global_scopes_never_leak_or_rep
         }) {
             observations.push(Observation::new(target.clone(),
                 support::observation("one", "literal-record")?.record().clone(),
-                &Exclusions::none(), Some(format!("literal-{index}")))?);
+                &Exclusions::none(), Some(format!("literal-{index}").into()))?);
             tags.push(TagObservation::new(target.clone(), TagCoverage::Complete,
                 pairs.iter().map(|(key, value)| Tag::new(*key, *value)).collect::<Result<Vec<_>, _>>()?)?);
         }

@@ -1,6 +1,6 @@
 use super::*;
 use catalog_tool::{endpoints, kind_map, overlay, runtime_catalog, smithy};
-use std::{fs, path::Path, sync::LazyLock};
+use std::sync::LazyLock;
 
 pub(super) const OPERATIONS: &[&str] = &[
     "ListAdConfigurations", "ListFailoverSlateConfigurations", "ListChannels", "ListStreamKeys",
@@ -20,10 +20,7 @@ pub(super) fn catalog() -> TestResult<RuntimeCatalog<'static>> {
 fn compile() -> TestResult<Vec<u8>> {
     let directory = tempfile::tempdir()?;
     let source = directory.path().join("source");
-    let relative = "ivs/service/2020-07-14/ivs-2020-07-14.json";
-    let destination = source.join("models").join(relative);
-    fs::create_dir_all(destination.parent().ok_or("model parent absent")?)?;
-    fs::copy(Path::new(env!("CARGO_MANIFEST_DIR")).join(".local/aws-models/models").join(relative), destination)?;
+    crate::sweep_runtime::pinned_model::install(&source.join("models"), "ivs", "2020-07-14", OPERATIONS)?;
     let embedded = overlay::embedded()?;
     let policy = embedded.iter().find(|policy| policy.service() == "ivs").ok_or("IVS policy absent")?;
     let operations = OPERATIONS.iter().map(|operation| {

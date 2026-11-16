@@ -101,15 +101,22 @@ fn given_explicit_fixed_page_limit_when_model_infers_default_then_only_explicit_
 fn given_modeled_string_page_limit_when_explicit_then_decimal_text_constraints_and_positive_bounds_apply()
 -> Result<(), Box<dyn std::error::Error>> {
     let model = PAGE_SIZE_MODEL.replace("\"type\":\"integer\"", "\"type\":\"string\"");
-    for (value, accepted) in [(0, false), (1, true), (10, true), (11, false), (i64::MAX, false)] {
+    for value in [0, 1, 10, 11, 100_000, 100_001, i64::MAX] {
         let root = fixture(&model, "")?;
         let mut plan = inferred()?;
         plan.page_size = Some(value);
-        if accepted {
-            checked(&root, vec![("ListThings", plan)])?;
-        } else {
-            assert!(violations(&root, vec![("ListThings", plan)])?.iter()
-                .any(|error| error.key() == "page_size" && error.rule() == ViolationRule::InvalidValue));
+        match (value, checked(&root, vec![("ListThings", plan)])) {
+            (1 | 10, Ok(when)) => {
+                let plan = when.services().first().ok_or("service")?
+                    .callable().first().ok_or("callable")?.plan();
+                assert_eq!(plan.page_size, Some(value));
+            }
+            (0 | 100_001 | i64::MAX, Err(CheckError::Policy(error))) =>
+                assert_eq!(error.value, "page_size: outside 1..=100000"),
+            (11 | 100_000, Err(CheckError::Violations(errors))) =>
+                assert!(errors.iter().any(|error| error.key() == "page_size"
+                    && error.rule() == ViolationRule::InvalidValue)),
+            (_, result) => return Err(format!("unexpected page limit result for {value}: {result:?}").into()),
         }
     }
     Ok(())

@@ -1,8 +1,8 @@
 services 436
-operations 19641
-read_named 8366
-readonly 2736
-list_describe 5207
+operations 19636
+read_named 8365
+readonly 2735
+list_describe 5206
 list_describe_root 2209
 services_with_root 359
 paginated 3787

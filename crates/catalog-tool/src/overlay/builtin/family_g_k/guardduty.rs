@@ -24,7 +24,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
 fn detector_child(items: &str, id: &str) -> Result<OperationOverlay, NameError> {
     let identity = Identity::CorrelatedKey(vec![
         IdentityField::Request(MemberPath::new("DetectorId")?),
-        IdentityField::Selected(MemberPath::new(id)?),
+        IdentityField::Selected(MemberPath::selected(id)?),
     ]);
     policy::query(policy::bind(
         policy::enumerate(items, identity, Some(("NextToken", "NextToken")))?,

@@ -66,7 +66,7 @@ async fn exercise(mode: Mode) -> TestResult {
             for row in record::item_records(&response, plan.items())? {
                 if crate::sweep_runtime::row_policy::selected(plan, actual_branch, &row, &actual, &response)? { selected.push(row); }
             }
-            let unresolved = rows::references(&catalog, plan, &home, &selected, &observations, &actual)?;
+            let unresolved = rows::references(&catalog, plan, &home, &selected, &observations, &actual, None)?;
             let next = cursor.next(plan.pagination(), &response, &http::HeaderMap::new(), 10)?;
             Ok((observations, children, unresolved, next))
         });

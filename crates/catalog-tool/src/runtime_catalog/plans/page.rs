@@ -58,15 +58,21 @@ fn validate_items(
     descriptor: Option<&inventory_core::catalog::Paginator<'_>>,
 ) -> Result<(), RuntimeCatalogCompileError> {
     match descriptor.and_then(|page| page.items) {
-        Some(expected) => match overlay.items.as_ref() {
-            Some(crate::overlay::ItemSelector::Member(actual) | crate::overlay::ItemSelector::Explicit { path: actual, .. })
-                if expected == actual.to_string() =>
-            {
-                Ok(())
-            }
-            _ => Err(RuntimeCatalogCompileError::Capability),
-        },
+        Some(expected) if selected_items(overlay).is_some_and(|actual| actual.as_str() == expected) => Ok(()),
+        Some(_) => Err(RuntimeCatalogCompileError::Capability),
         None => Ok(()),
+    }
+}
+
+/// The response collection one page contributes. A single-owner tag endpoint
+/// selects the response root, so its paged collection is the tag selector.
+fn selected_items(overlay: &OperationOverlay) -> Option<&crate::overlay::MemberPath> {
+    use crate::overlay::{ItemSelector, TagEndpointSelector};
+    match overlay.items.as_ref()? {
+        ItemSelector::Member(path) | ItemSelector::Explicit { path, .. } => Some(path),
+        ItemSelector::Root => overlay.tag_endpoint.as_ref().map(|endpoint| match &endpoint.selector {
+            TagEndpointSelector::Map { path } | TagEndpointSelector::List { path, .. } => path,
+        }),
     }
 }
 
@@ -76,6 +82,9 @@ fn placement(
     path: Vec<inventory_core::record::FieldId>,
     protocol: i64,
 ) -> Result<Value, RuntimeCatalogCompileError> {
+    if matches!(protocol, 0..=2) {
+        return encode::map([(1, Value::Int(3)), (2, path_value(path))]);
+    }
     let selected = match (protocol, member.wire()?.binding()?) {
         (3 | 4, HttpBinding::Document) if path.len() == 1 =>
             Some((1, Value::Text(query_name(member, protocol)?))),
@@ -116,13 +125,20 @@ fn path_value(path: Vec<inventory_core::record::FieldId>) -> Value {
             .collect(),
     )
 }
+/// Smithy ignores request-only bindings (`httpLabel`, `httpQuery`,
+/// `httpQueryParams`) on output members, so the wire decoder reads those
+/// members from the response body like any unbound member.
 fn response_placement(
     member: inventory_core::catalog::Member<'_>,
     path: Vec<inventory_core::record::FieldId>,
     protocol: i64,
 ) -> Result<Value, RuntimeCatalogCompileError> {
+    if matches!(protocol, 0..=2) {
+        return encode::map([(1, Value::Int(3)), (2, path_value(path))]);
+    }
     match (protocol, member.wire()?.binding()?) {
-        (_, HttpBinding::Document) => encode::map([(1, Value::Int(3)), (2, path_value(path))]),
+        (_, HttpBinding::Document | HttpBinding::Label | HttpBinding::Query(_) | HttpBinding::QueryParams) =>
+            encode::map([(1, Value::Int(3)), (2, path_value(path))]),
         (5 | 6, HttpBinding::Payload) if path.len() == 1 =>
             encode::map([(1, Value::Int(3)), (2, path_value(path))]),
         (5 | 6, HttpBinding::Header(name)) if path.len() == 1 => encode::map([
@@ -192,6 +208,7 @@ fn truncated_value(
 ) -> Result<Option<Value>, RuntimeCatalogCompileError> {
     let path = match overlay.paginator.as_ref() {
         Some(Paginator::Tokens { truncated, .. }) => truncated.as_ref(),
+        Some(Paginator::LastListItem { truncated, .. }) => Some(truncated),
         _ => None,
     };
     path.map(|path| {

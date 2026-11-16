@@ -20,6 +20,8 @@ pub use types::{
     BindingPlan, BindingSource, BindingValue, CallablePlan, EndpointClass, EndpointPathMode,
     IdentityPart, IdentityPlan, ItemPlan, KindCoverage, KindNamePath, PagePlan, PageSizeBinding, PageSizeType,
     PlanPurpose, PlanScope, RelationScope, RelationSource, RelationshipPlan, ResolvedEndpoint, ReviewDecision,
+    RelationPathMode, RelationTargetMode, RelationGuard,
+    RelationshipComponentPlan,
     ReviewDisposition, ReviewProvenance, RuntimeProtocol, TagPlan, TokenBinding, TokenPlacement, TokenType,
     TokenSelection,
 };

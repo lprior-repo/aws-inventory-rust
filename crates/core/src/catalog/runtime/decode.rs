@@ -3,6 +3,7 @@ mod plans;
 mod schemas;
 mod provenance;
 mod owners;
+mod services;
 pub(super) use provenance::compiled_inputs_sha256;
 
 use super::{CallablePlan, RuntimeCatalogError};
@@ -27,7 +28,7 @@ pub(crate) fn read<'a>(
     bytes: &'a [u8],
     catalog: Catalog<'a>,
 ) -> Result<Decoded<'a>, RuntimeCatalogError> {
-    let root = MapRef::from_bytes_bounded(bytes)?;
+    let root = MapRef::from_container_bytes(bytes, crate::catalog::MAX_CATALOG_BYTES)?;
     let extension_id = FieldId::new(60_000)?;
     let extension = match root.get_field(extension_id)? {
         Some(ValueRef::Map(value)) => value,
@@ -38,11 +39,12 @@ pub(crate) fn read<'a>(
     if version != 2 {
         return Err(RuntimeCatalogError::ExtensionVersion(version));
     }
-    let plans = plans::read(catalog, metadata::list(extension, 2)?)?;
+    let services = services::Services::open(catalog)?;
+    let plans = plans::read(&services, metadata::list(extension, 2)?)?;
     let schema_data = schemas::read(metadata::list(extension, 3)?)?;
     let relations = metadata::relations(metadata::list(extension, 4)?)?;
     let coverage = metadata::coverage(metadata::list(extension, 5)?)?;
-    let decisions = metadata::decisions(metadata::list(extension, 6)?, &plans, catalog)?;
+    let decisions = metadata::decisions(metadata::list(extension, 6)?, &plans, &services)?;
     let provenance = provenance::read(metadata::map_field(extension, 7)?)?;
     provenance::validate_inputs(extension, &provenance)?;
     provenance::validate_models(bytes, catalog, &provenance)?;
@@ -122,57 +124,6 @@ pub(super) fn text_value(value: ValueRef<'_>) -> Result<String, RuntimeCatalogEr
         ValueRef::Text(value) if !value.is_empty() && value.len() <= 16_384 => Ok(value.to_owned()),
         _ => Err(RuntimeCatalogError::Capability),
     }
-}
-
-pub(super) fn catalog_operation<'a>(
-    catalog: Catalog<'a>,
-    service_name: &str,
-    operation_name: &str,
-) -> Result<(crate::catalog::Service<'a>, crate::catalog::Operation<'a>), RuntimeCatalogError> {
-    let service = catalog
-        .service(service_name)?
-        .ok_or(RuntimeCatalogError::Capability)?;
-    let mut found = None;
-    service.operations()?.try_for_each(|candidate| {
-        let candidate = candidate?;
-        if candidate.name()? == operation_name && found.replace(candidate).is_some() {
-            return Err(RuntimeCatalogError::Capability);
-        }
-        Ok::<_, RuntimeCatalogError>(())
-    })?;
-    let operation = found.ok_or(RuntimeCatalogError::Capability)?;
-    Ok((service, operation))
-}
-
-pub(super) fn validate_operations<'k>(
-    catalog: Catalog<'_>,
-    keys: impl Iterator<Item = (&'k str, &'k str)>,
-) -> Result<(), RuntimeCatalogError> {
-    let mut grouped = std::collections::BTreeMap::<&str, Vec<&str>>::new();
-    keys.for_each(|(service, operation)| grouped.entry(service).or_default().push(operation));
-    grouped
-        .into_iter()
-        .try_for_each(|(service_name, operations)| {
-            let service = catalog
-                .service(service_name)?
-                .ok_or(RuntimeCatalogError::Capability)?;
-            let mut names = service
-                .operations()?
-                .map(|operation| operation?.name())
-                .collect::<Result<Vec<_>, _>>()?;
-            names.sort_unstable();
-            let present_once = operations.iter().all(|operation| {
-                let start = names.partition_point(|name| name < operation);
-                names.get(start..).map_or(0, |rest| {
-                    rest.iter().take_while(|name| *name == operation).count()
-                }) == 1
-            });
-            if present_once {
-                Ok(())
-            } else {
-                Err(RuntimeCatalogError::Capability)
-            }
-        })
 }
 
 pub(super) fn lookup(map: MapRef<'_>, key: u32) -> Result<ValueRef<'_>, RuntimeCatalogError> {

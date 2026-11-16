@@ -24,23 +24,6 @@ pub(in super::super) fn edge_source(value: &str) -> Result<EdgeSource, StoreErro
     }
 }
 
-pub(in super::super) fn text_field<'a>(
-    observation: &'a Observation,
-    path: &[FieldId],
-) -> Result<Option<&'a str>, StoreError> {
-    path.iter()
-        .try_fold(
-            Some(ValueRef::Map(observation.record().root())),
-            |current, field| match current {
-                Some(ValueRef::Map(map)) => map.get_field(*field).map_err(StoreError::from),
-                _ => Ok(None),
-            },
-        )
-        .map(|value| match value {
-            Some(ValueRef::Text(text)) => Some(text),
-            _ => None,
-        })
-}
 
 pub(in super::super) fn reference_scope(
     account: &str,

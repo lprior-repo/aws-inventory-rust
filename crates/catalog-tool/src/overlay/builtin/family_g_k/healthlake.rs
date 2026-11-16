@@ -44,11 +44,12 @@ fn profiles() -> Result<crate::overlay::OperationOverlay, NameError> {
 
 // Explicit pinned operation dispositions. No runtime operation-name classifier approves calls.
 // Mutation sets change resource/lifecycle/authorization state; content and credential reads stay denied.
+// The pinned file also declares TransformData, ValidateSource, and duplicate tag operations in an
+// unbound transformation namespace; they are outside the HealthLake service closure and not reviewed.
 const DEFERRED: &[&str] = &[
     "DescribeDataTransformationJob", "DescribeFHIRExportJob", "DescribeFHIRImportJob",
     "ListDataTransformationJobs",
     "ListFHIRExportJobs", "ListFHIRImportJobs", "ListTagsForResource",
-    "ValidateSource",
 ];
 
 const MUTATING: &[&str] = &[
@@ -60,5 +61,5 @@ const MUTATING: &[&str] = &[
 ];
 
 const CONTENT: &[&str] = &[
-    "GetDataTransformationProfile", "TransformData",
+    "GetDataTransformationProfile",
 ];

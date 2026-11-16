@@ -26,7 +26,7 @@ fn child(items: &str, id: &str) -> Result<OperationOverlay, NameError> {
     policy::query(policy::bind(
         policy::enumerate(items, Identity::CorrelatedKey(vec![
             IdentityField::Request(MemberPath::new("IndexId")?),
-            IdentityField::Selected(MemberPath::new(id)?),
+            IdentityField::Selected(MemberPath::selected(id)?),
         ]), Some(("NextToken", "NextToken")))?,
         "IndexId", "ListIndices", "Id",
     )?, &[id])

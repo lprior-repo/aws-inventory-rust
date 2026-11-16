@@ -8,10 +8,10 @@ use super::{BinaryStore, PageCommit, StoreError};
 use inventory_core::inventory::{
     Edge, EdgeSource, Observation, ResourceKey, UnresolvedReference,
 };
-use inventory_core::record::{FieldId, ValueRef};
+use inventory_core::record::FieldId;
 use references_tail::*;
 pub(super) use references_tail::{
-    edge_source, enqueue, reference_path, reference_scope, source_key, text_field,
+    edge_source, enqueue, reference_path, reference_scope, source_key,
 };
 use sqlx::{QueryBuilder, Row, Sqlite, Transaction};
 
@@ -98,11 +98,14 @@ async fn persist_observation(
         refresh_incoming(store, tx, observation, stats).await?;
         enqueue(tx, key, false).await?;
     }
-    if !legacy && !changed && aggregate.record_changed
-        && super::typed::upsert_kind(store, tx, observation, old_changed_at).await? {
-        // Excluded fields remain observable without advancing semantic last_changed.
-        refresh_incoming(store, tx, observation, stats).await?;
-        enqueue(tx, key, false).await?;
+    if !legacy && !changed {
+        let projection_changed = aggregate.record_changed
+            && super::typed::upsert_kind(store, tx, observation, old_changed_at).await?;
+        if projection_changed || aggregate.bound_context_changed {
+            // Request-only evidence changes also invalidate incoming typed matches.
+            refresh_incoming(store, tx, observation, stats).await?;
+            enqueue(tx, key, false).await?;
+        }
     }
     if !legacy && (changed || aggregate.relations_changed) {
         clear_source_relations(tx, key).await?;
@@ -277,7 +280,7 @@ async fn persist_reference(
 ) -> Result<(), StoreError> {
     let target = &reference.target;
     let scope = reference_scope(target.account().as_str(), target.region().as_str())?;
-    let path = reference_path(target.path());
+    let path = super::reference_candidates::stored_path(target)?;
     sqlx::query("INSERT INTO unresolved_refs(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source,target_kinds) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11) ON CONFLICT(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source) DO UPDATE SET target_kinds=excluded.target_kinds")
         .bind(reference.from.account.as_str()).bind(reference.from.region.as_str()).bind(reference.from.kind.as_str()).bind(reference.from.id.as_str())
         .bind(scope).bind(target.kind().as_str()).bind(path).bind(target.value().as_str()).bind(reference.relation.as_str()).bind(reference.source.as_str())

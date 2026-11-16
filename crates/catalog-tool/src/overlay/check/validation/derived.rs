@@ -17,6 +17,10 @@ pub(super) fn bindings(
     let Some((parent, identifiers)) = expansion(model, operation, deny) else {
         return BTreeMap::new();
     };
+    // A list operation that is its own resource's `list` has no parent rows to bind from.
+    if parent == operation {
+        return BTreeMap::new();
+    }
     let Some(selected) = selected_for_parent(model, parent, overlays.get(parent), vocabulary)
     else {
         return BTreeMap::new();
@@ -76,6 +80,10 @@ fn binding(
 }
 
 fn overridden(plan: &OperationOverlay, member: &str) -> bool {
-    plan.fixed.keys().any(|path| path.as_str() == member)
-        || plan.bind.keys().any(|path| path.as_str() == member)
+    let declared = |path: &MemberPath| path.as_str() == member;
+    plan.fixed.keys().any(declared)
+        || plan.bind.keys().any(declared)
+        || plan.branches.iter().any(|branch| {
+            branch.fixed.keys().any(declared) || branch.bind.keys().any(declared)
+        })
 }

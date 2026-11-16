@@ -1,7 +1,6 @@
 mod fixture;
 mod scenario;
-#[path = "../execution/page/cursor.rs"]
-mod cursor;
+use crate::sweep_runtime::execution::page::cursor;
 
 use crate::sweep_runtime::{execution::{page::{child, consumer_index::ConsumerIndex}, routing}, input, record, request};
 use cursor::Cursor;

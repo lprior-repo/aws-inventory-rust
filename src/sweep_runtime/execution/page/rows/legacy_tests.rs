@@ -26,7 +26,7 @@ async fn populated_upgrade(version: u8) -> TestResult {
     assert_eq!(lease.generation(), generation + 1);
     assert_eq!(lease.bindings(), bindings);
     assert_eq!(lease.token(), Some(token.as_slice()));
-    assert_eq!(lease.context(), &[]);
+    assert!(lease.context().is_empty());
     resume_first_page(&reopened, &catalog, lease).await?;
     assert_eq!(image(&directory, &catalog).await?, before);
     finish_partial(&reopened, &sweep).await?;
@@ -96,7 +96,7 @@ async fn given_an_orphan_legacy_baseline_when_only_partial_or_unrelated_complete
     downgrade(&directory, 15).await?;
     let before = state(&directory, &catalog).await?;
     let reopened = BinaryStore::open_with_catalog(&directory.path().join("inventory.sqlite"), &bytes).await?;
-    let sweep = SweepId::new("orphan-partial")?;
+    let sweep = SweepId::new("orphan-partial".to_owned())?;
     reopened.seed_work(work(&sweep, "ListPortals", None)?).await?;
     let lease = reopened.claim(&sweep, 20_000, 100).await?.ok_or("orphan source absent")?;
     // When the orphan receives a sparse first page but that execution terminates partial.

@@ -11,7 +11,6 @@ mod drain_tests;
 pub(super) type BenchResult<T = ()> = Result<T, Box<dyn Error + Send + Sync>>;
 const MAX_PAGES: usize = 100_000;
 const MAX_ROWS: usize = 10_000_000;
-const MAX_CATALOG: u64 = 16_777_216;
 
 #[derive(Clone, Debug)]
 pub(super) struct Workload {
@@ -77,9 +76,10 @@ impl Totals {
 }
 
 fn read_catalog(path: &std::path::Path) -> BenchResult<Vec<u8>> {
+    let limit = inventory_core::catalog::MAX_CATALOG_BYTES;
     let mut bytes = Vec::new();
-    std::fs::File::open(path)?.take(MAX_CATALOG.saturating_add(1)).read_to_end(&mut bytes)?;
-    if u64::try_from(bytes.len())? > MAX_CATALOG { return Err("catalog exceeds 16 MiB".into()); }
+    std::fs::File::open(path)?.take(u64::try_from(limit)?.saturating_add(1)).read_to_end(&mut bytes)?;
+    if bytes.len() > limit { return Err("catalog exceeds the runtime catalog bound".into()); }
     Ok(bytes)
 }
 
@@ -141,7 +141,9 @@ type PageResult = (ChangeStats, Duration, Duration);
 async fn run_round(workload: &Workload, catalog: &RuntimeCatalog<'_>, store: &BinaryStore, sweep: &SweepId, phase: Phase, page: usize) -> BenchResult<Vec<PageResult>> {
     // Claim the bounded batch first: no scope can be scheduled twice in a round.
     let leases = stream::iter(0..workload.concurrency).then(|_| async {
-        store.claim(sweep, phase.timestamp(), 60_000).await?.ok_or_else(|| "benchmark work lease is missing".into())
+        let lease: BenchResult<WorkLease> = store.claim(sweep, phase.timestamp(), 60_000).await?
+            .ok_or_else(|| "benchmark work lease is missing".into());
+        lease
     }).try_collect::<Vec<WorkLease>>().await?;
     let results = stream::iter(leases).map(|lease| commit(workload, catalog, store, lease, phase, page))
         .buffer_unordered(workload.concurrency).collect::<Vec<_>>().await;

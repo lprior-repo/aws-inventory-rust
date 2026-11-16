@@ -113,6 +113,8 @@ fn identity(record: &Record, plan: &IdentityPlan, scope: &ScopeKey) -> BenchResu
             text.push_str(value);
             Ok(text)
         })?,
+        IdentityPlan::Choice(_) | IdentityPlan::CorrelatedKey(_) | IdentityPlan::MapArn { .. } =>
+            return Err("table benchmark requires a scalar identity or ARN template".into()),
     };
     Ok(ResourceId::parse(&text)?)
 }

@@ -30,7 +30,7 @@ async fn trust_page(store: &BinaryStore, catalog: &RuntimeCatalog<'_>, owner: (&
     let plan = fixture::plan(catalog, "iam", "ListRoles")?;
     let (rows, observations) = trust_rows(catalog, owner, document)?;
     let request = Record::encode(&Value::Map(BTreeMap::new()))?;
-    let unresolved = references(catalog, plan, &RegionId::parse("us-east-1")?, &rows, &observations, &request)?;
+    let unresolved = references(catalog, plan, &RegionId::parse("us-east-1")?, &rows, &observations, &request, None)?;
     let sweep = SweepId::new(format!("trust-{at}"))?;
     let scope = ScopeKey::new(AccountId::parse(owner.0)?, Region::Global, ServiceId::parse("iam")?, OperationId::parse("ListRoles")?, None)?;
     store.seed_work(WorkSpec::new(sweep.clone(), scope, None, request.into_bytes())?).await?;

@@ -1,4 +1,5 @@
-use inventory_core::{catalog::{Catalog, Target}, record::{FieldId, Key, MapRef, Record, Value, ValueRef}};
+use inventory_core::{catalog::{runtime::compiled_inputs_sha256, Catalog, Target, MAX_CATALOG_BYTES}, record::{encode_container, FieldId, Key, MapRef, Value, ValueRef}};
+use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 use super::pipeline::BenchResult;
 
@@ -17,11 +18,24 @@ pub(super) fn bytes() -> BenchResult<Vec<u8>> {
     let schema = map([(1, text("AWS::DynamoDB::Table")), (2, text("benchmark_tables")),
         (3, Value::List(vec![])), (4, Value::Null)])?;
     let decision = map([(1, text("dynamodb")), (2, text("ListTables")), (3, Value::Int(0))])?;
-    let metadata = map([(1, Value::Int(2)), (2, Value::List(vec![plan(field)?])), (3, Value::List(vec![schema])),
-        (4, Value::List(vec![])), (5, Value::List(vec![])), (6, Value::List(vec![decision]))])?;
-    let Value::Map(mut root) = ValueRef::Map(MapRef::from_bytes_bounded(base)?).to_value()? else { return Err("wire catalog is not a map".into()); };
-    root.insert(Key::Field(FieldId::new(60_000)?), metadata);
-    Ok(Record::encode(&Value::Map(root))?.into_bytes())
+    let coverage = map([(1, Value::Null), (2, text("AWS::DynamoDB::Table")), (3, Value::Bool(true)),
+        (4, Value::Null), (5, Value::Bool(true))])?;
+    let mut metadata = map([(1, Value::Int(2)), (2, Value::List(vec![plan(field)?])), (3, Value::List(vec![schema])),
+        (4, Value::List(vec![])), (5, Value::List(vec![coverage])), (6, Value::List(vec![decision]))])?;
+    let Value::Map(mut root) = ValueRef::Map(MapRef::from_container_bytes(base, MAX_CATALOG_BYTES)?).to_value()? else { return Err("wire catalog is not a map".into()); };
+    let extension = Key::Field(FieldId::new(60_000)?);
+    root.remove(&extension);
+    // The receipt names this fixture as an assembled catalog, never as an upstream source pin.
+    let models = Sha256::digest(encode_container(&Value::Map(root.clone()), MAX_CATALOG_BYTES)?).to_vec();
+    let encoded = encode_container(&metadata, MAX_CATALOG_BYTES)?;
+    let reviewed = compiled_inputs_sha256(MapRef::from_container_bytes(&encoded, MAX_CATALOG_BYTES)?)?.to_vec();
+    let fixture = Sha256::digest(include_bytes!("pipeline_test_catalog.rs")).to_vec();
+    let receipt = map([(1, Value::Int(1)), (2, map([(1, Value::Int(1)), (2, Value::Bytes(models))])?), (3, Value::Int(1)),
+        (4, Value::Bytes(fixture.clone())), (5, Value::Null), (6, Value::Bytes(fixture)), (7, Value::Bytes(reviewed))])?;
+    let Value::Map(fields) = &mut metadata else { return Err("runtime extension is not a map".into()); };
+    fields.insert(Key::Field(FieldId::new(7)?), receipt);
+    root.insert(extension, metadata);
+    Ok(encode_container(&Value::Map(root), MAX_CATALOG_BYTES)?)
 }
 
 fn text(value: &str) -> Value { Value::Text(value.to_owned()) }

@@ -49,9 +49,11 @@ async fn snapshot(path: &Path, catalog: &RuntimeCatalog<'_>) -> TestResult<Vec<(
     let mut records = Vec::new();
     for schema in catalog.schemas() {
         let table = schema.table().as_str().replace('"', "\"\"");
-        let query = format!("SELECT ?1,account,region,id,record FROM \"{table}\" ORDER BY account,region,id");
-        let rows: Vec<(String, String, String, String, Vec<u8>)> = sqlx::query_as(&query)
-            .bind(schema.kind().as_str()).fetch_all(&reader).await?;
+        let mut query = sqlx::QueryBuilder::<sqlx::Sqlite>::new("SELECT ");
+        query.push_bind(schema.kind().as_str()).push(",account,region,id,record FROM \"")
+            .push(table).push("\" ORDER BY account,region,id");
+        let rows: Vec<(String, String, String, String, Vec<u8>)> = query.build_query_as()
+            .fetch_all(&reader).await?;
         records.extend(rows);
     }
     records.sort_unstable();

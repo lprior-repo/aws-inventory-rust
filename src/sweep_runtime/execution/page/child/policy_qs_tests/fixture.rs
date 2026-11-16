@@ -1,6 +1,6 @@
 use super::*;
 use catalog_tool::{endpoints, kind_map, overlay, runtime_catalog, smithy};
-use std::{fs, path::Path, sync::LazyLock};
+use std::sync::LazyLock;
 
 // Actual production overlays and pinned Smithy inputs; no substitute catalog or model.
 const SERVICES: &[(&str, &str, &[&str])] = &[
@@ -36,13 +36,9 @@ pub(super) fn catalog() -> TestResult<RuntimeCatalog<'static>> {
 fn compile() -> TestResult<Vec<u8>> {
     let root = tempfile::tempdir()?;
     let source = root.path().join("source");
-    let pinned = Path::new(env!("CARGO_MANIFEST_DIR")).join(".local/aws-models/models");
     let embedded = overlay::embedded()?;
     let policies = SERVICES.iter().map(|(service, date, operations)| {
-        let relative = format!("{service}/service/{date}/{service}-{date}.json");
-        let destination = source.join("models").join(&relative);
-        fs::create_dir_all(destination.parent().ok_or("model parent absent")?)?;
-        fs::copy(pinned.join(relative), destination)?;
+        crate::sweep_runtime::pinned_model::install(&source.join("models"), service, date, operations)?;
         let policy = embedded.iter().find(|policy| policy.service() == *service).ok_or("production service absent")?;
         let selected = operations.iter().map(|operation| {
             let key = overlay::OperationName::new(operation)?;

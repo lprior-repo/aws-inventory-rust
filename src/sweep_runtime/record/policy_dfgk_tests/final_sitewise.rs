@@ -4,8 +4,7 @@ mod definitions;
 mod twinmaker;
 mod arn_scope;
 mod access_assertions;
-#[path = "../../execution/page/cursor.rs"]
-mod cursor;
+use crate::sweep_runtime::execution::page::cursor;
 
 use fixture::{TestResult, Scenario, catalog, plan};
 use serde_json::{Value as Json, json};

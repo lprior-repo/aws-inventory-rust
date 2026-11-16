@@ -1,5 +1,4 @@
 use super::{BinaryStore, Kind, ResourceId, ResourceKey, StoreError, UnresolvedReference, commit};
-use inventory_core::record::FieldId;
 use sqlx::{Row, Sqlite, Transaction};
 
 pub(in crate::inventory) async fn supports(
@@ -14,7 +13,7 @@ pub(in crate::inventory) async fn supports(
         let kinds = super::decode(row.try_get("target_kinds")?, &kind)?;
         if !kinds.contains(&target.kind) { continue; }
         let value = ResourceId::parse(&row.try_get::<String, _>("target_value")?)?;
-        let reference_target = store.registry.reference_target(target.account.clone(), target.region.clone(), kind, path(row.try_get("target_path")?)?, value)?.with_candidate_kinds(kinds)?;
+        let reference_target = super::decode_target(target.account.clone(), target.region.clone(), kind, row.try_get("target_path")?, value)?.with_candidate_kinds(kinds)?;
         let candidate = UnresolvedReference { from: reference.from.clone(), relation: reference.relation.clone(), source: reference.source, target: reference_target };
         if let Some(resolution) = super::current_targets(store, tx, &candidate).await? {
             if resolution.targets.contains(target) { return Ok(true); }
@@ -23,12 +22,3 @@ pub(in crate::inventory) async fn supports(
     Ok(false)
 }
 
-fn path(bytes: &[u8]) -> Result<Vec<FieldId>, StoreError> {
-    let mut chunks = bytes.chunks_exact(4);
-    let fields = chunks.by_ref().map(|chunk| {
-        let bytes: [u8; 4] = chunk.try_into().map_err(|_| StoreError::Invalid("reference field path is truncated"))?;
-        Ok(FieldId::new(u32::from_be_bytes(bytes))?)
-    }).collect::<Result<Vec<_>, StoreError>>()?;
-    if !chunks.remainder().is_empty() { return Err(StoreError::Invalid("reference field path is truncated")); }
-    Ok(fields)
-}

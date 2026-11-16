@@ -87,10 +87,36 @@ fn pinned_model_checker_accepts_every_callable_q_s_contract() -> TestResult {
     // When typed policies are checked for request/output/type compatibility.
     let checked = overlay::check_policies(&source(), &policies, &DenyList::builtin())?;
     // Then all authored callable operations survive the safety/model boundary.
-    assert_eq!(checked.services().iter().map(|service| service.callable().len()).sum::<usize>(), 349);
-    let authored = policies.iter().flat_map(|service| service.operations().values())
-        .filter(|operation| matches!(operation.class, Some(OverlayClass::Enumerate | OverlayClass::Expand))).count();
-    assert_eq!(checked.services().iter().map(|service| service.callable().len()).sum::<usize>(), authored);
+    let authored = policies.iter().flat_map(|service| {
+        service.operations().iter().filter(|(_, operation)| {
+            matches!(operation.class, Some(OverlayClass::Enumerate | OverlayClass::Expand))
+        }).map(move |(operation, _)| (service.service().to_owned(), operation.to_string()))
+    }).collect::<BTreeSet<_>>();
+    let callable = checked.services().iter().flat_map(|service| {
+        service.callable().iter().map(move |operation| {
+            (service.service().to_owned(), operation.operation().to_owned())
+        })
+    }).collect::<BTreeSet<_>>();
+    assert_eq!(callable, authored);
+    // Then customer permissions and caller-owned applications retain their exact request domains.
+    let permissions = operation(&policies, "ram", "ListPermissions")?;
+    assert_eq!(permissions.fixed.get(&MemberPath::new("permissionType")?),
+        Some(&FixedValue::String("CUSTOMER_MANAGED".to_owned())));
+    assert_eq!(permissions.fixed.get(&MemberPath::new("resourceOwner")?),
+        Some(&FixedValue::String("SELF".to_owned())));
+    let applications = operation(&policies, "sso-admin", "ListApplications")?;
+    assert_eq!(applications.bind.get(&MemberPath::new("Filter.ApplicationAccount")?), Some(&Binding::Account));
+    assert_eq!(applications.identity, Some(Identity::Arn(MemberPath::new("ApplicationArn")?)));
+    // Both optional safety-rule arms remain callable, each using its exact returned ARN.
+    let rules = operation(&policies, "route53-recovery-control-config", "ListSafetyRules")?;
+    let arms = ["ASSERTION.SafetyRuleArn", "GATING.SafetyRuleArn"].into_iter().map(|field| {
+        let path = MemberPath::new(field)?;
+        overlay::IdentityBranch::new(overlay::IdentityPredicate::Present(path.clone()), overlay::IdentityLeaf::Arn(path))
+    }).collect::<Result<Vec<_>, _>>()?;
+    assert_eq!(rules.identity, Some(Identity::Choice(overlay::IdentityChoice::Discriminated(arms))));
+    assert_eq!(rules.bind.get(&MemberPath::new("ControlPanelArn")?), Some(&Binding::From {
+        operation: OperationName::new("ListControlPanels")?, path: MemberPath::new("ControlPanelArn")?,
+    }));
     Ok(())
 }
 

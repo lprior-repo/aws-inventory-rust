@@ -1,11 +1,17 @@
 mod evidence;
+mod typed;
+mod matching;
+pub(in crate::inventory) use typed::{decode_target, stored_path};
+pub(in crate::inventory) use typed::mode_code;
+use matching::match_target;
 
 pub(super) use evidence::supports;
 
 use super::{BinaryStore, StoreError, commit};
 use inventory_core::inventory::{Edge, Kind, ReferenceTarget, ResourceId, ResourceKey, ScalarType, UnresolvedReference};
 use inventory_core::record::{FieldId, Key, Record, Value, ValueRef};
-use sqlx::{QueryBuilder, Row, Sqlite, Transaction};
+use sqlx::{Row, Sqlite, Transaction};
+use futures_util::{stream, TryStreamExt};
 use std::collections::BTreeMap;
 
 pub(super) fn encode(target: &ReferenceTarget) -> Result<Vec<u8>, StoreError> {
@@ -72,55 +78,52 @@ enum TargetMatch {
     Ambiguous,
 }
 
-async fn match_target(
-    store: &BinaryStore, tx: &mut Transaction<'_, Sqlite>, target: &ReferenceTarget, expected: Option<&ResourceId>,
-) -> Result<TargetMatch, StoreError> {
-    let mut matched = None;
-    for kind in target.candidate_kinds() {
-        let schema = store.registry.schemas().iter().find(|schema| schema.kind() == kind)
-            .ok_or(StoreError::Invalid("referenced kind is absent from schema registry"))?;
-        let Some(column) = schema.columns().iter().find(|column| column.path() == target.path() && column.scalar() == ScalarType::Text) else { continue; };
-        let mut query = QueryBuilder::<Sqlite>::new("SELECT id FROM ");
-        query.push(commit::quote(schema.table().as_str())).push(" WHERE account=").push_bind(target.account().as_str())
-            .push(" AND region=").push_bind(target.region().as_str()).push(" AND ").push(commit::quote(column.name()))
-            .push("=").push_bind(target.value().as_str());
-        if let Some(expected) = expected { query.push(" AND id=").push_bind(expected.as_str()); }
-        query.push(" LIMIT 2");
-        for row in query.build().fetch_all(&mut **tx).await? {
-            if matched.is_some() { return Ok(TargetMatch::Ambiguous); }
-            matched = Some(ResourceKey { account: target.account().clone(), region: target.region().clone(), kind: kind.clone(), id: ResourceId::parse(&row.try_get::<String, _>("id")?)? });
-        }
-    }
-    Ok(matched.map_or(TargetMatch::Absent, TargetMatch::Unique))
-}
 
 async fn update_status(tx: &mut Transaction<'_, Sqlite>, reference: &UnresolvedReference, status: &str) -> Result<(), StoreError> {
     let target = &reference.target;
     sqlx::query("UPDATE unresolved_refs SET resolution=?1 WHERE from_account=?2 AND from_region=?3 AND from_kind=?4 AND from_id=?5 AND target_scope=?6 AND target_kind=?7 AND target_path=?8 AND target_value=?9 AND relation=?10 AND source=?11")
         .bind(status).bind(reference.from.account.as_str()).bind(reference.from.region.as_str()).bind(reference.from.kind.as_str()).bind(reference.from.id.as_str())
-        .bind(commit::reference_scope(target.account().as_str(), target.region().as_str())?).bind(target.kind().as_str()).bind(commit::reference_path(target.path()))
+        .bind(commit::reference_scope(target.account().as_str(), target.region().as_str())?).bind(target.kind().as_str()).bind(stored_path(target)?)
         .bind(target.value().as_str()).bind(reference.relation.as_str()).bind(reference.source.as_str()).execute(&mut **tx).await?;
     Ok(())
 }
 
 async fn retract_matches(store: &BinaryStore, tx: &mut Transaction<'_, Sqlite>, reference: &UnresolvedReference) -> Result<(), StoreError> {
-    let target = &reference.target;
-    for kind in target.candidate_kinds() {
-        let schema = store.registry.schemas().iter().find(|schema| schema.kind() == kind)
-            .ok_or(StoreError::Invalid("referenced kind is absent from schema registry"))?;
-        let Some(column) = schema.columns().iter().find(|column| column.path() == target.path() && column.scalar() == ScalarType::Text) else { continue; };
-        let mut query = QueryBuilder::<Sqlite>::new("SELECT to_id FROM edges WHERE from_account=");
-        query.push_bind(reference.from.account.as_str()).push(" AND from_region=").push_bind(reference.from.region.as_str())
-            .push(" AND from_kind=").push_bind(reference.from.kind.as_str()).push(" AND from_id=").push_bind(reference.from.id.as_str())
-            .push(" AND relation=").push_bind(reference.relation.as_str()).push(" AND source=").push_bind(reference.source.as_str())
-            .push(" AND to_account=").push_bind(target.account().as_str()).push(" AND to_region=").push_bind(target.region().as_str())
-            .push(" AND to_kind=").push_bind(kind.as_str()).push(" AND to_id IN(SELECT id FROM ").push(commit::quote(schema.table().as_str()))
-            .push(" WHERE account=").push_bind(target.account().as_str()).push(" AND region=").push_bind(target.region().as_str())
-            .push(" AND ").push(commit::quote(column.name())).push("=").push_bind(target.value().as_str()).push(")");
-        for row in query.build().fetch_all(&mut **tx).await? {
-            let key = ResourceKey { account: target.account().clone(), region: target.region().clone(), kind: kind.clone(), id: ResourceId::parse(&row.try_get::<String, _>("to_id")?)? };
-            super::references::retract(store, tx, &key, reference).await?;
-        }
-    }
+    stream::iter(reference.target.candidate_kinds().iter().map(Ok::<_, StoreError>))
+        .try_fold(tx, |tx, kind| async move {
+            if !store.registry.schemas().iter().any(|schema| schema.kind() == kind) {
+                return Err(StoreError::Invalid("referenced kind is absent from schema registry"));
+            }
+            retract_kind_matches(store, tx, reference, kind).await?;
+            Ok(tx)
+        }).await?;
     Ok(())
+}
+
+async fn retract_kind_matches(
+    store: &BinaryStore, tx: &mut Transaction<'_, Sqlite>, reference: &UnresolvedReference, kind: &Kind,
+) -> Result<(), StoreError> {
+    // A primary term may live only in checked request context. Enumerate existing
+    // edges, not selected columns, and let every independent proof veto retraction.
+    stream::try_unfold(Some((tx, None::<ResourceId>)), |state| async move {
+        let Some((tx, after)) = state else { return Ok::<_, StoreError>(None); };
+        let target = &reference.target;
+        let rows = sqlx::query("SELECT to_id FROM edges WHERE from_account=?1 AND from_region=?2 AND from_kind=?3 AND from_id=?4 AND relation=?5 AND source=?6 AND to_account=?7 AND to_region=?8 AND to_kind=?9 AND to_id>?10 ORDER BY to_id LIMIT 64")
+            .bind(reference.from.account.as_str()).bind(reference.from.region.as_str())
+            .bind(reference.from.kind.as_str()).bind(reference.from.id.as_str())
+            .bind(reference.relation.as_str()).bind(reference.source.as_str())
+            .bind(target.account().as_str()).bind(target.region().as_str()).bind(kind.as_str())
+            .bind(after.as_ref().map_or("", ResourceId::as_str)).fetch_all(&mut **tx).await?;
+        let more = rows.len() == 64;
+        if rows.is_empty() { return Ok(None); }
+        // Finish each bounded query before retraction issues queries on this transaction.
+        let (tx, after) = stream::iter(rows.into_iter().map(Ok::<_, StoreError>))
+            .try_fold((tx, None), |(tx, _), row| async move {
+                let key = ResourceKey { account: target.account().clone(), region: target.region().clone(),
+                    kind: kind.clone(), id: ResourceId::parse(row.try_get("to_id")?)? };
+                super::references::retract(store, tx, &key, reference).await?;
+                Ok((tx, Some(key.id)))
+            }).await?;
+        Ok(Some(((), if more { Some((tx, after)) } else { None })))
+    }).try_for_each(|()| async { Ok(()) }).await
 }

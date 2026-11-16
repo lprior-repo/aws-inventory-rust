@@ -77,7 +77,7 @@ pub(super) async fn prepare(
                 lease.scope().region(),&items,&request.record,&contexts)?
         };
         let references = rows::references(context.catalog,plan,&request.region,&items,
-            &observations,&request.record)?;
+            &observations,&request.record,lease.scope().parent())?;
         let tags = if emission == Emission::DiscoveryOnly {
             Vec::new()
         } else {

@@ -1,4 +1,5 @@
 use super::*;
+use inventory_core::catalog::runtime::CallablePlan;
 
 type RejectedCase = (&'static str, &'static str, &'static str, &'static str, &'static str, &'static str, Json, Option<(&'static str, Json)>, &'static str, &'static str, &'static str);
 

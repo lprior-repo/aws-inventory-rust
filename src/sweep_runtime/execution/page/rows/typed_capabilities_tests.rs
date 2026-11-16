@@ -1,4 +1,6 @@
+#[path = "typed_capabilities_tests/fixture.rs"]
 mod fixture;
+#[path = "typed_capabilities_tests/native.rs"]
 mod native;
 use super::*;
 use inventory_core::{inventory::AccountId, record::{FieldId, Key, Value}};

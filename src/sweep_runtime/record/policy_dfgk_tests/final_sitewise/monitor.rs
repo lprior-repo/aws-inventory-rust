@@ -125,7 +125,7 @@ fn given_same_project_id_when_parent_request_changes_then_identity_is_parent_qua
     let response = crate::sweep_runtime::record::policy_dfgk_tests::fixture::decode(plan, &serde_json::to_vec(&json!({"projectSummaries":[{"id":PROJECTS.first().ok_or("project absent")?,"name":"same"}]}))?)?;
     let rows = record::item_records(&response, plan.items())?;
     let row = rows.first().ok_or("project row absent")?;
-    let path = plan.bindings().first().ok_or("portal binding absent")?.input_path.to_vec();
+    let path = plan.bindings().first().ok_or("portal binding absent")?.path.clone();
     let keys = PORTALS.iter().map(|portal| {
         let request = input::merge_input(&inventory_core::record::Record::encode(&Value::Map(Default::default()))?, &[input::InputField { path:path.clone(), value:Value::Text((*portal).to_owned()) }])?;
         Ok(record::resource_id_with_context(row, plan.identity(), None, &DiscoveryContext::empty(), &request)?.as_str().to_owned())

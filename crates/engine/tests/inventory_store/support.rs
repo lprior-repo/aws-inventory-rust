@@ -238,6 +238,18 @@ pub(super) fn scalar_catalog_bytes(scalar: ScalarType) -> TestResult<Vec<u8>> {
     modeled_catalog(Some(scalar), false)
 }
 
+pub(super) fn typed_relationship_catalog(relations: Vec<Value>, dual: bool) -> TestResult<Vec<u8>> {
+    let record = Record::from_bytes(modeled_catalog(None, dual)?)?;
+    let mut root = inventory_core::record::ValueRef::Map(record.root()).to_value()?;
+    let Value::Map(fields) = &mut root else { return Err("catalog root is not a map".into()); };
+    let Some(Value::Map(extension)) = fields.get_mut(&Key::Field(FieldId::new(60_000)?)) else {
+        return Err("runtime extension missing".into());
+    };
+    extension.insert(Key::Field(FieldId::new(4)?), Value::List(relations));
+    seal_catalog(&mut root)?;
+    Ok(Record::encode(&root)?.into_bytes())
+}
+
 pub(super) fn scalar_catalog_with_forged_text_root_relation(scalar: ScalarType) -> TestResult<Vec<u8>> {
     let record = Record::from_bytes(scalar_catalog_bytes(scalar)?)?;
     let mut root = inventory_core::record::ValueRef::Map(record.root()).to_value()?;

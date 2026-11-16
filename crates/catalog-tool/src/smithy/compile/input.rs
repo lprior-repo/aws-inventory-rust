@@ -1,5 +1,5 @@
 use super::{CompileError, Error, Registry, encode};
-use inventory_core::record::{MAX_RECORD_BYTES, RecordError, Value};
+use inventory_core::{catalog::MAX_CATALOG_BYTES, record::{RecordError, Value}};
 use std::{
     collections::BTreeSet,
     path::{Component, Path},
@@ -28,7 +28,7 @@ impl Compilation {
         self.size = self
             .size
             .checked_add(bytes.len())
-            .filter(|n| *n <= MAX_RECORD_BYTES)
+            .filter(|n| *n <= MAX_CATALOG_BYTES)
             .ok_or(RecordError::SizeLimit)
             .map_err(|error| CompileError::from(error).in_service(name))?;
         self.services.push(Value::Bytes(bytes));

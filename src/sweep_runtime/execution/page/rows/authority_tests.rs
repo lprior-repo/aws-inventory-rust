@@ -1,6 +1,6 @@
 use super::*;
-use inventory_core::{catalog::runtime::ContextProjectionPlan, inventory::DiscoveryFrame, record::{Exclusions, Key}};
-use inventory_engine::inventory::{ScopeOutcome, WorkLease};
+use inventory_core::{catalog::runtime::ContextProjectionPlan, inventory::{DiscoveryFrame, ScopeOutcome}, record::{Exclusions, Key}};
+use inventory_engine::inventory::WorkLease;
 
 fn portal_observation(catalog: &RuntimeCatalog<'_>, operation: &str, id: &str, name: &str) -> TestResult<Observation> {
     let plan = catalog.lookup("workspaces-web", operation).ok_or("authority plan absent")?;

@@ -68,61 +68,10 @@ pub(super) fn relations(
     services: &ServiceIndex<'_>,
     checked: &crate::overlay::CheckedOverlays,
 ) -> Result<Vec<Value>, RuntimeCatalogCompileError> {
-    let context = super::model_path::ValidationContext { kinds, checked, services };
-    kinds
-        .relations()
-        .iter()
-        .filter(|relation| super::model_path::active_kind(&context, &relation.source_kind)
-            && super::model_path::active_kind(&context, &relation.target_kind))
-        .filter(|relation| kinds.relation_target_kinds(relation).is_none_or(|targets|
-            targets.iter().all(|target| super::model_path::active_kind(&context, target))))
-        .map(|relation| {
-            let scope = match relation.scope.as_str() {
-                "account_region" | "arn_account_region" => 0,
-                "account" => 1,
-                "home_region" => 2,
-                _ => return Err(RuntimeCatalogCompileError::Capability),
-            };
-            let mut value = map([
-                (1, Value::Text(relation.source_kind.clone())),
-                (2, path(services, &relation.source_path)?),
-                (3, Value::Text(relation.target_kind.clone())),
-                (4, path(services, &relation.target_path)?),
-                (5, Value::Text(relation.relation.clone())),
-                (6, Value::Int(scope)),
-                (10, Value::Int(match relation.source {
-                    crate::kind_map::RelationSource::SelectedOutput => 0,
-                    crate::kind_map::RelationSource::Request => 1,
-                })),
-            ])?;
-            if relation.scope == "arn_account_region" {
-                if relation.source_kind != "AWS::Oam::Link" || relation.source_path != "SinkArn"
-                    || relation.target_kind != "AWS::Oam::Sink" || relation.target_path != "Arn"
-                    || relation.relation != "TARGETS_SINK" {
-                    return Err(RuntimeCatalogCompileError::Capability);
-                }
-                let owner = map([
-                    (1, Value::Int(1)), (2, Value::Text("aws".into())),
-                    (3, Value::Text("oam".into())), (4, Value::Text("sink/".into())),
-                    (5, Value::Int(0)),
-                ])?;
-                let Value::Map(fields) = &mut value else {
-                    return Err(RuntimeCatalogCompileError::Capability);
-                };
-                fields.insert(Key::Field(FieldId::new(8)?), owner);
-            }
-            if let Some(targets) = kinds.relation_target_kinds(relation) {
-                let Value::Map(fields) = &mut value else {
-                    return Err(RuntimeCatalogCompileError::Capability);
-                };
-                fields.insert(Key::Field(FieldId::new(9)?), Value::List(
-                    targets.iter().cloned().map(Value::Text).collect(),
-                ));
-            }
-            Ok(value)
-        })
-        .collect()
+    relations::compile(kinds, services, checked)
 }
+
+mod relations;
 
 pub(super) fn path(
     services: &ServiceIndex<'_>,

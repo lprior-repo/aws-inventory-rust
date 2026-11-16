@@ -29,7 +29,7 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Arn("ApplicationArn"),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
-        input: &[Input::Account("applicationAccount"), Input::Parent("InstanceArn", "ListInstances", "InstanceArn")],
+        input: &[Input::Account("Filter.ApplicationAccount"), Input::Parent("InstanceArn", "ListInstances", "InstanceArn")],
         tags: None,
         queryable: &[],
     },

@@ -4,8 +4,7 @@ mod membership;
 mod gateway_audit_batch;
 #[path = "../../../crates/catalog-tool/src/overlay/builtin/family_a_c/consumer_fixture.rs"]
 mod fixture;
-#[path = "../execution/page/cursor.rs"]
-mod cursor;
+use crate::sweep_runtime::execution::page::cursor;
 #[path = "../execution/routing.rs"]
 mod routing;
 

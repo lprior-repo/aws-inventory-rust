@@ -1,5 +1,5 @@
 use super::*;
-use inventory_core::record::{KeyRef, scalar_record};
+use inventory_core::record::scalar_record;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
@@ -19,8 +19,8 @@ fn given_distinct_scalar_parents_when_bound_then_child_inputs_keep_exact_values(
     let target = FieldId::new(7)?;
     ["parent-one", "parent-two"].into_iter().try_for_each(|given| {
         let when = bound_child(ValueRef::Text(given), target)?;
-        assert!(matches!(when.root().get(KeyRef::Field(target))?, Some(ValueRef::Text(value)) if value == given));
-        assert!(when.root().get(KeyRef::Name("$"))?.is_none());
+        assert!(matches!(when.root().get_field(target)?, Some(ValueRef::Text(value)) if value == given));
+        assert!(when.root().get_name("$")?.is_none());
         Ok(())
     })
 }
@@ -29,7 +29,7 @@ fn given_distinct_scalar_parents_when_bound_then_child_inputs_keep_exact_values(
 fn given_long_parent_when_bound_then_child_input_preserves_all_64_bits() -> TestResult {
     let target = FieldId::new(7)?;
     let when = bound_child(ValueRef::Int(i64::MAX), target)?;
-    assert!(matches!(when.root().get(KeyRef::Field(target))?, Some(ValueRef::Int(i64::MAX))));
+    assert!(matches!(when.root().get_field(target)?, Some(ValueRef::Int(i64::MAX))));
     Ok(())
 }
 
@@ -37,7 +37,7 @@ fn given_long_parent_when_bound_then_child_input_preserves_all_64_bits() -> Test
 fn given_boolean_parent_when_bound_then_child_input_preserves_boolean_type() -> TestResult {
     let target = FieldId::new(7)?;
     let when = bound_child(ValueRef::Bool(false), target)?;
-    assert!(matches!(when.root().get(KeyRef::Field(target))?, Some(ValueRef::Bool(false))));
+    assert!(matches!(when.root().get_field(target)?, Some(ValueRef::Bool(false))));
     Ok(())
 }
 

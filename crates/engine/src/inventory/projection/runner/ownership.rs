@@ -22,7 +22,7 @@ impl DeliveryOwnership {
 }
 
 pub(super) async fn acquire(store: &BinaryStore) -> Result<DeliveryOwnership, ProjectionError> {
-    // Reading immutable pool options never acquires its single reader connection;
+    // Reading immutable pool options never acquires a reader connection;
     // an existing projector may retain that connection throughout its snapshot.
     let connection_options = store.reader.connect_options();
     let file = connection_options.get_filename();

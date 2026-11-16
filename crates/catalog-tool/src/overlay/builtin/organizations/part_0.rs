@@ -79,7 +79,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         scope: Some(Scope::Account),
         items: Some(ItemSelector::parse("ResponsibilityTransfers")?),
         identity: Some(Identity::Arn(path("Arn")?)),
-        fixed: [(path("Type")?, FixedValue::String("BILLING".to_owned()))].into_iter().collect(),
+        fixed: [(path("Type")?, FixedValue::String("BILLING".to_owned())), (path("MaxResults")?, FixedValue::Integer(20))].into_iter().collect(),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
     }),
@@ -88,7 +88,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         scope: Some(Scope::Account),
         items: Some(ItemSelector::parse("ResponsibilityTransfers")?),
         identity: Some(Identity::Arn(path("Arn")?)),
-        fixed: [(path("Type")?, FixedValue::String("BILLING".to_owned()))].into_iter().collect(),
+        fixed: [(path("Type")?, FixedValue::String("BILLING".to_owned())), (path("MaxResults")?, FixedValue::Integer(20))].into_iter().collect(),
         paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
     }),

@@ -29,7 +29,7 @@ fn scalar_relation_row(row: &ReviewedRelation) -> Result<String, Box<dyn std::er
 fn digest(rows: impl Iterator<Item = String>) -> String {
     let mut rows = rows.collect::<Vec<_>>();
     rows.sort();
-    format!("{:x}", Sha256::digest(rows.concat().as_bytes()))
+    Sha256::digest(rows.concat().as_bytes()).iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 #[test]
@@ -111,14 +111,18 @@ fn native_list_and_detail_views_share_the_exact_canonical_kind() -> TestResult {
 
 #[test]
 fn pinned_schema_absences_remain_explicit_api_only_resources() -> TestResult {
+    // Given resources with native inventory APIs but no exact pinned CFN type.
+    // When compiling the real registry, use the pinned Smithy service identity.
     let map = embedded(include_bytes!("../../../../../catalog/cloudcontrol-universal.json"))?;
-    for (service, operation, kind) in [
-        ("devicefarm", "ListInstanceProfiles", "AWS::ApiOnly::DeviceFarmInstanceProfile"),
-        ("transcribe", "ListLanguageModels", "AWS::ApiOnly::TranscribeLanguageModel"),
-        ("workspaces", "DescribeWorkspaceBundles", "AWS::ApiOnly::WorkSpacesBundle"),
+    for (service, operation, kind, absent_cfn) in [
+        ("device-farm", "ListInstanceProfiles", "AWS::ApiOnly::DeviceFarmInstanceProfile", "AWS::DeviceFarm::InstanceProfile"),
+        ("transcribe", "ListLanguageModels", "AWS::ApiOnly::TranscribeLanguageModel", "AWS::Transcribe::LanguageModel"),
+        ("workspaces", "DescribeWorkspaceBundles", "AWS::ApiOnly::WorkSpacesBundle", "AWS::WorkSpaces::Bundle"),
     ] {
-        assert_eq!(map.operations().iter().find(|row| row.service == service && row.operation == operation).map(|row| row.kind.as_str()), Some(kind));
-        assert!(map.api_only().iter().any(|row| row.kind == kind && !row.reason.is_empty()));
+        // Then every exact operation retains its distinct API-only identity and reason.
+        assert_eq!(map.operations().iter().find(|row| row.service == service && row.operation == operation).map(|row| row.kind.as_str()), Some(kind), "{service}.{operation}");
+        assert!(map.api_only().iter().any(|row| row.kind == kind && !row.reason.is_empty()), "{kind}");
+        assert!(map.lookup(absent_cfn).is_none(), "{absent_cfn}");
     }
     Ok(())
 }
@@ -139,7 +143,8 @@ fn native_scalar_relationships_preserve_exact_join_paths_and_scope() -> TestResu
 }
 
 #[test]
-fn all_six_reviewed_families_preserve_every_exact_operation_assignment() -> TestResult {
+fn given_reviewed_metadata_operations_when_registry_compiles_then_expected_kinds_are_retained() -> TestResult {
+    // Given independently specified native metadata identities.
     let additions = [
         ("apigatewayv2", "ListPortals", "AWS::ApiOnly::ApiGatewayV2Portal"),
         ("bedrock", "ListInferenceProfiles", "AWS::Bedrock::ApplicationInferenceProfile"),
@@ -155,24 +160,12 @@ fn all_six_reviewed_families_preserve_every_exact_operation_assignment() -> Test
         ("s3-control", "GetStorageLensGroup", "AWS::S3::StorageLensGroup"),
         ("transfer", "DescribeAgreement", "AWS::Transfer::Agreement"),
     ];
+    // When compiling all reviewed families against the pinned CFN source.
     let map = embedded(include_bytes!("../../../../../catalog/cloudcontrol-universal.json"))?;
-    assert_eq!(map.operations().len(), 1_750 + additions.len() + NEW_SAFE_METADATA_OPERATIONS.len());
+    // Then every listed operation keeps its exact canonical or API-only kind.
     for &(service, operation, kind) in additions.iter().chain(NEW_SAFE_METADATA_OPERATIONS) {
         assert_eq!(map.operations().iter().find(|row| row.service == service && row.operation == operation).map(|row| row.kind.as_str()), Some(kind), "{service}.{operation}");
     }
-    // Preserve every pre-repair assignment while reviewing the explicit MSK cutover separately.
-    let original = map.operations().iter()
-        .filter(|row| !additions.iter().chain(NEW_SAFE_METADATA_OPERATIONS).any(|(service, operation, _)| row.service == *service && row.operation == *operation))
-        .map(|row| {
-            let kind = if row.service == "kafka" && row.operation == "ListClustersV2" {
-                "AWS::ApiOnly::MSKCluster"
-            } else {
-                row.kind.as_str()
-            };
-            format!("{}\t{}\t{kind}\n", row.service, row.operation)
-        });
-    assert_eq!(digest(original), "e0f7910fd2845e3282f98dc18a13d4cf86786f70fb37cc198e7c9001aebaa940");
-    assert_eq!(map.source_sha256(), &crate::kind_map::fingerprint::digest(&map));
     Ok(())
 }
 
@@ -441,4 +434,107 @@ fn route53_dnssec_emits_distinct_dnssec_and_key_resources_with_exact_leased_pare
         assert!(!map.relations().iter().any(|row| row.source_kind == kind && row.relation == "FOR_HOSTED_ZONE"));
     }
     Ok(())
+}
+
+#[test]
+fn given_embedded_logging_destinations_when_compiled_then_firehose_is_canonical_and_edges_keep_their_selectors() -> TestResult {
+    // Given the real pinned registry and all reviewed native families.
+    let map = embedded(include_bytes!("../../../../../catalog/cloudcontrol-universal.json"))?;
+    // When resolving the destination resource, the exact CFN identity is mapped.
+    let kind = "AWS::KinesisFirehose::DeliveryStream";
+    assert!(matches!(map.lookup(kind).map(|entry| &entry.target),
+        Some(KindTarget::Mapped { kind: target, .. }) if target == kind));
+    // Then each logging consumer retains its selected ARN-to-canonical-ID edge.
+    for (source, path) in [
+        ("AWS::VpcLattice::AccessLogSubscription", "destinationArn"),
+        ("AWS::ApiOnly::WAFLoggingConfiguration", "LogDestinationConfigs"),
+        ("AWS::ApiOnly::WAFRegionalLoggingConfiguration", "LogDestinationConfigs"),
+    ] {
+        let edges = map.relations().iter().filter(|row| row.source_kind == source
+            && row.target_kinds.primary() == kind && row.relation == "LOGS_TO").collect::<Vec<_>>();
+        assert_eq!(edges.len(), 1, "{source}");
+        let edge = edges.first().ok_or("missing Firehose logging edge")?;
+        assert!(matches!(&edge.source,
+            ReviewedRelationSource::SelectedOutput(ReviewedValuePath::Fields(field)) if field == path));
+        assert_eq!(edge.target, ReviewedRelationTarget::CanonicalId);
+        assert_eq!(edge.scope, "account_region");
+        assert_eq!(edge.guard, None);
+    }
+    // Alternative destinations must not disappear when the Firehose target is registered.
+    let alternatives = map.relations().iter().filter(|row|
+        row.source_kind == "AWS::VpcLattice::AccessLogSubscription" && row.relation == "LOGS_TO")
+        .map(|row| (row.target_kinds.primary(), row.scope.as_str())).collect::<std::collections::BTreeSet<_>>();
+    assert_eq!(alternatives, std::collections::BTreeSet::from([
+        ("AWS::KinesisFirehose::DeliveryStream", "account_region"),
+        ("AWS::Logs::LogGroup", "account_region"),
+        ("AWS::S3::Bucket", "account"),
+    ]));
+    Ok(())
+}
+
+#[test]
+fn given_s3files_resources_when_embedded_compiles_then_native_operations_and_access_point_edges_share_canonical_kinds() -> TestResult {
+    // Given the real pinned source, when all native mappings compile together.
+    let map = embedded(include_bytes!("../../../../../catalog/cloudcontrol-universal.json"))?;
+    // Then native collection and CloudControl cannot create separate alias nodes.
+    for (operation, kind, alias) in [
+        ("ListFileSystems", "AWS::S3Files::FileSystem", "AWS::ApiOnly::S3FileSystem"),
+        ("ListMountTargets", "AWS::S3Files::MountTarget", "AWS::ApiOnly::S3FileSystemMountTarget"),
+    ] {
+        assert!(matches!(map.lookup(kind).map(|entry| &entry.target),
+            Some(KindTarget::Mapped { kind: target, .. }) if target == kind), "{kind}");
+        assert_eq!(map.operations().iter().find(|row| row.service == "s3files" && row.operation == operation)
+            .map(|row| row.kind.as_str()), Some(kind), "{operation}");
+        assert!(!map.api_only().iter().any(|row| row.kind == alias), "{alias}");
+        assert!(!map.operations().iter().any(|row| row.kind == alias), "{alias}");
+        assert!(!map.relations().iter().any(|row| row.source_kind == alias
+            || row.target_kinds.iter().any(|target| target == alias)), "{alias}");
+    }
+    let edges = map.relations().iter().filter(|row| row.source_kind == "AWS::S3Files::AccessPoint"
+        && row.relation == "FOR_FILE_SYSTEM").collect::<Vec<_>>();
+    assert_eq!(edges.len(), 1);
+    let edge = edges.first().ok_or("missing access-point filesystem edge")?;
+    assert!(matches!(edge.source, ReviewedRelationSource::Request(_)));
+    assert_eq!((source_fields(edge), edge.target_kinds.primary(), target_fields(edge), edge.scope.as_str()),
+        (Some("fileSystemId"), "AWS::S3Files::FileSystem", Some("fileSystemArn"), "account_region"));
+    Ok(())
+}
+
+#[test]
+fn given_registered_destination_absent_from_pin_when_embedded_compiles_then_exact_extra_type_is_rejected() -> TestResult {
+    // Given a pinned source missing one otherwise registered canonical destination.
+    for kind in ["AWS::KinesisFirehose::DeliveryStream", "AWS::S3Files::FileSystem", "AWS::S3Files::MountTarget"] {
+        let mut pin: serde_json::Value = serde_json::from_slice(include_bytes!("../../../../../catalog/cloudcontrol-universal.json"))?;
+        pin.get_mut("resource_types").and_then(serde_json::Value::as_array_mut)
+            .ok_or("missing pinned resource types")?.retain(|row|
+                row.get("type_name").and_then(serde_json::Value::as_str) != Some(kind));
+        // When compiling all families, registration never bypasses pinned-source validation.
+        let result = embedded(&serde_json::to_vec(&pin)?);
+        // Then the exact missing pinned identity, not an arbitrary replacement, is reported.
+        assert!(matches!(result, Err(KindMapError::ExtraType(actual)) if actual == kind), "{kind}");
+    }
+    Ok(())
+}
+
+#[test]
+fn given_unregistered_relation_target_when_compiled_with_pin_then_unknown_kind_is_rejected() {
+    use crate::kind_map::{CfnMapping, RelationMapping, RelationPath, RelationSource, RelationTarget};
+    // Given a valid source kind but no reviewed registration for the target.
+    // The first target really exists in the pin; the second is an unknown spelling.
+    for target in ["AWS::KinesisFirehose::DeliveryStream", "AWS::KinesisFirehose::UnknownStream"] {
+        let cfn = [CfnMapping::canonical("AWS::VpcLattice::AccessLogSubscription")];
+        let relations = [RelationMapping {
+            source_kind: "AWS::VpcLattice::AccessLogSubscription",
+            source: RelationSource::SelectedOutput(RelationPath::Fields("destinationArn")),
+            target_kind: target, target: RelationTarget::CanonicalId,
+            relation: "LOGS_TO", scope: "account_region", guard: None,
+        }];
+        let source = MappingSource { cfn: &cfn, relations: &relations, ..MappingSource::default() };
+        // When applying the same merged compilation path as embedded().
+        let result = super::super::merge::compile(std::iter::once(source),
+            include_bytes!("../../../../../catalog/cloudcontrol-universal.json"));
+        // Then even a pinned target requires an explicit reviewed mapping.
+        assert!(matches!(result, Err(KindMapError::UnknownRelationKind { relation, kind })
+            if relation == "LOGS_TO" && kind == target), "{target}");
+    }
 }

@@ -132,6 +132,17 @@ fn validate_page(
     };
     match overlay.paginator.as_ref() {
         Some(Paginator::Token(pair)) => token(pair),
+        Some(Paginator::LastListItem { input: request, output: response, truncated }) => {
+            let request = model_path::resolve(service, input, request.as_str())?.1;
+            let response = model_path::resolve(service, output, response.as_str())?.1;
+            model_path::string_target(service, request)?;
+            model_path::string_target(service, model_path::list_element(service, response)?)?;
+            let flag = model_path::resolve(service, output, truncated.as_str())?.1;
+            if model_path::kind(service, flag)? != "boolean" {
+                return Err(RuntimeCatalogCompileError::Capability);
+            }
+            Ok(())
+        }
         Some(Paginator::Tokens { pairs, truncated }) => {
             pairs.iter().try_for_each(token)?;
             truncated.as_ref().map_or(Ok(()), |path| {

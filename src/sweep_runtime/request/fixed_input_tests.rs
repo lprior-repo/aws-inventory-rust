@@ -67,7 +67,8 @@ fn compiled_inputs(protocol: &str, literal: overlay::FixedValue, attributes: ove
     let endpoint = json!({"version":"1.0","parameters":{"Region":{"type":"string"}},"rules":[{"type":"endpoint","conditions":[],"endpoint":{"url":"https://fixed.test","properties":properties}}]});
     let rules = endpoints::RuleSet::parse(Path::new("fixed-endpoint.json"), &endpoint)?;
     let cases: Vec<endpoints::Case> = serde_json::from_value(json!([{"params":{"Region":"us-east-1"},"expect":{"endpoint":{"url":"https://fixed.test","properties":properties}}}]))?;
-    let verified = rules.run_cases(&cases)?.verified_endpoint(Some("fixed"))?;
+    let verified = rules.run_cases(&cases)?.verified_endpoint(Some("fixed"))
+        .map_err(|error| format!("fixed-input fixture endpoint failed: {error:?}"))?;
     let kinds = KINDS.compile(&names::Exceptions::none())?;
     Ok(runtime_catalog::augment(&base, &checked, &kinds, &BTreeMap::from([("fixed".to_owned(), verified)]))?)
 }

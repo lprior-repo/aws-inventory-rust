@@ -181,12 +181,14 @@ fn given_exact_source_stages_when_indexed_then_only_that_stage_or_ordinary_depen
     };
     // The first consumer has an ordinary dependency as well as an exact-stage
     // dependency. Neither binding order nor overlapping keys may duplicate work.
-    index.add_dependency(Consumer { ordinal: 0, plan: first }, dependency(&stage("DETAIL"))?)?;
+    let detail = stage("DETAIL");
+    index.add_dependency(Consumer { ordinal: 0, plan: first }, dependency(&detail)?)?;
     let ordinary = BindingSource::Operation {
         service: "staged-service".into(), operation: "ListParents".into(), path: Box::default(),
     };
     index.add_dependency(Consumer { ordinal: 0, plan: first }, dependency(&ordinary)?)?;
-    index.add_dependency(Consumer { ordinal: 1, plan: second }, dependency(&stage("TAGS"))?)?;
+    let tags = stage("TAGS");
+    index.add_dependency(Consumer { ordinal: 1, plan: second }, dependency(&tags)?)?;
     let transformed = BindingSource::Transformed {
         source: Box::new(stage("DETAIL")), transform: BindingTransform::StripPrefix("/".into()),
     };

@@ -271,9 +271,10 @@ No throughput or latency benchmark claim is made.
 
 ### Bounds and failures
 
-- Root and each service obey the existing record `MAX_RECORD_BYTES` (16 MiB).
-  The compiler checks the service-byte sum while accumulating; the record writer
-  checks the complete root including its envelope. Neither limit is raised.
+- Each service is an independent record and obeys `MAX_RECORD_BYTES` (16 MiB).
+  The root nests those service blobs and obeys `MAX_CATALOG_BYTES` (64 MiB):
+  the compiler checks the service-byte sum while accumulating, and both the
+  container encoder and the reader check the complete root against that bound.
 - Catalog validation uses `MapRef::from_bytes_bounded`: at most 32 container
   frames, including containers inside unknown keys, tags and indefinite values.
   Exceeding that bound returns `RecordError::DepthLimit`. Generic record readers
@@ -293,11 +294,17 @@ No throughput or latency benchmark claim is made.
 
 ## Size estimate and decisions
 
-The pinned models contain 142,767 shapes and 238,070 structure/union members.
-The earlier format measured 6,951,532 bytes. The v2 catalog generated from the
-same pinned source on 2026-11-14 is **10,995,359 bytes** (10.486 MiB). A fresh
-`models compile --check` recompilation passed the byte comparison. The root
-limit remains 16 MiB.
+Historical size evidence: the pinned models contained 142,767 shapes and
+238,070 structure/union members. The earlier format measured 6,951,532 bytes.
+The v2 catalog generated from the same pinned source on 2026-11-14 was
+**10,995,359 bytes** (10.486 MiB); that `models compile --check` recompilation
+passed the byte comparison.
+
+Current evidence: the format-3 catalog regenerated on 2026-11-15 from the pinned
+models at `46135f8` (436 model files), including the reviewed runtime overlay,
+is **19,048,862 bytes** (18.166 MiB). A second `models compile --check`
+recompilation matched it byte for byte. Each service record stays under the
+16 MiB record limit; the root is bounded by `MAX_CATALOG_BYTES` (64 MiB).
 
 The coordinator's identity clarification replaces ambiguous short service names
 with model directories and adds key 18 for the full service ID. The optional
@@ -371,83 +378,64 @@ exercise clean provenance, nested-directory rejection, modified/untracked models
 catalog files. Inline-stack tests cover caller-storage identity, the inclusive
 32-frame bound, LIFO ordering, mutable top/pop reuse and generic dynamic storage.
 
-## Reviewed overlay syntax (M1.4b)
+## Embedded reviewed policies
 
-`catalog/overlay/<service>.toml` records a review, not authorization by itself.
-The filename stem matches `[a-z0-9][a-z0-9-]*`. Each file is at most 1 MiB
-and contains at most 4,096 operations. Directory loading visits at most 65,536
-entries and accepts at most 4,096 TOML files, in filename order. Non-TOML
-entries, including `must-deny.txt`, count toward traversal but are ignored.
-Distinct accepted filenames cannot share a service stem.
+Reviewed overlays are typed Rust values in
+`crates/catalog-tool/src/overlay/builtin/`, loaded by `overlay::embedded()`.
+There is no external overlay directory or TOML parser. Mandatory denials are
+embedded in `crates/catalog-tool/src/classes/deny/builtin.rs`; a supplied policy
+cannot remove them.
 
-Required root keys are integer `format = 1`, a quoted Gregorian `reviewed`
-date in `YYYY-MM-DD` form (years 0001–9999), and a nonempty `reviewer` string
-of at most 64 UTF-8 bytes. `operation` is an optional table keyed by exact
-`[A-Za-z][A-Za-z0-9]*` operation names.
+[`sts/part_0.rs`](../crates/catalog-tool/src/overlay/builtin/sts/part_0.rs)
+is a maintained typed example: it constructs the `GetCallerIdentity` root
+selection, account scope, key identity and unpaginated plan, as well as typed
+denials and a deferral. `ServiceOverlay::new` constructs a service policy;
+its metadata and operation map have read-only accessors. `OperationOverlay`
+contains typed classes, scope, selectors, identities, fixed inputs, bindings,
+paginators and batch plans, together with projection, routing and row policies.
+These constructors do not establish callability; the model-aware gate below
+must validate the complete plan.
 
-Unknown keys and wrong types are errors at every structured boundary.
-Member paths contain `[A-Za-z][A-Za-z0-9_]*` segments separated by dots,
-at most eight segments and 256 bytes. Lists and maps are traversed implicitly,
-not indexed. Arrays reject duplicates and contain at most 64 entries unless
-a tighter limit is listed below. The file budget bounds `fixed` and `bind`.
+`MemberPath::new` accepts ordinary dot-separated modeled member paths and
+rejects `$`; request destinations and request-context paths remain strict
+modeled paths. `MemberPath::selected("$")` explicitly denotes the selected
+current item, including scalar identity and parent binding sources; other
+selected paths still use ordinary member-path validation.
+`ItemSelector::Root` instead selects the output structure itself;
+`ItemSelector::Member` selects a modeled list/map, and `ItemSelector::Explicit`
+carries a typed selection kind. `$` is not a general Smithy member name.
 
-| Operation key | Accepted value | Absence |
-|---|---|---|
-| `class` | `enumerate`, `expand`, `deny`, `defer` | Candidate class |
-| `deny_reason` | `content`, `secret`, `paid`, `mutating`, `reference-data` | Required exactly for `deny`; forbidden otherwise |
-| `scope` | `region`, `account`, `home-region` | Modeled scope |
-| `items` | Output list/map member path, or `$` for the output structure itself | Modeled list, otherwise unresolved |
-| `page_size` | Integer 1–100000 | Largest modeled allowed size |
-| `exclude_from_hash` | Item member paths | No extra exclusions |
-| `skip` | Operation names, excluding self | No extra scheduling suppression |
-| `quota_group` | `[a-z][a-z0-9-]*`, at most 32 bytes | Service-wide group |
-| `queryable` | Item member paths | Modeled SQL columns |
-| `tags` | Item member path | Modeled tags, otherwise unresolved |
-| `fixed` | Input paths to string, i64, boolean, or string array | No extra fixed inputs |
-| `paginator` | Reviewed pagination table | Modeled pagination evidence |
-| `identity` | Reviewed identity table | Modeled identity evidence |
-| `bind` | Input paths to binding tables | Modeled binding evidence |
-| `batch` | Reviewed batch table | No extra batch replacement |
+Selected scalar observations use the native CBOR singleton text-keyed map
+`{"$": scalar}`. The current-item reader unwraps only that singleton scalar
+map; structures retain their registered-field-ID maps. Scalar typed columns
+use SQL column `value` with an empty field-ID path, preserved across SQLite
+reopen. This representation needs neither service-specific field IDs nor
+runtime JSON conversion.
 
-`deny` and `defer` entries carry no plan keys, even explicitly empty arrays
-or tables. The typed deny variant contains its reason.
+Typed deny variants carry their reason; deferred entries carry `defer_reason`.
+Pagination, identity, binding and selection validation remains model-aware,
+not a serialized configuration syntax contract.
 
-`paginator.kind = "token"` requires `input` and `output` paths and forbids
-other keys. `"tokens"` requires one to eight `{input, output}` pairs with
-distinct inputs and optionally a `truncated` output path. `"none"` forbids
-every other key. Model-aware validation checks the token and flag types.
-
-`identity` has exactly one of `arn` (item path), `template` (string), or
-`key` (one to eight item paths). A template has balanced, nonempty
-placeholders naming `partition`, `region`, `account`, or an item path;
-at least one placeholder is required.
-
-Each binding is exactly `{from = "Operation", path = "Item.Path"}`,
-`{account = true}`, or `{region = true}`. False context flags, self-bindings
-and explicit binding cycles are rejected. `batch` requires `member` (input
-list path), `max` (1–10000), and `replaces` (a different operation).
-Nested required keys have no defaults.
-
-The complete syntax example is
-[`complete.toml`](../crates/catalog-tool/tests/fixtures/overlay/complete.toml).
-Parsed `ServiceOverlay` values expose read-only accessors; callers cannot
-mutate their validated format, review metadata or operation map.
-
-The syntax parser does not establish callability. Parsing a review never
-promotes a denied operation; the model-aware gate below decides whether a
-complete, safe callable plan exists.
+`Paginator::LastListItem { input, output, truncated }` takes continuation from
+the final scalar of the modeled output list, not from the list as a whole.
+The checker validates the request token, list element type and Boolean
+truncation path. Runtime `TokenSelection::LastListItem` preserves the scalar's
+typed token value when writing the next request. A false truncation flag stops
+pagination; a true flag without required continuation is an error.
 
 ## Model-aware overlay gate (M1.4c)
 
-`catalog-tool overlay --source .local/aws-models --root . --check` validates
-reviews against the pinned models and compares `catalog/aws-overlay.report`.
-`--write` publishes the deterministic report only after validation succeeds.
-Moon runs the freshness check between collection plans and the binary catalog.
+`catalog-tool overlay --source .local/aws-models --root . --check` is the
+command interface for validating embedded reviews against the pinned models
+and comparing `catalog/aws-overlay.report`. `--write` requests publication of
+the deterministic report only after validation succeeds. `--root` selects
+the report destination, not an external policy directory. Publication requires
+successful validation; this CLI contract does not assert a current test result.
 
 The checker resolves operation names and paths in their modeled input, output
-or selected-item context, including built-in Smithy types. Ordinary `items`
-paths select a list or map; explicit `items = "$"` selects the output structure.
-Root selection is never inferred, and `$` is not a general member path.
+or selected-item context, including built-in Smithy types. Ordinary member
+selectors select a list or map; root selection explicitly selects the output
+structure. Explicit typed selectors describe additional selection kinds.
 
 A `CallableOperation` has private fields and is constructed only by the checker.
 It represents an operation of a reviewed service with a permitted effective
@@ -465,11 +453,12 @@ not publish a partial report.
 
 Deferred operations carry a mandatory `defer_reason` (at most 1,024 bytes);
 denied overrides carry a typed `deny_reason` (`content`, `secret`, `paid`,
-`mutating`, `reference-data`). Reviewed services are currently `ec2` and `sts`:
-four callable operations (EC2 `DescribeVpcs`, `DescribeSubnets`,
+`mutating`, `reference-data`). Historical M1.4c evidence covered `ec2` and
+`sts`: four callable operations (EC2 `DescribeVpcs`, `DescribeSubnets`,
 `DescribeRegions`; STS `GetCallerIdentity`), three STS credential-minting
-operations denied as `secret`, and every other candidate deferred. All other
-services remain unreviewed and uncallable.
+operations denied as `secret`, and other candidates deferred. That milestone
+is not the current embedded review inventory or a current verification result;
+current authorization comes only from checked embedded policies.
 
 ## Runtime catalog extension
 
@@ -483,8 +472,8 @@ catalog-tool.
 | ---: | --- |
 | 1 | Extension version, currently 1 |
 | 2 | Callable plans: service, operation, kind, scope, items, identity, bindings, page plan, relations, verified endpoint, review, purpose, protocol (fields 1–13) |
-| 3 | Kind schemas: kind, SQL table, typed text columns (display name path and every reviewed relation target path), optional name path |
-| 4 | Reviewed relations: source kind/path, target kind/path, relation, scope (0 account-region, 1 account, 2 home region) |
+| 3 | Kind schemas: kind, SQL table, typed columns (including selected scalar values, display name paths and reviewed relation target paths), optional name path |
+| 4 | Reviewed typed relations: source/target kinds and modes, paths, relation, scope (0 account-region, 1 account, 2 home region), optional guard and composite components |
 | 5 | Kind coverage for every CloudFormation type: mapped, API-only or unmapped with reason |
 | 6 | Review decisions: service, operation, disposition (0 callable, 1 denied, 2 deferred, 3 unclassified), reason |
 
@@ -492,5 +481,22 @@ Every map is closed: the reader rejects unknown fields, out-of-range enums and
 absent optional fields encoded as anything other than omission. Callable
 decisions and plans form an exact bijection by `(service, operation)`, and each
 referenced operation must exist once in its service. Bootstrap roles
-(account identity, region discovery) are explicit `kinds.tsv` rows matched by
-exact `(service, operation)` and never authorize a call on their own.
+(account identity, region discovery) are explicit typed mappings in
+`crates/catalog-tool/src/kind_map/builtin.rs`'s `SOURCE`, matched by exact
+`(service, operation)` and never authorize a call on their own.
+
+Relationship mappings use typed selectors rather than magic path prefixes.
+`RelationSource::SelectedOutput` reads the selected observation;
+`RelationSource::Request` reads the effective request. Compiled runtime
+`RelationSource::Parent` also represents parent-derived relationship values.
+Runtime source paths distinguish `Fields` from `RootText`, so a selected text
+scalar is explicit rather than an invented Smithy field.
+
+Mapping `RelationTarget::SelectedOutput`, `BoundContext` and `CanonicalId`
+compile to runtime `RelationTargetMode::{SelectedFields, SelectedRootText,
+BoundContextFields, BoundContextRootText, CanonicalId}`. Selected modes join
+against target observation values; bound-context modes join against retained
+target binding context; canonical mode joins against the target's canonical
+resource ID. The typed mapping `RelationPath::{Fields, RootText}` keeps scalar
+roots distinct from modeled fields. Guards and composite components retain
+their typed source/path and target modes through the compiled catalog.

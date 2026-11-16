@@ -10,7 +10,7 @@ const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 "n#Input":{"type":"structure","members":{"Id":{"target":"smithy.api#String","traits":{"smithy.api#required":{}}},"OtherId":{"target":"smithy.api#String"},"Regions":{"target":"n#Strings"}}},
 "n#Output":{"type":"structure","members":{"Items":{"target":"n#Things"}}},
 "n#Things":{"type":"list","member":{"target":"n#Thing"}},
-"n#Thing":{"type":"structure","members":{"Id":{"target":"smithy.api#String"},"Names":{"target":"n#Strings"},"Count":{"target":"smithy.api#Integer"}}},
+"n#Thing":{"type":"structure","members":{"Id":{"target":"smithy.api#String"},"Names":{"target":"n#Strings"},"Count":{"target":"smithy.api#Integer"},"Enabled":{"target":"smithy.api#Boolean"}}},
 "n#Strings":{"type":"list","member":{"target":"smithy.api#String"}}
 }}"#;
 
@@ -74,7 +74,7 @@ fn given_typed_identity_fields_when_shapes_and_bounds_match_then_checker_preserv
         overlay::IdentityField::SelectedStringList { path: MemberPath::new("Names")?, max_items: 8, max_item_bytes: 128 },
         overlay::IdentityField::SelectedDigest(MemberPath::selected("$")?)];
     plan.identity = Some(overlay::Identity::CorrelatedKey(fields.clone()));
-    let when = checked(&given, vec![("ListA", plan)])?;
+    let when = checked(&given, vec![("ListA", plan), ("ListB", deferred()), ("ListChildren", deferred())])?;
     assert_eq!(when.services().first().ok_or("service")?.callable().first().ok_or("callable")?.plan().identity,
         Some(overlay::Identity::CorrelatedKey(fields)));
     Ok(())
@@ -84,17 +84,53 @@ fn given_typed_identity_fields_when_shapes_and_bounds_match_then_checker_preserv
 fn given_typed_identity_fields_when_shape_or_bounds_are_invalid_then_plan_is_rejected() -> TestResult {
     let given = fixture(MODEL, "")?;
     for field in [
-        overlay::IdentityField::SelectedInteger { path: MemberPath::new("Id")?, minimum: 0, maximum: 10 },
-        overlay::IdentityField::SelectedInteger { path: MemberPath::new("Count")?, minimum: 11, maximum: 10 },
-        overlay::IdentityField::SelectedInteger { path: MemberPath::new("Count")?, minimum: 0, maximum: i64::MAX },
-        overlay::IdentityField::SelectedStringList { path: MemberPath::new("Names")?, max_items: 0, max_item_bytes: 1 },
-        overlay::IdentityField::SelectedStringList { path: MemberPath::new("Names")?, max_items: 65, max_item_bytes: 128 },
-        overlay::IdentityField::SelectedStringList { path: MemberPath::new("Id")?, max_items: 1, max_item_bytes: 1 },
-        overlay::IdentityField::SelectedDigest(MemberPath::new("Missing")?),
+        (overlay::IdentityField::SelectedInteger { path: MemberPath::new("Id")?, minimum: 0, maximum: 10 }, None),
+        (overlay::IdentityField::SelectedInteger { path: MemberPath::new("Count")?, minimum: 11, maximum: 10 }, Some("identity integer bounds")),
+        (overlay::IdentityField::SelectedInteger { path: MemberPath::new("Count")?, minimum: 0, maximum: i64::MAX }, None),
+        (overlay::IdentityField::SelectedStringList { path: MemberPath::new("Names")?, max_items: 0, max_item_bytes: 1 }, Some("identity string list bounds")),
+        (overlay::IdentityField::SelectedStringList { path: MemberPath::new("Names")?, max_items: 65, max_item_bytes: 128 }, Some("identity string list bounds")),
+        (overlay::IdentityField::SelectedStringList { path: MemberPath::new("Id")?, max_items: 1, max_item_bytes: 1 }, None),
+        (overlay::IdentityField::SelectedDigest(MemberPath::new("Missing")?), None),
     ] {
+        let (field, policy_error) = field;
         let mut plan = complete()?;
         plan.identity = Some(overlay::Identity::CorrelatedKey(vec![field]));
-        assert!(violations(&given, vec![("ListA", plan)])?.iter().any(|error| error.key() == "identity"));
+        match (checked(&given, vec![("ListA", plan), ("ListB", deferred()), ("ListChildren", deferred())]), policy_error) {
+            (Err(CheckError::Policy(error)), Some(expected)) => assert_eq!(error.value, expected),
+            (Err(CheckError::Violations(errors)), None) => assert!(errors.iter()
+                .any(|error| error.operation() == "ListA" && error.key() == "identity")),
+            (result, expected) => return Err(format!("unexpected identity result {result:?}, expected {expected:?}").into()),
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn given_scalar_presence_predicates_when_checked_then_numeric_and_boolean_presence_are_not_text_comparisons() -> TestResult {
+    let given = fixture(MODEL, "")?;
+    for (path, present, accepted) in [
+        ("Id", true, true), ("Count", true, true), ("Enabled", true, true),
+        ("Id", false, true), ("Count", false, false), ("Enabled", false, false),
+        ("Names", true, false), ("Missing", true, false),
+    ] {
+        let predicate = if present {
+            overlay::IdentityPredicate::Present(MemberPath::new(path)?)
+        } else {
+            overlay::IdentityPredicate::TextEquals { path: MemberPath::new(path)?, value: "value".into() }
+        };
+        let identity = overlay::Identity::Choice(overlay::IdentityChoice::Discriminated(vec![
+            overlay::IdentityBranch::new(predicate, overlay::IdentityLeaf::Key(vec![MemberPath::new("Id")?]))?,
+        ]));
+        let mut plan = complete()?;
+        plan.identity = Some(identity.clone());
+        let result = checked(&given, vec![("ListA", plan), ("ListB", deferred()), ("ListChildren", deferred())]);
+        match (result, accepted) {
+            (Ok(when), true) => assert_eq!(when.services().first().ok_or("service")?
+                .callable().first().ok_or("callable")?.plan().identity, Some(identity)),
+            (Err(CheckError::Violations(errors)), false) => assert!(errors.iter()
+                .any(|error| error.operation() == "ListA" && error.key() == "identity")),
+            (result, _) => return Err(format!("unexpected predicate result for {path}: {result:?}").into()),
+        }
     }
     Ok(())
 }

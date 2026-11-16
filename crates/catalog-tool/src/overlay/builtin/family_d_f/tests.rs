@@ -200,6 +200,18 @@ fn public_checker_accepts_the_real_ecr_parent_and_composite_image_plan() -> Test
     assert_eq!(images.plan().identity, Some(Identity::Key(vec![MemberPath::new("registryId")?,
         MemberPath::new("repositoryName")?, MemberPath::new("imageDigest")?])));
     assert_eq!(images.plan().items, Some(ItemSelector::Member(MemberPath::new("imageDetails")?)));
+    let status = MemberPath::new("filter.imageStatus")?;
+    assert!(!images.plan().fixed.contains_key(&status));
+    assert_eq!(images.plan().branches.iter().map(|branch| (
+        branch.discriminator.as_str(),
+        branch.fixed.get(&status),
+        branch.scope,
+        branch.request_region.as_deref(),
+    )).collect::<Vec<_>>(), [
+        ("ACTIVE", Some(&overlay::FixedValue::String("ACTIVE".to_owned())), Scope::Region, None),
+        ("ARCHIVED", Some(&overlay::FixedValue::String("ARCHIVED".to_owned())), Scope::Region, None),
+        ("ACTIVATING", Some(&overlay::FixedValue::String("ACTIVATING".to_owned())), Scope::Region, None),
+    ]);
     Ok(())
 }
 
@@ -226,5 +238,29 @@ fn databrew_identity_uses_required_unique_names_not_optional_arns() -> TestResul
         assert_eq!(operation(&policies, "databrew", name)?.identity,
             Some(Identity::Key(vec![MemberPath::new("Name")?])));
     }
+    Ok(())
+}
+
+#[test]
+fn selected_scalar_helpers_preserve_strict_request_domains() -> TestResult {
+    use super::support;
+    // Given a scalar identity and a parent-selected scalar binding.
+    let entry = support::inventory("ListChildren", "names", support::key(&["$"])?,
+        Paginator::None)?;
+    let bound = support::bound(entry.clone(), &[("parent", "ListParents", "$")])?;
+    // Then only the selected side accepts the root marker.
+    assert_eq!(bound.1.bind.get(&MemberPath::new("parent")?), Some(&Binding::From {
+        operation: OperationName::new("ListParents")?, path: MemberPath::selected("$")?,
+    }));
+    assert_eq!(support::arn("$")?, Identity::Arn(MemberPath::selected("$")?));
+    assert_eq!(support::queried(entry.clone(), &["$"])?.1.queryable,
+        vec![MemberPath::selected("$")?]);
+    let error = overlay::NameError { value: "$".to_owned() };
+    assert_eq!(support::bound(entry.clone(), &[("$", "ListParents", "$")]), Err(error.clone()));
+    assert_eq!(support::inherited(entry.clone(), "parent", "ListParents", "$"), Err(error.clone()));
+    assert_eq!(support::fixed_integer(entry, "$", 10), Err(error.clone()));
+    assert_eq!(support::correlated(&["$"], &["$"]), Err(error.clone()));
+    assert_eq!(support::token("$", "nextToken"), Err(error.clone()));
+    assert_eq!(support::token("nextToken", "$"), Err(error));
     Ok(())
 }

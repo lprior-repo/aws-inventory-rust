@@ -1,7 +1,7 @@
 use super::*;
 use catalog_tool::{endpoints, kind_map, overlay, runtime_catalog, smithy};
 use inventory_core::{catalog::runtime::{BindingSource, PlanScope}, inventory::{Observation, ResourceKey}, record::Value};
-use std::{collections::BTreeMap, fs, path::Path, sync::LazyLock};
+use std::{collections::BTreeMap, sync::LazyLock};
 
 // These tests intentionally require the pinned model checkout used by catalog compilation.
 // Missing model inputs fail the scenario; they never silently skip resource coverage.
@@ -33,13 +33,9 @@ pub(in crate::sweep_runtime) fn catalog() -> TestResult<RuntimeCatalog<'static>>
 fn compile() -> TestResult<Vec<u8>> {
     let root = tempfile::tempdir()?;
     let source = root.path().join("source");
-    let pinned = Path::new(env!("CARGO_MANIFEST_DIR")).join(".local/aws-models/models");
     let embedded = overlay::embedded()?;
     let policies = SERVICES.iter().map(|(service, date, operations)| {
-        let relative = format!("{service}/service/{date}/{service}-{date}.json");
-        let destination = source.join("models").join(&relative);
-        fs::create_dir_all(destination.parent().ok_or("model parent absent")?)?;
-        fs::copy(pinned.join(&relative), destination)?;
+        crate::sweep_runtime::pinned_model::install(&source.join("models"), service, date, operations)?;
         let policy = embedded.iter().find(|policy| policy.service() == *service)
             .ok_or("production service overlay absent")?;
         let selected = operations.iter().map(|operation| {
@@ -117,7 +113,7 @@ pub(in crate::sweep_runtime) fn observations(plan: &CallablePlan<'_>, rows: Vec<
         };
         let projected = super::super::super::resource_projection::project(plan, &row)?;
         Ok(Observation::new(key, projected, plan.hash_exclusions(), None)?
-            .with_facet_precedence(plan.facet_precedence())?)
+            .with_facet_precedence(plan.facet_precedence()))
     }).collect()
 }
 

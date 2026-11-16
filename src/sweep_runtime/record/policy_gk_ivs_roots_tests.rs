@@ -2,8 +2,7 @@ mod cases;
 mod fixture;
 mod safety;
 mod scenario;
-#[path = "../execution/page/cursor.rs"]
-mod cursor;
+use crate::sweep_runtime::execution::page::cursor;
 
 use crate::sweep_runtime::{execution::{page::{child, consumer_index::ConsumerIndex}, routing}, input, record, request};
 use inventory_core::{catalog::runtime::{CallablePlan, PlanScope, RuntimeCatalog}, inventory::{AccountId, DiscoveryContext, OperationId, Region, RegionId, ScopeKey, ServiceId}, record::{Key, Record, Value, ValueRef}};

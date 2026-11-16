@@ -1,6 +1,6 @@
 use super::*;
 use catalog_tool::{endpoints, kind_map, overlay, runtime_catalog, smithy};
-use std::{fs, path::Path, sync::LazyLock};
+use std::sync::LazyLock;
 
 pub(super) const FORBIDDEN: &[&str] = &[
     "DescribeContainerFleet", "DescribeContainerGroupDefinition", "DescribeContainerGroupPortMappings",
@@ -21,10 +21,8 @@ pub(super) fn catalog() -> TestResult<RuntimeCatalog<'static>> {
 fn compile() -> TestResult<Vec<u8>> {
     let directory = tempfile::tempdir()?;
     let source = directory.path().join("source");
-    let relative = "gamelift/service/2015-10-01/gamelift-2015-10-01.json";
-    let destination = source.join("models").join(relative);
-    fs::create_dir_all(destination.parent().ok_or("model parent absent")?)?;
-    fs::copy(Path::new(env!("CARGO_MANIFEST_DIR")).join(".local/aws-models/models").join(relative), destination)?;
+    let operations = std::iter::once("ListContainerFleets").chain(FORBIDDEN.iter().copied()).collect::<Vec<_>>();
+    crate::sweep_runtime::pinned_model::install(&source.join("models"), "gamelift", "2015-10-01", &operations)?;
     let embedded = overlay::embedded()?;
     let policy = embedded.iter().find(|policy| policy.service() == "gamelift").ok_or("embedded GameLift policy absent")?;
     let selected = std::iter::once("ListContainerFleets").chain(FORBIDDEN.iter().copied()).map(|operation| {

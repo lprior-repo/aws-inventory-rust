@@ -49,6 +49,39 @@ pub enum RelationScope {
 pub enum RelationSource {
     SelectedOutput,
     Request,
+    Parent,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RelationPathMode {
+    Fields,
+    RootText,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RelationTargetMode {
+    SelectedFields,
+    SelectedRootText,
+    BoundContextFields,
+    BoundContextRootText,
+    CanonicalId,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RelationGuard {
+    pub source: RelationSource,
+    pub path_mode: RelationPathMode,
+    pub path: Box<[FieldId]>,
+    pub equals: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RelationshipComponentPlan {
+    pub source: RelationSource,
+    pub source_path: Box<[FieldId]>,
+    pub source_path_mode: RelationPathMode,
+    pub target_mode: RelationTargetMode,
+    pub target_path: Box<[FieldId]>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -56,10 +89,14 @@ pub struct RelationshipPlan {
     pub source_kind: Kind,
     pub source: RelationSource,
     pub source_path: Box<[FieldId]>,
+    pub source_path_mode: RelationPathMode,
     pub target_kind: Kind,
     pub target_kinds: Box<[Kind]>,
     pub target_path: Box<[FieldId]>,
     pub relation: crate::inventory::Relation,
+    pub target_mode: RelationTargetMode,
+    pub guard: Option<RelationGuard>,
+    pub components: Box<[RelationshipComponentPlan]>,
     pub scope: RelationScope,
     pub owner: ReferenceOwnerRule,
 }

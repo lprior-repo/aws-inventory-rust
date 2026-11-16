@@ -33,6 +33,21 @@ fn overlay_paginator(
         Paginator::Token(pair) => {
             validate_single_token(service, operation, model, pair, violations)
         }
+        Paginator::LastListItem { input, output, truncated } => {
+            let request = resolve_request_path(model, operation, input.as_str());
+            let response = model.resolve_path(operation, "output", output.as_str()).ok().flatten();
+            let element = response.as_ref().filter(|shape| plans::model::shape_type(shape.value) == Some("list"))
+                .and_then(|shape| shape.value.get("member")).and_then(plans::model::target)
+                .and_then(|target| model.shape(target));
+            let valid = request.as_ref().zip(element.as_ref()).is_some_and(|(request, element)| {
+                matches!(plans::model::shape_type(request.value), Some("string" | "enum"))
+                    && matches!(plans::model::shape_type(element.value), Some("string" | "enum"))
+                    && compatible(model, request, element)
+            });
+            if !valid { invalid_token(service, operation, input.as_str(), violations); }
+            let flag_valid = validate_truncated(service, operation, model, Some(truncated), violations);
+            valid && flag_valid
+        }
         Paginator::Tokens { pairs, truncated } => validate_tokens(
             service,
             operation,
@@ -42,6 +57,20 @@ fn overlay_paginator(
             violations,
         ),
     }
+}
+
+fn resolve_request_path<'m>(
+    model: &Model<'m>,
+    operation: &str,
+    path: &str,
+) -> Option<crate::plans::model::ShapeRef<'m>> {
+    let root = model.side_root(operation, "input")?;
+    path.split('.').try_fold(root, |shape, segment| {
+        // Native request cursor ancestors must be structures, not projected rows.
+        (plans::model::shape_type(shape.value) == Some("structure"))
+            .then_some(shape)
+            .and_then(|shape| model.resolve_path_from(shape, segment).ok())
+    })
 }
 
 fn validate_single_token(

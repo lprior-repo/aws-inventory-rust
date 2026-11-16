@@ -295,4 +295,5 @@ fn semantic_errors_are_sorted_and_failed_write_preserves_report_and_stdout()
     );
     let stderr = String::from_utf8(output.stderr)?;
     assert!(stderr.contains("model"), "{stderr}");
+    Ok(())
 }

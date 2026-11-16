@@ -45,7 +45,7 @@ async fn given_foreign_oam_sink_reference_when_equal_value_wrong_owner_or_region
             assert_eq!(edge.to.id.as_str(), SINK);
             assert_eq!(edge.to.kind.as_str(), "AWS::Oam::Sink");
             assert_eq!(edge.relation.as_str(), "TARGETS_SINK");
-            assert_eq!(edge.source, inventory_core::inventory::EdgeSource::ReviewedRule);
+            assert_eq!(edge.source, inventory_core::inventory::EdgeSource::ReviewedRule.as_str());
             let pool = sqlx::SqlitePool::connect(&format!("sqlite://{}", directory.path().join("inventory.sqlite").display())).await?;
             assert_eq!(sqlx::query_scalar::<_, String>("SELECT resolution FROM unresolved_refs WHERE from_id=?1").bind(LINK).fetch_one(&pool).await?, "resolved");
             pool.close().await;

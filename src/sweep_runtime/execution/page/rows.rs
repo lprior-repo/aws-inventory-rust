@@ -1,10 +1,9 @@
-use std::{borrow::Cow, sync::Arc};
+use std::sync::Arc;
 
 use inventory_core::{
-    catalog::runtime::{CallablePlan, ReferenceOwnerRule, RelationSource, RelationshipPlan, RuntimeCatalog},
+    catalog::runtime::{CallablePlan, RuntimeCatalog},
     inventory::{
-        DiscoveryContext, Observation, ReferenceTarget, Region, RegionId, ResourceId, ResourceKey,
-        UnresolvedReference,
+        DiscoveryContext, Observation, Region, RegionId, ResourceKey, UnresolvedReference,
     },
     record::{Record, ValueRef},
 };
@@ -13,6 +12,11 @@ use crate::sweep_runtime::{SweepError, record, resource_projection};
 
 const MAX_PAGE_ROWS: usize = 100_000;
 const MAX_PAGE_REFERENCES: usize = 10_000;
+
+mod relations;
+
+#[cfg(test)]
+use inventory_core::{catalog::runtime::RelationSource, inventory::{ReferenceTarget, ResourceId}};
 
 
 pub(super) fn observations(
@@ -89,9 +93,8 @@ pub(super) fn observation(
         id,
     };
     let name = resource_name(catalog, &key.kind, row)?;
-    Observation::new(key, row.clone(), plan.hash_exclusions(), name)?
-        .with_facet_precedence(plan.facet_precedence())
-        .map_err(SweepError::from)
+    Ok(Observation::new(key, row.clone(), plan.hash_exclusions(), name)?
+        .with_facet_precedence(plan.facet_precedence()))
 }
 
 fn resource_name(
@@ -122,6 +125,7 @@ pub(in crate::sweep_runtime) fn references(
     rows: &[Record],
     observations: &[Observation],
     actual_request: &Record,
+    parent: Option<&ResourceKey>,
 ) -> Result<Vec<UnresolvedReference>, SweepError> {
     let mut output = Vec::new();
     for (row, observation) in rows.iter().zip(observations) {
@@ -133,15 +137,8 @@ pub(in crate::sweep_runtime) fn references(
             if !plan.supports_relationship(relation)? {
                 continue;
             }
-            if let Some(reference) = reference(catalog, row, actual_request, observation, home, relation)? {
-                if output.len() >= MAX_PAGE_REFERENCES {
-                    return Err(SweepError::Operation(
-                        "page exceeds the atomic reference bound",
-                    ));
-                }
-                output.try_reserve(1)?;
-                output.push(reference);
-            }
+            relations::Context { row, request: actual_request, observation, home, parent }
+                .append(relation, &mut output, MAX_PAGE_REFERENCES)?;
         }
         let trust = resource_projection::trust_references(catalog, plan, observation)?;
         if output.len().checked_add(trust.len()).is_none_or(|count| count > MAX_PAGE_REFERENCES) {
@@ -153,84 +150,7 @@ pub(in crate::sweep_runtime) fn references(
     Ok(output)
 }
 
-fn reference(
-    catalog: &RuntimeCatalog<'_>,
-    row: &Record,
-    actual_request: &Record,
-    observation: &Observation,
-    home: &RegionId,
-    relation: &RelationshipPlan,
-) -> Result<Option<UnresolvedReference>, SweepError> {
-    let source = match relation.source {
-        RelationSource::SelectedOutput => row,
-        RelationSource::Request => actual_request,
-    };
-    let Some(value) = record::path_value(source.root(), &relation.source_path)? else {
-        return Ok(None);
-    };
 
-    if relation.source == RelationSource::Request
-        && !matches!(value, ValueRef::Text(_) | ValueRef::Null)
-    {
-        return Err(SweepError::Operation("request relationship source is not modeled text"));
-    }
-    let Some(text) = reference_text(value)? else {
-        return Ok(None);
-    };
-    if relation.source == RelationSource::Request
-        && matches!(relation.owner, ReferenceOwnerRule::ExecutionAccount)
-        && text.starts_with("arn:")
-    {
-        record::trusted_arn::validate_arn(
-            &text,
-            Some(&record::IdentityContext { account: &observation.key().account, region: home }),
-        )?;
-    }
-    let target_id = ResourceId::parse(&text).map_err(SweepError::from)?;
-    let (target_account, target_region) = resource_projection::reference_owner(relation, observation, &text, home)?;
-    let target = if relation.target_path.is_empty() {
-        let schema = catalog.schemas().iter().find(|schema| schema.kind() == &relation.target_kind)
-            .ok_or(SweepError::Operation("reference target kind has no checked schema"))?;
-        ReferenceTarget::root_text(target_account, target_region, schema, target_id)?
-    } else {
-        ReferenceTarget::new(target_account, target_region, relation.target_kind.clone(),
-            relation.target_path.to_vec(), target_id)?
-    };
-    let target = if relation.target_kinds.len() > 1 {
-        target.with_candidate_kinds(relation.target_kinds.to_vec())?
-    } else { target };
-    Ok(Some(UnresolvedReference {
-        from: observation.key().clone(),
-        relation: relation.relation.clone(),
-        source: inventory_core::inventory::EdgeSource::ReviewedRule,
-        target,
-    }))
-}
-
-fn reference_text(value: ValueRef<'_>) -> Result<Option<Cow<'_, str>>, SweepError> {
-    match value {
-        ValueRef::Null => Ok(None),
-        ValueRef::Text("") => Ok(None),
-        ValueRef::Text(value) => Ok(Some(Cow::Borrowed(value))),
-        ValueRef::Int(value) => Ok(Some(Cow::Owned(value.to_string()))),
-        _ => Err(SweepError::Operation(
-            "relationship source is not a text or integer reference",
-        )),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn optional_null_and_empty_relationships_are_skipped() -> Result<(), Box<dyn std::error::Error>>
-    {
-        assert_eq!(reference_text(ValueRef::Null)?, None);
-        assert_eq!(reference_text(ValueRef::Text(""))?, None);
-        Ok(())
-    }
-}
 
 #[cfg(test)]
 #[path = "rows/facet_tests.rs"]

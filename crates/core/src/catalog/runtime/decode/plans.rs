@@ -36,31 +36,30 @@ use super::super::types::{
     PlanPurpose, PlanScope, ReviewProvenance, RuntimeProtocol, TokenBinding, TokenPlacement,
     TokenType,
 };
-use super::{RuntimeCatalogError, catalog_operation, list_value, map, metadata};
+use super::{RuntimeCatalogError, list_value, map, metadata, services::Services};
 use crate::{
-    catalog::Catalog,
     inventory::Kind,
     record::{Exclusions, ValueRef},
 };
 use bounds::{optional_u32, positive_u32};
 pub(super) fn read<'a>(
-    catalog: Catalog<'a>,
+    services: &Services<'a>,
     list: crate::record::ListRef<'_>,
 ) -> Result<Vec<CallablePlan<'a>>, RuntimeCatalogError> {
-    let mut plans = metadata::bounded(list, |value| plan(catalog, value), metadata::MAX_ITEMS)?;
+    let mut plans = metadata::bounded(list, |value| plan(services, value), metadata::MAX_ITEMS)?;
     dependencies::validate(&mut plans)?;
     Ok(plans)
 }
 
 fn plan<'a>(
-    catalog: Catalog<'a>,
+    services: &Services<'a>,
     value: ValueRef<'_>,
 ) -> Result<CallablePlan<'a>, RuntimeCatalogError> {
     let fields = map(value)?;
     metadata::only_fields(fields, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22])?;
     let service_name = metadata::text(fields, 1)?;
     let operation_name = metadata::text(fields, 2)?;
-    let (service, operation) = catalog_operation(catalog, &service_name, &operation_name)?;
+    let (service, operation) = services.operation(&service_name, &operation_name)?;
     decode_plan(fields, service, operation, service_name, operation_name)
 }
 

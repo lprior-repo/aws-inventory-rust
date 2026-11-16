@@ -4,8 +4,7 @@ mod iot;
 mod iam;
 mod suppressions;
 mod package_assertions;
-#[path = "../execution/page/cursor.rs"]
-mod cursor;
+use crate::sweep_runtime::execution::page::cursor;
 #[path = "../execution/routing.rs"]
 mod routing;
 

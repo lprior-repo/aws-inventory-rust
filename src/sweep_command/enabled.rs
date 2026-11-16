@@ -48,10 +48,11 @@ fn exit_code(outcomes: &sweep_runtime::ScopeOutcomes, unattributed_resources: u6
 }
 
 fn read_catalog(path: &Path) -> Result<Vec<u8>> {
+    let limit = inventory_core::catalog::MAX_CATALOG_BYTES;
     let file = File::open(path).with_context(|| format!("opening catalog {}", path.display()))?;
     let mut bytes = Vec::new();
-    file.take(16_777_217).read_to_end(&mut bytes)?;
-    anyhow::ensure!(bytes.len() <= 16_777_216, "runtime catalog exceeds 16 MiB");
+    file.take(u64::try_from(limit)?.saturating_add(1)).read_to_end(&mut bytes)?;
+    anyhow::ensure!(bytes.len() <= limit, "runtime catalog exceeds {limit} bytes");
     Ok(bytes)
 }
 

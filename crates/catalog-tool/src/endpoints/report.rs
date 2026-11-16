@@ -1,5 +1,6 @@
 use super::cases::CaseCounts;
 use super::report_text::render;
+use super::static_context::{HostLabel, Operation};
 use super::{Case, DerivedEndpoint, EndpointException, Error, Fault, RuleSet, VerifiedEndpoint};
 use serde::Deserialize;
 use serde_json::Value;
@@ -19,6 +20,31 @@ struct Shape {
     kind: String,
     #[serde(default)]
     traits: Traits,
+    input: Option<Target>,
+    #[serde(default, deserialize_with = "crate::model_source::unique_map")]
+    members: BTreeMap<String, Member>,
+}
+#[derive(Deserialize)]
+struct Target {
+    target: String,
+}
+#[derive(Deserialize)]
+struct Member {
+    #[serde(default)]
+    traits: MemberTraits,
+}
+#[derive(Default, Deserialize)]
+struct MemberTraits {
+    #[serde(rename = "smithy.api#hostLabel")]
+    host_label: Option<serde::de::IgnoredAny>,
+    #[serde(rename = "smithy.api#required")]
+    required: Option<serde::de::IgnoredAny>,
+    #[serde(rename = "smithy.rules#contextParam")]
+    context: Option<ContextParameter>,
+}
+#[derive(Deserialize)]
+struct ContextParameter {
+    name: String,
 }
 #[derive(Default, Deserialize)]
 struct Traits {
@@ -30,6 +56,13 @@ struct Traits {
     signing: Option<Signing>,
     #[serde(rename = "smithy.rules#staticContextParams")]
     static_context: Option<super::static_context::Context>,
+    #[serde(rename = "smithy.api#endpoint")]
+    endpoint: Option<HostPrefix>,
+}
+#[derive(Deserialize)]
+struct HostPrefix {
+    #[serde(rename = "hostPrefix")]
+    prefix: String,
 }
 #[derive(Deserialize)]
 struct Tests {
@@ -72,15 +105,21 @@ pub fn verified_endpoints(source: &Path) -> Result<BTreeMap<String, VerifiedEndp
             }
             let rules = RuleSet::parse(file, &evidence.rules)?;
             let run = rules.run_cases(&evidence.cases)?;
-            if let Ok(mut verified) = run.verified_endpoint(evidence.signing_name.as_deref()) {
-                for (operation, context) in evidence.operations {
+            let signing = evidence.signing_name.as_deref();
+            let service = run.verified_endpoint(signing).ok();
+            let carrier = service.is_none();
+            if let Some(mut verified) = service.or_else(|| run.operation_carrier(signing)) {
+                let mut routed = false;
+                for (operation, modeled) in evidence.operations {
                     let endpoint = super::static_context::compile(
-                        file, &evidence.rules, &evidence.cases, &context,
-                        evidence.signing_name.as_deref(),
+                        file, &evidence.rules, &evidence.cases, &operation, &modeled, signing,
                     ).ok();
+                    routed |= endpoint.is_some();
                     verified.bind_operation(operation, endpoint);
                 }
-                endpoints.insert(evidence.name, verified);
+                if routed || !carrier {
+                    endpoints.insert(evidence.name, verified);
+                }
             }
             Ok(endpoints)
         })
@@ -102,7 +141,7 @@ struct ServiceEvidence {
     rules: Value,
     cases: Vec<Case>,
     signing_name: Option<String>,
-    operations: BTreeMap<String, super::static_context::Context>,
+    operations: BTreeMap<String, Operation>,
 }
 
 fn read_evidence(file: &Path, models: &Path) -> Result<ServiceEvidence, Error> {
@@ -168,8 +207,12 @@ fn load_services(
     )
 }
 
-fn read_traits(file: &Path) -> Result<(Traits, BTreeMap<String, super::static_context::Context>), Error> {
+fn read_traits(file: &Path) -> Result<(Traits, BTreeMap<String, Operation>), Error> {
     let model: Model = crate::model_source::read_model(file)?;
+    let mut labels = model.shapes.iter()
+        .filter(|(_, shape)| shape.kind == "operation" && shape.traits.static_context.is_some())
+        .filter_map(|(id, shape)| Some((id.clone(), host_label(&model, shape)?)))
+        .collect::<BTreeMap<_, _>>();
     let mut service = None;
     let mut operations = BTreeMap::new();
     for (id, shape) in model.shapes {
@@ -181,7 +224,8 @@ fn read_traits(file: &Path) -> Result<(Traits, BTreeMap<String, super::static_co
             if let Some(context) = shape.traits.static_context {
                 let (_, name) = id.rsplit_once('#')
                     .ok_or_else(|| malformed(file, "invalid operation shape identifier"))?;
-                if operations.insert(name.to_owned(), context).is_some() {
+                let operation = Operation { context, label: labels.remove(&id) };
+                if operations.insert(name.to_owned(), operation).is_some() {
                     return Err(malformed(file, "duplicate operation endpoint context"));
                 }
             }
@@ -189,6 +233,31 @@ fn read_traits(file: &Path) -> Result<(Traits, BTreeMap<String, super::static_co
     }
     let traits = service.ok_or_else(|| malformed(file, "no service"))?;
     Ok((traits, operations))
+}
+
+/// The operation's single required input member that is both a host label and
+/// an endpoint parameter. A host prefix that uses the member any other way
+/// than as its whole leading label is not understood, so no label is claimed.
+fn host_label(model: &Model, operation: &Shape) -> Option<HostLabel> {
+    let input = model.shapes.get(&operation.input.as_ref()?.target)?;
+    let mut bound = input.members.iter().filter_map(|(member, shape)| {
+        let traits = &shape.traits;
+        let context = traits.context.as_ref()?;
+        (traits.host_label.is_some() && traits.required.is_some())
+            .then_some((member, &context.name))
+    });
+    let (member, parameter) = bound.next()?;
+    if bound.next().is_some() {
+        return None;
+    }
+    let own = format!("{{{member}}}");
+    let prefix = operation.traits.endpoint.as_ref().map(|endpoint| endpoint.prefix.as_str());
+    let prefixed = match prefix {
+        Some(prefix) if prefix.strip_suffix('.') == Some(own.as_str()) => true,
+        Some(prefix) if prefix.contains(&own) => return None,
+        _ => false,
+    };
+    Some(HostLabel { parameter: parameter.clone(), prefixed })
 }
 
 fn malformed(file: &Path, message: &str) -> Error {

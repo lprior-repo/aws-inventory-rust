@@ -197,7 +197,7 @@ fn check_plan_bindings(
     callable: &BTreeSet<&str>,
     errors: &mut Vec<Violation>,
 ) {
-    plan.bind.values().chain(plan.branches.iter().flat_map(|branch| branch.bind.values())).for_each(|binding| {
+    crate::overlay::policy::effective_bindings(plan).for_each(|binding| {
         check_binding_reference(service, operation, binding, names, callable, errors)
     });
 }
@@ -230,7 +230,7 @@ fn check_handle_references(
     callable: &BTreeSet<&str>,
     errors: &mut Vec<Violation>,
 ) {
-    for binding in handle.plan.bind.values().chain(handle.plan.branches.iter().flat_map(|branch| branch.bind.values())) {
+    for binding in crate::overlay::policy::effective_bindings(&handle.plan) {
         check_binding_reference(
             service,
             handle.operation(),

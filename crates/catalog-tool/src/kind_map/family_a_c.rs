@@ -1,5 +1,6 @@
 use crate::kind_map::{RelationPath, RelationSource, RelationTarget};
 use super::MappingSource;
+#[path = "family_a_c/completion_additions.rs"]
 mod completion_additions;
 
 #[path = "family_a_c/cfn_0.rs"]

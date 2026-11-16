@@ -27,10 +27,11 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         ("ImportBackendAuth", deferred("Model requires AppId, BackendEnvironmentName, NativeClientId, UserPoolId, WebClientId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Imports an existing backend authentication resource.")),
         ("ImportBackendStorage", deferred("Model requires AppId, BackendEnvironmentName, ServiceName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Imports an existing backend storage resource.")),
         ("ListBackendJobs", deferred("Model requires AppId, BackendEnvironmentName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the jobs for the backend of an Amplify app.")),
-        // Model: The list of S3 buckets in your account.
+        // Model: The list of S3 buckets in your account. Bucket names are partition-unique, so the
+        // row shares s3.ListBuckets' ARN identity domain for AWS::S3::Bucket.
         ("ListS3Buckets", OperationOverlay {
             queryable: vec![path("Name")?],
-            ..read("Buckets", Identity::Key(vec![path("Name")?]), Scope::Account, Paginator::None)?
+            ..read("Buckets", Identity::Template("arn:{partition}:s3:::{Name}".to_owned()), Scope::Account, Paginator::None)?
         }),
         ("RemoveAllBackends", deferred("Model requires AppId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes all backend environments from your Amplify project.")),
         ("RemoveBackendConfig", deferred("Model requires AppId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes the AWS resources required to access the Amplify Admin UI.")),

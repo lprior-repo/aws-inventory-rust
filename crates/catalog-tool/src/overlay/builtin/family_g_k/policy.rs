@@ -1,7 +1,7 @@
-use super::super::{empty, name, path, service};
+use super::super::{empty, name, service};
 pub(super) use crate::classes::DenyReason;
 use crate::overlay::{
-    Binding, FixedValue, Identity, ItemSelector, NameError, OperationOverlay, OverlayClass,
+    Binding, FixedValue, Identity, ItemSelector, MemberPath, NameError, OperationOverlay, OverlayClass,
     Paginator, Scope, ServiceOverlay, TokenPair,
 };
 
@@ -33,11 +33,11 @@ pub(super) fn finish(
 }
 
 pub(super) fn arn(member: &str) -> Result<Identity, NameError> {
-    Ok(Identity::Arn(path(member)?))
+    Ok(Identity::Arn(MemberPath::selected(member)?))
 }
 
 pub(super) fn key(member: &str) -> Result<Identity, NameError> {
-    Ok(Identity::Key(vec![path(member)?]))
+    Ok(Identity::Key(vec![MemberPath::selected(member)?]))
 }
 
 pub(super) fn enumerate(
@@ -52,7 +52,7 @@ pub(super) fn enumerate(
     value.identity = Some(identity);
     value.paginator = Some(match token {
         Some((input, output)) => Paginator::Token(TokenPair {
-            input: path(input)?, output: path(output)?, optional: false,
+            input: MemberPath::new(input)?, output: MemberPath::new(output)?, optional: false,
         }),
         None => Paginator::None,
     });
@@ -66,8 +66,8 @@ pub(super) fn bind(
     member: &str,
 ) -> Result<OperationOverlay, NameError> {
     value.class = Some(OverlayClass::Expand);
-    value.bind.insert(path(input)?, Binding::From {
-        operation: name(parent)?, path: path(member)?,
+    value.bind.insert(MemberPath::new(input)?, Binding::From {
+        operation: name(parent)?, path: MemberPath::selected(member)?,
     });
     Ok(value)
 }
@@ -77,7 +77,7 @@ pub(super) fn fixed(
     input: &str,
     fixed_value: &str,
 ) -> Result<OperationOverlay, NameError> {
-    value.fixed.insert(path(input)?, FixedValue::String(fixed_value.to_owned()));
+    value.fixed.insert(MemberPath::new(input)?, FixedValue::String(fixed_value.to_owned()));
     Ok(value)
 }
 
@@ -90,11 +90,11 @@ pub(super) fn query(
     mut value: OperationOverlay,
     members: &[&str],
 ) -> Result<OperationOverlay, NameError> {
-    value.queryable = members.iter().map(|member| path(member)).collect::<Result<_, _>>()?;
+    value.queryable = members.iter().map(|member| MemberPath::selected(member)).collect::<Result<_, _>>()?;
     Ok(value)
 }
 
 pub(super) fn tags(mut value: OperationOverlay, member: &str) -> Result<OperationOverlay, NameError> {
-    value.tags = Some(path(member)?);
+    value.tags = Some(MemberPath::selected(member)?);
     Ok(value)
 }

@@ -7,7 +7,7 @@ async fn given_account_alias_observed_from_two_home_regions_when_collected_then_
     let mut scenario = Scenario::new(&catalog, "alias-east").await?;
     for (home, sweep) in [("us-east-1", "alias-east"), ("eu-west-1", "alias-west")] {
         scenario.home = RegionId::parse(home)?;
-        scenario.sweep = inventory_engine::inventory::SweepId::new(sweep)?;
+        scenario.sweep = inventory_engine::inventory::SweepId::new(sweep.to_owned())?;
         scenario.seed(plan).await?;
         let lease = scenario.claim("ListAccountAliases").await?;
         let (request, _) = scenario.request(plan, &lease)?;

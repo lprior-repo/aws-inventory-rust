@@ -13,8 +13,8 @@ async fn given_global_and_regional_classic_waf_when_logging_pages_and_both_assoc
             match plan.operation_name() {
                 "ListDeliveryStreams" => {
                     assert_eq!(native.get("DeliveryStreamType"),None,"stream type must not narrow inventory");
-                    assert_eq!(native.get("ExclusiveStartDeliveryStreamName"),
-                        if resumed { Some(&json!("aws-waf-logs-inventory")) } else { None });
+                    assert_eq!(native.get("ExclusiveStartDeliveryStreamName").map(Json::as_str),
+                        if resumed { Some(Some("aws-waf-logs-inventory")) } else { None });
                     Ok(if resumed { json!({"DeliveryStreamNames":["z-final"],"HasMoreDeliveryStreams":false}) }
                         else { json!({"DeliveryStreamNames":["aws-waf-logs-archive","aws-waf-logs-inventory"],"HasMoreDeliveryStreams":true}) })
                 }

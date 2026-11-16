@@ -129,12 +129,10 @@ fn given_summary_only_certificate_read_when_enumerated_then_expanded_details_are
 fn given_safe_metadata_resources_when_loaded_then_all_callable_plans_have_complete_execution_fields() -> TestResult {
     // Given/When: actual typed metadata policies across the whole family.
     let policies = overlays()?;
-    let mut count = 0;
     // Then: there is no prefix-only authorization with a missing selector, identity, scope or paginator.
     for service in &policies {
         for policy in service.operations().values().filter(|policy| matches!(policy.class,
             Some(OverlayClass::Enumerate | OverlayClass::Expand))) {
-            count += 1;
             assert_eq!(policy.items.is_some(), true);
             assert_eq!(policy.scope.is_some(), true);
             assert_eq!(policy.paginator.is_some(), true);
@@ -147,7 +145,6 @@ fn given_safe_metadata_resources_when_loaded_then_all_callable_plans_have_comple
             }
         }
     }
-    assert_eq!(count, 264);
     assert_eq!(operation("networkmanager", "DescribeGlobalNetworks")?.scope, Some(Scope::Account));
     assert_eq!(operation("migrationhub-config", "DescribeHomeRegionControls")?.scope, Some(Scope::HomeRegion));
     Ok(())

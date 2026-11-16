@@ -33,6 +33,8 @@ const CFN: &[CfnMapping<'static>] = &[
     CfnMapping::canonical("AWS::Route53GlobalResolver::FirewallRule"),
     CfnMapping::canonical("AWS::Route53RecoveryControl::SafetyRule"),
     CfnMapping::canonical("AWS::S3Files::AccessPoint"),
+    CfnMapping::canonical("AWS::S3Files::FileSystem"),
+    CfnMapping::canonical("AWS::S3Files::MountTarget"),
     CfnMapping::canonical("AWS::SageMaker::ImageVersion"),
     CfnMapping::canonical("AWS::SES::EmailIdentityCertificate"),
     CfnMapping::canonical("AWS::SSM::Document"),

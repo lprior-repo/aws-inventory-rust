@@ -1,6 +1,7 @@
 // Pinned source: .local/aws-models/models/appfabric/service/2023-05-19/appfabric-2023-05-19.json
 // Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
+use crate::overlay::ContextSource;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![

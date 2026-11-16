@@ -146,7 +146,7 @@ fn absent_and_empty_model_directories_are_not_an_empty_success() -> Result<(), B
     assert!(overlay::check_policies(root.path(), &[], &DenyList::builtin()).is_err());
     fs::create_dir(root.path().join("models"))?;
     assert!(matches!(overlay::check_policies(root.path(), &[], &DenyList::builtin()),
-        Err(CheckError::ModelSource(catalog_tool::model_source::Error::NoModels))));
+        Err(CheckError::ModelSource(catalog_tool::ModelSourceError::NoModels))));
     Ok(())
 }
 

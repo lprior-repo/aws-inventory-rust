@@ -18,7 +18,13 @@ impl<'a> MapRef<'a> {
     }
 
     pub fn from_bytes_bounded(bytes: &'a [u8]) -> Result<Self, RecordError> {
-        super::validate_with_depth(bytes, Some(super::MAX_DEPTH))?;
+        Self::from_container_bytes(bytes, super::MAX_RECORD_BYTES)
+    }
+
+    /// Depth-bounded open of a container bounded by `max_bytes`; the decode
+    /// counterpart of [`super::encode_container`].
+    pub fn from_container_bytes(bytes: &'a [u8], max_bytes: usize) -> Result<Self, RecordError> {
+        super::validate_with_depth(bytes, Some(super::MAX_DEPTH), max_bytes)?;
         Ok(Self { bytes })
     }
 

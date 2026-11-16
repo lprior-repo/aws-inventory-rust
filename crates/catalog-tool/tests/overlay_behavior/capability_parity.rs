@@ -23,6 +23,25 @@ const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 "n#Endpoint":{"type":"structure","members":{"Address":{"target":"smithy.api#String"},"CachePeriodInMinutes":{"target":"smithy.api#Long"}}}
 }}"#;
 
+fn reviewed_operations(mut operations: Vec<(&str, OperationOverlay)>) -> Vec<(&str, OperationOverlay)> {
+    for operation in ["ListThings", "ListTags", "DescribeEndpoints"] {
+        if !operations.iter().any(|(name, _)| *name == operation) {
+            operations.push((operation, deferred()));
+        }
+    }
+    operations
+}
+
+fn checked(root: &Fixture<'_>, operations: Vec<(&str, OperationOverlay)>)
+    -> Result<overlay::CheckedOverlays, CheckError> {
+    super::checked(root, reviewed_operations(operations))
+}
+
+fn violations(root: &Fixture<'_>, operations: Vec<(&str, OperationOverlay)>)
+    -> Result<Vec<Violation>, Box<dyn std::error::Error>> {
+    super::violations(root, reviewed_operations(operations))
+}
+
 fn branch(name: &str, value: Option<&str>) -> Result<ExecutionBranch, overlay::NameError> {
     Ok(ExecutionBranch { discriminator: name.into(), scope: Scope::Region, request_region: None,
         bind: Default::default(), emission: None, row_policy: None,
@@ -215,5 +234,42 @@ fn given_optional_branch_structure_when_partial_members_activate_it_then_missing
         FixedValue::String("left".into()));
     assert!(violations(&given, vec![("ListThings", plan)])?.iter()
         .any(|error| error.key() == "required" && error.value() == "Config.Right"));
+    Ok(())
+}
+
+#[test]
+fn given_noncallable_common_producer_when_every_branch_overrides_then_only_effective_references_are_checked() -> TestResult {
+    // Given modeled request inputs of the same scalar type and an explicitly deferred producer.
+    let mut model: serde_json::Value = serde_json::from_str(MODEL)?;
+    let shapes = model.get_mut("shapes").and_then(serde_json::Value::as_object_mut).ok_or("shapes")?;
+    shapes.get_mut("n#ListTags").and_then(serde_json::Value::as_object_mut).ok_or("producer")?
+        .insert("input".into(), serde_json::json!({"target":"n#Input"}));
+    shapes.get_mut("n#Input").and_then(|shape| shape.get_mut("members"))
+        .and_then(|members| members.get_mut("Scope")).and_then(serde_json::Value::as_object_mut)
+        .ok_or("scope")?.insert("target".into(), serde_json::json!("smithy.api#String"));
+    let model = serde_json::to_string(&model)?;
+    let given = fixture(&model, "")?;
+    for fixed in [true, false] {
+        let mut plan = parent()?;
+        plan.bind.insert(MemberPath::new("Scope")?, overlay::Binding::Context {
+            operation: overlay::OperationName::new("ListTags")?, source: overlay::ContextSource::Request,
+            path: MemberPath::new("Scope")?,
+        });
+        if !fixed {
+            for branch in &mut plan.branches {
+                branch.fixed.clear();
+                branch.bind.insert(MemberPath::new("Scope")?, overlay::Binding::Region);
+            }
+        }
+        // When all actual branches override the common destination, then the consumer is callable.
+        let when = checked(&given, vec![("ListThings", plan.clone()), ("ListTags", deferred())])?;
+        assert!(when.services().first().ok_or("service")?.callable().iter()
+            .any(|handle| handle.operation() == "ListThings"));
+        // Given a sibling branch inherits that destination, then the deferred producer must be rejected.
+        plan.branches.push(branch("inherited", None)?);
+        let errors = violations(&given, vec![("ListThings", plan), ("ListTags", deferred())])?;
+        assert!(errors.iter().any(|error| error.operation() == "ListThings"
+            && error.value() == "ListTags" && error.rule() == ViolationRule::BindingSourceNotCallable));
+    }
     Ok(())
 }

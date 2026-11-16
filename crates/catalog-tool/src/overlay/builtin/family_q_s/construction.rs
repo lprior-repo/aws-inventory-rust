@@ -8,6 +8,9 @@ use crate::overlay::{
 pub(super) enum ResourceIdentity {
     Arn(&'static str),
     Key(&'static [&'static str]),
+    /// ARN template plus the item members it reads; aligns services that list one resource
+    /// store under different member names.
+    Template(&'static str, &'static [&'static str]),
 }
 
 pub(super) enum Input {
@@ -63,10 +66,11 @@ fn operation(spec: &Inventory) -> Result<(&'static str, OperationOverlay), NameE
         ResourceIdentity::Key(members) => Identity::Key(
             members.iter().map(|member| path(member)).collect::<Result<_, _>>()?,
         ),
+        ResourceIdentity::Template(template, _) => Identity::Template((*template).to_owned()),
     };
     let mut queryable = match &spec.identity {
         ResourceIdentity::Arn(member) => vec![path(member)?],
-        ResourceIdentity::Key(members) => {
+        ResourceIdentity::Key(members) | ResourceIdentity::Template(_, members) => {
             members.iter().map(|member| path(member)).collect::<Result<_, _>>()?
         }
     };

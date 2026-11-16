@@ -175,12 +175,12 @@ fn signed(request: &[u8], service: &str) -> TestResult {
         headers.get(name).map(|value| format!("{name}:{value}\n")).ok_or("signed header missing")
     }).collect::<Result<String, _>>()?;
     assert_eq!(head.lines().next(), Some("POST / HTTP/1.1"));
-    let payload = format!("{:x}", Sha256::digest(body));
+    let payload = inventory_harness::provenance::sha256_hex(body.as_bytes());
     assert_eq!(headers.get("x-amz-security-token"), Some(&"contract-token"));
     assert_eq!(headers.get("x-amz-content-sha256").copied(), Some(payload.as_str()));
     let canonical = format!("POST\n/\n\n{canonical_headers}\n{names}\n{payload}");
     let scope = format!("{day}/{REGION}/{service}/aws4_request");
-    let to_sign = format!("AWS4-HMAC-SHA256\n{date}\n{scope}\n{:x}", Sha256::digest(canonical));
+    let to_sign = format!("AWS4-HMAC-SHA256\n{date}\n{scope}\n{}", inventory_harness::provenance::sha256_hex(canonical.as_bytes()));
     let key = hmac(b"AWS4contract-secret", day.as_bytes());
     let key = hmac(&key, REGION.as_bytes());
     let key = hmac(&key, service.as_bytes());

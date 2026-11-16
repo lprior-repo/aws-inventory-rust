@@ -5,19 +5,62 @@ pub(super) fn validate(
     operations: &BTreeMap<OperationName, OperationOverlay>,
 ) -> Result<(), NameError> {
     operations.iter().try_for_each(|(name, plan)| operation(name, plan))?;
-    let remaining = operations.keys().collect::<BTreeSet<_>>();
-    let remaining = (0..operations.len()).try_fold(remaining, |mut remaining, _| {
-        let ready = remaining.iter().copied().find(|name| {
-            operations.get(*name).is_some_and(|plan| plan.bind.values().all(|binding| {
-                binding_parent(binding).is_ok_and(|parent| parent.is_none_or(|operation| !remaining.contains(operation)))
+    let stages = operations.iter().flat_map(|(name, plan)| {
+        branches(plan).map(move |branch| ((name, branch.map(|branch| branch.discriminator.as_str())), (plan, branch)))
+    }).collect::<BTreeMap<_, _>>();
+    stages.iter().try_for_each(|(stage, (plan, branch))| {
+        stage_bindings(plan, *branch).try_for_each(|binding| {
+            binding_parents(binding)?.try_for_each(|parent| validate_parent(*stage, parent, &stages))
+        })
+    })?;
+    let remaining = stages.keys().copied().collect::<BTreeSet<_>>();
+    let remaining = (0..stages.len()).try_fold(remaining, |mut remaining, _| {
+        let ready = remaining.iter().copied().find(|stage| {
+            stages.get(stage).is_some_and(|(plan, branch)| stage_bindings(plan, *branch).all(|binding| {
+                binding_parents(binding).is_ok_and(|mut parents| parents.all(|parent| {
+                    !remaining.iter().any(|stage| matches_parent(*stage, parent))
+                }))
             }))
         });
         match ready {
-            Some(name) => { remaining.remove(name); Ok(remaining) }
+            Some(name) => { remaining.remove(&name); Ok(remaining) }
             None => Err(invalid("bind", "cycle")),
         }
     })?;
     if !remaining.is_empty() { return Err(invalid("bind", "cycle")); }
+    Ok(())
+}
+
+// Branch inputs replace common inputs at the exact destination path, whether
+// the replacement is fixed or bound. With branches, no common-only call runs.
+pub(in crate::overlay) fn effective_bindings(plan: &OperationOverlay) -> impl Iterator<Item = &Binding> {
+    branches(plan).flat_map(move |branch| stage_bindings(plan, branch))
+}
+
+fn branches(plan: &OperationOverlay) -> impl Iterator<Item = Option<&super::ExecutionBranch>> {
+    plan.branches.iter().map(Some).chain(std::iter::once(None).filter(|_| plan.branches.is_empty()))
+}
+
+fn stage_bindings<'a>(plan: &'a OperationOverlay, branch: Option<&'a super::ExecutionBranch>) -> impl Iterator<Item = &'a Binding> {
+    plan.bind.iter().filter(move |(path, _)| !branch.is_some_and(|branch| {
+        branch.fixed.contains_key(*path) || branch.bind.contains_key(*path)
+    })).map(|(_, binding)| binding).chain(branch.into_iter().flat_map(|branch| branch.bind.values()))
+}
+
+type Stage<'a> = (&'a OperationName, Option<&'a str>);
+
+fn matches_parent(stage: Stage<'_>, parent: Stage<'_>) -> bool {
+    stage.0 == parent.0 && parent.1.is_none_or(|branch| stage.1 == Some(branch))
+}
+
+fn validate_parent(
+    stage: Stage<'_>, parent: Stage<'_>,
+    stages: &BTreeMap<Stage<'_>, (&OperationOverlay, Option<&super::ExecutionBranch>)>,
+) -> Result<(), NameError> {
+    if matches_parent(stage, parent) { return Err(invalid("operation", "self reference")); }
+    if parent.1.is_some() && !stages.contains_key(&parent) {
+        return Err(invalid("bind.from_branch", "unknown branch"));
+    }
     Ok(())
 }
 
@@ -37,7 +80,6 @@ fn operation(name: &OperationName, plan: &OperationOverlay) -> Result<(), NameEr
     if let Some(paginator) = &plan.paginator { paginator_rule(paginator)?; }
     plan.fixed.values().try_for_each(fixed_rule)?;
     if plan.skip.iter().any(|skipped| skipped == name)
-        || plan.bind.values().any(|binding| binding_parent(binding).map_or(true, |parent| parent.is_some_and(|operation| operation == name)))
         || plan.batch.as_ref().is_some_and(|batch| &batch.replaces == name) {
         return Err(invalid("operation", "self reference"));
     }
@@ -127,7 +169,7 @@ fn invalid(key: &str, value: &str) -> NameError {
     NameError { value: format!("{key}: {value}") }
 }
 
-fn binding_parent(binding: &Binding) -> Result<Option<&OperationName>, NameError> {
+fn binding_parents(binding: &Binding) -> Result<impl Iterator<Item = Stage<'_>>, NameError> {
     let binding = match binding {
         Binding::Transformed { binding, transform: super::BindingTransform::StripPrefix(prefix) } => {
             if prefix.is_empty() || prefix.len() > 256 || prefix.chars().any(char::is_control)
@@ -138,10 +180,222 @@ fn binding_parent(binding: &Binding) -> Result<Option<&OperationName>, NameError
         }
         binding => binding,
     };
-    match binding {
-        Binding::From { operation, .. } | Binding::FromArn { operation, .. } | Binding::FromUrl { operation, .. } | Binding::Context { operation, .. } => Ok(Some(operation)),
-        Binding::FromService { service, .. } if service.is_empty() || service.len() > 64 => Err(invalid("bind.service", service)),
-        Binding::FromService { .. } | Binding::Account | Binding::Region => Ok(None),
-        Binding::Transformed { .. } => Err(invalid("bind.transform", "nested transform")),
+    let (parent, alternatives) = match binding {
+        Binding::From { operation, .. } | Binding::FromArn { operation, .. }
+        | Binding::FromUrl { operation, .. } | Binding::Context { operation, .. } =>
+            (Some((operation, None)), None),
+        Binding::FromBranch { operation, branch, .. } | Binding::ContextFromBranch { operation, branch, .. } =>
+            (Some((operation, Some(branch.as_str()))), None),
+        Binding::FromAny(alternatives) => (None, Some(alternatives.as_slice())),
+        Binding::FromService { service, .. } if service.is_empty() || service.len() > 64 =>
+            return Err(invalid("bind.service", service)),
+        Binding::FromService { .. } | Binding::Account | Binding::Region | Binding::RegionList => (None, None),
+        Binding::Transformed { .. } => return Err(invalid("bind.transform", "nested transform")),
+    };
+    Ok(parent.into_iter().chain(alternatives.into_iter().flatten().map(|alternative| (&alternative.operation, None))))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::overlay::{BindingAlternative, ContextSource, ExecutionBranch, MemberPath, Scope, ServiceOverlay};
+
+    type TestResult = Result<(), Box<dyn std::error::Error>>;
+
+    fn operation_with(binding: Binding) -> Result<OperationOverlay, NameError> {
+        Ok(OperationOverlay {
+            bind: BTreeMap::from([(MemberPath::new("Id")?, binding)]),
+            ..OperationOverlay::default()
+        })
+    }
+
+    fn alternatives(names: &[&str]) -> Result<Binding, NameError> {
+        Ok(Binding::FromAny(names.iter().map(|name| Ok(BindingAlternative {
+            operation: OperationName::new(name)?, source: ContextSource::SelectedItem,
+            path: MemberPath::new("Id")?,
+        })).collect::<Result<_, NameError>>()?))
+    }
+
+    fn branch(bind: BTreeMap<MemberPath, Binding>, fixed: BTreeMap<MemberPath, FixedValue>) -> ExecutionBranch {
+        ExecutionBranch {
+            discriminator: "detail".into(), bind, fixed, emission: None,
+            row_policy: None, scope: Scope::Region, request_region: None,
+        }
+    }
+
+    #[test]
+    fn branch_only_dependencies_reject_self_references_and_mixed_cycles() -> TestResult {
+        // Given every producer namespace can occur only in a branch.
+        let bindings = [
+            alternatives(&["B", "A"])?,
+            Binding::FromBranch { operation: OperationName::new("A")?,
+                branch: "detail".into(), path: MemberPath::new("Id")? },
+            Binding::ContextFromBranch { operation: OperationName::new("A")?,
+                branch: "detail".into(), source: ContextSource::Request, path: MemberPath::new("Id")? },
+            Binding::Transformed { binding: Box::new(Binding::From {
+                operation: OperationName::new("A")?, path: MemberPath::new("Id")?,
+            }), transform: crate::overlay::BindingTransform::StripPrefix("prefix".into()) },
+        ];
+        for binding in bindings {
+            let a = OperationOverlay { branches: vec![branch(
+                BTreeMap::from([(MemberPath::new("Id")?, binding)]), BTreeMap::new())],
+                ..OperationOverlay::default() };
+            // When constructed, then branch-only self references are rejected explicitly.
+            assert_eq!(ServiceOverlay::new("example", vec![("A", a)])
+                .map(|overlay| overlay.operations().len()), Err(invalid("operation", "self reference")));
+        }
+        // Given the nonprimary branch alternative closes A -> B -> A.
+        let a = OperationOverlay { branches: vec![branch(
+            BTreeMap::from([(MemberPath::new("Id")?, alternatives(&["C", "B"])?)]),
+            BTreeMap::new())], ..OperationOverlay::default() };
+        let b = operation_with(Binding::From {
+            operation: OperationName::new("A")?, path: MemberPath::new("Id")?,
+        })?;
+        // When constructed, then common and branch dependencies share one cycle check.
+        assert_eq!(ServiceOverlay::new("example", vec![("A", a), ("B", b),
+            ("C", OperationOverlay::default())]).map(|overlay| overlay.operations().len()),
+            Err(invalid("bind", "cycle")));
+        Ok(())
+    }
+
+    #[test]
+    fn every_branch_override_removes_only_its_common_destination_dependency() -> TestResult {
+        for parent in ["A", "B"] {
+            for fixed in [false, true] {
+                // Given a common self reference or cycle replaced in the actual branch.
+                let mut a = operation_with(alternatives(&[parent])?)?;
+                let path = MemberPath::new("Id")?;
+                a.branches = vec![if fixed {
+                    branch(BTreeMap::new(), BTreeMap::from([(path, FixedValue::String("literal".into()))]))
+                } else {
+                    branch(BTreeMap::from([(path, Binding::Region)]), BTreeMap::new())
+                }];
+                let b = operation_with(Binding::From {
+                    operation: OperationName::new("A")?, path: MemberPath::new("Id")?,
+                })?;
+                // When constructed, then the overridden common dependency is not executed.
+                assert_eq!(ServiceOverlay::new("example", vec![("A", a.clone()), ("B", b.clone())])?
+                    .operations().len(), 2);
+                // Given another actual branch that inherits the common dependency.
+                let mut inherited = branch(BTreeMap::new(), BTreeMap::new());
+                inherited.discriminator = "inherited".into();
+                a.branches.push(inherited);
+                // Then one overriding branch cannot hide another branch's dependency.
+                let error = if parent == "A" { invalid("operation", "self reference") }
+                    else { invalid("bind", "cycle") };
+                assert_eq!(ServiceOverlay::new("example", vec![("A", a), ("B", b)])
+                    .map(|overlay| overlay.operations().len()), Err(error));
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn alternative_dependencies_detect_cycle_through_nonprimary_producer() -> TestResult {
+        // Given A depends on both B and C, while C depends back on A.
+        let a = operation_with(alternatives(&["B", "C"])?)?;
+        let c = operation_with(Binding::From {
+            operation: OperationName::new("A")?, path: MemberPath::new("Id")?,
+        })?;
+        // When the public policy constructor validates the dependency graph.
+        let result = ServiceOverlay::new("example", vec![("A", a),
+            ("B", OperationOverlay::default()), ("C", c)]);
+        // Then the second alternative cannot hide the dependency cycle.
+        assert_eq!(result.map(|overlay| overlay.operations().len()),
+            Err(invalid("bind", "cycle")));
+        Ok(())
+    }
+
+    #[test]
+    fn branch_and_alternative_bindings_reject_self_reference() -> TestResult {
+        // Given each newly supported producer reference points back at A.
+        let bindings = [
+            Binding::FromBranch { operation: OperationName::new("A")?,
+                branch: "detail".into(), path: MemberPath::new("Id")? },
+            Binding::ContextFromBranch { operation: OperationName::new("A")?,
+                branch: "detail".into(), source: ContextSource::Request, path: MemberPath::new("Id")? },
+            alternatives(&["B", "A"])?,
+        ];
+        for binding in bindings {
+            // When constructed, then every namespace reports the same explicit self-reference error.
+            let mut a = operation_with(binding)?;
+            a.branches.push(branch(BTreeMap::new(), BTreeMap::new()));
+            let result = ServiceOverlay::new("example", vec![("A", a)]);
+            assert_eq!(result.map(|overlay| overlay.operations().len()),
+                Err(invalid("operation", "self reference")));
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn region_list_and_acyclic_alternatives_keep_all_operations_callable() -> TestResult {
+        // Given an acyclic set with region routing and two producer alternatives.
+        let operations = vec![("A", operation_with(alternatives(&["B", "C"])?)?),
+            ("B", operation_with(Binding::RegionList)?), ("C", OperationOverlay::default())];
+        // When the public constructor validates the policy.
+        let result = ServiceOverlay::new("example", operations)?;
+        // Then none of the new binding variants is rejected or creates a phantom dependency.
+        assert_eq!(result.operations().len(), 3);
+        Ok(())
+    }
+
+    fn staged_reference(operation: &str, target: &str, context: bool) -> Result<Binding, NameError> {
+        let operation = OperationName::new(operation)?;
+        let path = MemberPath::new("Id")?;
+        Ok(if context {
+            Binding::ContextFromBranch { operation, branch: target.into(), source: ContextSource::Request, path }
+        } else {
+            Binding::FromBranch { operation, branch: target.into(), path }
+        })
+    }
+
+    fn staged_plan(binding: Binding) -> Result<OperationOverlay, NameError> {
+        let path = MemberPath::new("Id")?;
+        let mut seed = branch(BTreeMap::new(),
+            BTreeMap::from([(path.clone(), FixedValue::String("seed".into()))]));
+        seed.discriminator = "seed".into();
+        Ok(OperationOverlay { branches: vec![seed,
+            branch(BTreeMap::from([(path, binding)]), BTreeMap::new())],
+            ..OperationOverlay::default() })
+    }
+
+    #[test]
+    fn explicit_stage_dags_allow_same_and_cross_operation_dependencies() -> TestResult {
+        for context in [false, true] {
+            // Given detail consumes the independent seed of the same operation.
+            let a = staged_plan(staged_reference("A", "seed", context)?)?;
+            // When constructed, then the distinct stage identities form a legal DAG.
+            assert_eq!(ServiceOverlay::new("example", vec![("A", a)])?.operations().len(), 1);
+            // Given A.detail -> B -> A.seed, not the collapsed operation cycle A -> B -> A.
+            let a = staged_plan(Binding::From {
+                operation: OperationName::new("B")?, path: MemberPath::new("Id")?,
+            })?;
+            let b = operation_with(staged_reference("A", "seed", context)?)?;
+            assert_eq!(ServiceOverlay::new("example", vec![("A", a), ("B", b)])?
+                .operations().len(), 2);
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn explicit_stage_self_cycles_missing_targets_and_real_cycles_are_rejected() -> TestResult {
+        for context in [false, true] {
+            // Given detail explicitly consumes itself, then construction rejects that self edge.
+            let a = staged_plan(staged_reference("A", "detail", context)?)?;
+            assert_eq!(ServiceOverlay::new("example", vec![("A", a)])
+                .map(|overlay| overlay.operations().len()), Err(invalid("operation", "self reference")));
+            // Given a reference names no actual producer stage, then it cannot become a phantom root.
+            let a = staged_plan(staged_reference("A", "missing", context)?)?;
+            assert_eq!(ServiceOverlay::new("example", vec![("A", a)])
+                .map(|overlay| overlay.operations().len()), Err(invalid("bind.from_branch", "unknown branch")));
+            // Given seed and detail consume each other, then their distinct identities do not hide a cycle.
+            let mut a = staged_plan(staged_reference("A", "seed", context)?)?;
+            let seed = a.branches.first_mut().ok_or("seed absent")?;
+            seed.fixed.clear();
+            seed.bind.insert(MemberPath::new("Id")?, staged_reference("A", "detail", context)?);
+            assert_eq!(ServiceOverlay::new("example", vec![("A", a)])
+                .map(|overlay| overlay.operations().len()), Err(invalid("bind", "cycle")));
+        }
+        Ok(())
     }
 }

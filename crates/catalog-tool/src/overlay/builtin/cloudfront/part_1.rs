@@ -1,4 +1,4 @@
-use crate::overlay::{NameError, OperationOverlay, Binding, Identity, ItemSelector, OverlayClass, Paginator, Scope, TokenPair};
+use crate::overlay::{NameError, OperationOverlay, Binding, FixedValue, Identity, ItemSelector, OverlayClass, Paginator, Scope, TokenPair};
 use super::super::{empty, path, name};
 use crate::classes::DenyReason;
 
@@ -19,7 +19,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Enumerate),
         scope: Some(Scope::Account),
         items: Some(ItemSelector::parse("VpcOriginList.Items")?),
-        page_size: Some(100),
+        fixed: [(path("MaxItems")?, FixedValue::Integer(100))].into_iter().collect(),
         exclude_from_hash: vec![path("LastModifiedTime")?],
         identity: Some(Identity::Arn(path("Arn")?)),
         paginator: Some(Paginator::Tokens { pairs: vec![TokenPair { input: path("Marker")?, output: path("VpcOriginList.NextMarker")?, optional: false }], truncated: Some(path("VpcOriginList.IsTruncated")?) }),

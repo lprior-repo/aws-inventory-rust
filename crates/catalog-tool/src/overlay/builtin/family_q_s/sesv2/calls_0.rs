@@ -6,7 +6,7 @@ pub(super) const CALLS: &[Inventory] = &[
     Inventory {
         operation: "ListConfigurationSets",
         items: "ConfigurationSets",
-        identity: ResourceIdentity::Key(&["$"]),
+        identity: ResourceIdentity::Template("arn:{partition}:ses:{region}:{account}:configuration-set/{$}", &["$"]),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
         input: &[],
@@ -36,7 +36,7 @@ pub(super) const CALLS: &[Inventory] = &[
     Inventory {
         operation: "ListEmailIdentities",
         items: "EmailIdentities",
-        identity: ResourceIdentity::Key(&["IdentityName"]),
+        identity: ResourceIdentity::Template("arn:{partition}:ses:{region}:{account}:identity/{IdentityName}", &["IdentityName"]),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
         input: &[],
@@ -46,7 +46,7 @@ pub(super) const CALLS: &[Inventory] = &[
     Inventory {
         operation: "ListEmailTemplates",
         items: "TemplatesMetadata",
-        identity: ResourceIdentity::Key(&["TemplateName"]),
+        identity: ResourceIdentity::Template("arn:{partition}:ses:{region}:{account}:template/{TemplateName}", &["TemplateName"]),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
         input: &[],

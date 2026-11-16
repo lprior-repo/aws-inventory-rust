@@ -16,7 +16,8 @@ impl VerifiedEndpoint {
         &self.service.exceptions
     }
     /// Missing evidence for an explicitly modeled operation never falls back to
-    /// the service route. Operations without static context retain that route.
+    /// the service route. Operations without static context retain that route,
+    /// which is unresolved when only operation constants complete the rule set.
     pub fn operation_endpoint(&self, operation: &str) -> Option<&DerivedEndpoint> {
         match self.operations.get(operation) {
             Some(endpoint) => endpoint.as_ref().map(DerivedService::endpoint),
@@ -26,6 +27,35 @@ impl VerifiedEndpoint {
 
     pub(super) fn bind_operation(&mut self, operation: String, endpoint: Option<Self>) {
         self.operations.insert(operation, endpoint.map(|endpoint| endpoint.service));
+    }
+
+    /// Removes the placeholder host label a route was compiled with. The
+    /// runtime prepends a modeled host prefix itself, so a route leads with the
+    /// label exactly when that prefix supplies it and mentions it nowhere else.
+    pub(super) fn without_host_label(mut self, label: &str, prefixed: bool) -> Option<Self> {
+        let lead = format!("https://{label}.");
+        let strip = |url: &mut String| {
+            if prefixed {
+                *url = format!("https://{}", url.strip_prefix(&lead)?);
+            }
+            (!url.contains(label)).then_some(())
+        };
+        let DerivedEndpoint::Resolved { url_template, signing_name, signing_region, .. } =
+            &mut self.service.endpoint
+        else {
+            return None;
+        };
+        strip(url_template)?;
+        if signing_name.contains(label) || signing_region.contains(label) {
+            return None;
+        }
+        for exception in &mut self.service.exceptions {
+            strip(&mut exception.url)?;
+            if exception.signing_name.contains(label) || exception.signing_region.contains(label) {
+                return None;
+            }
+        }
+        Some(self)
     }
 }
 
@@ -58,6 +88,14 @@ impl CaseRun<'_> {
         } else {
             Err(VerificationFailure::UnresolvedCandidate)
         }
+    }
+
+    /// A service whose own route cannot resolve without operation constants
+    /// carries only its operation routes; its service route stays unresolved.
+    pub(super) fn operation_carrier(&self, signing_name: Option<&str>) -> Option<VerifiedEndpoint> {
+        let service = derive_run(self, signing_name).ok()?;
+        (!matches!(&service.endpoint, DerivedEndpoint::Resolved { .. }))
+            .then(|| VerifiedEndpoint { service, operations: BTreeMap::new() })
     }
 }
 

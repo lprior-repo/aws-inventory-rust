@@ -77,7 +77,7 @@ impl SourceAuthority<'_, '_> {
         let mut matched = false;
         for rule in &self.page.rules.relations {
             if matches_reference(rule, reference)
-                && source_matches(rule, self.page.lease.bindings(), source, reference.target.value().as_str())? {
+                && source_matches(rule, self.page.lease, source, reference)? {
                 hash.update([1]);
                 relation(&mut hash, rule)?;
                 matched = true;
@@ -100,7 +100,7 @@ impl SourceAuthority<'_, '_> {
 
 fn relation(hash: &mut Sha256, rule: &RelationshipPlan) -> Result<(), StoreError> {
     bytes(hash, rule.source_kind.as_str().as_bytes())?;
-    hash.update([match rule.source { RelationSource::SelectedOutput => 0, RelationSource::Request => 1 }]);
+    hash.update([source_code(rule.source)]);
     path(hash, &rule.source_path)?;
     bytes(hash, rule.target_kind.as_str().as_bytes())?;
     length(hash, rule.target_kinds.len())?;
@@ -118,7 +118,37 @@ fn relation(hash: &mut Sha256, rule: &RelationshipPlan) -> Result<(), StoreError
             hash.update([match owner.region { ArnRegionRule::Source => 0, ArnRegionRule::Global => 1 }]);
         }
     }
+    if rule.source == RelationSource::Parent || rule.guard.is_some() || !rule.components.is_empty()
+        || !matches!(rule.target_mode, inventory_core::catalog::runtime::RelationTargetMode::SelectedFields | inventory_core::catalog::runtime::RelationTargetMode::SelectedRootText) {
+        hash.update(b"typed-relation-v4");
+        hash.update([path_mode(rule.source_path_mode), target_mode(rule.target_mode)]);
+        length(hash, rule.components.len())?;
+        for term in &rule.components {
+            hash.update([source_code(term.source), path_mode(term.source_path_mode), target_mode(term.target_mode)]);
+            path(hash, &term.source_path)?; path(hash, &term.target_path)?;
+        }
+        if let Some(guard) = &rule.guard {
+            hash.update([1, source_code(guard.source), path_mode(guard.path_mode)]);
+            path(hash, &guard.path)?; bytes(hash, guard.equals.as_bytes())?;
+        } else { hash.update([0]); }
+    }
     Ok(())
+}
+
+fn source_code(source: RelationSource) -> u8 {
+    match source { RelationSource::SelectedOutput => 0, RelationSource::Request => 1, RelationSource::Parent => 2 }
+}
+fn path_mode(mode: inventory_core::catalog::runtime::RelationPathMode) -> u8 {
+    match mode { inventory_core::catalog::runtime::RelationPathMode::Fields => 0, inventory_core::catalog::runtime::RelationPathMode::RootText => 1 }
+}
+fn target_mode(mode: inventory_core::catalog::runtime::RelationTargetMode) -> u8 {
+    match mode {
+        inventory_core::catalog::runtime::RelationTargetMode::SelectedFields => 0,
+        inventory_core::catalog::runtime::RelationTargetMode::SelectedRootText => 1,
+        inventory_core::catalog::runtime::RelationTargetMode::BoundContextFields => 2,
+        inventory_core::catalog::runtime::RelationTargetMode::BoundContextRootText => 3,
+        inventory_core::catalog::runtime::RelationTargetMode::CanonicalId => 4,
+    }
 }
 
 fn length(hash: &mut Sha256, value: usize) -> Result<(), StoreError> {

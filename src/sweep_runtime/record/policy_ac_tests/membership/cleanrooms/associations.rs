@@ -104,7 +104,7 @@ async fn given_two_memberships_tables_models_and_namespaces_when_association_pag
             assert_eq!(observations.len(), 1);
             assert!(children.is_empty());
             let selected = record::item_records(&response, plan.items())?;
-            let references = rows::references(&catalog, plan, &home, &selected, &observations, &actual)?;
+            let references = rows::references(&catalog, plan, &home, &selected, &observations, &actual, None)?;
             assert_eq!(references.len(), 2, "both membership and selected endpoint must survive projection");
             references
         } else { Vec::new() };

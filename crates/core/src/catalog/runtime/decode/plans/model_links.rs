@@ -2,26 +2,43 @@ use super::{tags, CallablePlan, RuntimeCatalogError};
 use crate::{catalog::{runtime::{Emission, KindCoverage, KindNamePath, PlanPurpose, RelationshipPlan}, Service, Target}, inventory::{Kind, KindSchema, ScalarType}, record::FieldId};
 use std::sync::Arc;
 
+
 impl CallablePlan<'_> {
     /// Whether this operation can supply the reviewed relation from its actual modeled namespace.
     pub fn supports_relationship(&self, relation: &RelationshipPlan) -> Result<bool, RuntimeCatalogError> {
         if !emits(self) || !has_kind(self, &relation.source_kind) {
             return Ok(false);
         }
-        let target = match relation.source {
-            crate::catalog::runtime::RelationSource::SelectedOutput => {
-                if matches!(self.projection(), Some(crate::catalog::runtime::ResourceProjectionPlan::IamTrustSummary { path: protected }) if protected.as_ref() == relation.source_path.as_ref()) {
-                    return Err(RuntimeCatalogError::Capability);
-                }
-                tags::selected_item(self.service(), self.operation(), self.items())?
-            }
-            crate::catalog::runtime::RelationSource::Request => self.operation().input()?,
-        };
-        match optional_target(self.service(), target, &relation.source_path)? {
-            None => Ok(false),
-            Some(target) if scalar_matches(tags::target_kind(self.service(), target)?, ScalarType::Text) => Ok(true),
-            Some(_) => Err(RuntimeCatalogError::Capability),
+        if relation.source == crate::catalog::runtime::RelationSource::Parent { return Ok(true); }
+        if !supports_source(self, relation.source, &relation.source_path, relation.components.is_empty())? { return Ok(false); }
+        if let Some(guard) = &relation.guard {
+            if !supports_source(self, guard.source, &guard.path, false)? { return Ok(false); }
         }
+        relation.components.iter().try_fold(true, |supported, component| {
+            supports_source(self, component.source, &component.source_path, false).map(|present| supported && present)
+        })
+    }
+}
+
+fn supports_source(plan: &CallablePlan<'_>, source: crate::catalog::runtime::RelationSource,
+    path: &[FieldId], allow_list: bool,
+) -> Result<bool, RuntimeCatalogError> {
+    use crate::catalog::runtime::RelationSource;
+    let target = match source {
+        RelationSource::SelectedOutput => {
+            if matches!(plan.projection(), Some(crate::catalog::runtime::ResourceProjectionPlan::IamTrustSummary { path: protected }) if protected.as_ref() == path) {
+                return Err(RuntimeCatalogError::Capability);
+            }
+            tags::selected_item(plan.service(), plan.operation(), plan.items())?
+        }
+        RelationSource::Request => plan.operation().input()?,
+        RelationSource::Parent => return Ok(true),
+    };
+    match optional_target(plan.service(), target, path)? {
+        None => Ok(false),
+        Some(target) if scalar_matches(tags::target_kind(plan.service(), target)?, ScalarType::Text)
+            || (allow_list && relationship_text(plan.service(), target)?) => Ok(true),
+        Some(_) => Err(RuntimeCatalogError::Capability),
     }
 }
 
@@ -48,11 +65,28 @@ pub(in crate::catalog::runtime::decode) fn validate(plans: &[CallablePlan<'_>], 
         if !supported { return Err(RuntimeCatalogError::Capability); }
         for kind in relation.target_kinds.iter() {
             linked(kind, schemas, coverage)?;
-            column_link(schemas, kind, &relation.target_path)?;
-            validate_path(plans, kind, &relation.target_path, ScalarType::Text)?;
+            validate_target(plans, schemas, kind, relation.target_mode, &relation.target_path)?;
+            for component in relation.components.iter() {
+                validate_target(plans, schemas, kind, component.target_mode, &component.target_path)?;
+            }
         }
     }
     Ok(())
+}
+
+fn validate_target(plans: &[CallablePlan<'_>], schemas: &[Arc<KindSchema>], kind: &Kind,
+    mode: crate::catalog::runtime::RelationTargetMode, path: &[FieldId],
+) -> Result<(), RuntimeCatalogError> {
+    use crate::catalog::runtime::RelationTargetMode;
+    match mode {
+        RelationTargetMode::SelectedFields | RelationTargetMode::SelectedRootText => {
+            column_link(schemas, kind, path)?;
+            validate_path(plans, kind, path, ScalarType::Text)
+        }
+        RelationTargetMode::CanonicalId => Ok(()),
+        RelationTargetMode::BoundContextFields | RelationTargetMode::BoundContextRootText =>
+            validate_request_path(plans, kind, path),
+    }
 }
 
 fn linked(kind: &Kind, schemas: &[Arc<KindSchema>], coverage: &[KindCoverage]) -> Result<(), RuntimeCatalogError> {
@@ -87,6 +121,8 @@ fn validate_path(plans: &[CallablePlan<'_>], kind: &Kind, path: &[FieldId], scal
             return Err(RuntimeCatalogError::Capability);
         }
         let item = tags::selected_item(plan.service(), plan.operation(), plan.items())?;
+        // The selected-scalar column is null for a structure producer of the same kind.
+        if path.is_empty() && tags::target_kind(plan.service(), item)? == "structure" { continue; }
         if let Some(target) = optional_target(plan.service(), item, path)? {
             found = true;
             if !scalar_matches(tags::target_kind(plan.service(), target)?, scalar) {
@@ -97,11 +133,39 @@ fn validate_path(plans: &[CallablePlan<'_>], kind: &Kind, path: &[FieldId], scal
     if found { Ok(()) } else { Err(RuntimeCatalogError::Capability) }
 }
 
+fn validate_request_path(plans: &[CallablePlan<'_>], kind: &Kind, path: &[FieldId]) -> Result<(), RuntimeCatalogError> {
+    let found = plans.iter().filter(|plan| emits(plan) && has_kind(plan, kind))
+        .try_fold(false, |found, plan| {
+            match optional_target(plan.service(), plan.operation().input()?, path)? {
+                None => Ok(found),
+                Some(target) if scalar_matches(tags::target_kind(plan.service(), target)?, ScalarType::Text) => Ok(true),
+                Some(_) => Err(RuntimeCatalogError::Capability),
+            }
+        })?;
+    if found { Ok(()) } else { Err(RuntimeCatalogError::Capability) }
+}
+
+fn relationship_text(service: Service<'_>, target: Target) -> Result<bool, RuntimeCatalogError> {
+    if scalar_matches(tags::target_kind(service, target)?, ScalarType::Text) { return Ok(true); }
+    let shape = tags::shape(service, target)?;
+    if shape.kind()? != "list" { return Ok(false); }
+    let element = shape.element()?.ok_or(RuntimeCatalogError::Capability)?;
+    Ok(scalar_matches(tags::target_kind(service, element)?, ScalarType::Text))
+}
+
 
 fn optional_target(service: Service<'_>, mut target: Target, path: &[FieldId]) -> Result<Option<Target>, RuntimeCatalogError> {
     for id in path {
+        // A scalar producer of the same kind has no members; another producer must prove the path.
+        match tags::target_kind(service, target)? {
+            "string" | "enum" | "intEnum" | "boolean" | "byte" | "short" | "integer"
+            | "long" | "float" | "double" | "bigInteger" | "bigDecimal" | "timestamp"
+            | "blob" => return Ok(None),
+            // A union decodes as a one-member map, so runtime path extraction walks it like a structure.
+            "structure" | "union" => {}
+            _ => return Err(RuntimeCatalogError::Capability),
+        }
         let shape = tags::shape(service, target)?;
-        if shape.kind()? != "structure" { return Err(RuntimeCatalogError::Capability); }
         let mut member = None;
         for candidate in shape.members()? {
             let candidate = candidate?;

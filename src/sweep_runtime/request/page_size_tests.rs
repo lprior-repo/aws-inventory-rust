@@ -34,7 +34,8 @@ fn compiled(protocol: &str, size_type: &str, maximum: i64) -> Result<Vec<u8>, Bo
     let endpoint = json!({"version":"1.0","parameters":{"Region":{"type":"string"}},"rules":[{"type":"endpoint","conditions":[],"endpoint":{"url":"https://page.test","properties":properties}}]});
     let rules = endpoints::RuleSet::parse(Path::new("page-endpoint.json"), &endpoint)?;
     let cases: Vec<endpoints::Case> = serde_json::from_value(json!([{"params":{"Region":"us-east-1"},"expect":{"endpoint":{"url":"https://page.test","properties":properties}}}]))?;
-    let verified = rules.run_cases(&cases)?.verified_endpoint(Some("page"))?;
+    let verified = rules.run_cases(&cases)?.verified_endpoint(Some("page"))
+        .map_err(|error| format!("page-size fixture endpoint failed: {error:?}"))?;
     let source = kind_map::MappingSource {
         reviewer: "Typed page size fixture", reviewed: "2026-11-15",
         api_only: &[kind_map::ApiOnlyMapping { kind: "AWS::ApiOnly::PageThing", reason: "Synthetic wire fixture" }],

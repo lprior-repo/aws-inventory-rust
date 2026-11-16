@@ -14,13 +14,13 @@ async fn given_honest_v2_discovery_facet_when_same_catalog_targets_and_partial_s
     for complete_before_misses in [false, true] {
     let (directory, original) = store(&catalog).await?;
     let old = page(&original, &catalog, "metadata", "old-metadata", 1, true).await?;
-    let reference = old.unresolved.first().ok_or("native OAM reference absent")?.clone();
+    let reference = fixture::historical_evidence(&catalog, old.unresolved.first().ok_or("native OAM reference absent")?)?;
     original.commit_page(old).await?;
     original.commit_page(page(&original, &catalog, "discover", "old-discover", 2, false).await?).await?;
     drop(original);
     // The historical writer accepted a source under a DiscoveryOnly stage. Rebuild
     // its actual seven-field codec and v1 hash, not a modern fabricated proof.
-    old_image(&directory, &catalog, &reference).await?;
+    old_image(&directory, &reference).await?;
     let path = directory.path().join("inventory.sqlite");
     let sql = pool(&directory).await?;
     let before = frozen(&sql, &catalog).await?;
@@ -31,7 +31,7 @@ async fn given_honest_v2_discovery_facet_when_same_catalog_targets_and_partial_s
     assert_eq!(store.unattributed_authority_count().await?, 1);
     // Reusing the OLD sweep name for a genuine unrelated target must not make
     // the old terminal DiscoveryOnly outcome a current negative observation.
-    let target = oam_page_in_sweep(&store, &catalog, "ListSinks", "210987654321", 3, ("us-east-1", LINK, SINK), SweepId::new("old-discover")?).await?;
+    let target = oam_page_in_sweep(&store, &catalog, "ListSinks", "210987654321", 3, ("us-east-1", LINK, SINK), SweepId::new("old-discover".to_owned())?).await?;
     store.commit_page(target).await?;
     let sql = pool(&directory).await?;
     assert_eq!(frozen(&sql, &catalog).await?, before);
@@ -113,13 +113,13 @@ async fn given_pre_v3_active_lease_when_migration_keeps_its_generation_then_comm
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let (directory, original) = store(&catalog).await?;
     let old = page(&original, &catalog, "metadata", "old-metadata", 1, true).await?;
-    let reference = old.unresolved.first().ok_or("native OAM reference absent")?.clone();
+    let reference = fixture::historical_evidence(&catalog, old.unresolved.first().ok_or("native OAM reference absent")?)?;
     original.commit_page(old).await?;
     original.commit_page(page(&original, &catalog, "discover", "old-discover", 2, false).await?).await?;
     let pending = page(&original, &catalog, "metadata", "pending-old", 3, true).await?;
     let lease = pending.lease.clone();
     drop(original);
-    old_image(&directory, &catalog, &reference).await?;
+    old_image(&directory, &reference).await?;
     let sql = pool(&directory).await?;
     let generation: i64 = sqlx::query_scalar("SELECT generation FROM work_queue WHERE sweep_id='pending-old'").fetch_one(&sql).await?;
     sql.close().await;
@@ -142,11 +142,11 @@ async fn given_unavailable_catalog_when_fresh_generic_completes_match_old_owners
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let (directory, original) = store(&catalog).await?;
     let old = page(&original, &catalog, "metadata", "old-metadata", 1, true).await?;
-    let reference = old.unresolved.first().ok_or("native OAM reference absent")?.clone();
+    let reference = fixture::historical_evidence(&catalog, old.unresolved.first().ok_or("native OAM reference absent")?)?;
     original.commit_page(old).await?;
     original.commit_page(page(&original, &catalog, "discover", "old-discover", 2, false).await?).await?;
     drop(original);
-    old_image(&directory, &catalog, &reference).await?;
+    old_image(&directory, &reference).await?;
     let sql = pool(&directory).await?;
     let before = frozen(&sql, &catalog).await?;
     sqlx::query("DELETE FROM metadata WHERE key='reviewed_catalog'").execute(&sql).await?;

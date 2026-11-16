@@ -28,6 +28,7 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
     OperationMapping { service: "route53-recovery-readiness", operation: "GetResourceSet", kind: "AWS::Route53RecoveryReadiness::ResourceSet" },
     OperationMapping { service: "s3-control", operation: "ListMultiRegionAccessPoints", kind: "AWS::S3::MultiRegionAccessPoint" },
     OperationMapping { service: "s3-control", operation: "ListAccessPointsForDirectoryBuckets", kind: "AWS::S3::AccessPoint" },
+    OperationMapping { service: "sqs", operation: "ListQueues", kind: "AWS::SQS::Queue" },
     OperationMapping { service: "sqs", operation: "GetQueueAttributes", kind: "AWS::SQS::Queue" },
     OperationMapping { service: "sns", operation: "ListSubscriptions", kind: "AWS::SNS::Subscription" },
     OperationMapping { service: "sns", operation: "ListSubscriptionsByTopic", kind: "AWS::SNS::Subscription" },

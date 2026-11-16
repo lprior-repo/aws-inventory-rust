@@ -1,5 +1,5 @@
-use super::{SqlitePool, TestResult};
-use sqlx::Row;
+use super::TestResult;
+use sqlx::{Row, SqlitePool};
 
 #[derive(Debug, PartialEq, Eq)]
 pub(super) struct DurableState {

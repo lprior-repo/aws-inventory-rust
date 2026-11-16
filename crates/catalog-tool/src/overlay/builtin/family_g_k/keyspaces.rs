@@ -11,7 +11,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
         ("ListTypes", policy::query(policy::bind(
             policy::enumerate("types", Identity::CorrelatedKey(vec![
                 IdentityField::Request(MemberPath::new("keyspaceName")?),
-                IdentityField::Selected(MemberPath::new("$")?),
+                IdentityField::Selected(MemberPath::selected("$")?),
             ]), Some(("nextToken", "nextToken")))?,
             "keyspaceName", "ListKeyspaces", "keyspaceName",
         )?, &["$"])?),

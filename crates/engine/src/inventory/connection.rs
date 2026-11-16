@@ -66,7 +66,10 @@ async fn reader_pool(path: &Path, writer: &SqlitePool) -> Result<SqlitePool, Sto
     if path == Path::new(":memory:") {
         return Ok(writer.clone());
     }
+    // WAL readers do not block each other; a retained projection snapshot must not starve
+    // latest-state reads. The writer pool stays single-connection.
     Ok(pool()
+        .max_connections(4)
         .connect_with(
             options(path, false)?
                 .read_only(true)

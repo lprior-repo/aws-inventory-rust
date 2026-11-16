@@ -48,12 +48,15 @@ fn response_value(
     response: &Record,
     headers: &http::HeaderMap,
 ) -> Result<Option<Value>, SweepError> {
-    match &token.response_placement {
-        TokenPlacement::Body(path) if *path == token.response_path => {
-            path_value(response, path)?.map(|value| typed(value, token.value_type))
-                .transpose().map(Option::flatten)
+    match (&token.response_placement, token.selection) {
+        (TokenPlacement::Body(path), selection) if *path == token.response_path => {
+            let value = match selection {
+                TokenSelection::Value => path_value(response, path)?,
+                TokenSelection::LastListItem => last_item::select(response, path)?,
+            };
+            value.map(|value| typed(value, token.value_type)).transpose().map(Option::flatten)
         }
-        TokenPlacement::Header(name) => header_token(headers, name, token.value_type),
+        (TokenPlacement::Header(name), TokenSelection::Value) => header_token(headers, name, token.value_type),
         _ => Err(SweepError::Operation("pagination response placement is unsupported")),
     }
 }

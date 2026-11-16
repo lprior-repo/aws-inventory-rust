@@ -2,9 +2,9 @@ mod identity;
 mod endpoints;
 
 use super::*;
-use catalog_tool::{endpoints, kind_map, overlay, runtime_catalog, smithy};
+use catalog_tool::{endpoints as catalog_endpoints, kind_map, overlay, runtime_catalog, smithy};
 use inventory_core::{catalog::runtime::{CallablePlan, RuntimeCatalog}, inventory::{Observation, ResourceKey}, record::Value};
-use std::{collections::BTreeMap, fs, path::Path, sync::LazyLock};
+use std::{collections::BTreeMap, sync::LazyLock};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 static CATALOG: LazyLock<Result<Vec<u8>, String>> = LazyLock::new(|| compile().map_err(|error| error.to_string()));
@@ -16,7 +16,6 @@ fn bytes() -> TestResult<&'static [u8]> {
 fn compile() -> TestResult<Vec<u8>> {
     let root = tempfile::tempdir()?;
     let source = root.path().join("source");
-    let pinned = Path::new(env!("CARGO_MANIFEST_DIR")).join(".local/aws-models/models");
     let embedded = overlay::embedded()?;
     let mut policies = Vec::new();
     for (service, date, operations) in [
@@ -30,10 +29,7 @@ fn compile() -> TestResult<Vec<u8>> {
         ("timestream-write", "2018-11-01", &["DescribeEndpoints", "ListDatabases", "DescribeDatabase", "ListTables", "DescribeTable"][..]),
         ("timestream-query", "2018-11-01", &["DescribeEndpoints", "ListScheduledQueries", "DescribeScheduledQuery"][..]),
     ] {
-        let relative = format!("{service}/service/{date}/{service}-{date}.json");
-        let destination = source.join("models").join(&relative);
-        fs::create_dir_all(destination.parent().ok_or("model directory absent")?)?;
-        fs::copy(pinned.join(&relative), destination)?;
+        crate::sweep_runtime::pinned_model::install(&source.join("models"), service, date, operations)?;
         let policy = embedded.iter().find(|candidate| candidate.service() == service).ok_or("production service absent")?;
         let selected = operations.iter().map(|operation| {
             let key = overlay::OperationName::new(operation)?;
@@ -45,7 +41,7 @@ fn compile() -> TestResult<Vec<u8>> {
     let fields = smithy::Registry::parse(include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/catalog/field-ids.txt")))?;
     let base = smithy::build_catalog(&source, &fields, "46135f8468cd5cb60d983b97290c9f6661e359c6")?;
     let kinds = kind_map::embedded(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/catalog/cloudcontrol-universal.json")))?;
-    Ok(runtime_catalog::augment(&base, &checked, &kinds, &endpoints::verified_endpoints(&source)?)?)
+    Ok(runtime_catalog::augment(&base, &checked, &kinds, &catalog_endpoints::verified_endpoints(&source)?)?)
 }
 
 fn decode(plan: &CallablePlan<'_>, body: &[u8]) -> TestResult<Record> {
@@ -89,7 +85,7 @@ fn observations_with_request(plan: &CallablePlan<'_>, rows: Vec<Record>, request
             kind: plan.kind().clone(), id: resource_id_with_context(&row, plan.identity(),
                 Some(IdentityContext { account: &account, region: &region }),
                 &inventory_core::inventory::DiscoveryContext::empty(), request)? };
-        Ok(Observation::new(key, row, plan.hash_exclusions(), None)?.with_facet_precedence(plan.facet_precedence())?)
+        Ok(Observation::new(key, row, plan.hash_exclusions(), None)?.with_facet_precedence(plan.facet_precedence()))
     }).collect()
 }
 

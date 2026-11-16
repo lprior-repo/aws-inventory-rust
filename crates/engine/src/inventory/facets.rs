@@ -9,13 +9,14 @@ use sqlx::{Row, Sqlite, Transaction};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
 
-pub(super) const CREATE_SQL: &str = "CREATE TABLE resource_facets(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,service TEXT NOT NULL,operation TEXT NOT NULL,source_key BLOB NOT NULL,source_authority BLOB CHECK(source_authority IS NULL OR length(source_authority)=32),precedence INTEGER NOT NULL CHECK(precedence BETWEEN 0 AND 65535),record BLOB NOT NULL,owned BLOB NOT NULL,exclusions BLOB NOT NULL,relations BLOB NOT NULL,name TEXT,name_owned INTEGER NOT NULL CHECK(name_owned IN(0,1)),PRIMARY KEY(account,region,kind,id,service,operation,source_key),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID";
+pub(super) const CREATE_SQL: &str = "CREATE TABLE resource_facets(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,service TEXT NOT NULL,operation TEXT NOT NULL,source_key BLOB NOT NULL,source_authority BLOB CHECK(source_authority IS NULL OR length(source_authority)=32),bound_request BLOB,precedence INTEGER NOT NULL CHECK(precedence BETWEEN 0 AND 65535),record BLOB NOT NULL,owned BLOB NOT NULL,exclusions BLOB NOT NULL,relations BLOB NOT NULL,name TEXT,name_owned INTEGER NOT NULL CHECK(name_owned IN(0,1)),PRIMARY KEY(account,region,kind,id,service,operation,source_key),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID";
 
 pub(super) struct Aggregate {
     pub(super) observation: Observation,
     pub(super) references: Vec<(UnresolvedReference, Option<ResourceId>, super::relation_permissions::ReferenceProvenance)>,
     pub(super) relations_changed: bool,
     pub(super) record_changed: bool,
+    pub(super) bound_context_changed: bool,
 }
 
 pub(super) async fn apply(
@@ -23,10 +24,11 @@ pub(super) async fn apply(
     direct_references: &[(UnresolvedReference, ResourceId)],
     authority: Option<&super::relation_permissions::SourceAuthority<'_, '_>>,
 ) -> Result<Aggregate, StoreError> {
-    let (relations_changed, record_changed) = replace(registry, tx, page, observation, direct_references, authority).await?;
+    let (relations_changed, record_changed, bound_context_changed) = replace(registry, tx, page, observation, direct_references, authority).await?;
     let mut aggregate = load(registry, tx, observation.key()).await?;
     aggregate.relations_changed = relations_changed;
     aggregate.record_changed = record_changed;
+    aggregate.bound_context_changed = bound_context_changed;
     Ok(aggregate)
 }
 
@@ -42,14 +44,15 @@ async fn replace(
     registry: &SchemaRegistry, tx: &mut Transaction<'_, Sqlite>, page: &PageCommit, observation: &Observation,
     direct_references: &[(UnresolvedReference, ResourceId)],
     authority: Option<&super::relation_permissions::SourceAuthority<'_, '_>>,
-) -> Result<(bool, bool), StoreError> {
+) -> Result<(bool, bool, bool), StoreError> {
     let key = observation.key();
     let scope = page.lease.scope();
     let source = match authority {
         Some(authority) => std::borrow::Cow::Borrowed(authority.source_facet()),
         None => std::borrow::Cow::Owned(super::work::ownership_scope_bytes(scope, page.lease.bindings())?),
     };
-    let previous = sqlx::query("SELECT owned,name_owned,relations,record FROM resource_facets WHERE account=?1 AND region=?2 AND kind=?3 AND id=?4 AND service=?5 AND operation=?6 AND source_key=?7")
+    let bound_request = authority.map(|_| page.lease.bindings());
+    let previous = sqlx::query("SELECT owned,name_owned,relations,record,bound_request FROM resource_facets WHERE account=?1 AND region=?2 AND kind=?3 AND id=?4 AND service=?5 AND operation=?6 AND source_key=?7")
         .bind(key.account.as_str()).bind(key.region.as_str()).bind(key.kind.as_str()).bind(key.id.as_str())
         .bind(scope.service().as_str()).bind(scope.operation().as_str()).bind(source.as_ref()).fetch_optional(&mut **tx).await?;
     let old_owned = previous.as_ref().map(|row| -> Result<Record, StoreError> {
@@ -63,13 +66,16 @@ async fn replace(
     let relations_changed = old_relations.as_deref() != Some(relations.as_bytes());
     let old_record = previous.as_ref().map(|row| row.try_get::<&[u8], _>("record")).transpose()?;
     let record_changed = old_record != Some(observation.record().as_bytes());
-    sqlx::query("INSERT INTO resource_facets(account,region,kind,id,service,operation,precedence,record,owned,exclusions,relations,name,name_owned,source_key,source_authority) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15) ON CONFLICT(account,region,kind,id,service,operation,source_key) DO UPDATE SET precedence=excluded.precedence,record=excluded.record,owned=excluded.owned,exclusions=excluded.exclusions,relations=excluded.relations,name=excluded.name,name_owned=excluded.name_owned,source_authority=excluded.source_authority")
+    let old_request = previous.as_ref().map(|row| row.try_get::<Option<&[u8]>, _>("bound_request")).transpose()?.flatten();
+    let bound_context_changed = old_request != bound_request;
+    sqlx::query("INSERT INTO resource_facets(account,region,kind,id,service,operation,precedence,record,owned,exclusions,relations,name,name_owned,source_key,source_authority,bound_request) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16) ON CONFLICT(account,region,kind,id,service,operation,source_key) DO UPDATE SET precedence=excluded.precedence,record=excluded.record,owned=excluded.owned,exclusions=excluded.exclusions,relations=excluded.relations,name=excluded.name,name_owned=excluded.name_owned,source_authority=excluded.source_authority,bound_request=excluded.bound_request")
         .bind(key.account.as_str()).bind(key.region.as_str()).bind(key.kind.as_str()).bind(key.id.as_str())
         .bind(scope.service().as_str()).bind(scope.operation().as_str()).bind(i64::from(observation.facet_precedence()))
         .bind(observation.record().as_bytes()).bind(owned.as_bytes()).bind(exclusions.as_bytes())
         .bind(relations.as_bytes()).bind(observation.name()).bind(name_owned).bind(source.as_ref())
-        .bind(authority.map(|authority| authority.source_authority().as_slice())).execute(&mut **tx).await?;
-    Ok((relations_changed, record_changed))
+        .bind(authority.map(|authority| authority.source_authority().as_slice()))
+        .bind(bound_request).execute(&mut **tx).await?;
+    Ok((relations_changed, record_changed, bound_context_changed))
 }
 
 fn aggregate(registry: &SchemaRegistry, key: &ResourceKey, rows: Vec<sqlx::sqlite::SqliteRow>) -> Result<Aggregate, StoreError> {
@@ -99,7 +105,7 @@ fn aggregate(registry: &SchemaRegistry, key: &ResourceKey, rows: Vec<sqlx::sqlit
         references.extend(relations::decode(registry, record, observation.key(), facet, &owners, source, source_authority.as_ref())?);
         Ok::<_, StoreError>(references)
     })?;
-    Ok(Aggregate { observation, references, relations_changed: false, record_changed: false })
+    Ok(Aggregate { observation, references, relations_changed: false, record_changed: false, bound_context_changed: false })
 }
 
 pub(super) async fn retire_source(

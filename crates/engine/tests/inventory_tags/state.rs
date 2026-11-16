@@ -69,13 +69,13 @@ pub(super) async fn database_state(pool: &SqlitePool) -> TestResult<DatabaseStat
     let mut tables = Vec::new();
     for (_, name, _, _) in schema.iter().filter(|(kind, _, _, _)| kind == "table") {
         let quoted = quote(name);
-        let columns = sqlx::query(&format!("PRAGMA table_info({quoted})"))
+        let columns = sqlx::query(sqlx::AssertSqlSafe(format!("PRAGMA table_info({quoted})")))
             .fetch_all(pool).await?.into_iter()
             .map(|row| row.try_get::<String, _>("name"))
             .collect::<Result<Vec<_>, _>>()?;
         let selection = columns.iter().map(|column| format!("quote({})", quote(column)))
             .collect::<Vec<_>>().join(",");
-        let rows = sqlx::query(&format!("SELECT {selection} FROM {quoted}"))
+        let rows = sqlx::query(sqlx::AssertSqlSafe(format!("SELECT {selection} FROM {quoted}")))
             .fetch_all(pool).await?;
         let mut values = rows.into_iter().map(|row| {
             (0..columns.len()).map(|index| row.try_get::<String, _>(index))
@@ -94,7 +94,7 @@ fn quote(value: &str) -> String {
 pub(super) async fn resource_image(pool: &SqlitePool) -> TestResult<Vec<(String, String)>> {
     // SQL quote is byte-exact for records/hashes (BLOB hex), and distinguishes NULL.
     Ok(sqlx::query_as(
-        "SELECT 'resource:'||account||':'||region||':'||kind||':'||id,quote(name)||'|'||quote(content_hash)||'|'||quote(first_seen)||'|'||quote(last_changed) FROM resources UNION ALL SELECT 'typed:'||account||':'||region||':'||id,quote(content_hash)||'|'||quote(first_seen)||'|'||quote(last_changed)||'|'||quote(record)||'|'||quote(value) FROM thing_table ORDER BY 1",
+        "SELECT 'resource:'||account||':'||region||':'||kind||':'||id,quote(name)||'|'||quote(content_hash)||'|'||quote(first_seen)||'|'||quote(last_changed) FROM resources UNION ALL SELECT 'typed:'||account||':'||region||':'||id,quote(content_hash)||'|'||quote(first_seen)||'|'||quote(last_changed)||'|'||quote(record)||'|'||quote(f_1) FROM thing_table ORDER BY 1",
     ).fetch_all(pool).await?)
 }
 

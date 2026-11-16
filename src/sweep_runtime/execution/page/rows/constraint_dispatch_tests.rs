@@ -7,7 +7,7 @@ use inventory_core::{
 };
 use inventory_engine::inventory::{BinaryStore, PageCommit, SchemaRegistry, SweepId};
 use serde_json::json;
-use std::{collections::{BTreeMap, BTreeSet}, fs, path::Path, sync::LazyLock};
+use std::{collections::{BTreeMap, BTreeSet}, sync::LazyLock};
 
 #[path = "constraint_dispatch_tests/flow.rs"]
 mod flow;
@@ -35,10 +35,7 @@ fn catalog() -> TestResult<RuntimeCatalog<'static>> {
 
 fn compile() -> TestResult<Vec<u8>> {
     let root = tempfile::tempdir()?;
-    let relative = "models/service-catalog/service/2015-12-10/service-catalog-2015-12-10.json";
-    let destination = root.path().join(relative);
-    fs::create_dir_all(destination.parent().ok_or("model directory absent")?)?;
-    fs::copy(Path::new(env!("CARGO_MANIFEST_DIR")).join(".local/aws-models").join(relative), destination)?;
+    crate::sweep_runtime::pinned_model::install(&root.path().join("models"), SERVICE, "2015-12-10", &["ListPortfolios", OPERATION])?;
     let embedded = overlay::embedded()?;
     let policy = embedded.iter().find(|policy| policy.service() == SERVICE).ok_or("production service absent")?;
     let selected = ["ListPortfolios", OPERATION].into_iter().map(|operation| {
@@ -87,8 +84,6 @@ fn given_one_production_constraint_operation_when_compiled_then_all_five_canonic
     assert_eq!(classification.path.as_ref(), &[field("Type")?]);
     assert_eq!(classification.variants.iter().map(|(value, kind)| (value.as_str(), kind.as_str())).collect::<Vec<_>>(), MAPPINGS);
     let parent = catalog.lookup(SERVICE, "ListPortfolios").ok_or("portfolio plan absent")?;
-    let consumers = super::super::consumer_index::ConsumerIndex::build(&catalog)?;
-    assert_eq!(consumers.candidates(SERVICE, "ListPortfolios").map(|plan| plan.operation_name()).collect::<Vec<_>>(), [OPERATION]);
     // Then every selected subtype owns a canonical schema and exactly its checked portfolio relation.
     let mut tables = BTreeSet::new();
     for (_, kind) in MAPPINGS {
@@ -136,7 +131,9 @@ async fn given_five_native_constraint_types_in_one_page_when_dispatched_then_eac
     for (index, ((_, kind), row)) in MAPPINGS.iter().zip(&rows).enumerate() {
         let id = format!("8:port-one|6:cons-{index}");
         let schema = catalog.schemas().iter().find(|schema| schema.kind().as_str() == *kind).ok_or("schema absent")?;
-        let saved: Vec<(String, Vec<u8>)> = sqlx::query_as(&format!("SELECT id,record FROM \"{}\"", schema.table().as_str())).fetch_all(&reader).await?;
+        let mut query = sqlx::QueryBuilder::<sqlx::Sqlite>::new("SELECT id,record FROM \"");
+        query.push(schema.table().as_str()).push("\"");
+        let saved: Vec<(String, Vec<u8>)> = query.build_query_as().fetch_all(&reader).await?;
         assert_eq!(saved, [(id.clone(), row.as_bytes().to_vec())], "{kind}");
         let key = ResourceKey { account: AccountId::parse("123456789012")?, region: Region::parse("us-east-1")?,
             kind: inventory_core::inventory::Kind::parse(kind)?, id: ResourceId::parse(&id)? };

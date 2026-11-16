@@ -68,8 +68,8 @@ fn list(
     if element.kind()? != "structure" {
         return Err(RuntimeCatalogCompileError::Capability);
     }
-    let key = tag_member(element, &["Key", "key"])?;
-    let value = tag_member(element, &["Value", "value"])?;
+    let key = tag_member(element, &["Key", "key", "TagKey", "tagKey"])?;
+    let value = tag_member(element, &["Value", "value", "TagValue", "tagValue"])?;
     string(service, Some(key.target))?;
     string(service, Some(value.target))?;
     encode::map([

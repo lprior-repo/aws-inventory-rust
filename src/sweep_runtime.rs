@@ -8,6 +8,8 @@ mod config;
 mod execution;
 mod input;
 mod record;
+#[cfg(test)]
+mod pinned_model;
 mod request;
 mod resource_projection;
 mod row_policy;

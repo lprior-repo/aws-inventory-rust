@@ -6,6 +6,7 @@ mod stages;
 mod bindings;
 mod source_authority;
 
+mod typed;
 use super::{PageCommit, StoreError};
 use inventory_core::{
     catalog::runtime::{KindClassificationPlan, ReferenceOwnerRule, RelationScope, RelationSource, RelationshipPlan, RuntimeCatalog},
@@ -18,6 +19,7 @@ pub(super) use dependencies::{edge_references, reference_dependencies};
 pub(super) use provenance::{activate_reference, clear_active, mark_direct_reference, mark_reference, promotable, targets, ReferenceProvenance};
 pub(super) use provenance::{initialize as initialize_provenance, invalidate_prior_authority};
 pub(super) use source_authority::{SourceAuthority, page_authority};
+use typed::{source_matches, rule_reference, reference_matches_observation};
 
 type Operations = BTreeMap<String, BTreeMap<String, stages::Stages>>;
 
@@ -99,12 +101,12 @@ impl Permissions {
         if sources.len() != page.observations.len() { return Err(StoreError::Invalid("duplicate relationship source observations")); }
         for reference in &page.unresolved {
             let source = sources.get(&reference.from).ok_or_else(unreviewed)?;
-            authority.reference(page.lease.bindings(), source, reference)?;
+            authority.reference(&page.lease, source, reference)?;
         }
         for edge in &page.edges {
             let source = sources.get(&edge.from).ok_or_else(unreviewed)?;
             let target = sources.get(&edge.to).ok_or_else(unreviewed)?;
-            authority.edge(page.lease.bindings(), source, target, edge)?;
+            authority.edge(&page.lease, source, target, edge)?;
         }
         Ok(())
     }
@@ -118,9 +120,9 @@ impl Permissions {
 }
 
 impl Authority {
-    fn reference(&self, request: &[u8], source: &Observation, reference: &UnresolvedReference) -> Result<(), StoreError> {
+    fn reference(&self, lease: &super::WorkLease, source: &Observation, reference: &UnresolvedReference) -> Result<(), StoreError> {
         for rule in &self.relations {
-            if matches_reference(rule, reference) && source_matches(rule, request, source, reference.target.value().as_str())? { return Ok(()); }
+            if matches_reference(rule, reference) && source_matches(rule, lease, source, reference)? { return Ok(()); }
         }
         for rule in &self.trust {
             if rule.reference(reference) && rule.declares(source, reference.target.value().as_str())? { return Ok(()); }
@@ -128,13 +130,10 @@ impl Authority {
         Err(unreviewed())
     }
 
-    fn edge(&self, request: &[u8], source: &Observation, target: &Observation, edge: &Edge) -> Result<(), StoreError> {
+    fn edge(&self, lease: &super::WorkLease, source: &Observation, target: &Observation, edge: &Edge) -> Result<(), StoreError> {
         for rule in &self.relations {
-            if rule.source_kind != edge.from.kind || rule.relation != edge.relation
-                || rule.target_kind != edge.to.kind || rule.target_kinds.len() != 1 { continue; }
-            let Some(ValueRef::Text(value)) = scalar(target.record().root(), &rule.target_path)? else { continue; };
-            if owner_matches(rule, &edge.from, &edge.to.account, &edge.to.region, value)
-                && source_matches(rule, request, source, value)? { return Ok(()); }
+            let Some(reference) = rule_reference(rule, lease, source, target, edge)? else { continue; };
+            if reference_matches_observation(&reference, target, lease.bindings())? { return Ok(()); }
         }
         for rule in &self.trust {
             if rule.edge(edge) && rule.declares(source, edge.to.id.as_str())?
@@ -146,8 +145,12 @@ impl Authority {
 
 fn matches_reference(rule: &RelationshipPlan, reference: &UnresolvedReference) -> bool {
     let target = &reference.target;
-    rule.source_kind == reference.from.kind && rule.relation == reference.relation && rule.target_kind == *target.kind()
+    rule.source_kind == reference.from.kind && rule.relation == reference.relation
+        && (if rule.source == RelationSource::Parent { rule.target_kinds.contains(target.kind()) } else { rule.target_kind == *target.kind() })
         && rule.target_path.as_ref() == target.path()
+        && rule.target_mode == target.mode()
+        && rule.components.len() == target.components().len()
+        && rule.components.iter().zip(target.components()).all(|(rule, term)| rule.target_mode == term.mode && rule.target_path == term.path)
         && rule.target_kinds.len() == target.candidate_kinds().len()
         && rule.target_kinds.iter().all(|kind| target.candidate_kinds().contains(kind))
         && owner_matches(rule, &reference.from, target.account(), target.region(), target.value().as_str())
@@ -192,17 +195,6 @@ fn execution_arn_matches(from: &ResourceKey, region: &Region, value: &str) -> bo
         && !resource.bytes().any(|byte| byte.is_ascii_control() || byte.is_ascii_whitespace() || matches!(byte, b'*' | b'?')))
 }
 
-fn source_matches(rule: &RelationshipPlan, request: &[u8], source: &Observation, expected: &str) -> Result<bool, StoreError> {
-    let root = match rule.source {
-        RelationSource::SelectedOutput => source.record().root(),
-        RelationSource::Request => MapRef::from_bytes_bounded(request)?,
-    };
-    Ok(match scalar(root, &rule.source_path)? {
-        Some(ValueRef::Text(value)) => value == expected,
-        Some(ValueRef::Int(value)) if rule.source == RelationSource::SelectedOutput => expected.parse::<i64>().is_ok_and(|expected| value == expected),
-        _ => false,
-    })
-}
 
 pub(super) fn scalar<'a>(root: MapRef<'a>, path: &[FieldId]) -> Result<Option<ValueRef<'a>>, StoreError> {
     let Some((last, parents)) = path.split_last() else { return Ok(root.get_name("$")?); };

@@ -1,4 +1,5 @@
 pub(crate) mod model_source;
+pub use model_source::Error as ModelSourceError;
 pub(crate) mod report;
 pub use report::{ReportError, ReportMode};
 pub mod classes;

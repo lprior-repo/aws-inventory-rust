@@ -1,11 +1,12 @@
 mod fields;
+mod last_item;
 mod resume;
 mod tokens;
 #[cfg(test)]
 mod tests;
 use fields::*;
 use inventory_core::{
-    catalog::runtime::{PagePlan, TokenBinding, TokenPlacement, TokenType},
+    catalog::runtime::{PagePlan, TokenBinding, TokenPlacement, TokenSelection, TokenType},
     record::{Exclusions, FieldId, Key, Record, Value, ValueRef},
 };
 
@@ -18,23 +19,23 @@ const MAX_TOKEN_RECORD: usize = 65_000;
 const MAX_CURSOR: usize = 65_536;
 
 #[derive(Default)]
-pub(super) struct Cursor {
+pub(in crate::sweep_runtime) struct Cursor {
     pub pages: u32,
     pub current: Option<Record>,
     pub partial: bool,
 }
 
-pub(super) struct Advance {
+pub(in crate::sweep_runtime) struct Advance {
     pub cursor: Record,
     pub continuation_digest: Option<[u8; 32]>,
 }
 
 impl Cursor {
-    pub(super) fn decode(token: Option<&[u8]>) -> Result<Self, SweepError> {
+    pub(in crate::sweep_runtime) fn decode(token: Option<&[u8]>) -> Result<Self, SweepError> {
         token.map_or_else(|| Ok(Self::default()), resume::decode)
     }
 
-    pub(super) fn request_fields(
+    pub(in crate::sweep_runtime) fn request_fields(
         &self,
         plan: &PagePlan,
     ) -> Result<Vec<input::InputField>, SweepError> {
@@ -44,7 +45,7 @@ impl Cursor {
         )
     }
 
-    pub(super) fn next(
+    pub(in crate::sweep_runtime) fn next(
         self,
         plan: &PagePlan,
         response: &Record,

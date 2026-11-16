@@ -27,7 +27,7 @@ async fn oam_page_in_sweep(store: &BinaryStore, catalog: &RuntimeCatalog<'_>, op
     let account = AccountId::parse(account)?;
     let request = Record::encode(&Value::Map(BTreeMap::new()))?;
     let observations = rows.iter().map(|row| observation(catalog, record::IdentityContext { account: &account, region: &home }, plan, &Region::Regional(home.clone()), row, &request, &DiscoveryContext::default())).collect::<Result<Vec<_>, _>>()?;
-    let unresolved = references(catalog, plan, &home, &rows, &observations, &request)?;
+    let unresolved = references(catalog, plan, &home, &rows, &observations, &request, None)?;
     let scope = ScopeKey::new(account, Region::Regional(home), ServiceId::parse("oam")?, OperationId::parse(operation)?, None)?;
     store.seed_work(WorkSpec::new(sweep.clone(), scope, None, request.into_bytes())?).await?;
     let lease = store.claim(&sweep, at, 10_000).await?.ok_or("OAM lease absent")?;
@@ -143,7 +143,7 @@ async fn given_legacy_matching_foreign_reference_when_catalog_is_attached_then_o
         let home = RegionId::parse("us-east-1")?;
         let request = Record::encode(&Value::Map(BTreeMap::new()))?;
         page.observations = rows.iter().map(|row| observation(&catalog, record::IdentityContext { account: &account, region: &home }, plan, &Region::Regional(home.clone()), row, &request, &DiscoveryContext::default())).collect::<Result<Vec<_>, _>>()?;
-        page.unresolved = references(&catalog, plan, &home, &rows, &page.observations, &request)?;
+        page.unresolved = references(&catalog, plan, &home, &rows, &page.observations, &request, None)?;
         original.commit_page(page).await?;
         drop(original);
         let path = directory.path().join("inventory.sqlite");

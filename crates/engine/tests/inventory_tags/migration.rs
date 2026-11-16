@@ -116,7 +116,7 @@ async fn schema15_upgrade_preserves_existing_coverage_instead_of_recreating_it()
     assert_eq!(sqlx::query_scalar::<_, i64>("PRAGMA user_version").fetch_one(&pool).await?, 16);
     let context: Vec<Vec<u8>> = sqlx::query_scalar("SELECT context FROM work_queue ORDER BY sweep_id")
         .fetch_all(&pool).await?;
-    assert_eq!(context, vec![vec![], vec![]]);
+    assert_eq!(context, vec![Vec::<u8>::new(), Vec::new()]);
     pool.close().await;
     Ok(())
 }

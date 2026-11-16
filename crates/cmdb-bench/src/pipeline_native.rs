@@ -20,7 +20,7 @@ impl Target {
         // Redis validates authority, port, and credentials; prefix checking alone
         // is insufficient (a crafted user-info authority could escape loopback).
         let info = redis::Client::open(self.endpoint.as_str())?;
-        match &info.get_connection_info().addr {
+        match info.get_connection_info().addr() {
             redis::ConnectionAddr::Tcp(host, _) if matches!(host.as_str(), "127.0.0.1" | "localhost" | "::1") => Ok(()),
             _ => Err("benchmark graph endpoint must resolve from a loopback-only authority".into()),
         }

@@ -11,12 +11,19 @@ type Nodes = BTreeSet<(String, String)>;
 type Edges = BTreeSet<StoredEdge>;
 type Response = fn(&str, &Record, bool) -> TestResult<(Json, Option<String>)>;
 
+static FIELDS: std::sync::LazyLock<Result<catalog_tool::smithy::Registry, String>> =
+    std::sync::LazyLock::new(|| catalog_tool::smithy::Registry::parse(
+        include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/catalog/field-ids.txt"))
+    ).map_err(|error| error.to_string()));
+
 // Expected identities deliberately do not call the identity compiler/projector under test.
 fn key(parts: &[&str]) -> String {
     parts.iter().map(|part| format!("{}:{part}", part.len())).collect::<Vec<_>>().join("|")
 }
 fn string<'a>(request: &'a Record, name: &str) -> TestResult<&'a str> {
-    match record::path_value(request.root(), &[FieldId::named(name)])? {
+    let field = FIELDS.as_ref().map_err(|error| error.clone())?.id(name)
+        .ok_or_else(|| format!("pinned request field absent: {name}"))?;
+    match record::path_value(request.root(), &[field])? {
         Some(ValueRef::Text(value)) => Ok(value),
         _ => Err(format!("bound request omitted {name}").into()),
     }

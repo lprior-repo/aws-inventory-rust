@@ -1,6 +1,7 @@
 // Pinned source: .local/aws-models/models/codedeploy/service/2014-10-06/codedeploy-2014-10-06.json
 // Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
+use crate::overlay::IdentityField;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![

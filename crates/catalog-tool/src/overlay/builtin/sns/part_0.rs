@@ -38,7 +38,7 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         class: Some(OverlayClass::Expand),
         scope: Some(Scope::Region),
         items: Some(ItemSelector::Root),
-        identity: Some(Identity::CorrelatedKey(vec![IdentityField::Request(path("ResourceArn")?)])),
+        identity: Some(Identity::CorrelatedKey(vec![IdentityField::RequestArn(path("ResourceArn")?)])),
         bind: std::collections::BTreeMap::from([(path("ResourceArn")?, Binding::From { operation: name("ListTopics")?, path: path("TopicArn")? })]),
         paginator: Some(Paginator::None),
         ..empty()

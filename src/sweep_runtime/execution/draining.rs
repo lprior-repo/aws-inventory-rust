@@ -1,3 +1,4 @@
+#[path = "draining/admission.rs"]
 pub(super) mod admission;
 
 use super::*;
@@ -266,4 +267,5 @@ pub(super) fn now_ms() -> Result<i64, SweepError> {
 }
 
 #[cfg(test)]
+#[path = "draining/tests.rs"]
 mod tests;

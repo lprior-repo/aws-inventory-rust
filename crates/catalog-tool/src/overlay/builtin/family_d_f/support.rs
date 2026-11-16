@@ -1,9 +1,10 @@
-use super::super::{empty, name, path, service};
+use super::super::{empty, name, service};
 use crate::{
     classes::DenyReason,
     overlay::{Binding, ContextSource, FixedValue, Identity, ItemSelector, NameError, OperationOverlay, OverlayClass,
         Paginator, Scope, ServiceOverlay, TokenPair},
 };
+use crate::overlay::MemberPath;
 
 pub(super) type Entry = (&'static str, OperationOverlay);
 
@@ -24,55 +25,55 @@ pub(super) fn inventory(
 }
 
 pub(super) fn arn(member: &str) -> Result<Identity, NameError> {
-    Ok(Identity::Arn(path(member)?))
+    Ok(Identity::Arn(MemberPath::selected(member)?))
 }
 
 pub(super) fn key(members: &[&str]) -> Result<Identity, NameError> {
-    members.iter().map(|member| path(member)).collect::<Result<Vec<_>, _>>().map(Identity::Key)
+    members.iter().map(|member| MemberPath::selected(member)).collect::<Result<Vec<_>, _>>().map(Identity::Key)
 }
 
 pub(super) fn correlated(request: &[&str], selected: &[&str]) -> Result<Identity, NameError> {
-    request.iter().map(|member| path(member).map(crate::overlay::IdentityField::Request))
-        .chain(selected.iter().map(|member| path(member).map(crate::overlay::IdentityField::Selected)))
+    request.iter().map(|member| MemberPath::new(member).map(crate::overlay::IdentityField::Request))
+        .chain(selected.iter().map(|member| MemberPath::selected(member).map(crate::overlay::IdentityField::Selected)))
         .collect::<Result<Vec<_>, _>>().map(Identity::CorrelatedKey)
 }
 
 pub(super) fn token(input: &str, output: &str) -> Result<Paginator, NameError> {
-    Ok(Paginator::Token(TokenPair { input: path(input)?, output: path(output)?, optional: false }))
+    Ok(Paginator::Token(TokenPair { input: MemberPath::new(input)?, output: MemberPath::new(output)?, optional: false }))
 }
 
 pub(super) fn truncated(input: &str, output: &str, more: &str) -> Result<Paginator, NameError> {
     Ok(Paginator::Tokens {
-        pairs: vec![TokenPair { input: path(input)?, output: path(output)?, optional: false }],
-        truncated: Some(path(more)?),
+        pairs: vec![TokenPair { input: MemberPath::new(input)?, output: MemberPath::new(output)?, optional: false }],
+        truncated: Some(MemberPath::new(more)?),
     })
 }
 
 pub(super) fn bound(mut entry: Entry, bindings: &[(&str, &str, &str)]) -> Result<Entry, NameError> {
     entry.1.class = Some(OverlayClass::Expand);
     entry.1.bind = bindings.iter().map(|(input, operation, member)| {
-        Ok((path(input)?, Binding::From { operation: name(operation)?, path: path(member)? }))
+        Ok((MemberPath::new(input)?, Binding::From { operation: name(operation)?, path: MemberPath::selected(member)? }))
     }).collect::<Result<_, NameError>>()?;
     Ok(entry)
 }
 
 pub(super) fn inherited(mut entry: Entry, input: &str, operation: &str, member: &str) -> Result<Entry, NameError> {
-    entry.1.bind.insert(path(input)?, Binding::Context { operation: name(operation)?, source: ContextSource::Request, path: path(member)? });
+    entry.1.bind.insert(MemberPath::new(input)?, Binding::Context { operation: name(operation)?, source: ContextSource::Request, path: MemberPath::new(member)? });
     Ok(entry)
 }
 
 pub(super) fn fixed_integer(mut entry: Entry, input: &str, value: i64) -> Result<Entry, NameError> {
-    entry.1.fixed.extend([(path(input)?, FixedValue::Integer(value))]);
+    entry.1.fixed.extend([(MemberPath::new(input)?, FixedValue::Integer(value))]);
     Ok(entry)
 }
 
 pub(super) fn tagged(mut entry: Entry, member: &str) -> Result<Entry, NameError> {
-    entry.1.tags = Some(path(member)?);
+    entry.1.tags = Some(MemberPath::selected(member)?);
     Ok(entry)
 }
 
 pub(super) fn queried(mut entry: Entry, members: &[&str]) -> Result<Entry, NameError> {
-    entry.1.queryable = members.iter().map(|member| path(member)).collect::<Result<_, _>>()?;
+    entry.1.queryable = members.iter().map(|member| MemberPath::selected(member)).collect::<Result<_, _>>()?;
     Ok(entry)
 }
 

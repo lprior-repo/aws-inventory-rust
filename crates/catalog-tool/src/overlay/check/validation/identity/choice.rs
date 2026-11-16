@@ -13,7 +13,8 @@ pub(super) fn valid<'m>(operation: &str, model: &Model<'m>, item: ShapeRef<'m>, 
             IdentityChoice::PreferArn { path, fallback, .. } => text(selected(model, item, path.as_str())) && leaf(operation, model, item, fallback),
             IdentityChoice::Discriminated(branches) => branches.iter().all(|branch| {
                 let predicate = match &branch.predicate {
-                    IdentityPredicate::Present(path) | IdentityPredicate::TextEquals { path, .. } => text(selected(model, item, path.as_str())),
+                    IdentityPredicate::Present(path) => scalar(selected(model, item, path.as_str())),
+                    IdentityPredicate::TextEquals { path, .. } => text(selected(model, item, path.as_str())),
                     IdentityPredicate::RequestTextEquals { path, .. } => text(model.resolve_path(operation, "input", path.as_str()).ok().flatten()),
                 };
                 predicate && leaf(operation, model, item, &branch.identity)
@@ -33,7 +34,8 @@ fn leaf<'m>(operation: &str, model: &Model<'m>, item: ShapeRef<'m>, leaf: &Ident
 fn valid_fields<'m>(operation: &str, model: &Model<'m>, item: ShapeRef<'m>, fields: &[IdentityField]) -> bool {
     !fields.is_empty() && fields.len() <= 64 && fields.iter().all(|field| match field {
         IdentityField::Selected(path) => scalar(selected(model, item, path.as_str())),
-        IdentityField::SelectedDigest(path) => typed_fields::digest(selected(model, item, path.as_str())),
+        IdentityField::SelectedDigest(path) => typed_fields::digest(
+            if path.as_str() == "$" { Some(item) } else { selected(model, item, path.as_str()) }),
         IdentityField::Request(path) => scalar(model.resolve_path(operation, "input", path.as_str()).ok().flatten()),
         IdentityField::SelectedArn(path) => text(selected(model, item, path.as_str())),
         IdentityField::RequestArn(path) => text(model.resolve_path(operation, "input", path.as_str()).ok().flatten()),

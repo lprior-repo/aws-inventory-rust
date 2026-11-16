@@ -20,6 +20,8 @@ pub(super) const RETAIN_PAYLOADS: &[&str] = &[
     "smithy.api#error",
     "smithy.api#retryable",
     "smithy.api#range",
+    "smithy.api#length",
+    "smithy.api#pattern",
     "smithy.api#paginated",
     "smithy.api#readonly",
     "smithy.api#mediaType",

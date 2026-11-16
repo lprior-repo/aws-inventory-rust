@@ -62,6 +62,7 @@ mod operations_13;
 mod operations_14;
 #[path = "family_q_s/relations_0.rs"]
 mod relations_0;
+#[path = "family_q_s/coverage.rs"]
 mod coverage;
 
 pub(super) const SOURCES: &[MappingSource<'static>] = &[

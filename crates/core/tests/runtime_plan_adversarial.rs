@@ -3,7 +3,7 @@ mod runtime_provenance;
 
 use inventory_core::{
     catalog::runtime::{IdentityPart, IdentityPlan, RuntimeCatalog, RuntimeCatalogError, TokenType},
-    record::{FieldId, Key, MapRef, Record, RecordError, Value, ValueRef},
+    record::{FieldId, Key, MapRef, RecordError, Value, ValueRef},
 };
 use std::collections::BTreeMap;
 
@@ -33,7 +33,7 @@ fn path(ids: impl IntoIterator<Item = i64>) -> Value {
 }
 
 fn artifact(change: impl FnOnce(&mut Fields) -> TestResult) -> TestResult<Vec<u8>> {
-    let mut root = ValueRef::Map(MapRef::from_bytes_bounded(BASE)?).to_value()?;
+    let mut root = ValueRef::Map(MapRef::from_container_bytes(BASE, inventory_core::catalog::MAX_CATALOG_BYTES)?).to_value()?;
     let extension = fields(&mut root)?.get_mut(&key(60_000)?)
         .ok_or("base catalog has no runtime extension")?;
     let plans = fields(extension)?.get_mut(&key(2)?)
@@ -46,7 +46,7 @@ fn artifact(change: impl FnOnce(&mut Fields) -> TestResult) -> TestResult<Vec<u8
     }).ok_or("base catalog has no DescribeVpcs plan")?;
     change(fields(plan)?)?;
     runtime_provenance::reseal(&mut root, BASE)?;
-    Ok(Record::encode(&root)?.into_bytes())
+    Ok(inventory_core::record::encode_container(&root, inventory_core::catalog::MAX_CATALOG_BYTES)?)
 }
 
 fn replacing(id: u32, value: Value) -> TestResult<Vec<u8>> {

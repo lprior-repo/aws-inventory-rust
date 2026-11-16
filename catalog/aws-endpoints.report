@@ -1,19 +1,19 @@
 cases 14115
-in_scope 4109
-passed 4109
+in_scope 4112
+passed 4112
 failed 0
-skipped 10006
+skipped 10003
 skipped other_partition 5631
 skipped fips 1809
 skipped dual_stack 908
 skipped custom_endpoint 844
-skipped other_parameters 276
+skipped other_parameters 273
 skipped operation_inputs 538
 skipped request_time_function 0
 services 436
 global 28
-regional 401
-needs_overlay 4
+regional 402
+needs_overlay 3
 unsupported 3
 services_with_exceptions 3
 exceptions 3
@@ -177,7 +177,7 @@ service emr-serverless regional https://emr-serverless.{region}.amazonaws.com em
 service endusermessaging regional https://end-user-messaging.{region}.amazonaws.com end-user-messaging {region}
 service entityresolution regional https://entityresolution.{region}.amazonaws.com entityresolution {region}
 service eventbridge regional https://events.{region}.amazonaws.com events {region}
-service eventbridgev2 needs-overlay https://eventsv2.{region}.amazonaws.com events {region} reason:"regional template not confirmed by any published case"
+service eventbridgev2 regional https://eventsv2.{region}.amazonaws.com events {region}
 service evs regional https://evs.{region}.amazonaws.com evs {region}
 service firehose regional https://firehose.{region}.amazonaws.com firehose {region}
 service fis regional https://fis.{region}.amazonaws.com fis {region}

@@ -18,7 +18,8 @@ pub(in crate::runtime_catalog) fn validate(service: Service<'_>, operation: Oper
                 IdentityChoice::PreferArn { path, fallback, .. } => { text(service, target(service, item, path.as_str())?)?; leaf(service, operation, item, fallback) }
                 IdentityChoice::Discriminated(branches) => branches.iter().try_for_each(|branch| {
                     match &branch.predicate {
-                        IdentityPredicate::Present(path) | IdentityPredicate::TextEquals { path, .. } => text(service, target(service, item, path.as_str())?)?,
+                        IdentityPredicate::Present(path) => scalar(service, target(service, item, path.as_str())?)?,
+                        IdentityPredicate::TextEquals { path, .. } => text(service, target(service, item, path.as_str())?)?,
                         IdentityPredicate::RequestTextEquals { path, .. } => text(service, target(service, operation.input()?, path.as_str())?)?,
                     }
                     leaf(service, operation, item, &branch.identity)

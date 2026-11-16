@@ -19,7 +19,7 @@ pub(super) async fn revision(path: &Path) -> BenchResult<i64> {
 }
 
 async fn count(pool: &SqlitePool, statement: &str) -> BenchResult<u64> {
-    let value: i64 = sqlx::query_scalar(statement).fetch_one(pool).await?;
+    let value: i64 = sqlx::query_scalar(sqlx::AssertSqlSafe(statement)).fetch_one(pool).await?;
     Ok(u64::try_from(value)?)
 }
 
@@ -76,7 +76,7 @@ async fn check_detail_records(pool: &SqlitePool, workload: &Workload) -> BenchRe
     let detail_count = count(pool, &format!("SELECT COUNT(*) FROM \"{}\"", table.as_str())).await?;
     if detail_count != u64::try_from(workload.resources()?)? { return Err("typed detail table has missing or extra records".into()); }
     let statement = format!("SELECT r.name,d.record,r.content_hash,d.content_hash,d.first_seen,d.last_changed FROM \"{}\" d JOIN resources r ON r.account=d.account AND r.region=d.region AND r.id=d.id AND r.kind='AWS::DynamoDB::Table'", table.as_str());
-    let checked = sqlx::query_as::<_, (String, Vec<u8>, Vec<u8>, Vec<u8>, i64, i64)>(&statement)
+    let checked = sqlx::query_as::<_, (String, Vec<u8>, Vec<u8>, Vec<u8>, i64, i64)>(sqlx::AssertSqlSafe(statement.as_str()))
         .fetch(pool).map_err(|error| -> Box<dyn std::error::Error + Send + Sync> { error.into() })
         .try_fold(0_u64, |count, (name, record, summary_hash, detail_hash, first_seen, changed)| async move {
             let expected = scalar_record(ValueRef::Text(&name))?;

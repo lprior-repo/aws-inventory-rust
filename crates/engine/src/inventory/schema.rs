@@ -93,6 +93,9 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
         super::relation_permissions::invalidate_prior_authority(&mut tx).await?;
         sqlx::query("DROP TABLE resource_facets").execute(&mut *tx).await?;
         sqlx::query(super::facets::CREATE_SQL).execute(&mut *tx).await?;
+    } else if !facet_columns.iter().any(|row| row.try_get::<&str, _>("name").is_ok_and(|name| name == "bound_request")) {
+        // Existing V3 facets remain readable; absent validated requests cannot authorize bound-context targets.
+        sqlx::query("ALTER TABLE resource_facets ADD COLUMN bound_request BLOB").execute(&mut *tx).await?;
     }
     sqlx::query("INSERT INTO metadata(key,value) VALUES('canonical_facet_dependencies_v3',X'01') ON CONFLICT(key) DO UPDATE SET value=excluded.value").execute(&mut *tx).await?;
     tx.commit().await?;

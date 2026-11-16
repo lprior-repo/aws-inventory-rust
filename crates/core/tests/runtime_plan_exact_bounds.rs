@@ -3,7 +3,7 @@ mod runtime_provenance;
 
 use inventory_core::{
     catalog::runtime::{IdentityPart, IdentityPlan, RuntimeCatalog},
-    record::{FieldId, Key, MapRef, Record, Value, ValueRef},
+    record::{FieldId, Key, MapRef, Value, ValueRef},
 };
 use std::collections::BTreeMap;
 
@@ -28,7 +28,7 @@ fn map(entries: impl IntoIterator<Item = (u32, Value)>) -> TestResult<Value> {
 }
 
 fn with_identity(kind: i64, parts: Vec<Value>) -> TestResult<Vec<u8>> {
-    let mut root = ValueRef::Map(MapRef::from_bytes_bounded(BASE)?).to_value()?;
+    let mut root = ValueRef::Map(MapRef::from_container_bytes(BASE, inventory_core::catalog::MAX_CATALOG_BYTES)?).to_value()?;
     let extension = fields(&mut root)?.get_mut(&field(60_000)?)
         .ok_or("compiled catalog has no runtime extension")?;
     // The tag-aware artifact contract is version two, even when this plan has
@@ -49,7 +49,7 @@ fn with_identity(kind: i64, parts: Vec<Value>) -> TestResult<Vec<u8>> {
         (1, Value::Int(kind)), (2, Value::List(parts)),
     ])?);
     runtime_provenance::reseal(&mut root, BASE)?;
-    Ok(Record::encode(&root)?.into_bytes())
+    Ok(inventory_core::record::encode_container(&root, inventory_core::catalog::MAX_CATALOG_BYTES)?)
 }
 
 #[test]

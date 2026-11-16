@@ -36,6 +36,16 @@ pub fn encode_list(items: &[Value]) -> Result<Vec<u8>, RecordError> {
     encode::encode_list_record(items)
 }
 
+/// Encodes a map whose aggregate size is bounded by `max_bytes` instead of
+/// [`MAX_RECORD_BYTES`]. Only trusted build artifacts that nest independently
+/// bounded records use this; inventory and wire records stay on [`Record`].
+pub fn encode_container(value: &Value, max_bytes: usize) -> Result<Vec<u8>, RecordError> {
+    if !matches!(value, Value::Map(_)) {
+        return Err(RecordError::NotMap);
+    }
+    encode::encode(value, max_bytes)
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Record(Vec<u8>);
 
@@ -44,7 +54,7 @@ impl Record {
         if !matches!(value, Value::Map(_)) {
             return Err(RecordError::NotMap);
         }
-        encode::encode(value).map(Self)
+        encode::encode(value, MAX_RECORD_BYTES).map(Self)
     }
 
     pub fn from_bytes(bytes: Vec<u8>) -> Result<Self, RecordError> {
@@ -77,11 +87,15 @@ fn container_depth(depth: usize) -> Result<usize, RecordError> {
 }
 
 fn validate(bytes: &[u8]) -> Result<(), RecordError> {
-    validate_with_depth(bytes, None)
+    validate_with_depth(bytes, None, MAX_RECORD_BYTES)
 }
 
-fn validate_with_depth(bytes: &[u8], limit: Option<usize>) -> Result<(), RecordError> {
-    if bytes.len() > MAX_RECORD_BYTES {
+fn validate_with_depth(
+    bytes: &[u8],
+    limit: Option<usize>,
+    max_bytes: usize,
+) -> Result<(), RecordError> {
+    if bytes.len() > max_bytes {
         return Err(RecordError::SizeLimit);
     }
     let mut decoder = minicbor::Decoder::new(bytes);

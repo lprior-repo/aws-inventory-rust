@@ -67,9 +67,9 @@ fn plan() -> TestResult<overlay::OperationOverlay> {
     plan.scope = Some(overlay::Scope::Region);
     plan.items = Some(overlay::ItemSelector::parse("Items")?);
     plan.identity = Some(overlay::Identity::Key(vec![overlay::MemberPath::new("Id")?]));
-    plan.paginator = Some(overlay::Paginator::Token(overlay::TokenPair {
-        input:overlay::MemberPath::new("NextToken")?, output:overlay::MemberPath::new("NextToken")?, optional:false,
-    }));
+    plan.paginator = Some(overlay::Paginator::Token(overlay::TokenPair::new(
+        overlay::MemberPath::new("NextToken")?, overlay::MemberPath::new("NextToken")?,
+    )));
     plan.bind.insert(overlay::MemberPath::new("Regions")?, overlay::Binding::RegionList);
     Ok(plan)
 }

@@ -1,5 +1,6 @@
 #[path = "support/bindings.rs"]
 mod fixture;
+#[path = "binding_runtime/stages.rs"]
 mod stages;
 use catalog_tool::overlay::{self, Binding, ContextSource};
 use fixture::{TestResult, compiled};

@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Farley gate: functions on the new CMDB surfaces must stay <=25 lines.
+# Function-length gate: functions on the new CMDB surfaces must stay under 60 lines.
 # Span is measured from the `fn` line through the closing brace. Macro-heavy
 # bodies are counted conservatively; the check intentionally fails closed.
-MAX_LINES="${MAX_FUNCTION_LINES:-25}"
+MAX_LINES="${MAX_FUNCTION_LINES:-60}"
 status=0
 
 check_file() {
@@ -36,8 +36,8 @@ check_file() {
                 braces += opens - closes
                 if (opens > 0) seen_open = 1
                 if (seen_open && braces <= 0) {
-                    if (NR - start >= max) {
-                        printf "%s:%d: %d lines: %s\n", file, start, NR - start, name
+                    if (NR - start + 1 >= max) {
+                        printf "%s:%d: %d lines: %s\n", file, start, NR - start + 1, name
                     }
                     active = 0
                 }

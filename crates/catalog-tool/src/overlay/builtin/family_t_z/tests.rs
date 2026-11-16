@@ -1,3 +1,6 @@
+#[path = "../family_g_k/tests/contracts.rs"]
+mod contracts;
+
 use crate::{
     classes::DenyReason,
     overlay::{self, Binding, Identity, MemberPath, OperationName, OperationOverlay, OverlayClass,
@@ -34,22 +37,7 @@ fn embedded_registry_exposes_every_pinned_t_z_namespace_and_explicit_operation()
     // Then: no namespace or operation in the pinned partition silently disappears.
     let actual = selected.iter().map(|service| service.service.as_str()).collect::<BTreeSet<_>>();
     assert_eq!(actual, expected);
-    assert_eq!(selected.iter().map(|service| service.operations.len()).sum::<usize>(), 1_158);
-    let callable = selected.iter().flat_map(|service| service.operations.values())
-        .filter(|operation| matches!(operation.class,
-            Some(OverlayClass::Enumerate | OverlayClass::Expand))).collect::<Vec<_>>();
-    assert_eq!(callable.len(), 255);
-    for operation in callable {
-        if operation.endpoint_discovery {
-            assert_eq!(operation.identity, None);
-            assert_eq!(operation.items, None);
-            continue;
-        }
-        assert_ne!(operation.identity, None);
-        assert_ne!(operation.scope, None);
-        assert_ne!(operation.items, None);
-        assert_ne!(operation.paginator, None);
-    }
+    contracts::assert_reviewed(&selected.into_iter().cloned().collect::<Vec<_>>())?;
     Ok(())
 }
 
@@ -149,10 +137,16 @@ fn required_endpoint_discovery_and_both_waf_scopes_are_executable_typed_plans() 
         Some(&overlay::FixedValue::String("CLOUDFRONT".to_owned())),
     ]);
     assert_eq!(waf.branches.last().ok_or("CloudFront branch absent")?.request_region.as_deref(), Some("us-east-1"));
-    let tags = policy(&services, "wafv2", "ListTagsForResource")?;
-    assert_eq!(tags.branches.len(), 2);
-    assert!(tags.branches.iter().all(|branch| branch.fixed.is_empty()));
-    assert_eq!(tags.branches.last().ok_or("CloudFront tag branch absent")?.request_region.as_deref(), Some("us-east-1"));
+    for operation in ["ListTagsForResource", "GetLoggingConfiguration"] {
+        let plan = policy(&services, "wafv2", operation)?;
+        assert_eq!(plan.branches.iter().map(|branch| (
+            branch.discriminator.as_str(), branch.scope, branch.request_region.as_deref(),
+        )).collect::<Vec<_>>(), [
+            ("REGIONAL", Scope::Region, None),
+            ("CLOUDFRONT", Scope::Account, Some("us-east-1")),
+        ]);
+        assert!(plan.branches.iter().all(|branch| branch.fixed.is_empty()));
+    }
     Ok(())
 }
 

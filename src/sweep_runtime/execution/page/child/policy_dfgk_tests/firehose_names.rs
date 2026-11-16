@@ -1,6 +1,6 @@
 use super::*;
 use catalog_tool::{endpoints, kind_map, overlay, runtime_catalog, smithy};
-use std::{fs, path::Path, sync::LazyLock};
+use std::sync::LazyLock;
 
 const KIND: &str = "AWS::KinesisFirehose::DeliveryStream";
 const LAST_NAME: &str = "stream.Middle-09_";
@@ -33,10 +33,7 @@ fn catalog() -> TestResult<RuntimeCatalog<'static>> {
 fn compile() -> TestResult<Vec<u8>> {
     let directory = tempfile::tempdir()?;
     let source = directory.path().join("source");
-    let relative = "firehose/service/2015-08-04/firehose-2015-08-04.json";
-    let destination = source.join("models").join(relative);
-    fs::create_dir_all(destination.parent().ok_or("model parent absent")?)?;
-    fs::copy(Path::new(env!("CARGO_MANIFEST_DIR")).join(".local/aws-models/models").join(relative), destination)?;
+    crate::sweep_runtime::pinned_model::install(&source.join("models"), "firehose", "2015-08-04", &["ListDeliveryStreams", "DescribeDeliveryStream"])?;
     let embedded = overlay::embedded()?;
     let policy = embedded.iter().find(|policy| policy.service() == "firehose").ok_or("embedded Firehose policy absent")?;
     let selected = ["ListDeliveryStreams", "DescribeDeliveryStream"].into_iter().map(|name| {

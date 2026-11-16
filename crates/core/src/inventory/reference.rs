@@ -2,8 +2,26 @@ use super::{
     AccountId, EdgeSource, InventoryError, Kind, KindSchema, Region, Relation, ResourceId, ResourceKey, ScalarType,
 };
 use crate::record::FieldId;
+use crate::catalog::runtime::RelationTargetMode;
 
-#[derive(Debug)]
+/// One additional conjunct evaluated against the same target and target facet.
+#[derive(Debug, PartialEq, Eq)]
+pub struct ReferenceComponent {
+    pub mode: RelationTargetMode,
+    pub path: Box<[FieldId]>,
+    pub value: ResourceId,
+}
+
+fn valid_path(mode: RelationTargetMode, path: &[FieldId]) -> bool {
+    match mode {
+        RelationTargetMode::SelectedFields | RelationTargetMode::BoundContextFields =>
+            !path.is_empty() && path.len() <= 8,
+        RelationTargetMode::SelectedRootText | RelationTargetMode::BoundContextRootText |
+        RelationTargetMode::CanonicalId => path.is_empty(),
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
 pub struct ReferenceTarget {
     account: AccountId,
     region: Region,
@@ -11,6 +29,8 @@ pub struct ReferenceTarget {
     candidate_kinds: Box<[Kind]>,
     path: Box<[FieldId]>,
     value: ResourceId,
+    mode: RelationTargetMode,
+    components: Box<[ReferenceComponent]>,
 }
 
 impl ReferenceTarget {
@@ -21,17 +41,26 @@ impl ReferenceTarget {
         path: Vec<FieldId>,
         value: ResourceId,
     ) -> Result<Self, InventoryError> {
-        if path.is_empty() || path.len() > 8 {
+        Self::typed(account, region, kind, path, value, RelationTargetMode::SelectedFields)
+    }
+
+    pub fn typed(
+        account: AccountId, region: Region, kind: Kind, path: Vec<FieldId>,
+        value: ResourceId, mode: RelationTargetMode,
+    ) -> Result<Self, InventoryError> {
+        if !valid_path(mode, &path) { return Err(InventoryError::Path); }
+        Ok(Self { account, region, kind, candidate_kinds: Box::new([]),
+            path: path.into_boxed_slice(), value, mode, components: Box::new([]) })
+    }
+
+    pub fn mode(&self) -> RelationTargetMode { self.mode }
+    pub fn components(&self) -> &[ReferenceComponent] { &self.components }
+    pub fn with_components(mut self, components: Vec<ReferenceComponent>) -> Result<Self, InventoryError> {
+        if components.len() > 7 || components.iter().any(|term| !valid_path(term.mode, &term.path)) {
             return Err(InventoryError::Path);
         }
-        Ok(Self {
-            account,
-            region,
-            kind,
-            candidate_kinds: Box::new([]),
-            path: path.into_boxed_slice(),
-            value,
-        })
+        self.components = components.into_boxed_slice();
+        Ok(self)
     }
 
     /// Targets a selected scalar only when its schema declares a text root.
@@ -44,14 +73,7 @@ impl ReferenceTarget {
         if !schema.columns().iter().any(|column| column.path().is_empty() && column.scalar() == ScalarType::Text) {
             return Err(InventoryError::Path);
         }
-        Ok(Self {
-            account,
-            region,
-            kind: schema.kind().clone(),
-            candidate_kinds: Box::new([]),
-            path: Box::new([]),
-            value,
-        })
+        Self::typed(account, region, schema.kind().clone(), Vec::new(), value, RelationTargetMode::SelectedRootText)
     }
 
     pub fn account(&self) -> &AccountId {
@@ -172,6 +194,47 @@ mod tests {
         }
         assert!(matches!(ReferenceTarget::new(AccountId::parse("123456789012")?, Region::Global,
             Kind::parse("AWS::Fixture::Scalar")?, Vec::new(), ResourceId::parse("selected-value")?), Err(InventoryError::Path)));
+        Ok(())
+    }
+
+    #[test]
+    fn given_typed_target_modes_when_paths_cross_boundaries_then_only_the_matching_path_domain_is_accepted() -> Result<(), InventoryError> {
+        use RelationTargetMode::*;
+        // Given all typed target domains and empty/minimum/maximum/excessive paths.
+        for mode in [SelectedFields, SelectedRootText, BoundContextFields, BoundContextRootText, CanonicalId] {
+            for length in [0, 1, 8, 9] {
+                let path = vec![FieldId::new(1)?; length];
+                // When construction checks the path domain before persistence.
+                let result = ReferenceTarget::typed(AccountId::parse("123456789012")?, Region::Global,
+                    Kind::parse("AWS::Fixture::Object")?, path, ResourceId::parse("value")?, mode);
+                let expected = match mode { SelectedFields | BoundContextFields => (1..=8).contains(&length), _ => length == 0 };
+                // Then field paths cannot masquerade as canonical IDs or scalar roots.
+                if expected {
+                    let target = result?;
+                    assert_eq!((target.mode(), target.path().len(), target.value().as_str()), (mode, length, "value"));
+                } else { assert!(matches!(result, Err(InventoryError::Path)), "{mode:?} length {length}"); }
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn given_additional_terms_when_count_or_path_exceeds_bounds_then_the_compound_target_is_rejected() -> Result<(), InventoryError> {
+        // Given zero through eight additional conjuncts, and both legal/illegal paths.
+        for count in [0, 1, 7, 8] {
+            for length in [0, 1, 8, 9] {
+                let terms = (0..count).map(|_| Ok(ReferenceComponent {
+                    mode: RelationTargetMode::BoundContextFields, path: vec![FieldId::new(1)?; length].into_boxed_slice(),
+                    value: ResourceId::parse("component")?,
+                })).collect::<Result<Vec<_>, InventoryError>>()?;
+                // When extra predicates are attached to an otherwise legal target.
+                let result = target()?.with_components(terms);
+                // Then all terms must be valid, not merely the first one.
+                if count <= 7 && (count == 0 || (1..=8).contains(&length)) {
+                    assert_eq!(result?.components().len(), count);
+                } else { assert!(matches!(result, Err(InventoryError::Path)), "count {count} length {length}"); }
+            }
+        }
         Ok(())
     }
 }

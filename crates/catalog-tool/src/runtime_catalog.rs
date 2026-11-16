@@ -7,7 +7,8 @@ mod provenance;
 mod selection;
 pub use provenance::CatalogSources;
 
-use inventory_core::record::{FieldId, Key, Record, Value};
+use inventory_core::catalog::MAX_CATALOG_BYTES;
+use inventory_core::record::{FieldId, Key, Value};
 use std::collections::BTreeMap;
 use thiserror::Error;
 
@@ -143,13 +144,13 @@ pub fn augment_with_sources(
     let plans = plans::compile(checked, kind_map, verified_endpoints, &services)?;
     let extension = compile_extension(checked, kind_map, &services, plans, sources)?;
     root.insert(Key::Field(FieldId::new(60_000)?), extension);
-    let bytes = Record::encode(&Value::Map(root))?.into_bytes();
+    let bytes = inventory_core::record::encode_container(&Value::Map(root), MAX_CATALOG_BYTES)?;
     inventory_core::catalog::runtime::RuntimeCatalog::from_bytes(&bytes)
         .map_err(|_| RuntimeCatalogCompileError::Capability)?;
     Ok(bytes)
 }
 fn decode_root(bytes: &[u8]) -> Result<BTreeMap<Key, Value>, RuntimeCatalogCompileError> {
-    inventory_core::record::MapRef::from_bytes_bounded(bytes)?
+    inventory_core::record::MapRef::from_container_bytes(bytes, MAX_CATALOG_BYTES)?
         .iter()?
         .map(|entry| {
             let (key, value) = entry?;
@@ -177,48 +178,3 @@ fn compile_extension(
     )
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use inventory_core::catalog::runtime::RelationScope;
-    use inventory_core::record::{MapRef, ValueRef};
-
-    const BASE: &[u8] = include_bytes!("../../../catalog/aws-api.catalog");
-
-    #[test]
-    fn real_kind_map_relation_roundtrips_through_runtime_reader()
-    -> Result<(), Box<dyn std::error::Error>> {
-        let kinds = crate::kind_map::embedded(
-            include_bytes!("../../../catalog/cloudcontrol-universal.json"),
-        )?;
-        let bytes = catalog_with_extension(&kinds)?;
-        let runtime = inventory_core::catalog::runtime::RuntimeCatalog::from_bytes(&bytes)?;
-        let relationship = runtime
-            .relationships()
-            .first()
-            .ok_or("kind registry has no relationship")?;
-        assert_eq!(relationship.scope, RelationScope::AccountRegion);
-        Ok(())
-    }
-
-    fn catalog_with_extension(
-        kinds: &crate::kind_map::KindMap,
-    ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-        let services = ServiceIndex::build(inventory_core::catalog::Catalog::borrow(BASE)?)?;
-        let schemas = schemas::compile(kinds, &services, None)?;
-        let relations = encode::relations(kinds, &services)?;
-        let extension = encode::extension(
-            Vec::new(),
-            schemas,
-            relations,
-            encode::coverage(kinds)?,
-            Vec::new(),
-        )?;
-        let mut root = ValueRef::Map(MapRef::from_bytes_bounded(BASE)?).to_value()?;
-        let Value::Map(fields) = &mut root else {
-            return Err("compiled catalog root is not a map".into());
-        };
-        fields.insert(Key::Field(FieldId::new(60_000)?), extension);
-        Ok(Record::encode(&root)?.into_bytes())
-    }
-}

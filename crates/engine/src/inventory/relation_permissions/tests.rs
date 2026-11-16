@@ -27,7 +27,10 @@ fn given_global_source_without_execution_home_when_home_region_is_claimed_then_n
     let rule = RelationshipPlan { source_kind: source.kind.clone(), source: RelationSource::Request,
         source_path: vec![FieldId::new(1)?].into_boxed_slice(), target_kind: target_kind.clone(), target_kinds: vec![target_kind].into_boxed_slice(),
         target_path: vec![FieldId::new(1)?].into_boxed_slice(), relation: Relation::parse("TARGETS_SINK")?, scope: RelationScope::HomeRegion,
-        owner: ReferenceOwnerRule::ExecutionAccount };
+        owner: ReferenceOwnerRule::ExecutionAccount,
+        source_path_mode: inventory_core::catalog::runtime::RelationPathMode::Fields,
+        target_mode: inventory_core::catalog::runtime::RelationTargetMode::SelectedFields,
+        guard: None, components: Box::new([]) };
     assert!(!owner_matches(&rule, &source, &source.account, &Region::parse("us-east-1")?, "target"));
     assert!(!owner_matches(&rule, &source, &source.account, &Region::parse("us-west-2")?, "target"));
     Ok(())

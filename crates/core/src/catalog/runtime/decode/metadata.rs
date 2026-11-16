@@ -104,10 +104,15 @@ fn relation(value: ValueRef<'_>) -> Result<super::super::RelationshipPlan, Runti
     }
     let result = super::super::RelationshipPlan {
         source_kind: crate::inventory::Kind::parse(&text(fields, 1)?)?,
-        source_path: id_path(list(fields, 2)?)?,
+        source_path: selected_path(list(fields, 2)?)?,
+        source_path_mode: relation_modes::source_mode(fields)?,
+        target_mode: relation_modes::target_mode(fields)?,
+        guard: relation_modes::guard(fields)?,
+        components: relation_modes::components(fields)?,
         source: match fields.get_field(FieldId::new(10)?)? {
             None | Some(ValueRef::Int(0)) => super::super::RelationSource::SelectedOutput,
             Some(ValueRef::Int(1)) => super::super::RelationSource::Request,
+            Some(ValueRef::Int(2)) => super::super::RelationSource::Parent,
             Some(_) => return Err(RuntimeCatalogError::Capability),
         },
         target_kind,
@@ -122,9 +127,12 @@ fn relation(value: ValueRef<'_>) -> Result<super::super::RelationshipPlan, Runti
         },
         owner: super::owners::read_owner(fields)?,
     };
-    only_fields(fields, &[1, 2, 3, 4, 5, 6, 8, 9, 10])?;
+    relation_modes::validate(&result)?;
+    only_fields(fields, &[1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14])?;
     Ok(result)
 }
+
+mod relation_modes;
 
 pub(super) fn coverage(
     list: ListRef<'_>,
@@ -167,10 +175,12 @@ fn coverage_entry(value: ValueRef<'_>) -> Result<super::super::KindCoverage, Run
 pub(super) fn decisions(
     list: ListRef<'_>,
     plans: &[super::super::CallablePlan<'_>],
-    catalog: crate::catalog::Catalog<'_>,
+    services: &super::services::Services<'_>,
 ) -> Result<Vec<ReviewDecision>, RuntimeCatalogError> {
     let decisions = bounded(list, decision, MAX_ITEMS)?;
-    super::validate_operations(catalog, decisions.iter().map(decision_key))?;
+    decisions.iter().map(decision_key).try_for_each(|(service, operation)| {
+        services.operation(service, operation).map(|_| ())
+    })?;
     validate_decision_plans(&decisions, plans)?;
     Ok(decisions)
 }

@@ -36,11 +36,12 @@ pub(in crate::catalog::runtime::decode::plans) fn validate_identity(parts: &Plan
             leaf(parts, item, fallback)
         }
         IdentityPlan::Choice(IdentityChoicePlan::Discriminated(branches)) => branches.iter().try_for_each(|branch| {
-            let (root, path) = match &branch.predicate {
-                IdentityPredicatePlan::Present(path) | IdentityPredicatePlan::TextEquals { path, .. } => (item, path),
-                IdentityPredicatePlan::RequestTextEquals { path, .. } => (parts.operation.input()?, path),
-            };
-            text(parts.service, selected(parts.service, root, path)?)?;
+            match &branch.predicate {
+                IdentityPredicatePlan::Present(path) => scalar(parts.service, selected(parts.service, item, path)?)?,
+                IdentityPredicatePlan::TextEquals { path, .. } => text(parts.service, selected(parts.service, item, path)?)?,
+                IdentityPredicatePlan::RequestTextEquals { path, .. } =>
+                    text(parts.service, selected(parts.service, parts.operation.input()?, path)?)?,
+            }
             leaf(parts, item, &branch.identity)
         }),
         IdentityPlan::CorrelatedKey(fields) => fields.iter().try_for_each(|field| identity_field(parts, item, field)),

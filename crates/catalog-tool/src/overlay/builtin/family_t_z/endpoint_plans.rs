@@ -100,7 +100,7 @@ fn waf(service: &mut ServiceOverlay) -> Result<(), NameError> {
     service.operations.insert(name("ListLoggingConfigurations")?, logging);
     let mut detail = inventory("LoggingConfiguration", Identity::Arn(path("ResourceArn")?), Paginator::None, Scope::Region)?;
     bind(&mut detail, "ResourceArn", "ListLoggingConfigurations", "ResourceArn")?;
-    detail.branches = branches(true)?;
+    detail.branches = branches(false)?;
     service.operations.insert(name("GetLoggingConfiguration")?, detail);
     Ok(())
 }

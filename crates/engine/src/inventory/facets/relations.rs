@@ -21,7 +21,7 @@ pub(super) fn encode(
         Ok(Value::List(vec![
             Value::Bytes(super::super::work::resource_bytes(&key)?),
             Value::Text(reference.relation.as_str().to_owned()), Value::Text(reference.source.as_str().to_owned()),
-            Value::List(target.path().iter().map(|field| Value::Int(i64::from(field.value()))).collect()),
+            Value::Bytes(super::super::reference_candidates::stored_path(target)?),
             encode_dependencies(dependencies)?,
             if target.candidate_kinds().len() == 1 { Value::Null } else {
                 Value::List(target.candidate_kinds().iter().map(|kind| Value::Text(kind.as_str().to_owned())).collect())
@@ -37,7 +37,7 @@ pub(super) fn encode(
 
 
 pub(super) fn decode(
-    registry: &SchemaRegistry, record: &Record, from: &ResourceKey, facet: usize, owners: &BTreeMap<Path, usize>,
+    _registry: &SchemaRegistry, record: &Record, from: &ResourceKey, facet: usize, owners: &BTreeMap<Path, usize>,
     source_facet: &Arc<[u8]>,
     source_authority: Option<&[u8; 32]>,
 ) -> Result<Vec<(UnresolvedReference, Option<ResourceId>, super::super::relation_permissions::ReferenceProvenance)>, StoreError> {
@@ -53,11 +53,15 @@ pub(super) fn decode(
         if !owns_dependencies(values.get(4), facet, owners)? { return Ok(None); }
         let target = key(&values)?;
         let target_path = match values.get(3) {
-            Some(ValueRef::List(path)) => path.iter()?.map(|value| match value? {
-                ValueRef::Int(value) => Ok(FieldId::new(u32::try_from(value)
-                    .map_err(|_| StoreError::Invalid("facet target path exceeds bounds"))?)?),
-                _ => Err(StoreError::Invalid("facet target path is invalid")),
-            }).collect::<Result<Vec<_>, StoreError>>()?,
+            Some(ValueRef::Bytes(bytes)) => bytes.to_vec(),
+            Some(ValueRef::List(path)) => {
+                let fields = path.iter()?.map(|value| match value? {
+                    ValueRef::Int(value) => Ok(FieldId::new(u32::try_from(value)
+                        .map_err(|_| StoreError::Invalid("facet target path exceeds bounds"))?)?),
+                    _ => Err(StoreError::Invalid("facet target path is invalid")),
+                }).collect::<Result<Vec<_>, StoreError>>()?;
+                super::super::commit::reference_path(&fields)
+            }
             _ => return Err(StoreError::Invalid("facet target path is absent")),
         };
         let candidates = match values.get(5) {
@@ -68,8 +72,7 @@ pub(super) fn decode(
             None | Some(ValueRef::Null) => None,
             _ => return Err(StoreError::Invalid("facet reference candidates are absent or excessive")),
         };
-        let target = registry.reference_target(target.account, target.region, target.kind, target_path,
-            ResourceId::parse(target.id.as_str())?)?;
+        let target = super::super::reference_candidates::decode_target(target.account, target.region, target.kind, &target_path, target.id)?;
         let target = if let Some(candidates) = candidates { target.with_candidate_kinds(candidates)? } else { target };
         let pin = match values.get(6) {
             Some(ValueRef::Null) => None,
@@ -84,29 +87,39 @@ pub(super) fn decode(
     Ok(references)
 }
 
-fn encode_dependencies(dependencies: Option<Vec<Vec<FieldId>>>) -> Result<Value, StoreError> {
-    let Some(dependencies) = dependencies else { return Ok(Value::Null); };
-    if dependencies.is_empty() {
-        return Err(StoreError::Invalid("checked selected relationship dependency is empty"));
-    }
-    let paths = dependencies.into_iter().map(|path| path.into_iter().map(Key::Field).collect::<Vec<_>>()).collect::<Vec<_>>();
-    Ok(Value::Bytes(encode_paths(paths.iter().map(Vec::as_slice))?.into_bytes()))
+fn encode_dependencies(dependencies: Option<Vec<Vec<Vec<FieldId>>>>) -> Result<Value, StoreError> {
+    let Some(groups) = dependencies else { return Ok(Value::Null); };
+    Ok(Value::List(groups.into_iter().map(|dependencies| {
+        let paths = dependencies.into_iter().map(|path| path.into_iter().map(Key::Field).collect::<Vec<_>>()).collect::<Vec<_>>();
+        Ok(Value::Bytes(encode_paths(paths.iter().map(Vec::as_slice))?.into_bytes()))
+    }).collect::<Result<Vec<_>, StoreError>>()?))
 }
 
 fn owns_dependencies(
     value: Option<&ValueRef<'_>>, facet: usize, owners: &BTreeMap<Path, usize>,
 ) -> Result<bool, StoreError> {
-    let dependencies = match value {
-        Some(ValueRef::Null) => return Ok(true),
-        Some(ValueRef::Bytes(bytes)) => dependency_paths(&Record::from_bytes(bytes.to_vec())?)?,
-        _ => return Err(StoreError::Invalid("checked facet relationship dependencies are absent")),
-    };
-    if dependencies.is_empty() { return Err(StoreError::Invalid("checked facet relationship dependency is empty")); }
-    Ok(dependencies.iter().any(|dependency| {
-        let mut matching = owners.iter().filter(|(path, _)| path.starts_with(dependency) || dependency.starts_with(path));
-        matching.next().is_some_and(|(_, owner)| *owner == facet)
-            && matching.all(|(_, owner)| *owner == facet)
-    }))
+    match value {
+        Some(ValueRef::Null) => Ok(true),
+        Some(ValueRef::Bytes(bytes)) => {
+            // V3 encoded alternative single-path authorities as one flat OR.
+            let paths = dependency_paths(&Record::from_bytes(bytes.to_vec())?)?;
+            Ok(paths.iter().any(|path| owns_path(path, facet, owners)))
+        }
+        Some(ValueRef::List(groups)) if (1..=64).contains(&groups.count()?) => {
+            groups.iter()?.try_fold(false, |owned, group| {
+                let ValueRef::Bytes(bytes) = group? else { return Err(StoreError::Invalid("checked dependency group is invalid")); };
+                let paths = dependency_paths(&Record::from_bytes(bytes.to_vec())?)?;
+                if paths.is_empty() { return Err(StoreError::Invalid("checked dependency group is empty")); }
+                Ok(owned || paths.iter().all(|path| owns_path(path, facet, owners)))
+            })
+        }
+        _ => Err(StoreError::Invalid("checked facet relationship dependencies are absent")),
+    }
+}
+
+fn owns_path(dependency: &[Key], facet: usize, owners: &BTreeMap<Path, usize>) -> bool {
+    let mut matching = owners.iter().filter(|(path, _)| path.starts_with(dependency) || dependency.starts_with(path));
+    matching.next().is_some_and(|(_, owner)| *owner == facet) && matching.all(|(_, owner)| *owner == facet)
 }
 
 fn list(record: &Record, field: u32) -> Result<inventory_core::record::ListRef<'_>, StoreError> {

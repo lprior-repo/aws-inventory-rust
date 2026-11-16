@@ -29,12 +29,15 @@ pub(super) fn native_page(catalog: &RuntimeCatalog<'_>, lease: WorkLease, body: 
         body: &body, headers: &http::HeaderMap::new(), status: http::StatusCode::OK,
         limits: aws_wire::response::DecodeLimits::default(),
     })?;
-    let rows = items(&plan, &response)?;
+    let mut rows = record::item_records(&response, plan.items())?;
+    for row in &mut rows {
+        *row = resource_projection::project(&plan, row)?;
+    }
     let home = RegionId::parse("us-east-1")?;
     let account = AccountId::parse("123456789012")?;
     let request = Record::from_bytes(lease.bindings().to_vec())?;
     let observations = rows.iter().map(|row| observation(catalog, record::IdentityContext { account: &account, region: &home }, &plan, &Region::Regional(home.clone()), row, &request, &DiscoveryContext::default())).collect::<Result<Vec<_>, _>>()?;
-    let unresolved = references(catalog, &plan, &home, &rows, &observations, &request)?;
+    let unresolved = references(catalog, &plan, &home, &rows, &observations, &request, lease.scope().parent())?;
     Ok(PageCommit { lease, observations, unresolved, edges: Vec::new(), tags: Vec::new(), children: Vec::new(), next_token: None, continuation_digest: None, done: true, observed_at_ms: at })
 }
 
@@ -98,7 +101,7 @@ pub(super) async fn work_image(directory: &tempfile::TempDir) -> TestResult<Vec<
 }
 
 pub(super) async fn staged_work(store: &BinaryStore, catalog: &RuntimeCatalog<'_>) -> TestResult<(SweepId, i64, Vec<u8>, Vec<u8>)> {
-    let sweep = SweepId::new("legacy-inflight")?;
+    let sweep = SweepId::new("legacy-inflight".to_owned())?;
     store.seed_work(work(&sweep, "ListPortals", Some(b"old-cursor".to_vec()))?).await?;
     let lease = store.claim(&sweep, 10, 100).await?.ok_or("old page absent")?;
     let mut page = native_page(catalog, lease, json!({"portals":[]}), 11)?;
@@ -150,7 +153,7 @@ pub(super) fn child_work(sweep: &SweepId, id: &str, ordinal: Option<u32>) -> Tes
 }
 
 pub(super) async fn child_run(store: &BinaryStore, catalog: &RuntimeCatalog<'_>, sweep: &str, id: &str, ordinal: Option<u32>, name: Option<&str>, at: i64) -> TestResult {
-    let sweep = SweepId::new(sweep)?;
+    let sweep = SweepId::new(sweep.to_owned())?;
     store.seed_work(child_work(&sweep, id, ordinal)?).await?;
     let lease = store.claim(&sweep, at, 100).await?.ok_or("legacy child execution absent")?;
     let body = name.map_or_else(|| json!({}), |name| json!({"portal":{"portalArn":id,"displayName":name}}));

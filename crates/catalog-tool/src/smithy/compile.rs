@@ -13,8 +13,8 @@ mod tests;
 use super::{Error, Registry, fields, write_stdout};
 use crate::ReportMode;
 use inventory_core::{
-    catalog::{CATALOG_VERSION, Catalog, CatalogKey},
-    record::{MAX_RECORD_BYTES, Record, Value},
+    catalog::{CATALOG_VERSION, Catalog, CatalogKey, MAX_CATALOG_BYTES},
+    record::Value,
 };
 use std::path::Path;
 
@@ -106,7 +106,7 @@ impl CompileError {
 pub fn compile(root: &Path, source: &Path, mode: ReportMode) -> Result<(), Error> {
     let registry = fields::load_registry(&root.join("catalog/field-ids.txt"))?;
     let path = root.join("catalog/aws-api.catalog");
-    let limit = u64::try_from(MAX_RECORD_BYTES).map_err(|_| CompileError::Kind)?;
+    let limit = u64::try_from(MAX_CATALOG_BYTES).map_err(|_| CompileError::Kind)?;
     let original = fields::publish::read_bytes(&path, limit)?;
     let source_pin = provenance::capture(source)?;
     let bytes = build_catalog(source, &registry, &source_pin.commit)?;
@@ -161,9 +161,8 @@ fn encode_root(
         (CatalogKey::FieldNameOffsets, offsets),
         (CatalogKey::Services, Value::List(services)),
     ])?;
-    let bytes = Record::encode(&root)
-        .map_err(CompileError::from)?
-        .into_bytes();
+    let bytes = inventory_core::record::encode_container(&root, MAX_CATALOG_BYTES)
+        .map_err(CompileError::from)?;
     Catalog::borrow(&bytes).map_err(CompileError::from)?;
     Ok(bytes)
 }

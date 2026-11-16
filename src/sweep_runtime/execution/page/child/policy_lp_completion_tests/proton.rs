@@ -1,4 +1,5 @@
 use super::*;
+use crate::sweep_runtime::record;
 use inventory_core::record::{Record, ValueRef};
 use catalog_tool::smithy::Registry;
 

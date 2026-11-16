@@ -59,11 +59,11 @@ fn given_invalid_paths_types_or_predicate_bounds_when_compiled_then_checker_reje
         let error = compiled(1,|plan| plan.row_policy.owned = Some(predicate)).err().ok_or("invalid policy accepted")?;
         // Then the pinned checker—not a serialization accident—rejects the policy.
         let error = error.downcast_ref::<overlay::CheckError>().ok_or("wrong rejection boundary")?;
-        assert!(matches!(error,overlay::CheckError::Violations(violations) if violations.iter().any(|v| v.key == "row_policy" && v.rule == overlay::ViolationRule::InvalidPath)));
+        assert!(matches!(error,overlay::CheckError::Violations(violations) if violations.iter().any(|v| v.key() == "row_policy" && v.rule() == overlay::ViolationRule::InvalidPath)));
     }
     let predicate = equality()?;
     let error = compiled(1,|plan| plan.row_policy.assertions = vec![predicate;9]).err().ok_or("unbounded assertions accepted")?;
-    assert!(matches!(error.downcast_ref::<overlay::CheckError>(),Some(overlay::CheckError::Violations(violations)) if violations.iter().any(|v| v.key == "row_policy")));
+    assert!(matches!(error.downcast_ref::<overlay::CheckError>(),Some(overlay::CheckError::Violations(violations)) if violations.iter().any(|v| v.key() == "row_policy")));
     Ok(())
 }
 
@@ -72,7 +72,7 @@ fn given_child_eligibility_for_an_unbound_producer_when_compiled_then_it_cannot_
     let child = overlay::ChildEligibility { operation:overlay::OperationName::new("ListChildren")?,
         predicate:absent(ContextSource::SelectedItem,"Id")? };
     let error = compiled(1,|plan| plan.row_policy.child = Some(child)).err().ok_or("unbound predicate source accepted")?;
-    assert!(matches!(error.downcast_ref::<overlay::CheckError>(),Some(overlay::CheckError::Violations(violations)) if violations.iter().any(|v| v.key == "row_policy")));
+    assert!(matches!(error.downcast_ref::<overlay::CheckError>(),Some(overlay::CheckError::Violations(violations)) if violations.iter().any(|v| v.key() == "row_policy")));
     Ok(())
 }
 

@@ -1,7 +1,9 @@
 mod cbor_support;
 
 use cbor_support::{TestResult, envelope, owned};
-use inventory_core::record::{MAX_DEPTH, MAX_RECORD_BYTES, Record, RecordError, Value};
+use inventory_core::record::{
+    MAX_DEPTH, MAX_RECORD_BYTES, MapRef, Record, RecordError, Value, ValueRef, encode_container,
+};
 use minicbor::Encoder;
 
 #[derive(Clone, Copy)]
@@ -127,4 +129,46 @@ fn one_byte_over_sixteen_mebibytes_is_rejected_by_both_constructors() -> TestRes
     assert_eq!(encoded, Err(RecordError::SizeLimit));
     assert_eq!(decoded, Err(RecordError::SizeLimit));
     Ok(())
+}
+
+#[test]
+fn container_bound_admits_an_oversized_record_only_up_to_its_own_limit() -> TestResult {
+    // Given: a map one payload larger than any record may be.
+    let value = envelope(Value::Bytes(vec![0xA5; MAX_RECORD_BYTES]));
+    let limit = MAX_RECORD_BYTES.checked_mul(2).ok_or("limit overflow")?;
+
+    // When: it is encoded as a trusted container.
+    let bytes = encode_container(&value, limit)?;
+    let exact = bytes.len();
+    let short = exact.checked_sub(1).ok_or("empty container")?;
+
+    // Then: the container bound governs it, exactly, in both directions.
+    assert!(exact > MAX_RECORD_BYTES);
+    assert_eq!(encode_container(&value, exact)?, bytes);
+    assert_eq!(encode_container(&value, short), Err(RecordError::SizeLimit));
+    let payload = match MapRef::from_container_bytes(&bytes, exact)?.get_name("value")? {
+        Some(ValueRef::Bytes(payload)) => payload.len(),
+        _ => return Err("container payload is not bytes".into()),
+    };
+    assert_eq!(payload, MAX_RECORD_BYTES);
+    assert_eq!(
+        MapRef::from_container_bytes(&bytes, short).map(|_| ()),
+        Err(RecordError::SizeLimit)
+    );
+    // And: the record bound still refuses the same bytes and value.
+    assert_eq!(Record::encode(&value), Err(RecordError::SizeLimit));
+    assert_eq!(
+        MapRef::from_bytes_bounded(&bytes).map(|_| ()),
+        Err(RecordError::SizeLimit)
+    );
+    assert_eq!(Record::from_bytes(bytes), Err(RecordError::SizeLimit));
+    Ok(())
+}
+
+#[test]
+fn container_encoding_rejects_a_root_that_is_not_a_map() {
+    assert_eq!(
+        encode_container(&Value::List(vec![]), MAX_RECORD_BYTES),
+        Err(RecordError::NotMap)
+    );
 }

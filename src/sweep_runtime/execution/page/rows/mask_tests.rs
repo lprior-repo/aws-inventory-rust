@@ -101,9 +101,11 @@ async fn given_nested_sibling_owners_when_detail_omits_its_leaf_then_live_list_l
     commit_masked(&store, &catalog, "ListPortals", named_leaf("ListLeaf", "live")?, &Exclusions::none(), 1).await?;
     commit_masked(&store, &catalog, "GetPortal", named_leaf("DetailLeaf", "old")?, &Exclusions::none(), 2).await?;
     let before = state(&directory, &catalog).await?.0;
-    let nested = before.root().get_field(FieldId::new(1000)?)?.ok_or("nested map missing")?;
-    assert_eq!(nested.get_name("ListLeaf")?.map(ValueRef::to_value).transpose()?, Some(Value::Text("live".to_owned())));
-    assert_eq!(nested.get_name("DetailLeaf")?.map(ValueRef::to_value).transpose()?, Some(Value::Text("old".to_owned())));
+    let ValueRef::Map(nested) = before.root().get_field(FieldId::new(1000)?)?.ok_or("nested map missing")? else {
+        return Err("nested value is not a map".into());
+    };
+    assert_eq!(nested.get_name("ListLeaf")?.map(|value| value.to_value()).transpose()?, Some(Value::Text("live".to_owned())));
+    assert_eq!(nested.get_name("DetailLeaf")?.map(|value| value.to_value()).transpose()?, Some(Value::Text("old".to_owned())));
     drop(store);
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     persist(&reopened, &catalog, "GetPortal", json!({"portal":{"portalArn":PORTAL}}), 3).await?;

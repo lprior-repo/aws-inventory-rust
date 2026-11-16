@@ -55,7 +55,7 @@ fn compiled_with(model: &str, policies: &[overlay::ServiceOverlay], mappings: &k
     fs::create_dir_all(&models)?;
     fs::write(models.join("model.json"), model)?;
     let checked = overlay::check_policies(&source, policies, &DenyList::builtin())?;
-    let registry = smithy::Registry::parse("Envelope\nId\nItems\nKey\nTags\nValue\nkey\nvalue\n")?;
+    let registry = smithy::Registry::parse("Envelope\nId\nItems\nKey\nTags\nValue\nkey\nvalue\nTagKey\nTagValue\nTagValues\n")?;
     let base = smithy::build_catalog(&source, &registry, "tag-fixture")?;
     let kinds = mappings.compile(&names::Exceptions::none())?;
     Ok(runtime_catalog::augment(&base, &checked, &kinds, &BTreeMap::from([("things".to_owned(), endpoint()?)]))?)
@@ -81,6 +81,20 @@ fn given_list_tags_when_compiled_then_exact_numeric_item_relative_plan_roundtrip
     let lower = ITEM.replace("Key", "key").replace("Value", "value");
     let bytes = compiled("Items", Some("Envelope.Tags"), LIST, &lower)?;
     assert_eq!(tag_plan(&bytes)?, Some(TagPlan::List { path: path(&[1, 5])?, key: FieldId::new(7)?, value: FieldId::new(8)? }));
+    Ok(())
+}
+
+#[test]
+fn given_prefixed_tag_members_when_compiled_then_key_and_value_fields_are_bound() -> TestResult {
+    let prefixed = ITEM.replace("Key", "TagKey").replace("Value", "TagValue");
+    let bytes = compiled("Items", Some("Tags"), LIST, &prefixed)?;
+    assert_eq!(tag_plan(&bytes)?, Some(TagPlan::List { path: path(&[5])?, key: FieldId::new(9)?, value: FieldId::new(10)? }));
+    // A multi-valued TagValues member is not a scalar tag value: no plan may be emitted.
+    let plural = ITEM.replace("Key", "TagKey").replace("Value", "TagValues");
+    assert!(compiled("Items", Some("Tags"), LIST, &plural).is_err());
+    // Two key spellings on one element stay ambiguous and fail closed.
+    let ambiguous = prefixed.replace("\"TagKey\":", "\"Key\":{\"target\":\"smithy.api#String\"},\"TagKey\":");
+    assert!(compiled("Items", Some("Tags"), LIST, &ambiguous).is_err());
     Ok(())
 }
 

@@ -196,7 +196,7 @@ async fn run(
             assert!(record::path_value(row.root(), &[compiled.fields.id(case.parent_field).ok_or("request field absent")?])?.is_none());
             assert!(record::resource_id_with_context(row, plan.identity(), None, &ancestry, &root_request).is_err(), "scoped identity accepted an unrelated root request");
         }
-        let unresolved = rows::references(&catalog, plan, &home, &selected, &observations, &actual_request)?;
+        let unresolved = rows::references(&catalog, plan, &home, &selected, &observations, &actual_request, None)?;
         let expected_reference_count = if matches!(case.operation, "ListConfiguredTableAssociations" | "ListConfiguredAudienceModelAssociations" | "ListIdNamespaceAssociations") { 2 } else { 1 };
         assert_eq!(unresolved.len(), expected_reference_count, "every reviewed endpoint must retain its join");
         let parent_references = unresolved.iter().filter(|reference| reference.target.kind() == parent.kind()).collect::<Vec<_>>();

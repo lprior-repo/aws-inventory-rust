@@ -78,13 +78,25 @@ fn text_columns(
     let targets = context.kinds
         .relations()
         .iter()
-        .filter(|relation| relation.target_kind == kind || context.kinds.relation_target_kinds(relation)
-            .is_some_and(|targets| targets.iter().any(|target| target == kind)))
+        .filter(|relation| relation.target_kinds.iter().any(|target| target == kind))
         .filter(|relation| context.checked.is_none_or(|checked| super::model_path::active_kind(
             &super::model_path::ValidationContext { kinds: context.kinds, checked, services: context.services },
             &relation.source_kind)));
-    let paths = targets.map(|relation| relation.target_path.as_str());
-    let text_paths = name_path.into_iter().chain(paths).collect::<BTreeSet<_>>();
+    let paths = targets.filter_map(|relation| match &relation.target {
+        crate::kind_map::ReviewedRelationTarget::SelectedOutput(crate::kind_map::ReviewedValuePath::Fields(path)) => Some(path.as_str()),
+        _ => None,
+    });
+    let compound_paths = context.kinds.compound_relations().iter()
+        .filter(|relation| relation.target_kinds.iter().any(|target| target == kind))
+        .filter(|relation| context.checked.is_none_or(|checked| super::model_path::active_kind(
+            &super::model_path::ValidationContext { kinds: context.kinds, checked, services: context.services },
+            &relation.source_kind)))
+        .flat_map(|relation| &relation.components)
+        .filter_map(|component| match &component.target {
+            crate::kind_map::ReviewedRelationTarget::SelectedOutput(crate::kind_map::ReviewedValuePath::Fields(path)) => Some(path.as_str()),
+            _ => None,
+        });
+    let text_paths = name_path.into_iter().chain(paths).chain(compound_paths).collect::<BTreeSet<_>>();
     text_paths
         .into_iter()
         .map(|path| encode::map([(1, encode::path(context.services, path)?), (2, Value::Int(3))]))

@@ -131,7 +131,7 @@ async fn given_stream_key_summary_when_request_parent_is_forged_then_foreign_sco
     let rows = record::item_records(&response, child.items())?;
     let rule = catalog.relationships().iter().find(|rule| rule.source_kind == *child.kind()
         && rule.source == inventory_core::catalog::runtime::RelationSource::Request).ok_or("request parent rule absent")?;
-    let valid = page_rows::references(&catalog, child, &scenario.home, &rows, &observations, &request)?;
+    let valid = page_rows::references(&catalog, child, &scenario.home, &rows, &observations, &request, None)?;
     assert_eq!(valid.len(), 1);
     assert_eq!(valid.first().ok_or("channel relation absent")?.target.value().as_str(), channel);
     for hostile in [
@@ -142,7 +142,7 @@ async fn given_stream_key_summary_when_request_parent_is_forged_then_foreign_sco
         inventory_core::record::Value::Int(7),
     ] {
         let forged = input::merge_input(&request, &[input::InputField { path:rule.source_path.clone(), value:hostile }])?;
-        assert!(page_rows::references(&catalog, child, &scenario.home, &rows, &observations, &forged).is_err());
+        assert!(page_rows::references(&catalog, child, &scenario.home, &rows, &observations, &forged, None).is_err());
     }
     Ok(())
 }

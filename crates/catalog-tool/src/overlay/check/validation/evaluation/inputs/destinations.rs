@@ -23,6 +23,7 @@ fn dynamic_paths<'a>(paginator: Option<&'a crate::overlay::Paginator>,
         Some(crate::overlay::Paginator::Token(pair)) => destinations.push(pair.input.as_str()),
         Some(crate::overlay::Paginator::Tokens { pairs, .. }) =>
             destinations.extend(pairs.iter().map(|pair| pair.input.as_str())),
+        Some(crate::overlay::Paginator::LastListItem { input, .. }) => destinations.push(input.as_str()),
         None => {
             if let Some(plans::Pagination::Modeled { input_token, .. }) = pagination {
                 destinations.push(*input_token);

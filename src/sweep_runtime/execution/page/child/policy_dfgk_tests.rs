@@ -7,7 +7,7 @@ mod final_integrations;
 use super::*;
 use super::super::{consumer_index::ConsumerIndex, cursor, rows as page_rows};
 use crate::sweep_runtime::{execution::routing, record::policy_dfgk_tests::fixture, resource_projection};
-use inventory_core::{catalog::runtime::{Emission, PlanScope}, inventory::UnresolvedReference};
+use inventory_core::{catalog::runtime::{Emission, PlanScope, RuntimeCatalog}, inventory::UnresolvedReference};
 use inventory_engine::inventory::{BinaryStore, PageCommit, SchemaRegistry, WorkLease};
 use serde_json::{Value as Json, json};
 use std::collections::BTreeSet;
@@ -45,7 +45,7 @@ pub(in crate::sweep_runtime) fn projected_references(
 ) -> TestResult<Vec<UnresolvedReference>> {
     let items = projected_items(context.parent_plan, response)?;
     let region = routing::request_region(context.parent_plan, scope.region(), context.home, scope.branch())?;
-    Ok(page_rows::references(catalog, context.parent_plan, &region, &items, observations, request)?)
+    Ok(page_rows::references(catalog, context.parent_plan, &region, &items, observations, request, scope.parent())?)
 }
 
 fn projected_items(plan: &CallablePlan<'_>, response: &Record) -> TestResult<Vec<Record>> {

@@ -23,8 +23,8 @@ async fn given_services_networks_listeners_and_ip_or_lambda_groups_when_summary_
         let row = match plan.operation_name() {
             "ListDeliveryStreams" => {
                 let native: Json = serde_json::from_slice(wire.body())?;
-                assert_eq!(native.get("ExclusiveStartDeliveryStreamName"),
-                    if resumed { Some(&json!("aws-waf-logs-inventory")) } else { None });
+                assert_eq!(native.get("ExclusiveStartDeliveryStreamName").map(Json::as_str),
+                    if resumed { Some(Some("aws-waf-logs-inventory")) } else { None });
                 return Ok(if resumed { json!({"DeliveryStreamNames":["z-final"],"HasMoreDeliveryStreams":false}) }
                     else { json!({"DeliveryStreamNames":["aws-waf-logs-archive","aws-waf-logs-inventory"],"HasMoreDeliveryStreams":true}) });
             }

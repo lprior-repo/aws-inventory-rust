@@ -2,33 +2,44 @@ use super::{Key, MAX_RECORD_BYTES, RecordError, Time, Value, container_depth};
 use minicbor::{Encoder, encode::Write};
 use std::collections::BTreeMap;
 
-#[derive(Default)]
-struct Bounded(Vec<u8>);
+struct Bounded {
+    bytes: Vec<u8>,
+    limit: usize,
+}
+
+impl Bounded {
+    fn new(limit: usize) -> Self {
+        Self {
+            bytes: Vec::new(),
+            limit,
+        }
+    }
+}
 
 impl Write for Bounded {
     type Error = RecordError;
 
     fn write_all(&mut self, bytes: &[u8]) -> Result<(), Self::Error> {
-        self.0
+        self.bytes
             .len()
             .checked_add(bytes.len())
-            .filter(|length| *length <= MAX_RECORD_BYTES)
+            .filter(|length| *length <= self.limit)
             .ok_or(RecordError::SizeLimit)?;
-        self.0.extend_from_slice(bytes);
+        self.bytes.extend_from_slice(bytes);
         Ok(())
     }
 }
 
-pub(super) fn encode(value: &Value) -> Result<Vec<u8>, RecordError> {
-    let mut encoder = Encoder::new(Bounded::default());
+pub(super) fn encode(value: &Value, max_bytes: usize) -> Result<Vec<u8>, RecordError> {
+    let mut encoder = Encoder::new(Bounded::new(max_bytes));
     encode_value(&mut encoder, value, 0)?;
-    Ok(encoder.into_writer().0)
+    Ok(encoder.into_writer().bytes)
 }
 
 pub(super) fn encode_list_record(items: &[Value]) -> Result<Vec<u8>, RecordError> {
-    let mut encoder = Encoder::new(Bounded::default());
+    let mut encoder = Encoder::new(Bounded::new(MAX_RECORD_BYTES));
     encode_list_value(&mut encoder, items, 0)?;
-    Ok(encoder.into_writer().0)
+    Ok(encoder.into_writer().bytes)
 }
 fn encode_list_value(
     e: &mut Encoder<Bounded>,

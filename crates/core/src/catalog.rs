@@ -15,6 +15,11 @@ pub use views::{
 
 pub const CATALOG_VERSION: i64 = 3;
 
+/// Bound on the whole embedded catalog. The catalog is a trusted build
+/// artifact that nests one independently record-bounded blob per service, so
+/// its aggregate is not limited by [`crate::record::MAX_RECORD_BYTES`].
+pub const MAX_CATALOG_BYTES: usize = 67_108_864;
+
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum CatalogError {
@@ -59,7 +64,7 @@ impl<'a> Catalog<'a> {
         if bytes.is_empty() {
             return Err(CatalogError::Empty);
         }
-        let root = MapRef::from_bytes_bounded(bytes)?;
+        let root = MapRef::from_container_bytes(bytes, MAX_CATALOG_BYTES)?;
         let version = integer(root, CatalogKey::Format)?;
         if version != CATALOG_VERSION {
             return Err(CatalogError::Version(version));

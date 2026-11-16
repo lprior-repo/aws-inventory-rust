@@ -37,12 +37,15 @@ async fn persist_scoped(
         body: &body, headers: &http::HeaderMap::new(), status: http::StatusCode::OK,
         limits: aws_wire::response::DecodeLimits::default(),
     })?;
-    let rows = items(&plan, &response)?;
+    let mut rows = record::item_records(&response, plan.items())?;
+    for row in &mut rows {
+        *row = resource_projection::project(&plan, row)?;
+    }
     let home = RegionId::parse(region)?;
     let account = AccountId::parse(account)?;
     let request = Record::encode(&Value::Map(BTreeMap::new()))?;
     let observations = rows.iter().map(|row| observation(catalog, record::IdentityContext { account: &account, region: &home }, &plan, &Region::Regional(home.clone()), row, &request, &DiscoveryContext::default())).collect::<Result<Vec<_>, _>>()?;
-    let unresolved = references(catalog, &plan, &home, &rows, &observations, &request)?;
+    let unresolved = references(catalog, &plan, &home, &rows, &observations, &request, None)?;
     let sweep = SweepId::new(format!("facet-{at}"))?;
     let scope = ScopeKey::new(account, Region::Regional(home), ServiceId::parse("workspaces-web")?, OperationId::parse(operation)?, None)?;
     store.seed_work(WorkSpec::new(sweep.clone(), scope, None, request.into_bytes())?).await?;
@@ -54,7 +57,9 @@ async fn persist_scoped(
 async fn state(directory: &tempfile::TempDir, catalog: &RuntimeCatalog<'_>) -> TestResult<(Record, i64, Vec<u8>)> {
     let pool = sqlx::SqlitePool::connect(&format!("sqlite://{}", directory.path().join("inventory.sqlite").display())).await?;
     let schema = catalog.schemas().iter().find(|schema| schema.kind().as_str() == "AWS::WorkSpacesWeb::Portal").ok_or("portal schema absent")?;
-    let row = sqlx::query(&format!("SELECT record,last_changed,content_hash FROM \"{}\" WHERE id=?1", schema.table().as_str())).bind(PORTAL).fetch_one(&pool).await?;
+    let mut query = sqlx::QueryBuilder::<sqlx::Sqlite>::new("SELECT record,last_changed,content_hash FROM \"");
+    query.push(schema.table().as_str()).push("\" WHERE id=").push_bind(PORTAL);
+    let row = query.build().fetch_one(&pool).await?;
     let result = (Record::from_bytes(row.try_get("record")?)?, row.try_get("last_changed")?, row.try_get("content_hash")?);
     pool.close().await;
     Ok(result)
@@ -145,7 +150,7 @@ mod oam;
 mod masks;
 
 fn field(record: &Record, field: u32) -> TestResult<Option<Value>> {
-    Ok(record.root().get_field(FieldId::new(field)?)?.map(ValueRef::to_value).transpose()?)
+    Ok(record.root().get_field(FieldId::new(field)?)?.map(|value| value.to_value()).transpose()?)
 }
 
 #[tokio::test]

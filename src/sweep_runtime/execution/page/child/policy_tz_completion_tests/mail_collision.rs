@@ -172,8 +172,9 @@ async fn assert_shared_facets(scenario: &Scenario<'_, '_>, organizations: &[&str
     if retired {
         let table: String = sqlx::query_scalar("SELECT table_name FROM kinds WHERE kind='AWS::ApiOnly::WorkMailMailboxPermission'")
             .fetch_one(&reader).await?;
-        let statement = format!("SELECT account,region,id,record FROM \"{}\" ORDER BY account,region,id",table.replace('"',"\"\""));
-        let canonical: Vec<(String,String,String,Vec<u8>)> = sqlx::query_as(&statement).fetch_all(&reader).await?;
+        let mut statement = sqlx::QueryBuilder::<sqlx::Sqlite>::new("SELECT account,region,id,record FROM \"");
+        statement.push(table.replace('"',"\"\"")).push("\" ORDER BY account,region,id");
+        let canonical: Vec<(String,String,String,Vec<u8>)> = statement.build_query_as().fetch_all(&reader).await?;
         let mut keys = Vec::new();
         for (account,region,id,bytes) in canonical {
             let record = Record::from_bytes(bytes)?;

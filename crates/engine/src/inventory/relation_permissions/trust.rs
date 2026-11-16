@@ -40,6 +40,8 @@ impl TrustRule {
         let target = &reference.target;
         reference.relation.as_str() == "DECLARES_TRUST" && reference.from.kind == self.source
             && target.kind() == &self.target && target.candidate_kinds().len() == 1
+            && target.mode() == inventory_core::catalog::runtime::RelationTargetMode::SelectedFields
+            && target.components().is_empty()
             && target.path() == self.path.as_ref()
             && self.owner(&reference.from, target.account(), target.region(), target.value().as_str())
     }

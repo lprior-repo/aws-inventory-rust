@@ -3,6 +3,7 @@ mod exact_bounds;
 mod malformed;
 mod scalars;
 mod tuples;
+mod last_item;
 use super::*;
 use inventory_core::catalog::runtime::ItemPlan;
 
@@ -15,6 +16,7 @@ fn token(input: u32, output: u32) -> Result<TokenBinding, SweepError> {
         request_placement: TokenPlacement::Body(request_path.clone()),
         response_placement: TokenPlacement::Body(response_path.clone()),
         request_path, response_path, value_type: TokenType::String, optional: false,
+        selection: TokenSelection::Value,
     })
 }
 

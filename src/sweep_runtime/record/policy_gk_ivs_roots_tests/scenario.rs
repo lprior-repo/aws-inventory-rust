@@ -105,7 +105,9 @@ impl Scenario {
         assert_eq!(self.store.projection_edges(None, 10).await?.edges, Vec::new());
         let reader = self.reader().await?;
         for table in ["resources", "resource_facets", "tags", "edges", "unresolved_refs", "scope_outcomes"] {
-            let count: i64 = sqlx::query_scalar(&format!("SELECT COUNT(*) FROM {table}")).fetch_one(&reader).await?;
+            let mut query = sqlx::QueryBuilder::<sqlx::Sqlite>::new("SELECT COUNT(*) FROM \"");
+            query.push(table).push("\"");
+            let count: i64 = query.build_query_scalar().fetch_one(&reader).await?;
             assert_eq!(count, 0, "rejected/empty page mutated {table}");
         }
         reader.close().await;
@@ -128,7 +130,9 @@ impl Scenario {
             .fetch_all(&reader).await?;
         assert_eq!(keys, expected.iter().map(|id| ("123456789012".to_owned(), "us-east-1".to_owned(), case.kind.to_owned(), id.clone())).collect::<Vec<_>>());
         let schema = catalog.schemas().iter().find(|schema| schema.kind().as_str() == case.kind).ok_or("IVS kind schema absent")?;
-        let rows: Vec<(String, Vec<u8>)> = sqlx::query_as(&format!("SELECT id,record FROM {} ORDER BY id", schema.table().as_str())).fetch_all(&reader).await?;
+        let mut query = sqlx::QueryBuilder::<sqlx::Sqlite>::new("SELECT id,record FROM \"");
+        query.push(schema.table().as_str().replace('"', "\"\"")).push("\" ORDER BY id");
+        let rows: Vec<(String, Vec<u8>)> = query.build_query_as().fetch_all(&reader).await?;
         assert_eq!(rows.len(), 2);
         let fields = fixture::fields()?;
         for ((id, bytes), ordinal) in rows.into_iter().zip(["first", "later"]) {

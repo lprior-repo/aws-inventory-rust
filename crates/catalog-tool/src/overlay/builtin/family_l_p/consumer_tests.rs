@@ -1,4 +1,4 @@
-use super::tests::operation;
+use super::overlays;
 use crate::{classes::DenyList, endpoints, kind_map, overlay, runtime_catalog, smithy};
 use inventory_core::{
     catalog::runtime::{BindingSource, BindingValue, IdentityPlan, ItemPlan, RuntimeCatalog, TagPlan},
@@ -16,9 +16,11 @@ fn compile_pinned(service: &str, version: &str, operations: &[&str], kind: &str)
     let destination = source.path().join(&relative);
     fs::create_dir_all(destination.parent().ok_or("model parent missing")?)?;
     fs::copy(root.join(".local/aws-models").join(relative), &destination)?;
-    let policies = operations.iter().map(|name| Ok((*name, operation(service, name)?)))
-        .collect::<TestResult<Vec<_>>>()?;
-    let policies = [overlay::ServiceOverlay::new(service, policies)?];
+    // The pinned model is a complete service, so submit its complete reviewed policy.
+    // A selected-operation overlay leaves unrelated candidates without a disposition.
+    // Keep built-in deny enforcement active at the same public checker boundary.
+    let policies = [overlays()?.into_iter().find(|policy| policy.service() == service)
+        .ok_or("pinned service policy missing")?];
     let checked = overlay::check_policies(source.path(), &policies, &DenyList::builtin())?;
     let registry = smithy::Registry::parse(&fs::read_to_string(root.join("catalog/field-ids.txt"))?)?;
     let base = smithy::build_catalog(source.path(), &registry, "lp-pinned-regression")?;
@@ -37,7 +39,7 @@ fn fixture_endpoint(service: &str) -> TestResult<endpoints::VerifiedEndpoint> {
     let properties = json!({"authSchemes":[{"name":"sigv4","signingName":service,"signingRegion":"us-east-1"}]});
     let rules = json!({"version":"1.0","parameters":{"Region":{"type":"string"}},
         "rules":[{"type":"endpoint","conditions":[],"endpoint":{"url":url,"properties":properties}}]});
-    let cases = serde_json::from_value(json!([{"params":{"Region":"us-east-1"},
+    let cases = serde_json::from_value::<Vec<endpoints::Case>>(json!([{"params":{"Region":"us-east-1"},
         "expect":{"endpoint":{"url":url,"properties":properties}}}]))?;
     let parsed = endpoints::RuleSet::parse(Path::new("lp-regression-endpoint.json"), &rules)?;
     parsed.run_cases(&cases)?.verified_endpoint(Some(service))

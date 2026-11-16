@@ -105,7 +105,7 @@ async fn given_two_analyzers_with_identical_rule_names_when_later_pages_and_deta
         if let Some(previous) = keys.insert((analyzer.clone(), name.clone()), observation.key().clone()) {
             assert_eq!(&previous, observation.key(), "list/detail identities diverged");
         }
-        let unresolved = rows::references(&catalog, plan, &home, &selected, &observations, &actual_request)?;
+        let unresolved = rows::references(&catalog, plan, &home, &selected, &observations, &actual_request, None)?;
         assert_eq!(unresolved.len(), 1);
         let reference = unresolved.first().ok_or("analyzer reference absent")?;
         assert_eq!(&reference.from, observation.key());

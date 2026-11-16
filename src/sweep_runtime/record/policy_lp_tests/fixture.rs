@@ -22,10 +22,7 @@ pub(crate) fn compiled_with_operation(
 ) -> TestResult<Vec<u8>> {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));
     let source = tempfile::tempdir()?;
-    let relative = format!("models/{service}/service/{version}/{service}-{version}.json");
-    let destination = source.path().join(&relative);
-    fs::create_dir_all(destination.parent().ok_or("model parent absent")?)?;
-    fs::copy(root.join(".local/aws-models").join(relative), destination)?;
+    crate::sweep_runtime::pinned_model::install(&source.path().join("models"), service, version, operations)?;
     let embedded = overlay::embedded()?;
     let service_policy = embedded.iter().find(|policy| policy.service() == service).ok_or("service absent")?;
     let policies = operations.iter().map(|name| {
@@ -53,7 +50,7 @@ fn endpoint(service: &str) -> TestResult<endpoints::VerifiedEndpoint> {
     let properties = json!({"authSchemes":[{"name":"sigv4","signingName":service,"signingRegion":"us-east-1"}]});
     let rules = json!({"version":"1.0","parameters":{"Region":{"type":"string"}},
         "rules":[{"type":"endpoint","conditions":[],"endpoint":{"url":url,"properties":properties}}]});
-    let cases = serde_json::from_value(json!([{"params":{"Region":"us-east-1"},
+    let cases: Vec<endpoints::Case> = serde_json::from_value(json!([{"params":{"Region":"us-east-1"},
         "expect":{"endpoint":{"url":url,"properties":properties}}}]))?;
     endpoints::RuleSet::parse(Path::new("lp-fixture-endpoint.json"), &rules)?.run_cases(&cases)?
         .verified_endpoint(Some(service)).map_err(|error| format!("fixture endpoint failed: {error:?}").into())

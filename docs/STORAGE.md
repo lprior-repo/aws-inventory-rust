@@ -268,6 +268,9 @@ build that omits them. These guard large native values before the Rust result
 budget can inspect them. File backed temporary storage, bounded row channels and
 result limits reduce memory pressure; they are not a fixed bound on the complete
 process's resident memory or the database's disk growth.
+The reviewed catalog exceeds `MAX_LENGTH`, so it is stored in `metadata` as a
+`reviewed_catalog` head row plus ordered `reviewed_catalog.NN` continuation rows of
+at most 4 MiB each; readers concatenate them and verify the catalog digest.
 
 ## SQL views
 

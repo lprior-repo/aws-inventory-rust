@@ -1,7 +1,7 @@
 // Pinned source: .local/aws-models/models/cognito-identity-provider/service/2016-04-18/cognito-identity-provider-2016-04-18.json
 // Explicit reviewed decisions; document text is provenance, never an executable classifier.
 use super::support::*;
-use crate::overlay::{ContextSource, MissingSelected, RowOperand, RowPolicy, RowPredicate, RowValueType};
+use crate::overlay::{ContextSource, IdentityField, MissingSelected, RowOperand, RowPolicy, RowPredicate, RowValueType};
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![

@@ -2,7 +2,7 @@ use crate::kind_map::OperationMapping;
 
 pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
     OperationMapping { service: "pinpoint-sms-voice-v2", operation: "DescribeVerifiedDestinationNumbers", kind: "AWS::SMSVOICE::VerifiedDestinationNumber" },
-    OperationMapping { service: "pinpoint-sms-voice", operation: "ListConfigurationSets", kind: "AWS::SMSVOICE::ConfigurationSet" },
+    OperationMapping { service: "pinpoint-sms-voice", operation: "ListConfigurationSets", kind: "AWS::ApiOnly::PinpointSmsVoiceConfigurationSet" },
     OperationMapping { service: "pinpoint", operation: "GetApps", kind: "AWS::Pinpoint::App" },
     OperationMapping { service: "pinpoint", operation: "GetRecommenderConfigurations", kind: "AWS::ApiOnly::PinpointRecommenderConfiguration" },
     OperationMapping { service: "pipes", operation: "ListPipes", kind: "AWS::Pipes::Pipe" },

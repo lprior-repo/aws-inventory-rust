@@ -35,22 +35,22 @@ async fn given_equal_bindings_with_different_unbound_selected_response_and_reque
     let bytes = compiled()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let (directory, store) = store(&catalog).await?;
-    let first = projected_work(&SweepId::new("projection-one")?, 1, None, "old")?;
+    let first = projected_work(&SweepId::new("projection-one".to_owned())?, 1, None, "old")?;
     let first_scope = first.scope().clone();
     let bindings = projected_page(&store, first, vec![portal_observation(&catalog, "GetPortal", PORTAL, "stable")?], 1).await?;
-    let second = projected_work(&SweepId::new("projection-two")?, 9, None, "new")?;
+    let second = projected_work(&SweepId::new("projection-two".to_owned())?, 9, None, "new")?;
     assert_ne!(first_scope.context(), second.scope().context());
     // When unrelated projected values and ordinal change, only execution identity changes.
     assert_eq!(projected_page(&store, second, vec![portal_observation(&catalog, "GetPortal", PORTAL, "stable")?], 3).await?, bindings);
     assert_eq!(ownership(&directory).await?, (1, 0));
     let seen = first_seen(&directory).await?;
-    let third = projected_work(&SweepId::new("projection-miss-one")?, 18, None, "third")?;
+    let third = projected_work(&SweepId::new("projection-miss-one".to_owned())?, 18, None, "third")?;
     assert_eq!(projected_page(&store, third, Vec::new(), 5).await?, bindings);
     assert_eq!(ownership(&directory).await?, (1, 1));
     assert_eq!(first_seen(&directory).await?, seen);
     drop(store);
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
-    let fourth = projected_work(&SweepId::new("projection-miss-two")?, 27, None, "fourth")?;
+    let fourth = projected_work(&SweepId::new("projection-miss-two".to_owned())?, 27, None, "fourth")?;
     assert_eq!(projected_page(&reopened, fourth, Vec::new(), 7).await?, bindings);
     // Then no volatile historical owner remains to make the resource immortal.
     assert_eq!(reopened.projection_resource(&key()?).await?, None);
@@ -86,11 +86,11 @@ async fn given_two_branches_owning_the_same_resource_when_one_retires_then_only_
         assert_eq!(ownership(&directory).await?, (2, 0));
         let seen = first_seen(&directory).await?;
         // When only alpha completes absent twice, omega remains an independent live owner.
-        projected_page(&store, projected_work(&SweepId::new("alpha-miss-one")?, 7, Some("alpha"), "changed")?, Vec::new(), 5).await?;
+        projected_page(&store, projected_work(&SweepId::new("alpha-miss-one".to_owned())?, 7, Some("alpha"), "changed")?, Vec::new(), 5).await?;
         assert_eq!(field(&state(&directory, &catalog).await?.0, 7)?, Some(Value::Text("alpha-metadata".to_owned())));
         drop(store);
         let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
-        projected_page(&reopened, projected_work(&SweepId::new("alpha-miss-two")?, 8, Some("alpha"), "again")?, Vec::new(), 7).await?;
+        projected_page(&reopened, projected_work(&SweepId::new("alpha-miss-two".to_owned())?, 8, Some("alpha"), "again")?, Vec::new(), 7).await?;
         // Then exact canonical values, first_seen, and the surviving facet prove there was no cascade or overwrite.
         assert_eq!(reopened_name(&reopened).await?, "branch-B");
         assert_eq!(field(&state(&directory, &catalog).await?.0, 3)?, Some(Value::Text("branch-B".to_owned())));

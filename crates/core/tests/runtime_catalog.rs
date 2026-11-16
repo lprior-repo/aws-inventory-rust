@@ -6,7 +6,7 @@ use inventory_core::{
         CatalogSourceProvenance, ModelSourceProvenance, RelationScope, ReviewDisposition,
         RuntimeCatalog, RuntimeCatalogError, compiled_inputs_sha256,
     },
-    record::{FieldId, Key, MapRef, Record, Value, ValueRef},
+    record::{FieldId, Key, MapRef, Value, ValueRef},
 };
 use std::collections::BTreeMap;
 use sha2::{Digest, Sha256};
@@ -24,7 +24,7 @@ fn field_map(
 }
 
 fn runtime_bytes(version: i64) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-    let mut root = ValueRef::Map(MapRef::from_bytes_bounded(BASE)?).to_value()?;
+    let mut root = ValueRef::Map(MapRef::from_container_bytes(BASE, inventory_core::catalog::MAX_CATALOG_BYTES)?).to_value()?;
     let root = match &mut root {
         Value::Map(fields) => fields,
         _ => return Err("base compiled catalog is not a map".into()),
@@ -40,26 +40,7 @@ fn runtime_bytes(version: i64) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     root.insert(Key::Field(FieldId::new(60_000)?), extension);
     let mut root = Value::Map(root.clone());
     runtime_provenance::reseal(&mut root, BASE)?;
-    Ok(Record::encode(&root)?.into_bytes())
-}
-
-fn schema_value(kind: &str, table: &str) -> Result<Value, Box<dyn std::error::Error>> {
-    field_map([
-        (1, Value::Text(kind.to_owned())),
-        (2, Value::Text(table.to_owned())),
-        (3, Value::List(Vec::new())),
-        (4, Value::Null),
-    ])
-}
-
-fn coverage_value(kind: &str) -> Result<Value, Box<dyn std::error::Error>> {
-    field_map([
-        (1, Value::Text(kind.to_owned())),
-        (2, Value::Text(kind.to_owned())),
-        (3, Value::Bool(true)),
-        (4, Value::Null),
-        (5, Value::Bool(false)),
-    ])
+    Ok(inventory_core::record::encode_container(&root, inventory_core::catalog::MAX_CATALOG_BYTES)?)
 }
 
 fn denied_runtime_bytes() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
@@ -78,7 +59,7 @@ fn denied_runtime_bytes() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
         (3, Value::Int(1)),
         (4, Value::Text("explicitly reviewed denial".to_owned())),
     ])?;
-    let mut root = ValueRef::Map(MapRef::from_bytes_bounded(BASE)?).to_value()?;
+    let mut root = ValueRef::Map(MapRef::from_container_bytes(BASE, inventory_core::catalog::MAX_CATALOG_BYTES)?).to_value()?;
     let root = match &mut root {
         Value::Map(fields) => fields,
         _ => return Err("base compiled catalog is not a map".into()),
@@ -94,49 +75,25 @@ fn denied_runtime_bytes() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     root.insert(Key::Field(FieldId::new(60_000)?), extension);
     let mut root = Value::Map(root.clone());
     runtime_provenance::reseal(&mut root, BASE)?;
-    Ok(Record::encode(&root)?.into_bytes())
+    Ok(inventory_core::record::encode_container(&root, inventory_core::catalog::MAX_CATALOG_BYTES)?)
 }
 
 fn relationship_runtime_bytes() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
-    let source_kind = "AWS::EC2::Subnet";
-    let target_kind = "AWS::EC2::VPC";
-    let relation = field_map([
-        (1, Value::Text(source_kind.to_owned())),
-        (2, Value::List(vec![Value::Int(1)])),
-        (3, Value::Text(target_kind.to_owned())),
-        (4, Value::List(vec![Value::Int(2)])),
-        (5, Value::Text("IN_VPC".to_owned())),
-        (6, Value::Int(2)),
-    ])?;
-    let extension = field_map([
-        (1, Value::Int(2)),
-        (2, Value::List(Vec::new())),
-        (
-            3,
-            Value::List(vec![
-                schema_value(source_kind, "aws_ec2_subnet")?,
-                schema_value(target_kind, "aws_ec2_vpc")?,
-            ]),
-        ),
-        (4, Value::List(vec![relation])),
-        (
-            5,
-            Value::List(vec![
-                coverage_value(source_kind)?,
-                coverage_value(target_kind)?,
-            ]),
-        ),
-        (6, Value::List(Vec::new())),
-    ])?;
-    let mut root = ValueRef::Map(MapRef::from_bytes_bounded(BASE)?).to_value()?;
-    let root = match &mut root {
-        Value::Map(fields) => fields,
-        _ => return Err("base compiled catalog is not a map".into()),
+    // Keep real producers and schemas: a relation without a supporting plan is invalid.
+    let mut root = ValueRef::Map(MapRef::from_container_bytes(
+        BASE, inventory_core::catalog::MAX_CATALOG_BYTES,
+    )?).to_value()?;
+    let relations = match extension(&mut root)?.get_mut(&key(4)?) {
+        Some(Value::List(relations)) => relations,
+        _ => return Err("base catalog has no relationships".into()),
     };
-    root.insert(Key::Field(FieldId::new(60_000)?), extension);
-    let mut root = Value::Map(root.clone());
+    relations.truncate(1);
+    let relation = relations.first_mut().ok_or("base catalog has no relationship")?;
+    fields(relation)?.insert(key(6)?, Value::Int(2));
     runtime_provenance::reseal(&mut root, BASE)?;
-    Ok(Record::encode(&root)?.into_bytes())
+    Ok(inventory_core::record::encode_container(
+        &root, inventory_core::catalog::MAX_CATALOG_BYTES,
+    )?)
 }
 
 #[test]
@@ -175,7 +132,7 @@ fn valid_empty_runtime_extension_keeps_borrowed_catalog_and_bytes()
 #[test]
 fn incomplete_plan_metadata_is_rejected_as_a_closed_capability()
 -> Result<(), Box<dyn std::error::Error>> {
-    let mut root = ValueRef::Map(MapRef::from_bytes_bounded(BASE)?).to_value()?;
+    let mut root = ValueRef::Map(MapRef::from_container_bytes(BASE, inventory_core::catalog::MAX_CATALOG_BYTES)?).to_value()?;
     let root = match &mut root {
         Value::Map(fields) => fields,
         _ => return Err("base compiled catalog is not a map".into()),
@@ -191,7 +148,7 @@ fn incomplete_plan_metadata_is_rejected_as_a_closed_capability()
     root.insert(Key::Field(FieldId::new(60_000)?), extension);
     let mut root = Value::Map(root.clone());
     runtime_provenance::reseal(&mut root, BASE)?;
-    let bytes = Record::encode(&root)?.into_bytes();
+    let bytes = inventory_core::record::encode_container(&root, inventory_core::catalog::MAX_CATALOG_BYTES)?;
     assert!(matches!(
         RuntimeCatalog::from_bytes(&bytes),
         Err(RuntimeCatalogError::Capability)
@@ -255,9 +212,9 @@ fn mutated_receipt(change: impl FnOnce(&mut Fields) -> TestResult) -> TestResult
 fn mutate_receipt_in(bytes: &[u8], change: impl FnOnce(&mut Fields) -> TestResult) -> TestResult<Vec<u8>> {
     let control = RuntimeCatalog::from_bytes(bytes)?;
     assert_eq!(control.raw_bytes(), bytes);
-    let mut root = ValueRef::Map(MapRef::from_bytes_bounded(bytes)?).to_value()?;
+    let mut root = ValueRef::Map(MapRef::from_container_bytes(bytes, inventory_core::catalog::MAX_CATALOG_BYTES)?).to_value()?;
     change(receipt(&mut root)?)?;
-    Ok(Record::encode(&root)?.into_bytes())
+    Ok(inventory_core::record::encode_container(&root, inventory_core::catalog::MAX_CATALOG_BYTES)?)
 }
 
 fn rejects_capability(bytes: &[u8]) -> TestResult {
@@ -274,16 +231,17 @@ fn assembled_extension_preserves_true_source_pins_without_claiming_repository_or
     let control = RuntimeCatalog::from_bytes(BASE)?;
     let bytes = runtime_bytes(2)?;
     let base_input = runtime_provenance::base_bytes(BASE)?;
-    let mut restored = ValueRef::Map(MapRef::from_bytes_bounded(&base_input)?).to_value()?;
+    let mut restored = ValueRef::Map(MapRef::from_container_bytes(&base_input, inventory_core::catalog::MAX_CATALOG_BYTES)?).to_value()?;
     assert_eq!(fields(&mut restored)?.contains_key(&key(60_000)?), false);
-    let original_extension = MapRef::from_bytes_bounded(BASE)?
+    let original_extension = MapRef::from_container_bytes(BASE, inventory_core::catalog::MAX_CATALOG_BYTES)?
         .get_field(FieldId::new(60_000)?)?.ok_or("control extension missing")?.to_value()?;
     fields(&mut restored)?.insert(key(60_000)?, original_extension);
     // Independently prove the helper removed exactly the extension and no other input.
-    assert_eq!(Record::encode(&restored)?.as_bytes(), BASE);
+    let rebuilt = inventory_core::record::encode_container(&restored, inventory_core::catalog::MAX_CATALOG_BYTES)?;
+    assert_eq!(rebuilt.as_slice(), BASE);
     // When: the public consumer loads the re-sealed fixture.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
-    let root = MapRef::from_bytes_bounded(&bytes)?;
+    let root = MapRef::from_container_bytes(&bytes, inventory_core::catalog::MAX_CATALOG_BYTES)?;
     let Some(ValueRef::Map(extension)) = root.get_field(FieldId::new(60_000)?)? else {
         return Err("fixture extension missing".into());
     };
@@ -310,10 +268,10 @@ fn loader_rejects_capability_when_runtime_source_receipt_is_missing() -> TestRes
     let bytes = runtime_bytes(2)?;
     let control = RuntimeCatalog::from_bytes(&bytes)?;
     assert_eq!(control.source_provenance().version, 1);
-    let mut root = ValueRef::Map(MapRef::from_bytes_bounded(&bytes)?).to_value()?;
+    let mut root = ValueRef::Map(MapRef::from_container_bytes(&bytes, inventory_core::catalog::MAX_CATALOG_BYTES)?).to_value()?;
     extension(&mut root)?.remove(&key(7)?).ok_or("fixture receipt missing")?;
     // When/Then: legacy artifacts cannot silently acquire source evidence.
-    rejects_capability(&Record::encode(&root)?.into_bytes())
+    rejects_capability(&inventory_core::record::encode_container(&root, inventory_core::catalog::MAX_CATALOG_BYTES)?)
 }
 
 #[test]
@@ -430,17 +388,17 @@ fn loader_rejects_capability_when_valid_reviewed_metadata_changes_without_reseal
     let bytes = denied_runtime_bytes()?;
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     assert_eq!(runtime.decisions().len(), 1);
-    let mut root = ValueRef::Map(MapRef::from_bytes_bounded(&bytes)?).to_value()?;
+    let mut root = ValueRef::Map(MapRef::from_container_bytes(&bytes, inventory_core::catalog::MAX_CATALOG_BYTES)?).to_value()?;
     let Some(Value::List(decisions)) = extension(&mut root)?.get_mut(&key(6)?) else {
         return Err("fixture decisions missing".into());
     };
     fields(decisions.first_mut().ok_or("fixture decision missing")?)?
         .insert(key(4)?, Value::Text("different but valid reviewed denial".to_owned()));
     // When/Then: only the checksum, not a malformed capability, rejects this edit.
-    let stale = Record::encode(&root)?.into_bytes();
+    let stale = inventory_core::record::encode_container(&root, inventory_core::catalog::MAX_CATALOG_BYTES)?;
     rejects_capability(&stale)?;
     runtime_provenance::reseal(&mut root, BASE)?;
-    let sealed = Record::encode(&root)?.into_bytes();
+    let sealed = inventory_core::record::encode_container(&root, inventory_core::catalog::MAX_CATALOG_BYTES)?;
     let runtime = RuntimeCatalog::from_bytes(&sealed)?;
     assert_eq!(runtime.decisions()[0].disposition, ReviewDisposition::Denied {
         reason: "different but valid reviewed denial".to_owned(),
@@ -456,10 +414,10 @@ fn loader_rejects_capability_when_source_receipt_is_not_a_map() -> TestResult {
             let bytes = runtime_bytes(2)?;
             let control = RuntimeCatalog::from_bytes(&bytes)?;
             assert_eq!(control.source_provenance().version, 1);
-            let mut root = ValueRef::Map(MapRef::from_bytes_bounded(&bytes)?).to_value()?;
+            let mut root = ValueRef::Map(MapRef::from_container_bytes(&bytes, inventory_core::catalog::MAX_CATALOG_BYTES)?).to_value()?;
             extension(&mut root)?.insert(key(7)?, malformed);
             // When/Then: no scalar or container can stand in for the receipt.
-            rejects_capability(&Record::encode(&root)?.into_bytes())
+            rejects_capability(&inventory_core::record::encode_container(&root, inventory_core::catalog::MAX_CATALOG_BYTES)?)
         })
 }
 
@@ -484,7 +442,7 @@ fn loader_rejects_capability_when_model_descriptor_is_missing_fields_or_is_misty
 }
 
 fn reviewed_checksum(bytes: &[u8]) -> TestResult<[u8; 32]> {
-    let Some(ValueRef::Map(extension)) = MapRef::from_bytes_bounded(bytes)?
+    let Some(ValueRef::Map(extension)) = MapRef::from_container_bytes(bytes, inventory_core::catalog::MAX_CATALOG_BYTES)?
         .get_field(FieldId::new(60_000)?)? else {
             return Err("fixture extension missing".into());
         };
@@ -499,11 +457,11 @@ fn public_reviewed_checksum_excludes_receipt_even_when_that_receipt_is_absent_or
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     assert_eq!(runtime.source_provenance().reviewed_inputs_sha256, expected);
     // When: only the receipt is removed or replaced by malformed data.
-    let mut root = ValueRef::Map(MapRef::from_bytes_bounded(&bytes)?).to_value()?;
+    let mut root = ValueRef::Map(MapRef::from_container_bytes(&bytes, inventory_core::catalog::MAX_CATALOG_BYTES)?).to_value()?;
     extension(&mut root)?.remove(&key(7)?).ok_or("fixture receipt missing")?;
-    let missing = Record::encode(&root)?.into_bytes();
+    let missing = inventory_core::record::encode_container(&root, inventory_core::catalog::MAX_CATALOG_BYTES)?;
     extension(&mut root)?.insert(key(7)?, Value::Text("corrupt receipt".to_owned()));
-    let corrupt = Record::encode(&root)?.into_bytes();
+    let corrupt = inventory_core::record::encode_container(&root, inventory_core::catalog::MAX_CATALOG_BYTES)?;
     // Then: source evidence cannot self-hash, while the loader still requires it.
     assert_eq!(reviewed_checksum(&missing)?, expected);
     assert_eq!(reviewed_checksum(&corrupt)?, expected);
@@ -520,9 +478,9 @@ fn public_reviewed_checksum_binds_actual_version_and_each_capability_list() -> T
     assert_ne!(reviewed_checksum(&runtime_bytes(1)?)?, expected);
     // Given/When/Then: changing any single encoded list changes its commitment.
     (2..=6).try_for_each(|id| {
-        let mut root = ValueRef::Map(MapRef::from_bytes_bounded(&bytes)?).to_value()?;
+        let mut root = ValueRef::Map(MapRef::from_container_bytes(&bytes, inventory_core::catalog::MAX_CATALOG_BYTES)?).to_value()?;
         extension(&mut root)?.insert(key(id)?, Value::List(vec![Value::Null]));
-        let changed = Record::encode(&root)?.into_bytes();
+        let changed = inventory_core::record::encode_container(&root, inventory_core::catalog::MAX_CATALOG_BYTES)?;
         assert_ne!(reviewed_checksum(&changed)?, expected, "unbound extension field {id}");
         Ok(())
     })

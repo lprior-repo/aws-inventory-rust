@@ -100,7 +100,7 @@ async fn resource_observation_count_still_rejects_100001_independently_of_tags()
     let lease = store.claim(&SweepId::new("too-many-resources".into())?, 99, 100).await?.ok_or("lease missing")?;
     let pool = state::pool(&directory).await?;
     let before = state::database_state(&pool).await?;
-    let observations = vec![support::observation("one", "value")?; 100_001];
+    let observations = (0..100_001).map(|_| support::observation("one", "value")).collect::<Result<Vec<_>, _>>()?;
     assert!(matches!(store.commit_page(support::page(lease.clone(), observations, true, None, 100)).await,
         Err(StoreError::Invalid("page exceeds storage bounds"))));
     assert_eq!(state::database_state(&pool).await?, before);

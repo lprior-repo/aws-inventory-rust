@@ -17,6 +17,7 @@ pub(super) const ENTRIES: &[CfnMapping<'static>] = &[
     CfnMapping::canonical("AWS::Kinesis::StreamConsumer"),
     CfnMapping::canonical("AWS::KinesisAnalyticsV2::Application"),
     CfnMapping::canonical("AWS::KinesisAnalyticsV2::Snapshot"),
+    CfnMapping::canonical("AWS::KinesisFirehose::DeliveryStream"),
     CfnMapping::canonical("AWS::KinesisVideo::SignalingChannel"),
     CfnMapping::canonical("AWS::KinesisVideo::Stream"),
     CfnMapping::canonical("AWS::MSK::Configuration"),

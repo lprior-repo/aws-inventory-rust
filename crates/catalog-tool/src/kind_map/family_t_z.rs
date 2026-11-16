@@ -32,7 +32,9 @@ mod operations_7;
 mod operations_8;
 #[path = "family_t_z/relations_0.rs"]
 mod relations_0;
+#[path = "family_t_z/completion.rs"]
 mod completion;
+#[path = "family_t_z/completion_relations.rs"]
 mod completion_relations;
 
 pub(super) const SOURCES: &[MappingSource<'static>] = &[

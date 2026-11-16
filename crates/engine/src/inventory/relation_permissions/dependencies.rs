@@ -1,25 +1,31 @@
-use super::{matches_reference, owner_matches, scalar, source_matches, unreviewed, RelationSource, StoreError, ValueRef};
+use super::{matches_reference, source_matches, unreviewed, RelationSource, StoreError, rule_reference, reference_matches_observation};
 use crate::inventory::{SchemaRegistry, WorkLease};
 use inventory_core::{inventory::{Edge, Observation, UnresolvedReference}, record::FieldId};
 
-type Dependencies = Option<Vec<Vec<FieldId>>>;
+type Dependencies = Option<Vec<Vec<Vec<FieldId>>>>;
 
 pub(in crate::inventory) fn reference_dependencies(registry: &SchemaRegistry, lease: &WorkLease, source: &Observation, reference: &UnresolvedReference) -> Result<Dependencies, StoreError> {
     if source.key() != &reference.from { return Err(unreviewed()); }
     let authority = registry.permissions.authority(lease)?;
     let mut paths = Vec::new();
     for rule in &authority.relations {
-        if !matches_reference(rule, reference) || !source_matches(rule, lease.bindings(), source, reference.target.value().as_str())? { continue; }
-        if rule.source == RelationSource::Request { return Ok(None); }
-        paths.push(rule.source_path.to_vec());
+        if !matches_reference(rule, reference) || !source_matches(rule, lease, source, reference)? { continue; }
+        let mut group = Vec::new();
+        if rule.source == RelationSource::SelectedOutput { group.push(rule.source_path.to_vec()); }
+        group.extend(rule.components.iter().filter(|term| term.source == RelationSource::SelectedOutput).map(|term| term.source_path.to_vec()));
+        if let Some(guard) = &rule.guard {
+            if guard.source == RelationSource::SelectedOutput { group.push(guard.path.to_vec()); }
+        }
+        if group.is_empty() { return Ok(None); }
+        group.sort_unstable(); group.dedup(); paths.push(group);
     }
     for rule in &authority.trust {
-        if rule.reference(reference) && rule.declares(source, reference.target.value().as_str())? { paths.push(rule.dependency_path().to_vec()); }
+        if rule.reference(reference) && rule.declares(source, reference.target.value().as_str())? { paths.push(vec![rule.dependency_path().to_vec()]); }
     }
     checked_paths(paths)
 }
 
-fn checked_paths(mut paths: Vec<Vec<FieldId>>) -> Result<Dependencies, StoreError> {
+fn checked_paths(mut paths: Vec<Vec<Vec<FieldId>>>) -> Result<Dependencies, StoreError> {
     if paths.is_empty() { return Err(unreviewed()); }
     paths.sort_unstable();
     paths.dedup();
@@ -31,12 +37,9 @@ pub(in crate::inventory) fn edge_references(registry: &SchemaRegistry, lease: &W
     let authority = registry.permissions.authority(lease)?;
     let mut references = Vec::new();
     for rule in &authority.relations {
-        if rule.source_kind != edge.from.kind || rule.relation != edge.relation
-            || rule.target_kind != edge.to.kind || rule.target_kinds.len() != 1 { continue; }
-        let Some(ValueRef::Text(value)) = scalar(target.record().root(), &rule.target_path)? else { continue; };
-        if owner_matches(rule, &edge.from, &edge.to.account, &edge.to.region, value)
-            && source_matches(rule, lease.bindings(), source, value)? {
-            push_reference(registry, &mut references, edge, &rule.target_path, value)?;
+        let Some(reference) = rule_reference(rule, lease, source, target, edge)? else { continue; };
+        if reference_matches_observation(&reference, target, lease.bindings())? && !references.iter().any(|existing: &UnresolvedReference| existing.target == reference.target) {
+            references.push(reference);
         }
     }
     for rule in &authority.trust {

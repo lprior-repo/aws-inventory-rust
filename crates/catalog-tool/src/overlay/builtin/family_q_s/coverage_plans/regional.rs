@@ -13,7 +13,7 @@ pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
         "ram" => {
             let mut plan = arn("permissions", "arn", Some(("nextToken", "nextToken")))?;
             plan.fixed = [(path("resourceOwner")?, FixedValue::String("SELF".to_owned())),
-                (path("permissionType")?, FixedValue::String("LOCAL".to_owned()))].into();
+                (path("permissionType")?, FixedValue::String("CUSTOMER_MANAGED".to_owned()))].into();
             plan.tags = Some(path("tags")?);
             put(service, "ListPermissions", plan)
         }
@@ -79,10 +79,11 @@ fn globalresolver(service: &mut ServiceOverlay) -> Result<(), NameError> {
 }
 
 // Pin: route53-recovery-control-config/service/2020-11-02/route53-recovery-control-config-2020-11-02.json.
-// Rule is a modeled union. Both safe metadata arms must select their own nested ARN.
+// Rule has two optional structure arms. Each arm is identified by its own nested ARN.
 fn safety_rules(service: &mut ServiceOverlay) -> Result<(), NameError> {
     let arms = ["ASSERTION", "GATING"].into_iter().map(|arm| {
-        IdentityBranch::new(IdentityPredicate::Present(path(arm)?), IdentityLeaf::Arn(path(&format!("{arm}.SafetyRuleArn"))?))
+        let arn = path(&format!("{arm}.SafetyRuleArn"))?;
+        IdentityBranch::new(IdentityPredicate::Present(arn.clone()), IdentityLeaf::Arn(arn))
     }).collect::<Result<_, _>>()?;
     let mut plan = list("SafetyRules", Identity::Choice(IdentityChoice::Discriminated(arms)), Some(("NextToken", "NextToken")))?;
     parent(&mut plan, "ControlPanelArn", "ListControlPanels", "ControlPanelArn")?;

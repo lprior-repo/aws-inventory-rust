@@ -160,7 +160,7 @@ mod transform_tests {
 
     #[test]
     fn reviewed_prefix_removes_only_one_exact_type_prefix() -> Result<(),SweepError> {
-        let transform = BindingTransform::StripPrefix("/hostedzone/".to_owned());
+        let transform = BindingTransform::StripPrefix("/hostedzone/".into());
         for text in ["Z123","/hostedzone/Z123"] {
             assert_eq!(transform_value(Value::Text(text.to_owned()),&transform)?,Value::Text("Z123".to_owned()));
         }

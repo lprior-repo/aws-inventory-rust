@@ -1,6 +1,6 @@
 use super::*;
 use catalog_tool::{endpoints, kind_map, overlay, runtime_catalog, smithy};
-use std::{fs, path::Path, sync::LazyLock};
+use std::sync::LazyLock;
 
 static CATALOG: LazyLock<Result<Vec<u8>, String>> = LazyLock::new(|| compile().map_err(|error| error.to_string()));
 
@@ -11,7 +11,6 @@ pub(super) fn bytes() -> TestResult<&'static [u8]> {
 fn compile() -> TestResult<Vec<u8>> {
     let root = tempfile::tempdir()?;
     let source = root.path().join("source");
-    let pinned = Path::new(env!("CARGO_MANIFEST_DIR")).join(".local/aws-models/models");
     let embedded = overlay::embedded()?;
     let mut policies = Vec::new();
     for (service, date, operations) in [
@@ -20,10 +19,7 @@ fn compile() -> TestResult<Vec<u8>> {
         ("s3tables", "2018-05-10", &["ListTableBuckets", "ListNamespaces"][..]),
         ("securitylake", "2018-05-10", &["ListDataLakes"][..]),
     ] {
-        let relative = format!("{service}/service/{date}/{service}-{date}.json");
-        let destination = source.join("models").join(&relative);
-        fs::create_dir_all(destination.parent().ok_or("model directory absent")?)?;
-        fs::copy(pinned.join(&relative), destination)?;
+        crate::sweep_runtime::pinned_model::install(&source.join("models"), service, date, operations)?;
         let policy = embedded.iter().find(|candidate| candidate.service() == service).ok_or("production service absent")?;
         let selected = operations.iter().map(|operation| {
             let key = overlay::OperationName::new(operation)?;

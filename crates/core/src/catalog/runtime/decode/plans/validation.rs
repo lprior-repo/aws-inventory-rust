@@ -92,7 +92,19 @@ fn pagination(parts: &PlanParts<'_>) -> Result<(), RuntimeCatalogError> {
         let request = terminal(parts.service, parts.operation.input()?, &token.request_path)?;
         let response = terminal(parts.service, parts.operation.output()?, &token.response_path)?;
         token_kind(parts.service, request.target, token.value_type)?;
-        token_kind(parts.service, response.target, token.value_type)?;
+        match token.selection {
+            crate::catalog::runtime::TokenSelection::Value =>
+                token_kind(parts.service, response.target, token.value_type)?,
+            crate::catalog::runtime::TokenSelection::LastListItem => {
+                if token.value_type != TokenType::String
+                    || tags::target_kind(parts.service, response.target)? != "list" {
+                    return Err(RuntimeCatalogError::Capability);
+                }
+                let element = tags::shape(parts.service, response.target)?.element()?
+                    .ok_or(RuntimeCatalogError::Capability)?;
+                token_kind(parts.service, element, TokenType::String)?;
+            }
+        }
         placement(request, &token.request_path, &token.request_placement, parts.protocol, false)?;
         placement(response, &token.response_path, &token.response_placement, parts.protocol, true)
     })?;
@@ -129,11 +141,22 @@ fn token_kind(service: Service<'_>, target: Target, value_type: TokenType) -> Re
 }
 
 fn placement(member: Member<'_>, path: &[FieldId], placement: &TokenPlacement, protocol: RuntimeProtocol, response: bool) -> Result<(), RuntimeCatalogError> {
+    if matches!(protocol, RuntimeProtocol::AwsJson10 | RuntimeProtocol::AwsJson11 | RuntimeProtocol::RpcV2Cbor) {
+        return if matches!(placement, TokenPlacement::Body(body) if body.as_ref() == path) {
+            Ok(())
+        } else {
+            Err(RuntimeCatalogError::Capability)
+        };
+    }
     let wire = member.wire()?;
     let rest = matches!(protocol, RuntimeProtocol::RestJson1 | RuntimeProtocol::RestXml);
     let query = matches!(protocol, RuntimeProtocol::AwsQuery | RuntimeProtocol::Ec2Query);
     let valid = match (wire.binding()?, placement) {
         (HttpBinding::Document, TokenPlacement::Body(body)) => body.as_ref() == path && (response || !query || path.len() > 1),
+        // Request-only bindings are ignored on output members, which the wire
+        // decoder therefore reads from the response body.
+        (HttpBinding::Label | HttpBinding::Query(_) | HttpBinding::QueryParams, TokenPlacement::Body(body)) =>
+            response && body.as_ref() == path,
         (HttpBinding::Payload, TokenPlacement::Body(body)) => rest && path.len() == 1 && body.as_ref() == path,
         (HttpBinding::Header(name), TokenPlacement::Header(actual)) => rest && path.len() == 1 && name == actual,
         (HttpBinding::Query(name), TokenPlacement::Query(actual)) => !response && rest && path.len() == 1 && name == actual,

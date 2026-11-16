@@ -82,3 +82,15 @@ fn given_rehashed_corrupt_operand_metadata_when_loaded_then_unknown_tags_bounds_
     assert!(matches!(RuntimeCatalog::from_bytes(record.as_bytes()), Err(RuntimeCatalogError::Capability)));
     Ok(())
 }
+
+#[test]
+fn given_structured_selected_digest_when_compiled_then_current_row_is_preserved_as_empty_numeric_path() -> TestResult {
+    let identity = Identity::CorrelatedKey(vec![IdentityField::SelectedDigest(MemberPath::selected("$")?)]);
+    let bytes = compiled(identity, "active-wire", false)?;
+    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+    let plan = catalog.lookup("things", "ListThings").ok_or("plan absent")?;
+    let IdentityPlan::CorrelatedKey(fields) = plan.identity()
+        else { return Err("identity not correlated".into()) };
+    assert!(matches!(fields.as_ref(), [IdentityFieldPlan::SelectedDigest(path)] if path.is_empty()));
+    Ok(())
+}
