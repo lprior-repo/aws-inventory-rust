@@ -65,7 +65,11 @@ fn group_id(parent: &Parent, local: &str) -> String {
 }
 
 fn assert_text(record: &Record, field: &str, expected: &str) -> TestResult {
-    let actual = record.root().get_name(field)?.ok_or_else(|| format!("stored metadata omitted {field}"))?.to_value()?;
+    let keys: Vec<String> = record.root().iter()?.map(|e| {
+        let (k, _) = e?;
+        Ok::<_, SweepError>(format!("{k:?}"))
+    }).collect::<Result<Vec<_>, _>>()?;
+    let actual = record.root().get_name(field)?.ok_or_else(|| format!("stored metadata omitted {field} keys={keys:?} record_len={}", record.as_bytes().len()))?.to_value()?;
     assert_eq!(actual, Value::Text(expected.to_owned()), "{field}");
     Ok(())
 }
