@@ -98,12 +98,23 @@ fn rejects_bounds(bytes: &[u8]) -> TestResult {
 
 #[test]
 fn loader_preserves_scalar_self_and_each_identity_context_when_template_is_canonical() -> TestResult {
-    // Given: the actual encoded catalog with only one plan's identity replaced.
-    let bytes = template(vec![
-        map([(1, Value::Int(0)), (2, Value::Text("arn:".to_owned()))])?,
-        map([(1, Value::Int(2))])?, map([(1, Value::Int(3))])?,
-        map([(1, Value::Int(4))])?, map([(1, Value::Int(1)), (2, path([]))])?,
+    // Given: a modeled catalog with a plan whose identity template includes scalar-self.
+    let base = support::synthetic_catalog::scalar_item_catalog()?;
+    let extension = map(vec![
+        (1, Value::Int(2)),
+        (2, Value::List(vec![map(vec![
+            (1, Value::Text("ec2".to_owned())),
+            (2, Value::Text("DescribeVpcs".to_owned())),
+            (6, identity(1, vec![
+                map([(1, Value::Int(0)), (2, Value::Text("arn:".to_owned()))])?,
+                map([(1, Value::Int(2))])?,
+                map([(1, Value::Int(3))])?,
+                map([(1, Value::Int(4))])?,
+                map([(1, Value::Int(1)), (2, path([]))])?,
+            ])?),
+        ])?)]),
     ])?;
+    let bytes = support::synthetic_catalog::with_extension(&base, extension)?;
     // When: loading through the production public consumer boundary.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = runtime.plans().iter().find(|plan| plan.operation_name() == OPERATION)
@@ -210,8 +221,17 @@ fn loader_rejects_bounds_when_scalar_selected_path_has_nine_segments() -> TestRe
 
 #[test]
 fn loader_preserves_eight_segment_selected_path_at_the_exact_bound() -> TestResult {
-    // Given.
-    let bytes = replacing(6, identity(2, vec![path([1; 8]); 8])?)?;
+    // Given: a catalog with nested structures supporting 8-segment paths.
+    let base = support::synthetic_catalog::nested_structure_catalog(8)?;
+    let extension = map(vec![
+        (1, Value::Int(2)),
+        (2, Value::List(vec![map(vec![
+            (1, Value::Text("ec2".to_owned())),
+            (2, Value::Text("DescribeVpcs".to_owned())),
+            (6, identity(2, vec![path([1; 8]); 8])?),
+        ])?)]),
+    ])?;
+    let bytes = support::synthetic_catalog::with_extension(&base, extension)?;
     // When.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = runtime.plans().iter().find(|plan| plan.operation_name() == OPERATION)
@@ -293,10 +313,22 @@ fn loader_rejects_capability_when_cursor_components_overwrite_the_same_request_p
 
 #[test]
 fn loader_preserves_required_and_optional_components_at_cursor_tuple_limit() -> TestResult {
-    // Given: the maximal tuple, with one required anchor and seven optional components.
+    // Given: a catalog with input/output fields for 8 pagination tokens.
+    let input_ids: Vec<u32> = (1..=8).collect();
+    let output_ids: Vec<u32> = (11..=18).collect();
+    let base = support::synthetic_catalog::pagination_catalog(&input_ids, &output_ids)?;
     let tokens = (1..=8).map(|id| token(path([id]), path([id + 10]), id != 1))
         .collect::<TestResult<Vec<_>>>()?;
-    let bytes = pagination(tokens)?;
+    let extension = map(vec![
+        (1, Value::Int(2)),
+        (2, Value::List(vec![map(vec![
+            (1, Value::Text("ec2".to_owned())),
+            (2, Value::Text("DescribeVpcs".to_owned())),
+            (6, identity(2, vec![path([1])])?),
+            (8, pagination_value(tokens)?),
+        ])?)]),
+    ])?;
+    let bytes = support::synthetic_catalog::with_extension(&base, extension)?;
     // When.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = runtime.plans().iter().find(|plan| plan.operation_name() == OPERATION)
