@@ -63,7 +63,28 @@ async fn run_with_dependencies(service: &str, roots: &[&str], dependencies: &[(&
             assert_eq!(wire.method(), http::Method::GET);
             assert_eq!(wire.uri().path(), path);
             let query = wire.uri().query().unwrap_or_default();
-            assert_eq!(query, if second {"nextToken=same-next-token"} else {""}, "unreviewed query filter on {call_service}.{operation}");
+            // Page sizes derived from pinned Smithy model range constraints (max of range).
+            // evs: ListEnvironments maxResults range 1-100 -> 100
+            // deadline: ListFarms maxResults range 1-100 -> 100
+            // entityresolution: ListIdMappingWorkflows/ListMatchingWorkflows maxResults range max=25 -> 25
+            // fis: ListExperimentTemplates/ListExperiments maxResults range 1-100 -> 100
+            // frauddetector: GetDetectors maxResults range 5-10 -> 10
+            // datazone: ListDomains maxResults range 1-25 -> 25
+            let page_size=match (call_service,operation.as_str()) {
+                ("evs","ListEnvironments")=>100,
+                ("deadline","ListFarms")=>100,
+                ("entityresolution","ListIdMappingWorkflows"|"ListMatchingWorkflows")=>25,
+                ("fis","ListExperimentTemplates"|"ListExperiments")=>100,
+                ("frauddetector","GetDetectors")=>10,
+                ("datazone","ListDomains")=>25,
+                _=>return Err(format!("unknown page size for {call_service}.{operation}").into()),
+            };
+            let expected_query=if second {
+                format!("maxResults={page_size}&nextToken=same-next-token")
+            } else {
+                format!("maxResults={page_size}")
+            };
+            assert_eq!(query, expected_query, "unreviewed query filter on {call_service}.{operation}");
         } else {
             assert_eq!(wire.method(), http::Method::POST);
             assert!(wire.headers().get("x-amz-target").ok_or("AWS JSON target missing")?.to_str()?.ends_with(&format!(".{operation}")));
@@ -77,6 +98,23 @@ async fn run_with_dependencies(service: &str, roots: &[&str], dependencies: &[(&
             };
             if let Some(field)=binding {expected.insert(field.to_owned(),json!(string(&request,field)?));}
             if call_service=="secrets-manager" {expected.insert("IncludePlannedDeletion".to_owned(),json!(true));}
+            // Page sizes derived from pinned Smithy model range constraints (max of range).
+            // evs: ListEnvironments maxResults range 1-100 -> 100
+            // deadline: ListFarms maxResults range 1-100 -> 100
+            // entityresolution: ListIdMappingWorkflows/ListMatchingWorkflows maxResults range max=25 -> 25
+            // fis: ListExperimentTemplates/ListExperiments maxResults range 1-100 -> 100
+            // frauddetector: GetDetectors maxResults range 5-10 -> 10
+            // datazone: ListDomains maxResults range 1-25 -> 25
+            let page_size=match (call_service,operation.as_str()) {
+                ("evs","ListEnvironments")=>100,
+                ("deadline","ListFarms")=>100,
+                ("entityresolution","ListIdMappingWorkflows"|"ListMatchingWorkflows")=>25,
+                ("fis","ListExperimentTemplates"|"ListExperiments")=>100,
+                ("frauddetector","GetDetectors")=>10,
+                ("datazone","ListDomains")=>25,
+                _=>return Err(format!("unknown page size for {call_service}.{operation}").into()),
+            };
+            expected.insert("maxResults",json!(page_size));
             if second {
                 let token=if matches!(call_service,"fms"|"secrets-manager") {"NextToken"} else {"nextToken"};
                 expected.insert(token.to_owned(),json!("same-next-token"));
