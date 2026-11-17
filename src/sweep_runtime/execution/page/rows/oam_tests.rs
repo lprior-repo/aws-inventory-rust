@@ -188,7 +188,6 @@ async fn given_reviewed_oam_owner_when_source_partition_or_concrete_target_gramm
         let sink = SINK.replace("us-east-1", home);
         let mut page = oam_page_in_scope(&store, &catalog, "ListLinks", "123456789012", 1, (home, &link, &sink)).await?;
         if attack.starts_with("aws-") {
-            // The emitter drops a claim the validator cannot admit; a public caller can still forge one, so build it from a reviewed claim.
             assert!(page.unresolved.is_empty(), "{attack}");
             let plan = catalog.lookup("oam", "ListLinks").ok_or("OAM plan absent")?;
             let east = RegionId::parse("us-east-1")?;
@@ -277,7 +276,6 @@ async fn given_legacy_store_without_catalog_when_plain_open_commits_unrelated_ob
             }
             let lease = page.lease.clone();
             assert!(matches!(reopened.commit_page(page).await, Err(inventory_engine::inventory::StoreError::Invalid("relationship evidence is not permitted by the checked catalog"))), "schema {version}, direct {direct}");
-            // A rejected page leaves its sweep active; settle it as failed so the next attack can seed its own sweep.
             reopened.finish_scope(lease, inventory_core::inventory::ScopeOutcome::Failed, 10).await?;
             assert_eq!(reopened.projection_resources(None, 100).await?.len(), 2);
             assert!(reopened.projection_edges(None, 100).await?.edges.is_empty());

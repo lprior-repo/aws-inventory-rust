@@ -37,7 +37,6 @@ pub(super) fn compiled_competing() -> TestResult<Vec<u8>> {
     compile(false, true, false)
 }
 
-/// GetPortal fans out into two reviewed branches that own the same canonical resource.
 pub(super) fn compiled_branched() -> TestResult<Vec<u8>> {
     compile(false, false, true)
 }

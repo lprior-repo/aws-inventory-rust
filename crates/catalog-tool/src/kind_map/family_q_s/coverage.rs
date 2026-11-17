@@ -4,7 +4,6 @@ pub(super) const SOURCE: MappingSource<'static> = MappingSource {
     cfn: CFN, api_only: API, operations: OPERATIONS, relations: RELATIONS, parent_relations: PARENTS, ..super::super::EMPTY
 };
 
-// A data source is listed under exactly one index: the authoritative parent frame owns the qualified index identity.
 const PARENTS: &[ParentRelationMapping<'static>] = &[
     ParentRelationMapping { source_kind: "AWS::QBusiness::DataSource", target_kinds: &["AWS::QBusiness::Index"], relation: "FOR_INDEX", scope: "account_region" },
 ];

@@ -1,7 +1,6 @@
 use super::SweepError;
 use inventory_core::{catalog::runtime::{ContextSource, IdentityTextOperand, IdentityTextPlan}, record::FieldId};
 
-/// Production always carries the catalog-load-compiled list-element validators.
 /// Pure recipe unit tests can deliberately omit models; that route is absent in release code.
 pub(in crate::sweep_runtime) enum IdentityTextValidation<'p, 'catalog> {
     Modeled(&'p IdentityTextPlan<'catalog>),
@@ -10,7 +9,6 @@ pub(in crate::sweep_runtime) enum IdentityTextValidation<'p, 'catalog> {
 }
 
 impl<'p, 'catalog> IdentityTextValidation<'p, 'catalog> {
-    /// Resolves the element validator of one selected string-list operand.
     pub(super) fn selected_operand(&self, path: &[FieldId]) -> Result<IdentityTextOperandValidation<'_, 'catalog>, SweepError> {
         match self {
             Self::Modeled(plan) => Ok(IdentityTextOperandValidation::Modeled(plan.operand(ContextSource::SelectedItem, path)?)),

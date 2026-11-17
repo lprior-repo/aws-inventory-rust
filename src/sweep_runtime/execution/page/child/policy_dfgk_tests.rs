@@ -48,7 +48,6 @@ pub(in crate::sweep_runtime) fn projected_references(
     Ok(page_rows::references(catalog, context.parent_plan, &region, &items, observations, request, scope.parent())?)
 }
 
-/// Production applies row assertions and ownership before projection; scenarios must reject hostile rows the same way.
 fn selected_items(plan: &CallablePlan<'_>, scope_branch: Option<&str>, request: &Record, response: &Record) -> TestResult<Vec<Record>> {
     let branch = routing::execution_branch(plan, scope_branch)?;
     let mut items = Vec::new();

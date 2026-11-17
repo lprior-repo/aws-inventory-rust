@@ -205,8 +205,6 @@ pub(crate) fn float(body: &mut BoundedBody, value: f64) -> Result<(), EncodeErro
         bytes: [0; 64],
         length: 0,
     };
-    // Plain notation spells `f64::MAX` with 309 digits, which JSON readers cannot round-trip;
-    // the shortest exponent form is exact and bounded (at most 24 bytes).
     let magnitude = value.abs();
     let written = if magnitude != 0.0 && !(1e-5..1e16).contains(&magnitude) {
         std::fmt::write(&mut buffer, format_args!("{value:e}"))

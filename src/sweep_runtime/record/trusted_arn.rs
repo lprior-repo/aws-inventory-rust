@@ -21,7 +21,6 @@ pub(in crate::sweep_runtime) fn validate_arn(value:&str,trusted:Option<&Identity
     Ok(())
 }
 
-/// Reviewed per-kind ARN grammars. A kind without a reviewed grammar keeps the shared `validate_arn` checks.
 pub(in crate::sweep_runtime) fn validate_kind_arn(kind:&Kind,value:&str) -> Result<(),SweepError> {
     match kind.as_str() {
         "AWS::Wisdom::AIPrompt" => {

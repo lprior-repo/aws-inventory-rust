@@ -1,17 +1,11 @@
-//! Smithy RPC v2 CBOR fixtures for services whose pinned model prefers that protocol.
-//!
-//! JSON remains the readable fixture language; only the wire bytes change. The wire encoder is
-//! independent of the production encoder so a dropped request member cannot vanish from both sides.
 
 use super::TestResult;
 use inventory_core::catalog::runtime::{CallablePlan, RuntimeProtocol};
 use minicbor::{Decoder, Encoder, data::Type};
 use serde_json::{Map, Number, Value as Json};
 
-/// Fixture members modeled as `timestamp`: CBOR carries them as tag 1 epoch seconds.
 const TIMESTAMP_MEMBERS: &[&str] = &["CreationTime"];
 
-/// The response bytes a native server would send for `body` under the plan's protocol.
 pub(in crate::sweep_runtime::record) fn response(plan: &CallablePlan<'_>, body: &Json) -> TestResult<Vec<u8>> {
     if plan.protocol() == RuntimeProtocol::RpcV2Cbor {
         let mut encoder = Encoder::new(Vec::new());
@@ -22,7 +16,6 @@ pub(in crate::sweep_runtime::record) fn response(plan: &CallablePlan<'_>, body: 
     }
 }
 
-/// Asserts the RPC v2 CBOR envelope and returns the decoded request members.
 pub(in crate::sweep_runtime::record) fn request(wire: &http::Request<bytes::Bytes>, service: &str, operation: &str) -> TestResult<Json> {
     assert_eq!(wire.method(), http::Method::POST);
     assert_eq!(wire.uri().path(), format!("/service/{service}/operation/{operation}"));

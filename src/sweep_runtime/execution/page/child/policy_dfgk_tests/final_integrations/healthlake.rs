@@ -46,7 +46,6 @@ fn response(
     }
 }
 
-/// Root work carries the source-format branch; version children carry it in their length-prefixed parent identity instead.
 fn source_format(lease: &WorkLease) -> TestResult<String> {
     if let Some(branch) = lease.scope().branch() { return Ok(branch.to_owned()); }
     let parent = lease.scope().parent().ok_or("source-format branch and parent both absent")?;

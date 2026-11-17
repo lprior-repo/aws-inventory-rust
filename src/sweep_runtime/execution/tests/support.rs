@@ -33,8 +33,6 @@ impl Fixture {
         Ok(self.store.claim(&self.sweep,self.now,self.lease_ms).await?.ok_or("work absent")?)
     }
 
-    /// A distinct unbranched scope per `ordinal`: the catalog plan declares no branches,
-    /// so same-service scopes differ by account instead.
     pub fn scope_for(&self, ordinal: u32) -> TestResult<ScopeKey> {
         let account = AccountId::parse(&format!("{:012}", 100_000_000_000_u64 + u64::from(ordinal)))?;
         Ok(ScopeKey::new(account, self.scope.region().clone(), self.scope.service().clone(), self.scope.operation().clone(), None)?)

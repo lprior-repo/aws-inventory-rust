@@ -37,12 +37,10 @@ fn given_missing_or_null_suppression_target_when_identity_is_built_then_no_empty
     let account = AccountId::parse("123456789012")?;
     let home = RegionId::parse("us-east-1")?;
     let request = input::root_bindings(plan, Some(&account), Some(&Region::Regional(home.clone())))?;
-    // The wire decoder cannot default a required structure, so a missing or null target never becomes a row.
     for body in [json!({"suppressions":[{"checkName":"CHECK_A"}]}), json!({"suppressions":[{"checkName":"CHECK_A","resourceIdentifier":null}]})] {
         let rejected = fixture::decode(plan, &serde_json::to_vec(&body)?).err().ok_or("missing required suppression target was decoded")?;
         assert!(rejected.to_string().contains("uncorrectable required member"), "{rejected}");
     }
-    // A present but empty target decodes, yet identity construction must not fabricate an empty or fallback identity.
     let response = fixture::decode(plan, &serde_json::to_vec(&json!({"suppressions":[{"checkName":"CHECK_A","resourceIdentifier":{}}]}))?)?;
     let rows = item_records(&response, plan.items())?;
     let row = rows.first().ok_or("suppression row absent")?;

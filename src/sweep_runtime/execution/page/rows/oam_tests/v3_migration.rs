@@ -55,7 +55,6 @@ async fn given_honest_v2_discovery_facet_when_same_catalog_targets_and_partial_s
     let link = page(&store, &catalog, "metadata", "wrong-operation-source", 12, true).await?;
     let observations = link.observations;
     store.finish_scope(link.lease, ScopeOutcome::Partial, 13).await?;
-    // The sink is owned by the executing account: a foreign-account sink ARN no longer builds under that scope.
     let own_sink = SINK.replace("210987654321", "123456789012");
     let mut wrong_operation = oam_page_in_scope(&store, &catalog, "ListSinks", "123456789012", 14, ("us-east-1", LINK, &own_sink)).await?;
     wrong_operation.observations = observations;

@@ -445,7 +445,6 @@ fn given_embedded_logging_destinations_when_compiled_then_firehose_is_canonical_
     assert!(matches!(map.lookup(kind).map(|entry| &entry.target),
         Some(KindTarget::Mapped { kind: target, .. }) if target == kind));
     // Then each logging consumer retains its selected ARN-to-canonical-ID edge.
-    // The global classic-WAF source takes the Firehose region from the destination ARN.
     for (source, path, scope) in [
         ("AWS::VpcLattice::AccessLogSubscription", "destinationArn", "account_region"),
         ("AWS::ApiOnly::WAFLoggingConfiguration", "LogDestinationConfigs", "arn_region"),

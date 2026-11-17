@@ -110,7 +110,6 @@ impl Permissions {
         Ok(())
     }
 
-    /// A parent reference names its one actual producer kind; sibling candidate kinds that share the id must not match.
     pub(super) fn is_parent_reference(&self, reference: &UnresolvedReference) -> bool {
         let Self::Reviewed(reviewed) = self else { return false; };
         reviewed.relations.get(&reference.from.kind).is_some_and(|rules| rules.iter().any(|rule| rule.source == RelationSource::Parent && matches_reference(rule, reference)))
@@ -148,7 +147,6 @@ impl Authority {
     }
 }
 
-/// Emitter-side admission: the relation-rule match the validator runs first, without a lease.
 pub fn admits_reference(rule: &RelationshipPlan, reference: &UnresolvedReference) -> bool {
     matches_reference(rule, reference)
 }
@@ -199,7 +197,6 @@ fn execution_arn_matches(from: &ResourceKey, region: &Region, value: &str) -> bo
     let Some(service) = parts.next() else { return false; };
     if service.is_empty() || !service.bytes().all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-') { return false; }
     let expected_region = match region { Region::Global => "", Region::Regional(region) => region.as_str() };
-    // Region-less ARN namespaces (e.g. notifications configurations) name no foreign region, so only a different concrete region is forged.
     let Some(arn_region) = parts.next() else { return false; };
     if !arn_region.is_empty() && arn_region != expected_region { return false; }
     let Some(account) = parts.next() else { return false; };

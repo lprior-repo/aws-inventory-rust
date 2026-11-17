@@ -120,7 +120,6 @@ pub(super) fn resource_id(
     identity(record, plan, context.as_ref(), None, None, &IdentityTextValidation::RecipeOnly)
 }
 
-/// Pure recipe tests deliberately omit the pinned models, so they carry no operand validators.
 #[cfg(test)]
 pub(super) fn resource_id_with_context(
     record: &Record,
@@ -132,7 +131,6 @@ pub(super) fn resource_id_with_context(
     resource_id_validated(record, plan, trusted, discovery, current_request, &IdentityTextValidation::RecipeOnly)
 }
 
-/// Derives an identity, checking every modeled text operand against its source constraints.
 pub(super) fn resource_id_validated(
     record: &Record,
     plan: &IdentityPlan,

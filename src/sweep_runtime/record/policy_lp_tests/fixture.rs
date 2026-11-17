@@ -80,7 +80,6 @@ pub(super) fn discovered_input(plan: &CallablePlan<'_>, parent: &Record) -> Test
         return Err("detail must bind discovered parent output".into());
     };
     let value = path_value(parent.root(), path)?.ok_or("discovered ARN absent")?.to_value()?;
-    // The detail request is dependent: root bindings correctly refuse it, so only the discovered parent field is bound.
     let base = Record::encode(&inventory_core::record::Value::Map(BTreeMap::new()))?;
     Ok(crate::sweep_runtime::input::merge_input(&base, &[
         crate::sweep_runtime::input::InputField { path: binding.path.clone(), value },

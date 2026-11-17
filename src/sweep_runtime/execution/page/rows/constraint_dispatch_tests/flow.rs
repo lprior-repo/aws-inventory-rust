@@ -3,7 +3,6 @@ use crate::sweep_runtime::{call, execution::{draining, now_ms, routing}, input, 
 use super::super::super::{assembly, consumer_index::ConsumerIndex, cursor, preparation, PageParts, PageRequest};
 use inventory_engine::inventory::WorkLease;
 
-/// The pinned model prefers RPC v2 CBOR, so fixtures must speak the plan's own wire protocol.
 fn protocol(plan: &CallablePlan<'_>) -> TestResult<aws_wire::request::Protocol> {
     use aws_wire::request::Protocol;
     use inventory_core::catalog::runtime::RuntimeProtocol;

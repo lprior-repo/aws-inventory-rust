@@ -60,7 +60,6 @@ pub(in crate::sweep_runtime) fn decode(plan: &CallablePlan<'_>, body: &[u8]) -> 
     decode_with(plan, body, DecodeLimits::default())
 }
 
-/// Decodes exactly as the live sweep does: absent members stay absent instead of receiving SDK defaults.
 pub(in crate::sweep_runtime) fn decode_as_sweep(plan: &CallablePlan<'_>, body: &[u8]) -> TestResult<Record> {
     decode_with(plan, body, DecodeLimits::default().preserve_field_presence())
 }
@@ -147,7 +146,6 @@ pub(super) async fn persist(bytes: &[u8], plan: &CallablePlan<'_>, observations:
     let region = if plan.scope() == PlanScope::Account { Region::Global } else { Region::Regional(RegionId::parse("us-east-1")?) };
     let scope = ScopeKey::new(AccountId::parse("123456789012")?, region,
         ServiceId::parse(plan.service_name())?, OperationId::parse(plan.operation_name())?, None)?;
-    // Root work carries its reviewed request bindings (e.g. fixed EngineType); the store validates them.
     let bindings = if input::requires_parent(plan) { Vec::new() } else {
         let account = AccountId::parse("123456789012")?;
         input::root_bindings(plan, Some(&account), Some(&scope.region().clone()))?.into_bytes()

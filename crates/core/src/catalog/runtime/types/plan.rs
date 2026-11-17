@@ -79,7 +79,6 @@ pub(crate) struct PlanParts<'a> {
     pub(crate) classification: Option<KindClassificationPlan>,
     pub(crate) emission: Emission,
     pub(crate) resources: ResourceEmissions,
-    /// Catalog-load-compiled identity validators, one per emission key, `primary` included.
     pub(crate) identity_text: Box<[(Box<str>, IdentityTextPlan<'a>)]>,
     pub(crate) row_policy: RowPolicyPlan,
     pub(crate) context_projection: ContextProjectionPlan,
@@ -167,10 +166,6 @@ impl<'a> CallablePlan<'a> {
         &self.parts.identity
     }
 
-    /// The validators compiled for one resource emission's identity operands.
-    ///
-    /// # Errors
-    /// Rejects an emission key the plan did not compile.
     pub fn identity_text(&self, emission_key: &str) -> Result<&IdentityTextPlan<'a>, RuntimeCatalogError> {
         self.parts.identity_text.iter().find(|(key, _)| key.as_ref() == emission_key)
             .map(|(_, plan)| plan).ok_or(RuntimeCatalogError::Capability)

@@ -60,7 +60,6 @@ impl Scenario {
         let response = fixture::decode(plan, body)?;
         let branch = routing::execution_branch(plan, lease.scope().branch())?;
         for row in item_records(&response, plan.items())? {
-            // Page assembly evaluates assertions before projection; a hostile row rejects the whole page.
             if !crate::sweep_runtime::row_policy::selected(plan, branch, &row, request, &response)? {
                 return Err("row policy filtered a row from a filter-free IoT/IAM plan".into());
             }

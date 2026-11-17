@@ -89,7 +89,6 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
         let response = decoder::decode_as_sweep(plan, &bytes)?;
         let restored = cursor::Cursor::decode(lease.token())?;
         let next = restored.next(plan.pagination(), &response, &http::HeaderMap::new(), 10)?;
-        // The production row gate precedes projection: a hostile row may not commit any page prefix.
         let branch = routing::execution_branch(plan, lease.scope().branch())?;
         for row in record::item_records(&response, plan.items())? {
             assert!(crate::sweep_runtime::row_policy::selected(plan, branch, &row, request, &response)?, "reviewed child rows are never filtered out");

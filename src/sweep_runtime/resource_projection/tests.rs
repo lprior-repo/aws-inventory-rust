@@ -106,12 +106,10 @@ fn given_global_source_when_arn_region_relation_projects_owner_then_region_is_re
         id: ResourceId::parse("Z1/ksk")? };
     let observation = Observation::new(key, raw("{}")?, &Exclusions::none(), None)?;
     let home = RegionId::parse("us-west-2")?;
-    // Given a global key-signing key naming a us-east-1 KMS key, the ARN, not the home region, decides.
     let kms = "arn:aws:kms:us-east-1:123456789012:key/11111111-2222-3333-4444-555555555555";
     let (account, region) = reference_owner(&relation, &observation, kms, &home)?;
     assert_eq!(account.as_str(), "123456789012");
     assert_eq!(region, Region::parse("us-east-1")?);
-    // Then values that name no region fail closed instead of inventing one.
     for invalid in ["11111111-2222-3333-4444-555555555555", "arn:aws:iam::123456789012:role/r", "arn:aws:kms"] {
         assert!(reference_owner(&relation, &observation, invalid, &home).is_err(), "{invalid}");
     }

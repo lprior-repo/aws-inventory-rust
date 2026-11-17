@@ -19,9 +19,7 @@ async fn given_services_networks_listeners_and_ip_or_lambda_groups_when_summary_
     scenario.seed_firehose(&catalog).await?;
     let (scenario, seen) = scenario.drain(&catalog, "vpc-lattice", |plan, request, wire, resumed| {
         match plan.operation_name() {
-            // Firehose resumes from the last stream name; its arm below checks that cursor.
             "ListDeliveryStreams" => {}
-            // ListTargets is a JSON POST, but the Smithy model binds nextToken to the query string.
             "ListTargets" => {
                 let token = wire.uri().query().unwrap_or_default().split('&').find_map(|pair| pair.strip_prefix("nextToken="));
                 assert_eq!(token, resumed.then_some("page-two"));

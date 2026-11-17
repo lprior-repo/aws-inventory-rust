@@ -1,4 +1,3 @@
-//! Test-only JSON <-> CBOR conversion so RPC v2 CBOR plans can be driven by JSON-shaped fixtures.
 use serde_json::{Map, Value as Json};
 use minicbor::{Decoder, Encoder, data::Type};
 

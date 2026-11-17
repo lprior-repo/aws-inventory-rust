@@ -60,7 +60,6 @@ fn given_global_source_when_arn_region_rule_names_regional_arn_then_only_same_ac
     let key = "arn:aws:kms:us-east-1:123456789012:key/11111111-2222-3333-4444-555555555555";
     let us_east = Region::parse("us-east-1")?;
     assert!(owner_matches(&rule, &source, &source.account, &us_east, key));
-    // A global target region, a foreign account, a mismatched ARN region and a bare id are all rejected.
     assert!(!owner_matches(&rule, &source, &source.account, &Region::Global, key));
     assert!(!owner_matches(&rule, &source, &AccountId::parse("210987654321")?, &us_east, key));
     assert!(!owner_matches(&rule, &source, &source.account, &Region::parse("us-west-2")?, key));

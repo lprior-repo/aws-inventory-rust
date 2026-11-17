@@ -35,7 +35,6 @@ impl Page {
         self
     }
 
-    /// RPC v2 CBOR plans: `/service/{shape}/operation/{operation}` with a CBOR map body.
     fn cbor(mut self, shape: &str) -> Self {
         self.uri = format!("/service/{shape}/operation/{}", self.operation);
         self.cbor = true;

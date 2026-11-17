@@ -137,7 +137,6 @@ fn given_global_accelerator_called_from_another_home_region_then_control_plane_i
     let catalog = catalog()?;
     let plan = plan(&catalog, "global-accelerator", "ListAccelerators")?;
     for home in ["us-east-1", "eu-west-1"] {
-        // Fixed control-plane routing is applied by the executor's request-region step, not by the raw modeled endpoint.
         let region = crate::sweep_runtime::execution::routing::request_region(plan, &Region::Global, &RegionId::parse(home)?, None)?;
         let endpoint = crate::sweep_runtime::execution::routing::resolve(plan, &region)?;
         assert_eq!(endpoint.url, "https://globalaccelerator.us-west-2.amazonaws.com");
@@ -169,7 +168,6 @@ async fn given_mixed_msk_cluster_types_when_persisted_then_both_canonical_cfn_ki
     let body = br#"{"clusterInfoList":[{"clusterArn":"arn:aws:kafka:us-east-1:123456789012:cluster/provisioned/1","clusterType":"PROVISIONED"},{"clusterArn":"arn:aws:kafka:us-east-1:123456789012:cluster/serverless/2","clusterType":"SERVERLESS"}]}"#;
     let saved = persist(catalog.raw_bytes(), plan, observations(plan, rows(plan, body)?)?).await?;
     assert_eq!(saved.iter().map(|(kind, _, _)| kind.as_str()).collect::<Vec<_>>(), ["AWS::MSK::Cluster", "AWS::MSK::ServerlessCluster"]);
-    // An unreviewed discriminator names itself; an absent one proves no capability. Both fail closed.
     let unknown = rows(plan, br#"{"clusterInfoList":[{"clusterArn":"arn:aws:kafka:us-east-1:123456789012:cluster/unknown/3","clusterType":"FUTURE"}]}"#)?
         .into_iter().next().ok_or("unknown cluster row absent")?;
     assert!(matches!(crate::sweep_runtime::resource_projection::classify(plan, &unknown),

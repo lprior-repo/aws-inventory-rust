@@ -1,4 +1,3 @@
-//! Converts between the JSON used to describe fixtures and the CBOR that RPC v2 plans put on the wire.
 use super::TestResult;
 use serde_json::Value as Json;
 
@@ -61,7 +60,6 @@ fn read(decoder: &mut minicbor::Decoder<'_>) -> TestResult<Json> {
     })
 }
 
-/// Walks a definite container by count and an indefinite one until its break byte.
 fn more(decoder: &mut minicbor::Decoder<'_>, remaining: &mut Option<u64>) -> TestResult<bool> {
     match remaining {
         Some(0) => Ok(false),

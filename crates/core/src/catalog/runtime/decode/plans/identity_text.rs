@@ -5,10 +5,6 @@ use crate::{
 };
 use super::super::super::types::{IdentityPatternCache, IdentityTextOperand, IdentityTextPlan};
 
-/// Compiles the modeled element constraints of every selected string-list identity operand.
-///
-/// Only list elements are compiled here: their member constraints are the sole source of the
-/// component grammar, whereas ARN operands are validated structurally by the trusted ARN grammar.
 pub(super) fn compile<'a>(
     service: Service<'a>, operation: Operation<'a>, items: &ItemPlan, identity: &IdentityPlan,
     cache: &mut IdentityPatternCache<'a>,
@@ -34,7 +30,6 @@ pub(super) fn compile<'a>(
             Target::Prelude("string") => None,
             _ => return Err(RuntimeCatalogError::Capability),
         };
-        // The list member's own constraints refine the element shape's; the list shape itself bounds only the count.
         IdentityTextOperand::compile(ContextSource::SelectedItem, path, shape, Some(list.element_constraints()?), cache)
     }).collect::<Result<Vec<_>, RuntimeCatalogError>>()?;
     Ok(IdentityTextPlan::new(compiled))

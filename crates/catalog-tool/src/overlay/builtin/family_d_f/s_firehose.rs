@@ -7,8 +7,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "firehose",
         vec![
-            // Lists your Firehose streams in alphabetical order of their names.
-            // Name-based pagination using the last returned name as the exclusive start cursor.
             queried(inventory(
                 "ListDeliveryStreams",
                 "DeliveryStreamNames",

@@ -76,7 +76,6 @@ async fn given_organization_transfers_without_a_smithy_page_size_trait_when_nati
         let (request, wire) = scenario.request(callable, &lease)?;
         let native: Json = serde_json::from_slice(wire.body())?;
         assert_eq!(native.get("Type"), Some(&json!("BILLING")));
-        // No page-size trait is invented; the reviewed overlay fixes the modeled maximum (Smithy range 1..=20) as a plain input.
         assert!(callable.pagination().page_size.is_none(), "no synthetic page-size trait may be invented");
         assert_eq!(native.get("MaxResults"), Some(&json!(20)));
         assert!(native.get("Id").is_none(), "inbound collection must remain unfiltered");

@@ -115,8 +115,6 @@ pub(super) fn reference_owner(relation: &RelationshipPlan, observation: &Observa
     }
 }
 
-/// Region of an ARN-valued reference whose target region the catalog does not fix.
-/// Only regional ARNs qualify; anything else is not reviewed evidence.
 fn arn_region(text: &str) -> Result<Region, SweepError> {
     let region = text.strip_prefix("arn:").and_then(|rest| rest.split(':').nth(2))
         .filter(|region| !region.is_empty())

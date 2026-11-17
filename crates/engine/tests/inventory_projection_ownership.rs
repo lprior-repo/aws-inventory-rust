@@ -32,7 +32,6 @@ async fn given_another_delivery_owner_when_any_handle_projects_then_it_fails_bus
 #[tokio::test]
 async fn given_superseded_and_replayed_acknowledgements_when_applied_then_only_removed_rows_are_counted() -> TestResult {
     let (directory, store, _) = fixture().await?;
-    // Given: an overflowed outbox yields a full-rebuild marker, and acknowledgements may be stale.
     store.seed_work(work("overflow", "us-east-1")?).await?;
     let lease = store.claim(&SweepId::new("overflow".into())?, 1, 50).await?.ok_or("missing overflow lease")?;
     let mut raw = SqliteConnection::connect_with(&SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite"))).await?;

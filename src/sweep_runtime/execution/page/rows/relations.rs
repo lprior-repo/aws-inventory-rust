@@ -78,7 +78,6 @@ impl Context<'_> {
         let target = if relation.target_kinds.len() > 1 { target.with_candidate_kinds(relation.target_kinds.to_vec())? } else { target };
         let reference = UnresolvedReference { from: self.observation.key().clone(), relation: relation.relation.clone(),
             source: inventory_core::inventory::EdgeSource::ReviewedRule, target };
-        // The validator rejects the whole page on one non-matching claim; emit only claims it admits.
         if !inventory_engine::inventory::admits_reference(relation, &reference) { return Ok(()); }
         if output.len() >= limit { return Err(SweepError::Operation("page exceeds the atomic reference bound")); }
         output.try_reserve(1)?;

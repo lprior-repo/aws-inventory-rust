@@ -70,7 +70,6 @@ pub(super) fn decode(plan: &CallablePlan<'_>, body: &[u8]) -> TestResult<Record>
         _ => return Err("unexpected QS fixture wire protocol".into()),
     };
     let headers = http::HeaderMap::new();
-    // Fixtures are written as JSON; CBOR plans receive the same value on the wire as CBOR.
     let cbor;
     let body = if matches!(protocol, Protocol::RpcV2Cbor) { cbor = crate::sweep_runtime::test_cbor::json_to_cbor(&serde_json::from_slice(body)?)?; cbor.as_slice() } else { body };
     Ok(aws_wire::response::decode(ResponseContext { service: plan.service(), operation: plan.operation(), protocol,

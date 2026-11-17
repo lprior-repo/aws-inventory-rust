@@ -76,7 +76,6 @@ async fn given_portal_and_project_bound_policies_when_native_resource_contradict
             // When an otherwise valid first row precedes a contradictory native resource row.
             let result = scenario.apply(&catalog, policies, lease, &request,
                 json!({"accessPolicySummaries":[summary(FIRST_POLICY, resource, owner),second]})).await;
-            // Smithy JSON decoding treats a null union variant as absent, leaving the same record as `Equal`.
             let accepted = matches!(variant, ReturnedResource::Equal | ReturnedResource::NullOpposite);
             if accepted { result?; } else { assert!(result.is_err(), "{branch} admitted {variant:?}"); }
             scenario = scenario.reopen().await?;

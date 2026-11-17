@@ -119,7 +119,6 @@ pub(super) fn assert_metadata(case: &Case, fields: &Fields, id: &str, record: &R
     Ok(())
 }
 
-/// Wire member name: GuardDuty and Kafka declare lower-camel `jsonName` traits on these members.
 pub(super) fn wire(case: &Case, member: &str) -> String {
     if !matches!(case.service, "guardduty" | "kafka") { return member.to_owned(); }
     let mut chars = member.chars();
