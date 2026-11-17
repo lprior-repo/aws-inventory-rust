@@ -81,7 +81,7 @@ pub(super) async fn call(
         body: response.body.as_ref(),
         headers: &response.headers,
         status: response.status,
-        limits: DecodeLimits::default(),
+        limits: DecodeLimits::default().preserve_field_presence(),
     })?)
 }
 
