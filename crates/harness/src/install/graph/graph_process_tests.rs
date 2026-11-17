@@ -43,6 +43,16 @@ fn quoted(path: &Path) -> Result<String, Box<dyn std::error::Error>> {
     Ok(format!("'{}'", path.to_str().ok_or("non-UTF8 fixture path")?.replace('\'', "'\\''")))
 }
 
+fn settle(program: &Path) -> TestResult {
+    for _ in 0..500 {
+        match Command::new(program).env("FIXTURE_PROBE", "1").status() {
+            Err(error) if error.raw_os_error() == Some(libc::ETXTBSY) => std::thread::sleep(Duration::from_millis(10)),
+            other => return other.map(|_| ()).map_err(Into::into),
+        }
+    }
+    Err("fixture program stayed busy".into())
+}
+
 fn fifo(path: &Path) -> TestResult {
     if !Command::new("mkfifo").arg(path).status()?.success() {
         return Err("FIFO creation failed".into());
@@ -64,11 +74,12 @@ impl ProcessFixture {
         let stdout = if retain_stdout { "" } else { "exec 1>/dev/null;" };
         // The handshake guarantees a live witness-owning descendant before the leader exits.
         let script = format!(
-            "#!/bin/sh\nif [ -e {descendant} ]; then {action}; fi\n({stdout} exec 3>{witness}; printf 'ready\\n' >&3; printf 'ready\\n' >{ready}; exec sleep 30) &\nprintf '%s\\n' \"$!\" >>{descendant}\nread -r ready <{ready}\n{action}\n",
+            "#!/bin/sh\n[ -z \"$FIXTURE_PROBE\" ] || exit 0\nif [ -e {descendant} ]; then {action}; fi\n({stdout} exec 3>{witness}; printf 'ready\\n' >&3; printf 'ready\\n' >{ready}; exec sleep 30) &\nprintf '%s\\n' \"$!\" >>{descendant}\nread -r ready <{ready}\n{action}\n",
             witness = quoted(&witness)?, ready = quoted(&ready)?, descendant = quoted(&descendant)?,
         );
         std::fs::write(&program, script)?;
         std::fs::set_permissions(&program, std::fs::Permissions::from_mode(0o755))?;
+        settle(&program)?;
         Ok(Self { directory, program, descendant, witness: witness_file })
     }
 
