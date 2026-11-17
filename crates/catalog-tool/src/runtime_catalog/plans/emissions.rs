@@ -5,11 +5,20 @@ use crate::{kind_map::KindMap, overlay::{OperationOverlay, Paginator, ResourceEm
 use inventory_core::{catalog::{Operation, Service}, record::Value};
 use std::collections::BTreeSet;
 
+#[derive(Clone, Copy)]
+pub(super) struct Callable<'a> {
+    pub service_name: &'a str,
+    pub operation_name: &'a str,
+    pub primary_kind: &'a str,
+    pub service: Service<'a>,
+    pub operation: Operation<'a>,
+}
+
 /// Additional resource metadata uses the same numeric field meanings as the primary.
 /// Both are normalized into one nonempty ResourceEmissions collection by the decoder.
-pub(super) fn compile(service_name: &str, operation_name: &str, primary_kind: &str,
-    service: Service<'_>, operation: Operation<'_>, overlay: &OperationOverlay,
+pub(super) fn compile(callable: Callable<'_>, overlay: &OperationOverlay,
     kinds: &KindMap, services: &ServiceIndex<'_>) -> Result<Value, RuntimeCatalogCompileError> {
+    let Callable { service_name, operation_name, primary_kind, service, operation } = callable;
     if overlay.additional_resources.len() >= MAX_RESOURCE_EMISSIONS {
         return Err(RuntimeCatalogCompileError::Capability);
     }

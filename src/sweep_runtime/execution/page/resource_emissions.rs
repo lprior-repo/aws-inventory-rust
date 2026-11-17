@@ -47,9 +47,11 @@ pub(super) fn chunk(context: &assembly::Context<'_, '_>, lease: &WorkLease,
     request: &PageRequest, ancestry: &DiscoveryContext,
 ) -> Result<PageParts, SweepError> {
     let items = selected(emission, raw)?;
-    let observations = items.iter().map(|row| rows::emission_observation(context.catalog,
-        record::IdentityContext { account: context.account, region: &request.region },
-        plan, emission, lease.scope().region(), row, &request.record, ancestry))
+    let observations = items.iter().map(|row| rows::emission_observation(rows::EmissionScope {
+        catalog: context.catalog,
+        identity_context: record::IdentityContext { account: context.account, region: &request.region },
+        plan, emission, region: lease.scope().region(), request: &request.record, ancestry,
+    }, row))
         .collect::<Result<Vec<_>, _>>()?;
     let references = rows::references(context.catalog, plan, &request.region, &items, &observations, &request.record, lease.scope().parent())?;
     let tags = rows::emission_tags(emission, &items, &observations)?;

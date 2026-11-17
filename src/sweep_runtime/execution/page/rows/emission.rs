@@ -1,11 +1,19 @@
 use super::{ResourceKey, Observation, Record, Region, DiscoveryContext, RuntimeCatalog, CallablePlan, SweepError, record, resource_name};
 use inventory_core::{catalog::runtime::ResourceEmissionPlan, inventory::TagObservation};
 
-pub(in crate::sweep_runtime) fn emission_observation(catalog: &RuntimeCatalog<'_>,
-    identity_context: record::IdentityContext<'_>, plan: &CallablePlan<'_>,
-    emission: &ResourceEmissionPlan, region: &Region, row: &Record,
-    request: &Record, ancestry: &DiscoveryContext,
+pub(in crate::sweep_runtime) struct EmissionScope<'a> {
+    pub catalog: &'a RuntimeCatalog<'a>,
+    pub identity_context: record::IdentityContext<'a>,
+    pub plan: &'a CallablePlan<'a>,
+    pub emission: &'a ResourceEmissionPlan,
+    pub region: &'a Region,
+    pub request: &'a Record,
+    pub ancestry: &'a DiscoveryContext,
+}
+
+pub(in crate::sweep_runtime) fn emission_observation(scope: EmissionScope<'_>, row: &Record,
 ) -> Result<Observation, SweepError> {
+    let EmissionScope { catalog, identity_context, plan, emission, region, request, ancestry } = scope;
     let account = identity_context.account.clone();
     let validation = record::IdentityTextValidation::Modeled(plan.identity_text(emission.key())?);
     let id = record::resource_id_validated(row, emission.identity(), Some(identity_context), ancestry, request, &validation)?;

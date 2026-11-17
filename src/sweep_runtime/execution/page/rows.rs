@@ -16,7 +16,7 @@ const MAX_PAGE_REFERENCES: usize = 10_000;
 mod emission;
 mod relations;
 
-pub(in crate::sweep_runtime) use emission::{emission_observation, emission_tags};
+pub(in crate::sweep_runtime) use emission::{emission_observation, emission_tags, EmissionScope};
 
 #[cfg(test)]
 use inventory_core::{catalog::runtime::RelationSource, inventory::{ReferenceTarget, ResourceId}};
