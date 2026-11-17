@@ -9,6 +9,8 @@ use inventory_engine::inventory::{BinaryStore, PageCommit, SchemaRegistry, Sweep
 use serde_json::json;
 use std::{collections::{BTreeMap, BTreeSet}, sync::LazyLock};
 
+#[path = "constraint_dispatch_tests/cbor.rs"]
+mod cbor;
 #[path = "constraint_dispatch_tests/flow.rs"]
 mod flow;
 

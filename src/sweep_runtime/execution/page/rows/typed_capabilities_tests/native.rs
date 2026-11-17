@@ -41,15 +41,15 @@ fn evs(page: NativePage<'_, '_>, invalid: Option<&serde_json::Value>, seen: &mut
     assert_eq!(page.plan.operation_name(), "ListEnvironmentVlans");
     let id = page.text("environmentId")?.ok_or("environment selector missing")?;
     child(&page, "AWS::EVS::Environment", &environment(&id))?;
-    assert!(page.wire.uri().path().contains(&id));
+    assert_eq!(page.body_text("environmentId")?.as_deref(), Some(id.as_str()));
     let token = page.text("nextToken")?;
+    assert_eq!(page.body_text("nextToken")?, token);
     assert!(seen.insert((id.clone(), token.clone())), "a parent cursor replayed");
     if let Some(row) = invalid { return Ok(serde_json::json!({"environmentVlans":[row]})); }
     match token {
         None => Ok(serde_json::json!({"environmentVlans":[{"vlanId":i32::MIN}],"nextToken":format!("for-{id}")})),
         Some(token) => {
             assert_eq!(token, format!("for-{id}"));
-            assert!(page.wire.uri().query().is_some_and(|query| query.contains(&token)));
             Ok(if id == ENV_ONE { serde_json::json!({"environmentVlans":[{"vlanId":i32::MAX}]}) }
                 else { serde_json::json!({"environmentVlans":[]}) })
         },
@@ -116,8 +116,8 @@ async fn given_qconnect_long_versions_when_decoded_then_exact_max_and_prompt_iso
 fn namespaces(page: NativePage<'_, '_>, replacement: Option<&serde_json::Value>, seen: &mut BTreeSet<(String, Option<String>)>) -> TestResult<serde_json::Value> {
     if page.plan.operation_name() == "ListTableBuckets" {
         return Ok(serde_json::json!({"tableBuckets":[
-            {"arn":bucket("table-one"),"name":"table-one","ownerAccountId":"123456789012","createdAt":0},
-            {"arn":bucket("table-two"),"name":"table-two","ownerAccountId":"123456789012","createdAt":0}]}));
+            {"arn":bucket("table-one"),"name":"table-one","ownerAccountId":"123456789012","createdAt":"1970-01-01T00:00:00Z"},
+            {"arn":bucket("table-two"),"name":"table-two","ownerAccountId":"123456789012","createdAt":"1970-01-01T00:00:00Z"}]}));
     }
     assert_eq!(page.plan.operation_name(),"ListNamespaces");
     let arn = page.text("tableBucketARN")?.ok_or("bucket selector missing")?;

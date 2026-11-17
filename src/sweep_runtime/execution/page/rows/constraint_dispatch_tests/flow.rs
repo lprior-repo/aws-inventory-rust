@@ -1,13 +1,28 @@
-use super::*;
+use super::{*, cbor};
 use crate::sweep_runtime::{call, execution::{draining, now_ms, routing}, input, request};
 use super::super::super::{assembly, consumer_index::ConsumerIndex, cursor, preparation, PageParts, PageRequest};
 use inventory_engine::inventory::WorkLease;
 
+/// The pinned model prefers RPC v2 CBOR, so fixtures must speak the plan's own wire protocol.
+fn protocol(plan: &CallablePlan<'_>) -> TestResult<aws_wire::request::Protocol> {
+    use aws_wire::request::Protocol;
+    use inventory_core::catalog::runtime::RuntimeProtocol;
+    match plan.protocol() {
+        RuntimeProtocol::RpcV2Cbor => Ok(Protocol::RpcV2Cbor),
+        RuntimeProtocol::AwsJson11 => Ok(Protocol::AwsJson11),
+        _ => Err("unexpected service-catalog fixture protocol".into()),
+    }
+}
+
 pub(super) fn decode(plan: &CallablePlan<'_>, body: serde_json::Value) -> TestResult<call::DecodedResponse> {
-    let bytes = serde_json::to_vec(&body)?;
+    let protocol = protocol(plan)?;
+    let bytes = match protocol {
+        aws_wire::request::Protocol::RpcV2Cbor => cbor::from_json(&body)?,
+        _ => serde_json::to_vec(&body)?,
+    };
     Ok(call::DecodedResponse {
         record: aws_wire::response::decode(aws_wire::response::ResponseContext {
-            service: plan.service(), operation: plan.operation(), protocol: aws_wire::request::Protocol::AwsJson11,
+            service: plan.service(), operation: plan.operation(), protocol,
             body: &bytes, headers: &http::HeaderMap::new(), status: http::StatusCode::OK,
             limits: aws_wire::response::DecodeLimits::default(),
         })?,
@@ -25,7 +40,11 @@ fn wire_request(plan: &CallablePlan<'_>, lease: &WorkLease) -> TestResult<(PageR
         fields.push(input::InputField { path: size.path.clone(), value: size.value() });
     }
     let native = request::encode(plan, &endpoint.url, &base, &fields)?;
-    let wire: serde_json::Value = serde_json::from_slice(native.body())?;
+    let wire = match protocol(plan)? {
+        aws_wire::request::Protocol::RpcV2Cbor if native.body().is_empty() => serde_json::json!({}),
+        aws_wire::request::Protocol::RpcV2Cbor => cbor::to_json(native.body())?,
+        _ => serde_json::from_slice(native.body())?,
+    };
     Ok((PageRequest { record: input::merge_input(&base, &fields)?, region }, wire))
 }
 

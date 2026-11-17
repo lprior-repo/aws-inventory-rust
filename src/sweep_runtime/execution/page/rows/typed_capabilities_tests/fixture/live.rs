@@ -29,6 +29,14 @@ impl NativePage<'_, '_> {
     }
 }
 
+impl NativePage<'_, '_> {
+    /// Reads a text member the awsJson protocols carry in the wire body instead of the URI.
+    pub fn body_text(&self, name: &str) -> TestResult<Option<String>> {
+        let body: serde_json::Value = serde_json::from_slice(self.wire.body())?;
+        Ok(body.get(name).and_then(serde_json::Value::as_str).map(str::to_owned))
+    }
+}
+
 impl Scenario {
     pub async fn new(service: &str, operation: &str) -> TestResult<Self> {
         Self::new_region(service, operation, "us-east-1").await

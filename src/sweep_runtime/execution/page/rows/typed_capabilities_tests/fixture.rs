@@ -38,6 +38,7 @@ pub(super) fn decode(plan: &CallablePlan<'_>, body: &[u8]) -> TestResult<Record>
     use aws_wire::{request::Protocol, response::{DecodeLimits, ResponseContext}};
     let protocol = match plan.protocol() {
         inventory_core::catalog::runtime::RuntimeProtocol::RestJson1 => Protocol::RestJson1,
+        inventory_core::catalog::runtime::RuntimeProtocol::AwsJson10 => Protocol::AwsJson10,
         inventory_core::catalog::runtime::RuntimeProtocol::AwsJson11 => Protocol::AwsJson11,
         _ => return Err("unexpected typed operand fixture protocol".into()),
     };
