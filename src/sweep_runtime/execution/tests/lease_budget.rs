@@ -55,8 +55,7 @@ async fn given_sixty_four_same_service_leases_when_eight_permits_are_saturated_t
     let lease_ms = lease_budget(settings)?;
     let executor = ApiExecutor::with_seed(settings,42)?;
     for ordinal in 0..64 {
-        let scope = fixture.scope.clone().with_branch(format!("TEST_{ordinal}"))?;
-        fixture.store.seed_work(WorkSpec::new(fixture.sweep.clone(),scope,None,Vec::new())?).await?;
+        fixture.store.seed_work(WorkSpec::new(fixture.sweep.clone(),fixture.scope_for(ordinal)?,None,Vec::new())?).await?;
     }
     let mut leases = Vec::new();
     for _ in 0..64 {

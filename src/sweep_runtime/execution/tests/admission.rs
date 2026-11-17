@@ -4,9 +4,8 @@ use inventory_core::inventory::ScopeOutcome;
 use std::sync::atomic::{AtomicUsize,Ordering};
 
 async fn seed_pair(fixture: &Fixture) -> TestResult {
-    for branch in ["FIRST","SECOND"] {
-        fixture.store.seed_work(WorkSpec::new(fixture.sweep.clone(),
-            fixture.scope.clone().with_branch(branch.to_owned())?,None,Vec::new())?).await?;
+    for ordinal in 0..2 {
+        fixture.store.seed_work(WorkSpec::new(fixture.sweep.clone(),fixture.scope_for(ordinal)?,None,Vec::new())?).await?;
     }
     Ok(())
 }

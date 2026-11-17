@@ -106,7 +106,6 @@ fn given_compiled_singleton_structure_when_selected_then_one_relative_identity_i
 fn given_enum_member_identity_when_compiled_then_each_plan_extracts_exact_resource_text() -> TestResult {
     [
         (fixture::key("Name")?, "active-wire"),
-        (fixture::arn("Name")?, "active-wire"),
         (Identity::Template("name/{Name}".to_owned()), "name/active-wire"),
     ].into_iter().try_for_each(|(identity, expected)| -> TestResult {
         let bytes = compiled(identity, "active-wire", false)?;
@@ -118,10 +117,21 @@ fn given_enum_member_identity_when_compiled_then_each_plan_extracts_exact_resour
 }
 
 #[test]
+fn given_enum_text_that_is_not_an_arn_when_arn_identity_is_extracted_then_it_fails_closed() -> TestResult {
+    [("Name", "active-wire", false), ("$", "second-wire", true)].into_iter().try_for_each(|(member, wire, scalar)| -> TestResult {
+        let bytes = compiled(fixture::arn(member)?, wire, scalar)?;
+        let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+        let plan = catalog.lookup("things", "ListThings").ok_or("plan absent")?;
+        let record = if scalar { scalar_record(ValueRef::Text(wire))? } else { row()? };
+        assert!(matches!(resource_id(&record, plan.identity(), None), Err(SweepError::Operation("modeled ARN is malformed"))));
+        Ok(())
+    })
+}
+
+#[test]
 fn given_enum_scalar_identity_when_compiled_then_self_extraction_preserves_exact_text() -> TestResult {
     [
         (fixture::key("$")?, "second-wire"),
-        (fixture::arn("$")?, "second-wire"),
         (Identity::Template("prefix/{$}".to_owned()), "prefix/second-wire"),
     ].into_iter().try_for_each(|(identity, expected)| -> TestResult {
         let bytes = compiled(identity, "second-wire", true)?;
@@ -148,12 +158,12 @@ fn compiled_composite_identity_accepts_exact_bound_and_rejects_oversize_componen
             (Key::Field(FieldId::new(7)?), Value::Text(second.to_owned())),
         ])))?)
     };
-    let first = "a".repeat(2044);
-    let second = "b".repeat(2045);
+    let first = "a".repeat(2042);
+    let second = "b".repeat(2043);
     let accepted = resource_id(&encode(&first, &second)?, plan.identity(), None)?;
-    assert_eq!(accepted.as_str(), format!("2044:{first}|2045:{second}"));
+    assert_eq!(accepted.as_str(), format!("2042:{first}|2043:{second}"));
     assert_eq!(accepted.as_str().len(), 4096);
-    [(2045, 2045), (1_048_576, 1), (1, 1_048_576)]
+    [(2043, 2043), (1_048_576, 1), (1, 1_048_576)]
         .into_iter()
         .try_for_each(|(first, second)| -> TestResult {
             let result = resource_id(
