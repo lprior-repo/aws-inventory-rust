@@ -1,4 +1,4 @@
-totals	services_with_overlay=436	callable_enumerate=1529	callable_expand=612	denied_by_overlay=7350	deferred=9515	services_without_overlay=0	unreviewed_enumerate=0	unreviewed_expand=0	unreviewed_unclassified=0
+totals	services_with_overlay=436	callable_enumerate=1530	callable_expand=612	denied_by_overlay=7350	deferred=9514	services_without_overlay=0	unreviewed_enumerate=0	unreviewed_expand=0	unreviewed_unclassified=0
 operation	accessanalyzer	ApplyArchiveRule	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	accessanalyzer	CancelPolicyGeneration	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	accessanalyzer	CheckAccessNotGranted	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
@@ -7997,7 +7997,7 @@ operation	evs	UpdateEnvironmentConnector	deferred	class=overlay,items=missing,pa
 operation	firehose	CreateDeliveryStream	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	firehose	DeleteDeliveryStream	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	firehose	DescribeDeliveryStream	denied	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
-operation	firehose	ListDeliveryStreams	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	firehose	ListDeliveryStreams	enumerate	class=overlay,items=overlay,page_size=missing,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	firehose	ListTagsForDeliveryStream	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	firehose	PutRecord	denied	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	firehose	PutRecordBatch	denied	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
