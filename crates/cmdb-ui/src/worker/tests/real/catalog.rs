@@ -1,7 +1,7 @@
 use super::fixtures::TestResult;
 use inventory_core::{
     catalog::{CATALOG_VERSION, CatalogKey, runtime::compiled_inputs_sha256},
-    record::{FieldId, Key, Record, Value},
+    record::{FieldId, Key, ListRef, Record, Value, encode_list},
 };
 use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
@@ -56,10 +56,11 @@ pub(super) fn catalog() -> TestResult<Vec<u8>> {
         (3, Value::List(vec![schema])), (4, Value::List(vec![])),
         (5, Value::List(vec![coverage])), (6, Value::List(vec![decision])),
     ])?;
+    let (shapes, shape_offsets) = shapes()?;
     let operation = fields([
         (CatalogKey::Name, Value::Text("ListThings".into())),
-        (CatalogKey::Flags, Value::Int(31)), (CatalogKey::Input, Value::Int(-1)),
-        (CatalogKey::Output, Value::Int(-14)),
+        (CatalogKey::Flags, Value::Int(31)), (CatalogKey::Input, Value::Int(0)),
+        (CatalogKey::Output, Value::Int(1)),
     ])?;
     let service = fields([
         (CatalogKey::Name, Value::Text("example".into())),
@@ -67,8 +68,8 @@ pub(super) fn catalog() -> TestResult<Vec<u8>> {
         (CatalogKey::ServiceShape, Value::Text("n#example".into())),
         (CatalogKey::Protocols, Value::List(vec![Value::Text("aws.protocols#restJson1".into())])),
         (CatalogKey::Operations, Value::List(vec![operation])),
-        (CatalogKey::Shapes, Value::List(vec![])),
-        (CatalogKey::ShapeOffsets, Value::Bytes(vec![])),
+        (CatalogKey::Shapes, Value::List(shapes)),
+        (CatalogKey::ShapeOffsets, Value::Bytes(shape_offsets)),
         (CatalogKey::Resources, Value::List(vec![])),
     ])?;
     let offsets = (0_u32..8).flat_map(|index| [index * 2, (index + 1) * 2])
@@ -100,4 +101,22 @@ fn seal(mut catalog: BTreeMap<Key, Value>, mut runtime: Value) -> TestResult<Vec
     ])?);
     catalog.insert(Key::Field(FieldId::new(60_000)?), runtime);
     Ok(Record::encode(&Value::Map(catalog))?.into_bytes())
+}
+
+fn shapes() -> TestResult<(Vec<Value>, Vec<u8>)> {
+    let member = |id| fields([
+        (CatalogKey::MemberId, Value::Int(id)),
+        (CatalogKey::MemberTarget, Value::Int(-3)),
+        (CatalogKey::MemberRequired, Value::Bool(false)),
+    ]);
+    let shape = |name: &str, members| fields([
+        (CatalogKey::Name, Value::Text(name.into())),
+        (CatalogKey::Kind, Value::Int(14)),
+        (CatalogKey::Members, Value::List(members)),
+    ]);
+    let shapes = vec![shape("Input", vec![member(2)?, member(3)?])?, shape("Thing", vec![member(1)?])?];
+    let bytes = encode_list(&shapes)?;
+    let offsets = ListRef::from_bytes(&bytes)?.encoded_item_offsets()?
+        .iter().flat_map(|offset| offset.to_be_bytes()).collect();
+    Ok((shapes, offsets))
 }
