@@ -187,6 +187,21 @@ async fn given_reviewed_oam_owner_when_source_partition_or_concrete_target_gramm
         let link = if attack.starts_with("aws-") { link.replacen("arn:aws:", &format!("arn:{attack}:"), 1) } else { link };
         let sink = SINK.replace("us-east-1", home);
         let mut page = oam_page_in_scope(&store, &catalog, "ListLinks", "123456789012", 1, (home, &link, &sink)).await?;
+        if attack.starts_with("aws-") {
+            // The emitter drops a claim the validator cannot admit; a public caller can still forge one, so build it from a reviewed claim.
+            assert!(page.unresolved.is_empty(), "{attack}");
+            let plan = catalog.lookup("oam", "ListLinks").ok_or("OAM plan absent")?;
+            let east = RegionId::parse("us-east-1")?;
+            let account = AccountId::parse("123456789012")?;
+            let request = Record::encode(&Value::Map(BTreeMap::new()))?;
+            let rows = oam_fixture::rows(plan, json!({"Items":[{"Arn":LINK,"SinkArn":SINK}]}))?;
+            let observations = rows.iter().map(|row| observation(&catalog, record::IdentityContext { account: &account, region: &east }, plan, &Region::Regional(east.clone()), row, &request, &DiscoveryContext::default())).collect::<Result<Vec<_>, _>>()?;
+            let mut reviewed = references(&catalog, plan, &east, &rows, &observations, &request, None)?;
+            let mut forged = reviewed.pop().ok_or("reviewed OAM reference absent")?;
+            forged.from = page.observations.first().ok_or("forged source observation absent")?.key().clone();
+            forged.target = ReferenceTarget::typed(forged.target.account().clone(), Region::Regional(RegionId::parse(home)?), forged.target.kind().clone(), forged.target.path().to_vec(), ResourceId::parse(&sink)?, forged.target.mode())?;
+            page.unresolved.push(forged);
+        }
         if attack.starts_with("wildcard-") {
             let suffix = if attack == "wildcard-many" { "*" } else { "targe?" };
             let forged = format!("arn:aws:oam:{home}:210987654321:sink/{suffix}");

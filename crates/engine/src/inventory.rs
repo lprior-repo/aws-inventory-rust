@@ -19,6 +19,7 @@ use inventory_core::inventory::{
     Edge, KindSchema, Observation, ScopeKey, ScopeOutcome, UnresolvedReference,
 };
 pub use inventory_core::inventory::{Tag, TagCoverage, TagObservation};
+pub use relation_permissions::admits_reference;
 pub use projection::{ProjectionError, ProjectionReport, run_projection};
 use sha2::{Digest, Sha256};
 use sqlx::{Row, SqlitePool};

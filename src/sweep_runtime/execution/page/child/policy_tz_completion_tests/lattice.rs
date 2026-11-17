@@ -12,13 +12,22 @@ async fn given_services_networks_listeners_and_ip_or_lambda_groups_when_summary_
     assert_eq!(wire.uri().host(),Some("s3.us-east-1.amazonaws.com"));
     scenario.apply_wire(&catalog,buckets,lease,&request,
         b"<ListAllMyBucketsResult xmlns=\"http://s3.amazonaws.com/doc/2006-03-01/\"><Owner><ID>owned-account</ID><DisplayName>inventory</DisplayName></Owner><Buckets><Bucket><Name>inventory-access-logs</Name><CreationDate>2026-01-01T00:00:00Z</CreationDate></Bucket></Buckets></ListAllMyBucketsResult>").await?;
-    scenario = scenario.reopen().await?;
+    scenario = scenario.reopen(&catalog).await?;
     scenario.assert_ids_at("AWS::S3::Bucket","global",vec!["arn:aws:s3:::inventory-access-logs".to_owned()]).await?;
     scenario.seed(&catalog, "vpc-lattice", &["ListServices", "ListServiceNetworks", "ListTargetGroups"]).await?;
     scenario.seed(&catalog, "cloudwatch-logs", &["DescribeLogGroups"]).await?;
-    scenario.seed(&catalog, "firehose", &["ListDeliveryStreams"]).await?;
+    scenario.seed_firehose(&catalog).await?;
     let (scenario, seen) = scenario.drain(&catalog, "vpc-lattice", |plan, request, wire, resumed| {
-        if plan.service_name() != "firehose" { assert_token(wire, "nextToken", resumed)?; }
+        match plan.operation_name() {
+            // Firehose resumes from the last stream name; its arm below checks that cursor.
+            "ListDeliveryStreams" => {}
+            // ListTargets is a JSON POST, but the Smithy model binds nextToken to the query string.
+            "ListTargets" => {
+                let token = wire.uri().query().unwrap_or_default().split('&').find_map(|pair| pair.strip_prefix("nextToken="));
+                assert_eq!(token, resumed.then_some("page-two"));
+            }
+            _ => assert_token(wire, "nextToken", resumed)?,
+        }
         let p = if resumed { "2" } else { "1" };
         let row = match plan.operation_name() {
             "ListDeliveryStreams" => {

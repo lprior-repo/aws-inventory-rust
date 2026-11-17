@@ -62,8 +62,9 @@ async fn current_targets(
     store.registry.permissions.validate_reference(reference)?;
     let grants = super::relation_permissions::targets(&store.registry, tx, reference).await?;
     let mut resolution = Resolution { targets: Vec::new(), ambiguous: false };
+    let only = store.registry.permissions.is_parent_reference(reference).then(|| reference.target.kind());
     for expected in grants {
-        match match_target(store, tx, &reference.target, expected.as_ref()).await? {
+        match match_target(store, tx, &reference.target, only, expected.as_ref()).await? {
             TargetMatch::Unique(target) if !resolution.targets.contains(&target) => resolution.targets.push(target),
             TargetMatch::Ambiguous => resolution.ambiguous = true,
             TargetMatch::Unique(_) | TargetMatch::Absent => {}

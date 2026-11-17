@@ -1,6 +1,7 @@
 use crate::kind_map::OperationMapping;
 
 pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
+    OperationMapping { service: "firehose", operation: "ListDeliveryStreams", kind: "AWS::KinesisFirehose::DeliveryStream" },
     OperationMapping { service: "forecast", operation: "ListWhatIfForecasts", kind: "AWS::ApiOnly::ForecastWhatIfForecast" },
     OperationMapping { service: "frauddetector", operation: "GetDetectors", kind: "AWS::FraudDetector::Detector" },
     OperationMapping { service: "frauddetector", operation: "GetEntityTypes", kind: "AWS::FraudDetector::EntityType" },

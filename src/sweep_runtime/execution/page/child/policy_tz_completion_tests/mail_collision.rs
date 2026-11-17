@@ -12,7 +12,7 @@ async fn given_workmail_kinds_with_the_same_local_id_when_fromany_children_execu
         let native: Json = serde_json::from_slice(wire.body())?;
         let response = response(plan,&lease,&native,&mut actual_branches,false)?;
         scenario.apply(&catalog,plan,lease,&request,response).await?;
-        scenario = scenario.reopen().await?;
+        scenario = scenario.reopen(&catalog).await?;
     }
     actual_branches.sort();
     assert_eq!(actual_branches,["WorkMailAlias:group","WorkMailAlias:resource","WorkMailAlias:user","WorkMailEntityGroup:group","WorkMailEntityGroup:user","WorkMailMailboxPermission:resource","WorkMailMailboxPermission:user"]);
@@ -98,7 +98,7 @@ async fn given_identical_workmail_native_child_ids_when_one_actual_producer_reti
                 response(plan,&lease,&native,&mut branches,true)?
             };
             scenario.apply(&catalog,plan,lease,&request,body).await?;
-            scenario = scenario.reopen().await?;
+            scenario = scenario.reopen(&catalog).await?;
         }
         let retired = round == 2;
         let mut expected_branches = Vec::new();

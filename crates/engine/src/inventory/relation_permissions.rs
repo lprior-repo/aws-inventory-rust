@@ -110,6 +110,12 @@ impl Permissions {
         Ok(())
     }
 
+    /// A parent reference names its one actual producer kind; sibling candidate kinds that share the id must not match.
+    pub(super) fn is_parent_reference(&self, reference: &UnresolvedReference) -> bool {
+        let Self::Reviewed(reviewed) = self else { return false; };
+        reviewed.relations.get(&reference.from.kind).is_some_and(|rules| rules.iter().any(|rule| rule.source == RelationSource::Parent && matches_reference(rule, reference)))
+    }
+
     pub(super) fn validate_reference(&self, reference: &UnresolvedReference) -> Result<(), StoreError> {
         let Self::Reviewed(reviewed) = self else { return Err(unreviewed()); };
         if reviewed.relations.get(&reference.from.kind).is_some_and(|rules| rules.iter().any(|rule| matches_reference(rule, reference)))
@@ -140,6 +146,11 @@ impl Authority {
         }
         Err(unreviewed())
     }
+}
+
+/// Emitter-side admission: the relation-rule match the validator runs first, without a lease.
+pub fn admits_reference(rule: &RelationshipPlan, reference: &UnresolvedReference) -> bool {
+    matches_reference(rule, reference)
 }
 
 fn matches_reference(rule: &RelationshipPlan, reference: &UnresolvedReference) -> bool {

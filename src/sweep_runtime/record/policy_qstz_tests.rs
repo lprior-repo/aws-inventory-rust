@@ -60,20 +60,22 @@ fn decode(plan: &CallablePlan<'_>, body: &[u8]) -> TestResult<Record> {
     Ok(aws_wire::response::decode(context)?)
 }
 
-fn request(plan: &CallablePlan<'_>, fields: &[super::super::input::InputField]) -> TestResult<http::Request<bytes::Bytes>> {
+fn request_bindings(plan: &CallablePlan<'_>, fields: &[super::super::input::InputField]) -> TestResult<Record> {
     let account = AccountId::parse("123456789012")?;
     let region = inventory_core::inventory::Region::Regional(RegionId::parse("us-east-1")?);
     let base = if super::super::input::requires_parent(plan) { Record::encode(&Value::Map(BTreeMap::new()))? }
         else { super::super::input::root_bindings(plan, Some(&account), Some(&region))? };
-    let region = super::super::execution::routing::request_region(plan, &region, &RegionId::parse("us-east-1")?, None)?;
-    let endpoint = super::super::execution::routing::resolve(plan, &region)?;
-    Ok(super::super::request::encode(plan, &endpoint.url, &base, fields)?)
+    Ok(super::super::input::merge_input(&base, fields)?)
 }
 
-fn observations(plan: &CallablePlan<'_>, rows: Vec<Record>) -> TestResult<Vec<Observation>> {
-    let request = Record::encode(&Value::Map(BTreeMap::new()))?;
-    observations_with_request(plan, rows, &request)
+fn request(plan: &CallablePlan<'_>, fields: &[super::super::input::InputField]) -> TestResult<http::Request<bytes::Bytes>> {
+    let bindings = request_bindings(plan, fields)?;
+    let region = inventory_core::inventory::Region::Regional(RegionId::parse("us-east-1")?);
+    let region = super::super::execution::routing::request_region(plan, &region, &RegionId::parse("us-east-1")?, None)?;
+    let endpoint = super::super::execution::routing::resolve(plan, &region)?;
+    Ok(super::super::request::encode(plan, &endpoint.url, &bindings, &[])?)
 }
+
 
 fn observations_with_request(plan: &CallablePlan<'_>, rows: Vec<Record>, request: &Record) -> TestResult<Vec<Observation>> {
     let account = AccountId::parse("123456789012")?;
@@ -89,45 +91,7 @@ fn observations_with_request(plan: &CallablePlan<'_>, rows: Vec<Record>, request
     }).collect()
 }
 
-fn persist_bindings(plan: &CallablePlan<'_>) -> TestResult<Record> {
-    let account = AccountId::parse("123456789012")?;
-    let region = inventory_core::inventory::Region::Regional(RegionId::parse("us-east-1")?);
-    if !super::super::input::requires_parent(plan) {
-        return Ok(super::super::input::root_bindings(plan, Some(&account), Some(&region))?);
-    }
-    // Child plans that require a parent cannot be bootstrapped via root_bindings;
-    // produce a valid Record carrying only non-dependent (Account/Region/Fixed)
-    // bindings so Fixed validation succeeds and parent values are not invented.
-    use inventory_core::catalog::runtime::BindingSource;
-    let mut fields = Vec::new();
-    for binding in plan.bindings() {
-        let value = match &binding.source {
-            BindingSource::Account => Some(Value::Text(account.as_str().to_owned())),
-            BindingSource::Region => Some(Value::Text(region.as_str().to_owned())),
-            BindingSource::RegionList => Some(Value::List(vec![Value::Text(region.as_str().to_owned())])),
-            BindingSource::Fixed(v) => Some(crate::sweep_runtime::request::fixed_input::value(v)?),
-            BindingSource::Transformed { source, transform } => {
-                let base = match source.as_ref() {
-                    BindingSource::Fixed(v) => crate::sweep_runtime::request::fixed_input::value(v).ok(),
-                    BindingSource::Account => Some(Value::Text(account.as_str().to_owned())),
-                    BindingSource::Region => Some(Value::Text(region.as_str().to_owned())),
-                    _ => None,
-                };
-                base.and_then(|v| match v {
-                    Value::Text(_) => Some(crate::sweep_runtime::input::transform_value(v, transform).ok()?),
-                    _ => None,
-                })
-            }
-            _ => None,
-        };
-        if let Some(value) = value {
-            fields.push(super::super::input::InputField { path: binding.path.clone(), value });
-        }
-    }
-    Ok(super::super::input::merge_input(&Record::encode(&Value::Map(BTreeMap::new()))?, &fields)?)
-}
-
-async fn persist(plan: &CallablePlan<'_>, observations: Vec<Observation>) -> TestResult<(Vec<(String, String, Vec<u8>)>, Vec<(String, String)>)> {
+async fn persist(plan: &CallablePlan<'_>, pages: Vec<(&CallablePlan<'_>, Option<ResourceKey>, Record, Vec<Observation>)>) -> TestResult<(Vec<(String, String, Vec<u8>)>, Vec<(String, String)>)> {
     use inventory_core::inventory::{OperationId, Region, ScopeKey, ServiceId};
     use inventory_engine::inventory::{BinaryStore, PageCommit, SchemaRegistry, SweepId, WorkSpec};
     let root = tempfile::tempdir()?;
@@ -135,20 +99,22 @@ async fn persist(plan: &CallablePlan<'_>, observations: Vec<Observation>) -> Tes
     let runtime = RuntimeCatalog::from_bytes(bytes()?)?;
     let store = BinaryStore::create(&database, SchemaRegistry::new(bytes()?, runtime.schemas().to_vec())?).await?;
     let sweep = SweepId::new("qstz-policy-regression".to_owned())?;
-    let scope = ScopeKey::new(AccountId::parse("123456789012")?, Region::Regional(RegionId::parse("us-east-1")?),
-        ServiceId::parse(plan.service_name())?, OperationId::parse(plan.operation_name())?, None)?;
-    let bindings = persist_bindings(plan)?;
-    store.seed_work(WorkSpec::new(sweep.clone(), scope, None, bindings.into_bytes())?).await?;
-    let tags = if let Some(tags) = plan.tags() {
-        observations.iter().map(|observation| tag_observation(observation.record(), observation.key(), tags))
-            .collect::<Result<Vec<_>, _>>()?
-    } else { Vec::new() };
-    let lease = store.claim(&sweep, 1000, 10000).await?.ok_or("seeded work absent")?;
-    store.commit_page(PageCommit { lease, observations, edges: Vec::new(), unresolved: Vec::new(), tags,
-        next_token: None, continuation_digest: None, children: Vec::new(), done: true, observed_at_ms: 1001 }).await?;
+    for (producer, parent, bindings, observations) in pages {
+        let scope = ScopeKey::new(AccountId::parse("123456789012")?, Region::Regional(RegionId::parse("us-east-1")?),
+            ServiceId::parse(producer.service_name())?, OperationId::parse(producer.operation_name())?, parent)?;
+        store.seed_work(WorkSpec::new(sweep.clone(), scope, None, bindings.into_bytes())?).await?;
+        let tags = if let Some(tags) = producer.tags() {
+            observations.iter().map(|observation| tag_observation(observation.record(), observation.key(), tags))
+                .collect::<Result<Vec<_>, _>>()?
+        } else { Vec::new() };
+        let lease = store.claim(&sweep, 1000, 10000).await?.ok_or("seeded work absent")?;
+        store.commit_page(PageCommit { lease, observations, edges: Vec::new(), unresolved: Vec::new(), tags,
+            next_token: None, continuation_digest: None, children: Vec::new(), done: true, observed_at_ms: 1001 }).await?;
+    }
     let reader = sqlx::sqlite::SqlitePoolOptions::new().max_connections(1)
         .connect_with(sqlx::sqlite::SqliteConnectOptions::new().filename(&database).read_only(true)).await?;
-    let resources = sqlx::query_as("SELECT kind,id,record FROM resource_facets ORDER BY id").fetch_all(&reader).await?;
+    let resources = sqlx::query_as("SELECT kind,id,record FROM resource_facets WHERE kind=?1 ORDER BY id")
+        .bind(plan.kind().as_str()).fetch_all(&reader).await?;
     let tags = sqlx::query_as("SELECT tag_key,tag_value FROM tags ORDER BY tag_key").fetch_all(&reader).await?;
     reader.close().await;
     Ok((resources, tags))
@@ -170,7 +136,9 @@ async fn given_all_source_access_points_on_two_pages_when_wire_decoded_then_ever
     let second = decode(plan, br#"<ListAccessPointsResult><AccessPointList><AccessPoint><Name>filesystem</Name><NetworkOrigin>VPC</NetworkOrigin><Bucket>filesystem</Bucket><AccessPointArn>arn:aws:s3:us-east-1:123456789012:accesspoint/filesystem</AccessPointArn><DataSourceType>FSX_OPENZFS</DataSourceType></AccessPoint></AccessPointList></ListAccessPointsResult>"#)?;
     let mut rows = item_records(&first, plan.items())?;
     rows.extend(item_records(&second, plan.items())?);
-    let (persisted, _) = persist(plan, observations(plan, rows)?).await?;
+    let bindings = request_bindings(plan, &[])?;
+    let observations = observations_with_request(plan, rows, &bindings)?;
+    let (persisted, _) = persist(plan, vec![(plan, None, bindings, observations)]).await?;
     assert_eq!(persisted.iter().map(|(kind,id,_)| (kind.as_str(),id.as_str())).collect::<Vec<_>>(), [
         ("AWS::S3::AccessPoint", "arn:aws:s3:us-east-1:123456789012:accesspoint/filesystem"),
         ("AWS::S3::AccessPoint", "arn:aws:s3:us-east-1:123456789012:accesspoint/ordinary"),
@@ -186,9 +154,11 @@ async fn given_agreements_on_two_servers_when_details_bind_then_exact_pairs_safe
     let page = decode(list, br#"{"Agreements":[{"Arn":"arn:aws:transfer:us-east-1:123456789012:agreement/s-one/a-one","AgreementId":"a-one","ServerId":"s-one"},{"Arn":"arn:aws:transfer:us-east-1:123456789012:agreement/s-two/a-two","AgreementId":"a-two","ServerId":"s-two"}],"NextToken":"next"}"#)?;
     assert!(path_value(page.root(), &list.pagination().tokens.first().ok_or("list token absent")?.response_path)?.is_some());
     let mut pairs = Vec::new();
+    let mut first_bindings = None;
     for row in item_records(&page, list.items())? {
         let fields = child_fields(&catalog, list, detail, &row)?;
         let encoded = request(detail, &fields)?;
+        if first_bindings.is_none() { first_bindings = Some(request_bindings(detail, &fields)?); }
         let body: serde_json::Value = serde_json::from_slice(encoded.body())?;
         pairs.push((body.get("ServerId").and_then(serde_json::Value::as_str).ok_or("server absent")?.to_owned(),
             body.get("AgreementId").and_then(serde_json::Value::as_str).ok_or("agreement absent")?.to_owned()));
@@ -197,7 +167,9 @@ async fn given_agreements_on_two_servers_when_details_bind_then_exact_pairs_safe
     let response = decode(detail, br#"{"Agreement":{"Arn":"arn:aws:transfer:us-east-1:123456789012:agreement/s-one/a-one","AgreementId":"a-one","ServerId":"s-one","BaseDirectory":"/bucket/inbound","AccessRole":"arn:aws:iam::123456789012:role/transfer","Tags":[{"Key":"team","Value":"inventory"}]}}"#)?;
     let rows = item_records(&response, detail.items())?;
     let expected = rows.first().ok_or("detail row absent")?.as_bytes().to_vec();
-    let (persisted, tags) = persist(detail, observations(detail, rows)?).await?;
+    let bindings = first_bindings.ok_or("detail request absent")?;
+    let observations = observations_with_request(detail, rows, &bindings)?;
+    let (persisted, tags) = persist(detail, vec![(detail, None, bindings, observations)]).await?;
     let (kind, id, record) = persisted.first().ok_or("detail not persisted")?;
     assert_eq!(persisted.len(), 1);
     assert_eq!(kind, "AWS::Transfer::Agreement");
@@ -237,11 +209,14 @@ async fn given_two_outposts_when_bucket_pages_fan_out_then_wire_signing_headers_
     let catalog = RuntimeCatalog::from_bytes(bytes()?)?;
     let parent = catalog.lookup("outposts", "ListOutposts").ok_or("Outposts parent absent")?;
     let plan = catalog.lookup("s3-control", "ListRegionalBuckets").ok_or("regional buckets absent")?;
-    let outposts = decode(parent, br#"{"Outposts":[{"OutpostId":"op-01234567890123456"},{"OutpostId":"op-fedcba98765432100"}]}"#)?;
-    let mut rows = Vec::new();
+    let outposts = decode(parent, br#"{"Outposts":[{"OutpostId":"op-01234567890123456","OutpostArn":"arn:aws:outposts:us-east-1:123456789012:outpost/op-01234567890123456"},{"OutpostId":"op-fedcba98765432100","OutpostArn":"arn:aws:outposts:us-east-1:123456789012:outpost/op-fedcba98765432100"}]}"#)?;
+    let parent_bindings = request_bindings(parent, &[])?;
+    let owners = observations_with_request(parent, item_records(&outposts, parent.items())?, &parent_bindings)?;
+    let mut pages = Vec::new();
     let mut expected = Vec::new();
-    for row in item_records(&outposts, parent.items())? {
-        let fields = child_fields(&catalog, parent, plan, &row)?;
+    for owner in &owners {
+        let row = owner.record();
+        let fields = child_fields(&catalog, parent, plan, row)?;
         let first = request(plan, &fields)?;
         assert_eq!(first.uri().host(), Some("s3-outposts.us-east-1.amazonaws.com"));
         assert_eq!(first.headers().get("x-amz-account-id").ok_or("account header absent")?, "123456789012");
@@ -253,6 +228,7 @@ async fn given_two_outposts_when_bucket_pages_fan_out_then_wire_signing_headers_
         let signed = sign::sign(&Credentials::new("A", "secret", None)?, &scope, std::time::SystemTime::UNIX_EPOCH,
             sign::Request { method: first.method(), uri: &uri, headers: first.headers(), body: Body::Bytes(first.body()), payload_header: PayloadHeader::Omit }, PathMode::Standard)?;
         assert!(signed.get("authorization").ok_or("authorization absent")?.to_str()?.contains("/us-east-1/s3-outposts/aws4_request,"));
+        let mut rows = Vec::new();
         for page in 1..=2 {
             let arn = format!("arn:aws:s3-outposts:us-east-1:123456789012:outpost/{outpost}/bucket/bucket-{page}");
             let token = if page == 1 { "<NextToken>page-two</NextToken>" } else { "" };
@@ -261,7 +237,7 @@ async fn given_two_outposts_when_bucket_pages_fan_out_then_wire_signing_headers_
             if page == 1 {
                 let token = plan.pagination().tokens.first().ok_or("regional bucket cursor absent")?;
                 let value = path_value(response.root(), &token.response_path)?.ok_or("bucket response cursor absent")?.to_value()?;
-                let mut second_fields = child_fields(&catalog, parent, plan, &row)?;
+                let mut second_fields = child_fields(&catalog, parent, plan, row)?;
                 second_fields.push(super::super::input::InputField { path: token.request_path.clone(), value });
                 let second = request(plan, &second_fields)?;
                 assert_eq!(second.headers().get("x-amz-outpost-id"), first.headers().get("x-amz-outpost-id"));
@@ -270,10 +246,14 @@ async fn given_two_outposts_when_bucket_pages_fan_out_then_wire_signing_headers_
             rows.extend(item_records(&response, plan.items())?);
             expected.push(arn);
         }
+        let bindings = request_bindings(plan, &fields)?;
+        let observations = observations_with_request(plan, rows, &bindings)?;
+        pages.push((plan, Some(owner.key().clone()), bindings, observations));
     }
+    pages.insert(0, (parent, None, parent_bindings, owners));
     assert_eq!(expected.len(), 4);
     expected.sort();
-    let (persisted, _) = persist(plan, observations(plan, rows)?).await?;
+    let (persisted, _) = persist(plan, pages).await?;
     assert_eq!(persisted.iter().map(|(_,id,_)| id.clone()).collect::<Vec<_>>(), expected);
     assert!(persisted.iter().all(|(kind,_,_)| kind == plan.kind().as_str()));
     Ok(())

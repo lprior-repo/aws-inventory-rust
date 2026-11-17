@@ -1,12 +1,12 @@
-use super::{commit, BinaryStore, ReferenceTarget, ResourceId, ResourceKey, ScalarType, StoreError, TargetMatch};
+use super::{commit, BinaryStore, Kind, ReferenceTarget, ResourceId, ResourceKey, ScalarType, StoreError, TargetMatch};
 use inventory_core::{catalog::runtime::RelationTargetMode, record::{MapRef, ValueRef}};
 use sqlx::{QueryBuilder, Row, Sqlite, Transaction};
 use futures_util::TryStreamExt;
 
-pub(super) async fn match_target(store: &BinaryStore, tx: &mut Transaction<'_, Sqlite>, target: &ReferenceTarget, expected: Option<&ResourceId>) -> Result<TargetMatch, StoreError> {
+pub(super) async fn match_target(store: &BinaryStore, tx: &mut Transaction<'_, Sqlite>, target: &ReferenceTarget, only: Option<&Kind>, expected: Option<&ResourceId>) -> Result<TargetMatch, StoreError> {
     let mut matched = None;
     let bound = terms(target).any(|(mode, _, _)| is_bound(mode));
-    for kind in target.candidate_kinds() {
+    for kind in target.candidate_kinds().iter().filter(|kind| only.is_none_or(|only| only == *kind)) {
         let schema = store.registry.schemas().iter().find(|schema| schema.kind() == kind)
             .ok_or(StoreError::Invalid("referenced kind is absent from schema registry"))?;
         let mut query = QueryBuilder::<Sqlite>::new(if bound { "SELECT p.id, f.bound_request FROM " } else { "SELECT p.id FROM " });

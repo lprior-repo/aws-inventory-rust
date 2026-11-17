@@ -22,7 +22,7 @@ async fn given_queue_urls_when_attributes_are_collected_then_only_canonical_arn_
     let row = item_records(&urls, list.items())?.into_iter().next().ok_or("queue discovery row absent")?;
     let fields = child_fields(&catalog, list, detail, &row)?;
     let attributes = request(detail, &fields)?;
-    let request_record = super::super::super::input::merge_input(&Record::encode(&Value::Map(BTreeMap::new()))?, &fields)?;
+    let request_record = request_bindings(detail, &fields)?;
     let input: serde_json::Value = serde_json::from_slice(attributes.body())?;
     assert_eq!(input.get("QueueUrl").and_then(serde_json::Value::as_str), Some("https://sqs.us-east-1.amazonaws.com/123456789012/work"));
     let names = input.get("AttributeNames").and_then(serde_json::Value::as_array).ok_or("reviewed attribute whitelist absent")?;
@@ -35,7 +35,7 @@ async fn given_queue_urls_when_attributes_are_collected_then_only_canonical_arn_
     let hash = observations.first().ok_or("queue observation absent")?.content_hash();
     let changed = decode(detail, br#"{"Attributes":{"QueueArn":"arn:aws:sqs:us-east-1:123456789012:work","VisibilityTimeout":"30","ApproximateNumberOfMessages":"99","LastModifiedTimestamp":"100"}}"#)?;
     assert_eq!(hash, observations_with_request(detail, item_records(&changed, detail.items())?, &request_record)?.first().ok_or("queue repeat absent")?.content_hash());
-    let (persisted, _) = persist(detail, observations).await?;
+    let (persisted, _) = persist(detail, vec![(detail, None, request_record.clone(), observations)]).await?;
     assert_eq!(persisted.iter().map(|(kind,id,_)| (kind.as_str(),id.as_str())).collect::<Vec<_>>(), [("AWS::SQS::Queue", "arn:aws:sqs:us-east-1:123456789012:work")]);
     let missing = decode(detail, br#"{"Attributes":{"VisibilityTimeout":"30"}}"#)?;
     assert!(observations_with_request(detail, item_records(&missing, detail.items())?, &request_record).is_err());
@@ -71,7 +71,9 @@ async fn given_confirmed_pending_and_deleted_subscriptions_when_collected_then_n
         }
         rows.push(row);
     }
-    let (persisted, _) = persist(list, observations(list, rows)?).await?;
+    let bindings = request_bindings(list, &[])?;
+    let observations = observations_with_request(list, rows, &bindings)?;
+    let (persisted, _) = persist(list, vec![(list, None, bindings, observations)]).await?;
     assert_eq!(persisted.len(), 4);
     assert_eq!(persisted.iter().filter(|(_,id,_)| id == confirmed).count(), 1);
     for (kind, id, record) in persisted {
@@ -146,6 +148,7 @@ fn given_queue_arn_mismatches_when_attributes_identify_then_scope_or_queue_name_
         assert!(observations_with_request(detail, item_records(&response, detail.items())?, &request).is_err(), "hostile queue ARN accepted: {arn}");
     }
     let response = decode(detail, br#"{"Attributes":{"QueueArn":"arn:aws:sqs:us-east-1:123456789012:work"}}"#)?;
-    assert!(observations(detail, item_records(&response, detail.items())?).is_err(), "missing request URL bypassed ARN correlation");
+    let missing_request = Record::encode(&Value::Map(BTreeMap::new()))?;
+    assert!(observations_with_request(detail, item_records(&response, detail.items())?, &missing_request).is_err(), "missing request URL bypassed ARN correlation");
     Ok(())
 }

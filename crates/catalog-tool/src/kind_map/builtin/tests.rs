@@ -445,10 +445,11 @@ fn given_embedded_logging_destinations_when_compiled_then_firehose_is_canonical_
     assert!(matches!(map.lookup(kind).map(|entry| &entry.target),
         Some(KindTarget::Mapped { kind: target, .. }) if target == kind));
     // Then each logging consumer retains its selected ARN-to-canonical-ID edge.
-    for (source, path) in [
-        ("AWS::VpcLattice::AccessLogSubscription", "destinationArn"),
-        ("AWS::ApiOnly::WAFLoggingConfiguration", "LogDestinationConfigs"),
-        ("AWS::ApiOnly::WAFRegionalLoggingConfiguration", "LogDestinationConfigs"),
+    // The global classic-WAF source takes the Firehose region from the destination ARN.
+    for (source, path, scope) in [
+        ("AWS::VpcLattice::AccessLogSubscription", "destinationArn", "account_region"),
+        ("AWS::ApiOnly::WAFLoggingConfiguration", "LogDestinationConfigs", "arn_region"),
+        ("AWS::ApiOnly::WAFRegionalLoggingConfiguration", "LogDestinationConfigs", "account_region"),
     ] {
         let edges = map.relations().iter().filter(|row| row.source_kind == source
             && row.target_kinds.primary() == kind && row.relation == "LOGS_TO").collect::<Vec<_>>();
@@ -457,7 +458,7 @@ fn given_embedded_logging_destinations_when_compiled_then_firehose_is_canonical_
         assert!(matches!(&edge.source,
             ReviewedRelationSource::SelectedOutput(ReviewedValuePath::Fields(field)) if field == path));
         assert_eq!(edge.target, ReviewedRelationTarget::CanonicalId);
-        assert_eq!(edge.scope, "account_region");
+        assert_eq!(edge.scope, scope, "{source}");
         assert_eq!(edge.guard, None);
     }
     // Alternative destinations must not disappear when the Firehose target is registered.

@@ -41,7 +41,7 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
 
     async fn seed(&self, catalog: &RuntimeCatalog<'_>, service: &str, operations: &[&str]) -> TestResult {
         for operation in operations {
-            let plan = catalog.lookup(service, operation).ok_or("seed plan absent")?;
+            let plan = catalog.lookup(service, operation).ok_or_else(|| format!("seed plan absent: {service}.{operation}"))?;
             let region = if plan.scope() == PlanScope::Account { Region::Global } else { Region::Regional(self.home.clone()) };
             let scope = ScopeKey::new(self.account.clone(), region.clone(),
                 ServiceId::parse(service)?, OperationId::parse(operation)?, None)?;
@@ -49,6 +49,10 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
             self.store.seed_work(WorkSpec::new(self.sweep.clone(), scope, None, input.into_bytes())?).await?;
         }
         Ok(())
+    }
+
+    async fn seed_firehose(&self, catalog: &RuntimeCatalog<'_>) -> TestResult {
+        self.seed(catalog, "firehose", &["ListDeliveryStreams"]).await
     }
 
     fn request(&self, plan: &CallablePlan<'_>, lease: &WorkLease) -> TestResult<(Record, http::Request<bytes::Bytes>)> {
@@ -66,8 +70,16 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
 
     async fn apply(&self, catalog: &RuntimeCatalog<'_>, plan: &CallablePlan<'_>, lease: WorkLease,
         request: &Record, body: Json) -> TestResult {
-        self.apply_wire(catalog, plan, lease, request, &serde_json::to_vec(&body)?).await
+        let bytes = if plan.protocol() == inventory_core::catalog::runtime::RuntimeProtocol::RpcV2Cbor {
+            let service = plan.service();
+            let output_target = plan.operation().output().map_err(|e| format!("operation output error: {e}"))?;
+            json_to_cbor(&body, service, output_target)?
+        } else {
+            serde_json::to_vec(&body)?
+        };
+        self.apply_wire(catalog, plan, lease, request, &bytes).await
     }
+
 
     async fn apply_wire(&self, catalog: &RuntimeCatalog<'_>, plan: &CallablePlan<'_>, lease: WorkLease,
         request: &Record, body: &[u8]) -> TestResult {
@@ -98,18 +110,21 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
         let mut seen = BTreeMap::new();
         while let Some(lease) = self.store.claim(&self.sweep, 1000, 10000).await? {
             let operation = lease.scope().operation().as_str();
-            let plan = catalog.lookup(lease.scope().service().as_str(), operation).ok_or("leased producer absent")?;
+            let lease_service = lease.scope().service().as_str();
+            let plan = catalog.lookup(lease_service, operation).ok_or_else(|| format!("seed plan absent: {lease_service}.{operation}"))?;
             assert!(plan.service_name() == service || matches!(plan.service_name(), "cloudwatch-logs" | "firehose"),
-                "unexpected cross-service fixture producer");
+                "unexpected cross-service fixture producer: {}", plan.service_name());
             let (request, wire) = self.request(plan, &lease)?;
             let body = respond(plan, &request, &wire, lease.token().is_some())?;
             *seen.entry(operation.to_owned()).or_insert(0) += 1;
             assert!(seen.values().sum::<usize>() < 512, "fixture unexpectedly repeated work");
             self.apply(catalog, plan, lease, &request, body).await?;
-            self = self.reopen().await?;
+            self = self.reopen(catalog).await?;
         }
         Ok((self, seen))
     }
+
+
 
     async fn reader(&self) -> TestResult<sqlx::SqlitePool> {
         Ok(sqlx::sqlite::SqlitePoolOptions::new().max_connections(1)
@@ -117,10 +132,10 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
                 .filename(self.directory.path().join("inventory.db")).read_only(true)).await?)
     }
 
-    async fn reopen(self) -> TestResult<Self> {
+    async fn reopen(self, catalog: &RuntimeCatalog<'_>) -> TestResult<Self> {
         let Self { directory, store, sweep, account, home, consumers } = self;
         drop(store);
-        let store = BinaryStore::open(&directory.path().join("inventory.db")).await?;
+        let store = BinaryStore::open_with_catalog(&directory.path().join("inventory.db"), catalog.raw_bytes()).await?;
         Ok(Self { directory, store, sweep, account, home, consumers })
     }
 
@@ -168,11 +183,124 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
     }
 }
 
+use inventory_core::catalog::{Service, Target};
+
+fn json_to_cbor(
+    value: &Json,
+    service: Service<'_>,
+    output_target: Target,
+) -> TestResult<Vec<u8>> {
+    let mut encoder = minicbor::Encoder::new(Vec::new());
+    encode_json_with_schema(&mut encoder, value, service, Some(output_target))?;
+    Ok(encoder.into_writer())
+}
+
+fn resolve_target_kind(service: Service<'_>, target: Target) -> TestResult<&'static str> {
+    match target {
+        Target::Shape(index) => {
+            let shape = service.shape(index)?.ok_or("modeled CBOR shape absent")?;
+            Ok(shape.kind()?)
+        }
+        Target::Prelude(kind) => Ok(kind),
+        _ => Err("unsupported modeled CBOR target".into()),
+    }
+}
+
+fn find_member_target(service: Service<'_>, structure_target: Target, member_name: &str) -> TestResult<Option<Target>> {
+    match structure_target {
+        Target::Shape(index) => {
+            let shape = service.shape(index)?.ok_or("modeled CBOR shape absent")?;
+            let kind = shape.kind()?;
+            if kind != "structure" {
+                return Ok(None);
+            }
+            for member in shape.members().map_err(|e| format!("members error: {e}"))? {
+                let member = member.map_err(|e| format!("member error: {e}"))?;
+                if member.name().map_err(|e| format!("member name error: {e}"))? == member_name {
+                    return Ok(Some(member.target));
+                }
+            }
+            Ok(None)
+        }
+        _ => Ok(None),
+    }
+}
+
+fn encode_json_with_schema(
+    encoder: &mut minicbor::Encoder<Vec<u8>>,
+    value: &Json,
+    service: Service<'_>,
+    target: Option<Target>,
+) -> TestResult {
+    let kind = target.map(|target| resolve_target_kind(service, target)).transpose()?;
+
+    match value {
+        Json::Null => {
+            encoder.null().map_err(|e| format!("CBOR null error: {e}"))?;
+        }
+        Json::Bool(b) => {
+            encoder.bool(*b).map_err(|e| format!("CBOR bool error: {e}"))?;
+        }
+        Json::Number(n) => {
+            if kind == Some("timestamp") {
+                // Timestamps always get CBOR tag 1, regardless of numeric form
+                let tag = minicbor::data::Tag::from(minicbor::data::IanaTag::Timestamp);
+                encoder.tag(tag).map_err(|e| format!("CBOR tag error: {e}"))?;
+                if let Some(i) = n.as_i64() {
+                    encoder.i64(i).map_err(|e| format!("CBOR i64 error: {e}"))?;
+                } else if let Some(f) = n.as_f64() {
+                    encoder.f64(f).map_err(|e| format!("CBOR f64 error: {e}"))?;
+                } else {
+                    return Err("unsupported timestamp number format".into());
+                }
+            } else if let Some(i) = n.as_i64() {
+                encoder.i64(i).map_err(|e| format!("CBOR i64 error: {e}"))?;
+            } else if let Some(u) = n.as_u64() {
+                encoder.u64(u).map_err(|e| format!("CBOR u64 error: {e}"))?;
+            } else if let Some(f) = n.as_f64() {
+                encoder.f64(f).map_err(|e| format!("CBOR f64 error: {e}"))?;
+            } else {
+                return Err("unsupported JSON number".into());
+            }
+        }
+        Json::String(s) => {
+            encoder.str(s).map_err(|e| format!("CBOR str error: {e}"))?;
+        }
+        Json::Array(arr) => {
+            // For list types, determine the element target
+            let element_target = match (target, kind) {
+                (Some(Target::Shape(index)), Some("list")) => {
+                    let shape = service.shape(index)?.ok_or("modeled CBOR list shape absent")?;
+                    shape.element()?
+                }
+                _ => None,
+            };
+
+            encoder.array(u64::try_from(arr.len()).map_err(|_| "array length exceeds u64")?).map_err(|e| format!("CBOR array error: {e}"))?;
+            for item in arr {
+                encode_json_with_schema(encoder, item, service, element_target)?;
+            }
+        }
+        Json::Object(map) => {
+            encoder.map(u64::try_from(map.len()).map_err(|_| "map length exceeds u64")?).map_err(|e| format!("CBOR map error: {e}"))?;
+            for (key, val) in map {
+                encoder.str(key).map_err(|e| format!("CBOR key error: {e}"))?;
+                // For structure types, resolve each member's target
+                let member_target = target.map(|target| find_member_target(service, target, key))
+                    .transpose()?.flatten();
+                encode_json_with_schema(encoder, val, service, member_target)?;
+            }
+        }
+    }
+    Ok(())
+}
+
 fn decode(plan: &CallablePlan<'_>, body: &[u8]) -> TestResult<Record> {
     use aws_wire::{request::Protocol, response::{DecodeLimits, ResponseContext}};
     let protocol = match plan.protocol() {
         inventory_core::catalog::runtime::RuntimeProtocol::AwsJson10 => Protocol::AwsJson10,
         inventory_core::catalog::runtime::RuntimeProtocol::AwsJson11 => Protocol::AwsJson11,
+        inventory_core::catalog::runtime::RuntimeProtocol::RpcV2Cbor => Protocol::RpcV2Cbor,
         inventory_core::catalog::runtime::RuntimeProtocol::RestJson1 => Protocol::RestJson1,
         inventory_core::catalog::runtime::RuntimeProtocol::RestXml => Protocol::RestXml,
         _ => return Err("unexpected native protocol in T-Z fixture".into()),
@@ -207,9 +335,73 @@ fn assert_token(wire: &http::Request<bytes::Bytes>, name: &str, resumed: bool) -
         let actual = wire.uri().query().unwrap_or_default().split('&')
             .find_map(|pair| pair.strip_prefix(&format!("{name}=")));
         assert_eq!(actual, expected);
+    } else if wire.headers().get("smithy-protocol") == Some(&http::HeaderValue::from_static("rpc-v2-cbor")) {
+        let body = decode_rpc_body(wire.body())?;
+        let actual = body.get(name).and_then(Json::as_str);
+        assert_eq!(actual, expected);
     } else {
         let body: Json = if wire.body().is_empty() { Json::Null } else { serde_json::from_slice(wire.body())? };
         assert_eq!(body.get(name).and_then(Json::as_str), expected);
     }
+    Ok(())
+}
+
+pub(super) fn decode_rpc_body(body: &[u8]) -> TestResult<serde_json::Map<String, Json>> {
+    let mut decoder = minicbor::Decoder::new(body);
+    let mut fields = serde_json::Map::new();
+    if let Some(count) = decoder.map()? {
+        for _ in 0..count {
+            decode_rpc_field(&mut decoder, &mut fields)?;
+        }
+    } else {
+        loop {
+            if decoder.datatype()? == minicbor::data::Type::Break {
+                decoder.skip()?;
+                break;
+            }
+            decode_rpc_field(&mut decoder, &mut fields)?;
+        }
+    }
+    Ok(fields)
+}
+
+fn decode_rpc_field(decoder: &mut minicbor::Decoder<'_>, fields: &mut serde_json::Map<String, Json>) -> TestResult {
+    use minicbor::data::Type;
+    let name = decoder.str()?.to_owned();
+    if fields.contains_key(&name) {
+        return Err(format!("duplicate native RPC input field: {name}").into());
+    }
+    let dt = decoder.datatype()?;
+    let value = match dt {
+        Type::String => Json::String(decoder.str()?.to_owned()),
+        Type::U8 | Type::U16 | Type::U32 | Type::U64 => Json::from(decoder.u64()?),
+        Type::I8 | Type::I16 | Type::I32 | Type::I64 => Json::from(decoder.i64()?),
+        Type::Array | Type::ArrayIndef => {
+            // Support definite and indefinite length arrays of strings (e.g., AssociatedResourceTypes)
+            let mut items = Vec::new();
+            if let Some(count) = decoder.array()? {
+                for _ in 0..count {
+                    if decoder.datatype()? != Type::String {
+                        return Err("unsupported array element type in RPC fixture input".into());
+                    }
+                    items.push(Json::String(decoder.str()?.to_owned()));
+                }
+            } else {
+                loop {
+                    if decoder.datatype()? == Type::Break {
+                        decoder.skip()?;
+                        break;
+                    }
+                    if decoder.datatype()? != Type::String {
+                        return Err("unsupported array element type in RPC fixture input".into());
+                    }
+                    items.push(Json::String(decoder.str()?.to_owned()));
+                }
+            }
+            Json::Array(items)
+        }
+        _ => return Err(format!("unsupported native RPC fixture input value for field {name}").into()),
+    };
+    fields.insert(name, value);
     Ok(())
 }

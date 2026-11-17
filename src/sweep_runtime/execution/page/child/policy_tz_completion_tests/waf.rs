@@ -5,7 +5,7 @@ async fn given_global_and_regional_classic_waf_when_logging_pages_and_both_assoc
     let catalog = RuntimeCatalog::from_bytes(catalog::bytes()?)?;
     for service in ["waf","waf-regional"] {
         let scenario = Scenario::new(&catalog,&format!("tz-{service}-completion")).await?;
-        scenario.seed(&catalog,"firehose",&["ListDeliveryStreams"]).await?;
+        scenario.seed_firehose(&catalog).await?;
         scenario.seed(&catalog,service,&["ListLoggingConfigurations","ListWebACLs"]).await?;
         let (scenario, seen) = scenario.drain(&catalog,service,|plan,request,wire,resumed| {
             let native: Json = serde_json::from_slice(wire.body())?;

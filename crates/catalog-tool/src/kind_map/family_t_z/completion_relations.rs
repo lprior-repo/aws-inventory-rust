@@ -1,4 +1,4 @@
-use crate::kind_map::{ParentRelationMapping, RelationGuardMapping, RelationMapping, RelationPath, RelationSource, RelationTarget};
+use crate::kind_map::{CompoundRelationMapping, ParentRelationMapping, RelationComponentMapping, RelationGuardMapping, RelationMapping, RelationPath, RelationSource, RelationTarget};
 
 pub(super) const PARENTS: &[ParentRelationMapping<'static>] = &[
     ParentRelationMapping { source_kind: "AWS::VpcLattice::AccessLogSubscription", target_kinds: &["AWS::VpcLattice::Service", "AWS::VpcLattice::ServiceNetwork"], relation: "FOR_RESOURCE", scope: "account_region" },
@@ -50,9 +50,8 @@ pub(super) const OUTPUT: &[RelationMapping<'static>] = &[
     RelationMapping { source_kind: "AWS::VpcLattice::AccessLogSubscription", source: RelationSource::SelectedOutput(RelationPath::Fields("destinationArn")), target_kind: "AWS::S3::Bucket", target: RelationTarget::CanonicalId, relation: "LOGS_TO", scope: "account", guard: None },
     RelationMapping { source_kind: "AWS::ApiOnly::WAFLoggingConfiguration", source: RelationSource::SelectedOutput(RelationPath::Fields("ResourceArn")), target_kind: "AWS::WAF::WebACL", target: RelationTarget::SelectedOutput(RelationPath::Fields("WebACLArn")), relation: "FOR_WEB_ACL", scope: "account", guard: None },
     RelationMapping { source_kind: "AWS::ApiOnly::WAFRegionalLoggingConfiguration", source: RelationSource::SelectedOutput(RelationPath::Fields("ResourceArn")), target_kind: "AWS::WAFRegional::WebACL", target: RelationTarget::SelectedOutput(RelationPath::Fields("WebACLArn")), relation: "FOR_WEB_ACL", scope: "account_region", guard: None },
-    RelationMapping { source_kind: "AWS::ApiOnly::WAFLoggingConfiguration", source: RelationSource::SelectedOutput(RelationPath::Fields("LogDestinationConfigs")), target_kind: "AWS::KinesisFirehose::DeliveryStream", target: RelationTarget::CanonicalId, relation: "LOGS_TO", scope: "account_region", guard: None },
+    RelationMapping { source_kind: "AWS::ApiOnly::WAFLoggingConfiguration", source: RelationSource::SelectedOutput(RelationPath::Fields("LogDestinationConfigs")), target_kind: "AWS::KinesisFirehose::DeliveryStream", target: RelationTarget::CanonicalId, relation: "LOGS_TO", scope: "arn_region", guard: None },
     RelationMapping { source_kind: "AWS::ApiOnly::WAFRegionalLoggingConfiguration", source: RelationSource::SelectedOutput(RelationPath::Fields("LogDestinationConfigs")), target_kind: "AWS::KinesisFirehose::DeliveryStream", target: RelationTarget::CanonicalId, relation: "LOGS_TO", scope: "account_region", guard: None },
-    RelationMapping { source_kind: "AWS::ApiOnly::WorkMailEntityGroup", source: RelationSource::SelectedOutput(RelationPath::Fields("GroupId")), target_kind: "AWS::ApiOnly::WorkMailGroup", target: RelationTarget::SelectedOutput(RelationPath::Fields("Id")), relation: "IN_GROUP", scope: "account_region", guard: None },
     RelationMapping { source_kind: "AWS::ApiOnly::WorkSpacesApplicationAssociation", source: RelationSource::SelectedOutput(RelationPath::Fields("AssociatedResourceId")), target_kind: "AWS::WorkSpaces::Workspace", target: RelationTarget::SelectedOutput(RelationPath::Fields("WorkspaceId")), relation: "ASSOCIATES_WORKSPACE", scope: "account_region", guard: Some(RelationGuardMapping { source: RelationSource::SelectedOutput(RelationPath::Fields("AssociatedResourceType")), equals: "WORKSPACE" }) },
     RelationMapping { source_kind: "AWS::ApiOnly::WorkSpacesApplicationAssociation", source: RelationSource::SelectedOutput(RelationPath::Fields("AssociatedResourceId")), target_kind: "AWS::ApiOnly::WorkSpacesBundle", target: RelationTarget::SelectedOutput(RelationPath::Fields("BundleId")), relation: "ASSOCIATES_BUNDLE", scope: "account_region", guard: Some(RelationGuardMapping { source: RelationSource::SelectedOutput(RelationPath::Fields("AssociatedResourceType")), equals: "BUNDLE" }) },
     RelationMapping { source_kind: "AWS::ApiOnly::WorkSpacesApplicationAssociation", source: RelationSource::SelectedOutput(RelationPath::Fields("AssociatedResourceId")), target_kind: "AWS::ApiOnly::WorkSpacesImage", target: RelationTarget::SelectedOutput(RelationPath::Fields("ImageId")), relation: "ASSOCIATES_IMAGE", scope: "account_region", guard: Some(RelationGuardMapping { source: RelationSource::SelectedOutput(RelationPath::Fields("AssociatedResourceType")), equals: "IMAGE" }) },
@@ -61,3 +60,20 @@ pub(super) const OUTPUT: &[RelationMapping<'static>] = &[
     RelationMapping { source_kind: "AWS::ApiOnly::WorkSpacesWorkspaceAssociation", source: RelationSource::SelectedOutput(RelationPath::Fields("AssociatedResourceId")), target_kind: "AWS::ApiOnly::WorkSpacesApplication", target: RelationTarget::SelectedOutput(RelationPath::Fields("ApplicationId")), relation: "ASSOCIATES_APPLICATION", scope: "account_region", guard: None },
 ];
 
+
+pub(super) const COMPOUND: &[CompoundRelationMapping<'static>] = &[
+    CompoundRelationMapping {
+        source_kind: "AWS::ApiOnly::WorkMailEntityGroup", target_kind: "AWS::ApiOnly::WorkMailGroup",
+        relation: "IN_GROUP", scope: "account_region",
+        components: &[
+            RelationComponentMapping {
+                source: RelationSource::Request(RelationPath::Fields("OrganizationId")),
+                target: RelationTarget::BoundContext(RelationPath::Fields("OrganizationId")),
+            },
+            RelationComponentMapping {
+                source: RelationSource::SelectedOutput(RelationPath::Fields("GroupId")),
+                target: RelationTarget::SelectedOutput(RelationPath::Fields("Id")),
+            },
+        ],
+    },
+];

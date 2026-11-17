@@ -61,7 +61,7 @@ fn public_registry_dispositions_cover_every_pinned_d_f_service_and_operation() -
         }
     }
     assert_eq!(total, 2066);
-    assert_eq!(callable, 201);
+    assert_eq!(callable, 202);
     Ok(())
 }
 
@@ -159,7 +159,6 @@ fn unsupported_last_element_cursor_and_parent_identity_are_explicit_not_fake_col
     let policies = overlay::embedded()?;
     // When these operations are resolved, then they remain noncallable with exact capability evidence.
     for (service, name, evidence) in [
-        ("firehose", "ListDeliveryStreams", "last list element"),
         ("deadline", "ListWorkers", "credentials"),
         ("efs", "DescribeMountTargetSecurityGroups", "bound request parent"),
         ("eventbridge", "ListTargetsByRule", "bound input"),

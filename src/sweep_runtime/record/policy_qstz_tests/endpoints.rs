@@ -36,8 +36,8 @@ fn given_regional_and_cloudfront_waf_branches_when_requested_then_scope_region_c
         let row = item_records(&response, list.items())?.into_iter().next().ok_or("WAF summary absent")?;
         ids.push(resource_id(&row, list.identity(), None)?.as_str().to_owned());
         let detail_branch = detail.branches().iter().find(|branch| branch.discriminator == branch_name).ok_or("WAF detail branch absent")?;
-        let detail_base = routing::branch_bindings(detail, detail_branch, &account, &scope)?;
-        let encoded = super::super::super::request::encode(detail, &endpoint.url, &detail_base, &child_fields(&catalog, list, detail, &row)?)?;
+        assert_eq!(detail_branch.discriminator, branch.discriminator);
+        let encoded = super::super::super::request::encode(detail, &endpoint.url, &base, &child_fields(&catalog, list, detail, &row)?)?;
         let body: serde_json::Value = serde_json::from_slice(encoded.body())?;
         assert_eq!(body.get("Scope").and_then(serde_json::Value::as_str), Some(branch_name));
         assert_eq!(body.get("Name").and_then(serde_json::Value::as_str), Some("shared"));
@@ -78,7 +78,8 @@ async fn given_real_timestream_discovery_wire_when_lease_is_applied_then_query_a
         let encoded = super::super::super::request::encode(plan, &url, &base, &[])?;
         assert_eq!(encoded.uri().host(), Some(host));
         let decoded = decode(plan, response)?;
-        let (persisted, _) = persist(plan, observations(plan, item_records(&decoded, plan.items())?)?).await?;
+        let observations = observations_with_request(plan, item_records(&decoded, plan.items())?, &base)?;
+        let (persisted, _) = persist(plan, vec![(plan, None, base, observations)]).await?;
         assert_eq!(persisted.len(), 1);
         assert_eq!(persisted.first().ok_or("Timestream resource absent")?.0, plan.kind().as_str());
     }

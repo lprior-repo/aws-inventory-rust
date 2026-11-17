@@ -55,5 +55,6 @@ pub(super) const SOURCES: &[MappingSource<'static>] = &[
     MappingSource { operations: operations_8::ENTRIES, ..super::EMPTY },
     MappingSource { relations: relations_0::ENTRIES, ..super::EMPTY },
     MappingSource { cfn: completion::CFN, api_only: completion::API, operations: completion::OPERATIONS,
-        relations: completion_relations::OUTPUT, parent_relations: completion_relations::PARENTS, ..super::EMPTY },
+        relations: completion_relations::OUTPUT, parent_relations: completion_relations::PARENTS,
+        compound_relations: completion_relations::COMPOUND, ..super::EMPTY },
 ];

@@ -30,14 +30,14 @@ async fn given_custom_lenses_and_agent_profiles_when_native_pages_execute_then_o
         match plan.operation_name() {
             "ListAgentProfiles" => {
                 assert_eq!(wire.uri().path(), "/api/v1/agent-profiles");
-                Ok(page("items", json!({"name":format!("profile-{p}"),"arn":format!("arn:aws:wellarchitected:us-east-1:123456789012:agent-profile/profile-{p}"),"executionRoleArn":"arn:aws:iam::123456789012:role/inventory","aggregationConfiguration":[{"accountId":"123456789012","regions":["us-east-1"],"accessRoleArn":"arn:aws:iam::123456789012:role/inventory"}],"tags":[{"key":"owner","value":"inventory"}],"createdBy":"inventory","createdAt":0}), !resumed, "nextToken"))
+                Ok(page("items", json!({"name":format!("profile-{p}"),"arn":format!("arn:aws:wellarchitected:us-east-1:123456789012:agent-profile/profile-{p}"),"executionRoleArn":"arn:aws:iam::123456789012:role/inventory","aggregationConfiguration":[{"accountId":"123456789012","regions":["us-east-1"],"accessRoleArn":"arn:aws:iam::123456789012:role/inventory"}],"tags":[{"key":"owner","value":"inventory"}],"createdBy":"inventory","createdAt":"2026-01-01T00:00:00Z"}), !resumed, "nextToken"))
             }
             "ListAgentGoals" => {
                 let profile = text(request, "profileArn")?;
                 assert!(profile.ends_with("/profile-1") || profile.ends_with("/profile-2"));
                 assert!(wire.uri().path().starts_with("/api/v1/agent-profiles/arn"));
                 assert!(wire.uri().path().ends_with(&format!("{}/goals", profile.rsplit('/').next().ok_or("profile ID absent")?)));
-                Ok(page("items", json!({"id":format!("goal-{p}"),"profileArn":profile,"title":"safe optimization goal","createdBy":"inventory","createdAt":0}), !resumed, "nextToken"))
+                Ok(page("items", json!({"id":format!("goal-{p}"),"profileArn":profile,"title":"safe optimization goal","createdBy":"inventory","createdAt":"2026-01-01T00:00:00Z"}), !resumed, "nextToken"))
             }
             other => Err(format!("unexpected WellArchitected operation {other}").into()),
         }
@@ -184,7 +184,7 @@ async fn given_agent_profile_arns_outside_actual_request_authority_when_native_r
         let plan = catalog.lookup("wellarchitected", "ListAgentProfiles").ok_or("profile plan absent")?;
         let (request, _) = scenario.request(plan, &lease)?;
         let error = scenario.apply(&catalog, plan, lease, &request,
-            json!({"items":[{"name":"foreign","arn":arn,"executionRoleArn":"arn:aws:iam::123456789012:role/inventory","aggregationConfiguration":[],"createdBy":"inventory","createdAt":0}]}))
+            json!({"items":[{"name":"foreign","arn":arn,"executionRoleArn":"arn:aws:iam::123456789012:role/inventory","aggregationConfiguration":[],"createdBy":"inventory","createdAt":"2026-01-01T00:00:00Z"}]}))
             .await.err().ok_or("out-of-authority profile did not fail closed")?;
         assert!(error.to_string().contains("modeled ARN does not match trusted request scope"), "{error}");
         let reader = scenario.reader().await?;
