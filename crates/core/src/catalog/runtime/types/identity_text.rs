@@ -91,10 +91,10 @@ impl CompiledTextConstraints {
             if let Some(bound) = constraint.max_length {
                 maximum = Some(maximum.map_or(bound, |old: usize| old.min(bound)));
             }
-            if let Some(pattern) = constraint.pattern {
-                if !patterns.iter().any(|compiled| compiled.as_str() == pattern) {
-                    patterns.push(cache.pattern(pattern)?);
-                }
+            if let Some(pattern) = constraint.pattern
+                && !patterns.iter().any(|compiled| compiled.as_str() == pattern)
+            {
+                patterns.push(cache.pattern(pattern)?);
             }
         }
         if matches!((minimum, maximum), (Some(min), Some(max)) if min > max) {
