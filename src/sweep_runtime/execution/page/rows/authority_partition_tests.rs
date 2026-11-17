@@ -1,9 +1,10 @@
 use super::*;
 
 fn projected_work(sweep: &SweepId, ordinal: u32, branch: Option<&str>, volatile: &str) -> TestResult<WorkSpec> {
-    let bound = Record::encode(&Value::Map(BTreeMap::from([
-        (Key::Field(FieldId::new(5)?), Value::Text(PORTAL.to_owned())),
-    ])))?;
+    let mut request = BTreeMap::from([(Key::Field(FieldId::new(5)?), Value::Text(PORTAL.to_owned()))]);
+    // A reviewed branch fixes its own request member; the leased request must carry it (field 11 = `edition`).
+    if let Some(branch) = branch { request.insert(Key::Field(FieldId::new(11)?), Value::Text(branch.to_owned())); }
+    let bound = Record::encode(&Value::Map(request))?;
     let projected = |namespace: &str| -> TestResult<Record> {
         Ok(Record::encode(&Value::Map(BTreeMap::from([
             (Key::Field(FieldId::new(3)?), Value::Text(format!("{namespace}-{volatile}"))),
@@ -72,7 +73,7 @@ fn branch_observation(catalog: &RuntimeCatalog<'_>, name: &str, metadata: Option
 async fn given_two_branches_owning_the_same_resource_when_one_retires_then_only_its_facet_disappears_in_either_completion_order() -> TestResult {
     for reverse in [false, true] {
         // Given two branch-specific facets for exactly the same canonical ResourceKey and operation.
-        let bytes = compiled()?;
+        let bytes = fixture::compiled_branched()?;
         let catalog = RuntimeCatalog::from_bytes(&bytes)?;
         let (directory, store) = store(&catalog).await?;
         let mut owners = [("alpha", "branch-A", Some("alpha-metadata")), ("omega", "branch-B", None)];

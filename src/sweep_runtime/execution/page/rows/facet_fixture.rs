@@ -11,7 +11,7 @@ const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 "n#ListBrowserSettings":{"type":"operation","input":{"target":"n#Empty"},"output":{"target":"n#ListBrowserSettingsOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/browserSettings"}}},
 "n#ListUserSettings":{"type":"operation","input":{"target":"n#Empty"},"output":{"target":"n#ListUserSettingsOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/userSettings"}}},
 "n#Empty":{"type":"structure","members":{}},
-"n#PortalInput":{"type":"structure","members":{"portalArn":{"target":"smithy.api#String","traits":{"smithy.api#required":{},"smithy.api#httpLabel":{}}}}},
+"n#PortalInput":{"type":"structure","members":{"portalArn":{"target":"smithy.api#String","traits":{"smithy.api#required":{},"smithy.api#httpLabel":{}}},"edition":{"target":"smithy.api#String","traits":{"smithy.api#httpQuery":"edition"}}}},
 "n#ListPortalsOutput":{"type":"structure","members":{"portals":{"target":"n#Portals"}}},
 "n#Portals":{"type":"list","member":{"target":"n#Portal"}},
 "n#GetPortalOutput":{"type":"structure","members":{"portal":{"target":"n#Portal"}}},
@@ -26,18 +26,23 @@ const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 }}"#;
 
 pub(super) fn compiled() -> TestResult<Vec<u8>> {
-    compile(false, false)
+    compile(false, false, false)
 }
 
 pub(super) fn compiled_candidates() -> TestResult<Vec<u8>> {
-    compile(true, false)
+    compile(true, false, false)
 }
 
 pub(super) fn compiled_competing() -> TestResult<Vec<u8>> {
-    compile(false, true)
+    compile(false, true, false)
 }
 
-fn compile(candidates: bool, secondary: bool) -> TestResult<Vec<u8>> {
+/// GetPortal fans out into two reviewed branches that own the same canonical resource.
+pub(super) fn compiled_branched() -> TestResult<Vec<u8>> {
+    compile(false, false, true)
+}
+
+fn compile(candidates: bool, secondary: bool, branched: bool) -> TestResult<Vec<u8>> {
     let root = tempfile::tempdir()?;
     let source = root.path().join("source");
     let models = source.join("models/workspaces-web/service/2022-01-01");
@@ -45,13 +50,13 @@ fn compile(candidates: bool, secondary: bool) -> TestResult<Vec<u8>> {
     fs::write(models.join("model.json"), MODEL)?;
     let policies = overlay::ServiceOverlay::new("workspaces-web", vec![
         ("ListPortals", plan("portals", "portalArn", None)?),
-        ("GetPortal", plan("portal", "portalArn", Some("ListPortals"))?),
+        ("GetPortal", get_portal(branched)?),
         ("GetPortalServiceProviderMetadata", plan("$", "portalArn", Some("ListPortals"))?),
         ("ListBrowserSettings", plan("browserSettings", "browserSettingsArn", None)?),
         ("ListUserSettings", plan("userSettings", "userSettingsArn", None)?),
     ])?;
     let checked = overlay::check_policies(&source, &[policies], &catalog_tool::classes::DenyList::builtin())?;
-    let fields = smithy::Registry::parse("browserSettings\nbrowserSettingsArn\ndisplayName\nportal\nportalArn\nportals\nserviceProviderSamlMetadata\nuserSettings\nuserSettingsArn\nzzMetadataBrowserSettingsArn\n")?;
+    let fields = smithy::Registry::parse("browserSettings\nbrowserSettingsArn\ndisplayName\nportal\nportalArn\nportals\nserviceProviderSamlMetadata\nuserSettings\nuserSettingsArn\nzzMetadataBrowserSettingsArn\nedition\n")?;
     let base = smithy::build_catalog(&source, &fields, "canonical-facet-fixture")?;
     let primary = kind_map::RelationMapping { source_kind: "AWS::WorkSpacesWeb::Portal", source: kind_map::RelationSource::SelectedOutput(kind_map::RelationPath::Fields("browserSettingsArn")), target_kind: "AWS::WorkSpacesWeb::BrowserSettings", target: kind_map::RelationTarget::SelectedOutput(kind_map::RelationPath::Fields("browserSettingsArn")), relation: "USES_BROWSER_SETTINGS", scope: "account_region", guard: None };
     let mut relations = vec![primary];
@@ -102,4 +107,20 @@ fn endpoint() -> TestResult<endpoints::VerifiedEndpoint> {
     let rules = endpoints::RuleSet::parse(Path::new("facet-endpoint.json"), &json!({"version":"1.0","parameters":{"Region":{"type":"string"}},"rules":[{"type":"endpoint","conditions":[],"endpoint":{"url":"https://workspaces-web.test","properties":properties}}]}))?;
     let cases: Vec<endpoints::Case> = serde_json::from_value(json!([{"params":{"Region":"us-east-1"},"expect":{"endpoint":{"url":"https://workspaces-web.test","properties":properties}}}]))?;
     rules.run_cases(&cases)?.verified_endpoint(Some("workspaces-web")).map_err(|error| format!("endpoint fixture: {error:?}").into())
+}
+
+fn get_portal(branched: bool) -> TestResult<overlay::OperationOverlay> {
+    let mut plan = plan("portal", "portalArn", Some("ListPortals"))?;
+    if branched {
+        plan.branches = ["alpha", "omega"].into_iter().map(|edition| Ok(overlay::ExecutionBranch {
+            discriminator: edition.to_owned(),
+            fixed: BTreeMap::from([(overlay::MemberPath::new("edition")?, overlay::FixedValue::String(edition.to_owned()))]),
+            bind: BTreeMap::new(),
+            emission: None,
+            row_policy: None,
+            scope: overlay::Scope::Region,
+            request_region: None,
+        })).collect::<TestResult<_>>()?;
+    }
+    Ok(plan)
 }

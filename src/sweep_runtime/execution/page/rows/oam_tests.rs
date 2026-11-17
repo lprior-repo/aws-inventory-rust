@@ -260,7 +260,10 @@ async fn given_legacy_store_without_catalog_when_plain_open_commits_unrelated_ob
                 page.edges.push(Edge { from: reference.from.clone(), to: ResourceKey { account: reference.target.account().clone(), region: reference.target.region().clone(), kind: reference.target.kind().clone(), id: reference.target.value().clone() }, relation: reference.relation.clone(), source: reference.source });
                 page.unresolved.clear();
             }
+            let lease = page.lease.clone();
             assert!(matches!(reopened.commit_page(page).await, Err(inventory_engine::inventory::StoreError::Invalid("relationship evidence is not permitted by the checked catalog"))), "schema {version}, direct {direct}");
+            // A rejected page leaves its sweep active; settle it as failed so the next attack can seed its own sweep.
+            reopened.finish_scope(lease, inventory_core::inventory::ScopeOutcome::Failed, 10).await?;
             assert_eq!(reopened.projection_resources(None, 100).await?.len(), 2);
             assert!(reopened.projection_edges(None, 100).await?.edges.is_empty());
         }
