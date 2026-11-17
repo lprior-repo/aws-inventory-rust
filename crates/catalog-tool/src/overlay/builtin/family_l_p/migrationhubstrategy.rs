@@ -20,12 +20,18 @@ const GROUPS: &[Group] = &[
     },
     Group {
         operations: &[
-            "GetLatestAssessmentId", "GetPortfolioPreferences", "GetPortfolioSummary", 
             "ListAnalyzableServers", "ListApplicationComponents", "ListImportFileTask", 
             "ListServers",
         ],
+        class: OverlayClass::Enumerate,
+        reason: None,
+    },
+    Group {
+        operations: &[
+            "GetLatestAssessmentId", "GetPortfolioPreferences", "GetPortfolioSummary",
+        ],
         class: OverlayClass::Defer,
-        reason: Some("The authorized metadata summaries are collected separately; this operation has no complete resource identity, safety and discovery contract."),
+        reason: Some("Settings and reference data, not a resource collection. Pinned operations: Gets settings, references, or state."),
     },
     Group {
         operations: &[

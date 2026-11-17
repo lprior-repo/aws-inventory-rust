@@ -1,7 +1,5 @@
 use super::{IdentityTextOperandValidation, path_value, SweepError};
 use inventory_core::record::{FieldId, Record, ValueRef};
-use std::{borrow::Cow, fmt::Write};
-
 pub(super) fn integer<'a>(record: &'a Record, path: &[FieldId], minimum: i64, maximum: i64) -> Result<Cow<'a, str>, SweepError> {
     if minimum > maximum { return Err(SweepError::Operation("invalid identity integer bounds")) }
     let value = path_value(record.root(), path)?.ok_or(SweepError::Operation("modeled identity path is absent"))?;

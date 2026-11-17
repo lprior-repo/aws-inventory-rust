@@ -9,6 +9,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
         ("ListCustomPlugins", policy::query(policy::enumerate("customPlugins", policy::arn("customPluginArn")?, Some(("nextToken", "nextToken")))?, &["customPluginArn"])?),
         ("ListWorkerConfigurations", policy::query(policy::enumerate("workerConfigurations", policy::arn("workerConfigurationArn")?, Some(("nextToken", "nextToken")))?, &["workerConfigurationArn"])?),
         ("DescribeCustomPlugin", policy::query(policy::bind(policy::enumerate("$", policy::arn("customPluginArn")?, None)?, "customPluginArn", "ListCustomPlugins", "customPluginArn")?, &["customPluginArn"])?),
+        ("ListConnectorOperations", policy::query(policy::bind(policy::enumerate("connectorOperations", policy::arn("operationArn")?, Some(("nextToken", "nextToken")))?, "connectorArn", "ListConnectors", "connectorArn")?, &["connectorArn", "operationArn"])?),
     ];
     policy::finish(
         "kafkaconnect", approved, DEFERRED,
@@ -20,7 +21,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
 // Explicit pinned operation dispositions. No runtime operation-name classifier approves calls.
 // Mutation sets change resource/lifecycle/authorization state; content and credential reads stay denied.
 const DEFERRED: &[&str] = &[
-    "DescribeConnector", "DescribeConnectorOperation", "ListConnectorOperations", "ListTagsForResource",
+    "DescribeConnector", "DescribeConnectorOperation", "ListTagsForResource",
 ];
 
 const MUTATING: &[&str] = &[

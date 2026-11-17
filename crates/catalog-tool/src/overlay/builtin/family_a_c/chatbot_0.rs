@@ -29,13 +29,16 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
             queryable: vec![path("ChatConfigurationArn")?],
             ..read("SlackChannelConfigurations", Identity::Arn(path("ChatConfigurationArn")?), Scope::Account, token("NextToken", "NextToken")?)?
         }),
-        ("DescribeSlackUserIdentities", deferred("No safe resource collection plan is approved for this modeled operation. Its output is SlackUserIdentities; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Lists all Slack user identities with a mapped role.")),
-        ("DescribeSlackWorkspaces", deferred("No safe resource collection plan is approved for this modeled operation. Its output is SlackWorkspaces; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: List all authorized Slack workspaces connected to the AWS Account onboarded with AWS Chatbot.")),
+        ("DescribeSlackUserIdentities", deferred("Slack user identity references are external to AWS. No reviewed complete parent binding and selected-item resource identity is authorized for this operation.")),
+        ("DescribeSlackWorkspaces", deferred("Slack workspace authorizations are external to AWS. No reviewed complete parent binding and selected-item resource identity is authorized for this operation.")),
         ("DisassociateFromConfiguration", deferred("Model requires Resource, ChatConfiguration. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Unlink a resource, for example a custom action, from a channel configuration.")),
         ("GetAccountPreferences", deferred("No safe resource collection plan is approved for this modeled operation. Its output is AccountPreferences; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns AWS Chatbot account preferences.")),
         ("GetCustomAction", deferred("Model requires CustomActionArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a custom action.")),
         ("GetMicrosoftTeamsChannelConfiguration", deferred("Model requires ChatConfigurationArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a Microsoft Teams channel configuration in an AWS account.")),
-        ("ListAssociations", deferred("Model requires ChatConfiguration. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists resources associated with a channel configuration.")),
+        ("ListAssociations", OperationOverlay {
+            queryable: vec![path("ChatConfiguration")?],
+            ..read("Associations", Identity::Arn(path("Resource")?), Scope::Account, token("NextToken", "NextToken")?)?
+        }),
         // Model: Lists custom actions defined in this account.
         ("ListCustomActions", OperationOverlay {
             queryable: vec![path("$")?],
@@ -52,8 +55,8 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
             queryable: vec![path("ChatConfigurationArn")?],
             ..read("TeamChannelConfigurations", Identity::Arn(path("ChatConfigurationArn")?), Scope::Account, token("NextToken", "NextToken")?)?
         }),
-        ("ListMicrosoftTeamsConfiguredTeams", deferred("No safe resource collection plan is approved for this modeled operation. Its output is ConfiguredTeams; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Lists all authorized Microsoft Teams for an AWS Account")),
-        ("ListMicrosoftTeamsUserIdentities", deferred("No safe resource collection plan is approved for this modeled operation. Its output is TeamsUserIdentities; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: A list all Microsoft Teams user identities with a mapped role.")),
+        ("ListMicrosoftTeamsConfiguredTeams", deferred("Microsoft Teams team references are external to AWS. No reviewed complete parent binding and selected-item resource identity is authorized for this operation.")),
+        ("ListMicrosoftTeamsUserIdentities", deferred("Microsoft Teams user identity references are external to AWS. No reviewed complete parent binding and selected-item resource identity is authorized for this operation.")),
         ("ListTagsForResource", deferred("Model requires ResourceARN. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists all of the tags associated with the Amazon Resource Name (ARN) that you specify. The resource can be a user, server, or role.")),
         ("TagResource", deferred("Model requires ResourceARN, Tags. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Attaches a key-value pair to a resource, as identified by its Amazon Resource Name (ARN). Resources are users, servers, roles, and other entities.")),
         ("UntagResource", deferred("Model requires ResourceARN, TagKeys. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Detaches a key-value pair from a resource, as identified by its Amazon Resource Name (ARN). Resources are users, servers, roles, and other entities.")),

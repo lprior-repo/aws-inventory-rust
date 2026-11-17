@@ -20,13 +20,7 @@ const GROUPS: &[Group] = &[
         class: OverlayClass::Defer,
         reason: Some("Expansion requires request context (Id); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
     },
-    Group {
-        operations: &[
-            "ListAssets",
-        ],
-        class: OverlayClass::Defer,
-        reason: Some("The authorized metadata summaries are collected separately; this operation has no complete resource identity, safety and discovery contract."),
-    },
+
     Group {
         operations: &[
             "ListTagsForResource",
@@ -37,6 +31,16 @@ const GROUPS: &[Group] = &[
 ];
 
 const RESOURCES: &[Resource] = &[
+    // Returns a collection of MediaPackage VOD Asset resources.
+    Resource {
+        operation: "ListAssets",
+        items: "Assets", id: Id::Arn("Arn"),
+        scope: Scope::Region, tokens: Some(("NextToken", "NextToken")),
+        query: &["Arn", "Id", "PackagingGroupId", "ResourceId", "SourceArn"],
+        tags: Some("Tags"),
+        bindings: &[],
+        fixed: &[],
+    },
     // Returns a collection of MediaPackage VOD PackagingConfiguration resources.
     Resource {
         operation: "ListPackagingConfigurations",

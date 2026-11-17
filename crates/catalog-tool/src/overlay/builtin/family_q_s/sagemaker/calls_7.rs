@@ -1,0 +1,66 @@
+// Pinned model: .local/aws-models/models/sagemaker/service/2017-07-24/sagemaker-2017-07-24.json
+use super::super::construction::{Inventory, ResourceIdentity, Input};
+use crate::overlay::Scope;
+
+pub(super) const CALLS: &[Inventory] = &[
+    Inventory {
+        operation: "ListApps",
+        items: "AppList",
+        identity: ResourceIdentity::Key(&["DomainId", "AppType", "AppName"]),
+        token: Some(("NextToken", "NextToken")),
+        scope: Scope::Region,
+        input: &[],
+        tags: None,
+        queryable: &["DomainId", "UserProfileName", "SpaceName"],
+    },
+    Inventory {
+        operation: "ListAliases",
+        items: "SageMakerImageVersionAliases",
+        identity: ResourceIdentity::Key(&["ImageName", "Alias"]),
+        token: Some(("NextToken", "NextToken")),
+        scope: Scope::Region,
+        input: &[Input::Parent("ImageName", "ListImages", "ImageName")],
+        tags: None,
+        queryable: &["ImageName"],
+    },
+    Inventory {
+        operation: "ListCandidatesForAutoMLJob",
+        items: "Candidates",
+        identity: ResourceIdentity::Key(&["AutoMLJobName", "CandidateName"]),
+        token: Some(("NextToken", "NextToken")),
+        scope: Scope::Region,
+        input: &[Input::Parent("AutoMLJobName", "ListAutoMLJobs", "AutoMLJobName")],
+        tags: None,
+        queryable: &["AutoMLJobName"],
+    },
+    Inventory {
+        operation: "ListClusterEvents",
+        items: "Events",
+        identity: ResourceIdentity::Key(&["ClusterName", "EventId"]),
+        token: Some(("NextToken", "NextToken")),
+        scope: Scope::Region,
+        input: &[Input::Parent("ClusterName", "ListClusters", "ClusterName")],
+        tags: None,
+        queryable: &["ClusterName"],
+    },
+    Inventory {
+        operation: "ListClusterExtensions",
+        items: "ExtensionList",
+        identity: ResourceIdentity::Key(&["ClusterName", "ExtensionArn"]),
+        token: Some(("NextToken", "NextToken")),
+        scope: Scope::Region,
+        input: &[Input::Parent("ClusterArn", "ListClusters", "ClusterArn")],
+        tags: None,
+        queryable: &["ClusterName"],
+    },
+    Inventory {
+        operation: "DescribeTrainingPlanExtensionHistory",
+        items: "TrainingPlanExtensions",
+        identity: ResourceIdentity::Key(&["TrainingPlanArn", "ExtensionOfferingId"]),
+        token: Some(("NextToken", "NextToken")),
+        scope: Scope::Region,
+        input: &[Input::Parent("TrainingPlanArn", "ListTrainingPlans", "TrainingPlanArn")],
+        tags: None,
+        queryable: &["TrainingPlanArn"],
+    },
+];

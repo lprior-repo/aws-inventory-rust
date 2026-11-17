@@ -7,6 +7,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     let approved = vec![
         ("ListStreams", policy::query(policy::enumerate("StreamInfoList", policy::arn("StreamARN")?, Some(("NextToken", "NextToken")))?, &["StreamARN"])?),
         ("ListSignalingChannels", policy::query(policy::enumerate("ChannelInfoList", policy::arn("ChannelARN")?, Some(("NextToken", "NextToken")))?, &["ChannelARN"])?),
+        ("DescribeMappedResourceConfiguration", policy::query(policy::enumerate("MappedResourceConfigurationList", policy::arn("ResourceArn")?, Some(("NextToken", "NextToken")))?, &["ResourceArn", "ResourceName"])?),
     ];
     policy::finish(
         "kinesis-video", approved, DEFERRED,
@@ -19,7 +20,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
 // Mutation sets change resource/lifecycle/authorization state; content and credential reads stay denied.
 const DEFERRED: &[&str] = &[
     "DescribeEdgeConfiguration", "DescribeImageGenerationConfiguration",
-    "DescribeMappedResourceConfiguration", "DescribeMediaStorageConfiguration",
+    "DescribeMediaStorageConfiguration",
     "DescribeNotificationConfiguration", "DescribeSignalingChannel", "DescribeStream",
     "DescribeStreamStorageConfiguration", "GetDataEndpoint", "GetSignalingChannelEndpoint",
     "ListEdgeAgentConfigurations", "ListTagsForResource", "ListTagsForStream",
