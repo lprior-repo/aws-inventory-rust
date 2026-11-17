@@ -26,6 +26,7 @@ pub(in crate::sweep_runtime) fn project_children(
     let contexts = contexts_from(plan, Rows { items: &items, offset: 0 },
         request, response, ancestry, scope, &mut budget)?;
     let region = routing::request_region(plan, scope.region(), context.home, scope.branch())?;
+    let branch = routing::execution_branch(plan, scope.branch())?;
     let observations = if plan.effective_emission(branch) == Emission::DiscoveryOnly { Vec::new() } else {
         items.iter().zip(&contexts).map(|(row, ancestry)| {
             page_rows::observation(catalog,
