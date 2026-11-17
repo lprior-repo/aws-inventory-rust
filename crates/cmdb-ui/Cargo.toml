@@ -20,6 +20,7 @@ tracing.workspace = true
 inventory-engine = { workspace = true, default-features = false }
 sqlx.workspace = true
 redis = { version = "1.8.1", features = ["tokio-rustls-comp"] }
+sha2.workspace = true
 tempfile = "3.27.0"
 
 [lints]
