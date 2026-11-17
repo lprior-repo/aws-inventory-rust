@@ -31,9 +31,15 @@ async fn given_another_delivery_owner_when_any_handle_projects_then_it_fails_bus
 
 #[tokio::test]
 async fn given_superseded_and_replayed_acknowledgements_when_applied_then_only_removed_rows_are_counted() -> TestResult {
-    let (_directory, store, _) = fixture().await?;
-    // Given: both ordinary and full-rebuild acknowledgements may be stale.
-    let marker = store.drain_projection(1000).await?.into_iter().find(|entry| entry.full_rebuild).ok_or("missing initial rebuild marker")?;
+    let (directory, store, _) = fixture().await?;
+    // Given: an overflowed outbox yields a full-rebuild marker, and acknowledgements may be stale.
+    store.seed_work(work("overflow", "us-east-1")?).await?;
+    let lease = store.claim(&SweepId::new("overflow".into())?, 1, 50).await?.ok_or("missing overflow lease")?;
+    let mut raw = SqliteConnection::connect_with(&SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite"))).await?;
+    sqlx::query("UPDATE metadata SET value=100000 WHERE key='projection_pending'").execute(&mut raw).await?;
+    raw.close().await?;
+    store.commit_page(page(lease, vec![observation("one", "seed")?], true, None, 2)).await?;
+    let marker = store.drain_projection(1000).await?.into_iter().find(|entry| entry.full_rebuild).ok_or("missing overflow rebuild marker")?;
     assert_eq!(store.ack_projection(ProjectionAck::full_rebuild(marker.revision)?).await?, 1);
     assert_eq!(store.ack_projection(ProjectionAck::full_rebuild(marker.revision)?).await?, 0);
     let mut pending = Vec::new();
