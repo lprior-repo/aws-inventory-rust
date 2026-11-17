@@ -12,6 +12,7 @@ pub(in crate::sweep_runtime) fn emission_observation(catalog: &RuntimeCatalog<'_
         Some(classification) => classification.classify(row)?.clone(),
         None => emission.kind().clone(),
     };
+    record::trusted_arn::validate_kind_arn(&kind, id.as_str())?;
     let key = ResourceKey { account, region: region.clone(), kind, id };
     let name = resource_name(catalog, &key.kind, row)?;
     Ok(Observation::new(key, row.clone(), emission.hash_exclusions(), name)?

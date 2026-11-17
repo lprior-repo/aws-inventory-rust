@@ -70,6 +70,7 @@ impl Context<'_> {
             (parent.account.clone(), parent.region.clone(), parent.kind.clone())
         } else {
             let (account, region) = resource_projection::reference_owner(relation, self.observation, value, self.home)?;
+            record::trusted_arn::validate_kind_arn(&relation.target_kind, value)?;
             (account, region, relation.target_kind.clone())
         };
         let target = ReferenceTarget::typed(account, region, kind, relation.target_path.to_vec(),

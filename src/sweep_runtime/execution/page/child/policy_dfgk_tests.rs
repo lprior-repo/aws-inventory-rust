@@ -21,12 +21,18 @@ pub(in crate::sweep_runtime) fn project_children(
     ancestry: &DiscoveryContext,
 ) -> TestResult<(Vec<Observation>, Vec<WorkSpec>)> {
     let plan = context.parent_plan;
-    let items = projected_items(plan, response)?;
+    let branch = routing::execution_branch(plan, scope.branch())?;
+    // Mirror production assembly: the row policy selects (or rejects) rows before projection.
+    let mut items = Vec::new();
+    for row in record::item_records(response, plan.items())? {
+        if crate::sweep_runtime::row_policy::selected(plan, branch, &row, request, response)? {
+            items.push(resource_projection::project(plan, &row)?);
+        }
+    }
     let mut budget = PageContextBudget::new(ancestry, items.len())?;
     let contexts = contexts_from(plan, Rows { items: &items, offset: 0 },
         request, response, ancestry, scope, &mut budget)?;
     let region = routing::request_region(plan, scope.region(), context.home, scope.branch())?;
-    let branch = routing::execution_branch(plan, scope.branch())?;
     let observations = if plan.effective_emission(branch) == Emission::DiscoveryOnly { Vec::new() } else {
         items.iter().zip(&contexts).map(|(row, ancestry)| {
             page_rows::observation(catalog,

@@ -20,17 +20,25 @@ struct Page {
     uri: String,
     body: Option<Value>,
     absent: Vec<&'static str>,
+    cbor: bool,
 }
 
 impl Page {
     fn new(operation: &'static str, request: Value, response: Value, ids: Vec<String>) -> Self {
         Self { operation, body: Some(request.clone()), request, response, ids,
-            parent: None, uri: "/".to_owned(), absent: Vec::new() }
+            parent: None, uri: "/".to_owned(), absent: Vec::new(), cbor: false }
     }
 
     fn rest(mut self, uri: String, body: Option<Value>) -> Self {
         self.uri = uri;
         self.body = body;
+        self
+    }
+
+    /// RPC v2 CBOR plans: `/service/{shape}/operation/{operation}` with a CBOR map body.
+    fn cbor(mut self, shape: &str) -> Self {
+        self.uri = format!("/service/{shape}/operation/{}", self.operation);
+        self.cbor = true;
         self
     }
 
@@ -83,6 +91,14 @@ fn assert_wire(page: &Page, wire: &http::Request<bytes::Bytes>) -> TestResult {
         uri.query().map_or_else(BTreeSet::new, |query| query.split('&').map(str::to_owned).collect())
     };
     assert_eq!(query(wire.uri()), query(&expected), "{} query", page.operation);
+    if page.cbor {
+        assert_eq!(wire.headers().get("smithy-protocol").and_then(|value| value.to_str().ok()), Some("rpc-v2-cbor"), "{} protocol", page.operation);
+        assert_eq!(wire.method(), http::Method::POST, "{} method", page.operation);
+        assert!(wire.uri().query().is_none(), "{} query", page.operation);
+        let expected = page.body.as_ref().ok_or("CBOR page has no request body")?;
+        assert_eq!(&crate::sweep_runtime::test_cbor::cbor_to_json(wire.body())?, expected, "{} body", page.operation);
+        return Ok(());
+    }
     match &page.body {
         Some(body) => assert_eq!(serde_json::from_slice::<Value>(wire.body())?, *body, "{} body", page.operation),
         None => assert!(wire.body().is_empty() || wire.body().as_ref() == b"{}", "unexpected REST payload"),

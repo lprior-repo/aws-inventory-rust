@@ -133,6 +133,7 @@ async fn given_two_scalar_applications_when_equal_deployment_group_names_resume_
         pages.extend(later_pages("ListDeploymentGroups", json!({"applicationName":application}), application, "deploymentGroups", "nextToken",
             json!("prod"), scoped(application, "prod"), "/", None, &["applicationName"]));
     }
+    let pages = pages.into_iter().map(|page| page.cbor("CodeDeploy_20141006")).collect();
     consume("codedeploy", "2014-10-06", &["ListApplications"], &[("ListDeploymentGroups", "AWS::CodeDeploy::DeploymentGroup")],
         &["GetApplicationRevision", "CreateDeployment"], pages).await
 }

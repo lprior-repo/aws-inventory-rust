@@ -41,7 +41,7 @@ async fn given_three_retention_types_and_local_ram_permissions_when_branch_pages
         let second = lease.token().is_some();
         if plan.service_name()=="ram" {
             assert_eq!(text(&request,"resourceOwner")?,"SELF");
-            assert_eq!(text(&request,"permissionType")?,"LOCAL");
+            assert_eq!(text(&request,"permissionType")?,"CUSTOMER_MANAGED");
             assert!(request.get("permissionStatus").is_none());
             assert_eq!(request.get("nextToken").and_then(Json::as_str),second.then_some("page-two"));
             let permissions = if second { vec![json!({"arn":"arn:aws:ram:us-east-1:123456789012:permission/active","status":"ATTACHABLE"}),json!({"arn":"arn:aws:ram:us-east-1:123456789012:permission/deprecated","status":"UNATTACHABLE"})] } else {vec![]};

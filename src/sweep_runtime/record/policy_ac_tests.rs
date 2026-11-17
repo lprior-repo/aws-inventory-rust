@@ -23,12 +23,16 @@ fn resource_key(account: &inventory_core::inventory::AccountId, region: &invento
 }
 
 fn decode(plan: &CallablePlan<'_>, body: &Json) -> TestResult<Record> {
-    let body = serde_json::to_vec(body)?;
+    let body = match plan.protocol() {
+        RuntimeProtocol::RpcV2Cbor => crate::sweep_runtime::test_cbor::json_to_cbor(body)?,
+        _ => serde_json::to_vec(body)?,
+    };
     let protocol = match plan.protocol() {
         RuntimeProtocol::AwsJson10 => aws_wire::request::Protocol::AwsJson10,
         RuntimeProtocol::AwsJson11 => aws_wire::request::Protocol::AwsJson11,
         RuntimeProtocol::RestJson1 => aws_wire::request::Protocol::RestJson1,
-        _ => return Err("A-C fixture requires a JSON protocol".into()),
+        RuntimeProtocol::RpcV2Cbor => aws_wire::request::Protocol::RpcV2Cbor,
+        _ => return Err("A-C fixture requires a JSON or CBOR protocol".into()),
     };
     Ok(aws_wire::response::decode(aws_wire::response::ResponseContext {
         service: plan.service(), operation: plan.operation(), protocol, body: &body,
@@ -84,8 +88,7 @@ fn given_eight_real_paged_roots_when_resumed_then_wire_requests_and_terminal_pag
             // Then: actual request serialization carries the exact opaque token in query/body placement.
             let base = crate::sweep_runtime::input::root_bindings(plan, None, None)?;
             let request = crate::sweep_runtime::request::encode(plan, "https://fixture.example.test", &base, &fields)?;
-            let body = std::str::from_utf8(request.body())?;
-            assert!(request.uri().to_string().contains("resume-token") || body.contains("resume-token"), "{service}.{operation}");
+            assert!(request.uri().to_string().contains("resume-token") || request.body().windows(12).any(|window| window == b"resume-token"), "{service}.{operation}");
             let last = decode(plan, &last)?;
             assert!(restored.next(plan.pagination(), &last, &http::HeaderMap::new(), 10)?.is_none(), "{service}.{operation}");
             // Wrongly typed cursors cannot be silently accepted as a terminal successful page.

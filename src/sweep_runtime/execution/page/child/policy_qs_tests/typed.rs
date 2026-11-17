@@ -10,13 +10,13 @@ async fn given_empty_and_multicomponent_namespaces_in_two_buckets_when_pages_exe
     scenario.seed(fixture::plan(&catalog,"s3tables","ListTableBuckets")?).await?;
     scenario.run(&catalog,5,|plan,lease,wire| {
         if plan.operation_name()=="ListTableBuckets" {
-            return bytes(json!({"tableBuckets":[{"arn":bucket("a"),"name":"a","ownerAccountId":"123456789012","createdAt":0},{"arn":bucket("b"),"name":"b","ownerAccountId":"123456789012","createdAt":0}]}));
+            return bytes(json!({"tableBuckets":[{"arn":bucket("a"),"name":"a","ownerAccountId":"123456789012","createdAt":"1970-01-01T00:00:00Z"},{"arn":bucket("b"),"name":"b","ownerAccountId":"123456789012","createdAt":"1970-01-01T00:00:00Z"}]}));
         }
         assert!(wire.uri().path().starts_with("/namespaces/arn%3Aaws%3As3tables%3Aus-east-1%3A123456789012%3Abucket%2F"));
         assert!(!wire.uri().query().is_some_and(|query|query.contains("prefix=")));
         let second=lease.token().is_some();
         let names=if second {vec![vec!["empty"]]} else {vec![vec!["a","b_c"],vec!["a_b","c"]]};
-        paginated(json!({"namespaces":names.into_iter().map(|namespace|json!({"namespace":namespace,"createdAt":0,"createdBy":"123456789012","ownerAccountId":"123456789012"})).collect::<Vec<_>>()}),"continuationToken",second)
+        paginated(json!({"namespaces":names.into_iter().map(|namespace|json!({"namespace":namespace,"createdAt":"1970-01-01T00:00:00Z","createdBy":"123456789012","ownerAccountId":"123456789012"})).collect::<Vec<_>>()}),"continuationToken",second)
     }).await?;
     let saved=scenario.saved().await?;
     assert_eq!(count(&saved,"AWS::S3Tables::Namespace"),6);

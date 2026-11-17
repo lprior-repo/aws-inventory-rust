@@ -11,6 +11,8 @@ mod record;
 #[cfg(test)]
 mod pinned_model;
 mod request;
+#[cfg(test)]
+mod test_cbor;
 mod resource_projection;
 mod row_policy;
 

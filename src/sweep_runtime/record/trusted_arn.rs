@@ -1,5 +1,6 @@
+mod wisdom_ai_prompt;
 use super::{IdentityContext,SweepError};
-use inventory_core::{catalog::runtime::ArnResourceKind,inventory::{AccountId,RegionId,ServiceId}};
+use inventory_core::{catalog::runtime::ArnResourceKind,inventory::{AccountId,Kind,RegionId,ServiceId}};
 
 struct Arn<'a> { partition:&'a str, service:&'a str, region:&'a str, account:&'a str, resource:&'a str }
 
@@ -18,6 +19,18 @@ pub(in crate::sweep_runtime) fn validate_arn(value:&str,trusted:Option<&Identity
     let arn = parse(value)?;
     if let Some(trusted) = trusted { validate_scope(&arn,trusted,false)?; }
     Ok(())
+}
+
+/// Reviewed per-kind ARN grammars. A kind without a reviewed grammar keeps the shared `validate_arn` checks.
+pub(in crate::sweep_runtime) fn validate_kind_arn(kind:&Kind,value:&str) -> Result<(),SweepError> {
+    match kind.as_str() {
+        "AWS::Wisdom::AIPrompt" => {
+            let arn = parse(value)?;
+            if arn.service != "wisdom" || !wisdom_ai_prompt::valid(arn.resource) { return Err(SweepError::Operation("modeled ARN is malformed")); }
+            Ok(())
+        }
+        _ => Ok(()),
+    }
 }
 
 fn validate_scope(arn:&Arn<'_>,trusted:&IdentityContext<'_>,exact:bool) -> Result<(),SweepError> {

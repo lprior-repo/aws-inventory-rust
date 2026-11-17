@@ -129,7 +129,10 @@ impl<'a, 'c> Scenario<'a, 'c> {
 fn text<'a>(value: &'a Json, field: &str) -> TestResult<&'a str> {
     value.get(field).and_then(Json::as_str).ok_or_else(|| format!("native request omitted {field}").into())
 }
-fn body(wire: &Wire) -> TestResult<Json> { Ok(serde_json::from_slice(wire.body())?) }
+fn body(wire: &Wire) -> TestResult<Json> {
+    if wire.headers().get("smithy-protocol").is_some_and(|value| value == "rpc-v2-cbor") { return crate::sweep_runtime::test_cbor::cbor_to_json(wire.body()); }
+    Ok(serde_json::from_slice(wire.body())?)
+}
 fn bytes(value: Json) -> TestResult<Vec<u8>> { Ok(serde_json::to_vec(&value)?) }
 fn paginated(mut value: Json, token: &str, second: bool) -> TestResult<Vec<u8>> {
     if !second { value.as_object_mut().ok_or("native response not an object")?.insert(token.to_owned(), json!("page-two")); }

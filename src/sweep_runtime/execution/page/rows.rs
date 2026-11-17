@@ -89,10 +89,12 @@ pub(super) fn observation(
     let id = record::resource_id_with_context(
         row, plan.identity(), Some(identity_context), ancestry, request,
     )?;
+    let kind = resource_projection::classify(plan, row)?;
+    record::trusted_arn::validate_kind_arn(&kind, id.as_str())?;
     let key = ResourceKey {
         account: account.clone(),
         region: region.clone(),
-        kind: resource_projection::classify(plan, row)?,
+        kind,
         id,
     };
     let name = resource_name(catalog, &key.kind, row)?;
