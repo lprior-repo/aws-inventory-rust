@@ -46,9 +46,9 @@ async fn given_serverless_policy_type_domains_when_every_branch_resumes_then_sam
 #[tokio::test]
 async fn given_mediaconnect_owned_roots_when_unfiltered_pages_resume_then_endpoints_and_gateway_installations_persist() -> TestResult {
     let cases = [
-        ("ListGatewayInstances", "Instances", "GatewayInstanceArn", "AWS::ApiOnly::MediaConnectGatewayInstance", "gateway-instance"),
-        ("ListSourceEndpoints", "SourceEndpoints", "Arn", "AWS::MediaConnect::SourceEndpoint", "source-endpoint"),
-        ("ListDestinationEndpoints", "DestinationEndpoints", "Arn", "AWS::MediaConnect::DestinationEndpoint", "destination-endpoint"),
+        ("ListGatewayInstances", "instances", "gatewayInstanceArn", "AWS::ApiOnly::MediaConnectGatewayInstance", "gateway-instance"),
+        ("ListSourceEndpoints", "sourceEndpoints", "arn", "AWS::MediaConnect::SourceEndpoint", "source-endpoint"),
+        ("ListDestinationEndpoints", "destinationEndpoints", "arn", "AWS::MediaConnect::DestinationEndpoint", "destination-endpoint"),
     ];
     let names = ["ListGateways", "ListGatewayInstances", "ListSourceEndpoints", "ListDestinationEndpoints"];
     let bytes = compiled("mediaconnect", "2018-11-14", &names, "AWS::MediaConnect::Gateway")?;
@@ -65,14 +65,14 @@ async fn given_mediaconnect_owned_roots_when_unfiltered_pages_resume_then_endpoi
         let (request, wire) = scenario.request(callable, &lease)?;
         assert_cursor(&wire, second)?;
         assert!(seen.insert((operation.clone(), second)));
-        let body = if operation == "ListGateways" { json!({"Gateways":[{"GatewayArn":gateway}]}) } else {
+        let body = if operation == "ListGateways" { json!({"gateways":[{"gatewayArn":gateway}]}) } else {
             let case = cases.iter().find(|case| case.0 == operation).ok_or("unexpected MediaConnect work")?;
             let native = native_input(&wire)?;
             assert!(!native.contains("gatewayArn="));
             let arn = format!("arn:aws:mediaconnect:us-east-1:123456789012:{}:{}", case.4, if second { "two" } else { "one" });
-            let row = if operation == "ListGatewayInstances" { json!({(case.2):arn,"GatewayArn":gateway,"InstanceId":"i-12345678"}) }
-                else { json!({(case.2):arn,"ResourceShareOwnership":"SELF"}) };
-            page(json!({(case.1):[row]}), "NextToken", second)?
+            let row = if operation == "ListGatewayInstances" { json!({(case.2):arn,"gatewayArn":gateway,"instanceId":"i-12345678"}) }
+                else { json!({(case.2):arn,"resourceShareOwnership":"SELF"}) };
+            page(json!({(case.1):[row]}), "nextToken", second)?
         };
         scenario.apply(&catalog, callable, lease, &request, body).await?;
     }
@@ -169,7 +169,7 @@ async fn given_code_signing_configs_when_scalar_function_arn_pages_resume_then_l
         let (request, wire) = scenario.request(callable, &lease)?;
         assert_cursor(&wire, second)?;
         let body = if operation == "ListCodeSigningConfigs" {
-            json!({"CodeSigningConfigs":[{"CodeSigningConfigArn":"arn:aws:lambda:us-east-1:123456789012:code-signing-config:csc-11111111111111111"},{"CodeSigningConfigArn":"arn:aws:lambda:us-east-1:123456789012:code-signing-config:csc-22222222222222222"}]})
+            json!({"CodeSigningConfigs":[{"CodeSigningConfigId":"csc-11111111111111111","CodeSigningConfigArn":"arn:aws:lambda:us-east-1:123456789012:code-signing-config:csc-11111111111111111","AllowedPublishers":{"SigningProfileVersionArns":[]},"CodeSigningPolicies":{"UntrustedArtifactOnDeployment":"Warn"},"LastModified":"2024-01-01T00:00:00.000+0000"},{"CodeSigningConfigId":"csc-22222222222222222","CodeSigningConfigArn":"arn:aws:lambda:us-east-1:123456789012:code-signing-config:csc-22222222222222222","AllowedPublishers":{"SigningProfileVersionArns":[]},"CodeSigningPolicies":{"UntrustedArtifactOnDeployment":"Warn"},"LastModified":"2024-01-01T00:00:00.000+0000"}]})
         } else if operation == "ListFunctionsByCodeSigningConfig" {
             let parent = bound(callable, &request)?;
             assert_parent(&wire, &parent)?;

@@ -13,7 +13,8 @@ async fn given_bound_channel_when_summary_parent_is_equal_absent_or_hostile_then
         ("foreign-account", Some(json!("arn:aws:ivs:us-east-1:999999999999:channel/owner")), false),
         ("foreign-region", Some(json!("arn:aws:ivs:eu-west-1:123456789012:channel/owner")), false),
         ("foreign-partition", Some(json!("arn:aws-cn:ivs:us-east-1:123456789012:channel/owner")), false),
-        ("null", Some(Json::Null), false),
+        // Smithy JSON decoding treats null on a non-sparse member as absent, so it is equivalent to "absent".
+        ("null", Some(Json::Null), true),
         ("wrong-type", Some(json!(7)), false),
     ] {
         // Given persisted channel metadata and its real request-bound stream-key child lease.

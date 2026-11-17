@@ -30,7 +30,7 @@ async fn given_omics_reference_integrity_metadata_when_native_pages_resume_then_
             assert_parent(&wire, "1234567890")?;
             let id = if second { "1234567892" } else { "1234567891" };
             let digest = DIGESTS.get(usize::from(second)).ok_or("reference digest fixture absent")?;
-            page(json!({"references":[{"arn":format!("{STORE}/reference/{id}"),"id":id,"referenceStoreId":"1234567890","md5":digest,"name":"reference","status":"ACTIVE","creationTime":1}]}), "nextToken", second)?
+            page(json!({"references":[{"arn":format!("{STORE}/reference/{id}"),"id":id,"referenceStoreId":"1234567890","md5":digest,"name":"reference","status":"ACTIVE","creationTime":"2024-01-01T00:00:00Z","updateTime":"2024-01-02T00:00:00Z"}]}), "nextToken", second)?
         } else { return Err("non-resource Omics work was scheduled".into()) };
         scenario.apply(&catalog, callable, lease, &request, body).await?;
     }
@@ -60,7 +60,7 @@ async fn assert_reference_digests(scenario: &Scenario<'_, '_>) -> TestResult {
 }
 
 #[tokio::test]
-async fn given_organization_transfers_without_a_smithy_page_size_when_native_tokens_resume_then_both_direction_unions_survive_reopen() -> TestResult {
+async fn given_organization_transfers_without_a_smithy_page_size_trait_when_native_tokens_resume_then_both_direction_unions_survive_reopen() -> TestResult {
     let operations = ["ListInboundResponsibilityTransfers", "ListOutboundResponsibilityTransfers"];
     let kind = "AWS::ApiOnly::OrganizationsResponsibilityTransfer";
     let bytes = compiled("organizations", "2016-11-28", &operations, kind)?;
@@ -76,7 +76,9 @@ async fn given_organization_transfers_without_a_smithy_page_size_when_native_tok
         let (request, wire) = scenario.request(callable, &lease)?;
         let native: Json = serde_json::from_slice(wire.body())?;
         assert_eq!(native.get("Type"), Some(&json!("BILLING")));
-        assert!(native.get("MaxResults").is_none(), "no synthetic page-size trait may be invented");
+        // No page-size trait is invented; the reviewed overlay fixes the modeled maximum (Smithy range 1..=20) as a plain input.
+        assert!(callable.pagination().page_size.is_none(), "no synthetic page-size trait may be invented");
+        assert_eq!(native.get("MaxResults"), Some(&json!(20)));
         assert!(native.get("Id").is_none(), "inbound collection must remain unfiltered");
         assert_cursor(&wire, second)?;
         assert!(seen.insert((operation.clone(), second)));

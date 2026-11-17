@@ -21,6 +21,16 @@ fn given_execution_account_rule_when_arn_claims_foreign_owner_region_partition_o
 }
 
 #[test]
+fn given_regional_source_when_arn_names_no_region_then_it_is_owned_but_other_regions_and_global_claims_stay_forged() -> TestResult {
+    let regional = source(Region::parse("us-east-1")?)?;
+    assert!(execution_arn_matches(&regional, &regional.region, "arn:aws:oam::123456789012:sink/target"));
+    assert!(!execution_arn_matches(&regional, &regional.region, "arn:aws:oam:us-west-2:123456789012:sink/target"));
+    let global = source(Region::Global)?;
+    assert!(!execution_arn_matches(&global, &global.region, "arn:aws:oam:us-east-1:123456789012:sink/target"));
+    Ok(())
+}
+
+#[test]
 fn given_global_source_without_execution_home_when_home_region_is_claimed_then_no_region_is_invented() -> TestResult {
     let source = source(Region::Global)?;
     let target_kind = Kind::parse("AWS::Oam::Sink")?;

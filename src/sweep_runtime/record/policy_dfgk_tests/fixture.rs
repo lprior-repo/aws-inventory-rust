@@ -147,7 +147,12 @@ pub(super) async fn persist(bytes: &[u8], plan: &CallablePlan<'_>, observations:
     let region = if plan.scope() == PlanScope::Account { Region::Global } else { Region::Regional(RegionId::parse("us-east-1")?) };
     let scope = ScopeKey::new(AccountId::parse("123456789012")?, region,
         ServiceId::parse(plan.service_name())?, OperationId::parse(plan.operation_name())?, None)?;
-    store.seed_work(WorkSpec::new(sweep.clone(), scope, None, Vec::new())?).await?;
+    // Root work carries its reviewed request bindings (e.g. fixed EngineType); the store validates them.
+    let bindings = if input::requires_parent(plan) { Vec::new() } else {
+        let account = AccountId::parse("123456789012")?;
+        input::root_bindings(plan, Some(&account), Some(&scope.region().clone()))?.into_bytes()
+    };
+    store.seed_work(WorkSpec::new(sweep.clone(), scope, None, bindings)?).await?;
     let lease = store.claim(&sweep, 1000, 10000).await?.ok_or("seeded work not claimable")?;
     store.commit_page(PageCommit { lease, observations, edges: Vec::new(), unresolved, tags: Vec::new(),
         next_token: None, continuation_digest: None, children: Vec::new(), done: true, observed_at_ms: 1001 }).await?;

@@ -188,7 +188,9 @@ fn execution_arn_matches(from: &ResourceKey, region: &Region, value: &str) -> bo
     let Some(service) = parts.next() else { return false; };
     if service.is_empty() || !service.bytes().all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-') { return false; }
     let expected_region = match region { Region::Global => "", Region::Regional(region) => region.as_str() };
-    if parts.next() != Some(expected_region) { return false; }
+    // Region-less ARN namespaces (e.g. notifications configurations) name no foreign region, so only a different concrete region is forged.
+    let Some(arn_region) = parts.next() else { return false; };
+    if !arn_region.is_empty() && arn_region != expected_region { return false; }
     let Some(account) = parts.next() else { return false; };
     if !account.is_empty() && account != from.account.as_str() { return false; }
     parts.next().is_some_and(|resource| !resource.is_empty()

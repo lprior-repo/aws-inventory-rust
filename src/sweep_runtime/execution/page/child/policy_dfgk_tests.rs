@@ -21,14 +21,7 @@ pub(in crate::sweep_runtime) fn project_children(
     ancestry: &DiscoveryContext,
 ) -> TestResult<(Vec<Observation>, Vec<WorkSpec>)> {
     let plan = context.parent_plan;
-    let branch = routing::execution_branch(plan, scope.branch())?;
-    // Mirror production assembly: the row policy selects (or rejects) rows before projection.
-    let mut items = Vec::new();
-    for row in record::item_records(response, plan.items())? {
-        if crate::sweep_runtime::row_policy::selected(plan, branch, &row, request, response)? {
-            items.push(resource_projection::project(plan, &row)?);
-        }
-    }
+    let items = selected_items(plan, scope.branch(), request, response)?;
     let mut budget = PageContextBudget::new(ancestry, items.len())?;
     let contexts = contexts_from(plan, Rows { items: &items, offset: 0 },
         request, response, ancestry, scope, &mut budget)?;
@@ -49,9 +42,21 @@ pub(in crate::sweep_runtime) fn projected_references(
     context: &Context<'_, '_>, scope: &ScopeKey, request: &Record, response: &Record,
     observations: &[Observation],
 ) -> TestResult<Vec<UnresolvedReference>> {
-    let items = projected_items(context.parent_plan, response)?;
+    let items = selected_items(context.parent_plan, scope.branch(), request, response)?;
     let region = routing::request_region(context.parent_plan, scope.region(), context.home, scope.branch())?;
     Ok(page_rows::references(catalog, context.parent_plan, &region, &items, observations, request, scope.parent())?)
+}
+
+/// Production applies row assertions and ownership before projection; scenarios must reject hostile rows the same way.
+fn selected_items(plan: &CallablePlan<'_>, scope_branch: Option<&str>, request: &Record, response: &Record) -> TestResult<Vec<Record>> {
+    let branch = routing::execution_branch(plan, scope_branch)?;
+    let mut items = Vec::new();
+    for row in record::item_records(response, plan.items())? {
+        if crate::sweep_runtime::row_policy::selected(plan, branch, &row, request, response)? {
+            items.push(resource_projection::project(plan, &row)?);
+        }
+    }
+    Ok(items)
 }
 
 fn projected_items(plan: &CallablePlan<'_>, response: &Record) -> TestResult<Vec<Record>> {

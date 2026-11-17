@@ -22,15 +22,16 @@ fn response(
 ) -> TestResult<Json> {
     match plan.operation_name() {
         "ListDataTransformationProfiles" => {
-            let query = wire.uri().query().ok_or("source format query absent")?;
-            assert!(query.split('&').any(|pair| pair == format!("sourceFormat={format}")));
+            let body: Json = serde_json::from_slice(wire.body())?;
+            assert_eq!(body.get("SourceFormat").and_then(Json::as_str), Some(format));
             assert_eq!(lease.scope().parent(), None);
             Ok(if pages == 0 { page("Items", Vec::new(), Some("secondpage"), "NextToken") }
                 else { page("Items", vec![profile(format, 1)], None, "NextToken") })
         },
         "ListDataTransformationProfileVersions" => {
             let id = if format == "CCDA" { "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" } else { "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" };
-            assert_eq!(wire.uri().path(), format!("/data-transformation-profile/{id}/versions"));
+            let body: Json = serde_json::from_slice(wire.body())?;
+            assert_eq!(body.get("ProfileId").and_then(Json::as_str), Some(id));
             let parent = lease.scope().parent().ok_or("profile version lost its parent")?;
             assert_eq!(parent.kind, *root.kind());
             assert_eq!(parent.id.as_str(), format!("{}:{format}|{}:{id}", format.len(), id.len()));
@@ -43,6 +44,15 @@ fn response(
         },
         _ => Err("profile content/transformation call scheduled".into()),
     }
+}
+
+/// Root work carries the source-format branch; version children carry it in their length-prefixed parent identity instead.
+fn source_format(lease: &WorkLease) -> TestResult<String> {
+    if let Some(branch) = lease.scope().branch() { return Ok(branch.to_owned()); }
+    let parent = lease.scope().parent().ok_or("source-format branch and parent both absent")?;
+    let (length, rest) = parent.id.as_str().split_once(':').ok_or("parent identity lacks a format prefix")?;
+    let length: usize = length.parse()?;
+    Ok(rest.get(..length).ok_or("parent format prefix overruns identity")?.to_owned())
 }
 
 fn expected_requests() -> Vec<(String, String, u32)> {
@@ -73,13 +83,13 @@ async fn given_both_source_formats_when_empty_profile_and_version_pages_resume_t
     for _ in 0..10 {
         let lease = scenario.store.claim(&scenario.sweep, 1001, 10000).await?.ok_or("profile/version continuation absent")?;
         let plan = fixture::plan(&catalog, "healthlake", lease.scope().operation().as_str())?;
-        let format = lease.scope().branch().ok_or("source-format branch disappeared")?.to_owned();
+        let format = source_format(&lease)?;
         assert!(matches!(format.as_str(), "CCDA" | "CSV"));
         let (request, wire) = scenario.prepared_request(plan, &lease)?;
         assert!(wire.uri().host().ok_or("HealthLake endpoint host absent")?.starts_with("datatransformation."));
         let cursor = cursor::Cursor::decode(lease.token())?;
         let expected_token = match cursor.pages { 0 => None, 1 => Some("secondpage"), 2 => Some("lastpage"), _ => return Err("unexpected HealthLake page".into()) };
-        assert_wire_token(&wire, expected_token, "nextToken")?;
+        assert_wire_token(&wire, expected_token, "NextToken")?;
         requested.push((plan.operation_name().to_owned(), format.clone(), cursor.pages));
         let response = response(root, plan, &lease, &wire, &format, cursor.pages)?;
         scenario.apply(&catalog, plan, lease, &request, response).await?;
