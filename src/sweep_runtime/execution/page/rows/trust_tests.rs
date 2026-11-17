@@ -18,7 +18,8 @@ fn trust_rows(catalog: &RuntimeCatalog<'_>, owner: (&str, &str), document: &str)
     let (account, role) = owner;
     let arn = format!("arn:aws:iam::{account}:role/{role}");
     let body = format!("<ListRolesResponse><ListRolesResult><Roles><member><Path>/</Path><RoleName>{role}</RoleName><RoleId>AROA12345678901234567</RoleId><Arn>{arn}</Arn><CreateDate>2020-01-01T00:00:00Z</CreateDate><AssumeRolePolicyDocument>{document}</AssumeRolePolicyDocument></member></Roles><IsTruncated>false</IsTruncated></ListRolesResult></ListRolesResponse>");
-    let rows = fixture::rows(plan, body.as_bytes())?;
+    // Production assembly applies the reviewed trust projection to every decoded row before identity and references.
+    let rows = fixture::rows(plan, body.as_bytes())?.iter().map(|row| resource_projection::project(plan, row)).collect::<Result<Vec<_>, _>>()?;
     let account = AccountId::parse(account)?;
     let home = RegionId::parse("us-east-1")?;
     let request = Record::encode(&Value::Map(BTreeMap::new()))?;
