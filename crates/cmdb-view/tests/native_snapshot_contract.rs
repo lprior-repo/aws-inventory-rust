@@ -4,16 +4,17 @@
 //! GraphConnection's native multi-hop traversal uses separate frontier queries
 //! and is currently NOT cross-hop snapshot-consistent. These tests do not claim it is.
 
+#[path = "support/modeled_catalog.rs"]
+mod modeled_catalog;
+use modeled_catalog::{Model, modeled_catalog};
 #[path = "database/tag_snapshot_contract.rs"]
 mod tag_snapshot_contract;
-#[path = "support/seal.rs"]
-mod seal;
 
 use cmdb_view::{
     Database, EdgePageRequest, GraphEdge, GraphNode, PageRequest, ResourceFilter,
 };
 use inventory_core::{
-    catalog::{CATALOG_VERSION, CatalogKey, runtime::RuntimeCatalog},
+    catalog::runtime::RuntimeCatalog,
     inventory::{
         AccountId, Edge, EdgeSource, Kind, Observation, OperationId, Region, Relation,
         ResourceId, ResourceKey, ScopeKey, ServiceId,
@@ -34,77 +35,8 @@ fn wire(fields: impl IntoIterator<Item = (u32, Value)>) -> TestResult<Value> {
     }).collect::<Result<BTreeMap<_, _>, inventory_core::record::RecordError>>()?))
 }
 
-fn catalog_map(fields: impl IntoIterator<Item = (CatalogKey, Value)>) -> TestResult<Value> {
-    Ok(Value::Map(fields.into_iter().map(|(key, value)| {
-        Ok((Key::Field(key.field()?), value))
-    }).collect::<TestResult<BTreeMap<_, _>>>()?))
-}
-
 fn catalog() -> TestResult<Vec<u8>> {
-    let plan = wire([
-        (1, Value::Text("example".into())), (2, Value::Text("ListThings".into())),
-        (3, Value::Text(KIND.into())), (4, Value::Int(0)),
-        (5, wire([(1, Value::Int(0))])?),
-        (6, wire([(1, Value::Int(0)), (2, Value::List(vec![Value::Int(1)]))])?),
-        (7, Value::List(vec![])),
-        (8, wire([(1, wire([(1, Value::Int(0))])?), (2, Value::List(vec![]))])?),
-        (9, Value::List(vec![])),
-        (10, wire([
-            (1, Value::Text("https://example.invalid".into())),
-            (2, Value::Text(REGION.into())), (3, Value::Text("example".into())),
-            (4, Value::Int(0)), (5, Value::Int(0)),
-        ])?),
-        (11, wire([
-            (1, Value::Text("native reader contract".into())),
-            (2, Value::Text("test".into())), (3, Value::Text("2026-11-15".into())),
-        ])?),
-        (12, wire([(1, Value::Int(0))])?), (13, Value::Int(5)),
-    ])?;
-    let column = wire([(1, Value::List(vec![Value::Int(1)])), (2, Value::Int(3))])?;
-    // A valid SQL keyword identifier must be quoted by BOTH writer and reader.
-    let schema = wire([
-        (1, Value::Text(KIND.into())), (2, Value::Text("select".into())),
-        (3, Value::List(vec![column])), (4, Value::Null),
-    ])?;
-    let coverage = wire([
-        (1, Value::Null), (2, Value::Text(KIND.into())), (3, Value::Bool(true)),
-        (4, Value::Null), (5, Value::Bool(true)),
-    ])?;
-    let decision = wire([
-        (1, Value::Text("example".into())), (2, Value::Text("ListThings".into())),
-        (3, Value::Int(0)),
-    ])?;
-    let runtime = wire([
-        (1, Value::Int(2)), (2, Value::List(vec![plan])),
-        (3, Value::List(vec![schema])), (4, Value::List(vec![])),
-        (5, Value::List(vec![coverage])), (6, Value::List(vec![decision])),
-    ])?;
-    let operation = catalog_map([
-        (CatalogKey::Name, Value::Text("ListThings".into())),
-        (CatalogKey::Flags, Value::Int(31)), (CatalogKey::Input, Value::Int(-1)),
-        (CatalogKey::Output, Value::Int(-14)),
-    ])?;
-    let service = catalog_map([
-        (CatalogKey::Name, Value::Text("example".into())),
-        (CatalogKey::ApiVersion, Value::Text("1".into())),
-        (CatalogKey::ServiceShape, Value::Text("n#example".into())),
-        (CatalogKey::Protocols, Value::List(vec![Value::Text("aws.protocols#restJson1".into())])),
-        (CatalogKey::Operations, Value::List(vec![operation])),
-        (CatalogKey::Shapes, Value::List(vec![])),
-        (CatalogKey::ShapeOffsets, Value::Bytes(vec![])),
-        (CatalogKey::Resources, Value::List(vec![])),
-    ])?;
-    let offsets = (0_u32..8).flat_map(|index| [index * 2, (index + 1) * 2])
-        .flat_map(u32::to_be_bytes).collect();
-    let root = catalog_map([
-        (CatalogKey::Format, Value::Int(CATALOG_VERSION)),
-        (CatalogKey::ModelsCommit, Value::Text("native-contract-fixture".into())),
-        (CatalogKey::FieldNames, Value::Bytes(b"a1a2a3a4a5a6a7a8".to_vec())),
-        (CatalogKey::FieldNameOffsets, Value::Bytes(offsets)),
-        (CatalogKey::Services, Value::List(vec![Value::Bytes(Record::encode(&service)?.into_bytes())])),
-    ])?;
-    let Value::Map(fields) = root else { return Err("catalog root must be a map".into()); };
-    seal::seal(fields, runtime)
+    modeled_catalog(&Model { kind: KIND, region: REGION, table: "select", commit: "native-contract-fixture" })
 }
 
 async fn fixture() -> TestResult<(tempfile::TempDir, BinaryStore, Database)> {
@@ -150,7 +82,11 @@ async fn commit(
         OperationId::parse("ListThings")?, None,
     )?;
     let sweep = SweepId::new(sweep.into())?;
-    store.seed_work(WorkSpec::new(sweep.clone(), scope, None, vec![1])?).await?;
+    let targets = links.iter().map(|(_, to)| rows.iter().find(|(id, _)| id == to)
+        .map(|(_, name)| Value::Text((*name).into())).ok_or("edge target row missing"))
+        .collect::<Result<Vec<_>, _>>()?;
+    let bindings = Record::encode(&wire([(2, Value::List(targets))])?)?.into_bytes();
+    store.seed_work(WorkSpec::new(sweep.clone(), scope, None, bindings)?).await?;
     let lease = store.claim(&sweep, at, 100).await?.ok_or("missing fixture lease")?;
     let observations = rows.iter().map(|(id, value)| {
         Ok(Observation::new(key(account, region, id)?, record(value)?,
@@ -184,7 +120,7 @@ async fn given_retained_session_when_writer_commits_then_table_detail_and_edges_
             &[("root", "old")], 100).await?;
         let mut retained = db.snapshot().await?;
         // When: record and outgoing neighborhood change in one production commit.
-        commit(&store, "update", (ACCOUNT, REGION), &[("root", "revision-two")],
+        commit(&store, "update", (ACCOUNT, REGION), &[("root", "revision-two"), ("new", "new-target")],
             &[("root", "new")], 200).await?;
         let table = retained.page(&filter(ACCOUNT, REGION), page(10)).await?;
         let neighborhood = retained.edges_page(&node(ACCOUNT, REGION, "root"), edges(10)).await?;
