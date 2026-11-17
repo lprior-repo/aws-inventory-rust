@@ -4,10 +4,10 @@ use std::{collections::BTreeMap, process::{Output, Stdio}};
 use tokio::process::{Child, Command};
 
 const MODEL: &str = r#"{"smithy":"2.0","shapes":{
-"n#Service":{"type":"service","version":"1","operations":[{"target":"n#Identity"},{"target":"n#Regions"},{"target":"n#ListA"},{"target":"n#ListZ"},{"target":"n#Tags"}],"traits":{"aws.api#service":{"sdkId":"Taginventory","endpointPrefix":"taginventory","arnNamespace":"taginventory"},"aws.auth#sigv4":{"name":"taginventory"},"aws.protocols#restJson1":{}}},
-"n#Identity":{"type":"operation","output":{"target":"n#IdentityOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/identity"}}},
+"n#Service":{"type":"service","version":"1","operations":[{"target":"n#GetCallerIdentity"},{"target":"n#DescribeRegions"},{"target":"n#ListA"},{"target":"n#ListZ"},{"target":"n#ListTagsForResource"}],"traits":{"aws.api#service":{"sdkId":"Taginventory","endpointPrefix":"taginventory","arnNamespace":"taginventory"},"aws.auth#sigv4":{"name":"taginventory"},"aws.protocols#restJson1":{}}},
+"n#GetCallerIdentity":{"type":"operation","output":{"target":"n#IdentityOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/identity"}}},
 "n#IdentityOutput":{"type":"structure","members":{"Account":{"target":"smithy.api#String"}}},
-"n#Regions":{"type":"operation","output":{"target":"n#RegionsOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/regions"}}},
+"n#DescribeRegions":{"type":"operation","output":{"target":"n#RegionsOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/regions"}}},
 "n#RegionsOutput":{"type":"structure","members":{"Regions":{"target":"n#RegionsList"}}},
 "n#RegionsList":{"type":"list","member":{"target":"n#Region"}},
 "n#Region":{"type":"structure","members":{"RegionName":{"target":"smithy.api#String"}}},
@@ -17,7 +17,7 @@ const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 "n#Items":{"type":"list","member":{"target":"n#Item"}},
 "n#Item":{"type":"structure","members":{"Arn":{"target":"smithy.api#String"},"Tags":{"target":"n#TagMap"}}},
 "n#TagMap":{"type":"map","key":{"target":"smithy.api#String"},"value":{"target":"smithy.api#String"}},
-"n#Tags":{"type":"operation","input":{"target":"n#TagsInput"},"output":{"target":"n#TagsOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/tags"}}},
+"n#ListTagsForResource":{"type":"operation","input":{"target":"n#TagsInput"},"output":{"target":"n#TagsOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/tags"}}},
 "n#TagsInput":{"type":"structure","members":{"ResourceArn":{"target":"smithy.api#String","traits":{"smithy.api#required":{},"smithy.api#httpQuery":"arn"}},"Marker":{"target":"smithy.api#String","traits":{"smithy.api#httpQuery":"marker"}}}},
 "n#TagsOutput":{"type":"structure","members":{"Tags":{"target":"n#TagsList","traits":{"smithy.api#required":{}}},"NextToken":{"target":"smithy.api#String"},"IsTruncated":{"target":"smithy.api#Boolean","traits":{"smithy.api#default":false}}}},
 "n#TagsList":{"type":"list","member":{"target":"n#Tag"}},
@@ -34,14 +34,14 @@ const KINDS: kind_map::MappingSource<'static> = kind_map::MappingSource {
         kind_map::ApiOnlyMapping { kind: OTHER, reason: "Different kind with colliding ID" },
     ],
     operations: &[
-        kind_map::OperationMapping { service: "taginventory", operation: "Identity", kind: "AWS::ApiOnly::TagAccount" },
-        kind_map::OperationMapping { service: "taginventory", operation: "Regions", kind: "AWS::ApiOnly::TagRegion" },
+        kind_map::OperationMapping { service: "taginventory", operation: "GetCallerIdentity", kind: "AWS::ApiOnly::TagAccount" },
+        kind_map::OperationMapping { service: "taginventory", operation: "DescribeRegions", kind: "AWS::ApiOnly::TagRegion" },
         kind_map::OperationMapping { service: "taginventory", operation: "ListZ", kind: PARENT },
         kind_map::OperationMapping { service: "taginventory", operation: "ListA", kind: OTHER },
     ],
     bootstraps: &[
-        kind_map::BootstrapMapping::AccountIdentity { service: "taginventory", operation: "Identity", account_path: "Account" },
-        kind_map::BootstrapMapping::RegionDiscovery { service: "taginventory", operation: "Regions", regions_path: "Regions", region_name_path: "RegionName", opt_in_status_path: None },
+        kind_map::BootstrapMapping::AccountIdentity { service: "taginventory", operation: "GetCallerIdentity", account_path: "Account" },
+        kind_map::BootstrapMapping::RegionDiscovery { service: "taginventory", operation: "DescribeRegions", regions_path: "Regions", region_name_path: "RegionName", opt_in_status_path: None },
     ],
 };
 
@@ -60,7 +60,7 @@ fn policy(map: bool) -> Result<overlay::ServiceOverlay> {
     parent.tags = Some(path("Tags")?);
     let selector = if map { overlay::TagEndpointSelector::Map { path: path("Tags")? } } else { overlay::TagEndpointSelector::List { path: path("Tags")?, key: path("Key")?, value: path("Value")? } };
     let tags = overlay::TagEndpoint { parents: vec![overlay::TagEndpointParent { operation: overlay::OperationName::new("ListZ")?, request: overlay::TagEndpointRequest::Member { input: path("ResourceArn")?, parent: path("Arn")? } }], selector }.operation(overlay::Scope::Region, overlay::Paginator::Tokens { pairs: vec![overlay::TokenPair::new(path("Marker")?, path("NextToken")?)], truncated: Some(path("IsTruncated")?) })?;
-    Ok(overlay::ServiceOverlay::new("taginventory", vec![("Identity", plan(overlay::Scope::Account, "$", "Account")?), ("Regions", plan(overlay::Scope::Region, "Regions", "RegionName")?), ("ListA", parent.clone()), ("ListZ", parent), ("Tags", tags)])?)
+    Ok(overlay::ServiceOverlay::new("taginventory", vec![("GetCallerIdentity", plan(overlay::Scope::Account, "$", "Account")?), ("DescribeRegions", plan(overlay::Scope::Region, "Regions", "RegionName")?), ("ListA", parent.clone()), ("ListZ", parent), ("ListTagsForResource", tags)])?)
 }
 
 pub(super) struct Fixture { pub root: tempfile::TempDir, pub database: PathBuf, catalog: PathBuf, credentials: PathBuf, config: PathBuf }
@@ -82,7 +82,7 @@ impl Fixture {
         std::fs::write(&catalog, bytes)?;
         let credentials = root.path().join("credentials");
         let config = root.path().join("config");
-        std::fs::write(&credentials, "[tags]\naws_access_key_id=tag-contract\naws_secret_access_key=local-only-tag-secret\n")?;
+        std::fs::write(&credentials, "[tags]\naws_access_key_id=AKIATAGCONTRACT\naws_secret_access_key=local-only-tag-secret\n")?;
         std::fs::write(&config, "[profile tags]\nregion=us-east-1\n")?;
         let database = root.path().join("inventory.sqlite");
         Ok(Self { root, database, catalog, credentials, config })

@@ -53,7 +53,7 @@ impl Peer {
                         anyhow::ensure!(request.lines().next().is_some_and(|line| line.starts_with("GET ") && line.ends_with(" HTTP/1.1")), "wrong modeled request method/version");
                         let target = request.lines().next().and_then(|line| line.split_whitespace().nth(1)).ok_or_else(|| anyhow::anyhow!("request target"))?;
                         let authorization = request.lines().find_map(|line| line.split_once(':').filter(|(name, _)| name.eq_ignore_ascii_case("authorization")).map(|(_, value)| value)).ok_or_else(|| anyhow::anyhow!("unsigned request"))?;
-                        anyhow::ensure!(authorization.contains("Credential=tag-contract/") && authorization.contains("/us-east-1/taginventory/aws4_request"), "wrong signing identity: {authorization}");
+                        anyhow::ensure!(authorization.contains("Credential=AKIATAGCONTRACT/") && authorization.contains("/us-east-1/taginventory/aws4_request"), "wrong signing identity: {authorization}");
                         let url: http::Uri = target.parse()?;
                         let mut status = "200 OK";
                         let body = match url.path() {

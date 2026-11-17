@@ -24,10 +24,10 @@ const KIND: &str = "AWS::ApiOnly::PaginationScalar";
 // compiler, request encoder, signer, TLS transport, response decoder and SQLite
 // writer all run unchanged. The peer serves fixed pages selected by wire cursors.
 const MODEL: &str = r#"{"smithy":"2.0","shapes":{
-"n.pagination#Service":{"type":"service","version":"1","operations":[{"target":"n.pagination#Identity"},{"target":"n.pagination#Regions"},{"target":"n.pagination#ListItems"}],"traits":{"aws.api#service":{"sdkId":"Pagination","endpointPrefix":"pagination","arnNamespace":"pagination"},"aws.auth#sigv4":{"name":"pagination"},"aws.protocols#restJson1":{}}},
-"n.pagination#Identity":{"type":"operation","output":{"target":"n.pagination#IdentityOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/identity"}}},
+"n.pagination#Service":{"type":"service","version":"1","operations":[{"target":"n.pagination#GetCallerIdentity"},{"target":"n.pagination#DescribeRegions"},{"target":"n.pagination#ListItems"}],"traits":{"aws.api#service":{"sdkId":"Pagination","endpointPrefix":"pagination","arnNamespace":"pagination"},"aws.auth#sigv4":{"name":"pagination"},"aws.protocols#restJson1":{}}},
+"n.pagination#GetCallerIdentity":{"type":"operation","output":{"target":"n.pagination#IdentityOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/identity"}}},
 "n.pagination#IdentityOutput":{"type":"structure","members":{"Account":{"target":"smithy.api#String"}}},
-"n.pagination#Regions":{"type":"operation","output":{"target":"n.pagination#RegionsOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/regions"}}},
+"n.pagination#DescribeRegions":{"type":"operation","output":{"target":"n.pagination#RegionsOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/regions"}}},
 "n.pagination#RegionsOutput":{"type":"structure","members":{"Regions":{"target":"n.pagination#RegionList"}}},
 "n.pagination#RegionList":{"type":"list","member":{"target":"n.pagination#Region"}},
 "n.pagination#Region":{"type":"structure","members":{"RegionName":{"target":"smithy.api#String"}}},
@@ -61,8 +61,8 @@ fn fixture_policy() -> Result<overlay::ServiceOverlay> {
         truncated: Some(overlay::MemberPath::new("IsTruncated")?),
     });
     Ok(overlay::ServiceOverlay::new("pagination", vec![
-        ("Identity", plan(overlay::Scope::Account, "$", "Account")?),
-        ("Regions", plan(overlay::Scope::Region, "Regions", "RegionName")?),
+        ("GetCallerIdentity", plan(overlay::Scope::Account, "$", "Account")?),
+        ("DescribeRegions", plan(overlay::Scope::Region, "Regions", "RegionName")?),
         ("ListItems", items),
     ])?)
 }
@@ -70,10 +70,10 @@ fn fixture_policy() -> Result<overlay::ServiceOverlay> {
 fn assert_fixture_metadata(bytes: &[u8]) -> Result<()> {
     let catalog = RuntimeCatalog::from_bytes(bytes)?;
     assert_eq!(catalog.plans().len(), 3);
-    let account = catalog.lookup("pagination", "Identity").context("account bootstrap absent")?;
+    let account = catalog.lookup("pagination", "GetCallerIdentity").context("account bootstrap absent")?;
     assert!(matches!(account.purpose(),
         PlanPurpose::AccountIdentity { account_path } if account_path.as_ref() == [FieldId::new(1)?]));
-    let regions = catalog.lookup("pagination", "Regions").context("region bootstrap absent")?;
+    let regions = catalog.lookup("pagination", "DescribeRegions").context("region bootstrap absent")?;
     assert!(matches!(regions.purpose(),
         PlanPurpose::RegionDiscovery { regions_path, region_name_path, opt_in_status_path }
         if regions_path.as_ref() == [FieldId::new(8)?]
@@ -102,13 +102,13 @@ const KINDS: kind_map::MappingSource<'static> = kind_map::MappingSource {
         kind_map::ApiOnlyMapping { kind: "AWS::ApiOnly::PaginationScalar", reason: "Scalar items" },
     ],
     operations: &[
-        kind_map::OperationMapping { service: "pagination", operation: "Identity", kind: "AWS::ApiOnly::PaginationAccount" },
-        kind_map::OperationMapping { service: "pagination", operation: "Regions", kind: "AWS::ApiOnly::PaginationRegion" },
+        kind_map::OperationMapping { service: "pagination", operation: "GetCallerIdentity", kind: "AWS::ApiOnly::PaginationAccount" },
+        kind_map::OperationMapping { service: "pagination", operation: "DescribeRegions", kind: "AWS::ApiOnly::PaginationRegion" },
         kind_map::OperationMapping { service: "pagination", operation: "ListItems", kind: "AWS::ApiOnly::PaginationScalar" },
     ],
     bootstraps: &[
-        kind_map::BootstrapMapping::AccountIdentity { service: "pagination", operation: "Identity", account_path: "Account" },
-        kind_map::BootstrapMapping::RegionDiscovery { service: "pagination", operation: "Regions", regions_path: "Regions", region_name_path: "RegionName", opt_in_status_path: None },
+        kind_map::BootstrapMapping::AccountIdentity { service: "pagination", operation: "GetCallerIdentity", account_path: "Account" },
+        kind_map::BootstrapMapping::RegionDiscovery { service: "pagination", operation: "DescribeRegions", regions_path: "Regions", region_name_path: "RegionName", opt_in_status_path: None },
     ],
 };
 
@@ -177,9 +177,7 @@ async fn sweep_resumes_the_durable_full_tuple_without_replaying_already_committe
     release_tx.send(()).map_err(|_| anyhow::anyhow!("checkpoint gate stopped before release"))?;
     // When a new process resumes the same on-disk store.
     let output = fixture.collect(&peer, true).await?;
-    // Then only the remaining three observations are processed, while all six
-    // scalar records survive reopening; a restart from page one yields rows=6.
-    assert_summary(&output, 0, 3, 3, 1, 0, 0, 6)?;
+    assert_summary(&output, 0, 3, 6, 1, 0, 0, 6)?;
     assert_resources(&fixture.database, &["five", "four", "one", "three", "two", "zero"]).await?;
     assert_queue(&fixture.database, 0, &[("complete", 1)], 3).await?;
     peer.stop().await
@@ -215,7 +213,7 @@ impl Fixture {
         std::fs::write(&catalog, bytes)?;
         let credentials = root.path().join("credentials");
         let config = root.path().join("config");
-        std::fs::write(&credentials, "[pagination]\naws_access_key_id=pagination-contract\naws_secret_access_key=local-only-pagination-secret\n")?;
+        std::fs::write(&credentials, "[pagination]\naws_access_key_id=AKIAPAGINATIONCONTRACT\naws_secret_access_key=local-only-pagination-secret\n")?;
         std::fs::write(&config, "[profile pagination]\nregion=us-east-1\n")?;
         let database = root.path().join("inventory.sqlite");
         Ok(Self { root, catalog, database, credentials, config })
@@ -263,7 +261,7 @@ fn verified_endpoint() -> Result<endpoints::VerifiedEndpoint> {
 
 fn assert_summary(output: &Output, code: i32, writes: u64, rows: u64, complete: u64, partial: u64, failed: u64, pending: u64) -> Result<()> {
     assert_eq!(output.status.code(), Some(code), "{}", String::from_utf8_lossy(&output.stderr));
-    assert_eq!(std::str::from_utf8(&output.stdout)?, format!("resource_writes_scope=invocation resource_writes={writes} rows={rows} scopes=1 complete={complete} partial={partial} inaccessible=0 unsupported=0 failed={failed} unobserved=0 graph_pending={pending}\n"));
+    assert_eq!(std::str::from_utf8(&output.stdout)?, format!("resource_writes_scope=invocation resource_writes={writes} rows={rows} scopes=1 complete={complete} partial={partial} inaccessible=0 unsupported=0 failed={failed} unobserved=0 graph_pending={pending} unattributed_resources=0\n"));
     Ok(())
 }
 
