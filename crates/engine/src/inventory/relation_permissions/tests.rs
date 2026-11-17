@@ -35,3 +35,25 @@ fn given_global_source_without_execution_home_when_home_region_is_claimed_then_n
     assert!(!owner_matches(&rule, &source, &source.account, &Region::parse("us-west-2")?, "target"));
     Ok(())
 }
+
+#[test]
+fn given_global_source_when_arn_region_rule_names_regional_arn_then_only_same_account_regional_arns_are_authority() -> TestResult {
+    let source = source(Region::Global)?;
+    let target_kind = Kind::parse("AWS::KMS::Key")?;
+    let rule = RelationshipPlan { source_kind: source.kind.clone(), source: RelationSource::Request,
+        source_path: vec![FieldId::new(1)?].into_boxed_slice(), target_kind: target_kind.clone(), target_kinds: vec![target_kind].into_boxed_slice(),
+        target_path: vec![FieldId::new(1)?].into_boxed_slice(), relation: Relation::parse("USES_KEY")?, scope: RelationScope::ArnRegion,
+        owner: ReferenceOwnerRule::ExecutionAccount,
+        source_path_mode: inventory_core::catalog::runtime::RelationPathMode::Fields,
+        target_mode: inventory_core::catalog::runtime::RelationTargetMode::SelectedFields,
+        guard: None, components: Box::new([]) };
+    let key = "arn:aws:kms:us-east-1:123456789012:key/11111111-2222-3333-4444-555555555555";
+    let us_east = Region::parse("us-east-1")?;
+    assert!(owner_matches(&rule, &source, &source.account, &us_east, key));
+    // A global target region, a foreign account, a mismatched ARN region and a bare id are all rejected.
+    assert!(!owner_matches(&rule, &source, &source.account, &Region::Global, key));
+    assert!(!owner_matches(&rule, &source, &AccountId::parse("210987654321")?, &us_east, key));
+    assert!(!owner_matches(&rule, &source, &source.account, &Region::parse("us-west-2")?, key));
+    assert!(!owner_matches(&rule, &source, &source.account, &us_east, "11111111-2222-3333-4444-555555555555"));
+    Ok(())
+}

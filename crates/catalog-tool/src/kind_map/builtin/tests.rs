@@ -408,7 +408,7 @@ fn route53_signing_key_joins_the_native_kms_arn_across_regions() -> TestResult {
     let row = joins.next().ok_or("missing Route53 signing-key KMS join")?;
     assert!(matches!(row.source, ReviewedRelationSource::SelectedOutput(_)));
     assert_eq!((source_fields(row).ok_or("missing source field selector")?, row.target_kinds.primary(), target_fields(row).ok_or("missing target field selector")?, row.relation.as_str(), row.scope.as_str()),
-        ("KmsArn", "AWS::KMS::Key", "KeyArn", "USES_KEY", "account"));
+        ("KmsArn", "AWS::KMS::Key", "KeyArn", "USES_KEY", "arn_region"));
     // Then no unnormalized HostedZoneId-to-Id equality is silently admitted.
     assert!(joins.next().is_none());
     Ok(())

@@ -164,6 +164,7 @@ fn owner_matches(rule: &RelationshipPlan, from: &ResourceKey, account: &inventor
                 Region::Regional(home) => matches!(region, Region::Regional(target) if target == home),
                 Region::Global => false,
             },
+            RelationScope::ArnRegion => value.starts_with("arn:") && matches!(region, Region::Regional(_)),
         },
         ReferenceOwnerRule::Arn(owner) => source_partition_matches(from, owner.partition.as_str())
             && owner.owner(value, &from.region)

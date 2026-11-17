@@ -47,6 +47,10 @@ pub enum RelationScope {
     AccountRegion,
     Account,
     HomeRegion,
+    /// The target is a regional resource whose region is read from the ARN-valued
+    /// reference itself; used where a global source names a regional ARN (for
+    /// example a Route 53 key-signing key naming its us-east-1 KMS key).
+    ArnRegion,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

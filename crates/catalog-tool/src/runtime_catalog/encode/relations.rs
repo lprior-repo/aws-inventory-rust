@@ -90,5 +90,5 @@ pub(super) fn value_path(services: &ServiceIndex<'_>, value: &ReviewedValuePath)
 }
 
 pub(super) fn scope(scope: &str) -> Result<i64, RuntimeCatalogCompileError> {
-    match scope { "account_region" | "arn_account_region" => Ok(0), "account" => Ok(1), "home_region" => Ok(2), _ => Err(RuntimeCatalogCompileError::Capability) }
+    match scope { "account_region" | "arn_account_region" => Ok(0), "account" => Ok(1), "home_region" => Ok(2), "arn_region" => Ok(3), _ => Err(RuntimeCatalogCompileError::Capability) }
 }

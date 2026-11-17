@@ -300,9 +300,9 @@ The v2 catalog generated from the same pinned source on 2026-11-14 was
 **10,995,359 bytes** (10.486 MiB); that `models compile --check` recompilation
 passed the byte comparison.
 
-Current evidence: the format-3 catalog regenerated on 2026-11-15 from the pinned
+Current evidence: the format-3 catalog regenerated on 2026-11-16 from the pinned
 models at `46135f8` (436 model files), including the reviewed runtime overlay,
-is **19,048,862 bytes** (18.166 MiB). A second `models compile --check`
+is **19,049,193 bytes** (18.167 MiB). A second `models compile --check`
 recompilation matched it byte for byte. Each service record stays under the
 16 MiB record limit; the root is bounded by `MAX_CATALOG_BYTES` (64 MiB).
 

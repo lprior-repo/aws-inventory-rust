@@ -123,6 +123,7 @@ fn relation(value: ValueRef<'_>) -> Result<super::super::RelationshipPlan, Runti
             0 => super::super::RelationScope::AccountRegion,
             1 => super::super::RelationScope::Account,
             2 => super::super::RelationScope::HomeRegion,
+            3 => super::super::RelationScope::ArnRegion,
             _ => return Err(RuntimeCatalogError::Capability),
         },
         owner: super::owners::read_owner(fields)?,

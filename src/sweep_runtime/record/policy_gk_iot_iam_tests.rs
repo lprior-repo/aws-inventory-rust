@@ -20,7 +20,7 @@ type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 fn given_metadata_list_plans_when_compiled_then_no_body_credential_paid_or_mutating_plan_is_callable() -> TestResult {
     let catalog = fixture::catalog()?;
     for (service, operations) in [
-        ("iot", &["GetJobDocument", "GetJobTemplate", "GetProvisioningTemplate", "DescribeCertificate", "ListThings", "DescribeEndpoint"][..]),
+        ("iot", &["GetJobDocument", "DescribeJobTemplate", "DescribeProvisioningTemplate", "DescribeCertificate", "ListThings", "DescribeEndpoint"][..]),
         ("iam", &["GetGroupPolicy", "GetRolePolicy", "GetUserPolicy", "GetPolicyVersion", "CreateServiceSpecificCredential", "ResetServiceSpecificCredential"][..]),
         ("kms", &["GetKeyPolicy", "DescribeKey"][..]),
     ] {

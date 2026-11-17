@@ -3,7 +3,7 @@ use catalog_tool::{endpoints, kind_map, overlay, runtime_catalog, smithy};
 use std::sync::LazyLock;
 
 const SERVICES: &[(&str, &str, &[&str])] = &[
-    ("iot", "2015-05-28", &["ListAuthorizers", "ListCACertificates", "ListCertificates", "ListCertificateProviders", "ListCommands", "ListFleetMetrics", "ListMitigationActions", "ListJobTemplates", "ListPackages", "ListPackageVersions", "ListPolicies", "ListPolicyVersions", "ListAuditSuppressions", "ListProvisioningTemplates", "ListProvisioningTemplateVersions", "ListScheduledAudits", "ListStreams", "ListTopicRules", "ListOTAUpdates", "ListJobs", "GetJobDocument", "GetJobTemplate", "GetProvisioningTemplate", "DescribeCertificate", "ListThings", "DescribeEndpoint"]),
+    ("iot", "2015-05-28", &["ListAuthorizers", "ListCACertificates", "ListCertificates", "ListCertificateProviders", "ListCommands", "ListFleetMetrics", "ListMitigationActions", "ListJobTemplates", "ListPackages", "ListPackageVersions", "ListPolicies", "ListPolicyVersions", "ListAuditSuppressions", "ListProvisioningTemplates", "ListProvisioningTemplateVersions", "ListScheduledAudits", "ListStreams", "ListTopicRules", "ListOTAUpdates", "ListJobs", "GetJobDocument", "DescribeJobTemplate", "DescribeProvisioningTemplate", "DescribeCertificate", "ListThings", "DescribeEndpoint"]),
     ("iam", "2010-05-08", &["ListAccountAliases", "ListServiceSpecificCredentials", "ListGroups", "ListGroupPolicies", "ListRoles", "ListRolePolicies", "ListUsers", "ListUserPolicies", "ListPolicies", "ListPolicyVersions", "GetGroupPolicy", "GetRolePolicy", "GetUserPolicy", "GetPolicyVersion", "CreateServiceSpecificCredential", "ResetServiceSpecificCredential"]),
     ("kms", "2014-11-01", &["ListKeys", "ListKeyPolicies", "GetKeyPolicy", "DescribeKey"]),
 ];

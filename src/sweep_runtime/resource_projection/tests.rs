@@ -91,3 +91,29 @@ fn given_bounded_multiple_statements_when_principal_total_exceeds_limit_then_pro
     assert!(project_with(&projection, &raw(&document)?).is_err());
     Ok(())
 }
+
+#[test]
+fn given_global_source_when_arn_region_relation_projects_owner_then_region_is_read_from_the_arn_and_non_regional_values_fail() -> TestResult {
+    use inventory_core::{catalog::runtime::{RelationPathMode, RelationSource, RelationTargetMode}, inventory::{Relation, ResourceId, ResourceKey}};
+    let kind = Kind::parse("AWS::Route53::KeySigningKey")?;
+    let target = Kind::parse("AWS::KMS::Key")?;
+    let relation = RelationshipPlan { source_kind: kind.clone(), source: RelationSource::SelectedOutput,
+        source_path: vec![FieldId::new(1)?].into_boxed_slice(), target_kind: target.clone(), target_kinds: vec![target].into_boxed_slice(),
+        target_path: vec![FieldId::new(1)?].into_boxed_slice(), relation: Relation::parse("USES_KEY")?, scope: RelationScope::ArnRegion,
+        owner: ReferenceOwnerRule::ExecutionAccount, source_path_mode: RelationPathMode::Fields,
+        target_mode: RelationTargetMode::SelectedFields, guard: None, components: Box::new([]) };
+    let key = ResourceKey { account: AccountId::parse("123456789012")?, region: Region::Global, kind,
+        id: ResourceId::parse("Z1/ksk")? };
+    let observation = Observation::new(key, raw("{}")?, &Exclusions::none(), None)?;
+    let home = RegionId::parse("us-west-2")?;
+    // Given a global key-signing key naming a us-east-1 KMS key, the ARN, not the home region, decides.
+    let kms = "arn:aws:kms:us-east-1:123456789012:key/11111111-2222-3333-4444-555555555555";
+    let (account, region) = reference_owner(&relation, &observation, kms, &home)?;
+    assert_eq!(account.as_str(), "123456789012");
+    assert_eq!(region, Region::parse("us-east-1")?);
+    // Then values that name no region fail closed instead of inventing one.
+    for invalid in ["11111111-2222-3333-4444-555555555555", "arn:aws:iam::123456789012:role/r", "arn:aws:kms"] {
+        assert!(reference_owner(&relation, &observation, invalid, &home).is_err(), "{invalid}");
+    }
+    Ok(())
+}

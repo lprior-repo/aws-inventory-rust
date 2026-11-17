@@ -108,10 +108,21 @@ pub(super) fn reference_owner(relation: &RelationshipPlan, observation: &Observa
                 RelationScope::AccountRegion => observation.key().region.clone(),
                 RelationScope::Account => Region::Global,
                 RelationScope::HomeRegion => Region::Regional(home.clone()),
+                RelationScope::ArnRegion => arn_region(text)?,
             };
             Ok((observation.key().account.clone(), region))
         }
     }
+}
+
+/// Region of an ARN-valued reference whose target region the catalog does not fix.
+/// Only regional ARNs qualify; anything else is not reviewed evidence.
+fn arn_region(text: &str) -> Result<Region, SweepError> {
+    let region = text.strip_prefix("arn:").and_then(|rest| rest.split(':').nth(2))
+        .filter(|region| !region.is_empty())
+        .ok_or(SweepError::Operation("ARN-region relationship value is not a regional ARN"))?;
+    RegionId::parse(region).map(Region::Regional)
+        .map_err(|_| SweepError::Operation("ARN-region relationship value names an invalid region"))
 }
 
 #[cfg(test)]

@@ -2,6 +2,12 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Relationship scopes gain `arn_region`: a global source (Route 53
+  key-signing key) naming a regional ARN (its us-east-1 KMS key) takes the
+  target region from the ARN itself. Only same-account regional `arn:` values
+  are authority; bare ids, global targets and foreign accounts fail closed.
+  The catalog is regenerated accordingly.
+
 - D–F child-collection scenarios assert native REST, AWS JSON, and RPC v2 CBOR
   requests against the pinned service models, including operation-specific
   pagination inputs and parent identifiers. FMS response fixtures use CBOR

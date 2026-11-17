@@ -105,7 +105,7 @@ fn relation(hash: &mut Sha256, rule: &RelationshipPlan) -> Result<(), StoreError
     for kind in rule.target_kinds.iter() { bytes(hash, kind.as_str().as_bytes())?; }
     path(hash, &rule.target_path)?;
     bytes(hash, rule.relation.as_str().as_bytes())?;
-    hash.update([match rule.scope { RelationScope::AccountRegion => 0, RelationScope::Account => 1, RelationScope::HomeRegion => 2 }]);
+    hash.update([match rule.scope { RelationScope::AccountRegion => 0, RelationScope::Account => 1, RelationScope::HomeRegion => 2, RelationScope::ArnRegion => 3 }]);
     match &rule.owner {
         ReferenceOwnerRule::ExecutionAccount => hash.update([0]),
         ReferenceOwnerRule::Arn(owner) => {
