@@ -53,7 +53,7 @@ pub(super) fn catalog() -> TestResult<Vec<u8>> {
     ])?;
     let runtime = wire([
         (1, Value::Int(2)), (2, Value::List(vec![plan])),
-        (3, Value::List(vec![schema])), (4, Value::List(vec![])),
+        (3, Value::List(vec![schema])), (4, Value::List(relations()?)),
         (5, Value::List(vec![coverage])), (6, Value::List(vec![decision])),
     ])?;
     let (shapes, shape_offsets) = shapes()?;
@@ -114,9 +114,39 @@ fn shapes() -> TestResult<(Vec<Value>, Vec<u8>)> {
         (CatalogKey::Kind, Value::Int(14)),
         (CatalogKey::Members, Value::List(members)),
     ]);
-    let shapes = vec![shape("Input", vec![member(2)?, member(3)?])?, shape("Thing", vec![member(1)?])?];
+    let references = fields([
+        (CatalogKey::Name, Value::Text("References".into())),
+        (CatalogKey::Kind, Value::Int(16)),
+        (CatalogKey::Element, Value::Int(-3)),
+    ])?;
+    let linked = fields([
+        (CatalogKey::MemberId, Value::Int(2)),
+        (CatalogKey::MemberTarget, Value::Int(2)),
+        (CatalogKey::MemberRequired, Value::Bool(false)),
+    ])?;
+    let shapes = vec![shape("Input", vec![member(2)?, member(3)?])?, shape("Thing", vec![member(1)?, linked])?, references];
     let bytes = encode_list(&shapes)?;
     let offsets = ListRef::from_bytes(&bytes)?.encoded_item_offsets()?
         .iter().flat_map(|offset| offset.to_be_bytes()).collect();
     Ok((shapes, offsets))
+}
+
+const RELATIONS: [&str; 8] = ["references", "sql-only", "first", "second", "selected", "obsolete", "complete", "beyond-depth"];
+
+fn relations() -> TestResult<Vec<Value>> {
+    RELATIONS.iter().map(|relation| wire([
+        (1, Value::Text(super::fixtures::KIND.into())),
+        (2, Value::List(vec![Value::Int(2)])),
+        (3, Value::Text(super::fixtures::KIND.into())),
+        (4, Value::List(vec![Value::Int(1)])),
+        (5, Value::Text((*relation).into())),
+        (6, Value::Int(0)),
+    ])).chain(std::iter::once(wire([
+        (1, Value::Text(super::fixtures::KIND.into())),
+        (2, Value::List(vec![Value::Int(2)])),
+        (3, Value::Text(super::fixtures::KIND.into())),
+        (4, Value::List(vec![Value::Int(1)])),
+        (5, Value::Text("references".into())),
+        (6, Value::Int(3)),
+    ]))).collect()
 }

@@ -21,11 +21,11 @@ fn given_divergent_stores_and_concurrent_sweep_when_expanding_then_native_topolo
     let c = node(ACCOUNT, REGION, "AWS::Other::Thing", "shared");
     let d = node(ACCOUNT, REGION, KIND, "sql-only");
     let e = node("222222222222", REGION, KIND, "shared");
-    let common = edge(&a, &b, "references", "model");
+    let common = edge(&a, &b, "references", "inferred-exact");
     let sql_only = edge(&a, &d, "sql-only", "model");
     let native_edges = vec![common.clone(), edge(&b, &c, "native-only", "reviewed-rule"),
         edge(&a, &e, "cross-account", "inferred-exact")];
-    let mut expected = fixture.commit("before-west", ACCOUNT, "us-west-2", &[("shared", "west-before")], &[], 1).await?;
+    let mut expected = fixture.commit("before-west", ACCOUNT, "us-west-2", &[("shared", &fixtures::arn(&b))], &[], 1).await?;
     expected.extend(fixture.commit("before-account", "222222222222", REGION,
         &[("shared", "account-before")], &[], 1).await?);
     expected.extend(fixture.commit("before-root", ACCOUNT, REGION,

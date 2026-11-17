@@ -1,8 +1,9 @@
 use super::super::super::*;
 use inventory_core::{
-    catalog::runtime::RuntimeCatalog,
+    catalog::runtime::{RelationTargetMode, RuntimeCatalog},
     inventory::{AccountId, Edge as StoredEdge, EdgeSource, Kind, Observation, OperationId,
-        Region, Relation, ResourceId, ResourceKey, ScopeKey, ServiceId, TagObservation},
+        ReferenceTarget, Region, Relation, ResourceId, ResourceKey, ScopeKey, ServiceId, TagObservation,
+        UnresolvedReference},
     record::{Exclusions, FieldId, Key, Record, Value},
 };
 use inventory_engine::inventory::{BinaryStore, PageCommit, SchemaRegistry, SweepId, WorkSpec};
@@ -31,6 +32,14 @@ pub(crate) fn hex(bytes: &[u8]) -> TestResult<String> {
 }
 
 pub(crate) fn digest(node: &GraphNode) -> TestResult<String> { hex(key(node)?.digest().as_bytes()) }
+
+pub(crate) fn arn(node: &GraphNode) -> String {
+    format!("arn:aws:example:{}:{}:thing/{}", node.region, node.account, node.id)
+}
+
+fn foreign(edge: &cmdb_view::GraphEdge, account: &str, region: &str) -> bool {
+    edge.to.account != account || edge.to.region != region
+}
 
 pub(crate) fn edge(from: &GraphNode, to: &GraphNode, relation: &str, provenance: &str) -> cmdb_view::GraphEdge {
     cmdb_view::GraphEdge { from: from.clone(), to: to.clone(), relation: relation.into(), provenance: provenance.into() }
@@ -72,9 +81,13 @@ impl Fixture {
         self.store.seed_work(WorkSpec::new(sweep.clone(), scope, None, vec![1])?).await?;
         let lease = self.store.claim(&sweep, at, 100).await?.ok_or("fixture lease missing")?;
         let observations = rows.iter().map(|(id, name)| {
-            let record = Record::encode(&Value::Map(BTreeMap::from([
-                (Key::Field(FieldId::new(1)?), Value::Text((*name).into()))
-            ])))?;
+            let targets = links.iter().filter(|edge| edge.from.id == *id)
+                .filter_map(|edge| if foreign(edge, account, region) { Some(Value::Text(arn(&edge.to))) } else {
+                    rows.iter().find(|(target, _)| *target == edge.to.id)
+                        .map(|(_, target)| Value::Text((*target).into())) }).collect::<Vec<_>>();
+            let mut fields = BTreeMap::from([(Key::Field(FieldId::new(1)?), Value::Text((*name).into()))]);
+            if !targets.is_empty() { fields.insert(Key::Field(FieldId::new(2)?), Value::List(targets)); }
+            let record = Record::encode(&Value::Map(fields))?;
             Ok(Observation::new(key(&node(account, region, KIND, id))?, record,
                 &Exclusions::none(), Some(Arc::from(*name)))?)
         }).collect::<TestResult<Vec<_>>>()?;
@@ -97,10 +110,17 @@ impl Fixture {
                             .then_some(at),
                     }) })
         }).collect::<TestResult<Vec<_>>>()?;
-        let edges = links.iter().map(|edge| Ok(StoredEdge { from: key(&edge.from)?, to: key(&edge.to)?,
+        let (foreign_links, local_links): (Vec<_>, Vec<_>) = links.iter().partition(|edge| foreign(edge, account, region));
+        let edges = local_links.into_iter().map(|edge| Ok(StoredEdge { from: key(&edge.from)?, to: key(&edge.to)?,
             relation: Relation::parse(&edge.relation)?, source: EdgeSource::Model }))
             .collect::<TestResult<Vec<_>>>()?;
-        self.store.commit_page(PageCommit { lease, observations, edges, unresolved: vec![], tags,
+        let unresolved = foreign_links.into_iter().map(|edge| Ok(UnresolvedReference {
+            from: key(&edge.from)?, relation: Relation::parse(&edge.relation)?, source: EdgeSource::InferredExact,
+            target: ReferenceTarget::typed(AccountId::parse(&edge.to.account)?, Region::parse(&edge.to.region)?,
+                Kind::parse(&edge.to.kind)?, vec![FieldId::new(1)?], ResourceId::parse(&arn(&edge.to))?,
+                RelationTargetMode::SelectedFields)? }))
+            .collect::<TestResult<Vec<_>>>()?;
+        self.store.commit_page(PageCommit { lease, observations, edges, unresolved, tags,
             next_token: None, continuation_digest: None, children: vec![], done: true, observed_at_ms: at }).await?;
         Ok(expected)
     }

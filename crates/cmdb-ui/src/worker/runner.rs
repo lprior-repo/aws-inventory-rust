@@ -67,6 +67,7 @@ impl WorkerContext {
     }
 
     fn process(&mut self, command: Command, runtime: &tokio::runtime::Runtime, state: &mut WorkerState) -> bool {
+        let _entered = runtime.enter();
         match command {
             Command::Refresh { revision, filter } => {
                 let result = runtime.block_on(self.cancellation.run(refresh_page(&state.database, filter)));
@@ -97,6 +98,7 @@ pub(super) fn run_worker(config: WorkerConfig, mut context: WorkerContext) {
             return;
         }
     };
+    let _entered = runtime.enter();
     let startup = runtime.block_on(context.cancellation.run(startup(config)));
     match startup {
         Some(Ok((state, initial))) => {

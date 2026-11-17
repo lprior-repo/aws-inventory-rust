@@ -31,6 +31,7 @@ fn given_superseded_refresh_after_admission_when_runner_completes_then_next_expa
     // Enter the real process boundary after admission, then accept a newer
     // refresh before completion. No outputs or QuerySession values are injected.
     let runtime = runtime()?;
+    let _entered = runtime.enter();
     let fixture = runtime.block_on(Fixture::new())?;
     let a = root();
     let b = fixtures::node(ACCOUNT, REGION, KIND, "b");
@@ -83,6 +84,7 @@ fn given_obsolete_selection_queued_before_latest_refresh_when_real_runner_drains
     // drain also reject stale results: a skipped selection must not become the
     // selection re-expanded by the following current refresh.
     let runtime = runtime()?;
+    let _entered = runtime.enter();
     let fixture = runtime.block_on(Fixture::new())?;
     runtime.block_on(fixture.commit("seed", ACCOUNT, REGION,
         &[("shared", "selected-root"), ("a-leaf", "selected-leaf"), ("b-root", "obsolete-root"), ("b-leaf", "obsolete-leaf")], &[], 1))?;
@@ -129,6 +131,7 @@ fn given_selection_superseded_after_admission_when_native_query_completes_then_p
     // A producer-boundary test, NOT drain filtering: all observations below are
     // real process/query_graph/native transport outputs before current_events.
     let runtime = runtime()?;
+    let _entered = runtime.enter();
     let fixture = runtime.block_on(Fixture::new())?;
     runtime.block_on(fixture.commit("seed", ACCOUNT, REGION,
         &[("shared", "root"), ("b", "neighbor")], &[], 1))?;
@@ -158,6 +161,7 @@ fn given_full_queue_when_refresh_is_rejected_then_real_runner_commits_accepted_s
     supervised(|| {
     // Given a retained session before a real writer update and one queue slot.
     let runtime = runtime()?;
+    let _entered = runtime.enter();
     let fixture = runtime.block_on(Fixture::new())?;
     runtime.block_on(fixture.commit("before", ACCOUNT, REGION, &[("shared", "before")], &[], 1))?;
     let config = WorkerConfig { database: Some(fixture.path.clone()), ..WorkerConfig::default() };
@@ -185,6 +189,7 @@ fn given_full_queue_when_refresh_is_rejected_then_real_runner_commits_accepted_s
 fn given_full_queue_when_expansion_is_rejected_then_real_graph_is_delivered_until_deselect() -> TestResult {
     supervised(|| {
     let runtime = runtime()?;
+    let _entered = runtime.enter();
     let fixture = runtime.block_on(Fixture::new())?;
     runtime.block_on(fixture.commit("seed", ACCOUNT, REGION,
         &[("shared", "root"), ("b", "neighbor")], &[], 1))?;
