@@ -1,7 +1,7 @@
 mod accelerators;
 mod ecr_images;
 mod iot_names;
-mod complete_df;
+pub(super) mod complete_df;
 mod final_integrations;
 
 use super::*;

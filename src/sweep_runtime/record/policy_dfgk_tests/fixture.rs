@@ -1,6 +1,7 @@
 use super::*;
 use catalog_tool::{endpoints, kind_map, overlay, runtime_catalog, smithy};
 use inventory_core::{catalog::runtime::{BindingSource, PlanScope}, inventory::{Observation, ResourceKey}, record::Value};
+use aws_wire::response::{DecodeLimits, ResponseContext};
 use std::{collections::BTreeMap, sync::LazyLock};
 
 // These tests intentionally require the pinned model checkout used by catalog compilation.
@@ -56,7 +57,16 @@ pub(in crate::sweep_runtime) fn plan<'r, 'a>(catalog: &'r RuntimeCatalog<'a>, se
 }
 
 pub(in crate::sweep_runtime) fn decode(plan: &CallablePlan<'_>, body: &[u8]) -> TestResult<Record> {
-    use aws_wire::{request::Protocol, response::{DecodeLimits, ResponseContext}};
+    decode_with(plan, body, DecodeLimits::default())
+}
+
+/// Decodes exactly as the live sweep does: absent members stay absent instead of receiving SDK defaults.
+pub(in crate::sweep_runtime) fn decode_as_sweep(plan: &CallablePlan<'_>, body: &[u8]) -> TestResult<Record> {
+    decode_with(plan, body, DecodeLimits::default().preserve_field_presence())
+}
+
+fn decode_with(plan: &CallablePlan<'_>, body: &[u8], limits: DecodeLimits) -> TestResult<Record> {
+    use aws_wire::request::Protocol;
     use inventory_core::catalog::runtime::RuntimeProtocol;
     let protocol = match plan.protocol() {
         RuntimeProtocol::RestJson1 => Protocol::RestJson1,
@@ -68,7 +78,7 @@ pub(in crate::sweep_runtime) fn decode(plan: &CallablePlan<'_>, body: &[u8]) -> 
     };
     let headers = http::HeaderMap::new();
     let context = ResponseContext { service: plan.service(), operation: plan.operation(), protocol,
-        body, headers: &headers, status: http::StatusCode::OK, limits: DecodeLimits::default() };
+        body, headers: &headers, status: http::StatusCode::OK, limits };
     Ok(if matches!(protocol, Protocol::AwsQuery) {
         aws_wire::response::xml::decode(context)?
     } else if matches!(protocol, Protocol::RpcV2Cbor) {

@@ -9,11 +9,12 @@ use super::*;
 pub(super) fn response(case: &Case, parent: &Parent, page: u32) -> TestResult<Json> {
     let local = match page { 0 | 1 => "shared", 2 => "later", _ => return Err("unexpected test page".into()) };
     let rows = if page == 0 { Vec::new() } else { vec![item(case, parent, local)?] };
-    let token = if case.service == "kafka" { "nextToken" } else { case.token };
+    let token = wire(case, case.token);
+    let items = wire(case, case.items);
     Ok(match page {
-        0 => json!({(case.items): rows, (token): "empty-continuation"}),
-        1 => json!({(case.items): rows, (token): "data-continuation"}),
-        2 => json!({(case.items): rows}),
+        0 => json!({(items): rows, (token): "empty-continuation"}),
+        1 => json!({(items): rows, (token): "data-continuation"}),
+        2 => json!({(items): rows}),
         _ => return Err("unexpected test page".into()),
     })
 }
@@ -22,7 +23,7 @@ fn item(case: &Case, parent: &Parent, local: &str) -> TestResult<Json> {
     let id = expected_id(case, parent, local);
     Ok(match (case.service, case.operation) {
         ("guardduty", "ListFilters") | ("keyspaces", "ListTypes") => json!(local),
-        ("guardduty", "ListPublishingDestinations") => json!({"DestinationId":local,"DestinationType":"S3","Status":"PUBLISHING"}),
+        ("guardduty", "ListPublishingDestinations") => json!({"destinationId":local,"destinationType":"S3","status":"PUBLISHING"}),
         ("identitystore", "ListGroups") => json!({"IdentityStoreId":parent.binding,"GroupId":group_id(parent, local),
             "GroupArn":id,"Revision":"17","DisplayName":local,"Description":"engineering group", "CreatedBy":"system"}),
         ("greengrass", _) => json!({"Arn":id,"Id":parent.binding,"Version":local,"CreationTimestamp":"1700000000000"}),
@@ -64,73 +65,63 @@ fn group_id(parent: &Parent, local: &str) -> String {
     format!("{prefix}-00000000-0000-0000-0000-00000000000{}", revision(local))
 }
 
-fn assert_text(record: &Record, field: &str, expected: &str) -> TestResult {
-    // Stored CBOR uses FieldId keys, not Name; accept either Name hit or any Text value equal to expected under the field's FieldId via iteration
-    let actual_opt = record.root().get_name(field)?.map(|v| v.to_value()).transpose()?;
-    let actual = match actual_opt {
-        Some(v) => v,
-        None => {
-            // Fallback: iterate FieldId entries and check if any Text equals expected,
-            // needed because greengrass/kafka/kendra store as FieldId maps
-            let mut found = None;
-            for entry in record.root().iter()? {
-                let (_, val) = entry?;
-                if let Ok(tv) = val.to_value() {
-                    if tv == Value::Text(expected.to_owned()) {
-                        found = Some(tv.clone());
-                        break;
-                    }
-                }
-            }
-            found.ok_or_else(|| format!("stored metadata omitted {field} keys present but value not found (expected {expected})"))?
-        }
-    };
+type Fields = fixture_catalog::smithy::Registry;
+
+fn stored<'a>(record: &'a Record, fields: &Fields, name: &str) -> TestResult<Option<ValueRef<'a>>> {
+    let id = fields.id(name).ok_or_else(|| format!("{name} is not a modeled member"))?;
+    Ok(record::path_value(record.root(), &[id])?)
+}
+
+fn assert_text(record: &Record, fields: &Fields, field: &str, expected: &str) -> TestResult {
+    let actual = stored(record, fields, field)?.ok_or_else(|| format!("stored metadata omitted {field}"))?.to_value()?;
     assert_eq!(actual, Value::Text(expected.to_owned()), "{field}");
     Ok(())
 }
 
-pub(super) fn assert_metadata(case: &Case, id: &str, record: &Record) -> TestResult {
+pub(super) fn assert_metadata(case: &Case, fields: &Fields, id: &str, record: &Record) -> TestResult {
     let local = if id.ends_with("later") || id.ends_with("1:2") || id.ends_with("000000000002") { "later" } else { "shared" };
     match (case.service, case.operation) {
         ("guardduty", "ListFilters") | ("keyspaces", "ListTypes") => {
             assert_eq!(record::path_value(record.root(), &[])?.ok_or("scalar value missing")?.to_value()?, Value::Text(local.to_owned()));
         }
         ("guardduty", "ListPublishingDestinations") => {
-            assert_text(record, "DestinationId", local)?;
-            assert_text(record, "Status", "PUBLISHING")?;
+            assert_text(record, fields, "DestinationId", local)?;
+            assert_text(record, fields, "Status", "PUBLISHING")?;
         }
         ("identitystore", _) => {
-            assert_text(record, "GroupArn", id)?;
-            assert_text(record, "DisplayName", local)?;
-            assert_text(record, "Description", "engineering group")?;
-            assert_text(record, "Revision", "17")?;
+            assert_text(record, fields, "GroupArn", id)?;
+            assert_text(record, fields, "DisplayName", local)?;
+            assert_text(record, fields, "Description", "engineering group")?;
+            assert_text(record, fields, "Revision", "17")?;
         }
         ("greengrass", _) => {
-            assert_text(record, "Arn", id)?;
-            assert_text(record, "Version", local)?;
-            // FieldId-backed storage: check presence of parent Id via any text equal to local parent binding by scanning values
-            // The stored record uses FieldId keys; parent Id is retained as one of the text values — assert at least one text field exists and no Definition body leaked
-            // Original get_name("Id") check would fail on FieldId maps; emulate presence by ensuring record has 3+ entries and no large definition blob
-            let count = record.root().iter()?.count();
-            assert!(count >= 3, "parent Id metadata was dropped count={count}");
-            // Definition should be absent as FieldId/Name both — check via get_name fallback to iter len
-            assert!(record.root().get_name("Definition")?.is_none(), "forbidden definition body was persisted");
+            assert_text(record, fields, "Arn", id)?;
+            assert_text(record, fields, "Version", local)?;
+            assert!(stored(record, fields, "Id")?.is_some(), "parent Id metadata was dropped");
+            assert!(stored(record, fields, "Definition")?.is_none(), "forbidden definition body was persisted");
         }
-        ("kafka", "ListTopics") => { assert_text(record, "TopicArn", id)?; assert_text(record, "TopicName", local)?; }
-        ("kafka", "ListChannels") => { assert_text(record, "ChannelArn", id)?; assert_text(record, "ChannelName", local)?; }
+        ("kafka", "ListTopics") => { assert_text(record, fields, "TopicArn", id)?; assert_text(record, fields, "TopicName", local)?; }
+        ("kafka", "ListChannels") => { assert_text(record, fields, "ChannelArn", id)?; assert_text(record, fields, "ChannelName", local)?; }
         ("kafka", "ListConfigurationRevisions") => {
-            assert_eq!(record.root().get_name("Revision")?.ok_or("stored revision absent")?.to_value()?, Value::Int(revision(local)));
-            assert_text(record, "Description", "immutable metadata")?;
-            assert!(record.root().get_name("ServerProperties")?.is_none(), "forbidden configuration body was persisted");
+            assert_eq!(stored(record, fields, "Revision")?.ok_or("stored revision absent")?.to_value()?, Value::Int(revision(local)));
+            assert_text(record, fields, "Description", "immutable metadata")?;
+            assert!(stored(record, fields, "ServerProperties")?.is_none(), "forbidden configuration body was persisted");
         }
-        ("kendra", "ListFeaturedResultsSets") => { assert_text(record, "FeaturedResultsSetId", local)?; }
+        ("kendra", "ListFeaturedResultsSets") => { assert_text(record, fields, "FeaturedResultsSetId", local)?; }
         ("kendra", "ListExperiences") => {
-            assert_text(record, "Id", local)?;
-            assert!(matches!(record.root().get_name("Endpoints")?, Some(ValueRef::List(_))), "hosted HOME endpoint metadata was lost");
+            assert_text(record, fields, "Id", local)?;
+            assert!(matches!(stored(record, fields, "Endpoints")?, Some(ValueRef::List(_))), "hosted HOME endpoint metadata was lost");
         }
-        ("kendra", "ListAccessControlConfigurations") => { assert_text(record, "Id", local)?; }
-        ("kendra", _) => { assert_text(record, "Id", local)?; assert_text(record, "Status", "ACTIVE")?; }
+        ("kendra", "ListAccessControlConfigurations") => { assert_text(record, fields, "Id", local)?; }
+        ("kendra", _) => { assert_text(record, fields, "Id", local)?; assert_text(record, fields, "Status", "ACTIVE")?; }
         _ => return Err("missing metadata assertion scenario".into()),
     }
     Ok(())
+}
+
+/// Wire member name: GuardDuty and Kafka declare lower-camel `jsonName` traits on these members.
+pub(super) fn wire(case: &Case, member: &str) -> String {
+    if !matches!(case.service, "guardduty" | "kafka") { return member.to_owned(); }
+    let mut chars = member.chars();
+    chars.next().map_or_else(String::new, |first| first.to_lowercase().chain(chars).collect())
 }

@@ -5,11 +5,11 @@ mod fixture;
 
 use super::*;
 use super::super::{consumer_index::ConsumerIndex, cursor};
-use super::policy_dfgk_tests::{project_children, projected_references};
+use super::policy_dfgk_tests::{complete_df::json_to_cbor, project_children, projected_references};
 use crate::sweep_runtime::{execution::routing, record::policy_dfgk_tests::fixture as decoder};
 use catalog_tool as fixture_catalog;
 use fixture::{TestResult, compile};
-use inventory_core::catalog::runtime::RuntimeCatalog;
+use inventory_core::catalog::runtime::{RuntimeCatalog, RuntimeProtocol};
 use inventory_engine::inventory::{BinaryStore, PageCommit, SchemaRegistry, WorkLease};
 use serde_json::{Value as Json, json};
 use std::collections::BTreeSet;
@@ -80,14 +80,20 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
             fields.push(input::InputField { path: size.path.clone(), value: Value::Int(i64::from(size.max)) });
         }
         let wire = crate::sweep_runtime::request::encode(plan, &endpoint.url, &base, &fields)?;
-        Ok((input::merge_input(&base, &fields)?, format!("{} {}", wire.uri(), std::str::from_utf8(wire.body())?)))
+        Ok((input::merge_input(&base, &fields)?, format!("{} {}", wire.uri(), String::from_utf8_lossy(wire.body()))))
     }
 
     async fn apply(&self, catalog: &RuntimeCatalog<'_>, plan: &CallablePlan<'_>, lease: WorkLease,
         request: &Record, body: Json, expected_children: usize) -> TestResult {
-        let response = decoder::decode(plan, &serde_json::to_vec(&body)?)?;
+        let bytes = if plan.protocol() == RuntimeProtocol::RpcV2Cbor { json_to_cbor(&body)? } else { serde_json::to_vec(&body)? };
+        let response = decoder::decode_as_sweep(plan, &bytes)?;
         let restored = cursor::Cursor::decode(lease.token())?;
         let next = restored.next(plan.pagination(), &response, &http::HeaderMap::new(), 10)?;
+        // The production row gate precedes projection: a hostile row may not commit any page prefix.
+        let branch = routing::execution_branch(plan, lease.scope().branch())?;
+        for row in record::item_records(&response, plan.items())? {
+            assert!(crate::sweep_runtime::row_policy::selected(plan, branch, &row, request, &response)?, "reviewed child rows are never filtered out");
+        }
         let ancestry = DiscoveryContext::decode(lease.context())?;
         let expected_context = (!lease.context().is_empty()).then(|| ancestry.discriminator()).transpose()?;
         assert_eq!(lease.scope().context(), expected_context);
@@ -125,11 +131,11 @@ async fn exercise(case: Case, parents: [Parent; 2]) -> TestResult {
     let lease = scenario.store.claim(&scenario.sweep, 1000, 10000).await?.ok_or("root work missing")?;
     let (request, _) = scenario.request(root, &lease)?;
     scenario.apply(&catalog, root, lease, &request,
-        json!({(case.root_items):parents.iter().map(|parent| parent.row.clone()).collect::<Vec<_>>()}), 2).await?;
+        json!({(cases::wire(&case, case.root_items)):parents.iter().map(|parent| parent.row.clone()).collect::<Vec<_>>()}), 2).await?;
     let scenario = consume_children(scenario, &catalog, child, &compiled.fields, &case, &parents).await?;
     // Then: duplicate child-local IDs survive as separate queryable SQLite nodes and parent edges.
     let reader = scenario.reader().await?;
-    assert_persisted(&reader, &case, &parents).await?;
+    assert_persisted(&reader, &compiled.fields, &case, &parents).await?;
     reader.close().await;
     Ok(())
 }
@@ -168,7 +174,7 @@ async fn consume_children<'a, 'catalog>(mut scenario: Scenario<'a, 'catalog>, ca
 
 type Edge = (String, String, String, String, String);
 
-async fn assert_persisted(reader: &sqlx::SqlitePool, case: &Case, parents: &[Parent; 2]) -> TestResult {
+async fn assert_persisted(reader: &sqlx::SqlitePool, fields: &fixture_catalog::smithy::Registry, case: &Case, parents: &[Parent; 2]) -> TestResult {
     let mut expected_nodes = parents.iter().map(|parent| (parent.kind.to_owned(), parent.id.clone())).collect::<BTreeSet<_>>();
     let mut expected_edges = BTreeSet::new();
     for parent in parents {
@@ -187,7 +193,7 @@ async fn assert_persisted(reader: &sqlx::SqlitePool, case: &Case, parents: &[Par
     assert_eq!(saved.len(), 4, "child-local IDs collapsed across parents");
     for (id, bytes) in saved {
         let record = Record::from_bytes(bytes)?;
-        cases::assert_metadata(case, &id, &record)?;
+        cases::assert_metadata(case, fields, &id, &record)?;
     }
     Ok(())
 }
