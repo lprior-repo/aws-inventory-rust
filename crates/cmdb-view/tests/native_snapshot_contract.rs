@@ -6,6 +6,8 @@
 
 #[path = "database/tag_snapshot_contract.rs"]
 mod tag_snapshot_contract;
+#[path = "support/seal.rs"]
+mod seal;
 
 use cmdb_view::{
     Database, EdgePageRequest, GraphEdge, GraphNode, PageRequest, ResourceFilter,
@@ -101,9 +103,8 @@ fn catalog() -> TestResult<Vec<u8>> {
         (CatalogKey::FieldNameOffsets, Value::Bytes(offsets)),
         (CatalogKey::Services, Value::List(vec![Value::Bytes(Record::encode(&service)?.into_bytes())])),
     ])?;
-    let Value::Map(mut fields) = root else { return Err("catalog root must be a map".into()); };
-    fields.insert(Key::Field(FieldId::new(60_000)?), runtime);
-    Ok(Record::encode(&Value::Map(fields))?.into_bytes())
+    let Value::Map(fields) = root else { return Err("catalog root must be a map".into()); };
+    seal::seal(fields, runtime)
 }
 
 async fn fixture() -> TestResult<(tempfile::TempDir, BinaryStore, Database)> {

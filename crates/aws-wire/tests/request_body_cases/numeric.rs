@@ -115,8 +115,14 @@ fn rpc_big_decimal_honors_small_body_budget_before_conversion() {
 }
 
 fn rpc_fixture() -> Json {
-    serde_json::from_str(include_str!("../fixtures/protocol-tests/rpcv2Cbor.json"))
-        .expect("published RPCv2 fixture is JSON")
+    let mut fixture: Json =
+        serde_json::from_str(include_str!("../fixtures/protocol-tests/rpcv2Cbor.json"))
+            .expect("published RPCv2 fixture is JSON");
+    fixture["shapes"]["smithy.protocoltests.rpcv2Cbor#RpcV2Protocol"]["operations"]
+        .as_array_mut()
+        .expect("service operations")
+        .push(serde_json::json!({"target": "smithy.protocoltests.corpus#ScalarMembers"}));
+    fixture
 }
 
 fn scalar_operation(service: Service<'_>) -> Operation<'_> {

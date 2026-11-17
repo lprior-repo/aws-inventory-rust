@@ -1,8 +1,9 @@
 use super::fixtures::TestResult;
 use inventory_core::{
-    catalog::{CATALOG_VERSION, CatalogKey},
+    catalog::{CATALOG_VERSION, CatalogKey, runtime::compiled_inputs_sha256},
     record::{FieldId, Key, Record, Value},
 };
+use sha2::{Digest, Sha256};
 use std::collections::BTreeMap;
 
 pub(super) fn wire(fields: impl IntoIterator<Item = (u32, Value)>) -> TestResult<Value> {
@@ -79,7 +80,24 @@ pub(super) fn catalog() -> TestResult<Vec<u8>> {
         (CatalogKey::FieldNameOffsets, Value::Bytes(offsets)),
         (CatalogKey::Services, Value::List(vec![Value::Bytes(Record::encode(&service)?.into_bytes())])),
     ])?;
-    let Value::Map(mut entries) = root else { return Err("catalog map required".into()); };
-    entries.insert(Key::Field(FieldId::new(60_000)?), runtime);
-    Ok(Record::encode(&Value::Map(entries))?.into_bytes())
+    let Value::Map(entries) = root else { return Err("catalog map required".into()); };
+    seal(entries, runtime)
+}
+
+fn seal(mut catalog: BTreeMap<Key, Value>, mut runtime: Value) -> TestResult<Vec<u8>> {
+    let models = Sha256::digest(Record::encode(&Value::Map(catalog.clone()))?.as_bytes());
+    let reviewed = compiled_inputs_sha256(Record::encode(&runtime)?.root())?;
+    let source = Sha256::digest(include_bytes!("catalog.rs"));
+    let Value::Map(extension) = &mut runtime else { return Err("runtime extension must be a map".into()); };
+    extension.insert(Key::Field(FieldId::new(7)?), wire([
+        (1, Value::Int(1)),
+        (2, wire([(1, Value::Int(1)), (2, Value::Bytes(models.to_vec()))])?),
+        (3, Value::Int(1)),
+        (4, Value::Bytes(source.to_vec())),
+        (5, Value::Null),
+        (6, Value::Bytes(source.to_vec())),
+        (7, Value::Bytes(reviewed.to_vec())),
+    ])?);
+    catalog.insert(Key::Field(FieldId::new(60_000)?), runtime);
+    Ok(Record::encode(&Value::Map(catalog))?.into_bytes())
 }

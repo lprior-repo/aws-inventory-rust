@@ -114,7 +114,6 @@ fn catalog() -> TestResult<Vec<u8>> {
         (CatalogKey::FieldNames, Value::Bytes(b"a1a2a3a4a5a6a7a8".to_vec())),
         (CatalogKey::FieldNameOffsets, Value::Bytes(offsets)),
         (CatalogKey::Services, Value::List(vec![Value::Bytes(Record::encode(&service)?.into_bytes())]))])?;
-    let Value::Map(mut entries) = root else { return Err("catalog map required".into()); };
-    entries.insert(Key::Field(FieldId::new(60_000)?), runtime);
-    Ok(Record::encode(&Value::Map(entries))?.into_bytes())
+    let Value::Map(entries) = root else { return Err("catalog map required".into()); };
+    super::seal::seal(entries, runtime)
 }

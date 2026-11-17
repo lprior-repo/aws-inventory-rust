@@ -1,3 +1,5 @@
+#[path = "support/seal.rs"]
+mod seal;
 #[path = "support/tag_writer.rs"]
 mod support;
 
