@@ -3,6 +3,7 @@ mod lattice;
 mod mail;
 mod mail_collision;
 mod metadata;
+mod wire;
 mod workspaces;
 mod waf;
 
@@ -12,6 +13,7 @@ use crate::sweep_runtime::{execution::routing, record};
 use inventory_core::catalog::runtime::{RuntimeCatalog, PlanScope};
 use inventory_engine::inventory::{BinaryStore, PageCommit, SchemaRegistry, WorkLease};
 use serde_json::{Value as Json, json};
+use wire::{decode_rpc_body, json_to_cbor};
 use std::{collections::BTreeMap, error::Error, sync::LazyLock};
 
 type TestResult<T = ()> = Result<T, Box<dyn Error>>;
@@ -183,118 +185,6 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
     }
 }
 
-use inventory_core::catalog::{Service, Target};
-
-fn json_to_cbor(
-    value: &Json,
-    service: Service<'_>,
-    output_target: Target,
-) -> TestResult<Vec<u8>> {
-    let mut encoder = minicbor::Encoder::new(Vec::new());
-    encode_json_with_schema(&mut encoder, value, service, Some(output_target))?;
-    Ok(encoder.into_writer())
-}
-
-fn resolve_target_kind(service: Service<'_>, target: Target) -> TestResult<&'static str> {
-    match target {
-        Target::Shape(index) => {
-            let shape = service.shape(index)?.ok_or("modeled CBOR shape absent")?;
-            Ok(shape.kind()?)
-        }
-        Target::Prelude(kind) => Ok(kind),
-        _ => Err("unsupported modeled CBOR target".into()),
-    }
-}
-
-fn find_member_target(service: Service<'_>, structure_target: Target, member_name: &str) -> TestResult<Option<Target>> {
-    match structure_target {
-        Target::Shape(index) => {
-            let shape = service.shape(index)?.ok_or("modeled CBOR shape absent")?;
-            let kind = shape.kind()?;
-            if kind != "structure" {
-                return Ok(None);
-            }
-            for member in shape.members().map_err(|e| format!("members error: {e}"))? {
-                let member = member.map_err(|e| format!("member error: {e}"))?;
-                if member.name().map_err(|e| format!("member name error: {e}"))? == member_name {
-                    return Ok(Some(member.target));
-                }
-            }
-            Ok(None)
-        }
-        _ => Ok(None),
-    }
-}
-
-fn encode_json_with_schema(
-    encoder: &mut minicbor::Encoder<Vec<u8>>,
-    value: &Json,
-    service: Service<'_>,
-    target: Option<Target>,
-) -> TestResult {
-    let kind = target.map(|target| resolve_target_kind(service, target)).transpose()?;
-
-    match value {
-        Json::Null => {
-            encoder.null().map_err(|e| format!("CBOR null error: {e}"))?;
-        }
-        Json::Bool(b) => {
-            encoder.bool(*b).map_err(|e| format!("CBOR bool error: {e}"))?;
-        }
-        Json::Number(n) => {
-            if kind == Some("timestamp") {
-                // Timestamps always get CBOR tag 1, regardless of numeric form
-                let tag = minicbor::data::Tag::from(minicbor::data::IanaTag::Timestamp);
-                encoder.tag(tag).map_err(|e| format!("CBOR tag error: {e}"))?;
-                if let Some(i) = n.as_i64() {
-                    encoder.i64(i).map_err(|e| format!("CBOR i64 error: {e}"))?;
-                } else if let Some(f) = n.as_f64() {
-                    encoder.f64(f).map_err(|e| format!("CBOR f64 error: {e}"))?;
-                } else {
-                    return Err("unsupported timestamp number format".into());
-                }
-            } else if let Some(i) = n.as_i64() {
-                encoder.i64(i).map_err(|e| format!("CBOR i64 error: {e}"))?;
-            } else if let Some(u) = n.as_u64() {
-                encoder.u64(u).map_err(|e| format!("CBOR u64 error: {e}"))?;
-            } else if let Some(f) = n.as_f64() {
-                encoder.f64(f).map_err(|e| format!("CBOR f64 error: {e}"))?;
-            } else {
-                return Err("unsupported JSON number".into());
-            }
-        }
-        Json::String(s) => {
-            encoder.str(s).map_err(|e| format!("CBOR str error: {e}"))?;
-        }
-        Json::Array(arr) => {
-            // For list types, determine the element target
-            let element_target = match (target, kind) {
-                (Some(Target::Shape(index)), Some("list")) => {
-                    let shape = service.shape(index)?.ok_or("modeled CBOR list shape absent")?;
-                    shape.element()?
-                }
-                _ => None,
-            };
-
-            encoder.array(u64::try_from(arr.len()).map_err(|_| "array length exceeds u64")?).map_err(|e| format!("CBOR array error: {e}"))?;
-            for item in arr {
-                encode_json_with_schema(encoder, item, service, element_target)?;
-            }
-        }
-        Json::Object(map) => {
-            encoder.map(u64::try_from(map.len()).map_err(|_| "map length exceeds u64")?).map_err(|e| format!("CBOR map error: {e}"))?;
-            for (key, val) in map {
-                encoder.str(key).map_err(|e| format!("CBOR key error: {e}"))?;
-                // For structure types, resolve each member's target
-                let member_target = target.map(|target| find_member_target(service, target, key))
-                    .transpose()?.flatten();
-                encode_json_with_schema(encoder, val, service, member_target)?;
-            }
-        }
-    }
-    Ok(())
-}
-
 fn decode(plan: &CallablePlan<'_>, body: &[u8]) -> TestResult<Record> {
     use aws_wire::{request::Protocol, response::{DecodeLimits, ResponseContext}};
     let protocol = match plan.protocol() {
@@ -343,65 +233,5 @@ fn assert_token(wire: &http::Request<bytes::Bytes>, name: &str, resumed: bool) -
         let body: Json = if wire.body().is_empty() { Json::Null } else { serde_json::from_slice(wire.body())? };
         assert_eq!(body.get(name).and_then(Json::as_str), expected);
     }
-    Ok(())
-}
-
-pub(super) fn decode_rpc_body(body: &[u8]) -> TestResult<serde_json::Map<String, Json>> {
-    let mut decoder = minicbor::Decoder::new(body);
-    let mut fields = serde_json::Map::new();
-    if let Some(count) = decoder.map()? {
-        for _ in 0..count {
-            decode_rpc_field(&mut decoder, &mut fields)?;
-        }
-    } else {
-        loop {
-            if decoder.datatype()? == minicbor::data::Type::Break {
-                decoder.skip()?;
-                break;
-            }
-            decode_rpc_field(&mut decoder, &mut fields)?;
-        }
-    }
-    Ok(fields)
-}
-
-fn decode_rpc_field(decoder: &mut minicbor::Decoder<'_>, fields: &mut serde_json::Map<String, Json>) -> TestResult {
-    use minicbor::data::Type;
-    let name = decoder.str()?.to_owned();
-    if fields.contains_key(&name) {
-        return Err(format!("duplicate native RPC input field: {name}").into());
-    }
-    let dt = decoder.datatype()?;
-    let value = match dt {
-        Type::String => Json::String(decoder.str()?.to_owned()),
-        Type::U8 | Type::U16 | Type::U32 | Type::U64 => Json::from(decoder.u64()?),
-        Type::I8 | Type::I16 | Type::I32 | Type::I64 => Json::from(decoder.i64()?),
-        Type::Array | Type::ArrayIndef => {
-            // Support definite and indefinite length arrays of strings (e.g., AssociatedResourceTypes)
-            let mut items = Vec::new();
-            if let Some(count) = decoder.array()? {
-                for _ in 0..count {
-                    if decoder.datatype()? != Type::String {
-                        return Err("unsupported array element type in RPC fixture input".into());
-                    }
-                    items.push(Json::String(decoder.str()?.to_owned()));
-                }
-            } else {
-                loop {
-                    if decoder.datatype()? == Type::Break {
-                        decoder.skip()?;
-                        break;
-                    }
-                    if decoder.datatype()? != Type::String {
-                        return Err("unsupported array element type in RPC fixture input".into());
-                    }
-                    items.push(Json::String(decoder.str()?.to_owned()));
-                }
-            }
-            Json::Array(items)
-        }
-        _ => return Err(format!("unsupported native RPC fixture input value for field {name}").into()),
-    };
-    fields.insert(name, value);
     Ok(())
 }
