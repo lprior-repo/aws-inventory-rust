@@ -5,84 +5,48 @@ use crate::{
 };
 use super::super::super::types::{IdentityPatternCache, IdentityTextOperand, IdentityTextPlan};
 
-enum OperandKind { Text, MapValue, ListElement }
-struct Operand<'p> { source: ContextSource, path: &'p [FieldId], kind: OperandKind }
-
+/// Compiles the modeled element constraints of every selected string-list identity operand.
+///
+/// Only list elements are compiled here: their member constraints are the sole source of the
+/// component grammar, whereas ARN operands are validated structurally by the trusted ARN grammar.
 pub(super) fn compile<'a>(
     service: Service<'a>, operation: Operation<'a>, items: &ItemPlan, identity: &IdentityPlan,
     cache: &mut IdentityPatternCache<'a>,
 ) -> Result<IdentityTextPlan<'a>, RuntimeCatalogError> {
-    let mut operands = Vec::new();
+    let mut lists = Vec::new();
     match identity {
-        IdentityPlan::Arn(path) => selected(&mut operands, path),
-        IdentityPlan::Choice(IdentityChoicePlan::PreferArn { path, fallback, .. }) => {
-            selected(&mut operands, path);
-            leaf(&mut operands, fallback);
-        }
+        IdentityPlan::Choice(IdentityChoicePlan::PreferArn { fallback, .. }) => leaf(&mut lists, fallback),
         IdentityPlan::Choice(IdentityChoicePlan::Discriminated(branches)) => {
-            for branch in branches { leaf(&mut operands, &branch.identity); }
+            for branch in branches { leaf(&mut lists, &branch.identity); }
         }
-        IdentityPlan::CorrelatedKey(fields) => fields_operands(&mut operands, fields),
-        IdentityPlan::MapArn { path, .. } => operands.push(Operand { source: ContextSource::SelectedItem, path, kind: OperandKind::MapValue }),
-        IdentityPlan::Template(_) | IdentityPlan::Key(_) => {},
+        IdentityPlan::CorrelatedKey(fields) => fields_lists(&mut lists, fields),
+        IdentityPlan::Arn(_) | IdentityPlan::MapArn { .. } | IdentityPlan::Template(_) | IdentityPlan::Key(_) => {},
     }
-    if operands.is_empty() { return Ok(IdentityTextPlan::default()); }
-    let selected_root = if operands.iter().any(|operand| operand.source == ContextSource::SelectedItem) {
-        Some(selected_model(service, operation, items)?)
-    } else { None };
-    let compiled = operands.into_iter().map(|operand| {
-        let (root, root_member) = match operand.source {
-            ContextSource::SelectedItem => selected_root.ok_or(RuntimeCatalogError::Capability)?,
-            ContextSource::Request => (operation.input()?, None),
-            ContextSource::Response => return Err(RuntimeCatalogError::Capability),
-        };
-        let (mut target, mut member) = resolve(service, root, operand.path, root_member)?;
-        match operand.kind {
-            OperandKind::Text => {},
-            OperandKind::MapValue => {
-                let map = tags::shape(service, target)?;
-                if map.kind()? != "map" { return Err(RuntimeCatalogError::Capability); }
-                target = map.map_value()?.ok_or(RuntimeCatalogError::Capability)?;
-                member = Some(map.map_value_constraints()?);
-            },
-            OperandKind::ListElement => {
-                let list = tags::shape(service, target)?;
-                if list.kind()? != "list" { return Err(RuntimeCatalogError::Capability); }
-                target = list.element()?.ok_or(RuntimeCatalogError::Capability)?;
-                member = Some(list.element_constraints()?);
-            },
-        }
-        let shape = match target {
+    if lists.is_empty() { return Ok(IdentityTextPlan::default()); }
+    let (selected, item_member) = selected_model(service, operation, items)?;
+    let compiled = lists.into_iter().map(|path| {
+        let (target, _) = resolve(service, selected, path, item_member)?;
+        let list = tags::shape(service, target)?;
+        if list.kind()? != "list" { return Err(RuntimeCatalogError::Capability); }
+        let element = list.element()?.ok_or(RuntimeCatalogError::Capability)?;
+        let shape = match element {
             Target::Shape(index) => Some(service.shape(index)?.ok_or(RuntimeCatalogError::Capability)?),
             Target::Prelude("string") => None,
             _ => return Err(RuntimeCatalogError::Capability),
         };
-        IdentityTextOperand::compile(operand.source, operand.path, shape, member, cache)
+        // The list member's own constraints refine the element shape's; the list shape itself bounds only the count.
+        IdentityTextOperand::compile(ContextSource::SelectedItem, path, shape, Some(list.element_constraints()?), cache)
     }).collect::<Result<Vec<_>, RuntimeCatalogError>>()?;
     Ok(IdentityTextPlan::new(compiled))
 }
 
-fn selected<'p>(operands: &mut Vec<Operand<'p>>, path: &'p [FieldId]) {
-    operands.push(Operand { source: ContextSource::SelectedItem, path, kind: OperandKind::Text });
+fn leaf<'p>(lists: &mut Vec<&'p [FieldId]>, identity: &'p IdentityLeafPlan) {
+    if let IdentityLeafPlan::Fields(fields) = identity { fields_lists(lists, fields); }
 }
 
-fn leaf<'p>(operands: &mut Vec<Operand<'p>>, identity: &'p IdentityLeafPlan) {
-    match identity {
-        IdentityLeafPlan::Arn(path) => selected(operands, path),
-        IdentityLeafPlan::Fields(fields) => fields_operands(operands, fields),
-        IdentityLeafPlan::Template(_) | IdentityLeafPlan::Key(_) => {},
-    }
-}
-
-fn fields_operands<'p>(operands: &mut Vec<Operand<'p>>, fields: &'p [IdentityFieldPlan]) {
+fn fields_lists<'p>(lists: &mut Vec<&'p [FieldId]>, fields: &'p [IdentityFieldPlan]) {
     for field in fields {
-        match field {
-            IdentityFieldPlan::SelectedArn(path) => selected(operands, path),
-            IdentityFieldPlan::RequestArn(path) => operands.push(Operand { source: ContextSource::Request, path, kind: OperandKind::Text }),
-            IdentityFieldPlan::SelectedStringList { path, .. } =>
-                operands.push(Operand { source: ContextSource::SelectedItem, path, kind: OperandKind::ListElement }),
-            _ => {},
-        }
+        if let IdentityFieldPlan::SelectedStringList { path, .. } = field { lists.push(path); }
     }
 }
 

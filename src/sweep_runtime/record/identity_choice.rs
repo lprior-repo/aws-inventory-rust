@@ -24,7 +24,6 @@ pub(super) fn resource_id(
             }).transpose()?;
             validate_resource_arn(&text, resource_kind,
                 trusted.ok_or(SweepError::Operation("map ARN identity requires trusted request scope"))?, request_url.as_deref())?;
-            validation.selected(path, &text)?;
             text
         }
         _ => return Err(SweepError::Operation("unexpected contextual identity recipe")),
@@ -40,7 +39,6 @@ fn choose<'a>(row: &'a Record, choice: &IdentityChoicePlan, trusted: Option<&Ide
                 Some(value) => {
                     let text = value_text(value)?;
                     validate_arn(&text, trusted)?;
-                    validation.selected(path, &text)?;
                     Ok(text)
                 }
             }
@@ -74,7 +72,6 @@ fn leaf<'a>(row: &'a Record, leaf: &IdentityLeafPlan, trusted: Option<&IdentityC
         IdentityLeafPlan::Arn(path) => {
             let text = required_text(row, path)?;
             validate_arn(&text, trusted)?;
-            validation.selected(path, &text)?;
             Ok(text)
         }
         IdentityLeafPlan::Template(parts) => Ok(Cow::Owned(template_text(row, parts, trusted)?)),
@@ -110,7 +107,6 @@ fn field_text<'a>(row: &'a Record, field: &IdentityFieldPlan, trusted: Option<&I
             let value = path_value(record.root(), path)?.ok_or(SweepError::Operation("modeled identity path is absent"))?;
             let ValueRef::Text(text) = value else { return Err(SweepError::Operation("modeled ARN identity operand must be text")) };
             validate_arn(text, trusted)?;
-            if matches!(field, IdentityFieldPlan::SelectedArn(_)) { validation.selected(path, text)?; } else { validation.request(path, text)?; }
             Ok(Cow::Borrowed(text))
         }
         IdentityFieldPlan::SelectedInteger { path, minimum, maximum } =>

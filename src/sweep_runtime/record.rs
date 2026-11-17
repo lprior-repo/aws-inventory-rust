@@ -156,7 +156,6 @@ fn identity(
         IdentityPlan::Arn(path) => {
             let text = required_text(record, path)?;
             trusted_arn::validate_arn(&text, context)?;
-            validation.selected(path, &text)?;
             text
         }
         IdentityPlan::Template(parts) => Cow::Owned(template_text(record, parts, context)?),
