@@ -77,7 +77,7 @@ fn leaf<'p>(operands: &mut Vec<Operand<'p>>, identity: &'p IdentityLeafPlan) {
 fn fields_operands<'p>(operands: &mut Vec<Operand<'p>>, fields: &'p [IdentityFieldPlan]) {
     for field in fields {
         match field {
-            IdentityFieldPlan::SelectedArn(path) | IdentityFieldPlan::SelectedResourceArn { path, .. } => selected(operands, path),
+            IdentityFieldPlan::SelectedArn(path) => selected(operands, path),
             IdentityFieldPlan::RequestArn(path) => operands.push(Operand { source: ContextSource::Request, path, kind: OperandKind::Text }),
             IdentityFieldPlan::SelectedStringList { path, .. } =>
                 operands.push(Operand { source: ContextSource::SelectedItem, path, kind: OperandKind::ListElement }),

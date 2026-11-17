@@ -7,7 +7,8 @@ pub(in crate::sweep_runtime) fn emission_observation(catalog: &RuntimeCatalog<'_
     request: &Record, ancestry: &DiscoveryContext,
 ) -> Result<Observation, SweepError> {
     let account = identity_context.account.clone();
-    let id = record::resource_id_with_context(row, emission.identity(), Some(identity_context), ancestry, request)?;
+    let validation = record::IdentityTextValidation::Modeled(plan.identity_text(emission.key())?);
+    let id = record::resource_id_validated(row, emission.identity(), Some(identity_context), ancestry, request, &validation)?;
     let kind = match emission.classification() {
         Some(classification) => classification.classify(row)?.clone(),
         None => emission.kind().clone(),

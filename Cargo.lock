@@ -2468,6 +2468,7 @@ dependencies = [
  "blake3",
  "minicbor",
  "proptest",
+ "regex",
  "serde",
  "serde_json",
  "sha2",

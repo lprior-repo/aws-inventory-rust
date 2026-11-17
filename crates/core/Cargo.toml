@@ -15,6 +15,7 @@ serde_json = { workspace = true, optional = true }
 thiserror.workspace = true
 minicbor.workspace = true
 blake3.workspace = true
+regex = "=1.13.1"
 sha2.workspace = true
 
 [dev-dependencies]

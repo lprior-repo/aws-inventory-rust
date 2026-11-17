@@ -1,4 +1,4 @@
-use super::{path_value, SweepError};
+use super::{IdentityTextOperandValidation, path_value, SweepError};
 use inventory_core::record::{FieldId, Record, ValueRef};
 use std::{borrow::Cow, fmt::Write};
 
@@ -10,7 +10,7 @@ pub(super) fn integer<'a>(record: &'a Record, path: &[FieldId], minimum: i64, ma
     Ok(Cow::Owned(value.to_string()))
 }
 
-pub(super) fn string_list<'a>(record: &'a Record, path: &[FieldId], max_items: u32, max_item_bytes: u32) -> Result<Cow<'a, str>, SweepError> {
+pub(super) fn string_list<'a>(record: &'a Record, path: &[FieldId], max_items: u32, max_item_bytes: u32, element: &IdentityTextOperandValidation<'_, '_>) -> Result<Cow<'a, str>, SweepError> {
     if !(1..=64).contains(&max_items) || !(1..=4096).contains(&max_item_bytes) {
         return Err(SweepError::Operation("invalid identity string list bounds"))
     }
@@ -28,6 +28,7 @@ pub(super) fn string_list<'a>(record: &'a Record, path: &[FieldId], max_items: u
             || u32::try_from(component.len()).map_or(true, |length| length > max_item_bytes) {
             return Err(SweepError::Operation("modeled identity list member is empty, malformed, or too long"))
         }
+        element.accepts(component)?;
         append(&mut text, component)
     })?;
     Ok(Cow::Owned(text))

@@ -7,6 +7,9 @@ mod selection;
 mod row_policy;
 mod emission;
 mod emissions;
+mod identity_text;
+pub use identity_text::{IdentityTextOperand, IdentityTextPlan};
+pub(crate) use identity_text::IdentityPatternCache;
 pub use row_policy::{RowPolicyPlan, RowPredicatePlan, RowOperandPlan, RowValueType, MissingSelected, ChildEligibilityPlan};
 pub use selection::{SelectionKind, Emission, ContextSource, IdentityFieldPlan, IdentityLeafPlan,
     IdentityPredicatePlan, IdentityBranchPlan, IdentityChoicePlan, ContextProjectionPlan, BindingAlternativePlan};

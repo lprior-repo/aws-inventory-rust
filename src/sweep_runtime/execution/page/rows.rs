@@ -86,8 +86,9 @@ pub(super) fn observation(
     ancestry: &DiscoveryContext,
 ) -> Result<Observation, SweepError> {
     let account = identity_context.account;
-    let id = record::resource_id_with_context(
-        row, plan.identity(), Some(identity_context), ancestry, request,
+    let validation = record::IdentityTextValidation::Modeled(plan.identity_text("primary")?);
+    let id = record::resource_id_validated(
+        row, plan.identity(), Some(identity_context), ancestry, request, &validation,
     )?;
     let kind = resource_projection::classify(plan, row)?;
     record::trusted_arn::validate_kind_arn(&kind, id.as_str())?;

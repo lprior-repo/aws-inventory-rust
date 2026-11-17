@@ -3,7 +3,7 @@ use inventory_core::{catalog::runtime::{ContextSource, IdentityTextOperand, Iden
 
 /// Production always carries the catalog-load-compiled operand validators.
 /// Pure recipe unit tests can deliberately omit models; that route is absent in release code.
-pub(super) enum IdentityTextValidation<'p, 'catalog> {
+pub(in crate::sweep_runtime) enum IdentityTextValidation<'p, 'catalog> {
     Modeled(&'p IdentityTextPlan<'catalog>),
     #[cfg(test)]
     RecipeOnly,

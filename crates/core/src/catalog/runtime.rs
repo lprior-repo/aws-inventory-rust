@@ -15,7 +15,7 @@ pub use types::{
     RequestRouting, ExecutionBranch, ResourceProjectionPlan, KindClassificationPlan,
     ReferenceOwnerRule, ArnOwnerRule, ArnRegionRule, ContextSource, Emission, SelectionKind,
     IdentityFieldPlan, IdentityLeafPlan, IdentityChoicePlan, IdentityBranchPlan, IdentityPredicatePlan,
-    ContextProjectionPlan, BindingAlternativePlan,
+    ContextProjectionPlan, BindingAlternativePlan, IdentityTextOperand, IdentityTextPlan,
     ArnResourceKind, UrlResourceKind, BindingTransform,
     BindingPlan, BindingSource, BindingValue, CallablePlan, EndpointClass, EndpointPathMode,
     IdentityPart, IdentityPlan, ItemPlan, KindCoverage, KindNamePath, PagePlan, PageSizeBinding, PageSizeType,

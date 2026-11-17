@@ -24,6 +24,8 @@ mod policy_gk_ivs_roots_tests;
 mod tags;
 mod selection;
 mod identity_choice;
+mod identity_validation;
+pub(super) use identity_validation::IdentityTextValidation;
 pub(super) use tags::tag_observation;
 #[cfg(test)]
 #[path = "../../tests/sweep_record_exact_bounds.rs"]
@@ -109,27 +111,17 @@ pub(super) struct IdentityContext<'a> {
     pub region: &'a RegionId,
 }
 
+#[cfg(test)]
 pub(super) fn resource_id(
     record: &Record,
     plan: &IdentityPlan,
     context: Option<IdentityContext<'_>>,
 ) -> Result<ResourceId, SweepError> {
-    let text = match plan {
-        IdentityPlan::Arn(path) => {
-            let text = required_text(record, path)?;
-            trusted_arn::validate_arn(&text, context.as_ref())?;
-            text
-        }
-        IdentityPlan::Template(parts) => Cow::Owned(template_text(record, parts, context.as_ref())?),
-        IdentityPlan::Key(paths) => key_text(record, paths)?,
-        IdentityPlan::Choice(_) | IdentityPlan::CorrelatedKey(_) | IdentityPlan::MapArn { .. } => {
-            return identity_choice::resource_id(record, plan, context.as_ref(), None, None);
-        }
-    };
-    ResourceId::parse(&text)
-        .map_err(|_| SweepError::Operation("modeled resource identity is invalid"))
+    identity(record, plan, context.as_ref(), None, None, &IdentityTextValidation::RecipeOnly)
 }
 
+/// Pure recipe tests deliberately omit the pinned models, so they carry no operand validators.
+#[cfg(test)]
 pub(super) fn resource_id_with_context(
     record: &Record,
     plan: &IdentityPlan,
@@ -137,12 +129,44 @@ pub(super) fn resource_id_with_context(
     discovery: &inventory_core::inventory::DiscoveryContext,
     current_request: &Record,
 ) -> Result<ResourceId, SweepError> {
-    match plan {
-        IdentityPlan::Choice(_) | IdentityPlan::CorrelatedKey(_) | IdentityPlan::MapArn { .. } => {
-            identity_choice::resource_id(record, plan, trusted.as_ref(), Some(discovery), Some(current_request))
+    resource_id_validated(record, plan, trusted, discovery, current_request, &IdentityTextValidation::RecipeOnly)
+}
+
+/// Derives an identity, checking every modeled text operand against its source constraints.
+pub(super) fn resource_id_validated(
+    record: &Record,
+    plan: &IdentityPlan,
+    trusted: Option<IdentityContext<'_>>,
+    discovery: &inventory_core::inventory::DiscoveryContext,
+    current_request: &Record,
+    validation: &IdentityTextValidation<'_, '_>,
+) -> Result<ResourceId, SweepError> {
+    identity(record, plan, trusted.as_ref(), Some(discovery), Some(current_request), validation)
+}
+
+fn identity(
+    record: &Record,
+    plan: &IdentityPlan,
+    context: Option<&IdentityContext<'_>>,
+    discovery: Option<&inventory_core::inventory::DiscoveryContext>,
+    current_request: Option<&Record>,
+    validation: &IdentityTextValidation<'_, '_>,
+) -> Result<ResourceId, SweepError> {
+    let text = match plan {
+        IdentityPlan::Arn(path) => {
+            let text = required_text(record, path)?;
+            trusted_arn::validate_arn(&text, context)?;
+            validation.selected(path, &text)?;
+            text
         }
-        _ => resource_id(record, plan, trusted),
-    }
+        IdentityPlan::Template(parts) => Cow::Owned(template_text(record, parts, context)?),
+        IdentityPlan::Key(paths) => key_text(record, paths)?,
+        IdentityPlan::Choice(_) | IdentityPlan::CorrelatedKey(_) | IdentityPlan::MapArn { .. } => {
+            return identity_choice::resource_id(record, plan, context, discovery, current_request, validation);
+        }
+    };
+    ResourceId::parse(&text)
+        .map_err(|_| SweepError::Operation("modeled resource identity is invalid"))
 }
 fn required_text<'a>(record: &'a Record, path: &[FieldId]) -> Result<Cow<'a, str>, SweepError> {
     path_value(record.root(), path)?
