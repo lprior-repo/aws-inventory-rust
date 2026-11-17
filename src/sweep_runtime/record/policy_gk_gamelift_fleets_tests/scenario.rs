@@ -52,7 +52,7 @@ impl Scenario {
         let wire = request::encode(plan, &endpoint.url, &base, &fields)?;
         verify_wire(page, &wire)?;
         let actual = input::merge_input(&base, &fields)?;
-        let response = record::policy_dfgk_tests::fixture::decode(plan, &serde_json::to_vec(&body)?)?;
+        let response = record::policy_dfgk_tests::fixture::decode(plan, &crate::sweep_runtime::record::policy_gk_root_tests::cbor::response(plan, &body)?)?;
         self.commit(catalog, plan, lease, cursor, &actual, &response, at, page).await
     }
 
@@ -96,10 +96,7 @@ fn verify_wire(page: usize, wire: &http::Request<bytes::Bytes>) -> TestResult {
         0 => json!({}), 1 => json!({"NextToken":"second"}), 2 => json!({"NextToken":"third"}),
         _ => return Err("unexpected fleet request page".into()),
     };
-    assert_eq!(wire.method(), http::Method::POST);
-    assert_eq!(wire.uri().path(), "/");
-    assert_eq!(wire.uri().query(), None);
-    assert_eq!(wire.headers().get("x-amz-target").map(http::HeaderValue::to_str).transpose()?, Some("GameLift.ListContainerFleets"));
-    assert_eq!(serde_json::from_slice::<Json>(wire.body())?, expected, "must not filter ContainerGroupDefinitionName");
+    let actual = crate::sweep_runtime::record::policy_gk_root_tests::cbor::request(wire, "GameLift", "ListContainerFleets")?;
+    assert_eq!(actual, expected, "must not filter ContainerGroupDefinitionName");
     Ok(())
 }

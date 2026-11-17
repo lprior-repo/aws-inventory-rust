@@ -9,7 +9,8 @@ async fn given_bound_package_when_native_duplicate_owner_is_equal_absent_or_host
         ("equal", Some(json!("owner")), true),
         ("absent", None, true),
         ("foreign", Some(json!("foreign")), false),
-        ("null", Some(Json::Null), false),
+        // Smithy JSON decodes a null modeled member as absent; the row is still bound to the request's own package.
+        ("null", Some(Json::Null), true),
         ("wrong-type", Some(json!(7)), false),
     ] {
         // Given an account-owned package and the actual compiled parent-bound native request.

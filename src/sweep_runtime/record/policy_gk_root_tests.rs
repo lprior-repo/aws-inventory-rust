@@ -1,5 +1,6 @@
 mod cases;
 mod fixture;
+pub(in crate::sweep_runtime::record) mod cbor;
 use crate::sweep_runtime::execution::page::cursor;
 
 use crate::sweep_runtime::{execution::{page::{child, consumer_index::ConsumerIndex}, routing}, input, record, request};
@@ -20,6 +21,8 @@ fn verify_wire(case: &cases::Case, page: usize, wire: &http::Request<bytes::Byte
         assert_eq!(wire.uri().path(), "/-/provisioned-capacity");
         assert_eq!(wire.uri().query(), None);
         assert_eq!(wire.body().len(), 0);
+    } else if case.service == "gamelift" {
+        assert_eq!(cbor::request(wire, "GameLift", case.operation)?, expected, "{} page {page}", case.operation);
     } else {
         assert_eq!(wire.method(), http::Method::POST);
         assert_eq!(wire.uri().query(), None);
@@ -30,7 +33,6 @@ fn verify_wire(case: &cases::Case, page: usize, wire: &http::Request<bytes::Byte
                 "ListConnectorScanConfigurations" => "/connectorscanconfigurations/list",
                 _ => return Err("unreviewed Inspector HTTP path".into()),
             }).to_owned(), None),
-            "gamelift" => ("/".to_owned(), Some(format!("GameLift.{}", case.operation))),
             "glue" => ("/".to_owned(), Some(format!("AWSGlue.{}", case.operation))),
             "invoicing" => ("/".to_owned(), Some(format!("Invoicing.{}", case.operation))),
             _ => return Err("unreviewed root HTTP service".into()),
@@ -82,7 +84,7 @@ async fn consume(store: &BinaryStore, catalog: &RuntimeCatalog<'_>, consumers: &
     let wire = request::encode(plan, &endpoint.url, &base, &fields)?;
     verify_wire(case, page, &wire)?;
     let actual = input::merge_input(&base, &fields)?;
-    let body = serde_json::to_vec(&response(case, page)?)?;
+    let body = cbor::response(plan, &response(case, page)?)?;
     let response = record::policy_dfgk_tests::fixture::decode(plan, &body)?;
     let context = child::Context::new(plan, sweep, account, home, consumers);
     let (observations, children) = child::policy_dfgk_tests::project_children(catalog, &context, lease.scope(), &actual, &response, &DiscoveryContext::empty())?;
@@ -182,7 +184,7 @@ fn given_trusted_root_scope_when_an_arn_is_malformed_or_foreign_then_no_observat
         let request = input::root_bindings(plan, Some(&account), Some(&region))?;
         let context = child::Context::new(plan, &sweep, &account, &home, &consumers);
         let row = case.rows.first().ok_or("ARN fixture row absent")?;
-        let valid = serde_json::to_vec(&json!({case.items:[row]}))?;
+        let valid = cbor::response(plan, &json!({case.items:[row]}))?;
         let valid = record::policy_dfgk_tests::fixture::decode(plan, &valid)?;
         let (observations, children) = child::policy_dfgk_tests::project_children(&catalog, &context, &scope, &request, &valid, &DiscoveryContext::empty())?;
         assert_eq!(observations.len(), 1);
@@ -198,7 +200,7 @@ fn given_trusted_root_scope_when_an_arn_is_malformed_or_foreign_then_no_observat
         ] {
             let mut forged_row = row.clone();
             forged_row[identity] = json!(forged);
-            let response = serde_json::to_vec(&json!({case.items:[forged_row]}))?;
+            let response = cbor::response(plan, &json!({case.items:[forged_row]}))?;
             let response = record::policy_dfgk_tests::fixture::decode(plan, &response)?;
             let error = child::policy_dfgk_tests::project_children(&catalog, &context, &scope, &request, &response, &DiscoveryContext::empty()).err().ok_or("foreign ARN was admitted")?;
             assert!(error.to_string().contains("modeled ARN"), "{}: {error}", case.operation);

@@ -58,6 +58,13 @@ impl Scenario {
     pub async fn apply(&self, catalog: &RuntimeCatalog<'_>, plan: &CallablePlan<'_>, lease: WorkLease,
         request: &Record, body: &[u8]) -> TestResult {
         let response = fixture::decode(plan, body)?;
+        let branch = routing::execution_branch(plan, lease.scope().branch())?;
+        for row in item_records(&response, plan.items())? {
+            // Page assembly evaluates assertions before projection; a hostile row rejects the whole page.
+            if !crate::sweep_runtime::row_policy::selected(plan, branch, &row, request, &response)? {
+                return Err("row policy filtered a row from a filter-free IoT/IAM plan".into());
+            }
+        }
         let next = cursor::Cursor::decode(lease.token())?.next(plan.pagination(), &response, &http::HeaderMap::new(), 10)?;
         let ancestry = DiscoveryContext::decode(lease.context())?;
         let consumers = ConsumerIndex::build(catalog)?;

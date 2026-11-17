@@ -47,7 +47,7 @@ async fn given_reviewed_list_and_map_sources_when_consumed_then_only_trusted_par
             let sentinel_row = Record::encode(&Value::Map(source.member.map(|member| -> TestResult<_> { Ok((Key::Field(compiled.fields.id(member).ok_or("parent member missing")?), Value::Text(sentinel_id.clone()))) }).transpose()?.into_iter().collect()))?;
             let sentinel_observation = Observation::new(sentinel.clone(), sentinel_row, &Exclusions::none(), None)?;
             let observation = Observation::new(key.clone(), row.clone(), &Exclusions::none(), None)?;
-            let request = empty()?;
+            let request = input::root_bindings(parent_plan, Some(&key.account), Some(&key.region))?;
             let context = ChildContext { parent_plan, plan: tag_plan, request: &request, sweep: &sweep, discovery: &[], branch: None };
             let mut budget = super::super::super::child::PageContextBudget::new(&DiscoveryContext::empty(),0)?;
             let work = child_work(&context, &row, &observation, &mut budget)?.ok_or("reviewed source was not scheduled")?;
@@ -55,7 +55,7 @@ async fn given_reviewed_list_and_map_sources_when_consumed_then_only_trusted_par
                 assert!(child_work(&context, &empty()?, &observation, &mut budget)?.is_none(), "missing reviewed request source must not schedule an invented identifier");
             }
             let scope = ScopeKey::new(key.account.clone(), key.region.clone(), ServiceId::parse(source.service)?, OperationId::parse(operation)?, None)?;
-            store.seed_work(WorkSpec::new(sweep.clone(), scope, None, empty()?.into_bytes())?).await?;
+            store.seed_work(WorkSpec::new(sweep.clone(), scope, None, request.as_bytes().to_vec())?).await?;
             let parent_lease = claim(&store, &sweep, 0).await?;
             store.commit_page(PageCommit { lease: parent_lease, observations: vec![observation, sentinel_observation], edges: vec![], unresolved: vec![], tags: vec![TagObservation::new(sentinel.clone(), TagCoverage::Complete, vec![Tag::new("sentinel", "untouched")?])?], next_token: None, continuation_digest: None, children: vec![work], done: true, observed_at_ms: 1 }).await?;
             let lease = claim(&store, &sweep, 2).await?;

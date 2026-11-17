@@ -83,7 +83,7 @@ async fn given_actual_request_scope_when_a_fleet_arn_is_hostile_then_the_whole_p
         // When the real row gate processes the mixed page, no partial observation can commit.
         let error = scenario.page(&catalog, 1, 1, json!({"ContainerFleets":[fixture::row("first"),hostile]}))
             .await.err().ok_or("hostile fleet ARN was accepted")?;
-        assert_eq!(error.to_string(), message, "{ordinal}");
+        assert_eq!(error.to_string(), format!("sweep operation failed: {message}"), "{ordinal}");
         let reader = scenario.reader().await?;
         let rows: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM resource_facets").fetch_one(&reader).await?;
         let references: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM unresolved_refs").fetch_one(&reader).await?;

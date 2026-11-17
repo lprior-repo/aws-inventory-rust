@@ -115,7 +115,8 @@ fn field_text<'a>(row: &'a Record, field: &IdentityFieldPlan, trusted: Option<&I
             typed_operand::string_list(row, path, *max_items, *max_item_bytes),
         IdentityFieldPlan::SelectedDigest(path) => {
             let value = path_value(row.root(), path)?.ok_or(SweepError::Operation("modeled identity path is absent"))?;
-            if matches!(value, ValueRef::Null) { return Err(SweepError::Operation("modeled identity digest value is null")) }
+            let empty = match value { ValueRef::Null => true, ValueRef::Map(map) => map.count()? == 0, ValueRef::List(list) => list.count()? == 0, _ => false };
+            if empty { return Err(SweepError::Operation("modeled identity digest value is null or empty")) }
             let hash = inventory_core::record::selected_content_hash(value)?;
             let text = hash.as_bytes().iter().try_fold(String::from("blake3:"), |mut text, byte| {
                 write!(text, "{byte:02x}").map_err(|_| SweepError::Operation("identity digest formatting failed"))?;
