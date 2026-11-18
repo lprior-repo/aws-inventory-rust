@@ -28,7 +28,7 @@ pub(super) async fn get_default_view(
     sdk: &aws_sdk_resourceexplorer2::Client,
 ) -> Result<Option<String>, AwsScanError> {
     let response = client
-        .execute("resource-explorer-2", false, || async {
+        .execute("resource-explorer-2", client.region, || async {
             match sdk.get_default_view().send().await {
                 Ok(output) => Ok(output.view_arn),
                 Err(error)
@@ -55,7 +55,7 @@ pub(super) async fn get_view(
     arn: &str,
 ) -> Result<ExplorerView, AwsScanError> {
     let output = client
-        .execute("resource-explorer-2", false, || async {
+        .execute("resource-explorer-2", client.region, || async {
             sdk.get_view().view_arn(arn).send().await.map_err(sdk_error)
         })
         .await?;

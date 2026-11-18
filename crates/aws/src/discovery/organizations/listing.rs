@@ -12,7 +12,7 @@ pub(super) async fn list_accounts(
         MAX_DISCOVERED_ACCOUNTS,
         |token| async move {
             let response = client
-                .execute("organizations", true, || async {
+                .execute("organizations", "global", || async {
                     sdk.list_accounts()
                         .set_next_token(token.clone())
                         .max_results(client.page_size.clamp(1, 20))
@@ -43,7 +43,7 @@ pub(super) async fn list_roots(
         MAX_ROOTS,
         |token| async move {
             let response = client
-                .execute("organizations", true, || async {
+                .execute("organizations", "global", || async {
                     sdk.list_roots()
                         .set_next_token(token.clone())
                         .max_results(client.page_size.clamp(1, 20))
@@ -76,7 +76,7 @@ pub(super) async fn list_units(
         remaining,
         |token| async move {
             let response = client
-                .execute("organizations", true, || async {
+                .execute("organizations", "global", || async {
                     sdk.list_organizational_units_for_parent()
                         .parent_id(&parent.id)
                         .set_next_token(token.clone())
@@ -110,7 +110,7 @@ pub(super) async fn list_members(
         remaining,
         |token| async move {
             let response = client
-                .execute("organizations", true, || async {
+                .execute("organizations", "global", || async {
                     sdk.list_children()
                         .parent_id(parent)
                         .child_type(ChildType::Account)

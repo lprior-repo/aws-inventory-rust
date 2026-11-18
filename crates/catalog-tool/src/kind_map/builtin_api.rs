@@ -1,6 +1,8 @@
 use crate::kind_map::ApiOnlyMapping;
 
 pub(super) const ENTRIES: &[ApiOnlyMapping<'static>] = &[
+    ApiOnlyMapping { kind: "AWS::ApiOnly::KafkaConnectConnectorOperation", reason: "Kafka Connect connector operation is an operation-level resource with no CFN type" },
+    ApiOnlyMapping { kind: "AWS::ApiOnly::KinesisVideoMappedResourceConfiguration", reason: "Kinesis Video mapped resource configuration has no CFN type" },
     ApiOnlyMapping { kind: "AWS::ApiOnly::Account", reason: "Account identity is bootstrap scope, not a CFN resource" },
     ApiOnlyMapping { kind: "AWS::ApiOnly::Region", reason: "Enabled region identity is bootstrap scope, not a CFN resource" },
     ApiOnlyMapping { kind: "AWS::ApiOnly::CloudWatchDataset", reason: "CloudWatch default dataset is an ARN-identified configuration resource with no exact pinned CFN resource type" },

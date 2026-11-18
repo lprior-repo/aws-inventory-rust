@@ -4,6 +4,7 @@ use crate::overlay::{
     Binding, FixedValue, Identity, ItemSelector, NameError, OperationOverlay, OverlayClass,
     Paginator, Scope, ServiceOverlay, TokenPair,
 };
+use inventory_core::record::Time;
 
 pub(super) enum ResourceIdentity {
     Arn(&'static str),
@@ -17,6 +18,7 @@ pub(super) enum Input {
     Account(&'static str),
     Parent(&'static str, &'static str, &'static str),
     String(&'static str, &'static str),
+    Timestamp(&'static str, i64, u32),
     Boolean(&'static str, bool),
     Strings(&'static str, &'static [&'static str]),
 }
@@ -112,6 +114,12 @@ fn bind_input(mut overlay: OperationOverlay, input: &Input) -> Result<OperationO
         }
         Input::String(member, value) => {
             overlay.fixed.insert(path(member)?, FixedValue::String((*value).to_owned()));
+        }
+        Input::Timestamp(member, seconds, nanos) => {
+            let time = Time::new(*seconds, *nanos).map_err(|_| NameError {
+                value: "timestamp nanoseconds out of range".to_owned(),
+            })?;
+            overlay.fixed.insert(path(member)?, FixedValue::Timestamp(time));
         }
         Input::Boolean(member, value) => {
             overlay.fixed.insert(path(member)?, FixedValue::Boolean(*value));

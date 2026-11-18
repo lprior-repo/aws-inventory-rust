@@ -7,9 +7,9 @@ pub(super) const ENTRIES: &[(&str, &str)] = &[
     ("DeleteEventSource", "Requires EventSourceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes an EventSource."),
     ("DeleteResourcePolicy", "Requires ResourceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes the named resource policy attached to an event bus."),
     ("DeleteSubscriber", "Requires SubscriberArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a subscriber."),
-    ("DescribeEventBus", "Requires EventBusArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns the full configuration and lifecycle state of an event bus."),
-    ("DescribeEventSource", "Requires EventSourceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns the full configuration and lifecycle state of an EventSource."),
-    ("DescribeSubscriber", "Requires SubscriberArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns the full configuration and state of a subscriber."),
+    
+    
+    
     ("GetResourcePolicy", "Requires ResourceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns the named resource policy attached to an event bus."),
     ("ListResourcePolicies", "Requires ResourceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists the resource policies attached to an event bus as summaries (policy name and revision ID)."),
     ("ListTagsForResource", "Requires ResourceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists the tags on an event bus, subscriber, or event source."),

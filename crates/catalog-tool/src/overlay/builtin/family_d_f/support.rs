@@ -24,6 +24,22 @@ pub(super) fn inventory(
     }))
 }
 
+/// Single-item operation (Describe) with no pagination.
+pub(super) fn describe(
+    operation: &'static str,
+    items: &str,
+    identity: Identity,
+) -> Result<Entry, NameError> {
+    Ok((operation, OperationOverlay {
+        class: Some(OverlayClass::Enumerate),
+        scope: Some(Scope::Region),
+        items: Some(ItemSelector::parse(items)?),
+        identity: Some(identity),
+        paginator: None,
+        ..empty()
+    }))
+}
+
 pub(super) fn arn(member: &str) -> Result<Identity, NameError> {
     Ok(Identity::Arn(MemberPath::selected(member)?))
 }
@@ -65,6 +81,27 @@ pub(super) fn inherited(mut entry: Entry, input: &str, operation: &str, member: 
 pub(super) fn fixed_integer(mut entry: Entry, input: &str, value: i64) -> Result<Entry, NameError> {
     entry.1.fixed.extend([(MemberPath::new(input)?, FixedValue::Integer(value))]);
     Ok(entry)
+}
+
+pub(super) fn fixed_boolean(mut entry: Entry, input: &str, value: bool) -> Result<Entry, NameError> {
+    entry.1.fixed.extend([(MemberPath::new(input)?, FixedValue::Boolean(value))]);
+    Ok(entry)
+}
+
+pub(super) fn fixed_token(mut entry: Entry, pair: (&'static str, &'static str)) -> Result<Entry, NameError> {
+    let input = MemberPath::selected(pair.0)?;
+    let output = MemberPath::selected(pair.1)?;
+    entry.1.paginator = Some(Paginator::Token(TokenPair {
+        input,
+        output,
+        optional: false,
+    }));
+    Ok(entry)
+}
+
+/// Omit migration settings (large, may contain customer data) via WithoutSettings=true.
+pub(super) fn without_settings(entry: Entry) -> Result<Entry, NameError> {
+    fixed_boolean(entry, "WithoutSettings", true)
 }
 
 pub(super) fn tagged(mut entry: Entry, member: &str) -> Result<Entry, NameError> {

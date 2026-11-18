@@ -35,7 +35,7 @@ fn digest(rows: impl Iterator<Item = String>) -> String {
 #[test]
 fn embedded_baseline_preserves_all_313_exact_operation_mappings() -> TestResult {
     let map = SOURCE.compile(&Exceptions::builtin())?;
-    assert_eq!(map.operations().len(), 325);
+    assert_eq!(map.operations().len(), 333);
     let actual = digest(map.operations().iter()
         .filter(|row| !NEW_SAFE_METADATA_OPERATIONS.iter().any(|(service, operation, _)| row.service == *service && row.operation == *operation))
         .map(|row| format!("{}\t{}\t{}\n", row.service, row.operation, row.kind)));
@@ -212,6 +212,14 @@ fn serverless_execution_roles_join_global_iam_roles_in_account_scope() -> TestRe
 }
 
 const NEW_SAFE_METADATA_OPERATIONS: &[(&str, &str, &str)] = &[
+    ("kafkaconnect", "ListConnectors", "AWS::KafkaConnect::Connector"),
+    ("kafkaconnect", "ListCustomPlugins", "AWS::KafkaConnect::CustomPlugin"),
+    ("kafkaconnect", "ListWorkerConfigurations", "AWS::KafkaConnect::WorkerConfiguration"),
+    ("kafkaconnect", "DescribeCustomPlugin", "AWS::KafkaConnect::CustomPlugin"),
+    ("kafkaconnect", "ListConnectorOperations", "AWS::ApiOnly::KafkaConnectConnectorOperation"),
+    ("kinesis-video", "ListStreams", "AWS::KinesisVideo::Stream"),
+    ("kinesis-video", "ListSignalingChannels", "AWS::KinesisVideo::SignalingChannel"),
+    ("kinesis-video", "DescribeMappedResourceConfiguration", "AWS::ApiOnly::KinesisVideoMappedResourceConfiguration"),
     ("timestream-write", "ListDatabases", "AWS::Timestream::Database"),
     ("timestream-write", "DescribeDatabase", "AWS::Timestream::Database"),
     ("timestream-write", "ListTables", "AWS::Timestream::Table"),
@@ -360,11 +368,14 @@ const CENTRAL_ADDED_CFN_KINDS: &[&str] = &[
     "AWS::Lambda::Function", "AWS::IAM::GroupPolicy", "AWS::IAM::Role",
     "AWS::IAM::RolePolicy", "AWS::IAM::UserPolicy",
     "AWS::S3Express::DirectoryBucket", "AWS::RDS::DBSnapshot", "AWS::Route53::KeySigningKey", "AWS::Route53::DNSSEC",
+    "AWS::KafkaConnect::Connector", "AWS::KafkaConnect::CustomPlugin", "AWS::KafkaConnect::WorkerConfiguration",
+    "AWS::KinesisVideo::SignalingChannel", "AWS::KinesisVideo::Stream",
 ];
 const CENTRAL_ADDED_API_KINDS: &[&str] = &[
     "AWS::ApiOnly::OrganizationsDelegatedService", "AWS::ApiOnly::IAMAccountAlias",
     "AWS::ApiOnly::IAMServiceSpecificCredential", "AWS::ApiOnly::IAMPolicyVersion",
     "AWS::ApiOnly::KMSKeyPolicy",
+    "AWS::ApiOnly::KafkaConnectConnectorOperation", "AWS::ApiOnly::KinesisVideoMappedResourceConfiguration",
 ];
 
 #[test]

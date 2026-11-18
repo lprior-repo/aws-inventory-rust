@@ -41,12 +41,21 @@ fn public_registry_dispositions_cover_every_pinned_d_f_service_and_operation() -
         assert_eq!(policy.operations().len(), *expected_count, "{service}");
         total += policy.operations().len();
         // Then every operation has an explicit disposition, never inferred read-name approval.
-        for plan in policy.operations().values() {
+        for (operation, plan) in policy.operations().iter() {
             match plan.class {
                 Some(OverlayClass::Enumerate | OverlayClass::Expand) => {
                     callable += 1;
+                    if plan.items.is_none() {
+                        eprintln!("DMS missing items: {operation}");
+                    }
                     assert_ne!(plan.items, None);
+                    if plan.identity.is_none() {
+                        eprintln!("DMS missing identity: {operation}");
+                    }
                     assert_ne!(plan.identity, None);
+                    if plan.paginator.is_none() {
+                        eprintln!("DMS missing paginator: {operation}");
+                    }
                     assert_ne!(plan.paginator, None);
                     assert_ne!(plan.scope, None);
                 }
@@ -61,7 +70,7 @@ fn public_registry_dispositions_cover_every_pinned_d_f_service_and_operation() -
         }
     }
     assert_eq!(total, 2066);
-    assert_eq!(callable, 202);
+    assert_eq!(callable, 209);
     Ok(())
 }
 

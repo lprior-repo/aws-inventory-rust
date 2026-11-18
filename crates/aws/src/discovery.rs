@@ -157,7 +157,7 @@ impl DiscoveryClient<'_> {
     async fn execute<T, F, Fut>(
         &self,
         service: &str,
-        global: bool,
+        region: &str,
         operation: F,
     ) -> Result<T, AwsScanError>
     where
@@ -165,10 +165,9 @@ impl DiscoveryClient<'_> {
         F: FnMut() -> Fut + Send,
         Fut: Future<Output = Result<T, ApiError>> + Send,
     {
-        let region = if global { "global" } else { self.region };
         let bucket = format!(
-            "{}:{}:{region}:{service}:discovery",
-            self.partition, self.account
+            "{}:{}:{}:{}:discovery",
+            self.partition, self.account, region, service
         );
         self.executor
             .execute(&bucket, operation)

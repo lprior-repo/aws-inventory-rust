@@ -99,16 +99,16 @@ fn map_cluster(ctx: &Context, cluster: &Cluster) -> Result<PageBody, AwsScanErro
                 .map(|(key, value)| (key.clone(), value.clone()))
                 .collect()
         })
-        .unwrap_or_default();
+        .map_or_else(BTreeMap::new, |tags| tags);
     let resource = ctx.resource("aws_eks_cluster", required(cluster.arn(), "EKS cluster ARN")?, cluster.name().map(str::to_owned), json!({
         "name": cluster.name(), "arn": cluster.arn(), "status": cluster.status().map(|value|value.as_str()),
         "version": cluster.version(), "endpoint": cluster.endpoint(), "platform_version": cluster.platform_version(),
         "role_arn": cluster.role_arn(), "vpc_id": vpc.and_then(|vpc|vpc.vpc_id()),
-        "subnet_ids": vpc.map(|vpc|vpc.subnet_ids()).unwrap_or_default(),
-        "security_group_ids": vpc.map(|vpc|vpc.security_group_ids()).unwrap_or_default(),
+        "subnet_ids": vpc.as_ref().map(|vpc| vpc.subnet_ids().to_vec()),
+        "security_group_ids": vpc.as_ref().map(|vpc| vpc.security_group_ids().to_vec()),
         "endpoint_public_access": vpc.map(|vpc|vpc.endpoint_public_access()),
         "endpoint_private_access": vpc.map(|vpc|vpc.endpoint_private_access()),
-        "public_access_cidrs": vpc.map(|vpc|vpc.public_access_cidrs()).unwrap_or_default(),
+        "public_access_cidrs": vpc.as_ref().map(|vpc| vpc.public_access_cidrs().to_vec()),
     }), tags)?;
     let mut body = PageBody::default();
     if let Some(role) = cluster.role_arn() {
@@ -225,14 +225,9 @@ async fn nodegroup(
 }
 
 fn map_nodegroup(ctx: &Context, nodegroup: &Nodegroup) -> Result<PageBody, AwsScanError> {
-    let tags = nodegroup
-        .tags()
-        .map(|tags| {
-            tags.iter()
-                .map(|(key, value)| (key.clone(), value.clone()))
-                .collect()
-        })
-        .unwrap_or_default();
+    let tags = nodegroup.tags().map_or_else(BTreeMap::new, |tags| {
+        tags.iter().map(|(key, value)| (key.clone(), value.clone())).collect()
+    });
     let scaling = nodegroup.scaling_config();
     let resource = ctx.resource("aws_eks_node_group", required(nodegroup.nodegroup_arn(), "EKS node group ARN")?,
         nodegroup.nodegroup_name().map(str::to_owned), json!({
@@ -244,7 +239,7 @@ fn map_nodegroup(ctx: &Context, nodegroup: &Nodegroup) -> Result<PageBody, AwsSc
             "ami_type": nodegroup.ami_type().map(|value|value.as_str()),
             "desired_size": scaling.and_then(|value|value.desired_size()),
             "min_size": scaling.and_then(|value|value.min_size()), "max_size": scaling.and_then(|value|value.max_size()),
-            "autoscaling_groups": nodegroup.resources().map(|resources|resources.auto_scaling_groups().iter().filter_map(|group|group.name()).collect::<Vec<_>>()).unwrap_or_default(),
+            "autoscaling_groups": nodegroup.resources().map(|resources| resources.auto_scaling_groups().iter().filter_map(|group| group.name()).collect::<Vec<_>>()),
         }), tags)?;
     let mut body = PageBody::default();
     if let Some(cluster) = nodegroup.cluster_name() {

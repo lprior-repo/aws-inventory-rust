@@ -1,0 +1,137 @@
+[
+  {
+    "file": "crates/aws/src/scan.rs",
+    "line": 94,
+    "severity": "info",
+    "category": "task-spawning",
+    "finding": "buffer_unordered(4) on region stream creates up to 4 concurrent region collection futures, all boxed with Box::pin",
+    "impact": "Each boxed future allocates heap memory; with many regions this is moderate allocation but bounded",
+    "fix": "Consider replacing Box::pin with generic future types to eliminate heap allocation for each spawned task"
+  },
+  {
+    "file": "crates/aws/src/scan.rs",
+    "line": 253,
+    "severity": "info",
+    "category": "task-spawning",
+    "finding": "buffer_unordered(10) on service stream creates up to 10 concurrent service collector futures per region",
+    "impact": "Combined with 4 regions, up to 40 concurrent collector tasks, all serialized through rate limiter",
+    "fix": "Verify rate limiter handles 40 concurrent operations appropriately; current configuration should be sufficient"
+  },
+  {
+    "file": "crates/aws/src/scan.rs",
+    "line": 154,
+    "severity": "info",
+    "category": "join-pattern",
+    "finding": "tokio::try_join!(regional, global, supplemental) runs three independent futures concurrently",
+    "impact": "If any future errors, all three are dropped; errors from dropped futures are not reported",
+    "fix": "Use tokio::select! or join! with error aggregation if all failures need to be reported"
+  },
+  {
+    "file": "src/scan/pipeline.rs",
+    "line": 42,
+    "severity": "info",
+    "category": "join-pattern",
+    "finding": "tokio::join!(collect, write) waits for both producer and consumer tasks simultaneously",
+    "impact": "Correct pipeline pattern; channel backpressure (WRITER_QUEUE=4) prevents unbounded growth",
+    "fix": "None needed; this is the intended producer-consumer pattern"
+  },
+  {
+    "file": "src/scan/pipeline.rs",
+    "line": 64,
+    "severity": "info",
+    "category": "task-spawning",
+    "finding": "buffer_unordered(PROFILE_CONCURRENCY=4) on job stream creates up to 4 concurrent job collectors",
+    "impact": "Bounded concurrency is appropriate for profile-based parallelism",
+    "fix": "None needed"
+  },
+  {
+    "file": "src/scan/pipeline.rs",
+    "line": 72,
+    "severity": "info",
+    "category": "channel-usage",
+    "finding": "Each collect_job creates a dedicated mpsc channel (capacity 1) between AWS collector and event forwarder",
+    "impact": "Per-job channels provide isolation; when scan completes, sender drops and receiver stream naturally ends",
+    "fix": "None needed; this is a clean bounded producer-consumer pattern per job"
+  },
+  {
+    "file": "src/scan/pipeline.rs",
+    "line": 109,
+    "severity": "info",
+    "category": "channel-usage",
+    "finding": "stream::unfold wraps channel receiver into an iterator stream that completes on recv() == None",
+    "impact": "Correct pattern; stream terminates when sender is dropped (scan completion or cancellation)",
+    "fix": "None needed"
+  },
+  {
+    "file": "crates/engine/src/limiter/bucket.rs",
+    "line": 7,
+    "severity": "info",
+    "category": "synchronization",
+    "finding": "Each bucket holds a Mutex<PacingState> for rate state management",
+    "impact": "Mutex is acquired and released quickly (no async operations while held); contention risk is low",
+    "fix": "Consider lock-free structures or sharded state if profiling shows contention under high load"
+  },
+  {
+    "file": "crates/engine/src/limiter/admission.rs",
+    "line": 44,
+    "severity": "low",
+    "category": "admission-ordering",
+    "finding": "acquire order is: local bucket permit -> sequence permit -> global permit",
+    "impact": "All requests follow same acquisition order, preventing deadlock; however, sequence permit is held while waiting for global, which could cause brief serialization",
+    "fix": "Consider acquiring global permit before sequence if global is the scarcer resource"
+  },
+  {
+    "file": "crates/engine/src/limiter/admission.rs",
+    "line": 17,
+    "severity": "info",
+    "category": "cancellation",
+    "finding": "tokio::select! with biased ensures cancellation and bucket rejection are prioritized over semaphore acquisition",
+    "impact": "Cancellation is observed promptly; requests don't spin waiting for permits when the executor is shutting down",
+    "fix": "None needed"
+  },
+  {
+    "file": "crates/engine/src/graph/delivery/execution.rs",
+    "line": 12,
+    "severity": "low",
+    "category": "synchronization",
+    "finding": "Mutex<Option<redis::RedisError>> used to propagate the last error from the send closure across retry attempts",
+    "impact": "Functional but awkward; Mutex is only accessed serially within a single execute() call, so the lock is unnecessary",
+    "fix": "Replace with a plain Option and pass by ref mut, or restructure to return the error directly from the closure"
+  },
+  {
+    "file": "crates/engine/src/graph/delivery/execution.rs",
+    "line": 9,
+    "severity": "info",
+    "category": "connection-reuse",
+    "finding": "Redis connection is taken from projection, passed to executor closure, and returned connection is stored back",
+    "impact": "Connection is properly reused across batches; closure captures previous connection via FnMut semantics",
+    "fix": "None needed"
+  },
+  {
+    "file": "crates/engine/src/limiter/execution.rs",
+    "line": 93,
+    "severity": "info",
+    "category": "resource-tracking",
+    "finding": "RequestRecord::drop increments cancelled counter if complete() was not called",
+    "impact": "Provides safety net for uncompleted operations, but could mask logic errors where complete() is forgotten",
+    "fix": "Consider adding a debug_assert! in drop to flag programming errors during development"
+  },
+  {
+    "file": "crates/aws/src/discovery/execution.rs",
+    "line": 50,
+    "severity": "info",
+    "category": "join-pattern",
+    "finding": "tokio::join! runs organization discovery and supplemental source discovery concurrently",
+    "impact": "Both futures run to completion regardless of errors in either; errors are handled in post-processing",
+    "fix": "Consider using tokio::select! if one discovery type should short-circuit the other on error"
+  },
+  {
+    "file": "crates/engine/src/limiter/construction.rs",
+    "line": 58,
+    "severity": "info",
+    "category": "synchronization",
+    "finding": "ApiExecutor uses AtomicU64 for nonce to provide unique request identifiers",
+    "impact": "Lock-free counter ensures uniqueness without contention",
+    "fix": "None needed"
+  }
+]

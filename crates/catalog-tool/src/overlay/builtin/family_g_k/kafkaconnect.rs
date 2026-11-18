@@ -9,7 +9,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
         ("ListCustomPlugins", policy::query(policy::enumerate("customPlugins", policy::arn("customPluginArn")?, Some(("nextToken", "nextToken")))?, &["customPluginArn"])?),
         ("ListWorkerConfigurations", policy::query(policy::enumerate("workerConfigurations", policy::arn("workerConfigurationArn")?, Some(("nextToken", "nextToken")))?, &["workerConfigurationArn"])?),
         ("DescribeCustomPlugin", policy::query(policy::bind(policy::enumerate("$", policy::arn("customPluginArn")?, None)?, "customPluginArn", "ListCustomPlugins", "customPluginArn")?, &["customPluginArn"])?),
-        ("ListConnectorOperations", policy::query(policy::bind(policy::enumerate("connectorOperations", policy::arn("operationArn")?, Some(("nextToken", "nextToken")))?, "connectorArn", "ListConnectors", "connectorArn")?, &["connectorArn", "operationArn"])?),
+        ("ListConnectorOperations", policy::query(policy::bind(policy::enumerate("connectorOperations", policy::arn("connectorOperationArn")?, Some(("nextToken", "nextToken")))?, "connectorArn", "ListConnectors", "connectorArn")?, &["connectorOperationArn"])?),
     ];
     policy::finish(
         "kafkaconnect", approved, DEFERRED,

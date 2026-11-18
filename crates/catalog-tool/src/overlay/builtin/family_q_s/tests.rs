@@ -67,7 +67,14 @@ fn every_pinned_q_s_service_and_operation_has_an_explicit_decision() -> TestResu
         }
         // Then every actual modeled operation is inventoried, denied, or explicitly blocked.
         assert!(!expected_operations.is_empty(), "{}", policy.service());
-        assert_eq!(policy.operations().keys().map(ToString::to_string).collect::<BTreeSet<_>>(), expected_operations, "{}", policy.service());
+        let actual = policy.operations().keys().map(ToString::to_string).collect::<BTreeSet<_>>();
+        if actual != expected_operations {
+            let in_model_not_overlay = expected_operations.difference(&actual);
+            let in_overlay_not_model = actual.difference(&expected_operations);
+            eprintln!("sagemaker diff - in model not overlay: {:?}", in_model_not_overlay.collect::<Vec<_>>());
+            eprintln!("sagemaker diff - in overlay not model: {:?}", in_overlay_not_model.collect::<Vec<_>>());
+        }
+        assert_eq!(actual, expected_operations, "{}", policy.service());
         for decision in policy.operations().values() {
             assert!(decision.class.is_some());
             if decision.class == Some(OverlayClass::Defer) {

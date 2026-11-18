@@ -40,7 +40,7 @@ pub(super) async fn get_index(
     sdk: &aws_sdk_resourceexplorer2::Client,
 ) -> Result<Option<ExplorerIndex>, AwsScanError> {
     let output = client
-        .execute("resource-explorer-2", false, || async {
+        .execute("resource-explorer-2", client.region, || async {
             match sdk.get_index().send().await {
                 Ok(output) => Ok(Some(output)),
                 Err(error)
@@ -85,7 +85,7 @@ pub(super) async fn list_explorer_views(
         MAX_DISCOVERED_SOURCES,
         |token| async move {
             let response = client
-                .execute("resource-explorer-2", false, || async {
+                .execute("resource-explorer-2", client.region, || async {
                     sdk.list_views()
                         .set_next_token(token.clone())
                         .max_results(client.page_size.clamp(1, 1_000))

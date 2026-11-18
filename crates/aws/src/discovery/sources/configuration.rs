@@ -12,7 +12,7 @@ pub(super) async fn collect_config(client: &DiscoveryClient<'_>) -> ConfigDiscov
             let sdk = &sdk;
             async move {
                 let output = client
-                    .execute("config", false, || async {
+                    .execute("config", client.region, || async {
                         sdk.describe_configuration_aggregators()
                             .set_next_token(token.clone())
                             .limit(client.page_size.clamp(1, 100))

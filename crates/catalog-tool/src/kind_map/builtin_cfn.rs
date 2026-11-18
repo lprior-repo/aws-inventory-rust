@@ -1,6 +1,11 @@
 use crate::kind_map::CfnMapping;
 
 pub(super) const ENTRIES: &[CfnMapping<'static>] = &[
+    CfnMapping::canonical("AWS::KafkaConnect::Connector"),
+    CfnMapping::canonical("AWS::KafkaConnect::CustomPlugin"),
+    CfnMapping::canonical("AWS::KafkaConnect::WorkerConfiguration"),
+    CfnMapping::canonical("AWS::KinesisVideo::SignalingChannel"),
+    CfnMapping::canonical("AWS::KinesisVideo::Stream"),
     CfnMapping::canonical("AWS::EC2::VPC"),
     CfnMapping::canonical("AWS::EC2::Subnet"),
     CfnMapping::canonical("AWS::CloudFront::AnycastIpList"),

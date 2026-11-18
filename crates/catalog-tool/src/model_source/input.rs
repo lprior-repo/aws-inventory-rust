@@ -241,7 +241,7 @@ mod tests {
             0 => node(&[], true),
             1 => node(&["n#0"], false),
             _ => Node {
-                mixins: vec![format!("n#{}", level - 1), format!("n#{}", level - 2)],
+                mixins: vec![format!("n#{}", level.checked_sub(1).unwrap_or(0)), format!("n#{}", level.checked_sub(2).unwrap_or(0))],
                 required: false,
             },
         }
@@ -263,7 +263,7 @@ mod tests {
                     node(&[], false)
                 } else {
                     Node {
-                        mixins: vec![format!("n#{}", level - 1)],
+                        mixins: vec![format!("n#{}", level.checked_sub(1).unwrap_or(0))],
                         required: false,
                     }
                 };

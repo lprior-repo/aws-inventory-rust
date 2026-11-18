@@ -10,7 +10,7 @@ pub async fn scan(
     work.await
 }
 
-#[tracing::instrument(skip_all, fields(profile = options.profile.as_deref().unwrap_or("default")))]
+#[tracing::instrument(skip_all, fields(profile = options.profile.as_deref().map_or("default", |s| s)))]
 pub(super) async fn scan_inner(
     options: AwsScanOptions,
     executor: Arc<ApiExecutor>,

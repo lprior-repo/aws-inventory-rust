@@ -47,9 +47,9 @@ const RESOURCES: &[Resource] = &[
     },
     Resource {
         operation: "DescribeMappedResourceConfiguration",
-        items: "MappedResourceConfigurationList", id: Id::Key(&["ResourceArn"]),
+        items: "MappedResourceConfigurationList", id: Id::Key(&["ARN"]),
         scope: Scope::Region, tokens: Some(("NextToken", "NextToken")),
-        query: &["ResourceArn"],
+        query: &["ARN"],
         tags: None,
         bindings: &[],
         fixed: &[],

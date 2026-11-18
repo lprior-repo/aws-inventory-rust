@@ -7,7 +7,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     let approved = vec![
         ("ListStreams", policy::query(policy::enumerate("StreamInfoList", policy::arn("StreamARN")?, Some(("NextToken", "NextToken")))?, &["StreamARN"])?),
         ("ListSignalingChannels", policy::query(policy::enumerate("ChannelInfoList", policy::arn("ChannelARN")?, Some(("NextToken", "NextToken")))?, &["ChannelARN"])?),
-        ("DescribeMappedResourceConfiguration", policy::query(policy::enumerate("MappedResourceConfigurationList", policy::arn("ResourceArn")?, Some(("NextToken", "NextToken")))?, &["ResourceArn", "ResourceName"])?),
+        ("DescribeMappedResourceConfiguration", policy::query(policy::enumerate("MappedResourceConfigurationList", policy::arn("ARN")?, Some(("NextToken", "NextToken")))?, &["ARN", "Type"])?),
     ];
     policy::finish(
         "kinesis-video", approved, DEFERRED,

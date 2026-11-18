@@ -149,14 +149,18 @@ pub(super) fn startup_failure(
         scan_id: scan_id.into(),
         event: CollectionEvent::Failure(CollectionFailure {
             scope: CollectionScope {
-                account_id: target_account.unwrap_or("unknown").into(),
+                account_id: target_account.map_or_else(|| "unknown".to_owned(), Into::into).into(),
                 region: "global".into(),
                 collector: "scan_orchestration".into(),
                 parent_id: None,
                 source: Source::Direct,
             },
             category: "scan_failed".into(),
-            message: message.chars().take(2_048).collect(),
+            message: if message.chars().count() > 2_048 {
+                format!("{}… (truncated)", message.chars().take(2_048).collect::<String>())
+            } else {
+                message.to_owned()
+            },
         }),
     }
 }

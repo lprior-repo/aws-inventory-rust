@@ -6,7 +6,7 @@ pub(super) fn tags(values: &[Tag]) -> BTreeMap<String, String> {
         .filter_map(|tag| {
             Some((
                 tag.key()?.to_owned(),
-                tag.value().unwrap_or_default().to_owned(),
+                tag.value().map_or_else(String::new, |v| v.to_owned()),
             ))
         })
         .collect()
@@ -26,19 +26,20 @@ pub(super) fn resource(
         .get("owner_id")
         .and_then(Value::as_str)
         .filter(|value| !value.is_empty())
-        .unwrap_or(&ctx.account)
-        .to_owned();
+        .map(String::from)
+        .map_or_else(|| ctx.account.clone(), |v| v);
     let arn = properties
         .get("arn")
         .and_then(Value::as_str)
         .filter(|value| !value.is_empty())
         .map(str::to_owned)
-        .unwrap_or_else(|| {
-            format!(
+        .map_or_else(
+            || format!(
                 "arn:{}:ec2:{}:{}:{}/{}",
                 ctx.partition, ctx.region, owner, arn_type, id
-            )
-        });
+            ),
+            |v| v,
+        );
     let mut result = ctx.resource(kind, arn, tags.get("Name").cloned(), properties, tags)?;
     result.account_id = result
         .id
@@ -46,7 +47,7 @@ pub(super) fn resource(
         .nth(4)
         .filter(|value| !value.is_empty())
         .map(str::to_owned)
-        .unwrap_or(owner);
+        .map_or(owner, |v| v);
     Ok(result)
 }
 

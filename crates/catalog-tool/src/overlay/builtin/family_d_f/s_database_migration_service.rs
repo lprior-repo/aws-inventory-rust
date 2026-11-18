@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/database-migration-service/service/2016-01-01/database-migration-service-2016-01-01.json
-use super::support::{arn, inventory, key, queried, reviewed, token};
+use super::support::{arn, inventory, key, queried, reviewed, token, without_settings};
 use crate::overlay::{NameError, ServiceOverlay};
 use crate::classes::DenyReason;
 
@@ -24,6 +24,11 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
         // Assessment-run control metadata and result locations, not assessment result contents.
         queried(inventory("DescribeReplicationTaskAssessmentRuns", "ReplicationTaskAssessmentRuns", arn("ReplicationTaskAssessmentRunArn")?, token("Marker", "Marker")?)?, &["ReplicationTaskAssessmentRunArn", "ReplicationTaskArn", "Status"])?,
         queried(inventory("DescribeReplicationTaskIndividualAssessments", "ReplicationTaskIndividualAssessments", arn("ReplicationTaskIndividualAssessmentArn")?, token("Marker", "Marker")?)?, &["ReplicationTaskIndividualAssessmentArn", "ReplicationTaskAssessmentRunArn", "Status"])?,
+        // WithoutSettings omits the SecretString SelectionRules held inside DataMigrationSettings.
+        queried(without_settings(inventory("DescribeDataMigrations", "DataMigrations", arn("DataMigrationArn")?, token("Marker", "Marker")?)?)?, &["DataMigrationArn", "DataMigrationName", "DataMigrationStatus", "MigrationProjectArn"])?,
+        queried(inventory("DescribePendingMaintenanceActions", "PendingMaintenanceActions", key(&["ResourceIdentifier"])?, token("Marker", "Marker")?)?, &["ResourceIdentifier"])?,
+        queried(inventory("DescribeFleetAdvisorCollectors", "Collectors", key(&["CollectorReferencedId"])?, token("NextToken", "NextToken")?)?, &["CollectorReferencedId", "CollectorName"])?,
+        queried(inventory("DescribeFleetAdvisorDatabases", "Databases", key(&["DatabaseId"])?, token("NextToken", "NextToken")?)?, &["DatabaseId", "DatabaseName"])?,
         ],
         &[super::s_database_migration_service_decisions_0::ENTRIES, super::s_database_migration_service_decisions_1::ENTRIES, super::s_database_migration_service_decisions_2::ENTRIES, super::s_database_migration_service_decisions_3::ENTRIES],
         &[

@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/eventbridgev2/service/2025-05-15/eventbridgev2-2025-05-15.json
-use super::support::{arn, bound, inventory, queried, reviewed, tagged, token};
+use super::support::{arn, bound, describe, fixed_token, inventory, queried, reviewed, token};
 use crate::overlay::{NameError, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
@@ -13,11 +13,11 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
         // Lists subscribers as summaries.
         queried(inventory("ListSubscribers", "Subscribers", arn("SubscriberArn")?, token("NextToken", "NextToken")?)?, &["SubscriberArn", "EventBusArn", "Name", "Type", "State", "SubscriberAccountId"])?,
         // DescribeEventBus returns the full configuration of an event bus.
-        queried(bound(inventory("DescribeEventBus", "EventBus", arn("EventBusArn")?, None)?, &[("EventBusArn", "ListEventBuses", "EventBusArn")])?, &["EventBusArn", "Name", "Description", "State", "CreationTime", "LastModifiedTime"])?,
-        // DescribeEventSource returns the full configuration of an EventSource.
-        queried(bound(inventory("DescribeEventSource", "EventSource", arn("EventSourceArn")?, None)?, &[("EventSourceArn", "ListEventSources", "EventSourceArn")])?, &["EventSourceArn", "EventBusArn", "Name", "Description", "State", "CreationTime", "LastModifiedTime"])?,
+        queried(fixed_token(bound(describe("DescribeEventBus", "EventBus", arn("EventBusArn")?)?, &[("EventBusArn", "ListEventBuses", "EventBusArn")])?, ("NextToken", "NextToken"))?, &["EventBusArn", "Name", "Description", "State", "CreationTime", "LastModifiedTime"])?,
+        // DescribeEventSource returns the full configuration of an event source.
+        queried(fixed_token(bound(describe("DescribeEventSource", "EventSource", arn("EventSourceArn")?)?, &[("EventSourceArn", "ListEventSources", "EventSourceArn")])?, ("NextToken", "NextToken"))?, &["EventSourceArn", "EventBusArn", "Name", "Description", "State", "CreationTime", "LastModifiedTime"])?,
         // DescribeSubscriber returns the full configuration of a subscriber.
-        queried(bound(inventory("DescribeSubscriber", "Subscriber", arn("SubscriberArn")?, None)?, &[("SubscriberArn", "ListSubscribers", "SubscriberArn")])?, &["SubscriberArn", "EventBusArn", "Name", "Description", "State", "CreationTime", "LastModifiedTime"])?,
+        queried(fixed_token(bound(describe("DescribeSubscriber", "Subscriber", arn("SubscriberArn")?)?, &[("SubscriberArn", "ListSubscribers", "SubscriberArn")])?, ("NextToken", "NextToken"))?, &["SubscriberArn", "EventBusArn", "Name", "Description", "State", "CreationTime", "LastModifiedTime"])?,
         ],
         &[super::s_eventbridgev2_decisions_0::ENTRIES],
         &[

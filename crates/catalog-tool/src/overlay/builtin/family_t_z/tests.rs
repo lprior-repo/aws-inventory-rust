@@ -1,5 +1,5 @@
 #[path = "../family_g_k/tests/contracts.rs"]
-mod contracts;
+mod gz_contracts;
 
 use crate::{
     classes::DenyReason,
@@ -37,7 +37,7 @@ fn embedded_registry_exposes_every_pinned_t_z_namespace_and_explicit_operation()
     // Then: no namespace or operation in the pinned partition silently disappears.
     let actual = selected.iter().map(|service| service.service.as_str()).collect::<BTreeSet<_>>();
     assert_eq!(actual, expected);
-    contracts::assert_reviewed(&selected.into_iter().cloned().collect::<Vec<_>>())?;
+    gz_contracts::assert_reviewed(&selected.into_iter().cloned().collect::<Vec<_>>())?;
     Ok(())
 }
 

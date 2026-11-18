@@ -131,10 +131,21 @@ fn given_safe_metadata_resources_when_loaded_then_all_callable_plans_have_comple
     let policies = overlays()?;
     // Then: there is no prefix-only authorization with a missing selector, identity, scope or paginator.
     for service in &policies {
-        for policy in service.operations().values().filter(|policy| matches!(policy.class,
-            Some(OverlayClass::Enumerate | OverlayClass::Expand))) {
+        for (name, policy) in service.operations().iter() {
+            if !matches!(policy.class, Some(OverlayClass::Enumerate | OverlayClass::Expand)) {
+                continue;
+            }
+            if policy.items.is_none() {
+                eprintln!("L-P missing items: {}/{}", service.service(), name);
+            }
             assert_eq!(policy.items.is_some(), true);
+            if policy.scope.is_none() {
+                eprintln!("L-P missing scope: {}/{}", service.service(), name);
+            }
             assert_eq!(policy.scope.is_some(), true);
+            if policy.paginator.is_none() {
+                eprintln!("L-P missing paginator: {}/{}", service.service(), name);
+            }
             assert_eq!(policy.paginator.is_some(), true);
             if let Some(endpoint) = &policy.tag_endpoint {
                 assert!(!endpoint.parents.is_empty());

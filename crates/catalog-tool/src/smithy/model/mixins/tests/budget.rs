@@ -35,7 +35,9 @@ fn fibonacci_mixin_graph(levels: usize) -> Result<ModelFile, String> {
         if level == 1 {
             shape["mixins"] = serde_json::json!([{"target":"n#M00"}]);
         } else if level > 1 {
-            shape["mixins"] = serde_json::json!([{"target":format!("n#M{:02}", level - 1)},{"target":format!("n#M{:02}", level - 2)}]);
+            let level1 = level.checked_sub(1).unwrap_or(0);
+    let level2 = level.checked_sub(2).unwrap_or(0);
+    shape["mixins"] = serde_json::json!([{"target":format!("n#M{:02}", level1)},{"target":format!("n#M{:02}", level2)}]);
         }
         shapes.insert(format!("n#M{level:02}"), shape);
     }

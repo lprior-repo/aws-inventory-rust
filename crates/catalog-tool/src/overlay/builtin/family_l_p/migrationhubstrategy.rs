@@ -18,14 +18,7 @@ const GROUPS: &[Group] = &[
         class: OverlayClass::Defer,
         reason: Some("Expansion requires request context (id); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
     },
-    Group {
-        operations: &[
-            "ListAnalyzableServers", "ListApplicationComponents", "ListImportFileTask", 
-            "ListServers",
-        ],
-        class: OverlayClass::Enumerate,
-        reason: None,
-    },
+
     Group {
         operations: &[
             "GetLatestAssessmentId", "GetPortfolioPreferences", "GetPortfolioSummary",
@@ -58,6 +51,46 @@ const RESOURCES: &[Resource] = &[
         items: "Collectors", id: Id::Key(&["collectorId"]),
         scope: Scope::HomeRegion, tokens: Some(("nextToken", "nextToken")),
         query: &["collectorId", "hostName"],
+        tags: None,
+        bindings: &[],
+        fixed: &[],
+    },
+    // Lists servers that can be analyzed.
+    Resource {
+        operation: "ListAnalyzableServers",
+        items: "analyzableServers", id: Id::Key(&["hostname"]),
+        scope: Scope::HomeRegion, tokens: Some(("nextToken", "nextToken")),
+        query: &["hostname", "ipAddress"],
+        tags: None,
+        bindings: &[],
+        fixed: &[],
+    },
+    // Lists all registered servers.
+    Resource {
+        operation: "ListServers",
+        items: "serverInfos", id: Id::Key(&["id"]),
+        scope: Scope::HomeRegion, tokens: Some(("nextToken", "nextToken")),
+        query: &["id", "name"],
+        tags: None,
+        bindings: &[],
+        fixed: &[],
+    },
+    // Lists application components for analysis.
+    Resource {
+        operation: "ListApplicationComponents",
+        items: "applicationComponentInfos", id: Id::Key(&["id"]),
+        scope: Scope::HomeRegion, tokens: Some(("nextToken", "nextToken")),
+        query: &["id", "name"],
+        tags: None,
+        bindings: &[],
+        fixed: &[],
+    },
+    // Lists file import tasks.
+    Resource {
+        operation: "ListImportFileTask",
+        items: "taskInfos", id: Id::Key(&["id"]),
+        scope: Scope::HomeRegion, tokens: Some(("nextToken", "nextToken")),
+        query: &["id", "status"],
         tags: None,
         bindings: &[],
         fixed: &[],

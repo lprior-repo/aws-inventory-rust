@@ -14,11 +14,11 @@ pub(super) fn classify_sdk_error<E: ProvideErrorMetadata + ProvideErrorKind + De
                 "SDK rejected an HTTP success response without a modeled error code; check response decoding and protocol compatibility".into(),
             );
         }
-        let code = ProvideErrorMetadata::code(service).unwrap_or("UnknownServiceError");
+        let code = ProvideErrorMetadata::code(service).map_or("UnknownServiceError", |c| c);
         let detail = format!(
             "{}: {}",
             code,
-            service.message().unwrap_or("no service message")
+            service.message().map_or("no service message", |m| m)
         );
         let detail: String = detail.chars().take(1_024).collect();
         let normalized = code.to_ascii_lowercase();

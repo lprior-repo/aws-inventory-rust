@@ -78,8 +78,8 @@ fn map_function(
         "package_type": function.package_type().map(|value|value.as_str()),
         "architectures": function.architectures().iter().map(|value|value.as_str()).collect::<Vec<_>>(),
         "vpc_id": vpc.and_then(|value|value.vpc_id()),
-        "subnet_ids": vpc.map(|value|value.subnet_ids()).unwrap_or_default(),
-        "security_group_ids": vpc.map(|value|value.security_group_ids()).unwrap_or_default(),
+        "subnet_ids": vpc.as_ref().map(|value| value.subnet_ids().to_vec()),
+        "security_group_ids": vpc.as_ref().map(|value| value.security_group_ids().to_vec()),
         "tags_collected": false,
     }), BTreeMap::new())?;
     if let Some(role) = function.role() {

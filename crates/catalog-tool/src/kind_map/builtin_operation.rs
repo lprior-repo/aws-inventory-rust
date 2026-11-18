@@ -1,6 +1,14 @@
 use crate::kind_map::OperationMapping;
 
 pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
+    OperationMapping { service: "kafkaconnect", operation: "ListConnectors", kind: "AWS::KafkaConnect::Connector" },
+    OperationMapping { service: "kafkaconnect", operation: "ListCustomPlugins", kind: "AWS::KafkaConnect::CustomPlugin" },
+    OperationMapping { service: "kafkaconnect", operation: "ListWorkerConfigurations", kind: "AWS::KafkaConnect::WorkerConfiguration" },
+    OperationMapping { service: "kafkaconnect", operation: "DescribeCustomPlugin", kind: "AWS::KafkaConnect::CustomPlugin" },
+    OperationMapping { service: "kafkaconnect", operation: "ListConnectorOperations", kind: "AWS::ApiOnly::KafkaConnectConnectorOperation" },
+    OperationMapping { service: "kinesis-video", operation: "ListStreams", kind: "AWS::KinesisVideo::Stream" },
+    OperationMapping { service: "kinesis-video", operation: "ListSignalingChannels", kind: "AWS::KinesisVideo::SignalingChannel" },
+    OperationMapping { service: "kinesis-video", operation: "DescribeMappedResourceConfiguration", kind: "AWS::ApiOnly::KinesisVideoMappedResourceConfiguration" },
     OperationMapping { service: "ec2", operation: "DescribeVpcs", kind: "AWS::EC2::VPC" },
     OperationMapping { service: "ec2", operation: "DescribeSubnets", kind: "AWS::EC2::Subnet" },
     OperationMapping { service: "ec2", operation: "DescribeRegions", kind: "AWS::ApiOnly::Region" },
