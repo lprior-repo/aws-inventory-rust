@@ -7,14 +7,14 @@ mod call;
 mod config;
 mod execution;
 mod input;
-mod record;
 #[cfg(test)]
 mod pinned_model;
+mod record;
 mod request;
-#[cfg(test)]
-mod test_cbor;
 mod resource_projection;
 mod row_policy;
+#[cfg(test)]
+mod test_cbor;
 
 pub(crate) use execution::run;
 

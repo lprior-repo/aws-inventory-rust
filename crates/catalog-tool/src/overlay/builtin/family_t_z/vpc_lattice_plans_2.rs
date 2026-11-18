@@ -1,5 +1,5 @@
-use super::{inventory, path, paths, bind, token};
-use crate::overlay::{OperationOverlay, NameError, Identity, Scope};
+use super::{bind, inventory, path, paths, token};
+use crate::overlay::{Identity, NameError, OperationOverlay, Scope};
 
 pub(super) fn list_domain_verifications() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
@@ -8,12 +8,7 @@ pub(super) fn list_domain_verifications() -> Result<OperationOverlay, NameError>
         token("nextToken", "nextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "id",
-        "arn",
-        "domainName",
-        "status",
-    ])?;
+    operation.queryable = paths(&["id", "arn", "domainName", "status"])?;
     operation.tags = Some(path("tags")?);
     operation.page_size = Some(100);
     Ok(operation)
@@ -26,13 +21,7 @@ pub(super) fn list_listeners() -> Result<OperationOverlay, NameError> {
         token("nextToken", "nextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "arn",
-        "id",
-        "name",
-        "protocol",
-        "port",
-    ])?;
+    operation.queryable = paths(&["arn", "id", "name", "protocol", "port"])?;
     operation.page_size = Some(100);
     bind(&mut operation, "serviceIdentifier", "ListServices", "id")?;
     Ok(operation)
@@ -80,7 +69,12 @@ pub(super) fn list_resource_endpoint_associations() -> Result<OperationOverlay, 
         "createdBy",
     ])?;
     operation.page_size = Some(100);
-    bind(&mut operation, "resourceConfigurationIdentifier", "ListResourceConfigurations", "id")?;
+    bind(
+        &mut operation,
+        "resourceConfigurationIdentifier",
+        "ListResourceConfigurations",
+        "id",
+    )?;
     Ok(operation)
 }
 
@@ -171,7 +165,12 @@ pub(super) fn list_service_network_service_associations() -> Result<OperationOve
         "customDomainName",
     ])?;
     operation.page_size = Some(100);
-    bind(&mut operation, "serviceNetworkIdentifier", "ListServiceNetworks", "id")?;
+    bind(
+        &mut operation,
+        "serviceNetworkIdentifier",
+        "ListServiceNetworks",
+        "id",
+    )?;
     Ok(operation)
 }
 
@@ -194,11 +193,17 @@ pub(super) fn list_service_network_vpc_associations() -> Result<OperationOverlay
         "vpcId",
     ])?;
     operation.page_size = Some(100);
-    bind(&mut operation, "serviceNetworkIdentifier", "ListServiceNetworks", "id")?;
+    bind(
+        &mut operation,
+        "serviceNetworkIdentifier",
+        "ListServiceNetworks",
+        "id",
+    )?;
     Ok(operation)
 }
 
-pub(super) fn list_service_network_vpc_endpoint_associations() -> Result<OperationOverlay, NameError> {
+pub(super) fn list_service_network_vpc_endpoint_associations() -> Result<OperationOverlay, NameError>
+{
     let mut operation = inventory(
         "items",
         Identity::Key(paths(&["serviceNetworkArn", "id"])?),
@@ -214,7 +219,12 @@ pub(super) fn list_service_network_vpc_endpoint_associations() -> Result<Operati
         "serviceNetworkArn",
     ])?;
     operation.page_size = Some(100);
-    bind(&mut operation, "serviceNetworkIdentifier", "ListServiceNetworks", "id")?;
+    bind(
+        &mut operation,
+        "serviceNetworkIdentifier",
+        "ListServiceNetworks",
+        "id",
+    )?;
     Ok(operation)
 }
 
@@ -225,13 +235,7 @@ pub(super) fn list_services() -> Result<OperationOverlay, NameError> {
         token("nextToken", "nextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "id",
-        "name",
-        "arn",
-        "customDomainName",
-        "status",
-    ])?;
+    operation.queryable = paths(&["id", "name", "arn", "customDomainName", "status"])?;
     operation.page_size = Some(100);
     Ok(operation)
 }

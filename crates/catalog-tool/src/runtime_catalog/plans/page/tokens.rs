@@ -9,8 +9,9 @@ pub(super) fn compile(
     let pairs = match inputs.overlay.paginator.as_ref() {
         Some(Paginator::Token(pair)) => std::slice::from_ref(pair),
         Some(Paginator::Tokens { pairs, .. }) => pairs,
-        Some(Paginator::LastListItem { input, output, .. }) =>
-            return last_list_item(inputs, descriptor, input, output),
+        Some(Paginator::LastListItem { input, output, .. }) => {
+            return last_list_item(inputs, descriptor, input, output);
+        }
         Some(Paginator::None) | None => return untokenized(descriptor),
     };
     validate_pairs(pairs, descriptor)?;
@@ -31,15 +32,21 @@ fn validate_pairs(
     pairs: &[TokenPair],
     descriptor: Option<&Descriptor<'_>>,
 ) -> Result<(), RuntimeCatalogCompileError> {
-    if pairs.is_empty() || pairs.len() > 8 || conflicting_paths(pairs)
+    if pairs.is_empty()
+        || pairs.len() > 8
+        || conflicting_paths(pairs)
         || pairs.iter().all(|pair| pair.optional)
     {
         return Err(RuntimeCatalogCompileError::Capability);
     }
     if let Some(expected) = descriptor {
         let matches = pairs.iter().any(|pair| {
-            expected.input_token.is_none_or(|path| path == pair.input.as_str())
-                && expected.output_token.is_none_or(|path| path == pair.output.as_str())
+            expected
+                .input_token
+                .is_none_or(|path| path == pair.input.as_str())
+                && expected
+                    .output_token
+                    .is_none_or(|path| path == pair.output.as_str())
         });
         if !matches {
             return Err(RuntimeCatalogCompileError::Capability);
@@ -59,8 +66,12 @@ fn conflicting_paths(pairs: &[TokenPair]) -> bool {
 
 fn overlaps(left: &str, right: &str) -> bool {
     left == right
-        || left.strip_prefix(right).is_some_and(|tail| tail.starts_with('.'))
-        || right.strip_prefix(left).is_some_and(|tail| tail.starts_with('.'))
+        || left
+            .strip_prefix(right)
+            .is_some_and(|tail| tail.starts_with('.'))
+        || right
+            .strip_prefix(left)
+            .is_some_and(|tail| tail.starts_with('.'))
 }
 
 fn token_value(
@@ -68,10 +79,22 @@ fn token_value(
     inputs: &PageInputs<'_, '_>,
 ) -> Result<Value, RuntimeCatalogCompileError> {
     let service = inputs.service;
-    validate_ancestors(service, inputs.operation.input()?, pair.input.as_str(), inputs.protocol)?;
-    validate_ancestors(service, inputs.operation.output()?, pair.output.as_str(), inputs.protocol)?;
-    let input = model_path::terminal_member(service, inputs.operation.input()?, pair.input.as_str())?;
-    let output = model_path::terminal_member(service, inputs.operation.output()?, pair.output.as_str())?;
+    validate_ancestors(
+        service,
+        inputs.operation.input()?,
+        pair.input.as_str(),
+        inputs.protocol,
+    )?;
+    validate_ancestors(
+        service,
+        inputs.operation.output()?,
+        pair.output.as_str(),
+        inputs.protocol,
+    )?;
+    let input =
+        model_path::terminal_member(service, inputs.operation.input()?, pair.input.as_str())?;
+    let output =
+        model_path::terminal_member(service, inputs.operation.output()?, pair.output.as_str())?;
     let value_type = token_type(model_path::kind(service, input.1.target)?)?;
     if (pair.optional && input.1.required)
         || value_type != token_type(model_path::kind(service, output.1.target)?)?
@@ -83,7 +106,10 @@ fn token_value(
         (2, encode::path(inputs.services, pair.output.as_str())?),
         (3, Value::Int(value_type)),
         (4, super::placement(input.1, input.0, inputs.protocol)?),
-        (5, super::response_placement(output.1, output.0, inputs.protocol)?),
+        (
+            5,
+            super::response_placement(output.1, output.0, inputs.protocol)?,
+        ),
         (6, Value::Bool(pair.optional)),
     ])
 }
@@ -104,18 +130,19 @@ fn validate_ancestors(
     protocol: i64,
 ) -> Result<(), RuntimeCatalogCompileError> {
     path.match_indices('.').try_for_each(|(index, _)| {
-        let prefix = path.get(..index).ok_or(RuntimeCatalogCompileError::Capability)?;
+        let prefix = path
+            .get(..index)
+            .ok_or(RuntimeCatalogCompileError::Capability)?;
         let (_, member) = model_path::terminal_member(service, target, prefix)?;
         let body = if matches!(protocol, 0..=2) {
             true
         } else {
             let binding = member.wire()?.binding()?;
             matches!(binding, inventory_core::catalog::HttpBinding::Document)
-                || (matches!(binding, inventory_core::catalog::HttpBinding::Payload) && !prefix.contains('.'))
+                || (matches!(binding, inventory_core::catalog::HttpBinding::Payload)
+                    && !prefix.contains('.'))
         };
-        if !body
-            || model_path::kind(service, member.target)? != "structure"
-        {
+        if !body || model_path::kind(service, member.target)? != "structure" {
             return Err(RuntimeCatalogCompileError::Capability);
         }
         Ok(())
@@ -131,10 +158,21 @@ fn last_list_item(
     let pair = TokenPair::new(input.clone(), output.clone());
     validate_pairs(std::slice::from_ref(&pair), descriptor)?;
     let service = inputs.service;
-    validate_ancestors(service, inputs.operation.input()?, input.as_str(), inputs.protocol)?;
-    validate_ancestors(service, inputs.operation.output()?, output.as_str(), inputs.protocol)?;
+    validate_ancestors(
+        service,
+        inputs.operation.input()?,
+        input.as_str(),
+        inputs.protocol,
+    )?;
+    validate_ancestors(
+        service,
+        inputs.operation.output()?,
+        output.as_str(),
+        inputs.protocol,
+    )?;
     let request = model_path::terminal_member(service, inputs.operation.input()?, input.as_str())?;
-    let response = model_path::terminal_member(service, inputs.operation.output()?, output.as_str())?;
+    let response =
+        model_path::terminal_member(service, inputs.operation.output()?, output.as_str())?;
     let element = model_path::list_element(service, response.1.target)?;
     model_path::string_target(service, request.1.target)?;
     model_path::string_target(service, element)?;
@@ -146,7 +184,10 @@ fn last_list_item(
         (2, encode::path(inputs.services, output.as_str())?),
         (3, Value::Int(0)),
         (4, super::placement(request.1, request.0, inputs.protocol)?),
-        (5, super::response_placement(response.1, response.0, inputs.protocol)?),
+        (
+            5,
+            super::response_placement(response.1, response.0, inputs.protocol)?,
+        ),
         (6, Value::Bool(false)),
         (7, Value::Int(1)),
     ])?])

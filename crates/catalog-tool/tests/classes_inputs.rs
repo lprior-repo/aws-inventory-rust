@@ -72,8 +72,10 @@ fn model_without_a_service_directory_is_rejected() -> TestResult {
     let dir = fixture()?;
     let path = dir.path().join("models/model.json");
     std::fs::write(&path, MODEL)?;
-    assert!(matches!(build_report_with_policy(dir.path(), &DenyList::parse("")?),
-        Err(Error::ModelSource(source)) if source.to_string() == format!("invalid model path: {}", path.display())));
+    assert!(
+        matches!(build_report_with_policy(dir.path(), &DenyList::parse("")?),
+        Err(Error::ModelSource(source)) if source.to_string() == format!("invalid model path: {}", path.display()))
+    );
     Ok(())
 }
 #[test]

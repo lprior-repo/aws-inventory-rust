@@ -4,20 +4,78 @@ use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        ("ApplyGuardrail", deferred("Model requires guardrailIdentifier, guardrailVersion, source, content. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: The action to apply a guardrail. For troubleshooting some of the common errors you might encounter when using the ApplyGuardrail API, see Troubleshooting Amazon Bedrock API Error Codes in the Amazon Bedrock User Guide")),
-        ("Converse", deferred("Model requires modelId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Sends messages to the specified Amazon Bedrock model. Converse provides a consistent interface that works with all models that support messages. This allows you to write code once and use it with different models. If a model has…")),
-        ("ConverseStream", deferred("Model requires modelId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Sends messages to the specified Amazon Bedrock model and returns the response in a stream. ConverseStream provides a consistent API that works with all Amazon Bedrock models that support messages. This allows you to write code…")),
-        ("CountTokens", deferred("Model requires modelId, input. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the token count for a given inference request. This operation helps you estimate token usage before sending requests to foundation models by returning the token count that would be used if the same input were sent to the…")),
-        ("GetAsyncInvoke", deferred("Model requires invocationArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieve information about an asynchronous invocation.")),
-        ("InvokeGuardrailChecks", deferred("Model requires messages, checks. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Evaluates messages against inline guardrail checks. You specify the check configurations directly in the request, and Amazon Bedrock returns per-check results with severity or confidence scores.")),
-        ("InvokeModel", deferred("Model requires modelId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Invokes the specified Amazon Bedrock model to run inference using the prompt and inference parameters provided in the request body. You use model inference to generate text, images, and embeddings. For example code, see Invoke…")),
-        ("InvokeModelWithBidirectionalStream", deferred("Model requires modelId, body. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Invoke the specified Amazon Bedrock model to run inference using the bidirectional stream. The response is returned in a stream that remains open for 8 minutes. A single session can contain multiple prompts and responses from the…")),
-        ("InvokeModelWithResponseStream", deferred("Model requires modelId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Invoke the specified Amazon Bedrock model to run inference using the prompt and inference parameters provided in the request body. The response is returned in a stream. To see if a model supports streaming, call…")),
+        (
+            "ApplyGuardrail",
+            deferred(
+                "Model requires guardrailIdentifier, guardrailVersion, source, content. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: The action to apply a guardrail. For troubleshooting some of the common errors you might encounter when using the ApplyGuardrail API, see Troubleshooting Amazon Bedrock API Error Codes in the Amazon Bedrock User Guide",
+            ),
+        ),
+        (
+            "Converse",
+            deferred(
+                "Model requires modelId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Sends messages to the specified Amazon Bedrock model. Converse provides a consistent interface that works with all models that support messages. This allows you to write code once and use it with different models. If a model has…",
+            ),
+        ),
+        (
+            "ConverseStream",
+            deferred(
+                "Model requires modelId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Sends messages to the specified Amazon Bedrock model and returns the response in a stream. ConverseStream provides a consistent API that works with all Amazon Bedrock models that support messages. This allows you to write code…",
+            ),
+        ),
+        (
+            "CountTokens",
+            deferred(
+                "Model requires modelId, input. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the token count for a given inference request. This operation helps you estimate token usage before sending requests to foundation models by returning the token count that would be used if the same input were sent to the…",
+            ),
+        ),
+        (
+            "GetAsyncInvoke",
+            deferred(
+                "Model requires invocationArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieve information about an asynchronous invocation.",
+            ),
+        ),
+        (
+            "InvokeGuardrailChecks",
+            deferred(
+                "Model requires messages, checks. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Evaluates messages against inline guardrail checks. You specify the check configurations directly in the request, and Amazon Bedrock returns per-check results with severity or confidence scores.",
+            ),
+        ),
+        (
+            "InvokeModel",
+            deferred(
+                "Model requires modelId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Invokes the specified Amazon Bedrock model to run inference using the prompt and inference parameters provided in the request body. You use model inference to generate text, images, and embeddings. For example code, see Invoke…",
+            ),
+        ),
+        (
+            "InvokeModelWithBidirectionalStream",
+            deferred(
+                "Model requires modelId, body. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Invoke the specified Amazon Bedrock model to run inference using the bidirectional stream. The response is returned in a stream that remains open for 8 minutes. A single session can contain multiple prompts and responses from the…",
+            ),
+        ),
+        (
+            "InvokeModelWithResponseStream",
+            deferred(
+                "Model requires modelId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Invoke the specified Amazon Bedrock model to run inference using the prompt and inference parameters provided in the request body. The response is returned in a stream. To see if a model supports streaming, call…",
+            ),
+        ),
         // Model: Lists asynchronous invocations.
-        ("ListAsyncInvokes", OperationOverlay {
-            queryable: vec![path("invocationArn")?],
-            ..read("asyncInvokeSummaries", Identity::Arn(path("invocationArn")?), Scope::Region, token("nextToken", "nextToken")?)?
-        }),
-        ("StartAsyncInvoke", deferred("Model requires modelId, modelInput, outputDataConfig. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous invocation. This operation requires permission for the bedrock:InvokeModel action. To deny all inference access to resources that you specify in the modelId field, you need to deny access to the…")),
+        (
+            "ListAsyncInvokes",
+            OperationOverlay {
+                queryable: vec![path("invocationArn")?],
+                ..read(
+                    "asyncInvokeSummaries",
+                    Identity::Arn(path("invocationArn")?),
+                    Scope::Region,
+                    token("nextToken", "nextToken")?,
+                )?
+            },
+        ),
+        (
+            "StartAsyncInvoke",
+            deferred(
+                "Model requires modelId, modelInput, outputDataConfig. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous invocation. This operation requires permission for the bedrock:InvokeModel action. To deny all inference access to resources that you specify in the modelId field, you need to deny access to the…",
+            ),
+        ),
     ])
 }

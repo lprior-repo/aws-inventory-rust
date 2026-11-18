@@ -14,10 +14,12 @@ pub(super) fn capture(input: File) -> Result<File, HarnessError> {
         return Err(reject("input type or download byte bound"));
     }
     let flags = MemfdFlags::CLOEXEC | MemfdFlags::ALLOW_SEALING;
-    let mut snapshot = File::from(
-        rustix::fs::memfd_create("graph-archive", flags).map_err(std::io::Error::from)?,
-    );
-    let size = std::io::copy(&mut input.take(MAX_DOWNLOAD.saturating_add(1)), &mut snapshot)?;
+    let mut snapshot =
+        File::from(rustix::fs::memfd_create("graph-archive", flags).map_err(std::io::Error::from)?);
+    let size = std::io::copy(
+        &mut input.take(MAX_DOWNLOAD.saturating_add(1)),
+        &mut snapshot,
+    )?;
     if size > MAX_DOWNLOAD {
         return Err(reject("download byte bound"));
     }

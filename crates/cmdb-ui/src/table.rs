@@ -101,8 +101,11 @@ impl ResourceTable {
         self.track_hover(cx, actions);
         let index = self.click_index(cx, actions)?;
         let row = self.data.visible_row(index)?;
-        (!self.data.selected_row().is_some_and(|selected| selected.key == row.key))
-            .then(|| row.clone())
+        (!self
+            .data
+            .selected_row()
+            .is_some_and(|selected| selected.key == row.key))
+        .then(|| row.clone())
     }
 
     fn click_index(&mut self, cx: &mut Cx, actions: &Actions) -> Option<usize> {
@@ -201,15 +204,18 @@ impl ResourceTable {
         self.view.redraw(cx);
     }
 
-
-    pub fn apply_graph(&mut self, cx: &mut Cx, graph: crate::data::Graph, error: Option<String>) -> bool {
+    pub fn apply_graph(
+        &mut self,
+        cx: &mut Cx,
+        graph: crate::data::Graph,
+        error: Option<String>,
+    ) -> bool {
         let accepted = apply_graph_data(&mut self.data, graph, error);
         if accepted {
             self.view.redraw(cx);
         }
         accepted
     }
-
 
     pub fn set_loading(&mut self, loading: bool) {
         self.data.set_loading(loading);
@@ -288,5 +294,3 @@ impl ResourceTable {
         }
     }
 }
-
-

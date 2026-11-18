@@ -91,9 +91,14 @@ fn decode_response(
     response: Response,
 ) -> Result<DecodedResponse, SweepError> {
     let limits = aws_wire::response::DecodeLimits::default();
-    let limits = if matches!(plan.purpose(),inventory_core::catalog::runtime::PlanPurpose::TagEndpoint(_)) {
+    let limits = if matches!(
+        plan.purpose(),
+        inventory_core::catalog::runtime::PlanPurpose::TagEndpoint(_)
+    ) {
         limits.preserve_field_presence()
-    } else { limits };
+    } else {
+        limits
+    };
     let context = aws_wire::response::ResponseContext {
         service: plan.service(),
         operation: plan.operation(),

@@ -82,14 +82,19 @@ pub(super) fn tag(key: &ResourceKey, tag: &ProjectionTag) -> Result<String, Quer
 
 fn tag_identity(key: &ResourceKey, tag: &ProjectionTag) -> Result<String, QueryError> {
     let mut digest = Sha256::new();
-    [key.account.as_str(), key.region.as_str(), &tag.key, &tag.value]
-        .into_iter()
-        .try_for_each(|value| {
-            let length = u64::try_from(value.len()).map_err(|_| QueryError::TooLarge)?;
-            digest.update(length.to_be_bytes());
-            digest.update(value.as_bytes());
-            Ok::<_, QueryError>(())
-        })?;
+    [
+        key.account.as_str(),
+        key.region.as_str(),
+        &tag.key,
+        &tag.value,
+    ]
+    .into_iter()
+    .try_for_each(|value| {
+        let length = u64::try_from(value.len()).map_err(|_| QueryError::TooLarge)?;
+        digest.update(length.to_be_bytes());
+        digest.update(value.as_bytes());
+        Ok::<_, QueryError>(())
+    })?;
     hex(&digest.finalize())
 }
 
@@ -234,7 +239,9 @@ mod tests {
         let resource = key("123456789012", "vpc-a")?;
         let replacement = super::clear_edges(&resource)?;
         let deletion = super::delete(&resource)?;
-        assert!(replacement.contains("MATCH (n:Resource {key:$key})-[r]-(other:Resource) DELETE r"));
+        assert!(
+            replacement.contains("MATCH (n:Resource {key:$key})-[r]-(other:Resource) DELETE r")
+        );
         assert!(deletion.contains("DETACH DELETE n"));
         Ok(())
     }
@@ -244,12 +251,24 @@ mod tests {
     -> Result<(), Box<dyn std::error::Error>> {
         let resource = key("123456789012", "vpc-a")?;
         let other = key("123456789012", "vpc-b")?;
-        let pair = super::ProjectionTag { key: "team".into(), value: "platform".into() };
-        assert_eq!(super::tag_identity(&resource, &pair)?, super::tag_identity(&other, &pair)?);
-        assert_ne!(super::tag_identity(&resource, &pair)?, super::tag_identity(&key("000000000000", "vpc-a")?, &pair)?);
+        let pair = super::ProjectionTag {
+            key: "team".into(),
+            value: "platform".into(),
+        };
+        assert_eq!(
+            super::tag_identity(&resource, &pair)?,
+            super::tag_identity(&other, &pair)?
+        );
+        assert_ne!(
+            super::tag_identity(&resource, &pair)?,
+            super::tag_identity(&key("000000000000", "vpc-a")?, &pair)?
+        );
         let mut other_region = resource.clone();
         other_region.region = Region::parse("us-west-2")?;
-        assert_ne!(super::tag_identity(&resource, &pair)?, super::tag_identity(&other_region, &pair)?);
+        assert_ne!(
+            super::tag_identity(&resource, &pair)?,
+            super::tag_identity(&other_region, &pair)?
+        );
         let query = super::tag(&resource, &pair)?;
         assert!(query.contains("MERGE (t:Tag {key:$tag})"));
         assert!(query.contains("MERGE (r)-[:HAS_TAG {provenance:$provenance}]->(t)"));
@@ -262,7 +281,10 @@ mod tests {
     fn tag_data_is_bound_and_orphans_are_only_deleted_after_last_owner()
     -> Result<(), Box<dyn std::error::Error>> {
         let resource = key("123456789012", "vpc-a")?;
-        let pair = super::ProjectionTag { key: "quote'\\\\".into(), value: "line\\n\\t'".into() };
+        let pair = super::ProjectionTag {
+            key: "quote'\\\\".into(),
+            value: "line\\n\\t'".into(),
+        };
         let query = super::tag(&resource, &pair)?;
         assert!(query.contains("tag_key='quote\\'\\\\\\\\'"));
         assert!(query.contains("t.tag_key=$tag_key,t.tag_value=$tag_value"));

@@ -4,33 +4,42 @@ use super::policy;
 use crate::overlay::{NameError, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
-    let approved = vec![
-
-    ];
+    let approved = vec![];
     policy::finish(
-        "health", approved, DEFERRED,
+        "health",
+        approved,
+        DEFERRED,
         "Event descriptions and affected-entity data are customer operational content; event types/lifecycle tables are reference data. Remaining organization/aggregate calls are not resource inventory and no callable policy is approved.",
-        &[(policy::DenyReason::Mutating, MUTATING), (policy::DenyReason::Content, CONTENT), (policy::DenyReason::ReferenceData, REFERENCEDATA)],
+        &[
+            (policy::DenyReason::Mutating, MUTATING),
+            (policy::DenyReason::Content, CONTENT),
+            (policy::DenyReason::ReferenceData, REFERENCEDATA),
+        ],
     )
 }
 
 // Explicit pinned operation dispositions. No runtime operation-name classifier approves calls.
 // Mutation sets change resource/lifecycle/authorization state; content and credential reads stay denied.
 const DEFERRED: &[&str] = &[
-    "DescribeAffectedAccountsForOrganization", "DescribeEntityAggregates",
-    "DescribeEntityAggregatesForOrganization", "DescribeEventAggregates",
+    "DescribeAffectedAccountsForOrganization",
+    "DescribeEntityAggregates",
+    "DescribeEntityAggregatesForOrganization",
+    "DescribeEventAggregates",
     "DescribeHealthServiceStatusForOrganization",
 ];
 
 const MUTATING: &[&str] = &[
-    "DisableHealthServiceAccessForOrganization", "EnableHealthServiceAccessForOrganization",
+    "DisableHealthServiceAccessForOrganization",
+    "EnableHealthServiceAccessForOrganization",
 ];
 
 const CONTENT: &[&str] = &[
-    "DescribeAffectedEntities", "DescribeAffectedEntitiesForOrganization", "DescribeEventDetails",
-    "DescribeEventDetailsForOrganization", "DescribeEvents", "DescribeEventsForOrganization",
+    "DescribeAffectedEntities",
+    "DescribeAffectedEntitiesForOrganization",
+    "DescribeEventDetails",
+    "DescribeEventDetailsForOrganization",
+    "DescribeEvents",
+    "DescribeEventsForOrganization",
 ];
 
-const REFERENCEDATA: &[&str] = &[
-    "DescribeEventTypes", "DescribeServiceLifecycle",
-];
+const REFERENCEDATA: &[&str] = &["DescribeEventTypes", "DescribeServiceLifecycle"];

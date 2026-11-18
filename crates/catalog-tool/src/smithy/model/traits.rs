@@ -41,8 +41,10 @@ fn retains_payload(name: &str) -> bool {
 pub(super) fn validate_shape(shape: &super::Shape) -> Result<(), String> {
     validate_traits(&shape.traits)?;
     match &shape.kind {
-        super::ShapeKind::Structure { members } | super::ShapeKind::Union { members }
-        | super::ShapeKind::Enum { members } | super::ShapeKind::IntEnum { members } => members
+        super::ShapeKind::Structure { members }
+        | super::ShapeKind::Union { members }
+        | super::ShapeKind::Enum { members }
+        | super::ShapeKind::IntEnum { members } => members
             .values()
             .try_for_each(|member| validate_traits(&member.traits)),
         super::ShapeKind::List { member } => validate_traits(&member.traits),

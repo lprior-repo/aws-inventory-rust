@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/rekognition/service/2016-06-27/rekognition-2016-06-27.json
-use super::super::construction::{Inventory, ResourceIdentity, Input};
+use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 
 pub(super) const CALLS: &[Inventory] = &[
@@ -19,7 +19,10 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Arn("ProjectArn"),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
-        input: &[Input::Strings("Features", &["CUSTOM_LABELS", "CONTENT_MODERATION"])],
+        input: &[Input::Strings(
+            "Features",
+            &["CUSTOM_LABELS", "CONTENT_MODERATION"],
+        )],
         tags: None,
         queryable: &[],
     },

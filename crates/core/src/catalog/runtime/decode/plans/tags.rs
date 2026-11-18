@@ -1,7 +1,7 @@
 use super::{ItemPlan, RuntimeCatalogError, metadata};
 use crate::{
-    catalog::{Member, Operation, Service, Shape, Target},
     catalog::runtime::TagPlan,
+    catalog::{Member, Operation, Service, Shape, Target},
     record::{FieldId, MapRef},
 };
 
@@ -58,7 +58,10 @@ fn validate(
             if tags.kind()? != "list" {
                 return Err(RuntimeCatalogError::Capability);
             }
-            let element = shape(service, tags.element()?.ok_or(RuntimeCatalogError::Capability)?)?;
+            let element = shape(
+                service,
+                tags.element()?.ok_or(RuntimeCatalogError::Capability)?,
+            )?;
             string(service, Some(member(element, *key)?.target))?;
             string(service, Some(member(element, *value)?.target))
         }
@@ -98,16 +101,19 @@ pub(super) fn member<'a>(shape: Shape<'a>, id: FieldId) -> Result<Member<'a>, Ru
     if !matches!(shape.kind()?, "structure" | "union") {
         return Err(RuntimeCatalogError::Capability);
     }
-    shape.members()?.try_fold(None, |found, candidate| {
-        let candidate = candidate?;
-        if candidate.id != id {
-            return Ok(found);
-        }
-        if found.is_some() {
-            return Err(RuntimeCatalogError::Capability);
-        }
-        Ok(Some(candidate))
-    })?.ok_or(RuntimeCatalogError::Capability)
+    shape
+        .members()?
+        .try_fold(None, |found, candidate| {
+            let candidate = candidate?;
+            if candidate.id != id {
+                return Ok(found);
+            }
+            if found.is_some() {
+                return Err(RuntimeCatalogError::Capability);
+            }
+            Ok(Some(candidate))
+        })?
+        .ok_or(RuntimeCatalogError::Capability)
 }
 
 fn string(service: Service<'_>, target: Option<Target>) -> Result<(), RuntimeCatalogError> {
@@ -117,14 +123,20 @@ fn string(service: Service<'_>, target: Option<Target>) -> Result<(), RuntimeCat
     Ok(())
 }
 
-pub(super) fn target_kind(service: Service<'_>, target: Target) -> Result<&'static str, RuntimeCatalogError> {
+pub(super) fn target_kind(
+    service: Service<'_>,
+    target: Target,
+) -> Result<&'static str, RuntimeCatalogError> {
     match target {
         Target::Prelude(kind) => Ok(kind),
         Target::Shape(_) => Ok(shape(service, target)?.kind()?),
     }
 }
 
-pub(super) fn shape<'a>(service: Service<'a>, target: Target) -> Result<Shape<'a>, RuntimeCatalogError> {
+pub(super) fn shape<'a>(
+    service: Service<'a>,
+    target: Target,
+) -> Result<Shape<'a>, RuntimeCatalogError> {
     match target {
         Target::Shape(index) => service.shape(index)?.ok_or(RuntimeCatalogError::Capability),
         _ => Err(RuntimeCatalogError::Capability),

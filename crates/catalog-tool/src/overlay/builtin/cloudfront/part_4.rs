@@ -1,5 +1,5 @@
+use super::super::empty;
 use crate::overlay::{NameError, OperationOverlay, OverlayClass};
-use super::super::{empty};
 
 // Exact typed migration of the reviewed pinned-model policy; not emulator evidence.
 pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {

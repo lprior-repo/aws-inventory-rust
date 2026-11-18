@@ -27,19 +27,18 @@ pub(super) fn resource(
         .and_then(Value::as_str)
         .filter(|value| !value.is_empty())
         .map(String::from)
-        .map_or_else(|| ctx.account.clone(), |v| v);
+        .unwrap_or_else(|| ctx.account.clone());
     let arn = properties
         .get("arn")
         .and_then(Value::as_str)
         .filter(|value| !value.is_empty())
         .map(str::to_owned)
-        .map_or_else(
-            || format!(
+        .unwrap_or_else(|| {
+            format!(
                 "arn:{}:ec2:{}:{}:{}/{}",
                 ctx.partition, ctx.region, owner, arn_type, id
-            ),
-            |v| v,
-        );
+            )
+        });
     let mut result = ctx.resource(kind, arn, tags.get("Name").cloned(), properties, tags)?;
     result.account_id = result
         .id
@@ -47,7 +46,7 @@ pub(super) fn resource(
         .nth(4)
         .filter(|value| !value.is_empty())
         .map(str::to_owned)
-        .map_or(owner, |v| v);
+        .unwrap_or(owner);
     Ok(result)
 }
 

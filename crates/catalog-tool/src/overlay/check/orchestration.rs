@@ -60,21 +60,22 @@ fn check_model_policies(
 
 fn validate_policy_services(overlays: &[crate::overlay::ServiceOverlay]) -> Result<(), CheckError> {
     enforce_model_limit(overlays.len())?;
-    overlays.iter().try_fold(BTreeSet::new(), |mut names, overlay| {
-        if !names.insert(overlay.service()) {
-            return Err(CheckError::Invalid {
-                service: overlay.service().to_owned(),
-                operation: String::new(),
-                key: "service".to_owned(),
-                value: overlay.service().to_owned(),
-                rule: "duplicate service policy",
-            });
-        }
-        Ok(names)
-    })?;
+    overlays
+        .iter()
+        .try_fold(BTreeSet::new(), |mut names, overlay| {
+            if !names.insert(overlay.service()) {
+                return Err(CheckError::Invalid {
+                    service: overlay.service().to_owned(),
+                    operation: String::new(),
+                    key: "service".to_owned(),
+                    value: overlay.service().to_owned(),
+                    rule: "duplicate service policy",
+                });
+            }
+            Ok(names)
+        })?;
     Ok(())
 }
-
 
 fn read_model_values(source: &Path) -> Result<BTreeMap<String, Value>, CheckError> {
     let models = source.join("models");

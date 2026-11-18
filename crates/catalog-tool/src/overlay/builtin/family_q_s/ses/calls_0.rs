@@ -6,7 +6,10 @@ pub(super) const CALLS: &[Inventory] = &[
     Inventory {
         operation: "ListConfigurationSets",
         items: "ConfigurationSets",
-        identity: ResourceIdentity::Template("arn:{partition}:ses:{region}:{account}:configuration-set/{Name}", &["Name"]),
+        identity: ResourceIdentity::Template(
+            "arn:{partition}:ses:{region}:{account}:configuration-set/{Name}",
+            &["Name"],
+        ),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
         input: &[],
@@ -16,7 +19,10 @@ pub(super) const CALLS: &[Inventory] = &[
     Inventory {
         operation: "ListIdentities",
         items: "Identities",
-        identity: ResourceIdentity::Template("arn:{partition}:ses:{region}:{account}:identity/{$}", &["$"]),
+        identity: ResourceIdentity::Template(
+            "arn:{partition}:ses:{region}:{account}:identity/{$}",
+            &["$"],
+        ),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
         input: &[],
@@ -36,7 +42,10 @@ pub(super) const CALLS: &[Inventory] = &[
     Inventory {
         operation: "ListTemplates",
         items: "TemplatesMetadata",
-        identity: ResourceIdentity::Template("arn:{partition}:ses:{region}:{account}:template/{Name}", &["Name"]),
+        identity: ResourceIdentity::Template(
+            "arn:{partition}:ses:{region}:{account}:template/{Name}",
+            &["Name"],
+        ),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
         input: &[],

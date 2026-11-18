@@ -26,7 +26,8 @@ impl VerifiedEndpoint {
     }
 
     pub(super) fn bind_operation(&mut self, operation: String, endpoint: Option<Self>) {
-        self.operations.insert(operation, endpoint.map(|endpoint| endpoint.service));
+        self.operations
+            .insert(operation, endpoint.map(|endpoint| endpoint.service));
     }
 
     /// Removes the placeholder host label a route was compiled with. The
@@ -40,8 +41,12 @@ impl VerifiedEndpoint {
             }
             (!url.contains(label)).then_some(())
         };
-        let DerivedEndpoint::Resolved { url_template, signing_name, signing_region, .. } =
-            &mut self.service.endpoint
+        let DerivedEndpoint::Resolved {
+            url_template,
+            signing_name,
+            signing_region,
+            ..
+        } = &mut self.service.endpoint
         else {
             return None;
         };
@@ -84,7 +89,10 @@ impl CaseRun<'_> {
         let service =
             derive_run(self, signing_name).map_err(|_| VerificationFailure::UnresolvedCandidate)?;
         if matches!(&service.endpoint, DerivedEndpoint::Resolved { .. }) {
-            Ok(VerifiedEndpoint { service, operations: BTreeMap::new() })
+            Ok(VerifiedEndpoint {
+                service,
+                operations: BTreeMap::new(),
+            })
         } else {
             Err(VerificationFailure::UnresolvedCandidate)
         }
@@ -94,8 +102,10 @@ impl CaseRun<'_> {
     /// carries only its operation routes; its service route stays unresolved.
     pub(super) fn operation_carrier(&self, signing_name: Option<&str>) -> Option<VerifiedEndpoint> {
         let service = derive_run(self, signing_name).ok()?;
-        (!matches!(&service.endpoint, DerivedEndpoint::Resolved { .. }))
-            .then(|| VerifiedEndpoint { service, operations: BTreeMap::new() })
+        (!matches!(&service.endpoint, DerivedEndpoint::Resolved { .. })).then(|| VerifiedEndpoint {
+            service,
+            operations: BTreeMap::new(),
+        })
     }
 }
 

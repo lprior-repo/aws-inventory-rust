@@ -1,6 +1,6 @@
 use catalog_tool::overlay::{
-    self, CheckError, EffectiveClass, ItemSelector, OperationOverlay, OverlayClass,
-    ServiceOverlay, Violation, ViolationRule,
+    self, CheckError, EffectiveClass, ItemSelector, OperationOverlay, OverlayClass, ServiceOverlay,
+    Violation, ViolationRule,
 };
 use std::{fs, path::Path, process::Command};
 use tempfile::TempDir;
@@ -10,6 +10,8 @@ mod overlay_accepted_bind;
 mod overlay_behavior_extra;
 #[path = "overlay_behavior/bind_paths.rs"]
 mod overlay_bind_paths;
+#[path = "overlay_behavior/capability_parity.rs"]
+mod overlay_capability_parity;
 #[path = "overlay_behavior/deny_properties.rs"]
 mod overlay_deny_properties;
 #[path = "overlay_behavior/enum_fixed.rs"]
@@ -20,18 +22,16 @@ mod overlay_fixed_paths;
 mod overlay_page_size;
 #[path = "overlay_behavior/primitive_alias.rs"]
 mod overlay_primitive_alias;
+#[path = "overlay_behavior/scalar_items.rs"]
+mod overlay_scalar_items;
 #[path = "overlay_behavior/token_lists.rs"]
 mod overlay_token_lists;
 #[path = "overlay_behavior/token_maps.rs"]
 mod overlay_token_maps;
-#[path = "overlay_behavior/unclassified.rs"]
-mod overlay_unclassified;
-#[path = "overlay_behavior/scalar_items.rs"]
-mod overlay_scalar_items;
-#[path = "overlay_behavior/capability_parity.rs"]
-mod overlay_capability_parity;
 #[path = "overlay_behavior/typed_bindings.rs"]
 mod overlay_typed_bindings;
+#[path = "overlay_behavior/unclassified.rs"]
+mod overlay_unclassified;
 
 const BASIC: &str = r#"{"smithy":"2.0","shapes":{
 "n#Service":{"type":"service","operations":[{"target":"n#ListThings"}]},
@@ -101,7 +101,9 @@ fn command(root: &Path) -> std::io::Result<std::process::Output> {
 fn inferred() -> Result<OperationOverlay, overlay::NameError> {
     let mut plan = OperationOverlay::default();
     plan.class = Some(OverlayClass::Enumerate);
-    plan.identity = Some(overlay::Identity::Key(vec![overlay::MemberPath::new("Id")?]));
+    plan.identity = Some(overlay::Identity::Key(vec![overlay::MemberPath::new(
+        "Id",
+    )?]));
     Ok(plan)
 }
 
@@ -223,7 +225,8 @@ fn one_fixed_nested_child_does_not_satisfy_its_required_sibling()
         overlay::FixedValue::String("x".to_owned()),
     );
     let errors = violations(&root, vec![("ListThings", plan.clone())])?;
-    let required: Vec<_> = errors.iter()
+    let required: Vec<_> = errors
+        .iter()
         .filter(|error| error.key() == "required")
         .map(Violation::value)
         .collect();
@@ -234,7 +237,8 @@ fn one_fixed_nested_child_does_not_satisfy_its_required_sibling()
     );
     let root = fixture(&optional_model, "")?;
     let errors = violations(&root, vec![("ListThings", plan)])?;
-    let required: Vec<_> = errors.iter()
+    let required: Vec<_> = errors
+        .iter()
         .filter(|error| error.key() == "required")
         .map(Violation::value)
         .collect();
@@ -259,12 +263,17 @@ fn inferred_effective_bindings_cannot_form_a_cycle() -> Result<(), Box<dyn std::
     let root = fixture(model, "")?;
     let mut a = complete()?;
     a.class = Some(OverlayClass::Expand);
-    a.identity = Some(overlay::Identity::Key(vec![overlay::MemberPath::new("ParentA")?]));
+    a.identity = Some(overlay::Identity::Key(vec![overlay::MemberPath::new(
+        "ParentA",
+    )?]));
     let mut b = complete()?;
     b.class = Some(OverlayClass::Expand);
-    b.identity = Some(overlay::Identity::Key(vec![overlay::MemberPath::new("ParentB")?]));
+    b.identity = Some(overlay::Identity::Key(vec![overlay::MemberPath::new(
+        "ParentB",
+    )?]));
     let errors = violations(&root, vec![("DescribeA", a), ("DescribeB", b)])?;
-    let cycles: Vec<_> = errors.iter()
+    let cycles: Vec<_> = errors
+        .iter()
         .filter(|error| error.rule() == ViolationRule::BindingCycle)
         .map(|error| error.operation())
         .collect();
@@ -279,7 +288,9 @@ fn semantic_errors_are_sorted_and_failed_write_preserves_report_and_stdout()
     let mut plan = complete()?;
     plan.items = Some(ItemSelector::Member(overlay::MemberPath::new("Missing")?));
     plan.queryable = vec![overlay::MemberPath::new("Absent")?];
-    plan.identity = Some(overlay::Identity::Key(vec![overlay::MemberPath::new("Absent")?]));
+    plan.identity = Some(overlay::Identity::Key(vec![overlay::MemberPath::new(
+        "Absent",
+    )?]));
     let errors = violations(&root, vec![("ListThings", plan)])?;
     let keys: Vec<_> = errors.iter().map(Violation::key).collect();
     assert_eq!(keys, ["identity", "items", "queryable"]);

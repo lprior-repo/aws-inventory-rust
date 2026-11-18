@@ -1,9 +1,9 @@
 use super::super::RuntimeCatalogError;
 use super::{
-    BindingPlan, EndpointClass, EndpointPathMode, IdentityPlan, ItemPlan, PagePlan, PlanPurpose,
-    PlanScope, ResolvedEndpoint, ReviewProvenance, RuntimeProtocol, TagPlan,
-    RequestRouting, ExecutionBranch, ResourceProjectionPlan, KindClassificationPlan,
-    Emission, ContextProjectionPlan, RowPolicyPlan, ResourceEmissions, IdentityTextPlan,
+    BindingPlan, ContextProjectionPlan, Emission, EndpointClass, EndpointPathMode, ExecutionBranch,
+    IdentityPlan, IdentityTextPlan, ItemPlan, KindClassificationPlan, PagePlan, PlanPurpose,
+    PlanScope, RequestRouting, ResolvedEndpoint, ResourceEmissions, ResourceProjectionPlan,
+    ReviewProvenance, RowPolicyPlan, RuntimeProtocol, TagPlan,
 };
 use crate::{
     inventory::{Kind, RegionId},
@@ -90,14 +90,27 @@ pub struct CallablePlan<'a> {
 
 impl<'a> CallablePlan<'a> {
     /// Effective reviewed stage inputs, with exact-path overrides replacing common inputs.
-    pub fn effective_bindings<'p>(&'p self, branch: Option<&'p ExecutionBranch>) -> impl Iterator<Item = &'p BindingPlan> {
-        self.bindings().iter().filter(move |binding| !branch.is_some_and(|stage|
-            stage.bindings.iter().any(|overridden| overridden.path == binding.path)))
+    pub fn effective_bindings<'p>(
+        &'p self,
+        branch: Option<&'p ExecutionBranch>,
+    ) -> impl Iterator<Item = &'p BindingPlan> {
+        self.bindings()
+            .iter()
+            .filter(move |binding| {
+                !branch.is_some_and(|stage| {
+                    stage
+                        .bindings
+                        .iter()
+                        .any(|overridden| overridden.path == binding.path)
+                })
+            })
             .chain(branch.into_iter().flat_map(|stage| stage.bindings.iter()))
     }
 
     pub fn effective_emission(&self, branch: Option<&ExecutionBranch>) -> Emission {
-        branch.and_then(|stage| stage.emission).unwrap_or(self.emission())
+        branch
+            .and_then(|stage| stage.emission)
+            .unwrap_or(self.emission())
     }
     pub(crate) fn new(parts: PlanParts<'a>) -> Self {
         Self { parts }
@@ -137,7 +150,6 @@ impl<'a> CallablePlan<'a> {
         &self.parts.row_policy
     }
 
-
     pub fn context_projection(&self) -> &ContextProjectionPlan {
         &self.parts.context_projection
     }
@@ -166,9 +178,16 @@ impl<'a> CallablePlan<'a> {
         &self.parts.identity
     }
 
-    pub fn identity_text(&self, emission_key: &str) -> Result<&IdentityTextPlan<'a>, RuntimeCatalogError> {
-        self.parts.identity_text.iter().find(|(key, _)| key.as_ref() == emission_key)
-            .map(|(_, plan)| plan).ok_or(RuntimeCatalogError::Capability)
+    pub fn identity_text(
+        &self,
+        emission_key: &str,
+    ) -> Result<&IdentityTextPlan<'a>, RuntimeCatalogError> {
+        self.parts
+            .identity_text
+            .iter()
+            .find(|(key, _)| key.as_ref() == emission_key)
+            .map(|(_, plan)| plan)
+            .ok_or(RuntimeCatalogError::Capability)
     }
 
     /// `None` means tags were not observed, not a complete empty snapshot.

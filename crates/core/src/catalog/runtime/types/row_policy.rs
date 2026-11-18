@@ -2,7 +2,11 @@ use super::ContextSource;
 use crate::record::FieldId;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum RowValueType { String, Boolean, Structure }
+pub enum RowValueType {
+    String,
+    Boolean,
+    Structure,
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RowOperandPlan {
@@ -12,13 +16,24 @@ pub struct RowOperandPlan {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum MissingSelected { Reject, AllowAbsent }
+pub enum MissingSelected {
+    Reject,
+    AllowAbsent,
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RowPredicatePlan {
     Absent(RowOperandPlan),
-    BooleanEquals { operand: RowOperandPlan, value: bool },
-    SelectedRequestEquals { selected: Box<[FieldId]>, request: Box<[FieldId]>, value_type: RowValueType, missing: MissingSelected },
+    BooleanEquals {
+        operand: RowOperandPlan,
+        value: bool,
+    },
+    SelectedRequestEquals {
+        selected: Box<[FieldId]>,
+        request: Box<[FieldId]>,
+        value_type: RowValueType,
+        missing: MissingSelected,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

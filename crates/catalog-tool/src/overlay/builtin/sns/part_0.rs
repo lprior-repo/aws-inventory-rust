@@ -1,6 +1,11 @@
-use crate::overlay::{ArnResourceKind, Binding, IdentityBranch, IdentityChoice, IdentityField, IdentityLeaf, IdentityPredicate, MapKeyExclusion, NameError, OperationOverlay, Identity, ItemSelector, OverlayClass, Paginator, ResourceProjection, Scope, TagEndpoint, TagEndpointParent, TagEndpointRequest, TagEndpointSelector, TokenPair};
 use super::super::{empty, name, path};
 use crate::classes::DenyReason;
+use crate::overlay::{
+    ArnResourceKind, Binding, Identity, IdentityBranch, IdentityChoice, IdentityField,
+    IdentityLeaf, IdentityPredicate, ItemSelector, MapKeyExclusion, NameError, OperationOverlay,
+    OverlayClass, Paginator, ResourceProjection, Scope, TagEndpoint, TagEndpointParent,
+    TagEndpointRequest, TagEndpointSelector, TokenPair,
+};
 
 // Exact typed migration of the reviewed pinned-model policy; not emulator evidence.
 pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -115,22 +120,53 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
 }
 
 fn subscriptions(parent: Option<&str>) -> Result<OperationOverlay, NameError> {
-    let pending = IdentityLeaf::Key(vec![path("TopicArn")?, path("Protocol")?, path("Endpoint")?]);
+    let pending = IdentityLeaf::Key(vec![
+        path("TopicArn")?,
+        path("Protocol")?,
+        path("Endpoint")?,
+    ]);
     let identity = Identity::Choice(IdentityChoice::Discriminated(vec![
-        IdentityBranch::new(IdentityPredicate::TextEquals { path: path("SubscriptionArn")?, value: "PendingConfirmation".to_owned() }, pending.clone())?,
-        IdentityBranch::new(IdentityPredicate::TextEquals { path: path("SubscriptionArn")?, value: "Deleted".to_owned() }, pending)?,
-        IdentityBranch::new(IdentityPredicate::Present(path("SubscriptionArn")?), IdentityLeaf::Arn(path("SubscriptionArn")?))?,
+        IdentityBranch::new(
+            IdentityPredicate::TextEquals {
+                path: path("SubscriptionArn")?,
+                value: "PendingConfirmation".to_owned(),
+            },
+            pending.clone(),
+        )?,
+        IdentityBranch::new(
+            IdentityPredicate::TextEquals {
+                path: path("SubscriptionArn")?,
+                value: "Deleted".to_owned(),
+            },
+            pending,
+        )?,
+        IdentityBranch::new(
+            IdentityPredicate::Present(path("SubscriptionArn")?),
+            IdentityLeaf::Arn(path("SubscriptionArn")?),
+        )?,
     ]));
     let mut operation = OperationOverlay {
-        class: Some(OverlayClass::Enumerate), scope: Some(Scope::Region),
-        items: Some(ItemSelector::parse("Subscriptions")?), identity: Some(identity),
+        class: Some(OverlayClass::Enumerate),
+        scope: Some(Scope::Region),
+        items: Some(ItemSelector::parse("Subscriptions")?),
+        identity: Some(identity),
         projection: Some(ResourceProjection::SensitiveDigest(path("Endpoint")?)),
-        paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
+        paginator: Some(Paginator::Token(TokenPair {
+            input: path("NextToken")?,
+            output: path("NextToken")?,
+            optional: false,
+        })),
         ..empty()
     };
     if let Some(parent) = parent {
         operation.class = Some(OverlayClass::Expand);
-        operation.bind.insert(path("TopicArn")?, Binding::From { operation: name(parent)?, path: path("TopicArn")? });
+        operation.bind.insert(
+            path("TopicArn")?,
+            Binding::From {
+                operation: name(parent)?,
+                path: path("TopicArn")?,
+            },
+        );
     }
     Ok(operation)
 }

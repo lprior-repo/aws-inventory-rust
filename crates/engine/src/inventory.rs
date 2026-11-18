@@ -1,14 +1,14 @@
 mod authority;
-mod legacy;
 mod commit;
 mod completion;
 mod connection;
 mod facets;
+mod legacy;
 mod projection;
 mod projection_outbox;
 mod projection_read;
-mod references;
 mod reference_candidates;
+mod references;
 mod relation_permissions;
 mod schema;
 mod typed;
@@ -19,8 +19,8 @@ use inventory_core::inventory::{
     Edge, KindSchema, Observation, ScopeKey, ScopeOutcome, UnresolvedReference,
 };
 pub use inventory_core::inventory::{Tag, TagCoverage, TagObservation};
-pub use relation_permissions::admits_reference;
 pub use projection::{ProjectionError, ProjectionReport, run_projection};
+pub use relation_permissions::admits_reference;
 use sha2::{Digest, Sha256};
 use sqlx::{Row, SqlitePool};
 use std::collections::BTreeSet;
@@ -52,7 +52,9 @@ pub enum StoreError {
     Catalog(#[from] inventory_core::catalog::CatalogError),
     #[error("runtime catalog capability metadata is invalid: {0}")]
     RuntimeCatalog(#[from] inventory_core::catalog::runtime::RuntimeCatalogError),
-    #[error("database uses schema version {found}; expected schema16 (schema14/15 upgrade on open)")]
+    #[error(
+        "database uses schema version {found}; expected schema16 (schema14/15 upgrade on open)"
+    )]
     SchemaVersion { found: i64 },
     #[error("catalog digest differs from the immutable database catalog")]
     CatalogMismatch,
@@ -95,7 +97,12 @@ impl SchemaRegistry {
             })
             .collect();
         let permissions = relation_permissions::Permissions::new(catalog, &runtime)?;
-        let registry = Self::stored(Sha256::digest(catalog).into(), schemas, operations, permissions)?;
+        let registry = Self::stored(
+            Sha256::digest(catalog).into(),
+            schemas,
+            operations,
+            permissions,
+        )?;
         if !schema_sets_match(&registry.schemas, runtime.schemas()) {
             return Err(StoreError::Invalid(
                 "kind schemas differ from checked runtime catalog",
@@ -139,11 +146,20 @@ impl SchemaRegistry {
         value: inventory_core::inventory::ResourceId,
     ) -> Result<inventory_core::inventory::ReferenceTarget, StoreError> {
         if path.is_empty() {
-            let schema = self.schemas.iter().find(|schema| schema.kind() == &kind)
-                .ok_or(StoreError::Invalid("reference target kind is absent from schema registry"))?;
-            Ok(inventory_core::inventory::ReferenceTarget::root_text(account, region, schema, value)?)
+            let schema = self
+                .schemas
+                .iter()
+                .find(|schema| schema.kind() == &kind)
+                .ok_or(StoreError::Invalid(
+                    "reference target kind is absent from schema registry",
+                ))?;
+            Ok(inventory_core::inventory::ReferenceTarget::root_text(
+                account, region, schema, value,
+            )?)
         } else {
-            Ok(inventory_core::inventory::ReferenceTarget::new(account, region, kind, path, value)?)
+            Ok(inventory_core::inventory::ReferenceTarget::new(
+                account, region, kind, path, value,
+            )?)
         }
     }
     pub fn digest(&self) -> &[u8; 32] {
@@ -177,7 +193,6 @@ pub struct PageCommit {
     pub done: bool,
     pub observed_at_ms: i64,
 }
-
 
 impl BinaryStore {
     pub async fn create(path: &Path, registry: SchemaRegistry) -> Result<Self, StoreError> {

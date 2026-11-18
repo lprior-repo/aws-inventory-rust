@@ -7,11 +7,24 @@ mod part_5;
 mod part_6;
 mod part_7;
 mod part_8;
-use crate::overlay::{NameError, ServiceOverlay};
 use super::service;
+use crate::overlay::{NameError, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
-    let operations = [part_0::operations()?, part_1::operations()?, part_2::operations()?, part_3::operations()?, part_4::operations()?, part_5::operations()?, part_6::operations()?, part_7::operations()?, part_8::operations()?].into_iter().flatten().collect();
+    let operations = [
+        part_0::operations()?,
+        part_1::operations()?,
+        part_2::operations()?,
+        part_3::operations()?,
+        part_4::operations()?,
+        part_5::operations()?,
+        part_6::operations()?,
+        part_7::operations()?,
+        part_8::operations()?,
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
     let mut overlay = service("rds", operations)?;
     overlay.reviewed = "2026-11-15".to_owned();
     overlay.reviewer = "Automated Sol model review (gpt-6.1-sol)".to_owned();

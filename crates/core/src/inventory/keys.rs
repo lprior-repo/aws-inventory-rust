@@ -86,8 +86,11 @@ impl ScopeKey {
         self.branch.as_deref()
     }
     pub fn with_branch(mut self, branch: String) -> Result<Self, InventoryError> {
-        if branch.is_empty() || branch.len() > 64
-            || !branch.bytes().all(|byte| byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'-')
+        if branch.is_empty()
+            || branch.len() > 64
+            || !branch
+                .bytes()
+                .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'-')
         {
             return Err(InventoryError::Branch);
         }

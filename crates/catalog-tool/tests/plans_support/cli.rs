@@ -21,7 +21,8 @@ fn plans(root: &Path, flags: &[&str]) -> io::Result<Output> {
 }
 
 #[test]
-fn explicit_policy_print_preserves_exact_report_without_creating_committed_artifact() -> TestResult {
+fn explicit_policy_print_preserves_exact_report_without_creating_committed_artifact() -> TestResult
+{
     let dir = fixture()?;
     assert_eq!(build_report_with_policy(dir.path(), &policy()?)?, EXPECTED);
     run_with_policy(dir.path(), dir.path(), ReportMode::Print, &policy()?)?;
@@ -94,14 +95,19 @@ fn conflicting_cli_modes_fail_without_creating_a_report() -> TestResult {
 fn cli_builtin_policy_failure_never_prints_or_replaces_a_partial_report() -> TestResult {
     let dir = fixture()?;
     super_write(dir.path(), REPORT, "preserve\n")?;
-    [vec![], vec!["--write"]].into_iter().try_for_each(|flags| -> TestResult {
-        let result = plans(dir.path(), &flags)?;
-        assert_eq!(result.status.code(), Some(1));
-        assert_eq!(result.stdout, b"");
-        assert!(String::from_utf8(result.stderr)?.contains("matches no operation"));
-        assert_eq!(std::fs::read_to_string(dir.path().join(REPORT))?, "preserve\n");
-        Ok(())
-    })?;
+    [vec![], vec!["--write"]]
+        .into_iter()
+        .try_for_each(|flags| -> TestResult {
+            let result = plans(dir.path(), &flags)?;
+            assert_eq!(result.status.code(), Some(1));
+            assert_eq!(result.stdout, b"");
+            assert!(String::from_utf8(result.stderr)?.contains("matches no operation"));
+            assert_eq!(
+                std::fs::read_to_string(dir.path().join(REPORT))?,
+                "preserve\n"
+            );
+            Ok(())
+        })?;
     Ok(())
 }
 

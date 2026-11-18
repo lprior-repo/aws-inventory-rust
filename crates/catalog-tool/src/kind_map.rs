@@ -1,20 +1,27 @@
-mod source;
+mod builtin;
 mod construct;
 mod fingerprint;
-mod builtin;
 mod merge;
 mod relation_targets;
+mod source;
 pub use source::{ApiOnlyMapping, BootstrapMapping, CfnMapping, MappingSource, OperationMapping};
+mod emissions;
+mod relation_fingerprint;
+mod relation_modes;
 mod relation_selectors;
 mod target_kinds;
-mod relation_modes;
-mod relation_fingerprint;
-mod emissions;
-pub use relation_selectors::{RelationGuardMapping, RelationMapping, RelationPath, RelationSource, RelationTarget, RelationTargetsMapping, ReviewedRelation, ReviewedRelationGuard, ReviewedRelationSource, ReviewedRelationTarget, ReviewedValuePath};
-pub use target_kinds::ReviewedTargetKinds;
-pub use relation_modes::{CompoundRelationMapping, ParentRelationMapping, RelationComponentMapping, ReviewedCompoundRelation, ReviewedParentRelation, ReviewedRelationComponent};
-pub use emissions::{AdditionalEmissionMapping, ReviewedEmission};
 pub use builtin::embedded;
+pub use emissions::{AdditionalEmissionMapping, ReviewedEmission};
+pub use relation_modes::{
+    CompoundRelationMapping, ParentRelationMapping, RelationComponentMapping,
+    ReviewedCompoundRelation, ReviewedParentRelation, ReviewedRelationComponent,
+};
+pub use relation_selectors::{
+    RelationGuardMapping, RelationMapping, RelationPath, RelationSource, RelationTarget,
+    RelationTargetsMapping, ReviewedRelation, ReviewedRelationGuard, ReviewedRelationSource,
+    ReviewedRelationTarget, ReviewedValuePath,
+};
+pub use target_kinds::ReviewedTargetKinds;
 #[path = "kind_map/rows.rs"]
 mod rows;
 use crate::names::{Exceptions, NameError, SqlName};
@@ -97,7 +104,6 @@ pub struct ApiOnlyKind {
     pub reason: String,
 }
 
-
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum BootstrapPurpose {
     #[default]
@@ -155,7 +161,12 @@ impl KindMap {
     pub fn additional_emissions(&self) -> &[ReviewedEmission] {
         &self.additional_emissions
     }
-    pub fn additional_emission_kind(&self, service: &str, operation: &str, emitter_key: &str) -> Option<&str> {
+    pub fn additional_emission_kind(
+        &self,
+        service: &str,
+        operation: &str,
+        emitter_key: &str,
+    ) -> Option<&str> {
         emissions::lookup(&self.additional_emissions, service, operation, emitter_key)
     }
     pub fn bootstrap_for(&self, service: &str, operation: &str) -> Option<&BootstrapPurpose> {

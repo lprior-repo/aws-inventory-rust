@@ -1,23 +1,83 @@
 // Explicit dispositions from .local/aws-models/models/ecr/service/2015-09-21/ecr-2015-09-21.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
-    ("PutImageScanningConfiguration", "Requires repositoryName, imageScanningConfiguration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: The PutImageScanningConfiguration API is being deprecated, in favor of specifying the image scanning configuration at the registry level."),
-    ("PutImageTagMutability", "Requires repositoryName, imageTagMutability; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the image tag mutability settings for the specified repository."),
-    ("PutLifecyclePolicy", "Requires repositoryName, lifecyclePolicyText; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates or updates the lifecycle policy for the specified repository."),
-    ("PutRegistryPolicy", "Requires policyText; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates or updates the permissions policy for your registry."),
-    ("PutRegistryScanningConfiguration", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Creates or updates the scanning configuration for your private registry."),
-    ("PutReplicationConfiguration", "Requires replicationConfiguration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates or updates the replication configuration for a registry."),
-    ("PutSigningConfiguration", "Requires signingConfiguration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates or updates the registry's signing configuration, which defines rules for automatically signing images with Amazon Web Services Signer."),
-    ("RegisterPullTimeUpdateExclusion", "Requires principalArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds an IAM principal to the pull time update exclusion list for a registry."),
-    ("SetRepositoryPolicy", "Requires repositoryName, policyText; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Applies a repository policy to the specified repository to control access permissions."),
-    ("StartImageScan", "Requires repositoryName, imageId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a basic image vulnerability scan."),
-    ("StartLifecyclePolicyPreview", "Requires repositoryName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a preview of a lifecycle policy for the specified repository."),
-    ("StartReplicationBackfill", "Requires destination; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a replication backfill for a registry."),
-    ("StopReplicationBackfill", "Requires replicationBackfillId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Stops an in progress replication backfill for a registry."),
-    ("TagResource", "Requires resourceArn, tags; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds specified tags to a resource with the specified ARN."),
-    ("UntagResource", "Requires resourceArn, tagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes specified tags from a resource."),
-    ("UpdateImageStorageClass", "Requires repositoryName, imageId, targetStorageClass; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Transitions an image between storage classes."),
-    ("UpdatePullThroughCacheRule", "Requires ecrRepositoryPrefix; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates an existing pull through cache rule."),
-    ("UpdateRepositoryCreationTemplate", "Requires prefix; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates an existing repository creation template."),
-    ("UploadLayerPart", "Requires repositoryName, uploadId, partFirstByte, partLastByte, layerPartBlob; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Uploads an image layer part to Amazon ECR."),
-    ("ValidatePullThroughCacheRule", "Requires ecrRepositoryPrefix; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Validates an existing pull through cache rule for an upstream registry that requires authentication."),
+    (
+        "PutImageScanningConfiguration",
+        "Requires repositoryName, imageScanningConfiguration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: The PutImageScanningConfiguration API is being deprecated, in favor of specifying the image scanning configuration at the registry level.",
+    ),
+    (
+        "PutImageTagMutability",
+        "Requires repositoryName, imageTagMutability; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the image tag mutability settings for the specified repository.",
+    ),
+    (
+        "PutLifecyclePolicy",
+        "Requires repositoryName, lifecyclePolicyText; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates or updates the lifecycle policy for the specified repository.",
+    ),
+    (
+        "PutRegistryPolicy",
+        "Requires policyText; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates or updates the permissions policy for your registry.",
+    ),
+    (
+        "PutRegistryScanningConfiguration",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Creates or updates the scanning configuration for your private registry.",
+    ),
+    (
+        "PutReplicationConfiguration",
+        "Requires replicationConfiguration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates or updates the replication configuration for a registry.",
+    ),
+    (
+        "PutSigningConfiguration",
+        "Requires signingConfiguration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates or updates the registry's signing configuration, which defines rules for automatically signing images with Amazon Web Services Signer.",
+    ),
+    (
+        "RegisterPullTimeUpdateExclusion",
+        "Requires principalArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds an IAM principal to the pull time update exclusion list for a registry.",
+    ),
+    (
+        "SetRepositoryPolicy",
+        "Requires repositoryName, policyText; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Applies a repository policy to the specified repository to control access permissions.",
+    ),
+    (
+        "StartImageScan",
+        "Requires repositoryName, imageId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a basic image vulnerability scan.",
+    ),
+    (
+        "StartLifecyclePolicyPreview",
+        "Requires repositoryName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a preview of a lifecycle policy for the specified repository.",
+    ),
+    (
+        "StartReplicationBackfill",
+        "Requires destination; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a replication backfill for a registry.",
+    ),
+    (
+        "StopReplicationBackfill",
+        "Requires replicationBackfillId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Stops an in progress replication backfill for a registry.",
+    ),
+    (
+        "TagResource",
+        "Requires resourceArn, tags; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds specified tags to a resource with the specified ARN.",
+    ),
+    (
+        "UntagResource",
+        "Requires resourceArn, tagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes specified tags from a resource.",
+    ),
+    (
+        "UpdateImageStorageClass",
+        "Requires repositoryName, imageId, targetStorageClass; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Transitions an image between storage classes.",
+    ),
+    (
+        "UpdatePullThroughCacheRule",
+        "Requires ecrRepositoryPrefix; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates an existing pull through cache rule.",
+    ),
+    (
+        "UpdateRepositoryCreationTemplate",
+        "Requires prefix; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates an existing repository creation template.",
+    ),
+    (
+        "UploadLayerPart",
+        "Requires repositoryName, uploadId, partFirstByte, partLastByte, layerPartBlob; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Uploads an image layer part to Amazon ECR.",
+    ),
+    (
+        "ValidatePullThroughCacheRule",
+        "Requires ecrRepositoryPrefix; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Validates an existing pull through cache rule for an upstream registry that requires authentication.",
+    ),
 ];

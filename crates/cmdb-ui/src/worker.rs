@@ -8,7 +8,10 @@ mod runner;
 pub(crate) mod tests;
 
 use crate::data::{Counts, Filter, Graph, Row};
-use cmdb_view::{Database, DatabaseSnapshot, GraphConnection, GraphLimits, GraphNode, PageRequest, ResourceFilter};
+use cmdb_view::{
+    Database, DatabaseSnapshot, GraphConnection, GraphLimits, GraphNode, PageRequest,
+    ResourceFilter,
+};
 use graph_tasks::{GraphAccess, database_error, graph_failure};
 use lifecycle::{Cancellation, Shutdown, shutdown_channel};
 use makepad_widgets::makepad_platform::thread::SignalToUI;
@@ -102,7 +105,6 @@ pub enum WorkerEvent {
     },
 }
 
-
 pub struct DataWorker {
     commands: CommandSender<Command>,
     events: Option<Receiver<Output>>,
@@ -119,10 +121,22 @@ impl DataWorker {
         let (shutdown, cancellation) = shutdown_channel();
         let worker_revisions = Arc::clone(&revisions);
         let thread = thread::spawn(move || {
-            let context = runner::WorkerContext::new(receiver, events, signal, cancellation, worker_revisions);
+            let context = runner::WorkerContext::new(
+                receiver,
+                events,
+                signal,
+                cancellation,
+                worker_revisions,
+            );
             runner::run_worker(config, context);
         });
-        Self { commands, events: Some(outputs), revisions, shutdown, thread: Some(thread) }
+        Self {
+            commands,
+            events: Some(outputs),
+            revisions,
+            shutdown,
+            thread: Some(thread),
+        }
     }
 
     pub fn refresh(&self, filter: Filter) -> Result<(), String> {
@@ -171,11 +185,12 @@ impl Drop for DataWorker {
 
 fn command_error(error: tokio::sync::mpsc::error::TrySendError<()>) -> String {
     match error {
-        tokio::sync::mpsc::error::TrySendError::Full(()) => "inventory worker queue is full".to_owned(),
+        tokio::sync::mpsc::error::TrySendError::Full(()) => {
+            "inventory worker queue is full".to_owned()
+        }
         tokio::sync::mpsc::error::TrySendError::Closed(()) => "inventory worker stopped".to_owned(),
     }
 }
-
 
 struct WorkerState {
     database: Database,
@@ -204,6 +219,10 @@ async fn setup(path: PathBuf, config: WorkerConfig) -> Result<(WorkerState, Work
     let mut session = QuerySession::open(&database).await?;
     let initial = session.page(Filter::default()).await?;
     let graph = GraphAccess::new(config.graph_url, config.graph_name);
-    let state = WorkerState { database, graph, session };
+    let state = WorkerState {
+        database,
+        graph,
+        session,
+    };
     Ok((state, initial))
 }

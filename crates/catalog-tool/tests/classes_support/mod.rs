@@ -26,7 +26,8 @@ pub const DENY: &str = concat!(
     "beta/DescribeReference\treference-data\n"
 );
 
-pub fn policy() -> Result<catalog_tool::classes::DenyList<'static>, catalog_tool::classes::ParseError> {
+pub fn policy()
+-> Result<catalog_tool::classes::DenyList<'static>, catalog_tool::classes::ParseError> {
     catalog_tool::classes::DenyList::parse(DENY)
 }
 

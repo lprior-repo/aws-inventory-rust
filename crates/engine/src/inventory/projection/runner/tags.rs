@@ -1,4 +1,6 @@
-use super::{GraphClient, GraphError, MAX_REBUILD_PAGES, ProjectionSnapshot, ResourceKey, StoreError};
+use super::{
+    GraphClient, GraphError, MAX_REBUILD_PAGES, ProjectionSnapshot, ResourceKey, StoreError,
+};
 use futures_util::{StreamExt, TryStreamExt, stream};
 
 /// The snapshot and cursor move together so tag pages cannot mix SQLite revisions.
@@ -14,18 +16,18 @@ pub(super) async fn project_tags(
             if done {
                 return Ok(None);
             }
-            let remaining = remaining.checked_sub(1).ok_or(GraphError::Store(
-                StoreError::Invalid("projection tag page bound exceeded"),
-            ))?;
+            let remaining =
+                remaining
+                    .checked_sub(1)
+                    .ok_or(GraphError::Store(StoreError::Invalid(
+                        "projection tag page bound exceeded",
+                    )))?;
             let page = snapshot
                 .tags_for(key, cursor, limit)
                 .await
                 .map_err(GraphError::Store)?;
             let done = page.next.is_none();
-            Ok::<_, GraphError>(Some((
-                page.tags,
-                (snapshot, page.next, remaining, done),
-            )))
+            Ok::<_, GraphError>(Some((page.tags, (snapshot, page.next, remaining, done))))
         },
     );
     pages

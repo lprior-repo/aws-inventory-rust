@@ -12,9 +12,12 @@ struct ResumeFixture {
 }
 
 async fn writable_pool(directory: &tempfile::TempDir) -> TestResult<SqlitePool> {
-    Ok(SqlitePoolOptions::new().max_connections(1).connect_with(
-        SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite")),
-    ).await?)
+    Ok(SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(
+            SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite")),
+        )
+        .await?)
 }
 
 async fn resume_fixture(west_generation: i64) -> TestResult<ResumeFixture> {
@@ -25,19 +28,36 @@ async fn resume_fixture(west_generation: i64) -> TestResult<ResumeFixture> {
     let context = discovery.encode()?;
     assert_ne!(context, Vec::<u8>::new());
     let works = [
-        WorkSpec::new(SweepId::new("resume".to_owned())?,
-            support::scope("us-east-1")?.with_context(discriminator), None, vec![1, 2])?.with_context(context.clone())?,
-        WorkSpec::new(SweepId::new("resume".to_owned())?,
-            support::scope("us-west-2")?.with_context(discriminator), None, vec![1, 2])?.with_context(context.clone())?,
+        WorkSpec::new(
+            SweepId::new("resume".to_owned())?,
+            support::scope("us-east-1")?.with_context(discriminator),
+            None,
+            vec![1, 2],
+        )?
+        .with_context(context.clone())?,
+        WorkSpec::new(
+            SweepId::new("resume".to_owned())?,
+            support::scope("us-west-2")?.with_context(discriminator),
+            None,
+            vec![1, 2],
+        )?
+        .with_context(context.clone())?,
     ];
     store.seed_works(&works).await?;
     let leases = claim_pair(&store, &context, 200).await?;
     for lease in leases {
         let row = observation(lease.scope().region().as_str(), "on", "Enabled")?;
         assert_eq!(lease.context(), context);
-        assert_eq!(store.commit_page(continuations::nonfinal_page(lease, vec![row], 201)?).await?, CommitResult {
-            stats: ChangeStats::default(), next_generation: Some(1), repeated_token: false,
-        });
+        assert_eq!(
+            store
+                .commit_page(continuations::nonfinal_page(lease, vec![row], 201)?)
+                .await?,
+            CommitResult {
+                stats: ChangeStats::default(),
+                next_generation: Some(1),
+                repeated_token: false,
+            }
+        );
     }
     let leases = claim_pair(&store, &context, 210).await?;
     assert_eq!(leases.map(|lease| lease.generation()), [2, 2]);
@@ -58,35 +78,100 @@ async fn resume_fixture(west_generation: i64) -> TestResult<ResumeFixture> {
     writer.close().await;
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     let pool = read_pool(&directory).await?;
-    Ok(ResumeFixture { directory, store, pool, east, west, context })
+    Ok(ResumeFixture {
+        directory,
+        store,
+        pool,
+        east,
+        west,
+        context,
+    })
 }
 
 async fn claim_pair(store: &BinaryStore, context: &[u8], at: i64) -> TestResult<[WorkLease; 2]> {
     let discriminator = DiscoveryContext::decode(context)?.discriminator()?;
     let east = claim(store, "resume", at).await?;
     let west = claim(store, "resume", at).await?;
-    assert_eq!(east.scope(), &support::scope("us-east-1")?.with_context(discriminator));
-    assert_eq!(west.scope(), &support::scope("us-west-2")?.with_context(discriminator));
+    assert_eq!(
+        east.scope(),
+        &support::scope("us-east-1")?.with_context(discriminator)
+    );
+    assert_eq!(
+        west.scope(),
+        &support::scope("us-west-2")?.with_context(discriminator)
+    );
     Ok([east, west])
 }
 
-fn assert_queue(state: &StoredState, fixture: &ResumeFixture, east_generation: i64, west_generation: i64, status: i64, deadline: i64, has_token: bool) -> TestResult {
-    let token = if has_token { Some(continuations::checkpoint()?) } else { None };
-    assert_eq!(state.work.iter().filter(|row| row.0 == "resume").cloned().collect::<Vec<_>>(), vec![
-        ("resume".to_owned(), fixture.east.clone(), token.clone(), vec![1, 2], status, east_generation, deadline, fixture.context.clone()),
-        ("resume".to_owned(), fixture.west.clone(), token, vec![1, 2], status, west_generation, deadline, fixture.context.clone()),
-    ]);
-    assert_eq!(state.tokens, vec![
-        ("resume".to_owned(), fixture.east.clone(), continuations::digest()?),
-        ("resume".to_owned(), fixture.west.clone(), continuations::digest()?),
-    ]);
+fn assert_queue(
+    state: &StoredState,
+    fixture: &ResumeFixture,
+    east_generation: i64,
+    west_generation: i64,
+    status: i64,
+    deadline: i64,
+    has_token: bool,
+) -> TestResult {
+    let token = if has_token {
+        Some(continuations::checkpoint()?)
+    } else {
+        None
+    };
+    assert_eq!(
+        state
+            .work
+            .iter()
+            .filter(|row| row.0 == "resume")
+            .cloned()
+            .collect::<Vec<_>>(),
+        vec![
+            (
+                "resume".to_owned(),
+                fixture.east.clone(),
+                token.clone(),
+                vec![1, 2],
+                status,
+                east_generation,
+                deadline,
+                fixture.context.clone()
+            ),
+            (
+                "resume".to_owned(),
+                fixture.west.clone(),
+                token,
+                vec![1, 2],
+                status,
+                west_generation,
+                deadline,
+                fixture.context.clone()
+            ),
+        ]
+    );
+    assert_eq!(
+        state.tokens,
+        vec![
+            (
+                "resume".to_owned(),
+                fixture.east.clone(),
+                continuations::digest()?
+            ),
+            (
+                "resume".to_owned(),
+                fixture.west.clone(),
+                continuations::digest()?
+            ),
+        ]
+    );
     assert_eq!(state.resources.len(), 2);
     assert_eq!(state.typed.len(), 2);
     assert_eq!(state.tags.len(), 2);
     Ok(())
 }
 
-async fn assert_reopened_state(directory: &tempfile::TempDir, expected: &StoredState) -> TestResult {
+async fn assert_reopened_state(
+    directory: &tempfile::TempDir,
+    expected: &StoredState,
+) -> TestResult {
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     let pool = read_pool(directory).await?;
     assert_eq!(&stored_state(&pool).await?, expected);
@@ -96,7 +181,8 @@ async fn assert_reopened_state(directory: &tempfile::TempDir, expected: &StoredS
 }
 
 #[tokio::test]
-async fn given_ordinary_and_exhausted_inflight_leases_when_resumed_then_exact_overflow_leaves_every_durable_row_unchanged() -> TestResult {
+async fn given_ordinary_and_exhausted_inflight_leases_when_resumed_then_exact_overflow_leaves_every_durable_row_unchanged()
+-> TestResult {
     // Given: open succeeds with real resource/tag/facet state and nonempty token history/context.
     let fixture = resume_fixture(i64::MAX).await?;
     let before = stored_state(&fixture.pool).await?;
@@ -104,7 +190,10 @@ async fn given_ordinary_and_exhausted_inflight_leases_when_resumed_then_exact_ov
 
     // When: overflow is detected inside resume_sweep, not opening or claiming the fixture.
     // Kills RESUME-SKIPS-GENERATION-GUARD, including partial release of the ordinary row.
-    assert!(matches!(fixture.store.resume_sweep().await, Err(StoreError::LeaseGenerationOverflow)));
+    assert!(matches!(
+        fixture.store.resume_sweep().await,
+        Err(StoreError::LeaseGenerationOverflow)
+    ));
 
     // Then: the ordinary row remains in flight and all persisted tables survive reopen unchanged.
     assert_eq!(stored_state(&fixture.pool).await?, before);
@@ -128,7 +217,8 @@ async fn add_second_active_sweep(directory: &tempfile::TempDir, scope: &[u8]) ->
 }
 
 #[tokio::test]
-async fn given_two_active_sweeps_when_resumed_then_exact_multiple_active_error_has_no_side_effects() -> TestResult {
+async fn given_two_active_sweeps_when_resumed_then_exact_multiple_active_error_has_no_side_effects()
+-> TestResult {
     // Given: a deliberately inconsistent durable queue; public seeding correctly forbids this state.
     let fixture = resume_fixture(2).await?;
     let initial = stored_state(&fixture.pool).await?;
@@ -140,11 +230,17 @@ async fn given_two_active_sweeps_when_resumed_then_exact_multiple_active_error_h
     let pool = read_pool(&fixture.directory).await?;
     let active: Vec<(String, i64)> = sqlx::query_as("SELECT sweep_id,COUNT(*) FROM work_queue WHERE state IN(0,1) GROUP BY sweep_id ORDER BY sweep_id")
         .fetch_all(&pool).await?;
-    assert_eq!(active, vec![("other-active".to_owned(), 1), ("resume".to_owned(), 2)]);
+    assert_eq!(
+        active,
+        vec![("other-active".to_owned(), 1), ("resume".to_owned(), 2)]
+    );
     let before = stored_state(&pool).await?;
 
     // When: Kills RESUME-FIRST-ACTIVE-WINS; choosing either identity must not release its rows.
-    assert!(matches!(store.resume_sweep().await, Err(StoreError::MultipleActiveSweeps)));
+    assert!(matches!(
+        store.resume_sweep().await,
+        Err(StoreError::MultipleActiveSweeps)
+    ));
 
     // Then: queue generations/deadlines, both sweeps' history, and resource state are unchanged.
     assert_eq!(stored_state(&pool).await?, before);
@@ -156,7 +252,8 @@ async fn given_two_active_sweeps_when_resumed_then_exact_multiple_active_error_h
 }
 
 #[tokio::test]
-async fn given_near_max_inflight_generation_when_resumed_and_claimed_then_max_generation_can_still_commit() -> TestResult {
+async fn given_near_max_inflight_generation_when_resumed_and_claimed_then_max_generation_can_still_commit()
+-> TestResult {
     // Given: one ordinary lease and one at MAX-2, with genuine persisted checkpoints/history.
     let near_max = i64::MAX.checked_sub(2).ok_or("test generation underflow")?;
     let after_resume = i64::MAX.checked_sub(1).ok_or("test generation underflow")?;
@@ -165,7 +262,10 @@ async fn given_near_max_inflight_generation_when_resumed_and_claimed_then_max_ge
     assert_queue(&before, &fixture, 2, near_max, 1, 230, true)?;
 
     // When: resume advances once and a real claim advances again to the inclusive maximum.
-    assert_eq!(fixture.store.resume_sweep().await?, Some(SweepId::new("resume".to_owned())?));
+    assert_eq!(
+        fixture.store.resume_sweep().await?,
+        Some(SweepId::new("resume".to_owned())?)
+    );
     let resumed = stored_state(&fixture.pool).await?;
     assert_queue(&resumed, &fixture, 3, after_resume, 0, 0, true)?;
     let [east, west] = claim_pair(&fixture.store, &fixture.context, 300).await?;
@@ -176,9 +276,17 @@ async fn given_near_max_inflight_generation_when_resumed_and_claimed_then_max_ge
         assert_eq!(lease.context(), fixture.context);
         let generation = lease.generation();
         let row = observation(lease.scope().region().as_str(), "on", "Enabled")?;
-        assert_eq!(fixture.store.commit_page(support::page(lease, vec![row], true, None, 301)).await?, CommitResult {
-            stats: ChangeStats::default(), next_generation: Some(generation), repeated_token: false,
-        });
+        assert_eq!(
+            fixture
+                .store
+                .commit_page(support::page(lease, vec![row], true, None, 301))
+                .await?,
+            CommitResult {
+                stats: ChangeStats::default(),
+                next_generation: Some(generation),
+                repeated_token: false,
+            }
+        );
     }
 
     // Then: exact resources/history remain; both independent scopes finish without over-rejection.
@@ -189,9 +297,17 @@ async fn given_near_max_inflight_generation_when_resumed_and_claimed_then_max_ge
     assert_eq!(completed.tags, before.tags);
     assert_eq!(completed.outbox, before.outbox);
     assert_eq!(completed.metadata, before.metadata);
-    assert_eq!(fixture.store.sweep_summary(&SweepId::new("resume".to_owned())?).await?, SweepSummary {
-        complete_scopes: 2, resources_observed: 2, ..SweepSummary::default()
-    });
+    assert_eq!(
+        fixture
+            .store
+            .sweep_summary(&SweepId::new("resume".to_owned())?)
+            .await?,
+        SweepSummary {
+            complete_scopes: 2,
+            resources_observed: 2,
+            ..SweepSummary::default()
+        }
+    );
     fixture.pool.close().await;
     drop(fixture.store);
     assert_reopened_state(&fixture.directory, &completed).await?;

@@ -1,5 +1,5 @@
-use super::{inventory, path, paths, bind, token};
-use crate::overlay::{OperationOverlay, NameError, Identity, Scope};
+use super::{bind, inventory, path, paths, token};
+use crate::overlay::{Identity, NameError, OperationOverlay, Scope};
 
 pub(super) fn list_profiles() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
@@ -8,12 +8,7 @@ pub(super) fn list_profiles() -> Result<OperationOverlay, NameError> {
         token("NextToken", "NextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "Arn",
-        "ProfileId",
-        "As2Id",
-        "ProfileType",
-    ])?;
+    operation.queryable = paths(&["Arn", "ProfileId", "As2Id", "ProfileType"])?;
     operation.page_size = Some(100);
     Ok(operation)
 }
@@ -84,11 +79,7 @@ pub(super) fn list_workflows() -> Result<OperationOverlay, NameError> {
         token("NextToken", "NextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "WorkflowId",
-        "Description",
-        "Arn",
-    ])?;
+    operation.queryable = paths(&["WorkflowId", "Description", "Arn"])?;
     operation.page_size = Some(100);
     Ok(operation)
 }

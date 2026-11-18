@@ -15,9 +15,9 @@ pub(super) struct GraphAccess {
 impl GraphAccess {
     pub fn new(url: Option<String>, name: Option<String>) -> Self {
         let config = match (url, name) {
-            (None, None) => GraphConfig::Unavailable(
-                "not configured (--graph-url and --graph-name)".to_owned(),
-            ),
+            (None, None) => {
+                GraphConfig::Unavailable("not configured (--graph-url and --graph-name)".to_owned())
+            }
             (Some(url), Some(name)) => GraphConfig::Configured { url, name },
             _ => GraphConfig::Unavailable("configure both --graph-url and --graph-name".to_owned()),
         };
@@ -43,7 +43,9 @@ impl GraphAccess {
     }
 
     pub fn status(&self) -> WorkerEvent {
-        WorkerEvent::GraphStatus { error: self.error.clone() }
+        WorkerEvent::GraphStatus {
+            error: self.error.clone(),
+        }
     }
     pub async fn refresh(&mut self) -> WorkerEvent {
         self.reconnect();
@@ -52,7 +54,6 @@ impl GraphAccess {
         }
         self.status()
     }
-
 
     pub async fn expand(&mut self, node: GraphNode) -> WorkerEvent {
         if self.connection.is_none() {
@@ -66,7 +67,8 @@ impl GraphAccess {
             let neighborhood = connection.neighbors(&node, GRAPH_LIMITS).await?;
             let tags = connection.tag_affiliations(&node, TAG_LIMIT).await?;
             Ok::<_, cmdb_view::ViewError>((neighborhood, tags))
-        }).await;
+        })
+        .await;
         let event = match result {
             Ok(Ok((neighborhood, tags))) => neighborhood_event(&node, neighborhood, tags),
             Ok(Err(error)) => graph_failure(classify_graph_error(error)),
@@ -115,7 +117,10 @@ fn neighborhood_event(
 }
 
 pub(super) fn graph_failure(error: String) -> WorkerEvent {
-    WorkerEvent::Graph { graph: Graph::default(), error: Some(error) }
+    WorkerEvent::Graph {
+        graph: Graph::default(),
+        error: Some(error),
+    }
 }
 
 pub(super) fn database_error(error: String) -> WorkerEvent {
@@ -134,28 +139,46 @@ mod tests {
     #[test]
     fn given_query_failure_when_reconnecting_then_offline_status_survives_until_success() {
         let mut access = GraphAccess::new(
-            Some("redis://127.0.0.1:6379".to_owned()), Some("inventory".to_owned()),
+            Some("redis://127.0.0.1:6379".to_owned()),
+            Some("inventory".to_owned()),
         );
         access.record(&graph_failure("connection refused".to_owned()));
         assert!(access.connection.is_none());
         access.reconnect();
         assert!(access.connection.is_some());
-        assert!(matches!(access.status(), WorkerEvent::GraphStatus { error: Some(error) } if error == "connection refused"));
-        access.record(&WorkerEvent::Graph { graph: Graph::default(), error: None });
-        assert!(matches!(access.status(), WorkerEvent::GraphStatus { error: None }));
+        assert!(
+            matches!(access.status(), WorkerEvent::GraphStatus { error: Some(error) } if error == "connection refused")
+        );
+        access.record(&WorkerEvent::Graph {
+            graph: Graph::default(),
+            error: None,
+        });
+        assert!(matches!(
+            access.status(),
+            WorkerEvent::GraphStatus { error: None }
+        ));
     }
 
     #[tokio::test]
     async fn given_no_selected_node_when_refreshing_then_unchecked_connection_is_not_success() {
         let mut access = GraphAccess::new(
-            Some("redis://127.0.0.1:6379".to_owned()), Some("inventory".to_owned()),
+            Some("redis://127.0.0.1:6379".to_owned()),
+            Some("inventory".to_owned()),
         );
-        assert!(matches!(access.refresh().await, WorkerEvent::GraphStatus { error: Some(error) } if error == "connection not yet checked"));
+        assert!(
+            matches!(access.refresh().await, WorkerEvent::GraphStatus { error: Some(error) } if error == "connection not yet checked")
+        );
     }
 
     #[test]
     fn given_graph_timeout_when_classified_then_timeout_is_distinct_from_invalid_data() {
-        assert_eq!(classify_graph_error(cmdb_view::ViewError::GraphTimeout), "connection/query timed out");
-        assert_eq!(classify_graph_error(cmdb_view::ViewError::GraphResponse), "invalid graph response");
+        assert_eq!(
+            classify_graph_error(cmdb_view::ViewError::GraphTimeout),
+            "connection/query timed out"
+        );
+        assert_eq!(
+            classify_graph_error(cmdb_view::ViewError::GraphResponse),
+            "invalid graph response"
+        );
     }
 }

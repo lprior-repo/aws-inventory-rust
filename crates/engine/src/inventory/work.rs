@@ -6,7 +6,7 @@ use sqlx::{Row, Sqlite, Transaction};
 use std::sync::Arc;
 use transitions::*;
 pub(super) use transitions::{
-    decode_resource, encode_resource, resource_bytes, resume_sweep, ownership_scope_bytes,
+    decode_resource, encode_resource, ownership_scope_bytes, resource_bytes, resume_sweep,
 };
 
 pub(super) use super::validation::{validate_active_sweep, validate_page, validate_work};
@@ -16,7 +16,6 @@ const MAX_SCOPE_BYTES: usize = 16_384;
 pub(super) fn persisted_scope(bytes: &[u8]) -> Result<ScopeKey, StoreError> {
     decode_scope(bytes)
 }
-
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct SweepId(Arc<str>);
@@ -80,19 +79,33 @@ impl WorkSpec {
     }
 
     pub fn with_context(mut self, context: Vec<u8>) -> Result<Self, StoreError> {
-        if context.len() > 1_048_576 { return Err(StoreError::Invalid("work discovery context exceeds bounds")); }
+        if context.len() > 1_048_576 {
+            return Err(StoreError::Invalid("work discovery context exceeds bounds"));
+        }
         self.context = context;
         Ok(self)
     }
 
     pub(super) fn validate_context(&self) -> Result<(), StoreError> {
-        if self.context.len() > 1_048_576 { return Err(StoreError::Invalid("work discovery context exceeds bounds")); }
-        let digest = if self.context.is_empty() { None } else {
+        if self.context.len() > 1_048_576 {
+            return Err(StoreError::Invalid("work discovery context exceeds bounds"));
+        }
+        let digest = if self.context.is_empty() {
+            None
+        } else {
             let context = inventory_core::inventory::DiscoveryContext::decode(&self.context)
                 .map_err(|_| StoreError::Invalid("invalid work discovery context"))?;
-            Some(context.discriminator().map_err(|_| StoreError::Invalid("invalid work discovery context digest"))?)
+            Some(
+                context
+                    .discriminator()
+                    .map_err(|_| StoreError::Invalid("invalid work discovery context digest"))?,
+            )
         };
-        if self.scope.context() != digest { return Err(StoreError::Invalid("work discovery context digest mismatch")); }
+        if self.scope.context() != digest {
+            return Err(StoreError::Invalid(
+                "work discovery context digest mismatch",
+            ));
+        }
         Ok(())
     }
 
@@ -273,9 +286,13 @@ pub(super) async fn commit_page(
         .resources_deleted
         .checked_add(completed.resources_deleted)
         .ok_or(StoreError::Invalid("deletion count overflow"))?;
-    stats.resources_changed = stats.resources_changed.checked_add(completed.resources_changed)
+    stats.resources_changed = stats
+        .resources_changed
+        .checked_add(completed.resources_changed)
         .ok_or(StoreError::Invalid("resource change count overflow"))?;
-    stats.edges_changed = stats.edges_changed.checked_add(completed.edges_changed)
+    stats.edges_changed = stats
+        .edges_changed
+        .checked_add(completed.edges_changed)
         .ok_or(StoreError::Invalid("edge count overflow"))?;
     tx.commit().await?;
     Ok(CommitResult {
@@ -301,7 +318,8 @@ pub(super) async fn finish_scope(
         .execute(&mut *tx).await?;
     sqlx::query("UPDATE work_queue SET state=2,lease_until=0 WHERE sweep_id=?1 AND scope_key=?2 AND generation=?3")
         .bind(lease.sweep.as_str()).bind(encode_scope(&lease.scope)?).bind(lease.generation).execute(&mut *tx).await?;
-    let stats = super::completion::drain_sweep(store, &mut tx, lease.sweep(), observed_at_ms).await?;
+    let stats =
+        super::completion::drain_sweep(store, &mut tx, lease.sweep(), observed_at_ms).await?;
     tx.commit().await?;
     Ok(stats)
 }

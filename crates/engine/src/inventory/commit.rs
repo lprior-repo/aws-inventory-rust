@@ -1,13 +1,11 @@
 use super::reference_candidates;
-#[path = "commit/references_tail.rs"]
-mod references_tail;
 #[path = "commit/edges.rs"]
 mod edges;
+#[path = "commit/references_tail.rs"]
+mod references_tail;
 use super::work::{ChangeStats, WorkLease};
 use super::{BinaryStore, PageCommit, StoreError};
-use inventory_core::inventory::{
-    Edge, EdgeSource, Observation, ResourceKey, UnresolvedReference,
-};
+use inventory_core::inventory::{Edge, EdgeSource, Observation, ResourceKey, UnresolvedReference};
 use inventory_core::record::FieldId;
 use references_tail::*;
 pub(super) use references_tail::{
@@ -23,20 +21,52 @@ pub(super) async fn persist_page(
     let direct_references = edges::references(&store.registry, page)?;
     let authority = super::relation_permissions::page_authority(&store.registry, &page.lease)?;
     let mut stats = ChangeStats::default();
-    let mut tag_refreshes = page.tags.iter().map(|tags| tags.resource())
+    let mut tag_refreshes = page
+        .tags
+        .iter()
+        .map(|tags| tags.resource())
         .collect::<std::collections::BTreeSet<_>>();
     for observation in &page.observations {
-        let source_authority = authority.as_ref().map(|authority| authority.source(observation)).transpose()?;
+        let source_authority = authority
+            .as_ref()
+            .map(|authority| authority.source(observation))
+            .transpose()?;
         if let Some(authority) = &source_authority {
-            for (reference, target) in direct_references.iter().filter(|(reference, _)| &reference.from == observation.key()) {
-                super::relation_permissions::mark_direct_reference(authority, tx, reference, target).await?;
+            for (reference, target) in direct_references
+                .iter()
+                .filter(|(reference, _)| &reference.from == observation.key())
+            {
+                super::relation_permissions::mark_direct_reference(
+                    authority, tx, reference, target,
+                )
+                .await?;
             }
-            for reference in page.unresolved.iter().filter(|reference| &reference.from == observation.key()) {
+            for reference in page
+                .unresolved
+                .iter()
+                .filter(|reference| &reference.from == observation.key())
+            {
                 super::relation_permissions::mark_reference(authority, tx, reference).await?;
             }
-            super::legacy::observe_source(tx, observation.key(), authority.source_facet(), page.lease.sweep()).await?;
+            super::legacy::observe_source(
+                tx,
+                observation.key(),
+                authority.source_facet(),
+                page.lease.sweep(),
+            )
+            .await?;
         }
-        match persist_observation(store, tx, page, observation, &direct_references, source_authority.as_ref(), &mut stats).await? {
+        match persist_observation(
+            store,
+            tx,
+            page,
+            observation,
+            &direct_references,
+            source_authority.as_ref(),
+            &mut stats,
+        )
+        .await?
+        {
             Some(true) => {
                 tag_refreshes.remove(observation.key());
                 stats.resources_changed = stats
@@ -55,7 +85,13 @@ pub(super) async fn persist_page(
         }
     }
     for tags in &page.tags {
-        persist_tags(tx, tags, tag_refreshes.contains(tags.resource()), page.observed_at_ms).await?;
+        persist_tags(
+            tx,
+            tags,
+            tag_refreshes.contains(tags.resource()),
+            page.observed_at_ms,
+        )
+        .await?;
     }
     Ok(stats)
 }
@@ -81,17 +117,38 @@ async fn persist_observation(
     .bind(key.id.as_str())
     .fetch_optional(&mut **tx)
     .await?;
-    let legacy = old.as_ref().map(|row| row.try_get::<bool, _>("legacy")).transpose()?.unwrap_or(false);
-    let old_name = old.as_ref().map(|row| row.try_get::<Option<String>, _>("name")).transpose()?.flatten();
-    let old_changed_at = old.as_ref().map(|row| row.try_get::<i64, _>("last_changed")).transpose()?.unwrap_or(now);
+    let legacy = old
+        .as_ref()
+        .map(|row| row.try_get::<bool, _>("legacy"))
+        .transpose()?
+        .unwrap_or(false);
+    let old_name = old
+        .as_ref()
+        .map(|row| row.try_get::<Option<String>, _>("name"))
+        .transpose()?
+        .flatten();
+    let old_changed_at = old
+        .as_ref()
+        .map(|row| row.try_get::<i64, _>("last_changed"))
+        .transpose()?
+        .unwrap_or(now);
     let old_hash: Option<Vec<u8>> = old.map(|row| row.try_get("content_hash")).transpose()?;
     if old_hash.is_none() {
         upsert_resource(tx, observation, now, false).await?;
     }
-    let aggregate = super::facets::apply(&store.registry, tx, page, observation, direct_references, authority).await?;
+    let aggregate = super::facets::apply(
+        &store.registry,
+        tx,
+        page,
+        observation,
+        direct_references,
+        authority,
+    )
+    .await?;
     let observation = &aggregate.observation;
-    let changed = !legacy && (old_hash.as_deref() != Some(observation.content_hash().as_bytes())
-        || old_name.as_deref() != observation.name());
+    let changed = !legacy
+        && (old_hash.as_deref() != Some(observation.content_hash().as_bytes())
+            || old_name.as_deref() != observation.name());
     if changed {
         upsert_resource(tx, observation, now, true).await?;
         super::typed::upsert_kind(store, tx, observation, now).await?;
@@ -109,7 +166,9 @@ async fn persist_observation(
     }
     if !legacy && (changed || aggregate.relations_changed) {
         clear_source_relations(tx, key).await?;
-        stats.edges_changed = stats.edges_changed.checked_add(restore_relations(store, tx, &aggregate).await?)
+        stats.edges_changed = stats
+            .edges_changed
+            .checked_add(restore_relations(store, tx, &aggregate).await?)
             .ok_or(StoreError::Invalid("edge count overflow"))?;
         if !changed {
             enqueue(tx, key, false).await?;
@@ -124,43 +183,69 @@ async fn persist_observation(
 }
 
 async fn refresh_incoming(
-    store: &BinaryStore, tx: &mut Transaction<'_, Sqlite>, observation: &Observation,
+    store: &BinaryStore,
+    tx: &mut Transaction<'_, Sqlite>,
+    observation: &Observation,
     stats: &mut ChangeStats,
 ) -> Result<(), StoreError> {
-    stats.edges_changed = stats.edges_changed.checked_add(
-        super::references::refresh(store, tx, observation.key(), observation).await?,
-    ).ok_or(StoreError::Invalid("edge count overflow"))?;
+    stats.edges_changed = stats
+        .edges_changed
+        .checked_add(super::references::refresh(store, tx, observation.key(), observation).await?)
+        .ok_or(StoreError::Invalid("edge count overflow"))?;
     Ok(())
 }
 
 pub(super) async fn retire_source(
-    store: &BinaryStore, tx: &mut Transaction<'_, Sqlite>, key: &ResourceKey,
-    source: &[u8], at: i64,
+    store: &BinaryStore,
+    tx: &mut Transaction<'_, Sqlite>,
+    key: &ResourceKey,
+    source: &[u8],
+    at: i64,
 ) -> Result<ChangeStats, StoreError> {
-    let Some(aggregate) = super::facets::retire_source(&store.registry, tx, key, source).await? else { return Ok(ChangeStats::default()); };
-    if super::legacy::contains(tx, key).await? { return Ok(ChangeStats::default()); }
+    let Some(aggregate) = super::facets::retire_source(&store.registry, tx, key, source).await?
+    else {
+        return Ok(ChangeStats::default());
+    };
+    if super::legacy::contains(tx, key).await? {
+        return Ok(ChangeStats::default());
+    }
     publish_aggregate(store, tx, &aggregate, at).await
 }
 
 pub(super) async fn publish_aggregate(
-    store: &BinaryStore, tx: &mut Transaction<'_, Sqlite>, aggregate: &super::facets::Aggregate, at: i64,
+    store: &BinaryStore,
+    tx: &mut Transaction<'_, Sqlite>,
+    aggregate: &super::facets::Aggregate,
+    at: i64,
 ) -> Result<ChangeStats, StoreError> {
     let key = aggregate.observation.key();
     let observation = &aggregate.observation;
     let old = sqlx::query("SELECT content_hash,name,last_changed FROM resources WHERE account=?1 AND region=?2 AND kind=?3 AND id=?4")
         .bind(key.account.as_str()).bind(key.region.as_str()).bind(key.kind.as_str()).bind(key.id.as_str())
         .fetch_one(&mut **tx).await?;
-    let changed = old.try_get::<Vec<u8>, _>("content_hash")?.as_slice() != observation.content_hash().as_bytes()
+    let changed = old.try_get::<Vec<u8>, _>("content_hash")?.as_slice()
+        != observation.content_hash().as_bytes()
         || old.try_get::<Option<String>, _>("name")?.as_deref() != observation.name();
-    let changed_at = if changed { at } else { old.try_get("last_changed")? };
-    if changed { upsert_resource(tx, observation, at, true).await?; }
+    let changed_at = if changed {
+        at
+    } else {
+        old.try_get("last_changed")?
+    };
+    if changed {
+        upsert_resource(tx, observation, at, true).await?;
+    }
     super::typed::upsert_kind(store, tx, observation, changed_at).await?;
     let incoming_edges = super::references::refresh(store, tx, key, observation).await?;
     clear_source_relations(tx, key).await?;
-    let edges_changed = incoming_edges.checked_add(restore_relations(store, tx, aggregate).await?)
+    let edges_changed = incoming_edges
+        .checked_add(restore_relations(store, tx, aggregate).await?)
         .ok_or(StoreError::Invalid("edge count overflow"))?;
     enqueue(tx, key, false).await?;
-    Ok(ChangeStats { resources_changed: u64::from(changed), edges_changed, ..ChangeStats::default() })
+    Ok(ChangeStats {
+        resources_changed: u64::from(changed),
+        edges_changed,
+        ..ChangeStats::default()
+    })
 }
 
 async fn restore_relations(
@@ -170,11 +255,19 @@ async fn restore_relations(
 ) -> Result<u64, StoreError> {
     let mut inserted = 0_u64;
     for (reference, pin, provenance) in &aggregate.references {
-        super::relation_permissions::activate_reference(&store.registry, tx, reference, pin.as_ref(), provenance).await?;
+        super::relation_permissions::activate_reference(
+            &store.registry,
+            tx,
+            reference,
+            pin.as_ref(),
+            provenance,
+        )
+        .await?;
     }
     for (reference, _, _) in &aggregate.references {
         persist_reference(tx, reference).await?;
-        inserted = inserted.checked_add(resolve_reference(store, tx, reference).await?)
+        inserted = inserted
+            .checked_add(resolve_reference(store, tx, reference).await?)
             .ok_or(StoreError::Invalid("edge count overflow"))?;
     }
     Ok(inserted)
@@ -267,7 +360,10 @@ pub(super) fn quote(name: &str) -> String {
     format!("\"{}\"", name.replace('"', "\"\""))
 }
 
-pub(super) async fn persist_edge(tx: &mut Transaction<'_, Sqlite>, edge: &Edge) -> Result<bool, StoreError> {
+pub(super) async fn persist_edge(
+    tx: &mut Transaction<'_, Sqlite>,
+    edge: &Edge,
+) -> Result<bool, StoreError> {
     let result = sqlx::query("INSERT OR IGNORE INTO edges(from_account,from_region,from_kind,from_id,to_account,to_region,to_kind,to_id,relation,source) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10)")
         .bind(edge.from.account.as_str()).bind(edge.from.region.as_str()).bind(edge.from.kind.as_str()).bind(edge.from.id.as_str())
         .bind(edge.to.account.as_str()).bind(edge.to.region.as_str()).bind(edge.to.kind.as_str()).bind(edge.to.id.as_str())

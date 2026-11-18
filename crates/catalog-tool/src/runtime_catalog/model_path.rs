@@ -1,6 +1,6 @@
 mod emission;
-pub(super) use emission::active_kind;
 use super::RuntimeCatalogCompileError;
+pub(super) use emission::active_kind;
 use inventory_core::{
     catalog::{Operation, Service, Shape, Target},
     record::FieldId,
@@ -72,7 +72,9 @@ fn validate_display_paths(
 ) -> Result<(), RuntimeCatalogCompileError> {
     context.kinds.entries().iter().try_for_each(|entry| {
         match (&entry.target, entry.display_name_path.as_deref()) {
-            (crate::kind_map::KindTarget::Mapped { kind, .. }, Some(path)) if active_kind(context, kind) => {
+            (crate::kind_map::KindTarget::Mapped { kind, .. }, Some(path))
+                if active_kind(context, kind) =>
+            {
                 validate_kind_path(context, kind, path)
             }
             _ => Ok(()),
@@ -84,28 +86,72 @@ fn validate_relations(
     context: &ValidationContext<'_, '_>,
 ) -> Result<(), RuntimeCatalogCompileError> {
     use crate::kind_map::ReviewedRelationTarget;
-    context.kinds.relations().iter()
-        .filter(|relation| active_kind(context, &relation.source_kind)
-            && relation.target_kinds.iter().all(|kind| active_kind(context, kind)))
+    context
+        .kinds
+        .relations()
+        .iter()
+        .filter(|relation| {
+            active_kind(context, &relation.source_kind)
+                && relation
+                    .target_kinds
+                    .iter()
+                    .all(|kind| active_kind(context, kind))
+        })
         .try_for_each(|relation| {
-            validate_relation_source(context, &relation.source_kind, &relation.source, emission::Terminal::TextOrList)?;
+            validate_relation_source(
+                context,
+                &relation.source_kind,
+                &relation.source,
+                emission::Terminal::TextOrList,
+            )?;
             if let Some(guard) = &relation.guard {
-                validate_relation_source(context, &relation.source_kind, &guard.source, emission::Terminal::Text)?;
+                validate_relation_source(
+                    context,
+                    &relation.source_kind,
+                    &guard.source,
+                    emission::Terminal::Text,
+                )?;
             }
-            relation.target_kinds.iter().try_for_each(|kind| match &relation.target {
-                ReviewedRelationTarget::SelectedOutput(path) => validate_relation_value(context, kind, path, false),
-                ReviewedRelationTarget::BoundContext(path) => validate_relation_value(context, kind, path, true),
-                ReviewedRelationTarget::CanonicalId => Ok(()),
-            })
+            relation
+                .target_kinds
+                .iter()
+                .try_for_each(|kind| match &relation.target {
+                    ReviewedRelationTarget::SelectedOutput(path) => {
+                        validate_relation_value(context, kind, path, false)
+                    }
+                    ReviewedRelationTarget::BoundContext(path) => {
+                        validate_relation_value(context, kind, path, true)
+                    }
+                    ReviewedRelationTarget::CanonicalId => Ok(()),
+                })
         })?;
-    for relation in context.kinds.compound_relations().iter().filter(|relation| active_kind(context, &relation.source_kind)
-        && relation.target_kinds.iter().all(|kind| active_kind(context, kind))) {
+    for relation in context
+        .kinds
+        .compound_relations()
+        .iter()
+        .filter(|relation| {
+            active_kind(context, &relation.source_kind)
+                && relation
+                    .target_kinds
+                    .iter()
+                    .all(|kind| active_kind(context, kind))
+        })
+    {
         for component in &relation.components {
-            validate_relation_source(context, &relation.source_kind, &component.source, emission::Terminal::Text)?;
+            validate_relation_source(
+                context,
+                &relation.source_kind,
+                &component.source,
+                emission::Terminal::Text,
+            )?;
             for kind in relation.target_kinds.iter() {
                 match &component.target {
-                    ReviewedRelationTarget::SelectedOutput(path) => validate_relation_value(context, kind, path, false)?,
-                    ReviewedRelationTarget::BoundContext(path) => validate_relation_value(context, kind, path, true)?,
+                    ReviewedRelationTarget::SelectedOutput(path) => {
+                        validate_relation_value(context, kind, path, false)?
+                    }
+                    ReviewedRelationTarget::BoundContext(path) => {
+                        validate_relation_value(context, kind, path, true)?
+                    }
                     ReviewedRelationTarget::CanonicalId => {}
                 }
             }
@@ -173,27 +219,49 @@ fn validate_kind_path(
     kind: &str,
     path: &str,
 ) -> Result<(), RuntimeCatalogCompileError> {
-    emission::validate_kind_origin_path(context, kind, path, emission::Origin::SelectedOutput, emission::Terminal::Text)
+    emission::validate_kind_origin_path(
+        context,
+        kind,
+        path,
+        emission::Origin::SelectedOutput,
+        emission::Terminal::Text,
+    )
 }
 
-fn validate_relation_source(context: &ValidationContext<'_, '_>, kind: &str,
-    source: &crate::kind_map::ReviewedRelationSource, terminal: emission::Terminal,
+fn validate_relation_source(
+    context: &ValidationContext<'_, '_>,
+    kind: &str,
+    source: &crate::kind_map::ReviewedRelationSource,
+    terminal: emission::Terminal,
 ) -> Result<(), RuntimeCatalogCompileError> {
     use crate::kind_map::{ReviewedRelationSource, ReviewedValuePath};
     let (path, origin) = match source {
         ReviewedRelationSource::SelectedOutput(path) => (path, emission::Origin::SelectedOutput),
         ReviewedRelationSource::Request(path) => (path, emission::Origin::Request),
     };
-    let path = match path { ReviewedValuePath::Fields(path) => path.as_str(), ReviewedValuePath::RootText => "" };
+    let path = match path {
+        ReviewedValuePath::Fields(path) => path.as_str(),
+        ReviewedValuePath::RootText => "",
+    };
     emission::validate_kind_origin_path(context, kind, path, origin, terminal)
 }
 
-fn validate_relation_value(context: &ValidationContext<'_, '_>, kind: &str,
-    path: &crate::kind_map::ReviewedValuePath, request: bool,
+fn validate_relation_value(
+    context: &ValidationContext<'_, '_>,
+    kind: &str,
+    path: &crate::kind_map::ReviewedValuePath,
+    request: bool,
 ) -> Result<(), RuntimeCatalogCompileError> {
     use crate::kind_map::ReviewedValuePath;
-    let path = match path { ReviewedValuePath::Fields(path) => path.as_str(), ReviewedValuePath::RootText => "" };
-    let origin = if request { emission::Origin::Request } else { emission::Origin::SelectedOutput };
+    let path = match path {
+        ReviewedValuePath::Fields(path) => path.as_str(),
+        ReviewedValuePath::RootText => "",
+    };
+    let origin = if request {
+        emission::Origin::Request
+    } else {
+        emission::Origin::SelectedOutput
+    };
     emission::validate_kind_origin_path(context, kind, path, origin, emission::Terminal::Text)
 }
 
@@ -245,28 +313,48 @@ fn operation_for_checked<'p, 'a>(
         .ok_or(RuntimeCatalogCompileError::Capability)
 }
 
-pub(super) fn active_operation(context: &ValidationContext<'_, '_>, service: &str, operation: &str) -> bool {
+pub(super) fn active_operation(
+    context: &ValidationContext<'_, '_>,
+    service: &str,
+    operation: &str,
+) -> bool {
     operation_for_checked(context, service, operation).is_ok_and(|call| {
         let plan = call.plan();
-        plan.emission == crate::overlay::Emission::EmitMetadata && plan.tag_endpoint.is_none() && !plan.endpoint_discovery
+        plan.emission == crate::overlay::Emission::EmitMetadata
+            && plan.tag_endpoint.is_none()
+            && !plan.endpoint_discovery
     })
 }
 
-pub(super) fn optional_resolve(service: Service<'_>, target: Target, path: &str) -> Result<Option<Target>, RuntimeCatalogCompileError> {
+pub(super) fn optional_resolve(
+    service: Service<'_>,
+    target: Target,
+    path: &str,
+) -> Result<Option<Target>, RuntimeCatalogCompileError> {
     path.split('.').try_fold(Some(target), |target, segment| {
-        let Some(target) = target else { return Ok(None) };
+        let Some(target) = target else {
+            return Ok(None);
+        };
         match kind(service, target)? {
-            "string" | "enum" | "intEnum" | "boolean" | "byte" | "short" | "integer"
-            | "long" | "float" | "double" | "bigInteger" | "bigDecimal" | "timestamp"
-            | "blob" => return Ok(None),
+            "string" | "enum" | "intEnum" | "boolean" | "byte" | "short" | "integer" | "long"
+            | "float" | "double" | "bigInteger" | "bigDecimal" | "timestamp" | "blob" => {
+                return Ok(None);
+            }
             "structure" | "union" => {}
             _ => return Err(RuntimeCatalogCompileError::Capability),
         }
         let shape = shape_for(service, target)?;
-        shape.members()?.try_fold(None, |found, candidate| {
-            let candidate = candidate?;
-            if candidate.name()? == segment { Ok(Some(candidate.target)) } else { Ok(found) }
-        }).map_err(RuntimeCatalogCompileError::Catalog)
+        shape
+            .members()?
+            .try_fold(None, |found, candidate| {
+                let candidate = candidate?;
+                if candidate.name()? == segment {
+                    Ok(Some(candidate.target))
+                } else {
+                    Ok(found)
+                }
+            })
+            .map_err(RuntimeCatalogCompileError::Catalog)
     })
 }
 pub(super) fn list_element(

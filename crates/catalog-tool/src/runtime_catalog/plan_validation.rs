@@ -12,7 +12,10 @@ pub(super) fn validate(
     let output = operation.output()?;
     let input = operation.input()?;
     let item = item_target(service, output, overlay.items.as_ref())?;
-    if overlay.emission == crate::overlay::Emission::EmitMetadata && overlay.tag_endpoint.is_none() && !overlay.endpoint_discovery {
+    if overlay.emission == crate::overlay::Emission::EmitMetadata
+        && overlay.tag_endpoint.is_none()
+        && !overlay.endpoint_discovery
+    {
         validate_identity(service, operation, item, overlay.identity.as_ref())?;
     }
     validate_bindings(service, input, overlay)?;
@@ -49,7 +52,9 @@ fn validate_identity(
             .try_for_each(|path| scalar_target(service, item, path.as_str())),
         Some(Identity::Template(template)) => super::plans::identity::fields(template)
             .try_for_each(|path| scalar_target(service, item, path)),
-        Some(value @ (Identity::Choice(_) | Identity::CorrelatedKey(_) | Identity::MapArn { .. })) => super::selection::validate_identity(service, operation, item, value),
+        Some(
+            value @ (Identity::Choice(_) | Identity::CorrelatedKey(_) | Identity::MapArn { .. }),
+        ) => super::selection::validate_identity(service, operation, item, value),
         _ => Err(RuntimeCatalogCompileError::Capability),
     }
 }
@@ -92,34 +97,65 @@ fn validate_bindings(
     input: Target,
     overlay: &OperationOverlay,
 ) -> Result<(), RuntimeCatalogCompileError> {
-    overlay.bind.iter().chain(overlay.branches.iter().flat_map(|branch| branch.bind.iter())).try_for_each(|(path, binding)| {
-        let target = model_path::resolve(service, input, &path.to_string())?.1;
-        match binding {
-            Binding::Region | Binding::Account => model_path::string_target(service, target),
-            Binding::RegionList => {
-                model_path::string_target(service, model_path::list_element(service, target)?)
-            }
-            Binding::FromAny(alternatives) => {
-                if alternatives.is_empty() || alternatives.len() > 8
-                    || alternatives.iter().enumerate().any(|(index, alternative)| alternatives.iter().take(index)
-                        .any(|prior| prior.operation == alternative.operation)) {
-                    return Err(RuntimeCatalogCompileError::Capability);
+    overlay
+        .bind
+        .iter()
+        .chain(
+            overlay
+                .branches
+                .iter()
+                .flat_map(|branch| branch.bind.iter()),
+        )
+        .try_for_each(|(path, binding)| {
+            let target = model_path::resolve(service, input, &path.to_string())?.1;
+            match binding {
+                Binding::Region | Binding::Account => model_path::string_target(service, target),
+                Binding::RegionList => {
+                    model_path::string_target(service, model_path::list_element(service, target)?)
                 }
-                Ok(())
-            }
-            Binding::From { .. } | Binding::Context { .. } | Binding::FromArn { .. } | Binding::FromUrl { .. } | Binding::FromService { .. }
-                | Binding::FromBranch { .. } | Binding::ContextFromBranch { .. } => Ok(()),
-            Binding::Transformed { binding, transform: crate::overlay::BindingTransform::StripPrefix(prefix) } => {
-                if prefix.is_empty() || prefix.len() > 256 || prefix.chars().any(char::is_control)
-                    || !matches!(binding.as_ref(), Binding::From { .. } | Binding::Context { .. } | Binding::FromArn { .. } | Binding::FromService { .. }) {
-                    return Err(RuntimeCatalogCompileError::Capability);
+                Binding::FromAny(alternatives) => {
+                    if alternatives.is_empty()
+                        || alternatives.len() > 8
+                        || alternatives.iter().enumerate().any(|(index, alternative)| {
+                            alternatives
+                                .iter()
+                                .take(index)
+                                .any(|prior| prior.operation == alternative.operation)
+                        })
+                    {
+                        return Err(RuntimeCatalogCompileError::Capability);
+                    }
+                    Ok(())
                 }
-                model_path::string_target(service, target)
+                Binding::From { .. }
+                | Binding::Context { .. }
+                | Binding::FromArn { .. }
+                | Binding::FromUrl { .. }
+                | Binding::FromService { .. }
+                | Binding::FromBranch { .. }
+                | Binding::ContextFromBranch { .. } => Ok(()),
+                Binding::Transformed {
+                    binding,
+                    transform: crate::overlay::BindingTransform::StripPrefix(prefix),
+                } => {
+                    if prefix.is_empty()
+                        || prefix.len() > 256
+                        || prefix.chars().any(char::is_control)
+                        || !matches!(
+                            binding.as_ref(),
+                            Binding::From { .. }
+                                | Binding::Context { .. }
+                                | Binding::FromArn { .. }
+                                | Binding::FromService { .. }
+                        )
+                    {
+                        return Err(RuntimeCatalogCompileError::Capability);
+                    }
+                    model_path::string_target(service, target)
+                }
             }
-        }
-    })
+        })
 }
-
 
 fn validate_page(
     service: Service<'_>,
@@ -134,7 +170,11 @@ fn validate_page(
     };
     match overlay.paginator.as_ref() {
         Some(Paginator::Token(pair)) => token(pair),
-        Some(Paginator::LastListItem { input: request, output: response, truncated }) => {
+        Some(Paginator::LastListItem {
+            input: request,
+            output: response,
+            truncated,
+        }) => {
             let request = model_path::resolve(service, input, request.as_str())?.1;
             let response = model_path::resolve(service, output, response.as_str())?.1;
             model_path::string_target(service, request)?;

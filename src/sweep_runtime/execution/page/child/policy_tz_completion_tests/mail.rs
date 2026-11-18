@@ -1,11 +1,17 @@
 use super::*;
 
 #[tokio::test]
-async fn given_two_organizations_when_all_safe_mail_metadata_fans_out_then_native_requests_and_durable_composite_owners_remain_correlated() -> TestResult {
+async fn given_two_organizations_when_all_safe_mail_metadata_fans_out_then_native_requests_and_durable_composite_owners_remain_correlated()
+-> TestResult {
     let catalog = RuntimeCatalog::from_bytes(catalog::bytes()?)?;
     let scenario = Scenario::new(&catalog, "tz-mail-completion").await?;
-    scenario.seed(&catalog, "workmail", &["ListOrganizations"]).await?;
-    let organizations = ["m-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "m-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"];
+    scenario
+        .seed(&catalog, "workmail", &["ListOrganizations"])
+        .await?;
+    let organizations = [
+        "m-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "m-bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    ];
     let (scenario, seen) = scenario.drain(&catalog, "workmail", |plan, request, wire, resumed| {
         let operation = plan.operation_name();
         let native: Json = serde_json::from_slice(wire.body())?;
@@ -66,34 +72,116 @@ async fn given_two_organizations_when_all_safe_mail_metadata_fans_out_then_nativ
         Ok(result)
     }).await?;
     assert_eq!(seen.len(), 16);
-    for (kind, prefix) in [("WorkMailGroup", "group"), ("WorkMailUser", "user"), ("WorkMailResource", "resource"), ("WorkMailImpersonationRole", "role"), ("WorkMailMailDomain", "domain"), ("WorkMailAvailabilityConfiguration", "availability"), ("WorkMailPersonalAccessToken", "token-id")] {
+    for (kind, prefix) in [
+        ("WorkMailGroup", "group"),
+        ("WorkMailUser", "user"),
+        ("WorkMailResource", "resource"),
+        ("WorkMailImpersonationRole", "role"),
+        ("WorkMailMailDomain", "domain"),
+        ("WorkMailAvailabilityConfiguration", "availability"),
+        ("WorkMailPersonalAccessToken", "token-id"),
+    ] {
         let mut expected = Vec::new();
-        for org in organizations { for p in ["1", "2"] {
-            let local = if matches!(prefix, "domain" | "availability") { format!("{prefix}-{p}.example.test") } else { format!("{prefix}-{p}") };
-            expected.push(correlated(&[org, &local]));
-        }}
-        scenario.assert_ids(&format!("AWS::ApiOnly::{kind}"), expected).await?;
-        let parents = organizations.into_iter().flat_map(|org| ["1","2"].map(move |p| {
-            let local = if matches!(prefix,"domain"|"availability") { format!("{prefix}-{p}.example.test") } else { format!("{prefix}-{p}") };
-            (correlated(&[org,&local]),"AWS::ApiOnly::WorkMailOrganization".to_owned(),org.to_owned())
-        })).collect();
-        scenario.assert_edges(&format!("AWS::ApiOnly::{kind}"),"IN_ORGANIZATION",parents).await?;
+        for org in organizations {
+            for p in ["1", "2"] {
+                let local = if matches!(prefix, "domain" | "availability") {
+                    format!("{prefix}-{p}.example.test")
+                } else {
+                    format!("{prefix}-{p}")
+                };
+                expected.push(correlated(&[org, &local]));
+            }
+        }
+        scenario
+            .assert_ids(&format!("AWS::ApiOnly::{kind}"), expected)
+            .await?;
+        let parents = organizations
+            .into_iter()
+            .flat_map(|org| {
+                ["1", "2"].map(move |p| {
+                    let local = if matches!(prefix, "domain" | "availability") {
+                        format!("{prefix}-{p}.example.test")
+                    } else {
+                        format!("{prefix}-{p}")
+                    };
+                    (
+                        correlated(&[org, &local]),
+                        "AWS::ApiOnly::WorkMailOrganization".to_owned(),
+                        org.to_owned(),
+                    )
+                })
+            })
+            .collect();
+        scenario
+            .assert_edges(&format!("AWS::ApiOnly::{kind}"), "IN_ORGANIZATION", parents)
+            .await?;
     }
-    for (kind, id) in [("WorkMailAccessControlRule", "safe-rule"), ("WorkMailMobileDeviceAccessRule", "device-rule")] {
-        let expected = organizations.iter().map(|org| correlated(&[org, id])).collect();
-        scenario.assert_ids(&format!("AWS::ApiOnly::{kind}"), expected).await?;
-        scenario.assert_edges(&format!("AWS::ApiOnly::{kind}"),"IN_ORGANIZATION",
-            organizations.iter().map(|org| (correlated(&[org,id]),"AWS::ApiOnly::WorkMailOrganization".to_owned(),(*org).to_owned())).collect()).await?;
+    for (kind, id) in [
+        ("WorkMailAccessControlRule", "safe-rule"),
+        ("WorkMailMobileDeviceAccessRule", "device-rule"),
+    ] {
+        let expected = organizations
+            .iter()
+            .map(|org| correlated(&[org, id]))
+            .collect();
+        scenario
+            .assert_ids(&format!("AWS::ApiOnly::{kind}"), expected)
+            .await?;
+        scenario
+            .assert_edges(
+                &format!("AWS::ApiOnly::{kind}"),
+                "IN_ORGANIZATION",
+                organizations
+                    .iter()
+                    .map(|org| {
+                        (
+                            correlated(&[org, id]),
+                            "AWS::ApiOnly::WorkMailOrganization".to_owned(),
+                            (*org).to_owned(),
+                        )
+                    })
+                    .collect(),
+            )
+            .await?;
     }
-    let overrides = organizations.iter().flat_map(|org| ["device-1", "device-2"].map(|device| correlated(&[org, "shared-user", device]))).collect();
-    scenario.assert_ids("AWS::ApiOnly::WorkMailMobileDeviceAccessOverride", overrides).await?;
-    scenario.assert_edges("AWS::ApiOnly::WorkMailMobileDeviceAccessOverride","IN_ORGANIZATION",
-        organizations.iter().flat_map(|org| ["device-1","device-2"].map(move |device|
-            (correlated(&[org,"shared-user",device]),"AWS::ApiOnly::WorkMailOrganization".to_owned(),(*org).to_owned()))).collect()).await?;
+    let overrides = organizations
+        .iter()
+        .flat_map(|org| {
+            ["device-1", "device-2"].map(|device| correlated(&[org, "shared-user", device]))
+        })
+        .collect();
+    scenario
+        .assert_ids(
+            "AWS::ApiOnly::WorkMailMobileDeviceAccessOverride",
+            overrides,
+        )
+        .await?;
+    scenario
+        .assert_edges(
+            "AWS::ApiOnly::WorkMailMobileDeviceAccessOverride",
+            "IN_ORGANIZATION",
+            organizations
+                .iter()
+                .flat_map(|org| {
+                    ["device-1", "device-2"].map(move |device| {
+                        (
+                            correlated(&[org, "shared-user", device]),
+                            "AWS::ApiOnly::WorkMailOrganization".to_owned(),
+                            (*org).to_owned(),
+                        )
+                    })
+                })
+                .collect(),
+        )
+        .await?;
     for (kind, prefixes, local_prefix) in [
         ("WorkMailAlias", &["user", "group", "resource"][..], "alias"),
         ("WorkMailEntityGroup", &["user", "group"][..], "group"),
-        ("WorkMailMailboxPermission", &["user", "resource"][..], "grantee"),
+        (
+            "WorkMailMailboxPermission",
+            &["user", "resource"][..],
+            "grantee",
+        ),
         ("WorkMailGroupMember", &["group"][..], "member"),
         ("WorkMailResourceDelegate", &["resource"][..], "delegate"),
     ] {
@@ -101,24 +189,64 @@ async fn given_two_organizations_when_all_safe_mail_metadata_fans_out_then_nativ
         let mut org_edges = Vec::new();
         let mut owner_edges = Vec::new();
         let mut group_edges = Vec::new();
-        for org in organizations { for prefix in prefixes { for entity_page in ["1", "2"] { for p in ["1", "2"] {
-            let entity = format!("{prefix}-{entity_page}");
-            let local = if local_prefix == "alias" { format!("alias-{p}@example.test") } else { format!("{local_prefix}-{p}") };
-            expected.push(correlated(&[org, &entity, &local]));
-            let from = correlated(&[org,&entity,&local]);
-            org_edges.push((from.clone(),"AWS::ApiOnly::WorkMailOrganization".to_owned(),org.to_owned()));
-            let target_kind = match *prefix { "user" => "WorkMailUser", "group" => "WorkMailGroup", _ => "WorkMailResource" };
-            owner_edges.push((from.clone(),format!("AWS::ApiOnly::{target_kind}"),correlated(&[org,&entity])));
-            if kind == "WorkMailEntityGroup" {
-                group_edges.push((from,"AWS::ApiOnly::WorkMailGroup".to_owned(),correlated(&[org,&local])));
+        for org in organizations {
+            for prefix in prefixes {
+                for entity_page in ["1", "2"] {
+                    for p in ["1", "2"] {
+                        let entity = format!("{prefix}-{entity_page}");
+                        let local = if local_prefix == "alias" {
+                            format!("alias-{p}@example.test")
+                        } else {
+                            format!("{local_prefix}-{p}")
+                        };
+                        expected.push(correlated(&[org, &entity, &local]));
+                        let from = correlated(&[org, &entity, &local]);
+                        org_edges.push((
+                            from.clone(),
+                            "AWS::ApiOnly::WorkMailOrganization".to_owned(),
+                            org.to_owned(),
+                        ));
+                        let target_kind = match *prefix {
+                            "user" => "WorkMailUser",
+                            "group" => "WorkMailGroup",
+                            _ => "WorkMailResource",
+                        };
+                        owner_edges.push((
+                            from.clone(),
+                            format!("AWS::ApiOnly::{target_kind}"),
+                            correlated(&[org, &entity]),
+                        ));
+                        if kind == "WorkMailEntityGroup" {
+                            group_edges.push((
+                                from,
+                                "AWS::ApiOnly::WorkMailGroup".to_owned(),
+                                correlated(&[org, &local]),
+                            ));
+                        }
+                    }
+                }
             }
-        }}}}
-        scenario.assert_ids(&format!("AWS::ApiOnly::{kind}"), expected).await?;
+        }
+        scenario
+            .assert_ids(&format!("AWS::ApiOnly::{kind}"), expected)
+            .await?;
         let source_kind = format!("AWS::ApiOnly::{kind}");
-        scenario.assert_edges(&source_kind,"IN_ORGANIZATION",org_edges).await?;
-        let relation = match kind { "WorkMailGroupMember" => "IN_GROUP", "WorkMailResourceDelegate" => "FOR_RESOURCE", _ => "FOR_ENTITY" };
-        scenario.assert_edges(&source_kind,relation,owner_edges).await?;
-        if kind == "WorkMailEntityGroup" { scenario.assert_edges(&source_kind,"IN_GROUP",group_edges).await?; }
+        scenario
+            .assert_edges(&source_kind, "IN_ORGANIZATION", org_edges)
+            .await?;
+        let relation = match kind {
+            "WorkMailGroupMember" => "IN_GROUP",
+            "WorkMailResourceDelegate" => "FOR_RESOURCE",
+            _ => "FOR_ENTITY",
+        };
+        scenario
+            .assert_edges(&source_kind, relation, owner_edges)
+            .await?;
+        if kind == "WorkMailEntityGroup" {
+            scenario
+                .assert_edges(&source_kind, "IN_GROUP", group_edges)
+                .await?;
+        }
     }
     Ok(())
 }

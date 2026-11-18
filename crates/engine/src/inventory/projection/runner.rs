@@ -76,7 +76,8 @@ pub async fn run_projection(
 ) -> Result<ProjectionReport, ProjectionError> {
     validate(graph, endpoint, batch_limit)?;
     let ownership = ownership::acquire(store).await?;
-    let result = run_owned_projection(store, endpoint, graph, batch_limit, ownership.generation()).await;
+    let result =
+        run_owned_projection(store, endpoint, graph, batch_limit, ownership.generation()).await;
     ownership.release().await?;
     result
 }
@@ -198,9 +199,7 @@ async fn deliver_incident_edges(
 ) -> Result<(), EntryError> {
     let mut cursor: Option<ProjectionEdgeCursor> = None;
     for _ in 0..MAX_REBUILD_PAGES {
-        let page = snapshot
-            .edges_for(key, cursor.take(), batch_limit)
-            .await?;
+        let page = snapshot.edges_for(key, cursor.take(), batch_limit).await?;
         for edge in page.edges {
             client.edge(&edge).await.map_err(entry_graph_error)?;
         }

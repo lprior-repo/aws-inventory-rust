@@ -4,40 +4,133 @@ use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
     // Changes service state rather than reading inventory. Pinned purpose: Sets the specified view as the default for the Amazon Web Services Region in which you call this operation. When a user performs a Search that doesn't explicitly specify which view to use, then Amazon Web Services Resource Explorer automatically chooses this default view for searches performed in this Amazon Web Services Region. If an Amazon Web Services Region doesn't have a default view configur
-    ("AssociateDefaultView", Decision::Denied(DenyReason::Mutating)),
-    ("BatchGetView", Decision::Deferred("The optional-input response does not establish an immutable locally scoped owned-resource identity. Response members Views, Errors. Pinned request/ownership contract: Retrieves details about a list of views.")),
+    (
+        "AssociateDefaultView",
+        Decision::Denied(DenyReason::Mutating),
+    ),
+    (
+        "BatchGetView",
+        Decision::Deferred(
+            "The optional-input response does not establish an immutable locally scoped owned-resource identity. Response members Views, Errors. Pinned request/ownership contract: Retrieves details about a list of views.",
+        ),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Turns on Amazon Web Services Resource Explorer in the Amazon Web Services Region in which you called this operation by creating an index. Resource Explorer begins discovering the resources in this Region and stores the details about the resources in the index so that they can be queried by using the Search operation. You can create only one index in a Region. This operation creates only a local in
     ("CreateIndex", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Creates a Resource Explorer setup configuration across multiple Amazon Web Services Regions. This operation sets up indexes and views in the specified Regions. This operation can also be used to set an aggregator Region for cross-Region resource search.
-    ("CreateResourceExplorerSetup", Decision::Denied(DenyReason::Mutating)),
+    (
+        "CreateResourceExplorerSetup",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Creates a view that users can query by using the Search operation. Results from queries that you make using this view include only resources that match the view's Filters . For more information about Amazon Web Services Resource Explorer views, see Managing views in the Amazon Web Services Resource Explorer User Guide . Only the principals with an IAM identity-based policy that grants Allow to the
     ("CreateView", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes the specified index and turns off Amazon Web Services Resource Explorer in the specified Amazon Web Services Region. When you delete an index, Resource Explorer stops discovering and indexing resources in that Region. Resource Explorer also deletes all views in that Region. These actions occur as asynchronous background tasks. You can check to see when the actions are complete by using the
     ("DeleteIndex", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes a Resource Explorer setup configuration. This operation removes indexes and views from the specified Regions or all Regions where Resource Explorer is configured.
-    ("DeleteResourceExplorerSetup", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeleteResourceExplorerSetup",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes the specified view. If the specified view is the default view for its Amazon Web Services Region, then all Search operations in that Region must explicitly specify the view to use until you configure a new default by calling the AssociateDefaultView operation.
     ("DeleteView", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: After you call this operation, the affected Amazon Web Services Region no longer has a default view. All Search operations in that Region must explicitly specify a view or the operation fails. You can configure a new default by calling the AssociateDefaultView operation. If an Amazon Web Services Region doesn't have a default view configured, then users must explicitly specify a view with every Se
-    ("DisassociateDefaultView", Decision::Denied(DenyReason::Mutating)),
-    ("GetAccountLevelServiceConfiguration", Decision::Deferred("The optional-input response does not establish an immutable locally scoped owned-resource identity. Response members OrgConfiguration. Pinned request/ownership contract: Retrieves the status of your account's Amazon Web Services service access, and validates the service linked role required to access the multi-account search feature. Only the management account can invoke this API call.")),
-    ("GetDefaultView", Decision::Deferred("The optional-input response does not establish an immutable locally scoped owned-resource identity. Response members ViewArn. Pinned request/ownership contract: Retrieves the Amazon Resource Name (ARN) of the view that is the default for the Amazon Web Services Region in which you call this operation. You can then call GetView to retrieve the details of that view.")),
-    ("GetManagedView", Decision::Deferred("Required selectors ManagedViewArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ManagedView. Pinned purpose: Retrieves details of the specified Amazon Web Services-managed view .")),
-    ("GetResourceExplorerSetup", Decision::Deferred("Required selectors TaskId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Regions, NextToken. Pinned purpose: Retrieves the status and details of a Resource Explorer setup operation. This operation returns information about the progress of creating or deleting Resource Explorer configurations across Regions.")),
-    ("GetServiceIndex", Decision::Deferred("The optional-input response does not establish an immutable locally scoped owned-resource identity. Response members Arn, Type. Pinned request/ownership contract: Retrieves information about the Resource Explorer index in the current Amazon Web Services Region. This operation returns the ARN and type of the index if one exists.")),
-    ("GetServiceView", Decision::Deferred("Required selectors ServiceViewArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members View. Pinned purpose: Retrieves details about a specific Resource Explorer service view. This operation returns the configuration and properties of the specified view.")),
-    ("GetView", Decision::Deferred("Required selectors ViewArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members View, Tags. Pinned purpose: Retrieves details of the specified view.")),
-    ("ListIndexes", Decision::Deferred("Returns indexes across Regions. Per-item Region and Arn do not belong to one request region; account scope would incorrectly globalize regional indexes. Requires per-item scope routing, not an arbitrary local-region key.")),
-    ("ListIndexesForMembers", Decision::Deferred("Required selectors AccountIdList are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Indexes, NextToken. Pinned purpose: Retrieves a list of a member's indexes in all Amazon Web Services Regions that are currently collecting resource information for Amazon Web Services Resource Explorer. Only the management account or a delegated administrator with service access enabl")),
-    ("ListManagedViews", Decision::Deferred("AWS-managed view catalog, not account-owned mutable view inventory; ListViews is the customer-owned view root.")),
-    ("ListResources", Decision::Deferred("Heterogeneous Resource.Arn plus OwningAccountId/Region spans resource kinds and scopes. A static operation kind/scope would create incorrect resources; requires per-item canonical-kind and scope dispatch.")),
-    ("ListServiceIndexes", Decision::Deferred("Returns service-managed indexes with per-item Region; requires per-item scope routing rather than local-region or global relabeling.")),
+    (
+        "DisassociateDefaultView",
+        Decision::Denied(DenyReason::Mutating),
+    ),
+    (
+        "GetAccountLevelServiceConfiguration",
+        Decision::Deferred(
+            "The optional-input response does not establish an immutable locally scoped owned-resource identity. Response members OrgConfiguration. Pinned request/ownership contract: Retrieves the status of your account's Amazon Web Services service access, and validates the service linked role required to access the multi-account search feature. Only the management account can invoke this API call.",
+        ),
+    ),
+    (
+        "GetDefaultView",
+        Decision::Deferred(
+            "The optional-input response does not establish an immutable locally scoped owned-resource identity. Response members ViewArn. Pinned request/ownership contract: Retrieves the Amazon Resource Name (ARN) of the view that is the default for the Amazon Web Services Region in which you call this operation. You can then call GetView to retrieve the details of that view.",
+        ),
+    ),
+    (
+        "GetManagedView",
+        Decision::Deferred(
+            "Required selectors ManagedViewArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ManagedView. Pinned purpose: Retrieves details of the specified Amazon Web Services-managed view .",
+        ),
+    ),
+    (
+        "GetResourceExplorerSetup",
+        Decision::Deferred(
+            "Required selectors TaskId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Regions, NextToken. Pinned purpose: Retrieves the status and details of a Resource Explorer setup operation. This operation returns information about the progress of creating or deleting Resource Explorer configurations across Regions.",
+        ),
+    ),
+    (
+        "GetServiceIndex",
+        Decision::Deferred(
+            "The optional-input response does not establish an immutable locally scoped owned-resource identity. Response members Arn, Type. Pinned request/ownership contract: Retrieves information about the Resource Explorer index in the current Amazon Web Services Region. This operation returns the ARN and type of the index if one exists.",
+        ),
+    ),
+    (
+        "GetServiceView",
+        Decision::Deferred(
+            "Required selectors ServiceViewArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members View. Pinned purpose: Retrieves details about a specific Resource Explorer service view. This operation returns the configuration and properties of the specified view.",
+        ),
+    ),
+    (
+        "GetView",
+        Decision::Deferred(
+            "Required selectors ViewArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members View, Tags. Pinned purpose: Retrieves details of the specified view.",
+        ),
+    ),
+    (
+        "ListIndexes",
+        Decision::Deferred(
+            "Returns indexes across Regions. Per-item Region and Arn do not belong to one request region; account scope would incorrectly globalize regional indexes. Requires per-item scope routing, not an arbitrary local-region key.",
+        ),
+    ),
+    (
+        "ListIndexesForMembers",
+        Decision::Deferred(
+            "Required selectors AccountIdList are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Indexes, NextToken. Pinned purpose: Retrieves a list of a member's indexes in all Amazon Web Services Regions that are currently collecting resource information for Amazon Web Services Resource Explorer. Only the management account or a delegated administrator with service access enabl",
+        ),
+    ),
+    (
+        "ListManagedViews",
+        Decision::Deferred(
+            "AWS-managed view catalog, not account-owned mutable view inventory; ListViews is the customer-owned view root.",
+        ),
+    ),
+    (
+        "ListResources",
+        Decision::Deferred(
+            "Heterogeneous Resource.Arn plus OwningAccountId/Region spans resource kinds and scopes. A static operation kind/scope would create incorrect resources; requires per-item canonical-kind and scope dispatch.",
+        ),
+    ),
+    (
+        "ListServiceIndexes",
+        Decision::Deferred(
+            "Returns service-managed indexes with per-item Region; requires per-item scope routing rather than local-region or global relabeling.",
+        ),
+    ),
     // Public/service reference catalog or supported-capability enumeration, not account-owned resource inventory. Pinned purpose: Lists all Resource Explorer service views available in the current Amazon Web Services account. This operation returns the ARNs of available service views.
-    ("ListServiceViews", Decision::Denied(DenyReason::ReferenceData)),
+    (
+        "ListServiceViews",
+        Decision::Denied(DenyReason::ReferenceData),
+    ),
     // Public/service reference catalog or supported-capability enumeration, not account-owned resource inventory. Pinned purpose: Retrieves a list of all resource types currently supported by Amazon Web Services Resource Explorer.
-    ("ListSupportedResourceTypes", Decision::Denied(DenyReason::ReferenceData)),
-    ("ListTagsForResource", Decision::Deferred("Tag-only observation must join the originating resource identity with complete-snapshot semantics, not be persisted as a separate resource. Required request members: resourceArn. Pinned purpose: Lists the tags that are attached to the specified resource.")),
-    ("Search", Decision::Deferred("Required selectors QueryString are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Resources, NextToken, ViewArn, Count. Pinned purpose: Searches for resources and displays details about all resources that match the specified criteria. You must specify a query string. All search queries must use a view. If you don't explicitly specify a view, then Amazon Web Services Resource Explorer")),
+    (
+        "ListSupportedResourceTypes",
+        Decision::Denied(DenyReason::ReferenceData),
+    ),
+    (
+        "ListTagsForResource",
+        Decision::Deferred(
+            "Tag-only observation must join the originating resource identity with complete-snapshot semantics, not be persisted as a separate resource. Required request members: resourceArn. Pinned purpose: Lists the tags that are attached to the specified resource.",
+        ),
+    ),
+    (
+        "Search",
+        Decision::Deferred(
+            "Required selectors QueryString are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Resources, NextToken, ViewArn, Count. Pinned purpose: Searches for resources and displays details about all resources that match the specified criteria. You must specify a query string. All search queries must use a view. If you don't explicitly specify a view, then Amazon Web Services Resource Explorer",
+        ),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Adds one or more tag key and value pairs to an Amazon Web Services Resource Explorer view or index.
     ("TagResource", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Removes one or more tag key and value pairs from an Amazon Web Services Resource Explorer view or index.

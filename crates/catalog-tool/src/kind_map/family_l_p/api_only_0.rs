@@ -1,24 +1,84 @@
 use crate::kind_map::ApiOnlyMapping;
 
 pub(super) const ENTRIES: &[ApiOnlyMapping<'static>] = &[
-    ApiOnlyMapping { kind: "AWS::ApiOnly::FlatRatePricingSubscription", reason: "FlatRatePricingSubscription is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::LakeFormationTagExpression", reason: "LakeFormationTagExpression is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::LambdaMicrovm", reason: "LambdaMicrovm is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::LexV1Bot", reason: "Legacy Lex V1 bot names and versions are not AWS::Lex::Bot: the pinned CFN type models Lex V2 bot IDs." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::LinuxSubscription", reason: "LinuxSubscription is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::LinuxSubscriptionInstance", reason: "LinuxSubscriptionInstance is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::LinuxSubscriptionProvider", reason: "LinuxSubscriptionProvider is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::LookoutEquipmentDataset", reason: "LookoutEquipmentDataset is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::LookoutEquipmentLabelGroup", reason: "LookoutEquipmentLabelGroup is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::LookoutEquipmentModel", reason: "LookoutEquipmentModel is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::LookoutEquipmentRetrainingScheduler", reason: "LookoutEquipmentRetrainingScheduler is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::MachineLearningBatchPrediction", reason: "MachineLearningBatchPrediction is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::MachineLearningEvaluation", reason: "MachineLearningEvaluation is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::MachineLearningModel", reason: "MachineLearningModel is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::MacieClassificationJob", reason: "MacieClassificationJob is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::ManagedBlockchainNetwork", reason: "ManagedBlockchainNetwork is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::ManagedNotificationConfiguration", reason: "ManagedNotificationConfiguration is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::MarketplaceAgreement", reason: "MarketplaceAgreement is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::MediaLiveInputDevice", reason: "MediaLiveInputDevice is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::MigrationApplicationState", reason: "MigrationApplicationState is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource." },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::FlatRatePricingSubscription",
+        reason: "FlatRatePricingSubscription is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::LakeFormationTagExpression",
+        reason: "LakeFormationTagExpression is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::LambdaMicrovm",
+        reason: "LambdaMicrovm is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::LexV1Bot",
+        reason: "Legacy Lex V1 bot names and versions are not AWS::Lex::Bot: the pinned CFN type models Lex V2 bot IDs.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::LinuxSubscription",
+        reason: "LinuxSubscription is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::LinuxSubscriptionInstance",
+        reason: "LinuxSubscriptionInstance is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::LinuxSubscriptionProvider",
+        reason: "LinuxSubscriptionProvider is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::LookoutEquipmentDataset",
+        reason: "LookoutEquipmentDataset is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::LookoutEquipmentLabelGroup",
+        reason: "LookoutEquipmentLabelGroup is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::LookoutEquipmentModel",
+        reason: "LookoutEquipmentModel is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::LookoutEquipmentRetrainingScheduler",
+        reason: "LookoutEquipmentRetrainingScheduler is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::MachineLearningBatchPrediction",
+        reason: "MachineLearningBatchPrediction is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::MachineLearningEvaluation",
+        reason: "MachineLearningEvaluation is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::MachineLearningModel",
+        reason: "MachineLearningModel is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::MacieClassificationJob",
+        reason: "MacieClassificationJob is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::ManagedBlockchainNetwork",
+        reason: "ManagedBlockchainNetwork is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::ManagedNotificationConfiguration",
+        reason: "ManagedNotificationConfiguration is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::MarketplaceAgreement",
+        reason: "MarketplaceAgreement is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::MediaLiveInputDevice",
+        reason: "MediaLiveInputDevice is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::MigrationApplicationState",
+        reason: "MigrationApplicationState is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
 ];

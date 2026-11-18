@@ -1,9 +1,9 @@
 mod config;
+mod literal;
 mod model;
 mod runner;
 mod scenario;
 mod wire;
-mod literal;
 
 pub use runner::{run_data_scenario, run_scenario, run_seed};
 

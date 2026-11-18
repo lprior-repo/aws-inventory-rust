@@ -1,11 +1,11 @@
-#[path = "scenario/validation.rs"]
-mod validation;
+mod defaults;
 mod identity;
 mod template;
-mod defaults;
+#[path = "scenario/validation.rs"]
+mod validation;
+use super::config::SeedError;
 pub use identity::{SeedIdentity, SeedIdentityEvidence, SeedScope};
 pub use template::{SeedNestedBinding, SeedTemplate, SeedValuePart};
-use super::config::SeedError;
 use validation::*;
 
 const MAX_STEPS: usize = 12;
@@ -134,10 +134,22 @@ impl SeedStep {
         self
     }
 
-    pub fn auxiliary(id: StepId, service: String, operation: String, inputs: Vec<SeedInput>) -> Self {
+    pub fn auxiliary(
+        id: StepId,
+        service: String,
+        operation: String,
+        inputs: Vec<SeedInput>,
+    ) -> Self {
         Self {
-            id, service, operation, inputs, kind: String::new(), identity: None,
-            response_checks: Vec::new(), expected_identity: None, scope: SeedScope::Regional,
+            id,
+            service,
+            operation,
+            inputs,
+            kind: String::new(),
+            identity: None,
+            response_checks: Vec::new(),
+            expected_identity: None,
+            scope: SeedScope::Regional,
         }
     }
 }

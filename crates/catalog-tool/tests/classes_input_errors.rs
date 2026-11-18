@@ -72,7 +72,12 @@ fn invalid_input_is_rejected_even_for_a_mutating_operation() -> TestResult {
 #[test]
 fn resolved_mixins_contribute_required_input_members() -> TestResult {
     let dir = fixture(MIXINS)?;
-    run_with_policy(dir.path(), dir.path(), ReportMode::Write, &DenyList::parse("")?)?;
+    run_with_policy(
+        dir.path(),
+        dir.path(),
+        ReportMode::Write,
+        &DenyList::parse("")?,
+    )?;
     let report = std::fs::read_to_string(dir.path().join("catalog/aws-classes.report"))?;
     assert!(report.lines().any(|line| line == "expand 1"));
     assert!(report.lines().any(|line| line == "enumerate 0"));

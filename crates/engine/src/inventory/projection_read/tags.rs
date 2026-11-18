@@ -56,12 +56,18 @@ pub(super) async fn read(
 fn tag_row(row: sqlx::sqlite::SqliteRow) -> Result<ProjectionTag, StoreError> {
     let key = row
         .try_get::<Option<String>, _>("tag_key")?
-        .ok_or(StoreError::Invalid("persisted tag exceeds projection bounds"))?;
+        .ok_or(StoreError::Invalid(
+            "persisted tag exceeds projection bounds",
+        ))?;
     let value = row
         .try_get::<Option<String>, _>("tag_value")?
-        .ok_or(StoreError::Invalid("persisted tag exceeds projection bounds"))?;
+        .ok_or(StoreError::Invalid(
+            "persisted tag exceeds projection bounds",
+        ))?;
     if key.chars().any(char::is_control) || value.contains('\0') {
-        return Err(StoreError::Invalid("persisted tag contains forbidden controls"));
+        return Err(StoreError::Invalid(
+            "persisted tag contains forbidden controls",
+        ));
     }
     Ok(ProjectionTag { key, value })
 }

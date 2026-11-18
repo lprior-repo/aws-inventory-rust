@@ -33,9 +33,21 @@ pub enum IdentityField {
     Request(MemberPath),
     SelectedArn(MemberPath),
     RequestArn(MemberPath),
-    SelectedInteger { path: MemberPath, minimum: i64, maximum: i64 },
-    RequestInteger { path: MemberPath, minimum: i64, maximum: i64 },
-    SelectedStringList { path: MemberPath, max_items: u32, max_item_bytes: u32 },
+    SelectedInteger {
+        path: MemberPath,
+        minimum: i64,
+        maximum: i64,
+    },
+    RequestInteger {
+        path: MemberPath,
+        minimum: i64,
+        maximum: i64,
+    },
+    SelectedStringList {
+        path: MemberPath,
+        max_items: u32,
+        max_item_bytes: u32,
+    },
     Context {
         operation: OperationName,
         source: ContextSource,
@@ -71,11 +83,15 @@ pub struct IdentityBranch {
 impl IdentityBranch {
     pub fn new(predicate: IdentityPredicate, identity: IdentityLeaf) -> Result<Self, NameError> {
         if let IdentityPredicate::TextEquals { value, .. }
-        | IdentityPredicate::RequestTextEquals { value, .. } = &predicate {
+        | IdentityPredicate::RequestTextEquals { value, .. } = &predicate
+        {
             valid_text(value, 4096)?;
         }
         validate_leaf(&identity)?;
-        Ok(Self { predicate, identity })
+        Ok(Self {
+            predicate,
+            identity,
+        })
     }
 }
 
@@ -94,16 +110,21 @@ pub enum IdentityChoice {
 impl IdentityChoice {
     pub fn validate(&self) -> Result<(), NameError> {
         match self {
-            Self::PreferArn { fallback, review, .. } => {
+            Self::PreferArn {
+                fallback, review, ..
+            } => {
                 valid_text(review, 1024)?;
                 validate_leaf(fallback)
             }
             Self::Discriminated(branches) => {
                 if branches.is_empty() || branches.len() > 16 {
-                    return Err(NameError { value: "identity branches".to_owned() });
+                    return Err(NameError {
+                        value: "identity branches".to_owned(),
+                    });
                 }
                 branches.iter().try_for_each(|branch| {
-                    IdentityBranch::new(branch.predicate.clone(), branch.identity.clone()).map(|_| ())
+                    IdentityBranch::new(branch.predicate.clone(), branch.identity.clone())
+                        .map(|_| ())
                 })
             }
         }
@@ -116,29 +137,46 @@ pub(super) fn validate_leaf(leaf: &IdentityLeaf) -> Result<(), NameError> {
         IdentityLeaf::Template(template) => valid_text(template, 4096),
         IdentityLeaf::Key(fields) if !fields.is_empty() && fields.len() <= 8 => Ok(()),
         IdentityLeaf::Fields(fields) => validate_fields(fields),
-        _ => Err(NameError { value: "identity fields".to_owned() }),
+        _ => Err(NameError {
+            value: "identity fields".to_owned(),
+        }),
     }
 }
 
 pub(super) fn validate_fields(fields: &[IdentityField]) -> Result<(), NameError> {
     if fields.is_empty() || fields.len() > 64 {
-        return Err(NameError { value: "identity fields".to_owned() });
+        return Err(NameError {
+            value: "identity fields".to_owned(),
+        });
     }
     fields.iter().try_for_each(|field| match field {
         IdentityField::MapValue { key, .. } => valid_text(key, 4096),
-        IdentityField::SelectedInteger { minimum, maximum, .. }
-        | IdentityField::RequestInteger { minimum, maximum, .. } if minimum > maximum =>
-            Err(NameError { value: "identity integer bounds".to_owned() }),
-        IdentityField::SelectedStringList { max_items, max_item_bytes, .. }
-            if !(1..=64).contains(max_items) || !(1..=4096).contains(max_item_bytes) =>
-            Err(NameError { value: "identity string list bounds".to_owned() }),
+        IdentityField::SelectedInteger {
+            minimum, maximum, ..
+        }
+        | IdentityField::RequestInteger {
+            minimum, maximum, ..
+        } if minimum > maximum => Err(NameError {
+            value: "identity integer bounds".to_owned(),
+        }),
+        IdentityField::SelectedStringList {
+            max_items,
+            max_item_bytes,
+            ..
+        } if !(1..=64).contains(max_items) || !(1..=4096).contains(max_item_bytes) => {
+            Err(NameError {
+                value: "identity string list bounds".to_owned(),
+            })
+        }
         _ => Ok(()),
     })
 }
 
 fn valid_text(text: &str, bound: usize) -> Result<(), NameError> {
     if text.is_empty() || text.len() > bound || text.chars().any(char::is_control) {
-        return Err(NameError { value: text.to_owned() });
+        return Err(NameError {
+            value: text.to_owned(),
+        });
     }
     Ok(())
 }

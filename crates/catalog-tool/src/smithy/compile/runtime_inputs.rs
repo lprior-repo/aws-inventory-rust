@@ -1,6 +1,6 @@
 use crate::{endpoints, kind_map, overlay, report, runtime_catalog};
-use std::path::Path;
 use sha2::{Digest, Sha256};
+use std::path::Path;
 
 #[derive(Debug, thiserror::Error)]
 pub enum RuntimeInputsError {
@@ -45,9 +45,12 @@ pub(super) fn augment(
     let checked = overlay::check(root, source)?;
     let endpoints = endpoints::verified_endpoints(source)?;
     let sources = runtime_catalog::CatalogSources::repository(
-        source_pin.commit.clone(), source_pin.sha256, Sha256::digest(cfn.as_bytes()).into(),
+        source_pin.commit.clone(),
+        source_pin.sha256,
+        Sha256::digest(cfn.as_bytes()).into(),
     );
-    let augmented = runtime_catalog::augment_with_sources(bytes, &checked, &kinds, &endpoints, &sources)?;
+    let augmented =
+        runtime_catalog::augment_with_sources(bytes, &checked, &kinds, &endpoints, &sources)?;
     inventory_core::catalog::runtime::RuntimeCatalog::from_bytes(&augmented)?;
     if report::read_text(&root.join("catalog/cloudcontrol-universal.json"))? != cfn {
         return Err(RuntimeInputsError::SourceChanged);

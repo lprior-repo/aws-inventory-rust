@@ -1,23 +1,26 @@
 // Pinned model: .local/aws-models/models/firehose/service/2015-08-04/firehose-2015-08-04.json
 use super::support::{inventory, queried, reviewed};
-use crate::overlay::{Identity, NameError, Paginator, ServiceOverlay};
 use crate::classes::DenyReason;
+use crate::overlay::{Identity, NameError, Paginator, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "firehose",
-        vec![
-            queried(inventory(
+        vec![queried(
+            inventory(
                 "ListDeliveryStreams",
                 "DeliveryStreamNames",
-                Identity::Template("arn:{partition}:firehose:{region}:{account}:deliverystream/{$}".to_owned()),
+                Identity::Template(
+                    "arn:{partition}:firehose:{region}:{account}:deliverystream/{$}".to_owned(),
+                ),
                 Paginator::LastListItem {
                     input: crate::overlay::MemberPath::new("ExclusiveStartDeliveryStreamName")?,
                     output: crate::overlay::MemberPath::new("DeliveryStreamNames")?,
                     truncated: crate::overlay::MemberPath::new("HasMoreDeliveryStreams")?,
                 },
-            )?, &["$"])?,
-        ],
+            )?,
+            &["$"],
+        )?],
         &[super::s_firehose_decisions_0::ENTRIES],
         &[
             // The whole response can contain SplunkDestinationDescription.HECToken.

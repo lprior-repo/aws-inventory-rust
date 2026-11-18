@@ -1,48 +1,160 @@
 use super::{RuntimeCatalogCompileError, encode};
 use crate::overlay::{OperationOverlay, RequestRouting};
-use inventory_core::{catalog::{Operation,Service},record::Value};
+use inventory_core::{
+    catalog::{Operation, Service},
+    record::Value,
+};
 
-pub(super) fn compile(service:Service<'_>,operation:Operation<'_>,overlay:&OperationOverlay,checked:&crate::overlay::CheckedOverlays,services:&super::super::ServiceIndex<'_>) -> Result<[(u32,Value);2],RuntimeCatalogCompileError> {
-    let route=match &overlay.routing {
-        RequestRouting::Regional=>encode::map([(1,Value::Int(0))])?,
-        RequestRouting::FixedRegion{region}=>{ inventory_core::inventory::RegionId::parse(region).map_err(|_|RuntimeCatalogCompileError::Capability)?; encode::map([(1,Value::Int(1)),(2,Value::Text(region.clone()))])? },
-        RequestRouting::Discovered{operation,endpoints_path,address_path,cache_minutes_path,trusted_dns_suffix}=>{
-            if operation!="DescribeEndpoints" || trusted_dns_suffix!=".timestream.{region}.amazonaws.com" { return Err(RuntimeCatalogCompileError::Capability); }
-            encode::map([(1,Value::Int(2)),(2,Value::Text(operation.clone())),(3,encode::path(services,endpoints_path.as_str())?),(4,encode::path(services,address_path.as_str())?),(5,encode::path(services,cache_minutes_path.as_str())?),(6,Value::Text(trusted_dns_suffix.clone()))])?
-        },
-        RequestRouting::S3Outposts=>encode::map([(1,Value::Int(3))])?,
-        RequestRouting::S3ExpressControl=>encode::map([(1,Value::Int(4))])?,
+pub(super) fn compile(
+    service: Service<'_>,
+    operation: Operation<'_>,
+    overlay: &OperationOverlay,
+    checked: &crate::overlay::CheckedOverlays,
+    services: &super::super::ServiceIndex<'_>,
+) -> Result<[(u32, Value); 2], RuntimeCatalogCompileError> {
+    let route = match &overlay.routing {
+        RequestRouting::Regional => encode::map([(1, Value::Int(0))])?,
+        RequestRouting::FixedRegion { region } => {
+            inventory_core::inventory::RegionId::parse(region)
+                .map_err(|_| RuntimeCatalogCompileError::Capability)?;
+            encode::map([(1, Value::Int(1)), (2, Value::Text(region.clone()))])?
+        }
+        RequestRouting::Discovered {
+            operation,
+            endpoints_path,
+            address_path,
+            cache_minutes_path,
+            trusted_dns_suffix,
+        } => {
+            if operation != "DescribeEndpoints"
+                || trusted_dns_suffix != ".timestream.{region}.amazonaws.com"
+            {
+                return Err(RuntimeCatalogCompileError::Capability);
+            }
+            encode::map([
+                (1, Value::Int(2)),
+                (2, Value::Text(operation.clone())),
+                (3, encode::path(services, endpoints_path.as_str())?),
+                (4, encode::path(services, address_path.as_str())?),
+                (5, encode::path(services, cache_minutes_path.as_str())?),
+                (6, Value::Text(trusted_dns_suffix.clone())),
+            ])?
+        }
+        RequestRouting::S3Outposts => encode::map([(1, Value::Int(3))])?,
+        RequestRouting::S3ExpressControl => encode::map([(1, Value::Int(4))])?,
     };
-    if overlay.branches.len()>16 { return Err(RuntimeCatalogCompileError::Capability); }
-    let names=overlay.branches.iter().map(|branch| &branch.discriminator).collect::<std::collections::BTreeSet<_>>();
-    if names.len()!=overlay.branches.len() { return Err(RuntimeCatalogCompileError::Capability); }
-    let branches=overlay.branches.iter().map(|branch| compile_branch(service,operation,branch,overlay.items.as_ref(),checked,services)).collect::<Result<Vec<_>,_>>()?;
-    Ok([(15,route),(16,Value::List(branches))])
+    if overlay.branches.len() > 16 {
+        return Err(RuntimeCatalogCompileError::Capability);
+    }
+    let names = overlay
+        .branches
+        .iter()
+        .map(|branch| &branch.discriminator)
+        .collect::<std::collections::BTreeSet<_>>();
+    if names.len() != overlay.branches.len() {
+        return Err(RuntimeCatalogCompileError::Capability);
+    }
+    let branches = overlay
+        .branches
+        .iter()
+        .map(|branch| {
+            compile_branch(
+                service,
+                operation,
+                branch,
+                overlay.items.as_ref(),
+                checked,
+                services,
+            )
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok([(15, route), (16, Value::List(branches))])
 }
-fn compile_branch(service:Service<'_>,operation:Operation<'_>,branch:&crate::overlay::ExecutionBranch,
-    items:Option<&crate::overlay::ItemSelector>,checked:&crate::overlay::CheckedOverlays,
-    services:&super::super::ServiceIndex<'_>) -> Result<Value,RuntimeCatalogCompileError> {
-    let name=&branch.discriminator;
-    if !valid_branch_name(name) || branch.bind.len() > 4096 || branch.bind.keys().any(|path| branch.fixed.contains_key(path)) { return Err(RuntimeCatalogCompileError::Capability); }
-    let bindings=branch.fixed.iter().map(|(path,value)| {
-        let target=super::super::model_path::resolve(service,operation.input()?,path.as_str())?.1;
-        let value=super::fixed_input::compile(service,target,value)?;
-        super::binding_record(path,2,(value,Value::Null,Value::Null),services)
-    }).chain(branch.bind.iter().map(|(path,binding)| super::binding_value(service.name()?,path,binding,services)))
-        .collect::<Result<Vec<_>,_>>()?;
-    let region=branch.request_region.as_ref().map(|region| -> Result<_,RuntimeCatalogCompileError> {
-        inventory_core::inventory::RegionId::parse(region).map_err(|_|RuntimeCatalogCompileError::Capability)?;
-        Ok((4,Value::Text(region.to_owned())))
-    }).transpose()?;
-    let emission = branch.emission.map(|emission| (5,Value::Int(match emission {
-        crate::overlay::Emission::EmitMetadata => 0, crate::overlay::Emission::DiscoveryOnly => 1,
-    })));
-    let row_policy = branch.row_policy.as_ref().map(|policy| super::row_policy::compile(
-        service,operation,policy,items,checked,service.name()?,services)).transpose()?.flatten()
-        .map(|(_,value)| (6,value));
-    encode::map([(1,Value::Text(name.clone())),(2,Value::List(bindings)),(3,Value::Int(super::scope(Some(branch.scope))?))].into_iter().chain(region).chain(emission).chain(row_policy))
+fn compile_branch(
+    service: Service<'_>,
+    operation: Operation<'_>,
+    branch: &crate::overlay::ExecutionBranch,
+    items: Option<&crate::overlay::ItemSelector>,
+    checked: &crate::overlay::CheckedOverlays,
+    services: &super::super::ServiceIndex<'_>,
+) -> Result<Value, RuntimeCatalogCompileError> {
+    let name = &branch.discriminator;
+    if !valid_branch_name(name)
+        || branch.bind.len() > 4096
+        || branch
+            .bind
+            .keys()
+            .any(|path| branch.fixed.contains_key(path))
+    {
+        return Err(RuntimeCatalogCompileError::Capability);
+    }
+    let bindings = branch
+        .fixed
+        .iter()
+        .map(|(path, value)| {
+            let target =
+                super::super::model_path::resolve(service, operation.input()?, path.as_str())?.1;
+            let value = super::fixed_input::compile(service, target, value)?;
+            super::binding_record(path, 2, (value, Value::Null, Value::Null), services)
+        })
+        .chain(
+            branch.bind.iter().map(|(path, binding)| {
+                super::binding_value(service.name()?, path, binding, services)
+            }),
+        )
+        .collect::<Result<Vec<_>, _>>()?;
+    let region = branch
+        .request_region
+        .as_ref()
+        .map(|region| -> Result<_, RuntimeCatalogCompileError> {
+            inventory_core::inventory::RegionId::parse(region)
+                .map_err(|_| RuntimeCatalogCompileError::Capability)?;
+            Ok((4, Value::Text(region.to_owned())))
+        })
+        .transpose()?;
+    let emission = branch.emission.map(|emission| {
+        (
+            5,
+            Value::Int(match emission {
+                crate::overlay::Emission::EmitMetadata => 0,
+                crate::overlay::Emission::DiscoveryOnly => 1,
+            }),
+        )
+    });
+    let row_policy = branch
+        .row_policy
+        .as_ref()
+        .map(|policy| {
+            super::row_policy::compile(
+                service,
+                operation,
+                policy,
+                items,
+                checked,
+                service.name()?,
+                services,
+            )
+        })
+        .transpose()?
+        .flatten()
+        .map(|(_, value)| (6, value));
+    encode::map(
+        [
+            (1, Value::Text(name.clone())),
+            (2, Value::List(bindings)),
+            (3, Value::Int(super::scope(Some(branch.scope))?)),
+        ]
+        .into_iter()
+        .chain(region)
+        .chain(emission)
+        .chain(row_policy),
+    )
 }
 
 pub(super) fn valid_branch_name(name: &str) -> bool {
-    !name.is_empty() && name.len() <= 64 && name.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
+    !name.is_empty()
+        && name.len() <= 64
+        && name
+            .bytes()
+            .all(|b| b.is_ascii_alphanumeric() || b == b'_' || b == b'-')
 }

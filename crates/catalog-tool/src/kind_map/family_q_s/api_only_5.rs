@@ -1,24 +1,84 @@
 use crate::kind_map::ApiOnlyMapping;
 
 pub(super) const ENTRIES: &[ApiOnlyMapping<'static>] = &[
-    ApiOnlyMapping { kind: "AWS::ApiOnly::ServiceQuotaChangeRequest", reason: "Distinct API-managed ServiceQuotaChangeRequest resource identified by Id in service-quotas ListRequestedServiceQuotaChangeHistory RequestedQuotas. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SESCustomVerificationEmailTemplate", reason: "Distinct API-managed SESCustomVerificationEmailTemplate resource identified by TemplateName in ses ListCustomVerificationEmailTemplates CustomVerificationEmailTemplates. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SESDedicatedIp", reason: "Distinct API-managed SESDedicatedIp resource identified by Ip in sesv2 GetDedicatedIps DedicatedIps. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SESDeliverabilityTestReport", reason: "Distinct API-managed SESDeliverabilityTestReport resource identified by ReportId in sesv2 ListDeliverabilityTestReports DeliverabilityTestReports. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SESExportJob", reason: "Distinct API-managed SESExportJob resource identified by JobId in sesv2 ListExportJobs ExportJobs. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SESImportJob", reason: "Distinct API-managed SESImportJob resource identified by JobId in sesv2 ListImportJobs ImportJobs. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SESRecommendation", reason: "Distinct API-managed SESRecommendation resource identified by ResourceArn,Type in sesv2 ListRecommendations Recommendations. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SESReputationEntity", reason: "Distinct API-managed SESReputationEntity resource identified by ReputationEntityReference,ReputationEntityType in sesv2 ListReputationEntities ReputationEntities. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::ShieldAttack", reason: "Distinct API-managed ShieldAttack resource identified by AttackId in shield ListAttacks AttackSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SignerSigningJob", reason: "Distinct API-managed SignerSigningJob resource identified by jobId in signer ListSigningJobs jobs. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SimpleDBExport", reason: "Distinct API-managed SimpleDBExport resource identified by @exportArn in simpledbv2 ListExports exportSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SnowballCluster", reason: "Distinct API-managed SnowballCluster resource identified by ClusterId in snowball ListClusters ClusterListEntries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SnowballJob", reason: "Distinct API-managed SnowballJob resource identified by JobId in snowball ListJobs JobListEntries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SnowballLongTermRental", reason: "Distinct API-managed SnowballLongTermRental resource identified by LongTermPricingId in snowball ListLongTermPricing LongTermPricingEntries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SnowDevice", reason: "Distinct API-managed SnowDevice resource identified by @managedDeviceArn in snow-device-management ListDevices devices. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SnowDeviceTask", reason: "Distinct API-managed SnowDeviceTask resource identified by @taskArn in snow-device-management ListTasks tasks. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SSMActivation", reason: "Distinct API-managed SSMActivation resource identified by ActivationId in ssm DescribeActivations ActivationList. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SSMCloudConnector", reason: "Distinct API-managed SSMCloudConnector resource identified by CloudConnectorId in ssm ListCloudConnectors CloudConnectors. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SSMComplianceSummary", reason: "Distinct API-managed SSMComplianceSummary resource identified by ComplianceType in ssm ListComplianceSummaries ComplianceSummaryItems. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SSMContactEngagement", reason: "Distinct API-managed SSMContactEngagement resource identified by @EngagementArn in ssm-contacts ListEngagements Engagements. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::ServiceQuotaChangeRequest",
+        reason: "Distinct API-managed ServiceQuotaChangeRequest resource identified by Id in service-quotas ListRequestedServiceQuotaChangeHistory RequestedQuotas. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SESCustomVerificationEmailTemplate",
+        reason: "Distinct API-managed SESCustomVerificationEmailTemplate resource identified by TemplateName in ses ListCustomVerificationEmailTemplates CustomVerificationEmailTemplates. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SESDedicatedIp",
+        reason: "Distinct API-managed SESDedicatedIp resource identified by Ip in sesv2 GetDedicatedIps DedicatedIps. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SESDeliverabilityTestReport",
+        reason: "Distinct API-managed SESDeliverabilityTestReport resource identified by ReportId in sesv2 ListDeliverabilityTestReports DeliverabilityTestReports. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SESExportJob",
+        reason: "Distinct API-managed SESExportJob resource identified by JobId in sesv2 ListExportJobs ExportJobs. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SESImportJob",
+        reason: "Distinct API-managed SESImportJob resource identified by JobId in sesv2 ListImportJobs ImportJobs. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SESRecommendation",
+        reason: "Distinct API-managed SESRecommendation resource identified by ResourceArn,Type in sesv2 ListRecommendations Recommendations. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SESReputationEntity",
+        reason: "Distinct API-managed SESReputationEntity resource identified by ReputationEntityReference,ReputationEntityType in sesv2 ListReputationEntities ReputationEntities. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::ShieldAttack",
+        reason: "Distinct API-managed ShieldAttack resource identified by AttackId in shield ListAttacks AttackSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SignerSigningJob",
+        reason: "Distinct API-managed SignerSigningJob resource identified by jobId in signer ListSigningJobs jobs. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SimpleDBExport",
+        reason: "Distinct API-managed SimpleDBExport resource identified by @exportArn in simpledbv2 ListExports exportSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SnowballCluster",
+        reason: "Distinct API-managed SnowballCluster resource identified by ClusterId in snowball ListClusters ClusterListEntries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SnowballJob",
+        reason: "Distinct API-managed SnowballJob resource identified by JobId in snowball ListJobs JobListEntries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SnowballLongTermRental",
+        reason: "Distinct API-managed SnowballLongTermRental resource identified by LongTermPricingId in snowball ListLongTermPricing LongTermPricingEntries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SnowDevice",
+        reason: "Distinct API-managed SnowDevice resource identified by @managedDeviceArn in snow-device-management ListDevices devices. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SnowDeviceTask",
+        reason: "Distinct API-managed SnowDeviceTask resource identified by @taskArn in snow-device-management ListTasks tasks. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SSMActivation",
+        reason: "Distinct API-managed SSMActivation resource identified by ActivationId in ssm DescribeActivations ActivationList. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SSMCloudConnector",
+        reason: "Distinct API-managed SSMCloudConnector resource identified by CloudConnectorId in ssm ListCloudConnectors CloudConnectors. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SSMComplianceSummary",
+        reason: "Distinct API-managed SSMComplianceSummary resource identified by ComplianceType in ssm ListComplianceSummaries ComplianceSummaryItems. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SSMContactEngagement",
+        reason: "Distinct API-managed SSMContactEngagement resource identified by @EngagementArn in ssm-contacts ListEngagements Engagements. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
 ];

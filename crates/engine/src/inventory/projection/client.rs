@@ -50,7 +50,11 @@ fn index_already_exists(error: &redis::RedisError) -> bool {
 }
 
 impl GraphClient {
-    pub(super) async fn connect(endpoint: &str, graph: &str, generation: i64) -> Result<Self, GraphError> {
+    pub(super) async fn connect(
+        endpoint: &str,
+        graph: &str,
+        generation: i64,
+    ) -> Result<Self, GraphError> {
         let client = redis::Client::open(endpoint)?;
         let mut connection = tokio::time::timeout(
             Duration::from_secs(5),

@@ -1,23 +1,38 @@
-use super::super::{map, metadata, RuntimeCatalogError};
-use crate::{catalog::runtime::{IdentityBranchPlan, IdentityChoicePlan, IdentityFieldPlan, IdentityLeafPlan, IdentityPlan, IdentityPredicatePlan}, record::{MapRef, ValueRef}};
+use super::super::{RuntimeCatalogError, map, metadata};
+use crate::{
+    catalog::runtime::{
+        IdentityBranchPlan, IdentityChoicePlan, IdentityFieldPlan, IdentityLeafPlan, IdentityPlan,
+        IdentityPredicatePlan,
+    },
+    record::{MapRef, ValueRef},
+};
 
-pub(in crate::catalog::runtime::decode::plans) fn read(fields: MapRef<'_>) -> Result<IdentityPlan, RuntimeCatalogError> {
+pub(in crate::catalog::runtime::decode::plans) fn read(
+    fields: MapRef<'_>,
+) -> Result<IdentityPlan, RuntimeCatalogError> {
     let tag = metadata::integer(fields, 1)?;
-    if tag <= 2 { return super::super::identity(fields) }
+    if tag <= 2 {
+        return super::super::identity(fields);
+    }
     match tag {
         3 => {
             metadata::only_fields(fields, &[1, 2, 3, 4])?;
             let review = bounded_text(fields, 4, 1024)?;
             Ok(IdentityPlan::Choice(IdentityChoicePlan::PreferArn {
                 path: metadata::selected_path(metadata::list(fields, 2)?)?,
-                fallback: leaf(map(metadata::field(fields, 3)?)?)?, review,
+                fallback: leaf(map(metadata::field(fields, 3)?)?)?,
+                review,
             }))
         }
         4 => {
             metadata::only_fields(fields, &[1, 2])?;
             let branches = metadata::bounded(metadata::list(fields, 2)?, branch, 16)?;
-            if branches.is_empty() { return Err(RuntimeCatalogError::Capability) }
-            Ok(IdentityPlan::Choice(IdentityChoicePlan::Discriminated(branches.into_boxed_slice())))
+            if branches.is_empty() {
+                return Err(RuntimeCatalogError::Capability);
+            }
+            Ok(IdentityPlan::Choice(IdentityChoicePlan::Discriminated(
+                branches.into_boxed_slice(),
+            )))
         }
         5 => {
             metadata::only_fields(fields, &[1, 2])?;
@@ -26,13 +41,25 @@ pub(in crate::catalog::runtime::decode::plans) fn read(fields: MapRef<'_>) -> Re
         6 => {
             metadata::only_fields(fields, &[1, 2, 3, 4, 5])?;
             let resource_kind = super::arn_kind(metadata::integer(fields, 4)?)?;
-            let request_url = fields.get_field(crate::record::FieldId::new(5)?)?
-                .map(|value| super::super::super::list_value(value).and_then(metadata::selected_path)).transpose()?;
-            if matches!(resource_kind, crate::catalog::runtime::ArnResourceKind::SqsQueue) != request_url.is_some() {
+            let request_url = fields
+                .get_field(crate::record::FieldId::new(5)?)?
+                .map(|value| {
+                    super::super::super::list_value(value).and_then(metadata::selected_path)
+                })
+                .transpose()?;
+            if matches!(
+                resource_kind,
+                crate::catalog::runtime::ArnResourceKind::SqsQueue
+            ) != request_url.is_some()
+            {
                 return Err(RuntimeCatalogError::Capability);
             }
-            Ok(IdentityPlan::MapArn { path: metadata::selected_path(metadata::list(fields, 2)?)?,
-                key: bounded_text(fields, 3, 4096)?, resource_kind, request_url })
+            Ok(IdentityPlan::MapArn {
+                path: metadata::selected_path(metadata::list(fields, 2)?)?,
+                key: bounded_text(fields, 3, 4096)?,
+                resource_kind,
+                request_url,
+            })
         }
         _ => Err(RuntimeCatalogError::Capability),
     }
@@ -69,15 +96,23 @@ fn predicate(fields: MapRef<'_>) -> Result<IdentityPredicatePlan, RuntimeCatalog
     let path = metadata::selected_path(metadata::list(fields, 2)?)?;
     match tag {
         0 => Ok(IdentityPredicatePlan::Present(path)),
-        1 => Ok(IdentityPredicatePlan::TextEquals { path, value: bounded_text(fields, 3, 4096)? }),
-        2 => Ok(IdentityPredicatePlan::RequestTextEquals { path, value: bounded_text(fields, 3, 4096)? }),
+        1 => Ok(IdentityPredicatePlan::TextEquals {
+            path,
+            value: bounded_text(fields, 3, 4096)?,
+        }),
+        2 => Ok(IdentityPredicatePlan::RequestTextEquals {
+            path,
+            value: bounded_text(fields, 3, 4096)?,
+        }),
         _ => Err(RuntimeCatalogError::Capability),
     }
 }
 
 fn fields_list(fields: MapRef<'_>) -> Result<Box<[IdentityFieldPlan]>, RuntimeCatalogError> {
     let fields = metadata::bounded(metadata::list(fields, 2)?, field, 64)?;
-    if fields.is_empty() { return Err(RuntimeCatalogError::Capability) }
+    if fields.is_empty() {
+        return Err(RuntimeCatalogError::Capability);
+    }
     Ok(fields.into_boxed_slice())
 }
 
@@ -88,7 +123,11 @@ fn field(value: ValueRef<'_>) -> Result<IdentityFieldPlan, RuntimeCatalogError> 
         0 | 1 => {
             metadata::only_fields(fields, &[1, 2])?;
             let path = metadata::selected_path(metadata::list(fields, 2)?)?;
-            Ok(if tag == 0 { IdentityFieldPlan::Selected(path) } else { IdentityFieldPlan::SelectedDigest(path) })
+            Ok(if tag == 0 {
+                IdentityFieldPlan::Selected(path)
+            } else {
+                IdentityFieldPlan::SelectedDigest(path)
+            })
         }
         2 => {
             metadata::only_fields(fields, &[1, 2, 3, 4, 5])?;
@@ -96,21 +135,34 @@ fn field(value: ValueRef<'_>) -> Result<IdentityFieldPlan, RuntimeCatalogError> 
             let operation = metadata::text(fields, 3)?;
             crate::inventory::ServiceId::parse(&service)?;
             crate::inventory::OperationId::parse(&operation)?;
-            Ok(IdentityFieldPlan::Context { service: service.into_boxed_str(), operation: operation.into_boxed_str(),
-                source: super::source(metadata::integer(fields, 4)?)?, path: metadata::selected_path(metadata::list(fields, 5)?)? })
+            Ok(IdentityFieldPlan::Context {
+                service: service.into_boxed_str(),
+                operation: operation.into_boxed_str(),
+                source: super::source(metadata::integer(fields, 4)?)?,
+                path: metadata::selected_path(metadata::list(fields, 5)?)?,
+            })
         }
         3 => {
             metadata::only_fields(fields, &[1, 2, 3])?;
-            Ok(IdentityFieldPlan::MapValue { path: metadata::selected_path(metadata::list(fields, 2)?)?, key: bounded_text(fields, 3, 4096)? })
+            Ok(IdentityFieldPlan::MapValue {
+                path: metadata::selected_path(metadata::list(fields, 2)?)?,
+                key: bounded_text(fields, 3, 4096)?,
+            })
         }
         4 => {
             metadata::only_fields(fields, &[1, 2])?;
-            Ok(IdentityFieldPlan::Request(metadata::selected_path(metadata::list(fields, 2)?)?))
+            Ok(IdentityFieldPlan::Request(metadata::selected_path(
+                metadata::list(fields, 2)?,
+            )?))
         }
         8 | 9 => {
             metadata::only_fields(fields, &[1, 2])?;
             let path = metadata::selected_path(metadata::list(fields, 2)?)?;
-            Ok(if tag == 8 { IdentityFieldPlan::SelectedArn(path) } else { IdentityFieldPlan::RequestArn(path) })
+            Ok(if tag == 8 {
+                IdentityFieldPlan::SelectedArn(path)
+            } else {
+                IdentityFieldPlan::RequestArn(path)
+            })
         }
         5..=7 => {
             metadata::only_fields(fields, &[1, 2, 3, 4])?;
@@ -119,16 +171,26 @@ fn field(value: ValueRef<'_>) -> Result<IdentityFieldPlan, RuntimeCatalogError> 
             let upper = metadata::integer(fields, 4)?;
             match tag {
                 5 | 6 if lower <= upper => Ok(if tag == 5 {
-                    IdentityFieldPlan::SelectedInteger { path, minimum: lower, maximum: upper }
+                    IdentityFieldPlan::SelectedInteger {
+                        path,
+                        minimum: lower,
+                        maximum: upper,
+                    }
                 } else {
-                    IdentityFieldPlan::RequestInteger { path, minimum: lower, maximum: upper }
+                    IdentityFieldPlan::RequestInteger {
+                        path,
+                        minimum: lower,
+                        maximum: upper,
+                    }
                 }),
-                7 if (1..=64).contains(&lower) && (1..=4096).contains(&upper) =>
+                7 if (1..=64).contains(&lower) && (1..=4096).contains(&upper) => {
                     Ok(IdentityFieldPlan::SelectedStringList {
                         path,
                         max_items: u32::try_from(lower).map_err(|_| RuntimeCatalogError::Bounds)?,
-                        max_item_bytes: u32::try_from(upper).map_err(|_| RuntimeCatalogError::Bounds)?,
-                    }),
+                        max_item_bytes: u32::try_from(upper)
+                            .map_err(|_| RuntimeCatalogError::Bounds)?,
+                    })
+                }
                 _ => Err(RuntimeCatalogError::Bounds),
             }
         }
@@ -136,8 +198,14 @@ fn field(value: ValueRef<'_>) -> Result<IdentityFieldPlan, RuntimeCatalogError> 
     }
 }
 
-fn bounded_text(fields: MapRef<'_>, field: u32, bound: usize) -> Result<String, RuntimeCatalogError> {
+fn bounded_text(
+    fields: MapRef<'_>,
+    field: u32,
+    bound: usize,
+) -> Result<String, RuntimeCatalogError> {
     let text = metadata::text(fields, field)?;
-    if text.is_empty() || text.len() > bound || text.chars().any(char::is_control) { return Err(RuntimeCatalogError::Bounds) }
+    if text.is_empty() || text.len() > bound || text.chars().any(char::is_control) {
+        return Err(RuntimeCatalogError::Bounds);
+    }
     Ok(text)
 }

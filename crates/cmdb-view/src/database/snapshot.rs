@@ -8,10 +8,20 @@ impl DatabaseSnapshot {
 
     pub async fn counts(&mut self) -> Result<DatabaseCounts, ViewError> {
         let resources = scalar_count(&mut self.tx, "SELECT count(*) FROM resources").await?;
-        let accounts = scalar_count(&mut self.tx, "SELECT count(DISTINCT account) FROM resources").await?;
-        let regions = scalar_count(&mut self.tx, "SELECT count(DISTINCT region) FROM resources").await?;
+        let accounts = scalar_count(
+            &mut self.tx,
+            "SELECT count(DISTINCT account) FROM resources",
+        )
+        .await?;
+        let regions =
+            scalar_count(&mut self.tx, "SELECT count(DISTINCT region) FROM resources").await?;
         let services = scalar_count(&mut self.tx, "SELECT count(DISTINCT substr(kind,instr(kind,':')+2,instr(substr(kind,instr(kind,':')+2),':')-1)) FROM resources").await?;
-        Ok(DatabaseCounts { accounts, regions, services, resources })
+        Ok(DatabaseCounts {
+            accounts,
+            regions,
+            services,
+            resources,
+        })
     }
 
     pub async fn page(
@@ -59,7 +69,14 @@ impl DatabaseSnapshot {
         let resources = scalar_count(&mut self.tx, "SELECT count(*) FROM resources").await?;
         let edges = scalar_count(&mut self.tx, "SELECT count(*) FROM edges").await?;
         let connected = scalar_count(&mut self.tx, "SELECT count(*) FROM (SELECT from_account AS account,from_region AS region,from_kind AS kind,from_id AS id FROM edges UNION SELECT to_account,to_region,to_kind,to_id FROM edges)").await?;
-        let isolated = resources.checked_sub(connected).ok_or(ViewError::StoredRow)?;
-        Ok(LodSummary { resources, edges, connected_resources: connected, isolated_resources: isolated })
+        let isolated = resources
+            .checked_sub(connected)
+            .ok_or(ViewError::StoredRow)?;
+        Ok(LodSummary {
+            resources,
+            edges,
+            connected_resources: connected,
+            isolated_resources: isolated,
+        })
     }
 }

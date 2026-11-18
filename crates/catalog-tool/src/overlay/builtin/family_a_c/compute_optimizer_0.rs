@@ -4,37 +4,180 @@ use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        ("DeleteRecommendationPreferences", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Deletes a recommendation preference, such as enhanced infrastructure metrics. For more information, see Activating enhanced infrastructure metrics in the Compute Optimizer User Guide .")),
+        (
+            "DeleteRecommendationPreferences",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Deletes a recommendation preference, such as enhanced infrastructure metrics. For more information, see Activating enhanced infrastructure metrics in the Compute Optimizer User Guide .",
+            ),
+        ),
         // Model: Describes recommendation export jobs created in the last seven days. Use the ExportAutoScalingGroupRecommendations or ExportEC2InstanceRecommendations actions to request an export of your…
-        ("DescribeRecommendationExportJobs", OperationOverlay {
-            queryable: vec![path("jobId")?],
-            ..read("recommendationExportJobs", Identity::Key(vec![path("jobId")?]), Scope::Region, token("nextToken", "nextToken")?)?
-        }),
-        ("ExportAutoScalingGroupRecommendations", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Exports optimization recommendations for Auto Scaling groups. Recommendations are exported in a comma-separated values (.csv) file, and its metadata in a JavaScript Object Notation (JSON) (.json) file, to an existing Amazon…")),
-        ("ExportEBSVolumeRecommendations", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Exports optimization recommendations for Amazon EBS volumes. Recommendations are exported in a comma-separated values (.csv) file, and its metadata in a JavaScript Object Notation (JSON) (.json) file, to an existing Amazon Simple…")),
-        ("ExportEC2InstanceRecommendations", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Exports optimization recommendations for Amazon EC2 instances. Recommendations are exported in a comma-separated values (.csv) file, and its metadata in a JavaScript Object Notation (JSON) (.json) file, to an existing Amazon…")),
-        ("ExportECSServiceRecommendations", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Exports optimization recommendations for Amazon ECS services on Fargate. Recommendations are exported in a CSV file, and its metadata in a JSON file, to an existing Amazon Simple Storage Service (Amazon S3) bucket that you…")),
-        ("ExportIdleRecommendations", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Export optimization recommendations for your idle resources. Recommendations are exported in a comma-separated values (CSV) file, and its metadata in a JavaScript Object Notation (JSON) file, to an existing Amazon Simple Storage…")),
-        ("ExportLambdaFunctionRecommendations", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Exports optimization recommendations for Lambda functions. Recommendations are exported in a comma-separated values (.csv) file, and its metadata in a JavaScript Object Notation (JSON) (.json) file, to an existing Amazon Simple…")),
-        ("ExportLicenseRecommendations", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Export optimization recommendations for your licenses. Recommendations are exported in a comma-separated values (CSV) file, and its metadata in a JavaScript Object Notation (JSON) file, to an existing Amazon Simple Storage…")),
-        ("ExportRDSDatabaseRecommendations", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Export optimization recommendations for your Amazon Aurora and Amazon Relational Database Service (Amazon RDS) databases. Recommendations are exported in a comma-separated values (CSV) file, and its metadata in a JavaScript…")),
-        ("GetAutoScalingGroupRecommendations", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns Auto Scaling group recommendations. Compute Optimizer generates recommendations for Amazon EC2 Auto Scaling groups that meet a specific set of requirements. For more information, see the Supported resources and…")),
-        ("GetEBSVolumeRecommendations", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns Amazon Elastic Block Store (Amazon EBS) volume recommendations. Compute Optimizer generates recommendations for Amazon EBS volumes that meet a specific set of requirements. For more information, see the Supported…")),
-        ("GetEC2InstanceRecommendations", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns Amazon EC2 instance recommendations. Compute Optimizer generates recommendations for Amazon Elastic Compute Cloud (Amazon EC2) instances that meet a specific set of requirements. For more information, see the Supported…")),
-        ("GetEC2RecommendationProjectedMetrics", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns the projected utilization metrics of Amazon EC2 instance recommendations. The Cpu and Memory metrics are the only projected utilization metrics returned when you run this action. Additionally, the Memory metric is…")),
-        ("GetECSServiceRecommendationProjectedMetrics", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns the projected metrics of Amazon ECS service recommendations.")),
-        ("GetECSServiceRecommendations", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns Amazon ECS service recommendations. Compute Optimizer generates recommendations for Amazon ECS services on Fargate that meet a specific set of requirements. For more information, see the Supported resources and…")),
-        ("GetEffectiveRecommendationPreferences", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns the recommendation preferences that are in effect for a given resource, such as enhanced infrastructure metrics. Considers all applicable preferences that you might have set at the resource, account, and organization…")),
-        ("GetEnrollmentStatus", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns the enrollment (opt in) status of an account to the Compute Optimizer service. If the account is the management account of an organization, this action also confirms the enrollment status of member accounts of the…")),
-        ("GetEnrollmentStatusesForOrganization", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns the Compute Optimizer enrollment (opt-in) status of organization member accounts, if your account is an organization management account. To get the enrollment status of standalone accounts, use the GetEnrollmentStatus…")),
-        ("GetIdleRecommendations", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns idle resource recommendations. Compute Optimizer generates recommendations for idle resources that meet a specific set of requirements. For more information, see Resource requirements in the Compute Optimizer User Guide")),
-        ("GetLambdaFunctionRecommendations", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns Lambda function recommendations. Compute Optimizer generates recommendations for functions that meet a specific set of requirements. For more information, see the Supported resources and requirements in the Compute…")),
-        ("GetLicenseRecommendations", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns license recommendations for Amazon EC2 instances that run on a specific license. Compute Optimizer generates recommendations for licenses that meet a specific set of requirements. For more information, see the Supported…")),
-        ("GetRDSDatabaseRecommendationProjectedMetrics", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns the projected metrics of Aurora and RDS database recommendations.")),
-        ("GetRDSDatabaseRecommendations", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns Amazon Aurora and RDS database recommendations. Compute Optimizer generates recommendations for Amazon Aurora and RDS databases that meet a specific set of requirements. For more information, see the Supported resources…")),
-        ("GetRecommendationPreferences", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns existing recommendation preferences, such as enhanced infrastructure metrics. Use the scope parameter to specify which preferences to return. You can specify to return preferences for an organization, a specific account…")),
-        ("GetRecommendationSummaries", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns the optimization findings for an account. It returns the number of: Amazon EC2 instances in an account that are Underprovisioned , Overprovisioned , or Optimized . EC2Auto Scaling groups in an account that are…")),
-        ("PutRecommendationPreferences", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Creates a new recommendation preference or updates an existing recommendation preference, such as enhanced infrastructure metrics. For more information, see Activating enhanced infrastructure metrics in the Compute Optimizer User…")),
-        ("UpdateEnrollmentStatus", deferred("Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Updates the enrollment (opt in and opt out) status of an account to the Compute Optimizer service. If the account is a management account of an organization, this action can also be used to enroll member accounts of the…")),
+        (
+            "DescribeRecommendationExportJobs",
+            OperationOverlay {
+                queryable: vec![path("jobId")?],
+                ..read(
+                    "recommendationExportJobs",
+                    Identity::Key(vec![path("jobId")?]),
+                    Scope::Region,
+                    token("nextToken", "nextToken")?,
+                )?
+            },
+        ),
+        (
+            "ExportAutoScalingGroupRecommendations",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Exports optimization recommendations for Auto Scaling groups. Recommendations are exported in a comma-separated values (.csv) file, and its metadata in a JavaScript Object Notation (JSON) (.json) file, to an existing Amazon…",
+            ),
+        ),
+        (
+            "ExportEBSVolumeRecommendations",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Exports optimization recommendations for Amazon EBS volumes. Recommendations are exported in a comma-separated values (.csv) file, and its metadata in a JavaScript Object Notation (JSON) (.json) file, to an existing Amazon Simple…",
+            ),
+        ),
+        (
+            "ExportEC2InstanceRecommendations",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Exports optimization recommendations for Amazon EC2 instances. Recommendations are exported in a comma-separated values (.csv) file, and its metadata in a JavaScript Object Notation (JSON) (.json) file, to an existing Amazon…",
+            ),
+        ),
+        (
+            "ExportECSServiceRecommendations",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Exports optimization recommendations for Amazon ECS services on Fargate. Recommendations are exported in a CSV file, and its metadata in a JSON file, to an existing Amazon Simple Storage Service (Amazon S3) bucket that you…",
+            ),
+        ),
+        (
+            "ExportIdleRecommendations",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Export optimization recommendations for your idle resources. Recommendations are exported in a comma-separated values (CSV) file, and its metadata in a JavaScript Object Notation (JSON) file, to an existing Amazon Simple Storage…",
+            ),
+        ),
+        (
+            "ExportLambdaFunctionRecommendations",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Exports optimization recommendations for Lambda functions. Recommendations are exported in a comma-separated values (.csv) file, and its metadata in a JavaScript Object Notation (JSON) (.json) file, to an existing Amazon Simple…",
+            ),
+        ),
+        (
+            "ExportLicenseRecommendations",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Export optimization recommendations for your licenses. Recommendations are exported in a comma-separated values (CSV) file, and its metadata in a JavaScript Object Notation (JSON) file, to an existing Amazon Simple Storage…",
+            ),
+        ),
+        (
+            "ExportRDSDatabaseRecommendations",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Export optimization recommendations for your Amazon Aurora and Amazon Relational Database Service (Amazon RDS) databases. Recommendations are exported in a comma-separated values (CSV) file, and its metadata in a JavaScript…",
+            ),
+        ),
+        (
+            "GetAutoScalingGroupRecommendations",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns Auto Scaling group recommendations. Compute Optimizer generates recommendations for Amazon EC2 Auto Scaling groups that meet a specific set of requirements. For more information, see the Supported resources and…",
+            ),
+        ),
+        (
+            "GetEBSVolumeRecommendations",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns Amazon Elastic Block Store (Amazon EBS) volume recommendations. Compute Optimizer generates recommendations for Amazon EBS volumes that meet a specific set of requirements. For more information, see the Supported…",
+            ),
+        ),
+        (
+            "GetEC2InstanceRecommendations",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns Amazon EC2 instance recommendations. Compute Optimizer generates recommendations for Amazon Elastic Compute Cloud (Amazon EC2) instances that meet a specific set of requirements. For more information, see the Supported…",
+            ),
+        ),
+        (
+            "GetEC2RecommendationProjectedMetrics",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns the projected utilization metrics of Amazon EC2 instance recommendations. The Cpu and Memory metrics are the only projected utilization metrics returned when you run this action. Additionally, the Memory metric is…",
+            ),
+        ),
+        (
+            "GetECSServiceRecommendationProjectedMetrics",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns the projected metrics of Amazon ECS service recommendations.",
+            ),
+        ),
+        (
+            "GetECSServiceRecommendations",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns Amazon ECS service recommendations. Compute Optimizer generates recommendations for Amazon ECS services on Fargate that meet a specific set of requirements. For more information, see the Supported resources and…",
+            ),
+        ),
+        (
+            "GetEffectiveRecommendationPreferences",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns the recommendation preferences that are in effect for a given resource, such as enhanced infrastructure metrics. Considers all applicable preferences that you might have set at the resource, account, and organization…",
+            ),
+        ),
+        (
+            "GetEnrollmentStatus",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns the enrollment (opt in) status of an account to the Compute Optimizer service. If the account is the management account of an organization, this action also confirms the enrollment status of member accounts of the…",
+            ),
+        ),
+        (
+            "GetEnrollmentStatusesForOrganization",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns the Compute Optimizer enrollment (opt-in) status of organization member accounts, if your account is an organization management account. To get the enrollment status of standalone accounts, use the GetEnrollmentStatus…",
+            ),
+        ),
+        (
+            "GetIdleRecommendations",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns idle resource recommendations. Compute Optimizer generates recommendations for idle resources that meet a specific set of requirements. For more information, see Resource requirements in the Compute Optimizer User Guide",
+            ),
+        ),
+        (
+            "GetLambdaFunctionRecommendations",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns Lambda function recommendations. Compute Optimizer generates recommendations for functions that meet a specific set of requirements. For more information, see the Supported resources and requirements in the Compute…",
+            ),
+        ),
+        (
+            "GetLicenseRecommendations",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns license recommendations for Amazon EC2 instances that run on a specific license. Compute Optimizer generates recommendations for licenses that meet a specific set of requirements. For more information, see the Supported…",
+            ),
+        ),
+        (
+            "GetRDSDatabaseRecommendationProjectedMetrics",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns the projected metrics of Aurora and RDS database recommendations.",
+            ),
+        ),
+        (
+            "GetRDSDatabaseRecommendations",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns Amazon Aurora and RDS database recommendations. Compute Optimizer generates recommendations for Amazon Aurora and RDS databases that meet a specific set of requirements. For more information, see the Supported resources…",
+            ),
+        ),
+        (
+            "GetRecommendationPreferences",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns existing recommendation preferences, such as enhanced infrastructure metrics. Use the scope parameter to specify which preferences to return. You can specify to return preferences for an organization, a specific account…",
+            ),
+        ),
+        (
+            "GetRecommendationSummaries",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Returns the optimization findings for an account. It returns the number of: Amazon EC2 instances in an account that are Underprovisioned , Overprovisioned , or Optimized . EC2Auto Scaling groups in an account that are…",
+            ),
+        ),
+        (
+            "PutRecommendationPreferences",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Creates a new recommendation preference or updates an existing recommendation preference, such as enhanced infrastructure metrics. For more information, see Activating enhanced infrastructure metrics in the Compute Optimizer User…",
+            ),
+        ),
+        (
+            "UpdateEnrollmentStatus",
+            deferred(
+                "Recommendation, cost-analysis, or enrollment data is not an owned resource enumeration; automatic enrollment, exports, or recommendation generation are not authorized. Model: Updates the enrollment (opt in and opt out) status of an account to the Compute Optimizer service. If the account is a management account of an organization, this action can also be used to enroll member accounts of the…",
+            ),
+        ),
     ])
 }

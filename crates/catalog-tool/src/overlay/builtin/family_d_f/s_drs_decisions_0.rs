@@ -1,36 +1,135 @@
 // Explicit dispositions from .local/aws-models/models/drs/service/2020-02-26/drs-2020-02-26.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
-    ("AssociateSourceNetworkStack", "Requires sourceNetworkID, cfnStackName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Associate a Source Network to an existing CloudFormation Stack and modify launch templates to use this network."),
-    ("CancelRecoveryPlanExecution", "Requires recoveryPlanExecutionArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Cancels an in-progress Recovery Plan execution."),
-    ("CreateExtendedSourceServer", "Requires sourceServerArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Create an extended source server in the target Account based on the source server in staging account."),
-    ("CreateLaunchConfigurationTemplate", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Creates a new Launch Configuration Template."),
-    ("CreateRecoveryPlan", "Requires name; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a Recovery Plan to orchestrate multi-server disaster recovery."),
-    ("CreateRecoveryPlanStep", "Requires recoveryPlanArn, stepName, configuration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a step in a Recovery Plan."),
-    ("CreateReplicationConfigurationTemplate", "Requires stagingAreaSubnetId, replicationServersSecurityGroupsIDs, ebsEncryption, bandwidthThrottling, stagingAreaTags, pitPolicy; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new ReplicationConfigurationTemplate."),
-    ("CreateSourceNetwork", "Requires vpcID, originAccountID, originRegion; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Create a new Source Network resource for a provided VPC ID."),
-    ("DeleteJob", "Requires jobID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a single Job by ID."),
-    ("DeleteLaunchAction", "Requires resourceId, actionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a resource launch action."),
-    ("DeleteLaunchConfigurationTemplate", "Requires launchConfigurationTemplateID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a single Launch Configuration Template by ID."),
-    ("DeleteRecoveryInstance", "Requires recoveryInstanceID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a single Recovery Instance by ID."),
-    ("DeleteRecoveryPlan", "Requires recoveryPlanArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a Recovery Plan."),
-    ("DeleteRecoveryPlanExecution", "Requires recoveryPlanExecutionArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a Recovery Plan execution record."),
-    ("DeleteRecoveryPlanStep", "Requires recoveryPlanStepArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a step from a Recovery Plan."),
-    ("DeleteReplicationConfigurationTemplate", "Requires replicationConfigurationTemplateID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a single Replication Configuration Template by ID"),
-    ("DeleteSourceNetwork", "Requires sourceNetworkID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Delete Source Network resource."),
-    ("DeleteSourceServer", "Requires sourceServerID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a single Source Server by ID."),
-    ("DescribeJobLogItems", "Requires jobID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves a detailed Job log with pagination."),
-    ("DescribeRecoverySnapshots", "Requires sourceServerID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists all Recovery Snapshots for a single Source Server."),
-    ("DisconnectRecoveryInstance", "Requires recoveryInstanceID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Disconnect a Recovery Instance from Elastic Disaster Recovery."),
-    ("DisconnectSourceServer", "Requires sourceServerID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Disconnects a specific Source Server from Elastic Disaster Recovery."),
-    ("ExportSourceNetworkCfnTemplate", "Requires sourceNetworkID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Export the Source Network CloudFormation template to an S3 bucket."),
-    ("GetFailbackReplicationConfiguration", "Requires recoveryInstanceID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists all Failback ReplicationConfigurations, filtered by Recovery Instance ID."),
-    ("GetLaunchConfiguration", "Requires sourceServerID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets a LaunchConfiguration, filtered by Source Server IDs."),
-    ("GetRecoveryPlan", "Requires recoveryPlanArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets a Recovery Plan by ARN."),
-    ("GetRecoveryPlanExecution", "Requires recoveryPlanExecutionArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets the details of a Recovery Plan execution."),
-    ("GetRecoveryPlanExecutionStep", "Requires recoveryPlanExecutionStepArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets the details of a step within a Recovery Plan execution."),
-    ("GetRecoveryPlanStep", "Requires recoveryPlanStepArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets a Recovery Plan step by ARN."),
-    ("GetReplicationConfiguration", "Requires sourceServerID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets a ReplicationConfiguration, filtered by Source Server ID."),
-    ("InitializeService", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Initialize Elastic Disaster Recovery."),
-    ("ListExtensibleSourceServers", "Requires stagingAccountID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a list of source servers on a staging account that are extensible, which means that: a."),
-    ("ListLaunchActions", "Requires resourceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists resource launch actions."),
+    (
+        "AssociateSourceNetworkStack",
+        "Requires sourceNetworkID, cfnStackName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Associate a Source Network to an existing CloudFormation Stack and modify launch templates to use this network.",
+    ),
+    (
+        "CancelRecoveryPlanExecution",
+        "Requires recoveryPlanExecutionArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Cancels an in-progress Recovery Plan execution.",
+    ),
+    (
+        "CreateExtendedSourceServer",
+        "Requires sourceServerArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Create an extended source server in the target Account based on the source server in staging account.",
+    ),
+    (
+        "CreateLaunchConfigurationTemplate",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Creates a new Launch Configuration Template.",
+    ),
+    (
+        "CreateRecoveryPlan",
+        "Requires name; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a Recovery Plan to orchestrate multi-server disaster recovery.",
+    ),
+    (
+        "CreateRecoveryPlanStep",
+        "Requires recoveryPlanArn, stepName, configuration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a step in a Recovery Plan.",
+    ),
+    (
+        "CreateReplicationConfigurationTemplate",
+        "Requires stagingAreaSubnetId, replicationServersSecurityGroupsIDs, ebsEncryption, bandwidthThrottling, stagingAreaTags, pitPolicy; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new ReplicationConfigurationTemplate.",
+    ),
+    (
+        "CreateSourceNetwork",
+        "Requires vpcID, originAccountID, originRegion; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Create a new Source Network resource for a provided VPC ID.",
+    ),
+    (
+        "DeleteJob",
+        "Requires jobID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a single Job by ID.",
+    ),
+    (
+        "DeleteLaunchAction",
+        "Requires resourceId, actionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a resource launch action.",
+    ),
+    (
+        "DeleteLaunchConfigurationTemplate",
+        "Requires launchConfigurationTemplateID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a single Launch Configuration Template by ID.",
+    ),
+    (
+        "DeleteRecoveryInstance",
+        "Requires recoveryInstanceID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a single Recovery Instance by ID.",
+    ),
+    (
+        "DeleteRecoveryPlan",
+        "Requires recoveryPlanArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a Recovery Plan.",
+    ),
+    (
+        "DeleteRecoveryPlanExecution",
+        "Requires recoveryPlanExecutionArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a Recovery Plan execution record.",
+    ),
+    (
+        "DeleteRecoveryPlanStep",
+        "Requires recoveryPlanStepArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a step from a Recovery Plan.",
+    ),
+    (
+        "DeleteReplicationConfigurationTemplate",
+        "Requires replicationConfigurationTemplateID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a single Replication Configuration Template by ID",
+    ),
+    (
+        "DeleteSourceNetwork",
+        "Requires sourceNetworkID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Delete Source Network resource.",
+    ),
+    (
+        "DeleteSourceServer",
+        "Requires sourceServerID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a single Source Server by ID.",
+    ),
+    (
+        "DescribeJobLogItems",
+        "Requires jobID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves a detailed Job log with pagination.",
+    ),
+    (
+        "DescribeRecoverySnapshots",
+        "Requires sourceServerID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists all Recovery Snapshots for a single Source Server.",
+    ),
+    (
+        "DisconnectRecoveryInstance",
+        "Requires recoveryInstanceID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Disconnect a Recovery Instance from Elastic Disaster Recovery.",
+    ),
+    (
+        "DisconnectSourceServer",
+        "Requires sourceServerID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Disconnects a specific Source Server from Elastic Disaster Recovery.",
+    ),
+    (
+        "ExportSourceNetworkCfnTemplate",
+        "Requires sourceNetworkID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Export the Source Network CloudFormation template to an S3 bucket.",
+    ),
+    (
+        "GetFailbackReplicationConfiguration",
+        "Requires recoveryInstanceID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists all Failback ReplicationConfigurations, filtered by Recovery Instance ID.",
+    ),
+    (
+        "GetLaunchConfiguration",
+        "Requires sourceServerID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets a LaunchConfiguration, filtered by Source Server IDs.",
+    ),
+    (
+        "GetRecoveryPlan",
+        "Requires recoveryPlanArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets a Recovery Plan by ARN.",
+    ),
+    (
+        "GetRecoveryPlanExecution",
+        "Requires recoveryPlanExecutionArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets the details of a Recovery Plan execution.",
+    ),
+    (
+        "GetRecoveryPlanExecutionStep",
+        "Requires recoveryPlanExecutionStepArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets the details of a step within a Recovery Plan execution.",
+    ),
+    (
+        "GetRecoveryPlanStep",
+        "Requires recoveryPlanStepArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets a Recovery Plan step by ARN.",
+    ),
+    (
+        "GetReplicationConfiguration",
+        "Requires sourceServerID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets a ReplicationConfiguration, filtered by Source Server ID.",
+    ),
+    (
+        "InitializeService",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Initialize Elastic Disaster Recovery.",
+    ),
+    (
+        "ListExtensibleSourceServers",
+        "Requires stagingAccountID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a list of source servers on a staging account that are extensible, which means that: a.",
+    ),
+    (
+        "ListLaunchActions",
+        "Requires resourceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists resource launch actions.",
+    ),
 ];

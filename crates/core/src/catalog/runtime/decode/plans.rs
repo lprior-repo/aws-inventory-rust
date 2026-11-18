@@ -1,42 +1,42 @@
 #[cfg(test)]
 #[path = "plans/identity_tests.rs"]
 mod identity_tests;
+#[path = "plans/metadata_fields.rs"]
+mod metadata_fields;
 #[cfg(test)]
 #[path = "plans/pagination_tests.rs"]
 mod pagination_tests;
-#[path = "plans/metadata_fields.rs"]
-mod metadata_fields;
 use metadata_fields::*;
+mod binding_alternatives;
 mod bounds;
+mod capabilities;
+mod context;
+mod dependencies;
+mod emissions;
+mod fixed_input;
+mod identity_text;
+mod map_exclusions;
+mod model_links;
+mod page_codec;
 mod protocol_check;
+mod routing;
+mod row_policy;
+mod selection;
+mod stages;
+mod tag_endpoint;
 mod tags;
 mod validation;
-mod dependencies;
-mod fixed_input;
-mod routing;
-mod capabilities;
-mod emissions;
-mod identity_text;
-mod tag_endpoint;
-mod selection;
-mod context;
-mod model_links;
-mod map_exclusions;
-mod page_codec;
-mod binding_alternatives;
-mod stages;
-mod row_policy;
+pub(super) use model_links::validate as validate_model_links;
 use page_codec::page;
 #[cfg(test)]
 use page_codec::token;
-pub(super) use model_links::validate as validate_model_links;
 #[cfg(test)]
 mod tests;
 use super::super::types::{
     BindingPlan, BindingSource, BindingValue, CallablePlan, EndpointClass, EndpointPathMode,
-    EndpointTemplate, IdentityPart, IdentityPatternCache, IdentityPlan, ItemPlan, PagePlan, PageSizeBinding, PlanParts,
-    PlanPurpose, PlanScope, ReviewProvenance, RuntimeProtocol, TokenBinding, TokenPlacement,
-    TokenType,
+    EndpointTemplate, IdentityPart, IdentityPatternCache, IdentityPlan, ItemPlan, PagePlan,
+    PageSizeBinding, PlanParts, PlanPurpose, PlanScope, ReviewProvenance, RuntimeProtocol,
+    TokenBinding, TokenPlacement, TokenType,
 };
 use super::{RuntimeCatalogError, list_value, map, metadata, services::Services};
 use crate::{
@@ -49,7 +49,11 @@ pub(super) fn read<'a>(
     list: crate::record::ListRef<'_>,
 ) -> Result<Vec<CallablePlan<'a>>, RuntimeCatalogError> {
     let mut cache = IdentityPatternCache::default();
-    let mut plans = metadata::bounded(list, |value| plan(services, value, &mut cache), metadata::MAX_ITEMS)?;
+    let mut plans = metadata::bounded(
+        list,
+        |value| plan(services, value, &mut cache),
+        metadata::MAX_ITEMS,
+    )?;
     dependencies::validate(&mut plans)?;
     Ok(plans)
 }
@@ -60,11 +64,23 @@ fn plan<'a>(
     cache: &mut IdentityPatternCache<'a>,
 ) -> Result<CallablePlan<'a>, RuntimeCatalogError> {
     let fields = map(value)?;
-    metadata::only_fields(fields, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23])?;
+    metadata::only_fields(
+        fields,
+        &[
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+        ],
+    )?;
     let service_name = metadata::text(fields, 1)?;
     let operation_name = metadata::text(fields, 2)?;
     let (service, operation) = services.operation(&service_name, &operation_name)?;
-    decode_plan(fields, service, operation, service_name, operation_name, cache)
+    decode_plan(
+        fields,
+        service,
+        operation,
+        service_name,
+        operation_name,
+        cache,
+    )
 }
 
 fn decode_plan<'a>(
@@ -90,19 +106,44 @@ fn decode_plan<'a>(
     let bindings = bindings(metadata::list(fields, 7)?)?;
     let pagination = page(metadata::map_field(fields, 8)?)?;
     validation::exclusions(service, operation, &items, metadata::list(fields, 9)?)?;
-    let exclusions = map_exclusions::read(fields, service, operation, &items,
-        exclusions(metadata::list(fields, 9)?)?)?;
+    let exclusions = map_exclusions::read(
+        fields,
+        service,
+        operation,
+        &items,
+        exclusions(metadata::list(fields, 9)?)?,
+    )?;
     let endpoint = endpoint(metadata::map_field(fields, 10)?)?;
     let review = review(metadata::map_field(fields, 11)?)?;
     let protocol = protocol(metadata::integer(fields, 13)?)?;
     let (projection, classification) = capabilities::read(fields, service, operation, &items)?;
     let resources = super::super::types::ResourceEmissions::new(
-        super::super::types::ResourceEmissionPlan::primary(&kind, &items, &identity, tags.as_ref(), &exclusions,
-            projection.as_ref(), classification.as_ref()),
-        emissions::additional(fields, &service_name, service, operation)?)?;
-    let identity_text = resources.iter().map(|emission| {
-        Ok((Box::from(emission.key()), identity_text::compile(service, operation, emission.items(), emission.identity(), cache)?))
-    }).collect::<Result<Box<[_]>, RuntimeCatalogError>>()?;
+        super::super::types::ResourceEmissionPlan::primary(
+            &kind,
+            &items,
+            &identity,
+            tags.as_ref(),
+            &exclusions,
+            projection.as_ref(),
+            classification.as_ref(),
+        ),
+        emissions::additional(fields, &service_name, service, operation)?,
+    )?;
+    let identity_text = resources
+        .iter()
+        .map(|emission| {
+            Ok((
+                Box::from(emission.key()),
+                identity_text::compile(
+                    service,
+                    operation,
+                    emission.items(),
+                    emission.identity(),
+                    cache,
+                )?,
+            ))
+        })
+        .collect::<Result<Box<[_]>, RuntimeCatalogError>>()?;
     protocol_check::validate(service, protocol)?;
     let parts = PlanParts {
         service_name: service_name.into_boxed_str(),
@@ -136,9 +177,16 @@ fn decode_plan<'a>(
     Ok(CallablePlan::new(parts))
 }
 
-fn identity_for(fields: crate::record::MapRef<'_>, purpose: &PlanPurpose, emission: super::super::Emission) -> Result<IdentityPlan, RuntimeCatalogError> {
-    if matches!(purpose, PlanPurpose::TagEndpoint(_) | PlanPurpose::EndpointDiscovery)
-        || emission == super::super::Emission::DiscoveryOnly {
+fn identity_for(
+    fields: crate::record::MapRef<'_>,
+    purpose: &PlanPurpose,
+    emission: super::super::Emission,
+) -> Result<IdentityPlan, RuntimeCatalogError> {
+    if matches!(
+        purpose,
+        PlanPurpose::TagEndpoint(_) | PlanPurpose::EndpointDiscovery
+    ) || emission == super::super::Emission::DiscoveryOnly
+    {
         metadata::only_fields(fields, &[1, 2])?;
         if metadata::integer(fields, 1)? != 2 || metadata::list(fields, 2)?.count()? != 0 {
             return Err(RuntimeCatalogError::Capability);
@@ -212,7 +260,9 @@ fn identity_part(value: ValueRef<'_>) -> Result<IdentityPart, RuntimeCatalogErro
         }
         1 => {
             metadata::only_fields(fields, &[1, 2])?;
-            Ok(IdentityPart::Field(metadata::selected_path(metadata::list(fields, 2)?)?))
+            Ok(IdentityPart::Field(metadata::selected_path(
+                metadata::list(fields, 2)?,
+            )?))
         }
         2..=4 => {
             metadata::only_fields(fields, &[1])?;
@@ -289,7 +339,9 @@ fn binding(value: ValueRef<'_>) -> Result<BindingPlan, RuntimeCatalogError> {
         13 => {
             metadata::only_fields(fields, &[1, 2, 3, 4, 5, 6, 7])?;
             let branch = metadata::text(fields, 6)?;
-            if !routing::valid_branch_name(&branch) { return Err(RuntimeCatalogError::Capability); }
+            if !routing::valid_branch_name(&branch) {
+                return Err(RuntimeCatalogError::Capability);
+            }
             BindingSource::ContextFromBranch {
                 service: metadata::text(fields, 3)?.into_boxed_str(),
                 operation: metadata::text(fields, 4)?.into_boxed_str(),
@@ -311,7 +363,6 @@ fn binding(value: ValueRef<'_>) -> Result<BindingPlan, RuntimeCatalogError> {
 fn binding_value(value: ValueRef<'_>) -> Result<BindingValue, RuntimeCatalogError> {
     fixed_input::decode(value)
 }
-
 
 fn exclusions(list: crate::record::ListRef<'_>) -> Result<Exclusions, RuntimeCatalogError> {
     let paths = metadata::bounded(

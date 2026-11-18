@@ -1,30 +1,30 @@
-pub(in crate::sweep_runtime) mod trusted_arn;
-#[cfg(test)]
-mod selection_tests;
-#[cfg(test)]
-mod scalar_tests;
+mod identity_choice;
 #[cfg(test)]
 mod identity_tests;
+mod identity_validation;
 #[cfg(test)]
 mod policy_ac_tests;
 #[cfg(test)]
-mod policy_qstz_tests;
-#[cfg(test)]
-pub(crate) mod policy_lp_tests;
-#[cfg(test)]
 pub(in crate::sweep_runtime) mod policy_dfgk_tests;
-#[cfg(test)]
-mod policy_gk_iot_iam_tests;
-#[cfg(test)]
-mod policy_gk_root_tests;
 #[cfg(test)]
 mod policy_gk_gamelift_fleets_tests;
 #[cfg(test)]
+mod policy_gk_iot_iam_tests;
+#[cfg(test)]
 mod policy_gk_ivs_roots_tests;
-mod tags;
+#[cfg(test)]
+mod policy_gk_root_tests;
+#[cfg(test)]
+pub(crate) mod policy_lp_tests;
+#[cfg(test)]
+mod policy_qstz_tests;
+#[cfg(test)]
+mod scalar_tests;
 mod selection;
-mod identity_choice;
-mod identity_validation;
+#[cfg(test)]
+mod selection_tests;
+mod tags;
+pub(in crate::sweep_runtime) mod trusted_arn;
 pub(super) use identity_validation::IdentityTextValidation;
 pub(super) use tags::tag_observation;
 #[cfg(test)]
@@ -85,16 +85,24 @@ pub(super) fn item_records(record: &Record, plan: &ItemPlan) -> Result<Vec<Recor
     let (count, selected) = item_selection(record, plan)?;
     let mut records = Vec::new();
     records.try_reserve(count)?;
-    for item in selected { records.push(item?); }
+    for item in selected {
+        records.push(item?);
+    }
     Ok(records)
 }
 
 pub(super) fn item_selection<'a>(
-    record: &'a Record, plan: &ItemPlan,
-) -> Result<(usize, impl Iterator<Item = Result<Record, SweepError>> + 'a + use<'a>), SweepError> {
+    record: &'a Record,
+    plan: &ItemPlan,
+) -> Result<
+    (
+        usize,
+        impl Iterator<Item = Result<Record, SweepError>> + 'a + use<'a>,
+    ),
+    SweepError,
+> {
     selection::items(record, plan)
 }
-
 
 fn item_record(value: ValueRef<'_>) -> Result<Record, SweepError> {
     match value {
@@ -117,7 +125,14 @@ pub(super) fn resource_id(
     plan: &IdentityPlan,
     context: Option<IdentityContext<'_>>,
 ) -> Result<ResourceId, SweepError> {
-    identity(record, plan, context.as_ref(), None, None, &IdentityTextValidation::RecipeOnly)
+    identity(
+        record,
+        plan,
+        context.as_ref(),
+        None,
+        None,
+        &IdentityTextValidation::RecipeOnly,
+    )
 }
 
 #[cfg(test)]
@@ -128,7 +143,14 @@ pub(super) fn resource_id_with_context(
     discovery: &inventory_core::inventory::DiscoveryContext,
     current_request: &Record,
 ) -> Result<ResourceId, SweepError> {
-    resource_id_validated(record, plan, trusted, discovery, current_request, &IdentityTextValidation::RecipeOnly)
+    resource_id_validated(
+        record,
+        plan,
+        trusted,
+        discovery,
+        current_request,
+        &IdentityTextValidation::RecipeOnly,
+    )
 }
 
 pub(super) fn resource_id_validated(
@@ -139,7 +161,14 @@ pub(super) fn resource_id_validated(
     current_request: &Record,
     validation: &IdentityTextValidation<'_, '_>,
 ) -> Result<ResourceId, SweepError> {
-    identity(record, plan, trusted.as_ref(), Some(discovery), Some(current_request), validation)
+    identity(
+        record,
+        plan,
+        trusted.as_ref(),
+        Some(discovery),
+        Some(current_request),
+        validation,
+    )
 }
 
 fn identity(
@@ -159,7 +188,14 @@ fn identity(
         IdentityPlan::Template(parts) => Cow::Owned(template_text(record, parts, context)?),
         IdentityPlan::Key(paths) => key_text(record, paths)?,
         IdentityPlan::Choice(_) | IdentityPlan::CorrelatedKey(_) | IdentityPlan::MapArn { .. } => {
-            return identity_choice::resource_id(record, plan, context, discovery, current_request, validation);
+            return identity_choice::resource_id(
+                record,
+                plan,
+                context,
+                discovery,
+                current_request,
+                validation,
+            );
         }
     };
     ResourceId::parse(&text)
@@ -184,7 +220,9 @@ fn template_text(
             _ => Cow::Borrowed(context_text(context, part)?),
         };
         if text.len().saturating_add(value.len()) > 4096 {
-            return Err(SweepError::Operation("modeled resource identity is too long"));
+            return Err(SweepError::Operation(
+                "modeled resource identity is too long",
+            ));
         }
         text.try_reserve(value.len())?;
         text.push_str(&value);
@@ -199,7 +237,9 @@ fn context_text<'a>(
     let context = context.ok_or(SweepError::Operation("identity request context is absent"))?;
     let region = context.region.as_str();
     if !commercial_region(region) {
-        return Err(SweepError::Operation("identity context requires the commercial partition"));
+        return Err(SweepError::Operation(
+            "identity context requires the commercial partition",
+        ));
     }
     match part {
         IdentityPart::Partition => Ok("aws"),
@@ -210,11 +250,27 @@ fn context_text<'a>(
 }
 
 fn commercial_region(region: &str) -> bool {
-    let Some((area, rest)) = region.split_once('-') else { return false };
-    let Some((direction, _)) = rest.rsplit_once('-') else { return false };
-    matches!(area, "af" | "ap" | "ca" | "eu" | "il" | "me" | "mx" | "sa" | "us")
-        && matches!(direction, "central" | "east" | "west" | "north" | "northeast"
-            | "northwest" | "south" | "southeast" | "southwest")
+    let Some((area, rest)) = region.split_once('-') else {
+        return false;
+    };
+    let Some((direction, _)) = rest.rsplit_once('-') else {
+        return false;
+    };
+    matches!(
+        area,
+        "af" | "ap" | "ca" | "eu" | "il" | "me" | "mx" | "sa" | "us"
+    ) && matches!(
+        direction,
+        "central"
+            | "east"
+            | "west"
+            | "north"
+            | "northeast"
+            | "northwest"
+            | "south"
+            | "southeast"
+            | "southwest"
+    )
 }
 
 fn key_text<'a>(record: &'a Record, paths: &[Box<[FieldId]>]) -> Result<Cow<'a, str>, SweepError> {
@@ -232,15 +288,27 @@ fn key_text<'a>(record: &'a Record, paths: &[Box<[FieldId]>]) -> Result<Cow<'a, 
         .enumerate()
         .try_fold(String::new(), |mut text, (position, path)| {
             let component = required_text(record, path)?;
-            let digits = if component.is_empty() { 1 } else { component.len().ilog10().saturating_add(1) };
+            let digits = if component.is_empty() {
+                1
+            } else {
+                component.len().ilog10().saturating_add(1)
+            };
             let digits = usize::try_from(digits)
                 .map_err(|_| SweepError::Operation("identity length overflow"))?;
-            let additional = component.len().checked_add(digits)
+            let additional = component
+                .len()
+                .checked_add(digits)
                 .and_then(|length| length.checked_add(1))
                 .and_then(|length| length.checked_add(usize::from(position > 0)))
                 .ok_or(SweepError::Operation("identity length overflow"))?;
-            if text.len().checked_add(additional).is_none_or(|length| length > 4096) {
-                return Err(SweepError::Operation("modeled resource identity is too long"));
+            if text
+                .len()
+                .checked_add(additional)
+                .is_none_or(|length| length > 4096)
+            {
+                return Err(SweepError::Operation(
+                    "modeled resource identity is too long",
+                ));
             }
             text.try_reserve(additional)?;
             if position > 0 {

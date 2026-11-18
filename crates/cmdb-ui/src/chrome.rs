@@ -55,7 +55,8 @@ pub(crate) fn sync_chrome(ui: &WidgetRef, cx: &mut Cx) {
 fn write_summary(ui: &WidgetRef, cx: &mut Cx, state: &ChromeState) {
     ui.label(cx, ids!(summary)).set_text(cx, &state.summary);
     ui.label(cx, ids!(table_status)).set_text(cx, &state.status);
-    ui.label(cx, ids!(all_mark)).set_visible(cx, state.filters_clear);
+    ui.label(cx, ids!(all_mark))
+        .set_visible(cx, state.filters_clear);
     [
         ids!(ec2_count),
         ids!(s3_count),
@@ -178,7 +179,8 @@ fn show_details(ui: &WidgetRef, cx: &mut Cx, row: Row) {
     );
     detail.label(cx, ids!(detail_record)).set_text(cx, &record);
     detail.label(cx, ids!(detail_hash)).set_text(cx, &hash);
-    ui.label(cx, ids!(detail_tags)).set_text(cx, &tag_summary(&row));
+    ui.label(cx, ids!(detail_tags))
+        .set_text(cx, &tag_summary(&row));
 }
 
 fn hide_details(ui: &WidgetRef, cx: &mut Cx) {
@@ -199,9 +201,11 @@ fn tag_summary(row: &Row) -> String {
         return text;
     }
     text.push('\n');
-    let result = row.tags.iter().take(8).try_for_each(|tag| {
-        writeln!(&mut text, "{:?} = {:?}", tag.key, tag.value)
-    });
+    let result = row
+        .tags
+        .iter()
+        .take(8)
+        .try_for_each(|tag| writeln!(&mut text, "{:?} = {:?}", tag.key, tag.value));
     if let Err(error) = result {
         return format!("Tag display unavailable · {error}");
     }

@@ -1,14 +1,12 @@
 // Pinned model: .local/aws-models/models/ec2-instance-connect/service/2018-04-02/ec2-instance-connect-2018-04-02.json
-use super::support::{reviewed};
-use crate::overlay::{NameError, ServiceOverlay};
+use super::support::reviewed;
 use crate::classes::DenyReason;
+use crate::overlay::{NameError, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "ec2-instance-connect",
-        vec![
-
-        ],
+        vec![],
         &[],
         &[
             // Pushes an SSH public key to the specified EC2 instance for use by the specified user.

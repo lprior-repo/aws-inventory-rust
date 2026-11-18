@@ -8,7 +8,9 @@ impl SeedState {
         self,
         relationships: &[PreparedRelationship],
     ) -> Result<ScenarioSeedOracle, SeedError> {
-        let edges = relationships.iter().map(|relationship| self.edge(relationship))
+        let edges = relationships
+            .iter()
+            .map(|relationship| self.edge(relationship))
             .collect::<Result<Vec<_>, _>>()?;
         Ok(ScenarioSeedOracle {
             resources: self.resources(),
@@ -40,15 +42,17 @@ impl SeedState {
     }
 
     fn resources(&self) -> Vec<super::super::SeedResourceIdentity> {
-        self.outputs.iter().filter_map(|output| output.resource.clone()).collect()
+        self.outputs
+            .iter()
+            .filter_map(|output| output.resource.clone())
+            .collect()
     }
 
     pub(super) fn edge(&self, relationship: &PreparedRelationship) -> Result<Edge, SeedError> {
         let source = self.output(relationship.source)?;
         let from = self.resource(relationship.source)?;
         let target = self.resource(relationship.target)?;
-        if text_path(source.record.root(), &relationship.observed_path)? != target.id.as_str()
-        {
+        if text_path(source.record.root(), &relationship.observed_path)? != target.id.as_str() {
             return Err(SeedError::Invalid(
                 "response did not confirm the modeled relationship",
             ));
@@ -86,9 +90,16 @@ impl SeedState {
         }))
     }
 
-    pub(super) fn resource(&self, step: super::super::StepId) -> Result<&SeedResourceIdentity, SeedError> {
-        self.output(step)?.resource.as_ref()
-            .ok_or(SeedError::Invalid("relationship endpoint must be a resource step"))
+    pub(super) fn resource(
+        &self,
+        step: super::super::StepId,
+    ) -> Result<&SeedResourceIdentity, SeedError> {
+        self.output(step)?
+            .resource
+            .as_ref()
+            .ok_or(SeedError::Invalid(
+                "relationship endpoint must be a resource step",
+            ))
     }
 
     pub(super) fn output(
@@ -137,9 +148,15 @@ pub(super) fn validate_oracle_plan(models: &SeedModels<'_>) -> Result<(), SeedEr
     let found = models.relationships.iter().any(|relationship| {
         let source = models.steps.get(usize::from(relationship.source.0));
         let target = models.steps.get(usize::from(relationship.target.0));
-        source.is_some_and(|step| step.resource.as_ref().is_some_and(|resource| resource.kind == subnet_kind))
-            && target.is_some_and(|step| step.resource.as_ref().is_some_and(|resource| resource.kind == vpc_kind))
-            && relationship.relation.as_str() == "IN_VPC"
+        source.is_some_and(|step| {
+            step.resource
+                .as_ref()
+                .is_some_and(|resource| resource.kind == subnet_kind)
+        }) && target.is_some_and(|step| {
+            step.resource
+                .as_ref()
+                .is_some_and(|resource| resource.kind == vpc_kind)
+        }) && relationship.relation.as_str() == "IN_VPC"
     });
     if !found {
         return Err(SeedError::Invalid(
@@ -149,7 +166,10 @@ pub(super) fn validate_oracle_plan(models: &SeedModels<'_>) -> Result<(), SeedEr
     Ok(())
 }
 
-pub(super) fn text_path(map: MapRef<'_>, path: &[super::super::model::Selector]) -> Result<String, SeedError> {
+pub(super) fn text_path(
+    map: MapRef<'_>,
+    path: &[super::super::model::Selector],
+) -> Result<String, SeedError> {
     match value_path(map, path)? {
         ValueRef::Text(text) => Ok(text.to_owned()),
         _ => Err(SeedError::Invalid("modeled identity output is not text")),
@@ -161,14 +181,23 @@ pub(super) fn value_path<'a>(
     path: &[super::super::model::Selector],
 ) -> Result<ValueRef<'a>, SeedError> {
     use super::super::model::Selector;
-    if path.is_empty() { return Err(SeedError::Invalid("modeled output path is empty")); }
-    path.iter().try_fold(ValueRef::Map(root), |value, selector| {
-        let value = match (value, selector) {
-            (ValueRef::Map(map), Selector::Field(field)) => map.get_field(*field)?,
-            (ValueRef::Map(map), Selector::Name(name)) => map.get_name(name)?,
-            (ValueRef::List(list), Selector::Index(index)) => list.get(*index)?,
-            _ => return Err(SeedError::Invalid("modeled output selector has the wrong container type")),
-        };
-        value.ok_or(SeedError::Invalid("modeled output field or element is missing"))
-    })
+    if path.is_empty() {
+        return Err(SeedError::Invalid("modeled output path is empty"));
+    }
+    path.iter()
+        .try_fold(ValueRef::Map(root), |value, selector| {
+            let value = match (value, selector) {
+                (ValueRef::Map(map), Selector::Field(field)) => map.get_field(*field)?,
+                (ValueRef::Map(map), Selector::Name(name)) => map.get_name(name)?,
+                (ValueRef::List(list), Selector::Index(index)) => list.get(*index)?,
+                _ => {
+                    return Err(SeedError::Invalid(
+                        "modeled output selector has the wrong container type",
+                    ));
+                }
+            };
+            value.ok_or(SeedError::Invalid(
+                "modeled output field or element is missing",
+            ))
+        })
 }

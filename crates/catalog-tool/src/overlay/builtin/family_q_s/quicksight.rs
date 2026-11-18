@@ -1,5 +1,5 @@
 // Entire pinned service accounted for; no runtime name-prefix authorization.
-use super::{construction, NameError, ServiceOverlay};
+use super::{NameError, ServiceOverlay, construction};
 mod calls_0;
 mod decisions_0;
 mod decisions_1;
@@ -12,6 +12,13 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     construction::reviewed(
         "quicksight",
         &[calls_0::CALLS],
-        &[decisions_0::DECISIONS, decisions_1::DECISIONS, decisions_2::DECISIONS, decisions_3::DECISIONS, decisions_4::DECISIONS, decisions_5::DECISIONS],
+        &[
+            decisions_0::DECISIONS,
+            decisions_1::DECISIONS,
+            decisions_2::DECISIONS,
+            decisions_3::DECISIONS,
+            decisions_4::DECISIONS,
+            decisions_5::DECISIONS,
+        ],
     )
 }

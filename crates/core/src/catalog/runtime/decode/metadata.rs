@@ -93,13 +93,23 @@ fn relation(value: ValueRef<'_>) -> Result<super::super::RelationshipPlan, Runti
     let target_kind = crate::inventory::Kind::parse(&text(fields, 3)?)?;
     let target_kinds = match fields.get_field(FieldId::new(9)?)? {
         None => vec![target_kind.clone()],
-        Some(ValueRef::List(values)) => bounded(values, |value| {
-            crate::inventory::Kind::parse(&super::text_value(value)?).map_err(RuntimeCatalogError::from)
-        }, 64)?,
+        Some(ValueRef::List(values)) => bounded(
+            values,
+            |value| {
+                crate::inventory::Kind::parse(&super::text_value(value)?)
+                    .map_err(RuntimeCatalogError::from)
+            },
+            64,
+        )?,
         Some(_) => return Err(RuntimeCatalogError::Capability),
     };
-    if target_kinds.is_empty() || !target_kinds.contains(&target_kind)
-        || target_kinds.iter().enumerate().any(|(index, kind)| target_kinds.iter().take(index).any(|prior| prior == kind)) {
+    if target_kinds.is_empty()
+        || !target_kinds.contains(&target_kind)
+        || target_kinds
+            .iter()
+            .enumerate()
+            .any(|(index, kind)| target_kinds.iter().take(index).any(|prior| prior == kind))
+    {
         return Err(RuntimeCatalogError::Capability);
     }
     let result = super::super::RelationshipPlan {
@@ -179,9 +189,10 @@ pub(super) fn decisions(
     services: &super::services::Services<'_>,
 ) -> Result<Vec<ReviewDecision>, RuntimeCatalogError> {
     let decisions = bounded(list, decision, MAX_ITEMS)?;
-    decisions.iter().map(decision_key).try_for_each(|(service, operation)| {
-        services.operation(service, operation).map(|_| ())
-    })?;
+    decisions
+        .iter()
+        .map(decision_key)
+        .try_for_each(|(service, operation)| services.operation(service, operation).map(|_| ()))?;
     validate_decision_plans(&decisions, plans)?;
     Ok(decisions)
 }

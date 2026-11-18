@@ -4,11 +4,23 @@ use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
     // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Returns estimated carbon emission values based on customer grouping and filtering parameters. We recommend using pagination to ensure that the operation returns quickly and successfully.
-    ("GetEstimatedCarbonEmissions", Decision::Denied(DenyReason::Content)),
+    (
+        "GetEstimatedCarbonEmissions",
+        Decision::Denied(DenyReason::Content),
+    ),
     // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Returns the possible dimension values available for a customer's account. We recommend using pagination to ensure that the operation returns quickly and successfully.
-    ("GetEstimatedCarbonEmissionsDimensionValues", Decision::Denied(DenyReason::Content)),
+    (
+        "GetEstimatedCarbonEmissionsDimensionValues",
+        Decision::Denied(DenyReason::Content),
+    ),
     // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Returns estimated water allocation values based on customer grouping and filtering parameters. We recommend using pagination to ensure that the operation returns quickly and successfully.
-    ("GetEstimatedWaterAllocation", Decision::Denied(DenyReason::Content)),
+    (
+        "GetEstimatedWaterAllocation",
+        Decision::Denied(DenyReason::Content),
+    ),
     // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Returns the possible dimension values available for a customer's account. We recommend using pagination to ensure that the operation returns quickly and successfully.
-    ("GetEstimatedWaterAllocationDimensionValues", Decision::Denied(DenyReason::Content)),
+    (
+        "GetEstimatedWaterAllocationDimensionValues",
+        Decision::Denied(DenyReason::Content),
+    ),
 ];

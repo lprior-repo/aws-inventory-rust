@@ -20,11 +20,21 @@ pub(super) async fn claim(
     key: &str,
     generation: i64,
 ) -> Result<String, GraphError> {
-    let owner: i64 = redis::cmd("CLIENT").arg("ID").query_async(connection).await?;
+    let owner: i64 = redis::cmd("CLIENT")
+        .arg("ID")
+        .query_async(connection)
+        .await?;
     let token = format!("{generation:020}:{owner}");
-    let claimed: bool = redis::cmd("EVAL").arg(CLAIM).arg(1).arg(key).arg(&token)
-        .query_async(connection).await?;
-    if !claimed { return Err(GraphError::OwnershipLost); }
+    let claimed: bool = redis::cmd("EVAL")
+        .arg(CLAIM)
+        .arg(1)
+        .arg(key)
+        .arg(&token)
+        .query_async(connection)
+        .await?;
+    if !claimed {
+        return Err(GraphError::OwnershipLost);
+    }
     Ok(token)
 }
 
@@ -39,8 +49,10 @@ impl GraphClient {
         query: String,
     ) -> Result<redis::Value, GraphError> {
         let ((), current): ((), Option<String>) = redis::pipe()
-            .cmd("WATCH").arg(&self.fence_key)
-            .cmd("GET").arg(&self.fence_key)
+            .cmd("WATCH")
+            .arg(&self.fence_key)
+            .cmd("GET")
+            .arg(&self.fence_key)
             .query_async(&mut self.connection)
             .await?;
         if current.as_deref() != Some(self.fence.as_str()) {
@@ -48,9 +60,15 @@ impl GraphClient {
         }
         let response: Option<(redis::Value,)> = redis::pipe()
             .atomic()
-            .cmd("GRAPH.QUERY").arg(&self.graph).arg(query).arg("TIMEOUT").arg(10_000_u32)
+            .cmd("GRAPH.QUERY")
+            .arg(&self.graph)
+            .arg(query)
+            .arg("TIMEOUT")
+            .arg(10_000_u32)
             .query_async(&mut self.connection)
             .await?;
-        response.map(|(value,)| value).ok_or(GraphError::OwnershipLost)
+        response
+            .map(|(value,)| value)
+            .ok_or(GraphError::OwnershipLost)
     }
 }

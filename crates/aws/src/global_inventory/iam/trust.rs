@@ -28,12 +28,23 @@ pub(crate) fn trust_summary(document: Option<&str>) -> Result<Vec<Value>, AwsSca
             ));
         }
     };
-    let summaries = statements.into_iter().map(trust_statement).collect::<Result<Vec<_>, _>>()?;
-    let _principal_count = summaries.iter().filter_map(|summary| summary.get("principals").and_then(Value::as_object))
-        .flat_map(|principals| principals.values()).filter_map(Value::as_array)
-        .try_fold(0_usize, |count, values| count.checked_add(values.len())
-            .filter(|count| *count <= MAX_PRINCIPALS)
-            .ok_or_else(|| AwsScanError::InvalidData("trust policy exceeds 256 principals".into())))?;
+    let summaries = statements
+        .into_iter()
+        .map(trust_statement)
+        .collect::<Result<Vec<_>, _>>()?;
+    let _principal_count = summaries
+        .iter()
+        .filter_map(|summary| summary.get("principals").and_then(Value::as_object))
+        .flat_map(|principals| principals.values())
+        .filter_map(Value::as_array)
+        .try_fold(0_usize, |count, values| {
+            count
+                .checked_add(values.len())
+                .filter(|count| *count <= MAX_PRINCIPALS)
+                .ok_or_else(|| {
+                    AwsScanError::InvalidData("trust policy exceeds 256 principals".into())
+                })
+        })?;
     Ok(summaries)
 }
 

@@ -78,7 +78,9 @@ impl Engine<'_, '_> {
             && !schema::preserves_null(self.context, parent)?
         {
             if self.context.limits.preserve_fields && target.is_some() {
-                return Err(DecodeError::Invalid("null modeled member has no inventory value"));
+                return Err(DecodeError::Invalid(
+                    "null modeled member has no inventory value",
+                ));
             }
             Ok((None, Key::Ignore))
         } else {

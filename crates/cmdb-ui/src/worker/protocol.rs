@@ -38,13 +38,17 @@ impl Revisions {
 
     fn next(&self) -> Result<u64, String> {
         self.serial
-            .try_update(Ordering::AcqRel, Ordering::Acquire, |value| value.checked_add(1))
+            .try_update(Ordering::AcqRel, Ordering::Acquire, |value| {
+                value.checked_add(1)
+            })
             .map(|previous| previous.saturating_add(1))
             .map_err(|_| "inventory request revision exhausted".to_owned())
     }
 
     pub fn accepts(&self, output: &Output) -> bool {
-        let Some(revision) = output.revision else { return true; };
+        let Some(revision) = output.revision else {
+            return true;
+        };
         let latest = match &output.event {
             WorkerEvent::Snapshot { .. } | WorkerEvent::GraphStatus { .. } => &self.page,
             WorkerEvent::Graph { .. } => &self.graph,
@@ -65,12 +69,17 @@ pub(super) fn current_events(
     outputs: impl Iterator<Item = Output>,
     revisions: &Revisions,
 ) -> Vec<WorkerEvent> {
-    let (status, graph, page) = outputs.take(EVENT_CAPACITY).filter(|output| revisions.accepts(output))
-        .fold((None, None, None), |(status, graph, page), output| match output.event {
-            event @ WorkerEvent::GraphStatus { .. } => (Some(event), graph, page),
-            event @ WorkerEvent::Graph { .. } => (status, Some(event), page),
-            event @ WorkerEvent::Snapshot { .. } => (status, graph, Some(event)),
-        });
+    let (status, graph, page) = outputs
+        .take(EVENT_CAPACITY)
+        .filter(|output| revisions.accepts(output))
+        .fold(
+            (None, None, None),
+            |(status, graph, page), output| match output.event {
+                event @ WorkerEvent::GraphStatus { .. } => (Some(event), graph, page),
+                event @ WorkerEvent::Graph { .. } => (status, Some(event), page),
+                event @ WorkerEvent::Snapshot { .. } => (status, graph, Some(event)),
+            },
+        );
     status.into_iter().chain(graph).chain(page).collect()
 }
 

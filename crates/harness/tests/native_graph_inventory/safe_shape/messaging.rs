@@ -2,9 +2,11 @@ use super::Shape;
 
 pub(super) fn tree(kind: &str) -> Option<&'static [(&'static str, Shape)]> {
     Some(match kind {
-        "AWS::EKS::Cluster" | "AWS::ECS::Cluster" | "AWS::ECS::Service" => &[("", Shape::Map),
-            ("$", Shape::Text)],
-        "AWS::SQS::Queue" => &[("", Shape::Map),
+        "AWS::EKS::Cluster" | "AWS::ECS::Cluster" | "AWS::ECS::Service" => {
+            &[("", Shape::Map), ("$", Shape::Text)]
+        }
+        "AWS::SQS::Queue" => &[
+            ("", Shape::Map),
             ("$", Shape::Text),
             ("QueueUrl", Shape::Text),
             ("Attributes", Shape::Map),
@@ -14,7 +16,10 @@ pub(super) fn tree(kind: &str) -> Option<&'static [(&'static str, Shape)]> {
             ("Attributes.MaximumMessageSize", Shape::Text),
             ("Attributes.MessageRetentionPeriod", Shape::Text),
             ("Attributes.ApproximateNumberOfMessages", Shape::Text),
-            ("Attributes.ApproximateNumberOfMessagesNotVisible", Shape::Text),
+            (
+                "Attributes.ApproximateNumberOfMessagesNotVisible",
+                Shape::Text,
+            ),
             ("Attributes.CreatedTimestamp", Shape::Text),
             ("Attributes.LastModifiedTimestamp", Shape::Text),
             ("Attributes.DelaySeconds", Shape::Text),
@@ -28,8 +33,10 @@ pub(super) fn tree(kind: &str) -> Option<&'static [(&'static str, Shape)]> {
             ("Attributes.FifoThroughputLimit", Shape::Text),
             ("Attributes.RedriveAllowPolicy", Shape::Text),
             ("Attributes.SqsManagedSseEnabled", Shape::Text),
-            ("Attributes.ApproximateNumberOfMessagesDelayed", Shape::Text)],
-        "AWS::SNS::Topic" => &[("", Shape::Map),
+            ("Attributes.ApproximateNumberOfMessagesDelayed", Shape::Text),
+        ],
+        "AWS::SNS::Topic" => &[
+            ("", Shape::Map),
             ("TopicArn", Shape::Text),
             ("Attributes", Shape::Map),
             ("Attributes.TopicArn", Shape::Text),
@@ -48,8 +55,10 @@ pub(super) fn tree(kind: &str) -> Option<&'static [(&'static str, Shape)]> {
             ("Attributes.TracingConfig", Shape::Text),
             ("Attributes.ArchivePolicy", Shape::Text),
             ("Attributes.BeginningArchiveTime", Shape::Text),
-            ("Attributes.FifoThroughputScope", Shape::Text)],
-        "AWS::SNS::Subscription" => &[("", Shape::Map),
+            ("Attributes.FifoThroughputScope", Shape::Text),
+        ],
+        "AWS::SNS::Subscription" => &[
+            ("", Shape::Map),
             ("SubscriptionArn", Shape::Text),
             ("Owner", Shape::Text),
             ("Protocol", Shape::Text),
@@ -71,7 +80,8 @@ pub(super) fn tree(kind: &str) -> Option<&'static [(&'static str, Shape)]> {
             ("Attributes.RedrivePolicy", Shape::Text),
             ("Attributes.ReplayPolicy", Shape::Text),
             ("Attributes.ReplayStatus", Shape::Text),
-            ("Attributes.SubscriptionRoleArn", Shape::Text)],
+            ("Attributes.SubscriptionRoleArn", Shape::Text),
+        ],
         _ => return None,
     })
 }

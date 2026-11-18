@@ -59,7 +59,11 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Arn("PageArn"),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
-        input: &[Input::Parent("EngagementId", "ListEngagements", "EngagementArn")],
+        input: &[Input::Parent(
+            "EngagementId",
+            "ListEngagements",
+            "EngagementArn",
+        )],
         tags: None,
         queryable: &[],
     },

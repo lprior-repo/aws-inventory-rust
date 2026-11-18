@@ -19,11 +19,20 @@ impl WorkerContext {
         cancellation: Cancellation,
         revisions: Arc<Revisions>,
     ) -> Self {
-        Self { commands, events, signal, cancellation, revisions }
+        Self {
+            commands,
+            events,
+            signal,
+            cancellation,
+            revisions,
+        }
     }
 
     fn emit(&self, revision: u64, event: WorkerEvent) -> bool {
-        let output = Output { revision: Some(revision), event };
+        let output = Output {
+            revision: Some(revision),
+            event,
+        };
         if self.cancellation.is_stopped() || !self.revisions.accepts(&output) {
             return !self.cancellation.is_stopped();
         }
@@ -45,36 +54,61 @@ impl WorkerContext {
 
     fn report_failure(&self, error: String) {
         let graph = graph_failure(format!("database unavailable · {error}"));
-        if self.publish(Output { revision: None, event: graph }) {
-            self.publish(Output { revision: None, event: database_error(error) });
+        if self.publish(Output {
+            revision: None,
+            event: graph,
+        }) {
+            self.publish(Output {
+                revision: None,
+                event: database_error(error),
+            });
         }
     }
 
     fn run_commands(&mut self, runtime: &tokio::runtime::Runtime, mut state: WorkerState) {
         let result = std::iter::repeat(()).try_for_each(|()| {
-            let Some(command) = self.commands.blocking_recv() else { return Err(()); };
+            let Some(command) = self.commands.blocking_recv() else {
+                return Err(());
+            };
             if self.cancellation.is_stopped() || matches!(command, Command::Stop) {
                 return Err(());
             }
             if !self.revisions.accepts_command(&command) {
                 return Ok(());
             }
-            self.process(command, runtime, &mut state).then_some(()).ok_or(())
+            self.process(command, runtime, &mut state)
+                .then_some(())
+                .ok_or(())
         });
         if result.is_err() {
             tracing::debug!("CMDB worker command intake closed");
         }
     }
 
-    fn process(&mut self, command: Command, runtime: &tokio::runtime::Runtime, state: &mut WorkerState) -> bool {
+    fn process(
+        &mut self,
+        command: Command,
+        runtime: &tokio::runtime::Runtime,
+        state: &mut WorkerState,
+    ) -> bool {
         let _entered = runtime.enter();
         match command {
             Command::Refresh { revision, filter } => {
-                let result = runtime.block_on(self.cancellation.run(refresh_page(&state.database, filter)));
-                let Some((session, event)) = result else { return false; };
-                let output = Output { revision: Some(revision), event };
-                if !self.revisions.accepts(&output) { return true; }
-                if let Some(session) = session { state.session = session; }
+                let result =
+                    runtime.block_on(self.cancellation.run(refresh_page(&state.database, filter)));
+                let Some((session, event)) = result else {
+                    return false;
+                };
+                let output = Output {
+                    revision: Some(revision),
+                    event,
+                };
+                if !self.revisions.accepts(&output) {
+                    return true;
+                }
+                if let Some(session) = session {
+                    state.session = session;
+                }
                 if !self.publish(output) {
                     return false;
                 }

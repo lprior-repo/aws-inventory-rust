@@ -1,5 +1,8 @@
 use super::fingerprint::fields;
-use super::{ReviewedCompoundRelation, ReviewedParentRelation, ReviewedRelation, ReviewedRelationSource, ReviewedRelationTarget, ReviewedTargetKinds, ReviewedValuePath};
+use super::{
+    ReviewedCompoundRelation, ReviewedParentRelation, ReviewedRelation, ReviewedRelationSource,
+    ReviewedRelationTarget, ReviewedTargetKinds, ReviewedValuePath,
+};
 use sha2::Sha256;
 
 pub(super) fn update(
@@ -10,9 +13,28 @@ pub(super) fn update(
 ) {
     for row in relations {
         if let Some((domain, source, target)) = legacy_fields(row) {
-            fields(hash, [domain, &row.source_kind, source, row.target_kinds.primary(), target, &row.relation, &row.scope]);
+            fields(
+                hash,
+                [
+                    domain,
+                    &row.source_kind,
+                    source,
+                    row.target_kinds.primary(),
+                    target,
+                    &row.relation,
+                    &row.scope,
+                ],
+            );
         } else {
-            fields(hash, ["typed_relation", &row.source_kind, &row.relation, &row.scope]);
+            fields(
+                hash,
+                [
+                    "typed_relation",
+                    &row.source_kind,
+                    &row.relation,
+                    &row.scope,
+                ],
+            );
             source(hash, &row.source);
             target(hash, &row.target);
             targets(hash, &row.target_kinds);
@@ -25,11 +47,27 @@ pub(super) fn update(
     }
     legacy_expanded_groups(hash, relations);
     for row in parents {
-        fields(hash, ["parent_relation", &row.source_kind, &row.relation, &row.scope]);
+        fields(
+            hash,
+            [
+                "parent_relation",
+                &row.source_kind,
+                &row.relation,
+                &row.scope,
+            ],
+        );
         targets(hash, &row.target_kinds);
     }
     for row in compounds {
-        fields(hash, ["compound_relation", &row.source_kind, &row.relation, &row.scope]);
+        fields(
+            hash,
+            [
+                "compound_relation",
+                &row.source_kind,
+                &row.relation,
+                &row.scope,
+            ],
+        );
         targets(hash, &row.target_kinds);
         for component in &row.components {
             fields(hash, ["and_component"]);
@@ -43,18 +81,25 @@ fn legacy_fields(row: &ReviewedRelation) -> Option<(&str, &str, &str)> {
     if row.guard.is_some() {
         return None;
     }
-    let ReviewedRelationTarget::SelectedOutput(ReviewedValuePath::Fields(target)) = &row.target else {
+    let ReviewedRelationTarget::SelectedOutput(ReviewedValuePath::Fields(target)) = &row.target
+    else {
         return None;
     };
     match &row.source {
-        ReviewedRelationSource::SelectedOutput(ReviewedValuePath::Fields(source)) => Some(("relation", source, target)),
-        ReviewedRelationSource::Request(ReviewedValuePath::Fields(source)) => Some(("request_relation", source, target)),
+        ReviewedRelationSource::SelectedOutput(ReviewedValuePath::Fields(source)) => {
+            Some(("relation", source, target))
+        }
+        ReviewedRelationSource::Request(ReviewedValuePath::Fields(source)) => {
+            Some(("request_relation", source, target))
+        }
         _ => None,
     }
 }
 
 fn legacy_expanded_groups(hash: &mut Sha256, relations: &[ReviewedRelation]) {
-    let mut groups = relations.iter().filter(|row| row.target_kinds.len() > 1)
+    let mut groups = relations
+        .iter()
+        .filter(|row| row.target_kinds.len() > 1)
         .filter_map(|row| legacy_fields(row).map(|(_, source, _)| (row, source)));
     match (groups.next(), groups.next()) {
         (Some(first), None) => legacy_group(hash, first),
@@ -70,7 +115,9 @@ fn legacy_expanded_groups(hash: &mut Sha256, relations: &[ReviewedRelation]) {
     }
 }
 
-fn legacy_group_key<'a>((row, source): (&'a ReviewedRelation, &'a str)) -> (&'a str, &'a str, &'a str) {
+fn legacy_group_key<'a>(
+    (row, source): (&'a ReviewedRelation, &'a str),
+) -> (&'a str, &'a str, &'a str) {
     (&row.source_kind, source, &row.relation)
 }
 
@@ -126,7 +173,11 @@ mod tests {
 
     type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-    fn digest(rows: &[ReviewedRelation], parents: &[ReviewedParentRelation], compounds: &[ReviewedCompoundRelation]) -> [u8; 32] {
+    fn digest(
+        rows: &[ReviewedRelation],
+        parents: &[ReviewedParentRelation],
+        compounds: &[ReviewedCompoundRelation],
+    ) -> [u8; 32] {
         let mut hash = Sha256::new();
         update(&mut hash, rows, parents, compounds);
         hash.finalize().into()
@@ -135,10 +186,15 @@ mod tests {
     fn subnet() -> TestResultRow {
         Ok(ReviewedRelation {
             source_kind: "AWS::EC2::Subnet".to_owned(),
-            source: ReviewedRelationSource::SelectedOutput(ReviewedValuePath::Fields("VpcId".to_owned())),
+            source: ReviewedRelationSource::SelectedOutput(ReviewedValuePath::Fields(
+                "VpcId".to_owned(),
+            )),
             target_kinds: ReviewedTargetKinds::singleton("AWS::EC2::VPC", 0)?,
-            target: ReviewedRelationTarget::SelectedOutput(ReviewedValuePath::Fields("VpcId".to_owned())),
-            relation: "IN_VPC".to_owned(), scope: "account_region".to_owned(),
+            target: ReviewedRelationTarget::SelectedOutput(ReviewedValuePath::Fields(
+                "VpcId".to_owned(),
+            )),
+            relation: "IN_VPC".to_owned(),
+            scope: "account_region".to_owned(),
             guard: None,
         })
     }
@@ -159,17 +215,27 @@ mod tests {
     fn folded_target_groups_retain_the_exact_legacy_full_member_order() -> TestResult {
         let row = ReviewedRelation {
             source_kind: "AWS::MSK::VpcConnection".to_owned(),
-            source: ReviewedRelationSource::SelectedOutput(ReviewedValuePath::Fields("TargetClusterArn".to_owned())),
-            target_kinds: ReviewedTargetKinds::from_declared("AWS::MSK::ServerlessCluster",
-                &["AWS::MSK::ServerlessCluster", "AWS::MSK::Cluster"], 0)?,
-            target: ReviewedRelationTarget::SelectedOutput(ReviewedValuePath::Fields("ClusterArn".to_owned())),
-            relation: "CONNECTS_TO".to_owned(), scope: "account_region".to_owned(),
+            source: ReviewedRelationSource::SelectedOutput(ReviewedValuePath::Fields(
+                "TargetClusterArn".to_owned(),
+            )),
+            target_kinds: ReviewedTargetKinds::from_declared(
+                "AWS::MSK::ServerlessCluster",
+                &["AWS::MSK::ServerlessCluster", "AWS::MSK::Cluster"],
+                0,
+            )?,
+            target: ReviewedRelationTarget::SelectedOutput(ReviewedValuePath::Fields(
+                "ClusterArn".to_owned(),
+            )),
+            relation: "CONNECTS_TO".to_owned(),
+            scope: "account_region".to_owned(),
             guard: None,
         };
         // Primary is deliberately not lexically first, catching duplicate-anchor or order drift.
         let mut legacy = Sha256::new();
         legacy.update(b"relation\0AWS::MSK::VpcConnection\0TargetClusterArn\0AWS::MSK::ServerlessCluster\0ClusterArn\0CONNECTS_TO\0account_region\0\xff");
-        legacy.update(b"relation_targets\0AWS::MSK::VpcConnection\0TargetClusterArn\0CONNECTS_TO\0\xff");
+        legacy.update(
+            b"relation_targets\0AWS::MSK::VpcConnection\0TargetClusterArn\0CONNECTS_TO\0\xff",
+        );
         legacy.update(b"AWS::MSK::Cluster\0AWS::MSK::ServerlessCluster\0\xff");
         let expected: [u8; 32] = legacy.finalize().into();
         assert_eq!(digest(&[row], &[], &[]), expected);
@@ -177,10 +243,12 @@ mod tests {
     }
 
     #[test]
-    fn multiple_legacy_groups_serialize_in_legacy_label_order_not_relation_traversal_order() -> TestResult {
+    fn multiple_legacy_groups_serialize_in_legacy_label_order_not_relation_traversal_order()
+    -> TestResult {
         let mut last = subnet()?;
         last.relation = "Z_LINK".to_owned();
-        last.target_kinds.expand(&["AWS::EC2::VPC", "AWS::ApiOnly::AlternateVPC"], 0)?;
+        last.target_kinds
+            .expand(&["AWS::EC2::VPC", "AWS::ApiOnly::AlternateVPC"], 0)?;
         let mut first = last.clone();
         first.relation = "A_LINK".to_owned();
         let mut actual = Sha256::new();
@@ -200,13 +268,35 @@ mod tests {
         let baseline = digest(std::slice::from_ref(&row), &[], &[]);
         let mut receipts = std::collections::BTreeSet::from([baseline]);
         for changed in [
-            ReviewedRelation { source: ReviewedRelationSource::Request(ReviewedValuePath::Fields("VpcId".to_owned())), ..row.clone() },
-            ReviewedRelation { source: ReviewedRelationSource::SelectedOutput(ReviewedValuePath::RootText), ..row.clone() },
-            ReviewedRelation { target: ReviewedRelationTarget::BoundContext(ReviewedValuePath::Fields("VpcId".to_owned())), ..row.clone() },
-            ReviewedRelation { target: ReviewedRelationTarget::CanonicalId, ..row.clone() },
-            ReviewedRelation { target: ReviewedRelationTarget::SelectedOutput(ReviewedValuePath::RootText), ..row },
+            ReviewedRelation {
+                source: ReviewedRelationSource::Request(ReviewedValuePath::Fields(
+                    "VpcId".to_owned(),
+                )),
+                ..row.clone()
+            },
+            ReviewedRelation {
+                source: ReviewedRelationSource::SelectedOutput(ReviewedValuePath::RootText),
+                ..row.clone()
+            },
+            ReviewedRelation {
+                target: ReviewedRelationTarget::BoundContext(ReviewedValuePath::Fields(
+                    "VpcId".to_owned(),
+                )),
+                ..row.clone()
+            },
+            ReviewedRelation {
+                target: ReviewedRelationTarget::CanonicalId,
+                ..row.clone()
+            },
+            ReviewedRelation {
+                target: ReviewedRelationTarget::SelectedOutput(ReviewedValuePath::RootText),
+                ..row
+            },
         ] {
-            assert!(receipts.insert(digest(&[changed], &[], &[])), "typed selector receipt aliases another namespace");
+            assert!(
+                receipts.insert(digest(&[changed], &[], &[])),
+                "typed selector receipt aliases another namespace"
+            );
         }
         Ok(())
     }
@@ -223,18 +313,24 @@ mod tests {
     }
 
     #[test]
-    fn guard_selector_literal_and_absence_are_bound_without_changing_unguarded_receipts() -> TestResult {
+    fn guard_selector_literal_and_absence_are_bound_without_changing_unguarded_receipts()
+    -> TestResult {
         use super::super::ReviewedRelationGuard;
         let mut row = subnet()?;
         let baseline = digest(std::slice::from_ref(&row), &[], &[]);
         let mut receipts = std::collections::BTreeSet::from([baseline]);
         for source in [
-            ReviewedRelationSource::SelectedOutput(ReviewedValuePath::Fields("ResourceType".to_owned())),
+            ReviewedRelationSource::SelectedOutput(ReviewedValuePath::Fields(
+                "ResourceType".to_owned(),
+            )),
             ReviewedRelationSource::Request(ReviewedValuePath::Fields("ResourceType".to_owned())),
             ReviewedRelationSource::SelectedOutput(ReviewedValuePath::RootText),
         ] {
             for equals in ["WORKSPACE", "BUNDLE", "IMAGE", "", "WORKSPACE\0"] {
-                row.guard = Some(ReviewedRelationGuard { source: source.clone(), equals: equals.to_owned() });
+                row.guard = Some(ReviewedRelationGuard {
+                    source: source.clone(),
+                    equals: equals.to_owned(),
+                });
                 assert!(receipts.insert(digest(std::slice::from_ref(&row), &[], &[])));
             }
         }

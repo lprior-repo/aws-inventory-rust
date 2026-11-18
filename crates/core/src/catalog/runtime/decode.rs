@@ -1,8 +1,8 @@
 mod metadata;
-mod plans;
-mod schemas;
-mod provenance;
 mod owners;
+mod plans;
+mod provenance;
+mod schemas;
 mod services;
 pub(super) use provenance::compiled_inputs_sha256;
 
@@ -50,12 +50,22 @@ pub(crate) fn read<'a>(
     provenance::validate_models(bytes, catalog, &provenance)?;
     metadata::only_fields(extension, &[1, 2, 3, 4, 5, 6, 7])?;
     let schemas = schema_data.schemas;
-    if plans.iter().any(|plan| !schemas.iter().any(|schema| schema.kind() == plan.kind())
-        || !coverage.iter().any(|entry| entry.mapped && entry.kind.as_ref() == Some(plan.kind()))) {
+    if plans.iter().any(|plan| {
+        !schemas.iter().any(|schema| schema.kind() == plan.kind())
+            || !coverage
+                .iter()
+                .any(|entry| entry.mapped && entry.kind.as_ref() == Some(plan.kind()))
+    }) {
         return Err(RuntimeCatalogError::Capability);
     }
     validate_links(&schemas, &schema_data.name_paths, &relations, &coverage)?;
-    plans::validate_model_links(&plans, &schemas, &schema_data.name_paths, &relations, &coverage)?;
+    plans::validate_model_links(
+        &plans,
+        &schemas,
+        &schema_data.name_paths,
+        &relations,
+        &coverage,
+    )?;
     Ok(Decoded {
         plans,
         schemas,
@@ -90,7 +100,10 @@ fn validate_links(
         .any(|entry| !schema_kinds.contains(entry.kind.as_str()))
         || relations.iter().any(|entry| {
             !schema_kinds.contains(entry.source_kind.as_str())
-                || entry.target_kinds.iter().any(|kind| !schema_kinds.contains(kind.as_str()))
+                || entry
+                    .target_kinds
+                    .iter()
+                    .any(|kind| !schema_kinds.contains(kind.as_str()))
         })
     {
         return Err(RuntimeCatalogError::Capability);

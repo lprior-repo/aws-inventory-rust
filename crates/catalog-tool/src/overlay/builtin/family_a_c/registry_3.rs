@@ -2,46 +2,95 @@ use super::support::{NameError, ServiceOverlay, service};
 
 pub(super) fn overlays() -> Result<Vec<ServiceOverlay>, NameError> {
     Ok(vec![
-        service("arc-region-switch", [
-            super::arc_region_switch_0::part_0()?,
-        ].into_iter().flatten().collect())?,
-        service("arc-zonal-shift", [
-            super::arc_zonal_shift_0::part_0()?,
-        ].into_iter().flatten().collect())?,
-        service("artifact", [
-            super::artifact_0::part_0()?,
-        ].into_iter().flatten().collect())?,
-        service("athena", [
-            super::athena_0::part_0()?,
-            super::athena_0::part_1()?,
-            super::athena_0::part_2()?,
-        ].into_iter().flatten().collect())?,
-        service("auditmanager", [
-            super::auditmanager_0::part_0()?,
-            super::auditmanager_0::part_1()?,
-        ].into_iter().flatten().collect())?,
-        service("auto-scaling", [
-            super::auto_scaling_0::part_0()?,
-            super::auto_scaling_0::part_1()?,
-            super::auto_scaling_0::part_2()?,
-        ].into_iter().flatten().collect())?,
-        service("auto-scaling-plans", [
-            super::auto_scaling_plans_0::part_0()?,
-        ].into_iter().flatten().collect())?,
-        service("b2bi", [
-            super::b2bi_0::part_0()?,
-            super::b2bi_0::part_1()?,
-        ].into_iter().flatten().collect())?,
-        service("backup", [
-            super::backup_0::part_0()?,
-            super::backup_0::part_1()?,
-            super::backup_0::part_2()?,
-            super::backup_0::part_3()?,
-            super::backup_0::part_4()?,
-        ].into_iter().flatten().collect())?,
-        service("backup-gateway", [
-            super::backup_gateway_0::part_0()?,
-            super::backup_gateway_0::part_1()?,
-        ].into_iter().flatten().collect())?,
+        service(
+            "arc-region-switch",
+            [super::arc_region_switch_0::part_0()?]
+                .into_iter()
+                .flatten()
+                .collect(),
+        )?,
+        service(
+            "arc-zonal-shift",
+            [super::arc_zonal_shift_0::part_0()?]
+                .into_iter()
+                .flatten()
+                .collect(),
+        )?,
+        service(
+            "artifact",
+            [super::artifact_0::part_0()?]
+                .into_iter()
+                .flatten()
+                .collect(),
+        )?,
+        service(
+            "athena",
+            [
+                super::athena_0::part_0()?,
+                super::athena_0::part_1()?,
+                super::athena_0::part_2()?,
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
+        )?,
+        service(
+            "auditmanager",
+            [
+                super::auditmanager_0::part_0()?,
+                super::auditmanager_0::part_1()?,
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
+        )?,
+        service(
+            "auto-scaling",
+            [
+                super::auto_scaling_0::part_0()?,
+                super::auto_scaling_0::part_1()?,
+                super::auto_scaling_0::part_2()?,
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
+        )?,
+        service(
+            "auto-scaling-plans",
+            [super::auto_scaling_plans_0::part_0()?]
+                .into_iter()
+                .flatten()
+                .collect(),
+        )?,
+        service(
+            "b2bi",
+            [super::b2bi_0::part_0()?, super::b2bi_0::part_1()?]
+                .into_iter()
+                .flatten()
+                .collect(),
+        )?,
+        service(
+            "backup",
+            [
+                super::backup_0::part_0()?,
+                super::backup_0::part_1()?,
+                super::backup_0::part_2()?,
+                super::backup_0::part_3()?,
+                super::backup_0::part_4()?,
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
+        )?,
+        service(
+            "backup-gateway",
+            [
+                super::backup_gateway_0::part_0()?,
+                super::backup_gateway_0::part_1()?,
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
+        )?,
     ])
 }

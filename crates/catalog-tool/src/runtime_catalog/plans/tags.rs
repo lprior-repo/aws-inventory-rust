@@ -51,10 +51,17 @@ fn resolve(
         if parent.kind()? != "structure" {
             return Err(RuntimeCatalogCompileError::Capability);
         }
-        parent.members()?.try_fold(None, |found, member| {
-            let member = member?;
-            Ok::<_, RuntimeCatalogCompileError>(if member.id == *id { Some(member.target) } else { found })
-        })?.ok_or(RuntimeCatalogCompileError::Capability)
+        parent
+            .members()?
+            .try_fold(None, |found, member| {
+                let member = member?;
+                Ok::<_, RuntimeCatalogCompileError>(if member.id == *id {
+                    Some(member.target)
+                } else {
+                    found
+                })
+            })?
+            .ok_or(RuntimeCatalogCompileError::Capability)
     })?;
     Ok((fields, terminal))
 }
@@ -64,7 +71,11 @@ fn list(
     tags: Shape<'_>,
     path: Value,
 ) -> Result<Value, RuntimeCatalogCompileError> {
-    let element = shape(service, tags.element()?.ok_or(RuntimeCatalogCompileError::Capability)?)?;
+    let element = shape(
+        service,
+        tags.element()?
+            .ok_or(RuntimeCatalogCompileError::Capability)?,
+    )?;
     if element.kind()? != "structure" {
         return Err(RuntimeCatalogCompileError::Capability);
     }
@@ -84,23 +95,26 @@ fn tag_member<'a>(
     shape: Shape<'a>,
     names: &[&str],
 ) -> Result<Member<'a>, RuntimeCatalogCompileError> {
-    shape.members()?.try_fold(None, |found, member| {
-        let member = member?;
-        if !names.contains(&member.name()?) {
-            return Ok(found);
-        }
-        if found.is_some() {
-            return Err(RuntimeCatalogCompileError::Capability);
-        }
-        Ok(Some(member))
-    })?.ok_or(RuntimeCatalogCompileError::Capability)
+    shape
+        .members()?
+        .try_fold(None, |found, member| {
+            let member = member?;
+            if !names.contains(&member.name()?) {
+                return Ok(found);
+            }
+            if found.is_some() {
+                return Err(RuntimeCatalogCompileError::Capability);
+            }
+            Ok(Some(member))
+        })?
+        .ok_or(RuntimeCatalogCompileError::Capability)
 }
 
-fn string(
-    service: Service<'_>,
-    target: Option<Target>,
-) -> Result<(), RuntimeCatalogCompileError> {
-    model_path::string_target(service, target.ok_or(RuntimeCatalogCompileError::Capability)?)
+fn string(service: Service<'_>, target: Option<Target>) -> Result<(), RuntimeCatalogCompileError> {
+    model_path::string_target(
+        service,
+        target.ok_or(RuntimeCatalogCompileError::Capability)?,
+    )
 }
 
 fn shape<'a>(
@@ -108,7 +122,9 @@ fn shape<'a>(
     target: Target,
 ) -> Result<Shape<'a>, RuntimeCatalogCompileError> {
     match target {
-        Target::Shape(index) => service.shape(index)?.ok_or(RuntimeCatalogCompileError::Capability),
+        Target::Shape(index) => service
+            .shape(index)?
+            .ok_or(RuntimeCatalogCompileError::Capability),
         _ => Err(RuntimeCatalogCompileError::Capability),
     }
 }

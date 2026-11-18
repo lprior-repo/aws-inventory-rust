@@ -46,9 +46,20 @@ fn identity_paths(
     identity: &Identity,
     violations: &mut Vec<Violation>,
 ) -> bool {
-    if matches!(identity, Identity::Choice(_) | Identity::CorrelatedKey(_) | Identity::MapArn { .. }) {
-        return if choice::valid(origin.1, model, item, identity) { true }
-            else { identity_failure(origin.0, origin.1, "conditional identity source", violations) };
+    if matches!(
+        identity,
+        Identity::Choice(_) | Identity::CorrelatedKey(_) | Identity::MapArn { .. }
+    ) {
+        return if choice::valid(origin.1, model, item, identity) {
+            true
+        } else {
+            identity_failure(
+                origin.0,
+                origin.1,
+                "conditional identity source",
+                violations,
+            )
+        };
     }
     let paths = match identity {
         Identity::Arn(path) => vec![path.as_str()],
@@ -56,7 +67,11 @@ fn identity_paths(
         Identity::Template(template) => template_paths(template),
         Identity::Choice(_) | Identity::CorrelatedKey(_) | Identity::MapArn { .. } => return false,
     };
-    let context = IdentityContext { model, item, identity };
+    let context = IdentityContext {
+        model,
+        item,
+        identity,
+    };
     paths.iter().fold(true, |valid, path| {
         validate_identity_path(origin, &context, path, violations) & valid
     })

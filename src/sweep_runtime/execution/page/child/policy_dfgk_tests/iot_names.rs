@@ -14,14 +14,25 @@ struct NameCase {
 }
 
 const CASES: [NameCase; 2] = [
-    NameCase { operation: "ListCustomMetrics", items: "metricNames", prefix: "custommetric",
-        kind: "AWS::IoT::CustomMetric", path: "/custom-metrics" },
-    NameCase { operation: "ListDimensions", items: "dimensionNames", prefix: "dimension",
-        kind: "AWS::IoT::Dimension", path: "/dimensions" },
+    NameCase {
+        operation: "ListCustomMetrics",
+        items: "metricNames",
+        prefix: "custommetric",
+        kind: "AWS::IoT::CustomMetric",
+        path: "/custom-metrics",
+    },
+    NameCase {
+        operation: "ListDimensions",
+        items: "dimensionNames",
+        prefix: "dimension",
+        kind: "AWS::IoT::Dimension",
+        path: "/dimensions",
+    },
 ];
 
 #[tokio::test]
-async fn given_name_only_iot_roots_when_two_pages_resume_then_canonical_graph_nodes_keep_account_and_region() -> TestResult {
+async fn given_name_only_iot_roots_when_two_pages_resume_then_canonical_graph_nodes_keep_account_and_region()
+-> TestResult {
     let catalog = fixture::catalog()?;
     let mut scenario = Scenario::new(&catalog, "iot-name-only-pagination").await?;
     let mut expected = BTreeSet::new();
@@ -30,19 +41,34 @@ async fn given_name_only_iot_roots_when_two_pages_resume_then_canonical_graph_no
             scenario.account = AccountId::parse(account)?;
             scenario.home = RegionId::parse(region)?;
             for case in &CASES {
-                scenario.seed(fixture::plan(&catalog, "iot", case.operation)?).await?;
+                scenario
+                    .seed(fixture::plan(&catalog, "iot", case.operation)?)
+                    .await?;
                 for name in ["shared", "page-one", "page-two"] {
-                    expected.insert((account.to_owned(), region.to_owned(), case.kind.to_owned(),
-                        format!("arn:aws:iot:{region}:{account}:{}/{name}", case.prefix)));
+                    expected.insert((
+                        account.to_owned(),
+                        region.to_owned(),
+                        case.kind.to_owned(),
+                        format!("arn:aws:iot:{region}:{account}:{}/{name}", case.prefix),
+                    ));
                 }
             }
             let mut pages = BTreeSet::new();
             for _ in 0..4 {
-                let lease = scenario.store.claim(&scenario.sweep, 1001, 10_000).await?.ok_or("IoT name page absent")?;
+                let lease = scenario
+                    .store
+                    .claim(&scenario.sweep, 1001, 10_000)
+                    .await?
+                    .ok_or("IoT name page absent")?;
                 assert_eq!(lease.scope().service().as_str(), "iot");
                 assert_eq!(lease.scope().account(), &scenario.account);
-                assert_eq!(lease.scope().region(), &Region::Regional(scenario.home.clone()));
-                let case = CASES.iter().find(|case| case.operation == lease.scope().operation().as_str())
+                assert_eq!(
+                    lease.scope().region(),
+                    &Region::Regional(scenario.home.clone())
+                );
+                let case = CASES
+                    .iter()
+                    .find(|case| case.operation == lease.scope().operation().as_str())
                     .ok_or("unexpected IoT content/detail work")?;
                 let plan = fixture::plan(&catalog, "iot", case.operation)?;
                 let second_page = lease.token().is_some();
@@ -52,17 +78,28 @@ async fn given_name_only_iot_roots_when_two_pages_resume_then_canonical_graph_no
                 assert!(wire.body().is_empty());
                 assert_eq!(wire.uri().path(), case.path);
                 // Page size derived from pinned Smithy model: iot MaxResults range 1-250 -> 250
-                let expected_query=if second_page {
+                let expected_query = if second_page {
                     "maxResults=250&nextToken=next-page".to_owned()
                 } else {
                     "maxResults=250".to_owned()
                 };
                 assert_eq!(wire.uri().query(), Some(expected_query.as_str()));
-                assert_eq!(wire.uri().host(), Some(format!("iot.{region}.amazonaws.com").as_str()));
-                scenario.apply(&catalog, plan, lease, &request, response(case, second_page)).await?;
+                assert_eq!(
+                    wire.uri().host(),
+                    Some(format!("iot.{region}.amazonaws.com").as_str())
+                );
+                scenario
+                    .apply(&catalog, plan, lease, &request, response(case, second_page))
+                    .await?;
             }
             assert_eq!(pages.len(), 4);
-            assert!(scenario.store.claim(&scenario.sweep, 1001, 10_000).await?.is_none());
+            assert!(
+                scenario
+                    .store
+                    .claim(&scenario.sweep, 1001, 10_000)
+                    .await?
+                    .is_none()
+            );
         }
     }
     assert_durable_nodes(scenario, expected).await
@@ -70,8 +107,13 @@ async fn given_name_only_iot_roots_when_two_pages_resume_then_canonical_graph_no
 
 fn response(case: &NameCase, second_page: bool) -> Json {
     let mut fields = serde_json::Map::new();
-    fields.insert(case.items.to_owned(), json!(["shared", if second_page { "page-two" } else { "page-one" }]));
-    if !second_page { fields.insert("nextToken".to_owned(), json!("next-page")); }
+    fields.insert(
+        case.items.to_owned(),
+        json!(["shared", if second_page { "page-two" } else { "page-one" }]),
+    );
+    if !second_page {
+        fields.insert("nextToken".to_owned(), json!("next-page"));
+    }
     Json::Object(fields)
 }
 
@@ -79,22 +121,47 @@ async fn assert_durable_nodes(scenario: Scenario<'_, '_>, expected: BTreeSet<Nod
     let path = scenario.directory.path().join("inventory.db");
     drop(scenario.store);
     let store = BinaryStore::open(&path).await?;
-    let reader = sqlx::sqlite::SqlitePoolOptions::new().max_connections(1)
-        .connect_with(sqlx::sqlite::SqliteConnectOptions::new().filename(&path).read_only(true)).await?;
-    let nodes: Vec<Node> = sqlx::query_as("SELECT account,region,kind,id FROM resources ORDER BY account,region,kind,id")
-        .fetch_all(&reader).await?;
+    let reader = sqlx::sqlite::SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(
+            sqlx::sqlite::SqliteConnectOptions::new()
+                .filename(&path)
+                .read_only(true),
+        )
+        .await?;
+    let nodes: Vec<Node> = sqlx::query_as(
+        "SELECT account,region,kind,id FROM resources ORDER BY account,region,kind,id",
+    )
+    .fetch_all(&reader)
+    .await?;
     assert_eq!(nodes.len(), 24);
     assert_eq!(nodes.iter().cloned().collect::<BTreeSet<_>>(), expected);
-    let scopes: Vec<Node> = sqlx::query_as("SELECT account,region,kind,id FROM resource_scopes ORDER BY account,region,kind,id")
-        .fetch_all(&reader).await?;
+    let scopes: Vec<Node> = sqlx::query_as(
+        "SELECT account,region,kind,id FROM resource_scopes ORDER BY account,region,kind,id",
+    )
+    .fetch_all(&reader)
+    .await?;
     assert_eq!(scopes, nodes);
-    let facets: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM resource_facets").fetch_one(&reader).await?;
+    let facets: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM resource_facets")
+        .fetch_one(&reader)
+        .await?;
     assert_eq!(facets, 24);
     for (account, region, kind, id) in nodes {
         let account = AccountId::parse(&account)?;
         let region = RegionId::parse(&region)?;
-        record::trusted_arn::validate_arn(&id, Some(&record::IdentityContext { account: &account, region: &region }))?;
-        let key = ResourceKey { account, region: Region::Regional(region), kind: Kind::parse(&kind)?, id: ResourceId::parse(&id)? };
+        record::trusted_arn::validate_arn(
+            &id,
+            Some(&record::IdentityContext {
+                account: &account,
+                region: &region,
+            }),
+        )?;
+        let key = ResourceKey {
+            account,
+            region: Region::Regional(region),
+            kind: Kind::parse(&kind)?,
+            id: ResourceId::parse(&id)?,
+        };
         assert!(store.projection_resource(&key).await?.is_some());
     }
     reader.close().await;
@@ -102,14 +169,17 @@ async fn assert_durable_nodes(scenario: Scenario<'_, '_>, expected: BTreeSet<Nod
 }
 
 #[test]
-fn given_native_iot_scalar_names_without_trusted_request_scope_then_identity_fails_closed() -> TestResult {
+fn given_native_iot_scalar_names_without_trusted_request_scope_then_identity_fails_closed()
+-> TestResult {
     let catalog = fixture::catalog()?;
     for case in &CASES {
         let plan = fixture::plan(&catalog, "iot", case.operation)?;
         let response = fixture::decode(plan, &serde_json::to_vec(&response(case, false))?)?;
         let rows = projected_items(plan, &response)?;
         assert_eq!(rows.len(), 2);
-        for row in rows { assert!(record::resource_id(&row, plan.identity(), None).is_err()); }
+        for row in rows {
+            assert!(record::resource_id(&row, plan.identity(), None).is_err());
+        }
     }
     Ok(())
 }

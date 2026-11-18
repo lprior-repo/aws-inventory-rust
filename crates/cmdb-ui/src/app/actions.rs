@@ -127,13 +127,17 @@ impl App {
             return;
         };
         if let Some(id) = id {
-            let row = self.table(cx).borrow::<ResourceTable>()
+            let row = self
+                .table(cx)
+                .borrow::<ResourceTable>()
                 .and_then(|table| table.row_for_id(&id));
             if let Some(row) = row {
                 self.request_selection(cx, row);
             }
         } else {
-            let changed = self.table(cx).borrow_mut::<ResourceTable>()
+            let changed = self
+                .table(cx)
+                .borrow_mut::<ResourceTable>()
                 .is_some_and(|mut table| table.clear_selection(cx));
             if changed {
                 self.request_expansion(cx);
@@ -202,13 +206,21 @@ mod tests {
     #[test]
     fn given_tag_value_mode_when_filtering_then_empty_exact_values_and_key_only_are_distinct() {
         // Given a key with the value matcher disabled, no value restriction is sent.
-        assert_eq!(tag_filter("Environment", None), Some(TagFilter {
-            key: "Environment".to_owned(), value: None,
-        }));
+        assert_eq!(
+            tag_filter("Environment", None),
+            Some(TagFilter {
+                key: "Environment".to_owned(),
+                value: None,
+            })
+        );
         // When exact value matching is enabled, an empty value remains a real value.
-        assert_eq!(tag_filter("Environment", Some("")), Some(TagFilter {
-            key: "Environment".to_owned(), value: Some(String::new()),
-        }));
+        assert_eq!(
+            tag_filter("Environment", Some("")),
+            Some(TagFilter {
+                key: "Environment".to_owned(),
+                value: Some(String::new()),
+            })
+        );
         // Then clearing the key disables the filter, irrespective of value mode.
         assert_eq!(tag_filter("", Some("production")), None);
     }
@@ -219,9 +231,13 @@ mod tests {
         // When transformed into the query boundary, neither side is normalized.
         let filter = tag_filter(" owner ", Some(" équipe "));
         // Then the exact stored tag can still be queried.
-        assert_eq!(filter, Some(TagFilter {
-            key: " owner ".to_owned(), value: Some(" équipe ".to_owned()),
-        }));
+        assert_eq!(
+            filter,
+            Some(TagFilter {
+                key: " owner ".to_owned(),
+                value: Some(" équipe ".to_owned()),
+            })
+        );
     }
 }
 

@@ -4,236 +4,928 @@ use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        ("AssociateBackupVaultMpaApprovalTeam", deferred("Model requires BackupVaultName, MpaApprovalTeamArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Associates an MPA approval team with a backup vault.")),
-        ("CancelLegalHold", deferred("Model requires LegalHoldId, CancelDescription. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes the specified legal hold on a recovery point. This action can only be performed by a user with sufficient permissions.")),
-        ("CreateBackupAccessPoint", deferred("Model requires Name, RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a backup access point for an Amazon S3 recovery point. A backup access point provides on-demand, read-only access to the backup data in a recovery point through an Amazon S3 access point, without initiating a restore.…")),
-        ("CreateBackupPlan", deferred("Model requires BackupPlan. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a backup plan using a backup plan name and backup rules. A backup plan is a document that contains information that Backup uses to schedule tasks that create recovery points for resources. If you call CreateBackupPlan…")),
-        ("CreateBackupSelection", deferred("Model requires BackupPlanId, BackupSelection. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a JSON document that specifies a set of resources to assign to a backup plan. For examples, see Assigning resources programmatically .")),
-        ("CreateBackupVault", deferred("Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a logical container where backups are stored. A CreateBackupVault request includes a name, optionally one or more resource tags, an encryption key, and a request ID. Do not include sensitive data, such as passport…")),
-        ("CreateFramework", deferred("Model requires FrameworkName, FrameworkControls. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a framework with one or more controls. A framework is a collection of controls that you can use to evaluate your backup practices. By using pre-built customizable controls to define your policies, you can evaluate whether…")),
-        ("CreateLegalHold", deferred("Model requires Title, Description. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a legal hold on a recovery point (backup). A legal hold is a restraint on altering or deleting a backup until an authorized user cancels the legal hold. Any actions to delete or disassociate a recovery point will fail…")),
-        ("CreateLogicallyAirGappedBackupVault", deferred("Model requires BackupVaultName, MinRetentionDays, MaxRetentionDays. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a logical container to where backups may be copied. This request includes a name, the Region, the maximum number of retention days, the minimum number of retention days, and optionally can include tags and a creator…")),
-        ("CreateReportPlan", deferred("Model requires ReportPlanName, ReportDeliveryChannel, ReportSetting. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a report plan. A report plan is a document that contains information about the contents of the report and where Backup will deliver it. If you call CreateReportPlan with a plan that already exists, you receive an…")),
-        ("CreateRestoreAccessBackupVault", deferred("Model requires SourceBackupVaultArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a restore access backup vault that provides temporary access to recovery points in a logically air-gapped backup vault, subject to MPA approval.")),
-        ("CreateRestoreTestingPlan", deferred("Model requires RestoreTestingPlan. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a restore testing plan. The first of two steps to create a restore testing plan. After this request is successful, finish the procedure using CreateRestoreTestingSelection.")),
-        ("CreateRestoreTestingSelection", deferred("Model requires RestoreTestingPlanName, RestoreTestingSelection. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This request can be sent after CreateRestoreTestingPlan request returns successfully. This is the second part of creating a resource testing plan, and it must be completed sequentially. This consists of…")),
-        ("CreateTieringConfiguration", deferred("Model requires TieringConfiguration. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a tiering configuration. A tiering configuration enables automatic movement of backup data to a lower-cost storage tier based on the age of backed-up objects in the backup vault. Each vault can only have one…")),
-        ("DeleteBackupAccessPoint", deferred("Model requires AccessPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a backup access point. This deletes the underlying Amazon S3 access point and, if no other backup access points remain for the recovery point, resumes lifecycle transitions for that recovery point. Always delete backup…")),
-        ("DeleteBackupPlan", deferred("Model requires BackupPlanId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a backup plan. A backup plan can only be deleted after all associated selections of resources have been deleted. Deleting a backup plan deletes the current version of a backup plan. Previous versions, if any, will still…")),
-        ("DeleteBackupSelection", deferred("Model requires BackupPlanId, SelectionId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the resource selection associated with a backup plan that is specified by the SelectionId .")),
-        ("DeleteBackupVault", deferred("Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the backup vault identified by its name. A vault can be deleted only if it is empty.")),
-        ("DeleteBackupVaultAccessPolicy", deferred("Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the policy document that manages permissions on a backup vault.")),
-        ("DeleteBackupVaultLockConfiguration", deferred("Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes Backup Vault Lock from a backup vault specified by a backup vault name. If the Vault Lock configuration is immutable, then you cannot delete Vault Lock using API operations, and you will receive an InvalidRequestException…")),
-        ("DeleteBackupVaultNotifications", deferred("Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes event notifications for the specified backup vault.")),
-        ("DeleteFramework", deferred("Model requires FrameworkName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the framework specified by a framework name.")),
-        ("DeleteRecoveryPoint", deferred("Model requires BackupVaultName, RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the recovery point specified by a recovery point ID. If the recovery point ID belongs to a continuous backup, calling this endpoint deletes the existing continuous backup and stops future continuous backup. When an IAM…")),
-        ("DeleteReportPlan", deferred("Model requires ReportPlanName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the report plan specified by a report plan name.")),
-        ("DeleteRestoreTestingPlan", deferred("Model requires RestoreTestingPlanName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This request deletes the specified restore testing plan. Deletion can only successfully occur if all associated restore testing selections are deleted first.")),
-        ("DeleteRestoreTestingSelection", deferred("Model requires RestoreTestingPlanName, RestoreTestingSelectionName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Input the Restore Testing Plan name and Restore Testing Selection name. All testing selections associated with a restore testing plan must be deleted before the restore testing plan can be deleted.")),
-        ("DeleteTieringConfiguration", deferred("Model requires TieringConfigurationName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the tiering configuration specified by a tiering configuration name.")),
-        ("DescribeBackupAccessPoint", deferred("Model requires AccessPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns metadata about a backup access point, including its status and the details of the underlying Amazon S3 access point. After a backup access point reaches the AVAILABLE status, use this operation to retrieve the Amazon S3…")),
-        ("DescribeBackupJob", deferred("Model requires BackupJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns backup job details for the specified BackupJobId .")),
+        (
+            "AssociateBackupVaultMpaApprovalTeam",
+            deferred(
+                "Model requires BackupVaultName, MpaApprovalTeamArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Associates an MPA approval team with a backup vault.",
+            ),
+        ),
+        (
+            "CancelLegalHold",
+            deferred(
+                "Model requires LegalHoldId, CancelDescription. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes the specified legal hold on a recovery point. This action can only be performed by a user with sufficient permissions.",
+            ),
+        ),
+        (
+            "CreateBackupAccessPoint",
+            deferred(
+                "Model requires Name, RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a backup access point for an Amazon S3 recovery point. A backup access point provides on-demand, read-only access to the backup data in a recovery point through an Amazon S3 access point, without initiating a restore.…",
+            ),
+        ),
+        (
+            "CreateBackupPlan",
+            deferred(
+                "Model requires BackupPlan. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a backup plan using a backup plan name and backup rules. A backup plan is a document that contains information that Backup uses to schedule tasks that create recovery points for resources. If you call CreateBackupPlan…",
+            ),
+        ),
+        (
+            "CreateBackupSelection",
+            deferred(
+                "Model requires BackupPlanId, BackupSelection. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a JSON document that specifies a set of resources to assign to a backup plan. For examples, see Assigning resources programmatically .",
+            ),
+        ),
+        (
+            "CreateBackupVault",
+            deferred(
+                "Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a logical container where backups are stored. A CreateBackupVault request includes a name, optionally one or more resource tags, an encryption key, and a request ID. Do not include sensitive data, such as passport…",
+            ),
+        ),
+        (
+            "CreateFramework",
+            deferred(
+                "Model requires FrameworkName, FrameworkControls. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a framework with one or more controls. A framework is a collection of controls that you can use to evaluate your backup practices. By using pre-built customizable controls to define your policies, you can evaluate whether…",
+            ),
+        ),
+        (
+            "CreateLegalHold",
+            deferred(
+                "Model requires Title, Description. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a legal hold on a recovery point (backup). A legal hold is a restraint on altering or deleting a backup until an authorized user cancels the legal hold. Any actions to delete or disassociate a recovery point will fail…",
+            ),
+        ),
+        (
+            "CreateLogicallyAirGappedBackupVault",
+            deferred(
+                "Model requires BackupVaultName, MinRetentionDays, MaxRetentionDays. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a logical container to where backups may be copied. This request includes a name, the Region, the maximum number of retention days, the minimum number of retention days, and optionally can include tags and a creator…",
+            ),
+        ),
+        (
+            "CreateReportPlan",
+            deferred(
+                "Model requires ReportPlanName, ReportDeliveryChannel, ReportSetting. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a report plan. A report plan is a document that contains information about the contents of the report and where Backup will deliver it. If you call CreateReportPlan with a plan that already exists, you receive an…",
+            ),
+        ),
+        (
+            "CreateRestoreAccessBackupVault",
+            deferred(
+                "Model requires SourceBackupVaultArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a restore access backup vault that provides temporary access to recovery points in a logically air-gapped backup vault, subject to MPA approval.",
+            ),
+        ),
+        (
+            "CreateRestoreTestingPlan",
+            deferred(
+                "Model requires RestoreTestingPlan. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a restore testing plan. The first of two steps to create a restore testing plan. After this request is successful, finish the procedure using CreateRestoreTestingSelection.",
+            ),
+        ),
+        (
+            "CreateRestoreTestingSelection",
+            deferred(
+                "Model requires RestoreTestingPlanName, RestoreTestingSelection. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This request can be sent after CreateRestoreTestingPlan request returns successfully. This is the second part of creating a resource testing plan, and it must be completed sequentially. This consists of…",
+            ),
+        ),
+        (
+            "CreateTieringConfiguration",
+            deferred(
+                "Model requires TieringConfiguration. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a tiering configuration. A tiering configuration enables automatic movement of backup data to a lower-cost storage tier based on the age of backed-up objects in the backup vault. Each vault can only have one…",
+            ),
+        ),
+        (
+            "DeleteBackupAccessPoint",
+            deferred(
+                "Model requires AccessPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a backup access point. This deletes the underlying Amazon S3 access point and, if no other backup access points remain for the recovery point, resumes lifecycle transitions for that recovery point. Always delete backup…",
+            ),
+        ),
+        (
+            "DeleteBackupPlan",
+            deferred(
+                "Model requires BackupPlanId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a backup plan. A backup plan can only be deleted after all associated selections of resources have been deleted. Deleting a backup plan deletes the current version of a backup plan. Previous versions, if any, will still…",
+            ),
+        ),
+        (
+            "DeleteBackupSelection",
+            deferred(
+                "Model requires BackupPlanId, SelectionId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the resource selection associated with a backup plan that is specified by the SelectionId .",
+            ),
+        ),
+        (
+            "DeleteBackupVault",
+            deferred(
+                "Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the backup vault identified by its name. A vault can be deleted only if it is empty.",
+            ),
+        ),
+        (
+            "DeleteBackupVaultAccessPolicy",
+            deferred(
+                "Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the policy document that manages permissions on a backup vault.",
+            ),
+        ),
+        (
+            "DeleteBackupVaultLockConfiguration",
+            deferred(
+                "Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes Backup Vault Lock from a backup vault specified by a backup vault name. If the Vault Lock configuration is immutable, then you cannot delete Vault Lock using API operations, and you will receive an InvalidRequestException…",
+            ),
+        ),
+        (
+            "DeleteBackupVaultNotifications",
+            deferred(
+                "Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes event notifications for the specified backup vault.",
+            ),
+        ),
+        (
+            "DeleteFramework",
+            deferred(
+                "Model requires FrameworkName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the framework specified by a framework name.",
+            ),
+        ),
+        (
+            "DeleteRecoveryPoint",
+            deferred(
+                "Model requires BackupVaultName, RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the recovery point specified by a recovery point ID. If the recovery point ID belongs to a continuous backup, calling this endpoint deletes the existing continuous backup and stops future continuous backup. When an IAM…",
+            ),
+        ),
+        (
+            "DeleteReportPlan",
+            deferred(
+                "Model requires ReportPlanName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the report plan specified by a report plan name.",
+            ),
+        ),
+        (
+            "DeleteRestoreTestingPlan",
+            deferred(
+                "Model requires RestoreTestingPlanName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This request deletes the specified restore testing plan. Deletion can only successfully occur if all associated restore testing selections are deleted first.",
+            ),
+        ),
+        (
+            "DeleteRestoreTestingSelection",
+            deferred(
+                "Model requires RestoreTestingPlanName, RestoreTestingSelectionName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Input the Restore Testing Plan name and Restore Testing Selection name. All testing selections associated with a restore testing plan must be deleted before the restore testing plan can be deleted.",
+            ),
+        ),
+        (
+            "DeleteTieringConfiguration",
+            deferred(
+                "Model requires TieringConfigurationName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the tiering configuration specified by a tiering configuration name.",
+            ),
+        ),
+        (
+            "DescribeBackupAccessPoint",
+            deferred(
+                "Model requires AccessPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns metadata about a backup access point, including its status and the details of the underlying Amazon S3 access point. After a backup access point reaches the AVAILABLE status, use this operation to retrieve the Amazon S3…",
+            ),
+        ),
+        (
+            "DescribeBackupJob",
+            deferred(
+                "Model requires BackupJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns backup job details for the specified BackupJobId .",
+            ),
+        ),
         // Model: Returns metadata about a backup vault specified by its name.
-        ("DescribeBackupVault", OperationOverlay {
-            class: Some(OverlayClass::Expand),
-            bind: [(path("BackupVaultName")?, Binding::From { operation: name("ListBackupVaults")?, path: path("BackupVaultName")? })].into_iter().collect(),
-            queryable: vec![path("BackupVaultArn")?],
-            ..read("$", Identity::Arn(path("BackupVaultArn")?), Scope::Region, Paginator::None)?
-        }),
-        ("DescribeCopyJob", deferred("Model requires CopyJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns metadata associated with creating a copy of a resource.")),
+        (
+            "DescribeBackupVault",
+            OperationOverlay {
+                class: Some(OverlayClass::Expand),
+                bind: [(
+                    path("BackupVaultName")?,
+                    Binding::From {
+                        operation: name("ListBackupVaults")?,
+                        path: path("BackupVaultName")?,
+                    },
+                )]
+                .into_iter()
+                .collect(),
+                queryable: vec![path("BackupVaultArn")?],
+                ..read(
+                    "$",
+                    Identity::Arn(path("BackupVaultArn")?),
+                    Scope::Region,
+                    Paginator::None,
+                )?
+            },
+        ),
+        (
+            "DescribeCopyJob",
+            deferred(
+                "Model requires CopyJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns metadata associated with creating a copy of a resource.",
+            ),
+        ),
     ])
 }
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
         // Model: Returns the framework details for the specified FrameworkName .
-        ("DescribeFramework", OperationOverlay {
-            class: Some(OverlayClass::Expand),
-            bind: [(path("FrameworkName")?, Binding::From { operation: name("ListFrameworks")?, path: path("FrameworkName")? })].into_iter().collect(),
-            queryable: vec![path("FrameworkArn")?],
-            ..read("$", Identity::Arn(path("FrameworkArn")?), Scope::Region, Paginator::None)?
-        }),
-        ("DescribeGlobalSettings", deferred("No safe resource collection plan is approved for this modeled operation. Its output is GlobalSettings, LastUpdateTime; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes whether the Amazon Web Services account has enabled different cross-account management options, including cross-account backup, multi-party approval, and delegated administrator. Returns an error if the account is not a…")),
-        ("DescribeProtectedResource", deferred("Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns information about a saved resource, including the last time it was backed up, its Amazon Resource Name (ARN), and the Amazon Web Services service type of the saved resource.")),
-        ("DescribeRecoveryPoint", deferred("Model requires BackupVaultName, RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns metadata associated with a recovery point, including ID, status, encryption, and lifecycle.")),
-        ("DescribeRegionSettings", deferred("No safe resource collection plan is approved for this modeled operation. Its output is ResourceTypeOptInPreference, ResourceTypeManagementPreference; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns the current service opt-in settings for the Region. If service opt-in is enabled for a service, Backup tries to protect that service's resources in this Region, when the resource is included in an on-demand backup or…")),
-        ("DescribeReportJob", deferred("Model requires ReportJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the details associated with creating a report as specified by its ReportJobId .")),
+        (
+            "DescribeFramework",
+            OperationOverlay {
+                class: Some(OverlayClass::Expand),
+                bind: [(
+                    path("FrameworkName")?,
+                    Binding::From {
+                        operation: name("ListFrameworks")?,
+                        path: path("FrameworkName")?,
+                    },
+                )]
+                .into_iter()
+                .collect(),
+                queryable: vec![path("FrameworkArn")?],
+                ..read(
+                    "$",
+                    Identity::Arn(path("FrameworkArn")?),
+                    Scope::Region,
+                    Paginator::None,
+                )?
+            },
+        ),
+        (
+            "DescribeGlobalSettings",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is GlobalSettings, LastUpdateTime; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes whether the Amazon Web Services account has enabled different cross-account management options, including cross-account backup, multi-party approval, and delegated administrator. Returns an error if the account is not a…",
+            ),
+        ),
+        (
+            "DescribeProtectedResource",
+            deferred(
+                "Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns information about a saved resource, including the last time it was backed up, its Amazon Resource Name (ARN), and the Amazon Web Services service type of the saved resource.",
+            ),
+        ),
+        (
+            "DescribeRecoveryPoint",
+            deferred(
+                "Model requires BackupVaultName, RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns metadata associated with a recovery point, including ID, status, encryption, and lifecycle.",
+            ),
+        ),
+        (
+            "DescribeRegionSettings",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is ResourceTypeOptInPreference, ResourceTypeManagementPreference; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns the current service opt-in settings for the Region. If service opt-in is enabled for a service, Backup tries to protect that service's resources in this Region, when the resource is included in an on-demand backup or…",
+            ),
+        ),
+        (
+            "DescribeReportJob",
+            deferred(
+                "Model requires ReportJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the details associated with creating a report as specified by its ReportJobId .",
+            ),
+        ),
         // Model: Returns a list of all report plans for an Amazon Web Services account and Amazon Web Services Region.
-        ("DescribeReportPlan", OperationOverlay {
-            class: Some(OverlayClass::Expand),
-            bind: [(path("ReportPlanName")?, Binding::From { operation: name("ListReportPlans")?, path: path("ReportPlanName")? })].into_iter().collect(),
-            queryable: vec![path("ReportPlanArn")?],
-            ..read("ReportPlan", Identity::Arn(path("ReportPlanArn")?), Scope::Region, Paginator::None)?
-        }),
-        ("DescribeRestoreJob", deferred("Model requires RestoreJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns metadata associated with a restore job that is specified by a job ID.")),
-        ("DescribeScanJob", deferred("Model requires ScanJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns scan job details for the specified ScanJobID.")),
-        ("DisassociateBackupVaultMpaApprovalTeam", deferred("Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes the association between an MPA approval team and a backup vault, disabling the MPA approval workflow for restore operations.")),
-        ("DisassociateRecoveryPoint", deferred("Model requires BackupVaultName, RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified continuous backup recovery point from Backup and releases control of that continuous backup to the source service, such as Amazon RDS. The source service will continue to create and retain continuous backups…")),
-        ("DisassociateRecoveryPointFromParent", deferred("Model requires BackupVaultName, RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This action to a specific child (nested) recovery point removes the relationship between the specified recovery point and its parent (composite) recovery point.")),
-        ("ExportBackupPlanTemplate", deferred("Model requires BackupPlanId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the backup plan that is specified by the plan ID as a backup template.")),
-        ("GetBackupPlan", deferred("Model requires BackupPlanId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns BackupPlan details for the specified BackupPlanId . The details are the body of a backup plan in JSON format, in addition to plan metadata.")),
-        ("GetBackupPlanFromJSON", deferred("Model requires BackupPlanTemplateJson. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a valid JSON document specifying a backup plan or an error.")),
-        ("GetBackupPlanFromTemplate", deferred("Model requires BackupPlanTemplateId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the template specified by its templateId as a backup plan.")),
-        ("GetBackupSelection", deferred("Model requires BackupPlanId, SelectionId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns selection metadata and a document in JSON format that specifies a list of resources that are associated with a backup plan.")),
-        ("GetBackupVaultAccessPolicy", deferred("Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the access policy document that is associated with the named backup vault.")),
-        ("GetBackupVaultNotifications", deferred("Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns event notifications for the specified backup vault.")),
-        ("GetLegalHold", deferred("Model requires LegalHoldId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This action returns details for a specified legal hold. The details are the body of a legal hold in JSON format, in addition to metadata.")),
-        ("GetPITRMalwareScanResults", deferred("Model requires RecoveryPointArn, BackupVaultName, ScanEndTime, MalwareScanner. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the malware scan results for a specified point in time within a continuous (point-in-time recovery) backup.")),
-        ("GetRecoveryPointIndexDetails", deferred("Model requires BackupVaultName, RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This operation returns the metadata and details specific to the backup index associated with the specified recovery point.")),
-        ("GetRecoveryPointRestoreMetadata", deferred("Model requires BackupVaultName, RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a set of metadata key-value pairs that were used to create the backup.")),
-        ("GetRestoreJobMetadata", deferred("Model requires RestoreJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This request returns the metadata for the specified restore job.")),
-        ("GetRestoreTestingInferredMetadata", deferred("Model requires BackupVaultName, RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This request returns the minimal required set of metadata needed to start a restore job with secure default settings. BackupVaultName and RecoveryPointArn are required parameters. BackupVaultAccountId is an optional parameter.")),
-        ("GetRestoreTestingPlan", deferred("Model requires RestoreTestingPlanName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns RestoreTestingPlan details for the specified RestoreTestingPlanName . The details are the body of a restore testing plan in JSON format, in addition to plan metadata.")),
-        ("GetRestoreTestingSelection", deferred("Model requires RestoreTestingPlanName, RestoreTestingSelectionName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns RestoreTestingSelection, which displays resources and elements of the restore testing plan.")),
-        ("GetSupportedResourceTypes", deferred("No safe resource collection plan is approved for this modeled operation. Its output is ResourceTypes; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns the Amazon Web Services resource types supported by Backup.")),
-        ("GetTieringConfiguration", deferred("Model requires TieringConfigurationName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns TieringConfiguration details for the specified TieringConfigurationName . The details are the body of a tiering configuration in JSON format, in addition to configuration metadata.")),
+        (
+            "DescribeReportPlan",
+            OperationOverlay {
+                class: Some(OverlayClass::Expand),
+                bind: [(
+                    path("ReportPlanName")?,
+                    Binding::From {
+                        operation: name("ListReportPlans")?,
+                        path: path("ReportPlanName")?,
+                    },
+                )]
+                .into_iter()
+                .collect(),
+                queryable: vec![path("ReportPlanArn")?],
+                ..read(
+                    "ReportPlan",
+                    Identity::Arn(path("ReportPlanArn")?),
+                    Scope::Region,
+                    Paginator::None,
+                )?
+            },
+        ),
+        (
+            "DescribeRestoreJob",
+            deferred(
+                "Model requires RestoreJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns metadata associated with a restore job that is specified by a job ID.",
+            ),
+        ),
+        (
+            "DescribeScanJob",
+            deferred(
+                "Model requires ScanJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns scan job details for the specified ScanJobID.",
+            ),
+        ),
+        (
+            "DisassociateBackupVaultMpaApprovalTeam",
+            deferred(
+                "Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes the association between an MPA approval team and a backup vault, disabling the MPA approval workflow for restore operations.",
+            ),
+        ),
+        (
+            "DisassociateRecoveryPoint",
+            deferred(
+                "Model requires BackupVaultName, RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified continuous backup recovery point from Backup and releases control of that continuous backup to the source service, such as Amazon RDS. The source service will continue to create and retain continuous backups…",
+            ),
+        ),
+        (
+            "DisassociateRecoveryPointFromParent",
+            deferred(
+                "Model requires BackupVaultName, RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This action to a specific child (nested) recovery point removes the relationship between the specified recovery point and its parent (composite) recovery point.",
+            ),
+        ),
+        (
+            "ExportBackupPlanTemplate",
+            deferred(
+                "Model requires BackupPlanId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the backup plan that is specified by the plan ID as a backup template.",
+            ),
+        ),
+        (
+            "GetBackupPlan",
+            deferred(
+                "Model requires BackupPlanId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns BackupPlan details for the specified BackupPlanId . The details are the body of a backup plan in JSON format, in addition to plan metadata.",
+            ),
+        ),
+        (
+            "GetBackupPlanFromJSON",
+            deferred(
+                "Model requires BackupPlanTemplateJson. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a valid JSON document specifying a backup plan or an error.",
+            ),
+        ),
+        (
+            "GetBackupPlanFromTemplate",
+            deferred(
+                "Model requires BackupPlanTemplateId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the template specified by its templateId as a backup plan.",
+            ),
+        ),
+        (
+            "GetBackupSelection",
+            deferred(
+                "Model requires BackupPlanId, SelectionId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns selection metadata and a document in JSON format that specifies a list of resources that are associated with a backup plan.",
+            ),
+        ),
+        (
+            "GetBackupVaultAccessPolicy",
+            deferred(
+                "Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the access policy document that is associated with the named backup vault.",
+            ),
+        ),
+        (
+            "GetBackupVaultNotifications",
+            deferred(
+                "Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns event notifications for the specified backup vault.",
+            ),
+        ),
+        (
+            "GetLegalHold",
+            deferred(
+                "Model requires LegalHoldId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This action returns details for a specified legal hold. The details are the body of a legal hold in JSON format, in addition to metadata.",
+            ),
+        ),
+        (
+            "GetPITRMalwareScanResults",
+            deferred(
+                "Model requires RecoveryPointArn, BackupVaultName, ScanEndTime, MalwareScanner. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the malware scan results for a specified point in time within a continuous (point-in-time recovery) backup.",
+            ),
+        ),
+        (
+            "GetRecoveryPointIndexDetails",
+            deferred(
+                "Model requires BackupVaultName, RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This operation returns the metadata and details specific to the backup index associated with the specified recovery point.",
+            ),
+        ),
+        (
+            "GetRecoveryPointRestoreMetadata",
+            deferred(
+                "Model requires BackupVaultName, RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a set of metadata key-value pairs that were used to create the backup.",
+            ),
+        ),
+        (
+            "GetRestoreJobMetadata",
+            deferred(
+                "Model requires RestoreJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This request returns the metadata for the specified restore job.",
+            ),
+        ),
+        (
+            "GetRestoreTestingInferredMetadata",
+            deferred(
+                "Model requires BackupVaultName, RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This request returns the minimal required set of metadata needed to start a restore job with secure default settings. BackupVaultName and RecoveryPointArn are required parameters. BackupVaultAccountId is an optional parameter.",
+            ),
+        ),
+        (
+            "GetRestoreTestingPlan",
+            deferred(
+                "Model requires RestoreTestingPlanName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns RestoreTestingPlan details for the specified RestoreTestingPlanName . The details are the body of a restore testing plan in JSON format, in addition to plan metadata.",
+            ),
+        ),
+        (
+            "GetRestoreTestingSelection",
+            deferred(
+                "Model requires RestoreTestingPlanName, RestoreTestingSelectionName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns RestoreTestingSelection, which displays resources and elements of the restore testing plan.",
+            ),
+        ),
+        (
+            "GetSupportedResourceTypes",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is ResourceTypes; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns the Amazon Web Services resource types supported by Backup.",
+            ),
+        ),
+        (
+            "GetTieringConfiguration",
+            deferred(
+                "Model requires TieringConfigurationName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns TieringConfiguration details for the specified TieringConfigurationName . The details are the body of a tiering configuration in JSON format, in addition to configuration metadata.",
+            ),
+        ),
     ])
 }
 
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
         // Model: Returns a list of the backup access points in your account and Region.
-        ("ListBackupAccessPoints", OperationOverlay {
-            queryable: vec![path("AccessPointArn")?],
-            ..read("BackupAccessPoints", Identity::Arn(path("AccessPointArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("ListBackupAccessPointsByRecoveryPoint", deferred("Model requires RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the backup access points associated with the specified recovery point. If you own the recovery point and have shared it with other accounts, the response includes backup access points created by those accounts.")),
-        ("ListBackupAccessPointsByResource", deferred("Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the backup access points associated with the specified resource, such as an Amazon S3 bucket.")),
-        ("ListBackupJobSummaries", deferred("No safe resource collection plan is approved for this modeled operation. Its output is BackupJobSummaries, AggregationPeriod; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: This is a request for a summary of backup jobs created or running within the most recent 14 days. You can include parameters AccountID, State, ResourceType, MessageCategory, AggregationPeriod, MaxResults, or NextToken to filter…")),
+        (
+            "ListBackupAccessPoints",
+            OperationOverlay {
+                queryable: vec![path("AccessPointArn")?],
+                ..read(
+                    "BackupAccessPoints",
+                    Identity::Arn(path("AccessPointArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListBackupAccessPointsByRecoveryPoint",
+            deferred(
+                "Model requires RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the backup access points associated with the specified recovery point. If you own the recovery point and have shared it with other accounts, the response includes backup access points created by those accounts.",
+            ),
+        ),
+        (
+            "ListBackupAccessPointsByResource",
+            deferred(
+                "Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the backup access points associated with the specified resource, such as an Amazon S3 bucket.",
+            ),
+        ),
+        (
+            "ListBackupJobSummaries",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is BackupJobSummaries, AggregationPeriod; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: This is a request for a summary of backup jobs created or running within the most recent 14 days. You can include parameters AccountID, State, ResourceType, MessageCategory, AggregationPeriod, MaxResults, or NextToken to filter…",
+            ),
+        ),
         // Model: Returns a list of existing backup jobs for an authenticated account for the last 30 days. For a longer period of time, consider using these monitoring tools .
-        ("ListBackupJobs", OperationOverlay {
-            queryable: vec![path("BackupJobId")?],
-            ..read("BackupJobs", Identity::Key(vec![path("BackupJobId")?]), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("ListBackupPlanTemplates", deferred("No safe resource collection plan is approved for this modeled operation. Its output is BackupPlanTemplatesList; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Lists the backup plan templates.")),
-        ("ListBackupPlanVersions", deferred("Model requires BackupPlanId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns version metadata of your backup plans, including Amazon Resource Names (ARNs), backup plan IDs, creation and deletion dates, plan names, and version IDs.")),
+        (
+            "ListBackupJobs",
+            OperationOverlay {
+                queryable: vec![path("BackupJobId")?],
+                ..read(
+                    "BackupJobs",
+                    Identity::Key(vec![path("BackupJobId")?]),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListBackupPlanTemplates",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is BackupPlanTemplatesList; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Lists the backup plan templates.",
+            ),
+        ),
+        (
+            "ListBackupPlanVersions",
+            deferred(
+                "Model requires BackupPlanId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns version metadata of your backup plans, including Amazon Resource Names (ARNs), backup plan IDs, creation and deletion dates, plan names, and version IDs.",
+            ),
+        ),
         // Model: Lists the active backup plans for the account.
-        ("ListBackupPlans", OperationOverlay {
-            queryable: vec![path("BackupPlanArn")?],
-            ..read("BackupPlansList", Identity::Arn(path("BackupPlanArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
+        (
+            "ListBackupPlans",
+            OperationOverlay {
+                queryable: vec![path("BackupPlanArn")?],
+                ..read(
+                    "BackupPlansList",
+                    Identity::Arn(path("BackupPlanArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
         // Reviewed full response: selection metadata includes both keys, role ARN and creation/request metadata, not backup contents.
-        ("ListBackupSelections", OperationOverlay {
-            class: Some(OverlayClass::Expand),
-            bind: [(path("BackupPlanId")?, Binding::From { operation: name("ListBackupPlans")?, path: path("BackupPlanId")? })].into_iter().collect(),
-            queryable: vec![path("BackupPlanId")?, path("SelectionId")?],
-            ..read("BackupSelectionsList", Identity::Key(vec![path("BackupPlanId")?, path("SelectionId")?]), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
+        (
+            "ListBackupSelections",
+            OperationOverlay {
+                class: Some(OverlayClass::Expand),
+                bind: [(
+                    path("BackupPlanId")?,
+                    Binding::From {
+                        operation: name("ListBackupPlans")?,
+                        path: path("BackupPlanId")?,
+                    },
+                )]
+                .into_iter()
+                .collect(),
+                queryable: vec![path("BackupPlanId")?, path("SelectionId")?],
+                ..read(
+                    "BackupSelectionsList",
+                    Identity::Key(vec![path("BackupPlanId")?, path("SelectionId")?]),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
         // Model: Returns a list of recovery point storage containers along with information about them.
-        ("ListBackupVaults", OperationOverlay {
-            queryable: vec![path("BackupVaultArn")?],
-            ..read("BackupVaultList", Identity::Arn(path("BackupVaultArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("ListCopyJobSummaries", deferred("No safe resource collection plan is approved for this modeled operation. Its output is CopyJobSummaries, AggregationPeriod; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: This request obtains a list of copy jobs created or running within the the most recent 14 days. You can include parameters AccountID, State, ResourceType, MessageCategory, AggregationPeriod, MaxResults, or NextToken to filter…")),
+        (
+            "ListBackupVaults",
+            OperationOverlay {
+                queryable: vec![path("BackupVaultArn")?],
+                ..read(
+                    "BackupVaultList",
+                    Identity::Arn(path("BackupVaultArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListCopyJobSummaries",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is CopyJobSummaries, AggregationPeriod; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: This request obtains a list of copy jobs created or running within the the most recent 14 days. You can include parameters AccountID, State, ResourceType, MessageCategory, AggregationPeriod, MaxResults, or NextToken to filter…",
+            ),
+        ),
         // Model: Returns metadata about your copy jobs.
-        ("ListCopyJobs", OperationOverlay {
-            queryable: vec![path("CopyJobId")?],
-            ..read("CopyJobs", Identity::Key(vec![path("CopyJobId")?]), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
+        (
+            "ListCopyJobs",
+            OperationOverlay {
+                queryable: vec![path("CopyJobId")?],
+                ..read(
+                    "CopyJobs",
+                    Identity::Key(vec![path("CopyJobId")?]),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
         // Model: Returns a list of all frameworks for an Amazon Web Services account and Amazon Web Services Region.
-        ("ListFrameworks", OperationOverlay {
-            queryable: vec![path("FrameworkArn")?],
-            ..read("Frameworks", Identity::Arn(path("FrameworkArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
+        (
+            "ListFrameworks",
+            OperationOverlay {
+                queryable: vec![path("FrameworkArn")?],
+                ..read(
+                    "Frameworks",
+                    Identity::Arn(path("FrameworkArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
         // Model: This operation returns a list of recovery points that have an associated index, belonging to the specified account. Optional parameters you can include are: MaxResults; NextToken; SourceResourceArns;…
-        ("ListIndexedRecoveryPoints", OperationOverlay {
-            queryable: vec![path("RecoveryPointArn")?],
-            ..read("IndexedRecoveryPoints", Identity::Arn(path("RecoveryPointArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
+        (
+            "ListIndexedRecoveryPoints",
+            OperationOverlay {
+                queryable: vec![path("RecoveryPointArn")?],
+                ..read(
+                    "IndexedRecoveryPoints",
+                    Identity::Arn(path("RecoveryPointArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
     ])
 }
 
 pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
         // Model: This action returns metadata about active and previous legal holds.
-        ("ListLegalHolds", OperationOverlay {
-            queryable: vec![path("LegalHoldArn")?],
-            ..read("LegalHolds", Identity::Arn(path("LegalHoldArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
+        (
+            "ListLegalHolds",
+            OperationOverlay {
+                queryable: vec![path("LegalHoldArn")?],
+                ..read(
+                    "LegalHolds",
+                    Identity::Arn(path("LegalHoldArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
         // Model: Returns an array of resources with recovery points created by Backup (regardless of the recovery point's status ), including the time the resource was saved, an Amazon Resource Name (ARN) of the…
-        ("ListProtectedResources", OperationOverlay {
-            queryable: vec![path("ResourceArn")?],
-            ..read("Results", Identity::Arn(path("ResourceArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("ListProtectedResourcesByBackupVault", deferred("Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This request lists the protected resources corresponding to each backup vault.")),
+        (
+            "ListProtectedResources",
+            OperationOverlay {
+                queryable: vec![path("ResourceArn")?],
+                ..read(
+                    "Results",
+                    Identity::Arn(path("ResourceArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListProtectedResourcesByBackupVault",
+            deferred(
+                "Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This request lists the protected resources corresponding to each backup vault.",
+            ),
+        ),
         // Model: Returns detailed information about the recovery points stored in a backup vault.
-        ("ListRecoveryPointsByBackupVault", OperationOverlay {
-            class: Some(OverlayClass::Expand),
-            bind: [(path("BackupVaultName")?, Binding::From { operation: name("ListBackupVaults")?, path: path("BackupVaultName")? })].into_iter().collect(),
-            queryable: vec![path("RecoveryPointArn")?],
-            ..read("RecoveryPoints", Identity::Arn(path("RecoveryPointArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("ListRecoveryPointsByLegalHold", deferred("Model requires LegalHoldId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This action returns recovery point ARNs (Amazon Resource Names) of the specified legal hold.")),
-        ("ListRecoveryPointsByResource", deferred("Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: The information about the recovery points of the type specified by a resource Amazon Resource Name (ARN). For Amazon EFS and Amazon EC2, this action only lists recovery points created by Backup.")),
+        (
+            "ListRecoveryPointsByBackupVault",
+            OperationOverlay {
+                class: Some(OverlayClass::Expand),
+                bind: [(
+                    path("BackupVaultName")?,
+                    Binding::From {
+                        operation: name("ListBackupVaults")?,
+                        path: path("BackupVaultName")?,
+                    },
+                )]
+                .into_iter()
+                .collect(),
+                queryable: vec![path("RecoveryPointArn")?],
+                ..read(
+                    "RecoveryPoints",
+                    Identity::Arn(path("RecoveryPointArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListRecoveryPointsByLegalHold",
+            deferred(
+                "Model requires LegalHoldId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This action returns recovery point ARNs (Amazon Resource Names) of the specified legal hold.",
+            ),
+        ),
+        (
+            "ListRecoveryPointsByResource",
+            deferred(
+                "Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: The information about the recovery points of the type specified by a resource Amazon Resource Name (ARN). For Amazon EFS and Amazon EC2, this action only lists recovery points created by Backup.",
+            ),
+        ),
         // Model: Returns details about your report jobs.
-        ("ListReportJobs", OperationOverlay {
-            queryable: vec![path("ReportJobId")?],
-            ..read("ReportJobs", Identity::Key(vec![path("ReportJobId")?]), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
+        (
+            "ListReportJobs",
+            OperationOverlay {
+                queryable: vec![path("ReportJobId")?],
+                ..read(
+                    "ReportJobs",
+                    Identity::Key(vec![path("ReportJobId")?]),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
         // Model: Returns a list of your report plans. For detailed information about a single report plan, use DescribeReportPlan .
-        ("ListReportPlans", OperationOverlay {
-            queryable: vec![path("ReportPlanArn")?],
-            ..read("ReportPlans", Identity::Arn(path("ReportPlanArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("ListRestoreAccessBackupVaults", deferred("Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a list of restore access backup vaults associated with a specified backup vault.")),
-        ("ListRestoreJobSummaries", deferred("No safe resource collection plan is approved for this modeled operation. Its output is RestoreJobSummaries, AggregationPeriod; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: This request obtains a summary of restore jobs created or running within the the most recent 14 days. You can include parameters AccountID, State, ResourceType, AggregationPeriod, MaxResults, or NextToken to filter results. This…")),
+        (
+            "ListReportPlans",
+            OperationOverlay {
+                queryable: vec![path("ReportPlanArn")?],
+                ..read(
+                    "ReportPlans",
+                    Identity::Arn(path("ReportPlanArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListRestoreAccessBackupVaults",
+            deferred(
+                "Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a list of restore access backup vaults associated with a specified backup vault.",
+            ),
+        ),
+        (
+            "ListRestoreJobSummaries",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is RestoreJobSummaries, AggregationPeriod; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: This request obtains a summary of restore jobs created or running within the the most recent 14 days. You can include parameters AccountID, State, ResourceType, AggregationPeriod, MaxResults, or NextToken to filter results. This…",
+            ),
+        ),
         // Model: Returns a list of jobs that Backup initiated to restore a saved resource, including details about the recovery process.
-        ("ListRestoreJobs", OperationOverlay {
-            queryable: vec![path("RestoreJobId")?],
-            ..read("RestoreJobs", Identity::Key(vec![path("RestoreJobId")?]), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("ListRestoreJobsByProtectedResource", deferred("Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This returns restore jobs that contain the specified protected resource. You must include ResourceArn . You can optionally include NextToken , ByStatus , MaxResults , ByRecoveryPointCreationDateAfter , and…")),
+        (
+            "ListRestoreJobs",
+            OperationOverlay {
+                queryable: vec![path("RestoreJobId")?],
+                ..read(
+                    "RestoreJobs",
+                    Identity::Key(vec![path("RestoreJobId")?]),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListRestoreJobsByProtectedResource",
+            deferred(
+                "Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This returns restore jobs that contain the specified protected resource. You must include ResourceArn . You can optionally include NextToken , ByStatus , MaxResults , ByRecoveryPointCreationDateAfter , and…",
+            ),
+        ),
     ])
 }
 
 pub(super) fn part_4() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
         // Model: Returns a list of restore testing plans.
-        ("ListRestoreTestingPlans", OperationOverlay {
-            queryable: vec![path("RestoreTestingPlanArn")?],
-            ..read("RestoreTestingPlans", Identity::Arn(path("RestoreTestingPlanArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
+        (
+            "ListRestoreTestingPlans",
+            OperationOverlay {
+                queryable: vec![path("RestoreTestingPlanArn")?],
+                ..read(
+                    "RestoreTestingPlans",
+                    Identity::Arn(path("RestoreTestingPlanArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
         // Reviewed full response: plan/selection names, role/resource-type references, creation time and validation window only.
-        ("ListRestoreTestingSelections", OperationOverlay {
-            class: Some(OverlayClass::Expand),
-            bind: [(path("RestoreTestingPlanName")?, Binding::From { operation: name("ListRestoreTestingPlans")?, path: path("RestoreTestingPlanName")? })].into_iter().collect(),
-            queryable: vec![path("RestoreTestingPlanName")?, path("RestoreTestingSelectionName")?],
-            ..read("RestoreTestingSelections", Identity::Key(vec![path("RestoreTestingPlanName")?, path("RestoreTestingSelectionName")?]), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("ListScanJobSummaries", deferred("No safe resource collection plan is approved for this modeled operation. Its output is ScanJobSummaries, AggregationPeriod; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: This is a request for a summary of scan jobs created or running within the most recent 14 days.")),
+        (
+            "ListRestoreTestingSelections",
+            OperationOverlay {
+                class: Some(OverlayClass::Expand),
+                bind: [(
+                    path("RestoreTestingPlanName")?,
+                    Binding::From {
+                        operation: name("ListRestoreTestingPlans")?,
+                        path: path("RestoreTestingPlanName")?,
+                    },
+                )]
+                .into_iter()
+                .collect(),
+                queryable: vec![
+                    path("RestoreTestingPlanName")?,
+                    path("RestoreTestingSelectionName")?,
+                ],
+                ..read(
+                    "RestoreTestingSelections",
+                    Identity::Key(vec![
+                        path("RestoreTestingPlanName")?,
+                        path("RestoreTestingSelectionName")?,
+                    ]),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListScanJobSummaries",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is ScanJobSummaries, AggregationPeriod; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: This is a request for a summary of scan jobs created or running within the most recent 14 days.",
+            ),
+        ),
         // Model: Returns a list of existing scan jobs for an authenticated account for the last 30 days.
-        ("ListScanJobs", OperationOverlay {
-            queryable: vec![path("ScanJobId")?],
-            ..read("ScanJobs", Identity::Key(vec![path("ScanJobId")?]), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("ListTags", deferred("Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the tags assigned to the resource, such as a target recovery point, backup plan, or backup vault. This operation returns results depending on the resource type used in the value for resourceArn . For example, recovery…")),
+        (
+            "ListScanJobs",
+            OperationOverlay {
+                queryable: vec![path("ScanJobId")?],
+                ..read(
+                    "ScanJobs",
+                    Identity::Key(vec![path("ScanJobId")?]),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListTags",
+            deferred(
+                "Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the tags assigned to the resource, such as a target recovery point, backup plan, or backup vault. This operation returns results depending on the resource type used in the value for resourceArn . For example, recovery…",
+            ),
+        ),
         // Model: Returns a list of tiering configurations.
-        ("ListTieringConfigurations", OperationOverlay {
-            queryable: vec![path("TieringConfigurationArn")?],
-            ..read("TieringConfigurations", Identity::Arn(path("TieringConfigurationArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("PutBackupVaultAccessPolicy", deferred("Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Sets a resource-based policy that is used to manage access permissions on the target backup vault. Requires a backup vault name and an access policy document in JSON format.")),
-        ("PutBackupVaultLockConfiguration", deferred("Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Applies Backup Vault Lock to a backup vault, preventing attempts to delete any recovery point stored in or created in a backup vault. Vault Lock also prevents attempts to update the lifecycle policy that controls the retention…")),
-        ("PutBackupVaultNotifications", deferred("Model requires BackupVaultName, SNSTopicArn, BackupVaultEvents. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Turns on notifications on a backup vault for the specified topic and events.")),
-        ("PutRestoreValidationResult", deferred("Model requires RestoreJobId, ValidationStatus. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This request allows you to send your independent self-run restore test validation results. RestoreJobId and ValidationStatus are required. Optionally, you can input a ValidationStatusMessage .")),
-        ("RevokeRestoreAccessBackupVault", deferred("Model requires BackupVaultName, RestoreAccessBackupVaultArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Revokes access to a restore access backup vault, removing the ability to restore from its recovery points and permanently deleting the vault.")),
-        ("StartBackupJob", deferred("Model requires BackupVaultName, ResourceArn, IamRoleArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an on-demand backup job for the specified resource.")),
-        ("StartCopyJob", deferred("Model requires RecoveryPointArn, SourceBackupVaultName, DestinationBackupVaultArn, IamRoleArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts a job to create a one-time copy of the specified resource. Does not support continuous backups. See Copy job retry for information on how Backup retries copy job operations.")),
-        ("StartReportJob", deferred("Model requires ReportPlanName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an on-demand report job for the specified report plan.")),
-        ("StartRestoreJob", deferred("Model requires RecoveryPointArn, Metadata. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Recovers the saved resource identified by an Amazon Resource Name (ARN).")),
-        ("StartScanJob", deferred("Model requires BackupVaultName, IamRoleArn, MalwareScanner, RecoveryPointArn, ScanMode, ScannerRoleArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts scanning jobs for specific resources.")),
-        ("StopBackupJob", deferred("Model requires BackupJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Attempts to cancel a job to create a one-time backup of a resource. This action is not supported for the following services: Amazon Aurora Amazon DocumentDB (with MongoDB compatibility) Amazon FSx for Lustre Amazon FSx for NetApp…")),
-        ("TagResource", deferred("Model requires ResourceArn, Tags. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Assigns a set of key-value pairs to a resource.")),
-        ("UntagResource", deferred("Model requires ResourceArn, TagKeyList. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes a set of key-value pairs from a recovery point, backup plan, or backup vault identified by an Amazon Resource Name (ARN) This API is not supported for recovery points for resource types including Aurora, Amazon…")),
-        ("UpdateBackupPlan", deferred("Model requires BackupPlanId, BackupPlan. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the specified backup plan. The new version is uniquely identified by its ID.")),
-        ("UpdateFramework", deferred("Model requires FrameworkName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the specified framework.")),
-        ("UpdateGlobalSettings", deferred("No safe resource collection plan is approved for this modeled operation. Its output is not an inventory record; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Updates whether the Amazon Web Services account has enabled different cross-account management options, including cross-account backup, multi-party approval, and delegated administrator. Returns an error if the account is not an…")),
-        ("UpdateRecoveryPointIndexSettings", deferred("Model requires BackupVaultName, RecoveryPointArn, Index. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This operation updates the settings of a recovery point index. Required: BackupVaultName, RecoveryPointArn, and IAMRoleArn")),
-        ("UpdateRecoveryPointLifecycle", deferred("Model requires BackupVaultName, RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Sets the transition lifecycle of a recovery point. The lifecycle defines when a protected resource is transitioned to cold storage and when it expires. Backup transitions and expires backups automatically according to the…")),
-        ("UpdateRegionSettings", deferred("No safe resource collection plan is approved for this modeled operation. Its output is not an inventory record; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Updates the current service opt-in settings for the Region. Use the DescribeRegionSettings API to determine the resource types that are supported.")),
-        ("UpdateReportPlan", deferred("Model requires ReportPlanName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the specified report plan.")),
-        ("UpdateRestoreTestingPlan", deferred("Model requires RestoreTestingPlan, RestoreTestingPlanName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This request will send changes to your specified restore testing plan. RestoreTestingPlanName cannot be updated after it is created. RecoveryPointSelection can contain: Algorithm ExcludeVaults IncludeVaults RecoveryPointTypes…")),
-        ("UpdateRestoreTestingSelection", deferred("Model requires RestoreTestingPlanName, RestoreTestingSelection, RestoreTestingSelectionName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the specified restore testing selection. Most elements except the RestoreTestingSelectionName can be updated with this request. You can use either protected resource ARNs or conditions, but not both.")),
-        ("UpdateTieringConfiguration", deferred("Model requires TieringConfigurationName, TieringConfiguration. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This request will send changes to your specified tiering configuration. TieringConfigurationName cannot be updated after it is created. ResourceSelection can contain: Resources TieringDownSettingsInDays ResourceType")),
+        (
+            "ListTieringConfigurations",
+            OperationOverlay {
+                queryable: vec![path("TieringConfigurationArn")?],
+                ..read(
+                    "TieringConfigurations",
+                    Identity::Arn(path("TieringConfigurationArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "PutBackupVaultAccessPolicy",
+            deferred(
+                "Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Sets a resource-based policy that is used to manage access permissions on the target backup vault. Requires a backup vault name and an access policy document in JSON format.",
+            ),
+        ),
+        (
+            "PutBackupVaultLockConfiguration",
+            deferred(
+                "Model requires BackupVaultName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Applies Backup Vault Lock to a backup vault, preventing attempts to delete any recovery point stored in or created in a backup vault. Vault Lock also prevents attempts to update the lifecycle policy that controls the retention…",
+            ),
+        ),
+        (
+            "PutBackupVaultNotifications",
+            deferred(
+                "Model requires BackupVaultName, SNSTopicArn, BackupVaultEvents. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Turns on notifications on a backup vault for the specified topic and events.",
+            ),
+        ),
+        (
+            "PutRestoreValidationResult",
+            deferred(
+                "Model requires RestoreJobId, ValidationStatus. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This request allows you to send your independent self-run restore test validation results. RestoreJobId and ValidationStatus are required. Optionally, you can input a ValidationStatusMessage .",
+            ),
+        ),
+        (
+            "RevokeRestoreAccessBackupVault",
+            deferred(
+                "Model requires BackupVaultName, RestoreAccessBackupVaultArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Revokes access to a restore access backup vault, removing the ability to restore from its recovery points and permanently deleting the vault.",
+            ),
+        ),
+        (
+            "StartBackupJob",
+            deferred(
+                "Model requires BackupVaultName, ResourceArn, IamRoleArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an on-demand backup job for the specified resource.",
+            ),
+        ),
+        (
+            "StartCopyJob",
+            deferred(
+                "Model requires RecoveryPointArn, SourceBackupVaultName, DestinationBackupVaultArn, IamRoleArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts a job to create a one-time copy of the specified resource. Does not support continuous backups. See Copy job retry for information on how Backup retries copy job operations.",
+            ),
+        ),
+        (
+            "StartReportJob",
+            deferred(
+                "Model requires ReportPlanName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an on-demand report job for the specified report plan.",
+            ),
+        ),
+        (
+            "StartRestoreJob",
+            deferred(
+                "Model requires RecoveryPointArn, Metadata. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Recovers the saved resource identified by an Amazon Resource Name (ARN).",
+            ),
+        ),
+        (
+            "StartScanJob",
+            deferred(
+                "Model requires BackupVaultName, IamRoleArn, MalwareScanner, RecoveryPointArn, ScanMode, ScannerRoleArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts scanning jobs for specific resources.",
+            ),
+        ),
+        (
+            "StopBackupJob",
+            deferred(
+                "Model requires BackupJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Attempts to cancel a job to create a one-time backup of a resource. This action is not supported for the following services: Amazon Aurora Amazon DocumentDB (with MongoDB compatibility) Amazon FSx for Lustre Amazon FSx for NetApp…",
+            ),
+        ),
+        (
+            "TagResource",
+            deferred(
+                "Model requires ResourceArn, Tags. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Assigns a set of key-value pairs to a resource.",
+            ),
+        ),
+        (
+            "UntagResource",
+            deferred(
+                "Model requires ResourceArn, TagKeyList. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes a set of key-value pairs from a recovery point, backup plan, or backup vault identified by an Amazon Resource Name (ARN) This API is not supported for recovery points for resource types including Aurora, Amazon…",
+            ),
+        ),
+        (
+            "UpdateBackupPlan",
+            deferred(
+                "Model requires BackupPlanId, BackupPlan. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the specified backup plan. The new version is uniquely identified by its ID.",
+            ),
+        ),
+        (
+            "UpdateFramework",
+            deferred(
+                "Model requires FrameworkName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the specified framework.",
+            ),
+        ),
+        (
+            "UpdateGlobalSettings",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is not an inventory record; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Updates whether the Amazon Web Services account has enabled different cross-account management options, including cross-account backup, multi-party approval, and delegated administrator. Returns an error if the account is not an…",
+            ),
+        ),
+        (
+            "UpdateRecoveryPointIndexSettings",
+            deferred(
+                "Model requires BackupVaultName, RecoveryPointArn, Index. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This operation updates the settings of a recovery point index. Required: BackupVaultName, RecoveryPointArn, and IAMRoleArn",
+            ),
+        ),
+        (
+            "UpdateRecoveryPointLifecycle",
+            deferred(
+                "Model requires BackupVaultName, RecoveryPointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Sets the transition lifecycle of a recovery point. The lifecycle defines when a protected resource is transitioned to cold storage and when it expires. Backup transitions and expires backups automatically according to the…",
+            ),
+        ),
+        (
+            "UpdateRegionSettings",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is not an inventory record; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Updates the current service opt-in settings for the Region. Use the DescribeRegionSettings API to determine the resource types that are supported.",
+            ),
+        ),
+        (
+            "UpdateReportPlan",
+            deferred(
+                "Model requires ReportPlanName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the specified report plan.",
+            ),
+        ),
+        (
+            "UpdateRestoreTestingPlan",
+            deferred(
+                "Model requires RestoreTestingPlan, RestoreTestingPlanName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This request will send changes to your specified restore testing plan. RestoreTestingPlanName cannot be updated after it is created. RecoveryPointSelection can contain: Algorithm ExcludeVaults IncludeVaults RecoveryPointTypes…",
+            ),
+        ),
+        (
+            "UpdateRestoreTestingSelection",
+            deferred(
+                "Model requires RestoreTestingPlanName, RestoreTestingSelection, RestoreTestingSelectionName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the specified restore testing selection. Most elements except the RestoreTestingSelectionName can be updated with this request. You can use either protected resource ARNs or conditions, but not both.",
+            ),
+        ),
+        (
+            "UpdateTieringConfiguration",
+            deferred(
+                "Model requires TieringConfigurationName, TieringConfiguration. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This request will send changes to your specified tiering configuration. TieringConfigurationName cannot be updated after it is created. ResourceSelection can contain: Resources TieringDownSettingsInDays ResourceType",
+            ),
+        ),
     ])
 }

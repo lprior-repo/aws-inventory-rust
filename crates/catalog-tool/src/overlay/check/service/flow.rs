@@ -250,15 +250,44 @@ fn check_binding_reference(
     callable: &BTreeSet<&str>,
     errors: &mut Vec<Violation>,
 ) {
-    let binding = if let Binding::Transformed { binding, .. } = binding { binding.as_ref() } else { binding };
+    let binding = if let Binding::Transformed { binding, .. } = binding {
+        binding.as_ref()
+    } else {
+        binding
+    };
     if let Binding::FromAny(alternatives) = binding {
-        alternatives.iter().for_each(|alternative| validate_reference(
-            service, operation, "bind.from_any", alternative.operation.as_str(), names, callable, errors,
-        ));
+        alternatives.iter().for_each(|alternative| {
+            validate_reference(
+                service,
+                operation,
+                "bind.from_any",
+                alternative.operation.as_str(),
+                names,
+                callable,
+                errors,
+            )
+        });
         return;
     }
-    if let Binding::From { operation: parent, .. } | Binding::FromArn { operation: parent, .. } | Binding::FromUrl { operation: parent, .. }
-        | Binding::Context { operation: parent, .. } | Binding::FromBranch { operation: parent, .. } | Binding::ContextFromBranch { operation: parent, .. } = binding {
+    if let Binding::From {
+        operation: parent, ..
+    }
+    | Binding::FromArn {
+        operation: parent, ..
+    }
+    | Binding::FromUrl {
+        operation: parent, ..
+    }
+    | Binding::Context {
+        operation: parent, ..
+    }
+    | Binding::FromBranch {
+        operation: parent, ..
+    }
+    | Binding::ContextFromBranch {
+        operation: parent, ..
+    } = binding
+    {
         validate_reference(
             service,
             operation,

@@ -105,7 +105,10 @@ fn tag_validation_uses_owned_values_not_disagreeing_borrowed_views() -> TestResu
     }
     assert!(matches!(
         Tag::new(
-            DisagreeingText { borrowed: "valid", owned: String::new() },
+            DisagreeingText {
+                borrowed: "valid",
+                owned: String::new()
+            },
             "value",
         ),
         Err(InventoryError::TagKey)
@@ -113,13 +116,22 @@ fn tag_validation_uses_owned_values_not_disagreeing_borrowed_views() -> TestResu
     assert!(matches!(
         Tag::new(
             "key",
-            DisagreeingText { borrowed: "valid", owned: "\0".to_owned() },
+            DisagreeingText {
+                borrowed: "valid",
+                owned: "\0".to_owned()
+            },
         ),
         Err(InventoryError::TagValue)
     ));
     let tag = Tag::new(
-        DisagreeingText { borrowed: "", owned: "actual-key".to_owned() },
-        DisagreeingText { borrowed: "\0", owned: "actual-value".to_owned() },
+        DisagreeingText {
+            borrowed: "",
+            owned: "actual-key".to_owned(),
+        },
+        DisagreeingText {
+            borrowed: "\0",
+            owned: "actual-value".to_owned(),
+        },
     )?;
     assert_eq!(tag.key(), "actual-key");
     assert_eq!(tag.value(), "actual-value");

@@ -3,7 +3,9 @@ use inventory_core::record::Value;
 
 // Overlay parsing has already validated balanced braces and member-path syntax.
 pub(in crate::runtime_catalog) fn fields(template: &str) -> impl Iterator<Item = &str> {
-    template.split('{').skip(1)
+    template
+        .split('{')
+        .skip(1)
         .filter_map(|part| part.split_once('}').map(|(path, _)| path))
         .filter(|path| !matches!(*path, "partition" | "account" | "region"))
 }
@@ -13,10 +15,18 @@ pub(super) fn compile(
     services: &super::super::ServiceIndex<'_>,
 ) -> Result<Value, RuntimeCatalogCompileError> {
     let mut segments = template.split('{');
-    let first = segments.next().ok_or(RuntimeCatalogCompileError::Capability)?;
-    let initial = if first.is_empty() { Vec::new() } else { vec![literal(first)?] };
+    let first = segments
+        .next()
+        .ok_or(RuntimeCatalogCompileError::Capability)?;
+    let initial = if first.is_empty() {
+        Vec::new()
+    } else {
+        vec![literal(first)?]
+    };
     let parts = segments.try_fold(initial, |mut parts, segment| {
-        let (path, tail) = segment.split_once('}').ok_or(RuntimeCatalogCompileError::Capability)?;
+        let (path, tail) = segment
+            .split_once('}')
+            .ok_or(RuntimeCatalogCompileError::Capability)?;
         parts.push(placeholder(path, services)?);
         if !tail.is_empty() {
             parts.push(literal(tail)?);

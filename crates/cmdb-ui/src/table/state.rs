@@ -55,7 +55,8 @@ pub(super) fn apply_snapshot_data(
 
 pub(super) fn apply_graph_data(data: &mut Data, graph: Graph, error: Option<String>) -> bool {
     if graph.tag_root.as_deref().is_some_and(|root| {
-        data.selected_row().is_none_or(|selected| selected.key != root)
+        data.selected_row()
+            .is_none_or(|selected| selected.key != root)
     }) {
         return false;
     }

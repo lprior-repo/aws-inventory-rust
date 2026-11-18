@@ -7,28 +7,57 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
     ("AssociateResource", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Creates a canary. Canaries are scripts that monitor your endpoints and APIs from the outside-in. Canaries help you check the availability and latency of your web services and troubleshoot anomalies by investigating load time data, screenshots of the UI, logs, and metrics. You can set up a canary to run continuously or just once. Do not use CreateCanary to modify an existing canary. Use UpdateCanar
     ("CreateCanary", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a group which you can use to associate canaries with each other, including cross-Region canaries. Using groups can help you with managing and automating your canaries, and you can also view aggregated run results and statistics for all canaries in a group. Groups are global resources. When you create a group, it is replicated across Amazon Web Services Regions, and you can view it and add 
+    // Changes service state rather than reading inventory. Pinned purpose: Creates a group which you can use to associate canaries with each other, including cross-Region canaries. Using groups can help you with managing and automating your canaries, and you can also view aggregated run results and statistics for all canaries in a group. Groups are global resources. When you create a group, it is replicated across Amazon Web Services Regions, and you can view it and add
     ("CreateGroup", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Permanently deletes the specified canary. If the canary's ProvisionedResourceCleanup field is set to AUTOMATIC or you specify DeleteLambda in this operation as true , CloudWatch Synthetics also deletes the Lambda functions and layers that are used by the canary. Other resources used and created by the canary are not automatically deleted. After you delete a canary, you should also delete the follo
     ("DeleteCanary", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes a group. The group doesn't need to be empty to be deleted. If there are canaries in the group, they are not deleted when you delete the group. Groups are a global resource that appear in all Regions, but the request to delete a group must be made from its home Region. You can find the home Region of a group within its ARN.
     ("DeleteGroup", Decision::Denied(DenyReason::Mutating)),
-    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: This operation returns a list of the canaries in your account, along with full details about each canary. This operation supports resource-level authorization using an IAM policy and the Names parameter. If you specify the Names parameter, the operation is successful only if you have authorization to view all the canaries that you specify in your request. If you do not have permission to view any 
+    // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: This operation returns a list of the canaries in your account, along with full details about each canary. This operation supports resource-level authorization using an IAM policy and the Names parameter. If you specify the Names parameter, the operation is successful only if you have authorization to view all the canaries that you specify in your request. If you do not have permission to view any
     ("DescribeCanaries", Decision::Denied(DenyReason::Content)),
     // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Use this operation to see information from the most recent run of each canary that you have created. This operation supports resource-level authorization using an IAM policy and the Names parameter. If you specify the Names parameter, the operation is successful only if you have authorization to view all the canaries that you specify in your request. If you do not have permission to view any of th
-    ("DescribeCanariesLastRun", Decision::Denied(DenyReason::Content)),
+    (
+        "DescribeCanariesLastRun",
+        Decision::Denied(DenyReason::Content),
+    ),
     // Public/service reference catalog or supported-capability enumeration, not account-owned resource inventory. Pinned purpose: Returns a list of Synthetics canary runtime versions. For more information, see Canary Runtime Versions .
-    ("DescribeRuntimeVersions", Decision::Denied(DenyReason::ReferenceData)),
+    (
+        "DescribeRuntimeVersions",
+        Decision::Denied(DenyReason::ReferenceData),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Removes a canary from a group. You must run this operation in the Region where the canary exists.
-    ("DisassociateResource", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DisassociateResource",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Retrieves complete information about one canary. You must specify the name of the canary that you want. To get a list of canaries and their names, use DescribeCanaries .
     ("GetCanary", Decision::Denied(DenyReason::Content)),
     // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Retrieves a list of runs for a specified canary.
     ("GetCanaryRuns", Decision::Denied(DenyReason::Content)),
-    ("GetGroup", Decision::Deferred("Required selectors GroupIdentifier are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Group. Pinned purpose: Returns information about one group. Groups are a global resource, so you can use this operation from any Region.")),
-    ("ListAssociatedGroups", Decision::Deferred("Required selectors ResourceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Groups, NextToken. Pinned purpose: Returns a list of the groups that the specified canary is associated with. The canary that you specify must be in the current Region.")),
-    ("ListGroupResources", Decision::Deferred("Required selectors GroupIdentifier are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Resources, NextToken. Pinned purpose: This operation returns a list of the ARNs of the canaries that are associated with the specified group.")),
-    ("ListTagsForResource", Decision::Deferred("Tag-only observation must join the originating resource identity with complete-snapshot semantics, not be persisted as a separate resource. Required request members: ResourceArn. Pinned purpose: Displays the tags associated with a canary or group.")),
+    (
+        "GetGroup",
+        Decision::Deferred(
+            "Required selectors GroupIdentifier are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Group. Pinned purpose: Returns information about one group. Groups are a global resource, so you can use this operation from any Region.",
+        ),
+    ),
+    (
+        "ListAssociatedGroups",
+        Decision::Deferred(
+            "Required selectors ResourceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Groups, NextToken. Pinned purpose: Returns a list of the groups that the specified canary is associated with. The canary that you specify must be in the current Region.",
+        ),
+    ),
+    (
+        "ListGroupResources",
+        Decision::Deferred(
+            "Required selectors GroupIdentifier are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Resources, NextToken. Pinned purpose: This operation returns a list of the ARNs of the canaries that are associated with the specified group.",
+        ),
+    ),
+    (
+        "ListTagsForResource",
+        Decision::Deferred(
+            "Tag-only observation must join the originating resource identity with complete-snapshot semantics, not be persisted as a separate resource. Required request members: ResourceArn. Pinned purpose: Displays the tags associated with a canary or group.",
+        ),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Use this operation to run a canary that has already been created. The frequency of the canary runs is determined by the value of the canary's Schedule . To see a canary's schedule, use GetCanary .
     ("StartCanary", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Use this operation to start a dry run for a canary that has already been created

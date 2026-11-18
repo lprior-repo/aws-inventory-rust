@@ -1,14 +1,22 @@
 // Pinned Smithy source: .local/aws-models/models/partnercentral-benefits/service/2018-05-10/partnercentral-benefits-2018-05-10.json
 use super::policy::{Group, compile};
-use crate::{classes::DenyReason, overlay::{NameError, OverlayClass, ServiceOverlay}};
+use crate::{
+    classes::DenyReason,
+    overlay::{NameError, OverlayClass, ServiceOverlay},
+};
 
 const GROUPS: &[Group] = &[
     Group {
         operations: &[
-            "AmendBenefitApplication", "AssociateBenefitApplicationResource", 
-            "CancelBenefitApplication", "CreateBenefitApplication", 
-            "DisassociateBenefitApplicationResource", "RecallBenefitApplication", 
-            "SubmitBenefitApplication", "TagResource", "UntagResource", 
+            "AmendBenefitApplication",
+            "AssociateBenefitApplicationResource",
+            "CancelBenefitApplication",
+            "CreateBenefitApplication",
+            "DisassociateBenefitApplicationResource",
+            "RecallBenefitApplication",
+            "SubmitBenefitApplication",
+            "TagResource",
+            "UntagResource",
             "UpdateBenefitApplication",
         ],
         class: OverlayClass::Deny(DenyReason::Mutating),
@@ -16,12 +24,18 @@ const GROUPS: &[Group] = &[
     },
     Group {
         operations: &[
-            "GetBenefit", "GetBenefitAllocation", "GetBenefitApplication", 
-            "ListBenefitAllocations", "ListBenefitApplications", "ListBenefits", 
+            "GetBenefit",
+            "GetBenefitAllocation",
+            "GetBenefitApplication",
+            "ListBenefitAllocations",
+            "ListBenefitApplications",
+            "ListBenefits",
             "ListTagsForResource",
         ],
         class: OverlayClass::Defer,
-        reason: Some("Benefit listing requires catalog selection not enumerated by the pinned model; application details contain customer business content."),
+        reason: Some(
+            "Benefit listing requires catalog selection not enumerated by the pinned model; application details contain customer business content.",
+        ),
     },
 ];
 

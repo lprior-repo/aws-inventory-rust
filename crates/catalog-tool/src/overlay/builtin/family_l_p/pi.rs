@@ -1,19 +1,26 @@
 // Pinned Smithy source: .local/aws-models/models/pi/service/2018-02-27/pi-2018-02-27.json
 use super::policy::{Group, compile};
-use crate::{classes::DenyReason, overlay::{NameError, OverlayClass, ServiceOverlay}};
+use crate::{
+    classes::DenyReason,
+    overlay::{NameError, OverlayClass, ServiceOverlay},
+};
 
 const GROUPS: &[Group] = &[
     Group {
         operations: &[
-            "CreatePerformanceAnalysisReport", "DeletePerformanceAnalysisReport", 
-            "TagResource", "UntagResource",
+            "CreatePerformanceAnalysisReport",
+            "DeletePerformanceAnalysisReport",
+            "TagResource",
+            "UntagResource",
         ],
         class: OverlayClass::Deny(DenyReason::Mutating),
         reason: None,
     },
     Group {
         operations: &[
-            "DescribeDimensionKeys", "GetDimensionKeyDetails", "GetPerformanceAnalysisReport", 
+            "DescribeDimensionKeys",
+            "GetDimensionKeyDetails",
+            "GetPerformanceAnalysisReport",
             "GetResourceMetrics",
         ],
         class: OverlayClass::Deny(DenyReason::Content),
@@ -21,12 +28,17 @@ const GROUPS: &[Group] = &[
     },
     Group {
         operations: &[
-            "GetResourceMetadata", "ListAvailableResourceDimensions", 
-            "ListAvailableResourceMetrics", "ListPerformanceAnalysisReportRecommendations", 
-            "ListPerformanceAnalysisReports", "ListTagsForResource",
+            "GetResourceMetadata",
+            "ListAvailableResourceDimensions",
+            "ListAvailableResourceMetrics",
+            "ListPerformanceAnalysisReportRecommendations",
+            "ListPerformanceAnalysisReports",
+            "ListTagsForResource",
         ],
         class: OverlayClass::Defer,
-        reason: Some("Performance Insights reads SQL/dimension values and metrics for an externally supplied database identifier; it is not infrastructure discovery."),
+        reason: Some(
+            "Performance Insights reads SQL/dimension values and metrics for an externally supplied database identifier; it is not infrastructure discovery.",
+        ),
     },
 ];
 

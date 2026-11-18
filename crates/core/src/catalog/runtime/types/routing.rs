@@ -5,8 +5,16 @@ use crate::record::FieldId;
 pub enum RequestRouting {
     #[default]
     Regional,
-    FixedRegion { region: String },
-    Discovered { operation: String, endpoints_path: Box<[FieldId]>, address_path: Box<[FieldId]>, cache_minutes_path: Box<[FieldId]>, trusted_dns_suffix: String },
+    FixedRegion {
+        region: String,
+    },
+    Discovered {
+        operation: String,
+        endpoints_path: Box<[FieldId]>,
+        address_path: Box<[FieldId]>,
+        cache_minutes_path: Box<[FieldId]>,
+        trusted_dns_suffix: String,
+    },
     S3Outposts,
     S3ExpressControl,
 }

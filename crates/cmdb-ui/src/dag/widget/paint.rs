@@ -59,7 +59,9 @@ impl DagView {
 
     fn paint_edge(&mut self, edge: LayoutEdge, from: LayoutRect, to: LayoutRect) {
         let (color, width) = edge_style(edge, self.selection);
-        let affiliation = self.graph.node(edge.to)
+        let affiliation = self
+            .graph
+            .node(edge.to)
             .is_some_and(|node| node.kind() == crate::dag::graph::NodeKind::Tag);
         let color = if affiliation { 0x60bda5 } else { color };
         let (start, end, forward, bend) = self.edge_anchors(from, to);

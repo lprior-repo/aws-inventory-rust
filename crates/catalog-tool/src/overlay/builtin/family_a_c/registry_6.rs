@@ -2,45 +2,94 @@ use super::support::{NameError, ServiceOverlay, service};
 
 pub(super) fn overlays() -> Result<Vec<ServiceOverlay>, NameError> {
     Ok(vec![
-        service("chime-sdk-identity", [
-            super::chime_sdk_identity_0::part_0()?,
-        ].into_iter().flatten().collect())?,
-        service("chime-sdk-media-pipelines", [
-            super::chime_sdk_media_pipelines_0::part_0()?,
-            super::chime_sdk_media_pipelines_0::part_1()?,
-        ].into_iter().flatten().collect())?,
-        service("chime-sdk-meetings", [
-            super::chime_sdk_meetings_0::part_0()?,
-        ].into_iter().flatten().collect())?,
-        service("chime-sdk-messaging", [
-            super::chime_sdk_messaging_0::part_0()?,
-            super::chime_sdk_messaging_0::part_1()?,
-        ].into_iter().flatten().collect())?,
-        service("chime-sdk-voice", [
-            super::chime_sdk_voice_0::part_0()?,
-            super::chime_sdk_voice_0::part_1()?,
-            super::chime_sdk_voice_0::part_2()?,
-            super::chime_sdk_voice_0::part_3()?,
-        ].into_iter().flatten().collect())?,
-        service("cleanrooms", [
-            super::cleanrooms_0::part_0()?,
-            super::cleanrooms_0::part_1()?,
-            super::cleanrooms_0::part_2()?,
-            super::cleanrooms_0::part_3()?,
-        ].into_iter().flatten().collect())?,
-        service("cleanroomsml", [
-            super::cleanroomsml_0::part_0()?,
-            super::cleanroomsml_0::part_1()?,
-        ].into_iter().flatten().collect())?,
-        service("cloud9", [
-            super::cloud9_0::part_0()?,
-        ].into_iter().flatten().collect())?,
-        service("cloudcontrol", [
-            super::cloudcontrol_0::part_0()?,
-        ].into_iter().flatten().collect())?,
-        service("clouddirectory", [
-            super::clouddirectory_0::part_0()?,
-            super::clouddirectory_0::part_1()?,
-        ].into_iter().flatten().collect())?,
+        service(
+            "chime-sdk-identity",
+            [super::chime_sdk_identity_0::part_0()?]
+                .into_iter()
+                .flatten()
+                .collect(),
+        )?,
+        service(
+            "chime-sdk-media-pipelines",
+            [
+                super::chime_sdk_media_pipelines_0::part_0()?,
+                super::chime_sdk_media_pipelines_0::part_1()?,
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
+        )?,
+        service(
+            "chime-sdk-meetings",
+            [super::chime_sdk_meetings_0::part_0()?]
+                .into_iter()
+                .flatten()
+                .collect(),
+        )?,
+        service(
+            "chime-sdk-messaging",
+            [
+                super::chime_sdk_messaging_0::part_0()?,
+                super::chime_sdk_messaging_0::part_1()?,
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
+        )?,
+        service(
+            "chime-sdk-voice",
+            [
+                super::chime_sdk_voice_0::part_0()?,
+                super::chime_sdk_voice_0::part_1()?,
+                super::chime_sdk_voice_0::part_2()?,
+                super::chime_sdk_voice_0::part_3()?,
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
+        )?,
+        service(
+            "cleanrooms",
+            [
+                super::cleanrooms_0::part_0()?,
+                super::cleanrooms_0::part_1()?,
+                super::cleanrooms_0::part_2()?,
+                super::cleanrooms_0::part_3()?,
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
+        )?,
+        service(
+            "cleanroomsml",
+            [
+                super::cleanroomsml_0::part_0()?,
+                super::cleanroomsml_0::part_1()?,
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
+        )?,
+        service(
+            "cloud9",
+            [super::cloud9_0::part_0()?].into_iter().flatten().collect(),
+        )?,
+        service(
+            "cloudcontrol",
+            [super::cloudcontrol_0::part_0()?]
+                .into_iter()
+                .flatten()
+                .collect(),
+        )?,
+        service(
+            "clouddirectory",
+            [
+                super::clouddirectory_0::part_0()?,
+                super::clouddirectory_0::part_1()?,
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
+        )?,
     ])
 }

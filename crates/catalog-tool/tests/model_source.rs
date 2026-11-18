@@ -62,7 +62,9 @@ fn resolved_mixin_required_members_are_used_by_classification()
     let model = r#"{"shapes":{"n#Service":{"type":"service"},"n#ListThings":{"type":"operation","input":{"target":"n#Input"}},"n#Input":{"type":"structure","mixins":[{"target":"n#Base"}]},"n#Base":{"type":"structure","members":{"Required":{"target":"smithy.api#String","traits":{"smithy.api#required":{}}}}}}}"#;
     write_fixture(dir.path(), "models/service/deep/model.json", model)?;
     let report_text = catalog_tool::classes::build_report_with_policy(
-        dir.path(), &catalog_tool::classes::DenyList::default())?;
+        dir.path(),
+        &catalog_tool::classes::DenyList::default(),
+    )?;
     assert!(report_text.lines().any(|line| line == "expand 1"));
     assert!(report_text.lines().any(|line| line == "enumerate 0"));
     Ok(())

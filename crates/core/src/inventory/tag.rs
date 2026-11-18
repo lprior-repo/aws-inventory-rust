@@ -12,15 +12,9 @@ pub struct Tag {
 }
 
 impl Tag {
-    pub fn new(
-        key: impl Into<String>,
-        value: impl Into<String>,
-    ) -> Result<Self, InventoryError> {
+    pub fn new(key: impl Into<String>, value: impl Into<String>) -> Result<Self, InventoryError> {
         let key: String = key.into();
-        if key.is_empty()
-            || key.len() > MAX_TAG_KEY_BYTES
-            || key.chars().any(char::is_control)
-        {
+        if key.is_empty() || key.len() > MAX_TAG_KEY_BYTES || key.chars().any(char::is_control) {
             return Err(InventoryError::TagKey);
         }
         let value: String = value.into();
@@ -82,7 +76,11 @@ impl TagObservation {
         }) {
             return Err(InventoryError::DuplicateTag);
         }
-        Ok(Self { resource, coverage, tags })
+        Ok(Self {
+            resource,
+            coverage,
+            tags,
+        })
     }
 
     pub fn resource(&self) -> &ResourceKey {

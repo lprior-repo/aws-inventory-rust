@@ -1,21 +1,75 @@
 // Explicit dispositions from .local/aws-models/models/emr-serverless/service/2021-07-13/emr-serverless-2021-07-13.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
-    ("CancelJobRun", "Requires applicationId, jobRunId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Cancels a job run."),
-    ("CreateApplication", "Requires releaseLabel, type, clientToken; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates an application."),
-    ("DeleteApplication", "Requires applicationId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes an application."),
-    ("GetApplication", "Requires applicationId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Displays detailed information about a specified application."),
-    ("GetDashboardForJobRun", "Requires applicationId, jobRunId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates and returns a URL that you can use to access the application UIs for a job run."),
-    ("GetJobRun", "Requires applicationId, jobRunId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Displays detailed information about a job run."),
-    ("GetResourceDashboard", "Requires applicationId, resourceId, resourceType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a URL that you can use to access the application UIs for a specified resource, such as a session."),
-    ("GetSession", "Requires applicationId, sessionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Displays detailed information about a session."),
-    ("ListJobRunAttempts", "Selected arn identifies the job run, not an individual attempt; attempt is an integer. Current selected string identity cannot encode the distinct (job ARN, attempt number) key without collapsing attempts."),
-    ("ListTagsForResource", "Requires resourceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists the tags assigned to the resources."),
-    ("StartApplication", "Requires applicationId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a specified application and initializes initial capacity if configured."),
-    ("StartJobRun", "Requires applicationId, clientToken, executionRoleArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a job run."),
-    ("StartSession", "Requires applicationId, clientToken, executionRoleArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates and starts a new session on the specified application."),
-    ("StopApplication", "Requires applicationId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Stops a specified application and releases initial capacity if configured."),
-    ("TagResource", "Requires resourceArn, tags; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Assigns tags to resources."),
-    ("TerminateSession", "Requires applicationId, sessionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Terminates the specified session."),
-    ("UntagResource", "Requires resourceArn, tagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes tags from resources."),
-    ("UpdateApplication", "Requires applicationId, clientToken; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates a specified application."),
+    (
+        "CancelJobRun",
+        "Requires applicationId, jobRunId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Cancels a job run.",
+    ),
+    (
+        "CreateApplication",
+        "Requires releaseLabel, type, clientToken; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates an application.",
+    ),
+    (
+        "DeleteApplication",
+        "Requires applicationId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes an application.",
+    ),
+    (
+        "GetApplication",
+        "Requires applicationId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Displays detailed information about a specified application.",
+    ),
+    (
+        "GetDashboardForJobRun",
+        "Requires applicationId, jobRunId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates and returns a URL that you can use to access the application UIs for a job run.",
+    ),
+    (
+        "GetJobRun",
+        "Requires applicationId, jobRunId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Displays detailed information about a job run.",
+    ),
+    (
+        "GetResourceDashboard",
+        "Requires applicationId, resourceId, resourceType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a URL that you can use to access the application UIs for a specified resource, such as a session.",
+    ),
+    (
+        "GetSession",
+        "Requires applicationId, sessionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Displays detailed information about a session.",
+    ),
+    (
+        "ListJobRunAttempts",
+        "Selected arn identifies the job run, not an individual attempt; attempt is an integer. Current selected string identity cannot encode the distinct (job ARN, attempt number) key without collapsing attempts.",
+    ),
+    (
+        "ListTagsForResource",
+        "Requires resourceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists the tags assigned to the resources.",
+    ),
+    (
+        "StartApplication",
+        "Requires applicationId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a specified application and initializes initial capacity if configured.",
+    ),
+    (
+        "StartJobRun",
+        "Requires applicationId, clientToken, executionRoleArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a job run.",
+    ),
+    (
+        "StartSession",
+        "Requires applicationId, clientToken, executionRoleArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates and starts a new session on the specified application.",
+    ),
+    (
+        "StopApplication",
+        "Requires applicationId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Stops a specified application and releases initial capacity if configured.",
+    ),
+    (
+        "TagResource",
+        "Requires resourceArn, tags; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Assigns tags to resources.",
+    ),
+    (
+        "TerminateSession",
+        "Requires applicationId, sessionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Terminates the specified session.",
+    ),
+    (
+        "UntagResource",
+        "Requires resourceArn, tagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes tags from resources.",
+    ),
+    (
+        "UpdateApplication",
+        "Requires applicationId, clientToken; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates a specified application.",
+    ),
 ];

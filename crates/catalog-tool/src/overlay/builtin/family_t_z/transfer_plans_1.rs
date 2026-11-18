@@ -1,5 +1,5 @@
-use super::{inventory, path, paths, bind, token};
-use crate::overlay::{OperationOverlay, NameError, Identity, Paginator, Scope};
+use super::{bind, inventory, path, paths, token};
+use crate::overlay::{Identity, NameError, OperationOverlay, Paginator, Scope};
 
 pub(super) fn describe_agreement() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
@@ -9,12 +9,25 @@ pub(super) fn describe_agreement() -> Result<OperationOverlay, NameError> {
         Scope::Region,
     )?;
     operation.queryable = paths(&[
-        "Arn", "AgreementId", "ServerId", "LocalProfileId", "PartnerProfileId",
-        "Description", "Status", "BaseDirectory", "AccessRole", "PreserveFilename",
+        "Arn",
+        "AgreementId",
+        "ServerId",
+        "LocalProfileId",
+        "PartnerProfileId",
+        "Description",
+        "Status",
+        "BaseDirectory",
+        "AccessRole",
+        "PreserveFilename",
         "EnforceMessageSigning",
     ])?;
     operation.tags = Some(path("Tags")?);
-    bind(&mut operation, "AgreementId", "ListAgreements", "AgreementId")?;
+    bind(
+        &mut operation,
+        "AgreementId",
+        "ListAgreements",
+        "AgreementId",
+    )?;
     bind(&mut operation, "ServerId", "ListAgreements", "ServerId")?;
     Ok(operation)
 }
@@ -38,7 +51,12 @@ pub(super) fn describe_certificate() -> Result<OperationOverlay, NameError> {
         "Description",
     ])?;
     operation.tags = Some(path("Tags")?);
-    bind(&mut operation, "CertificateId", "ListCertificates", "CertificateId")?;
+    bind(
+        &mut operation,
+        "CertificateId",
+        "ListCertificates",
+        "CertificateId",
+    )?;
     Ok(operation)
 }
 
@@ -62,7 +80,12 @@ pub(super) fn describe_connector() -> Result<OperationOverlay, NameError> {
         "IpAddressType",
     ])?;
     operation.tags = Some(path("Tags")?);
-    bind(&mut operation, "ConnectorId", "ListConnectors", "ConnectorId")?;
+    bind(
+        &mut operation,
+        "ConnectorId",
+        "ListConnectors",
+        "ConnectorId",
+    )?;
     Ok(operation)
 }
 
@@ -73,12 +96,7 @@ pub(super) fn describe_profile() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "Arn",
-        "ProfileId",
-        "ProfileType",
-        "As2Id",
-    ])?;
+    operation.queryable = paths(&["Arn", "ProfileId", "ProfileType", "As2Id"])?;
     operation.tags = Some(path("Tags")?);
     bind(&mut operation, "ProfileId", "ListProfiles", "ProfileId")?;
     Ok(operation)
@@ -139,11 +157,7 @@ pub(super) fn describe_workflow() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "Arn",
-        "Description",
-        "WorkflowId",
-    ])?;
+    operation.queryable = paths(&["Arn", "Description", "WorkflowId"])?;
     operation.tags = Some(path("Tags")?);
     bind(&mut operation, "WorkflowId", "ListWorkflows", "WorkflowId")?;
     Ok(operation)
@@ -196,11 +210,7 @@ pub(super) fn list_connectors() -> Result<OperationOverlay, NameError> {
         token("NextToken", "NextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "Arn",
-        "ConnectorId",
-        "Url",
-    ])?;
+    operation.queryable = paths(&["Arn", "ConnectorId", "Url"])?;
     operation.page_size = Some(100);
     Ok(operation)
 }

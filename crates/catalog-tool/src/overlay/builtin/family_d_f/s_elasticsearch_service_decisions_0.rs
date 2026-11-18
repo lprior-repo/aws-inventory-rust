@@ -1,37 +1,139 @@
 // Explicit dispositions from .local/aws-models/models/elasticsearch-service/service/2015-01-01/elasticsearch-service-2015-01-01.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
-    ("AcceptInboundCrossClusterSearchConnection", "Requires CrossClusterSearchConnectionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Allows the destination domain owner to accept an inbound cross-cluster search connection request."),
-    ("AddTags", "Requires ARN, TagList; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Attaches tags to an existing Elasticsearch domain."),
-    ("AssociatePackage", "Requires PackageID, DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Associates a package with an Amazon ES domain."),
-    ("AuthorizeVpcEndpointAccess", "Requires DomainName, Account; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides access to an Amazon OpenSearch Service domain through the use of an interface VPC endpoint."),
-    ("CancelDomainConfigChange", "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Cancels a pending configuration change on an Amazon OpenSearch Service domain."),
-    ("CancelElasticsearchServiceSoftwareUpdate", "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Cancels a scheduled service software update for an Amazon ES domain."),
-    ("CreateElasticsearchDomain", "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new Elasticsearch domain."),
-    ("CreateOutboundCrossClusterSearchConnection", "Requires SourceDomainInfo, DestinationDomainInfo, ConnectionAlias; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new cross-cluster search connection from a source domain to a destination domain."),
-    ("CreatePackage", "Requires PackageName, PackageType, PackageSource; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Create a package for use with Amazon ES domains."),
-    ("CreateVpcEndpoint", "Requires DomainArn, VpcOptions; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates an Amazon OpenSearch Service-managed VPC endpoint."),
-    ("DeleteElasticsearchDomain", "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Permanently deletes the specified Elasticsearch domain and all of its data."),
-    ("DeleteElasticsearchServiceRole", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Deletes the service-linked role that Elasticsearch Service uses to manage and maintain VPC domains."),
-    ("DeleteInboundCrossClusterSearchConnection", "Requires CrossClusterSearchConnectionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Allows the destination domain owner to delete an existing inbound cross-cluster search connection."),
-    ("DeleteOutboundCrossClusterSearchConnection", "Requires CrossClusterSearchConnectionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Allows the source domain owner to delete an existing outbound cross-cluster search connection."),
-    ("DeletePackage", "Requires PackageID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Delete the package."),
-    ("DeleteVpcEndpoint", "Requires VpcEndpointId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes an Amazon OpenSearch Service-managed interface VPC endpoint."),
-    ("DescribeDomainAutoTunes", "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides scheduled Auto-Tune action details for the Elasticsearch domain, such as Auto-Tune action type, description, severity, and scheduled date."),
-    ("DescribeDomainChangeProgress", "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns information about the current blue/green deployment happening on a domain, including a change ID, status, and progress stages."),
-    ("DescribeElasticsearchDomain", "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns domain configuration information about the specified Elasticsearch domain, including the domain ID, domain endpoint, and domain ARN."),
-    ("DescribeElasticsearchDomainConfig", "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides cluster configuration information about the specified Elasticsearch domain, such as the state, creation date, update version, and update date for cluster options."),
-    ("DescribeElasticsearchDomains", "Requires DomainNames; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns domain configuration information about the specified Elasticsearch domains, including the domain ID, domain endpoint, and domain ARN."),
-    ("DescribeElasticsearchInstanceTypeLimits", "Requires InstanceType, ElasticsearchVersion; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Describe Elasticsearch Limits for a given InstanceType and ElasticsearchVersion."),
-    ("DescribeReservedElasticsearchInstanceOfferings", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Lists available reserved Elasticsearch instance offerings."),
-    ("DescribeVpcEndpoints", "Requires VpcEndpointIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Describes one or more Amazon OpenSearch Service-managed VPC endpoints."),
-    ("DissociatePackage", "Requires PackageID, DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Dissociates a package from the Amazon ES domain."),
-    ("GetCompatibleElasticsearchVersions", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns a list of upgrade compatible Elastisearch versions."),
-    ("GetPackageVersionHistory", "Requires PackageID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a list of versions of the package, along with their creation time and commit message."),
-    ("GetUpgradeHistory", "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves the complete history of the last 10 upgrades that were performed on the domain."),
-    ("GetUpgradeStatus", "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves the latest status of the last upgrade or upgrade eligibility check that was performed on the domain."),
-    ("ListDomainsForPackage", "Requires PackageID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists all Amazon ES domains associated with the package."),
-    ("ListElasticsearchInstanceTypes", "Requires ElasticsearchVersion; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: List all Elasticsearch instance types that are supported for given ElasticsearchVersion"),
-    ("ListElasticsearchVersions", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: List all supported Elasticsearch versions"),
-    ("ListPackagesForDomain", "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists all packages associated with the Amazon ES domain."),
-    ("ListTags", "Requires ARN; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns all tags for the given Elasticsearch domain."),
+    (
+        "AcceptInboundCrossClusterSearchConnection",
+        "Requires CrossClusterSearchConnectionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Allows the destination domain owner to accept an inbound cross-cluster search connection request.",
+    ),
+    (
+        "AddTags",
+        "Requires ARN, TagList; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Attaches tags to an existing Elasticsearch domain.",
+    ),
+    (
+        "AssociatePackage",
+        "Requires PackageID, DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Associates a package with an Amazon ES domain.",
+    ),
+    (
+        "AuthorizeVpcEndpointAccess",
+        "Requires DomainName, Account; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides access to an Amazon OpenSearch Service domain through the use of an interface VPC endpoint.",
+    ),
+    (
+        "CancelDomainConfigChange",
+        "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Cancels a pending configuration change on an Amazon OpenSearch Service domain.",
+    ),
+    (
+        "CancelElasticsearchServiceSoftwareUpdate",
+        "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Cancels a scheduled service software update for an Amazon ES domain.",
+    ),
+    (
+        "CreateElasticsearchDomain",
+        "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new Elasticsearch domain.",
+    ),
+    (
+        "CreateOutboundCrossClusterSearchConnection",
+        "Requires SourceDomainInfo, DestinationDomainInfo, ConnectionAlias; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new cross-cluster search connection from a source domain to a destination domain.",
+    ),
+    (
+        "CreatePackage",
+        "Requires PackageName, PackageType, PackageSource; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Create a package for use with Amazon ES domains.",
+    ),
+    (
+        "CreateVpcEndpoint",
+        "Requires DomainArn, VpcOptions; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates an Amazon OpenSearch Service-managed VPC endpoint.",
+    ),
+    (
+        "DeleteElasticsearchDomain",
+        "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Permanently deletes the specified Elasticsearch domain and all of its data.",
+    ),
+    (
+        "DeleteElasticsearchServiceRole",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Deletes the service-linked role that Elasticsearch Service uses to manage and maintain VPC domains.",
+    ),
+    (
+        "DeleteInboundCrossClusterSearchConnection",
+        "Requires CrossClusterSearchConnectionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Allows the destination domain owner to delete an existing inbound cross-cluster search connection.",
+    ),
+    (
+        "DeleteOutboundCrossClusterSearchConnection",
+        "Requires CrossClusterSearchConnectionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Allows the source domain owner to delete an existing outbound cross-cluster search connection.",
+    ),
+    (
+        "DeletePackage",
+        "Requires PackageID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Delete the package.",
+    ),
+    (
+        "DeleteVpcEndpoint",
+        "Requires VpcEndpointId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes an Amazon OpenSearch Service-managed interface VPC endpoint.",
+    ),
+    (
+        "DescribeDomainAutoTunes",
+        "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides scheduled Auto-Tune action details for the Elasticsearch domain, such as Auto-Tune action type, description, severity, and scheduled date.",
+    ),
+    (
+        "DescribeDomainChangeProgress",
+        "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns information about the current blue/green deployment happening on a domain, including a change ID, status, and progress stages.",
+    ),
+    (
+        "DescribeElasticsearchDomain",
+        "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns domain configuration information about the specified Elasticsearch domain, including the domain ID, domain endpoint, and domain ARN.",
+    ),
+    (
+        "DescribeElasticsearchDomainConfig",
+        "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides cluster configuration information about the specified Elasticsearch domain, such as the state, creation date, update version, and update date for cluster options.",
+    ),
+    (
+        "DescribeElasticsearchDomains",
+        "Requires DomainNames; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns domain configuration information about the specified Elasticsearch domains, including the domain ID, domain endpoint, and domain ARN.",
+    ),
+    (
+        "DescribeElasticsearchInstanceTypeLimits",
+        "Requires InstanceType, ElasticsearchVersion; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Describe Elasticsearch Limits for a given InstanceType and ElasticsearchVersion.",
+    ),
+    (
+        "DescribeReservedElasticsearchInstanceOfferings",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Lists available reserved Elasticsearch instance offerings.",
+    ),
+    (
+        "DescribeVpcEndpoints",
+        "Requires VpcEndpointIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Describes one or more Amazon OpenSearch Service-managed VPC endpoints.",
+    ),
+    (
+        "DissociatePackage",
+        "Requires PackageID, DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Dissociates a package from the Amazon ES domain.",
+    ),
+    (
+        "GetCompatibleElasticsearchVersions",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns a list of upgrade compatible Elastisearch versions.",
+    ),
+    (
+        "GetPackageVersionHistory",
+        "Requires PackageID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a list of versions of the package, along with their creation time and commit message.",
+    ),
+    (
+        "GetUpgradeHistory",
+        "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves the complete history of the last 10 upgrades that were performed on the domain.",
+    ),
+    (
+        "GetUpgradeStatus",
+        "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves the latest status of the last upgrade or upgrade eligibility check that was performed on the domain.",
+    ),
+    (
+        "ListDomainsForPackage",
+        "Requires PackageID; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists all Amazon ES domains associated with the package.",
+    ),
+    (
+        "ListElasticsearchInstanceTypes",
+        "Requires ElasticsearchVersion; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: List all Elasticsearch instance types that are supported for given ElasticsearchVersion",
+    ),
+    (
+        "ListElasticsearchVersions",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: List all supported Elasticsearch versions",
+    ),
+    (
+        "ListPackagesForDomain",
+        "Requires DomainName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists all packages associated with the Amazon ES domain.",
+    ),
+    (
+        "ListTags",
+        "Requires ARN; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns all tags for the given Elasticsearch domain.",
+    ),
 ];

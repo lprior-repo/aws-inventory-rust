@@ -149,7 +149,8 @@ pub(super) fn startup_failure(
         scan_id: scan_id.into(),
         event: CollectionEvent::Failure(CollectionFailure {
             scope: CollectionScope {
-                account_id: target_account.map_or_else(|| "unknown".to_owned(), Into::into).into(),
+                account_id: target_account
+                    .map_or_else(|| "unknown".to_owned(), Into::into),
                 region: "global".into(),
                 collector: "scan_orchestration".into(),
                 parent_id: None,
@@ -157,7 +158,10 @@ pub(super) fn startup_failure(
             },
             category: "scan_failed".into(),
             message: if message.chars().count() > 2_048 {
-                format!("{}… (truncated)", message.chars().take(2_048).collect::<String>())
+                format!(
+                    "{}… (truncated)",
+                    message.chars().take(2_048).collect::<String>()
+                )
             } else {
                 message.to_owned()
             },

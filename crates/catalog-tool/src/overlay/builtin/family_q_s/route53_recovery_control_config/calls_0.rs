@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/route53-recovery-control-config/service/2020-11-02/route53-recovery-control-config-2020-11-02.json
-use super::super::construction::{Inventory, ResourceIdentity, Input};
+use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 
 pub(super) const CALLS: &[Inventory] = &[
@@ -29,7 +29,11 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Arn("RoutingControlArn"),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Account,
-        input: &[Input::Parent("ControlPanelArn", "ListControlPanels", "ControlPanelArn")],
+        input: &[Input::Parent(
+            "ControlPanelArn",
+            "ListControlPanels",
+            "ControlPanelArn",
+        )],
         tags: None,
         queryable: &[],
     },

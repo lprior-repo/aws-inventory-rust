@@ -32,7 +32,14 @@ pub(super) async fn seed_enumerations(
         .iter()
         .filter(|plan| matches!(plan.purpose(), PlanPurpose::Enumeration))
     {
-        append_plan_work(&context.account, context.bootstrap.home, sweep, plan, regions, &mut work)?;
+        append_plan_work(
+            &context.account,
+            context.bootstrap.home,
+            sweep,
+            plan,
+            regions,
+            &mut work,
+        )?;
     }
     context.store.seed_works(&work).await?;
     Ok(())
@@ -48,22 +55,32 @@ pub(super) fn append_plan_work(
     regions: &[Region],
     work: &mut Vec<WorkSpec>,
 ) -> Result<(), SweepError> {
-    for branch in plan.branches().iter().map(Some)
-        .chain(std::iter::once(None).filter(|_| plan.branches().is_empty())) {
+    for branch in plan
+        .branches()
+        .iter()
+        .map(Some)
+        .chain(std::iter::once(None).filter(|_| plan.branches().is_empty()))
+    {
         if input::requires_parent_branch(plan, branch) {
             continue;
         }
         let scope_kind = branch.map_or(plan.scope(), |branch| branch.scope);
         for region in plan_regions(scope_kind, regions, home) {
             if work.len() >= MAX_ROOT_SCOPES {
-                return Err(SweepError::Operation("root enumeration scope count exceeds bound"));
+                return Err(SweepError::Operation(
+                    "root enumeration scope count exceeds bound",
+                ));
             }
             let mut scope = scope_key(plan, account, region.scope)?;
-            if let Some(branch) = branch { scope = scope.with_branch(branch.discriminator.clone())?; }
-            let request_region = super::routing::request_region(plan, scope.region(), home, scope.branch())?;
+            if let Some(branch) = branch {
+                scope = scope.with_branch(branch.discriminator.clone())?;
+            }
+            let request_region =
+                super::routing::request_region(plan, scope.region(), home, scope.branch())?;
             let request_region = Region::Regional(request_region);
-            let bindings = input::root_bindings_branch(plan, branch, Some(account), Some(&request_region))?
-                .into_bytes();
+            let bindings =
+                input::root_bindings_branch(plan, branch, Some(account), Some(&request_region))?
+                    .into_bytes();
             work.try_reserve(1)?;
             work.push(WorkSpec::new(sweep.clone(), scope, None, bindings)?);
         }
@@ -78,9 +95,13 @@ pub(super) struct PlannedRegion {
 }
 
 #[cfg(test)]
-fn planned_region(scope: Region, request: Region) -> PlannedRegion { PlannedRegion { scope, request } }
+fn planned_region(scope: Region, request: Region) -> PlannedRegion {
+    PlannedRegion { scope, request }
+}
 #[cfg(not(test))]
-fn planned_region(scope: Region, _request: Region) -> PlannedRegion { PlannedRegion { scope } }
+fn planned_region(scope: Region, _request: Region) -> PlannedRegion {
+    PlannedRegion { scope }
+}
 
 pub(super) fn plan_regions(
     scope: PlanScope,
@@ -93,8 +114,14 @@ pub(super) fn plan_regions(
             .cloned()
             .map(|region| planned_region(region.clone(), region))
             .collect(),
-        PlanScope::Account => vec![planned_region(Region::Global, Region::Regional(home.clone()))],
-        PlanScope::HomeRegion => vec![planned_region(Region::Regional(home.clone()), Region::Regional(home.clone()))],
+        PlanScope::Account => vec![planned_region(
+            Region::Global,
+            Region::Regional(home.clone()),
+        )],
+        PlanScope::HomeRegion => vec![planned_region(
+            Region::Regional(home.clone()),
+            Region::Regional(home.clone()),
+        )],
     }
 }
 
@@ -115,23 +142,35 @@ pub(super) async fn drain_work(
     let mut summary = SweepSummary::default();
     let mut leases = Vec::new();
     loop {
-        admission::claim_batch(context.store,context.bootstrap.executor,context.bootstrap.config.concurrency,
-            &mut leases,|| async {
-                context.store.claim(sweep,now_ms()?,context.lease_ms).await.map_err(SweepError::from)
-            }).await?;
+        admission::claim_batch(
+            context.store,
+            context.bootstrap.executor,
+            context.bootstrap.config.concurrency,
+            &mut leases,
+            || async {
+                context
+                    .store
+                    .claim(sweep, now_ms()?, context.lease_ms)
+                    .await
+                    .map_err(SweepError::from)
+            },
+        )
+        .await?;
         if leases.is_empty() {
             break;
         }
         // Retain ownership credentials for bounded cancellation recovery; page
         // futures otherwise consume their lease when dispatching a transaction.
         let owned = leases.clone();
-        let work = stream::iter(
-            leases
-                .drain(..)
-                .map(|lease| page::process(context, lease)),
+        let work = stream::iter(leases.drain(..).map(|lease| page::process(context, lease)))
+            .buffer_unordered(context.bootstrap.config.concurrency);
+        summary = settle_batch(
+            context.store,
+            context.bootstrap.executor,
+            owned,
+            summarize_batch(work, summary),
         )
-        .buffer_unordered(context.bootstrap.config.concurrency);
-        summary = settle_batch(context.store,context.bootstrap.executor,owned,summarize_batch(work,summary)).await?;
+        .await?;
     }
     if context.bootstrap.executor.is_cancelled() {
         return Err(inventory_engine::limiter::ApiError::Cancelled.into());
@@ -160,8 +199,8 @@ pub(super) async fn settle_batch(
     store: &BinaryStore,
     executor: &ApiExecutor,
     owned: Vec<inventory_engine::inventory::WorkLease>,
-    work: impl Future<Output = Result<SweepSummary,SweepError>>,
-) -> Result<SweepSummary,SweepError> {
+    work: impl Future<Output = Result<SweepSummary, SweepError>>,
+) -> Result<SweepSummary, SweepError> {
     let result = {
         let work = work;
         tokio::pin!(work);
@@ -176,14 +215,17 @@ pub(super) async fn settle_batch(
             }
         }
     };
-    if !executor.is_cancelled() { return result; }
+    if !executor.is_cancelled() {
+        return result;
+    }
     // The dropped batch can have dispatched COMMIT/ROLLBACK to SQLite. Each
     // finish acquires the sole writer after those commands and is therefore a
     // durable barrier, not merely an in-memory cancellation acknowledgement.
-    settle_owned(store,owned.into_iter()).await?;
+    settle_owned(store, owned.into_iter()).await?;
     match result {
-        Ok(_) | Err(SweepError::Api(inventory_engine::limiter::ApiError::Cancelled)) =>
-            Err(inventory_engine::limiter::ApiError::Cancelled.into()),
+        Ok(_) | Err(SweepError::Api(inventory_engine::limiter::ApiError::Cancelled)) => {
+            Err(inventory_engine::limiter::ApiError::Cancelled.into())
+        }
         Err(error) => Err(error),
     }
 }
@@ -191,15 +233,29 @@ pub(super) async fn settle_batch(
 async fn settle_owned(
     store: &BinaryStore,
     owned: impl ExactSizeIterator<Item = inventory_engine::inventory::WorkLease>,
-) -> Result<(),SweepError> {
+) -> Result<(), SweepError> {
     let admitted = owned.len();
-    let result = stream::iter(owned).then(|lease| async move {
-        match store.finish_scope(lease,inventory_core::inventory::ScopeOutcome::Partial,now_ms()?).await {
-            Ok(_) | Err(inventory_engine::inventory::StoreError::StaleLease) => Ok(()),
-            Err(error) => Err(SweepError::Store(error)),
-        }
-    }).fold(Ok(()),|prior,next| async move { prior.and(next) }).await;
-    tracing::info!(admitted,settled=result.is_ok(),"cancelled batch durable finalization completed");
+    let result = stream::iter(owned)
+        .then(|lease| async move {
+            match store
+                .finish_scope(
+                    lease,
+                    inventory_core::inventory::ScopeOutcome::Partial,
+                    now_ms()?,
+                )
+                .await
+            {
+                Ok(_) | Err(inventory_engine::inventory::StoreError::StaleLease) => Ok(()),
+                Err(error) => Err(SweepError::Store(error)),
+            }
+        })
+        .fold(Ok(()), |prior, next| async move { prior.and(next) })
+        .await;
+    tracing::info!(
+        admitted,
+        settled = result.is_ok(),
+        "cancelled batch durable finalization completed"
+    );
     result
 }
 

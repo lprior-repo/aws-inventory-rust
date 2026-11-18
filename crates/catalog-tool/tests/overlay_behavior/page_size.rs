@@ -21,9 +21,18 @@ fn modeled_page_size_obeys_member_range_at_and_inside_its_boundary()
             plan.page_size = Some(size.parse::<i64>()?);
             if valid {
                 let checked = checked(&root, vec![("ListThings", plan)])?;
-                let callable = checked.services().first().ok_or("missing service")?.callable().first().ok_or("missing callable")?;
+                let callable = checked
+                    .services()
+                    .first()
+                    .ok_or("missing service")?
+                    .callable()
+                    .first()
+                    .ok_or("missing callable")?;
                 assert_eq!(callable.plan().page_size, Some(size.parse::<i64>()?));
-                assert_eq!(callable.plan().items, Some(ItemSelector::Member(overlay::MemberPath::new("Items")?)));
+                assert_eq!(
+                    callable.plan().items,
+                    Some(ItemSelector::Member(overlay::MemberPath::new("Items")?))
+                );
                 let Some(overlay::Paginator::Token(pair)) = &callable.plan().paginator else {
                     return Err("missing inferred paginator".into());
                 };
@@ -89,11 +98,24 @@ fn given_explicit_fixed_page_limit_when_model_infers_default_then_only_explicit_
 -> Result<(), Box<dyn std::error::Error>> {
     let root = fixture(PAGE_SIZE_MODEL, "")?;
     let mut plan = inferred()?;
-    plan.fixed.insert(overlay::MemberPath::new("Limit")?, overlay::FixedValue::Integer(5));
+    plan.fixed.insert(
+        overlay::MemberPath::new("Limit")?,
+        overlay::FixedValue::Integer(5),
+    );
     let reviewed = checked(&root, vec![("ListThings", plan)])?;
-    let plan = reviewed.services().first().ok_or("service")?.callable().first().ok_or("callable")?.plan();
+    let plan = reviewed
+        .services()
+        .first()
+        .ok_or("service")?
+        .callable()
+        .first()
+        .ok_or("callable")?
+        .plan();
     assert_eq!(plan.page_size, None);
-    assert_eq!(plan.fixed.get(&overlay::MemberPath::new("Limit")?), Some(&overlay::FixedValue::Integer(5)));
+    assert_eq!(
+        plan.fixed.get(&overlay::MemberPath::new("Limit")?),
+        Some(&overlay::FixedValue::Integer(5))
+    );
     Ok(())
 }
 
@@ -107,16 +129,26 @@ fn given_modeled_string_page_limit_when_explicit_then_decimal_text_constraints_a
         plan.page_size = Some(value);
         match (value, checked(&root, vec![("ListThings", plan)])) {
             (1 | 10, Ok(when)) => {
-                let plan = when.services().first().ok_or("service")?
-                    .callable().first().ok_or("callable")?.plan();
+                let plan = when
+                    .services()
+                    .first()
+                    .ok_or("service")?
+                    .callable()
+                    .first()
+                    .ok_or("callable")?
+                    .plan();
                 assert_eq!(plan.page_size, Some(value));
             }
-            (0 | 100_001 | i64::MAX, Err(CheckError::Policy(error))) =>
-                assert_eq!(error.value, "page_size: outside 1..=100000"),
-            (11 | 100_000, Err(CheckError::Violations(errors))) =>
+            (0 | 100_001 | i64::MAX, Err(CheckError::Policy(error))) => {
+                assert_eq!(error.value, "page_size: outside 1..=100000")
+            }
+            (11 | 100_000, Err(CheckError::Violations(errors))) => {
                 assert!(errors.iter().any(|error| error.key() == "page_size"
-                    && error.rule() == ViolationRule::InvalidValue)),
-            (_, result) => return Err(format!("unexpected page limit result for {value}: {result:?}").into()),
+                    && error.rule() == ViolationRule::InvalidValue))
+            }
+            (_, result) => {
+                return Err(format!("unexpected page limit result for {value}: {result:?}").into());
+            }
         }
     }
     Ok(())

@@ -1,5 +1,5 @@
-use super::{inventory, path, paths, bind, token};
-use crate::overlay::{OperationOverlay, NameError, Identity, Paginator, Scope};
+use super::{bind, inventory, path, paths, token};
+use crate::overlay::{Identity, NameError, OperationOverlay, Paginator, Scope};
 
 pub(super) fn get_adapter() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
@@ -8,12 +8,7 @@ pub(super) fn get_adapter() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "AdapterId",
-        "AdapterName",
-        "Description",
-        "AutoUpdate",
-    ])?;
+    operation.queryable = paths(&["AdapterId", "AdapterName", "Description", "AutoUpdate"])?;
     operation.tags = Some(path("Tags")?);
     bind(&mut operation, "AdapterId", "ListAdapters", "AdapterId")?;
     Ok(operation)
@@ -34,8 +29,18 @@ pub(super) fn get_adapter_version() -> Result<OperationOverlay, NameError> {
         "KMSKeyId",
     ])?;
     operation.tags = Some(path("Tags")?);
-    bind(&mut operation, "AdapterId", "ListAdapterVersions", "AdapterId")?;
-    bind(&mut operation, "AdapterVersion", "ListAdapterVersions", "AdapterVersion")?;
+    bind(
+        &mut operation,
+        "AdapterId",
+        "ListAdapterVersions",
+        "AdapterId",
+    )?;
+    bind(
+        &mut operation,
+        "AdapterVersion",
+        "ListAdapterVersions",
+        "AdapterVersion",
+    )?;
     Ok(operation)
 }
 
@@ -46,10 +51,7 @@ pub(super) fn list_adapters() -> Result<OperationOverlay, NameError> {
         token("NextToken", "NextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "AdapterId",
-        "AdapterName",
-    ])?;
+    operation.queryable = paths(&["AdapterId", "AdapterName"])?;
     operation.page_size = Some(100);
     Ok(operation)
 }
@@ -61,12 +63,7 @@ pub(super) fn list_adapter_versions() -> Result<OperationOverlay, NameError> {
         token("NextToken", "NextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "AdapterId",
-        "AdapterVersion",
-        "Status",
-        "StatusMessage",
-    ])?;
+    operation.queryable = paths(&["AdapterId", "AdapterVersion", "Status", "StatusMessage"])?;
     operation.page_size = Some(100);
     Ok(operation)
 }

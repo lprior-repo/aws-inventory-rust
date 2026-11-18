@@ -5,6 +5,12 @@ mod ec2;
 mod ecs;
 mod eks;
 mod elastic_load_balancing_v2;
+mod family_a_c;
+mod family_d_f;
+mod family_g_k;
+mod family_l_p;
+mod family_q_s;
+mod family_t_z;
 mod iam;
 mod kms;
 mod lambda;
@@ -16,12 +22,6 @@ mod sfn;
 mod sns;
 mod sqs;
 mod sts;
-mod family_a_c;
-mod family_d_f;
-mod family_g_k;
-mod family_l_p;
-mod family_q_s;
-mod family_t_z;
 
 pub(super) fn overlays() -> Result<Vec<ServiceOverlay>, NameError> {
     let mut overlays = vec![
@@ -66,18 +66,27 @@ pub(super) fn service(
     operations: Vec<(&str, OperationOverlay)>,
 ) -> Result<ServiceOverlay, NameError> {
     if !service.starts_with(|c: char| c.is_ascii_lowercase() || c.is_ascii_digit())
-        || !service.bytes().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-')
+        || !service
+            .bytes()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-')
         || operations.len() > super::MAX_OPERATIONS
     {
-        return Err(NameError { value: service.to_owned() });
+        return Err(NameError {
+            value: service.to_owned(),
+        });
     }
-    let operations = operations.into_iter().try_fold(BTreeMap::new(), |mut result, (key, value)| {
-        let key = name(key)?;
-        if result.insert(key.clone(), value).is_some() {
-            return Err(NameError { value: format!("{service}/{key}: duplicate operation") });
-        }
-        Ok(result)
-    })?;
+    let operations =
+        operations
+            .into_iter()
+            .try_fold(BTreeMap::new(), |mut result, (key, value)| {
+                let key = name(key)?;
+                if result.insert(key.clone(), value).is_some() {
+                    return Err(NameError {
+                        value: format!("{service}/{key}: duplicate operation"),
+                    });
+                }
+                Ok(result)
+            })?;
     super::policy::validate(&operations)?;
     Ok(ServiceOverlay {
         service: service.to_owned(),

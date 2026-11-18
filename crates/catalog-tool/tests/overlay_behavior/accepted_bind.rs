@@ -15,7 +15,10 @@ fn acyclic_binding_from_callable_parent_is_materialized() -> Result<(), Box<dyn 
     let root = fixture(&model, "")?;
     let mut plan = complete()?;
     plan.class = Some(OverlayClass::Expand);
-    plan.bind.insert(overlay::MemberPath::new("Id")?, binding("ListThings", "Id")?);
+    plan.bind.insert(
+        overlay::MemberPath::new("Id")?,
+        binding("ListThings", "Id")?,
+    );
     let checked = checked(&root, vec![("ListThings", complete()?), ("GetThing", plan)])?;
     let child = checked
         .services()

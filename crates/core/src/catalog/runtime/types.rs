@@ -1,27 +1,34 @@
-mod plan;
-mod fixed_input;
-mod provenance;
-mod routing;
 mod capabilities;
-mod selection;
-mod row_policy;
 mod emission;
 mod emissions;
+mod fixed_input;
 mod identity_text;
-pub use identity_text::{IdentityTextOperand, IdentityTextPlan};
-pub(crate) use identity_text::IdentityPatternCache;
-pub use row_policy::{RowPolicyPlan, RowPredicatePlan, RowOperandPlan, RowValueType, MissingSelected, ChildEligibilityPlan};
-pub use selection::{SelectionKind, Emission, ContextSource, IdentityFieldPlan, IdentityLeafPlan,
-    IdentityPredicatePlan, IdentityBranchPlan, IdentityChoicePlan, ContextProjectionPlan, BindingAlternativePlan};
-pub use fixed_input::BindingValue;
-pub use provenance::{CatalogSourceProvenance, ModelSourceProvenance};
-pub use routing::{ExecutionBranch, RequestRouting};
-pub use capabilities::{ArnOwnerRule, ArnRegionRule, ReferenceOwnerRule, ResourceProjectionPlan, KindClassificationPlan};
+mod plan;
+mod provenance;
+mod routing;
+mod row_policy;
+mod selection;
 use crate::{inventory::Kind, record::FieldId};
+pub use capabilities::{
+    ArnOwnerRule, ArnRegionRule, KindClassificationPlan, ReferenceOwnerRule, ResourceProjectionPlan,
+};
 pub use emission::ResourceEmissionPlan;
 pub use emissions::ResourceEmissions;
+pub use fixed_input::BindingValue;
+pub(crate) use identity_text::IdentityPatternCache;
+pub use identity_text::{IdentityTextOperand, IdentityTextPlan};
 pub use plan::CallablePlan;
 pub(crate) use plan::{EndpointTemplate, PlanParts};
+pub use provenance::{CatalogSourceProvenance, ModelSourceProvenance};
+pub use routing::{ExecutionBranch, RequestRouting};
+pub use row_policy::{
+    ChildEligibilityPlan, MissingSelected, RowOperandPlan, RowPolicyPlan, RowPredicatePlan,
+    RowValueType,
+};
+pub use selection::{
+    BindingAlternativePlan, ContextProjectionPlan, ContextSource, Emission, IdentityBranchPlan,
+    IdentityChoicePlan, IdentityFieldPlan, IdentityLeafPlan, IdentityPredicatePlan, SelectionKind,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PlanScope {
@@ -138,7 +145,10 @@ pub enum PlanPurpose {
 pub enum ItemPlan {
     Root,
     Path(Box<[FieldId]>),
-    Select { path: Box<[FieldId]>, kind: SelectionKind },
+    Select {
+        path: Box<[FieldId]>,
+        kind: SelectionKind,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -157,8 +167,12 @@ pub enum IdentityPlan {
     Key(Box<[Box<[FieldId]>]>),
     Choice(IdentityChoicePlan),
     CorrelatedKey(Box<[IdentityFieldPlan]>),
-    MapArn { path: Box<[FieldId]>, key: String, resource_kind: ArnResourceKind,
-        request_url: Option<Box<[FieldId]>> },
+    MapArn {
+        path: Box<[FieldId]>,
+        key: String,
+        resource_kind: ArnResourceKind,
+        request_url: Option<Box<[FieldId]>>,
+    },
 }
 
 /// Numeric tag extraction relative to the selected resource item.

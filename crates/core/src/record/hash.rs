@@ -1,6 +1,6 @@
 use super::{
-    Exclusions, FORMAT_VERSION, FieldId, KeyRef, ListRef, MapKeyExclusion, MapRef, Record, RecordError, Time,
-    ValueRef, container_depth,
+    Exclusions, FORMAT_VERSION, FieldId, KeyRef, ListRef, MapKeyExclusion, MapRef, Record,
+    RecordError, Time, ValueRef, container_depth,
 };
 use minicbor::{Encoder, data::Tag, encode::Write};
 use std::convert::Infallible;
@@ -51,12 +51,20 @@ impl Scope<'_> {
             .paths
             .partition_point(|path| at(path.as_ref()) <= Some(id));
         let paths = self.paths.get(start..end).ok_or(RecordError::Encode)?;
-        let start = self.map_keys.partition_point(|mask| at(mask.path()) < Some(id));
-        let end = self.map_keys.partition_point(|mask| at(mask.path()) <= Some(id));
+        let start = self
+            .map_keys
+            .partition_point(|mask| at(mask.path()) < Some(id));
+        let end = self
+            .map_keys
+            .partition_point(|mask| at(mask.path()) <= Some(id));
         let map_keys = self.map_keys.get(start..end).ok_or(RecordError::Encode)?;
         let level = self.level.checked_add(1).ok_or(RecordError::DepthLimit)?;
         let ends_here = paths.first().is_some_and(|path| path.len() == level);
-        Ok((!ends_here).then_some(Scope { paths, map_keys, level }))
+        Ok((!ends_here).then_some(Scope {
+            paths,
+            map_keys,
+            level,
+        }))
     }
 }
 
@@ -83,7 +91,11 @@ pub fn selected_content_hash(value: ValueRef<'_>) -> Result<ContentHash, RecordE
     let mut hasher = blake3::Hasher::new();
     hasher.update(&[FORMAT_VERSION]);
     let mut sink = Encoder::new(HashWriter(hasher));
-    let scope = Scope { paths: &[], map_keys: &[], level: 0 };
+    let scope = Scope {
+        paths: &[],
+        map_keys: &[],
+        level: 0,
+    };
     sink.begin_map()?.str(super::SCALAR_ITEM_NAME)?;
     hash_value(&mut sink, value, scope, container_depth(0)?)?;
     sink.end()?;
@@ -94,11 +106,17 @@ fn validate_selected(value: ValueRef<'_>) -> Result<(), RecordError> {
     let bytes = match value {
         ValueRef::Map(map) => map.bytes,
         ValueRef::List(list) => list.bytes,
-        ValueRef::Text(text) if text.len() > super::MAX_RECORD_BYTES => return Err(RecordError::SizeLimit),
-        ValueRef::Bytes(bytes) if bytes.len() > super::MAX_RECORD_BYTES => return Err(RecordError::SizeLimit),
+        ValueRef::Text(text) if text.len() > super::MAX_RECORD_BYTES => {
+            return Err(RecordError::SizeLimit);
+        }
+        ValueRef::Bytes(bytes) if bytes.len() > super::MAX_RECORD_BYTES => {
+            return Err(RecordError::SizeLimit);
+        }
         _ => return Ok(()),
     };
-    if bytes.len() > super::MAX_RECORD_BYTES { return Err(RecordError::SizeLimit) }
+    if bytes.len() > super::MAX_RECORD_BYTES {
+        return Err(RecordError::SizeLimit);
+    }
     let mut decoder = minicbor::Decoder::new(bytes);
     super::structure::validate(&mut decoder, Some(super::MAX_DEPTH.saturating_sub(1)))
 }
@@ -127,13 +145,18 @@ fn hash_entry(
 ) -> Result<(), RecordError> {
     let inner = match key {
         KeyRef::Name(name) => {
-            if scope.map_keys.iter().any(|mask| {
-                mask.path().len() == scope.level && mask.key() == name
-            }) {
+            if scope
+                .map_keys
+                .iter()
+                .any(|mask| mask.path().len() == scope.level && mask.key() == name)
+            {
                 return Ok(());
             }
             sink.str(name)?;
-            Scope { map_keys: &[], ..scope }
+            Scope {
+                map_keys: &[],
+                ..scope
+            }
         }
         KeyRef::Field(id) => {
             let Some(inner) = scope.enter(id)? else {

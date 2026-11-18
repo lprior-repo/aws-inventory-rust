@@ -1,6 +1,6 @@
-mod tokens;
 #[cfg(test)]
 mod tests;
+mod tokens;
 use super::super::{RuntimeCatalogCompileError, encode, model_path};
 use super::{OperationOverlay, item_value};
 use crate::overlay::Paginator;
@@ -35,7 +35,10 @@ pub(super) fn compile(
     validate_items(overlay, descriptor.as_ref())?;
     let mut fields = vec![
         (1, item_value(overlay.items.as_ref(), services)?),
-        (2, Value::List(tokens::compile(&inputs, descriptor.as_ref())?)),
+        (
+            2,
+            Value::List(tokens::compile(&inputs, descriptor.as_ref())?),
+        ),
     ];
     fields.extend(page_size_value(&inputs, descriptor.as_ref())?.map(|value| (3, value)));
     fields.extend(maximum_value(descriptor.as_ref())?.map(|value| (4, value)));
@@ -58,7 +61,11 @@ fn validate_items(
     descriptor: Option<&inventory_core::catalog::Paginator<'_>>,
 ) -> Result<(), RuntimeCatalogCompileError> {
     match descriptor.and_then(|page| page.items) {
-        Some(expected) if selected_items(overlay).is_some_and(|actual| actual.as_str() == expected) => Ok(()),
+        Some(expected)
+            if selected_items(overlay).is_some_and(|actual| actual.as_str() == expected) =>
+        {
+            Ok(())
+        }
         Some(_) => Err(RuntimeCatalogCompileError::Capability),
         None => Ok(()),
     }
@@ -70,12 +77,18 @@ fn selected_items(overlay: &OperationOverlay) -> Option<&crate::overlay::MemberP
     use crate::overlay::{ItemSelector, TagEndpointSelector};
     match overlay.items.as_ref()? {
         ItemSelector::Member(path) | ItemSelector::Explicit { path, .. } => Some(path),
-        ItemSelector::Root => overlay.tag_endpoint.as_ref().map(|endpoint| match &endpoint.selector {
-            TagEndpointSelector::Map { path } | TagEndpointSelector::List { path, .. } => path,
-        }),
+        ItemSelector::Root => {
+            overlay
+                .tag_endpoint
+                .as_ref()
+                .map(|endpoint| match &endpoint.selector {
+                    TagEndpointSelector::Map { path } | TagEndpointSelector::List { path, .. } => {
+                        path
+                    }
+                })
+        }
     }
 }
-
 
 fn placement(
     member: inventory_core::catalog::Member<'_>,
@@ -86,14 +99,18 @@ fn placement(
         return encode::map([(1, Value::Int(3)), (2, path_value(path))]);
     }
     let selected = match (protocol, member.wire()?.binding()?) {
-        (3 | 4, HttpBinding::Document) if path.len() == 1 =>
-            Some((1, Value::Text(query_name(member, protocol)?))),
-        (5 | 6, HttpBinding::Query(value)) if path.len() == 1 =>
-            Some((1, Value::Text(value.to_owned()))),
-        (5 | 6, HttpBinding::Header(value)) if path.len() == 1 =>
-            Some((2, Value::Text(value.to_owned()))),
-        (5 | 6, HttpBinding::Label) if path.len() == 1 =>
-            Some((0, Value::Text(member.name()?.to_owned()))),
+        (3 | 4, HttpBinding::Document) if path.len() == 1 => {
+            Some((1, Value::Text(query_name(member, protocol)?)))
+        }
+        (5 | 6, HttpBinding::Query(value)) if path.len() == 1 => {
+            Some((1, Value::Text(value.to_owned())))
+        }
+        (5 | 6, HttpBinding::Header(value)) if path.len() == 1 => {
+            Some((2, Value::Text(value.to_owned())))
+        }
+        (5 | 6, HttpBinding::Label) if path.len() == 1 => {
+            Some((0, Value::Text(member.name()?.to_owned())))
+        }
         (_, HttpBinding::Document) => Some((3, path_value(path))),
         (5 | 6, HttpBinding::Payload) if path.len() == 1 => Some((3, path_value(path))),
         _ => None,
@@ -137,13 +154,19 @@ fn response_placement(
         return encode::map([(1, Value::Int(3)), (2, path_value(path))]);
     }
     match (protocol, member.wire()?.binding()?) {
-        (_, HttpBinding::Document | HttpBinding::Label | HttpBinding::Query(_) | HttpBinding::QueryParams) =>
-            encode::map([(1, Value::Int(3)), (2, path_value(path))]),
-        (5 | 6, HttpBinding::Payload) if path.len() == 1 =>
-            encode::map([(1, Value::Int(3)), (2, path_value(path))]),
-        (5 | 6, HttpBinding::Header(name)) if path.len() == 1 => encode::map([
-            (1, Value::Int(2)), (2, Value::Text(name.to_owned())),
-        ]),
+        (
+            _,
+            HttpBinding::Document
+            | HttpBinding::Label
+            | HttpBinding::Query(_)
+            | HttpBinding::QueryParams,
+        ) => encode::map([(1, Value::Int(3)), (2, path_value(path))]),
+        (5 | 6, HttpBinding::Payload) if path.len() == 1 => {
+            encode::map([(1, Value::Int(3)), (2, path_value(path))])
+        }
+        (5 | 6, HttpBinding::Header(name)) if path.len() == 1 => {
+            encode::map([(1, Value::Int(2)), (2, Value::Text(name.to_owned()))])
+        }
         _ => Err(RuntimeCatalogCompileError::Capability),
     }
 }
@@ -173,7 +196,14 @@ fn page_size_value(
         (1, encode::path(inputs.services, path)?),
         (2, Value::Int(i64::from(max))),
         (3, placement),
-        (4, Value::Int(if matches!(kind, "string" | "enum") { 0 } else { 1 })),
+        (
+            4,
+            Value::Int(if matches!(kind, "string" | "enum") {
+                0
+            } else {
+                1
+            }),
+        ),
     ];
     Ok(Some(encode::map(fields)?))
 }
@@ -183,7 +213,10 @@ fn validated_max(
     kind: &str,
     descriptor: &Descriptor<'_>,
 ) -> Result<u32, RuntimeCatalogCompileError> {
-    let supported = matches!(kind, "integer" | "long" | "short" | "byte" | "string" | "enum");
+    let supported = matches!(
+        kind,
+        "integer" | "long" | "short" | "byte" | "string" | "enum"
+    );
     let max = u32::try_from(value).map_err(|_| RuntimeCatalogCompileError::Capability)?;
     if !supported || max == 0 || exceeds_modeled(max, descriptor)? {
         return Err(RuntimeCatalogCompileError::Capability);
@@ -212,7 +245,8 @@ fn truncated_value(
         _ => None,
     };
     path.map(|path| {
-        let (_, member) = model_path::terminal_member(service, operation.output()?, &path.to_string())?;
+        let (_, member) =
+            model_path::terminal_member(service, operation.output()?, &path.to_string())?;
         if model_path::kind(service, member.target)? != "boolean"
             || !matches!(member.wire()?.binding()?, HttpBinding::Document)
         {

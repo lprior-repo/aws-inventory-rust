@@ -118,6 +118,8 @@ mod cost_optimization_hub_0;
 mod customer_profiles_0;
 mod registry_0;
 mod registry_1;
+mod registry_10;
+mod registry_11;
 mod registry_2;
 mod registry_3;
 mod registry_4;
@@ -126,8 +128,6 @@ mod registry_6;
 mod registry_7;
 mod registry_8;
 mod registry_9;
-mod registry_10;
-mod registry_11;
 mod support;
 
 #[cfg(test)]
@@ -153,5 +153,8 @@ pub(super) fn overlays() -> Result<Vec<ServiceOverlay>, NameError> {
         registry_9::overlays()?,
         registry_10::overlays()?,
         registry_11::overlays()?,
-    ].into_iter().flatten().collect())
+    ]
+    .into_iter()
+    .flatten()
+    .collect())
 }

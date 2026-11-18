@@ -1,6 +1,8 @@
 use super::{StoreError, scalar, unreviewed};
 use inventory_core::{
-    catalog::runtime::{BindingSource, BindingTransform, BindingValue, CallablePlan, ExecutionBranch},
+    catalog::runtime::{
+        BindingSource, BindingTransform, BindingValue, CallablePlan, ExecutionBranch,
+    },
     record::{FieldId, Key, KeyRef, MapRef, ValueRef},
 };
 
@@ -10,21 +12,29 @@ pub(super) struct FixedBinding {
     value: BindingValue,
 }
 
-pub(super) fn compile(plan: &CallablePlan<'_>, branch: Option<&ExecutionBranch>) -> Result<Vec<FixedBinding>, StoreError> {
-    plan.effective_bindings(branch).filter_map(|binding| {
-        match fixed_value(&binding.source) {
+pub(super) fn compile(
+    plan: &CallablePlan<'_>,
+    branch: Option<&ExecutionBranch>,
+) -> Result<Vec<FixedBinding>, StoreError> {
+    plan.effective_bindings(branch)
+        .filter_map(|binding| match fixed_value(&binding.source) {
             Ok(Some(mut value)) => {
                 normalize(&mut value);
-                Some(Ok(FixedBinding { path: binding.path.clone(), value }))
+                Some(Ok(FixedBinding {
+                    path: binding.path.clone(),
+                    value,
+                }))
             }
             Ok(None) => None,
             Err(error) => Some(Err(error)),
-        }
-    }).collect()
+        })
+        .collect()
 }
 
 pub(super) fn validate(bindings: &[FixedBinding], request: &[u8]) -> Result<(), StoreError> {
-    if bindings.is_empty() { return Ok(()); }
+    if bindings.is_empty() {
+        return Ok(());
+    }
     // Empty request bytes denote a legacy empty Record; treat as empty map so
     // the failure is unreviewed (missing fixed) rather than Missing at offset 0.
     let root = if request.is_empty() {
@@ -33,8 +43,12 @@ pub(super) fn validate(bindings: &[FixedBinding], request: &[u8]) -> Result<(), 
         MapRef::from_bytes_bounded(request)?
     };
     for binding in bindings {
-        let Some(value) = scalar(root, &binding.path)? else { return Err(unreviewed()); };
-        if !same(&binding.value, value)? { return Err(unreviewed()); }
+        let Some(value) = scalar(root, &binding.path)? else {
+            return Err(unreviewed());
+        };
+        if !same(&binding.value, value)? {
+            return Err(unreviewed());
+        }
     }
     Ok(())
 }
@@ -43,14 +57,22 @@ fn fixed_value(source: &BindingSource) -> Result<Option<BindingValue>, StoreErro
     match source {
         BindingSource::Fixed(value) => Ok(Some(value.clone())),
         BindingSource::Transformed { source, transform } => {
-            let Some(value) = fixed_value(source)? else { return Ok(None); };
-            let BindingValue::String(mut value) = value else { return Err(unreviewed()); };
+            let Some(value) = fixed_value(source)? else {
+                return Ok(None);
+            };
+            let BindingValue::String(mut value) = value else {
+                return Err(unreviewed());
+            };
             match transform {
                 BindingTransform::StripPrefix(prefix) => {
-                    if value.starts_with(prefix.as_ref()) { value.drain(..prefix.len()); }
+                    if value.starts_with(prefix.as_ref()) {
+                        value.drain(..prefix.len());
+                    }
                 }
             }
-            if value.is_empty() || value.contains('/') { return Err(unreviewed()); }
+            if value.is_empty() || value.contains('/') {
+                return Err(unreviewed());
+            }
             Ok(Some(BindingValue::String(value)))
         }
         _ => Ok(None),
@@ -79,25 +101,40 @@ fn same(expected: &BindingValue, actual: ValueRef<'_>) -> Result<bool, StoreErro
         (BindingValue::Bytes(expected), ValueRef::Bytes(actual)) => expected.as_ref() == actual,
         (BindingValue::Timestamp(expected), ValueRef::Time(actual)) => *expected == actual,
         (BindingValue::Strings(expected), ValueRef::List(actual)) => {
-            if actual.count()? != expected.len() { return Ok(false); }
+            if actual.count()? != expected.len() {
+                return Ok(false);
+            }
             for (expected, actual) in expected.iter().zip(actual.iter()?) {
-                if !matches!(actual?, ValueRef::Text(actual) if actual == expected.as_str()) { return Ok(false); }
+                if !matches!(actual?, ValueRef::Text(actual) if actual == expected.as_str()) {
+                    return Ok(false);
+                }
             }
             true
         }
         (BindingValue::List(expected), ValueRef::List(actual)) => {
-            if actual.count()? != expected.len() { return Ok(false); }
+            if actual.count()? != expected.len() {
+                return Ok(false);
+            }
             for (expected, actual) in expected.iter().zip(actual.iter()?) {
-                if !same(expected, actual?)? { return Ok(false); }
+                if !same(expected, actual?)? {
+                    return Ok(false);
+                }
             }
             true
         }
         (BindingValue::Object(expected), ValueRef::Map(actual)) => {
-            if actual.count()? != expected.len() { return Ok(false); }
+            if actual.count()? != expected.len() {
+                return Ok(false);
+            }
             for ((expected_key, expected), actual) in expected.iter().zip(actual.iter()?) {
                 let (actual_key, actual) = actual?;
-                let expected_key = match expected_key { Key::Field(field) => KeyRef::Field(*field), Key::Name(name) => KeyRef::Name(name) };
-                if expected_key != actual_key || !same(expected, actual)? { return Ok(false); }
+                let expected_key = match expected_key {
+                    Key::Field(field) => KeyRef::Field(*field),
+                    Key::Name(name) => KeyRef::Name(name),
+                };
+                if expected_key != actual_key || !same(expected, actual)? {
+                    return Ok(false);
+                }
             }
             true
         }

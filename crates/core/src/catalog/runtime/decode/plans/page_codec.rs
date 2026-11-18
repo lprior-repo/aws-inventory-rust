@@ -1,5 +1,7 @@
-use super::{map, metadata, optional_u32, positive_u32, selection, PagePlan,
-    PageSizeBinding, RuntimeCatalogError, TokenBinding, TokenPlacement, TokenType, ValueRef};
+use super::{
+    PagePlan, PageSizeBinding, RuntimeCatalogError, TokenBinding, TokenPlacement, TokenType,
+    ValueRef, map, metadata, optional_u32, positive_u32, selection,
+};
 use crate::catalog::runtime::{PageSizeType, TokenSelection};
 pub(super) fn page(map_value: crate::record::MapRef<'_>) -> Result<PagePlan, RuntimeCatalogError> {
     let items = selection::item(metadata::map_field(map_value, 1)?)?;
@@ -53,7 +55,9 @@ fn token_optional(fields: crate::record::MapRef<'_>) -> Result<bool, RuntimeCata
     }
 }
 
-fn token_selection(fields: crate::record::MapRef<'_>) -> Result<TokenSelection, RuntimeCatalogError> {
+fn token_selection(
+    fields: crate::record::MapRef<'_>,
+) -> Result<TokenSelection, RuntimeCatalogError> {
     match fields.get_field(crate::record::FieldId::new(7)?)? {
         None | Some(ValueRef::Int(0)) => Ok(TokenSelection::Value),
         Some(ValueRef::Int(1)) => Ok(TokenSelection::LastListItem),
@@ -61,10 +65,14 @@ fn token_selection(fields: crate::record::MapRef<'_>) -> Result<TokenSelection, 
     }
 }
 
-fn page_tokens(fields: crate::record::MapRef<'_>) -> Result<Vec<TokenBinding>, RuntimeCatalogError> {
+fn page_tokens(
+    fields: crate::record::MapRef<'_>,
+) -> Result<Vec<TokenBinding>, RuntimeCatalogError> {
     let tokens = metadata::bounded(metadata::list(fields, 2)?, token, 8)?;
     let duplicates = tokens.iter().enumerate().any(|(index, current)| {
-        tokens.iter().take(index)
+        tokens
+            .iter()
+            .take(index)
             .any(|previous| previous.request_path == current.request_path)
     });
     if duplicates || (!tokens.is_empty() && tokens.iter().all(|token| token.optional)) {

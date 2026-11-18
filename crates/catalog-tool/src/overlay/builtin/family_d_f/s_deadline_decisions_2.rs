@@ -1,31 +1,115 @@
 // Explicit dispositions from .local/aws-models/models/deadline/service/2023-10-12/deadline-2023-10-12.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
-    ("GetWorker", "Requires farmId, fleetId, workerId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets a worker."),
-    ("ListAvailableMeteredProducts", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: A list of the available metered products."),
-    ("ListFarmMembers", "Requires farmId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists the members of a farm."),
-    ("ListFleetMembers", "Requires farmId, fleetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists fleet members."),
-    ("ListJobMembers", "Requires farmId, queueId, jobId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists members on a job."),
-    ("ListJobParameterDefinitions", "Requires farmId, queueId, jobId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists parameter definitions of a job."),
-    ("ListJobs", "Requires farmId, queueId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists jobs."),
-    ("ListMemberships", "Requires principalId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists the Deadline Cloud resource memberships associated with a specified IAM Identity Center principal, optionally filtered by the requested resource types."),
-    ("ListMeteredProducts", "Requires licenseEndpointId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists metered products."),
-    ("ListQueueMembers", "Requires farmId, queueId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists the members in a queue."),
-    ("ListSessionActions", "Requires farmId, queueId, jobId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists session actions."),
-    ("ListSessions", "Requires farmId, queueId, jobId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists sessions."),
-    ("ListSessionsForWorker", "Requires farmId, fleetId, workerId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists sessions for a worker."),
-    ("ListStepConsumers", "Requires farmId, queueId, jobId, stepId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists step consumers."),
-    ("ListStepDependencies", "Requires farmId, queueId, jobId, stepId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists the dependencies for a step."),
-    ("ListSteps", "Requires farmId, queueId, jobId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists steps for a job."),
-    ("ListStorageProfilesForQueue", "Requires farmId, queueId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists storage profiles for a queue."),
-    ("ListTagsForResource", "Requires resourceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists tags for a resource."),
-    ("ListTasks", "Requires farmId, queueId, jobId, stepId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists tasks for a job."),
-    ("ListWorkers", "Unresolved whole-response safety: WorkerSummary.log includes LogConfiguration.options and parameters (unconstrained string maps) and error text. The pinned model does not guarantee these values exclude credentials. Selecting worker IDs cannot prevent receiving those fields; remain noncallable until the entire response is metadata-safe."),
-    ("PutMeteredProduct", "Requires licenseEndpointId, productId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds a metered product."),
-    ("SearchJobs", "Requires farmId, itemOffset, queueIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Searches for jobs."),
-    ("SearchSteps", "Requires farmId, itemOffset, queueIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Searches for steps."),
-    ("SearchTasks", "Requires farmId, itemOffset, queueIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Searches for tasks."),
-    ("SearchWorkers", "Requires farmId, itemOffset, fleetIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Searches for workers."),
-    ("StartSessionsStatisticsAggregation", "Requires farmId, resourceIds, startTime, endTime, groupBy, statistics; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts an asynchronous request for getting aggregated statistics about queues and farms."),
-    ("TagResource", "Requires resourceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Tags a resource using the resource's ARN and desired tags."),
-    ("UntagResource", "Requires resourceArn, tagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes a tag from a resource using the resource's ARN and tag to remove."),
+    (
+        "GetWorker",
+        "Requires farmId, fleetId, workerId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets a worker.",
+    ),
+    (
+        "ListAvailableMeteredProducts",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: A list of the available metered products.",
+    ),
+    (
+        "ListFarmMembers",
+        "Requires farmId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists the members of a farm.",
+    ),
+    (
+        "ListFleetMembers",
+        "Requires farmId, fleetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists fleet members.",
+    ),
+    (
+        "ListJobMembers",
+        "Requires farmId, queueId, jobId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists members on a job.",
+    ),
+    (
+        "ListJobParameterDefinitions",
+        "Requires farmId, queueId, jobId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists parameter definitions of a job.",
+    ),
+    (
+        "ListJobs",
+        "Requires farmId, queueId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists jobs.",
+    ),
+    (
+        "ListMemberships",
+        "Requires principalId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists the Deadline Cloud resource memberships associated with a specified IAM Identity Center principal, optionally filtered by the requested resource types.",
+    ),
+    (
+        "ListMeteredProducts",
+        "Requires licenseEndpointId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists metered products.",
+    ),
+    (
+        "ListQueueMembers",
+        "Requires farmId, queueId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists the members in a queue.",
+    ),
+    (
+        "ListSessionActions",
+        "Requires farmId, queueId, jobId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists session actions.",
+    ),
+    (
+        "ListSessions",
+        "Requires farmId, queueId, jobId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists sessions.",
+    ),
+    (
+        "ListSessionsForWorker",
+        "Requires farmId, fleetId, workerId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists sessions for a worker.",
+    ),
+    (
+        "ListStepConsumers",
+        "Requires farmId, queueId, jobId, stepId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists step consumers.",
+    ),
+    (
+        "ListStepDependencies",
+        "Requires farmId, queueId, jobId, stepId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists the dependencies for a step.",
+    ),
+    (
+        "ListSteps",
+        "Requires farmId, queueId, jobId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists steps for a job.",
+    ),
+    (
+        "ListStorageProfilesForQueue",
+        "Requires farmId, queueId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists storage profiles for a queue.",
+    ),
+    (
+        "ListTagsForResource",
+        "Requires resourceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists tags for a resource.",
+    ),
+    (
+        "ListTasks",
+        "Requires farmId, queueId, jobId, stepId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists tasks for a job.",
+    ),
+    (
+        "ListWorkers",
+        "Unresolved whole-response safety: WorkerSummary.log includes LogConfiguration.options and parameters (unconstrained string maps) and error text. The pinned model does not guarantee these values exclude credentials. Selecting worker IDs cannot prevent receiving those fields; remain noncallable until the entire response is metadata-safe.",
+    ),
+    (
+        "PutMeteredProduct",
+        "Requires licenseEndpointId, productId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds a metered product.",
+    ),
+    (
+        "SearchJobs",
+        "Requires farmId, itemOffset, queueIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Searches for jobs.",
+    ),
+    (
+        "SearchSteps",
+        "Requires farmId, itemOffset, queueIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Searches for steps.",
+    ),
+    (
+        "SearchTasks",
+        "Requires farmId, itemOffset, queueIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Searches for tasks.",
+    ),
+    (
+        "SearchWorkers",
+        "Requires farmId, itemOffset, fleetIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Searches for workers.",
+    ),
+    (
+        "StartSessionsStatisticsAggregation",
+        "Requires farmId, resourceIds, startTime, endTime, groupBy, statistics; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts an asynchronous request for getting aggregated statistics about queues and farms.",
+    ),
+    (
+        "TagResource",
+        "Requires resourceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Tags a resource using the resource's ARN and desired tags.",
+    ),
+    (
+        "UntagResource",
+        "Requires resourceArn, tagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes a tag from a resource using the resource's ARN and tag to remove.",
+    ),
 ];

@@ -1,5 +1,5 @@
-use super::{inventory, paths, bind, token};
-use crate::overlay::{OperationOverlay, NameError, Identity, Paginator, Scope};
+use super::{bind, inventory, paths, token};
+use crate::overlay::{Identity, NameError, OperationOverlay, Paginator, Scope};
 
 pub(super) fn describe_organization() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
@@ -20,7 +20,12 @@ pub(super) fn describe_organization() -> Result<OperationOverlay, NameError> {
         "MigrationAdmin",
         "InteroperabilityEnabled",
     ])?;
-    bind(&mut operation, "OrganizationId", "ListOrganizations", "OrganizationId")?;
+    bind(
+        &mut operation,
+        "OrganizationId",
+        "ListOrganizations",
+        "OrganizationId",
+    )?;
     Ok(operation)
 }
 

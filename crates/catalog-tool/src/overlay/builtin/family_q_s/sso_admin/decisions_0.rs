@@ -6,81 +6,291 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
     // Changes service state rather than reading inventory. Pinned purpose: Adds a Region to an IAM Identity Center instance. This operation initiates an asynchronous workflow to replicate the IAM Identity Center instance to the target Region. The Region status is set to ADDING at first and changes to ACTIVE when the workflow completes. To use this operation, your IAM Identity Center instance and the target Region must meet the requirements described in the IAM Identity C
     ("AddRegion", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Attaches the specified customer managed policy to the specified PermissionSet .
-    ("AttachCustomerManagedPolicyReferenceToPermissionSet", Decision::Denied(DenyReason::Mutating)),
+    (
+        "AttachCustomerManagedPolicyReferenceToPermissionSet",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Attaches an Amazon Web Services managed policy ARN to a permission set. If the permission set is already referenced by one or more account assignments, you will need to call ProvisionPermissionSet after this operation. Calling ProvisionPermissionSet applies the corresponding IAM policy updates to all assigned accounts.
-    ("AttachManagedPolicyToPermissionSet", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Assigns access to a principal for a specified Amazon Web Services account using a specified permission set. The term principal here refers to a user or group that is defined in IAM Identity Center. As part of a successful CreateAccountAssignment call, the specified permission set will automatically be provisioned to the account in the form of an IAM policy. That policy is attached to the IAM role 
-    ("CreateAccountAssignment", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates an OAuth 2.0 customer managed application in IAM Identity Center for the given application provider. This API does not support creating SAML 2.0 customer managed applications or Amazon Web Services managed applications. To learn how to create an Amazon Web Services managed application, see the application user guide. You can create a SAML 2.0 customer managed application in the Amazon Web 
+    (
+        "AttachManagedPolicyToPermissionSet",
+        Decision::Denied(DenyReason::Mutating),
+    ),
+    // Changes service state rather than reading inventory. Pinned purpose: Assigns access to a principal for a specified Amazon Web Services account using a specified permission set. The term principal here refers to a user or group that is defined in IAM Identity Center. As part of a successful CreateAccountAssignment call, the specified permission set will automatically be provisioned to the account in the form of an IAM policy. That policy is attached to the IAM role
+    (
+        "CreateAccountAssignment",
+        Decision::Denied(DenyReason::Mutating),
+    ),
+    // Changes service state rather than reading inventory. Pinned purpose: Creates an OAuth 2.0 customer managed application in IAM Identity Center for the given application provider. This API does not support creating SAML 2.0 customer managed applications or Amazon Web Services managed applications. To learn how to create an Amazon Web Services managed application, see the application user guide. You can create a SAML 2.0 customer managed application in the Amazon Web
     ("CreateApplication", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Grant application access to a user or group.
-    ("CreateApplicationAssignment", Decision::Denied(DenyReason::Mutating)),
+    (
+        "CreateApplicationAssignment",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Creates an instance of IAM Identity Center for a standalone Amazon Web Services account that is not managed by Organizations or a member Amazon Web Services account in an organization. You can create only one instance per account and across all Amazon Web Services Regions. The CreateInstance request is rejected if the following apply: The instance is created within the organization management acco
     ("CreateInstance", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Enables the attributes-based access control (ABAC) feature for the specified IAM Identity Center instance. You can also specify new attributes to add to your ABAC configuration during the enabling process. For more information about ABAC, see Attribute-Based Access Control in the IAM Identity Center User Guide . After a successful response, call DescribeInstanceAccessControlAttributeConfiguration 
-    ("CreateInstanceAccessControlAttributeConfiguration", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: Enables the attributes-based access control (ABAC) feature for the specified IAM Identity Center instance. You can also specify new attributes to add to your ABAC configuration during the enabling process. For more information about ABAC, see Attribute-Based Access Control in the IAM Identity Center User Guide . After a successful response, call DescribeInstanceAccessControlAttributeConfiguration
+    (
+        "CreateInstanceAccessControlAttributeConfiguration",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Creates a permission set within a specified IAM Identity Center instance. To grant users and groups access to Amazon Web Services account resources, use CreateAccountAssignment .
-    ("CreatePermissionSet", Decision::Denied(DenyReason::Mutating)),
+    (
+        "CreatePermissionSet",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Creates a connection to a trusted token issuer in an instance of IAM Identity Center. A trusted token issuer enables trusted identity propagation to be used with applications that authenticate outside of Amazon Web Services. This trusted token issuer describes an external identity provider (IdP) that can generate claims or assertions in the form of access tokens for a user. Applications enabled fo
-    ("CreateTrustedTokenIssuer", Decision::Denied(DenyReason::Mutating)),
+    (
+        "CreateTrustedTokenIssuer",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes a principal's access from a specified Amazon Web Services account using a specified permission set. After a successful response, call DescribeAccountAssignmentDeletionStatus to describe the status of an assignment deletion request.
-    ("DeleteAccountAssignment", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeleteAccountAssignment",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes the association with the application. The connected service resource still exists.
     ("DeleteApplication", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes an IAM Identity Center access scope from an application.
-    ("DeleteApplicationAccessScope", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeleteApplicationAccessScope",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Revoke application access to an application by deleting application assignments for a user or group.
-    ("DeleteApplicationAssignment", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeleteApplicationAssignment",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes an authentication method from an application.
-    ("DeleteApplicationAuthenticationMethod", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeleteApplicationAuthenticationMethod",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes a grant from an application.
-    ("DeleteApplicationGrant", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeleteApplicationGrant",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes the inline policy from a specified permission set.
-    ("DeleteInlinePolicyFromPermissionSet", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeleteInlinePolicyFromPermissionSet",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes the instance of IAM Identity Center. Only the account that owns the instance can call this API. Neither the delegated administrator nor member account can delete the organization instance, but those roles can delete their own instance.
     ("DeleteInstance", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Disables the attributes-based access control (ABAC) feature for the specified IAM Identity Center instance and deletes all of the attribute mappings that have been configured. Once deleted, any attributes that are received from an identity source and any custom attributes you have previously configured will not be passed. For more information about ABAC, see Attribute-Based Access Control in the I
-    ("DeleteInstanceAccessControlAttributeConfiguration", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeleteInstanceAccessControlAttributeConfiguration",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes the specified permission set.
-    ("DeletePermissionSet", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeletePermissionSet",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes the permissions boundary from a specified PermissionSet .
-    ("DeletePermissionsBoundaryFromPermissionSet", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeletePermissionsBoundaryFromPermissionSet",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes a trusted token issuer configuration from an instance of IAM Identity Center. Deleting this trusted token issuer configuration will cause users to lose access to any applications that are configured to use the trusted token issuer.
-    ("DeleteTrustedTokenIssuer", Decision::Denied(DenyReason::Mutating)),
-    ("DescribeAccountAssignmentCreationStatus", Decision::Deferred("Required selectors InstanceArn, AccountAssignmentCreationRequestId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AccountAssignmentCreationStatus. Pinned purpose: Describes the status of the assignment creation request.")),
-    ("DescribeAccountAssignmentDeletionStatus", Decision::Deferred("Required selectors InstanceArn, AccountAssignmentDeletionRequestId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AccountAssignmentDeletionStatus. Pinned purpose: Describes the status of the assignment deletion request.")),
-    ("DescribeApplication", Decision::Deferred("Required selectors ApplicationArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ApplicationArn, ApplicationProviderArn, Name, ApplicationAccount, InstanceArn, IdentityStoreArn, Status, PortalOptions, Description, CreatedDate, CreatedFrom. Pinned purpose: Retrieves the details of an application associated with an instance of IAM Identity Center.")),
-    ("DescribeApplicationAssignment", Decision::Deferred("Required selectors ApplicationArn, PrincipalId, PrincipalType are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members PrincipalType, PrincipalId, ApplicationArn. Pinned purpose: Retrieves a direct assignment of a user or group to an application. If the user doesn’t have a direct assignment to the application, the user may still have access to the application through a group. Therefore, don’t use this API to test access to an")),
-    ("DescribeApplicationProvider", Decision::Deferred("Required selectors ApplicationProviderArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ApplicationProviderArn, FederationProtocol, DisplayData, ResourceServerConfig. Pinned purpose: Retrieves details about a provider that can be used to connect an Amazon Web Services managed application or customer managed application to IAM Identity Center.")),
-    ("DescribeInstance", Decision::Deferred("Required selectors InstanceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members InstanceArn, IdentityStoreId, IdentityStoreArn, OwnerAccountId, Name, CreatedDate, Status, StatusReason, PrimaryRegion, Regions, EncryptionConfigurationDetails, NetworkConfigurationDetails, PermissionSetsEnabled. Pinned purpose: Returns the details of an instance of IAM Identity Center. The status can be one of the following: CREATE_IN_PROGRESS - The instance is in the process of being created. When the instance is ready for use, DescribeInstance returns the status of ACTIVE")),
-    ("DescribeInstanceAccessControlAttributeConfiguration", Decision::Deferred("Required selectors InstanceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Status, StatusReason, InstanceAccessControlAttributeConfiguration. Pinned purpose: Returns the list of IAM Identity Center identity store attributes that have been configured to work with attributes-based access control (ABAC) for the specified IAM Identity Center instance. This will not return attributes configured and sent by an ")),
-    ("DescribePermissionSet", Decision::Deferred("Required selectors InstanceArn, PermissionSetArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members PermissionSet. Pinned purpose: Gets the details of the permission set.")),
-    ("DescribePermissionSetProvisioningStatus", Decision::Deferred("Required selectors InstanceArn, ProvisionPermissionSetRequestId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members PermissionSetProvisioningStatus. Pinned purpose: Describes the status for the given permission set provisioning request.")),
-    ("DescribeRegion", Decision::Deferred("Required selectors InstanceArn, RegionName are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members RegionName, Status, AddedDate, IsPrimaryRegion. Pinned purpose: Retrieves details about a specific Region enabled in an IAM Identity Center instance. Details include the Region name, current status (ACTIVE, ADDING, or REMOVING), the date when the Region was added, and whether it is the primary Region. The request")),
-    ("DescribeTrustedTokenIssuer", Decision::Deferred("Required selectors TrustedTokenIssuerArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members TrustedTokenIssuerArn, Name, TrustedTokenIssuerType, TrustedTokenIssuerConfiguration. Pinned purpose: Retrieves details about a trusted token issuer configuration stored in an instance of IAM Identity Center. Details include the name of the trusted token issuer, the issuer URL, and the path of the source attribute and the destination attribute for a ")),
+    (
+        "DeleteTrustedTokenIssuer",
+        Decision::Denied(DenyReason::Mutating),
+    ),
+    (
+        "DescribeAccountAssignmentCreationStatus",
+        Decision::Deferred(
+            "Required selectors InstanceArn, AccountAssignmentCreationRequestId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AccountAssignmentCreationStatus. Pinned purpose: Describes the status of the assignment creation request.",
+        ),
+    ),
+    (
+        "DescribeAccountAssignmentDeletionStatus",
+        Decision::Deferred(
+            "Required selectors InstanceArn, AccountAssignmentDeletionRequestId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AccountAssignmentDeletionStatus. Pinned purpose: Describes the status of the assignment deletion request.",
+        ),
+    ),
+    (
+        "DescribeApplication",
+        Decision::Deferred(
+            "Required selectors ApplicationArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ApplicationArn, ApplicationProviderArn, Name, ApplicationAccount, InstanceArn, IdentityStoreArn, Status, PortalOptions, Description, CreatedDate, CreatedFrom. Pinned purpose: Retrieves the details of an application associated with an instance of IAM Identity Center.",
+        ),
+    ),
+    (
+        "DescribeApplicationAssignment",
+        Decision::Deferred(
+            "Required selectors ApplicationArn, PrincipalId, PrincipalType are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members PrincipalType, PrincipalId, ApplicationArn. Pinned purpose: Retrieves a direct assignment of a user or group to an application. If the user doesn’t have a direct assignment to the application, the user may still have access to the application through a group. Therefore, don’t use this API to test access to an",
+        ),
+    ),
+    (
+        "DescribeApplicationProvider",
+        Decision::Deferred(
+            "Required selectors ApplicationProviderArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ApplicationProviderArn, FederationProtocol, DisplayData, ResourceServerConfig. Pinned purpose: Retrieves details about a provider that can be used to connect an Amazon Web Services managed application or customer managed application to IAM Identity Center.",
+        ),
+    ),
+    (
+        "DescribeInstance",
+        Decision::Deferred(
+            "Required selectors InstanceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members InstanceArn, IdentityStoreId, IdentityStoreArn, OwnerAccountId, Name, CreatedDate, Status, StatusReason, PrimaryRegion, Regions, EncryptionConfigurationDetails, NetworkConfigurationDetails, PermissionSetsEnabled. Pinned purpose: Returns the details of an instance of IAM Identity Center. The status can be one of the following: CREATE_IN_PROGRESS - The instance is in the process of being created. When the instance is ready for use, DescribeInstance returns the status of ACTIVE",
+        ),
+    ),
+    (
+        "DescribeInstanceAccessControlAttributeConfiguration",
+        Decision::Deferred(
+            "Required selectors InstanceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Status, StatusReason, InstanceAccessControlAttributeConfiguration. Pinned purpose: Returns the list of IAM Identity Center identity store attributes that have been configured to work with attributes-based access control (ABAC) for the specified IAM Identity Center instance. This will not return attributes configured and sent by an ",
+        ),
+    ),
+    (
+        "DescribePermissionSet",
+        Decision::Deferred(
+            "Required selectors InstanceArn, PermissionSetArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members PermissionSet. Pinned purpose: Gets the details of the permission set.",
+        ),
+    ),
+    (
+        "DescribePermissionSetProvisioningStatus",
+        Decision::Deferred(
+            "Required selectors InstanceArn, ProvisionPermissionSetRequestId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members PermissionSetProvisioningStatus. Pinned purpose: Describes the status for the given permission set provisioning request.",
+        ),
+    ),
+    (
+        "DescribeRegion",
+        Decision::Deferred(
+            "Required selectors InstanceArn, RegionName are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members RegionName, Status, AddedDate, IsPrimaryRegion. Pinned purpose: Retrieves details about a specific Region enabled in an IAM Identity Center instance. Details include the Region name, current status (ACTIVE, ADDING, or REMOVING), the date when the Region was added, and whether it is the primary Region. The request",
+        ),
+    ),
+    (
+        "DescribeTrustedTokenIssuer",
+        Decision::Deferred(
+            "Required selectors TrustedTokenIssuerArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members TrustedTokenIssuerArn, Name, TrustedTokenIssuerType, TrustedTokenIssuerConfiguration. Pinned purpose: Retrieves details about a trusted token issuer configuration stored in an instance of IAM Identity Center. Details include the name of the trusted token issuer, the issuer URL, and the path of the source attribute and the destination attribute for a ",
+        ),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Detaches the specified customer managed policy from the specified PermissionSet .
-    ("DetachCustomerManagedPolicyReferenceFromPermissionSet", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DetachCustomerManagedPolicyReferenceFromPermissionSet",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Detaches the attached Amazon Web Services managed policy ARN from the specified permission set.
-    ("DetachManagedPolicyFromPermissionSet", Decision::Denied(DenyReason::Mutating)),
-    ("GetApplicationAccessScope", Decision::Deferred("Required selectors ApplicationArn, Scope are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Scope, AuthorizedTargets. Pinned purpose: Retrieves the authorized targets for an IAM Identity Center access scope for an application.")),
-    ("GetApplicationAssignmentConfiguration", Decision::Deferred("Required selectors ApplicationArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AssignmentRequired. Pinned purpose: Retrieves the configuration of PutApplicationAssignmentConfiguration .")),
-    ("GetApplicationAuthenticationMethod", Decision::Deferred("Required selectors ApplicationArn, AuthenticationMethodType are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AuthenticationMethod. Pinned purpose: Retrieves details about an authentication method used by an application.")),
-    ("GetApplicationGrant", Decision::Deferred("Required selectors ApplicationArn, GrantType are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Grant. Pinned purpose: Retrieves details about an application grant.")),
-    ("GetApplicationSessionConfiguration", Decision::Deferred("Required selectors ApplicationArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members UserBackgroundSessionApplicationStatus. Pinned purpose: Retrieves the session configuration for an application in IAM Identity Center. The session configuration determines how users can access an application. This includes whether user background sessions are enabled. User background sessions allow users ")),
-    ("GetInlinePolicyForPermissionSet", Decision::Deferred("Required selectors InstanceArn, PermissionSetArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members InlinePolicy. Pinned purpose: Obtains the inline policy assigned to the permission set.")),
-    ("GetPermissionsBoundaryForPermissionSet", Decision::Deferred("Required selectors InstanceArn, PermissionSetArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members PermissionsBoundary. Pinned purpose: Obtains the permissions boundary for a specified PermissionSet .")),
-    ("ListAccountAssignmentCreationStatus", Decision::Deferred("Required selectors InstanceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AccountAssignmentsCreationStatus, NextToken. Pinned purpose: Lists the status of the Amazon Web Services account assignment creation requests for a specified IAM Identity Center instance.")),
-    ("ListAccountAssignmentDeletionStatus", Decision::Deferred("Required selectors InstanceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AccountAssignmentsDeletionStatus, NextToken. Pinned purpose: Lists the status of the Amazon Web Services account assignment deletion requests for a specified IAM Identity Center instance.")),
-    ("ListAccountAssignments", Decision::Deferred("Required selectors InstanceArn, AccountId, PermissionSetArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AccountAssignments, NextToken. Pinned purpose: Lists the assignee of the specified Amazon Web Services account with the specified permission set.")),
-    ("ListAccountAssignmentsForPrincipal", Decision::Deferred("Required selectors InstanceArn, PrincipalId, PrincipalType are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AccountAssignments, NextToken. Pinned purpose: Retrieves a list of the IAM Identity Center associated Amazon Web Services accounts that the principal has access to. This action must be called from the management account containing your organization instance of IAM Identity Center. This action is ")),
-    ("ListAccountsForProvisionedPermissionSet", Decision::Deferred("Required selectors InstanceArn, PermissionSetArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AccountIds, NextToken. Pinned purpose: Lists all the Amazon Web Services accounts where the specified permission set is provisioned.")),
-    ("ListApplicationAccessScopes", Decision::Deferred("Required selectors ApplicationArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Scopes, NextToken. Pinned purpose: Lists the access scopes and authorized targets associated with an application.")),
-    ("ListApplicationAssignments", Decision::Deferred("Required selectors ApplicationArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ApplicationAssignments, NextToken. Pinned purpose: Lists Amazon Web Services account users that are assigned to an application.")),
-    ("ListApplicationAssignmentsForPrincipal", Decision::Deferred("Required selectors InstanceArn, PrincipalId, PrincipalType are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ApplicationAssignments, NextToken. Pinned purpose: Lists the applications to which a specified principal is assigned. You must provide a filter when calling this action from a member account against your organization instance of IAM Identity Center. A filter is not required when called from the manag")),
-    ("ListApplicationAuthenticationMethods", Decision::Deferred("Required selectors ApplicationArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AuthenticationMethods, NextToken. Pinned purpose: Lists all of the authentication methods supported by the specified application.")),
-    ("ListApplicationGrants", Decision::Deferred("Required selectors ApplicationArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Grants, NextToken. Pinned purpose: List the grants associated with an application.")),
+    (
+        "DetachManagedPolicyFromPermissionSet",
+        Decision::Denied(DenyReason::Mutating),
+    ),
+    (
+        "GetApplicationAccessScope",
+        Decision::Deferred(
+            "Required selectors ApplicationArn, Scope are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Scope, AuthorizedTargets. Pinned purpose: Retrieves the authorized targets for an IAM Identity Center access scope for an application.",
+        ),
+    ),
+    (
+        "GetApplicationAssignmentConfiguration",
+        Decision::Deferred(
+            "Required selectors ApplicationArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AssignmentRequired. Pinned purpose: Retrieves the configuration of PutApplicationAssignmentConfiguration .",
+        ),
+    ),
+    (
+        "GetApplicationAuthenticationMethod",
+        Decision::Deferred(
+            "Required selectors ApplicationArn, AuthenticationMethodType are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AuthenticationMethod. Pinned purpose: Retrieves details about an authentication method used by an application.",
+        ),
+    ),
+    (
+        "GetApplicationGrant",
+        Decision::Deferred(
+            "Required selectors ApplicationArn, GrantType are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Grant. Pinned purpose: Retrieves details about an application grant.",
+        ),
+    ),
+    (
+        "GetApplicationSessionConfiguration",
+        Decision::Deferred(
+            "Required selectors ApplicationArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members UserBackgroundSessionApplicationStatus. Pinned purpose: Retrieves the session configuration for an application in IAM Identity Center. The session configuration determines how users can access an application. This includes whether user background sessions are enabled. User background sessions allow users ",
+        ),
+    ),
+    (
+        "GetInlinePolicyForPermissionSet",
+        Decision::Deferred(
+            "Required selectors InstanceArn, PermissionSetArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members InlinePolicy. Pinned purpose: Obtains the inline policy assigned to the permission set.",
+        ),
+    ),
+    (
+        "GetPermissionsBoundaryForPermissionSet",
+        Decision::Deferred(
+            "Required selectors InstanceArn, PermissionSetArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members PermissionsBoundary. Pinned purpose: Obtains the permissions boundary for a specified PermissionSet .",
+        ),
+    ),
+    (
+        "ListAccountAssignmentCreationStatus",
+        Decision::Deferred(
+            "Required selectors InstanceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AccountAssignmentsCreationStatus, NextToken. Pinned purpose: Lists the status of the Amazon Web Services account assignment creation requests for a specified IAM Identity Center instance.",
+        ),
+    ),
+    (
+        "ListAccountAssignmentDeletionStatus",
+        Decision::Deferred(
+            "Required selectors InstanceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AccountAssignmentsDeletionStatus, NextToken. Pinned purpose: Lists the status of the Amazon Web Services account assignment deletion requests for a specified IAM Identity Center instance.",
+        ),
+    ),
+    (
+        "ListAccountAssignments",
+        Decision::Deferred(
+            "Required selectors InstanceArn, AccountId, PermissionSetArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AccountAssignments, NextToken. Pinned purpose: Lists the assignee of the specified Amazon Web Services account with the specified permission set.",
+        ),
+    ),
+    (
+        "ListAccountAssignmentsForPrincipal",
+        Decision::Deferred(
+            "Required selectors InstanceArn, PrincipalId, PrincipalType are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AccountAssignments, NextToken. Pinned purpose: Retrieves a list of the IAM Identity Center associated Amazon Web Services accounts that the principal has access to. This action must be called from the management account containing your organization instance of IAM Identity Center. This action is ",
+        ),
+    ),
+    (
+        "ListAccountsForProvisionedPermissionSet",
+        Decision::Deferred(
+            "Required selectors InstanceArn, PermissionSetArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AccountIds, NextToken. Pinned purpose: Lists all the Amazon Web Services accounts where the specified permission set is provisioned.",
+        ),
+    ),
+    (
+        "ListApplicationAccessScopes",
+        Decision::Deferred(
+            "Required selectors ApplicationArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Scopes, NextToken. Pinned purpose: Lists the access scopes and authorized targets associated with an application.",
+        ),
+    ),
+    (
+        "ListApplicationAssignments",
+        Decision::Deferred(
+            "Required selectors ApplicationArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ApplicationAssignments, NextToken. Pinned purpose: Lists Amazon Web Services account users that are assigned to an application.",
+        ),
+    ),
+    (
+        "ListApplicationAssignmentsForPrincipal",
+        Decision::Deferred(
+            "Required selectors InstanceArn, PrincipalId, PrincipalType are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ApplicationAssignments, NextToken. Pinned purpose: Lists the applications to which a specified principal is assigned. You must provide a filter when calling this action from a member account against your organization instance of IAM Identity Center. A filter is not required when called from the manag",
+        ),
+    ),
+    (
+        "ListApplicationAuthenticationMethods",
+        Decision::Deferred(
+            "Required selectors ApplicationArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AuthenticationMethods, NextToken. Pinned purpose: Lists all of the authentication methods supported by the specified application.",
+        ),
+    ),
+    (
+        "ListApplicationGrants",
+        Decision::Deferred(
+            "Required selectors ApplicationArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Grants, NextToken. Pinned purpose: List the grants associated with an application.",
+        ),
+    ),
     // Public/service reference catalog or supported-capability enumeration, not account-owned resource inventory. Pinned purpose: Lists the application providers configured in the IAM Identity Center identity store.
-    ("ListApplicationProviders", Decision::Denied(DenyReason::ReferenceData)),
-    ("ListCustomerManagedPolicyReferencesInPermissionSet", Decision::Deferred("Required selectors InstanceArn, PermissionSetArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members CustomerManagedPolicyReferences, NextToken. Pinned purpose: Lists all customer managed policies attached to a specified PermissionSet .")),
-    ("ListManagedPoliciesInPermissionSet", Decision::Deferred("Required selectors InstanceArn, PermissionSetArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AttachedManagedPolicies, NextToken. Pinned purpose: Lists the Amazon Web Services managed policy that is attached to a specified permission set.")),
+    (
+        "ListApplicationProviders",
+        Decision::Denied(DenyReason::ReferenceData),
+    ),
+    (
+        "ListCustomerManagedPolicyReferencesInPermissionSet",
+        Decision::Deferred(
+            "Required selectors InstanceArn, PermissionSetArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members CustomerManagedPolicyReferences, NextToken. Pinned purpose: Lists all customer managed policies attached to a specified PermissionSet .",
+        ),
+    ),
+    (
+        "ListManagedPoliciesInPermissionSet",
+        Decision::Deferred(
+            "Required selectors InstanceArn, PermissionSetArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AttachedManagedPolicies, NextToken. Pinned purpose: Lists the Amazon Web Services managed policy that is attached to a specified permission set.",
+        ),
+    ),
 ];

@@ -4,5 +4,8 @@ use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
     // Executes billable analysis/inference/database or customer data access rather than metadata inventory. Pinned purpose: Invokes a model endpoint with bidirectional streaming capabilities. This operation establishes a persistent connection that allows you to send multiple requests and receive streaming responses from the model in real-time. Bidirectional streaming is useful for interactive applications such as chatbots, real-time translation, or any scenario where yo
-    ("InvokeEndpointWithBidirectionalStream", Decision::Denied(DenyReason::Paid)),
+    (
+        "InvokeEndpointWithBidirectionalStream",
+        Decision::Denied(DenyReason::Paid),
+    ),
 ];

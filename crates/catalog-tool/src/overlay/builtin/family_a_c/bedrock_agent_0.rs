@@ -5,145 +5,608 @@ use crate::overlay::IdentityField;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        ("AssociateAgentCollaborator", deferred("Model requires agentId, agentVersion, agentDescriptor, collaboratorName, collaborationInstruction. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Makes an agent a collaborator for another agent.")),
-        ("AssociateAgentKnowledgeBase", deferred("Model requires agentId, agentVersion, knowledgeBaseId, description. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Associates a knowledge base with an agent. If a knowledge base is associated and its indexState is set to Enabled , the agent queries the knowledge base for information to augment its response to the user.")),
-        ("CreateAgent", deferred("Model requires agentName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Amazon Bedrock Agents (now Amazon Bedrock Agents Classic) is no longer open to new customers. For capabilities similar to Bedrock Agents Classic, explore Amazon Bedrock AgentCore. Existing customers can continue to use the…")),
-        ("CreateAgentActionGroup", deferred("Model requires agentId, agentVersion, actionGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates an action group for an agent. An action group represents the actions that an agent can carry out for the customer by defining the APIs that an agent can call and the logic for calling them. To allow your agent to request…")),
-        ("CreateAgentAlias", deferred("Model requires agentId, agentAliasName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates an alias of an agent that can be used to deploy the agent.")),
-        ("CreateDataSource", deferred("Model requires knowledgeBaseId, name, dataSourceConfiguration. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Connects a knowledge base to a data source. You specify the configuration for the specific data source service in the dataSourceConfiguration field. You can't change the chunkingConfiguration after you create the data source…")),
-        ("CreateFlow", deferred("Model requires name, executionRoleArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a prompt flow that you can use to send an input through various steps to yield an output. Configure nodes, each of which corresponds to a step of the flow, and create connections between the nodes to create paths to…")),
-        ("CreateFlowAlias", deferred("Model requires name, routingConfiguration, flowIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates an alias of a flow for deployment. For more information, see Deploy a flow in Amazon Bedrock in the Amazon Bedrock User Guide.")),
-        ("CreateFlowVersion", deferred("Model requires flowIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a version of the flow that you can deploy. For more information, see Deploy a flow in Amazon Bedrock in the Amazon Bedrock User Guide.")),
-        ("CreateKnowledgeBase", deferred("Model requires name, roleArn, knowledgeBaseConfiguration. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a knowledge base. A knowledge base contains your data sources so that Large Language Models (LLMs) can use your data. To create a knowledge base, you must first set up your data sources and configure a supported vector…")),
-        ("CreatePrompt", deferred("Model requires name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a prompt in your prompt library that you can add to a flow. For more information, see Prompt management in Amazon Bedrock , Create a prompt using Prompt management and Prompt flows in Amazon Bedrock in the Amazon Bedrock…")),
-        ("CreatePromptVersion", deferred("Model requires promptIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a static snapshot of your prompt that can be deployed to production. For more information, see Deploy prompts using Prompt management by creating versions in the Amazon Bedrock User Guide.")),
-        ("CreateRetrievalInstruction", deferred("Model requires name, instruction. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a new retrieval instruction. The retrieval instruction is usable once its status becomes ACTIVE. Use GetRetrievalInstruction to check whether it is ready.")),
-        ("CreateRetrievalInstructionVersion", deferred("Model requires retrievalInstructionId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates an immutable numbered version from the retrieval instruction's current reviewed content. The service creates the version synchronously. The service numbers versions from 1 and assigns them in order, never reusing a number.")),
-        ("CreateVpcConfiguration", deferred("Model requires knowledgeBaseId, vpcId, subnetIds, resourceTarget, port, protocol, resolutionMode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a VPC configuration that lets a knowledge base connect to a resource in your private VPC. This operation is asynchronous: it returns a vpcConfigurationId with status CREATING . Poll GetVpcConfiguration until the status…")),
-        ("DeleteAgent", deferred("Model requires agentId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes an agent.")),
-        ("DeleteAgentActionGroup", deferred("Model requires agentId, agentVersion, actionGroupId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes an action group in an agent.")),
-        ("DeleteAgentAlias", deferred("Model requires agentId, agentAliasId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes an alias of an agent.")),
-        ("DeleteAgentVersion", deferred("Model requires agentId, agentVersion. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a version of an agent.")),
-        ("DeleteDataSource", deferred("Model requires knowledgeBaseId, dataSourceId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a data source from a knowledge base.")),
-        ("DeleteFlow", deferred("Model requires flowIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a flow.")),
-        ("DeleteFlowAlias", deferred("Model requires flowIdentifier, aliasIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes an alias of a flow.")),
-        ("DeleteFlowVersion", deferred("Model requires flowIdentifier, flowVersion. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a version of a flow.")),
-        ("DeleteKnowledgeBase", deferred("Model requires knowledgeBaseId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a knowledge base. Before deleting a knowledge base, you should disassociate the knowledge base from any agents that it is associated with by making a DisassociateAgentKnowledgeBase request.")),
-        ("DeleteKnowledgeBaseDocuments", deferred("Model requires knowledgeBaseId, dataSourceId, documentIdentifiers. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes documents from a data source and syncs the changes to the knowledge base that is connected to it. For more information, see Ingest changes directly into a knowledge base in the Amazon Bedrock User Guide.")),
-        ("DeletePrompt", deferred("Model requires promptIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a prompt or a version of it, depending on whether you include the promptVersion field or not. For more information, see Delete prompts from the Prompt management tool and Delete a version of a prompt from the Prompt…")),
-        ("DeleteResourcePolicy", deferred("Model requires resourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes the resource policy associated with a knowledge base. After deletion, other AWS accounts can no longer access the knowledge base using cross-account permissions.")),
-        ("DeleteRetrievalInstruction", deferred("Model requires retrievalInstructionId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a retrieval instruction or a single version of it. Omit retrievalInstructionVersion to delete the retrieval instruction itself; the service rejects that request with ConflictException while the retrieval instruction has…")),
-        ("DeleteVpcConfiguration", deferred("Model requires knowledgeBaseId, vpcConfigurationId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a VPC configuration. This operation is asynchronous: it returns status DELETING . Poll GetVpcConfiguration until it returns a ResourceNotFoundException , indicating the configuration is deleted. Delete requests are…")),
-        ("DisassociateAgentCollaborator", deferred("Model requires agentId, agentVersion, collaboratorId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Disassociates an agent collaborator.")),
-        ("DisassociateAgentKnowledgeBase", deferred("Model requires agentId, agentVersion, knowledgeBaseId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Disassociates a knowledge base from an agent.")),
+        (
+            "AssociateAgentCollaborator",
+            deferred(
+                "Model requires agentId, agentVersion, agentDescriptor, collaboratorName, collaborationInstruction. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Makes an agent a collaborator for another agent.",
+            ),
+        ),
+        (
+            "AssociateAgentKnowledgeBase",
+            deferred(
+                "Model requires agentId, agentVersion, knowledgeBaseId, description. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Associates a knowledge base with an agent. If a knowledge base is associated and its indexState is set to Enabled , the agent queries the knowledge base for information to augment its response to the user.",
+            ),
+        ),
+        (
+            "CreateAgent",
+            deferred(
+                "Model requires agentName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Amazon Bedrock Agents (now Amazon Bedrock Agents Classic) is no longer open to new customers. For capabilities similar to Bedrock Agents Classic, explore Amazon Bedrock AgentCore. Existing customers can continue to use the…",
+            ),
+        ),
+        (
+            "CreateAgentActionGroup",
+            deferred(
+                "Model requires agentId, agentVersion, actionGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates an action group for an agent. An action group represents the actions that an agent can carry out for the customer by defining the APIs that an agent can call and the logic for calling them. To allow your agent to request…",
+            ),
+        ),
+        (
+            "CreateAgentAlias",
+            deferred(
+                "Model requires agentId, agentAliasName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates an alias of an agent that can be used to deploy the agent.",
+            ),
+        ),
+        (
+            "CreateDataSource",
+            deferred(
+                "Model requires knowledgeBaseId, name, dataSourceConfiguration. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Connects a knowledge base to a data source. You specify the configuration for the specific data source service in the dataSourceConfiguration field. You can't change the chunkingConfiguration after you create the data source…",
+            ),
+        ),
+        (
+            "CreateFlow",
+            deferred(
+                "Model requires name, executionRoleArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a prompt flow that you can use to send an input through various steps to yield an output. Configure nodes, each of which corresponds to a step of the flow, and create connections between the nodes to create paths to…",
+            ),
+        ),
+        (
+            "CreateFlowAlias",
+            deferred(
+                "Model requires name, routingConfiguration, flowIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates an alias of a flow for deployment. For more information, see Deploy a flow in Amazon Bedrock in the Amazon Bedrock User Guide.",
+            ),
+        ),
+        (
+            "CreateFlowVersion",
+            deferred(
+                "Model requires flowIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a version of the flow that you can deploy. For more information, see Deploy a flow in Amazon Bedrock in the Amazon Bedrock User Guide.",
+            ),
+        ),
+        (
+            "CreateKnowledgeBase",
+            deferred(
+                "Model requires name, roleArn, knowledgeBaseConfiguration. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a knowledge base. A knowledge base contains your data sources so that Large Language Models (LLMs) can use your data. To create a knowledge base, you must first set up your data sources and configure a supported vector…",
+            ),
+        ),
+        (
+            "CreatePrompt",
+            deferred(
+                "Model requires name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a prompt in your prompt library that you can add to a flow. For more information, see Prompt management in Amazon Bedrock , Create a prompt using Prompt management and Prompt flows in Amazon Bedrock in the Amazon Bedrock…",
+            ),
+        ),
+        (
+            "CreatePromptVersion",
+            deferred(
+                "Model requires promptIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a static snapshot of your prompt that can be deployed to production. For more information, see Deploy prompts using Prompt management by creating versions in the Amazon Bedrock User Guide.",
+            ),
+        ),
+        (
+            "CreateRetrievalInstruction",
+            deferred(
+                "Model requires name, instruction. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a new retrieval instruction. The retrieval instruction is usable once its status becomes ACTIVE. Use GetRetrievalInstruction to check whether it is ready.",
+            ),
+        ),
+        (
+            "CreateRetrievalInstructionVersion",
+            deferred(
+                "Model requires retrievalInstructionId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates an immutable numbered version from the retrieval instruction's current reviewed content. The service creates the version synchronously. The service numbers versions from 1 and assigns them in order, never reusing a number.",
+            ),
+        ),
+        (
+            "CreateVpcConfiguration",
+            deferred(
+                "Model requires knowledgeBaseId, vpcId, subnetIds, resourceTarget, port, protocol, resolutionMode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a VPC configuration that lets a knowledge base connect to a resource in your private VPC. This operation is asynchronous: it returns a vpcConfigurationId with status CREATING . Poll GetVpcConfiguration until the status…",
+            ),
+        ),
+        (
+            "DeleteAgent",
+            deferred(
+                "Model requires agentId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes an agent.",
+            ),
+        ),
+        (
+            "DeleteAgentActionGroup",
+            deferred(
+                "Model requires agentId, agentVersion, actionGroupId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes an action group in an agent.",
+            ),
+        ),
+        (
+            "DeleteAgentAlias",
+            deferred(
+                "Model requires agentId, agentAliasId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes an alias of an agent.",
+            ),
+        ),
+        (
+            "DeleteAgentVersion",
+            deferred(
+                "Model requires agentId, agentVersion. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a version of an agent.",
+            ),
+        ),
+        (
+            "DeleteDataSource",
+            deferred(
+                "Model requires knowledgeBaseId, dataSourceId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a data source from a knowledge base.",
+            ),
+        ),
+        (
+            "DeleteFlow",
+            deferred(
+                "Model requires flowIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a flow.",
+            ),
+        ),
+        (
+            "DeleteFlowAlias",
+            deferred(
+                "Model requires flowIdentifier, aliasIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes an alias of a flow.",
+            ),
+        ),
+        (
+            "DeleteFlowVersion",
+            deferred(
+                "Model requires flowIdentifier, flowVersion. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a version of a flow.",
+            ),
+        ),
+        (
+            "DeleteKnowledgeBase",
+            deferred(
+                "Model requires knowledgeBaseId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a knowledge base. Before deleting a knowledge base, you should disassociate the knowledge base from any agents that it is associated with by making a DisassociateAgentKnowledgeBase request.",
+            ),
+        ),
+        (
+            "DeleteKnowledgeBaseDocuments",
+            deferred(
+                "Model requires knowledgeBaseId, dataSourceId, documentIdentifiers. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes documents from a data source and syncs the changes to the knowledge base that is connected to it. For more information, see Ingest changes directly into a knowledge base in the Amazon Bedrock User Guide.",
+            ),
+        ),
+        (
+            "DeletePrompt",
+            deferred(
+                "Model requires promptIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a prompt or a version of it, depending on whether you include the promptVersion field or not. For more information, see Delete prompts from the Prompt management tool and Delete a version of a prompt from the Prompt…",
+            ),
+        ),
+        (
+            "DeleteResourcePolicy",
+            deferred(
+                "Model requires resourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes the resource policy associated with a knowledge base. After deletion, other AWS accounts can no longer access the knowledge base using cross-account permissions.",
+            ),
+        ),
+        (
+            "DeleteRetrievalInstruction",
+            deferred(
+                "Model requires retrievalInstructionId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a retrieval instruction or a single version of it. Omit retrievalInstructionVersion to delete the retrieval instruction itself; the service rejects that request with ConflictException while the retrieval instruction has…",
+            ),
+        ),
+        (
+            "DeleteVpcConfiguration",
+            deferred(
+                "Model requires knowledgeBaseId, vpcConfigurationId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a VPC configuration. This operation is asynchronous: it returns status DELETING . Poll GetVpcConfiguration until it returns a ResourceNotFoundException , indicating the configuration is deleted. Delete requests are…",
+            ),
+        ),
+        (
+            "DisassociateAgentCollaborator",
+            deferred(
+                "Model requires agentId, agentVersion, collaboratorId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Disassociates an agent collaborator.",
+            ),
+        ),
+        (
+            "DisassociateAgentKnowledgeBase",
+            deferred(
+                "Model requires agentId, agentVersion, knowledgeBaseId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Disassociates a knowledge base from an agent.",
+            ),
+        ),
         // Model: Gets information about an agent.
         ("GetAgent", denied(DenyReason::Content)),
-        ("GetAgentActionGroup", deferred("Model requires agentId, agentVersion, actionGroupId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about an action group for an agent.")),
-        ("GetAgentAlias", deferred("Model requires agentId, agentAliasId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about an alias of an agent.")),
-        ("GetAgentCollaborator", deferred("Model requires agentId, agentVersion, collaboratorId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves information about an agent's collaborator.")),
-        ("GetAgentKnowledgeBase", deferred("Model requires agentId, agentVersion, knowledgeBaseId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about a knowledge base associated with an agent.")),
-        ("GetAgentVersion", deferred("Model requires agentId, agentVersion. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets details about a version of an agent.")),
-        ("GetDataSource", deferred("Model requires knowledgeBaseId, dataSourceId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about a data source.")),
+        (
+            "GetAgentActionGroup",
+            deferred(
+                "Model requires agentId, agentVersion, actionGroupId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about an action group for an agent.",
+            ),
+        ),
+        (
+            "GetAgentAlias",
+            deferred(
+                "Model requires agentId, agentAliasId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about an alias of an agent.",
+            ),
+        ),
+        (
+            "GetAgentCollaborator",
+            deferred(
+                "Model requires agentId, agentVersion, collaboratorId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves information about an agent's collaborator.",
+            ),
+        ),
+        (
+            "GetAgentKnowledgeBase",
+            deferred(
+                "Model requires agentId, agentVersion, knowledgeBaseId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about a knowledge base associated with an agent.",
+            ),
+        ),
+        (
+            "GetAgentVersion",
+            deferred(
+                "Model requires agentId, agentVersion. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets details about a version of an agent.",
+            ),
+        ),
+        (
+            "GetDataSource",
+            deferred(
+                "Model requires knowledgeBaseId, dataSourceId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about a data source.",
+            ),
+        ),
         // Model: Retrieves information about a flow. For more information, see Manage a flow in Amazon Bedrock in the Amazon Bedrock User Guide.
         ("GetFlow", denied(DenyReason::Content)),
-        ("GetFlowAlias", deferred("Model requires flowIdentifier, aliasIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves information about a flow. For more information, see Deploy a flow in Amazon Bedrock in the Amazon Bedrock User Guide.")),
+        (
+            "GetFlowAlias",
+            deferred(
+                "Model requires flowIdentifier, aliasIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves information about a flow. For more information, see Deploy a flow in Amazon Bedrock in the Amazon Bedrock User Guide.",
+            ),
+        ),
     ])
 }
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        ("GetFlowVersion", deferred("Model requires flowIdentifier, flowVersion. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves information about a version of a flow. For more information, see Deploy a flow in Amazon Bedrock in the Amazon Bedrock User Guide.")),
-        ("GetIngestionJob", deferred("Model requires knowledgeBaseId, dataSourceId, ingestionJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about a data ingestion job. Data sources are ingested into your knowledge base so that Large Language Models (LLMs) can use your data.")),
+        (
+            "GetFlowVersion",
+            deferred(
+                "Model requires flowIdentifier, flowVersion. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves information about a version of a flow. For more information, see Deploy a flow in Amazon Bedrock in the Amazon Bedrock User Guide.",
+            ),
+        ),
+        (
+            "GetIngestionJob",
+            deferred(
+                "Model requires knowledgeBaseId, dataSourceId, ingestionJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about a data ingestion job. Data sources are ingested into your knowledge base so that Large Language Models (LLMs) can use your data.",
+            ),
+        ),
         // Model: Gets information about a knowledge base.
-        ("GetKnowledgeBase", OperationOverlay {
-            class: Some(OverlayClass::Expand),
-            bind: [(path("knowledgeBaseId")?, Binding::From { operation: name("ListKnowledgeBases")?, path: path("knowledgeBaseId")? })].into_iter().collect(),
-            queryable: vec![path("knowledgeBaseId")?],
-            ..read("knowledgeBase", Identity::Key(vec![path("knowledgeBaseId")?]), Scope::Region, Paginator::None)?
-        }),
-        ("GetKnowledgeBaseDocuments", deferred("Model requires knowledgeBaseId, dataSourceId, documentIdentifiers. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves specific documents from a data source that is connected to a knowledge base. For more information, see Ingest changes directly into a knowledge base in the Amazon Bedrock User Guide.")),
+        (
+            "GetKnowledgeBase",
+            OperationOverlay {
+                class: Some(OverlayClass::Expand),
+                bind: [(
+                    path("knowledgeBaseId")?,
+                    Binding::From {
+                        operation: name("ListKnowledgeBases")?,
+                        path: path("knowledgeBaseId")?,
+                    },
+                )]
+                .into_iter()
+                .collect(),
+                queryable: vec![path("knowledgeBaseId")?],
+                ..read(
+                    "knowledgeBase",
+                    Identity::Key(vec![path("knowledgeBaseId")?]),
+                    Scope::Region,
+                    Paginator::None,
+                )?
+            },
+        ),
+        (
+            "GetKnowledgeBaseDocuments",
+            deferred(
+                "Model requires knowledgeBaseId, dataSourceId, documentIdentifiers. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves specific documents from a data source that is connected to a knowledge base. For more information, see Ingest changes directly into a knowledge base in the Amazon Bedrock User Guide.",
+            ),
+        ),
         // Model: Retrieves information about the working draft ( DRAFT version) of a prompt or a version of it, depending on whether you include the promptVersion field or not. For more information, see View…
         ("GetPrompt", denied(DenyReason::Content)),
-        ("GetResourcePolicy", deferred("Model requires resourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the resource policy associated with a knowledge base.")),
-        ("GetRetrievalInstruction", deferred("Model requires retrievalInstructionId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets a retrieval instruction. Also used to poll the terminal reporting of an asynchronous create or update.")),
-        ("GetVpcConfiguration", deferred("Model requires knowledgeBaseId, vpcConfigurationId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the details and current status of a single VPC configuration. Use this operation to poll for the outcome of an asynchronous create or delete.")),
-        ("IngestKnowledgeBaseDocuments", deferred("Model requires knowledgeBaseId, dataSourceId, documents. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Ingests documents directly into the knowledge base that is connected to the data source. The dataSourceType specified in the content for each document must match the type of the data source that you specify in the header. For…")),
-        ("ListAgentActionGroups", deferred("Model requires agentId, agentVersion. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the action groups for an agent and information about each one.")),
+        (
+            "GetResourcePolicy",
+            deferred(
+                "Model requires resourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the resource policy associated with a knowledge base.",
+            ),
+        ),
+        (
+            "GetRetrievalInstruction",
+            deferred(
+                "Model requires retrievalInstructionId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets a retrieval instruction. Also used to poll the terminal reporting of an asynchronous create or update.",
+            ),
+        ),
+        (
+            "GetVpcConfiguration",
+            deferred(
+                "Model requires knowledgeBaseId, vpcConfigurationId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns the details and current status of a single VPC configuration. Use this operation to poll for the outcome of an asynchronous create or delete.",
+            ),
+        ),
+        (
+            "IngestKnowledgeBaseDocuments",
+            deferred(
+                "Model requires knowledgeBaseId, dataSourceId, documents. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Ingests documents directly into the knowledge base that is connected to the data source. The dataSourceType specified in the content for each document must match the type of the data source that you specify in the header. For…",
+            ),
+        ),
+        (
+            "ListAgentActionGroups",
+            deferred(
+                "Model requires agentId, agentVersion. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the action groups for an agent and information about each one.",
+            ),
+        ),
         // Reviewed full response: alias metadata/version/throughput references only, no instructions/prompts or invocation content.
-        ("ListAgentAliases", OperationOverlay {
-            class: Some(OverlayClass::Expand),
-            bind: [(path("agentId")?, Binding::From { operation: name("ListAgents")?, path: path("agentId")? })].into_iter().collect(),
-            queryable: vec![path("agentAliasId")?],
-            ..read("agentAliasSummaries", Identity::CorrelatedKey(vec![
-                IdentityField::Request(path("agentId")?),
-                IdentityField::Selected(path("agentAliasId")?),
-            ]), Scope::Region, token("nextToken", "nextToken")?)?
-        }),
-        ("ListAgentCollaborators", deferred("Model requires agentId, agentVersion. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieve a list of an agent's collaborators.")),
-        ("ListAgentKnowledgeBases", deferred("Model requires agentId, agentVersion. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists knowledge bases associated with an agent and information about each one.")),
-        ("ListAgentVersions", deferred("Model requires agentId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the versions of an agent and information about each version.")),
+        (
+            "ListAgentAliases",
+            OperationOverlay {
+                class: Some(OverlayClass::Expand),
+                bind: [(
+                    path("agentId")?,
+                    Binding::From {
+                        operation: name("ListAgents")?,
+                        path: path("agentId")?,
+                    },
+                )]
+                .into_iter()
+                .collect(),
+                queryable: vec![path("agentAliasId")?],
+                ..read(
+                    "agentAliasSummaries",
+                    Identity::CorrelatedKey(vec![
+                        IdentityField::Request(path("agentId")?),
+                        IdentityField::Selected(path("agentAliasId")?),
+                    ]),
+                    Scope::Region,
+                    token("nextToken", "nextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListAgentCollaborators",
+            deferred(
+                "Model requires agentId, agentVersion. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieve a list of an agent's collaborators.",
+            ),
+        ),
+        (
+            "ListAgentKnowledgeBases",
+            deferred(
+                "Model requires agentId, agentVersion. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists knowledge bases associated with an agent and information about each one.",
+            ),
+        ),
+        (
+            "ListAgentVersions",
+            deferred(
+                "Model requires agentId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the versions of an agent and information about each version.",
+            ),
+        ),
         // Model: Lists the agents belonging to an account and information about each agent.
-        ("ListAgents", OperationOverlay {
-            queryable: vec![path("agentId")?],
-            ..read("agentSummaries", Identity::Key(vec![path("agentId")?]), Scope::Region, token("nextToken", "nextToken")?)?
-        }),
+        (
+            "ListAgents",
+            OperationOverlay {
+                queryable: vec![path("agentId")?],
+                ..read(
+                    "agentSummaries",
+                    Identity::Key(vec![path("agentId")?]),
+                    Scope::Region,
+                    token("nextToken", "nextToken")?,
+                )?
+            },
+        ),
         // Reviewed full response: scoped identifiers/name/status/description/update time; no connector credentials or documents.
-        ("ListDataSources", OperationOverlay {
-            class: Some(OverlayClass::Expand),
-            bind: [(path("knowledgeBaseId")?, Binding::From { operation: name("ListKnowledgeBases")?, path: path("knowledgeBaseId")? })].into_iter().collect(),
-            queryable: vec![path("knowledgeBaseId")?, path("dataSourceId")?],
-            ..read("dataSourceSummaries", Identity::Key(vec![path("knowledgeBaseId")?, path("dataSourceId")?]), Scope::Region, token("nextToken", "nextToken")?)?
-        }),
-        ("ListFlowAliases", deferred("Model requires flowIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a list of aliases for a flow.")),
-        ("ListFlowVersions", deferred("Model requires flowIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a list of information about each flow. For more information, see Deploy a flow in Amazon Bedrock in the Amazon Bedrock User Guide.")),
+        (
+            "ListDataSources",
+            OperationOverlay {
+                class: Some(OverlayClass::Expand),
+                bind: [(
+                    path("knowledgeBaseId")?,
+                    Binding::From {
+                        operation: name("ListKnowledgeBases")?,
+                        path: path("knowledgeBaseId")?,
+                    },
+                )]
+                .into_iter()
+                .collect(),
+                queryable: vec![path("knowledgeBaseId")?, path("dataSourceId")?],
+                ..read(
+                    "dataSourceSummaries",
+                    Identity::Key(vec![path("knowledgeBaseId")?, path("dataSourceId")?]),
+                    Scope::Region,
+                    token("nextToken", "nextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListFlowAliases",
+            deferred(
+                "Model requires flowIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a list of aliases for a flow.",
+            ),
+        ),
+        (
+            "ListFlowVersions",
+            deferred(
+                "Model requires flowIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a list of information about each flow. For more information, see Deploy a flow in Amazon Bedrock in the Amazon Bedrock User Guide.",
+            ),
+        ),
         // Model: Returns a list of flows and information about each flow. For more information, see Manage a flow in Amazon Bedrock in the Amazon Bedrock User Guide.
-        ("ListFlows", OperationOverlay {
-            queryable: vec![path("arn")?],
-            ..read("flowSummaries", Identity::Arn(path("arn")?), Scope::Region, token("nextToken", "nextToken")?)?
-        }),
-        ("ListIngestionJobs", deferred("Model requires knowledgeBaseId, dataSourceId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the data ingestion jobs for a data source. The list also includes information about each job.")),
-        ("ListKnowledgeBaseDocuments", deferred("Model requires knowledgeBaseId, dataSourceId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves all the documents contained in a data source that is connected to a knowledge base. For more information, see Ingest changes directly into a knowledge base in the Amazon Bedrock User Guide.")),
+        (
+            "ListFlows",
+            OperationOverlay {
+                queryable: vec![path("arn")?],
+                ..read(
+                    "flowSummaries",
+                    Identity::Arn(path("arn")?),
+                    Scope::Region,
+                    token("nextToken", "nextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListIngestionJobs",
+            deferred(
+                "Model requires knowledgeBaseId, dataSourceId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the data ingestion jobs for a data source. The list also includes information about each job.",
+            ),
+        ),
+        (
+            "ListKnowledgeBaseDocuments",
+            deferred(
+                "Model requires knowledgeBaseId, dataSourceId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves all the documents contained in a data source that is connected to a knowledge base. For more information, see Ingest changes directly into a knowledge base in the Amazon Bedrock User Guide.",
+            ),
+        ),
         // Model: Lists the knowledge bases in an account. The list also includesinformation about each knowledge base.
-        ("ListKnowledgeBases", OperationOverlay {
-            queryable: vec![path("knowledgeBaseId")?],
-            ..read("knowledgeBaseSummaries", Identity::Key(vec![path("knowledgeBaseId")?]), Scope::Region, token("nextToken", "nextToken")?)?
-        }),
+        (
+            "ListKnowledgeBases",
+            OperationOverlay {
+                queryable: vec![path("knowledgeBaseId")?],
+                ..read(
+                    "knowledgeBaseSummaries",
+                    Identity::Key(vec![path("knowledgeBaseId")?]),
+                    Scope::Region,
+                    token("nextToken", "nextToken")?,
+                )?
+            },
+        ),
     ])
 }
 
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
         // Model: Returns either information about the working draft ( DRAFT version) of each prompt in an account, or information about of all versions of a prompt, depending on whether you include the…
-        ("ListPrompts", OperationOverlay {
-            queryable: vec![path("arn")?],
-            ..read("promptSummaries", Identity::Arn(path("arn")?), Scope::Region, token("nextToken", "nextToken")?)?
-        }),
-        ("ListRetrievalInstructionVersions", deferred("Model requires retrievalInstructionId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the numbered versions of a retrieval instruction, newest first. DRAFT is not listed; read it with GetRetrievalInstruction without retrievalInstructionVersion. Results are paginated. Use the nextToken parameter to retrieve…")),
+        (
+            "ListPrompts",
+            OperationOverlay {
+                queryable: vec![path("arn")?],
+                ..read(
+                    "promptSummaries",
+                    Identity::Arn(path("arn")?),
+                    Scope::Region,
+                    token("nextToken", "nextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListRetrievalInstructionVersions",
+            deferred(
+                "Model requires retrievalInstructionId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the numbered versions of a retrieval instruction, newest first. DRAFT is not listed; read it with GetRetrievalInstruction without retrievalInstructionVersion. Results are paginated. Use the nextToken parameter to retrieve…",
+            ),
+        ),
         // Model: Lists the retrieval instructions in the caller's account. Results are paginated. Use the nextToken parameter to retrieve additional results.
-        ("ListRetrievalInstructions", OperationOverlay {
-            queryable: vec![path("retrievalInstructionArn")?],
-            ..read("retrievalInstructionSummaries", Identity::Arn(path("retrievalInstructionArn")?), Scope::Region, token("nextToken", "nextToken")?)?
-        }),
-        ("ListTagsForResource", deferred("Model requires resourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: List all the tags for the resource you specify.")),
-        ("ListVpcConfigurations", deferred("Model requires knowledgeBaseId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a paginated list of the VPC configurations for a knowledge base. You can optionally filter by status. Use the nextToken parameter to retrieve additional results.")),
-        ("PrepareAgent", deferred("Model requires agentId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a DRAFT version of the agent that can be used for internal testing.")),
-        ("PrepareFlow", deferred("Model requires flowIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Prepares the DRAFT version of a flow so that it can be invoked. For more information, see Test a flow in Amazon Bedrock in the Amazon Bedrock User Guide.")),
-        ("PutResourcePolicy", deferred("Model requires resourceArn, policy. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Associates a resource policy with a knowledge base. A resource policy allows other AWS accounts to access the knowledge base. For more information, see Cross-account access for knowledge bases .")),
-        ("StartIngestionJob", deferred("Model requires knowledgeBaseId, dataSourceId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Begins a data ingestion job. Data sources are ingested into your knowledge base so that Large Language Models (LLMs) can use your data.")),
-        ("StopIngestionJob", deferred("Model requires knowledgeBaseId, dataSourceId, ingestionJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops a currently running data ingestion job. You can send a StartIngestionJob request again to ingest the rest of your data when you are ready.")),
-        ("TagResource", deferred("Model requires resourceArn, tags. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Associate tags with a resource. For more information, see Tagging resources in the Amazon Bedrock User Guide.")),
-        ("UntagResource", deferred("Model requires resourceArn, tagKeys. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Remove tags from a resource.")),
-        ("UpdateAgent", deferred("Model requires agentId, agentName, foundationModel, agentResourceRoleArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the configuration of an agent.")),
-        ("UpdateAgentActionGroup", deferred("Model requires agentId, agentVersion, actionGroupId, actionGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the configuration for an action group for an agent.")),
-        ("UpdateAgentAlias", deferred("Model requires agentId, agentAliasId, agentAliasName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates configurations for an alias of an agent.")),
-        ("UpdateAgentCollaborator", deferred("Model requires agentId, agentVersion, collaboratorId, agentDescriptor, collaboratorName, collaborationInstruction. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates an agent's collaborator.")),
-        ("UpdateAgentKnowledgeBase", deferred("Model requires agentId, agentVersion, knowledgeBaseId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the configuration for a knowledge base that has been associated with an agent.")),
-        ("UpdateDataSource", deferred("Model requires knowledgeBaseId, dataSourceId, name, dataSourceConfiguration. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the configurations for a data source connector. You can't change the chunkingConfiguration after you create the data source connector. Specify the existing chunkingConfiguration .")),
-        ("UpdateFlow", deferred("Model requires name, executionRoleArn, flowIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Modifies a flow. Include both fields that you want to keep and fields that you want to change. For more information, see How it works and Create a flow in Amazon Bedrock in the Amazon Bedrock User Guide.")),
-        ("UpdateFlowAlias", deferred("Model requires name, routingConfiguration, flowIdentifier, aliasIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Modifies the alias of a flow. Include both fields that you want to keep and ones that you want to change. For more information, see Deploy a flow in Amazon Bedrock in the Amazon Bedrock User Guide.")),
-        ("UpdateKnowledgeBase", deferred("Model requires knowledgeBaseId, name, roleArn, knowledgeBaseConfiguration. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the configuration of a knowledge base with the fields that you specify. Because all fields will be overwritten, you must include the same values for fields that you want to keep the same. You can change the following…")),
-        ("UpdatePrompt", deferred("Model requires name, promptIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Modifies a prompt in your prompt library. Include both fields that you want to keep and fields that you want to replace. For more information, see Prompt management in Amazon Bedrock and Edit prompts in your prompt library in the…")),
-        ("UpdateRetrievalInstruction", deferred("Model requires retrievalInstructionId, instruction. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the content of a retrieval instruction. The update is processed asynchronously; the stored content is a candidate until content review passes, and the served content does not change while the update is in flight. The…")),
-        ("ValidateFlowDefinition", deferred("Model requires definition. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Validates the definition of a flow.")),
+        (
+            "ListRetrievalInstructions",
+            OperationOverlay {
+                queryable: vec![path("retrievalInstructionArn")?],
+                ..read(
+                    "retrievalInstructionSummaries",
+                    Identity::Arn(path("retrievalInstructionArn")?),
+                    Scope::Region,
+                    token("nextToken", "nextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListTagsForResource",
+            deferred(
+                "Model requires resourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: List all the tags for the resource you specify.",
+            ),
+        ),
+        (
+            "ListVpcConfigurations",
+            deferred(
+                "Model requires knowledgeBaseId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a paginated list of the VPC configurations for a knowledge base. You can optionally filter by status. Use the nextToken parameter to retrieve additional results.",
+            ),
+        ),
+        (
+            "PrepareAgent",
+            deferred(
+                "Model requires agentId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a DRAFT version of the agent that can be used for internal testing.",
+            ),
+        ),
+        (
+            "PrepareFlow",
+            deferred(
+                "Model requires flowIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Prepares the DRAFT version of a flow so that it can be invoked. For more information, see Test a flow in Amazon Bedrock in the Amazon Bedrock User Guide.",
+            ),
+        ),
+        (
+            "PutResourcePolicy",
+            deferred(
+                "Model requires resourceArn, policy. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Associates a resource policy with a knowledge base. A resource policy allows other AWS accounts to access the knowledge base. For more information, see Cross-account access for knowledge bases .",
+            ),
+        ),
+        (
+            "StartIngestionJob",
+            deferred(
+                "Model requires knowledgeBaseId, dataSourceId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Begins a data ingestion job. Data sources are ingested into your knowledge base so that Large Language Models (LLMs) can use your data.",
+            ),
+        ),
+        (
+            "StopIngestionJob",
+            deferred(
+                "Model requires knowledgeBaseId, dataSourceId, ingestionJobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops a currently running data ingestion job. You can send a StartIngestionJob request again to ingest the rest of your data when you are ready.",
+            ),
+        ),
+        (
+            "TagResource",
+            deferred(
+                "Model requires resourceArn, tags. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Associate tags with a resource. For more information, see Tagging resources in the Amazon Bedrock User Guide.",
+            ),
+        ),
+        (
+            "UntagResource",
+            deferred(
+                "Model requires resourceArn, tagKeys. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Remove tags from a resource.",
+            ),
+        ),
+        (
+            "UpdateAgent",
+            deferred(
+                "Model requires agentId, agentName, foundationModel, agentResourceRoleArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the configuration of an agent.",
+            ),
+        ),
+        (
+            "UpdateAgentActionGroup",
+            deferred(
+                "Model requires agentId, agentVersion, actionGroupId, actionGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the configuration for an action group for an agent.",
+            ),
+        ),
+        (
+            "UpdateAgentAlias",
+            deferred(
+                "Model requires agentId, agentAliasId, agentAliasName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates configurations for an alias of an agent.",
+            ),
+        ),
+        (
+            "UpdateAgentCollaborator",
+            deferred(
+                "Model requires agentId, agentVersion, collaboratorId, agentDescriptor, collaboratorName, collaborationInstruction. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates an agent's collaborator.",
+            ),
+        ),
+        (
+            "UpdateAgentKnowledgeBase",
+            deferred(
+                "Model requires agentId, agentVersion, knowledgeBaseId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the configuration for a knowledge base that has been associated with an agent.",
+            ),
+        ),
+        (
+            "UpdateDataSource",
+            deferred(
+                "Model requires knowledgeBaseId, dataSourceId, name, dataSourceConfiguration. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the configurations for a data source connector. You can't change the chunkingConfiguration after you create the data source connector. Specify the existing chunkingConfiguration .",
+            ),
+        ),
+        (
+            "UpdateFlow",
+            deferred(
+                "Model requires name, executionRoleArn, flowIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Modifies a flow. Include both fields that you want to keep and fields that you want to change. For more information, see How it works and Create a flow in Amazon Bedrock in the Amazon Bedrock User Guide.",
+            ),
+        ),
+        (
+            "UpdateFlowAlias",
+            deferred(
+                "Model requires name, routingConfiguration, flowIdentifier, aliasIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Modifies the alias of a flow. Include both fields that you want to keep and ones that you want to change. For more information, see Deploy a flow in Amazon Bedrock in the Amazon Bedrock User Guide.",
+            ),
+        ),
+        (
+            "UpdateKnowledgeBase",
+            deferred(
+                "Model requires knowledgeBaseId, name, roleArn, knowledgeBaseConfiguration. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the configuration of a knowledge base with the fields that you specify. Because all fields will be overwritten, you must include the same values for fields that you want to keep the same. You can change the following…",
+            ),
+        ),
+        (
+            "UpdatePrompt",
+            deferred(
+                "Model requires name, promptIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Modifies a prompt in your prompt library. Include both fields that you want to keep and fields that you want to replace. For more information, see Prompt management in Amazon Bedrock and Edit prompts in your prompt library in the…",
+            ),
+        ),
+        (
+            "UpdateRetrievalInstruction",
+            deferred(
+                "Model requires retrievalInstructionId, instruction. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the content of a retrieval instruction. The update is processed asynchronously; the stored content is a candidate until content review passes, and the served content does not change while the update is in flight. The…",
+            ),
+        ),
+        (
+            "ValidateFlowDefinition",
+            deferred(
+                "Model requires definition. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Validates the definition of a flow.",
+            ),
+        ),
     ])
 }

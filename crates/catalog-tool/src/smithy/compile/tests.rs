@@ -1,6 +1,9 @@
 use super::*;
 use crate::smithy::{model::ModelFile, stats};
-use inventory_core::{catalog::{Catalog, Target}, record::Record};
+use inventory_core::{
+    catalog::{Catalog, Target},
+    record::Record,
+};
 use std::collections::BTreeMap;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 

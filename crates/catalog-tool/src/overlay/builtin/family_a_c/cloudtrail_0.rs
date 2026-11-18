@@ -4,114 +4,464 @@ use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        ("AddTags", deferred("Model requires ResourceId, TagsList. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Adds one or more tags to a trail, event data store, dashboard, or channel, up to a limit of 50. Overwrites an existing tag's value when a new value is specified for an existing tag key. Tag key names must be unique; you cannot…")),
-        ("CancelQuery", deferred("Model requires QueryId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("CreateChannel", deferred("Model requires Name, Source, Destinations. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("CreateDashboard", deferred("Model requires Name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("CreateEventDataStore", deferred("Model requires Name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("CreateTrail", deferred("Model requires Name, S3BucketName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a trail that specifies the settings for delivery of log data to an Amazon S3 bucket.")),
-        ("DeleteChannel", deferred("Model requires Channel. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("DeleteDashboard", deferred("Model requires DashboardId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("DeleteEventDataStore", deferred("Model requires EventDataStore. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("DeleteResourcePolicy", deferred("Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the resource-based policy attached to the CloudTrail event data store, dashboard, or channel.")),
-        ("DeleteTrail", deferred("Model requires Name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a trail. This operation must be called from the Region in which the trail was created. DeleteTrail cannot be called on the shadow trails (replicated trails in other Regions) of a trail that is enabled in all Regions.…")),
-        ("DeregisterOrganizationDelegatedAdmin", deferred("Model requires DelegatedAdminAccountId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes CloudTrail delegated administrator permissions from a member account in an organization.")),
-        ("DescribeQuery", deferred("No safe resource collection plan is approved for this modeled operation. Its output is QueryId, QueryString, QueryStatus, QueryStatistics, ErrorMessage, DeliveryS3Uri, DeliveryStatus, Prompt, EventDataStoreOwnerAccountId; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
+        (
+            "AddTags",
+            deferred(
+                "Model requires ResourceId, TagsList. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Adds one or more tags to a trail, event data store, dashboard, or channel, up to a limit of 50. Overwrites an existing tag's value when a new value is specified for an existing tag key. Tag key names must be unique; you cannot…",
+            ),
+        ),
+        (
+            "CancelQuery",
+            deferred(
+                "Model requires QueryId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "CreateChannel",
+            deferred(
+                "Model requires Name, Source, Destinations. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "CreateDashboard",
+            deferred(
+                "Model requires Name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "CreateEventDataStore",
+            deferred(
+                "Model requires Name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "CreateTrail",
+            deferred(
+                "Model requires Name, S3BucketName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a trail that specifies the settings for delivery of log data to an Amazon S3 bucket.",
+            ),
+        ),
+        (
+            "DeleteChannel",
+            deferred(
+                "Model requires Channel. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "DeleteDashboard",
+            deferred(
+                "Model requires DashboardId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "DeleteEventDataStore",
+            deferred(
+                "Model requires EventDataStore. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "DeleteResourcePolicy",
+            deferred(
+                "Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the resource-based policy attached to the CloudTrail event data store, dashboard, or channel.",
+            ),
+        ),
+        (
+            "DeleteTrail",
+            deferred(
+                "Model requires Name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a trail. This operation must be called from the Region in which the trail was created. DeleteTrail cannot be called on the shadow trails (replicated trails in other Regions) of a trail that is enabled in all Regions.…",
+            ),
+        ),
+        (
+            "DeregisterOrganizationDelegatedAdmin",
+            deferred(
+                "Model requires DelegatedAdminAccountId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes CloudTrail delegated administrator permissions from a member account in an organization.",
+            ),
+        ),
+        (
+            "DescribeQuery",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is QueryId, QueryString, QueryStatus, QueryStatistics, ErrorMessage, DeliveryS3Uri, DeliveryStatus, Prompt, EventDataStoreOwnerAccountId; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
         // Model: Retrieves settings for one or more trails associated with the current Region for your account.
-        ("DescribeTrails", OperationOverlay {
-            fixed: [(path("includeShadowTrails")?, FixedValue::Boolean(false))].into_iter().collect(),
-            queryable: vec![path("TrailARN")?],
-            ..read("trailList", Identity::Arn(path("TrailARN")?), Scope::Region, Paginator::None)?
-        }),
-        ("DisableFederation", deferred("Model requires EventDataStore. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("EnableFederation", deferred("Model requires EventDataStore, FederationRoleArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("GenerateQuery", deferred("Model requires EventDataStores, Prompt. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
+        (
+            "DescribeTrails",
+            OperationOverlay {
+                fixed: [(path("includeShadowTrails")?, FixedValue::Boolean(false))]
+                    .into_iter()
+                    .collect(),
+                queryable: vec![path("TrailARN")?],
+                ..read(
+                    "trailList",
+                    Identity::Arn(path("TrailARN")?),
+                    Scope::Region,
+                    Paginator::None,
+                )?
+            },
+        ),
+        (
+            "DisableFederation",
+            deferred(
+                "Model requires EventDataStore. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "EnableFederation",
+            deferred(
+                "Model requires EventDataStore, FederationRoleArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "GenerateQuery",
+            deferred(
+                "Model requires EventDataStores, Prompt. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
         // Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service…
-        ("GetChannel", OperationOverlay {
-            class: Some(OverlayClass::Expand),
-            bind: [(path("Channel")?, Binding::From { operation: name("ListChannels")?, path: path("ChannelArn")? })].into_iter().collect(),
-            queryable: vec![path("ChannelArn")?],
-            ..read("$", Identity::Arn(path("ChannelArn")?), Scope::Region, Paginator::None)?
-        }),
-        ("GetDashboard", deferred("Model requires DashboardId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("GetEventConfiguration", deferred("No safe resource collection plan is approved for this modeled operation. Its output is TrailARN, EventDataStoreArn, MaxEventSize, ContextKeySelectors, AggregationConfigurations; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Retrieves the current event configuration settings for the specified event data store or trail. The response includes maximum event size configuration, the context key selectors configured for the event data store, and any…")),
+        (
+            "GetChannel",
+            OperationOverlay {
+                class: Some(OverlayClass::Expand),
+                bind: [(
+                    path("Channel")?,
+                    Binding::From {
+                        operation: name("ListChannels")?,
+                        path: path("ChannelArn")?,
+                    },
+                )]
+                .into_iter()
+                .collect(),
+                queryable: vec![path("ChannelArn")?],
+                ..read(
+                    "$",
+                    Identity::Arn(path("ChannelArn")?),
+                    Scope::Region,
+                    Paginator::None,
+                )?
+            },
+        ),
+        (
+            "GetDashboard",
+            deferred(
+                "Model requires DashboardId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "GetEventConfiguration",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is TrailARN, EventDataStoreArn, MaxEventSize, ContextKeySelectors, AggregationConfigurations; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Retrieves the current event configuration settings for the specified event data store or trail. The response includes maximum event size configuration, the context key selectors configured for the event data store, and any…",
+            ),
+        ),
         // Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service…
-        ("GetEventDataStore", OperationOverlay {
-            class: Some(OverlayClass::Expand),
-            bind: [(path("EventDataStore")?, Binding::From { operation: name("ListEventDataStores")?, path: path("EventDataStoreArn")? })].into_iter().collect(),
-            queryable: vec![path("EventDataStoreArn")?],
-            ..read("$", Identity::Arn(path("EventDataStoreArn")?), Scope::Region, Paginator::None)?
-        }),
-        ("GetEventSelectors", deferred("Model requires TrailName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Describes the settings for the event selectors that you configured for your trail. The information returned for your event selectors includes the following: If your event selector includes read-only events, write-only events, or…")),
-        ("GetImport", deferred("Model requires ImportId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("GetInsightSelectors", deferred("No safe resource collection plan is approved for this modeled operation. Its output is TrailARN, InsightSelectors, EventDataStoreArn, InsightsDestination; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the settings for the Insights event selectors that you configured for your trail or event data store. GetInsightSelectors shows if CloudTrail Insights logging is enabled and which Insights types are configured with…")),
-        ("GetQueryResults", deferred("Model requires QueryId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
+        (
+            "GetEventDataStore",
+            OperationOverlay {
+                class: Some(OverlayClass::Expand),
+                bind: [(
+                    path("EventDataStore")?,
+                    Binding::From {
+                        operation: name("ListEventDataStores")?,
+                        path: path("EventDataStoreArn")?,
+                    },
+                )]
+                .into_iter()
+                .collect(),
+                queryable: vec![path("EventDataStoreArn")?],
+                ..read(
+                    "$",
+                    Identity::Arn(path("EventDataStoreArn")?),
+                    Scope::Region,
+                    Paginator::None,
+                )?
+            },
+        ),
+        (
+            "GetEventSelectors",
+            deferred(
+                "Model requires TrailName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Describes the settings for the event selectors that you configured for your trail. The information returned for your event selectors includes the following: If your event selector includes read-only events, write-only events, or…",
+            ),
+        ),
+        (
+            "GetImport",
+            deferred(
+                "Model requires ImportId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "GetInsightSelectors",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is TrailARN, InsightSelectors, EventDataStoreArn, InsightsDestination; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the settings for the Insights event selectors that you configured for your trail or event data store. GetInsightSelectors shows if CloudTrail Insights logging is enabled and which Insights types are configured with…",
+            ),
+        ),
+        (
+            "GetQueryResults",
+            deferred(
+                "Model requires QueryId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
     ])
 }
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        ("GetResourcePolicy", deferred("Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the JSON text of the resource-based policy document attached to the CloudTrail event data store, dashboard, or channel.")),
+        (
+            "GetResourcePolicy",
+            deferred(
+                "Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the JSON text of the resource-based policy document attached to the CloudTrail event data store, dashboard, or channel.",
+            ),
+        ),
         // Model: Returns settings information for a specified trail.
-        ("GetTrail", OperationOverlay {
-            class: Some(OverlayClass::Expand),
-            bind: [(path("Name")?, Binding::From { operation: name("DescribeTrails")?, path: path("TrailARN")? })].into_iter().collect(),
-            queryable: vec![path("TrailARN")?],
-            ..read("Trail", Identity::Arn(path("TrailARN")?), Scope::Region, Paginator::None)?
-        }),
-        ("GetTrailStatus", deferred("Model requires Name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a JSON-formatted list of information about the specified trail. Fields include information on delivery errors, Amazon SNS and Amazon S3 errors, and start and stop logging times for each trail. This operation returns trail…")),
+        (
+            "GetTrail",
+            OperationOverlay {
+                class: Some(OverlayClass::Expand),
+                bind: [(
+                    path("Name")?,
+                    Binding::From {
+                        operation: name("DescribeTrails")?,
+                        path: path("TrailARN")?,
+                    },
+                )]
+                .into_iter()
+                .collect(),
+                queryable: vec![path("TrailARN")?],
+                ..read(
+                    "Trail",
+                    Identity::Arn(path("TrailARN")?),
+                    Scope::Region,
+                    Paginator::None,
+                )?
+            },
+        ),
+        (
+            "GetTrailStatus",
+            deferred(
+                "Model requires Name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns a JSON-formatted list of information about the specified trail. Fields include information on delivery errors, Amazon SNS and Amazon S3 errors, and start and stop logging times for each trail. This operation returns trail…",
+            ),
+        ),
         // Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service…
-        ("ListChannels", OperationOverlay {
-            queryable: vec![path("ChannelArn")?],
-            ..read("Channels", Identity::Arn(path("ChannelArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
+        (
+            "ListChannels",
+            OperationOverlay {
+                queryable: vec![path("ChannelArn")?],
+                ..read(
+                    "Channels",
+                    Identity::Arn(path("ChannelArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
         // Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service…
-        ("ListDashboards", OperationOverlay {
-            queryable: vec![path("DashboardArn")?],
-            ..read("Dashboards", Identity::Arn(path("DashboardArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
+        (
+            "ListDashboards",
+            OperationOverlay {
+                queryable: vec![path("DashboardArn")?],
+                ..read(
+                    "Dashboards",
+                    Identity::Arn(path("DashboardArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
         // Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service…
-        ("ListEventDataStores", OperationOverlay {
-            queryable: vec![path("EventDataStoreArn")?],
-            ..read("EventDataStores", Identity::Arn(path("EventDataStoreArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("ListImportFailures", deferred("Model requires ImportId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
+        (
+            "ListEventDataStores",
+            OperationOverlay {
+                queryable: vec![path("EventDataStoreArn")?],
+                ..read(
+                    "EventDataStores",
+                    Identity::Arn(path("EventDataStoreArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListImportFailures",
+            deferred(
+                "Model requires ImportId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
         // Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service…
-        ("ListImports", OperationOverlay {
-            queryable: vec![path("ImportId")?],
-            ..read("Imports", Identity::Key(vec![path("ImportId")?]), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("ListInsightsData", deferred("Model requires InsightSource, DataType. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns Insights events generated on a trail that logs data events. You can list Insights events that occurred in a Region within the last 90 days. ListInsightsData supports the following Dimensions for Insights events: Event ID…")),
-        ("ListInsightsMetricData", deferred("Model requires EventSource, EventName, InsightType. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns Insights metrics data for trails that have enabled Insights. The request must include the EventSource , EventName , and InsightType parameters. If the InsightType is set to ApiErrorRateInsight , the request must also…")),
-        ("ListPublicKeys", deferred("No safe resource collection plan is approved for this modeled operation. Its output is PublicKeyList; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns all public keys whose private keys were used to sign the digest files within the specified time range. The public key is needed to validate digest files that were signed with its corresponding private key. CloudTrail uses…")),
-        ("ListQueries", deferred("Model requires EventDataStore. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("ListTags", deferred("Model requires ResourceIdList. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the tags for the specified trails, event data stores, dashboards, or channels in the current Region.")),
-        ("ListTrails", deferred("No safe resource collection plan is approved for this modeled operation. Its output is Trails; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Lists trails that are in the current account.")),
-        ("LookupEvents", deferred("No safe resource collection plan is approved for this modeled operation. Its output is Events; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Looks up management events or CloudTrail Insights events that are captured by CloudTrail. You can look up events that occurred in a Region within the last 90 days. LookupEvents returns recent Insights events for trails that…")),
-        ("PutEventConfiguration", deferred("No safe resource collection plan is approved for this modeled operation. Its output is TrailARN, EventDataStoreArn, MaxEventSize, ContextKeySelectors, AggregationConfigurations; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Updates the event configuration settings for the specified event data store or trail. This operation supports updating the maximum event size, adding or modifying context key selectors for event data store, and configuring…")),
-        ("PutEventSelectors", deferred("Model requires TrailName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Configures event selectors (also referred to as basic event selectors ) or advanced event selectors for your trail. You can use either AdvancedEventSelectors or EventSelectors , but not both. If you apply AdvancedEventSelectors…")),
-        ("PutInsightSelectors", deferred("Model requires InsightSelectors. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lets you enable Insights event logging on specific event categories by specifying the Insights selectors that you want to enable on an existing trail or event data store. You also use PutInsightSelectors to turn off Insights…")),
-        ("PutResourcePolicy", deferred("Model requires ResourceArn, ResourcePolicy. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Attaches a resource-based permission policy to a CloudTrail event data store, dashboard, or channel. For more information about resource-based policies, see CloudTrail resource-based policy examples in the CloudTrail User Guide .")),
-        ("RegisterOrganizationDelegatedAdmin", deferred("Model requires MemberAccountId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Registers an organization’s member account as the CloudTrail delegated administrator .")),
+        (
+            "ListImports",
+            OperationOverlay {
+                queryable: vec![path("ImportId")?],
+                ..read(
+                    "Imports",
+                    Identity::Key(vec![path("ImportId")?]),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListInsightsData",
+            deferred(
+                "Model requires InsightSource, DataType. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns Insights events generated on a trail that logs data events. You can list Insights events that occurred in a Region within the last 90 days. ListInsightsData supports the following Dimensions for Insights events: Event ID…",
+            ),
+        ),
+        (
+            "ListInsightsMetricData",
+            deferred(
+                "Model requires EventSource, EventName, InsightType. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns Insights metrics data for trails that have enabled Insights. The request must include the EventSource , EventName , and InsightType parameters. If the InsightType is set to ApiErrorRateInsight , the request must also…",
+            ),
+        ),
+        (
+            "ListPublicKeys",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is PublicKeyList; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns all public keys whose private keys were used to sign the digest files within the specified time range. The public key is needed to validate digest files that were signed with its corresponding private key. CloudTrail uses…",
+            ),
+        ),
+        (
+            "ListQueries",
+            deferred(
+                "Model requires EventDataStore. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "ListTags",
+            deferred(
+                "Model requires ResourceIdList. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the tags for the specified trails, event data stores, dashboards, or channels in the current Region.",
+            ),
+        ),
+        (
+            "ListTrails",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is Trails; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Lists trails that are in the current account.",
+            ),
+        ),
+        (
+            "LookupEvents",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is Events; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Looks up management events or CloudTrail Insights events that are captured by CloudTrail. You can look up events that occurred in a Region within the last 90 days. LookupEvents returns recent Insights events for trails that…",
+            ),
+        ),
+        (
+            "PutEventConfiguration",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is TrailARN, EventDataStoreArn, MaxEventSize, ContextKeySelectors, AggregationConfigurations; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Updates the event configuration settings for the specified event data store or trail. This operation supports updating the maximum event size, adding or modifying context key selectors for event data store, and configuring…",
+            ),
+        ),
+        (
+            "PutEventSelectors",
+            deferred(
+                "Model requires TrailName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Configures event selectors (also referred to as basic event selectors ) or advanced event selectors for your trail. You can use either AdvancedEventSelectors or EventSelectors , but not both. If you apply AdvancedEventSelectors…",
+            ),
+        ),
+        (
+            "PutInsightSelectors",
+            deferred(
+                "Model requires InsightSelectors. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lets you enable Insights event logging on specific event categories by specifying the Insights selectors that you want to enable on an existing trail or event data store. You also use PutInsightSelectors to turn off Insights…",
+            ),
+        ),
+        (
+            "PutResourcePolicy",
+            deferred(
+                "Model requires ResourceArn, ResourcePolicy. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Attaches a resource-based permission policy to a CloudTrail event data store, dashboard, or channel. For more information about resource-based policies, see CloudTrail resource-based policy examples in the CloudTrail User Guide .",
+            ),
+        ),
+        (
+            "RegisterOrganizationDelegatedAdmin",
+            deferred(
+                "Model requires MemberAccountId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Registers an organization’s member account as the CloudTrail delegated administrator .",
+            ),
+        ),
     ])
 }
 
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        ("RemoveTags", deferred("Model requires ResourceId, TagsList. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes the specified tags from a trail, event data store, dashboard, or channel.")),
-        ("RestoreEventDataStore", deferred("Model requires EventDataStore. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("SearchSampleQueries", deferred("Model requires SearchPhrase. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("StartDashboardRefresh", deferred("Model requires DashboardId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("StartEventDataStoreIngestion", deferred("Model requires EventDataStore. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("StartImport", deferred("No safe resource collection plan is approved for this modeled operation. Its output is ImportId, Destinations, ImportSource, StartEventTime, EndEventTime, ImportStatus, CreatedTimestamp, UpdatedTimestamp; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("StartLogging", deferred("Model requires Name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts the recording of Amazon Web Services API calls and log file delivery for a trail. For a trail that is enabled in all Regions, this operation must be called from the Region in which the trail was created. This operation…")),
-        ("StartQuery", deferred("No safe resource collection plan is approved for this modeled operation. Its output is QueryId, EventDataStoreOwnerAccountId; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("StopEventDataStoreIngestion", deferred("Model requires EventDataStore. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("StopImport", deferred("Model requires ImportId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("StopLogging", deferred("Model requires Name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Suspends the recording of Amazon Web Services API calls and log file delivery for the specified trail. Under most circumstances, there is no need to use this action. You can update a trail without stopping it first. This action…")),
-        ("UpdateChannel", deferred("Model requires Channel. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("UpdateDashboard", deferred("Model requires DashboardId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("UpdateEventDataStore", deferred("Model requires EventDataStore. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…")),
-        ("UpdateTrail", deferred("Model requires Name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates trail settings that control what events you are logging, and how to handle log files. Changes to a trail do not require stopping the CloudTrail service. Use this action to designate an existing bucket for log delivery. If…")),
+        (
+            "RemoveTags",
+            deferred(
+                "Model requires ResourceId, TagsList. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes the specified tags from a trail, event data store, dashboard, or channel.",
+            ),
+        ),
+        (
+            "RestoreEventDataStore",
+            deferred(
+                "Model requires EventDataStore. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "SearchSampleQueries",
+            deferred(
+                "Model requires SearchPhrase. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "StartDashboardRefresh",
+            deferred(
+                "Model requires DashboardId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "StartEventDataStoreIngestion",
+            deferred(
+                "Model requires EventDataStore. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "StartImport",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is ImportId, Destinations, ImportSource, StartEventTime, EndEventTime, ImportStatus, CreatedTimestamp, UpdatedTimestamp; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "StartLogging",
+            deferred(
+                "Model requires Name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts the recording of Amazon Web Services API calls and log file delivery for a trail. For a trail that is enabled in all Regions, this operation must be called from the Region in which the trail was created. This operation…",
+            ),
+        ),
+        (
+            "StartQuery",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is QueryId, EventDataStoreOwnerAccountId; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "StopEventDataStoreIngestion",
+            deferred(
+                "Model requires EventDataStore. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "StopImport",
+            deferred(
+                "Model requires ImportId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "StopLogging",
+            deferred(
+                "Model requires Name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Suspends the recording of Amazon Web Services API calls and log file delivery for the specified trail. Under most circumstances, there is no need to use this action. You can update a trail without stopping it first. This action…",
+            ),
+        ),
+        (
+            "UpdateChannel",
+            deferred(
+                "Model requires Channel. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "UpdateDashboard",
+            deferred(
+                "Model requires DashboardId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "UpdateEventDataStore",
+            deferred(
+                "Model requires EventDataStore. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: CloudTrail Lake will no longer be open to new customers starting May 31, 2026. If you would like to use CloudTrail Lake, sign up prior to that date. Existing customers can continue to use the service as normal. For more…",
+            ),
+        ),
+        (
+            "UpdateTrail",
+            deferred(
+                "Model requires Name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates trail settings that control what events you are logging, and how to handle log files. Changes to a trail do not require stopping the CloudTrail service. Use this action to designate an existing bucket for log delivery. If…",
+            ),
+        ),
     ])
 }

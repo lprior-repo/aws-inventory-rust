@@ -16,7 +16,9 @@ const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 }}"#;
 
 pub fn key(path: &str) -> Result<overlay::Identity, overlay::NameError> {
-    Ok(overlay::Identity::Key(vec![overlay::MemberPath::selected(path)?]))
+    Ok(overlay::Identity::Key(vec![overlay::MemberPath::selected(
+        path,
+    )?]))
 }
 
 pub fn arn(path: &str) -> Result<overlay::Identity, overlay::NameError> {
@@ -31,15 +33,34 @@ pub fn compiled_singleton(identity: overlay::Identity) -> TestResult<Vec<u8>> {
     compile_fixture(identity, "active-wire", None, false, true, None)
 }
 
-pub fn compiled_fixed(identity: overlay::Identity, mode: &str, modes: &[&str], scalar: bool) -> TestResult<Vec<u8>> {
+pub fn compiled_fixed(
+    identity: overlay::Identity,
+    mode: &str,
+    modes: &[&str],
+    scalar: bool,
+) -> TestResult<Vec<u8>> {
     compile_fixture(identity, mode, Some(modes), scalar, false, None)
 }
 
 pub fn compiled_self_binding(source: overlay::ContextSource) -> TestResult<Vec<u8>> {
-    compile_fixture(key("Name")?, "active-wire", None, false, false, Some(source))
+    compile_fixture(
+        key("Name")?,
+        "active-wire",
+        None,
+        false,
+        false,
+        Some(source),
+    )
 }
 
-fn compile_fixture(identity: overlay::Identity, mode: &str, modes: Option<&[&str]>, scalar: bool, singleton: bool, self_binding: Option<overlay::ContextSource>) -> TestResult<Vec<u8>> {
+fn compile_fixture(
+    identity: overlay::Identity,
+    mode: &str,
+    modes: Option<&[&str]>,
+    scalar: bool,
+    singleton: bool,
+    self_binding: Option<overlay::ContextSource>,
+) -> TestResult<Vec<u8>> {
     let root = tempfile::tempdir()?;
     let source = root.path().join("source");
     let model_dir = source.join("models/things/service/2020-01-01");
@@ -47,7 +68,10 @@ fn compile_fixture(identity: overlay::Identity, mode: &str, modes: Option<&[&str
     let target = if scalar { "n#Choice" } else { "n#Thing" };
     let model = MODEL.replace("ITEM_TARGET", target);
     let model = if singleton {
-        model.replace("\"Items\":{\"target\":\"n#Items\"}", "\"Items\":{\"target\":\"n#Thing\"}")
+        model.replace(
+            "\"Items\":{\"target\":\"n#Items\"}",
+            "\"Items\":{\"target\":\"n#Thing\"}",
+        )
     } else {
         model
     };
@@ -60,35 +84,63 @@ fn compile_fixture(identity: overlay::Identity, mode: &str, modes: Option<&[&str
     plan.identity = Some(identity);
     let mode_path = overlay::MemberPath::new("Mode")?;
     if let Some(source) = self_binding {
-        plan.bind.insert(mode_path, overlay::Binding::Context {
-            operation: overlay::OperationName::new("ListThings")?, source,
-            path: overlay::MemberPath::new("Mode")?,
-        });
+        plan.bind.insert(
+            mode_path,
+            overlay::Binding::Context {
+                operation: overlay::OperationName::new("ListThings")?,
+                source,
+                path: overlay::MemberPath::new("Mode")?,
+            },
+        );
     } else {
-        plan.fixed.insert(mode_path, overlay::FixedValue::String(mode.to_owned()));
+        plan.fixed
+            .insert(mode_path, overlay::FixedValue::String(mode.to_owned()));
     }
     if let Some(modes) = modes {
-        plan.fixed.insert(overlay::MemberPath::new("Modes")?,
-            overlay::FixedValue::Strings(modes.iter().map(|mode| (*mode).to_owned()).collect()));
+        plan.fixed.insert(
+            overlay::MemberPath::new("Modes")?,
+            overlay::FixedValue::Strings(modes.iter().map(|mode| (*mode).to_owned()).collect()),
+        );
     }
-    let policies = [overlay::ServiceOverlay::new("things", vec![("ListThings", plan)])?];
-    let checked = overlay::check_policies(&source, &policies, &catalog_tool::classes::DenyList::builtin())?;
+    let policies = [overlay::ServiceOverlay::new(
+        "things",
+        vec![("ListThings", plan)],
+    )?];
+    let checked = overlay::check_policies(
+        &source,
+        &policies,
+        &catalog_tool::classes::DenyList::builtin(),
+    )?;
     let fields = smithy::Registry::parse("Count\nFlag\nItems\nMode\nModes\nName\nOtherName\n")?;
     let base = smithy::build_catalog(&source, &fields, "identity-fixture")?;
     let kinds = kind_map::MappingSource {
-        api_only: &[kind_map::ApiOnlyMapping { kind: "AWS::ApiOnly::Identity", reason: "Identity fixture" }],
-        operations: &[kind_map::OperationMapping { service: "things", operation: "ListThings", kind: "AWS::ApiOnly::Identity" }],
+        api_only: &[kind_map::ApiOnlyMapping {
+            kind: "AWS::ApiOnly::Identity",
+            reason: "Identity fixture",
+        }],
+        operations: &[kind_map::OperationMapping {
+            service: "things",
+            operation: "ListThings",
+            kind: "AWS::ApiOnly::Identity",
+        }],
         ..kind_map::MappingSource::default()
-    }.compile(&names::Exceptions::none())?;
+    }
+    .compile(&names::Exceptions::none())?;
     let endpoints = BTreeMap::from([("things".to_owned(), endpoint()?)]);
-    Ok(runtime_catalog::augment(&base, &checked, &kinds, &endpoints)?)
+    Ok(runtime_catalog::augment(
+        &base, &checked, &kinds, &endpoints,
+    )?)
 }
 
 fn endpoint() -> TestResult<endpoints::VerifiedEndpoint> {
     let properties = json!({"authSchemes":[{"name":"sigv4","signingName":"things","signingRegion":"us-east-1"}]});
     let document = json!({"version":"1.0","parameters":{"Region":{"type":"string"}},"rules":[{"type":"endpoint","conditions":[],"endpoint":{"url":"https://things.test","properties":properties}}]});
     let rules = endpoints::RuleSet::parse(Path::new("identity-endpoint.json"), &document)?;
-    let cases: Vec<endpoints::Case> = serde_json::from_value(json!([{"params":{"Region":"us-east-1"},"expect":{"endpoint":{"url":"https://things.test","properties":properties}}}]))?;
-    rules.run_cases(&cases)?.verified_endpoint(Some("things"))
+    let cases: Vec<endpoints::Case> = serde_json::from_value(
+        json!([{"params":{"Region":"us-east-1"},"expect":{"endpoint":{"url":"https://things.test","properties":properties}}}]),
+    )?;
+    rules
+        .run_cases(&cases)?
+        .verified_endpoint(Some("things"))
         .map_err(|failure| format!("fixture endpoint evidence failed: {failure:?}").into())
 }

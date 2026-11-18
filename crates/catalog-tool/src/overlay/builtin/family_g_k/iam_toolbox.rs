@@ -4,11 +4,11 @@ use super::policy;
 use crate::overlay::{NameError, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
-    let approved = vec![
-
-    ];
+    let approved = vec![];
     policy::finish(
-        "iam-toolbox", approved, DEFERRED,
+        "iam-toolbox",
+        approved,
+        DEFERRED,
         "Authorization troubleshooting returns request/evaluation context, not an account-wide resource listing; caller-provided request ID and sensitive-context review are unresolved. No callable policy is approved.",
         &[],
     )
@@ -16,7 +16,4 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
 
 // Explicit pinned operation dispositions. No runtime operation-name classifier approves calls.
 // Mutation sets change resource/lifecycle/authorization state; content and credential reads stay denied.
-const DEFERRED: &[&str] = &[
-    "GetRequestAuthorizationDetails",
-];
-
+const DEFERRED: &[&str] = &["GetRequestAuthorizationDetails"];

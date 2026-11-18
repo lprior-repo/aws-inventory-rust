@@ -11,7 +11,10 @@ pub(super) fn shortest(
     to: &GraphNode,
     depth: u8,
 ) -> Result<Option<Vec<GraphEdge>>, ViewError> {
-    let mut steps = vec![Step { node: from, parent: None }];
+    let mut steps = vec![Step {
+        node: from,
+        parent: None,
+    }];
     (0..depth).for_each(|_| {
         let width = steps.len();
         edges.iter().enumerate().for_each(|(index, edge)| {
@@ -19,10 +22,12 @@ pub(super) fn shortest(
             append(&mut steps, width, index, &edge.to, &edge.from);
         });
     });
-    steps.iter().position(|step| step.node == to)
-        .map(|index| reconstruct(&steps, edges, index, depth)).transpose()
+    steps
+        .iter()
+        .position(|step| step.node == to)
+        .map(|index| reconstruct(&steps, edges, index, depth))
+        .transpose()
 }
-
 
 fn append<'a>(
     steps: &mut Vec<Step<'a>>,
@@ -35,7 +40,10 @@ fn append<'a>(
         return;
     }
     if let Some(parent) = steps.iter().take(width).position(|step| step.node == from) {
-        steps.push(Step { node: to, parent: Some((parent, edge)) });
+        steps.push(Step {
+            node: to,
+            parent: Some((parent, edge)),
+        });
     }
 }
 

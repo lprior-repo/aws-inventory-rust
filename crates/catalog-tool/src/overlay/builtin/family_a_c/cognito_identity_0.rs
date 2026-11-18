@@ -4,41 +4,167 @@ use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        ("CreateIdentityPool", deferred("Model requires IdentityPoolName, AllowUnauthenticatedIdentities. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a new identity pool. The identity pool is a store of user identity information that is specific to your Amazon Web Services account. The keys for SupportedLoginProviders are as follows: Facebook: graph.facebook.com…")),
-        ("DeleteIdentities", deferred("Model requires IdentityIdsToDelete. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes identities from an identity pool. You can specify a list of 1-60 identities that you want to delete. You must use Amazon Web Services developer credentials to call this operation.")),
-        ("DeleteIdentityPool", deferred("Model requires IdentityPoolId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes an identity pool. Once a pool is deleted, users will not be able to authenticate with the pool. You must use Amazon Web Services developer credentials to call this operation.")),
-        ("DescribeIdentity", deferred("Model requires IdentityId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns metadata related to the given identity, including when the identity was created and any associated linked logins. You must use Amazon Web Services developer credentials to call this operation.")),
+        (
+            "CreateIdentityPool",
+            deferred(
+                "Model requires IdentityPoolName, AllowUnauthenticatedIdentities. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a new identity pool. The identity pool is a store of user identity information that is specific to your Amazon Web Services account. The keys for SupportedLoginProviders are as follows: Facebook: graph.facebook.com…",
+            ),
+        ),
+        (
+            "DeleteIdentities",
+            deferred(
+                "Model requires IdentityIdsToDelete. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes identities from an identity pool. You can specify a list of 1-60 identities that you want to delete. You must use Amazon Web Services developer credentials to call this operation.",
+            ),
+        ),
+        (
+            "DeleteIdentityPool",
+            deferred(
+                "Model requires IdentityPoolId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes an identity pool. Once a pool is deleted, users will not be able to authenticate with the pool. You must use Amazon Web Services developer credentials to call this operation.",
+            ),
+        ),
+        (
+            "DescribeIdentity",
+            deferred(
+                "Model requires IdentityId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns metadata related to the given identity, including when the identity was created and any associated linked logins. You must use Amazon Web Services developer credentials to call this operation.",
+            ),
+        ),
         // Model: Gets details about a particular identity pool, including the pool name, ID description, creation date, and current number of users. You must use Amazon Web Services developer credentials to call this…
-        ("DescribeIdentityPool", OperationOverlay {
-            class: Some(OverlayClass::Expand),
-            bind: [(path("IdentityPoolId")?, Binding::From { operation: name("ListIdentityPools")?, path: path("IdentityPoolId")? })].into_iter().collect(),
-            tags: Some(path("IdentityPoolTags")?),
-            queryable: vec![path("IdentityPoolId")?],
-            ..read("$", Identity::Key(vec![path("IdentityPoolId")?]), Scope::Region, Paginator::None)?
-        }),
-        ("GetCredentialsForIdentity", deferred("Model requires IdentityId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns credentials for the provided identity ID. Any provided logins will be validated against supported login providers. If the token is for cognito-identity.amazonaws.com , it will be passed through to Security Token Service…")),
+        (
+            "DescribeIdentityPool",
+            OperationOverlay {
+                class: Some(OverlayClass::Expand),
+                bind: [(
+                    path("IdentityPoolId")?,
+                    Binding::From {
+                        operation: name("ListIdentityPools")?,
+                        path: path("IdentityPoolId")?,
+                    },
+                )]
+                .into_iter()
+                .collect(),
+                tags: Some(path("IdentityPoolTags")?),
+                queryable: vec![path("IdentityPoolId")?],
+                ..read(
+                    "$",
+                    Identity::Key(vec![path("IdentityPoolId")?]),
+                    Scope::Region,
+                    Paginator::None,
+                )?
+            },
+        ),
+        (
+            "GetCredentialsForIdentity",
+            deferred(
+                "Model requires IdentityId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns credentials for the provided identity ID. Any provided logins will be validated against supported login providers. If the token is for cognito-identity.amazonaws.com , it will be passed through to Security Token Service…",
+            ),
+        ),
         // Model: Generates (or retrieves) IdentityID. Supplying multiple logins will create an implicit linked account. This is a public API. You do not need any credentials to call this API.
         ("GetId", denied(DenyReason::Mutating)),
-        ("GetIdentityPoolRoles", deferred("Model requires IdentityPoolId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the roles for an identity pool. You must use Amazon Web Services developer credentials to call this operation.")),
-        ("GetOpenIdToken", deferred("Model requires IdentityId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets an OpenID token, using a known Cognito ID. This known Cognito ID is returned by GetId . You can optionally add additional logins for the identity. Supplying multiple logins creates an implicit link. The OpenID token is valid…")),
-        ("GetOpenIdTokenForDeveloperIdentity", deferred("Model requires IdentityPoolId, Logins. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Registers (or retrieves) a Cognito IdentityId and an OpenID Connect token for a user authenticated by your backend authentication process. Supplying multiple logins will create an implicit linked account. You can only specify one…")),
-        ("GetPrincipalTagAttributeMap", deferred("Model requires IdentityPoolId, IdentityProviderName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Use GetPrincipalTagAttributeMap to list all mappings between PrincipalTags and user attributes.")),
-        ("ListIdentities", deferred("Model requires IdentityPoolId, MaxResults. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the identities in an identity pool. You must use Amazon Web Services developer credentials to call this operation.")),
+        (
+            "GetIdentityPoolRoles",
+            deferred(
+                "Model requires IdentityPoolId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the roles for an identity pool. You must use Amazon Web Services developer credentials to call this operation.",
+            ),
+        ),
+        (
+            "GetOpenIdToken",
+            deferred(
+                "Model requires IdentityId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets an OpenID token, using a known Cognito ID. This known Cognito ID is returned by GetId . You can optionally add additional logins for the identity. Supplying multiple logins creates an implicit link. The OpenID token is valid…",
+            ),
+        ),
+        (
+            "GetOpenIdTokenForDeveloperIdentity",
+            deferred(
+                "Model requires IdentityPoolId, Logins. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Registers (or retrieves) a Cognito IdentityId and an OpenID Connect token for a user authenticated by your backend authentication process. Supplying multiple logins will create an implicit linked account. You can only specify one…",
+            ),
+        ),
+        (
+            "GetPrincipalTagAttributeMap",
+            deferred(
+                "Model requires IdentityPoolId, IdentityProviderName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Use GetPrincipalTagAttributeMap to list all mappings between PrincipalTags and user attributes.",
+            ),
+        ),
+        (
+            "ListIdentities",
+            deferred(
+                "Model requires IdentityPoolId, MaxResults. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the identities in an identity pool. You must use Amazon Web Services developer credentials to call this operation.",
+            ),
+        ),
         // Model: Lists all of the Cognito identity pools registered for your account. You must use Amazon Web Services developer credentials to call this operation.
-        ("ListIdentityPools", OperationOverlay {
-            fixed: [(path("MaxResults")?, FixedValue::Integer(60))].into_iter().collect(),
-            queryable: vec![path("IdentityPoolId")?],
-            ..read("IdentityPools", Identity::Key(vec![path("IdentityPoolId")?]), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("ListTagsForResource", deferred("Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the tags that are assigned to an Amazon Cognito identity pool. A tag is a label that you can apply to identity pools to categorize and manage them in different ways, such as by purpose, owner, environment, or other…")),
-        ("LookupDeveloperIdentity", deferred("Model requires IdentityPoolId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the IdentityID associated with a DeveloperUserIdentifier or the list of DeveloperUserIdentifier values associated with an IdentityId for an existing identity. Either IdentityID or DeveloperUserIdentifier must not be…")),
-        ("MergeDeveloperIdentities", deferred("Model requires SourceUserIdentifier, DestinationUserIdentifier, DeveloperProviderName, IdentityPoolId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Merges two users having different IdentityId s, existing in the same identity pool, and identified by the same developer provider. You can use this action to request that discrete users be merged and identified as a single user…")),
-        ("SetIdentityPoolRoles", deferred("Model requires IdentityPoolId, Roles. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Sets the roles for an identity pool. These roles are used when making calls to GetCredentialsForIdentity action. You must use Amazon Web Services developer credentials to call this operation.")),
-        ("SetPrincipalTagAttributeMap", deferred("Model requires IdentityPoolId, IdentityProviderName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: You can use this operation to use default (username and clientID) attribute or custom attribute mappings.")),
-        ("TagResource", deferred("Model requires ResourceArn, Tags. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Assigns a set of tags to the specified Amazon Cognito identity pool. A tag is a label that you can use to categorize and manage identity pools in different ways, such as by purpose, owner, environment, or other criteria. Each tag…")),
-        ("UnlinkDeveloperIdentity", deferred("Model requires IdentityId, IdentityPoolId, DeveloperProviderName, DeveloperUserIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Unlinks a DeveloperUserIdentifier from an existing identity. Unlinked developer users will be considered new identities next time they are seen. If, for a given Cognito identity, you remove all federated identities as well as the…")),
-        ("UnlinkIdentity", deferred("Model requires IdentityId, Logins, LoginsToRemove. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Unlinks a federated identity from an existing account. Unlinked logins will be considered new identities next time they are seen. Removing the last linked login will make this identity inaccessible. This is a public API. You do…")),
-        ("UntagResource", deferred("Model requires ResourceArn, TagKeys. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes the specified tags from the specified Amazon Cognito identity pool. You can use this action up to 5 times per second, per account")),
-        ("UpdateIdentityPool", deferred("Model requires IdentityPoolId, IdentityPoolName, AllowUnauthenticatedIdentities. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the configuration of an identity pool. If you don't provide a value for a parameter, Amazon Cognito sets it to its default value. You must use Amazon Web Services developer credentials to call this operation.")),
+        (
+            "ListIdentityPools",
+            OperationOverlay {
+                fixed: [(path("MaxResults")?, FixedValue::Integer(60))]
+                    .into_iter()
+                    .collect(),
+                queryable: vec![path("IdentityPoolId")?],
+                ..read(
+                    "IdentityPools",
+                    Identity::Key(vec![path("IdentityPoolId")?]),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListTagsForResource",
+            deferred(
+                "Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the tags that are assigned to an Amazon Cognito identity pool. A tag is a label that you can apply to identity pools to categorize and manage them in different ways, such as by purpose, owner, environment, or other…",
+            ),
+        ),
+        (
+            "LookupDeveloperIdentity",
+            deferred(
+                "Model requires IdentityPoolId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the IdentityID associated with a DeveloperUserIdentifier or the list of DeveloperUserIdentifier values associated with an IdentityId for an existing identity. Either IdentityID or DeveloperUserIdentifier must not be…",
+            ),
+        ),
+        (
+            "MergeDeveloperIdentities",
+            deferred(
+                "Model requires SourceUserIdentifier, DestinationUserIdentifier, DeveloperProviderName, IdentityPoolId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Merges two users having different IdentityId s, existing in the same identity pool, and identified by the same developer provider. You can use this action to request that discrete users be merged and identified as a single user…",
+            ),
+        ),
+        (
+            "SetIdentityPoolRoles",
+            deferred(
+                "Model requires IdentityPoolId, Roles. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Sets the roles for an identity pool. These roles are used when making calls to GetCredentialsForIdentity action. You must use Amazon Web Services developer credentials to call this operation.",
+            ),
+        ),
+        (
+            "SetPrincipalTagAttributeMap",
+            deferred(
+                "Model requires IdentityPoolId, IdentityProviderName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: You can use this operation to use default (username and clientID) attribute or custom attribute mappings.",
+            ),
+        ),
+        (
+            "TagResource",
+            deferred(
+                "Model requires ResourceArn, Tags. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Assigns a set of tags to the specified Amazon Cognito identity pool. A tag is a label that you can use to categorize and manage identity pools in different ways, such as by purpose, owner, environment, or other criteria. Each tag…",
+            ),
+        ),
+        (
+            "UnlinkDeveloperIdentity",
+            deferred(
+                "Model requires IdentityId, IdentityPoolId, DeveloperProviderName, DeveloperUserIdentifier. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Unlinks a DeveloperUserIdentifier from an existing identity. Unlinked developer users will be considered new identities next time they are seen. If, for a given Cognito identity, you remove all federated identities as well as the…",
+            ),
+        ),
+        (
+            "UnlinkIdentity",
+            deferred(
+                "Model requires IdentityId, Logins, LoginsToRemove. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Unlinks a federated identity from an existing account. Unlinked logins will be considered new identities next time they are seen. Removing the last linked login will make this identity inaccessible. This is a public API. You do…",
+            ),
+        ),
+        (
+            "UntagResource",
+            deferred(
+                "Model requires ResourceArn, TagKeys. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes the specified tags from the specified Amazon Cognito identity pool. You can use this action up to 5 times per second, per account",
+            ),
+        ),
+        (
+            "UpdateIdentityPool",
+            deferred(
+                "Model requires IdentityPoolId, IdentityPoolName, AllowUnauthenticatedIdentities. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the configuration of an identity pool. If you don't provide a value for a parameter, Amazon Cognito sets it to its default value. You must use Amazon Web Services developer credentials to call this operation.",
+            ),
+        ),
     ])
 }

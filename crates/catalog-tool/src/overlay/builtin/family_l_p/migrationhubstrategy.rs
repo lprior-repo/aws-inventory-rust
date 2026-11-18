@@ -1,43 +1,60 @@
 // Pinned Smithy source: .local/aws-models/models/migrationhubstrategy/service/2020-02-19/migrationhubstrategy-2020-02-19.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
-use crate::{classes::DenyReason, overlay::{NameError, OverlayClass, ServiceOverlay}};
+use crate::{
+    classes::DenyReason,
+    overlay::{NameError, OverlayClass, ServiceOverlay},
+};
 
 const GROUPS: &[Group] = &[
     Group {
         operations: &[
-            "GetApplicationComponentDetails", "GetApplicationComponentStrategies",
+            "GetApplicationComponentDetails",
+            "GetApplicationComponentStrategies",
         ],
         class: OverlayClass::Defer,
-        reason: Some("Expansion requires request context (applicationComponentId); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+        reason: Some(
+            "Expansion requires request context (applicationComponentId); this operation has no complete metadata-only dependency/output contract in the embedded planner.",
+        ),
     },
     Group {
         operations: &[
-            "GetAssessment", "GetImportFileTask", "GetRecommendationReportDetails",
+            "GetAssessment",
+            "GetImportFileTask",
+            "GetRecommendationReportDetails",
         ],
         class: OverlayClass::Defer,
-        reason: Some("Expansion requires request context (id); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
-    },
-
-    Group {
-        operations: &[
-            "GetLatestAssessmentId", "GetPortfolioPreferences", "GetPortfolioSummary",
-        ],
-        class: OverlayClass::Defer,
-        reason: Some("Settings and reference data, not a resource collection. Pinned operations: Gets settings, references, or state."),
+        reason: Some(
+            "Expansion requires request context (id); this operation has no complete metadata-only dependency/output contract in the embedded planner.",
+        ),
     },
     Group {
         operations: &[
-            "GetServerDetails", "GetServerStrategies",
+            "GetLatestAssessmentId",
+            "GetPortfolioPreferences",
+            "GetPortfolioSummary",
         ],
         class: OverlayClass::Defer,
-        reason: Some("Expansion requires request context (serverId); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+        reason: Some(
+            "Settings and reference data, not a resource collection. Pinned operations: Gets settings, references, or state.",
+        ),
+    },
+    Group {
+        operations: &["GetServerDetails", "GetServerStrategies"],
+        class: OverlayClass::Defer,
+        reason: Some(
+            "Expansion requires request context (serverId); this operation has no complete metadata-only dependency/output contract in the embedded planner.",
+        ),
     },
     Group {
         operations: &[
-            "PutPortfolioPreferences", "StartAssessment", "StartImportFileTask", 
-            "StartRecommendationReportGeneration", "StopAssessment", 
-            "UpdateApplicationComponentConfig", "UpdateServerConfig",
+            "PutPortfolioPreferences",
+            "StartAssessment",
+            "StartImportFileTask",
+            "StartRecommendationReportGeneration",
+            "StopAssessment",
+            "UpdateApplicationComponentConfig",
+            "UpdateServerConfig",
         ],
         class: OverlayClass::Deny(DenyReason::Mutating),
         reason: None,
@@ -48,8 +65,10 @@ const RESOURCES: &[Resource] = &[
     // Retrieves a list of all the installed collectors.
     Resource {
         operation: "ListCollectors",
-        items: "Collectors", id: Id::Key(&["collectorId"]),
-        scope: Scope::HomeRegion, tokens: Some(("nextToken", "nextToken")),
+        items: "Collectors",
+        id: Id::Key(&["collectorId"]),
+        scope: Scope::HomeRegion,
+        tokens: Some(("nextToken", "nextToken")),
         query: &["collectorId", "hostName"],
         tags: None,
         bindings: &[],
@@ -58,8 +77,10 @@ const RESOURCES: &[Resource] = &[
     // Lists servers that can be analyzed.
     Resource {
         operation: "ListAnalyzableServers",
-        items: "analyzableServers", id: Id::Key(&["hostname"]),
-        scope: Scope::HomeRegion, tokens: Some(("nextToken", "nextToken")),
+        items: "analyzableServers",
+        id: Id::Key(&["hostname"]),
+        scope: Scope::HomeRegion,
+        tokens: Some(("nextToken", "nextToken")),
         query: &["hostname", "ipAddress"],
         tags: None,
         bindings: &[],
@@ -68,8 +89,10 @@ const RESOURCES: &[Resource] = &[
     // Lists all registered servers.
     Resource {
         operation: "ListServers",
-        items: "serverInfos", id: Id::Key(&["id"]),
-        scope: Scope::HomeRegion, tokens: Some(("nextToken", "nextToken")),
+        items: "serverInfos",
+        id: Id::Key(&["id"]),
+        scope: Scope::HomeRegion,
+        tokens: Some(("nextToken", "nextToken")),
         query: &["id", "name"],
         tags: None,
         bindings: &[],
@@ -78,8 +101,10 @@ const RESOURCES: &[Resource] = &[
     // Lists application components for analysis.
     Resource {
         operation: "ListApplicationComponents",
-        items: "applicationComponentInfos", id: Id::Key(&["id"]),
-        scope: Scope::HomeRegion, tokens: Some(("nextToken", "nextToken")),
+        items: "applicationComponentInfos",
+        id: Id::Key(&["id"]),
+        scope: Scope::HomeRegion,
+        tokens: Some(("nextToken", "nextToken")),
         query: &["id", "name"],
         tags: None,
         bindings: &[],
@@ -88,8 +113,10 @@ const RESOURCES: &[Resource] = &[
     // Lists file import tasks.
     Resource {
         operation: "ListImportFileTask",
-        items: "taskInfos", id: Id::Key(&["id"]),
-        scope: Scope::HomeRegion, tokens: Some(("nextToken", "nextToken")),
+        items: "taskInfos",
+        id: Id::Key(&["id"]),
+        scope: Scope::HomeRegion,
+        tokens: Some(("nextToken", "nextToken")),
         query: &["id", "status"],
         tags: None,
         bindings: &[],

@@ -14,7 +14,11 @@ pub(super) const DIRECTORY_FLAGS: OFlags = OFlags::RDONLY
     .union(OFlags::CLOEXEC);
 
 pub(super) fn descriptor_path(file: &impl std::os::fd::AsRawFd) -> PathBuf {
-    PathBuf::from(format!("/proc/{}/fd/{}", std::process::id(), file.as_raw_fd()))
+    PathBuf::from(format!(
+        "/proc/{}/fd/{}",
+        std::process::id(),
+        file.as_raw_fd()
+    ))
 }
 
 pub(super) struct OwnedDirectory {
@@ -31,7 +35,11 @@ enum Removal {
 
 impl OwnedDirectory {
     pub(super) fn retained(parent: OwnedFd, name: OsString, directory: OwnedFd) -> Self {
-        Self { parent, name, directory }
+        Self {
+            parent,
+            name,
+            directory,
+        }
     }
 
     pub(super) fn claim(path: &Path) -> Result<Self, HarnessError> {
@@ -39,8 +47,13 @@ impl OwnedDirectory {
         let private = Self::private(parent.try_clone()?)?;
         private.verify()?;
         let result = rustix::fs::renameat_with(
-            &private.parent, &private.name, &parent, &name, RenameFlags::NOREPLACE,
-        ).map_err(std::io::Error::from);
+            &private.parent,
+            &private.name,
+            &parent,
+            &name,
+            RenameFlags::NOREPLACE,
+        )
+        .map_err(std::io::Error::from);
         match result {
             Ok(()) => private.relocate(parent, name),
             Err(error) => complete(Err(error.into()), private.remove_private_empty()),
@@ -48,7 +61,11 @@ impl OwnedDirectory {
     }
 
     fn relocate(self, parent: OwnedFd, name: OsString) -> Result<Self, HarnessError> {
-        let owned = Self { parent, name, directory: self.directory };
+        let owned = Self {
+            parent,
+            name,
+            directory: self.directory,
+        };
         owned.verify()?;
         Ok(owned)
     }
@@ -60,8 +77,12 @@ impl OwnedDirectory {
     }
 
     fn location(path: &Path) -> Result<(OwnedFd, OsString), HarnessError> {
-        let parent = path.parent().ok_or_else(|| HarnessError::invalid("directory has no parent"))?;
-        let name = path.file_name().ok_or_else(|| HarnessError::invalid("directory has no name"))?;
+        let parent = path
+            .parent()
+            .ok_or_else(|| HarnessError::invalid("directory has no parent"))?;
+        let name = path
+            .file_name()
+            .ok_or_else(|| HarnessError::invalid("directory has no name"))?;
         let parent = rustix::fs::open(parent, DIRECTORY_FLAGS, Mode::empty())
             .map_err(std::io::Error::from)?;
         Ok((parent, name.to_owned()))
@@ -70,15 +91,22 @@ impl OwnedDirectory {
     fn open(parent: OwnedFd, name: OsString) -> Result<Self, HarnessError> {
         let directory = rustix::fs::openat(&parent, &name, DIRECTORY_FLAGS, Mode::empty())
             .map_err(std::io::Error::from)?;
-        Ok(Self { parent, name, directory })
+        Ok(Self {
+            parent,
+            name,
+            directory,
+        })
     }
 
     fn private(parent: OwnedFd) -> Result<Self, HarnessError> {
         let mut nonce = [0_u8; 16];
-        let count = rustix::rand::getrandom(nonce.as_mut_slice(), rustix::rand::GetRandomFlags::empty())
-            .map_err(std::io::Error::from)?;
+        let count =
+            rustix::rand::getrandom(nonce.as_mut_slice(), rustix::rand::GetRandomFlags::empty())
+                .map_err(std::io::Error::from)?;
         if count != nonce.len() {
-            return Err(HarnessError::invalid("incomplete cleanup namespace entropy"));
+            return Err(HarnessError::invalid(
+                "incomplete cleanup namespace entropy",
+            ));
         }
         let name = OsString::from(format!(".graph-owned-{:x}", base16ct::HexDisplay(&nonce)));
         rustix::fs::mkdirat(&parent, &name, Mode::RWXU).map_err(std::io::Error::from)?;
@@ -139,8 +167,13 @@ impl OwnedDirectory {
 
     fn claim_and_remove(&self, quarantine: &Self, mode: Removal) -> Result<(), HarnessError> {
         rustix::fs::renameat_with(
-            &self.parent, &self.name, &quarantine.directory, "owned", RenameFlags::NOREPLACE,
-        ).map_err(std::io::Error::from)?;
+            &self.parent,
+            &self.name,
+            &quarantine.directory,
+            "owned",
+            RenameFlags::NOREPLACE,
+        )
+        .map_err(std::io::Error::from)?;
         if let Err(error) = self.verify_in(&quarantine.directory, OsStr::new("owned")) {
             return complete(Err(error), self.restore(quarantine));
         }
@@ -153,8 +186,13 @@ impl OwnedDirectory {
 
     fn restore(&self, quarantine: &Self) -> Result<(), HarnessError> {
         rustix::fs::renameat_with(
-            &quarantine.directory, "owned", &self.parent, &self.name, RenameFlags::NOREPLACE,
-        ).map_err(std::io::Error::from)?;
+            &quarantine.directory,
+            "owned",
+            &self.parent,
+            &self.name,
+            RenameFlags::NOREPLACE,
+        )
+        .map_err(std::io::Error::from)?;
         Ok(())
     }
 

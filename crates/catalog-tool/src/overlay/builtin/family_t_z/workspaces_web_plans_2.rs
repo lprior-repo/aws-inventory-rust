@@ -1,5 +1,5 @@
 use super::{inventory, path, paths, token};
-use crate::overlay::{OperationOverlay, NameError, Identity, Scope};
+use crate::overlay::{Identity, NameError, OperationOverlay, Scope};
 
 pub(super) fn list_network_settings() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
@@ -8,10 +8,7 @@ pub(super) fn list_network_settings() -> Result<OperationOverlay, NameError> {
         token("nextToken", "nextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "networkSettingsArn",
-        "vpcId",
-    ])?;
+    operation.queryable = paths(&["networkSettingsArn", "vpcId"])?;
     operation.page_size = Some(100);
     Ok(operation)
 }
@@ -54,10 +51,7 @@ pub(super) fn list_session_loggers() -> Result<OperationOverlay, NameError> {
         token("nextToken", "nextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "sessionLoggerArn",
-        "displayName",
-    ])?;
+    operation.queryable = paths(&["sessionLoggerArn", "displayName"])?;
     operation.page_size = Some(100);
     Ok(operation)
 }
@@ -69,9 +63,7 @@ pub(super) fn list_trust_stores() -> Result<OperationOverlay, NameError> {
         token("nextToken", "nextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "trustStoreArn",
-    ])?;
+    operation.queryable = paths(&["trustStoreArn"])?;
     operation.page_size = Some(100);
     Ok(operation)
 }
@@ -83,10 +75,7 @@ pub(super) fn list_user_access_logging_settings() -> Result<OperationOverlay, Na
         token("nextToken", "nextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "userAccessLoggingSettingsArn",
-        "kinesisStreamArn",
-    ])?;
+    operation.queryable = paths(&["userAccessLoggingSettingsArn", "kinesisStreamArn"])?;
     operation.page_size = Some(100);
     Ok(operation)
 }

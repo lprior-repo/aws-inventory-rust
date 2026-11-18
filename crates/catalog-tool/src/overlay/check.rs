@@ -60,7 +60,6 @@ pub enum CheckError {
     CountOverflow,
 }
 
-
 impl From<plans::Error> for CheckError {
     fn from(error: plans::Error) -> Self {
         Self::Plans(Box::new(error))

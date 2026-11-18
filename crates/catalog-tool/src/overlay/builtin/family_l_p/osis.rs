@@ -1,60 +1,69 @@
 // Pinned Smithy source: .local/aws-models/models/osis/service/2022-01-01/osis-2022-01-01.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
-use crate::{classes::DenyReason, overlay::{NameError, OverlayClass, ServiceOverlay}};
+use crate::{
+    classes::DenyReason,
+    overlay::{NameError, OverlayClass, ServiceOverlay},
+};
 
 const GROUPS: &[Group] = &[
     Group {
         operations: &[
-            "CreatePipeline", "CreatePipelineEndpoint", "DeletePipeline", 
-            "DeletePipelineEndpoint", "DeleteResourcePolicy", "PutResourcePolicy", 
-            "RevokePipelineEndpointConnections", "StartPipeline", "StopPipeline", 
-            "TagResource", "UntagResource", "UpdatePipeline",
+            "CreatePipeline",
+            "CreatePipelineEndpoint",
+            "DeletePipeline",
+            "DeletePipelineEndpoint",
+            "DeleteResourcePolicy",
+            "PutResourcePolicy",
+            "RevokePipelineEndpointConnections",
+            "StartPipeline",
+            "StopPipeline",
+            "TagResource",
+            "UntagResource",
+            "UpdatePipeline",
         ],
         class: OverlayClass::Deny(DenyReason::Mutating),
         reason: None,
     },
     Group {
-        operations: &[
-            "GetPipeline", "GetPipelineBlueprint",
-        ],
+        operations: &["GetPipeline", "GetPipelineBlueprint"],
         class: OverlayClass::Deny(DenyReason::Content),
         reason: None,
     },
     Group {
-        operations: &[
-            "GetPipelineChangeProgress",
-        ],
+        operations: &["GetPipelineChangeProgress"],
         class: OverlayClass::Defer,
-        reason: Some("Expansion requires request context (PipelineName); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+        reason: Some(
+            "Expansion requires request context (PipelineName); this operation has no complete metadata-only dependency/output contract in the embedded planner.",
+        ),
     },
     Group {
-        operations: &[
-            "GetResourcePolicy",
-        ],
+        operations: &["GetResourcePolicy"],
         class: OverlayClass::Defer,
-        reason: Some("Expansion requires request context (ResourceArn); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+        reason: Some(
+            "Expansion requires request context (ResourceArn); this operation has no complete metadata-only dependency/output contract in the embedded planner.",
+        ),
     },
     Group {
-        operations: &[
-            "ListPipelineBlueprints", "ListPipelineEndpointConnections",
-        ],
+        operations: &["ListPipelineBlueprints", "ListPipelineEndpointConnections"],
         class: OverlayClass::Defer,
-        reason: Some("The authorized metadata summaries are collected separately; this operation has no complete resource identity, safety and discovery contract."),
+        reason: Some(
+            "The authorized metadata summaries are collected separately; this operation has no complete resource identity, safety and discovery contract.",
+        ),
     },
     Group {
-        operations: &[
-            "ListTagsForResource",
-        ],
+        operations: &["ListTagsForResource"],
         class: OverlayClass::Defer,
-        reason: Some("Expansion requires request context (Arn); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+        reason: Some(
+            "Expansion requires request context (Arn); this operation has no complete metadata-only dependency/output contract in the embedded planner.",
+        ),
     },
     Group {
-        operations: &[
-            "ValidatePipeline",
-        ],
+        operations: &["ValidatePipeline"],
         class: OverlayClass::Defer,
-        reason: Some("Expansion requires request context (PipelineConfigurationBody); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+        reason: Some(
+            "Expansion requires request context (PipelineConfigurationBody); this operation has no complete metadata-only dependency/output contract in the embedded planner.",
+        ),
     },
 ];
 
@@ -62,8 +71,10 @@ const RESOURCES: &[Resource] = &[
     // Lists all OpenSearch Ingestion pipelines in the current Amazon Web Services account and Region. For more information, see Viewing Amazon OpenSearch Ingestion pipelines .
     Resource {
         operation: "ListPipelines",
-        items: "Pipelines", id: Id::Arn("PipelineArn"),
-        scope: Scope::Region, tokens: Some(("NextToken", "NextToken")),
+        items: "Pipelines",
+        id: Id::Arn("PipelineArn"),
+        scope: Scope::Region,
+        tokens: Some(("NextToken", "NextToken")),
         query: &["PipelineArn", "Status", "PipelineName"],
         tags: Some("Tags"),
         bindings: &[],
@@ -72,8 +83,10 @@ const RESOURCES: &[Resource] = &[
     // Lists all pipeline endpoints in your account.
     Resource {
         operation: "ListPipelineEndpoints",
-        items: "PipelineEndpoints", id: Id::Key(&["EndpointId"]),
-        scope: Scope::Region, tokens: Some(("NextToken", "NextToken")),
+        items: "PipelineEndpoints",
+        id: Id::Key(&["EndpointId"]),
+        scope: Scope::Region,
+        tokens: Some(("NextToken", "NextToken")),
         query: &["EndpointId", "PipelineArn", "Status", "VpcId"],
         tags: None,
         bindings: &[],

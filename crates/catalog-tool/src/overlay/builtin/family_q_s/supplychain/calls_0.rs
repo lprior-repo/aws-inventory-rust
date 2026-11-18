@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/supplychain/service/2024-01-01/supplychain-2024-01-01.json
-use super::super::construction::{Inventory, ResourceIdentity, Input};
+use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 
 pub(super) const CALLS: &[Inventory] = &[
@@ -29,7 +29,10 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Arn("arn"),
         token: Some(("nextToken", "nextToken")),
         scope: Scope::Region,
-        input: &[Input::Parent("instanceId", "ListDataLakeNamespaces", "instanceId"), Input::Parent("namespace", "ListDataLakeNamespaces", "name")],
+        input: &[
+            Input::Parent("instanceId", "ListDataLakeNamespaces", "instanceId"),
+            Input::Parent("namespace", "ListDataLakeNamespaces", "name"),
+        ],
         tags: None,
         queryable: &[],
     },

@@ -1,5 +1,5 @@
-use super::{inventory, path, paths, bind, token};
-use crate::overlay::{OperationOverlay, NameError, Identity, Paginator, Scope};
+use super::{bind, inventory, path, paths, token};
+use crate::overlay::{Identity, NameError, OperationOverlay, Paginator, Scope};
 
 pub(super) fn describe_text_translation_job() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(

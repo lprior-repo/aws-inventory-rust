@@ -1,7 +1,7 @@
-#[path = "runner/oracle.rs"]
-mod oracle;
 mod identity;
 mod materialize;
+#[path = "runner/oracle.rs"]
+mod oracle;
 #[cfg(test)]
 mod tests;
 use super::{
@@ -40,7 +40,8 @@ pub async fn run_scenario(
     let models = SeedModels::load(catalog, &scenario)?;
     validate_oracle_plan(&models)?;
     let client = seed_client(&config)?;
-    execute_scenario(&models, &config, credentials, &client).await?
+    execute_scenario(&models, &config, credentials, &client)
+        .await?
         .oracle(&models.relationships)
 }
 
@@ -52,7 +53,8 @@ pub async fn run_data_scenario(
 ) -> Result<ScenarioSeedOracle, SeedError> {
     let models = SeedModels::load(catalog, &scenario)?;
     let client = seed_client(&config)?;
-    execute_scenario(&models, &config, credentials, &client).await?
+    execute_scenario(&models, &config, credentials, &client)
+        .await?
         .generic_oracle(&models.relationships)
 }
 
@@ -150,8 +152,11 @@ async fn execute_step(
         .collect::<Result<Vec<_>, _>>()?;
     let response = call_step(step, context, &inputs).await?;
     validate_response(&response, step, &inputs)?;
-    let resource = step.resource.as_ref().map(|resource|
-        identity::resource(state, step.id, resource, &response, &inputs)).transpose()?;
+    let resource = step
+        .resource
+        .as_ref()
+        .map(|resource| identity::resource(state, step.id, resource, &response, &inputs))
+        .transpose()?;
     record_output(state, step.id, resource, response)
 }
 
@@ -182,17 +187,30 @@ fn record_output(
     resource: Option<SeedResourceIdentity>,
     record: Record,
 ) -> Result<(), SeedError> {
-    if resource.as_ref().is_some_and(|resource| state.outputs.iter()
-        .filter_map(|output| output.resource.as_ref()).any(|prior| prior.key == resource.key)) {
-        return Err(SeedError::Invalid("seed operation returned a duplicate resource identity"));
+    if resource.as_ref().is_some_and(|resource| {
+        state
+            .outputs
+            .iter()
+            .filter_map(|output| output.resource.as_ref())
+            .any(|prior| prior.key == resource.key)
+    }) {
+        return Err(SeedError::Invalid(
+            "seed operation returned a duplicate resource identity",
+        ));
     }
-    state.outputs.push(SeedOutput { step, resource, record });
+    state.outputs.push(SeedOutput {
+        step,
+        resource,
+        record,
+    });
     Ok(())
 }
 
 fn validate_exact_identity(expected: Option<&str>, identity: &ResourceId) -> Result<(), SeedError> {
     if expected.is_some_and(|expected| expected != identity.as_str()) {
-        return Err(SeedError::Invalid("seed operation returned an unexpected exact identity"));
+        return Err(SeedError::Invalid(
+            "seed operation returned an unexpected exact identity",
+        ));
     }
     Ok(())
 }
@@ -207,7 +225,9 @@ fn materialize_input(
         PreparedInputValue::Integer(value) => Value::Int(*value),
         PreparedInputValue::Literal(value) => value.clone(),
         PreparedInputValue::Template(template) => materialize::template(state, template)?,
-        PreparedInputValue::PreviousOutput { step, path } => materialize::output_value(state, *step, path)?,
+        PreparedInputValue::PreviousOutput { step, path } => {
+            materialize::output_value(state, *step, path)?
+        }
     };
     Ok((input.path.clone(), value))
 }
@@ -231,4 +251,3 @@ fn validate_response(
         Ok(())
     })
 }
-

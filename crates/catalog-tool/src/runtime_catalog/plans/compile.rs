@@ -138,18 +138,33 @@ fn operation_kind<'p>(
     context: &PlanContext<'p, '_>,
     callable: &CallableOperation,
 ) -> Result<&'p str, RuntimeCatalogCompileError> {
-    let mapped = |operation: &str| context.kinds.operations().iter()
-        .find(|row| row.service == callable.service() && row.operation == operation)
-        .map(|row| row.kind.as_str());
+    let mapped = |operation: &str| {
+        context
+            .kinds
+            .operations()
+            .iter()
+            .find(|row| row.service == callable.service() && row.operation == operation)
+            .map(|row| row.kind.as_str())
+    };
     if let Some(endpoint) = &callable.plan().tag_endpoint {
-        let parent = endpoint.parents.first().ok_or(RuntimeCatalogCompileError::Capability)?;
+        let parent = endpoint
+            .parents
+            .first()
+            .ok_or(RuntimeCatalogCompileError::Capability)?;
         return mapped(parent.operation.as_str()).ok_or(RuntimeCatalogCompileError::Capability);
     }
     if callable.plan().endpoint_discovery {
-        return context.checked.services().iter().flat_map(|review| review.callable())
-            .filter(|candidate| candidate.service() == callable.service()
-                && candidate.plan().class == Some(crate::overlay::OverlayClass::Enumerate)
-                && candidate.plan().tag_endpoint.is_none() && !candidate.plan().endpoint_discovery)
+        return context
+            .checked
+            .services()
+            .iter()
+            .flat_map(|review| review.callable())
+            .filter(|candidate| {
+                candidate.service() == callable.service()
+                    && candidate.plan().class == Some(crate::overlay::OverlayClass::Enumerate)
+                    && candidate.plan().tag_endpoint.is_none()
+                    && !candidate.plan().endpoint_discovery
+            })
             .find_map(|candidate| mapped(candidate.operation()))
             .ok_or(RuntimeCatalogCompileError::Capability);
     }
@@ -165,7 +180,12 @@ fn encode_plan(
     let overlay = callable.plan();
     let operation = callable.operation();
     let (kinds, services) = (context.kinds, context.services);
-    let purpose = match super::tag_endpoint::compile(prepared.service, prepared.operation, overlay, services)? {
+    let purpose = match super::tag_endpoint::compile(
+        prepared.service,
+        prepared.operation,
+        overlay,
+        services,
+    )? {
         Some(purpose) => purpose,
         None if overlay.endpoint_discovery => encode::map([(1, Value::Int(4))])?,
         None => purpose_value(callable.service(), operation, kinds, services)?,
@@ -184,26 +204,79 @@ fn encode_plan(
     ];
     let body = overlay_fields(prepared, overlay, context.services)?;
     let tags = super::tags::compile(prepared.service, prepared.operation, overlay)?;
-    let routing = super::routing::compile(prepared.service, prepared.operation, overlay, context.checked, services)?;
+    let routing = super::routing::compile(
+        prepared.service,
+        prepared.operation,
+        overlay,
+        context.checked,
+        services,
+    )?;
     let capabilities = super::capabilities::compile(prepared.service, prepared.operation, overlay)?;
     let discovery = [
         (19, super::selection::emission(overlay)),
-        (20, super::selection::context_projection(callable.service(), operation, context.checked, services)?),
+        (
+            20,
+            super::selection::context_projection(
+                callable.service(),
+                operation,
+                context.checked,
+                services,
+            )?,
+        ),
     ];
-    let map_exclusions = if overlay.exclude_map_keys.is_empty() { None } else {
-        let item = super::super::selection::target(prepared.service, prepared.operation.output()?, overlay.items.as_ref())?;
-        Some((21, super::map_exclusions::encode(prepared.service, item, overlay)?))
+    let map_exclusions = if overlay.exclude_map_keys.is_empty() {
+        None
+    } else {
+        let item = super::super::selection::target(
+            prepared.service,
+            prepared.operation.output()?,
+            overlay.items.as_ref(),
+        )?;
+        Some((
+            21,
+            super::map_exclusions::encode(prepared.service, item, overlay)?,
+        ))
     };
-    let row_policy = super::row_policy::compile(prepared.service,prepared.operation,&overlay.row_policy,
-        overlay.items.as_ref(),context.checked,callable.service(),services)?;
-    let emissions = if overlay.additional_resources.is_empty() { None } else {
-        Some((23, super::emissions::compile(super::emissions::Callable {
-            service_name: callable.service(), operation_name: operation, primary_kind: prepared.kind,
-            service: prepared.service, operation: prepared.operation,
-        }, overlay, kinds, services)?))
+    let row_policy = super::row_policy::compile(
+        prepared.service,
+        prepared.operation,
+        &overlay.row_policy,
+        overlay.items.as_ref(),
+        context.checked,
+        callable.service(),
+        services,
+    )?;
+    let emissions = if overlay.additional_resources.is_empty() {
+        None
+    } else {
+        Some((
+            23,
+            super::emissions::compile(
+                super::emissions::Callable {
+                    service_name: callable.service(),
+                    operation_name: operation,
+                    primary_kind: prepared.kind,
+                    service: prepared.service,
+                    operation: prepared.operation,
+                },
+                overlay,
+                kinds,
+                services,
+            )?,
+        ))
     };
-    encode::map(head.into_iter().chain(body).chain(tail).chain(tags.map(|tags| (14, tags)))
-        .chain(routing).chain(capabilities).chain(discovery).chain(map_exclusions).chain(row_policy).chain(emissions))
+    encode::map(
+        head.into_iter()
+            .chain(body)
+            .chain(tail)
+            .chain(tags.map(|tags| (14, tags)))
+            .chain(routing)
+            .chain(capabilities)
+            .chain(discovery)
+            .chain(map_exclusions)
+            .chain(row_policy)
+            .chain(emissions),
+    )
 }
 
 fn overlay_fields(
@@ -213,12 +286,25 @@ fn overlay_fields(
 ) -> Result<[(u32, Value); 5], RuntimeCatalogCompileError> {
     Ok([
         (5, item_value(overlay.items.as_ref(), services)?),
-        (6, if overlay.emission == crate::overlay::Emission::DiscoveryOnly || overlay.tag_endpoint.is_some() || overlay.endpoint_discovery {
-            encode::map([(1, Value::Int(2)), (2, Value::List(Vec::new()))])?
-        } else { identity_value(overlay.identity.as_ref(), &prepared.service_name, services)? }),
+        (
+            6,
+            if overlay.emission == crate::overlay::Emission::DiscoveryOnly
+                || overlay.tag_endpoint.is_some()
+                || overlay.endpoint_discovery
+            {
+                encode::map([(1, Value::Int(2)), (2, Value::List(Vec::new()))])?
+            } else {
+                identity_value(overlay.identity.as_ref(), &prepared.service_name, services)?
+            },
+        ),
         (
             7,
-            binding_values(&prepared.service_name, prepared.operation, overlay, services)?,
+            binding_values(
+                &prepared.service_name,
+                prepared.operation,
+                overlay,
+                services,
+            )?,
         ),
         (8, plan_page(prepared, overlay, services)?),
         (9, exclusions(overlay, services)?),

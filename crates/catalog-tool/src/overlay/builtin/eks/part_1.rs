@@ -1,6 +1,8 @@
-use crate::overlay::{NameError, OperationOverlay, Binding, Identity, ItemSelector, OverlayClass, Paginator, Scope};
-use super::super::{empty, path, name};
+use super::super::{empty, name, path};
 use crate::classes::DenyReason;
+use crate::overlay::{
+    Binding, Identity, ItemSelector, NameError, OperationOverlay, OverlayClass, Paginator, Scope,
+};
 
 // Exact typed migration of the reviewed pinned-model policy; not emulator evidence.
 pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {

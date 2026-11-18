@@ -1,4 +1,6 @@
+mod discovery_context;
 mod error;
+mod iam_principal;
 mod identifiers;
 mod keys;
 mod observation;
@@ -6,12 +8,12 @@ mod query;
 mod reference;
 mod schema;
 mod tag;
-mod discovery_context;
-mod iam_principal;
 
+pub use discovery_context::{
+    ContextError, DiscoveryContext, DiscoveryFrame, MAX_DISCOVERY_CONTEXT_BYTES,
+    MAX_DISCOVERY_FRAMES,
+};
 pub use error::InventoryError;
-pub use discovery_context::{ContextError, DiscoveryContext, DiscoveryFrame,
-    MAX_DISCOVERY_CONTEXT_BYTES, MAX_DISCOVERY_FRAMES};
 pub use iam_principal::{IamPrincipalKind, iam_principal_resource_kind};
 pub use identifiers::{
     AccountId, Kind, OperationId, Region, RegionId, Relation, ResourceId, ServiceId, SqlName,

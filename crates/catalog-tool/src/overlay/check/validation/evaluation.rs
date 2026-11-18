@@ -105,8 +105,15 @@ fn validate_complete_plan(state: &mut State<'_, '_, '_>) {
     check_required_inputs(state);
     validate_pagination(state);
     validate_identity(state);
-    super::row_policy::validate(state.service,state.name,&state.item,state.model,state.vocabulary,
-        state.overlays,&mut state.violations);
+    super::row_policy::validate(
+        state.service,
+        state.name,
+        &state.item,
+        state.model,
+        state.vocabulary,
+        state.overlays,
+        &mut state.violations,
+    );
     paths::validate_output_paths(
         state.service,
         state.name,
@@ -161,7 +168,10 @@ fn validate_identity(state: &mut State<'_, '_, '_>) {
         state.item.emission == crate::overlay::Emission::DiscoveryOnly
     } else {
         state.item.branches.iter().all(|branch| {
-            branch.emission.as_ref().map_or(&state.item.emission, |emission| emission)
+            branch
+                .emission
+                .as_ref()
+                .map_or(&state.item.emission, |emission| emission)
                 == &crate::overlay::Emission::DiscoveryOnly
         })
     };

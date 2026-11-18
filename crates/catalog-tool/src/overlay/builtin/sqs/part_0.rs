@@ -1,6 +1,10 @@
-use crate::overlay::{ArnResourceKind, Binding, Emission, FixedValue, Identity, ItemSelector, MapKeyExclusion, NameError, OperationOverlay, OverlayClass, Paginator, Scope, SelectionKind, TagEndpoint, TagEndpointParent, TagEndpointRequest, TagEndpointSelector, TokenPair, UrlResourceKind};
 use super::super::{empty, name, path};
 use crate::classes::DenyReason;
+use crate::overlay::{
+    ArnResourceKind, Binding, Emission, FixedValue, Identity, ItemSelector, MapKeyExclusion,
+    NameError, OperationOverlay, OverlayClass, Paginator, Scope, SelectionKind, TagEndpoint,
+    TagEndpointParent, TagEndpointRequest, TagEndpointSelector, TokenPair, UrlResourceKind,
+};
 
 // Exact typed migration of the reviewed pinned-model policy; not emulator evidence.
 pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {

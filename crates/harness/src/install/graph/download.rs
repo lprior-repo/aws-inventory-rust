@@ -40,7 +40,10 @@ impl Read for DeadlineInput<'_> {
         self.input.set_read_timeout(Some(duration))?;
         match self.input.read(buffer) {
             Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {
-                Err(std::io::Error::new(std::io::ErrorKind::TimedOut, "fixture download deadline exceeded"))
+                Err(std::io::Error::new(
+                    std::io::ErrorKind::TimedOut,
+                    "fixture download deadline exceeded",
+                ))
             }
             result => result,
         }
@@ -57,20 +60,27 @@ fn pinned_with_limit(
     digest: &str,
     max_bytes: u64,
 ) -> Result<(), HarnessError> {
-    let directory = path.parent().filter(|parent| !parent.as_os_str().is_empty());
+    let directory = path
+        .parent()
+        .filter(|parent| !parent.as_os_str().is_empty());
     let directory = directory.map_or_else(|| Path::new("."), |parent| parent);
-    let name = path.file_name().ok_or_else(|| HarnessError::invalid("download has no name"))?;
-    let parent = File::from(rustix::fs::open(directory, super::DIRECTORY_FLAGS, Mode::empty())
-        .map_err(std::io::Error::from)?);
+    let name = path
+        .file_name()
+        .ok_or_else(|| HarnessError::invalid("download has no name"))?;
+    let parent = File::from(
+        rustix::fs::open(directory, super::DIRECTORY_FLAGS, Mode::empty())
+            .map_err(std::io::Error::from)?,
+    );
     let anchored = super::descriptor_path(&parent).join(name);
     if existing(&anchored, digest)? {
         return Ok(());
     }
     // Anonymous staging has no replaceable pathname and no pathname cleanup obligation.
     let flags = OFlags::RDWR | OFlags::TMPFILE | OFlags::CLOEXEC;
-    let mut temporary = File::from(rustix::fs::openat(
-        &parent, ".", flags, Mode::RUSR | Mode::WUSR,
-    ).map_err(std::io::Error::from)?);
+    let mut temporary = File::from(
+        rustix::fs::openat(&parent, ".", flags, Mode::RUSR | Mode::WUSR)
+            .map_err(std::io::Error::from)?,
+    );
     fetch(url, &mut temporary, digest, max_bytes.min(MAX_DOWNLOAD))?;
     publish(&temporary, &parent, name, digest)
 }
@@ -89,8 +99,10 @@ pub(super) fn existing(path: &Path, digest: &str) -> Result<bool, HarnessError> 
 }
 
 fn open_cached(path: &Path) -> Result<Option<File>, HarnessError> {
-    let opened = OpenOptions::new().read(true)
-        .custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW).open(path);
+    let opened = OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW)
+        .open(path);
     let file = match opened {
         Ok(file) => file,
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
@@ -99,7 +111,8 @@ fn open_cached(path: &Path) -> Result<Option<File>, HarnessError> {
     let metadata = file.metadata()?;
     if !metadata.file_type().is_file() || metadata.len() > MAX_DOWNLOAD {
         return Err(HarnessError::invalid(format!(
-            "fixture path is not a bounded regular file: {}", path.display()
+            "fixture path is not a bounded regular file: {}",
+            path.display()
         )));
     }
     Ok(Some(file))
@@ -115,8 +128,13 @@ fn publish(
     #[cfg(test)]
     tests::races::publication_checkpoint(temporary, true)?;
     let linked = rustix::fs::linkat(
-        rustix::fs::CWD, super::descriptor_path(temporary), parent, name, AtFlags::SYMLINK_FOLLOW,
-    ).map_err(std::io::Error::from);
+        rustix::fs::CWD,
+        super::descriptor_path(temporary),
+        parent,
+        name,
+        AtFlags::SYMLINK_FOLLOW,
+    )
+    .map_err(std::io::Error::from);
     match linked {
         Ok(()) => {
             #[cfg(test)]
@@ -145,7 +163,13 @@ fn curl(url: &str, output: UnixStream) -> Command {
     command
         .process_group(0)
         .arg("-q")
-        .args(["--fail", "--location", "--silent", "--show-error", "--globoff"])
+        .args([
+            "--fail",
+            "--location",
+            "--silent",
+            "--show-error",
+            "--globoff",
+        ])
         .args(["--max-time", "180", "--url"])
         .arg(url)
         .stdin(Stdio::null())
@@ -158,10 +182,17 @@ fn fetch(url: &str, file: &mut File, digest: &str, max_bytes: u64) -> Result<(),
     let lifetime = LIFETIME;
     #[cfg(test)]
     let lifetime = super::archive::download_timeout(lifetime);
-    let budget = DownloadBudget { started: Instant::now(), max_bytes, lifetime };
+    let budget = DownloadBudget {
+        started: Instant::now(),
+        max_bytes,
+        lifetime,
+    };
     let mut child = curl(url, output).spawn()?;
     let copied = copy_body(
-        &mut DeadlineInput { input: &mut input, budget: &budget },
+        &mut DeadlineInput {
+            input: &mut input,
+            budget: &budget,
+        },
         file,
         budget.max_bytes,
     );
@@ -172,7 +203,11 @@ fn fetch(url: &str, file: &mut File, digest: &str, max_bytes: u64) -> Result<(),
     };
     let completed = copied.is_ok() && finished.is_ok();
     let reaped = super::build::terminate_and_reap(&mut child).and_then(|status| {
-        if completed { check_status(status) } else { Ok(()) }
+        if completed {
+            check_status(status)
+        } else {
+            Ok(())
+        }
     });
     let actual = combine(combine(copied, finished), reaped)?;
     if actual != digest {
@@ -182,7 +217,8 @@ fn fetch(url: &str, file: &mut File, digest: &str, max_bytes: u64) -> Result<(),
 }
 
 fn remaining(budget: &DownloadBudget) -> Result<Duration, HarnessError> {
-    budget.lifetime
+    budget
+        .lifetime
         .checked_sub(budget.started.elapsed())
         .filter(|remaining| !remaining.is_zero())
         .ok_or_else(|| HarnessError::invalid("fixture download deadline exceeded"))
@@ -205,7 +241,9 @@ fn copy_body<R: Read, W: Write>(
     match copied {
         ControlFlow::Break(result) => result?,
         ControlFlow::Continue(_) => {
-            return Err(HarnessError::invalid("fixture download size limit exceeded"));
+            return Err(HarnessError::invalid(
+                "fixture download size limit exceeded",
+            ));
         }
     }
     Ok(format!("{:x}", base16ct::HexDisplay(&hasher.finalize())))
@@ -222,8 +260,14 @@ fn copy_chunk<R: Read, W: Write>(
     let count = input.take(available).read(buffer)?;
     let count_u64 = u64::try_from(count)
         .map_err(|_| HarnessError::invalid("fixture download byte count overflow"))?;
-    if state.0.checked_add(count_u64).is_none_or(|total| total > state.1) {
-        return Err(HarnessError::invalid("fixture download size limit exceeded"));
+    if state
+        .0
+        .checked_add(count_u64)
+        .is_none_or(|total| total > state.1)
+    {
+        return Err(HarnessError::invalid(
+            "fixture download size limit exceeded",
+        ));
     }
     let bytes = buffer
         .get(..count)
@@ -258,7 +302,6 @@ fn check_status(status: ExitStatus) -> Result<(), HarnessError> {
         "fixture download failed: {status}"
     )))
 }
-
 
 fn combine<T>(
     result: Result<T, HarnessError>,

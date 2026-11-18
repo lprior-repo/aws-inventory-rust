@@ -13,10 +13,13 @@ fn unclassified_candidate_requires_explicit_disposition() -> Result<(), Box<dyn 
             "\"n#GetThing\":{\"type\":\"operation\",\"output\":{\"target\":\"n#Output\"}},\"n#ListThings\":{\"type\":\"operation\"",
         );
     let root = fixture(&model, "")?;
-    let errors = violations(&root, vec![
-        ("ListThings", complete()?),
-        ("GetThing", OperationOverlay::default()),
-    ])?;
+    let errors = violations(
+        &root,
+        vec![
+            ("ListThings", complete()?),
+            ("GetThing", OperationOverlay::default()),
+        ],
+    )?;
     assert!(errors.iter().any(|error| error.operation() == "GetThing"
         && error.key() == "review"
         && error.value() == "non-callable candidate"
@@ -37,14 +40,19 @@ fn an_unclassified_operation_can_be_reviewed_as_expand() -> Result<(), Box<dyn s
         );
     let root = fixture(&model, "")?;
     let mut denied = OperationOverlay::default();
-    denied.class = Some(OverlayClass::Deny(catalog_tool::classes::DenyReason::Content));
+    denied.class = Some(OverlayClass::Deny(
+        catalog_tool::classes::DenyReason::Content,
+    ));
     let mut child = complete()?;
     child.class = Some(OverlayClass::Expand);
-    let checked = checked(&root, vec![
-        ("ListDenied", denied),
-        ("ListThings", deferred()),
-        ("GetThing", child),
-    ])?;
+    let checked = checked(
+        &root,
+        vec![
+            ("ListDenied", denied),
+            ("ListThings", deferred()),
+            ("GetThing", child),
+        ],
+    )?;
     let callable = checked
         .services()
         .first()

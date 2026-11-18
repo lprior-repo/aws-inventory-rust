@@ -4,97 +4,439 @@ use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        ("AttachInstances", deferred("Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Attaches one or more EC2 instances to the specified Auto Scaling group. When you attach instances, Amazon EC2 Auto Scaling increases the desired capacity of the group by the number of instances being attached. If the number of…")),
-        ("AttachLoadBalancerTargetGroups", deferred("Model requires AutoScalingGroupName, TargetGroupARNs. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This API operation is superseded by AttachTrafficSources , which can attach multiple traffic sources types. We recommend using AttachTrafficSources to simplify how you manage traffic sources. However, we continue to support…")),
-        ("AttachLoadBalancers", deferred("Model requires AutoScalingGroupName, LoadBalancerNames. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This API operation is superseded by AttachTrafficSources , which can attach multiple traffic sources types. We recommend using AttachTrafficSources to simplify how you manage traffic sources. However, we continue to support…")),
-        ("AttachTrafficSources", deferred("Model requires AutoScalingGroupName, TrafficSources. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Attaches one or more traffic sources to the specified Auto Scaling group. You can use any of the following as traffic sources for an Auto Scaling group: Application Load Balancer Classic Load Balancer Gateway Load Balancer…")),
-        ("BatchDeleteScheduledAction", deferred("Model requires AutoScalingGroupName, ScheduledActionNames. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes one or more scheduled actions for the specified Auto Scaling group.")),
-        ("BatchPutScheduledUpdateGroupAction", deferred("Model requires AutoScalingGroupName, ScheduledUpdateGroupActions. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates or updates one or more scheduled scaling actions for an Auto Scaling group.")),
-        ("CancelInstanceRefresh", deferred("Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Cancels an instance refresh or rollback that is in progress. If an instance refresh or rollback is not in progress, an ActiveInstanceRefreshNotFound error occurs. This operation is part of the instance refresh feature in Amazon…")),
-        ("CompleteLifecycleAction", deferred("Model requires LifecycleHookName, AutoScalingGroupName, LifecycleActionResult. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Completes the lifecycle action for the specified token or instance with the specified result. This step is a part of the procedure for adding a lifecycle hook to an Auto Scaling group: (Optional) Create a launch template or…")),
-        ("CreateAutoScalingGroup", deferred("Model requires AutoScalingGroupName, MinSize, MaxSize. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: We strongly recommend using a launch template when calling this operation to ensure full functionality for Amazon EC2 Auto Scaling and Amazon EC2. Creates an Auto Scaling group with the specified name and attributes. If you…")),
-        ("CreateLaunchConfiguration", deferred("Model requires LaunchConfigurationName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a launch configuration. If you exceed your maximum limit of launch configurations, the call fails. To query this limit, call the DescribeAccountLimits API. For information about updating this limit, see Quotas for Amazon…")),
-        ("CreateOrUpdateTags", deferred("Model requires Tags. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates or updates tags for the specified Auto Scaling group. When you specify a tag with a key that already exists, the operation overwrites the previous tag definition, and you do not get an error message. For more information,…")),
-        ("DeleteAutoScalingGroup", deferred("Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified Auto Scaling group. If the group has instances or scaling activities in progress, you must specify the option to force the deletion in order for it to succeed. The force delete operation will also terminate…")),
-        ("DeleteLaunchConfiguration", deferred("Model requires LaunchConfigurationName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified launch configuration. The launch configuration must not be attached to an Auto Scaling group. When this call completes, the launch configuration is no longer available for use.")),
-        ("DeleteLifecycleHook", deferred("Model requires LifecycleHookName, AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified lifecycle hook. If there are any outstanding lifecycle actions, they are completed first ( ABANDON for launching instances, CONTINUE for terminating instances).")),
-        ("DeleteNotificationConfiguration", deferred("Model requires AutoScalingGroupName, TopicARN. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified notification.")),
-        ("DeletePolicy", deferred("Model requires PolicyName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified scaling policy. Deleting either a step scaling policy or a simple scaling policy deletes the underlying alarm action, but does not delete the alarm, even if it no longer has an associated action. For more…")),
-        ("DeleteScheduledAction", deferred("Model requires AutoScalingGroupName, ScheduledActionName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified scheduled action.")),
-        ("DeleteTags", deferred("Model requires Tags. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified tags.")),
-        ("DeleteWarmPool", deferred("Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the warm pool for the specified Auto Scaling group. For more information, see Warm pools for Amazon EC2 Auto Scaling in the Amazon EC2 Auto Scaling User Guide .")),
-        ("DescribeAccountLimits", deferred("No safe resource collection plan is approved for this modeled operation. Its output is MaxNumberOfAutoScalingGroups, MaxNumberOfLaunchConfigurations, NumberOfAutoScalingGroups, NumberOfLaunchConfigurations; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the current Amazon EC2 Auto Scaling resource quotas for your account. When you establish an Amazon Web Services account, the account has initial quotas on the maximum number of Auto Scaling groups and launch…")),
-        ("DescribeAccountSettings", deferred("No safe resource collection plan is approved for this modeled operation. Its output is Settings; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the current Amazon EC2 Auto Scaling account settings for your account. Account settings are a framework that allows you to enable or disable features for your account. The framework also gives you visibility into…")),
-        ("DescribeAdjustmentTypes", deferred("No safe resource collection plan is approved for this modeled operation. Its output is AdjustmentTypes; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the available adjustment types for step scaling and simple scaling policies. The following adjustment types are supported: ChangeInCapacity ExactCapacity PercentChangeInCapacity")),
+        (
+            "AttachInstances",
+            deferred(
+                "Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Attaches one or more EC2 instances to the specified Auto Scaling group. When you attach instances, Amazon EC2 Auto Scaling increases the desired capacity of the group by the number of instances being attached. If the number of…",
+            ),
+        ),
+        (
+            "AttachLoadBalancerTargetGroups",
+            deferred(
+                "Model requires AutoScalingGroupName, TargetGroupARNs. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This API operation is superseded by AttachTrafficSources , which can attach multiple traffic sources types. We recommend using AttachTrafficSources to simplify how you manage traffic sources. However, we continue to support…",
+            ),
+        ),
+        (
+            "AttachLoadBalancers",
+            deferred(
+                "Model requires AutoScalingGroupName, LoadBalancerNames. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This API operation is superseded by AttachTrafficSources , which can attach multiple traffic sources types. We recommend using AttachTrafficSources to simplify how you manage traffic sources. However, we continue to support…",
+            ),
+        ),
+        (
+            "AttachTrafficSources",
+            deferred(
+                "Model requires AutoScalingGroupName, TrafficSources. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Attaches one or more traffic sources to the specified Auto Scaling group. You can use any of the following as traffic sources for an Auto Scaling group: Application Load Balancer Classic Load Balancer Gateway Load Balancer…",
+            ),
+        ),
+        (
+            "BatchDeleteScheduledAction",
+            deferred(
+                "Model requires AutoScalingGroupName, ScheduledActionNames. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes one or more scheduled actions for the specified Auto Scaling group.",
+            ),
+        ),
+        (
+            "BatchPutScheduledUpdateGroupAction",
+            deferred(
+                "Model requires AutoScalingGroupName, ScheduledUpdateGroupActions. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates or updates one or more scheduled scaling actions for an Auto Scaling group.",
+            ),
+        ),
+        (
+            "CancelInstanceRefresh",
+            deferred(
+                "Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Cancels an instance refresh or rollback that is in progress. If an instance refresh or rollback is not in progress, an ActiveInstanceRefreshNotFound error occurs. This operation is part of the instance refresh feature in Amazon…",
+            ),
+        ),
+        (
+            "CompleteLifecycleAction",
+            deferred(
+                "Model requires LifecycleHookName, AutoScalingGroupName, LifecycleActionResult. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Completes the lifecycle action for the specified token or instance with the specified result. This step is a part of the procedure for adding a lifecycle hook to an Auto Scaling group: (Optional) Create a launch template or…",
+            ),
+        ),
+        (
+            "CreateAutoScalingGroup",
+            deferred(
+                "Model requires AutoScalingGroupName, MinSize, MaxSize. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: We strongly recommend using a launch template when calling this operation to ensure full functionality for Amazon EC2 Auto Scaling and Amazon EC2. Creates an Auto Scaling group with the specified name and attributes. If you…",
+            ),
+        ),
+        (
+            "CreateLaunchConfiguration",
+            deferred(
+                "Model requires LaunchConfigurationName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a launch configuration. If you exceed your maximum limit of launch configurations, the call fails. To query this limit, call the DescribeAccountLimits API. For information about updating this limit, see Quotas for Amazon…",
+            ),
+        ),
+        (
+            "CreateOrUpdateTags",
+            deferred(
+                "Model requires Tags. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates or updates tags for the specified Auto Scaling group. When you specify a tag with a key that already exists, the operation overwrites the previous tag definition, and you do not get an error message. For more information,…",
+            ),
+        ),
+        (
+            "DeleteAutoScalingGroup",
+            deferred(
+                "Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified Auto Scaling group. If the group has instances or scaling activities in progress, you must specify the option to force the deletion in order for it to succeed. The force delete operation will also terminate…",
+            ),
+        ),
+        (
+            "DeleteLaunchConfiguration",
+            deferred(
+                "Model requires LaunchConfigurationName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified launch configuration. The launch configuration must not be attached to an Auto Scaling group. When this call completes, the launch configuration is no longer available for use.",
+            ),
+        ),
+        (
+            "DeleteLifecycleHook",
+            deferred(
+                "Model requires LifecycleHookName, AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified lifecycle hook. If there are any outstanding lifecycle actions, they are completed first ( ABANDON for launching instances, CONTINUE for terminating instances).",
+            ),
+        ),
+        (
+            "DeleteNotificationConfiguration",
+            deferred(
+                "Model requires AutoScalingGroupName, TopicARN. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified notification.",
+            ),
+        ),
+        (
+            "DeletePolicy",
+            deferred(
+                "Model requires PolicyName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified scaling policy. Deleting either a step scaling policy or a simple scaling policy deletes the underlying alarm action, but does not delete the alarm, even if it no longer has an associated action. For more…",
+            ),
+        ),
+        (
+            "DeleteScheduledAction",
+            deferred(
+                "Model requires AutoScalingGroupName, ScheduledActionName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified scheduled action.",
+            ),
+        ),
+        (
+            "DeleteTags",
+            deferred(
+                "Model requires Tags. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified tags.",
+            ),
+        ),
+        (
+            "DeleteWarmPool",
+            deferred(
+                "Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the warm pool for the specified Auto Scaling group. For more information, see Warm pools for Amazon EC2 Auto Scaling in the Amazon EC2 Auto Scaling User Guide .",
+            ),
+        ),
+        (
+            "DescribeAccountLimits",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is MaxNumberOfAutoScalingGroups, MaxNumberOfLaunchConfigurations, NumberOfAutoScalingGroups, NumberOfLaunchConfigurations; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the current Amazon EC2 Auto Scaling resource quotas for your account. When you establish an Amazon Web Services account, the account has initial quotas on the maximum number of Auto Scaling groups and launch…",
+            ),
+        ),
+        (
+            "DescribeAccountSettings",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is Settings; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the current Amazon EC2 Auto Scaling account settings for your account. Account settings are a framework that allows you to enable or disable features for your account. The framework also gives you visibility into…",
+            ),
+        ),
+        (
+            "DescribeAdjustmentTypes",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is AdjustmentTypes; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the available adjustment types for step scaling and simple scaling policies. The following adjustment types are supported: ChangeInCapacity ExactCapacity PercentChangeInCapacity",
+            ),
+        ),
         // Model: Gets information about the Auto Scaling groups in the account and Region. If you specify Auto Scaling group names, the output includes information for only the specified Auto Scaling groups. If you…
-        ("DescribeAutoScalingGroups", OperationOverlay {
-            tags: Some(path("Tags")?),
-            queryable: vec![path("AutoScalingGroupARN")?],
-            ..read("AutoScalingGroups", Identity::Arn(path("AutoScalingGroupARN")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("DescribeAutoScalingInstances", deferred("No safe resource collection plan is approved for this modeled operation. Its output is AutoScalingInstances; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Gets information about the Auto Scaling instances in the account and Region.")),
-        ("DescribeAutoScalingNotificationTypes", deferred("No safe resource collection plan is approved for this modeled operation. Its output is AutoScalingNotificationTypes; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the notification types that are supported by Amazon EC2 Auto Scaling.")),
-        ("DescribeInstanceRefreshes", deferred("Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about the instance refreshes for the specified Auto Scaling group from the previous six weeks. This operation is part of the instance refresh feature in Amazon EC2 Auto Scaling, which helps you update instances…")),
+        (
+            "DescribeAutoScalingGroups",
+            OperationOverlay {
+                tags: Some(path("Tags")?),
+                queryable: vec![path("AutoScalingGroupARN")?],
+                ..read(
+                    "AutoScalingGroups",
+                    Identity::Arn(path("AutoScalingGroupARN")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "DescribeAutoScalingInstances",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is AutoScalingInstances; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Gets information about the Auto Scaling instances in the account and Region.",
+            ),
+        ),
+        (
+            "DescribeAutoScalingNotificationTypes",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is AutoScalingNotificationTypes; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the notification types that are supported by Amazon EC2 Auto Scaling.",
+            ),
+        ),
+        (
+            "DescribeInstanceRefreshes",
+            deferred(
+                "Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about the instance refreshes for the specified Auto Scaling group from the previous six weeks. This operation is part of the instance refresh feature in Amazon EC2 Auto Scaling, which helps you update instances…",
+            ),
+        ),
         // Model: Gets information about the launch configurations in the account and Region.
         ("DescribeLaunchConfigurations", denied(DenyReason::Content)),
-        ("DescribeLifecycleHookTypes", deferred("No safe resource collection plan is approved for this modeled operation. Its output is LifecycleHookTypes; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the available types of lifecycle hooks. The following hook types are supported: autoscaling:EC2_INSTANCE_LAUNCHING autoscaling:EC2_INSTANCE_TERMINATING")),
-        ("DescribeLifecycleHooks", deferred("Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about the lifecycle hooks for the specified Auto Scaling group.")),
-        ("DescribeLoadBalancerTargetGroups", deferred("Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This API operation is superseded by DescribeTrafficSources , which can describe multiple traffic sources types. We recommend using DetachTrafficSources to simplify how you manage traffic sources. However, we continue to support…")),
-        ("DescribeLoadBalancers", deferred("Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This API operation is superseded by DescribeTrafficSources , which can describe multiple traffic sources types. We recommend using DescribeTrafficSources to simplify how you manage traffic sources. However, we continue to support…")),
-        ("DescribeMetricCollectionTypes", deferred("No safe resource collection plan is approved for this modeled operation. Its output is Metrics, Granularities; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the available CloudWatch metrics for Amazon EC2 Auto Scaling.")),
-        ("DescribeNotificationConfigurations", deferred("No safe resource collection plan is approved for this modeled operation. Its output is NotificationConfigurations; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Gets information about the Amazon SNS notifications that are configured for one or more Auto Scaling groups.")),
+        (
+            "DescribeLifecycleHookTypes",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is LifecycleHookTypes; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the available types of lifecycle hooks. The following hook types are supported: autoscaling:EC2_INSTANCE_LAUNCHING autoscaling:EC2_INSTANCE_TERMINATING",
+            ),
+        ),
+        (
+            "DescribeLifecycleHooks",
+            deferred(
+                "Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about the lifecycle hooks for the specified Auto Scaling group.",
+            ),
+        ),
+        (
+            "DescribeLoadBalancerTargetGroups",
+            deferred(
+                "Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This API operation is superseded by DescribeTrafficSources , which can describe multiple traffic sources types. We recommend using DetachTrafficSources to simplify how you manage traffic sources. However, we continue to support…",
+            ),
+        ),
+        (
+            "DescribeLoadBalancers",
+            deferred(
+                "Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This API operation is superseded by DescribeTrafficSources , which can describe multiple traffic sources types. We recommend using DescribeTrafficSources to simplify how you manage traffic sources. However, we continue to support…",
+            ),
+        ),
+        (
+            "DescribeMetricCollectionTypes",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is Metrics, Granularities; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the available CloudWatch metrics for Amazon EC2 Auto Scaling.",
+            ),
+        ),
+        (
+            "DescribeNotificationConfigurations",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is NotificationConfigurations; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Gets information about the Amazon SNS notifications that are configured for one or more Auto Scaling groups.",
+            ),
+        ),
     ])
 }
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
         // Model: Gets information about the scaling policies in the account and Region.
-        ("DescribePolicies", OperationOverlay {
-            queryable: vec![path("PolicyARN")?],
-            ..read("ScalingPolicies", Identity::Arn(path("PolicyARN")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("DescribeScalingActivities", deferred("No safe resource collection plan is approved for this modeled operation. Its output is Activities; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Gets information about the scaling activities in the account and Region. When scaling events occur, you see a record of the scaling activity in the scaling activities. For more information, see Verify a scaling activity for an…")),
-        ("DescribeScalingProcessTypes", deferred("No safe resource collection plan is approved for this modeled operation. Its output is Processes; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the scaling process types for use with the ResumeProcesses and SuspendProcesses APIs.")),
+        (
+            "DescribePolicies",
+            OperationOverlay {
+                queryable: vec![path("PolicyARN")?],
+                ..read(
+                    "ScalingPolicies",
+                    Identity::Arn(path("PolicyARN")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "DescribeScalingActivities",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is Activities; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Gets information about the scaling activities in the account and Region. When scaling events occur, you see a record of the scaling activity in the scaling activities. For more information, see Verify a scaling activity for an…",
+            ),
+        ),
+        (
+            "DescribeScalingProcessTypes",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is Processes; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the scaling process types for use with the ResumeProcesses and SuspendProcesses APIs.",
+            ),
+        ),
         // Model: Gets information about the scheduled actions that haven't run or that have not reached their end time. To describe the scaling activities for scheduled actions that have already run, call the…
-        ("DescribeScheduledActions", OperationOverlay {
-            queryable: vec![path("ScheduledActionARN")?],
-            ..read("ScheduledUpdateGroupActions", Identity::Arn(path("ScheduledActionARN")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("DescribeTags", deferred("No safe resource collection plan is approved for this modeled operation. Its output is Tags; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the specified tags. You can use filters to limit the results. For example, you can query for the tags for a specific Auto Scaling group. You can specify multiple values for a filter. A tag must match at least one of the…")),
-        ("DescribeTerminationPolicyTypes", deferred("No safe resource collection plan is approved for this modeled operation. Its output is TerminationPolicyTypes; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the termination policies supported by Amazon EC2 Auto Scaling. For more information, see Configure termination policies for Amazon EC2 Auto Scaling in the Amazon EC2 Auto Scaling User Guide .")),
-        ("DescribeTrafficSources", deferred("Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about the traffic sources for the specified Auto Scaling group. You can optionally provide a traffic source type. If you provide a traffic source type, then the results only include that traffic source type. If…")),
-        ("DescribeWarmPool", deferred("Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about a warm pool and its instances. For more information, see Warm pools for Amazon EC2 Auto Scaling in the Amazon EC2 Auto Scaling User Guide .")),
-        ("DetachInstances", deferred("Model requires AutoScalingGroupName, ShouldDecrementDesiredCapacity. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes one or more instances from the specified Auto Scaling group. After the instances are detached, you can manage them independent of the Auto Scaling group. If you do not specify the option to decrement the desired capacity,…")),
-        ("DetachLoadBalancerTargetGroups", deferred("Model requires AutoScalingGroupName, TargetGroupARNs. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This API operation is superseded by DetachTrafficSources , which can detach multiple traffic sources types. We recommend using DetachTrafficSources to simplify how you manage traffic sources. However, we continue to support…")),
-        ("DetachLoadBalancers", deferred("Model requires AutoScalingGroupName, LoadBalancerNames. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This API operation is superseded by DetachTrafficSources , which can detach multiple traffic sources types. We recommend using DetachTrafficSources to simplify how you manage traffic sources. However, we continue to support…")),
-        ("DetachTrafficSources", deferred("Model requires AutoScalingGroupName, TrafficSources. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Detaches one or more traffic sources from the specified Auto Scaling group. When you detach a traffic source, it enters the Removing state while deregistering the instances in the group. When all instances are deregistered, then…")),
-        ("DisableMetricsCollection", deferred("Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Disables group metrics collection for the specified Auto Scaling group.")),
-        ("EnableMetricsCollection", deferred("Model requires AutoScalingGroupName, Granularity. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Enables group metrics collection for the specified Auto Scaling group. You can use these metrics to track changes in an Auto Scaling group and to set alarms on threshold values. You can view group metrics using the Amazon EC2…")),
-        ("EnterStandby", deferred("Model requires AutoScalingGroupName, ShouldDecrementDesiredCapacity. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Moves the specified instances into the standby state. If you choose to decrement the desired capacity of the Auto Scaling group, the instances can enter standby as long as the desired capacity of the Auto Scaling group after the…")),
-        ("ExecutePolicy", deferred("Model requires PolicyName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Executes the specified policy. This can be useful for testing the design of your scaling policy.")),
-        ("ExitStandby", deferred("Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Moves the specified instances out of the standby state. After you put the instances back in service, the desired capacity is incremented. For more information, see Temporarily removing instances from your Auto Scaling group in…")),
-        ("GetPredictiveScalingForecast", deferred("Model requires AutoScalingGroupName, PolicyName, StartTime, EndTime. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the forecast data for a predictive scaling policy. Load forecasts are predictions of the hourly load values using historical load data from CloudWatch and an analysis of historical trends. Capacity forecasts are…")),
-        ("LaunchInstances", deferred("Model requires AutoScalingGroupName, RequestedCapacity, ClientToken. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Launches a specified number of instances in an Auto Scaling group. Returns instance IDs and other details if launch is successful or error details if launch is unsuccessful.")),
-        ("PutAccountSetting", deferred("Model requires Name, Value. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Modifies an account setting for your account. You can use this operation to opt in or opt out of features provided through account settings when permitted. Account settings give you control over features that might have…")),
-        ("PutLifecycleHook", deferred("Model requires LifecycleHookName, AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates or updates a lifecycle hook for the specified Auto Scaling group. Lifecycle hooks let you create solutions that are aware of events in the Auto Scaling instance lifecycle, and then perform a custom action on instances…")),
-        ("PutNotificationConfiguration", deferred("Model requires AutoScalingGroupName, TopicARN, NotificationTypes. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Configures an Auto Scaling group to send notifications when specified events take place. Subscribers to the specified topic can have messages delivered to an endpoint such as a web server or an email address. This configuration…")),
-        ("PutScalingPolicy", deferred("Model requires AutoScalingGroupName, PolicyName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates or updates a scaling policy for an Auto Scaling group. Scaling policies are used to scale an Auto Scaling group based on configurable metrics. If no policies are defined, the dynamic scaling and predictive scaling…")),
-        ("PutScheduledUpdateGroupAction", deferred("Model requires AutoScalingGroupName, ScheduledActionName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates or updates a scheduled scaling action for an Auto Scaling group. For more information, see Scheduled scaling in the Amazon EC2 Auto Scaling User Guide . You can view the scheduled actions for an Auto Scaling group using…")),
-        ("PutWarmPool", deferred("Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates or updates a warm pool for the specified Auto Scaling group. A warm pool is a pool of pre-initialized EC2 instances that sits alongside the Auto Scaling group. Whenever your application needs to scale out, the Auto…")),
-        ("RecordLifecycleActionHeartbeat", deferred("Model requires LifecycleHookName, AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Records a heartbeat for the lifecycle action associated with the specified token or instance. This extends the timeout by the length of time defined using the PutLifecycleHook API call. This step is a part of the procedure for…")),
-        ("ResumeProcesses", deferred("Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Resumes the specified suspended auto scaling processes, or all suspended process, for the specified Auto Scaling group. For more information, see Suspend and resume Amazon EC2 Auto Scaling processes in the Amazon EC2 Auto Scaling…")),
-        ("RollbackInstanceRefresh", deferred("Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Cancels an instance refresh that is in progress and rolls back any changes that it made. Amazon EC2 Auto Scaling replaces any instances that were replaced during the instance refresh. This restores your Auto Scaling group to the…")),
-        ("SetDesiredCapacity", deferred("Model requires AutoScalingGroupName, DesiredCapacity. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Sets the size of the specified Auto Scaling group. If a scale-in activity occurs as a result of a new DesiredCapacity value that is lower than the current size of the group, the Auto Scaling group uses its termination policy to…")),
-        ("SetInstanceHealth", deferred("Model requires InstanceId, HealthStatus. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Sets the health status of the specified instance. For more information, see Set up a custom health check for your Auto Scaling group in the Amazon EC2 Auto Scaling User Guide .")),
-        ("SetInstanceProtection", deferred("Model requires InstanceIds, AutoScalingGroupName, ProtectedFromScaleIn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the instance protection settings of the specified instances. This operation cannot be called on instances in a warm pool. For more information, see Use instance scale-in protection in the Amazon EC2 Auto Scaling User…")),
-        ("StartInstanceRefresh", deferred("Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an instance refresh. This operation is part of the instance refresh feature in Amazon EC2 Auto Scaling, which helps you update instances in your Auto Scaling group. This feature is helpful, for example, when you have a new…")),
-        ("SuspendProcesses", deferred("Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Suspends the specified auto scaling processes, or all processes, for the specified Auto Scaling group. If you suspend either the Launch or Terminate process types, it can prevent other process types from functioning properly. For…")),
-        ("TerminateInstanceInAutoScalingGroup", deferred("Model requires ShouldDecrementDesiredCapacity. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Terminates the specified instance and optionally adjusts the desired group size. This operation cannot be called on instances in a warm pool. This call simply makes a termination request. The instances are not terminated…")),
+        (
+            "DescribeScheduledActions",
+            OperationOverlay {
+                queryable: vec![path("ScheduledActionARN")?],
+                ..read(
+                    "ScheduledUpdateGroupActions",
+                    Identity::Arn(path("ScheduledActionARN")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "DescribeTags",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is Tags; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the specified tags. You can use filters to limit the results. For example, you can query for the tags for a specific Auto Scaling group. You can specify multiple values for a filter. A tag must match at least one of the…",
+            ),
+        ),
+        (
+            "DescribeTerminationPolicyTypes",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is TerminationPolicyTypes; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Describes the termination policies supported by Amazon EC2 Auto Scaling. For more information, see Configure termination policies for Amazon EC2 Auto Scaling in the Amazon EC2 Auto Scaling User Guide .",
+            ),
+        ),
+        (
+            "DescribeTrafficSources",
+            deferred(
+                "Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about the traffic sources for the specified Auto Scaling group. You can optionally provide a traffic source type. If you provide a traffic source type, then the results only include that traffic source type. If…",
+            ),
+        ),
+        (
+            "DescribeWarmPool",
+            deferred(
+                "Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets information about a warm pool and its instances. For more information, see Warm pools for Amazon EC2 Auto Scaling in the Amazon EC2 Auto Scaling User Guide .",
+            ),
+        ),
+        (
+            "DetachInstances",
+            deferred(
+                "Model requires AutoScalingGroupName, ShouldDecrementDesiredCapacity. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes one or more instances from the specified Auto Scaling group. After the instances are detached, you can manage them independent of the Auto Scaling group. If you do not specify the option to decrement the desired capacity,…",
+            ),
+        ),
+        (
+            "DetachLoadBalancerTargetGroups",
+            deferred(
+                "Model requires AutoScalingGroupName, TargetGroupARNs. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This API operation is superseded by DetachTrafficSources , which can detach multiple traffic sources types. We recommend using DetachTrafficSources to simplify how you manage traffic sources. However, we continue to support…",
+            ),
+        ),
+        (
+            "DetachLoadBalancers",
+            deferred(
+                "Model requires AutoScalingGroupName, LoadBalancerNames. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: This API operation is superseded by DetachTrafficSources , which can detach multiple traffic sources types. We recommend using DetachTrafficSources to simplify how you manage traffic sources. However, we continue to support…",
+            ),
+        ),
+        (
+            "DetachTrafficSources",
+            deferred(
+                "Model requires AutoScalingGroupName, TrafficSources. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Detaches one or more traffic sources from the specified Auto Scaling group. When you detach a traffic source, it enters the Removing state while deregistering the instances in the group. When all instances are deregistered, then…",
+            ),
+        ),
+        (
+            "DisableMetricsCollection",
+            deferred(
+                "Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Disables group metrics collection for the specified Auto Scaling group.",
+            ),
+        ),
+        (
+            "EnableMetricsCollection",
+            deferred(
+                "Model requires AutoScalingGroupName, Granularity. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Enables group metrics collection for the specified Auto Scaling group. You can use these metrics to track changes in an Auto Scaling group and to set alarms on threshold values. You can view group metrics using the Amazon EC2…",
+            ),
+        ),
+        (
+            "EnterStandby",
+            deferred(
+                "Model requires AutoScalingGroupName, ShouldDecrementDesiredCapacity. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Moves the specified instances into the standby state. If you choose to decrement the desired capacity of the Auto Scaling group, the instances can enter standby as long as the desired capacity of the Auto Scaling group after the…",
+            ),
+        ),
+        (
+            "ExecutePolicy",
+            deferred(
+                "Model requires PolicyName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Executes the specified policy. This can be useful for testing the design of your scaling policy.",
+            ),
+        ),
+        (
+            "ExitStandby",
+            deferred(
+                "Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Moves the specified instances out of the standby state. After you put the instances back in service, the desired capacity is incremented. For more information, see Temporarily removing instances from your Auto Scaling group in…",
+            ),
+        ),
+        (
+            "GetPredictiveScalingForecast",
+            deferred(
+                "Model requires AutoScalingGroupName, PolicyName, StartTime, EndTime. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the forecast data for a predictive scaling policy. Load forecasts are predictions of the hourly load values using historical load data from CloudWatch and an analysis of historical trends. Capacity forecasts are…",
+            ),
+        ),
+        (
+            "LaunchInstances",
+            deferred(
+                "Model requires AutoScalingGroupName, RequestedCapacity, ClientToken. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Launches a specified number of instances in an Auto Scaling group. Returns instance IDs and other details if launch is successful or error details if launch is unsuccessful.",
+            ),
+        ),
+        (
+            "PutAccountSetting",
+            deferred(
+                "Model requires Name, Value. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Modifies an account setting for your account. You can use this operation to opt in or opt out of features provided through account settings when permitted. Account settings give you control over features that might have…",
+            ),
+        ),
+        (
+            "PutLifecycleHook",
+            deferred(
+                "Model requires LifecycleHookName, AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates or updates a lifecycle hook for the specified Auto Scaling group. Lifecycle hooks let you create solutions that are aware of events in the Auto Scaling instance lifecycle, and then perform a custom action on instances…",
+            ),
+        ),
+        (
+            "PutNotificationConfiguration",
+            deferred(
+                "Model requires AutoScalingGroupName, TopicARN, NotificationTypes. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Configures an Auto Scaling group to send notifications when specified events take place. Subscribers to the specified topic can have messages delivered to an endpoint such as a web server or an email address. This configuration…",
+            ),
+        ),
+        (
+            "PutScalingPolicy",
+            deferred(
+                "Model requires AutoScalingGroupName, PolicyName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates or updates a scaling policy for an Auto Scaling group. Scaling policies are used to scale an Auto Scaling group based on configurable metrics. If no policies are defined, the dynamic scaling and predictive scaling…",
+            ),
+        ),
+        (
+            "PutScheduledUpdateGroupAction",
+            deferred(
+                "Model requires AutoScalingGroupName, ScheduledActionName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates or updates a scheduled scaling action for an Auto Scaling group. For more information, see Scheduled scaling in the Amazon EC2 Auto Scaling User Guide . You can view the scheduled actions for an Auto Scaling group using…",
+            ),
+        ),
+        (
+            "PutWarmPool",
+            deferred(
+                "Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates or updates a warm pool for the specified Auto Scaling group. A warm pool is a pool of pre-initialized EC2 instances that sits alongside the Auto Scaling group. Whenever your application needs to scale out, the Auto…",
+            ),
+        ),
+        (
+            "RecordLifecycleActionHeartbeat",
+            deferred(
+                "Model requires LifecycleHookName, AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Records a heartbeat for the lifecycle action associated with the specified token or instance. This extends the timeout by the length of time defined using the PutLifecycleHook API call. This step is a part of the procedure for…",
+            ),
+        ),
+        (
+            "ResumeProcesses",
+            deferred(
+                "Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Resumes the specified suspended auto scaling processes, or all suspended process, for the specified Auto Scaling group. For more information, see Suspend and resume Amazon EC2 Auto Scaling processes in the Amazon EC2 Auto Scaling…",
+            ),
+        ),
+        (
+            "RollbackInstanceRefresh",
+            deferred(
+                "Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Cancels an instance refresh that is in progress and rolls back any changes that it made. Amazon EC2 Auto Scaling replaces any instances that were replaced during the instance refresh. This restores your Auto Scaling group to the…",
+            ),
+        ),
+        (
+            "SetDesiredCapacity",
+            deferred(
+                "Model requires AutoScalingGroupName, DesiredCapacity. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Sets the size of the specified Auto Scaling group. If a scale-in activity occurs as a result of a new DesiredCapacity value that is lower than the current size of the group, the Auto Scaling group uses its termination policy to…",
+            ),
+        ),
+        (
+            "SetInstanceHealth",
+            deferred(
+                "Model requires InstanceId, HealthStatus. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Sets the health status of the specified instance. For more information, see Set up a custom health check for your Auto Scaling group in the Amazon EC2 Auto Scaling User Guide .",
+            ),
+        ),
+        (
+            "SetInstanceProtection",
+            deferred(
+                "Model requires InstanceIds, AutoScalingGroupName, ProtectedFromScaleIn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the instance protection settings of the specified instances. This operation cannot be called on instances in a warm pool. For more information, see Use instance scale-in protection in the Amazon EC2 Auto Scaling User…",
+            ),
+        ),
+        (
+            "StartInstanceRefresh",
+            deferred(
+                "Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an instance refresh. This operation is part of the instance refresh feature in Amazon EC2 Auto Scaling, which helps you update instances in your Auto Scaling group. This feature is helpful, for example, when you have a new…",
+            ),
+        ),
+        (
+            "SuspendProcesses",
+            deferred(
+                "Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Suspends the specified auto scaling processes, or all processes, for the specified Auto Scaling group. If you suspend either the Launch or Terminate process types, it can prevent other process types from functioning properly. For…",
+            ),
+        ),
+        (
+            "TerminateInstanceInAutoScalingGroup",
+            deferred(
+                "Model requires ShouldDecrementDesiredCapacity. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Terminates the specified instance and optionally adjusts the desired group size. This operation cannot be called on instances in a warm pool. This call simply makes a termination request. The instances are not terminated…",
+            ),
+        ),
     ])
 }
 
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
-    Ok(vec![
-        ("UpdateAutoScalingGroup", deferred("Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: We strongly recommend that all Auto Scaling groups use launch templates to ensure full functionality for Amazon EC2 Auto Scaling and Amazon EC2. Updates the configuration for the specified Auto Scaling group. To update an Auto…")),
-    ])
+    Ok(vec![(
+        "UpdateAutoScalingGroup",
+        deferred(
+            "Model requires AutoScalingGroupName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: We strongly recommend that all Auto Scaling groups use launch templates to ensure full functionality for Amazon EC2 Auto Scaling and Amazon EC2. Updates the configuration for the specified Auto Scaling group. To update an Auto…",
+        ),
+    )])
 }

@@ -11,8 +11,7 @@ pub(super) fn reviewed_parents(
         if row.list_model_validation.as_deref() != Some("reviewed_parent_model") {
             continue;
         }
-        let family = row.type_name.split("::").nth(1)
-            .expect(&format!("CFN type name missing service component: {}", row.type_name));
+        let family = row.type_name.split("::").nth(1).unwrap_or_default();
         let mut candidate = None;
         for pointer in &row.primary_identifier {
             let Some(property) = pointer.rsplit('/').next() else {

@@ -1,11 +1,11 @@
 #[cfg(test)]
 mod tests;
 
+mod completion;
 mod context_plans;
-mod tag_plans;
 mod endpoint_plans;
 mod extra_plans;
-mod completion;
+mod tag_plans;
 mod taxsettings;
 mod textract;
 mod textract_plans_1;
@@ -65,45 +65,52 @@ mod xray_plans_1;
 use super::{empty, name, path};
 use crate::{
     classes::DenyReason,
-    overlay::{Binding, Identity, ItemSelector, MemberPath, NameError, OperationOverlay,
-        OverlayClass, Paginator, Scope, ServiceOverlay, TokenPair},
+    overlay::{
+        Binding, Identity, ItemSelector, MemberPath, NameError, OperationOverlay, OverlayClass,
+        Paginator, Scope, ServiceOverlay, TokenPair,
+    },
 };
 
 pub(super) fn overlays() -> Result<Vec<ServiceOverlay>, NameError> {
-    completion::apply(tag_plans::apply(context_plans::apply(endpoint_plans::apply(vec![
-        taxsettings::overlay()?,
-        textract::overlay()?,
-        timestream_influxdb::overlay()?,
-        timestream_query::overlay()?,
-        timestream_write::overlay()?,
-        transcribe::overlay()?,
-        transcribe_streaming::overlay()?,
-        transfer::overlay()?,
-        translate::overlay()?,
-        trustedadvisor::overlay()?,
-        uxc::overlay()?,
-        verifiedpermissions::overlay()?,
-        voice_id::overlay()?,
-        vpc_lattice::overlay()?,
-        waf::overlay()?,
-        waf_regional::overlay()?,
-        wafv2::overlay()?,
-        wellarchitected::overlay()?,
-        wickr::overlay()?,
-        wisdom::overlay()?,
-        workdocs::overlay()?,
-        workmail::overlay()?,
-        workmailmessageflow::overlay()?,
-        workspaces::overlay()?,
-        workspaces_instances::overlay()?,
-        workspaces_thin_client::overlay()?,
-        workspaces_web::overlay()?,
-        xray::overlay()?,
-    ])?)?)?)
+    completion::apply(tag_plans::apply(context_plans::apply(
+        endpoint_plans::apply(vec![
+            taxsettings::overlay()?,
+            textract::overlay()?,
+            timestream_influxdb::overlay()?,
+            timestream_query::overlay()?,
+            timestream_write::overlay()?,
+            transcribe::overlay()?,
+            transcribe_streaming::overlay()?,
+            transfer::overlay()?,
+            translate::overlay()?,
+            trustedadvisor::overlay()?,
+            uxc::overlay()?,
+            verifiedpermissions::overlay()?,
+            voice_id::overlay()?,
+            vpc_lattice::overlay()?,
+            waf::overlay()?,
+            waf_regional::overlay()?,
+            wafv2::overlay()?,
+            wellarchitected::overlay()?,
+            wickr::overlay()?,
+            wisdom::overlay()?,
+            workdocs::overlay()?,
+            workmail::overlay()?,
+            workmailmessageflow::overlay()?,
+            workspaces::overlay()?,
+            workspaces_instances::overlay()?,
+            workspaces_thin_client::overlay()?,
+            workspaces_web::overlay()?,
+            xray::overlay()?,
+        ])?,
+    )?)?)
 }
 
 fn deny(reason: DenyReason) -> OperationOverlay {
-    OperationOverlay { class: Some(OverlayClass::Deny(reason)), ..empty() }
+    OperationOverlay {
+        class: Some(OverlayClass::Deny(reason)),
+        ..empty()
+    }
 }
 
 fn defer(reason: &str) -> OperationOverlay {
@@ -119,7 +126,11 @@ fn paths(values: &[&str]) -> Result<Vec<MemberPath>, NameError> {
 }
 
 fn token(input: &str, output: &str) -> Result<Paginator, NameError> {
-    Ok(Paginator::Token(TokenPair { input: path(input)?, output: path(output)?, optional: false }))
+    Ok(Paginator::Token(TokenPair {
+        input: path(input)?,
+        output: path(output)?,
+        optional: false,
+    }))
 }
 
 fn inventory(
@@ -145,6 +156,12 @@ fn bind(
     field: &str,
 ) -> Result<(), NameError> {
     operation.class = Some(OverlayClass::Expand);
-    operation.bind.insert(path(input)?, Binding::From { operation: name(parent)?, path: path(field)? });
+    operation.bind.insert(
+        path(input)?,
+        Binding::From {
+            operation: name(parent)?,
+            path: path(field)?,
+        },
+    );
     Ok(())
 }

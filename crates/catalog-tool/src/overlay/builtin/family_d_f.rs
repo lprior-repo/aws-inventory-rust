@@ -1,6 +1,5 @@
 // Embedded, explicitly reviewed d <= service key < g policies.
 // First-wave dynamodb/ec2/ecs/eks/elastic-load-balancing-v2 remain owned by builtin.rs.
-mod support;
 mod s_data_pipeline;
 mod s_data_pipeline_decisions_0;
 mod s_database_migration_service;
@@ -123,6 +122,7 @@ mod s_freetier_decisions_0;
 mod s_fsx;
 mod s_fsx_decisions_0;
 mod s_fsx_decisions_1;
+mod support;
 
 use crate::overlay::{NameError, ServiceOverlay};
 

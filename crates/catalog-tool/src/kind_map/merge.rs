@@ -1,19 +1,84 @@
-use super::{AdditionalEmissionMapping, ApiOnlyMapping, CfnMapping, CompoundRelationMapping, KindMap, KindMapError, MappingSource, OperationMapping, ParentRelationMapping, RelationMapping, RelationTargetsMapping};
+use super::{
+    AdditionalEmissionMapping, ApiOnlyMapping, CfnMapping, CompoundRelationMapping, KindMap,
+    KindMapError, MappingSource, OperationMapping, ParentRelationMapping, RelationMapping,
+    RelationTargetsMapping,
+};
 use crate::names::Exceptions;
 use std::collections::BTreeMap;
 
-pub(super) fn compile<'a>(sources: impl Iterator<Item = MappingSource<'a>> + Clone, cfn_source: &[u8]) -> Result<KindMap, KindMapError> {
-    let cfn = unique(sources.clone().flat_map(|source| source.cfn.iter().copied()), cfn_key)?;
-    let api_only = unique(sources.clone().flat_map(|source| source.api_only.iter().copied()), |row: &ApiOnlyMapping<'_>| row.kind)?;
-    let operations = unique(sources.clone().flat_map(|source| source.operations.iter().copied()), |row: &OperationMapping<'_>| (row.service, row.operation))?;
-    let relation_targets = unique(sources.clone().flat_map(|source| source.relation_targets.iter().copied()), |row: &RelationTargetsMapping<'_>| (row.source_kind, row.source, row.relation))?;
-    let relations = unique(sources.clone().flat_map(|source| source.relations.iter().copied()), |row: &RelationMapping<'_>| (row.source_kind, row.source, row.target_kind, row.target, row.relation, row.scope, row.guard.map(|guard| (guard.source, guard.equals))))?;
-    let parent_relations = unique(sources.clone().flat_map(|source| source.parent_relations.iter().copied()), |row: &ParentRelationMapping<'_>| (row.source_kind, row.target_kinds, row.relation, row.scope))?;
-    let compound_relations = unique(sources.clone().flat_map(|source| source.compound_relations.iter().copied()), |row: &CompoundRelationMapping<'_>| (row.source_kind, row.target_kind, row.relation, row.scope))?;
-    let additional_emissions = unique(sources.flat_map(|source| source.additional_emissions.iter().copied()), |row: &AdditionalEmissionMapping<'_>| (row.service, row.operation, row.emitter_key))?;
+pub(super) fn compile<'a>(
+    sources: impl Iterator<Item = MappingSource<'a>> + Clone,
+    cfn_source: &[u8],
+) -> Result<KindMap, KindMapError> {
+    let cfn = unique(
+        sources
+            .clone()
+            .flat_map(|source| source.cfn.iter().copied()),
+        cfn_key,
+    )?;
+    let api_only = unique(
+        sources
+            .clone()
+            .flat_map(|source| source.api_only.iter().copied()),
+        |row: &ApiOnlyMapping<'_>| row.kind,
+    )?;
+    let operations = unique(
+        sources
+            .clone()
+            .flat_map(|source| source.operations.iter().copied()),
+        |row: &OperationMapping<'_>| (row.service, row.operation),
+    )?;
+    let relation_targets = unique(
+        sources
+            .clone()
+            .flat_map(|source| source.relation_targets.iter().copied()),
+        |row: &RelationTargetsMapping<'_>| (row.source_kind, row.source, row.relation),
+    )?;
+    let relations = unique(
+        sources
+            .clone()
+            .flat_map(|source| source.relations.iter().copied()),
+        |row: &RelationMapping<'_>| {
+            (
+                row.source_kind,
+                row.source,
+                row.target_kind,
+                row.target,
+                row.relation,
+                row.scope,
+                row.guard.map(|guard| (guard.source, guard.equals)),
+            )
+        },
+    )?;
+    let parent_relations = unique(
+        sources
+            .clone()
+            .flat_map(|source| source.parent_relations.iter().copied()),
+        |row: &ParentRelationMapping<'_>| {
+            (row.source_kind, row.target_kinds, row.relation, row.scope)
+        },
+    )?;
+    let compound_relations = unique(
+        sources
+            .clone()
+            .flat_map(|source| source.compound_relations.iter().copied()),
+        |row: &CompoundRelationMapping<'_>| {
+            (row.source_kind, row.target_kind, row.relation, row.scope)
+        },
+    )?;
+    let additional_emissions = unique(
+        sources.flat_map(|source| source.additional_emissions.iter().copied()),
+        |row: &AdditionalEmissionMapping<'_>| (row.service, row.operation, row.emitter_key),
+    )?;
     let source = MappingSource {
-        cfn: &cfn, api_only: &api_only, operations: &operations, relations: &relations, relation_targets: &relation_targets,
-        parent_relations: &parent_relations, compound_relations: &compound_relations, additional_emissions: &additional_emissions,
+        cfn: &cfn,
+        api_only: &api_only,
+        operations: &operations,
+        relations: &relations,
+        relation_targets: &relation_targets,
+        parent_relations: &parent_relations,
+        compound_relations: &compound_relations,
+        additional_emissions: &additional_emissions,
         reviewer: "Automated pinned-model review; embedded native service families; no human approval",
         reviewed: "2026-11-15",
         ..super::builtin::SOURCE
@@ -27,12 +92,19 @@ fn cfn_key<'a>(row: &CfnMapping<'a>) -> &'a str {
     }
 }
 
-fn unique<T: Copy + PartialEq, K: Ord + std::fmt::Debug>(rows: impl Iterator<Item = T>, key: impl Fn(&T) -> K) -> Result<Vec<T>, KindMapError> {
+fn unique<T: Copy + PartialEq, K: Ord + std::fmt::Debug>(
+    rows: impl Iterator<Item = T>,
+    key: impl Fn(&T) -> K,
+) -> Result<Vec<T>, KindMapError> {
     let mut entries = BTreeMap::new();
     rows.into_iter().try_for_each(|row| {
         let key = key(&row);
         if let Some(previous) = entries.get(&key) {
-            return if *previous == row { Ok(()) } else { Err(KindMapError::Duplicate(format!("{key:?}"))) };
+            return if *previous == row {
+                Ok(())
+            } else {
+                Err(KindMapError::Duplicate(format!("{key:?}")))
+            };
         }
         entries.insert(key, row);
         Ok(())

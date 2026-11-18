@@ -1,25 +1,88 @@
 use crate::kind_map::ApiOnlyMapping;
 
 pub(super) const ENTRIES: &[ApiOnlyMapping<'static>] = &[
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SSMIncidentRecord", reason: "Distinct API-managed SSMIncidentRecord resource identified by @arn in ssm-incidents ListIncidentRecords incidentRecordSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SSMInventoryDeletion", reason: "Distinct API-managed SSMInventoryDeletion resource identified by DeletionId in ssm DescribeInventoryDeletions InventoryDeletions. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SSMManagedInstance", reason: "Distinct API-managed SSMManagedInstance resource identified by InstanceId in ssm DescribeInstanceInformation InstanceInformationList. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SSMOpsItemAssociation", reason: "Distinct API-managed SSMOpsItemAssociation resource identified by OpsItemId,AssociationId in ssm ListOpsItemRelatedItems Summaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SSMOpsMetadata", reason: "Distinct API-managed SSMOpsMetadata resource identified by @OpsMetadataArn in ssm ListOpsMetadata OpsMetadataList. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SSMPatchGroup", reason: "Distinct API-managed SSMPatchGroup resource identified by PatchGroup in ssm DescribePatchGroups Mappings. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SSMResourceComplianceSummary", reason: "Distinct API-managed SSMResourceComplianceSummary resource identified by ComplianceType,ResourceType,ResourceId in ssm ListResourceComplianceSummaries ResourceComplianceSummaryItems. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SSOTrustedTokenIssuer", reason: "Distinct API-managed SSOTrustedTokenIssuer resource identified by @TrustedTokenIssuerArn in sso-admin ListTrustedTokenIssuers TrustedTokenIssuers. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::StorageGateway", reason: "Distinct API-managed StorageGateway resource identified by @GatewayARN in storage-gateway ListGateways Gateways. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::StorageGatewayAutomaticTapePolicy", reason: "Distinct API-managed StorageGatewayAutomaticTapePolicy resource identified by @GatewayARN in storage-gateway ListAutomaticTapeCreationPolicies AutomaticTapeCreationPolicyInfos. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::StorageGatewayCacheReport", reason: "Distinct API-managed StorageGatewayCacheReport resource identified by @CacheReportARN in storage-gateway ListCacheReports CacheReportList. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::StorageGatewayFileShare", reason: "Distinct API-managed StorageGatewayFileShare resource identified by @FileShareARN in storage-gateway ListFileShares FileShareInfoList. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::StorageGatewayFileSystemAssociation", reason: "Distinct API-managed StorageGatewayFileSystemAssociation resource identified by @FileSystemAssociationARN in storage-gateway ListFileSystemAssociations FileSystemAssociationSummaryList. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::StorageGatewayTape", reason: "Distinct API-managed StorageGatewayTape resource identified by @TapeARN in storage-gateway ListTapes TapeInfos. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::StorageGatewayTapePool", reason: "Distinct API-managed StorageGatewayTapePool resource identified by @PoolARN in storage-gateway ListTapePools PoolInfos. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::StorageGatewayVolume", reason: "Distinct API-managed StorageGatewayVolume resource identified by @VolumeARN in storage-gateway ListVolumes VolumeInfos. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SupplyChainDataLakeDataset", reason: "Distinct API-managed SupplyChainDataLakeDataset resource identified by @arn in supplychain ListDataLakeDatasets datasets. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SupplyChainDataLakeNamespace", reason: "Distinct API-managed SupplyChainDataLakeNamespace resource identified by @arn in supplychain ListDataLakeNamespaces namespaces. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SupplyChainInstance", reason: "Distinct API-managed SupplyChainInstance resource identified by instanceId in supplychain ListInstances instances. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::WhatsAppBusinessAccount", reason: "Distinct API-managed WhatsAppBusinessAccount resource identified by @arn in socialmessaging ListLinkedWhatsAppBusinessAccounts linkedAccounts. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::Route53Domain", reason: "Registered domain is identified by DomainName and is distinct from a hosted zone, DNS record, or DNSSEC resource; no pinned CFN domain-registration type exists." },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SSMIncidentRecord",
+        reason: "Distinct API-managed SSMIncidentRecord resource identified by @arn in ssm-incidents ListIncidentRecords incidentRecordSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SSMInventoryDeletion",
+        reason: "Distinct API-managed SSMInventoryDeletion resource identified by DeletionId in ssm DescribeInventoryDeletions InventoryDeletions. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SSMManagedInstance",
+        reason: "Distinct API-managed SSMManagedInstance resource identified by InstanceId in ssm DescribeInstanceInformation InstanceInformationList. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SSMOpsItemAssociation",
+        reason: "Distinct API-managed SSMOpsItemAssociation resource identified by OpsItemId,AssociationId in ssm ListOpsItemRelatedItems Summaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SSMOpsMetadata",
+        reason: "Distinct API-managed SSMOpsMetadata resource identified by @OpsMetadataArn in ssm ListOpsMetadata OpsMetadataList. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SSMPatchGroup",
+        reason: "Distinct API-managed SSMPatchGroup resource identified by PatchGroup in ssm DescribePatchGroups Mappings. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SSMResourceComplianceSummary",
+        reason: "Distinct API-managed SSMResourceComplianceSummary resource identified by ComplianceType,ResourceType,ResourceId in ssm ListResourceComplianceSummaries ResourceComplianceSummaryItems. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SSOTrustedTokenIssuer",
+        reason: "Distinct API-managed SSOTrustedTokenIssuer resource identified by @TrustedTokenIssuerArn in sso-admin ListTrustedTokenIssuers TrustedTokenIssuers. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::StorageGateway",
+        reason: "Distinct API-managed StorageGateway resource identified by @GatewayARN in storage-gateway ListGateways Gateways. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::StorageGatewayAutomaticTapePolicy",
+        reason: "Distinct API-managed StorageGatewayAutomaticTapePolicy resource identified by @GatewayARN in storage-gateway ListAutomaticTapeCreationPolicies AutomaticTapeCreationPolicyInfos. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::StorageGatewayCacheReport",
+        reason: "Distinct API-managed StorageGatewayCacheReport resource identified by @CacheReportARN in storage-gateway ListCacheReports CacheReportList. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::StorageGatewayFileShare",
+        reason: "Distinct API-managed StorageGatewayFileShare resource identified by @FileShareARN in storage-gateway ListFileShares FileShareInfoList. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::StorageGatewayFileSystemAssociation",
+        reason: "Distinct API-managed StorageGatewayFileSystemAssociation resource identified by @FileSystemAssociationARN in storage-gateway ListFileSystemAssociations FileSystemAssociationSummaryList. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::StorageGatewayTape",
+        reason: "Distinct API-managed StorageGatewayTape resource identified by @TapeARN in storage-gateway ListTapes TapeInfos. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::StorageGatewayTapePool",
+        reason: "Distinct API-managed StorageGatewayTapePool resource identified by @PoolARN in storage-gateway ListTapePools PoolInfos. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::StorageGatewayVolume",
+        reason: "Distinct API-managed StorageGatewayVolume resource identified by @VolumeARN in storage-gateway ListVolumes VolumeInfos. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SupplyChainDataLakeDataset",
+        reason: "Distinct API-managed SupplyChainDataLakeDataset resource identified by @arn in supplychain ListDataLakeDatasets datasets. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SupplyChainDataLakeNamespace",
+        reason: "Distinct API-managed SupplyChainDataLakeNamespace resource identified by @arn in supplychain ListDataLakeNamespaces namespaces. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SupplyChainInstance",
+        reason: "Distinct API-managed SupplyChainInstance resource identified by instanceId in supplychain ListInstances instances. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::WhatsAppBusinessAccount",
+        reason: "Distinct API-managed WhatsAppBusinessAccount resource identified by @arn in socialmessaging ListLinkedWhatsAppBusinessAccounts linkedAccounts. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::Route53Domain",
+        reason: "Registered domain is identified by DomainName and is distinct from a hosted zone, DNS record, or DNSSEC resource; no pinned CFN domain-registration type exists.",
+    },
 ];

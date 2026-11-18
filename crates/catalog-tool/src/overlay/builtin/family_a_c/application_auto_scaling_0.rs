@@ -4,19 +4,89 @@ use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        ("DeleteScalingPolicy", deferred("Model requires PolicyName, ServiceNamespace, ResourceId, ScalableDimension. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified scaling policy for an Application Auto Scaling scalable target. Deleting a step scaling policy deletes the underlying alarm action, but does not delete the CloudWatch alarm associated with the scaling…")),
-        ("DeleteScheduledAction", deferred("Model requires ServiceNamespace, ScheduledActionName, ResourceId, ScalableDimension. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified scheduled action for an Application Auto Scaling scalable target. For more information, see Delete a scheduled action in the Application Auto Scaling User Guide .")),
-        ("DeregisterScalableTarget", deferred("Model requires ServiceNamespace, ResourceId, ScalableDimension. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deregisters an Application Auto Scaling scalable target when you have finished using it. To see which resources have been registered, use DescribeScalableTargets . Deregistering a scalable target deletes the scaling policies and…")),
-        ("DescribeScalableTargets", deferred("Required ServiceNamespace is an enum; complete collection needs one request stream per modeled namespace. Current policy runtime has one fixed-input plan per operation and no enum-product fan-out. Selecting only ECS would silently omit other resources.")),
-        ("DescribeScalingActivities", deferred("Model requires ServiceNamespace. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Provides descriptive information about the scaling activities in the specified namespace from the previous six weeks. You can filter the results using ResourceId and ScalableDimension . For information about viewing scaling…")),
-        ("DescribeScalingPolicies", deferred("Required ServiceNamespace is an enum; complete collection needs one request stream per modeled namespace. Current policy runtime has one fixed-input plan per operation and no enum-product fan-out. Selecting only ECS would silently omit other resources.")),
-        ("DescribeScheduledActions", deferred("Required ServiceNamespace is an enum; complete collection needs one request stream per modeled namespace. Current policy runtime has one fixed-input plan per operation and no enum-product fan-out. Selecting only ECS would silently omit other resources.")),
-        ("GetPredictiveScalingForecast", deferred("Model requires ServiceNamespace, ResourceId, ScalableDimension, PolicyName, StartTime, EndTime. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the forecast data for a predictive scaling policy. Load forecasts are predictions of the hourly load values using historical load data from CloudWatch and an analysis of historical trends. Capacity forecasts are…")),
-        ("ListTagsForResource", deferred("Model requires ResourceARN. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns all the tags on the specified Application Auto Scaling scalable target. For general information about tags, including the format and syntax, see Tagging your Amazon Web Services resources in the Amazon Web Services…")),
-        ("PutScalingPolicy", deferred("Model requires PolicyName, ServiceNamespace, ResourceId, ScalableDimension. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates or updates a scaling policy for an Application Auto Scaling scalable target. Each scalable target is identified by a service namespace, resource ID, and scalable dimension. A scaling policy applies to the scalable target…")),
-        ("PutScheduledAction", deferred("Model requires ServiceNamespace, ScheduledActionName, ResourceId, ScalableDimension. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates or updates a scheduled action for an Application Auto Scaling scalable target. Each scalable target is identified by a service namespace, resource ID, and scalable dimension. A scheduled action applies to the scalable…")),
-        ("RegisterScalableTarget", deferred("Model requires ServiceNamespace, ResourceId, ScalableDimension. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Registers or updates a scalable target, which is the resource that you want to scale. Scalable targets are uniquely identified by the combination of resource ID, scalable dimension, and namespace, which represents some capacity…")),
-        ("TagResource", deferred("Model requires ResourceARN, Tags. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Adds or edits tags on an Application Auto Scaling scalable target. Each tag consists of a tag key and a tag value, which are both case-sensitive strings. To add a tag, specify a new tag key and a tag value. To edit a tag, specify…")),
-        ("UntagResource", deferred("Model requires ResourceARN, TagKeys. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes tags from an Application Auto Scaling scalable target. To delete a tag, specify the tag key and the Application Auto Scaling scalable target.")),
+        (
+            "DeleteScalingPolicy",
+            deferred(
+                "Model requires PolicyName, ServiceNamespace, ResourceId, ScalableDimension. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified scaling policy for an Application Auto Scaling scalable target. Deleting a step scaling policy deletes the underlying alarm action, but does not delete the CloudWatch alarm associated with the scaling…",
+            ),
+        ),
+        (
+            "DeleteScheduledAction",
+            deferred(
+                "Model requires ServiceNamespace, ScheduledActionName, ResourceId, ScalableDimension. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified scheduled action for an Application Auto Scaling scalable target. For more information, see Delete a scheduled action in the Application Auto Scaling User Guide .",
+            ),
+        ),
+        (
+            "DeregisterScalableTarget",
+            deferred(
+                "Model requires ServiceNamespace, ResourceId, ScalableDimension. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deregisters an Application Auto Scaling scalable target when you have finished using it. To see which resources have been registered, use DescribeScalableTargets . Deregistering a scalable target deletes the scaling policies and…",
+            ),
+        ),
+        (
+            "DescribeScalableTargets",
+            deferred(
+                "Required ServiceNamespace is an enum; complete collection needs one request stream per modeled namespace. Current policy runtime has one fixed-input plan per operation and no enum-product fan-out. Selecting only ECS would silently omit other resources.",
+            ),
+        ),
+        (
+            "DescribeScalingActivities",
+            deferred(
+                "Model requires ServiceNamespace. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Provides descriptive information about the scaling activities in the specified namespace from the previous six weeks. You can filter the results using ResourceId and ScalableDimension . For information about viewing scaling…",
+            ),
+        ),
+        (
+            "DescribeScalingPolicies",
+            deferred(
+                "Required ServiceNamespace is an enum; complete collection needs one request stream per modeled namespace. Current policy runtime has one fixed-input plan per operation and no enum-product fan-out. Selecting only ECS would silently omit other resources.",
+            ),
+        ),
+        (
+            "DescribeScheduledActions",
+            deferred(
+                "Required ServiceNamespace is an enum; complete collection needs one request stream per modeled namespace. Current policy runtime has one fixed-input plan per operation and no enum-product fan-out. Selecting only ECS would silently omit other resources.",
+            ),
+        ),
+        (
+            "GetPredictiveScalingForecast",
+            deferred(
+                "Model requires ServiceNamespace, ResourceId, ScalableDimension, PolicyName, StartTime, EndTime. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the forecast data for a predictive scaling policy. Load forecasts are predictions of the hourly load values using historical load data from CloudWatch and an analysis of historical trends. Capacity forecasts are…",
+            ),
+        ),
+        (
+            "ListTagsForResource",
+            deferred(
+                "Model requires ResourceARN. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns all the tags on the specified Application Auto Scaling scalable target. For general information about tags, including the format and syntax, see Tagging your Amazon Web Services resources in the Amazon Web Services…",
+            ),
+        ),
+        (
+            "PutScalingPolicy",
+            deferred(
+                "Model requires PolicyName, ServiceNamespace, ResourceId, ScalableDimension. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates or updates a scaling policy for an Application Auto Scaling scalable target. Each scalable target is identified by a service namespace, resource ID, and scalable dimension. A scaling policy applies to the scalable target…",
+            ),
+        ),
+        (
+            "PutScheduledAction",
+            deferred(
+                "Model requires ServiceNamespace, ScheduledActionName, ResourceId, ScalableDimension. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates or updates a scheduled action for an Application Auto Scaling scalable target. Each scalable target is identified by a service namespace, resource ID, and scalable dimension. A scheduled action applies to the scalable…",
+            ),
+        ),
+        (
+            "RegisterScalableTarget",
+            deferred(
+                "Model requires ServiceNamespace, ResourceId, ScalableDimension. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Registers or updates a scalable target, which is the resource that you want to scale. Scalable targets are uniquely identified by the combination of resource ID, scalable dimension, and namespace, which represents some capacity…",
+            ),
+        ),
+        (
+            "TagResource",
+            deferred(
+                "Model requires ResourceARN, Tags. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Adds or edits tags on an Application Auto Scaling scalable target. Each tag consists of a tag key and a tag value, which are both case-sensitive strings. To add a tag, specify a new tag key and a tag value. To edit a tag, specify…",
+            ),
+        ),
+        (
+            "UntagResource",
+            deferred(
+                "Model requires ResourceARN, TagKeys. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes tags from an Application Auto Scaling scalable target. To delete a tag, specify the tag key and the Application Auto Scaling scalable target.",
+            ),
+        ),
     ])
 }

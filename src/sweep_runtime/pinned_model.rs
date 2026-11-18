@@ -23,7 +23,10 @@ pub(in crate::sweep_runtime) fn install(
         .ok_or("pinned model shapes absent")?;
     shapes.retain(|name, shape| {
         !is_type(shape, "operation")
-            || name.rsplit('#').next().is_some_and(|local| operations.contains(&local))
+            || name
+                .rsplit('#')
+                .next()
+                .is_some_and(|local| operations.contains(&local))
     });
     let retained = shapes
         .iter()
@@ -33,8 +36,13 @@ pub(in crate::sweep_runtime) fn install(
     if retained.len() != operations.len() {
         return Err(format!("pinned {service} model lacks a selected operation").into());
     }
-    for shape in shapes.values_mut().filter(|shape| is_type(shape, "service")) {
-        let service = shape.as_object_mut().ok_or("pinned service shape is not an object")?;
+    for shape in shapes
+        .values_mut()
+        .filter(|shape| is_type(shape, "service"))
+    {
+        let service = shape
+            .as_object_mut()
+            .ok_or("pinned service shape is not an object")?;
         service.insert("operations".to_owned(), Value::Array(retained.clone()));
         service.remove("resources");
     }

@@ -1,53 +1,157 @@
-use super::{defer, deny, wickr_plans_1};
 use super::super::service;
-use crate::{classes::DenyReason, overlay::{NameError, ServiceOverlay}};
+use super::{defer, deny, wickr_plans_1};
+use crate::{
+    classes::DenyReason,
+    overlay::{NameError, ServiceOverlay},
+};
 
 // Reviewed against pinned Smithy documentation, not operation-name read approval.
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
-    service("wickr", vec![
-        ("BatchCreateUser", deny(DenyReason::Mutating)),
-        ("BatchDeleteUser", deny(DenyReason::Mutating)),
-        ("BatchLookupUserUname", defer("Missing executable inventory binding for networkId, unames: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("BatchReinviteUser", defer("Missing executable inventory binding for networkId, userIds: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("BatchResetDevicesForUser", defer("Missing executable inventory binding for networkId, userId, appIds: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("BatchToggleUserSuspendStatus", defer("Missing executable inventory binding for networkId, suspend, userIds: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("CreateBot", deny(DenyReason::Mutating)),
-        ("CreateDataRetentionBot", deny(DenyReason::Mutating)),
-        ("CreateDataRetentionBotChallenge", deny(DenyReason::Mutating)),
-        ("CreateNetwork", deny(DenyReason::Mutating)),
-        ("CreateSecurityGroup", deny(DenyReason::Mutating)),
-        ("DeleteBot", deny(DenyReason::Mutating)),
-        ("DeleteDataRetentionBot", deny(DenyReason::Mutating)),
-        ("DeleteNetwork", deny(DenyReason::Mutating)),
-        ("DeleteSecurityGroup", deny(DenyReason::Mutating)),
-        ("GetBot", defer("Missing executable inventory binding for networkId, botId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetBotsCount", defer("Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetDataRetentionBot", defer("Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetGuestUserHistoryCount", defer("Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetNetwork", wickr_plans_1::get_network()?),
-        ("GetNetworkSettings", defer("Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetOidcInfo", deny(DenyReason::Secret)),
-        ("GetOpentdfConfig", deny(DenyReason::Secret)),
-        ("GetSecurityGroup", defer("Missing executable inventory binding for networkId, groupId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetUser", defer("Missing executable inventory binding for networkId, userId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetUsersCount", defer("Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListBlockedGuestUsers", defer("Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListBots", defer("Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListDevicesForUser", defer("Missing executable inventory binding for networkId, userId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListGuestUsers", defer("Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListNetworks", wickr_plans_1::list_networks()?),
-        ("ListSecurityGroups", defer("Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListSecurityGroupUsers", defer("Missing executable inventory binding for networkId, groupId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListUsers", defer("Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("RegisterOidcConfig", deny(DenyReason::Mutating)),
-        ("RegisterOidcConfigTest", deny(DenyReason::Mutating)),
-        ("RegisterOpentdfConfig", deny(DenyReason::Mutating)),
-        ("UpdateBot", deny(DenyReason::Mutating)),
-        ("UpdateDataRetention", deny(DenyReason::Mutating)),
-        ("UpdateGuestUser", deny(DenyReason::Mutating)),
-        ("UpdateNetwork", deny(DenyReason::Mutating)),
-        ("UpdateNetworkSettings", deny(DenyReason::Mutating)),
-        ("UpdateSecurityGroup", deny(DenyReason::Mutating)),
-        ("UpdateUser", deny(DenyReason::Mutating)),
-    ])
+    service(
+        "wickr",
+        vec![
+            ("BatchCreateUser", deny(DenyReason::Mutating)),
+            ("BatchDeleteUser", deny(DenyReason::Mutating)),
+            (
+                "BatchLookupUserUname",
+                defer(
+                    "Missing executable inventory binding for networkId, unames: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "BatchReinviteUser",
+                defer(
+                    "Missing executable inventory binding for networkId, userIds: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "BatchResetDevicesForUser",
+                defer(
+                    "Missing executable inventory binding for networkId, userId, appIds: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "BatchToggleUserSuspendStatus",
+                defer(
+                    "Missing executable inventory binding for networkId, suspend, userIds: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            ("CreateBot", deny(DenyReason::Mutating)),
+            ("CreateDataRetentionBot", deny(DenyReason::Mutating)),
+            (
+                "CreateDataRetentionBotChallenge",
+                deny(DenyReason::Mutating),
+            ),
+            ("CreateNetwork", deny(DenyReason::Mutating)),
+            ("CreateSecurityGroup", deny(DenyReason::Mutating)),
+            ("DeleteBot", deny(DenyReason::Mutating)),
+            ("DeleteDataRetentionBot", deny(DenyReason::Mutating)),
+            ("DeleteNetwork", deny(DenyReason::Mutating)),
+            ("DeleteSecurityGroup", deny(DenyReason::Mutating)),
+            (
+                "GetBot",
+                defer(
+                    "Missing executable inventory binding for networkId, botId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "GetBotsCount",
+                defer(
+                    "Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "GetDataRetentionBot",
+                defer(
+                    "Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "GetGuestUserHistoryCount",
+                defer(
+                    "Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            ("GetNetwork", wickr_plans_1::get_network()?),
+            (
+                "GetNetworkSettings",
+                defer(
+                    "Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            ("GetOidcInfo", deny(DenyReason::Secret)),
+            ("GetOpentdfConfig", deny(DenyReason::Secret)),
+            (
+                "GetSecurityGroup",
+                defer(
+                    "Missing executable inventory binding for networkId, groupId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "GetUser",
+                defer(
+                    "Missing executable inventory binding for networkId, userId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "GetUsersCount",
+                defer(
+                    "Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListBlockedGuestUsers",
+                defer(
+                    "Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListBots",
+                defer(
+                    "Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListDevicesForUser",
+                defer(
+                    "Missing executable inventory binding for networkId, userId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListGuestUsers",
+                defer(
+                    "Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            ("ListNetworks", wickr_plans_1::list_networks()?),
+            (
+                "ListSecurityGroups",
+                defer(
+                    "Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListSecurityGroupUsers",
+                defer(
+                    "Missing executable inventory binding for networkId, groupId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListUsers",
+                defer(
+                    "Missing executable inventory binding for networkId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            ("RegisterOidcConfig", deny(DenyReason::Mutating)),
+            ("RegisterOidcConfigTest", deny(DenyReason::Mutating)),
+            ("RegisterOpentdfConfig", deny(DenyReason::Mutating)),
+            ("UpdateBot", deny(DenyReason::Mutating)),
+            ("UpdateDataRetention", deny(DenyReason::Mutating)),
+            ("UpdateGuestUser", deny(DenyReason::Mutating)),
+            ("UpdateNetwork", deny(DenyReason::Mutating)),
+            ("UpdateNetworkSettings", deny(DenyReason::Mutating)),
+            ("UpdateSecurityGroup", deny(DenyReason::Mutating)),
+            ("UpdateUser", deny(DenyReason::Mutating)),
+        ],
+    )
 }

@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/quicksight/service/2018-04-01/quicksight-2018-04-01.json
-use super::super::construction::{Inventory, ResourceIdentity, Input};
+use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 
 pub(super) const CALLS: &[Inventory] = &[
@@ -59,7 +59,10 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Arn("Arn"),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
-        input: &[Input::Account("AwsAccountId"), Input::String("Type", "CUSTOM")],
+        input: &[
+            Input::Account("AwsAccountId"),
+            Input::String("Type", "CUSTOM"),
+        ],
         tags: None,
         queryable: &[],
     },

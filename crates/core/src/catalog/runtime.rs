@@ -1,7 +1,9 @@
 mod decode;
-mod types;
 mod tag_endpoint;
-pub use tag_endpoint::{TagEndpointPlan, TagEndpointParentPlan, TagEndpointRequestPlan, TagEndpointSource};
+mod types;
+pub use tag_endpoint::{
+    TagEndpointParentPlan, TagEndpointPlan, TagEndpointRequestPlan, TagEndpointSource,
+};
 
 use crate::{
     catalog::{Catalog, CatalogError},
@@ -10,27 +12,27 @@ use crate::{
 };
 use std::sync::Arc;
 pub use types::{
-    CatalogSourceProvenance, ModelSourceProvenance,
-    RowPolicyPlan, RowPredicatePlan, RowOperandPlan, RowValueType, MissingSelected, ChildEligibilityPlan,
-    RequestRouting, ExecutionBranch, ResourceProjectionPlan, KindClassificationPlan,
-    ReferenceOwnerRule, ArnOwnerRule, ArnRegionRule, ContextSource, Emission, SelectionKind,
-    IdentityFieldPlan, IdentityLeafPlan, IdentityChoicePlan, IdentityBranchPlan, IdentityPredicatePlan,
-    ContextProjectionPlan, BindingAlternativePlan, IdentityTextOperand, IdentityTextPlan,
-    ArnResourceKind, UrlResourceKind, BindingTransform,
-    BindingPlan, BindingSource, BindingValue, CallablePlan, EndpointClass, EndpointPathMode,
-    IdentityPart, IdentityPlan, ItemPlan, KindCoverage, KindNamePath, PagePlan, PageSizeBinding, PageSizeType,
-    PlanPurpose, PlanScope, RelationScope, RelationSource, RelationshipPlan, ResolvedEndpoint, ReviewDecision,
-    RelationPathMode, RelationTargetMode, RelationGuard,
-    RelationshipComponentPlan,
-    ResourceEmissionPlan, ResourceEmissions,
-    ReviewDisposition, ReviewProvenance, RuntimeProtocol, TagPlan, TokenBinding, TokenPlacement, TokenType,
-    TokenSelection,
+    ArnOwnerRule, ArnRegionRule, ArnResourceKind, BindingAlternativePlan, BindingPlan,
+    BindingSource, BindingTransform, BindingValue, CallablePlan, CatalogSourceProvenance,
+    ChildEligibilityPlan, ContextProjectionPlan, ContextSource, Emission, EndpointClass,
+    EndpointPathMode, ExecutionBranch, IdentityBranchPlan, IdentityChoicePlan, IdentityFieldPlan,
+    IdentityLeafPlan, IdentityPart, IdentityPlan, IdentityPredicatePlan, IdentityTextOperand,
+    IdentityTextPlan, ItemPlan, KindClassificationPlan, KindCoverage, KindNamePath,
+    MissingSelected, ModelSourceProvenance, PagePlan, PageSizeBinding, PageSizeType, PlanPurpose,
+    PlanScope, ReferenceOwnerRule, RelationGuard, RelationPathMode, RelationScope, RelationSource,
+    RelationTargetMode, RelationshipComponentPlan, RelationshipPlan, RequestRouting,
+    ResolvedEndpoint, ResourceEmissionPlan, ResourceEmissions, ResourceProjectionPlan,
+    ReviewDecision, ReviewDisposition, ReviewProvenance, RowOperandPlan, RowPolicyPlan,
+    RowPredicatePlan, RowValueType, RuntimeProtocol, SelectionKind, TagPlan, TokenBinding,
+    TokenPlacement, TokenSelection, TokenType, UrlResourceKind,
 };
 
 const MAX_PLANS: usize = 65_536;
 
 /// Hashes the canonical compiled capability fields without including their source receipt.
-pub fn compiled_inputs_sha256(extension: crate::record::MapRef<'_>) -> Result<[u8; 32], RuntimeCatalogError> {
+pub fn compiled_inputs_sha256(
+    extension: crate::record::MapRef<'_>,
+) -> Result<[u8; 32], RuntimeCatalogError> {
     decode::compiled_inputs_sha256(extension)
 }
 

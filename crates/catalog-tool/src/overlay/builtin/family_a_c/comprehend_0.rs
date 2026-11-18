@@ -4,161 +4,628 @@ use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        ("BatchDetectDominantLanguage", deferred("Model requires TextList. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Determines the dominant language of the input text for a batch of documents. For a list of languages that Amazon Comprehend can detect, see Amazon Comprehend Supported Languages .")),
-        ("BatchDetectEntities", deferred("Model requires TextList, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Inspects the text of a batch of documents for named entities and returns information about them. For more information about named entities, see Entities in the Comprehend Developer Guide.")),
-        ("BatchDetectKeyPhrases", deferred("Model requires TextList, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Detects the key noun phrases found in a batch of documents.")),
-        ("BatchDetectSentiment", deferred("Model requires TextList, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Inspects a batch of documents and returns an inference of the prevailing sentiment, POSITIVE , NEUTRAL , MIXED , or NEGATIVE , in each one.")),
-        ("BatchDetectSyntax", deferred("Model requires TextList, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Inspects the text of a batch of documents for the syntax and part of speech of the words in the document and returns information about them. For more information, see Syntax in the Comprehend Developer Guide.")),
-        ("BatchDetectTargetedSentiment", deferred("Model requires TextList, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Inspects a batch of documents and returns a sentiment analysis for each entity identified in the documents. For more information about targeted sentiment, see Targeted sentiment in the Amazon Comprehend Developer Guide .")),
-        ("ClassifyDocument", deferred("Model requires EndpointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a classification request to analyze a single document in real-time. ClassifyDocument supports the following model types: Custom classifier - a custom model that you have created and trained. For input, you can provide…")),
-        ("ContainsPiiEntities", deferred("Model requires Text, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Analyzes input text for the presence of personally identifiable information (PII) and returns the labels of identified PII entity types such as name, address, bank account number, or phone number.")),
-        ("CreateDataset", deferred("Model requires FlywheelArn, DatasetName, InputDataConfig. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a dataset to upload training or test data for a model associated with a flywheel. For more information about datasets, see Flywheel overview in the Amazon Comprehend Developer Guide .")),
-        ("CreateDocumentClassifier", deferred("Model requires DocumentClassifierName, DataAccessRoleArn, InputDataConfig, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a new document classifier that you can use to categorize documents. To create a classifier, you provide a set of training documents that are labeled with the categories that you want to use. For more information, see…")),
-        ("CreateEndpoint", deferred("Model requires EndpointName, DesiredInferenceUnits. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a model-specific endpoint for synchronous inference for a previously trained custom model For information about endpoints, see Managing endpoints .")),
-        ("CreateEntityRecognizer", deferred("Model requires RecognizerName, DataAccessRoleArn, InputDataConfig, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates an entity recognizer using submitted files. After your CreateEntityRecognizer request is submitted, you can check job status using the DescribeEntityRecognizer API.")),
-        ("CreateFlywheel", deferred("Model requires FlywheelName, DataAccessRoleArn, DataLakeS3Uri. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: A flywheel is an Amazon Web Services resource that orchestrates the ongoing training of a model for custom classification or custom entity recognition. You can create a flywheel to start with an existing trained model, or…")),
-        ("DeleteDocumentClassifier", deferred("Model requires DocumentClassifierArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a previously created document classifier Only those classifiers that are in terminated states (IN_ERROR, TRAINED) will be deleted. If an active inference job is using the model, a ResourceInUseException will be returned.…")),
-        ("DeleteEndpoint", deferred("Model requires EndpointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a model-specific endpoint for a previously-trained custom model. All endpoints must be deleted in order for the model to be deleted. For information about endpoints, see Managing endpoints .")),
-        ("DeleteEntityRecognizer", deferred("Model requires EntityRecognizerArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes an entity recognizer. Only those recognizers that are in terminated states (IN_ERROR, TRAINED) will be deleted. If an active inference job is using the model, a ResourceInUseException will be returned. This is an…")),
-        ("DeleteFlywheel", deferred("Model requires FlywheelArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a flywheel. When you delete the flywheel, Amazon Comprehend does not delete the data lake or the model associated with the flywheel. For more information about flywheels, see Flywheel overview in the Amazon Comprehend…")),
-        ("DeleteResourcePolicy", deferred("Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a resource-based policy that is attached to a custom model.")),
-        ("DescribeDataset", deferred("Model requires DatasetArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns information about the dataset that you specify. For more information about datasets, see Flywheel overview in the Amazon Comprehend Developer Guide .")),
-        ("DescribeDocumentClassificationJob", deferred("Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with a document classification job. Use this operation to get the status of a classification job.")),
-        ("DescribeDocumentClassifier", deferred("Model requires DocumentClassifierArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with a document classifier.")),
-        ("DescribeDominantLanguageDetectionJob", deferred("Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with a dominant language detection job. Use this operation to get the status of a detection job.")),
-        ("DescribeEndpoint", deferred("Model requires EndpointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with a specific endpoint. Use this operation to get the status of an endpoint. For information about endpoints, see Managing endpoints .")),
-        ("DescribeEntitiesDetectionJob", deferred("Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with an entities detection job. Use this operation to get the status of a detection job.")),
-        ("DescribeEntityRecognizer", deferred("Model requires EntityRecognizerArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Provides details about an entity recognizer including status, S3 buckets containing training data, recognizer metadata, metrics, and so on.")),
-        ("DescribeEventsDetectionJob", deferred("Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the status and details of an events detection job.")),
-        ("DescribeFlywheel", deferred("Model requires FlywheelArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Provides configuration information about the flywheel. For more information about flywheels, see Flywheel overview in the Amazon Comprehend Developer Guide .")),
-        ("DescribeFlywheelIteration", deferred("Model requires FlywheelArn, FlywheelIterationId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieve the configuration properties of a flywheel iteration. For more information about flywheels, see Flywheel overview in the Amazon Comprehend Developer Guide .")),
-        ("DescribeKeyPhrasesDetectionJob", deferred("Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with a key phrases detection job. Use this operation to get the status of a detection job.")),
-        ("DescribePiiEntitiesDetectionJob", deferred("Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with a PII entities detection job. For example, you can use this operation to get the job status.")),
-        ("DescribeResourcePolicy", deferred("Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the details of a resource-based policy that is attached to a custom model, including the JSON body of the policy.")),
-        ("DescribeSentimentDetectionJob", deferred("Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with a sentiment detection job. Use this operation to get the status of a detection job.")),
-        ("DescribeTargetedSentimentDetectionJob", deferred("Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with a targeted sentiment detection job. Use this operation to get the status of the job.")),
-        ("DescribeTopicsDetectionJob", deferred("Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with a topic detection job. Use this operation to get the status of a detection job.")),
-        ("DetectDominantLanguage", deferred("Model requires Text. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Determines the dominant language of the input text. For a list of languages that Amazon Comprehend can detect, see Amazon Comprehend Supported Languages .")),
-        ("DetectEntities", deferred("No safe resource collection plan is approved for this modeled operation. Its output is Entities, DocumentMetadata, DocumentType, Blocks, Errors; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Detects named entities in input text when you use the pre-trained model. Detects custom entities if you have a custom entity recognition model. When detecting named entities using the pre-trained model, use plain text as the…")),
-        ("DetectKeyPhrases", deferred("Model requires Text, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Detects the key noun phrases found in the text.")),
-        ("DetectPiiEntities", deferred("Model requires Text, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Inspects the input text for entities that contain personally identifiable information (PII) and returns information about them.")),
-        ("DetectSentiment", deferred("Model requires Text, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Inspects text and returns an inference of the prevailing sentiment ( POSITIVE , NEUTRAL , MIXED , or NEGATIVE ).")),
-        ("DetectSyntax", deferred("Model requires Text, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Inspects text for syntax and the part of speech of words in the document. For more information, see Syntax in the Comprehend Developer Guide.")),
-        ("DetectTargetedSentiment", deferred("Model requires Text, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Inspects the input text and returns a sentiment analysis for each entity identified in the text. For more information about targeted sentiment, see Targeted sentiment in the Amazon Comprehend Developer Guide .")),
-        ("DetectToxicContent", deferred("Model requires TextSegments, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Performs toxicity analysis on the list of text strings that you provide as input. The API response contains a results list that matches the size of the input list. For more information about toxicity detection, see Toxicity…")),
+        (
+            "BatchDetectDominantLanguage",
+            deferred(
+                "Model requires TextList. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Determines the dominant language of the input text for a batch of documents. For a list of languages that Amazon Comprehend can detect, see Amazon Comprehend Supported Languages .",
+            ),
+        ),
+        (
+            "BatchDetectEntities",
+            deferred(
+                "Model requires TextList, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Inspects the text of a batch of documents for named entities and returns information about them. For more information about named entities, see Entities in the Comprehend Developer Guide.",
+            ),
+        ),
+        (
+            "BatchDetectKeyPhrases",
+            deferred(
+                "Model requires TextList, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Detects the key noun phrases found in a batch of documents.",
+            ),
+        ),
+        (
+            "BatchDetectSentiment",
+            deferred(
+                "Model requires TextList, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Inspects a batch of documents and returns an inference of the prevailing sentiment, POSITIVE , NEUTRAL , MIXED , or NEGATIVE , in each one.",
+            ),
+        ),
+        (
+            "BatchDetectSyntax",
+            deferred(
+                "Model requires TextList, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Inspects the text of a batch of documents for the syntax and part of speech of the words in the document and returns information about them. For more information, see Syntax in the Comprehend Developer Guide.",
+            ),
+        ),
+        (
+            "BatchDetectTargetedSentiment",
+            deferred(
+                "Model requires TextList, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Inspects a batch of documents and returns a sentiment analysis for each entity identified in the documents. For more information about targeted sentiment, see Targeted sentiment in the Amazon Comprehend Developer Guide .",
+            ),
+        ),
+        (
+            "ClassifyDocument",
+            deferred(
+                "Model requires EndpointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a classification request to analyze a single document in real-time. ClassifyDocument supports the following model types: Custom classifier - a custom model that you have created and trained. For input, you can provide…",
+            ),
+        ),
+        (
+            "ContainsPiiEntities",
+            deferred(
+                "Model requires Text, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Analyzes input text for the presence of personally identifiable information (PII) and returns the labels of identified PII entity types such as name, address, bank account number, or phone number.",
+            ),
+        ),
+        (
+            "CreateDataset",
+            deferred(
+                "Model requires FlywheelArn, DatasetName, InputDataConfig. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a dataset to upload training or test data for a model associated with a flywheel. For more information about datasets, see Flywheel overview in the Amazon Comprehend Developer Guide .",
+            ),
+        ),
+        (
+            "CreateDocumentClassifier",
+            deferred(
+                "Model requires DocumentClassifierName, DataAccessRoleArn, InputDataConfig, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a new document classifier that you can use to categorize documents. To create a classifier, you provide a set of training documents that are labeled with the categories that you want to use. For more information, see…",
+            ),
+        ),
+        (
+            "CreateEndpoint",
+            deferred(
+                "Model requires EndpointName, DesiredInferenceUnits. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a model-specific endpoint for synchronous inference for a previously trained custom model For information about endpoints, see Managing endpoints .",
+            ),
+        ),
+        (
+            "CreateEntityRecognizer",
+            deferred(
+                "Model requires RecognizerName, DataAccessRoleArn, InputDataConfig, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates an entity recognizer using submitted files. After your CreateEntityRecognizer request is submitted, you can check job status using the DescribeEntityRecognizer API.",
+            ),
+        ),
+        (
+            "CreateFlywheel",
+            deferred(
+                "Model requires FlywheelName, DataAccessRoleArn, DataLakeS3Uri. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: A flywheel is an Amazon Web Services resource that orchestrates the ongoing training of a model for custom classification or custom entity recognition. You can create a flywheel to start with an existing trained model, or…",
+            ),
+        ),
+        (
+            "DeleteDocumentClassifier",
+            deferred(
+                "Model requires DocumentClassifierArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a previously created document classifier Only those classifiers that are in terminated states (IN_ERROR, TRAINED) will be deleted. If an active inference job is using the model, a ResourceInUseException will be returned.…",
+            ),
+        ),
+        (
+            "DeleteEndpoint",
+            deferred(
+                "Model requires EndpointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a model-specific endpoint for a previously-trained custom model. All endpoints must be deleted in order for the model to be deleted. For information about endpoints, see Managing endpoints .",
+            ),
+        ),
+        (
+            "DeleteEntityRecognizer",
+            deferred(
+                "Model requires EntityRecognizerArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes an entity recognizer. Only those recognizers that are in terminated states (IN_ERROR, TRAINED) will be deleted. If an active inference job is using the model, a ResourceInUseException will be returned. This is an…",
+            ),
+        ),
+        (
+            "DeleteFlywheel",
+            deferred(
+                "Model requires FlywheelArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a flywheel. When you delete the flywheel, Amazon Comprehend does not delete the data lake or the model associated with the flywheel. For more information about flywheels, see Flywheel overview in the Amazon Comprehend…",
+            ),
+        ),
+        (
+            "DeleteResourcePolicy",
+            deferred(
+                "Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes a resource-based policy that is attached to a custom model.",
+            ),
+        ),
+        (
+            "DescribeDataset",
+            deferred(
+                "Model requires DatasetArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns information about the dataset that you specify. For more information about datasets, see Flywheel overview in the Amazon Comprehend Developer Guide .",
+            ),
+        ),
+        (
+            "DescribeDocumentClassificationJob",
+            deferred(
+                "Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with a document classification job. Use this operation to get the status of a classification job.",
+            ),
+        ),
+        (
+            "DescribeDocumentClassifier",
+            deferred(
+                "Model requires DocumentClassifierArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with a document classifier.",
+            ),
+        ),
+        (
+            "DescribeDominantLanguageDetectionJob",
+            deferred(
+                "Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with a dominant language detection job. Use this operation to get the status of a detection job.",
+            ),
+        ),
+        (
+            "DescribeEndpoint",
+            deferred(
+                "Model requires EndpointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with a specific endpoint. Use this operation to get the status of an endpoint. For information about endpoints, see Managing endpoints .",
+            ),
+        ),
+        (
+            "DescribeEntitiesDetectionJob",
+            deferred(
+                "Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with an entities detection job. Use this operation to get the status of a detection job.",
+            ),
+        ),
+        (
+            "DescribeEntityRecognizer",
+            deferred(
+                "Model requires EntityRecognizerArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Provides details about an entity recognizer including status, S3 buckets containing training data, recognizer metadata, metrics, and so on.",
+            ),
+        ),
+        (
+            "DescribeEventsDetectionJob",
+            deferred(
+                "Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the status and details of an events detection job.",
+            ),
+        ),
+        (
+            "DescribeFlywheel",
+            deferred(
+                "Model requires FlywheelArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Provides configuration information about the flywheel. For more information about flywheels, see Flywheel overview in the Amazon Comprehend Developer Guide .",
+            ),
+        ),
+        (
+            "DescribeFlywheelIteration",
+            deferred(
+                "Model requires FlywheelArn, FlywheelIterationId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieve the configuration properties of a flywheel iteration. For more information about flywheels, see Flywheel overview in the Amazon Comprehend Developer Guide .",
+            ),
+        ),
+        (
+            "DescribeKeyPhrasesDetectionJob",
+            deferred(
+                "Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with a key phrases detection job. Use this operation to get the status of a detection job.",
+            ),
+        ),
+        (
+            "DescribePiiEntitiesDetectionJob",
+            deferred(
+                "Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with a PII entities detection job. For example, you can use this operation to get the job status.",
+            ),
+        ),
+        (
+            "DescribeResourcePolicy",
+            deferred(
+                "Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the details of a resource-based policy that is attached to a custom model, including the JSON body of the policy.",
+            ),
+        ),
+        (
+            "DescribeSentimentDetectionJob",
+            deferred(
+                "Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with a sentiment detection job. Use this operation to get the status of a detection job.",
+            ),
+        ),
+        (
+            "DescribeTargetedSentimentDetectionJob",
+            deferred(
+                "Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with a targeted sentiment detection job. Use this operation to get the status of the job.",
+            ),
+        ),
+        (
+            "DescribeTopicsDetectionJob",
+            deferred(
+                "Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Gets the properties associated with a topic detection job. Use this operation to get the status of a detection job.",
+            ),
+        ),
+        (
+            "DetectDominantLanguage",
+            deferred(
+                "Model requires Text. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Determines the dominant language of the input text. For a list of languages that Amazon Comprehend can detect, see Amazon Comprehend Supported Languages .",
+            ),
+        ),
+        (
+            "DetectEntities",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is Entities, DocumentMetadata, DocumentType, Blocks, Errors; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Detects named entities in input text when you use the pre-trained model. Detects custom entities if you have a custom entity recognition model. When detecting named entities using the pre-trained model, use plain text as the…",
+            ),
+        ),
+        (
+            "DetectKeyPhrases",
+            deferred(
+                "Model requires Text, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Detects the key noun phrases found in the text.",
+            ),
+        ),
+        (
+            "DetectPiiEntities",
+            deferred(
+                "Model requires Text, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Inspects the input text for entities that contain personally identifiable information (PII) and returns information about them.",
+            ),
+        ),
+        (
+            "DetectSentiment",
+            deferred(
+                "Model requires Text, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Inspects text and returns an inference of the prevailing sentiment ( POSITIVE , NEUTRAL , MIXED , or NEGATIVE ).",
+            ),
+        ),
+        (
+            "DetectSyntax",
+            deferred(
+                "Model requires Text, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Inspects text for syntax and the part of speech of words in the document. For more information, see Syntax in the Comprehend Developer Guide.",
+            ),
+        ),
+        (
+            "DetectTargetedSentiment",
+            deferred(
+                "Model requires Text, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Inspects the input text and returns a sentiment analysis for each entity identified in the text. For more information about targeted sentiment, see Targeted sentiment in the Amazon Comprehend Developer Guide .",
+            ),
+        ),
+        (
+            "DetectToxicContent",
+            deferred(
+                "Model requires TextSegments, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Performs toxicity analysis on the list of text strings that you provide as input. The API response contains a results list that matches the size of the input list. For more information about toxicity detection, see Toxicity…",
+            ),
+        ),
     ])
 }
 
 pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        ("ImportModel", deferred("Model requires SourceModelArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a new custom model that replicates a source custom model that you import. The source model can be in your Amazon Web Services account or another one. If the source model is in another Amazon Web Services account, then it…")),
+        (
+            "ImportModel",
+            deferred(
+                "Model requires SourceModelArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates a new custom model that replicates a source custom model that you import. The source model can be in your Amazon Web Services account or another one. If the source model is in another Amazon Web Services account, then it…",
+            ),
+        ),
         // Model: List the datasets that you have configured in this Region. For more information about datasets, see Flywheel overview in the Amazon Comprehend Developer Guide .
-        ("ListDatasets", OperationOverlay {
-            queryable: vec![path("DatasetArn")?],
-            ..read("DatasetPropertiesList", Identity::Arn(path("DatasetArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
+        (
+            "ListDatasets",
+            OperationOverlay {
+                queryable: vec![path("DatasetArn")?],
+                ..read(
+                    "DatasetPropertiesList",
+                    Identity::Arn(path("DatasetArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
         // Model: Gets a list of the documentation classification jobs that you have submitted.
-        ("ListDocumentClassificationJobs", OperationOverlay {
-            queryable: vec![path("JobArn")?],
-            ..read("DocumentClassificationJobPropertiesList", Identity::Arn(path("JobArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("ListDocumentClassifierSummaries", deferred("No safe resource collection plan is approved for this modeled operation. Its output is DocumentClassifierSummariesList; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Gets a list of summaries of the document classifiers that you have created")),
+        (
+            "ListDocumentClassificationJobs",
+            OperationOverlay {
+                queryable: vec![path("JobArn")?],
+                ..read(
+                    "DocumentClassificationJobPropertiesList",
+                    Identity::Arn(path("JobArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListDocumentClassifierSummaries",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is DocumentClassifierSummariesList; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Gets a list of summaries of the document classifiers that you have created",
+            ),
+        ),
         // Model: Gets a list of the document classifiers that you have created.
-        ("ListDocumentClassifiers", OperationOverlay {
-            queryable: vec![path("DocumentClassifierArn")?],
-            ..read("DocumentClassifierPropertiesList", Identity::Arn(path("DocumentClassifierArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
+        (
+            "ListDocumentClassifiers",
+            OperationOverlay {
+                queryable: vec![path("DocumentClassifierArn")?],
+                ..read(
+                    "DocumentClassifierPropertiesList",
+                    Identity::Arn(path("DocumentClassifierArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
         // Model: Gets a list of the dominant language detection jobs that you have submitted.
-        ("ListDominantLanguageDetectionJobs", OperationOverlay {
-            queryable: vec![path("JobArn")?],
-            ..read("DominantLanguageDetectionJobPropertiesList", Identity::Arn(path("JobArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
+        (
+            "ListDominantLanguageDetectionJobs",
+            OperationOverlay {
+                queryable: vec![path("JobArn")?],
+                ..read(
+                    "DominantLanguageDetectionJobPropertiesList",
+                    Identity::Arn(path("JobArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
         // Model: Gets a list of all existing endpoints that you've created. For information about endpoints, see Managing endpoints .
-        ("ListEndpoints", OperationOverlay {
-            queryable: vec![path("EndpointArn")?],
-            ..read("EndpointPropertiesList", Identity::Arn(path("EndpointArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
+        (
+            "ListEndpoints",
+            OperationOverlay {
+                queryable: vec![path("EndpointArn")?],
+                ..read(
+                    "EndpointPropertiesList",
+                    Identity::Arn(path("EndpointArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
         // Model: Gets a list of the entity detection jobs that you have submitted.
-        ("ListEntitiesDetectionJobs", OperationOverlay {
-            queryable: vec![path("JobArn")?],
-            ..read("EntitiesDetectionJobPropertiesList", Identity::Arn(path("JobArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("ListEntityRecognizerSummaries", deferred("No safe resource collection plan is approved for this modeled operation. Its output is EntityRecognizerSummariesList; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Gets a list of summaries for the entity recognizers that you have created.")),
+        (
+            "ListEntitiesDetectionJobs",
+            OperationOverlay {
+                queryable: vec![path("JobArn")?],
+                ..read(
+                    "EntitiesDetectionJobPropertiesList",
+                    Identity::Arn(path("JobArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListEntityRecognizerSummaries",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is EntityRecognizerSummariesList; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Gets a list of summaries for the entity recognizers that you have created.",
+            ),
+        ),
         // Model: Gets a list of the properties of all entity recognizers that you created, including recognizers currently in training. Allows you to filter the list of recognizers based on criteria such as status…
-        ("ListEntityRecognizers", OperationOverlay {
-            queryable: vec![path("EntityRecognizerArn")?],
-            ..read("EntityRecognizerPropertiesList", Identity::Arn(path("EntityRecognizerArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
+        (
+            "ListEntityRecognizers",
+            OperationOverlay {
+                queryable: vec![path("EntityRecognizerArn")?],
+                ..read(
+                    "EntityRecognizerPropertiesList",
+                    Identity::Arn(path("EntityRecognizerArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
     ])
 }
 
 pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
         // Model: Gets a list of the events detection jobs that you have submitted.
-        ("ListEventsDetectionJobs", OperationOverlay {
-            queryable: vec![path("JobArn")?],
-            ..read("EventsDetectionJobPropertiesList", Identity::Arn(path("JobArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("ListFlywheelIterationHistory", deferred("Model requires FlywheelArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Information about the history of a flywheel iteration. For more information about flywheels, see Flywheel overview in the Amazon Comprehend Developer Guide .")),
+        (
+            "ListEventsDetectionJobs",
+            OperationOverlay {
+                queryable: vec![path("JobArn")?],
+                ..read(
+                    "EventsDetectionJobPropertiesList",
+                    Identity::Arn(path("JobArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListFlywheelIterationHistory",
+            deferred(
+                "Model requires FlywheelArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Information about the history of a flywheel iteration. For more information about flywheels, see Flywheel overview in the Amazon Comprehend Developer Guide .",
+            ),
+        ),
         // Model: Gets a list of the flywheels that you have created.
-        ("ListFlywheels", OperationOverlay {
-            queryable: vec![path("FlywheelArn")?],
-            ..read("FlywheelSummaryList", Identity::Arn(path("FlywheelArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
+        (
+            "ListFlywheels",
+            OperationOverlay {
+                queryable: vec![path("FlywheelArn")?],
+                ..read(
+                    "FlywheelSummaryList",
+                    Identity::Arn(path("FlywheelArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
         // Model: Get a list of key phrase detection jobs that you have submitted.
-        ("ListKeyPhrasesDetectionJobs", OperationOverlay {
-            queryable: vec![path("JobArn")?],
-            ..read("KeyPhrasesDetectionJobPropertiesList", Identity::Arn(path("JobArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
+        (
+            "ListKeyPhrasesDetectionJobs",
+            OperationOverlay {
+                queryable: vec![path("JobArn")?],
+                ..read(
+                    "KeyPhrasesDetectionJobPropertiesList",
+                    Identity::Arn(path("JobArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
         // Model: Gets a list of the PII entity detection jobs that you have submitted.
-        ("ListPiiEntitiesDetectionJobs", OperationOverlay {
-            queryable: vec![path("JobArn")?],
-            ..read("PiiEntitiesDetectionJobPropertiesList", Identity::Arn(path("JobArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
+        (
+            "ListPiiEntitiesDetectionJobs",
+            OperationOverlay {
+                queryable: vec![path("JobArn")?],
+                ..read(
+                    "PiiEntitiesDetectionJobPropertiesList",
+                    Identity::Arn(path("JobArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
         // Model: Gets a list of sentiment detection jobs that you have submitted.
-        ("ListSentimentDetectionJobs", OperationOverlay {
-            queryable: vec![path("JobArn")?],
-            ..read("SentimentDetectionJobPropertiesList", Identity::Arn(path("JobArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("ListTagsForResource", deferred("Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists all tags associated with a given Amazon Comprehend resource.")),
+        (
+            "ListSentimentDetectionJobs",
+            OperationOverlay {
+                queryable: vec![path("JobArn")?],
+                ..read(
+                    "SentimentDetectionJobPropertiesList",
+                    Identity::Arn(path("JobArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListTagsForResource",
+            deferred(
+                "Model requires ResourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists all tags associated with a given Amazon Comprehend resource.",
+            ),
+        ),
         // Model: Gets a list of targeted sentiment detection jobs that you have submitted.
-        ("ListTargetedSentimentDetectionJobs", OperationOverlay {
-            queryable: vec![path("JobArn")?],
-            ..read("TargetedSentimentDetectionJobPropertiesList", Identity::Arn(path("JobArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
+        (
+            "ListTargetedSentimentDetectionJobs",
+            OperationOverlay {
+                queryable: vec![path("JobArn")?],
+                ..read(
+                    "TargetedSentimentDetectionJobPropertiesList",
+                    Identity::Arn(path("JobArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
         // Model: Gets a list of the topic detection jobs that you have submitted.
-        ("ListTopicsDetectionJobs", OperationOverlay {
-            queryable: vec![path("JobArn")?],
-            ..read("TopicsDetectionJobPropertiesList", Identity::Arn(path("JobArn")?), Scope::Region, token("NextToken", "NextToken")?)?
-        }),
-        ("PutResourcePolicy", deferred("Model requires ResourceArn, ResourcePolicy. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Attaches a resource-based policy to a custom model. You can use this policy to authorize an entity in another Amazon Web Services account to import the custom model, which replicates it in Amazon Comprehend in their account.")),
-        ("StartDocumentClassificationJob", deferred("Model requires InputDataConfig, OutputDataConfig, DataAccessRoleArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous document classification job using a custom classification model. Use the DescribeDocumentClassificationJob operation to track the progress of the job.")),
-        ("StartDominantLanguageDetectionJob", deferred("Model requires InputDataConfig, OutputDataConfig, DataAccessRoleArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous dominant language detection job for a collection of documents. Use the operation to track the status of a job.")),
-        ("StartEntitiesDetectionJob", deferred("Model requires InputDataConfig, OutputDataConfig, DataAccessRoleArn, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous entity detection job for a collection of documents. Use the operation to track the status of a job. This API can be used for either standard entity detection or custom entity recognition. In order to be…")),
-        ("StartEventsDetectionJob", deferred("Model requires InputDataConfig, OutputDataConfig, DataAccessRoleArn, LanguageCode, TargetEventTypes. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous event detection job for a collection of documents.")),
+        (
+            "ListTopicsDetectionJobs",
+            OperationOverlay {
+                queryable: vec![path("JobArn")?],
+                ..read(
+                    "TopicsDetectionJobPropertiesList",
+                    Identity::Arn(path("JobArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "PutResourcePolicy",
+            deferred(
+                "Model requires ResourceArn, ResourcePolicy. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Attaches a resource-based policy to a custom model. You can use this policy to authorize an entity in another Amazon Web Services account to import the custom model, which replicates it in Amazon Comprehend in their account.",
+            ),
+        ),
+        (
+            "StartDocumentClassificationJob",
+            deferred(
+                "Model requires InputDataConfig, OutputDataConfig, DataAccessRoleArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous document classification job using a custom classification model. Use the DescribeDocumentClassificationJob operation to track the progress of the job.",
+            ),
+        ),
+        (
+            "StartDominantLanguageDetectionJob",
+            deferred(
+                "Model requires InputDataConfig, OutputDataConfig, DataAccessRoleArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous dominant language detection job for a collection of documents. Use the operation to track the status of a job.",
+            ),
+        ),
+        (
+            "StartEntitiesDetectionJob",
+            deferred(
+                "Model requires InputDataConfig, OutputDataConfig, DataAccessRoleArn, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous entity detection job for a collection of documents. Use the operation to track the status of a job. This API can be used for either standard entity detection or custom entity recognition. In order to be…",
+            ),
+        ),
+        (
+            "StartEventsDetectionJob",
+            deferred(
+                "Model requires InputDataConfig, OutputDataConfig, DataAccessRoleArn, LanguageCode, TargetEventTypes. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous event detection job for a collection of documents.",
+            ),
+        ),
     ])
 }
 
 pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        ("StartFlywheelIteration", deferred("Model requires FlywheelArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Start the flywheel iteration.This operation uses any new datasets to train a new model version. For more information about flywheels, see Flywheel overview in the Amazon Comprehend Developer Guide .")),
-        ("StartKeyPhrasesDetectionJob", deferred("Model requires InputDataConfig, OutputDataConfig, DataAccessRoleArn, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous key phrase detection job for a collection of documents. Use the operation to track the status of a job.")),
-        ("StartPiiEntitiesDetectionJob", deferred("Model requires InputDataConfig, OutputDataConfig, Mode, DataAccessRoleArn, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous PII entity detection job for a collection of documents.")),
-        ("StartSentimentDetectionJob", deferred("Model requires InputDataConfig, OutputDataConfig, DataAccessRoleArn, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous sentiment detection job for a collection of documents. Use the operation to track the status of a job.")),
-        ("StartTargetedSentimentDetectionJob", deferred("Model requires InputDataConfig, OutputDataConfig, DataAccessRoleArn, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous targeted sentiment detection job for a collection of documents. Use the DescribeTargetedSentimentDetectionJob operation to track the status of a job.")),
-        ("StartTopicsDetectionJob", deferred("Model requires InputDataConfig, OutputDataConfig, DataAccessRoleArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous topic detection job. Use the DescribeTopicDetectionJob operation to track the status of a job.")),
-        ("StopDominantLanguageDetectionJob", deferred("Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops a dominant language detection job in progress. If the job state is IN_PROGRESS the job is marked for termination and put into the STOP_REQUESTED state. If the job completes before it can be stopped, it is put into the…")),
-        ("StopEntitiesDetectionJob", deferred("Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops an entities detection job in progress. If the job state is IN_PROGRESS the job is marked for termination and put into the STOP_REQUESTED state. If the job completes before it can be stopped, it is put into the COMPLETED…")),
-        ("StopEventsDetectionJob", deferred("Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops an events detection job in progress.")),
-        ("StopKeyPhrasesDetectionJob", deferred("Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops a key phrases detection job in progress. If the job state is IN_PROGRESS the job is marked for termination and put into the STOP_REQUESTED state. If the job completes before it can be stopped, it is put into the COMPLETED…")),
-        ("StopPiiEntitiesDetectionJob", deferred("Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops a PII entities detection job in progress.")),
-        ("StopSentimentDetectionJob", deferred("Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops a sentiment detection job in progress. If the job state is IN_PROGRESS , the job is marked for termination and put into the STOP_REQUESTED state. If the job completes before it can be stopped, it is put into the COMPLETED…")),
-        ("StopTargetedSentimentDetectionJob", deferred("Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops a targeted sentiment detection job in progress. If the job state is IN_PROGRESS , the job is marked for termination and put into the STOP_REQUESTED state. If the job completes before it can be stopped, it is put into the…")),
-        ("StopTrainingDocumentClassifier", deferred("Model requires DocumentClassifierArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops a document classifier training job while in progress. If the training job state is TRAINING , the job is marked for termination and put into the STOP_REQUESTED state. If the training job completes before it can be stopped,…")),
-        ("StopTrainingEntityRecognizer", deferred("Model requires EntityRecognizerArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops an entity recognizer training job while in progress. If the training job state is TRAINING , the job is marked for termination and put into the STOP_REQUESTED state. If the training job completes before it can be stopped,…")),
-        ("TagResource", deferred("Model requires ResourceArn, Tags. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Associates a specific tag with an Amazon Comprehend resource. A tag is a key-value pair that adds as a metadata to a resource used by Amazon Comprehend. For example, a tag with \"Sales\" as the key might be added to a resource to…")),
-        ("UntagResource", deferred("Model requires ResourceArn, TagKeys. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes a specific tag associated with an Amazon Comprehend resource.")),
-        ("UpdateEndpoint", deferred("Model requires EndpointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates information about the specified endpoint. For information about endpoints, see Managing endpoints .")),
-        ("UpdateFlywheel", deferred("Model requires FlywheelArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Update the configuration information for an existing flywheel.")),
+        (
+            "StartFlywheelIteration",
+            deferred(
+                "Model requires FlywheelArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Start the flywheel iteration.This operation uses any new datasets to train a new model version. For more information about flywheels, see Flywheel overview in the Amazon Comprehend Developer Guide .",
+            ),
+        ),
+        (
+            "StartKeyPhrasesDetectionJob",
+            deferred(
+                "Model requires InputDataConfig, OutputDataConfig, DataAccessRoleArn, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous key phrase detection job for a collection of documents. Use the operation to track the status of a job.",
+            ),
+        ),
+        (
+            "StartPiiEntitiesDetectionJob",
+            deferred(
+                "Model requires InputDataConfig, OutputDataConfig, Mode, DataAccessRoleArn, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous PII entity detection job for a collection of documents.",
+            ),
+        ),
+        (
+            "StartSentimentDetectionJob",
+            deferred(
+                "Model requires InputDataConfig, OutputDataConfig, DataAccessRoleArn, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous sentiment detection job for a collection of documents. Use the operation to track the status of a job.",
+            ),
+        ),
+        (
+            "StartTargetedSentimentDetectionJob",
+            deferred(
+                "Model requires InputDataConfig, OutputDataConfig, DataAccessRoleArn, LanguageCode. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous targeted sentiment detection job for a collection of documents. Use the DescribeTargetedSentimentDetectionJob operation to track the status of a job.",
+            ),
+        ),
+        (
+            "StartTopicsDetectionJob",
+            deferred(
+                "Model requires InputDataConfig, OutputDataConfig, DataAccessRoleArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts an asynchronous topic detection job. Use the DescribeTopicDetectionJob operation to track the status of a job.",
+            ),
+        ),
+        (
+            "StopDominantLanguageDetectionJob",
+            deferred(
+                "Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops a dominant language detection job in progress. If the job state is IN_PROGRESS the job is marked for termination and put into the STOP_REQUESTED state. If the job completes before it can be stopped, it is put into the…",
+            ),
+        ),
+        (
+            "StopEntitiesDetectionJob",
+            deferred(
+                "Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops an entities detection job in progress. If the job state is IN_PROGRESS the job is marked for termination and put into the STOP_REQUESTED state. If the job completes before it can be stopped, it is put into the COMPLETED…",
+            ),
+        ),
+        (
+            "StopEventsDetectionJob",
+            deferred(
+                "Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops an events detection job in progress.",
+            ),
+        ),
+        (
+            "StopKeyPhrasesDetectionJob",
+            deferred(
+                "Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops a key phrases detection job in progress. If the job state is IN_PROGRESS the job is marked for termination and put into the STOP_REQUESTED state. If the job completes before it can be stopped, it is put into the COMPLETED…",
+            ),
+        ),
+        (
+            "StopPiiEntitiesDetectionJob",
+            deferred(
+                "Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops a PII entities detection job in progress.",
+            ),
+        ),
+        (
+            "StopSentimentDetectionJob",
+            deferred(
+                "Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops a sentiment detection job in progress. If the job state is IN_PROGRESS , the job is marked for termination and put into the STOP_REQUESTED state. If the job completes before it can be stopped, it is put into the COMPLETED…",
+            ),
+        ),
+        (
+            "StopTargetedSentimentDetectionJob",
+            deferred(
+                "Model requires JobId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops a targeted sentiment detection job in progress. If the job state is IN_PROGRESS , the job is marked for termination and put into the STOP_REQUESTED state. If the job completes before it can be stopped, it is put into the…",
+            ),
+        ),
+        (
+            "StopTrainingDocumentClassifier",
+            deferred(
+                "Model requires DocumentClassifierArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops a document classifier training job while in progress. If the training job state is TRAINING , the job is marked for termination and put into the STOP_REQUESTED state. If the training job completes before it can be stopped,…",
+            ),
+        ),
+        (
+            "StopTrainingEntityRecognizer",
+            deferred(
+                "Model requires EntityRecognizerArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Stops an entity recognizer training job while in progress. If the training job state is TRAINING , the job is marked for termination and put into the STOP_REQUESTED state. If the training job completes before it can be stopped,…",
+            ),
+        ),
+        (
+            "TagResource",
+            deferred(
+                "Model requires ResourceArn, Tags. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Associates a specific tag with an Amazon Comprehend resource. A tag is a key-value pair that adds as a metadata to a resource used by Amazon Comprehend. For example, a tag with \"Sales\" as the key might be added to a resource to…",
+            ),
+        ),
+        (
+            "UntagResource",
+            deferred(
+                "Model requires ResourceArn, TagKeys. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes a specific tag associated with an Amazon Comprehend resource.",
+            ),
+        ),
+        (
+            "UpdateEndpoint",
+            deferred(
+                "Model requires EndpointArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates information about the specified endpoint. For information about endpoints, see Managing endpoints .",
+            ),
+        ),
+        (
+            "UpdateFlywheel",
+            deferred(
+                "Model requires FlywheelArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Update the configuration information for an existing flywheel.",
+            ),
+        ),
     ])
 }

@@ -11,14 +11,14 @@ mod build;
 mod build_cleanup;
 mod build_version;
 mod download;
-mod receipt;
 mod ownership;
+mod receipt;
 
 use ownership::{DIRECTORY_FLAGS, OwnedDirectory, descriptor_path};
-#[cfg(all(test, feature = "native-graph-integration"))]
-mod native_tests;
 #[cfg(test)]
 mod installer_tests;
+#[cfg(all(test, feature = "native-graph-integration"))]
+mod native_tests;
 #[cfg(test)]
 mod tests;
 
@@ -128,7 +128,9 @@ fn require_platform() -> Result<(), HarnessError> {
 fn set_module_executable(path: &Path) -> Result<(), HarnessError> {
     let file = open_regular(path)?;
     if receipt::digest_file(&file)? != MODULE_SHA256 {
-        return Err(HarnessError::invalid("module changed before executable permission update"));
+        return Err(HarnessError::invalid(
+            "module changed before executable permission update",
+        ));
     }
     make_executable(&file)
 }
@@ -141,7 +143,9 @@ fn set_executable(path: &Path) -> Result<(), HarnessError> {
 fn make_executable(file: &File) -> Result<(), HarnessError> {
     use std::os::unix::fs::{MetadataExt, PermissionsExt};
     if file.metadata()?.nlink() != 1 {
-        return Err(HarnessError::invalid("refusing executable permission change on aliased inode"));
+        return Err(HarnessError::invalid(
+            "refusing executable permission change on aliased inode",
+        ));
     }
     Ok(file.set_permissions(std::fs::Permissions::from_mode(0o755))?)
 }
@@ -178,15 +182,17 @@ pub(super) fn executable(file: &File) -> Result<(), HarnessError> {
         rustix::fs::AtFlags::EACCESS,
     ) {
         Ok(()) => Ok(()),
-        Err(rustix::io::Errno::ACCESS) => {
-            Err(HarnessError::invalid("Redis binary has no executable permissions"))
-        }
+        Err(rustix::io::Errno::ACCESS) => Err(HarnessError::invalid(
+            "Redis binary has no executable permissions",
+        )),
         Err(error) => Err(std::io::Error::from(error).into()),
     }
 }
 pub(super) fn regular_file(metadata: &std::fs::Metadata) -> Result<(), HarnessError> {
     if !metadata.is_file() || metadata.len() > MAX_DOWNLOAD {
-        return Err(HarnessError::invalid("installation file is not a bounded regular file"));
+        return Err(HarnessError::invalid(
+            "installation file is not a bounded regular file",
+        ));
     }
     Ok(())
 }
@@ -200,16 +206,19 @@ pub(super) fn read_bounded(path: &Path, maximum: u64) -> Result<Vec<u8>, Harness
     if u64::try_from(bytes.len()).map_err(|error| HarnessError::invalid(error.to_string()))?
         > maximum
     {
-        return Err(HarnessError::invalid("installation file exceeds read limit"));
+        return Err(HarnessError::invalid(
+            "installation file exceeds read limit",
+        ));
     }
     Ok(bytes)
 }
 fn open_regular(path: &Path) -> Result<File, HarnessError> {
-    let flags = rustix::fs::OFlags::RDONLY | rustix::fs::OFlags::NOFOLLOW
-        | rustix::fs::OFlags::NONBLOCK | rustix::fs::OFlags::CLOEXEC;
+    let flags = rustix::fs::OFlags::RDONLY
+        | rustix::fs::OFlags::NOFOLLOW
+        | rustix::fs::OFlags::NONBLOCK
+        | rustix::fs::OFlags::CLOEXEC;
     let file = File::from(
-        rustix::fs::open(path, flags, rustix::fs::Mode::empty())
-            .map_err(std::io::Error::from)?,
+        rustix::fs::open(path, flags, rustix::fs::Mode::empty()).map_err(std::io::Error::from)?,
     );
     regular_file(&file.metadata()?)?;
     Ok(file)

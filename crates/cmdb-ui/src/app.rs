@@ -80,7 +80,6 @@ impl App {
         self.request_filter(cx, filter);
     }
 
-
     fn refresh(&mut self, cx: &mut Cx) {
         crate::chrome::sync_chrome(&self.ui, cx);
         self.sync_view(cx);
@@ -149,7 +148,10 @@ impl App {
         self.request_filter(cx, filter);
     }
     fn start_worker(&mut self, cx: &mut Cx) {
-        let config = self.worker_config.as_ref().map_or_else(WorkerConfig::from_process_args, Clone::clone);
+        let config = self
+            .worker_config
+            .as_ref()
+            .map_or_else(WorkerConfig::from_process_args, Clone::clone);
         self.start_worker_with_config(cx, config);
     }
 
@@ -206,16 +208,25 @@ impl App {
                 );
             }
             None => {
-                self.apply_graph_event(cx, crate::data::Graph::default(), self.graph_access_error.clone());
+                self.apply_graph_event(
+                    cx,
+                    crate::data::Graph::default(),
+                    self.graph_access_error.clone(),
+                );
                 self.request_expansion(cx);
             }
         }
     }
 
-    fn apply_graph_event(&mut self, cx: &mut Cx, graph: crate::data::Graph, error: Option<String>) -> bool {
-        self.table(cx).borrow_mut::<ResourceTable>().is_some_and(|mut table| {
-            table.apply_graph(cx, graph, error)
-        })
+    fn apply_graph_event(
+        &mut self,
+        cx: &mut Cx,
+        graph: crate::data::Graph,
+        error: Option<String>,
+    ) -> bool {
+        self.table(cx)
+            .borrow_mut::<ResourceTable>()
+            .is_some_and(|mut table| table.apply_graph(cx, graph, error))
     }
 
     fn handle_accounts(&mut self, cx: &mut Cx, actions: &Actions) {
@@ -255,7 +266,9 @@ impl App {
     }
 
     fn handle_row_clicks(&mut self, cx: &mut Cx, actions: &Actions) {
-        let row = self.table(cx).borrow_mut::<ResourceTable>()
+        let row = self
+            .table(cx)
+            .borrow_mut::<ResourceTable>()
             .and_then(|mut table| table.clicked_row(cx, actions));
         if let Some(row) = row {
             self.request_selection(cx, row);

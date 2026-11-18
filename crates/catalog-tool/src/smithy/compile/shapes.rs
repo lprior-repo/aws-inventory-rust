@@ -114,7 +114,10 @@ fn targets(
     match kind {
         ShapeKind::List { member } => {
             let mut fields = vec![(CatalogKey::Element, reference(&member.target, indexes)?)];
-            fields.push(metadata::pseudo_field(&member.traits, CatalogKey::ElementWire)?);
+            fields.push(metadata::pseudo_field(
+                &member.traits,
+                CatalogKey::ElementWire,
+            )?);
             Ok(fields)
         }
         ShapeKind::Map { key, value } => map_targets(key, value, indexes),
@@ -132,7 +135,10 @@ fn map_targets(
         (CatalogKey::MapValue, reference(&value.target, indexes)?),
     ];
     fields.push(metadata::pseudo_field(&key.traits, CatalogKey::MapKeyWire)?);
-    fields.push(metadata::pseudo_field(&value.traits, CatalogKey::MapValueWire)?);
+    fields.push(metadata::pseudo_field(
+        &value.traits,
+        CatalogKey::MapValueWire,
+    )?);
     Ok(fields)
 }
 

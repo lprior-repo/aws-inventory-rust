@@ -3,20 +3,37 @@ use super::*;
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 fn node(id: &str) -> GraphNode {
-    GraphNode { account: "111111111111".to_owned(), region: "us-east-1".to_owned(),
-        kind: "AWS::S3::Bucket".to_owned(), id: id.to_owned() }
+    GraphNode {
+        account: "111111111111".to_owned(),
+        region: "us-east-1".to_owned(),
+        kind: "AWS::S3::Bucket".to_owned(),
+        id: id.to_owned(),
+    }
 }
 
 fn edge(from: &str, to: &str) -> GraphEdge {
-    GraphEdge { from: node(from), to: node(to), relation: "depends_on".to_owned(), provenance: "model".to_owned() }
+    GraphEdge {
+        from: node(from),
+        to: node(to),
+        relation: "depends_on".to_owned(),
+        provenance: "model".to_owned(),
+    }
 }
 
 fn traversal(nodes: usize, edges: usize) -> Result<Traversal, ViewError> {
-    Ok(Traversal::new(key_digest(&node("a"))?, GraphLimits { depth: 3, nodes, edges }))
+    Ok(Traversal::new(
+        key_digest(&node("a"))?,
+        GraphLimits {
+            depth: 3,
+            nodes,
+            edges,
+        },
+    ))
 }
 
 #[test]
-fn given_chain_when_each_bounded_frontier_advances_then_exact_edge_budget_loses_no_layer() -> TestResult {
+fn given_chain_when_each_bounded_frontier_advances_then_exact_edge_budget_loses_no_layer()
+-> TestResult {
     let mut state = traversal(3, 2)?;
     state.add_layer(vec![edge("a", "b")])?;
     state.add_layer(vec![edge("b", "c")])?;
@@ -28,7 +45,8 @@ fn given_chain_when_each_bounded_frontier_advances_then_exact_edge_budget_loses_
 }
 
 #[test]
-fn given_parallel_provenances_when_frontier_has_budget_then_relationship_identity_is_preserved() -> TestResult {
+fn given_parallel_provenances_when_frontier_has_budget_then_relationship_identity_is_preserved()
+-> TestResult {
     let mut state = traversal(2, 2)?;
     let mut parallel = edge("a", "b");
     parallel.provenance = "reviewed".to_owned();
@@ -75,26 +93,59 @@ fn given_self_loop_when_node_budget_is_one_then_root_is_counted_once() -> TestRe
 #[test]
 fn given_unrelated_edge_when_decoding_layer_then_response_is_rejected() -> TestResult {
     let mut state = traversal(3, 2)?;
-    assert!(matches!(state.add_layer(vec![edge("b", "c")]), Err(ViewError::GraphResponse)));
+    assert!(matches!(
+        state.add_layer(vec![edge("b", "c")]),
+        Err(ViewError::GraphResponse)
+    ));
     Ok(())
 }
 
 fn reply(rows: Vec<redis::Value>) -> redis::Value {
-    redis::Value::Array(vec![redis::Value::Array(Vec::new()), redis::Value::Array(rows), redis::Value::Array(Vec::new())])
+    redis::Value::Array(vec![
+        redis::Value::Array(Vec::new()),
+        redis::Value::Array(rows),
+        redis::Value::Array(Vec::new()),
+    ])
 }
 
 fn row() -> redis::Value {
-    redis::Value::Array(["111111111111", "us-east-1", "AWS::S3::Bucket", "a", "111111111111",
-        "us-east-1", "AWS::S3::Bucket", "b", "depends_on", "model"].into_iter()
-        .map(|text| redis::Value::BulkString(text.as_bytes().to_vec())).collect())
+    redis::Value::Array(
+        [
+            "111111111111",
+            "us-east-1",
+            "AWS::S3::Bucket",
+            "a",
+            "111111111111",
+            "us-east-1",
+            "AWS::S3::Bucket",
+            "b",
+            "depends_on",
+            "model",
+        ]
+        .into_iter()
+        .map(|text| redis::Value::BulkString(text.as_bytes().to_vec()))
+        .collect(),
+    )
 }
 
 #[test]
 fn given_malformed_or_overbudget_rows_when_parsing_then_errors_are_explicit() {
-    assert!(matches!(parse_rows(redis::Value::Nil, 1), Err(ViewError::GraphResponse)));
-    assert!(matches!(parse_rows(reply(vec![redis::Value::Nil]), 1), Err(ViewError::GraphResponse)));
-    assert!(matches!(parse_rows(reply(vec![row(), row()]), 1), Err(ViewError::GraphResponse)));
-    assert!(matches!(parse_rows(reply(vec![redis::Value::Array(vec![])]), 1), Err(ViewError::GraphResponse)));
+    assert!(matches!(
+        parse_rows(redis::Value::Nil, 1),
+        Err(ViewError::GraphResponse)
+    ));
+    assert!(matches!(
+        parse_rows(reply(vec![redis::Value::Nil]), 1),
+        Err(ViewError::GraphResponse)
+    ));
+    assert!(matches!(
+        parse_rows(reply(vec![row(), row()]), 1),
+        Err(ViewError::GraphResponse)
+    ));
+    assert!(matches!(
+        parse_rows(reply(vec![redis::Value::Array(vec![])]), 1),
+        Err(ViewError::GraphResponse)
+    ));
 }
 
 #[test]
@@ -111,7 +162,15 @@ fn given_frontier_when_compiling_query_then_limit_precedes_any_combinatorial_wor
     assert!(query.starts_with(&format!("UNWIND ['{root}'] AS frontier_key MATCH")));
     assert!(query.contains(&format!("NOT n.key IN ['{previous}']")));
     assert!(query.ends_with("LIMIT 2001"));
-    ["[*", "UNWIND relationships", "DISTINCT", "ORDER BY", "min(", "WITH "].iter()
-        .for_each(|operation| assert!(!query.contains(operation), "{query}"));
+    [
+        "[*",
+        "UNWIND relationships",
+        "DISTINCT",
+        "ORDER BY",
+        "min(",
+        "WITH ",
+    ]
+    .iter()
+    .for_each(|operation| assert!(!query.contains(operation), "{query}"));
     Ok(())
 }

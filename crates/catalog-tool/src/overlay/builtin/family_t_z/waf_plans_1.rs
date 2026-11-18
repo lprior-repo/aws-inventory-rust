@@ -1,5 +1,5 @@
-use super::{inventory, path, paths, bind, token};
-use crate::overlay::{OperationOverlay, NameError, Identity, Paginator, Scope, FixedValue};
+use super::{bind, inventory, path, paths, token};
+use crate::overlay::{FixedValue, Identity, NameError, OperationOverlay, Paginator, Scope};
 
 pub(super) fn get_byte_match_set() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
@@ -8,11 +8,13 @@ pub(super) fn get_byte_match_set() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Account,
     )?;
-    operation.queryable = paths(&[
+    operation.queryable = paths(&["ByteMatchSetId", "Name"])?;
+    bind(
+        &mut operation,
         "ByteMatchSetId",
-        "Name",
-    ])?;
-    bind(&mut operation, "ByteMatchSetId", "ListByteMatchSets", "ByteMatchSetId")?;
+        "ListByteMatchSets",
+        "ByteMatchSetId",
+    )?;
     Ok(operation)
 }
 
@@ -23,11 +25,13 @@ pub(super) fn get_geo_match_set() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Account,
     )?;
-    operation.queryable = paths(&[
+    operation.queryable = paths(&["GeoMatchSetId", "Name"])?;
+    bind(
+        &mut operation,
         "GeoMatchSetId",
-        "Name",
-    ])?;
-    bind(&mut operation, "GeoMatchSetId", "ListGeoMatchSets", "GeoMatchSetId")?;
+        "ListGeoMatchSets",
+        "GeoMatchSetId",
+    )?;
     Ok(operation)
 }
 
@@ -38,10 +42,7 @@ pub(super) fn get_ip_set() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Account,
     )?;
-    operation.queryable = paths(&[
-        "IPSetId",
-        "Name",
-    ])?;
+    operation.queryable = paths(&["IPSetId", "Name"])?;
     bind(&mut operation, "IPSetId", "ListIPSets", "IPSetId")?;
     Ok(operation)
 }
@@ -53,13 +54,7 @@ pub(super) fn get_rate_based_rule() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Account,
     )?;
-    operation.queryable = paths(&[
-        "RuleId",
-        "Name",
-        "MetricName",
-        "RateKey",
-        "RateLimit",
-    ])?;
+    operation.queryable = paths(&["RuleId", "Name", "MetricName", "RateKey", "RateLimit"])?;
     bind(&mut operation, "RuleId", "ListRateBasedRules", "RuleId")?;
     Ok(operation)
 }
@@ -71,11 +66,13 @@ pub(super) fn get_regex_match_set() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Account,
     )?;
-    operation.queryable = paths(&[
+    operation.queryable = paths(&["RegexMatchSetId", "Name"])?;
+    bind(
+        &mut operation,
         "RegexMatchSetId",
-        "Name",
-    ])?;
-    bind(&mut operation, "RegexMatchSetId", "ListRegexMatchSets", "RegexMatchSetId")?;
+        "ListRegexMatchSets",
+        "RegexMatchSetId",
+    )?;
     Ok(operation)
 }
 
@@ -86,11 +83,13 @@ pub(super) fn get_regex_pattern_set() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Account,
     )?;
-    operation.queryable = paths(&[
+    operation.queryable = paths(&["RegexPatternSetId", "Name"])?;
+    bind(
+        &mut operation,
         "RegexPatternSetId",
-        "Name",
-    ])?;
-    bind(&mut operation, "RegexPatternSetId", "ListRegexPatternSets", "RegexPatternSetId")?;
+        "ListRegexPatternSets",
+        "RegexPatternSetId",
+    )?;
     Ok(operation)
 }
 
@@ -101,11 +100,7 @@ pub(super) fn get_rule() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Account,
     )?;
-    operation.queryable = paths(&[
-        "RuleId",
-        "Name",
-        "MetricName",
-    ])?;
+    operation.queryable = paths(&["RuleId", "Name", "MetricName"])?;
     bind(&mut operation, "RuleId", "ListRules", "RuleId")?;
     Ok(operation)
 }
@@ -117,12 +112,13 @@ pub(super) fn get_rule_group() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Account,
     )?;
-    operation.queryable = paths(&[
+    operation.queryable = paths(&["RuleGroupId", "Name", "MetricName"])?;
+    bind(
+        &mut operation,
         "RuleGroupId",
-        "Name",
-        "MetricName",
-    ])?;
-    bind(&mut operation, "RuleGroupId", "ListRuleGroups", "RuleGroupId")?;
+        "ListRuleGroups",
+        "RuleGroupId",
+    )?;
     Ok(operation)
 }
 
@@ -133,11 +129,13 @@ pub(super) fn get_size_constraint_set() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Account,
     )?;
-    operation.queryable = paths(&[
+    operation.queryable = paths(&["SizeConstraintSetId", "Name"])?;
+    bind(
+        &mut operation,
         "SizeConstraintSetId",
-        "Name",
-    ])?;
-    bind(&mut operation, "SizeConstraintSetId", "ListSizeConstraintSets", "SizeConstraintSetId")?;
+        "ListSizeConstraintSets",
+        "SizeConstraintSetId",
+    )?;
     Ok(operation)
 }
 
@@ -148,11 +146,13 @@ pub(super) fn get_sql_injection_match_set() -> Result<OperationOverlay, NameErro
         Paginator::None,
         Scope::Account,
     )?;
-    operation.queryable = paths(&[
+    operation.queryable = paths(&["SqlInjectionMatchSetId", "Name"])?;
+    bind(
+        &mut operation,
         "SqlInjectionMatchSetId",
-        "Name",
-    ])?;
-    bind(&mut operation, "SqlInjectionMatchSetId", "ListSqlInjectionMatchSets", "SqlInjectionMatchSetId")?;
+        "ListSqlInjectionMatchSets",
+        "SqlInjectionMatchSetId",
+    )?;
     Ok(operation)
 }
 
@@ -163,12 +163,7 @@ pub(super) fn get_web_acl() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Account,
     )?;
-    operation.queryable = paths(&[
-        "WebACLId",
-        "Name",
-        "MetricName",
-        "WebACLArn",
-    ])?;
+    operation.queryable = paths(&["WebACLId", "Name", "MetricName", "WebACLArn"])?;
     bind(&mut operation, "WebACLId", "ListWebACLs", "WebACLId")?;
     Ok(operation)
 }
@@ -180,11 +175,13 @@ pub(super) fn get_xss_match_set() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Account,
     )?;
-    operation.queryable = paths(&[
+    operation.queryable = paths(&["XssMatchSetId", "Name"])?;
+    bind(
+        &mut operation,
         "XssMatchSetId",
-        "Name",
-    ])?;
-    bind(&mut operation, "XssMatchSetId", "ListXssMatchSets", "XssMatchSetId")?;
+        "ListXssMatchSets",
+        "XssMatchSetId",
+    )?;
     Ok(operation)
 }
 
@@ -195,11 +192,10 @@ pub(super) fn list_byte_match_sets() -> Result<OperationOverlay, NameError> {
         token("NextMarker", "NextMarker")?,
         Scope::Account,
     )?;
-    operation.queryable = paths(&[
-        "ByteMatchSetId",
-        "Name",
-    ])?;
-    operation.fixed.insert(path("Limit")?, FixedValue::Integer(100));
+    operation.queryable = paths(&["ByteMatchSetId", "Name"])?;
+    operation
+        .fixed
+        .insert(path("Limit")?, FixedValue::Integer(100));
     Ok(operation)
 }
 
@@ -210,11 +206,10 @@ pub(super) fn list_geo_match_sets() -> Result<OperationOverlay, NameError> {
         token("NextMarker", "NextMarker")?,
         Scope::Account,
     )?;
-    operation.queryable = paths(&[
-        "GeoMatchSetId",
-        "Name",
-    ])?;
-    operation.fixed.insert(path("Limit")?, FixedValue::Integer(100));
+    operation.queryable = paths(&["GeoMatchSetId", "Name"])?;
+    operation
+        .fixed
+        .insert(path("Limit")?, FixedValue::Integer(100));
     Ok(operation)
 }
 
@@ -225,11 +220,10 @@ pub(super) fn list_ip_sets() -> Result<OperationOverlay, NameError> {
         token("NextMarker", "NextMarker")?,
         Scope::Account,
     )?;
-    operation.queryable = paths(&[
-        "IPSetId",
-        "Name",
-    ])?;
-    operation.fixed.insert(path("Limit")?, FixedValue::Integer(100));
+    operation.queryable = paths(&["IPSetId", "Name"])?;
+    operation
+        .fixed
+        .insert(path("Limit")?, FixedValue::Integer(100));
     Ok(operation)
 }
 
@@ -240,10 +234,9 @@ pub(super) fn list_rate_based_rules() -> Result<OperationOverlay, NameError> {
         token("NextMarker", "NextMarker")?,
         Scope::Account,
     )?;
-    operation.queryable = paths(&[
-        "RuleId",
-        "Name",
-    ])?;
-    operation.fixed.insert(path("Limit")?, FixedValue::Integer(100));
+    operation.queryable = paths(&["RuleId", "Name"])?;
+    operation
+        .fixed
+        .insert(path("Limit")?, FixedValue::Integer(100));
     Ok(operation)
 }

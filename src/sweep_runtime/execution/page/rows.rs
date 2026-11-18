@@ -16,11 +16,13 @@ const MAX_PAGE_REFERENCES: usize = 10_000;
 mod emission;
 mod relations;
 
-pub(in crate::sweep_runtime) use emission::{emission_observation, emission_tags, EmissionScope};
+pub(in crate::sweep_runtime) use emission::{EmissionScope, emission_observation, emission_tags};
 
 #[cfg(test)]
-use inventory_core::{catalog::runtime::RelationSource, inventory::{ReferenceTarget, ResourceId}};
-
+use inventory_core::{
+    catalog::runtime::RelationSource,
+    inventory::{ReferenceTarget, ResourceId},
+};
 
 pub(super) fn observations(
     catalog: &RuntimeCatalog<'_>,
@@ -37,15 +39,24 @@ pub(super) fn observations(
         ));
     }
     if contexts.len() != rows.len() {
-        return Err(SweepError::Operation("row contexts and observations have different lengths"));
+        return Err(SweepError::Operation(
+            "row contexts and observations have different lengths",
+        ));
     }
     let mut observations = Vec::new();
     observations.try_reserve(rows.len())?;
     for (row, ancestry) in rows.iter().zip(contexts) {
         observations.push(observation(
             catalog,
-            record::IdentityContext { account:identity.account, region:identity.region },
-            plan, region, row, request, ancestry,
+            record::IdentityContext {
+                account: identity.account,
+                region: identity.region,
+            },
+            plan,
+            region,
+            row,
+            request,
+            ancestry,
         )?);
     }
     Ok(observations)
@@ -60,20 +71,28 @@ pub(super) fn tags(
         return Ok(Vec::new());
     };
     if rows.len() != observations.len() {
-        return Err(SweepError::Operation("tag rows and observations have different lengths"));
+        return Err(SweepError::Operation(
+            "tag rows and observations have different lengths",
+        ));
     }
-    rows.iter().zip(observations).try_fold(
-        (Vec::new(), 0_usize),
-        |(mut snapshots, count), (row, observation)| {
-            let snapshot = record::tag_observation(row, observation.key(), tags)?;
-            let count = count.checked_add(snapshot.tags().len())
-                .filter(|count| *count <= 50_000)
-                .ok_or(SweepError::Operation("page exceeds the atomic tag pair bound"))?;
-            snapshots.try_reserve(1)?;
-            snapshots.push(snapshot);
-            Ok((snapshots, count))
-        },
-    ).map(|(snapshots, _)| snapshots)
+    rows.iter()
+        .zip(observations)
+        .try_fold(
+            (Vec::new(), 0_usize),
+            |(mut snapshots, count), (row, observation)| {
+                let snapshot = record::tag_observation(row, observation.key(), tags)?;
+                let count = count
+                    .checked_add(snapshot.tags().len())
+                    .filter(|count| *count <= 50_000)
+                    .ok_or(SweepError::Operation(
+                        "page exceeds the atomic tag pair bound",
+                    ))?;
+                snapshots.try_reserve(1)?;
+                snapshots.push(snapshot);
+                Ok((snapshots, count))
+            },
+        )
+        .map(|(snapshots, _)| snapshots)
 }
 
 pub(super) fn observation(
@@ -88,7 +107,12 @@ pub(super) fn observation(
     let account = identity_context.account;
     let validation = record::IdentityTextValidation::Modeled(plan.identity_text("primary")?);
     let id = record::resource_id_validated(
-        row, plan.identity(), Some(identity_context), ancestry, request, &validation,
+        row,
+        plan.identity(),
+        Some(identity_context),
+        ancestry,
+        request,
+        &validation,
     )?;
     let kind = resource_projection::classify(plan, row)?;
     record::trusted_arn::validate_kind_arn(&kind, id.as_str())?;
@@ -99,8 +123,10 @@ pub(super) fn observation(
         id,
     };
     let name = resource_name(catalog, &key.kind, row)?;
-    Ok(Observation::new(key, row.clone(), plan.hash_exclusions(), name)?
-        .with_facet_precedence(plan.facet_precedence()))
+    Ok(
+        Observation::new(key, row.clone(), plan.hash_exclusions(), name)?
+            .with_facet_precedence(plan.facet_precedence()),
+    )
 }
 
 fn resource_name(
@@ -143,20 +169,30 @@ pub(in crate::sweep_runtime) fn references(
             if !plan.supports_relationship(relation)? {
                 continue;
             }
-            relations::Context { row, request: actual_request, observation, home, parent }
-                .append(relation, &mut output, MAX_PAGE_REFERENCES)?;
+            relations::Context {
+                row,
+                request: actual_request,
+                observation,
+                home,
+                parent,
+            }
+            .append(relation, &mut output, MAX_PAGE_REFERENCES)?;
         }
         let trust = resource_projection::trust_references(catalog, plan, observation)?;
-        if output.len().checked_add(trust.len()).is_none_or(|count| count > MAX_PAGE_REFERENCES) {
-            return Err(SweepError::Operation("page exceeds the atomic reference bound"));
+        if output
+            .len()
+            .checked_add(trust.len())
+            .is_none_or(|count| count > MAX_PAGE_REFERENCES)
+        {
+            return Err(SweepError::Operation(
+                "page exceeds the atomic reference bound",
+            ));
         }
         output.try_reserve(trust.len())?;
         output.extend(trust);
     }
     Ok(output)
 }
-
-
 
 #[cfg(test)]
 #[path = "rows/facet_tests.rs"]

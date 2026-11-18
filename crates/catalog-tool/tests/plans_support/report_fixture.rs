@@ -1,7 +1,8 @@
 use super::{TestResult, paginated, replace, write_model};
 use serde_json::{Value, json};
 
-pub fn policy() -> Result<catalog_tool::classes::DenyList<'static>, catalog_tool::classes::ParseError> {
+pub fn policy()
+-> Result<catalog_tool::classes::DenyList<'static>, catalog_tool::classes::ParseError> {
     catalog_tool::classes::DenyList::parse("ListBlocked\tcontent\n")
 }
 

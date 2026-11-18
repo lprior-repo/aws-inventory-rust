@@ -99,7 +99,7 @@ fn map_cluster(ctx: &Context, cluster: &Cluster) -> Result<PageBody, AwsScanErro
                 .map(|(key, value)| (key.clone(), value.clone()))
                 .collect()
         })
-        .map_or_else(BTreeMap::new, |tags| tags);
+        .unwrap_or_default();
     let resource = ctx.resource("aws_eks_cluster", required(cluster.arn(), "EKS cluster ARN")?, cluster.name().map(str::to_owned), json!({
         "name": cluster.name(), "arn": cluster.arn(), "status": cluster.status().map(|value|value.as_str()),
         "version": cluster.version(), "endpoint": cluster.endpoint(), "platform_version": cluster.platform_version(),
@@ -226,7 +226,9 @@ async fn nodegroup(
 
 fn map_nodegroup(ctx: &Context, nodegroup: &Nodegroup) -> Result<PageBody, AwsScanError> {
     let tags = nodegroup.tags().map_or_else(BTreeMap::new, |tags| {
-        tags.iter().map(|(key, value)| (key.clone(), value.clone())).collect()
+        tags.iter()
+            .map(|(key, value)| (key.clone(), value.clone()))
+            .collect()
     });
     let scaling = nodegroup.scaling_config();
     let resource = ctx.resource("aws_eks_node_group", required(nodegroup.nodegroup_arn(), "EKS node group ARN")?,

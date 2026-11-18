@@ -18,8 +18,8 @@ pub use containers::{ListRef, MapRef};
 pub use error::RecordError;
 pub use exclusions::{Exclusions, MapKeyExclusion};
 pub use hash::{ContentHash, selected_content_hash};
-pub use value::{FieldId, Float, Key, KeyRef, Time, Value, ValueKind, ValueRef};
 pub use selected::{SCALAR_ITEM_NAME, scalar_item, scalar_record};
+pub use value::{FieldId, Float, Key, KeyRef, Time, Value, ValueKind, ValueRef};
 
 pub const MAX_RECORD_BYTES: usize = 16_777_216;
 

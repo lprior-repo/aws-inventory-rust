@@ -4,11 +4,11 @@ use super::policy;
 use crate::overlay::{NameError, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
-    let approved = vec![
-
-    ];
+    let approved = vec![];
     policy::finish(
-        "kinesis-video-archived-media", approved, DEFERRED,
+        "kinesis-video-archived-media",
+        approved,
+        DEFERRED,
         "Clips, images, media, fragment inventories and playback URLs expose media content/capabilities rather than resource configuration; every operation is denied.",
         &[(policy::DenyReason::Content, CONTENT)],
     )
@@ -16,11 +16,13 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
 
 // Explicit pinned operation dispositions. No runtime operation-name classifier approves calls.
 // Mutation sets change resource/lifecycle/authorization state; content and credential reads stay denied.
-const DEFERRED: &[&str] = &[
-
-];
+const DEFERRED: &[&str] = &[];
 
 const CONTENT: &[&str] = &[
-    "GetClip", "GetDASHStreamingSessionURL", "GetHLSStreamingSessionURL", "GetImages",
-    "GetMediaForFragmentList", "ListFragments",
+    "GetClip",
+    "GetDASHStreamingSessionURL",
+    "GetHLSStreamingSessionURL",
+    "GetImages",
+    "GetMediaForFragmentList",
+    "ListFragments",
 ];

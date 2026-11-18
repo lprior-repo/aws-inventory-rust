@@ -4,7 +4,10 @@ use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
     // Changes service state rather than reading inventory. Pinned purpose: Starts a failure mode assessment.
-    ("StartFailureModeAssessment", Decision::Denied(DenyReason::Mutating)),
+    (
+        "StartFailureModeAssessment",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Starts a run of a test. Each run scopes to the current resources in the service and produces a pass or fail outcome.
     ("StartTestRun", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Stops an in-progress test run.
@@ -18,13 +21,19 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
     // Changes service state rather than reading inventory. Pinned purpose: Updates a dependency classification.
     ("UpdateDependency", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Updates an existing finding.
-    ("UpdateFailureModeFinding", Decision::Denied(DenyReason::Mutating)),
+    (
+        "UpdateFailureModeFinding",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Updates an existing resilience policy.
     ("UpdatePolicy", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Updates an existing service.
     ("UpdateService", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Updates a service function.
-    ("UpdateServiceFunction", Decision::Denied(DenyReason::Mutating)),
+    (
+        "UpdateServiceFunction",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Updates an existing system.
     ("UpdateSystem", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Updates the configuration of an existing test.

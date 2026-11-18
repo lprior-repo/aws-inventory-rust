@@ -62,7 +62,10 @@ pub(super) fn route53() -> Result<SeedScenario, SeedError> {
         FieldPath::new(&["HostedZone", "Id"])?,
         vec![
             text(&["Name"], "inventory-seed.example.com.")?,
-            text(&["CallerReference"], "inventory-seed-route53-public-zone-v1")?,
+            text(
+                &["CallerReference"],
+                "inventory-seed-route53-public-zone-v1",
+            )?,
         ],
     )
     .with_response_checks(vec![
@@ -127,32 +130,50 @@ fn check(output: &[&str], input: &[&str]) -> Result<SeedOutputCheck, SeedError> 
 type OracleResult = Result<(), Box<dyn Error>>;
 
 pub(super) fn assert_iam_oracle(
-    oracle: &ScenarioSeedOracle, account: &str, region: &str,
+    oracle: &ScenarioSeedOracle,
+    account: &str,
+    region: &str,
 ) -> OracleResult {
     let resource = account_resource(oracle, account, region, "AWS::IAM::Group")?;
     assert_eq!(
         resource.id.as_str(),
-        format!("arn:{}:iam::{account}:group/inventory-seed/inventory-seed-group", partition(region)),
+        format!(
+            "arn:{}:iam::{account}:group/inventory-seed/inventory-seed-group",
+            partition(region)
+        ),
     );
     Ok(())
 }
 
 pub(super) fn assert_organizations_oracle(
-    oracle: &ScenarioSeedOracle, account: &str, region: &str,
+    oracle: &ScenarioSeedOracle,
+    account: &str,
+    region: &str,
 ) -> OracleResult {
     let resource = account_resource(oracle, account, region, "AWS::Organizations::Organization")?;
-    let prefix = format!("arn:{}:organizations::{account}:organization/o-", partition(region));
-    let organization_id = resource.id.as_str().strip_prefix(&prefix)
+    let prefix = format!(
+        "arn:{}:organizations::{account}:organization/o-",
+        partition(region)
+    );
+    let organization_id = resource
+        .id
+        .as_str()
+        .strip_prefix(&prefix)
         .ok_or("organization identity does not match its account and partition")?;
     assert!(!organization_id.is_empty());
     Ok(())
 }
 
 pub(super) fn assert_route53_oracle(
-    oracle: &ScenarioSeedOracle, account: &str, region: &str,
+    oracle: &ScenarioSeedOracle,
+    account: &str,
+    region: &str,
 ) -> OracleResult {
     let resource = account_resource(oracle, account, region, "AWS::Route53::HostedZone")?;
-    let id = resource.id.as_str().strip_prefix("/hostedzone/")
+    let id = resource
+        .id
+        .as_str()
+        .strip_prefix("/hostedzone/")
         .map_or(resource.id.as_str(), |id| id);
     assert!(!id.is_empty());
     assert!(!id.contains('/'));
@@ -160,20 +181,33 @@ pub(super) fn assert_route53_oracle(
 }
 
 pub(super) fn assert_cloudfront_oracle(
-    oracle: &ScenarioSeedOracle, account: &str, region: &str,
+    oracle: &ScenarioSeedOracle,
+    account: &str,
+    region: &str,
 ) -> OracleResult {
-    account_resource(oracle, account, region, "AWS::CloudFront::OriginAccessControl")?;
+    account_resource(
+        oracle,
+        account,
+        region,
+        "AWS::CloudFront::OriginAccessControl",
+    )?;
     Ok(())
 }
 
 fn account_resource<'a>(
-    oracle: &'a ScenarioSeedOracle, account: &str, region: &str, kind: &str,
+    oracle: &'a ScenarioSeedOracle,
+    account: &str,
+    region: &str,
+    kind: &str,
 ) -> Result<&'a SeedResourceIdentity, Box<dyn Error>> {
     assert_eq!(oracle.account_id.as_str(), account);
     assert_eq!(oracle.region, Region::parse(region)?);
     assert_eq!(oracle.resources.len(), 1);
     assert!(oracle.edges.is_empty());
-    let resource = oracle.resources.first().ok_or("missing seeded global resource")?;
+    let resource = oracle
+        .resources
+        .first()
+        .ok_or("missing seeded global resource")?;
     assert_eq!(resource.step, StepId::new(0));
     assert_eq!(resource.kind, Kind::parse(kind)?);
     assert_eq!(resource.key.kind, resource.kind);

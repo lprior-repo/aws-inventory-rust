@@ -1,32 +1,119 @@
 // Explicit dispositions from .local/aws-models/models/direct-connect/service/2012-10-25/direct-connect-2012-10-25.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
-    ("DeleteVirtualInterface", "Requires virtualInterfaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a virtual interface."),
-    ("DescribeConnectionLoa", "Requires connectionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deprecated."),
-    ("DescribeConnectionsOnInterconnect", "Requires interconnectId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deprecated."),
-    ("DescribeCustomerMetadata", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Get and view a list of customer agreements, along with their signed status and whether the customer is an NNIPartner, NNIPartnerV2, or a nonPartner."),
-    ("DescribeHostedConnections", "Requires connectionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists the hosted connections that have been provisioned on the specified interconnect or link aggregation group (LAG)."),
-    ("DescribeInterconnectLoa", "Requires interconnectId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deprecated."),
-    ("DescribeLoa", "Requires connectionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets the LOA-CFA for a connection, interconnect, or link aggregation group (LAG)."),
-    ("DescribeLocations", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Lists the Direct Connect locations in the current Amazon Web Services Region."),
-    ("DescribeRouterConfiguration", "Requires virtualInterfaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Details about the router."),
-    ("DescribeTags", "Requires resourceArns; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Describes the tags associated with the specified Direct Connect resources."),
-    ("DescribeVirtualGateways", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Deprecated."),
-    ("DisassociateConnectionFromLag", "Requires connectionId, lagId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Disassociates a connection from a link aggregation group (LAG)."),
-    ("DisassociateConnectionsFromResiliencyGroup", "Requires connectionIdentifiers, resiliencyGroupId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Disassociates one or more connections from the specified resiliency group."),
-    ("DisassociateMacSecKey", "Requires connectionId, secretARN; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes the association between a MAC Security (MACsec) security key and a Direct Connect connection."),
-    ("GetResiliencyGroup", "Requires resiliencyGroupId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets information about the specified resiliency group."),
-    ("ListResiliencyGroupAssociations", "Requires resiliencyGroupId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists the connection associations for the specified resiliency group."),
-    ("ListVirtualInterfaceRoutes", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Lists the routes for the specified virtual interface."),
-    ("ListVirtualInterfaceTestHistory", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Lists the virtual interface failover test history."),
-    ("StartBgpFailoverTest", "Requires virtualInterfaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts the virtual interface failover test that verifies your configuration meets your resiliency requirements by placing the BGP peering session in the DOWN state."),
-    ("StopBgpFailoverTest", "Requires virtualInterfaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Stops the virtual interface failover test."),
-    ("TagResource", "Requires resourceArn, tags; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds the specified tags to the specified Direct Connect resource."),
-    ("UntagResource", "Requires resourceArn, tagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes one or more tags from the specified Direct Connect resource."),
-    ("UpdateConnection", "Requires connectionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the Direct Connect connection configuration."),
-    ("UpdateConnectionsBillingMode", "Requires connectionIds, billingMode; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the billing mode for the specified Direct Connect connections."),
-    ("UpdateDirectConnectGateway", "Requires directConnectGatewayId, newDirectConnectGatewayName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the name of a current Direct Connect gateway."),
-    ("UpdateDirectConnectGatewayAssociation", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Updates the specified attributes of the Direct Connect gateway association."),
-    ("UpdateLag", "Requires lagId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the attributes of the specified link aggregation group (LAG)."),
-    ("UpdateResiliencyGroup", "Requires resiliencyGroupId, resiliencyGroupName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the name of the specified resiliency group."),
-    ("UpdateVirtualInterfaceAttributes", "Requires virtualInterfaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the specified attributes of the specified virtual private interface."),
+    (
+        "DeleteVirtualInterface",
+        "Requires virtualInterfaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a virtual interface.",
+    ),
+    (
+        "DescribeConnectionLoa",
+        "Requires connectionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deprecated.",
+    ),
+    (
+        "DescribeConnectionsOnInterconnect",
+        "Requires interconnectId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deprecated.",
+    ),
+    (
+        "DescribeCustomerMetadata",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Get and view a list of customer agreements, along with their signed status and whether the customer is an NNIPartner, NNIPartnerV2, or a nonPartner.",
+    ),
+    (
+        "DescribeHostedConnections",
+        "Requires connectionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists the hosted connections that have been provisioned on the specified interconnect or link aggregation group (LAG).",
+    ),
+    (
+        "DescribeInterconnectLoa",
+        "Requires interconnectId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deprecated.",
+    ),
+    (
+        "DescribeLoa",
+        "Requires connectionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets the LOA-CFA for a connection, interconnect, or link aggregation group (LAG).",
+    ),
+    (
+        "DescribeLocations",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Lists the Direct Connect locations in the current Amazon Web Services Region.",
+    ),
+    (
+        "DescribeRouterConfiguration",
+        "Requires virtualInterfaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Details about the router.",
+    ),
+    (
+        "DescribeTags",
+        "Requires resourceArns; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Describes the tags associated with the specified Direct Connect resources.",
+    ),
+    (
+        "DescribeVirtualGateways",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Deprecated.",
+    ),
+    (
+        "DisassociateConnectionFromLag",
+        "Requires connectionId, lagId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Disassociates a connection from a link aggregation group (LAG).",
+    ),
+    (
+        "DisassociateConnectionsFromResiliencyGroup",
+        "Requires connectionIdentifiers, resiliencyGroupId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Disassociates one or more connections from the specified resiliency group.",
+    ),
+    (
+        "DisassociateMacSecKey",
+        "Requires connectionId, secretARN; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes the association between a MAC Security (MACsec) security key and a Direct Connect connection.",
+    ),
+    (
+        "GetResiliencyGroup",
+        "Requires resiliencyGroupId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets information about the specified resiliency group.",
+    ),
+    (
+        "ListResiliencyGroupAssociations",
+        "Requires resiliencyGroupId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists the connection associations for the specified resiliency group.",
+    ),
+    (
+        "ListVirtualInterfaceRoutes",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Lists the routes for the specified virtual interface.",
+    ),
+    (
+        "ListVirtualInterfaceTestHistory",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Lists the virtual interface failover test history.",
+    ),
+    (
+        "StartBgpFailoverTest",
+        "Requires virtualInterfaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts the virtual interface failover test that verifies your configuration meets your resiliency requirements by placing the BGP peering session in the DOWN state.",
+    ),
+    (
+        "StopBgpFailoverTest",
+        "Requires virtualInterfaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Stops the virtual interface failover test.",
+    ),
+    (
+        "TagResource",
+        "Requires resourceArn, tags; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds the specified tags to the specified Direct Connect resource.",
+    ),
+    (
+        "UntagResource",
+        "Requires resourceArn, tagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes one or more tags from the specified Direct Connect resource.",
+    ),
+    (
+        "UpdateConnection",
+        "Requires connectionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the Direct Connect connection configuration.",
+    ),
+    (
+        "UpdateConnectionsBillingMode",
+        "Requires connectionIds, billingMode; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the billing mode for the specified Direct Connect connections.",
+    ),
+    (
+        "UpdateDirectConnectGateway",
+        "Requires directConnectGatewayId, newDirectConnectGatewayName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the name of a current Direct Connect gateway.",
+    ),
+    (
+        "UpdateDirectConnectGatewayAssociation",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Updates the specified attributes of the Direct Connect gateway association.",
+    ),
+    (
+        "UpdateLag",
+        "Requires lagId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the attributes of the specified link aggregation group (LAG).",
+    ),
+    (
+        "UpdateResiliencyGroup",
+        "Requires resiliencyGroupId, resiliencyGroupName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the name of the specified resiliency group.",
+    ),
+    (
+        "UpdateVirtualInterfaceAttributes",
+        "Requires virtualInterfaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the specified attributes of the specified virtual private interface.",
+    ),
 ];

@@ -1,5 +1,5 @@
-use super::{inventory, paths, bind, token};
-use crate::overlay::{OperationOverlay, NameError, Identity, Paginator, Scope};
+use super::{bind, inventory, paths, token};
+use crate::overlay::{Identity, NameError, OperationOverlay, Paginator, Scope};
 
 pub(super) fn get_workspace_instance() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
@@ -8,11 +8,13 @@ pub(super) fn get_workspace_instance() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "ProvisionState",
+    operation.queryable = paths(&["ProvisionState", "WorkspaceInstanceId"])?;
+    bind(
+        &mut operation,
         "WorkspaceInstanceId",
-    ])?;
-    bind(&mut operation, "WorkspaceInstanceId", "ListWorkspaceInstances", "WorkspaceInstanceId")?;
+        "ListWorkspaceInstances",
+        "WorkspaceInstanceId",
+    )?;
     Ok(operation)
 }
 
@@ -23,10 +25,7 @@ pub(super) fn list_workspace_instances() -> Result<OperationOverlay, NameError> 
         token("NextToken", "NextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "ProvisionState",
-        "WorkspaceInstanceId",
-    ])?;
+    operation.queryable = paths(&["ProvisionState", "WorkspaceInstanceId"])?;
     operation.page_size = Some(25);
     Ok(operation)
 }

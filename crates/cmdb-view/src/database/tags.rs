@@ -1,4 +1,4 @@
-use super::{ResourceTag, StoredTagObservation, ViewError, MAX_PAGE_LIMIT};
+use super::{MAX_PAGE_LIMIT, ResourceTag, StoredTagObservation, ViewError};
 use inventory_core::inventory::TagCoverage;
 use sqlx::Row;
 
@@ -20,11 +20,21 @@ pub(super) async fn read(
         .fetch_all(&mut **tx).await?;
     let truncated = rows.len() > MAX_PAGE_LIMIT;
     rows.truncate(MAX_PAGE_LIMIT);
-    let tags = rows.into_iter().map(|row| {
-        Ok(ResourceTag { key: row.try_get("tag_key")?, value: row.try_get("tag_value")? })
-    }).collect::<Result<Vec<_>, ViewError>>()?;
+    let tags = rows
+        .into_iter()
+        .map(|row| {
+            Ok(ResourceTag {
+                key: row.try_get("tag_key")?,
+                value: row.try_get("tag_value")?,
+            })
+        })
+        .collect::<Result<Vec<_>, ViewError>>()?;
     let observation = observation(tx, [account, region, kind, id]).await?;
-    Ok(StoredTags { tags, truncated, observation })
+    Ok(StoredTags {
+        tags,
+        truncated,
+        observation,
+    })
 }
 
 async fn observation(
@@ -42,7 +52,11 @@ async fn observation(
             "unobserved" => TagCoverage::Unobserved,
             _ => return Err(ViewError::StoredRow),
         };
-        Ok(StoredTagObservation { coverage, observed_at_ms: row.try_get("observed_at")?,
-            last_complete_at_ms: row.try_get("last_complete_at")? })
-    }).transpose()
+        Ok(StoredTagObservation {
+            coverage,
+            observed_at_ms: row.try_get("observed_at")?,
+            last_complete_at_ms: row.try_get("last_complete_at")?,
+        })
+    })
+    .transpose()
 }

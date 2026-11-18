@@ -1,21 +1,34 @@
 mod identity;
 mod validation;
+use super::{RuntimeCatalogError, metadata};
+use crate::{
+    catalog::runtime::{
+        BindingSource, ContextProjectionPlan, ContextSource, Emission, ItemPlan, SelectionKind,
+    },
+    record::{FieldId, MapRef, ValueRef},
+};
 pub(super) use identity::read as identity;
 pub(super) use validation::{validate_identity, validate_item, validate_projection};
-use super::{metadata, RuntimeCatalogError};
-use crate::{catalog::runtime::{BindingSource, ContextProjectionPlan, ContextSource, Emission, ItemPlan, SelectionKind}, record::{FieldId, MapRef, ValueRef}};
 
 pub(super) fn item(fields: MapRef<'_>) -> Result<ItemPlan, RuntimeCatalogError> {
     let tag = metadata::integer(fields, 1)?;
-    if tag <= 1 { return super::item_plan(fields) }
+    if tag <= 1 {
+        return super::item_plan(fields);
+    }
     metadata::only_fields(fields, &[1, 2])?;
     let kind = match tag {
-        2 => SelectionKind::MapEntries, 3 => SelectionKind::MapKeys,
-        4 => SelectionKind::MapValues, 5 => SelectionKind::List,
-        6 => SelectionKind::Structure, 7 => SelectionKind::Scalar,
+        2 => SelectionKind::MapEntries,
+        3 => SelectionKind::MapKeys,
+        4 => SelectionKind::MapValues,
+        5 => SelectionKind::List,
+        6 => SelectionKind::Structure,
+        7 => SelectionKind::Scalar,
         _ => return Err(RuntimeCatalogError::Capability),
     };
-    Ok(ItemPlan::Select { path: metadata::selected_path(metadata::list(fields, 2)?)?, kind })
+    Ok(ItemPlan::Select {
+        path: metadata::selected_path(metadata::list(fields, 2)?)?,
+        kind,
+    })
 }
 
 pub(super) fn emission(fields: MapRef<'_>) -> Result<Emission, RuntimeCatalogError> {
@@ -27,16 +40,25 @@ pub(super) fn emission(fields: MapRef<'_>) -> Result<Emission, RuntimeCatalogErr
 }
 
 pub(super) fn projection(fields: MapRef<'_>) -> Result<ContextProjectionPlan, RuntimeCatalogError> {
-    let Some(value) = fields.get_field(FieldId::new(20)?)? else { return Ok(ContextProjectionPlan::default()) };
+    let Some(value) = fields.get_field(FieldId::new(20)?)? else {
+        return Ok(ContextProjectionPlan::default());
+    };
     let map = super::map(value)?;
     metadata::only_fields(map, &[1, 2, 3])?;
-    Ok(ContextProjectionPlan { selected: paths(map, 1)?, response: paths(map, 2)?, request: paths(map, 3)? })
+    Ok(ContextProjectionPlan {
+        selected: paths(map, 1)?,
+        response: paths(map, 2)?,
+        request: paths(map, 3)?,
+    })
 }
 
 fn paths(map: MapRef<'_>, field: u32) -> Result<Box<[Box<[FieldId]>]>, RuntimeCatalogError> {
-    metadata::bounded(metadata::list(map, field)?, |value| {
-        metadata::selected_path(super::super::list_value(value)?)
-    }, 256).map(Vec::into_boxed_slice)
+    metadata::bounded(
+        metadata::list(map, field)?,
+        |value| metadata::selected_path(super::super::list_value(value)?),
+        256,
+    )
+    .map(Vec::into_boxed_slice)
 }
 
 pub(super) fn binding(fields: MapRef<'_>) -> Result<BindingSource, RuntimeCatalogError> {
@@ -46,13 +68,21 @@ pub(super) fn binding(fields: MapRef<'_>) -> Result<BindingSource, RuntimeCatalo
     let operation = metadata::text(fields, 4)?;
     crate::inventory::ServiceId::parse(&service)?;
     crate::inventory::OperationId::parse(&operation)?;
-    Ok(BindingSource::Context { service: service.into_boxed_str(), operation: operation.into_boxed_str(), source,
-        path: metadata::selected_path(metadata::list(fields, 5)?)? })
+    Ok(BindingSource::Context {
+        service: service.into_boxed_str(),
+        operation: operation.into_boxed_str(),
+        source,
+        path: metadata::selected_path(metadata::list(fields, 5)?)?,
+    })
 }
 
 pub(super) fn source(tag: i64) -> Result<ContextSource, RuntimeCatalogError> {
-    match tag { 5 => Ok(ContextSource::SelectedItem), 6 => Ok(ContextSource::Response), 7 => Ok(ContextSource::Request),
-        _ => Err(RuntimeCatalogError::Capability) }
+    match tag {
+        5 => Ok(ContextSource::SelectedItem),
+        6 => Ok(ContextSource::Response),
+        7 => Ok(ContextSource::Request),
+        _ => Err(RuntimeCatalogError::Capability),
+    }
 }
 
 pub(super) fn transformed(fields: MapRef<'_>) -> Result<BindingSource, RuntimeCatalogError> {
@@ -86,12 +116,22 @@ pub(super) fn url_binding(fields: MapRef<'_>) -> Result<BindingSource, RuntimeCa
         0 => crate::catalog::runtime::UrlResourceKind::SqsQueue,
         _ => return Err(RuntimeCatalogError::Capability),
     };
-    Ok(BindingSource::OperationUrl { service: service.into_boxed_str(), operation: operation.into_boxed_str(),
-        path: metadata::selected_path(metadata::list(fields, 5)?)?, resource_kind })
+    Ok(BindingSource::OperationUrl {
+        service: service.into_boxed_str(),
+        operation: operation.into_boxed_str(),
+        path: metadata::selected_path(metadata::list(fields, 5)?)?,
+        resource_kind,
+    })
 }
 
-pub(super) fn arn_kind(tag: i64) -> Result<crate::catalog::runtime::ArnResourceKind, RuntimeCatalogError> {
+pub(super) fn arn_kind(
+    tag: i64,
+) -> Result<crate::catalog::runtime::ArnResourceKind, RuntimeCatalogError> {
     use crate::catalog::runtime::ArnResourceKind;
-    match tag { 0 => Ok(ArnResourceKind::SnsSubscription), 1 => Ok(ArnResourceKind::SqsQueue),
-        2 => Ok(ArnResourceKind::SnsTopic), _ => Err(RuntimeCatalogError::Capability) }
+    match tag {
+        0 => Ok(ArnResourceKind::SnsSubscription),
+        1 => Ok(ArnResourceKind::SqsQueue),
+        2 => Ok(ArnResourceKind::SnsTopic),
+        _ => Err(RuntimeCatalogError::Capability),
+    }
 }

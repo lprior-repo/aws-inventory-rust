@@ -4,94 +4,261 @@ use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
     // Changes service state rather than reading inventory. Pinned purpose: Associates an S/MIME certificate with an email identity. After the certificate is active, Amazon SES API v2 can add an S/MIME signature to messages that you send from the associated address when signing is enabled on the configuration set used to send the message. The certificate is an X.509 certificate that you manage in Certificate Manager (ACM). You identify it by its Amazon Resource Name (ARN)
-    ("AssociateEmailIdentityCertificate", Decision::Denied(DenyReason::Mutating)),
-    ("BatchGetMetricData", Decision::Deferred("Required selectors Queries are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Results, Errors. Pinned purpose: Retrieves batches of metric data collected based on your sending activity. You can execute this operation no more than 16 times per second, and with at most 160 queries from the batches per second (cumulative).")),
+    (
+        "AssociateEmailIdentityCertificate",
+        Decision::Denied(DenyReason::Mutating),
+    ),
+    (
+        "BatchGetMetricData",
+        Decision::Deferred(
+            "Required selectors Queries are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Results, Errors. Pinned purpose: Retrieves batches of metric data collected based on your sending activity. You can execute this operation no more than 16 times per second, and with at most 160 queries from the batches per second (cumulative).",
+        ),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Cancels an export job.
     ("CancelExportJob", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Create a configuration set. Configuration sets are groups of rules that you can apply to the emails that you send. You apply a configuration set to an email by specifying the name of the configuration set when you call the Amazon SES API v2. When you apply a configuration set to an email, all of the rules in that configuration set are applied to the email.
-    ("CreateConfigurationSet", Decision::Denied(DenyReason::Mutating)),
+    (
+        "CreateConfigurationSet",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Create an event destination. Events include message sends, deliveries, opens, clicks, bounces, and complaints. Event destinations are places that you can send information about these events to. For example, you can send event data to Amazon EventBridge and associate a rule to send the event to the specified target. A single configuration set can include more than one event destination.
-    ("CreateConfigurationSetEventDestination", Decision::Denied(DenyReason::Mutating)),
+    (
+        "CreateConfigurationSetEventDestination",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Creates a contact, which is an end-user who is receiving the email, and adds them to a contact list.
     ("CreateContact", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Creates a contact list.
     ("CreateContactList", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Creates a new custom verification email template. For more information about custom verification email templates, see Using custom verification email templates in the Amazon SES Developer Guide . You can execute this operation no more than once per second.
-    ("CreateCustomVerificationEmailTemplate", Decision::Denied(DenyReason::Mutating)),
+    (
+        "CreateCustomVerificationEmailTemplate",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Create a new pool of dedicated IP addresses. A pool can include one or more dedicated IP addresses that are associated with your Amazon Web Services account. You can associate a pool with a configuration set. When you send an email that uses that configuration set, the message is sent from one of the addresses in the associated pool.
-    ("CreateDedicatedIpPool", Decision::Denied(DenyReason::Mutating)),
+    (
+        "CreateDedicatedIpPool",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Create a new predictive inbox placement test. Predictive inbox placement tests can help you predict how your messages will be handled by various email providers around the world. When you perform a predictive inbox placement test, you provide a sample message that contains the content that you plan to send to your customers. Amazon SES then sends that message to special email addresses spread acro
-    ("CreateDeliverabilityTestReport", Decision::Denied(DenyReason::Mutating)),
+    (
+        "CreateDeliverabilityTestReport",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Starts the process of verifying an email identity. An identity is an email address or domain that you use when you send email. Before you can use an identity to send email, you first have to verify it. By verifying an identity, you demonstrate that you're the owner of the identity, and that you've given Amazon SES API v2 permission to send email from the identity. When you verify an email address,
-    ("CreateEmailIdentity", Decision::Denied(DenyReason::Mutating)),
+    (
+        "CreateEmailIdentity",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Creates the specified sending authorization policy for the given identity (an email address or a domain). This API is for the identity owner only. If you have not verified the identity, this API will return an error. Sending authorization is a feature that enables an identity owner to authorize other senders to use its identities. For information about using sending authorization, see the Amazon S
-    ("CreateEmailIdentityPolicy", Decision::Denied(DenyReason::Mutating)),
+    (
+        "CreateEmailIdentityPolicy",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Creates an email template. Email templates enable you to send personalized email to one or more destinations in a single API operation. For more information, see the Amazon SES Developer Guide . You can execute this operation no more than once per second.
-    ("CreateEmailTemplate", Decision::Denied(DenyReason::Mutating)),
+    (
+        "CreateEmailTemplate",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Creates an export job for a data source and destination. Export jobs run asynchronously. This operation returns a JobId . Call GetExportJob with that ID until JobStatus is COMPLETED , FAILED , or CANCELLED . When the status is COMPLETED , download the export file from the pre-signed URL in ExportDestination.S3Url . When the status is FAILED , see FailureInfo . To store a copy in your own bucket, u
     ("CreateExportJob", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Creates an import job for a data destination.
     ("CreateImportJob", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Creates a multi-region endpoint (global-endpoint). The primary region is going to be the AWS-Region where the operation is executed. The secondary region has to be provided in request's parameters. From the data flow standpoint there is no difference between primary and secondary regions - sending traffic is divided between the two. The primary region is the region where the resource has been crea
-    ("CreateMultiRegionEndpoint", Decision::Denied(DenyReason::Mutating)),
+    (
+        "CreateMultiRegionEndpoint",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Create a tenant. Tenants are logical containers that group related SES resources together. Each tenant can have its own set of resources like email identities, configuration sets, and templates, along with reputation metrics and sending status. This helps isolate and manage email sending for different customers or business units within your Amazon SES API v2 account. You can optionally specify Sup
     ("CreateTenant", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Associate a resource with a tenant. Resources can be email identities, configuration sets, or email templates. When you associate a resource with a tenant, you can use that resource when sending emails on behalf of that tenant. A single resource can be associated with multiple tenants, allowing for resource sharing across different tenants while maintaining isolation in email sending operations.
-    ("CreateTenantResourceAssociation", Decision::Denied(DenyReason::Mutating)),
+    (
+        "CreateTenantResourceAssociation",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Delete an existing configuration set. Configuration sets are groups of rules that you can apply to the emails you send. You apply a configuration set to an email by including a reference to the configuration set in the headers of the email. When you apply a configuration set to an email, all of the rules in that configuration set are applied to the email.
-    ("DeleteConfigurationSet", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeleteConfigurationSet",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Delete an event destination. Events include message sends, deliveries, opens, clicks, bounces, and complaints. Event destinations are places that you can send information about these events to. For example, you can send event data to Amazon EventBridge and associate a rule to send the event to the specified target.
-    ("DeleteConfigurationSetEventDestination", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeleteConfigurationSetEventDestination",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Removes a contact from a contact list.
     ("DeleteContact", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes a contact list and all of the contacts on that list.
     ("DeleteContactList", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes an existing custom verification email template. For more information about custom verification email templates, see Using custom verification email templates in the Amazon SES Developer Guide . You can execute this operation no more than once per second.
-    ("DeleteCustomVerificationEmailTemplate", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeleteCustomVerificationEmailTemplate",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Delete a dedicated IP pool.
-    ("DeleteDedicatedIpPool", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeleteDedicatedIpPool",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes an email identity. An identity can be either an email address or a domain name.
-    ("DeleteEmailIdentity", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Deletes the specified sending authorization policy for the given identity (an email address or a domain). This API returns successfully even if a policy with the specified name does not exist. This API is for the identity owner only. If you have not verified the identity, this API will return an error. Sending authorization is a feature that enables an identity owner to authorize other senders to 
-    ("DeleteEmailIdentityPolicy", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeleteEmailIdentity",
+        Decision::Denied(DenyReason::Mutating),
+    ),
+    // Changes service state rather than reading inventory. Pinned purpose: Deletes the specified sending authorization policy for the given identity (an email address or a domain). This API returns successfully even if a policy with the specified name does not exist. This API is for the identity owner only. If you have not verified the identity, this API will return an error. Sending authorization is a feature that enables an identity owner to authorize other senders to
+    (
+        "DeleteEmailIdentityPolicy",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes an email template. You can execute this operation no more than once per second.
-    ("DeleteEmailTemplate", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeleteEmailTemplate",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes a multi-region endpoint (global-endpoint). Only multi-region endpoints (global-endpoints) whose primary region is the AWS-Region where operation is executed can be deleted.
-    ("DeleteMultiRegionEndpoint", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeleteMultiRegionEndpoint",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Removes an email address from the suppression list for your account or for a specific tenant. To target a tenant's suppression list, specify the TenantName parameter. If you omit TenantName , the address is removed from the account-level suppression list.
-    ("DeleteSuppressedDestination", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeleteSuppressedDestination",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Delete an existing tenant. When you delete a tenant, its associations with resources are removed, but the resources themselves are not deleted.
     ("DeleteTenant", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Delete an association between a tenant and a resource. When you delete a tenant-resource association, the resource itself is not deleted, only its association with the specific tenant is removed. After removal, the resource will no longer be available for use with that tenant's email sending operations.
-    ("DeleteTenantResourceAssociation", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Removes the association between an S/MIME certificate and an email identity. After the association is removed, Amazon SES API v2 stops adding an S/MIME signature to messages sent from that address. If the email identity is a domain, specify the FromAddress whose certificate association you want to remove. This operation is idempotent. If the specified email identity exists but there's no matching 
-    ("DisassociateEmailIdentityCertificate", Decision::Denied(DenyReason::Mutating)),
-    ("GetAccount", Decision::Deferred("Account sending configuration has no immutable resource identifier in its output. Current identity grammar cannot use the implicit request account as a singleton key.")),
-    ("GetBlacklistReports", Decision::Deferred("Required selectors BlacklistItemNames are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members BlacklistReport. Pinned purpose: Retrieve a list of the blacklists that your dedicated IP addresses appear on.")),
-    ("GetConfigurationSet", Decision::Deferred("Required selectors ConfigurationSetName are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ConfigurationSetName, TrackingOptions, DeliveryOptions, ReputationOptions, SendingOptions, Tags, SuppressionOptions, VdmOptions, ArchivingOptions, MessageSecurityOptions. Pinned purpose: Get information about an existing configuration set, including the dedicated IP pool that it's associated with, whether or not it's enabled for sending email, and more. Configuration sets are groups of rules that you can apply to the emails you send.")),
-    ("GetConfigurationSetEventDestinations", Decision::Deferred("Required selectors ConfigurationSetName are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members EventDestinations. Pinned purpose: Retrieve a list of event destinations that are associated with a configuration set. Events include message sends, deliveries, opens, clicks, bounces, and complaints. Event destinations are places that you can send information about these events to. F")),
+    (
+        "DeleteTenantResourceAssociation",
+        Decision::Denied(DenyReason::Mutating),
+    ),
+    // Changes service state rather than reading inventory. Pinned purpose: Removes the association between an S/MIME certificate and an email identity. After the association is removed, Amazon SES API v2 stops adding an S/MIME signature to messages sent from that address. If the email identity is a domain, specify the FromAddress whose certificate association you want to remove. This operation is idempotent. If the specified email identity exists but there's no matching
+    (
+        "DisassociateEmailIdentityCertificate",
+        Decision::Denied(DenyReason::Mutating),
+    ),
+    (
+        "GetAccount",
+        Decision::Deferred(
+            "Account sending configuration has no immutable resource identifier in its output. Current identity grammar cannot use the implicit request account as a singleton key.",
+        ),
+    ),
+    (
+        "GetBlacklistReports",
+        Decision::Deferred(
+            "Required selectors BlacklistItemNames are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members BlacklistReport. Pinned purpose: Retrieve a list of the blacklists that your dedicated IP addresses appear on.",
+        ),
+    ),
+    (
+        "GetConfigurationSet",
+        Decision::Deferred(
+            "Required selectors ConfigurationSetName are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ConfigurationSetName, TrackingOptions, DeliveryOptions, ReputationOptions, SendingOptions, Tags, SuppressionOptions, VdmOptions, ArchivingOptions, MessageSecurityOptions. Pinned purpose: Get information about an existing configuration set, including the dedicated IP pool that it's associated with, whether or not it's enabled for sending email, and more. Configuration sets are groups of rules that you can apply to the emails you send.",
+        ),
+    ),
+    (
+        "GetConfigurationSetEventDestinations",
+        Decision::Deferred(
+            "Required selectors ConfigurationSetName are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members EventDestinations. Pinned purpose: Retrieve a list of event destinations that are associated with a configuration set. Events include message sends, deliveries, opens, clicks, bounces, and complaints. Event destinations are places that you can send information about these events to. F",
+        ),
+    ),
     // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Returns a contact from a contact list.
     ("GetContact", Decision::Denied(DenyReason::Content)),
-    ("GetContactList", Decision::Deferred("Required selectors ContactListName are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ContactListName, Topics, Description, CreatedTimestamp, LastUpdatedTimestamp, Tags. Pinned purpose: Returns contact list metadata. It does not return any information about the contacts present in the list.")),
+    (
+        "GetContactList",
+        Decision::Deferred(
+            "Required selectors ContactListName are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ContactListName, Topics, Description, CreatedTimestamp, LastUpdatedTimestamp, Tags. Pinned purpose: Returns contact list metadata. It does not return any information about the contacts present in the list.",
+        ),
+    ),
     // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Returns the custom email verification template for the template name you specify. For more information about custom verification email templates, see Using custom verification email templates in the Amazon SES Developer Guide . You can execute this operation no more than once per second.
-    ("GetCustomVerificationEmailTemplate", Decision::Denied(DenyReason::Content)),
-    ("GetDedicatedIp", Decision::Deferred("Required selectors Ip are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members DedicatedIp. Pinned purpose: Get information about a dedicated IP address, including the name of the dedicated IP pool that it's associated with, as well information about the automatic warm-up process for the address.")),
-    ("GetDedicatedIpPool", Decision::Deferred("Required selectors PoolName are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members DedicatedIpPool. Pinned purpose: Retrieve information about the dedicated pool.")),
-    ("GetDeliverabilityDashboardOptions", Decision::Deferred("The optional-input response does not establish an immutable locally scoped owned-resource identity. Response members DashboardEnabled, SubscriptionExpiryDate, AccountStatus, ActiveSubscribedDomains, PendingExpirationSubscribedDomains. Pinned request/ownership contract: Retrieve information about the status of the Deliverability dashboard for your account. When the Deliverability dashboard is enabled, you gain access to reputation, deliverability, and other metrics for the domains that you use to send email. You also gain the ability to perform predictive inbox placement tests. When you use the Deliverability dashboard, you pay a monthly subscription charge, in addition to any other fees that you accrue by using")),
-    ("GetDeliverabilityTestReport", Decision::Deferred("Required selectors ReportId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members DeliverabilityTestReport, OverallPlacement, IspPlacements, Message, Tags. Pinned purpose: Retrieve the results of a predictive inbox placement test.")),
-    ("GetDomainDeliverabilityCampaign", Decision::Deferred("Required selectors CampaignId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members DomainDeliverabilityCampaign. Pinned purpose: Retrieve all the deliverability data for a specific campaign. This data is available for a campaign only if the campaign sent email by using a domain that the Deliverability dashboard is enabled for.")),
-    ("GetDomainStatisticsReport", Decision::Deferred("Required selectors Domain, StartDate, EndDate are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members OverallVolume, DailyVolumes. Pinned purpose: Retrieve inbox placement and engagement rates for the domains that you use to send email.")),
-    ("GetEmailAddressInsights", Decision::Deferred("Required selectors EmailAddress are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members MailboxValidation. Pinned purpose: Provides validation insights about a specific email address, including syntax validation, DNS record checks, mailbox existence, and other deliverability factors.")),
-    ("GetEmailIdentity", Decision::Deferred("Required selectors EmailIdentity are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members IdentityType, FeedbackForwardingStatus, VerifiedForSendingStatus, DkimAttributes, MailFromAttributes, Policies, Tags, ConfigurationSetName, VerificationStatus, VerificationInfo. Pinned purpose: Provides information about a specific identity, including the identity's verification status, sending authorization policies, its DKIM authentication status, and its custom Mail-From settings.")),
-    ("GetEmailIdentityPolicies", Decision::Deferred("Required selectors EmailIdentity are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Policies. Pinned purpose: Returns the requested sending authorization policies for the given identity (an email address or a domain). The policies are returned as a map of policy names to policy contents. You can retrieve a maximum of 20 policies at a time. This API is for th")),
+    (
+        "GetCustomVerificationEmailTemplate",
+        Decision::Denied(DenyReason::Content),
+    ),
+    (
+        "GetDedicatedIp",
+        Decision::Deferred(
+            "Required selectors Ip are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members DedicatedIp. Pinned purpose: Get information about a dedicated IP address, including the name of the dedicated IP pool that it's associated with, as well information about the automatic warm-up process for the address.",
+        ),
+    ),
+    (
+        "GetDedicatedIpPool",
+        Decision::Deferred(
+            "Required selectors PoolName are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members DedicatedIpPool. Pinned purpose: Retrieve information about the dedicated pool.",
+        ),
+    ),
+    (
+        "GetDeliverabilityDashboardOptions",
+        Decision::Deferred(
+            "The optional-input response does not establish an immutable locally scoped owned-resource identity. Response members DashboardEnabled, SubscriptionExpiryDate, AccountStatus, ActiveSubscribedDomains, PendingExpirationSubscribedDomains. Pinned request/ownership contract: Retrieve information about the status of the Deliverability dashboard for your account. When the Deliverability dashboard is enabled, you gain access to reputation, deliverability, and other metrics for the domains that you use to send email. You also gain the ability to perform predictive inbox placement tests. When you use the Deliverability dashboard, you pay a monthly subscription charge, in addition to any other fees that you accrue by using",
+        ),
+    ),
+    (
+        "GetDeliverabilityTestReport",
+        Decision::Deferred(
+            "Required selectors ReportId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members DeliverabilityTestReport, OverallPlacement, IspPlacements, Message, Tags. Pinned purpose: Retrieve the results of a predictive inbox placement test.",
+        ),
+    ),
+    (
+        "GetDomainDeliverabilityCampaign",
+        Decision::Deferred(
+            "Required selectors CampaignId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members DomainDeliverabilityCampaign. Pinned purpose: Retrieve all the deliverability data for a specific campaign. This data is available for a campaign only if the campaign sent email by using a domain that the Deliverability dashboard is enabled for.",
+        ),
+    ),
+    (
+        "GetDomainStatisticsReport",
+        Decision::Deferred(
+            "Required selectors Domain, StartDate, EndDate are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members OverallVolume, DailyVolumes. Pinned purpose: Retrieve inbox placement and engagement rates for the domains that you use to send email.",
+        ),
+    ),
+    (
+        "GetEmailAddressInsights",
+        Decision::Deferred(
+            "Required selectors EmailAddress are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members MailboxValidation. Pinned purpose: Provides validation insights about a specific email address, including syntax validation, DNS record checks, mailbox existence, and other deliverability factors.",
+        ),
+    ),
+    (
+        "GetEmailIdentity",
+        Decision::Deferred(
+            "Required selectors EmailIdentity are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members IdentityType, FeedbackForwardingStatus, VerifiedForSendingStatus, DkimAttributes, MailFromAttributes, Policies, Tags, ConfigurationSetName, VerificationStatus, VerificationInfo. Pinned purpose: Provides information about a specific identity, including the identity's verification status, sending authorization policies, its DKIM authentication status, and its custom Mail-From settings.",
+        ),
+    ),
+    (
+        "GetEmailIdentityPolicies",
+        Decision::Deferred(
+            "Required selectors EmailIdentity are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Policies. Pinned purpose: Returns the requested sending authorization policies for the given identity (an email address or a domain). The policies are returned as a map of policy names to policy contents. You can retrieve a maximum of 20 policies at a time. This API is for th",
+        ),
+    ),
     // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Displays the template object (which includes the subject line, HTML part and text part) for the template you specify. You can execute this operation no more than 50 times per second.
     ("GetEmailTemplate", Decision::Denied(DenyReason::Content)),
-    ("GetExportJob", Decision::Deferred("Required selectors JobId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members JobId, ExportSourceType, JobStatus, ExportDestination, ExportDataSource, CreatedTimestamp, CompletedTimestamp, FailureInfo, Statistics. Pinned purpose: Provides information about an export job. When the job status is COMPLETED , the response includes a pre-signed URL in ExportDestination.S3Url that you use to download the export file.")),
-    ("GetImportJob", Decision::Deferred("Required selectors JobId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members JobId, ImportDestination, ImportDataSource, FailureInfo, JobStatus, CreatedTimestamp, CompletedTimestamp, ProcessedRecordsCount, FailedRecordsCount. Pinned purpose: Provides information about an import job.")),
+    (
+        "GetExportJob",
+        Decision::Deferred(
+            "Required selectors JobId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members JobId, ExportSourceType, JobStatus, ExportDestination, ExportDataSource, CreatedTimestamp, CompletedTimestamp, FailureInfo, Statistics. Pinned purpose: Provides information about an export job. When the job status is COMPLETED , the response includes a pre-signed URL in ExportDestination.S3Url that you use to download the export file.",
+        ),
+    ),
+    (
+        "GetImportJob",
+        Decision::Deferred(
+            "Required selectors JobId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members JobId, ImportDestination, ImportDataSource, FailureInfo, JobStatus, CreatedTimestamp, CompletedTimestamp, ProcessedRecordsCount, FailedRecordsCount. Pinned purpose: Provides information about an import job.",
+        ),
+    ),
     // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Provides information about a specific message, including the from address, the subject, the recipient address, email tags, as well as events associated with the message. You can execute this operation no more than once per second.
     ("GetMessageInsights", Decision::Denied(DenyReason::Content)),
-    ("GetMultiRegionEndpoint", Decision::Deferred("Required selectors EndpointName are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members EndpointName, EndpointId, Routes, Status, CreatedTimestamp, LastUpdatedTimestamp. Pinned purpose: Displays the multi-region endpoint (global-endpoint) configuration. Only multi-region endpoints (global-endpoints) whose primary region is the AWS-Region where operation is executed can be displayed.")),
-    ("GetReputationEntity", Decision::Deferred("Required selectors ReputationEntityReference, ReputationEntityType are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ReputationEntity. Pinned purpose: Retrieve information about a specific reputation entity, including its reputation management policy, customer-managed status, Amazon Web Services Amazon SES-managed status, and aggregate sending status. Reputation entities represent resources in your")),
+    (
+        "GetMultiRegionEndpoint",
+        Decision::Deferred(
+            "Required selectors EndpointName are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members EndpointName, EndpointId, Routes, Status, CreatedTimestamp, LastUpdatedTimestamp. Pinned purpose: Displays the multi-region endpoint (global-endpoint) configuration. Only multi-region endpoints (global-endpoints) whose primary region is the AWS-Region where operation is executed can be displayed.",
+        ),
+    ),
+    (
+        "GetReputationEntity",
+        Decision::Deferred(
+            "Required selectors ReputationEntityReference, ReputationEntityType are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ReputationEntity. Pinned purpose: Retrieve information about a specific reputation entity, including its reputation management policy, customer-managed status, Amazon Web Services Amazon SES-managed status, and aggregate sending status. Reputation entities represent resources in your",
+        ),
+    ),
     // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Retrieves information about a specific email address that's on the suppression list for your account or for a specific tenant. To target a tenant's suppression list, specify the TenantName parameter. If you omit TenantName , the operation targets the account-level suppression list.
-    ("GetSuppressedDestination", Decision::Denied(DenyReason::Content)),
+    (
+        "GetSuppressedDestination",
+        Decision::Denied(DenyReason::Content),
+    ),
 ];

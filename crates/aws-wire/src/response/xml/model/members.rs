@@ -77,7 +77,12 @@ impl<'a, 'd> Model<'a, 'd, '_> {
     }
 
     fn absent(&mut self, member: Member<'a>) -> Result<bool, DecodeError> {
-        defaults::apply_member(self.builder, member, self.context.service, self.context.limits)?;
+        defaults::apply_member(
+            self.builder,
+            member,
+            self.context.service,
+            self.context.limits,
+        )?;
         Ok(false)
     }
 

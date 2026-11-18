@@ -1,5 +1,5 @@
-use super::{inventory, path, paths, bind, token};
-use crate::overlay::{OperationOverlay, NameError, Identity, Paginator, Scope};
+use super::{bind, inventory, path, paths, token};
+use crate::overlay::{Identity, NameError, OperationOverlay, Paginator, Scope};
 
 pub(super) fn get_db_parameter_group() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
@@ -8,12 +8,7 @@ pub(super) fn get_db_parameter_group() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "id",
-        "name",
-        "arn",
-        "description",
-    ])?;
+    operation.queryable = paths(&["id", "name", "arn", "description"])?;
     bind(&mut operation, "identifier", "ListDbParameterGroups", "id")?;
     Ok(operation)
 }

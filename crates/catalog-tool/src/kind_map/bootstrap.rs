@@ -5,4 +5,3 @@ pub(super) struct BootstrapEntry {
     pub(super) operation: String,
     pub(super) purpose: BootstrapPurpose,
 }
-

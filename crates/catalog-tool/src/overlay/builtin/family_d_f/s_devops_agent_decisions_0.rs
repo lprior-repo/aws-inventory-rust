@@ -1,38 +1,143 @@
 // Explicit dispositions from .local/aws-models/models/devops-agent/service/2026-01-01/devops-agent-2026-01-01.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
-    ("AssociateService", "Requires agentSpaceId, serviceId, configuration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds a specific service association to an AgentSpace."),
-    ("CreateAgentSpace", "Requires name; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new AgentSpace with the specified name and description."),
-    ("CreateAsset", "Requires agentSpaceId, assetType, content; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new asset in the specified agent space"),
-    ("CreateAssetFile", "Requires agentSpaceId, assetId, path, content; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a file in an asset"),
-    ("CreateBacklogTask", "Requires agentSpaceId, taskType, title, priority; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new backlog task in the specified agent space"),
-    ("CreateChat", "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new chat execution in the specified agent space"),
-    ("CreatePrivateConnection", "Requires name, mode; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a Private Connection to a target resource."),
-    ("CreateTrigger", "Requires agentSpaceId, type, condition, action; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new Trigger in the specified agent space"),
-    ("DeleteAgentSpace", "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes an AgentSpace."),
-    ("DeleteAsset", "Requires agentSpaceId, assetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes an asset and all its files from the specified agent space"),
-    ("DeleteAssetFile", "Requires agentSpaceId, assetId, path; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a file from an asset"),
-    ("DeletePrivateConnection", "Requires name; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a Private Connection."),
-    ("DeleteTrigger", "Requires agentSpaceId, triggerId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a Trigger from the specified agent space"),
-    ("DeregisterService", "Requires serviceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deregister a service"),
-    ("DescribePrivateConnection", "Requires name; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves details of an existing Private Connection."),
-    ("DisableOperatorApp", "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Disable the Operator App for the specified AgentSpace"),
-    ("DisassociateService", "Requires agentSpaceId, associationId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a specific service association from an AgentSpace."),
-    ("EnableOperatorApp", "Requires agentSpaceId, authFlow, operatorAppRoleArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Enable the Operator App to access the given AgentSpace"),
-    ("GetAccountUsage", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Retrieves monthly account usage metrics and limits for the AWS account."),
-    ("GetAgentSpace", "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves detailed information about a specific AgentSpace."),
-    ("GetAsset", "Requires agentSpaceId, assetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets an asset from the specified agent space"),
-    ("GetAssetContent", "Requires agentSpaceId, assetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets an asset's content as a zip bundle"),
-    ("GetAssetFile", "Requires agentSpaceId, assetId, path; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets a file from an asset"),
-    ("GetAssociation", "Requires agentSpaceId, associationId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves given associations configured for a specific AgentSpace."),
-    ("GetBacklogTask", "Requires agentSpaceId, taskId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets a backlog task for the specified agent space and task id"),
-    ("GetOperatorApp", "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Get the full auth configuration of operator including any enabled auth flow"),
-    ("GetRecommendation", "Requires agentSpaceId, recommendationId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves a specific recommendation by its ID"),
-    ("GetService", "Requires serviceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves given service by it's unique identifier"),
-    ("GetTrigger", "Requires agentSpaceId, triggerId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets a Trigger from the specified agent space"),
-    ("ListAssetFiles", "Requires agentSpaceId, assetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists files in an asset"),
-    ("ListAssetTypes", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Lists the supported asset types"),
-    ("ListAssetVersions", "Requires agentSpaceId, assetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists versions of an asset in the specified agent space"),
-    ("ListAssets", "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists assets in the specified agent space"),
-    ("ListAssociations", "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: List all associations for given AgentSpace"),
-    ("ListBacklogTasks", "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists backlog tasks in the specified agent space with optional filtering and sorting"),
+    (
+        "AssociateService",
+        "Requires agentSpaceId, serviceId, configuration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds a specific service association to an AgentSpace.",
+    ),
+    (
+        "CreateAgentSpace",
+        "Requires name; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new AgentSpace with the specified name and description.",
+    ),
+    (
+        "CreateAsset",
+        "Requires agentSpaceId, assetType, content; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new asset in the specified agent space",
+    ),
+    (
+        "CreateAssetFile",
+        "Requires agentSpaceId, assetId, path, content; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a file in an asset",
+    ),
+    (
+        "CreateBacklogTask",
+        "Requires agentSpaceId, taskType, title, priority; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new backlog task in the specified agent space",
+    ),
+    (
+        "CreateChat",
+        "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new chat execution in the specified agent space",
+    ),
+    (
+        "CreatePrivateConnection",
+        "Requires name, mode; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a Private Connection to a target resource.",
+    ),
+    (
+        "CreateTrigger",
+        "Requires agentSpaceId, type, condition, action; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new Trigger in the specified agent space",
+    ),
+    (
+        "DeleteAgentSpace",
+        "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes an AgentSpace.",
+    ),
+    (
+        "DeleteAsset",
+        "Requires agentSpaceId, assetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes an asset and all its files from the specified agent space",
+    ),
+    (
+        "DeleteAssetFile",
+        "Requires agentSpaceId, assetId, path; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a file from an asset",
+    ),
+    (
+        "DeletePrivateConnection",
+        "Requires name; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a Private Connection.",
+    ),
+    (
+        "DeleteTrigger",
+        "Requires agentSpaceId, triggerId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a Trigger from the specified agent space",
+    ),
+    (
+        "DeregisterService",
+        "Requires serviceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deregister a service",
+    ),
+    (
+        "DescribePrivateConnection",
+        "Requires name; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves details of an existing Private Connection.",
+    ),
+    (
+        "DisableOperatorApp",
+        "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Disable the Operator App for the specified AgentSpace",
+    ),
+    (
+        "DisassociateService",
+        "Requires agentSpaceId, associationId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a specific service association from an AgentSpace.",
+    ),
+    (
+        "EnableOperatorApp",
+        "Requires agentSpaceId, authFlow, operatorAppRoleArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Enable the Operator App to access the given AgentSpace",
+    ),
+    (
+        "GetAccountUsage",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Retrieves monthly account usage metrics and limits for the AWS account.",
+    ),
+    (
+        "GetAgentSpace",
+        "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves detailed information about a specific AgentSpace.",
+    ),
+    (
+        "GetAsset",
+        "Requires agentSpaceId, assetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets an asset from the specified agent space",
+    ),
+    (
+        "GetAssetContent",
+        "Requires agentSpaceId, assetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets an asset's content as a zip bundle",
+    ),
+    (
+        "GetAssetFile",
+        "Requires agentSpaceId, assetId, path; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets a file from an asset",
+    ),
+    (
+        "GetAssociation",
+        "Requires agentSpaceId, associationId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves given associations configured for a specific AgentSpace.",
+    ),
+    (
+        "GetBacklogTask",
+        "Requires agentSpaceId, taskId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets a backlog task for the specified agent space and task id",
+    ),
+    (
+        "GetOperatorApp",
+        "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Get the full auth configuration of operator including any enabled auth flow",
+    ),
+    (
+        "GetRecommendation",
+        "Requires agentSpaceId, recommendationId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves a specific recommendation by its ID",
+    ),
+    (
+        "GetService",
+        "Requires serviceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves given service by it's unique identifier",
+    ),
+    (
+        "GetTrigger",
+        "Requires agentSpaceId, triggerId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets a Trigger from the specified agent space",
+    ),
+    (
+        "ListAssetFiles",
+        "Requires agentSpaceId, assetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists files in an asset",
+    ),
+    (
+        "ListAssetTypes",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Lists the supported asset types",
+    ),
+    (
+        "ListAssetVersions",
+        "Requires agentSpaceId, assetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists versions of an asset in the specified agent space",
+    ),
+    (
+        "ListAssets",
+        "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists assets in the specified agent space",
+    ),
+    (
+        "ListAssociations",
+        "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: List all associations for given AgentSpace",
+    ),
+    (
+        "ListBacklogTasks",
+        "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists backlog tasks in the specified agent space with optional filtering and sorting",
+    ),
 ];

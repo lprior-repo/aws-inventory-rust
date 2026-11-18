@@ -14,26 +14,51 @@ fn scalar_cases() -> TestResult<Vec<(ValueRef<'static>, Vec<u8>)>> {
         (ValueRef::Null, vec![0xa1, 0x61, 0x24, 0xf6]),
         (ValueRef::Bool(false), vec![0xa1, 0x61, 0x24, 0xf4]),
         (ValueRef::Bool(true), vec![0xa1, 0x61, 0x24, 0xf5]),
-        (ValueRef::Int(i64::MIN), vec![0xa1, 0x61, 0x24, 0x3b, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]),
-        (ValueRef::Int(i64::MAX), vec![0xa1, 0x61, 0x24, 0x1b, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff]),
+        (
+            ValueRef::Int(i64::MIN),
+            vec![
+                0xa1, 0x61, 0x24, 0x3b, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+            ],
+        ),
+        (
+            ValueRef::Int(i64::MAX),
+            vec![
+                0xa1, 0x61, 0x24, 0x1b, 0x7f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+            ],
+        ),
         (ValueRef::Int(0), vec![0xa1, 0x61, 0x24, 0x00]),
         (ValueRef::Text(""), vec![0xa1, 0x61, 0x24, 0x60]),
-        (ValueRef::Text("é"), vec![0xa1, 0x61, 0x24, 0x62, 0xc3, 0xa9]),
+        (
+            ValueRef::Text("é"),
+            vec![0xa1, 0x61, 0x24, 0x62, 0xc3, 0xa9],
+        ),
         (ValueRef::Bytes(&[]), vec![0xa1, 0x61, 0x24, 0x40]),
-        (ValueRef::Bytes(&[0, 255]), vec![0xa1, 0x61, 0x24, 0x42, 0, 255]),
-        (ValueRef::Float(Float::new(0.5)), vec![0xa1, 0x61, 0x24, 0xfb, 0x3f, 0xe0, 0, 0, 0, 0, 0, 0]),
-        (ValueRef::Time(Time::new(-1, 1)?), vec![0xa1, 0x61, 0x24, 0xc1, 0x82, 0x20, 0x01]),
+        (
+            ValueRef::Bytes(&[0, 255]),
+            vec![0xa1, 0x61, 0x24, 0x42, 0, 255],
+        ),
+        (
+            ValueRef::Float(Float::new(0.5)),
+            vec![0xa1, 0x61, 0x24, 0xfb, 0x3f, 0xe0, 0, 0, 0, 0, 0, 0],
+        ),
+        (
+            ValueRef::Time(Time::new(-1, 1)?),
+            vec![0xa1, 0x61, 0x24, 0xc1, 0x82, 0x20, 0x01],
+        ),
     ])
 }
 
 #[test]
-fn scalar_decoder_preserves_each_native_scalar_in_an_independently_encoded_envelope() -> TestResult {
+fn scalar_decoder_preserves_each_native_scalar_in_an_independently_encoded_envelope() -> TestResult
+{
     // Given independently encoded scalar envelopes, including both polarities,
     // signed extrema, null and scalar kinds that are not AWS identity strings.
     for (expected, bytes) in scalar_cases()? {
         let record = Record::from_bytes(bytes)?;
         // When the public selected-item decoder reads the envelope.
-        let actual = scalar_item(record.root())?.map(|value| value.to_value()).transpose()?;
+        let actual = scalar_item(record.root())?
+            .map(|value| value.to_value())
+            .transpose()?;
         // Then native type and value are exact, without paired-encoder oracles.
         assert_eq!(actual, Some(expected.to_value()?));
     }
@@ -47,7 +72,10 @@ fn scalar_encoder_emits_exactly_one_dollar_entry_with_independently_expected_byt
         let record = scalar_record(value)?;
         // Then the bytes and entry count match the independent envelope oracle.
         assert_eq!(record.as_bytes(), expected.as_slice());
-        assert_eq!(record.root().iter()?.collect::<Result<Vec<_>, _>>()?.len(), 1);
+        assert_eq!(
+            record.root().iter()?.collect::<Result<Vec<_>, _>>()?.len(),
+            1
+        );
     }
     Ok(())
 }
@@ -58,10 +86,19 @@ fn scalar_decoder_refuses_extra_entries_containers_and_non_dollar_structures() -
     // particular "$" comes first in the two-entry named map, exercising the
     // second-entry guard rather than rejection of the first key alone.
     let cases: &[(&str, &[u8])] = &[
-        ("extra named entry", &[0xa2, 0x61, 0x24, 0x61, b'x', 0x61, b'z', 0x01]),
-        ("extra ordinary field", &[0xa2, 0x01, 0x01, 0x61, 0x24, 0x61, b'x']),
+        (
+            "extra named entry",
+            &[0xa2, 0x61, 0x24, 0x61, b'x', 0x61, b'z', 0x01],
+        ),
+        (
+            "extra ordinary field",
+            &[0xa2, 0x01, 0x01, 0x61, 0x24, 0x61, b'x'],
+        ),
         ("empty map payload", &[0xa1, 0x61, 0x24, 0xa0]),
-        ("populated map payload", &[0xa1, 0x61, 0x24, 0xa1, 0x01, 0x01]),
+        (
+            "populated map payload",
+            &[0xa1, 0x61, 0x24, 0xa1, 0x01, 0x01],
+        ),
         ("empty list payload", &[0xa1, 0x61, 0x24, 0x80]),
         ("populated list payload", &[0xa1, 0x61, 0x24, 0x81, 0xf6]),
         ("different named key", &[0xa1, 0x61, b'x', 0x61, b'a']),
@@ -72,7 +109,13 @@ fn scalar_decoder_refuses_extra_entries_containers_and_non_dollar_structures() -
         // Given a hostile shape encoded without scalar_record.
         let record = Record::from_bytes(bytes.to_vec())?;
         // When decoded, then it is exactly absent, not a scalar or parse error.
-        assert_eq!(scalar_item(record.root())?.map(|value| value.to_value()).transpose()?, None, "{name}");
+        assert_eq!(
+            scalar_item(record.root())?
+                .map(|value| value.to_value())
+                .transpose()?,
+            None,
+            "{name}"
+        );
     }
     Ok(())
 }
@@ -89,15 +132,23 @@ where
     // Given a real compiled scalar enumeration and precisely 100000 items.
     let bytes = compiled_scalar_catalog()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
-    let plan = catalog.lookup("bounds", "ListThings").ok_or("compiled plan missing")?;
+    let plan = catalog
+        .lookup("bounds", "ListThings")
+        .ok_or("compiled plan missing")?;
     let response = response(100_000)?;
     // When the production extraction consumer uses the loaded selector.
     let rows = extract(&response, plan.items())?;
     // Then every accepted row is preserved in order with its full native value.
     assert_eq!(rows.len(), 100_000);
     for (index, row) in rows.iter().enumerate() {
-        let actual = scalar_item(row.root())?.map(|value| value.to_value()).transpose()?;
-        assert_eq!(actual, Some(Value::Int(i64::try_from(index)?)), "row {index}");
+        let actual = scalar_item(row.root())?
+            .map(|value| value.to_value())
+            .transpose()?;
+        assert_eq!(
+            actual,
+            Some(Value::Int(i64::try_from(index)?)),
+            "row {index}"
+        );
         assert_eq!(row.root().iter()?.collect::<Result<Vec<_>, _>>()?.len(), 1);
     }
     Ok(())
@@ -112,15 +163,29 @@ where
     // Given the same compiled plan, with precisely one additional valid item.
     let bytes = compiled_scalar_catalog()?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
-    let plan = catalog.lookup("bounds", "ListThings").ok_or("compiled plan missing")?;
+    let plan = catalog
+        .lookup("bounds", "ListThings")
+        .ok_or("compiled plan missing")?;
     let response = response(100_001)?;
     // When extracting the page, then no successful partial Vec can escape.
     match extract(&response, plan.items()) {
         Err(error) => {
-            assert_eq!(format!("{error:?}"), "Operation(\"page exceeds the atomic observation bound\")");
-            assert_eq!(error.to_string(), "sweep operation failed: page exceeds the atomic observation bound");
+            assert_eq!(
+                format!("{error:?}"),
+                "Operation(\"page exceeds the atomic observation bound\")"
+            );
+            assert_eq!(
+                error.to_string(),
+                "sweep operation failed: page exceeds the atomic observation bound"
+            );
         }
-        Ok(rows) => return Err(format!("oversized page returned {} partial or unbounded rows", rows.len()).into()),
+        Ok(rows) => {
+            return Err(format!(
+                "oversized page returned {} partial or unbounded rows",
+                rows.len()
+            )
+            .into());
+        }
     }
     Ok(())
 }
@@ -140,7 +205,9 @@ const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 }}"#;
 
 fn compiled_scalar_catalog() -> TestResult<Vec<u8>> {
-    use catalog_tool::{classes::DenyList, endpoints, kind_map, names, overlay, runtime_catalog, smithy};
+    use catalog_tool::{
+        classes::DenyList, endpoints, kind_map, names, overlay, runtime_catalog, smithy,
+    };
     use serde_json::json;
     use std::{fs, path::Path};
 
@@ -152,29 +219,55 @@ fn compiled_scalar_catalog() -> TestResult<Vec<u8>> {
     let mut operation = overlay::OperationOverlay::default();
     operation.class = Some(overlay::OverlayClass::Enumerate);
     operation.scope = Some(overlay::Scope::Region);
-    operation.items = Some(overlay::ItemSelector::Member(overlay::MemberPath::new("Items")?));
+    operation.items = Some(overlay::ItemSelector::Member(overlay::MemberPath::new(
+        "Items",
+    )?));
     operation.paginator = Some(overlay::Paginator::None);
-    operation.identity = Some(overlay::Identity::Key(vec![overlay::MemberPath::selected("$")?]));
-    let policies = [overlay::ServiceOverlay::new("bounds", vec![("ListThings", operation)])?];
+    operation.identity = Some(overlay::Identity::Key(vec![overlay::MemberPath::selected(
+        "$",
+    )?]));
+    let policies = [overlay::ServiceOverlay::new(
+        "bounds",
+        vec![("ListThings", operation)],
+    )?];
     let checked = overlay::check_policies(&source, &policies, &DenyList::parse("")?)?;
     let fields = smithy::Registry::parse("Items\n")?;
     let base = smithy::build_catalog(&source, &fields, "exact-bound-fixture")?;
     let kinds = kind_map::MappingSource {
-        version: 1, reviewed: "2026-11-15", reviewer: "Exact-bound fixture",
-        default_unmapped_reason: None, cfn: &[], relations: &[], parent_relations: &[], compound_relations: &[], additional_emissions: &[], relation_targets: &[], bootstraps: &[],
+        version: 1,
+        reviewed: "2026-11-15",
+        reviewer: "Exact-bound fixture",
+        default_unmapped_reason: None,
+        cfn: &[],
+        relations: &[],
+        parent_relations: &[],
+        compound_relations: &[],
+        additional_emissions: &[],
+        relation_targets: &[],
+        bootstraps: &[],
         api_only: &[kind_map::ApiOnlyMapping {
-            kind: "AWS::ApiOnly::ExactBound", reason: "Exact-bound scalar fixture",
+            kind: "AWS::ApiOnly::ExactBound",
+            reason: "Exact-bound scalar fixture",
         }],
         operations: &[kind_map::OperationMapping {
-            service: "bounds", operation: "ListThings", kind: "AWS::ApiOnly::ExactBound",
+            service: "bounds",
+            operation: "ListThings",
+            kind: "AWS::ApiOnly::ExactBound",
         }],
-    }.compile(&names::Exceptions::none())?;
+    }
+    .compile(&names::Exceptions::none())?;
     let properties = json!({"authSchemes":[{"name":"sigv4","signingName":"bounds","signingRegion":"us-east-1"}]});
     let document = json!({"version":"1.0","parameters":{"Region":{"type":"string"}},"rules":[{"type":"endpoint","conditions":[],"endpoint":{"url":"https://bounds.test","properties":properties}}]});
     let rules = endpoints::RuleSet::parse(Path::new("exact-bound-endpoint.json"), &document)?;
-    let cases: Vec<endpoints::Case> = serde_json::from_value(json!([{"params":{"Region":"us-east-1"},"expect":{"endpoint":{"url":"https://bounds.test","properties":properties}}}]))?;
-    let endpoint = rules.run_cases(&cases)?.verified_endpoint(Some("bounds"))
+    let cases: Vec<endpoints::Case> = serde_json::from_value(
+        json!([{"params":{"Region":"us-east-1"},"expect":{"endpoint":{"url":"https://bounds.test","properties":properties}}}]),
+    )?;
+    let endpoint = rules
+        .run_cases(&cases)?
+        .verified_endpoint(Some("bounds"))
         .map_err(|_| "fixture endpoint evidence failed")?;
     let endpoints = BTreeMap::from([("bounds".to_owned(), endpoint)]);
-    Ok(runtime_catalog::augment(&base, &checked, &kinds, &endpoints)?)
+    Ok(runtime_catalog::augment(
+        &base, &checked, &kinds, &endpoints,
+    )?)
 }

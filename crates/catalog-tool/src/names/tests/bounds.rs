@@ -43,8 +43,13 @@ fn exception_byte_bound_accepts_65536_and_rejects_65537() -> TestResult {
 
 #[test]
 fn exception_row_bound_accepts_1024_and_rejects_1025_before_copying() -> TestResult {
-    let spellings = (0..1_024).map(|index| format!("X{index}")).collect::<Vec<_>>();
-    let bounded = spellings.iter().map(|spelling| (spelling.as_str(), "x")).collect::<Vec<_>>();
+    let spellings = (0..1_024)
+        .map(|index| format!("X{index}"))
+        .collect::<Vec<_>>();
+    let bounded = spellings
+        .iter()
+        .map(|spelling| (spelling.as_str(), "x"))
+        .collect::<Vec<_>>();
     let exceptions = Exceptions::from_entries(&bounded)?;
     assert_eq!(sql_name("A::X1023", &exceptions)?.as_str(), "a_x");
     assert_eq!(

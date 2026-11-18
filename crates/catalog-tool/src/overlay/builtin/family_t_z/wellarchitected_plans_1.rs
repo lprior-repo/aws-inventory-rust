@@ -1,5 +1,5 @@
 use super::{inventory, path, paths, token};
-use crate::overlay::{OperationOverlay, NameError, Identity, Scope};
+use crate::overlay::{Identity, NameError, OperationOverlay, Scope};
 
 pub(super) fn list_profiles() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(

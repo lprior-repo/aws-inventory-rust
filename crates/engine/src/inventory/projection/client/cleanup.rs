@@ -11,16 +11,20 @@ impl GraphClient {
         existence_query: &str,
         deletion_query: &str,
     ) -> Result<(), GraphError> {
-        stream::try_unfold((self, MAX_CLEANUP_PAGES), |(client, remaining)| async move {
-            let response = client.request(existence_query.to_owned()).await?;
-            if !has_row(response)? {
-                return Ok(None);
-            }
-            let remaining = remaining.checked_sub(1)
-                .ok_or(GraphError::Query(QueryError::InvalidResponse))?;
-            client.send(deletion_query.to_owned()).await?;
-            Ok::<_, GraphError>(Some(((), (client, remaining))))
-        })
+        stream::try_unfold(
+            (self, MAX_CLEANUP_PAGES),
+            |(client, remaining)| async move {
+                let response = client.request(existence_query.to_owned()).await?;
+                if !has_row(response)? {
+                    return Ok(None);
+                }
+                let remaining = remaining
+                    .checked_sub(1)
+                    .ok_or(GraphError::Query(QueryError::InvalidResponse))?;
+                client.send(deletion_query.to_owned()).await?;
+                Ok::<_, GraphError>(Some(((), (client, remaining))))
+            },
+        )
         .try_for_each(|()| async { Ok(()) })
         .await
     }
@@ -51,7 +55,10 @@ mod tests {
     #[test]
     fn cleanup_checks_one_bounded_sentinel_and_rejects_malformed_replies() {
         assert!(matches!(has_row(reply(vec![])), Ok(false)));
-        assert!(matches!(has_row(reply(vec![redis::Value::Array(vec![redis::Value::Int(1)])])), Ok(true)));
+        assert!(matches!(
+            has_row(reply(vec![redis::Value::Array(vec![redis::Value::Int(1)])])),
+            Ok(true)
+        ));
         assert!(has_row(redis::Value::Nil).is_err());
         assert!(has_row(reply(vec![redis::Value::Int(1)])).is_err());
         assert!(has_row(reply(vec![redis::Value::Array(vec![redis::Value::Int(0)])])).is_err());

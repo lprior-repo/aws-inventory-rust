@@ -15,7 +15,10 @@ impl MapKeyExclusion {
         if key.is_empty() || key.len() > 4096 {
             return Err(RecordError::ExclusionKey { length: key.len() });
         }
-        Ok(Self { path: path.into_boxed_slice(), key })
+        Ok(Self {
+            path: path.into_boxed_slice(),
+            key,
+        })
     }
 
     pub fn path(&self) -> &[FieldId] {
@@ -48,16 +51,24 @@ impl Exclusions {
             .collect::<Result<Vec<_>, RecordError>>()?;
         paths.sort_unstable();
         paths.dedup();
-        Ok(Self { paths, map_keys: Vec::new() })
+        Ok(Self {
+            paths,
+            map_keys: Vec::new(),
+        })
     }
 
     pub fn paths(&self) -> &[Box<[FieldId]>] {
         &self.paths
     }
 
-    pub fn with_map_keys(mut self, mut map_keys: Vec<MapKeyExclusion>) -> Result<Self, RecordError> {
+    pub fn with_map_keys(
+        mut self,
+        mut map_keys: Vec<MapKeyExclusion>,
+    ) -> Result<Self, RecordError> {
         if map_keys.len() > 64 {
-            return Err(RecordError::ExclusionCount { length: map_keys.len() });
+            return Err(RecordError::ExclusionCount {
+                length: map_keys.len(),
+            });
         }
         map_keys.sort_unstable();
         if map_keys.windows(2).any(|pair| pair.first() == pair.last()) {

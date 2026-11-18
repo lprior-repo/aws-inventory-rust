@@ -1,10 +1,13 @@
 use super::*;
 
 #[tokio::test]
-async fn given_two_applications_when_index_and_datasource_fanout_resumes_then_matching_parent_pairs_and_all_children_persist() -> TestResult {
+async fn given_two_applications_when_index_and_datasource_fanout_resumes_then_matching_parent_pairs_and_all_children_persist()
+-> TestResult {
     let catalog = fixture::catalog()?;
     let scenario = Scenario::new(&catalog, "qbusiness-owned-descendants", "us-east-1").await?;
-    scenario.seed(fixture::plan(&catalog, "qbusiness", "ListApplications")?).await?;
+    scenario
+        .seed(fixture::plan(&catalog, "qbusiness", "ListApplications")?)
+        .await?;
     let mut requests = BTreeSet::new();
     scenario.run(&catalog, 25, |plan, lease, wire| {
         let operation = plan.operation_name();
@@ -31,16 +34,47 @@ async fn given_two_applications_when_index_and_datasource_fanout_resumes_then_ma
     }).await?;
     assert_eq!(requests.len(), 24);
     let saved = scenario.saved().await?;
-    for kind in ["Index", "Plugin", "WebExperience", "Retriever"] { assert_eq!(count(&saved, &format!("AWS::QBusiness::{kind}")), 4); }
+    for kind in ["Index", "Plugin", "WebExperience", "Retriever"] {
+        assert_eq!(count(&saved, &format!("AWS::QBusiness::{kind}")), 4);
+    }
     assert_eq!(count(&saved, "AWS::QBusiness::DataSource"), 8);
     let edges = scenario.edges().await?;
-    assert_eq!(edges.iter().filter(|(kind, _, _, _, relation)| kind == "AWS::QBusiness::DataSource" && relation == "FOR_INDEX").count(), 8);
-    assert_eq!(edges.iter().filter(|(_, _, kind, _, relation)| kind == "AWS::QBusiness::Application" && relation == "FOR_APPLICATION").count(), 20);
+    assert_eq!(
+        edges
+            .iter()
+            .filter(
+                |(kind, _, _, _, relation)| kind == "AWS::QBusiness::DataSource"
+                    && relation == "FOR_INDEX"
+            )
+            .count(),
+        8
+    );
+    assert_eq!(
+        edges
+            .iter()
+            .filter(
+                |(_, _, kind, _, relation)| kind == "AWS::QBusiness::Application"
+                    && relation == "FOR_APPLICATION"
+            )
+            .count(),
+        20
+    );
     for application in ["app-a", "app-b"] {
         for index in ["index-a", "index-b"] {
-            let expected = saved.iter().find(|(kind, id, _)| kind == "AWS::QBusiness::Index" && id.contains(application) && id.contains(index))
+            let expected = saved
+                .iter()
+                .find(|(kind, id, _)| {
+                    kind == "AWS::QBusiness::Index"
+                        && id.contains(application)
+                        && id.contains(index)
+                })
                 .ok_or("actual persisted owning index is missing")?;
-            let matches = edges.iter().filter(|(kind, source, _, _, relation)| kind == "AWS::QBusiness::DataSource" && relation == "FOR_INDEX" && source.contains(application) && source.contains(index));
+            let matches = edges.iter().filter(|(kind, source, _, _, relation)| {
+                kind == "AWS::QBusiness::DataSource"
+                    && relation == "FOR_INDEX"
+                    && source.contains(application)
+                    && source.contains(index)
+            });
             let mut matched = 0;
             for (_, _, target_kind, target, _) in matches {
                 matched += 1;
@@ -54,11 +88,20 @@ async fn given_two_applications_when_index_and_datasource_fanout_resumes_then_ma
 }
 
 #[tokio::test]
-async fn given_two_owners_per_family_when_safe_child_pages_resume_then_accesspoints_versions_certificates_and_window_targets_remain_distinct() -> TestResult {
+async fn given_two_owners_per_family_when_safe_child_pages_resume_then_accesspoints_versions_certificates_and_window_targets_remain_distinct()
+-> TestResult {
     let catalog = fixture::catalog()?;
     let scenario = Scenario::new(&catalog, "qs-metadata-children", "us-east-1").await?;
-    for (service, operation) in [("s3files","ListFileSystems"),("sagemaker","ListImages"),("sesv2","ListEmailIdentities"),("ssm","DescribeMaintenanceWindows"),("ssm","ListDocuments")] {
-        scenario.seed(fixture::plan(&catalog, service, operation)?).await?;
+    for (service, operation) in [
+        ("s3files", "ListFileSystems"),
+        ("sagemaker", "ListImages"),
+        ("sesv2", "ListEmailIdentities"),
+        ("ssm", "DescribeMaintenanceWindows"),
+        ("ssm", "ListDocuments"),
+    ] {
+        scenario
+            .seed(fixture::plan(&catalog, service, operation)?)
+            .await?;
     }
     scenario.run(&catalog, 22, |plan, lease, wire| {
         let second = lease.token().is_some();
@@ -105,15 +148,45 @@ async fn given_two_owners_per_family_when_safe_child_pages_resume_then_accesspoi
         paginated(value, if plan.service_name() == "s3files" { "nextToken" } else { "NextToken" }, second)
     }).await?;
     let saved = scenario.saved().await?;
-    for (kind, expected) in [("AWS::S3Files::AccessPoint",4),("AWS::SageMaker::ImageVersion",22),("AWS::SES::EmailIdentityCertificate",6),("AWS::SSM::MaintenanceWindowTarget",4),("AWS::SSM::Document",2)] {
-        assert_eq!(count(&saved,kind), expected, "lost {kind}");
+    for (kind, expected) in [
+        ("AWS::S3Files::AccessPoint", 4),
+        ("AWS::SageMaker::ImageVersion", 22),
+        ("AWS::SES::EmailIdentityCertificate", 6),
+        ("AWS::SSM::MaintenanceWindowTarget", 4),
+        ("AWS::SSM::Document", 2),
+    ] {
+        assert_eq!(count(&saved, kind), expected, "lost {kind}");
     }
     let edges = scenario.edges().await?;
-    assert_eq!(edges.iter().filter(|(kind, _, _, _, relation)| kind == "AWS::SageMaker::ImageVersion" && relation == "VERSION_OF").count(),22);
-    assert_eq!(edges.iter().filter(|(kind, _, _, _, relation)| kind == "AWS::SSM::MaintenanceWindowTarget" && relation == "FOR_WINDOW").count(),4);
+    assert_eq!(
+        edges
+            .iter()
+            .filter(
+                |(kind, _, _, _, relation)| kind == "AWS::SageMaker::ImageVersion"
+                    && relation == "VERSION_OF"
+            )
+            .count(),
+        22
+    );
+    assert_eq!(
+        edges
+            .iter()
+            .filter(
+                |(kind, _, _, _, relation)| kind == "AWS::SSM::MaintenanceWindowTarget"
+                    && relation == "FOR_WINDOW"
+            )
+            .count(),
+        4
+    );
     Ok(())
 }
 
-fn filesystem(id: &str) -> Json { json!({"creationTime":0,"fileSystemArn":format!("arn:aws:s3files:us-east-1:123456789012:file-system/{id}"),"fileSystemId":id,"bucket":"owned","status":"available","roleArn":"arn:aws:iam::123456789012:role/files","ownerId":"123456789012"}) }
-fn image_arn(name: &str) -> String { format!("arn:aws:sagemaker:us-east-1:123456789012:image/{name}") }
-fn image(name: &str) -> Json { json!({"CreationTime":0,"ImageArn":image_arn(name),"ImageName":name,"ImageStatus":"CREATED","LastModifiedTime":0}) }
+fn filesystem(id: &str) -> Json {
+    json!({"creationTime":0,"fileSystemArn":format!("arn:aws:s3files:us-east-1:123456789012:file-system/{id}"),"fileSystemId":id,"bucket":"owned","status":"available","roleArn":"arn:aws:iam::123456789012:role/files","ownerId":"123456789012"})
+}
+fn image_arn(name: &str) -> String {
+    format!("arn:aws:sagemaker:us-east-1:123456789012:image/{name}")
+}
+fn image(name: &str) -> Json {
+    json!({"CreationTime":0,"ImageArn":image_arn(name),"ImageName":name,"ImageStatus":"CREATED","LastModifiedTime":0})
+}

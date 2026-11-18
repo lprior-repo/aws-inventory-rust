@@ -1,13 +1,54 @@
 use super::*;
-use std::sync::{Arc, atomic::{AtomicBool, AtomicUsize, Ordering}};
-use tokio::{io::{AsyncReadExt, AsyncWriteExt}, net::TcpListener, sync::{Mutex, Notify, oneshot}, task::JoinHandle};
-use tokio_rustls::{TlsAcceptor, rustls::{self, pki_types::{PrivateKeyDer, PrivatePkcs8KeyDer}}};
+use std::sync::{
+    Arc,
+    atomic::{AtomicBool, AtomicUsize, Ordering},
+};
+use tokio::{
+    io::{AsyncReadExt, AsyncWriteExt},
+    net::TcpListener,
+    sync::{Mutex, Notify, oneshot},
+    task::JoinHandle,
+};
+use tokio_rustls::{
+    TlsAcceptor,
+    rustls::{
+        self,
+        pki_types::{PrivateKeyDer, PrivatePkcs8KeyDer},
+    },
+};
 
 #[derive(Clone, Copy)]
-pub(super) enum Mode { Complete, MapComplete, MissingKey, MissingValue, MissingCompletion, NullEntry, MixedNullEntry, NullMap, MixedNullMap, Absent, Empty, Repeat, Denied, Gate }
+pub(super) enum Mode {
+    Complete,
+    MapComplete,
+    MissingKey,
+    MissingValue,
+    MissingCompletion,
+    NullEntry,
+    MixedNullEntry,
+    NullMap,
+    MixedNullMap,
+    Absent,
+    Empty,
+    Repeat,
+    Denied,
+    Gate,
+}
 #[derive(Default)]
-struct State { tags: AtomicUsize, roots: AtomicUsize, arrived: AtomicBool, gate: Notify, failures: Mutex<Vec<String>> }
-pub(super) struct Peer { pub endpoint: String, pub ca: PathBuf, state: Arc<State>, shutdown: Option<oneshot::Sender<()>>, task: Option<JoinHandle<Result<()>>> }
+struct State {
+    tags: AtomicUsize,
+    roots: AtomicUsize,
+    arrived: AtomicBool,
+    gate: Notify,
+    failures: Mutex<Vec<String>>,
+}
+pub(super) struct Peer {
+    pub endpoint: String,
+    pub ca: PathBuf,
+    state: Arc<State>,
+    shutdown: Option<oneshot::Sender<()>>,
+    task: Option<JoinHandle<Result<()>>>,
+}
 impl Peer {
     pub async fn start(root: &Path, mode: Mode) -> Result<Self> {
         let mut parameters = rcgen::CertificateParams::new(vec!["signed-tag-fixture-ca".into()])?;
@@ -16,12 +57,16 @@ impl Peer {
         let authority = parameters.self_signed(&authority_key)?;
         let issuer = rcgen::Issuer::from_params(&parameters, &authority_key);
         let key = rcgen::KeyPair::generate()?;
-        let leaf = rcgen::CertificateParams::new(vec!["localhost".into(), "127.0.0.1".into()])?.signed_by(&key, &issuer)?;
+        let leaf = rcgen::CertificateParams::new(vec!["localhost".into(), "127.0.0.1".into()])?
+            .signed_by(&key, &issuer)?;
         let ca = root.join("tags-ca.pem");
         std::fs::write(&ca, authority.pem())?;
         let private_key = PrivateKeyDer::Pkcs8(PrivatePkcs8KeyDer::from(key.serialize_der()));
         let provider = rustls::crypto::aws_lc_rs::default_provider();
-        let config = rustls::ServerConfig::builder_with_provider(Arc::new(provider)).with_safe_default_protocol_versions()?.with_no_client_auth().with_single_cert(vec![leaf.der().clone()], private_key)?;
+        let config = rustls::ServerConfig::builder_with_provider(Arc::new(provider))
+            .with_safe_default_protocol_versions()?
+            .with_no_client_auth()
+            .with_single_cert(vec![leaf.der().clone()], private_key)?;
         let listener = TcpListener::bind("127.0.0.1:0").await?;
         let endpoint = format!("https://localhost:{}", listener.local_addr()?.port());
         let acceptor = TlsAcceptor::from(Arc::new(config));
@@ -34,7 +79,10 @@ impl Peer {
             loop {
                 let socket = tokio::select! { _ = &mut stop => break, accepted = listener.accept() => accepted?.0 };
                 requests += 1;
-                anyhow::ensure!(requests <= 32, "TLS tag fixture exhausted its fixed request budget");
+                anyhow::ensure!(
+                    requests <= 32,
+                    "TLS tag fixture exhausted its fixed request budget"
+                );
                 let acceptor = acceptor.clone();
                 let state = Arc::clone(&serving);
                 handlers.spawn(async move {
@@ -111,10 +159,18 @@ impl Peer {
                     }
                 });
             }
-            while let Some(result) = handlers.join_next().await { result?; }
+            while let Some(result) = handlers.join_next().await {
+                result?;
+            }
             Ok(())
         });
-        Ok(Self { endpoint, ca, state, shutdown: Some(shutdown), task: Some(task) })
+        Ok(Self {
+            endpoint,
+            ca,
+            state,
+            shutdown: Some(shutdown),
+            task: Some(task),
+        })
     }
     pub async fn wait_for_checkpoint(&self) -> Result<()> {
         tokio::time::timeout(DEADLINE, async {
@@ -122,30 +178,50 @@ impl Peer {
                 let notified = self.state.gate.notified();
                 tokio::pin!(notified);
                 notified.as_mut().enable();
-                if !self.state.arrived.load(Ordering::SeqCst) { notified.await; }
+                if !self.state.arrived.load(Ordering::SeqCst) {
+                    notified.await;
+                }
             }
-        }).await?;
+        })
+        .await?;
         Ok(())
     }
-    pub fn tag_calls(&self) -> usize { self.state.tags.load(Ordering::SeqCst) }
-    pub fn root_calls(&self) -> usize { self.state.roots.load(Ordering::SeqCst) }
+    pub fn tag_calls(&self) -> usize {
+        self.state.tags.load(Ordering::SeqCst)
+    }
+    pub fn root_calls(&self) -> usize {
+        self.state.roots.load(Ordering::SeqCst)
+    }
     pub async fn stop(mut self) -> Result<()> {
-        if let Some(shutdown) = self.shutdown.take() { let _ = shutdown.send(()); }
+        if let Some(shutdown) = self.shutdown.take() {
+            let _ = shutdown.send(());
+        }
         let mut task = self.task.take().context("TLS peer task missing")?;
         match tokio::time::timeout(DEADLINE, &mut task).await {
             Ok(result) => result??,
-            Err(error) => { task.abort(); let _ = task.await; return Err(error.into()); }
+            Err(error) => {
+                task.abort();
+                let _ = task.await;
+                return Err(error.into());
+            }
         }
         let failures = self.state.failures.lock().await;
-        anyhow::ensure!(failures.is_empty(), "TLS peer contract failures: {failures:?}");
+        anyhow::ensure!(
+            failures.is_empty(),
+            "TLS peer contract failures: {failures:?}"
+        );
         Ok(())
     }
 }
 
 impl Drop for Peer {
     fn drop(&mut self) {
-        if let Some(shutdown) = self.shutdown.take() { let _ = shutdown.send(()); }
+        if let Some(shutdown) = self.shutdown.take() {
+            let _ = shutdown.send(());
+        }
         // Aborting the owner drops its JoinSet, which aborts every connection handler.
-        if let Some(task) = &self.task { task.abort(); }
+        if let Some(task) = &self.task {
+            task.abort();
+        }
     }
 }

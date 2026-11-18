@@ -10,7 +10,10 @@ pub(super) fn row_from_resource(resource: &StoredResource) -> Result<Row, String
         region: key.region.as_str().to_owned(),
         kind: key.kind.as_str().to_owned(),
         id: key.id.as_str().to_owned(),
-        name: resource.name.clone().unwrap_or_else(|| key.id.as_str().to_owned()),
+        name: resource
+            .name
+            .clone()
+            .unwrap_or_else(|| key.id.as_str().to_owned()),
         key: resource_key_text(key)?,
         record_bytes: Some(resource.record.as_bytes().len()),
         content_hash: Some(hash),

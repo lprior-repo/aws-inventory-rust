@@ -5,9 +5,9 @@ use std::time::{Duration, Instant};
 
 use rustix::process::{Pid, Signal, WaitId, WaitIdOptions};
 
-use super::{OwnedDirectory, complete};
 pub(super) use super::build_cleanup::clear_owned;
 pub(super) use super::build_version::version;
+use super::{OwnedDirectory, complete};
 use crate::HarnessError;
 
 const BUILD_TIMEOUT: Duration = Duration::from_secs(1_800);
@@ -18,7 +18,10 @@ pub(super) fn compile(source: &OwnedDirectory, jobs: usize) -> Result<(), Harnes
 
 fn compile_command(source: &OwnedDirectory, jobs: usize) -> Command {
     let mut command = Command::new("make");
-    command.arg("-C").arg(source.anchor()).arg(format!("-j{jobs}"))
+    command
+        .arg("-C")
+        .arg(source.anchor())
+        .arg(format!("-j{jobs}"))
         .args(["MALLOC=libc", "OPT=-O2", "redis-server", "redis-cli"]);
     command
 }
@@ -40,7 +43,8 @@ fn compile_status(status: ExitStatus) -> Result<(), HarnessError> {
 }
 
 fn wait_compile(pid: Pid, timeout: Duration) -> Result<(), HarnessError> {
-    let deadline = Instant::now().checked_add(timeout)
+    let deadline = Instant::now()
+        .checked_add(timeout)
         .ok_or_else(|| HarnessError::invalid("invalid compilation deadline"))?;
     match (0..1_000_000).try_for_each(|_| match compile_step(pid, deadline) {
         Ok(true) => ControlFlow::Break(Ok(())),
@@ -48,18 +52,25 @@ fn wait_compile(pid: Pid, timeout: Duration) -> Result<(), HarnessError> {
         Err(error) => ControlFlow::Break(Err(error)),
     }) {
         ControlFlow::Break(result) => result,
-        ControlFlow::Continue(()) => Err(HarnessError::invalid("Redis compilation polling exceeds iteration limit")),
+        ControlFlow::Continue(()) => Err(HarnessError::invalid(
+            "Redis compilation polling exceeds iteration limit",
+        )),
     }
 }
 
 fn compile_step(pid: Pid, deadline: Instant) -> Result<bool, HarnessError> {
-    let remaining = deadline.checked_duration_since(Instant::now())
-        .ok_or_else(|| HarnessError::invalid("Redis compilation failed or timed out: wall deadline expired"))?;
+    let remaining = deadline
+        .checked_duration_since(Instant::now())
+        .ok_or_else(|| {
+            HarnessError::invalid("Redis compilation failed or timed out: wall deadline expired")
+        })?;
     if exited(pid)? {
         return Ok(true);
     }
     let timeout = rustix::event::Timespec::try_from(remaining.min(Duration::from_millis(10)))
-        .map_err(|error| HarnessError::invalid(format!("invalid compilation poll duration: {error}")))?;
+        .map_err(|error| {
+            HarnessError::invalid(format!("invalid compilation poll duration: {error}"))
+        })?;
     match rustix::event::poll(&mut [], Some(&timeout)) {
         Ok(_) | Err(rustix::io::Errno::INTR) => Ok(false),
         Err(error) => Err(std::io::Error::from(error).into()),
@@ -122,12 +133,20 @@ mod tests {
     fn given_native_versions_when_parsed_then_exact_pins_are_accepted() -> TestResult {
         build::validate_versions(SERVER_VERSION, CLIENT_VERSION)?;
         build::validate_versions(SERVER_VERSION, "redis-cli 8.10.3")?;
-        ["redis-cli 8.10.30", "redis-cli 8.10.3evil", "prefix redis-cli 8.10.3"]
-            .into_iter()
-            .for_each(|client| assert!(build::validate_versions(SERVER_VERSION, client).is_err()));
-        ["Redis server v=8.10.30 sha=x", "Redis server v=8.10.3evil", "Redis server v=8.10.3\nextra"]
-            .into_iter()
-            .for_each(|server| assert!(build::validate_versions(server, CLIENT_VERSION).is_err()));
+        [
+            "redis-cli 8.10.30",
+            "redis-cli 8.10.3evil",
+            "prefix redis-cli 8.10.3",
+        ]
+        .into_iter()
+        .for_each(|client| assert!(build::validate_versions(SERVER_VERSION, client).is_err()));
+        [
+            "Redis server v=8.10.30 sha=x",
+            "Redis server v=8.10.3evil",
+            "Redis server v=8.10.3\nextra",
+        ]
+        .into_iter()
+        .for_each(|server| assert!(build::validate_versions(server, CLIENT_VERSION).is_err()));
         Ok(())
     }
 }

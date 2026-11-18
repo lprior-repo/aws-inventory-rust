@@ -1,38 +1,143 @@
 // Explicit dispositions from .local/aws-models/models/database-migration-service/service/2016-01-01/database-migration-service-2016-01-01.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
-    ("ExportMetadataModelAssessment", "Requires MigrationProjectIdentifier, SelectionRules; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Saves a copy of a database migration assessment report to your Amazon S3 bucket."),
-    ("GetTargetSelectionRules", "Requires MigrationProjectIdentifier, SelectionRules; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Converts source selection rules into their target counterparts for schema conversion operations."),
-    ("ImportCertificate", "Requires CertificateIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Uploads the specified certificate."),
-    ("ListTagsForResource", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Lists all metadata tags attached to an DMS resource, including replication instance, endpoint, subnet group, and migration task."),
-    ("ModifyConversionConfiguration", "Requires MigrationProjectIdentifier, ConversionConfiguration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies the specified schema conversion configuration using the provided parameters."),
-    ("ModifyDataMigration", "Requires DataMigrationIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies an existing DMS data migration."),
-    ("ModifyDataProvider", "Requires DataProviderIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies the specified data provider using the provided settings."),
-    ("ModifyEndpoint", "Requires EndpointArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies the specified endpoint."),
-    ("ModifyEventSubscription", "Requires SubscriptionName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies an existing DMS event notification subscription."),
-    ("ModifyInstanceProfile", "Requires InstanceProfileIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies the specified instance profile using the provided parameters."),
-    ("ModifyMigrationProject", "Requires MigrationProjectIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies the specified migration project using the provided parameters."),
-    ("ModifyReplicationConfig", "Requires ReplicationConfigArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies an existing DMS Serverless replication configuration that you can use to start a replication."),
-    ("ModifyReplicationInstance", "Requires ReplicationInstanceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies the replication instance to apply new settings."),
-    ("ModifyReplicationSubnetGroup", "Requires ReplicationSubnetGroupIdentifier, SubnetIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies the settings for the specified replication subnet group."),
-    ("ModifyReplicationTask", "Requires ReplicationTaskArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies the specified replication task."),
-    ("MoveReplicationTask", "Requires ReplicationTaskArn, TargetReplicationInstanceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Moves a replication task from its current replication instance to a different target replication instance using the specified parameters."),
-    ("RebootReplicationInstance", "Requires ReplicationInstanceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Reboots a replication instance."),
-    ("RefreshSchemas", "Requires EndpointArn, ReplicationInstanceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Populates the schema for the specified endpoint."),
-    ("ReloadReplicationTables", "Requires ReplicationConfigArn, TablesToReload; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Reloads the target database table with the source data for a given DMS Serverless replication configuration."),
-    ("ReloadTables", "Requires ReplicationTaskArn, TablesToReload; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Reloads the target database table with the source data."),
-    ("RemoveTagsFromResource", "Requires ResourceArn, TagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes metadata tags from an DMS resource, including replication instance, endpoint, subnet group, and migration task."),
-    ("RunFleetAdvisorLsaAnalysis", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: End of support notice: On May 20, 2026, Amazon Web Services will end support for Amazon Web Services DMS Fleet Advisor;."),
-    ("StartDataMigration", "Requires DataMigrationIdentifier, StartType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts the specified data migration."),
-    ("StartExtensionPackAssociation", "Requires MigrationProjectIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Queues the installation of the extension pack on your target database."),
-    ("StartMetadataModelAssessment", "Requires MigrationProjectIdentifier, SelectionRules; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Queues an assessment of the selected source metadata models (database objects such as tables, views, and procedures) to evaluate conversion complexity to the target database format."),
-    ("StartMetadataModelConversion", "Requires MigrationProjectIdentifier, SelectionRules; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Queues a conversion of the selected source metadata models (database objects such as tables, views, and procedures) to the target database format."),
-    ("StartMetadataModelCreation", "Requires MigrationProjectIdentifier, SelectionRules, MetadataModelName, Properties; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Queues the creation of a metadata model in the source metadata tree."),
-    ("StartMetadataModelExportAsScript", "Requires MigrationProjectIdentifier, SelectionRules, Origin; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Queues an export of metadata models (database objects such as tables, views, and procedures) as a data definition language (DDL) script."),
-    ("StartMetadataModelExportToTarget", "Requires MigrationProjectIdentifier, SelectionRules; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Queues an export of the selected converted metadata models (database objects such as tables, views, and procedures) to your target database."),
-    ("StartMetadataModelImport", "Requires MigrationProjectIdentifier, SelectionRules, Origin; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Queues an import of metadata models (database objects such as tables, views, and procedures) from your data provider into the metadata tree."),
-    ("StartRecommendations", "Requires DatabaseId, Settings; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: End of support notice: On May 20, 2026, Amazon Web Services will end support for Amazon Web Services DMS Fleet Advisor;."),
-    ("StartReplication", "Requires ReplicationConfigArn, StartReplicationType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: For a given DMS Serverless replication configuration, DMS connects to the source endpoint and collects the metadata to analyze the replication workload."),
-    ("StartReplicationTask", "Requires ReplicationTaskArn, StartReplicationTaskType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts the replication task."),
-    ("StartReplicationTaskAssessment", "Requires ReplicationTaskArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts the replication task assessment for unsupported data types in the source database."),
-    ("StartReplicationTaskAssessmentRun", "Requires ReplicationTaskArn, ServiceAccessRoleArn, ResultLocationBucket, AssessmentRunName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a new premigration assessment run for one or more individual assessments of a migration task."),
+    (
+        "ExportMetadataModelAssessment",
+        "Requires MigrationProjectIdentifier, SelectionRules; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Saves a copy of a database migration assessment report to your Amazon S3 bucket.",
+    ),
+    (
+        "GetTargetSelectionRules",
+        "Requires MigrationProjectIdentifier, SelectionRules; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Converts source selection rules into their target counterparts for schema conversion operations.",
+    ),
+    (
+        "ImportCertificate",
+        "Requires CertificateIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Uploads the specified certificate.",
+    ),
+    (
+        "ListTagsForResource",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Lists all metadata tags attached to an DMS resource, including replication instance, endpoint, subnet group, and migration task.",
+    ),
+    (
+        "ModifyConversionConfiguration",
+        "Requires MigrationProjectIdentifier, ConversionConfiguration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies the specified schema conversion configuration using the provided parameters.",
+    ),
+    (
+        "ModifyDataMigration",
+        "Requires DataMigrationIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies an existing DMS data migration.",
+    ),
+    (
+        "ModifyDataProvider",
+        "Requires DataProviderIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies the specified data provider using the provided settings.",
+    ),
+    (
+        "ModifyEndpoint",
+        "Requires EndpointArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies the specified endpoint.",
+    ),
+    (
+        "ModifyEventSubscription",
+        "Requires SubscriptionName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies an existing DMS event notification subscription.",
+    ),
+    (
+        "ModifyInstanceProfile",
+        "Requires InstanceProfileIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies the specified instance profile using the provided parameters.",
+    ),
+    (
+        "ModifyMigrationProject",
+        "Requires MigrationProjectIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies the specified migration project using the provided parameters.",
+    ),
+    (
+        "ModifyReplicationConfig",
+        "Requires ReplicationConfigArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies an existing DMS Serverless replication configuration that you can use to start a replication.",
+    ),
+    (
+        "ModifyReplicationInstance",
+        "Requires ReplicationInstanceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies the replication instance to apply new settings.",
+    ),
+    (
+        "ModifyReplicationSubnetGroup",
+        "Requires ReplicationSubnetGroupIdentifier, SubnetIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies the settings for the specified replication subnet group.",
+    ),
+    (
+        "ModifyReplicationTask",
+        "Requires ReplicationTaskArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies the specified replication task.",
+    ),
+    (
+        "MoveReplicationTask",
+        "Requires ReplicationTaskArn, TargetReplicationInstanceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Moves a replication task from its current replication instance to a different target replication instance using the specified parameters.",
+    ),
+    (
+        "RebootReplicationInstance",
+        "Requires ReplicationInstanceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Reboots a replication instance.",
+    ),
+    (
+        "RefreshSchemas",
+        "Requires EndpointArn, ReplicationInstanceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Populates the schema for the specified endpoint.",
+    ),
+    (
+        "ReloadReplicationTables",
+        "Requires ReplicationConfigArn, TablesToReload; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Reloads the target database table with the source data for a given DMS Serverless replication configuration.",
+    ),
+    (
+        "ReloadTables",
+        "Requires ReplicationTaskArn, TablesToReload; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Reloads the target database table with the source data.",
+    ),
+    (
+        "RemoveTagsFromResource",
+        "Requires ResourceArn, TagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes metadata tags from an DMS resource, including replication instance, endpoint, subnet group, and migration task.",
+    ),
+    (
+        "RunFleetAdvisorLsaAnalysis",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: End of support notice: On May 20, 2026, Amazon Web Services will end support for Amazon Web Services DMS Fleet Advisor;.",
+    ),
+    (
+        "StartDataMigration",
+        "Requires DataMigrationIdentifier, StartType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts the specified data migration.",
+    ),
+    (
+        "StartExtensionPackAssociation",
+        "Requires MigrationProjectIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Queues the installation of the extension pack on your target database.",
+    ),
+    (
+        "StartMetadataModelAssessment",
+        "Requires MigrationProjectIdentifier, SelectionRules; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Queues an assessment of the selected source metadata models (database objects such as tables, views, and procedures) to evaluate conversion complexity to the target database format.",
+    ),
+    (
+        "StartMetadataModelConversion",
+        "Requires MigrationProjectIdentifier, SelectionRules; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Queues a conversion of the selected source metadata models (database objects such as tables, views, and procedures) to the target database format.",
+    ),
+    (
+        "StartMetadataModelCreation",
+        "Requires MigrationProjectIdentifier, SelectionRules, MetadataModelName, Properties; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Queues the creation of a metadata model in the source metadata tree.",
+    ),
+    (
+        "StartMetadataModelExportAsScript",
+        "Requires MigrationProjectIdentifier, SelectionRules, Origin; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Queues an export of metadata models (database objects such as tables, views, and procedures) as a data definition language (DDL) script.",
+    ),
+    (
+        "StartMetadataModelExportToTarget",
+        "Requires MigrationProjectIdentifier, SelectionRules; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Queues an export of the selected converted metadata models (database objects such as tables, views, and procedures) to your target database.",
+    ),
+    (
+        "StartMetadataModelImport",
+        "Requires MigrationProjectIdentifier, SelectionRules, Origin; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Queues an import of metadata models (database objects such as tables, views, and procedures) from your data provider into the metadata tree.",
+    ),
+    (
+        "StartRecommendations",
+        "Requires DatabaseId, Settings; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: End of support notice: On May 20, 2026, Amazon Web Services will end support for Amazon Web Services DMS Fleet Advisor;.",
+    ),
+    (
+        "StartReplication",
+        "Requires ReplicationConfigArn, StartReplicationType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: For a given DMS Serverless replication configuration, DMS connects to the source endpoint and collects the metadata to analyze the replication workload.",
+    ),
+    (
+        "StartReplicationTask",
+        "Requires ReplicationTaskArn, StartReplicationTaskType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts the replication task.",
+    ),
+    (
+        "StartReplicationTaskAssessment",
+        "Requires ReplicationTaskArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts the replication task assessment for unsupported data types in the source database.",
+    ),
+    (
+        "StartReplicationTaskAssessmentRun",
+        "Requires ReplicationTaskArn, ServiceAccessRoleArn, ResultLocationBucket, AssessmentRunName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a new premigration assessment run for one or more individual assessments of a migration task.",
+    ),
 ];

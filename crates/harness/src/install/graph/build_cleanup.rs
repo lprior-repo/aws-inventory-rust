@@ -31,7 +31,9 @@ pub(super) fn clear_owned(directory: &OwnedFd) -> Result<(), HarnessError> {
 
 fn cleanup_stack(directory: &OwnedFd) -> Result<Vec<CleanupFrame>, HarnessError> {
     let mut stack = Vec::new();
-    stack.try_reserve_exact(64).map_err(|error| HarnessError::invalid(error.to_string()))?;
+    stack
+        .try_reserve_exact(64)
+        .map_err(|error| HarnessError::invalid(error.to_string()))?;
     stack.push(CleanupFrame {
         entries: rustix::fs::Dir::read_from(directory).map_err(std::io::Error::from)?,
         name: CleanupName::Root,
@@ -50,12 +52,17 @@ fn cleanup_step(stack: &mut Vec<CleanupFrame>) -> Result<ControlFlow<()>, Harnes
     Ok(ControlFlow::Continue(()))
 }
 
-fn cleanup_entry(stack: &mut Vec<CleanupFrame>, entry: rustix::fs::DirEntry) -> Result<(), HarnessError> {
+fn cleanup_entry(
+    stack: &mut Vec<CleanupFrame>,
+    entry: rustix::fs::DirEntry,
+) -> Result<(), HarnessError> {
     let name = entry.file_name();
     if matches!(name.to_bytes(), b"." | b"..") {
         return Ok(());
     }
-    let parent = stack.last().ok_or_else(|| HarnessError::invalid("cleanup parent missing"))?;
+    let parent = stack
+        .last()
+        .ok_or_else(|| HarnessError::invalid("cleanup parent missing"))?;
     let fd = parent.entries.fd().map_err(std::io::Error::from)?;
     if let Some(child) = cleanup_open(fd, name)? {
         cleanup_descend(stack, child, name.to_owned())?;
@@ -81,7 +88,9 @@ fn cleanup_descend(
     name: CString,
 ) -> Result<(), HarnessError> {
     if stack.len() >= 64 {
-        return Err(HarnessError::invalid("source cleanup exceeds directory depth limit"));
+        return Err(HarnessError::invalid(
+            "source cleanup exceeds directory depth limit",
+        ));
     }
     stack.push(CleanupFrame {
         entries: rustix::fs::Dir::new(child).map_err(std::io::Error::from)?,
@@ -91,11 +100,23 @@ fn cleanup_descend(
 }
 
 fn cleanup_ascend(stack: &mut Vec<CleanupFrame>) -> Result<(), HarnessError> {
-    let frame = stack.pop().ok_or_else(|| HarnessError::invalid("cleanup frame missing"))?;
+    let frame = stack
+        .pop()
+        .ok_or_else(|| HarnessError::invalid("cleanup frame missing"))?;
     if let CleanupName::Child(name) = frame.name {
-        let parent = stack.last().ok_or_else(|| HarnessError::invalid("cleanup parent missing"))?;
-        let parent_fd = parent.entries.fd().map_err(std::io::Error::from)?.try_clone_to_owned()?;
-        let child_fd = frame.entries.fd().map_err(std::io::Error::from)?.try_clone_to_owned()?;
+        let parent = stack
+            .last()
+            .ok_or_else(|| HarnessError::invalid("cleanup parent missing"))?;
+        let parent_fd = parent
+            .entries
+            .fd()
+            .map_err(std::io::Error::from)?
+            .try_clone_to_owned()?;
+        let child_fd = frame
+            .entries
+            .fd()
+            .map_err(std::io::Error::from)?
+            .try_clone_to_owned()?;
         // Ownership is the opened inode, not the mutable name used to descend.
         // remove_empty claims into a private quarantine and checks that identity
         // before unlinking; a substituted foreign directory is preserved/restored.

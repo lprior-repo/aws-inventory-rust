@@ -4,26 +4,23 @@ use super::policy;
 use crate::overlay::{NameError, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
-    let approved = vec![
-
-    ];
+    let approved = vec![];
     policy::finish(
-        "kinesis-video-signaling", approved, DEFERRED,
+        "kinesis-video-signaling",
+        approved,
+        DEFERRED,
         "ICE configuration discloses username/password credentials and Alexa offer sends signaling content; every operation is denied.",
-        &[(policy::DenyReason::Mutating, MUTATING), (policy::DenyReason::Secret, SECRET)],
+        &[
+            (policy::DenyReason::Mutating, MUTATING),
+            (policy::DenyReason::Secret, SECRET),
+        ],
     )
 }
 
 // Explicit pinned operation dispositions. No runtime operation-name classifier approves calls.
 // Mutation sets change resource/lifecycle/authorization state; content and credential reads stay denied.
-const DEFERRED: &[&str] = &[
+const DEFERRED: &[&str] = &[];
 
-];
+const MUTATING: &[&str] = &["SendAlexaOfferToMaster"];
 
-const MUTATING: &[&str] = &[
-    "SendAlexaOfferToMaster",
-];
-
-const SECRET: &[&str] = &[
-    "GetIceServerConfig",
-];
+const SECRET: &[&str] = &["GetIceServerConfig"];

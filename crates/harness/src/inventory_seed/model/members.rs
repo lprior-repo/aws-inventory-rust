@@ -18,7 +18,9 @@ pub(super) fn path_target(
     target: Target,
     path: &FieldPath,
 ) -> Result<Target, SeedError> {
-    path.parts().iter().try_fold(target, |target, name| Ok(member(service, target, name)?.target))
+    path.parts().iter().try_fold(target, |target, name| {
+        Ok(member(service, target, name)?.target)
+    })
 }
 
 pub(in crate::inventory_seed) fn member<'a>(

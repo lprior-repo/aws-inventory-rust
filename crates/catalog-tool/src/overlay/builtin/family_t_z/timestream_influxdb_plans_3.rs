@@ -1,5 +1,5 @@
-use super::{inventory, path, paths, bind, token};
-use crate::overlay::{OperationOverlay, NameError, Identity, Scope};
+use super::{bind, inventory, path, paths, token};
+use crate::overlay::{Identity, NameError, OperationOverlay, Scope};
 
 pub(super) fn list_db_instances() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
@@ -58,12 +58,7 @@ pub(super) fn list_db_parameter_groups() -> Result<OperationOverlay, NameError> 
         token("nextToken", "nextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "id",
-        "name",
-        "arn",
-        "description",
-    ])?;
+    operation.queryable = paths(&["id", "name", "arn", "description"])?;
     operation.page_size = Some(100);
     Ok(operation)
 }

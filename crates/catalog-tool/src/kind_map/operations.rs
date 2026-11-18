@@ -14,7 +14,10 @@ pub(super) fn validate(
     validate_bootstraps(api_only, operations, bootstraps)
 }
 
-pub(super) fn known_kinds<'a>(entries: &'a [KindEntry], api_only: &'a [ApiOnlyKind]) -> BTreeSet<&'a str> {
+pub(super) fn known_kinds<'a>(
+    entries: &'a [KindEntry],
+    api_only: &'a [ApiOnlyKind],
+) -> BTreeSet<&'a str> {
     let mapped = entries.iter().filter_map(|entry| match &entry.target {
         KindTarget::Mapped { kind, .. } => Some(kind.as_str()),
         KindTarget::Unmapped { .. } => None,
@@ -45,15 +48,17 @@ fn validate_relations(
     relations: &[ReviewedRelation],
 ) -> Result<(), KindMapError> {
     relations.iter().try_for_each(|relation| {
-        std::iter::once(relation.source_kind.as_str()).chain(relation.target_kinds.iter()).try_for_each(|kind| {
-            if known.contains(kind) {
-                return Ok(());
-            }
-            Err(KindMapError::UnknownRelationKind {
-                relation: relation.relation.clone(),
-                kind: kind.to_owned(),
+        std::iter::once(relation.source_kind.as_str())
+            .chain(relation.target_kinds.iter())
+            .try_for_each(|kind| {
+                if known.contains(kind) {
+                    return Ok(());
+                }
+                Err(KindMapError::UnknownRelationKind {
+                    relation: relation.relation.clone(),
+                    kind: kind.to_owned(),
+                })
             })
-        })
     })
 }
 fn validate_bootstraps(

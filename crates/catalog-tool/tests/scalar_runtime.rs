@@ -1,5 +1,8 @@
 use catalog_tool::{endpoints, kind_map, names, overlay, runtime_catalog, smithy};
-use inventory_core::{catalog::runtime::{BindingSource, IdentityPlan, RuntimeCatalog}, inventory::ScalarType};
+use inventory_core::{
+    catalog::runtime::{BindingSource, IdentityPlan, RuntimeCatalog},
+    inventory::ScalarType,
+};
 use serde_json::json;
 use std::{collections::BTreeMap, fs, path::Path};
 
@@ -15,15 +18,38 @@ const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 "n#Thing":{"type":"structure","members":{"Id":{"target":"smithy.api#SCALAR"}}}
 }}"#;
 const KINDS: kind_map::MappingSource<'static> = kind_map::MappingSource {
-    version: 1, reviewed: "2026-11-15", reviewer: "Scalar fixture", default_unmapped_reason: None,
-    cfn: &[], relations: &[], parent_relations: &[], compound_relations: &[], additional_emissions: &[], relation_targets: &[], bootstraps: &[],
+    version: 1,
+    reviewed: "2026-11-15",
+    reviewer: "Scalar fixture",
+    default_unmapped_reason: None,
+    cfn: &[],
+    relations: &[],
+    parent_relations: &[],
+    compound_relations: &[],
+    additional_emissions: &[],
+    relation_targets: &[],
+    bootstraps: &[],
     api_only: &[
-        kind_map::ApiOnlyMapping { kind: "AWS::ApiOnly::Scalar", reason: "Scalar fixture" },
-        kind_map::ApiOnlyMapping { kind: "AWS::ApiOnly::Detail", reason: "Detail fixture" },
+        kind_map::ApiOnlyMapping {
+            kind: "AWS::ApiOnly::Scalar",
+            reason: "Scalar fixture",
+        },
+        kind_map::ApiOnlyMapping {
+            kind: "AWS::ApiOnly::Detail",
+            reason: "Detail fixture",
+        },
     ],
     operations: &[
-        kind_map::OperationMapping { service: "things", operation: "ListThings", kind: "AWS::ApiOnly::Scalar" },
-        kind_map::OperationMapping { service: "things", operation: "GetThing", kind: "AWS::ApiOnly::Detail" },
+        kind_map::OperationMapping {
+            service: "things",
+            operation: "ListThings",
+            kind: "AWS::ApiOnly::Scalar",
+        },
+        kind_map::OperationMapping {
+            service: "things",
+            operation: "GetThing",
+            kind: "AWS::ApiOnly::Detail",
+        },
     ],
 };
 
@@ -31,12 +57,19 @@ fn endpoint() -> Result<endpoints::VerifiedEndpoint, Box<dyn std::error::Error>>
     let properties = json!({"authSchemes":[{"name":"sigv4","signingName":"things","signingRegion":"us-east-1"}]});
     let document = json!({"version":"1.0","parameters":{"Region":{"type":"string"}},"rules":[{"type":"endpoint","conditions":[],"endpoint":{"url":"https://things.test","properties":properties}}]});
     let rules = endpoints::RuleSet::parse(Path::new("scalar-endpoint.json"), &document)?;
-    let cases: Vec<endpoints::Case> = serde_json::from_value(json!([{"params":{"Region":"us-east-1"},"expect":{"endpoint":{"url":"https://things.test","properties":properties}}}]))?;
-    rules.run_cases(&cases)?.verified_endpoint(Some("things"))
+    let cases: Vec<endpoints::Case> = serde_json::from_value(
+        json!([{"params":{"Region":"us-east-1"},"expect":{"endpoint":{"url":"https://things.test","properties":properties}}}]),
+    )?;
+    rules
+        .run_cases(&cases)?
+        .verified_endpoint(Some("things"))
         .map_err(|_| "fixture endpoint evidence failed".into())
 }
 
-fn compiled(shape: &str, identity: overlay::Identity) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+fn compiled(
+    shape: &str,
+    identity: overlay::Identity,
+) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let root = tempfile::tempdir()?;
     let source = root.path().join("source");
     let model_dir = source.join("models/things/service/2020-01-01");
@@ -53,21 +86,37 @@ fn compiled(shape: &str, identity: overlay::Identity) -> Result<Vec<u8>, Box<dyn
     detail.scope = Some(overlay::Scope::Region);
     detail.items = Some(overlay::ItemSelector::Root);
     detail.paginator = Some(overlay::Paginator::None);
-    detail.identity = Some(overlay::Identity::Key(vec![overlay::MemberPath::new("Id")?]));
-    detail.bind.insert(overlay::MemberPath::new("Id")?,
-        overlay::Binding::From { operation: overlay::OperationName::new("ListThings")?,
-            path: overlay::MemberPath::selected("$")? });
-    let policies = [overlay::ServiceOverlay::new("things", vec![("ListThings", list), ("GetThing", detail)])?];
-    let checked = overlay::check_policies(&source, &policies, &catalog_tool::classes::DenyList::builtin())?;
+    detail.identity = Some(overlay::Identity::Key(vec![overlay::MemberPath::new(
+        "Id",
+    )?]));
+    detail.bind.insert(
+        overlay::MemberPath::new("Id")?,
+        overlay::Binding::From {
+            operation: overlay::OperationName::new("ListThings")?,
+            path: overlay::MemberPath::selected("$")?,
+        },
+    );
+    let policies = [overlay::ServiceOverlay::new(
+        "things",
+        vec![("ListThings", list), ("GetThing", detail)],
+    )?];
+    let checked = overlay::check_policies(
+        &source,
+        &policies,
+        &catalog_tool::classes::DenyList::builtin(),
+    )?;
     let fields = smithy::Registry::parse("Id\nItems\n")?;
     let base = smithy::build_catalog(&source, &fields, "scalar-fixture")?;
     let kinds = KINDS.compile(&names::Exceptions::none())?;
     let endpoints = BTreeMap::from([("things".to_owned(), endpoint()?)]);
-    Ok(runtime_catalog::augment(&base, &checked, &kinds, &endpoints)?)
+    Ok(runtime_catalog::augment(
+        &base, &checked, &kinds, &endpoints,
+    )?)
 }
 
 #[test]
-fn given_scalar_review_when_compiled_and_loaded_then_self_paths_and_typed_columns_roundtrip() -> TestResult {
+fn given_scalar_review_when_compiled_and_loaded_then_self_paths_and_typed_columns_roundtrip()
+-> TestResult {
     [("String", ScalarType::Text), ("Boolean", ScalarType::Bool), ("Byte", ScalarType::Integer),
         ("Short", ScalarType::Integer), ("Integer", ScalarType::Integer), ("Long", ScalarType::Integer)]
         .into_iter().try_for_each(|(shape, scalar)| {
@@ -86,10 +135,18 @@ fn given_scalar_review_when_compiled_and_loaded_then_self_paths_and_typed_column
 }
 
 #[test]
-fn given_scalar_arn_review_when_compiled_then_arn_and_root_structure_paths_stay_distinct() -> TestResult {
-    let given = compiled("String", overlay::Identity::Arn(overlay::MemberPath::selected("$")?))?;
+fn given_scalar_arn_review_when_compiled_then_arn_and_root_structure_paths_stay_distinct()
+-> TestResult {
+    let given = compiled(
+        "String",
+        overlay::Identity::Arn(overlay::MemberPath::selected("$")?),
+    )?;
     let when = RuntimeCatalog::from_bytes(&given)?;
-    assert!(matches!(when.lookup("things", "ListThings").ok_or("parent missing")?.identity(), IdentityPlan::Arn(path) if path.is_empty()));
-    assert!(matches!(when.lookup("things", "GetThing").ok_or("child missing")?.identity(), IdentityPlan::Key(paths) if paths.first().is_some_and(|path| !path.is_empty())));
+    assert!(
+        matches!(when.lookup("things", "ListThings").ok_or("parent missing")?.identity(), IdentityPlan::Arn(path) if path.is_empty())
+    );
+    assert!(
+        matches!(when.lookup("things", "GetThing").ok_or("child missing")?.identity(), IdentityPlan::Key(paths) if paths.first().is_some_and(|path| !path.is_empty()))
+    );
     Ok(())
 }

@@ -1,4 +1,6 @@
-use super::{Identity, ItemSelector, KindClassification, MapKeyExclusion, MemberPath, ResourceProjection};
+use super::{
+    Identity, ItemSelector, KindClassification, MapKeyExclusion, MemberPath, ResourceProjection,
+};
 
 /// One additional resource selection from the same modeled HTTP response.
 /// Its reviewed key is resolved through the central kind map, never a fake operation.
@@ -18,9 +20,15 @@ pub struct ResourceEmission {
 impl ResourceEmission {
     pub fn new(key: impl Into<String>, items: ItemSelector, identity: Identity) -> Self {
         Self {
-            key: key.into(), items, identity, projection: None, classification: None,
-            exclude_from_hash: Vec::new(), exclude_map_keys: Vec::new(),
-            queryable: Vec::new(), tags: None,
+            key: key.into(),
+            items,
+            identity,
+            projection: None,
+            classification: None,
+            exclude_from_hash: Vec::new(),
+            exclude_map_keys: Vec::new(),
+            queryable: Vec::new(),
+            tags: None,
         }
     }
 }

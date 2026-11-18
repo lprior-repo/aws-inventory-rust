@@ -110,7 +110,8 @@ pub fn compile(root: &Path, source: &Path, mode: ReportMode) -> Result<(), Error
     let original = fields::publish::read_bytes(&path, limit)?;
     let source_pin = provenance::capture(source)?;
     let bytes = build_catalog(source, &registry, &source_pin.commit)?;
-    let bytes = runtime_inputs::augment(root, source, &bytes, &source_pin).map_err(CompileError::from)?;
+    let bytes =
+        runtime_inputs::augment(root, source, &bytes, &source_pin).map_err(CompileError::from)?;
     provenance::verify(source, &source_pin)?;
     match mode {
         ReportMode::Write => {

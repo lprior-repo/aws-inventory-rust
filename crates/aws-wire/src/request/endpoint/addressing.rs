@@ -179,11 +179,7 @@ fn valid_zone_id(zone: &str) -> bool {
     {
         return false;
     }
-    if !prefix
-        .bytes()
-        .last()
-        .is_some_and(|b| b.is_ascii_digit())
-    {
+    if !prefix.bytes().last().is_some_and(|b| b.is_ascii_digit()) {
         return false;
     }
     prefix.bytes().filter(|b| b.is_ascii_lowercase()).count() >= 2
@@ -334,8 +330,7 @@ fn s3_url<'a>(
             if accelerate {
                 return Err(EncodeError::InvalidEndpoint);
             }
-            let zone =
-                extract_zone(b).ok_or(EncodeError::InvalidEndpoint)?;
+            let zone = extract_zone(b).ok_or(EncodeError::InvalidEndpoint)?;
             if !valid_zone_id(zone) {
                 return Err(EncodeError::InvalidEndpoint);
             }
@@ -378,7 +373,7 @@ fn s3_url<'a>(
 
 #[cfg(test)]
 mod tests {
-    use super::{s3_endpoint, AddressingStyle, S3EndpointConfig};
+    use super::{AddressingStyle, S3EndpointConfig, s3_endpoint};
 
     fn cfg<'a>(
         bucket: Option<&'a str>,
@@ -445,8 +440,14 @@ mod tests {
     #[test]
     fn s3express_directory_bucket_uses_zonal_endpoint() {
         let bucket = "mybucket--usw2-az1--x-s3";
-        let resolved = s3_endpoint(cfg(Some(bucket), Some(AddressingStyle::Virtual), None, false, false))
-            .expect("directory bucket virtual should succeed");
+        let resolved = s3_endpoint(cfg(
+            Some(bucket),
+            Some(AddressingStyle::Virtual),
+            None,
+            false,
+            false,
+        ))
+        .expect("directory bucket virtual should succeed");
         assert_eq!(
             resolved.endpoint.as_ref(),
             "https://s3express-usw2-az1.us-west-2.amazonaws.com/"
@@ -457,9 +458,8 @@ mod tests {
     #[test]
     fn s3express_directory_bucket_auto_also_virtual() {
         let bucket = "mybucket--use1-az4--x-s3";
-        let resolved =
-            s3_endpoint(cfg(Some(bucket), None, None, false, false))
-                .expect("directory bucket auto should succeed");
+        let resolved = s3_endpoint(cfg(Some(bucket), None, None, false, false))
+            .expect("directory bucket auto should succeed");
         assert_eq!(
             resolved.endpoint.as_ref(),
             "https://s3express-use1-az4.us-west-2.amazonaws.com/"
@@ -481,31 +481,58 @@ mod tests {
     #[test]
     fn s3express_path_style_is_rejected() {
         let bucket = "mybucket--usw2-az1--x-s3";
-        let result = s3_endpoint(cfg(Some(bucket), Some(AddressingStyle::Path), None, false, false));
-        assert!(matches!(result, Err(super::super::EncodeError::InvalidEndpoint)));
+        let result = s3_endpoint(cfg(
+            Some(bucket),
+            Some(AddressingStyle::Path),
+            None,
+            false,
+            false,
+        ));
+        assert!(matches!(
+            result,
+            Err(super::super::EncodeError::InvalidEndpoint)
+        ));
     }
 
     #[test]
     fn s3express_accelerate_is_rejected() {
         let bucket = "mybucket--usw2-az1--x-s3";
         let result = s3_endpoint(cfg(Some(bucket), None, None, false, true));
-        assert!(matches!(result, Err(super::super::EncodeError::InvalidEndpoint)));
-        let result = s3_endpoint(cfg(Some(bucket), Some(AddressingStyle::Virtual), None, false, true));
-        assert!(matches!(result, Err(super::super::EncodeError::InvalidEndpoint)));
+        assert!(matches!(
+            result,
+            Err(super::super::EncodeError::InvalidEndpoint)
+        ));
+        let result = s3_endpoint(cfg(
+            Some(bucket),
+            Some(AddressingStyle::Virtual),
+            None,
+            false,
+            true,
+        ));
+        assert!(matches!(
+            result,
+            Err(super::super::EncodeError::InvalidEndpoint)
+        ));
     }
 
     #[test]
     fn s3express_invalid_zone_is_rejected() {
         let bucket = "mybucket--invalid--x-s3";
         let result = s3_endpoint(cfg(Some(bucket), None, None, false, false));
-        assert!(matches!(result, Err(super::super::EncodeError::InvalidEndpoint)));
+        assert!(matches!(
+            result,
+            Err(super::super::EncodeError::InvalidEndpoint)
+        ));
     }
 
     #[test]
     fn s3express_dotted_bucket_is_rejected() {
         let bucket = "my.bucket--usw2-az1--x-s3";
         let result = s3_endpoint(cfg(Some(bucket), None, None, false, false));
-        assert!(matches!(result, Err(super::super::EncodeError::InvalidEndpoint)));
+        assert!(matches!(
+            result,
+            Err(super::super::EncodeError::InvalidEndpoint)
+        ));
     }
 
     #[test]
@@ -529,7 +556,10 @@ mod tests {
             false,
             false,
         ));
-        assert!(matches!(result, Err(super::super::EncodeError::InvalidEndpoint)));
+        assert!(matches!(
+            result,
+            Err(super::super::EncodeError::InvalidEndpoint)
+        ));
     }
 
     #[test]
@@ -545,18 +575,12 @@ mod tests {
             false,
         ))
         .expect("regular virtual should succeed");
-        assert!(resolved
-            .endpoint
-            .as_ref()
-            .starts_with("https://s3."));
+        assert!(resolved.endpoint.as_ref().starts_with("https://s3."));
         // Directory bucket zonal host should not contain account id prefix
         let bucket = "mybucket--usw2-az1--x-s3";
         let resolved = s3_endpoint(cfg(Some(bucket), None, None, false, false))
             .expect("directory bucket should succeed");
-        assert!(resolved
-            .endpoint
-            .as_ref()
-            .contains("s3express-"));
+        assert!(resolved.endpoint.as_ref().contains("s3express-"));
         assert!(!resolved.endpoint.as_ref().contains("s3-control"));
     }
 }

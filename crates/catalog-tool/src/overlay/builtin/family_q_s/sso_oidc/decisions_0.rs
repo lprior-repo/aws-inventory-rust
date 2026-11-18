@@ -10,5 +10,8 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
     // Full modeled response contains authentication/secret material clientSecret. Pinned purpose: Registers a public client with IAM Identity Center. This allows clients to perform authorization using the authorization code grant with Proof Key for Code Exchange (PKCE) or the device code grant.. Projection cannot authorize this call.
     ("RegisterClient", Decision::Denied(DenyReason::Secret)),
     // Changes service state rather than reading inventory. Pinned purpose: Initiates device authorization by requesting a pair of verification codes from the authorization service.
-    ("StartDeviceAuthorization", Decision::Denied(DenyReason::Mutating)),
+    (
+        "StartDeviceAuthorization",
+        Decision::Denied(DenyReason::Mutating),
+    ),
 ];

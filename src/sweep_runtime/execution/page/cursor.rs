@@ -1,9 +1,9 @@
 mod fields;
 mod last_item;
 mod resume;
-mod tokens;
 #[cfg(test)]
 mod tests;
+mod tokens;
 use fields::*;
 use inventory_core::{
     catalog::runtime::{PagePlan, TokenBinding, TokenPlacement, TokenSelection, TokenType},
@@ -59,16 +59,23 @@ impl Cursor {
     }
 
     fn advance(self, request: Record, limit: u32) -> Result<Advance, SweepError> {
-        let pages = self.pages.checked_add(1)
+        let pages = self
+            .pages
+            .checked_add(1)
             .ok_or(SweepError::Operation("pagination page counter overflow"))?;
         let partial = pages >= limit || request.as_bytes().len() > MAX_TOKEN_RECORD;
         let continuation_digest = Some(token_digest(&request)?);
         let current = if partial { empty_record()? } else { request };
         let cursor = encode(pages, current.as_bytes(), partial)?;
         if cursor.as_bytes().len() > MAX_CURSOR {
-            return Err(SweepError::Operation("pagination checkpoint exceeds durable cursor bound"));
+            return Err(SweepError::Operation(
+                "pagination checkpoint exceeds durable cursor bound",
+            ));
         }
-        Ok(Advance { cursor, continuation_digest })
+        Ok(Advance {
+            cursor,
+            continuation_digest,
+        })
     }
 }
 

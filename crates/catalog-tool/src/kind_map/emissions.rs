@@ -25,36 +25,58 @@ pub(super) fn compile(
     operations: &[RuntimeOperation],
     known: &BTreeSet<&str>,
 ) -> Result<Vec<ReviewedEmission>, KindMapError> {
-    let mut entries = source.iter().enumerate().map(|(index, row)| {
-        validate(row, index, operations, known)?;
-        Ok(ReviewedEmission {
-            service: row.service.to_owned(), operation: row.operation.to_owned(),
-            emitter_key: row.emitter_key.to_owned(), kind: row.kind.to_owned(),
+    let mut entries = source
+        .iter()
+        .enumerate()
+        .map(|(index, row)| {
+            validate(row, index, operations, known)?;
+            Ok(ReviewedEmission {
+                service: row.service.to_owned(),
+                operation: row.operation.to_owned(),
+                emitter_key: row.emitter_key.to_owned(),
+                kind: row.kind.to_owned(),
+            })
         })
-    }).collect::<Result<Vec<_>, KindMapError>>()?;
+        .collect::<Result<Vec<_>, KindMapError>>()?;
     entries.sort_by(|left, right| key(left).cmp(&key(right)));
     validate_group_bounds(&entries)?;
     Ok(entries)
 }
 
 fn validate(
-    row: &AdditionalEmissionMapping<'_>, index: usize, operations: &[RuntimeOperation], known: &BTreeSet<&str>,
+    row: &AdditionalEmissionMapping<'_>,
+    index: usize,
+    operations: &[RuntimeOperation],
+    known: &BTreeSet<&str>,
 ) -> Result<(), KindMapError> {
-    if !valid_service(row.service) || !valid_operation(row.operation)
-        || !valid_label(row.emitter_key) || !valid_kind(row.kind)
+    if !valid_service(row.service)
+        || !valid_operation(row.operation)
+        || !valid_label(row.emitter_key)
+        || !valid_kind(row.kind)
     {
         return Err(row_error(index, "invalid reviewed additional emission"));
     }
-    let primary = operations.iter().find(|operation| {
-        operation.service == row.service && operation.operation == row.operation
-    }).ok_or_else(|| row_error(index, "additional emission requires a reviewed primary operation"))?;
+    let primary = operations
+        .iter()
+        .find(|operation| operation.service == row.service && operation.operation == row.operation)
+        .ok_or_else(|| {
+            row_error(
+                index,
+                "additional emission requires a reviewed primary operation",
+            )
+        })?;
     if !known.contains(row.kind) {
         return Err(KindMapError::UnknownKind {
-            service: row.service.to_owned(), operation: row.operation.to_owned(), kind: row.kind.to_owned(),
+            service: row.service.to_owned(),
+            operation: row.operation.to_owned(),
+            kind: row.kind.to_owned(),
         });
     }
     if primary.kind == row.kind {
-        return Err(row_error(index, "additional emission repeats the primary kind"));
+        return Err(row_error(
+            index,
+            "additional emission repeats the primary kind",
+        ));
     }
     Ok(())
 }
@@ -62,24 +84,36 @@ fn validate(
 fn validate_group_bounds(entries: &[ReviewedEmission]) -> Result<(), KindMapError> {
     let mut group_start = 0;
     for (index, row) in entries.iter().enumerate() {
-        let previous = entries.get(group_start..index)
+        let previous = entries
+            .get(group_start..index)
             .ok_or_else(|| row_error(index, "invalid additional emission group"))?;
-        if previous.first().is_some_and(|first| {
-            first.service != row.service || first.operation != row.operation
-        }) {
+        if previous
+            .first()
+            .is_some_and(|first| first.service != row.service || first.operation != row.operation)
+        {
             group_start = index;
         }
-        let siblings = entries.get(group_start..index)
+        let siblings = entries
+            .get(group_start..index)
             .ok_or_else(|| row_error(index, "invalid additional emission group"))?;
         if siblings.len() >= MAX_ADDITIONAL_EMISSIONS {
-            return Err(row_error(index, "operation exceeds eight total resource emissions"));
+            return Err(row_error(
+                index,
+                "operation exceeds eight total resource emissions",
+            ));
         }
         for sibling in siblings {
             if sibling.emitter_key == row.emitter_key {
-                return Err(KindMapError::Duplicate(format!("{}.{}:{}", row.service, row.operation, row.emitter_key)));
+                return Err(KindMapError::Duplicate(format!(
+                    "{}.{}:{}",
+                    row.service, row.operation, row.emitter_key
+                )));
             }
             if sibling.kind == row.kind {
-                return Err(row_error(index, "additional emissions repeat a sibling kind"));
+                return Err(row_error(
+                    index,
+                    "additional emissions repeat a sibling kind",
+                ));
             }
         }
     }
@@ -91,9 +125,14 @@ fn key(row: &ReviewedEmission) -> (&str, &str, &str) {
 }
 
 pub(super) fn lookup<'a>(
-    entries: &'a [ReviewedEmission], service: &str, operation: &str, emitter_key: &str,
+    entries: &'a [ReviewedEmission],
+    service: &str,
+    operation: &str,
+    emitter_key: &str,
 ) -> Option<&'a str> {
-    let index = entries.binary_search_by(|row| key(row).cmp(&(service, operation, emitter_key))).ok()?;
+    let index = entries
+        .binary_search_by(|row| key(row).cmp(&(service, operation, emitter_key)))
+        .ok()?;
     entries.get(index).map(|row| row.kind.as_str())
 }
 
@@ -106,17 +145,31 @@ mod tests {
     const KEY: &str = "AWS::Route53::KeySigningKey";
     const OTHER: &str = "AWS::ApiOnly::OtherEmission";
     const ROW: AdditionalEmissionMapping<'static> = AdditionalEmissionMapping {
-        service: "route-53", operation: "GetDNSSEC", emitter_key: "key_signing_keys", kind: KEY,
+        service: "route-53",
+        operation: "GetDNSSEC",
+        emitter_key: "key_signing_keys",
+        kind: KEY,
     };
 
     fn primary() -> Vec<RuntimeOperation> {
-        vec![RuntimeOperation { service: ROW.service.to_owned(), operation: ROW.operation.to_owned(), kind: PRIMARY.to_owned() }]
+        vec![RuntimeOperation {
+            service: ROW.service.to_owned(),
+            operation: ROW.operation.to_owned(),
+            kind: PRIMARY.to_owned(),
+        }]
     }
 
     #[test]
     fn additional_emitter_lookup_is_exact_and_never_falls_back_to_primary() -> TestResult {
         // Given two reviewed resource emitters in reverse declaration order.
-        let source = [ROW, AdditionalEmissionMapping { emitter_key: "a_other", kind: OTHER, ..ROW }];
+        let source = [
+            ROW,
+            AdditionalEmissionMapping {
+                emitter_key: "a_other",
+                kind: OTHER,
+                ..ROW
+            },
+        ];
         let known = [PRIMARY, KEY, OTHER].into_iter().collect();
         // When compiling, key order is canonical and independent of the declaration order.
         let compiled = compile(&source, &primary(), &known)?;
@@ -124,11 +177,26 @@ mod tests {
         let reversed = [second, first];
         assert_eq!(compiled, compile(&reversed, &primary(), &known)?);
         // Then only the exact operation and stable emitter key yields the reviewed kind.
-        assert_eq!(lookup(&compiled, ROW.service, ROW.operation, ROW.emitter_key), Some(KEY));
-        assert_eq!(lookup(&compiled, ROW.service, ROW.operation, "a_other"), Some(OTHER));
-        assert_eq!(lookup(&compiled, ROW.service, ROW.operation, "missing"), None);
-        assert_eq!(lookup(&compiled, ROW.service, "ListHostedZones", ROW.emitter_key), None);
-        assert_eq!(lookup(&compiled, "kms", ROW.operation, ROW.emitter_key), None);
+        assert_eq!(
+            lookup(&compiled, ROW.service, ROW.operation, ROW.emitter_key),
+            Some(KEY)
+        );
+        assert_eq!(
+            lookup(&compiled, ROW.service, ROW.operation, "a_other"),
+            Some(OTHER)
+        );
+        assert_eq!(
+            lookup(&compiled, ROW.service, ROW.operation, "missing"),
+            None
+        );
+        assert_eq!(
+            lookup(&compiled, ROW.service, "ListHostedZones", ROW.emitter_key),
+            None
+        );
+        assert_eq!(
+            lookup(&compiled, "kms", ROW.operation, ROW.emitter_key),
+            None
+        );
         Ok(())
     }
 
@@ -137,80 +205,198 @@ mod tests {
         let known = [PRIMARY, KEY].into_iter().collect();
         let oversized = "x".repeat(129);
         for emitter_key in ["", "has spaces", oversized.as_str()] {
-            assert_invalid(compile(&[AdditionalEmissionMapping { emitter_key, ..ROW }], &primary(), &known), 0, "invalid reviewed additional emission");
+            assert_invalid(
+                compile(
+                    &[AdditionalEmissionMapping { emitter_key, ..ROW }],
+                    &primary(),
+                    &known,
+                ),
+                0,
+                "invalid reviewed additional emission",
+            );
         }
-        assert_invalid(compile(&[ROW], &[], &known), 0, "additional emission requires a reviewed primary operation");
+        assert_invalid(
+            compile(&[ROW], &[], &known),
+            0,
+            "additional emission requires a reviewed primary operation",
+        );
         let unknown = AdditionalEmissionMapping { kind: OTHER, ..ROW };
         assert!(matches!(compile(&[unknown], &primary(), &known),
             Err(KindMapError::UnknownKind { service, operation, kind })
                 if (service.as_str(), operation.as_str(), kind.as_str()) == (ROW.service, ROW.operation, OTHER)));
-        assert_invalid(compile(&[AdditionalEmissionMapping { kind: PRIMARY, ..ROW }], &primary(), &known), 0, "additional emission repeats the primary kind");
+        assert_invalid(
+            compile(
+                &[AdditionalEmissionMapping {
+                    kind: PRIMARY,
+                    ..ROW
+                }],
+                &primary(),
+                &known,
+            ),
+            0,
+            "additional emission repeats the primary kind",
+        );
     }
 
-    fn assert_invalid(result: Result<Vec<ReviewedEmission>, KindMapError>, expected_line: usize, expected_reason: &'static str) {
-        assert!(matches!(result, Err(KindMapError::InvalidRow { line, reason })
-            if (line, reason) == (expected_line, expected_reason)));
+    fn assert_invalid(
+        result: Result<Vec<ReviewedEmission>, KindMapError>,
+        expected_line: usize,
+        expected_reason: &'static str,
+    ) {
+        assert!(
+            matches!(result, Err(KindMapError::InvalidRow { line, reason })
+            if (line, reason) == (expected_line, expected_reason))
+        );
     }
 
     #[test]
     fn additional_emitters_reject_duplicate_keys_and_overlapping_sibling_kinds() {
         let known = [PRIMARY, KEY, OTHER].into_iter().collect();
-        assert!(matches!(compile(&[ROW, AdditionalEmissionMapping { kind: OTHER, ..ROW }], &primary(), &known),
-            Err(KindMapError::Duplicate(key)) if key == "route-53.GetDNSSEC:key_signing_keys"));
-        assert_invalid(compile(&[ROW, AdditionalEmissionMapping { emitter_key: "another_key", ..ROW }], &primary(), &known), 1, "additional emissions repeat a sibling kind");
+        assert!(
+            matches!(compile(&[ROW, AdditionalEmissionMapping { kind: OTHER, ..ROW }], &primary(), &known),
+            Err(KindMapError::Duplicate(key)) if key == "route-53.GetDNSSEC:key_signing_keys")
+        );
+        assert_invalid(
+            compile(
+                &[
+                    ROW,
+                    AdditionalEmissionMapping {
+                        emitter_key: "another_key",
+                        ..ROW
+                    },
+                ],
+                &primary(),
+                &known,
+            ),
+            1,
+            "additional emissions repeat a sibling kind",
+        );
     }
 
     #[test]
     fn eighth_total_emitter_is_allowed_but_ninth_is_rejected() -> TestResult {
-        let kinds = ["AWS::Test::A", "AWS::Test::B", "AWS::Test::C", "AWS::Test::D",
-            "AWS::Test::E", "AWS::Test::F", "AWS::Test::G", "AWS::Test::H"];
+        let kinds = [
+            "AWS::Test::A",
+            "AWS::Test::B",
+            "AWS::Test::C",
+            "AWS::Test::D",
+            "AWS::Test::E",
+            "AWS::Test::F",
+            "AWS::Test::G",
+            "AWS::Test::H",
+        ];
         let known = kinds.into_iter().chain([PRIMARY]).collect();
-        let source = kinds.into_iter().zip(["a", "b", "c", "d", "e", "f", "g", "h"])
-            .map(|(kind, emitter_key)| AdditionalEmissionMapping { kind, emitter_key, ..ROW }).collect::<Vec<_>>();
+        let source = kinds
+            .into_iter()
+            .zip(["a", "b", "c", "d", "e", "f", "g", "h"])
+            .map(|(kind, emitter_key)| AdditionalEmissionMapping {
+                kind,
+                emitter_key,
+                ..ROW
+            })
+            .collect::<Vec<_>>();
         let allowed = source.get(..7).ok_or("fixture bounds")?;
         assert_eq!(compile(allowed, &primary(), &known)?.len(), 7);
-        assert_invalid(compile(&source, &primary(), &known), 7, "operation exceeds eight total resource emissions");
+        assert_invalid(
+            compile(&source, &primary(), &known),
+            7,
+            "operation exceeds eight total resource emissions",
+        );
         Ok(())
     }
 
     #[test]
-    fn full_mapping_pipeline_binds_each_emitter_field_and_canonicalizes_declarations() -> TestResult {
+    fn full_mapping_pipeline_binds_each_emitter_field_and_canonicalizes_declarations() -> TestResult
+    {
         use crate::kind_map::{ApiOnlyMapping, CfnMapping, MappingSource, OperationMapping};
         use crate::names::Exceptions;
         // Given two primary operations and separately reviewed additional resource kinds.
         let primary_operations = [
-            OperationMapping { service: ROW.service, operation: ROW.operation, kind: PRIMARY },
-            OperationMapping { service: ROW.service, operation: "GetOther", kind: PRIMARY },
-            OperationMapping { service: "route-53-alt", operation: ROW.operation, kind: PRIMARY },
+            OperationMapping {
+                service: ROW.service,
+                operation: ROW.operation,
+                kind: PRIMARY,
+            },
+            OperationMapping {
+                service: ROW.service,
+                operation: "GetOther",
+                kind: PRIMARY,
+            },
+            OperationMapping {
+                service: "route-53-alt",
+                operation: ROW.operation,
+                kind: PRIMARY,
+            },
         ];
         let source = MappingSource {
             cfn: &[CfnMapping::canonical(PRIMARY), CfnMapping::canonical(KEY)],
-            api_only: &[ApiOnlyMapping { kind: OTHER, reason: "Distinct additional emission fixture resource" }],
+            api_only: &[ApiOnlyMapping {
+                kind: OTHER,
+                reason: "Distinct additional emission fixture resource",
+            }],
             operations: &primary_operations,
             ..MappingSource::default()
         };
         let baseline = source.compile(&Exceptions::none())?;
         assert_eq!(baseline.additional_emissions(), &[]);
-        assert_eq!(baseline.additional_emission_kind(ROW.service, ROW.operation, ROW.emitter_key), None);
-        let mapped = MappingSource { additional_emissions: &[ROW], ..source }.compile(&Exceptions::none())?;
+        assert_eq!(
+            baseline.additional_emission_kind(ROW.service, ROW.operation, ROW.emitter_key),
+            None
+        );
+        let mapped = MappingSource {
+            additional_emissions: &[ROW],
+            ..source
+        }
+        .compile(&Exceptions::none())?;
         // When adding an emitter, its review changes provenance and exact lookup is available.
         assert_ne!(baseline.source_sha256(), mapped.source_sha256());
-        assert_eq!(mapped.additional_emission_kind(ROW.service, ROW.operation, ROW.emitter_key), Some(KEY));
+        assert_eq!(
+            mapped.additional_emission_kind(ROW.service, ROW.operation, ROW.emitter_key),
+            Some(KEY)
+        );
         assert_eq!(mapped.additional_emissions().len(), 1);
-        assert_eq!(mapped.additional_emission_kind(ROW.service, ROW.operation, "missing"), None);
+        assert_eq!(
+            mapped.additional_emission_kind(ROW.service, ROW.operation, "missing"),
+            None
+        );
         for row in [
-            AdditionalEmissionMapping { emitter_key: "another", ..ROW },
-            AdditionalEmissionMapping { operation: "GetOther", ..ROW },
-            AdditionalEmissionMapping { service: "route-53-alt", ..ROW },
+            AdditionalEmissionMapping {
+                emitter_key: "another",
+                ..ROW
+            },
+            AdditionalEmissionMapping {
+                operation: "GetOther",
+                ..ROW
+            },
+            AdditionalEmissionMapping {
+                service: "route-53-alt",
+                ..ROW
+            },
             AdditionalEmissionMapping { kind: OTHER, ..ROW },
         ] {
-            let changed = MappingSource { additional_emissions: &[row], ..source }.compile(&Exceptions::none())?;
+            let changed = MappingSource {
+                additional_emissions: &[row],
+                ..source
+            }
+            .compile(&Exceptions::none())?;
             assert_ne!(mapped.source_sha256(), changed.source_sha256());
         }
         // Then declaration order cannot alter either the map or its reviewed fingerprint.
-        let other = AdditionalEmissionMapping { emitter_key: "a_other", kind: OTHER, ..ROW };
-        let forward = MappingSource { additional_emissions: &[ROW, other], ..source }.compile(&Exceptions::none())?;
-        let reverse = MappingSource { additional_emissions: &[other, ROW], ..source }.compile(&Exceptions::none())?;
+        let other = AdditionalEmissionMapping {
+            emitter_key: "a_other",
+            kind: OTHER,
+            ..ROW
+        };
+        let forward = MappingSource {
+            additional_emissions: &[ROW, other],
+            ..source
+        }
+        .compile(&Exceptions::none())?;
+        let reverse = MappingSource {
+            additional_emissions: &[other, ROW],
+            ..source
+        }
+        .compile(&Exceptions::none())?;
         assert_eq!(forward, reverse);
         Ok(())
     }

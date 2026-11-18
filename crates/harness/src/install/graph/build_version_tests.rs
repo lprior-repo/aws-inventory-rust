@@ -38,7 +38,13 @@ impl Fixture {
             .stdout(Stdio::piped())
             .stderr(Stdio::from(OwnedFd::from(output)))
             .spawn()?;
-        let mut fixture = Self { _directory: directory, child, handshake, release, finalized: false };
+        let mut fixture = Self {
+            _directory: directory,
+            child,
+            handshake,
+            release,
+            finalized: false,
+        };
         let mut ready = [0; 5];
         fixture.handshake.read_exact(&mut ready)?;
         assert_eq!(&ready, b"ready");
@@ -46,7 +52,10 @@ impl Fixture {
             WaitId::Pid(Pid::from_child(&fixture.child)),
             WaitIdOptions::EXITED | WaitIdOptions::NOWAIT,
         )?;
-        assert!(status.is_some(), "direct child must exit before the probe starts");
+        assert!(
+            status.is_some(),
+            "direct child must exit before the probe starts"
+        );
         Ok(fixture)
     }
 
@@ -57,12 +66,17 @@ impl Fixture {
     }
 
     fn assert_reaped_and_closed(&mut self) -> TestResult {
-        assert_eq!(self.handshake.read(&mut [0; 1])?, 0, "descendant still holds its handshake FD");
+        assert_eq!(
+            self.handshake.read(&mut [0; 1])?,
+            0,
+            "descendant still holds its handshake FD"
+        );
         assert_eq!(
             rustix::process::waitid(
                 WaitId::Pid(Pid::from_child(&self.child)),
                 WaitIdOptions::EXITED | WaitIdOptions::NOHANG | WaitIdOptions::NOWAIT,
-            ).err(),
+            )
+            .err(),
             Some(rustix::io::Errno::CHILD),
             "owned direct child was not reaped"
         );
@@ -79,7 +93,10 @@ impl Drop for Fixture {
             eprintln!("fixture FIFO release failed: {error}");
         }
         if !self.finalized {
-            match rustix::process::kill_process_group(Pid::from_child(&self.child), rustix::process::Signal::KILL) {
+            match rustix::process::kill_process_group(
+                Pid::from_child(&self.child),
+                rustix::process::Signal::KILL,
+            ) {
                 Ok(()) | Err(rustix::io::Errno::SRCH) => {}
                 Err(error) => eprintln!("fixture process group cleanup failed: {error}"),
             }
@@ -101,28 +118,35 @@ fn release_file(path: &std::path::Path) -> Result<File, std::io::Error> {
         path,
         rustix::fs::OFlags::RDWR | rustix::fs::OFlags::NONBLOCK | rustix::fs::OFlags::CLOEXEC,
         rustix::fs::Mode::empty(),
-    ).map(File::from).map_err(std::io::Error::from)
+    )
+    .map(File::from)
+    .map_err(std::io::Error::from)
 }
 
 #[test]
-fn given_exited_leader_with_descendant_stdout_when_probed_then_wall_deadline_kills_group() -> TestResult {
+fn given_exited_leader_with_descendant_stdout_when_probed_then_wall_deadline_kills_group()
+-> TestResult {
     let mut fixture = Fixture::descendant(false)?;
     let started = Instant::now();
-    let error = fixture.probe(Duration::from_millis(150))
-        .err().ok_or("descendant-held stdout was accepted")?;
+    let error = fixture
+        .probe(Duration::from_millis(150))
+        .err()
+        .ok_or("descendant-held stdout was accepted")?;
     assert!(error.to_string().contains("wall deadline expired"));
     assert!(started.elapsed() < Duration::from_secs(2));
     fixture.assert_reaped_and_closed()
 }
 
 #[test]
-fn given_descendant_closed_stdout_when_leader_exits_then_success_still_kills_owned_group() -> TestResult {
+fn given_descendant_closed_stdout_when_leader_exits_then_success_still_kills_owned_group()
+-> TestResult {
     let mut fixture = Fixture::descendant(true)?;
     assert_eq!(fixture.probe(Duration::from_secs(1))?, "redis-cli 8.10.3");
     fixture.assert_reaped_and_closed()
 }
 #[test]
-fn given_live_leader_closing_stdout_when_probed_then_exit_wait_has_same_wall_deadline() -> TestResult {
+fn given_live_leader_closing_stdout_when_probed_then_exit_wait_has_same_wall_deadline() -> TestResult
+{
     let directory = tempfile::tempdir()?;
     let fifo = directory.path().join("release");
     rustix::fs::mkfifoat(rustix::fs::CWD, &fifo, rustix::fs::Mode::RWXU)?;
@@ -130,25 +154,38 @@ fn given_live_leader_closing_stdout_when_probed_then_exit_wait_has_same_wall_dea
     let (handshake, output) = UnixStream::pair()?;
     handshake.set_read_timeout(Some(Duration::from_secs(2)))?;
     let child = Command::new("sh")
-        .args(["-c", "exec 1>&-; printf ready >&2; read release < \"$1\"", "version-fixture"])
+        .args([
+            "-c",
+            "exec 1>&-; printf ready >&2; read release < \"$1\"",
+            "version-fixture",
+        ])
         .arg(&fifo)
         .process_group(0)
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::from(OwnedFd::from(output)))
         .spawn()?;
-    let mut fixture = Fixture { _directory: directory, child, handshake, release, finalized: false };
+    let mut fixture = Fixture {
+        _directory: directory,
+        child,
+        handshake,
+        release,
+        finalized: false,
+    };
     let mut ready = [0; 5];
     fixture.handshake.read_exact(&mut ready)?;
     assert_eq!(&ready, b"ready");
-    let error = fixture.probe(Duration::from_millis(150))
-        .err().ok_or("live leader with closed stdout was accepted")?;
+    let error = fixture
+        .probe(Duration::from_millis(150))
+        .err()
+        .ok_or("live leader with closed stdout was accepted")?;
     assert!(error.to_string().contains("wall deadline expired"));
     fixture.assert_reaped_and_closed()
 }
 
 #[test]
-fn given_reaped_leader_without_group_cleanup_when_fixture_drops_then_descendant_is_released() -> TestResult {
+fn given_reaped_leader_without_group_cleanup_when_fixture_drops_then_descendant_is_released()
+-> TestResult {
     let mut fixture = Fixture::descendant(true)?;
     let mut handshake = fixture.handshake.try_clone()?;
     let mut emergency_release = fixture.release.try_clone()?;

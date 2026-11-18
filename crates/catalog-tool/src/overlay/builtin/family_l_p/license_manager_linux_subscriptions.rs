@@ -1,37 +1,43 @@
 // Pinned Smithy source: .local/aws-models/models/license-manager-linux-subscriptions/service/2018-05-10/license-manager-linux-subscriptions-2018-05-10.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
-use crate::{classes::DenyReason, overlay::{NameError, OverlayClass, ServiceOverlay}};
+use crate::{
+    classes::DenyReason,
+    overlay::{NameError, OverlayClass, ServiceOverlay},
+};
 
 const GROUPS: &[Group] = &[
     Group {
         operations: &[
-            "DeregisterSubscriptionProvider", "RegisterSubscriptionProvider", "TagResource", 
-            "UntagResource", "UpdateServiceSettings",
+            "DeregisterSubscriptionProvider",
+            "RegisterSubscriptionProvider",
+            "TagResource",
+            "UntagResource",
+            "UpdateServiceSettings",
         ],
         class: OverlayClass::Deny(DenyReason::Mutating),
         reason: None,
     },
     Group {
-        operations: &[
-            "GetRegisteredSubscriptionProvider",
-        ],
+        operations: &["GetRegisteredSubscriptionProvider"],
         class: OverlayClass::Defer,
-        reason: Some("Expansion requires request context (SubscriptionProviderArn); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+        reason: Some(
+            "Expansion requires request context (SubscriptionProviderArn); this operation has no complete metadata-only dependency/output contract in the embedded planner.",
+        ),
     },
     Group {
-        operations: &[
-            "GetServiceSettings",
-        ],
+        operations: &["GetServiceSettings"],
         class: OverlayClass::Defer,
-        reason: Some("The authorized metadata summaries are collected separately; this operation has no complete resource identity, safety and discovery contract."),
+        reason: Some(
+            "The authorized metadata summaries are collected separately; this operation has no complete resource identity, safety and discovery contract.",
+        ),
     },
     Group {
-        operations: &[
-            "ListTagsForResource",
-        ],
+        operations: &["ListTagsForResource"],
         class: OverlayClass::Defer,
-        reason: Some("Expansion requires request context (resourceArn); this operation has no complete metadata-only dependency/output contract in the embedded planner."),
+        reason: Some(
+            "Expansion requires request context (resourceArn); this operation has no complete metadata-only dependency/output contract in the embedded planner.",
+        ),
     },
 ];
 
@@ -39,9 +45,19 @@ const RESOURCES: &[Resource] = &[
     // Lists the running Amazon EC2 instances that were discovered with commercial Linux subscriptions.
     Resource {
         operation: "ListLinuxSubscriptionInstances",
-        items: "Instances", id: Id::Key(&["AccountID", "Region", "InstanceID"]),
-        scope: Scope::Region, tokens: Some(("NextToken", "NextToken")),
-        query: &["AccountID", "Region", "InstanceID", "AmiId", "InstanceType", "Status", "SubscriptionName"],
+        items: "Instances",
+        id: Id::Key(&["AccountID", "Region", "InstanceID"]),
+        scope: Scope::Region,
+        tokens: Some(("NextToken", "NextToken")),
+        query: &[
+            "AccountID",
+            "Region",
+            "InstanceID",
+            "AmiId",
+            "InstanceType",
+            "Status",
+            "SubscriptionName",
+        ],
         tags: None,
         bindings: &[],
         fixed: &[],
@@ -49,8 +65,10 @@ const RESOURCES: &[Resource] = &[
     // Lists the Linux subscriptions that have been discovered. If you have linked your organization, the returned results will include data aggregated across your accounts in Organizatio
     Resource {
         operation: "ListLinuxSubscriptions",
-        items: "Subscriptions", id: Id::Key(&["Name", "Type"]),
-        scope: Scope::Region, tokens: Some(("NextToken", "NextToken")),
+        items: "Subscriptions",
+        id: Id::Key(&["Name", "Type"]),
+        scope: Scope::Region,
+        tokens: Some(("NextToken", "NextToken")),
         query: &["Name", "Type"],
         tags: None,
         bindings: &[],
@@ -59,9 +77,15 @@ const RESOURCES: &[Resource] = &[
     // List Bring Your Own License (BYOL) subscription registration resources for your account.
     Resource {
         operation: "ListRegisteredSubscriptionProviders",
-        items: "RegisteredSubscriptionProviders", id: Id::Arn("SubscriptionProviderArn"),
-        scope: Scope::Region, tokens: Some(("NextToken", "NextToken")),
-        query: &["SubscriptionProviderArn", "SecretArn", "SubscriptionProviderStatus"],
+        items: "RegisteredSubscriptionProviders",
+        id: Id::Arn("SubscriptionProviderArn"),
+        scope: Scope::Region,
+        tokens: Some(("NextToken", "NextToken")),
+        query: &[
+            "SubscriptionProviderArn",
+            "SecretArn",
+            "SubscriptionProviderStatus",
+        ],
         tags: None,
         bindings: &[],
         fixed: &[],

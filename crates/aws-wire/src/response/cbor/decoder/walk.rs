@@ -120,8 +120,13 @@ impl WalkState<'_, '_, '_> {
             .frames
             .last()
             .ok_or(DecodeError::Invalid("CBOR stack"))?;
-        if modeled && self.context.limits.preserve_fields && !preserves_null(frame, self.context.service)? {
-            return Err(DecodeError::Invalid("null modeled member has no inventory value"));
+        if modeled
+            && self.context.limits.preserve_fields
+            && !preserves_null(frame, self.context.service)?
+        {
+            return Err(DecodeError::Invalid(
+                "null modeled member has no inventory value",
+            ));
         }
         if modeled && preserves_null(frame, self.context.service)? {
             self.builder

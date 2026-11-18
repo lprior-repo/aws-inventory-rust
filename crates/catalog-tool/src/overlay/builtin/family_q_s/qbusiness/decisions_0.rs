@@ -4,9 +4,15 @@ use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
     // Changes service state rather than reading inventory. Pinned purpose: Adds or updates a permission policy for a Amazon Q Business application, allowing cross-account access for an ISV. This operation creates a new policy statement for the specified Amazon Q Business application. The policy statement defines the IAM actions that the ISV is allowed to perform on the Amazon Q Business application's resources.
-    ("AssociatePermission", Decision::Denied(DenyReason::Mutating)),
+    (
+        "AssociatePermission",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Asynchronously deletes one or more documents added using the BatchPutDocument API from an Amazon Q Business index. You can see the progress of the deletion, and any error messages related to the process, by using CloudWatch.
-    ("BatchDeleteDocument", Decision::Denied(DenyReason::Mutating)),
+    (
+        "BatchDeleteDocument",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Adds one or more documents to an Amazon Q Business index. You use this API to: ingest your structured and unstructured documents and documents stored in an Amazon S3 bucket into an Amazon Q Business index. add custom attributes to documents in an Amazon Q Business index. attach an access control list to the documents added to an Amazon Q Business index. You can see the progress of the deletion, an
     ("BatchPutDocument", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Unsubscribes a user or a group from their pricing tier in an Amazon Q Business application. An unsubscribed user or group loses all Amazon Q Business feature access at the start of next month.
@@ -15,14 +21,25 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
     ("Chat", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Starts or continues a non-streaming Amazon Q Business conversation.
     ("ChatSync", Decision::Denied(DenyReason::Mutating)),
-    ("CheckDocumentAccess", Decision::Deferred("Required selectors applicationId, indexId, userId, documentId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members userGroups, userAliases, hasAccess, documentAcl. Pinned purpose: Verifies if a user has access permissions for a specified document and returns the actual ACL attached to the document. Resolves user access on the document via user aliases and groups when verifying user access.")),
+    (
+        "CheckDocumentAccess",
+        Decision::Deferred(
+            "Required selectors applicationId, indexId, userId, documentId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members userGroups, userAliases, hasAccess, documentAcl. Pinned purpose: Verifies if a user has access permissions for a specified document and returns the actual ACL attached to the document. Resolves user access on the document via user aliases and groups when verifying user access.",
+        ),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Creates a unique URL for anonymous Amazon Q Business web experience. This URL can only be used once and must be used within 5 minutes after it's generated.
-    ("CreateAnonymousWebExperienceUrl", Decision::Denied(DenyReason::Mutating)),
+    (
+        "CreateAnonymousWebExperienceUrl",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Creates an Amazon Q Business application. There are new tiers for Amazon Q Business. Not all features in Amazon Q Business Pro are also available in Amazon Q Business Lite. For information on what's included in Amazon Q Business Lite and what's included in Amazon Q Business Pro, see Amazon Q Business tiers . You must use the Amazon Q Business console to assign subscription tiers to users. An Amazo
     ("CreateApplication", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Creates a new chat response configuration for an Amazon Q Business application. This operation establishes a set of parameters that define how the system generates and formats responses to user queries in chat interactions.
-    ("CreateChatResponseConfiguration", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Creates a new data accessor for an ISV to access data from a Amazon Q Business application. The data accessor is an entity that represents the ISV's access to the Amazon Q Business application's data. It includes the IAM role ARN for the ISV, a friendly name, and a set of action configurations that define the specific actions the ISV is allowed to perform and any associated data filters. When the 
+    (
+        "CreateChatResponseConfiguration",
+        Decision::Denied(DenyReason::Mutating),
+    ),
+    // Changes service state rather than reading inventory. Pinned purpose: Creates a new data accessor for an ISV to access data from a Amazon Q Business application. The data accessor is an entity that represents the ISV's access to the Amazon Q Business application's data. It includes the IAM role ARN for the ISV, a friendly name, and a set of action configurations that define the specific actions the ISV is allowed to perform and any associated data filters. When the
     ("CreateDataAccessor", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Creates a data source connector for an Amazon Q Business application. CreateDataSource is a synchronous operation. The operation returns 200 if the data source was successfully created. Otherwise, an exception is raised.
     ("CreateDataSource", Decision::Denied(DenyReason::Mutating)),
@@ -37,15 +54,24 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
     // Changes service state rather than reading inventory. Pinned purpose: Creates a universally unique identifier (UUID) mapped to a list of local user ids within an application.
     ("CreateUser", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Creates an Amazon Q Business web experience.
-    ("CreateWebExperience", Decision::Denied(DenyReason::Mutating)),
+    (
+        "CreateWebExperience",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes an Amazon Q Business application.
     ("DeleteApplication", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes an attachment associated with a specific Amazon Q Business conversation.
     ("DeleteAttachment", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes chat controls configured for an existing Amazon Q Business application.
-    ("DeleteChatControlsConfiguration", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeleteChatControlsConfiguration",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes a specified chat response configuration from an Amazon Q Business application.
-    ("DeleteChatResponseConfiguration", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeleteChatResponseConfiguration",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes an Amazon Q Business web experience conversation.
     ("DeleteConversation", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes a specified data accessor. This operation permanently removes the data accessor and its associated IAM Identity Center application. Any access granted to the ISV through this data accessor will be revoked.
@@ -63,30 +89,131 @@ pub(super) const DECISIONS: &[(&str, Decision)] = &[
     // Changes service state rather than reading inventory. Pinned purpose: Deletes a user by email id.
     ("DeleteUser", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Deletes an Amazon Q Business web experience.
-    ("DeleteWebExperience", Decision::Denied(DenyReason::Mutating)),
+    (
+        "DeleteWebExperience",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Removes a permission policy from a Amazon Q Business application, revoking the cross-account access that was previously granted to an ISV. This operation deletes the specified policy statement from the application's permission policy.
-    ("DisassociatePermission", Decision::Denied(DenyReason::Mutating)),
-    ("GetApplication", Decision::Deferred("Required selectors applicationId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members displayName, applicationId, applicationArn, identityType, iamIdentityProviderArn, identityCenterApplicationArn, roleArn, status, description, encryptionConfiguration, createdAt, updatedAt, error, attachmentsConfiguration, qAppsConfiguration, personalizationConfiguration, autoSubscriptionConfiguration, clientIdsForOIDC, quickSightConfiguration. Pinned purpose: Gets information about an existing Amazon Q Business application.")),
-    ("GetChatControlsConfiguration", Decision::Deferred("Required selectors applicationId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members responseScope, orchestrationConfiguration, blockedPhrases, topicConfigurations, creatorModeConfiguration, nextToken, hallucinationReductionConfiguration. Pinned purpose: Gets information about chat controls configured for an existing Amazon Q Business application.")),
-    ("GetChatResponseConfiguration", Decision::Deferred("Required selectors applicationId, chatResponseConfigurationId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members chatResponseConfigurationId, chatResponseConfigurationArn, displayName, createdAt, inUseConfiguration, lastUpdateConfiguration. Pinned purpose: Retrieves detailed information about a specific chat response configuration from an Amazon Q Business application. This operation returns the complete configuration settings and metadata.")),
-    ("GetDataAccessor", Decision::Deferred("Required selectors applicationId, dataAccessorId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members displayName, dataAccessorId, dataAccessorArn, applicationId, idcApplicationArn, principal, actionConfigurations, authenticationDetail, createdAt, updatedAt. Pinned purpose: Retrieves information about a specified data accessor. This operation returns details about the data accessor, including its display name, unique identifier, Amazon Resource Name (ARN), the associated Amazon Q Business application and IAM Identity Ce")),
-    ("GetDataSource", Decision::Deferred("Required selectors applicationId, indexId, dataSourceId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members applicationId, indexId, dataSourceId, dataSourceArn, displayName, type, configuration, vpcConfiguration, createdAt, updatedAt, description, status, syncSchedule, roleArn, error, documentEnrichmentConfiguration, mediaExtractionConfiguration. Pinned purpose: Gets information about an existing Amazon Q Business data source connector.")),
+    (
+        "DisassociatePermission",
+        Decision::Denied(DenyReason::Mutating),
+    ),
+    (
+        "GetApplication",
+        Decision::Deferred(
+            "Required selectors applicationId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members displayName, applicationId, applicationArn, identityType, iamIdentityProviderArn, identityCenterApplicationArn, roleArn, status, description, encryptionConfiguration, createdAt, updatedAt, error, attachmentsConfiguration, qAppsConfiguration, personalizationConfiguration, autoSubscriptionConfiguration, clientIdsForOIDC, quickSightConfiguration. Pinned purpose: Gets information about an existing Amazon Q Business application.",
+        ),
+    ),
+    (
+        "GetChatControlsConfiguration",
+        Decision::Deferred(
+            "Required selectors applicationId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members responseScope, orchestrationConfiguration, blockedPhrases, topicConfigurations, creatorModeConfiguration, nextToken, hallucinationReductionConfiguration. Pinned purpose: Gets information about chat controls configured for an existing Amazon Q Business application.",
+        ),
+    ),
+    (
+        "GetChatResponseConfiguration",
+        Decision::Deferred(
+            "Required selectors applicationId, chatResponseConfigurationId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members chatResponseConfigurationId, chatResponseConfigurationArn, displayName, createdAt, inUseConfiguration, lastUpdateConfiguration. Pinned purpose: Retrieves detailed information about a specific chat response configuration from an Amazon Q Business application. This operation returns the complete configuration settings and metadata.",
+        ),
+    ),
+    (
+        "GetDataAccessor",
+        Decision::Deferred(
+            "Required selectors applicationId, dataAccessorId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members displayName, dataAccessorId, dataAccessorArn, applicationId, idcApplicationArn, principal, actionConfigurations, authenticationDetail, createdAt, updatedAt. Pinned purpose: Retrieves information about a specified data accessor. This operation returns details about the data accessor, including its display name, unique identifier, Amazon Resource Name (ARN), the associated Amazon Q Business application and IAM Identity Ce",
+        ),
+    ),
+    (
+        "GetDataSource",
+        Decision::Deferred(
+            "Required selectors applicationId, indexId, dataSourceId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members applicationId, indexId, dataSourceId, dataSourceArn, displayName, type, configuration, vpcConfiguration, createdAt, updatedAt, description, status, syncSchedule, roleArn, error, documentEnrichmentConfiguration, mediaExtractionConfiguration. Pinned purpose: Gets information about an existing Amazon Q Business data source connector.",
+        ),
+    ),
     // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Retrieves the content of a document that was ingested into Amazon Q Business. This API validates user authorization against document ACLs before returning a pre-signed URL for secure document access. You can download or view source documents referenced in chat responses through the URL.
     ("GetDocumentContent", Decision::Denied(DenyReason::Content)),
-    ("GetGroup", Decision::Deferred("Required selectors applicationId, indexId, groupName are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members status, statusHistory. Pinned purpose: Describes a group by group name.")),
-    ("GetIndex", Decision::Deferred("Required selectors applicationId, indexId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members applicationId, indexId, displayName, indexArn, status, type, description, createdAt, updatedAt, capacityConfiguration, documentAttributeConfigurations, error, indexStatistics. Pinned purpose: Gets information about an existing Amazon Q Business index.")),
+    (
+        "GetGroup",
+        Decision::Deferred(
+            "Required selectors applicationId, indexId, groupName are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members status, statusHistory. Pinned purpose: Describes a group by group name.",
+        ),
+    ),
+    (
+        "GetIndex",
+        Decision::Deferred(
+            "Required selectors applicationId, indexId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members applicationId, indexId, displayName, indexArn, status, type, description, createdAt, updatedAt, capacityConfiguration, documentAttributeConfigurations, error, indexStatistics. Pinned purpose: Gets information about an existing Amazon Q Business index.",
+        ),
+    ),
     // Returns customer content/data-plane records, not configuration inventory. Pinned purpose: Returns the image bytes corresponding to a media object. If you have implemented your own application with the Chat and ChatSync APIs, and have enabled content extraction from visual data in Amazon Q Business, you use the GetMedia API operation to download the images so you can show them in your UI with responses. For more information, see Extracting semantic meaning from images and visuals .
     ("GetMedia", Decision::Denied(DenyReason::Content)),
-    ("GetPlugin", Decision::Deferred("Required selectors applicationId, pluginId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members applicationId, pluginId, displayName, type, serverUrl, authConfiguration, customPluginConfiguration, buildStatus, pluginArn, state, createdAt, updatedAt. Pinned purpose: Gets information about an existing Amazon Q Business plugin.")),
-    ("GetPolicy", Decision::Deferred("Required selectors applicationId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members policy. Pinned purpose: Retrieves the current permission policy for a Amazon Q Business application. The policy is returned as a JSON-formatted string and defines the IAM actions that are allowed or denied for the application's resources.")),
-    ("GetRetriever", Decision::Deferred("Required selectors applicationId, retrieverId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members applicationId, retrieverId, retrieverArn, type, status, displayName, configuration, roleArn, createdAt, updatedAt. Pinned purpose: Gets information about an existing retriever used by an Amazon Q Business application.")),
-    ("GetUser", Decision::Deferred("Required selectors applicationId, userId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members userAliases. Pinned purpose: Describes the universally unique identifier (UUID) associated with a local user in a data source.")),
-    ("GetWebExperience", Decision::Deferred("Required selectors applicationId, webExperienceId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members applicationId, webExperienceId, webExperienceArn, defaultEndpoint, status, createdAt, updatedAt, title, subtitle, welcomeMessage, samplePromptsControlMode, origins, roleArn, identityProviderConfiguration, authenticationConfiguration, error, browserExtensionConfiguration, customizationConfiguration. Pinned purpose: Gets information about an existing Amazon Q Business web experience.")),
-    ("ListAttachments", Decision::Deferred("Required selectors applicationId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members attachments, nextToken. Pinned purpose: Gets a list of attachments associated with an Amazon Q Business web experience or a list of attachements associated with a specific Amazon Q Business conversation.")),
-    ("ListChatResponseConfigurations", Decision::Deferred("Required selectors applicationId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members chatResponseConfigurations, nextToken. Pinned purpose: Retrieves a list of all chat response configurations available in a specified Amazon Q Business application. This operation returns summary information about each configuration to help administrators manage and select appropriate response settings.")),
-    ("ListConversations", Decision::Deferred("Required selectors applicationId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members nextToken, conversations. Pinned purpose: Lists one or more Amazon Q Business conversations.")),
-    ("ListDataAccessors", Decision::Deferred("Required selectors applicationId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members dataAccessors, nextToken. Pinned purpose: Lists the data accessors for a Amazon Q Business application. This operation returns a paginated list of data accessor summaries, including the friendly name, unique identifier, ARN, associated IAM role, and creation/update timestamps for each data a")),
-    ("ListDataSourceSyncJobs", Decision::Deferred("Required selectors dataSourceId, applicationId, indexId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members history, nextToken. Pinned purpose: Get information about an Amazon Q Business data source connector synchronization.")),
-    ("ListDocuments", Decision::Deferred("Required selectors applicationId, indexId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members documentDetailList, nextToken. Pinned purpose: A list of documents attached to an index.")),
-    ("ListGroups", Decision::Deferred("Required selectors applicationId, indexId, updatedEarlierThan are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members nextToken, items. Pinned purpose: Provides a list of groups that are mapped to users.")),
+    (
+        "GetPlugin",
+        Decision::Deferred(
+            "Required selectors applicationId, pluginId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members applicationId, pluginId, displayName, type, serverUrl, authConfiguration, customPluginConfiguration, buildStatus, pluginArn, state, createdAt, updatedAt. Pinned purpose: Gets information about an existing Amazon Q Business plugin.",
+        ),
+    ),
+    (
+        "GetPolicy",
+        Decision::Deferred(
+            "Required selectors applicationId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members policy. Pinned purpose: Retrieves the current permission policy for a Amazon Q Business application. The policy is returned as a JSON-formatted string and defines the IAM actions that are allowed or denied for the application's resources.",
+        ),
+    ),
+    (
+        "GetRetriever",
+        Decision::Deferred(
+            "Required selectors applicationId, retrieverId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members applicationId, retrieverId, retrieverArn, type, status, displayName, configuration, roleArn, createdAt, updatedAt. Pinned purpose: Gets information about an existing retriever used by an Amazon Q Business application.",
+        ),
+    ),
+    (
+        "GetUser",
+        Decision::Deferred(
+            "Required selectors applicationId, userId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members userAliases. Pinned purpose: Describes the universally unique identifier (UUID) associated with a local user in a data source.",
+        ),
+    ),
+    (
+        "GetWebExperience",
+        Decision::Deferred(
+            "Required selectors applicationId, webExperienceId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members applicationId, webExperienceId, webExperienceArn, defaultEndpoint, status, createdAt, updatedAt, title, subtitle, welcomeMessage, samplePromptsControlMode, origins, roleArn, identityProviderConfiguration, authenticationConfiguration, error, browserExtensionConfiguration, customizationConfiguration. Pinned purpose: Gets information about an existing Amazon Q Business web experience.",
+        ),
+    ),
+    (
+        "ListAttachments",
+        Decision::Deferred(
+            "Required selectors applicationId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members attachments, nextToken. Pinned purpose: Gets a list of attachments associated with an Amazon Q Business web experience or a list of attachements associated with a specific Amazon Q Business conversation.",
+        ),
+    ),
+    (
+        "ListChatResponseConfigurations",
+        Decision::Deferred(
+            "Required selectors applicationId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members chatResponseConfigurations, nextToken. Pinned purpose: Retrieves a list of all chat response configurations available in a specified Amazon Q Business application. This operation returns summary information about each configuration to help administrators manage and select appropriate response settings.",
+        ),
+    ),
+    (
+        "ListConversations",
+        Decision::Deferred(
+            "Required selectors applicationId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members nextToken, conversations. Pinned purpose: Lists one or more Amazon Q Business conversations.",
+        ),
+    ),
+    (
+        "ListDataAccessors",
+        Decision::Deferred(
+            "Required selectors applicationId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members dataAccessors, nextToken. Pinned purpose: Lists the data accessors for a Amazon Q Business application. This operation returns a paginated list of data accessor summaries, including the friendly name, unique identifier, ARN, associated IAM role, and creation/update timestamps for each data a",
+        ),
+    ),
+    (
+        "ListDataSourceSyncJobs",
+        Decision::Deferred(
+            "Required selectors dataSourceId, applicationId, indexId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members history, nextToken. Pinned purpose: Get information about an Amazon Q Business data source connector synchronization.",
+        ),
+    ),
+    (
+        "ListDocuments",
+        Decision::Deferred(
+            "Required selectors applicationId, indexId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members documentDetailList, nextToken. Pinned purpose: A list of documents attached to an index.",
+        ),
+    ),
+    (
+        "ListGroups",
+        Decision::Deferred(
+            "Required selectors applicationId, indexId, updatedEarlierThan are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members nextToken, items. Pinned purpose: Provides a list of groups that are mapped to users.",
+        ),
+    ),
 ];

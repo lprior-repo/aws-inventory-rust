@@ -53,15 +53,21 @@ pub(super) fn compile(
         .filter(|case| matches_context(&rules, case, context))
         .filter(|case| {
             label.is_none_or(|label| {
-                case.params.get(&label.parameter).is_some_and(Value::is_string)
+                case.params
+                    .get(&label.parameter)
+                    .is_some_and(Value::is_string)
             })
         })
         .collect::<Vec<_>>();
-    let fixed = context.iter()
+    let fixed = context
+        .iter()
         .map(|(name, input)| (name, input.value.clone()))
         .chain(label.map(|label| (&label.parameter, Value::String(HOST_LABEL.into()))));
     for (name, value) in fixed {
-        let parameter = rules.document.parameters.get_mut(name)
+        let parameter = rules
+            .document
+            .parameters
+            .get_mut(name)
             .ok_or_else(|| Error::Model {
                 file: file.to_path_buf(),
                 kind: Fault::Malformed("undeclared static endpoint parameter".into()),
@@ -73,15 +79,22 @@ pub(super) fn compile(
         .into_iter()
         .map(|case| scoped(&rules, case, name, operation))
         .collect::<Vec<_>>();
-    let verified = rules.run_cases(&cases)?.verified_endpoint(signing_name)
-        .map_err(|failure| rules.error(Fault::Malformed(format!(
-            "unverified static endpoint context: {failure:?}"
-        ))))?;
+    let verified = rules
+        .run_cases(&cases)?
+        .verified_endpoint(signing_name)
+        .map_err(|failure| {
+            rules.error(Fault::Malformed(format!(
+                "unverified static endpoint context: {failure:?}"
+            )))
+        })?;
     match label {
-        Some(label) => verified.without_host_label(HOST_LABEL, label.prefixed)
-            .ok_or_else(|| rules.error(Fault::Malformed(
-                "host label is not the modeled host prefix of the route".into(),
-            ))),
+        Some(label) => verified
+            .without_host_label(HOST_LABEL, label.prefixed)
+            .ok_or_else(|| {
+                rules.error(Fault::Malformed(
+                    "host label is not the modeled host prefix of the route".into(),
+                ))
+            }),
         None => Ok(verified),
     }
 }
@@ -91,7 +104,9 @@ pub(super) fn compile(
 /// request carries, and inputs naming only this operation add no parameters.
 fn scoped(rules: &RuleSet, case: &Case, name: &str, operation: &Operation) -> Case {
     let declared = |name: &str| rules.document.parameters.get(name);
-    let params = case.params.iter()
+    let params = case
+        .params
+        .iter()
         .filter(|(name, value)| {
             !operation.context.contains_key(*name)
                 && declared(name).and_then(|parameter| parameter.default.as_ref()) != Some(*value)
@@ -128,7 +143,9 @@ fn with_placeholder(
     };
     let mut restated = expect.clone();
     if let Outcome::Endpoint(endpoint) = &mut restated {
-        let rest = endpoint.url.strip_prefix("https://")
+        let rest = endpoint
+            .url
+            .strip_prefix("https://")
             .and_then(|host| host.strip_prefix(value))
             .and_then(|host| host.strip_prefix('.'));
         if let Some(rest) = rest {
@@ -157,11 +174,16 @@ fn without_inert_flags(
     let mut unset = params.clone();
     unset.retain(|name, value| {
         value != &Value::Bool(false)
-            || rules.document.parameters.get(name)
+            || rules
+                .document
+                .parameters
+                .get(name)
                 .is_none_or(|parameter| parameter.required || parameter.default.is_some())
     });
     let expected = |bindings: &BTreeMap<String, Value>| {
-        rules.evaluate(bindings).is_ok_and(|outcome| &outcome == expect)
+        rules
+            .evaluate(bindings)
+            .is_ok_and(|outcome| &outcome == expect)
     };
     if unset.len() < params.len() && expected(&params) && expected(&unset) {
         unset
@@ -173,13 +195,14 @@ fn without_inert_flags(
 /// A case's parameters are the complete rule inputs of the requests it names,
 /// so inputs naming only this operation describe nothing its parameters lack.
 fn describes_only(case: &Case, operation: &str) -> bool {
-    case.operation_inputs.iter().all(|input| {
-        input.get("operationName").and_then(Value::as_str) == Some(operation)
-    })
+    case.operation_inputs
+        .iter()
+        .all(|input| input.get("operationName").and_then(Value::as_str) == Some(operation))
 }
 
 fn builtin(document: &Value, name: &str) -> bool {
-    document.get("parameters")
+    document
+        .get("parameters")
         .and_then(|parameters| parameters.get(name))
         .and_then(|parameter| parameter.get("builtIn"))
         .is_some()
@@ -190,12 +213,13 @@ fn validate(rules: &RuleSet, document: &Value, context: &Context) -> Result<(), 
     let mut steps = MAX_STEPS;
     for (name, input) in context {
         super::model::guard(&input.value, 0, &mut steps).map_err(|kind| rules.error(kind))?;
-        let accepted = rules.document.parameters.get(name)
+        let accepted = rules
+            .document
+            .parameters
+            .get(name)
             .is_some_and(|parameter| parameter.kind.accepts(&input.value));
         if builtin(document, name) || !accepted {
-            return Err(rules.error(Fault::Malformed(
-                "invalid static endpoint parameter".into(),
-            )));
+            return Err(rules.error(Fault::Malformed("invalid static endpoint parameter".into())));
         }
     }
     Ok(())
@@ -210,7 +234,10 @@ fn validate_label(
     label: &HostLabel,
 ) -> Result<(), Error> {
     let name = label.parameter.as_str();
-    let text = rules.document.parameters.get(name)
+    let text = rules
+        .document
+        .parameters
+        .get(name)
         .is_some_and(|parameter| parameter.kind.accepts(&Value::String(HOST_LABEL.into())));
     if builtin(document, name) || context.contains_key(name) || !text {
         return Err(rules.error(Fault::Malformed(
@@ -222,8 +249,12 @@ fn validate_label(
 
 fn matches_context(rules: &RuleSet, case: &Case, context: &Context) -> bool {
     context.iter().all(|(name, input)| {
-        case.params.get(name)
-            .or_else(|| rules.document.parameters.get(name).and_then(|parameter| parameter.default.as_ref()))
-            == Some(&input.value)
+        case.params.get(name).or_else(|| {
+            rules
+                .document
+                .parameters
+                .get(name)
+                .and_then(|parameter| parameter.default.as_ref())
+        }) == Some(&input.value)
     })
 }

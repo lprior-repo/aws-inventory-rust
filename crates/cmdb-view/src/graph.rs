@@ -1,14 +1,14 @@
-#[path = "graph/response.rs"]
-mod response;
-#[path = "graph/query.rs"]
-mod query;
 #[path = "graph/path.rs"]
 mod path;
+#[path = "graph/query.rs"]
+mod query;
+#[path = "graph/response.rs"]
+mod response;
 #[path = "graph/tags.rs"]
 mod tags;
-pub use tags::{ScopedTag, TagAffiliation, TagAffiliations};
 use crate::ViewError;
 use inventory_core::inventory::{AccountId, Kind, Region, ResourceId, ResourceKey};
+pub use tags::{ScopedTag, TagAffiliation, TagAffiliations};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct GraphNode {
@@ -95,8 +95,14 @@ impl GraphConnection {
         key_digest(to)?;
         let neighborhood = self.neighbors(from, limits).await?;
         match path::shortest(&neighborhood.edges, from, to, limits.depth)? {
-            Some(edges) => Ok(GraphNeighborhood { edges, truncated: neighborhood.truncated }),
-            None => Ok(GraphNeighborhood { edges: Vec::new(), truncated: neighborhood.truncated }),
+            Some(edges) => Ok(GraphNeighborhood {
+                edges,
+                truncated: neighborhood.truncated,
+            }),
+            None => Ok(GraphNeighborhood {
+                edges: Vec::new(),
+                truncated: neighborhood.truncated,
+            }),
         }
     }
 }

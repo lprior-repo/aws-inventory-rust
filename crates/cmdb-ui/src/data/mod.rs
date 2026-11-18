@@ -127,7 +127,10 @@ impl Data {
     }
 
     pub fn row_for_key(&self, key: &str) -> Option<&Row> {
-        self.rows.iter().chain(self.graph.nodes.iter()).find(|row| row.key == key)
+        self.rows
+            .iter()
+            .chain(self.graph.nodes.iter())
+            .find(|row| row.key == key)
     }
 
     #[cfg(test)]

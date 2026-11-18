@@ -1,38 +1,143 @@
 // Explicit dispositions from .local/aws-models/models/deadline/service/2023-10-12/deadline-2023-10-12.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
-    ("AssociateMemberToFarm", "Requires farmId, principalType, identityStoreId, membershipLevel, principalId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Assigns a farm membership level to a member."),
-    ("AssociateMemberToFleet", "Requires farmId, fleetId, principalType, identityStoreId, membershipLevel, principalId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Assigns a fleet membership level to a member."),
-    ("AssociateMemberToJob", "Requires farmId, queueId, jobId, principalType, identityStoreId, membershipLevel, principalId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Assigns a job membership level to a member"),
-    ("AssociateMemberToQueue", "Requires farmId, queueId, principalType, identityStoreId, membershipLevel, principalId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Assigns a queue membership level to a member"),
-    ("AssumeFleetRoleForRead", "Requires farmId, fleetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Get Amazon Web Services credentials from the fleet role."),
-    ("AssumeFleetRoleForWorker", "Requires farmId, fleetId, workerId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Get credentials from the fleet role for a worker."),
-    ("AssumeQueueRoleForRead", "Requires farmId, queueId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets Amazon Web Services credentials from the queue role."),
-    ("AssumeQueueRoleForUser", "Requires farmId, queueId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Allows a user to assume a role for a queue."),
-    ("AssumeQueueRoleForWorker", "Requires farmId, fleetId, workerId, queueId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Allows a worker to assume a queue role."),
-    ("BatchGetJob", "Requires identifiers; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves multiple jobs in a single request."),
-    ("BatchGetJobEntity", "Requires farmId, fleetId, workerId, identifiers; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Get batched job details for a worker."),
-    ("BatchGetSession", "Requires identifiers; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves multiple sessions in a single request."),
-    ("BatchGetSessionAction", "Requires identifiers; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves multiple session actions in a single request."),
-    ("BatchGetStep", "Requires identifiers; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves multiple steps in a single request."),
-    ("BatchGetTask", "Requires identifiers; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves multiple tasks in a single request."),
-    ("BatchGetWorker", "Requires identifiers; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves multiple workers in a single request."),
-    ("BatchUpdateJob", "Requires jobs; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates multiple jobs in a single request."),
-    ("BatchUpdateTask", "Requires tasks; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates multiple tasks in a single request."),
-    ("CopyJobTemplate", "Requires farmId, queueId, jobId, targetS3Location; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Copies a job template to an Amazon S3 bucket."),
-    ("CreateBudget", "Requires farmId, displayName, usageTrackingResource, approximateDollarLimit, actions, schedule; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a budget to set spending thresholds for your rendering activity."),
-    ("CreateFarm", "Requires displayName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a farm to allow space for queues and fleets."),
-    ("CreateFleet", "Requires farmId, displayName, roleArn, maxWorkerCount, configuration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a fleet."),
-    ("CreateJob", "Requires farmId, queueId, priority; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a job."),
-    ("CreateLicenseEndpoint", "Requires vpcId, subnetIds, securityGroupIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a license endpoint to integrate your various licensed software used for rendering on Deadline Cloud."),
-    ("CreateLimit", "Requires farmId, displayName, amountRequirementName, maxCount; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a limit that manages the distribution of shared resources, such as floating licenses."),
-    ("CreateMonitor", "Requires displayName, identityCenterInstanceArn, subdomain, roleArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates an Amazon Web Services Deadline Cloud monitor that you can use to view your farms, queues, and fleets."),
-    ("CreateQueue", "Requires farmId, displayName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a queue to coordinate the order in which jobs run on a farm."),
-    ("CreateQueueEnvironment", "Requires farmId, queueId, priority, templateType, template; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates an environment for a queue that defines how jobs in the queue run."),
-    ("CreateQueueFleetAssociation", "Requires farmId, queueId, fleetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates an association between a queue and a fleet."),
-    ("CreateQueueLimitAssociation", "Requires farmId, queueId, limitId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Associates a limit with a particular queue."),
-    ("CreateStorageProfile", "Requires farmId, displayName, osFamily; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a storage profile that specifies the operating system, file type, and file location of resources used on a farm."),
-    ("CreateWorker", "Requires farmId, fleetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a worker."),
-    ("DeleteBudget", "Requires farmId, budgetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a budget."),
-    ("DeleteFarm", "Requires farmId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a farm."),
-    ("DeleteFleet", "Requires farmId, fleetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a fleet."),
+    (
+        "AssociateMemberToFarm",
+        "Requires farmId, principalType, identityStoreId, membershipLevel, principalId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Assigns a farm membership level to a member.",
+    ),
+    (
+        "AssociateMemberToFleet",
+        "Requires farmId, fleetId, principalType, identityStoreId, membershipLevel, principalId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Assigns a fleet membership level to a member.",
+    ),
+    (
+        "AssociateMemberToJob",
+        "Requires farmId, queueId, jobId, principalType, identityStoreId, membershipLevel, principalId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Assigns a job membership level to a member",
+    ),
+    (
+        "AssociateMemberToQueue",
+        "Requires farmId, queueId, principalType, identityStoreId, membershipLevel, principalId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Assigns a queue membership level to a member",
+    ),
+    (
+        "AssumeFleetRoleForRead",
+        "Requires farmId, fleetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Get Amazon Web Services credentials from the fleet role.",
+    ),
+    (
+        "AssumeFleetRoleForWorker",
+        "Requires farmId, fleetId, workerId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Get credentials from the fleet role for a worker.",
+    ),
+    (
+        "AssumeQueueRoleForRead",
+        "Requires farmId, queueId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets Amazon Web Services credentials from the queue role.",
+    ),
+    (
+        "AssumeQueueRoleForUser",
+        "Requires farmId, queueId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Allows a user to assume a role for a queue.",
+    ),
+    (
+        "AssumeQueueRoleForWorker",
+        "Requires farmId, fleetId, workerId, queueId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Allows a worker to assume a queue role.",
+    ),
+    (
+        "BatchGetJob",
+        "Requires identifiers; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves multiple jobs in a single request.",
+    ),
+    (
+        "BatchGetJobEntity",
+        "Requires farmId, fleetId, workerId, identifiers; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Get batched job details for a worker.",
+    ),
+    (
+        "BatchGetSession",
+        "Requires identifiers; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves multiple sessions in a single request.",
+    ),
+    (
+        "BatchGetSessionAction",
+        "Requires identifiers; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves multiple session actions in a single request.",
+    ),
+    (
+        "BatchGetStep",
+        "Requires identifiers; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves multiple steps in a single request.",
+    ),
+    (
+        "BatchGetTask",
+        "Requires identifiers; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves multiple tasks in a single request.",
+    ),
+    (
+        "BatchGetWorker",
+        "Requires identifiers; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves multiple workers in a single request.",
+    ),
+    (
+        "BatchUpdateJob",
+        "Requires jobs; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates multiple jobs in a single request.",
+    ),
+    (
+        "BatchUpdateTask",
+        "Requires tasks; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates multiple tasks in a single request.",
+    ),
+    (
+        "CopyJobTemplate",
+        "Requires farmId, queueId, jobId, targetS3Location; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Copies a job template to an Amazon S3 bucket.",
+    ),
+    (
+        "CreateBudget",
+        "Requires farmId, displayName, usageTrackingResource, approximateDollarLimit, actions, schedule; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a budget to set spending thresholds for your rendering activity.",
+    ),
+    (
+        "CreateFarm",
+        "Requires displayName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a farm to allow space for queues and fleets.",
+    ),
+    (
+        "CreateFleet",
+        "Requires farmId, displayName, roleArn, maxWorkerCount, configuration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a fleet.",
+    ),
+    (
+        "CreateJob",
+        "Requires farmId, queueId, priority; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a job.",
+    ),
+    (
+        "CreateLicenseEndpoint",
+        "Requires vpcId, subnetIds, securityGroupIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a license endpoint to integrate your various licensed software used for rendering on Deadline Cloud.",
+    ),
+    (
+        "CreateLimit",
+        "Requires farmId, displayName, amountRequirementName, maxCount; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a limit that manages the distribution of shared resources, such as floating licenses.",
+    ),
+    (
+        "CreateMonitor",
+        "Requires displayName, identityCenterInstanceArn, subdomain, roleArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates an Amazon Web Services Deadline Cloud monitor that you can use to view your farms, queues, and fleets.",
+    ),
+    (
+        "CreateQueue",
+        "Requires farmId, displayName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a queue to coordinate the order in which jobs run on a farm.",
+    ),
+    (
+        "CreateQueueEnvironment",
+        "Requires farmId, queueId, priority, templateType, template; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates an environment for a queue that defines how jobs in the queue run.",
+    ),
+    (
+        "CreateQueueFleetAssociation",
+        "Requires farmId, queueId, fleetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates an association between a queue and a fleet.",
+    ),
+    (
+        "CreateQueueLimitAssociation",
+        "Requires farmId, queueId, limitId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Associates a limit with a particular queue.",
+    ),
+    (
+        "CreateStorageProfile",
+        "Requires farmId, displayName, osFamily; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a storage profile that specifies the operating system, file type, and file location of resources used on a farm.",
+    ),
+    (
+        "CreateWorker",
+        "Requires farmId, fleetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a worker.",
+    ),
+    (
+        "DeleteBudget",
+        "Requires farmId, budgetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a budget.",
+    ),
+    (
+        "DeleteFarm",
+        "Requires farmId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a farm.",
+    ),
+    (
+        "DeleteFleet",
+        "Requires farmId, fleetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a fleet.",
+    ),
 ];

@@ -31,16 +31,31 @@ pub enum IdentityFieldPlan {
     Request(Box<[FieldId]>),
     SelectedArn(Box<[FieldId]>),
     RequestArn(Box<[FieldId]>),
-    SelectedInteger { path: Box<[FieldId]>, minimum: i64, maximum: i64 },
-    RequestInteger { path: Box<[FieldId]>, minimum: i64, maximum: i64 },
-    SelectedStringList { path: Box<[FieldId]>, max_items: u32, max_item_bytes: u32 },
+    SelectedInteger {
+        path: Box<[FieldId]>,
+        minimum: i64,
+        maximum: i64,
+    },
+    RequestInteger {
+        path: Box<[FieldId]>,
+        minimum: i64,
+        maximum: i64,
+    },
+    SelectedStringList {
+        path: Box<[FieldId]>,
+        max_items: u32,
+        max_item_bytes: u32,
+    },
     Context {
         service: Box<str>,
         operation: Box<str>,
         source: ContextSource,
         path: Box<[FieldId]>,
     },
-    MapValue { path: Box<[FieldId]>, key: String },
+    MapValue {
+        path: Box<[FieldId]>,
+        key: String,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

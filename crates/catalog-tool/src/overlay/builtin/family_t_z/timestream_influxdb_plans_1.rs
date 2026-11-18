@@ -1,5 +1,5 @@
-use super::{inventory, path, paths, bind};
-use crate::overlay::{OperationOverlay, NameError, Identity, Paginator, Scope};
+use super::{bind, inventory, path, paths};
+use crate::overlay::{Identity, NameError, OperationOverlay, Paginator, Scope};
 
 pub(super) fn get_db_backup() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(

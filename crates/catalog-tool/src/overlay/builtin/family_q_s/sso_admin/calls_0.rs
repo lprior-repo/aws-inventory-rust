@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/sso-admin/service/2020-07-20/sso-admin-2020-07-20.json
-use super::super::construction::{Inventory, ResourceIdentity, Input};
+use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 
 pub(super) const CALLS: &[Inventory] = &[
@@ -29,7 +29,10 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Arn("ApplicationArn"),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
-        input: &[Input::Account("Filter.ApplicationAccount"), Input::Parent("InstanceArn", "ListInstances", "InstanceArn")],
+        input: &[
+            Input::Account("Filter.ApplicationAccount"),
+            Input::Parent("InstanceArn", "ListInstances", "InstanceArn"),
+        ],
         tags: None,
         queryable: &[],
     },

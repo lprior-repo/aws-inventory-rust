@@ -1,8 +1,8 @@
+use super::FixedValue;
 use super::NameError;
+use super::ResourceEmission;
 use crate::classes::DenyReason;
 use std::{collections::BTreeMap, fmt};
-use super::FixedValue;
-use super::ResourceEmission;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct MemberPath(String);
@@ -174,7 +174,10 @@ pub struct OperationOverlay {
 pub enum ItemSelector {
     Root,
     Member(MemberPath),
-    Explicit { path: MemberPath, kind: super::SelectionKind },
+    Explicit {
+        path: MemberPath,
+        kind: super::SelectionKind,
+    },
 }
 
 impl ItemSelector {
@@ -185,7 +188,6 @@ impl ItemSelector {
         MemberPath::new(value).map(Self::Member)
     }
 }
-
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
@@ -215,7 +217,11 @@ pub struct TokenPair {
 impl TokenPair {
     #[must_use]
     pub const fn new(input: MemberPath, output: MemberPath) -> Self {
-        Self { input, output, optional: false }
+        Self {
+            input,
+            output,
+            optional: false,
+        }
     }
 }
 
@@ -248,25 +254,59 @@ pub enum Identity {
     Key(Vec<MemberPath>),
     Choice(super::IdentityChoice),
     CorrelatedKey(Vec<super::IdentityField>),
-    MapArn { path: MemberPath, key: String, resource_kind: super::ArnResourceKind, request_url: Option<MemberPath> },
+    MapArn {
+        path: MemberPath,
+        key: String,
+        resource_kind: super::ArnResourceKind,
+        request_url: Option<MemberPath>,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Binding {
-    Context { operation: OperationName, source: super::ContextSource, path: MemberPath },
-    FromBranch { operation: OperationName, branch: String, path: MemberPath },
-    ContextFromBranch { operation: OperationName, branch: String, source: super::ContextSource, path: MemberPath },
+    Context {
+        operation: OperationName,
+        source: super::ContextSource,
+        path: MemberPath,
+    },
+    FromBranch {
+        operation: OperationName,
+        branch: String,
+        path: MemberPath,
+    },
+    ContextFromBranch {
+        operation: OperationName,
+        branch: String,
+        source: super::ContextSource,
+        path: MemberPath,
+    },
     From {
         operation: OperationName,
         path: MemberPath,
     },
-    FromArn { operation: OperationName, path: MemberPath, arn_service: String, resource_kind: super::ArnResourceKind },
-    FromUrl { operation: OperationName, path: MemberPath, resource_kind: super::UrlResourceKind },
-    FromService { service: String, operation: OperationName, path: MemberPath },
+    FromArn {
+        operation: OperationName,
+        path: MemberPath,
+        arn_service: String,
+        resource_kind: super::ArnResourceKind,
+    },
+    FromUrl {
+        operation: OperationName,
+        path: MemberPath,
+        resource_kind: super::UrlResourceKind,
+    },
+    FromService {
+        service: String,
+        operation: OperationName,
+        path: MemberPath,
+    },
     /// One value from the current producer, never a cross-product of producers.
     FromAny(Vec<super::BindingAlternative>),
-    Transformed { binding: Box<Binding>, transform: super::BindingTransform },
+    Transformed {
+        binding: Box<Binding>,
+        transform: super::BindingTransform,
+    },
 
     Account,
 
@@ -288,6 +328,10 @@ pub struct Batch {
 impl Batch {
     #[must_use]
     pub const fn new(member: MemberPath, max: i64, replaces: OperationName) -> Self {
-        Self { member, max, replaces }
+        Self {
+            member,
+            max,
+            replaces,
+        }
     }
 }

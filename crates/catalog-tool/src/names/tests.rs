@@ -111,8 +111,12 @@ fn exceptions_replace_longest_spelling_at_each_position() -> TestResult {
 
 #[test]
 fn exceptions_preserve_replacement_words_and_split_unmatched_digits() -> TestResult {
-    let exceptions =
-        Exceptions::from_entries(&[("VPCDHCP", "vpc_dhcp"), ("WAFv2", "wafv2"), ("OAuth", "oauth"), ("IoT", "iot")])?;
+    let exceptions = Exceptions::from_entries(&[
+        ("VPCDHCP", "vpc_dhcp"),
+        ("WAFv2", "wafv2"),
+        ("OAuth", "oauth"),
+        ("IoT", "iot"),
+    ])?;
     EXCEPTION_CASES.iter().try_for_each(|(kind, expected)| {
         let name = sql_name(kind, &exceptions)?;
         assert_eq!(name.as_str(), *expected, "{kind}");

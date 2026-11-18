@@ -179,9 +179,10 @@ fn extract(package: &Path, destination: &Path) -> Result<(), HarnessError> {
         path_text(destination)?,
     ]);
     if let Err(e) = std::fs::remove_file(&payload)
-        && e.kind() != std::io::ErrorKind::NotFound {
-            eprintln!("warning: cleanup remove_file failed: {e:?}");
-        }
+        && e.kind() != std::io::ErrorKind::NotFound
+    {
+        eprintln!("warning: cleanup remove_file failed: {e:?}");
+    }
     extracted
 }
 

@@ -237,14 +237,22 @@ fn fit_centres_and_zoom_keeps_the_anchor() {
 fn native_tag_graph(account: &str, region: &str) -> crate::data::Graph {
     let mut root = projected_row(account, region, "AWS::EC2::VPC", "vpc-a", "root");
     root.tags.push(cmdb_view::ResourceTag {
-        key: "sql-only".to_owned(), value: "not-native".to_owned(),
+        key: "sql-only".to_owned(),
+        value: "not-native".to_owned(),
     });
     crate::data::Graph {
-        nodes: vec![root, projected_row(account, region, "AWS::EC2::VPC", "vpc-b", "neighbor")],
+        nodes: vec![
+            root,
+            projected_row(account, region, "AWS::EC2::VPC", "vpc-b", "neighbor"),
+        ],
         tag_root: Some("root".to_owned()),
         tag_affiliations: vec![cmdb_view::TagAffiliation {
-            tag: cmdb_view::ScopedTag { account: account.to_owned(), region: region.to_owned(),
-                key: "Environment".to_owned(), value: "production".to_owned() },
+            tag: cmdb_view::ScopedTag {
+                account: account.to_owned(),
+                region: region.to_owned(),
+                key: "Environment".to_owned(),
+                value: "production".to_owned(),
+            },
             provenance: "resource-tags".to_owned(),
         }],
         ..crate::data::Graph::default()
@@ -258,18 +266,34 @@ fn given_native_tags_when_projecting_then_only_the_requested_resource_gets_affil
     // When the actual graph surface projection is constructed.
     let graph = builder::from_data_graph(&source);
     // Then there is one distinct tag vertex and one affiliation, never a resource clique.
-    let tags: Vec<_> = graph.nodes().iter().enumerate()
-        .filter(|(_, node)| node.kind() == NodeKind::Tag).collect();
+    let tags: Vec<_> = graph
+        .nodes()
+        .iter()
+        .enumerate()
+        .filter(|(_, node)| node.kind() == NodeKind::Tag)
+        .collect();
     assert_eq!(tags.len(), 1);
     let (tag_index, tag) = tags.first().expect("native tag vertex");
     assert!(!tag.kind().is_resource());
     assert!(tag.label().starts_with("tag:"));
     let root = graph.index_of("root").expect("root vertex");
     let neighbor = graph.index_of("neighbor").expect("neighbor vertex");
-    let links: Vec<_> = graph.edges().iter().filter(|edge| edge.to == *tag_index).collect();
+    let links: Vec<_> = graph
+        .edges()
+        .iter()
+        .filter(|edge| edge.to == *tag_index)
+        .collect();
     assert_eq!(links.len(), 1);
-    assert_eq!(links.first().map(|edge| (edge.from, edge.overlay)), Some((root, false)));
-    assert!(!graph.edges().iter().any(|edge| edge.from == root && edge.to == neighbor));
+    assert_eq!(
+        links.first().map(|edge| (edge.from, edge.overlay)),
+        Some((root, false))
+    );
+    assert!(
+        !graph
+            .edges()
+            .iter()
+            .any(|edge| edge.from == root && edge.to == neighbor)
+    );
     assert_eq!(graph.len(), 6);
     assert_eq!(graph.edges().len(), 5);
 }
@@ -282,9 +306,12 @@ fn given_identical_tag_text_when_scopes_differ_then_tag_vertex_identities_do_not
     let other_region = native_tag_graph("111111111111", "eu-west-1");
     // When each native affiliation is projected.
     let tag_id = |source: &crate::data::Graph| {
-        builder::from_data_graph(source).nodes().iter()
+        builder::from_data_graph(source)
+            .nodes()
+            .iter()
             .find(|node| node.kind() == NodeKind::Tag)
-            .map(|node| node.id().to_owned()).expect("tag vertex")
+            .map(|node| node.id().to_owned())
+            .expect("tag vertex")
     };
     // Then stable scoped identity is separate even though labels match.
     assert_ne!(tag_id(&source), tag_id(&other_account));
@@ -295,14 +322,33 @@ fn given_identical_tag_text_when_scopes_differ_then_tag_vertex_identities_do_not
 fn given_missing_or_foreign_tag_root_when_projecting_then_no_affiliation_is_invented() {
     // Given native-looking tag data not bound to the displayed resource scope.
     let mut source = native_tag_graph("111111111111", "us-east-1");
-    source.tag_affiliations.first_mut().expect("affiliation").tag.account = "222222222222".to_owned();
+    source
+        .tag_affiliations
+        .first_mut()
+        .expect("affiliation")
+        .tag
+        .account = "222222222222".to_owned();
     // When projected, foreign-scope data cannot attach to the root.
     let graph = builder::from_data_graph(&source);
-    assert_eq!(graph.nodes().iter().filter(|node| node.kind() == NodeKind::Tag).count(), 0);
+    assert_eq!(
+        graph
+            .nodes()
+            .iter()
+            .filter(|node| node.kind() == NodeKind::Tag)
+            .count(),
+        0
+    );
     // Nor can affiliations without a requested root be attached to arbitrary neighbors.
     source.tag_root = None;
     let graph = builder::from_data_graph(&source);
-    assert_eq!(graph.nodes().iter().filter(|node| node.kind() == NodeKind::Tag).count(), 0);
+    assert_eq!(
+        graph
+            .nodes()
+            .iter()
+            .filter(|node| node.kind() == NodeKind::Tag)
+            .count(),
+        0
+    );
     assert_eq!(graph.edges().len(), 4);
 }
 
@@ -310,11 +356,17 @@ fn given_missing_or_foreign_tag_root_when_projecting_then_no_affiliation_is_inve
 fn given_more_native_tags_than_render_capacity_when_projecting_then_vertices_stay_bounded() {
     // Given a native affiliation fanout exceeding the graph renderer's hard cap.
     let mut source = native_tag_graph("111111111111", "us-east-1");
-    source.tag_affiliations = (0..MAX_NODES.saturating_add(10)).map(|index| cmdb_view::TagAffiliation {
-        tag: cmdb_view::ScopedTag { account: "111111111111".to_owned(), region: "us-east-1".to_owned(),
-            key: format!("key-{index}"), value: "value".to_owned() },
-        provenance: "resource-tags".to_owned(),
-    }).collect();
+    source.tag_affiliations = (0..MAX_NODES.saturating_add(10))
+        .map(|index| cmdb_view::TagAffiliation {
+            tag: cmdb_view::ScopedTag {
+                account: "111111111111".to_owned(),
+                region: "us-east-1".to_owned(),
+                key: format!("key-{index}"),
+                value: "value".to_owned(),
+            },
+            provenance: "resource-tags".to_owned(),
+        })
+        .collect();
     // When projected, resource hierarchy plus tag vertices share the same fixed budget.
     let graph = builder::from_data_graph(&source);
     // Then overflow is explicit and the layout never receives excess vertices.

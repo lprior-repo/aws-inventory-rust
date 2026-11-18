@@ -1,6 +1,6 @@
 mod part_0;
-use crate::overlay::{NameError, ServiceOverlay};
 use super::service;
+use crate::overlay::{NameError, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     let operations = [part_0::operations()?].into_iter().flatten().collect();

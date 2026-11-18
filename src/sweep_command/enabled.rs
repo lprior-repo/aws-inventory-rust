@@ -34,8 +34,12 @@ async fn collect(options: &SweepArgs) -> Result<(BinaryStore, SweepSummary)> {
     Ok((store, summary))
 }
 
-fn exit_code(outcomes: &sweep_runtime::ScopeOutcomes, unattributed_resources: u64) -> std::process::ExitCode {
-    if unattributed_resources > 0 || outcomes.partial > 0
+fn exit_code(
+    outcomes: &sweep_runtime::ScopeOutcomes,
+    unattributed_resources: u64,
+) -> std::process::ExitCode {
+    if unattributed_resources > 0
+        || outcomes.partial > 0
         || outcomes.inaccessible > 0
         || outcomes.unsupported > 0
         || outcomes.failed > 0
@@ -51,8 +55,12 @@ fn read_catalog(path: &Path) -> Result<Vec<u8>> {
     let limit = inventory_core::catalog::MAX_CATALOG_BYTES;
     let file = File::open(path).with_context(|| format!("opening catalog {}", path.display()))?;
     let mut bytes = Vec::new();
-    file.take(u64::try_from(limit)?.saturating_add(1)).read_to_end(&mut bytes)?;
-    anyhow::ensure!(bytes.len() <= limit, "runtime catalog exceeds {limit} bytes");
+    file.take(u64::try_from(limit)?.saturating_add(1))
+        .read_to_end(&mut bytes)?;
+    anyhow::ensure!(
+        bytes.len() <= limit,
+        "runtime catalog exceeds {limit} bytes"
+    );
     Ok(bytes)
 }
 
@@ -116,10 +124,16 @@ mod tests {
 
     #[test]
     fn given_complete_fresh_scopes_when_legacy_authority_is_unresolved_then_exit_is_incomplete() {
-        let outcomes = ScopeOutcomes { complete: 7, ..ScopeOutcomes::default() };
+        let outcomes = ScopeOutcomes {
+            complete: 7,
+            ..ScopeOutcomes::default()
+        };
         assert_eq!(exit_code(&outcomes, 1), ExitCode::from(2));
         assert_eq!(exit_code(&outcomes, 0), ExitCode::SUCCESS);
-        let partial = ScopeOutcomes { partial: 1, ..outcomes };
+        let partial = ScopeOutcomes {
+            partial: 1,
+            ..outcomes
+        };
         assert_eq!(exit_code(&partial, 0), ExitCode::from(2));
     }
 }

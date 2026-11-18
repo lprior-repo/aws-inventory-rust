@@ -1,5 +1,5 @@
-use super::{inventory, path, paths, bind, token};
-use crate::overlay::{OperationOverlay, NameError, Identity, Paginator, Scope};
+use super::{bind, inventory, path, paths, token};
+use crate::overlay::{Identity, NameError, OperationOverlay, Paginator, Scope};
 
 pub(super) fn get_browser_settings() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
@@ -8,12 +8,13 @@ pub(super) fn get_browser_settings() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
+    operation.queryable = paths(&["browserSettingsArn", "browserPolicy", "customerManagedKey"])?;
+    bind(
+        &mut operation,
         "browserSettingsArn",
-        "browserPolicy",
-        "customerManagedKey",
-    ])?;
-    bind(&mut operation, "browserSettingsArn", "ListBrowserSettings", "browserSettingsArn")?;
+        "ListBrowserSettings",
+        "browserSettingsArn",
+    )?;
     Ok(operation)
 }
 
@@ -30,7 +31,12 @@ pub(super) fn get_data_protection_settings() -> Result<OperationOverlay, NameErr
         "description",
         "customerManagedKey",
     ])?;
-    bind(&mut operation, "dataProtectionSettingsArn", "ListDataProtectionSettings", "dataProtectionSettingsArn")?;
+    bind(
+        &mut operation,
+        "dataProtectionSettingsArn",
+        "ListDataProtectionSettings",
+        "dataProtectionSettingsArn",
+    )?;
     Ok(operation)
 }
 
@@ -47,7 +53,12 @@ pub(super) fn get_ip_access_settings() -> Result<OperationOverlay, NameError> {
         "description",
         "customerManagedKey",
     ])?;
-    bind(&mut operation, "ipAccessSettingsArn", "ListIpAccessSettings", "ipAccessSettingsArn")?;
+    bind(
+        &mut operation,
+        "ipAccessSettingsArn",
+        "ListIpAccessSettings",
+        "ipAccessSettingsArn",
+    )?;
     Ok(operation)
 }
 
@@ -58,11 +69,13 @@ pub(super) fn get_network_settings() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
+    operation.queryable = paths(&["networkSettingsArn", "vpcId"])?;
+    bind(
+        &mut operation,
         "networkSettingsArn",
-        "vpcId",
-    ])?;
-    bind(&mut operation, "networkSettingsArn", "ListNetworkSettings", "networkSettingsArn")?;
+        "ListNetworkSettings",
+        "networkSettingsArn",
+    )?;
     Ok(operation)
 }
 
@@ -106,12 +119,13 @@ pub(super) fn get_session_logger() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
+    operation.queryable = paths(&["sessionLoggerArn", "customerManagedKey", "displayName"])?;
+    bind(
+        &mut operation,
         "sessionLoggerArn",
-        "customerManagedKey",
-        "displayName",
-    ])?;
-    bind(&mut operation, "sessionLoggerArn", "ListSessionLoggers", "sessionLoggerArn")?;
+        "ListSessionLoggers",
+        "sessionLoggerArn",
+    )?;
     Ok(operation)
 }
 
@@ -122,10 +136,13 @@ pub(super) fn get_trust_store() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
+    operation.queryable = paths(&["trustStoreArn"])?;
+    bind(
+        &mut operation,
         "trustStoreArn",
-    ])?;
-    bind(&mut operation, "trustStoreArn", "ListTrustStores", "trustStoreArn")?;
+        "ListTrustStores",
+        "trustStoreArn",
+    )?;
     Ok(operation)
 }
 
@@ -136,11 +153,13 @@ pub(super) fn get_user_access_logging_settings() -> Result<OperationOverlay, Nam
         Paginator::None,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
+    operation.queryable = paths(&["userAccessLoggingSettingsArn", "kinesisStreamArn"])?;
+    bind(
+        &mut operation,
         "userAccessLoggingSettingsArn",
-        "kinesisStreamArn",
-    ])?;
-    bind(&mut operation, "userAccessLoggingSettingsArn", "ListUserAccessLoggingSettings", "userAccessLoggingSettingsArn")?;
+        "ListUserAccessLoggingSettings",
+        "userAccessLoggingSettingsArn",
+    )?;
     Ok(operation)
 }
 
@@ -164,7 +183,12 @@ pub(super) fn get_user_settings() -> Result<OperationOverlay, NameError> {
         "deepLinkAllowed",
         "webAuthnAllowed",
     ])?;
-    bind(&mut operation, "userSettingsArn", "ListUserSettings", "userSettingsArn")?;
+    bind(
+        &mut operation,
+        "userSettingsArn",
+        "ListUserSettings",
+        "userSettingsArn",
+    )?;
     Ok(operation)
 }
 
@@ -175,9 +199,7 @@ pub(super) fn list_browser_settings() -> Result<OperationOverlay, NameError> {
         token("nextToken", "nextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "browserSettingsArn",
-    ])?;
+    operation.queryable = paths(&["browserSettingsArn"])?;
     operation.page_size = Some(100);
     Ok(operation)
 }
@@ -189,11 +211,7 @@ pub(super) fn list_data_protection_settings() -> Result<OperationOverlay, NameEr
         token("nextToken", "nextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "dataProtectionSettingsArn",
-        "displayName",
-        "description",
-    ])?;
+    operation.queryable = paths(&["dataProtectionSettingsArn", "displayName", "description"])?;
     operation.page_size = Some(100);
     Ok(operation)
 }
@@ -222,11 +240,7 @@ pub(super) fn list_ip_access_settings() -> Result<OperationOverlay, NameError> {
         token("nextToken", "nextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "ipAccessSettingsArn",
-        "displayName",
-        "description",
-    ])?;
+    operation.queryable = paths(&["ipAccessSettingsArn", "displayName", "description"])?;
     operation.page_size = Some(100);
     Ok(operation)
 }

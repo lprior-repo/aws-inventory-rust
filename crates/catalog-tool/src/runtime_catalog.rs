@@ -3,8 +3,8 @@ mod encode;
 mod model_path;
 mod plan_validation;
 mod plans;
-mod schemas;
 mod provenance;
+mod schemas;
 mod selection;
 pub use provenance::CatalogSources;
 
@@ -120,7 +120,13 @@ pub fn augment(
     kind_map: &crate::kind_map::KindMap,
     verified_endpoints: &BTreeMap<String, crate::endpoints::VerifiedEndpoint>,
 ) -> Result<Vec<u8>, RuntimeCatalogCompileError> {
-    augment_with_sources(base_bytes, checked, kind_map, verified_endpoints, &CatalogSources::compiled(base_bytes))
+    augment_with_sources(
+        base_bytes,
+        checked,
+        kind_map,
+        verified_endpoints,
+        &CatalogSources::compiled(base_bytes),
+    )
 }
 
 pub fn augment_with_sources(
@@ -178,4 +184,3 @@ fn compile_extension(
         kinds,
     )
 }
-

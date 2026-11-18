@@ -2,7 +2,11 @@ use super::{ContextSource, MemberPath, OperationName};
 
 /// Only the modeled value types needed by reviewed row policies.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum RowValueType { String, Boolean, Structure }
+pub enum RowValueType {
+    String,
+    Boolean,
+    Structure,
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct RowOperand {
@@ -12,14 +16,25 @@ pub struct RowOperand {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum MissingSelected { Reject, AllowAbsent }
+pub enum MissingSelected {
+    Reject,
+    AllowAbsent,
+}
 
 /// Deliberately bounded: no expressions, coercion, scripts or operation exceptions.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum RowPredicate {
     Absent(RowOperand),
-    BooleanEquals { operand: RowOperand, value: bool },
-    SelectedRequestEquals { selected: MemberPath, request: MemberPath, value_type: RowValueType, missing: MissingSelected },
+    BooleanEquals {
+        operand: RowOperand,
+        value: bool,
+    },
+    SelectedRequestEquals {
+        selected: MemberPath,
+        request: MemberPath,
+        value_type: RowValueType,
+        missing: MissingSelected,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

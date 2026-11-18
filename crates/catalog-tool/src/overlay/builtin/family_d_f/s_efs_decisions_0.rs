@@ -1,30 +1,111 @@
 // Explicit dispositions from .local/aws-models/models/efs/service/2015-02-01/efs-2015-02-01.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
-    ("CreateAccessPoint", "Requires ClientToken, FileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates an EFS access point."),
-    ("CreateFileSystem", "Requires CreationToken; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new, empty file system."),
-    ("CreateMountTarget", "Requires FileSystemId, SubnetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a mount target for a file system."),
-    ("CreateReplicationConfiguration", "Requires SourceFileSystemId, Destinations; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a replication conﬁguration to either a new or existing EFS file system."),
-    ("CreateTags", "Requires FileSystemId, Tags; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: DEPRECATED - CreateTags is deprecated and not maintained."),
-    ("DeleteAccessPoint", "Requires AccessPointId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes the specified access point."),
-    ("DeleteFileSystem", "Requires FileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a file system, permanently severing access to its contents."),
-    ("DeleteFileSystemPolicy", "Requires FileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes the FileSystemPolicy for the specified file system."),
-    ("DeleteMountTarget", "Requires MountTargetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes the specified mount target."),
-    ("DeleteReplicationConfiguration", "Requires SourceFileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a replication configuration."),
-    ("DeleteTags", "Requires FileSystemId, TagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: DEPRECATED - DeleteTags is deprecated and not maintained."),
-    ("DescribeAccountPreferences", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns the account preferences settings for the Amazon Web Services account associated with the user making the request, in the current Amazon Web Services Region."),
-    ("DescribeBackupPolicy", "Requires FileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns the backup policy for the specified EFS file system."),
-    ("DescribeFileSystemPolicy", "Requires FileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns the FileSystemPolicy for the specified EFS file system."),
-    ("DescribeLifecycleConfiguration", "Requires FileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns the current LifecycleConfiguration object for the specified EFS file system."),
-    ("DescribeMountTargetSecurityGroups", "SecurityGroups contains only strings; response lacks MountTargetId. Runtime identity cannot include bound request parent, so associations would alias across mount targets. Pinned operation: Returns the security groups currently in effect for a mount target."),
-    ("DescribeTags", "Requires FileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: DEPRECATED - The DescribeTags action is deprecated and not maintained."),
-    ("ListTagsForResource", "Requires ResourceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists all tags for a top-level EFS resource."),
-    ("ModifyMountTargetSecurityGroups", "Requires MountTargetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies the set of security groups in effect for a mount target."),
-    ("PutAccountPreferences", "Requires ResourceIdType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Use this operation to set the account preference in the current Amazon Web Services Region to use long 17 character (63 bit) or short 8 character (32 bit) resource IDs for new EFS file system and moun"),
-    ("PutBackupPolicy", "Requires FileSystemId, BackupPolicy; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the file system's backup policy."),
-    ("PutFileSystemPolicy", "Requires FileSystemId, Policy; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Applies an Amazon EFS FileSystemPolicy to an Amazon EFS file system."),
-    ("PutLifecycleConfiguration", "Requires FileSystemId, LifecyclePolicies; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Use this action to manage storage for your file system."),
-    ("TagResource", "Requires ResourceId, Tags; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a tag for an EFS resource."),
-    ("UntagResource", "Requires ResourceId, TagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes tags from an EFS resource."),
-    ("UpdateFileSystem", "Requires FileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the throughput mode or the amount of provisioned throughput of an existing file system."),
-    ("UpdateFileSystemProtection", "Requires FileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates protection on the file system."),
+    (
+        "CreateAccessPoint",
+        "Requires ClientToken, FileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates an EFS access point.",
+    ),
+    (
+        "CreateFileSystem",
+        "Requires CreationToken; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new, empty file system.",
+    ),
+    (
+        "CreateMountTarget",
+        "Requires FileSystemId, SubnetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a mount target for a file system.",
+    ),
+    (
+        "CreateReplicationConfiguration",
+        "Requires SourceFileSystemId, Destinations; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a replication conﬁguration to either a new or existing EFS file system.",
+    ),
+    (
+        "CreateTags",
+        "Requires FileSystemId, Tags; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: DEPRECATED - CreateTags is deprecated and not maintained.",
+    ),
+    (
+        "DeleteAccessPoint",
+        "Requires AccessPointId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes the specified access point.",
+    ),
+    (
+        "DeleteFileSystem",
+        "Requires FileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a file system, permanently severing access to its contents.",
+    ),
+    (
+        "DeleteFileSystemPolicy",
+        "Requires FileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes the FileSystemPolicy for the specified file system.",
+    ),
+    (
+        "DeleteMountTarget",
+        "Requires MountTargetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes the specified mount target.",
+    ),
+    (
+        "DeleteReplicationConfiguration",
+        "Requires SourceFileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a replication configuration.",
+    ),
+    (
+        "DeleteTags",
+        "Requires FileSystemId, TagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: DEPRECATED - DeleteTags is deprecated and not maintained.",
+    ),
+    (
+        "DescribeAccountPreferences",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns the account preferences settings for the Amazon Web Services account associated with the user making the request, in the current Amazon Web Services Region.",
+    ),
+    (
+        "DescribeBackupPolicy",
+        "Requires FileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns the backup policy for the specified EFS file system.",
+    ),
+    (
+        "DescribeFileSystemPolicy",
+        "Requires FileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns the FileSystemPolicy for the specified EFS file system.",
+    ),
+    (
+        "DescribeLifecycleConfiguration",
+        "Requires FileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns the current LifecycleConfiguration object for the specified EFS file system.",
+    ),
+    (
+        "DescribeMountTargetSecurityGroups",
+        "SecurityGroups contains only strings; response lacks MountTargetId. Runtime identity cannot include bound request parent, so associations would alias across mount targets. Pinned operation: Returns the security groups currently in effect for a mount target.",
+    ),
+    (
+        "DescribeTags",
+        "Requires FileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: DEPRECATED - The DescribeTags action is deprecated and not maintained.",
+    ),
+    (
+        "ListTagsForResource",
+        "Requires ResourceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists all tags for a top-level EFS resource.",
+    ),
+    (
+        "ModifyMountTargetSecurityGroups",
+        "Requires MountTargetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Modifies the set of security groups in effect for a mount target.",
+    ),
+    (
+        "PutAccountPreferences",
+        "Requires ResourceIdType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Use this operation to set the account preference in the current Amazon Web Services Region to use long 17 character (63 bit) or short 8 character (32 bit) resource IDs for new EFS file system and moun",
+    ),
+    (
+        "PutBackupPolicy",
+        "Requires FileSystemId, BackupPolicy; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the file system's backup policy.",
+    ),
+    (
+        "PutFileSystemPolicy",
+        "Requires FileSystemId, Policy; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Applies an Amazon EFS FileSystemPolicy to an Amazon EFS file system.",
+    ),
+    (
+        "PutLifecycleConfiguration",
+        "Requires FileSystemId, LifecyclePolicies; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Use this action to manage storage for your file system.",
+    ),
+    (
+        "TagResource",
+        "Requires ResourceId, Tags; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a tag for an EFS resource.",
+    ),
+    (
+        "UntagResource",
+        "Requires ResourceId, TagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes tags from an EFS resource.",
+    ),
+    (
+        "UpdateFileSystem",
+        "Requires FileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the throughput mode or the amount of provisioned throughput of an existing file system.",
+    ),
+    (
+        "UpdateFileSystemProtection",
+        "Requires FileSystemId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates protection on the file system.",
+    ),
 ];

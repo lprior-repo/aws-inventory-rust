@@ -64,15 +64,19 @@ fn add_resource_edges(dag: &mut DagGraph, source: &DataGraph) {
 }
 
 fn add_tag_affiliations(dag: &mut DagGraph, source: &DataGraph) {
-    let Some(root) = source.tag_root.as_deref().and_then(|key| {
-        source.nodes.iter().find(|row| row.key == key)
-    }) else {
+    let Some(root) = source
+        .tag_root
+        .as_deref()
+        .and_then(|key| source.nodes.iter().find(|row| row.key == key))
+    else {
         return;
     };
     let Some(resource) = dag.index_of(&root.key) else {
         return;
     };
-    source.tag_affiliations.iter()
+    source
+        .tag_affiliations
+        .iter()
         .filter(|entry| entry.tag.account == root.account && entry.tag.region == root.region)
         .for_each(|entry| {
             let tag = &entry.tag;
@@ -86,9 +90,13 @@ fn add_tag_affiliations(dag: &mut DagGraph, source: &DataGraph) {
 fn tag_id(tag: &cmdb_view::ScopedTag) -> String {
     format!(
         "tag:{}:{}:{}:{}:{}:{}:{}:{}",
-        tag.account.len(), tag.account,
-        tag.region.len(), tag.region,
-        tag.key.len(), tag.key,
-        tag.value.len(), tag.value,
+        tag.account.len(),
+        tag.account,
+        tag.region.len(),
+        tag.region,
+        tag.key.len(),
+        tag.key,
+        tag.value.len(),
+        tag.value,
     )
 }

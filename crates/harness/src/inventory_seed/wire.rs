@@ -91,7 +91,12 @@ fn build_request(
 ) -> Result<Request<Bytes>, SeedError> {
     let descriptor = spec.operation;
     let request = encode_request(spec)?;
-    sign_request(credentials, request, descriptor.service.signing_name()?, spec.region)
+    sign_request(
+        credentials,
+        request,
+        descriptor.service.signing_name()?,
+        spec.region,
+    )
 }
 
 fn encode_request(spec: RequestSpec<'_>) -> Result<Request<Bytes>, SeedError> {
@@ -108,10 +113,12 @@ fn encode_request(spec: RequestSpec<'_>) -> Result<Request<Bytes>, SeedError> {
         addressing: None,
     };
     Ok(match descriptor.protocol {
-        aws_wire::request::Protocol::AwsQuery | aws_wire::request::Protocol::Ec2Query =>
-            aws_wire::request::query::encode(context)?,
-        aws_wire::request::Protocol::RestJson1 | aws_wire::request::Protocol::RestXml =>
-            aws_wire::request::rest::encode(context)?,
+        aws_wire::request::Protocol::AwsQuery | aws_wire::request::Protocol::Ec2Query => {
+            aws_wire::request::query::encode(context)?
+        }
+        aws_wire::request::Protocol::RestJson1 | aws_wire::request::Protocol::RestXml => {
+            aws_wire::request::rest::encode(context)?
+        }
         _ => aws_wire::request::body::encode(context)?,
     })
 }

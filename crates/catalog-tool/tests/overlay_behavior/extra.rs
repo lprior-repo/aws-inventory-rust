@@ -32,11 +32,14 @@ fn skip_and_batch_cannot_target_a_deferred_operation() -> Result<(), Box<dyn std
     plan.batch = Some(batch("GetThing")?);
     let mut child = complete()?;
     child.class = Some(OverlayClass::Expand);
-    let checked = checked(&root, vec![
-        ("ListThings", plan),
-        ("GetThing", child),
-        ("ListOther", deferred()),
-    ])?;
+    let checked = checked(
+        &root,
+        vec![
+            ("ListThings", plan),
+            ("GetThing", child),
+            ("ListOther", deferred()),
+        ],
+    )?;
     assert_eq!(
         checked
             .services()
@@ -82,7 +85,9 @@ fn item_metadata_paths_must_resolve_on_selected_items() -> Result<(), Box<dyn st
     plan.exclude_from_hash = vec![overlay::MemberPath::new("Absent")?];
     plan.queryable = vec![overlay::MemberPath::new("Absent")?];
     plan.tags = Some(overlay::MemberPath::new("Absent")?);
-    plan.identity = Some(overlay::Identity::Key(vec![overlay::MemberPath::new("Absent")?]));
+    plan.identity = Some(overlay::Identity::Key(vec![overlay::MemberPath::new(
+        "Absent",
+    )?]));
     let errors = violations(&root, vec![("ListThings", plan)])?;
     let actual: Vec<_> = errors
         .iter()
@@ -211,12 +216,17 @@ fn references_reject_unknown_and_deferred_operations() -> Result<(), Box<dyn std
     plan.batch = Some(batch("MissingBatch")?);
     let mut child = complete()?;
     child.class = Some(OverlayClass::Expand);
-    child.bind.insert(overlay::MemberPath::new("Id")?, binding("ListOther", "Id")?);
-    let errors = violations(&root, vec![
-        ("ListThings", plan),
-        ("ListOther", deferred()),
-        ("GetThing", child),
-    ])?;
+    child
+        .bind
+        .insert(overlay::MemberPath::new("Id")?, binding("ListOther", "Id")?);
+    let errors = violations(
+        &root,
+        vec![
+            ("ListThings", plan),
+            ("ListOther", deferred()),
+            ("GetThing", child),
+        ],
+    )?;
     for (key, target) in [("skip", "MissingSkip"), ("batch.replaces", "MissingBatch")] {
         assert!(
             errors.iter().any(|error| error.key() == key

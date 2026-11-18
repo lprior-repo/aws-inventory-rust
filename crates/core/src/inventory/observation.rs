@@ -59,7 +59,6 @@ impl Observation {
     pub fn hash_exclusions(&self) -> &Exclusions {
         &self.exclusions
     }
-
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

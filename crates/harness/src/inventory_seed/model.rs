@@ -4,15 +4,11 @@ mod operation;
 pub(super) use operation::locate;
 mod identity;
 mod output;
+mod template;
 #[cfg(test)]
 mod tests;
-mod template;
-pub(super) use identity::{PreparedIdentity, PreparedResource};
-pub(super) use output::{Selector, output_path};
-pub(super) use template::PreparedTemplate;
-#[cfg(test)]
-pub(super) use template::PreparedNestedBinding;
 use aws_wire::request::Protocol;
+pub(super) use identity::{PreparedIdentity, PreparedResource};
 use inventory_core::{
     catalog::runtime::RuntimeCatalog,
     catalog::{Catalog, Member, Operation, Service, Target},
@@ -20,6 +16,10 @@ use inventory_core::{
     record::FieldId,
 };
 use members::*;
+pub(super) use output::{Selector, output_path};
+#[cfg(test)]
+pub(super) use template::PreparedNestedBinding;
+pub(super) use template::PreparedTemplate;
 
 use super::{
     config::SeedError,
@@ -80,8 +80,16 @@ impl<'a> SeedModels<'a> {
     pub fn load(runtime: &RuntimeCatalog<'a>, scenario: &SeedScenario) -> Result<Self, SeedError> {
         let catalog = runtime.catalog();
         let caller = locate(catalog, "sts", "GetCallerIdentity")?;
-        let caller_account = output_path(caller.service, caller.operation.output()?, &FieldPath::new(&["Account"])?)?;
-        let caller_arn = output_path(caller.service, caller.operation.output()?, &FieldPath::new(&["Arn"])?)?;
+        let caller_account = output_path(
+            caller.service,
+            caller.operation.output()?,
+            &FieldPath::new(&["Account"])?,
+        )?;
+        let caller_arn = output_path(
+            caller.service,
+            caller.operation.output()?,
+            &FieldPath::new(&["Arn"])?,
+        )?;
         let steps = scenario
             .steps()
             .iter()
@@ -153,10 +161,13 @@ fn prepare_input<'a>(
         SeedInputValue::Boolean(value) => PreparedInputValue::Boolean(*value),
         SeedInputValue::Integer(value) => PreparedInputValue::Integer(*value),
         SeedInputValue::Literal(value) => {
-            let target = members::path_target(operation.service, operation.operation.input()?, field)?;
+            let target =
+                members::path_target(operation.service, operation.operation.input()?, field)?;
             PreparedInputValue::Literal(super::literal::resolve(operation.service, target, value)?)
         }
-        SeedInputValue::Template(value) => template::prepare(catalog, scenario, operation, field, value)?,
+        SeedInputValue::Template(value) => {
+            template::prepare(catalog, scenario, operation, field, value)?
+        }
         SeedInputValue::PreviousOutput { step, path } => {
             previous_output(catalog, scenario, *step, path)?
         }
@@ -200,8 +211,16 @@ fn prepare_relationship(
 ) -> Result<PreparedRelationship, SeedError> {
     let source = prepared(steps, spec.source, "seed relationship source is missing")?;
     let target = prepared(steps, spec.target, "seed relationship target is missing")?;
-    let source_kind = &source.resource.as_ref().ok_or(SeedError::Invalid("relationship source must be a resource"))?.kind;
-    let target_kind = &target.resource.as_ref().ok_or(SeedError::Invalid("relationship target must be a resource"))?.kind;
+    let source_kind = &source
+        .resource
+        .as_ref()
+        .ok_or(SeedError::Invalid("relationship source must be a resource"))?
+        .kind;
+    let target_kind = &target
+        .resource
+        .as_ref()
+        .ok_or(SeedError::Invalid("relationship target must be a resource"))?
+        .kind;
     Ok(PreparedRelationship {
         source: spec.source,
         target: spec.target,
@@ -261,4 +280,3 @@ fn read_relation(
         .map(|plan| plan.relation.clone())
         .ok_or(SeedError::Invalid("modeled seed relationship is missing"))
 }
-

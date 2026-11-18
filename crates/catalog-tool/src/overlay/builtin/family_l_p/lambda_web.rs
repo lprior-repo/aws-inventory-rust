@@ -1,14 +1,24 @@
 // Pinned Smithy source: .local/aws-models/models/lambda-web/service/2025-03-07/lambda-web-2025-03-07.json
 use super::policy::{Group, Id, Resource, compile};
 use crate::overlay::Scope;
-use crate::{classes::DenyReason, overlay::{NameError, OverlayClass, ServiceOverlay}};
+use crate::{
+    classes::DenyReason,
+    overlay::{NameError, OverlayClass, ServiceOverlay},
+};
 
 const GROUPS: &[Group] = &[
     Group {
         operations: &[
-            "CreateWebFunction", "CreateWebFunctionEndpoint", "CreateWebFunctionRevision", 
-            "DeleteResourcePolicy", "DeleteWebFunction", "DeleteWebFunctionEndpoint", 
-            "DeleteWebFunctionRevision", "PutResourcePolicy", "TagResource", "UntagResource", 
+            "CreateWebFunction",
+            "CreateWebFunctionEndpoint",
+            "CreateWebFunctionRevision",
+            "DeleteResourcePolicy",
+            "DeleteWebFunction",
+            "DeleteWebFunctionEndpoint",
+            "DeleteWebFunctionRevision",
+            "PutResourcePolicy",
+            "TagResource",
+            "UntagResource",
             "UpdateWebFunctionEndpoint",
         ],
         class: OverlayClass::Deny(DenyReason::Mutating),
@@ -16,12 +26,19 @@ const GROUPS: &[Group] = &[
     },
     Group {
         operations: &[
-            "GetResourcePolicy", "GetWebAccountSettings", "GetWebFunction", 
-            "GetWebFunctionEndpoint", "GetWebFunctionRevision", "ListTags", 
-            "ListWebFunctionEndpoints", "ListWebFunctionRevisions",
+            "GetResourcePolicy",
+            "GetWebAccountSettings",
+            "GetWebFunction",
+            "GetWebFunctionEndpoint",
+            "GetWebFunctionRevision",
+            "ListTags",
+            "ListWebFunctionEndpoints",
+            "ListWebFunctionRevisions",
         ],
         class: OverlayClass::Defer,
-        reason: Some("Revision/endpoint detail requires function context; function summaries do not authorize code or revision content reads."),
+        reason: Some(
+            "Revision/endpoint detail requires function context; function summaries do not authorize code or revision content reads.",
+        ),
     },
 ];
 
@@ -29,8 +46,10 @@ const RESOURCES: &[Resource] = &[
     // Lists web functions in your account. Use pagination to ensure that the operation returns quickly and successfully.
     Resource {
         operation: "ListWebFunctions",
-        items: "functions", id: Id::Arn("functionArn"),
-        scope: Scope::Region, tokens: Some(("nextToken", "nextToken")),
+        items: "functions",
+        id: Id::Arn("functionArn"),
+        scope: Scope::Region,
+        tokens: Some(("nextToken", "nextToken")),
         query: &["functionArn", "functionName", "state"],
         tags: None,
         bindings: &[],

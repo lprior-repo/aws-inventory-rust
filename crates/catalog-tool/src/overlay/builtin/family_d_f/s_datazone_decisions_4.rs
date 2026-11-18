@@ -1,38 +1,143 @@
 // Explicit dispositions from .local/aws-models/models/datazone/service/2018-05-10/datazone-2018-05-10.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
-    ("ListSubscriptions", "Requires domainIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists subscriptions in Amazon DataZone."),
-    ("ListTagsForResource", "Requires resourceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists tags for the specified resource in Amazon DataZone."),
-    ("ListTimeSeriesDataPoints", "Requires domainIdentifier, entityIdentifier, entityType, formName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists time series data points."),
-    ("PostLineageEvent", "Requires domainIdentifier, event; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Posts a data lineage event."),
-    ("PostTimeSeriesDataPoints", "Requires domainIdentifier, entityIdentifier, entityType, forms; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Posts time series data points to Amazon DataZone for the specified asset."),
-    ("PutDataExportConfiguration", "Requires domainIdentifier, enableExport; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates data export configuration details."),
-    ("PutEnvironmentBlueprintConfiguration", "Requires domainIdentifier, environmentBlueprintIdentifier, enabledRegions; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Writes the configuration for the specified environment blueprint in Amazon DataZone."),
-    ("QueryGraph", "Requires domainIdentifier, match; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Queries entities in the graph store."),
-    ("RejectPredictions", "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Rejects automatically generated business-friendly metadata for your Amazon DataZone assets."),
-    ("RejectSubscriptionRequest", "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Rejects the specified subscription request."),
-    ("RemoveEntityOwner", "Requires domainIdentifier, entityType, entityIdentifier, owner; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes an owner from an entity."),
-    ("RemovePolicyGrant", "Requires domainIdentifier, entityType, entityIdentifier, policyType, principal; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes a policy grant."),
-    ("RevokeSubscription", "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Revokes a specified subscription in Amazon DataZone."),
-    ("Search", "Requires domainIdentifier, searchScope; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Searches for assets in Amazon DataZone."),
-    ("SearchGroupProfiles", "Requires domainIdentifier, groupType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Searches group profiles in Amazon DataZone."),
-    ("SearchListings", "Requires domainIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Searches listings in Amazon DataZone."),
-    ("SearchTypes", "Requires domainIdentifier, searchScope, managed; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Searches for types in Amazon DataZone."),
-    ("SearchUserProfiles", "Requires domainIdentifier, userType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Searches user profiles in Amazon DataZone."),
-    ("StartDataSourceRun", "Requires domainIdentifier, dataSourceIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Start the run of the specified data source in Amazon DataZone."),
-    ("StartMetadataGenerationRun", "Requires domainIdentifier, target, owningProjectIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts the metadata generation run."),
-    ("StartNotebookExport", "Requires domainIdentifier, notebookIdentifier, owningProjectIdentifier, fileFormat; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a notebook export in Amazon SageMaker Unified Studio."),
-    ("StartNotebookImport", "Requires domainIdentifier, owningProjectIdentifier, sourceLocation, name; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a notebook import in Amazon SageMaker Unified Studio."),
-    ("StartNotebookRun", "Requires domainIdentifier, owningProjectIdentifier, notebookIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a notebook run in Amazon SageMaker Unified Studio."),
-    ("StartNotebookSync", "Requires domainIdentifier, owningProjectIdentifier, sourceLocation; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a notebook sync in Amazon SageMaker Unified Studio."),
-    ("StopNotebookRun", "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Stops a running notebook run in Amazon SageMaker Unified Studio."),
-    ("TagResource", "Requires resourceArn, tags; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Tags a resource in Amazon DataZone."),
-    ("UntagResource", "Requires resourceArn, tagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Untags a resource in Amazon DataZone."),
-    ("UpdateAccountPool", "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the account pool."),
-    ("UpdateAssetFilter", "Requires domainIdentifier, assetIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates an asset filter."),
-    ("UpdateConnection", "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates a connection."),
-    ("UpdateDataSource", "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the specified data source in Amazon DataZone."),
-    ("UpdateDesignation", "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates an existing user-created designation."),
-    ("UpdateDomain", "Requires identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates a Amazon DataZone domain."),
-    ("UpdateDomainUnit", "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the domain unit."),
-    ("UpdateEnvironment", "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the specified environment in Amazon DataZone."),
+    (
+        "ListSubscriptions",
+        "Requires domainIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists subscriptions in Amazon DataZone.",
+    ),
+    (
+        "ListTagsForResource",
+        "Requires resourceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists tags for the specified resource in Amazon DataZone.",
+    ),
+    (
+        "ListTimeSeriesDataPoints",
+        "Requires domainIdentifier, entityIdentifier, entityType, formName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists time series data points.",
+    ),
+    (
+        "PostLineageEvent",
+        "Requires domainIdentifier, event; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Posts a data lineage event.",
+    ),
+    (
+        "PostTimeSeriesDataPoints",
+        "Requires domainIdentifier, entityIdentifier, entityType, forms; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Posts time series data points to Amazon DataZone for the specified asset.",
+    ),
+    (
+        "PutDataExportConfiguration",
+        "Requires domainIdentifier, enableExport; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates data export configuration details.",
+    ),
+    (
+        "PutEnvironmentBlueprintConfiguration",
+        "Requires domainIdentifier, environmentBlueprintIdentifier, enabledRegions; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Writes the configuration for the specified environment blueprint in Amazon DataZone.",
+    ),
+    (
+        "QueryGraph",
+        "Requires domainIdentifier, match; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Queries entities in the graph store.",
+    ),
+    (
+        "RejectPredictions",
+        "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Rejects automatically generated business-friendly metadata for your Amazon DataZone assets.",
+    ),
+    (
+        "RejectSubscriptionRequest",
+        "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Rejects the specified subscription request.",
+    ),
+    (
+        "RemoveEntityOwner",
+        "Requires domainIdentifier, entityType, entityIdentifier, owner; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes an owner from an entity.",
+    ),
+    (
+        "RemovePolicyGrant",
+        "Requires domainIdentifier, entityType, entityIdentifier, policyType, principal; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes a policy grant.",
+    ),
+    (
+        "RevokeSubscription",
+        "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Revokes a specified subscription in Amazon DataZone.",
+    ),
+    (
+        "Search",
+        "Requires domainIdentifier, searchScope; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Searches for assets in Amazon DataZone.",
+    ),
+    (
+        "SearchGroupProfiles",
+        "Requires domainIdentifier, groupType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Searches group profiles in Amazon DataZone.",
+    ),
+    (
+        "SearchListings",
+        "Requires domainIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Searches listings in Amazon DataZone.",
+    ),
+    (
+        "SearchTypes",
+        "Requires domainIdentifier, searchScope, managed; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Searches for types in Amazon DataZone.",
+    ),
+    (
+        "SearchUserProfiles",
+        "Requires domainIdentifier, userType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Searches user profiles in Amazon DataZone.",
+    ),
+    (
+        "StartDataSourceRun",
+        "Requires domainIdentifier, dataSourceIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Start the run of the specified data source in Amazon DataZone.",
+    ),
+    (
+        "StartMetadataGenerationRun",
+        "Requires domainIdentifier, target, owningProjectIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts the metadata generation run.",
+    ),
+    (
+        "StartNotebookExport",
+        "Requires domainIdentifier, notebookIdentifier, owningProjectIdentifier, fileFormat; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a notebook export in Amazon SageMaker Unified Studio.",
+    ),
+    (
+        "StartNotebookImport",
+        "Requires domainIdentifier, owningProjectIdentifier, sourceLocation, name; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a notebook import in Amazon SageMaker Unified Studio.",
+    ),
+    (
+        "StartNotebookRun",
+        "Requires domainIdentifier, owningProjectIdentifier, notebookIdentifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a notebook run in Amazon SageMaker Unified Studio.",
+    ),
+    (
+        "StartNotebookSync",
+        "Requires domainIdentifier, owningProjectIdentifier, sourceLocation; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts a notebook sync in Amazon SageMaker Unified Studio.",
+    ),
+    (
+        "StopNotebookRun",
+        "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Stops a running notebook run in Amazon SageMaker Unified Studio.",
+    ),
+    (
+        "TagResource",
+        "Requires resourceArn, tags; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Tags a resource in Amazon DataZone.",
+    ),
+    (
+        "UntagResource",
+        "Requires resourceArn, tagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Untags a resource in Amazon DataZone.",
+    ),
+    (
+        "UpdateAccountPool",
+        "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the account pool.",
+    ),
+    (
+        "UpdateAssetFilter",
+        "Requires domainIdentifier, assetIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates an asset filter.",
+    ),
+    (
+        "UpdateConnection",
+        "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates a connection.",
+    ),
+    (
+        "UpdateDataSource",
+        "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the specified data source in Amazon DataZone.",
+    ),
+    (
+        "UpdateDesignation",
+        "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates an existing user-created designation.",
+    ),
+    (
+        "UpdateDomain",
+        "Requires identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates a Amazon DataZone domain.",
+    ),
+    (
+        "UpdateDomainUnit",
+        "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the domain unit.",
+    ),
+    (
+        "UpdateEnvironment",
+        "Requires domainIdentifier, identifier; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the specified environment in Amazon DataZone.",
+    ),
 ];

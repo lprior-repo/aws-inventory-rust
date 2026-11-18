@@ -1,5 +1,8 @@
 use super::{BinaryStore, ProjectionError, StoreError};
-use sqlx::{Connection, SqliteConnection, sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteLockingMode, SqliteSynchronous}};
+use sqlx::{
+    Connection, SqliteConnection,
+    sqlite::{SqliteConnectOptions, SqliteJournalMode, SqliteLockingMode, SqliteSynchronous},
+};
 use std::time::Duration;
 
 /// A separate SQLite file owns delivery, never the inventory writer transaction.
@@ -13,7 +16,9 @@ pub(super) struct DeliveryOwnership {
 }
 
 impl DeliveryOwnership {
-    pub(super) fn generation(&self) -> i64 { self.generation }
+    pub(super) fn generation(&self) -> i64 {
+        self.generation
+    }
 
     pub(super) async fn release(self) -> Result<(), ProjectionError> {
         self.connection.close().await.map_err(StoreError::from)?;
@@ -39,15 +44,22 @@ pub(super) async fn acquire(store: &BinaryStore) -> Result<DeliveryOwnership, Pr
         .journal_mode(SqliteJournalMode::Delete)
         .synchronous(SqliteSynchronous::Full)
         .locking_mode(SqliteLockingMode::Exclusive);
-    let mut connection = SqliteConnection::connect_with(&options).await.map_err(delivery_error)?;
+    let mut connection = SqliteConnection::connect_with(&options)
+        .await
+        .map_err(delivery_error)?;
     let generation = allocate(&mut connection).await.map_err(delivery_error)?;
-    Ok(DeliveryOwnership { connection, generation })
+    Ok(DeliveryOwnership {
+        connection,
+        generation,
+    })
 }
 
 async fn allocate(connection: &mut SqliteConnection) -> Result<i64, sqlx::Error> {
     // Commit before any Redis request, even if its caller subsequently cancels.
     // EXCLUSIVE locking_mode retains ownership continuously across this commit.
-    sqlx::query("BEGIN EXCLUSIVE").execute(&mut *connection).await?;
+    sqlx::query("BEGIN EXCLUSIVE")
+        .execute(&mut *connection)
+        .await?;
     sqlx::query("CREATE TABLE IF NOT EXISTS delivery_generation (id INTEGER PRIMARY KEY CHECK(id=1), generation INTEGER NOT NULL CHECK(generation>0)) STRICT")
         .execute(&mut *connection).await?;
     let generation = sqlx::query_scalar("INSERT INTO delivery_generation(id,generation) VALUES(1,1) ON CONFLICT(id) DO UPDATE SET generation=generation+1 RETURNING generation")
@@ -57,11 +69,15 @@ async fn allocate(connection: &mut SqliteConnection) -> Result<i64, sqlx::Error>
 }
 
 fn delivery_error(error: sqlx::Error) -> ProjectionError {
-    if is_busy(&error) { ProjectionError::DeliveryBusy } else { StoreError::from(error).into() }
+    if is_busy(&error) {
+        ProjectionError::DeliveryBusy
+    } else {
+        StoreError::from(error).into()
+    }
 }
 
 fn is_busy(error: &sqlx::Error) -> bool {
-    error.as_database_error().is_some_and(|error| {
-        matches!(error.code().as_deref(), Some("5" | "6"))
-    })
+    error
+        .as_database_error()
+        .is_some_and(|error| matches!(error.code().as_deref(), Some("5" | "6")))
 }

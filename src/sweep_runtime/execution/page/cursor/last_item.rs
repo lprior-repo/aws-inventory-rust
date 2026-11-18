@@ -11,6 +11,8 @@ pub(super) fn select<'a>(
             .iter()?
             .try_fold(None, |_, item| item.map(Some))
             .map_err(SweepError::from),
-        _ => Err(SweepError::Operation("pagination last-item selector requires a list")),
+        _ => Err(SweepError::Operation(
+            "pagination last-item selector requires a list",
+        )),
     }
 }

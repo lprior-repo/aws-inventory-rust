@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/schemas/service/2019-12-02/schemas-2019-12-02.json
-use super::super::construction::{Inventory, ResourceIdentity, Input};
+use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 
 pub(super) const CALLS: &[Inventory] = &[
@@ -29,7 +29,11 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Arn("SchemaArn"),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
-        input: &[Input::Parent("RegistryName", "ListRegistries", "RegistryName")],
+        input: &[Input::Parent(
+            "RegistryName",
+            "ListRegistries",
+            "RegistryName",
+        )],
         tags: Some("Tags"),
         queryable: &[],
     },

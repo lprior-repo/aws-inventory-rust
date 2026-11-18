@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/qconnect/service/2020-10-19/qconnect-2020-10-19.json
-use super::super::construction::{Inventory, ResourceIdentity, Input};
+use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 
 pub(super) const CALLS: &[Inventory] = &[
@@ -29,8 +29,15 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Arn("assistantAssociationArn"),
         token: Some(("nextToken", "nextToken")),
         scope: Scope::Region,
-        input: &[Input::Parent("assistantId", "ListAssistants", "assistantId")],
+        input: &[Input::Parent(
+            "assistantId",
+            "ListAssistants",
+            "assistantId",
+        )],
         tags: Some("tags"),
-        queryable: &["assistantArn", "associationData.knowledgeBaseAssociation.knowledgeBaseArn"],
+        queryable: &[
+            "assistantArn",
+            "associationData.knowledgeBaseAssociation.knowledgeBaseArn",
+        ],
     },
 ];

@@ -1,28 +1,103 @@
 // Explicit dispositions from .local/aws-models/models/devops-agent/service/2026-01-01/devops-agent-2026-01-01.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
-    ("ListChats", "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves a paginated list of the user's recent chat executions"),
-    ("ListExecutions", "Requires agentSpaceId, taskId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: List executions"),
-    ("ListGoals", "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists goals in the specified agent space with optional filtering"),
-    ("ListJournalRecords", "Requires agentSpaceId, executionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: List journal records for a specific execution"),
-    ("ListPendingMessages", "Requires agentSpaceId, executionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: List pending messages for a specific execution."),
-    ("ListRecommendations", "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists recommendations for the specified agent space"),
-    ("ListTagsForResource", "Requires resourceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists tags for the specified AWS DevOps Agent resource."),
-    ("ListTriggers", "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists Triggers in the specified agent space"),
-    ("ListWebhooks", "Requires agentSpaceId, associationId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: List all webhooks for given Association"),
-    ("RegisterService", "Requires service, serviceDetails; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: This operation registers the specified service"),
-    ("SendMessage", "Requires agentSpaceId, executionId, content; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Sends a chat message and streams the response for the specified agent space execution"),
-    ("TagResource", "Requires resourceArn, tags; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds or overwrites tags for the specified AWS DevOps Agent resource."),
-    ("UntagResource", "Requires resourceArn, tagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes tags from the specified AWS DevOps Agent resource."),
-    ("UpdateAgentSpace", "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the information of an existing AgentSpace."),
-    ("UpdateApprovalAction", "Requires agentSpaceId, approvalId, action; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates an approval request with the terminal decision (APPROVED or REJECTED)."),
-    ("UpdateAsset", "Requires agentSpaceId, assetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates an asset in the specified agent space"),
-    ("UpdateAssetFile", "Requires agentSpaceId, assetId, path; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates a file in an asset"),
-    ("UpdateAssociation", "Requires agentSpaceId, associationId, configuration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Partially updates the configuration of an existing service association for an AgentSpace."),
-    ("UpdateBacklogTask", "Requires agentSpaceId, taskId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Update an existing backlog task."),
-    ("UpdateGoal", "Requires agentSpaceId, goalId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Update an existing goal"),
-    ("UpdateOperatorAppIdpConfig", "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Update the external Identity Provider configuration for the Operator App"),
-    ("UpdatePrivateConnectionCertificate", "Requires name, certificate; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the certificate associated with a Private Connection."),
-    ("UpdateRecommendation", "Requires agentSpaceId, recommendationId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates an existing recommendation with new content, status, or metadata"),
-    ("UpdateTrigger", "Requires agentSpaceId, triggerId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the status of an existing Trigger"),
-    ("ValidateAwsAssociations", "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Validates an aws association and set status and returns a 204 No Content response on success."),
+    (
+        "ListChats",
+        "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves a paginated list of the user's recent chat executions",
+    ),
+    (
+        "ListExecutions",
+        "Requires agentSpaceId, taskId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: List executions",
+    ),
+    (
+        "ListGoals",
+        "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists goals in the specified agent space with optional filtering",
+    ),
+    (
+        "ListJournalRecords",
+        "Requires agentSpaceId, executionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: List journal records for a specific execution",
+    ),
+    (
+        "ListPendingMessages",
+        "Requires agentSpaceId, executionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: List pending messages for a specific execution.",
+    ),
+    (
+        "ListRecommendations",
+        "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists recommendations for the specified agent space",
+    ),
+    (
+        "ListTagsForResource",
+        "Requires resourceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists tags for the specified AWS DevOps Agent resource.",
+    ),
+    (
+        "ListTriggers",
+        "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists Triggers in the specified agent space",
+    ),
+    (
+        "ListWebhooks",
+        "Requires agentSpaceId, associationId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: List all webhooks for given Association",
+    ),
+    (
+        "RegisterService",
+        "Requires service, serviceDetails; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: This operation registers the specified service",
+    ),
+    (
+        "SendMessage",
+        "Requires agentSpaceId, executionId, content; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Sends a chat message and streams the response for the specified agent space execution",
+    ),
+    (
+        "TagResource",
+        "Requires resourceArn, tags; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds or overwrites tags for the specified AWS DevOps Agent resource.",
+    ),
+    (
+        "UntagResource",
+        "Requires resourceArn, tagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes tags from the specified AWS DevOps Agent resource.",
+    ),
+    (
+        "UpdateAgentSpace",
+        "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the information of an existing AgentSpace.",
+    ),
+    (
+        "UpdateApprovalAction",
+        "Requires agentSpaceId, approvalId, action; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates an approval request with the terminal decision (APPROVED or REJECTED).",
+    ),
+    (
+        "UpdateAsset",
+        "Requires agentSpaceId, assetId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates an asset in the specified agent space",
+    ),
+    (
+        "UpdateAssetFile",
+        "Requires agentSpaceId, assetId, path; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates a file in an asset",
+    ),
+    (
+        "UpdateAssociation",
+        "Requires agentSpaceId, associationId, configuration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Partially updates the configuration of an existing service association for an AgentSpace.",
+    ),
+    (
+        "UpdateBacklogTask",
+        "Requires agentSpaceId, taskId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Update an existing backlog task.",
+    ),
+    (
+        "UpdateGoal",
+        "Requires agentSpaceId, goalId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Update an existing goal",
+    ),
+    (
+        "UpdateOperatorAppIdpConfig",
+        "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Update the external Identity Provider configuration for the Operator App",
+    ),
+    (
+        "UpdatePrivateConnectionCertificate",
+        "Requires name, certificate; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the certificate associated with a Private Connection.",
+    ),
+    (
+        "UpdateRecommendation",
+        "Requires agentSpaceId, recommendationId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates an existing recommendation with new content, status, or metadata",
+    ),
+    (
+        "UpdateTrigger",
+        "Requires agentSpaceId, triggerId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the status of an existing Trigger",
+    ),
+    (
+        "ValidateAwsAssociations",
+        "Requires agentSpaceId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Validates an aws association and set status and returns a 204 No Content response on success.",
+    ),
 ];

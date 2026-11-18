@@ -1,5 +1,8 @@
 use super::{CompileError, Error, Registry, encode};
-use inventory_core::{catalog::MAX_CATALOG_BYTES, record::{RecordError, Value}};
+use inventory_core::{
+    catalog::MAX_CATALOG_BYTES,
+    record::{RecordError, Value},
+};
 use std::{
     collections::BTreeSet,
     path::{Component, Path},

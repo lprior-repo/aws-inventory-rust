@@ -1,33 +1,123 @@
 // Explicit dispositions from .local/aws-models/models/devops-guru/service/2020-12-01/devops-guru-2020-12-01.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
-    ("AddNotificationChannel", "Requires Config; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds a notification channel to DevOps Guru."),
-    ("DeleteInsight", "Requires Id; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes the insight along with the associated anomalies, events and recommendations."),
-    ("DescribeAccountHealth", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns the number of open reactive insights, the number of open proactive insights, and the number of metrics analyzed in your Amazon Web Services account."),
-    ("DescribeAccountOverview", "Requires FromTime; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: For the time range passed in, returns the number of open reactive insight that were created, the number of open proactive insights that were created, and the Mean Time to Recover (MTTR) for all closed"),
-    ("DescribeAnomaly", "Requires Id; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns details about an anomaly that you specify using its ID."),
-    ("DescribeEventSourcesConfig", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns the integration status of services that are integrated with DevOps Guru as Consumer via EventBridge."),
-    ("DescribeFeedback", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns the most recent feedback submitted in the current Amazon Web Services account and Region."),
-    ("DescribeInsight", "Requires Id; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns details about an insight that you specify using its ID."),
-    ("DescribeOrganizationHealth", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns active insights, predictive insights, and resource hours analyzed in last hour."),
-    ("DescribeOrganizationOverview", "Requires FromTime; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns an overview of your organization's history based on the specified time range."),
-    ("DescribeOrganizationResourceCollectionHealth", "Requires OrganizationResourceCollectionType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides an overview of your system's health."),
-    ("DescribeResourceCollectionHealth", "Requires ResourceCollectionType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns the number of open proactive insights, open reactive insights, and the Mean Time to Recover (MTTR) for all closed insights in resource collections in your account."),
-    ("DescribeServiceIntegration", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns the integration status of services that are integrated with DevOps Guru."),
-    ("GetCostEstimation", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns an estimate of the monthly cost for DevOps Guru to analyze your Amazon Web Services resources."),
-    ("GetResourceCollection", "Requires ResourceCollectionType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns lists Amazon Web Services resources that are of the specified resource collection type."),
-    ("ListAnomaliesForInsight", "Requires InsightId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a list of the anomalies that belong to an insight that you specify using its ID."),
-    ("ListAnomalousLogGroups", "Requires InsightId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns the list of log groups that contain log anomalies."),
-    ("ListEvents", "Requires Filters; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a list of the events emitted by the resources that are evaluated by DevOps Guru."),
-    ("ListInsights", "Requires StatusFilter; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a list of insights in your Amazon Web Services account."),
-    ("ListMonitoredResources", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns the list of all log groups that are being monitored and tagged by DevOps Guru."),
-    ("ListOrganizationInsights", "Requires StatusFilter; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a list of insights associated with the account or OU Id."),
-    ("ListRecommendations", "Requires InsightId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a list of a specified insight's recommendations."),
-    ("PutFeedback", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Collects customer feedback about the specified insight."),
-    ("RemoveNotificationChannel", "Requires Id; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes a notification channel from DevOps Guru."),
-    ("SearchInsights", "Requires StartTimeRange, Type; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a list of insights in your Amazon Web Services account."),
-    ("SearchOrganizationInsights", "Requires AccountIds, StartTimeRange, Type; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a list of insights in your organization."),
-    ("StartCostEstimation", "Requires ResourceCollection; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts the creation of an estimate of the monthly cost to analyze your Amazon Web Services resources."),
-    ("UpdateEventSourcesConfig", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Enables or disables integration with a service that can be integrated with DevOps Guru."),
-    ("UpdateResourceCollection", "Requires Action, ResourceCollection; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the collection of resources that DevOps Guru analyzes."),
-    ("UpdateServiceIntegration", "Requires ServiceIntegration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Enables or disables integration with a service that can be integrated with DevOps Guru."),
+    (
+        "AddNotificationChannel",
+        "Requires Config; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds a notification channel to DevOps Guru.",
+    ),
+    (
+        "DeleteInsight",
+        "Requires Id; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes the insight along with the associated anomalies, events and recommendations.",
+    ),
+    (
+        "DescribeAccountHealth",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns the number of open reactive insights, the number of open proactive insights, and the number of metrics analyzed in your Amazon Web Services account.",
+    ),
+    (
+        "DescribeAccountOverview",
+        "Requires FromTime; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: For the time range passed in, returns the number of open reactive insight that were created, the number of open proactive insights that were created, and the Mean Time to Recover (MTTR) for all closed",
+    ),
+    (
+        "DescribeAnomaly",
+        "Requires Id; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns details about an anomaly that you specify using its ID.",
+    ),
+    (
+        "DescribeEventSourcesConfig",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns the integration status of services that are integrated with DevOps Guru as Consumer via EventBridge.",
+    ),
+    (
+        "DescribeFeedback",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns the most recent feedback submitted in the current Amazon Web Services account and Region.",
+    ),
+    (
+        "DescribeInsight",
+        "Requires Id; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns details about an insight that you specify using its ID.",
+    ),
+    (
+        "DescribeOrganizationHealth",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns active insights, predictive insights, and resource hours analyzed in last hour.",
+    ),
+    (
+        "DescribeOrganizationOverview",
+        "Requires FromTime; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns an overview of your organization's history based on the specified time range.",
+    ),
+    (
+        "DescribeOrganizationResourceCollectionHealth",
+        "Requires OrganizationResourceCollectionType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides an overview of your system's health.",
+    ),
+    (
+        "DescribeResourceCollectionHealth",
+        "Requires ResourceCollectionType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns the number of open proactive insights, open reactive insights, and the Mean Time to Recover (MTTR) for all closed insights in resource collections in your account.",
+    ),
+    (
+        "DescribeServiceIntegration",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns the integration status of services that are integrated with DevOps Guru.",
+    ),
+    (
+        "GetCostEstimation",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns an estimate of the monthly cost for DevOps Guru to analyze your Amazon Web Services resources.",
+    ),
+    (
+        "GetResourceCollection",
+        "Requires ResourceCollectionType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns lists Amazon Web Services resources that are of the specified resource collection type.",
+    ),
+    (
+        "ListAnomaliesForInsight",
+        "Requires InsightId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a list of the anomalies that belong to an insight that you specify using its ID.",
+    ),
+    (
+        "ListAnomalousLogGroups",
+        "Requires InsightId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns the list of log groups that contain log anomalies.",
+    ),
+    (
+        "ListEvents",
+        "Requires Filters; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a list of the events emitted by the resources that are evaluated by DevOps Guru.",
+    ),
+    (
+        "ListInsights",
+        "Requires StatusFilter; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a list of insights in your Amazon Web Services account.",
+    ),
+    (
+        "ListMonitoredResources",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns the list of all log groups that are being monitored and tagged by DevOps Guru.",
+    ),
+    (
+        "ListOrganizationInsights",
+        "Requires StatusFilter; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a list of insights associated with the account or OU Id.",
+    ),
+    (
+        "ListRecommendations",
+        "Requires InsightId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a list of a specified insight's recommendations.",
+    ),
+    (
+        "PutFeedback",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Collects customer feedback about the specified insight.",
+    ),
+    (
+        "RemoveNotificationChannel",
+        "Requires Id; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes a notification channel from DevOps Guru.",
+    ),
+    (
+        "SearchInsights",
+        "Requires StartTimeRange, Type; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a list of insights in your Amazon Web Services account.",
+    ),
+    (
+        "SearchOrganizationInsights",
+        "Requires AccountIds, StartTimeRange, Type; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns a list of insights in your organization.",
+    ),
+    (
+        "StartCostEstimation",
+        "Requires ResourceCollection; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Starts the creation of an estimate of the monthly cost to analyze your Amazon Web Services resources.",
+    ),
+    (
+        "UpdateEventSourcesConfig",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Enables or disables integration with a service that can be integrated with DevOps Guru.",
+    ),
+    (
+        "UpdateResourceCollection",
+        "Requires Action, ResourceCollection; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Updates the collection of resources that DevOps Guru analyzes.",
+    ),
+    (
+        "UpdateServiceIntegration",
+        "Requires ServiceIntegration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Enables or disables integration with a service that can be integrated with DevOps Guru.",
+    ),
 ];

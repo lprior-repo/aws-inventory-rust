@@ -1,5 +1,5 @@
-use super::{inventory, path, paths, bind, token};
-use crate::overlay::{OperationOverlay, NameError, Identity, Paginator, Scope};
+use super::{bind, inventory, path, paths, token};
+use crate::overlay::{Identity, NameError, OperationOverlay, Paginator, Scope};
 
 pub(super) fn describe_language_model() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
@@ -16,7 +16,12 @@ pub(super) fn describe_language_model() -> Result<OperationOverlay, NameError> {
         "UpgradeAvailability",
         "FailureReason",
     ])?;
-    bind(&mut operation, "ModelName", "ListLanguageModels", "ModelName")?;
+    bind(
+        &mut operation,
+        "ModelName",
+        "ListLanguageModels",
+        "ModelName",
+    )?;
     Ok(operation)
 }
 
@@ -27,12 +32,14 @@ pub(super) fn get_call_analytics_category() -> Result<OperationOverlay, NameErro
         Paginator::None,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "CategoryName",
-        "InputType",
-    ])?;
+    operation.queryable = paths(&["CategoryName", "InputType"])?;
     operation.tags = Some(path("Tags")?);
-    bind(&mut operation, "CategoryName", "ListCallAnalyticsCategories", "CategoryName")?;
+    bind(
+        &mut operation,
+        "CategoryName",
+        "ListCallAnalyticsCategories",
+        "CategoryName",
+    )?;
     Ok(operation)
 }
 
@@ -43,10 +50,7 @@ pub(super) fn list_call_analytics_categories() -> Result<OperationOverlay, NameE
         token("NextToken", "NextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "CategoryName",
-        "InputType",
-    ])?;
+    operation.queryable = paths(&["CategoryName", "InputType"])?;
     operation.tags = Some(path("Tags")?);
     operation.page_size = Some(100);
     Ok(operation)
@@ -133,11 +137,7 @@ pub(super) fn list_medical_vocabularies() -> Result<OperationOverlay, NameError>
         token("NextToken", "NextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "VocabularyName",
-        "LanguageCode",
-        "VocabularyState",
-    ])?;
+    operation.queryable = paths(&["VocabularyName", "LanguageCode", "VocabularyState"])?;
     operation.page_size = Some(100);
     Ok(operation)
 }
@@ -169,11 +169,7 @@ pub(super) fn list_vocabularies() -> Result<OperationOverlay, NameError> {
         token("NextToken", "NextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "VocabularyName",
-        "LanguageCode",
-        "VocabularyState",
-    ])?;
+    operation.queryable = paths(&["VocabularyName", "LanguageCode", "VocabularyState"])?;
     operation.page_size = Some(100);
     Ok(operation)
 }
@@ -185,10 +181,7 @@ pub(super) fn list_vocabulary_filters() -> Result<OperationOverlay, NameError> {
         token("NextToken", "NextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "VocabularyFilterName",
-        "LanguageCode",
-    ])?;
+    operation.queryable = paths(&["VocabularyFilterName", "LanguageCode"])?;
     operation.page_size = Some(100);
     Ok(operation)
 }

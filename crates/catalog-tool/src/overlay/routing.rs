@@ -5,8 +5,16 @@ use std::collections::BTreeMap;
 pub enum RequestRouting {
     #[default]
     Regional,
-    FixedRegion { region: String },
-    Discovered { operation: String, endpoints_path: MemberPath, address_path: MemberPath, cache_minutes_path: MemberPath, trusted_dns_suffix: String },
+    FixedRegion {
+        region: String,
+    },
+    Discovered {
+        operation: String,
+        endpoints_path: MemberPath,
+        address_path: MemberPath,
+        cache_minutes_path: MemberPath,
+        trusted_dns_suffix: String,
+    },
     S3Outposts,
     S3ExpressControl,
 }

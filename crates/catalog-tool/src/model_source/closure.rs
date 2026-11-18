@@ -59,7 +59,14 @@ struct Target {
 
 impl Shape {
     fn bound(&self) -> impl Iterator<Item = &str> {
-        let lifecycle = [&self.create, &self.put, &self.read, &self.update, &self.delete, &self.list];
+        let lifecycle = [
+            &self.create,
+            &self.put,
+            &self.read,
+            &self.update,
+            &self.delete,
+            &self.list,
+        ];
         self.operations
             .iter()
             .chain(&self.collection_operations)
@@ -84,7 +91,10 @@ pub(super) fn unbound_operations(bytes: &[u8]) -> Result<Vec<String>, serde_json
     if pending.is_empty() {
         return Ok(Vec::new());
     }
-    let namespaces = pending.iter().map(|id| namespace(id)).collect::<BTreeSet<_>>();
+    let namespaces = pending
+        .iter()
+        .map(|id| namespace(id))
+        .collect::<BTreeSet<_>>();
     let mut visited = BTreeSet::new();
     let mut bound = BTreeSet::new();
     while let Some(id) = pending.pop() {
@@ -115,7 +125,8 @@ mod tests {
     use super::unbound_operations;
 
     #[test]
-    fn foreign_operations_outside_the_service_resource_tree_are_unbound() -> Result<(), serde_json::Error> {
+    fn foreign_operations_outside_the_service_resource_tree_are_unbound()
+    -> Result<(), serde_json::Error> {
         let model = br#"{"shapes":{
             "n#Service":{"type":"service","operations":[{"target":"n#ListTags"}],"resources":[{"target":"n#Outer"}]},
             "n#Outer":{"type":"resource","list":{"target":"n#ListOuter"},"resources":[{"target":"n#Inner"}]},
@@ -131,7 +142,10 @@ mod tests {
             "n#List":{"type":"list","member":{"target":"smithy.api#String"}}
         }}"#;
 
-        assert_eq!(unbound_operations(model)?, ["other#ListTags", "other#Transform"]);
+        assert_eq!(
+            unbound_operations(model)?,
+            ["other#ListTags", "other#Transform"]
+        );
         Ok(())
     }
 

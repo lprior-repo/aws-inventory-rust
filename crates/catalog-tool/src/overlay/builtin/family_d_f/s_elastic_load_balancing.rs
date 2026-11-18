@@ -6,12 +6,24 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "elastic-load-balancing",
         vec![
-        // Describes the specified the load balancers.
-        queried(inventory("DescribeLoadBalancers", "LoadBalancerDescriptions", key(&["LoadBalancerName"])?, token("Marker", "NextMarker")?)?, &["LoadBalancerName", "DNSName", "CanonicalHostedZoneName", "CanonicalHostedZoneNameID", "VPCId"])?,
+            // Describes the specified the load balancers.
+            queried(
+                inventory(
+                    "DescribeLoadBalancers",
+                    "LoadBalancerDescriptions",
+                    key(&["LoadBalancerName"])?,
+                    token("Marker", "NextMarker")?,
+                )?,
+                &[
+                    "LoadBalancerName",
+                    "DNSName",
+                    "CanonicalHostedZoneName",
+                    "CanonicalHostedZoneNameID",
+                    "VPCId",
+                ],
+            )?,
         ],
         &[super::s_elastic_load_balancing_decisions_0::ENTRIES],
-        &[
-
-        ],
+        &[],
     )
 }

@@ -19,7 +19,9 @@ pub(super) fn read(
     };
     let item = tags::selected_item(service, operation, items)?;
     let masks = metadata::bounded(list, |value| parse(value, service, item), 64)?;
-    exclusions.with_map_keys(masks).map_err(|_| RuntimeCatalogError::Capability)
+    exclusions
+        .with_map_keys(masks)
+        .map_err(|_| RuntimeCatalogError::Capability)
 }
 
 fn parse(
@@ -55,7 +57,21 @@ fn validate_map(service: Service<'_>, target: Target) -> Result<(), RuntimeCatal
         return Err(RuntimeCatalogError::Capability);
     }
     let value = map.map_value()?.ok_or(RuntimeCatalogError::Capability)?;
-    if !matches!(tags::target_kind(service, value)?, "string" | "enum" | "intEnum" | "boolean" | "byte" | "short" | "integer" | "long" | "float" | "double" | "timestamp" | "blob") {
+    if !matches!(
+        tags::target_kind(service, value)?,
+        "string"
+            | "enum"
+            | "intEnum"
+            | "boolean"
+            | "byte"
+            | "short"
+            | "integer"
+            | "long"
+            | "float"
+            | "double"
+            | "timestamp"
+            | "blob"
+    ) {
         return Err(RuntimeCatalogError::Capability);
     }
     Ok(())

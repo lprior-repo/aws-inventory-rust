@@ -6,12 +6,18 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "devops-guru",
         vec![
-        // Returns a list of notification channels configured for DevOps Guru.
-        queried(inventory("ListNotificationChannels", "Channels", key(&["Id"])?, token("NextToken", "NextToken")?)?, &["Id"])?,
+            // Returns a list of notification channels configured for DevOps Guru.
+            queried(
+                inventory(
+                    "ListNotificationChannels",
+                    "Channels",
+                    key(&["Id"])?,
+                    token("NextToken", "NextToken")?,
+                )?,
+                &["Id"],
+            )?,
         ],
         &[super::s_devops_guru_decisions_0::ENTRIES],
-        &[
-
-        ],
+        &[],
     )
 }

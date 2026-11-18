@@ -1,22 +1,76 @@
 use crate::kind_map::ApiOnlyMapping;
 
 pub(super) const ENTRIES: &[ApiOnlyMapping<'static>] = &[
-    ApiOnlyMapping { kind: "AWS::ApiOnly::Route53OutpostResolver", reason: "Distinct API-managed Route53OutpostResolver resource identified by @Arn in route53resolver ListOutpostResolvers OutpostResolvers. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::Route53ResolverConfig", reason: "Distinct API-managed Route53ResolverConfig resource identified by Id in route53resolver ListResolverConfigs ResolverConfigs. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::S3BatchJob", reason: "Distinct API-managed S3BatchJob resource identified by JobId in s3-control ListJobs Jobs. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::S3Outpost", reason: "Distinct API-managed S3Outpost resource identified by @S3OutpostArn in s3outposts ListOutpostsWithS3 Outposts. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::S3TableMigration", reason: "Distinct API-managed S3TableMigration resource identified by migrationId in s3tables ListTableMigrations migrations. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SageMakerAIBenchmarkJob", reason: "Distinct API-managed SageMakerAIBenchmarkJob resource identified by @AIBenchmarkJobArn in sagemaker ListAIBenchmarkJobs AIBenchmarkJobs. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SageMakerAIRecommendationJob", reason: "Distinct API-managed SageMakerAIRecommendationJob resource identified by @AIRecommendationJobArn in sagemaker ListAIRecommendationJobs AIRecommendationJobs. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SageMakerAIWorkloadConfig", reason: "Distinct API-managed SageMakerAIWorkloadConfig resource identified by @AIWorkloadConfigArn in sagemaker ListAIWorkloadConfigs AIWorkloadConfigs. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SageMakerAlgorithm", reason: "Distinct API-managed SageMakerAlgorithm resource identified by @AlgorithmArn in sagemaker ListAlgorithms AlgorithmSummaryList. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SageMakerAutoMLJob", reason: "Distinct API-managed SageMakerAutoMLJob resource identified by @AutoMLJobArn in sagemaker ListAutoMLJobs AutoMLJobSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SageMakerCluster", reason: "Distinct API-managed SageMakerCluster resource identified by @ClusterArn in sagemaker ListClusters ClusterSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SageMakerCompilationJob", reason: "Distinct API-managed SageMakerCompilationJob resource identified by @CompilationJobArn in sagemaker ListCompilationJobs CompilationJobSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SageMakerEarthObservationJob", reason: "Distinct API-managed SageMakerEarthObservationJob resource identified by @Arn in sagemaker-geospatial ListEarthObservationJobs EarthObservationJobSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SageMakerEdgeDeploymentPlan", reason: "Distinct API-managed SageMakerEdgeDeploymentPlan resource identified by @EdgeDeploymentPlanArn in sagemaker ListEdgeDeploymentPlans EdgeDeploymentPlanSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SageMakerEdgePackagingJob", reason: "Distinct API-managed SageMakerEdgePackagingJob resource identified by @EdgePackagingJobArn in sagemaker ListEdgePackagingJobs EdgePackagingJobSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SageMakerExperiment", reason: "Distinct API-managed SageMakerExperiment resource identified by @ExperimentArn in sagemaker ListExperiments ExperimentSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SageMakerFlowDefinition", reason: "Distinct API-managed SageMakerFlowDefinition resource identified by @FlowDefinitionArn in sagemaker ListFlowDefinitions FlowDefinitionSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::SageMakerHub", reason: "Distinct API-managed SageMakerHub resource identified by @HubArn in sagemaker ListHubs HubSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::Route53OutpostResolver",
+        reason: "Distinct API-managed Route53OutpostResolver resource identified by @Arn in route53resolver ListOutpostResolvers OutpostResolvers. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::Route53ResolverConfig",
+        reason: "Distinct API-managed Route53ResolverConfig resource identified by Id in route53resolver ListResolverConfigs ResolverConfigs. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::S3BatchJob",
+        reason: "Distinct API-managed S3BatchJob resource identified by JobId in s3-control ListJobs Jobs. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::S3Outpost",
+        reason: "Distinct API-managed S3Outpost resource identified by @S3OutpostArn in s3outposts ListOutpostsWithS3 Outposts. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::S3TableMigration",
+        reason: "Distinct API-managed S3TableMigration resource identified by migrationId in s3tables ListTableMigrations migrations. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SageMakerAIBenchmarkJob",
+        reason: "Distinct API-managed SageMakerAIBenchmarkJob resource identified by @AIBenchmarkJobArn in sagemaker ListAIBenchmarkJobs AIBenchmarkJobs. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SageMakerAIRecommendationJob",
+        reason: "Distinct API-managed SageMakerAIRecommendationJob resource identified by @AIRecommendationJobArn in sagemaker ListAIRecommendationJobs AIRecommendationJobs. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SageMakerAIWorkloadConfig",
+        reason: "Distinct API-managed SageMakerAIWorkloadConfig resource identified by @AIWorkloadConfigArn in sagemaker ListAIWorkloadConfigs AIWorkloadConfigs. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SageMakerAlgorithm",
+        reason: "Distinct API-managed SageMakerAlgorithm resource identified by @AlgorithmArn in sagemaker ListAlgorithms AlgorithmSummaryList. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SageMakerAutoMLJob",
+        reason: "Distinct API-managed SageMakerAutoMLJob resource identified by @AutoMLJobArn in sagemaker ListAutoMLJobs AutoMLJobSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SageMakerCluster",
+        reason: "Distinct API-managed SageMakerCluster resource identified by @ClusterArn in sagemaker ListClusters ClusterSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SageMakerCompilationJob",
+        reason: "Distinct API-managed SageMakerCompilationJob resource identified by @CompilationJobArn in sagemaker ListCompilationJobs CompilationJobSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SageMakerEarthObservationJob",
+        reason: "Distinct API-managed SageMakerEarthObservationJob resource identified by @Arn in sagemaker-geospatial ListEarthObservationJobs EarthObservationJobSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SageMakerEdgeDeploymentPlan",
+        reason: "Distinct API-managed SageMakerEdgeDeploymentPlan resource identified by @EdgeDeploymentPlanArn in sagemaker ListEdgeDeploymentPlans EdgeDeploymentPlanSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SageMakerEdgePackagingJob",
+        reason: "Distinct API-managed SageMakerEdgePackagingJob resource identified by @EdgePackagingJobArn in sagemaker ListEdgePackagingJobs EdgePackagingJobSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SageMakerExperiment",
+        reason: "Distinct API-managed SageMakerExperiment resource identified by @ExperimentArn in sagemaker ListExperiments ExperimentSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SageMakerFlowDefinition",
+        reason: "Distinct API-managed SageMakerFlowDefinition resource identified by @FlowDefinitionArn in sagemaker ListFlowDefinitions FlowDefinitionSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SageMakerHub",
+        reason: "Distinct API-managed SageMakerHub resource identified by @HubArn in sagemaker ListHubs HubSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
 ];

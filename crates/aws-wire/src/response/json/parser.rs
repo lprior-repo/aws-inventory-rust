@@ -82,7 +82,13 @@ pub(super) fn decode_object(
     builder: &mut RecordBuilder,
 ) -> Result<(), DecodeError> {
     if context.body.is_empty() {
-        return crate::response::defaults::apply(builder, Some(target), &[], context.service, context.limits);
+        return crate::response::defaults::apply(
+            builder,
+            Some(target),
+            &[],
+            context.service,
+            context.limits,
+        );
     }
     let root = Object::new(Some(target), 0, MapRole::Root, context)?;
     Engine::new(context, builder, 1).run(Task::Object(root))

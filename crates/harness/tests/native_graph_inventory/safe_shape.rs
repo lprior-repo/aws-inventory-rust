@@ -6,26 +6,42 @@ use super::TestResult;
 use inventory_core::record::{Key, Value};
 
 #[derive(Clone, Copy, Debug)]
-enum Shape { Map, List, Text, Bool, Integer, Number, Timestamp }
+enum Shape {
+    Map,
+    List,
+    Text,
+    Bool,
+    Integer,
+    Number,
+    Timestamp,
+}
 
-#[path = "safe_shape/ec2.rs"]
-mod ec2;
-#[path = "safe_shape/network.rs"]
-mod network;
 #[path = "safe_shape/compute.rs"]
 mod compute;
-#[path = "safe_shape/storage.rs"]
-mod storage;
+#[path = "safe_shape/ec2.rs"]
+mod ec2;
 #[path = "safe_shape/global.rs"]
 mod global;
 #[path = "safe_shape/messaging.rs"]
 mod messaging;
+#[path = "safe_shape/network.rs"]
+mod network;
+#[path = "safe_shape/storage.rs"]
+mod storage;
 
 fn tree(kind: &str) -> TestResult<&'static [(&'static str, Shape)]> {
-    [ec2::tree(kind), network::tree(kind), compute::tree(kind),
-        storage::tree(kind), global::tree(kind), messaging::tree(kind)]
-        .into_iter().flatten().next()
-        .ok_or_else(|| format!("no independently reviewed safe member tree for {kind}").into())
+    [
+        ec2::tree(kind),
+        network::tree(kind),
+        compute::tree(kind),
+        storage::tree(kind),
+        global::tree(kind),
+        messaging::tree(kind),
+    ]
+    .into_iter()
+    .flatten()
+    .next()
+    .ok_or_else(|| format!("no independently reviewed safe member tree for {kind}").into())
 }
 
 pub(super) fn validate(kind: &str, value: &Value) -> TestResult {
@@ -33,26 +49,66 @@ pub(super) fn validate(kind: &str, value: &Value) -> TestResult {
 }
 
 fn visit(value: &Value, path: &str, tree: &[(&str, Shape)], depth: usize) -> TestResult {
-    if depth > 32 { return Err("fixture safe tree nesting bound exceeded".into()); }
-    let shape = tree.iter().find(|(candidate, _)| *candidate == path).map(|(_, shape)| *shape)
+    if depth > 32 {
+        return Err("fixture safe tree nesting bound exceeded".into());
+    }
+    let shape = tree
+        .iter()
+        .find(|(candidate, _)| *candidate == path)
+        .map(|(_, shape)| *shape)
         .ok_or_else(|| format!("unreviewed safe member {path}"))?;
     match (shape, value) {
-        (Shape::Map, Value::Map(map)) => for (key, child) in map {
-            let Key::Name(name) = key else { return Err("safe tree requires named members".into()); };
-            if matches!(name.as_str(), "SecretAccessKey" | "SecretString" | "SecretBinary" | "Password" | "PrivateKey" | "AccessToken" | "RefreshToken" | "ClientSecret" | "SessionToken" | "UnsafeSentinel") {
-                return Err(format!("forbidden safe member {name}").into());
+        (Shape::Map, Value::Map(map)) => {
+            for (key, child) in map {
+                let Key::Name(name) = key else {
+                    return Err("safe tree requires named members".into());
+                };
+                if matches!(
+                    name.as_str(),
+                    "SecretAccessKey"
+                        | "SecretString"
+                        | "SecretBinary"
+                        | "Password"
+                        | "PrivateKey"
+                        | "AccessToken"
+                        | "RefreshToken"
+                        | "ClientSecret"
+                        | "SessionToken"
+                        | "UnsafeSentinel"
+                ) {
+                    return Err(format!("forbidden safe member {name}").into());
+                }
+                let named = if path.is_empty() {
+                    name.clone()
+                } else {
+                    format!("{path}.{name}")
+                };
+                let child_path = if tree.iter().any(|(candidate, _)| *candidate == named) {
+                    named
+                } else {
+                    format!("{path}.*")
+                };
+                visit(child, &child_path, tree, depth + 1)?;
             }
-            let named = if path.is_empty() { name.clone() } else { format!("{path}.{name}") };
-            let child_path = if tree.iter().any(|(candidate, _)| *candidate == named) { named } else { format!("{path}.*") };
-            visit(child, &child_path, tree, depth + 1)?;
-        },
-        (Shape::List, Value::List(list)) => for child in list { visit(child, &format!("{path}.*"), tree, depth + 1)?; },
-        (Shape::Text, Value::Text(_)) | (Shape::Bool, Value::Bool(_)) | (Shape::Integer, Value::Int(_)) |
-        (Shape::Number, Value::Int(_) | Value::Float(_)) => {},
-        (Shape::Timestamp, Value::Text(value)) if !value.is_empty() => {},
-        (Shape::Timestamp, Value::Int(value)) if *value >= 0 => {},
-        (Shape::Timestamp, Value::Float(_)) => {},
-        _ => return Err(format!("safe member {path} violates explicit {shape:?} predicate: {value:?}").into()),
+        }
+        (Shape::List, Value::List(list)) => {
+            for child in list {
+                visit(child, &format!("{path}.*"), tree, depth + 1)?;
+            }
+        }
+        (Shape::Text, Value::Text(_))
+        | (Shape::Bool, Value::Bool(_))
+        | (Shape::Integer, Value::Int(_))
+        | (Shape::Number, Value::Int(_) | Value::Float(_)) => {}
+        (Shape::Timestamp, Value::Text(value)) if !value.is_empty() => {}
+        (Shape::Timestamp, Value::Int(value)) if *value >= 0 => {}
+        (Shape::Timestamp, Value::Float(_)) => {}
+        _ => {
+            return Err(format!(
+                "safe member {path} violates explicit {shape:?} predicate: {value:?}"
+            )
+            .into());
+        }
     }
     Ok(())
 }

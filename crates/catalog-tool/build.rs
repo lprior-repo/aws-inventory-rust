@@ -1,10 +1,22 @@
 use sha2::{Digest, Sha256};
-use std::{collections::BTreeSet, env, fs, io::Read, path::{Path, PathBuf}};
+use std::{
+    collections::BTreeSet,
+    env, fs,
+    io::Read,
+    path::{Path, PathBuf},
+};
 
 type Failure = Box<dyn std::error::Error>;
 const SOURCE_ROOTS: &[&str] = &[
-    "build.rs", "src/overlay.rs", "src/overlay", "src/kind_map.rs", "src/kind_map",
-    "src/names.rs", "src/names", "src/classes.rs", "src/classes",
+    "build.rs",
+    "src/overlay.rs",
+    "src/overlay",
+    "src/kind_map.rs",
+    "src/kind_map",
+    "src/names.rs",
+    "src/names",
+    "src/classes.rs",
+    "src/classes",
 ];
 
 fn main() -> Result<(), Failure> {
@@ -20,9 +32,13 @@ fn main() -> Result<(), Failure> {
         println!("cargo:rerun-if-changed={}", relative(&root, path)?);
     }
     let output = PathBuf::from(env::var_os("OUT_DIR").ok_or("missing build output directory")?);
-    fs::write(output.join("embedded_sources_sha256.rs"), format!(
-        "pub(crate) const EMBEDDED_SOURCES_SHA256: [u8; 32] = {:?};\n", first.0,
-    ))?;
+    fs::write(
+        output.join("embedded_sources_sha256.rs"),
+        format!(
+            "pub(crate) const EMBEDDED_SOURCES_SHA256: [u8; 32] = {:?};\n",
+            first.0,
+        ),
+    )?;
     Ok(())
 }
 
@@ -31,7 +47,9 @@ fn snapshot(root: &Path) -> Result<([u8; 32], Vec<PathBuf>), Failure> {
     for name in SOURCE_ROOTS {
         collect(&root.join(name), &mut files)?;
     }
-    let mut files = files.into_iter().map(|path| Ok((relative(root, &path)?, path)))
+    let mut files = files
+        .into_iter()
+        .map(|path| Ok((relative(root, &path)?, path)))
         .collect::<Result<Vec<_>, Failure>>()?;
     files.sort_by(|left, right| left.0.cmp(&right.0));
     let mut hash = Sha256::new();
@@ -41,7 +59,10 @@ fn snapshot(root: &Path) -> Result<([u8; 32], Vec<PathBuf>), Failure> {
         hash.update(name.as_bytes());
         hash_file(path, &mut hash)?;
     }
-    Ok((hash.finalize().into(), files.into_iter().map(|(_, path)| path).collect()))
+    Ok((
+        hash.finalize().into(),
+        files.into_iter().map(|(_, path)| path).collect(),
+    ))
 }
 
 fn collect(path: &Path, files: &mut BTreeSet<PathBuf>) -> Result<(), Failure> {
@@ -53,15 +74,26 @@ fn collect(path: &Path, files: &mut BTreeSet<PathBuf>) -> Result<(), Failure> {
     } else if kind.is_file() && path.extension().is_some_and(|extension| extension == "rs") {
         files.insert(path.to_path_buf());
     } else if kind.is_symlink() {
-        return Err(format!("embedded catalog source must not be a symlink: {}", path.display()).into());
+        return Err(format!(
+            "embedded catalog source must not be a symlink: {}",
+            path.display()
+        )
+        .into());
     }
     Ok(())
 }
 
 fn relative(root: &Path, path: &Path) -> Result<String, Failure> {
-    path.strip_prefix(root)?.components().map(|component| {
-        component.as_os_str().to_str().ok_or_else(|| "non-UTF-8 embedded source path".into())
-    }).collect::<Result<Vec<_>, Failure>>().map(|parts| parts.join("/"))
+    path.strip_prefix(root)?
+        .components()
+        .map(|component| {
+            component
+                .as_os_str()
+                .to_str()
+                .ok_or_else(|| "non-UTF-8 embedded source path".into())
+        })
+        .collect::<Result<Vec<_>, Failure>>()
+        .map(|parts| parts.join("/"))
 }
 
 fn hash_file(path: &Path, hash: &mut Sha256) -> Result<(), Failure> {
@@ -75,9 +107,15 @@ fn hash_file(path: &Path, hash: &mut Sha256) -> Result<(), Failure> {
         if read == 0 {
             break;
         }
-        total = total.checked_add(u64::try_from(read)?).filter(|total| *total <= length)
+        total = total
+            .checked_add(u64::try_from(read)?)
+            .filter(|total| *total <= length)
             .ok_or("embedded source changed during capture")?;
-        hash.update(buffer.get(..read).ok_or("invalid embedded source read length")?);
+        hash.update(
+            buffer
+                .get(..read)
+                .ok_or("invalid embedded source read length")?,
+        );
     }
     if total != length {
         return Err("embedded source changed during capture".into());

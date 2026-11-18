@@ -1,30 +1,72 @@
 use crate::classes::{DenyList, DenyReason};
-use crate::overlay::{self, Binding, Identity, IdentityField, ItemSelector, MemberPath, OperationName,
-    OperationOverlay, OverlayClass, Paginator, Scope, ServiceOverlay, TokenPair};
+use crate::overlay::{
+    self, Binding, Identity, IdentityField, ItemSelector, MemberPath, OperationName,
+    OperationOverlay, OverlayClass, Paginator, Scope, ServiceOverlay, TokenPair,
+};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 include!("test_model.rs");
 
 const SERVICES: &[(&str, usize)] = &[
-    ("data-pipeline", 19), ("database-migration-service", 119), ("databrew", 44),
-    ("dataexchange", 37), ("datasync", 53), ("datazone", 195), ("dax", 21),
-    ("deadline", 127), ("detective", 29), ("device-farm", 77), ("devops-agent", 63),
-    ("devops-guru", 31), ("direct-connect", 73), ("directory-service-data", 17),
-    ("directory-service", 80), ("dlm", 8), ("docdb-elastic", 19), ("docdb", 56),
-    ("drs", 70), ("dsql", 16), ("dynamodb-streams", 4), ("ebs", 6),
-    ("ec2-instance-connect", 2), ("ecr-public", 23), ("ecr", 62), ("efs", 31),
-    ("eks-auth", 1), ("elastic-beanstalk", 47), ("elastic-load-balancing", 29),
-    ("elasticache", 77), ("elasticsearch-service", 52), ("elementalinference", 24),
-    ("emr-containers", 25), ("emr-serverless", 22), ("emr", 65), ("endusermessaging", 27),
-    ("entityresolution", 38), ("eventbridge", 57), ("eventbridgev2", 25), ("evs", 24),
-    ("firehose", 12), ("fis", 26), ("fms", 42), ("forecast", 63), ("forecastquery", 2),
-    ("frauddetector", 73), ("freetier", 5), ("fsx", 48),
+    ("data-pipeline", 19),
+    ("database-migration-service", 119),
+    ("databrew", 44),
+    ("dataexchange", 37),
+    ("datasync", 53),
+    ("datazone", 195),
+    ("dax", 21),
+    ("deadline", 127),
+    ("detective", 29),
+    ("device-farm", 77),
+    ("devops-agent", 63),
+    ("devops-guru", 31),
+    ("direct-connect", 73),
+    ("directory-service-data", 17),
+    ("directory-service", 80),
+    ("dlm", 8),
+    ("docdb-elastic", 19),
+    ("docdb", 56),
+    ("drs", 70),
+    ("dsql", 16),
+    ("dynamodb-streams", 4),
+    ("ebs", 6),
+    ("ec2-instance-connect", 2),
+    ("ecr-public", 23),
+    ("ecr", 62),
+    ("efs", 31),
+    ("eks-auth", 1),
+    ("elastic-beanstalk", 47),
+    ("elastic-load-balancing", 29),
+    ("elasticache", 77),
+    ("elasticsearch-service", 52),
+    ("elementalinference", 24),
+    ("emr-containers", 25),
+    ("emr-serverless", 22),
+    ("emr", 65),
+    ("endusermessaging", 27),
+    ("entityresolution", 38),
+    ("eventbridge", 57),
+    ("eventbridgev2", 25),
+    ("evs", 24),
+    ("firehose", 12),
+    ("fis", 26),
+    ("fms", 42),
+    ("forecast", 63),
+    ("forecastquery", 2),
+    ("frauddetector", 73),
+    ("freetier", 5),
+    ("fsx", 48),
 ];
 
-fn operation<'a>(policies: &'a [ServiceOverlay], service: &str, name: &str)
-    -> Result<&'a OperationOverlay, Box<dyn std::error::Error>> {
-    policies.iter().find(|policy| policy.service() == service)
+fn operation<'a>(
+    policies: &'a [ServiceOverlay],
+    service: &str,
+    name: &str,
+) -> Result<&'a OperationOverlay, Box<dyn std::error::Error>> {
+    policies
+        .iter()
+        .find(|policy| policy.service() == service)
         .and_then(|policy| policy.operations().get(&OperationName::new(name).ok()?))
         .ok_or_else(|| format!("missing policy {service}/{name}").into())
 }
@@ -37,7 +79,10 @@ fn public_registry_dispositions_cover_every_pinned_d_f_service_and_operation() -
     let mut callable = 0;
     // When consumers read the public embedded registry.
     for (service, expected_count) in SERVICES {
-        let policy = policies.iter().find(|p| p.service() == *service).ok_or(*service)?;
+        let policy = policies
+            .iter()
+            .find(|p| p.service() == *service)
+            .ok_or(*service)?;
         assert_eq!(policy.operations().len(), *expected_count, "{service}");
         total += policy.operations().len();
         // Then every operation has an explicit disposition, never inferred read-name approval.
@@ -83,13 +128,37 @@ fn whole_response_credentials_content_and_paid_workloads_never_become_callable()
         ("firehose", "DescribeDeliveryStream", DenyReason::Secret),
         ("ecr", "BatchGetImage", DenyReason::Content),
         ("eks-auth", "AssumeRoleForPodIdentity", DenyReason::Secret),
-        ("directory-service", "DescribeDirectories", DenyReason::Secret),
+        (
+            "directory-service",
+            "DescribeDirectories",
+            DenyReason::Secret,
+        ),
         ("docdb", "DescribeDBInstances", DenyReason::Secret),
-        ("database-migration-service", "DescribeCertificates", DenyReason::Secret),
-        ("database-migration-service", "DescribeEndpoints", DenyReason::Secret),
-        ("database-migration-service", "DescribeReplicationTasks", DenyReason::Content),
-        ("database-migration-service", "DescribeReplicationConfigs", DenyReason::Content),
-        ("database-migration-service", "DescribeReplicationInstances", DenyReason::Content),
+        (
+            "database-migration-service",
+            "DescribeCertificates",
+            DenyReason::Secret,
+        ),
+        (
+            "database-migration-service",
+            "DescribeEndpoints",
+            DenyReason::Secret,
+        ),
+        (
+            "database-migration-service",
+            "DescribeReplicationTasks",
+            DenyReason::Content,
+        ),
+        (
+            "database-migration-service",
+            "DescribeReplicationConfigs",
+            DenyReason::Content,
+        ),
+        (
+            "database-migration-service",
+            "DescribeReplicationInstances",
+            DenyReason::Content,
+        ),
         ("databrew", "ListDatasets", DenyReason::Content),
         ("dataexchange", "ListJobs", DenyReason::Secret),
         ("dataexchange", "ListRevisionAssets", DenyReason::Secret),
@@ -98,15 +167,27 @@ fn whole_response_credentials_content_and_paid_workloads_never_become_callable()
         ("dynamodb-streams", "GetRecords", DenyReason::Content),
         ("forecastquery", "QueryForecast", DenyReason::Paid),
         ("frauddetector", "GetEventPrediction", DenyReason::Paid),
-        ("ec2-instance-connect", "SendSSHPublicKey", DenyReason::Mutating),
-        ("direct-connect", "DescribeVirtualInterfaces", DenyReason::Secret),
+        (
+            "ec2-instance-connect",
+            "SendSSHPublicKey",
+            DenyReason::Mutating,
+        ),
+        (
+            "direct-connect",
+            "DescribeVirtualInterfaces",
+            DenyReason::Secret,
+        ),
         ("emr-containers", "ListJobTemplates", DenyReason::Content),
         ("frauddetector", "GetExternalModels", DenyReason::Content),
     ];
     // When resolving those APIs, then projected metadata never disguises the whole call as safe.
     for (service, name, reason) in cases {
         let plan = operation(&policies, service, name)?;
-        assert_eq!(plan.class, Some(OverlayClass::Deny(reason)), "{service}/{name}");
+        assert_eq!(
+            plan.class,
+            Some(OverlayClass::Deny(reason)),
+            "{service}/{name}"
+        );
         assert_eq!(plan.items, None);
         assert_eq!(plan.identity, None);
         assert_eq!(plan.paginator, None);
@@ -120,22 +201,50 @@ fn descendants_preserve_parent_context_in_the_selected_resource_identity() -> Te
     // Given identifiers whose uniqueness is limited to the parent resource.
     let policies = overlay::embedded()?;
     let cases = [
-        ("ecr", "DescribeImages", vec!["registryId", "repositoryName", "imageDigest"]),
-        ("ecr-public", "DescribeImages", vec!["registryId", "repositoryName", "imageDigest"]),
+        (
+            "ecr",
+            "DescribeImages",
+            vec!["registryId", "repositoryName", "imageDigest"],
+        ),
+        (
+            "ecr-public",
+            "DescribeImages",
+            vec!["registryId", "repositoryName", "imageDigest"],
+        ),
         ("datazone", "ListProjects", vec!["domainId", "id"]),
-        ("emr", "ListStudioSessionMappings", vec!["StudioId", "IdentityType", "IdentityId"]),
+        (
+            "emr",
+            "ListStudioSessionMappings",
+            vec!["StudioId", "IdentityType", "IdentityId"],
+        ),
     ];
     // When policies choose selected-item keys, then sibling resources cannot alias by bare name/id.
     for (service, name, members) in cases {
-        let expected = members.into_iter().map(MemberPath::new).collect::<Result<Vec<_>, _>>()?;
-        assert_eq!(operation(&policies, service, name)?.identity, Some(Identity::Key(expected)));
+        let expected = members
+            .into_iter()
+            .map(MemberPath::new)
+            .collect::<Result<Vec<_>, _>>()?;
+        assert_eq!(
+            operation(&policies, service, name)?.identity,
+            Some(Identity::Key(expected))
+        );
     }
-    assert_eq!(operation(&policies, "deadline", "ListQueues")?.identity, Some(Identity::CorrelatedKey(vec![
-        IdentityField::Request(MemberPath::new("farmId")?),
-        IdentityField::Selected(MemberPath::new("queueId")?),
-    ])));
-    assert_eq!(operation(&policies, "ecr", "DescribeImages")?.bind.get(&MemberPath::new("repositoryName")?),
-        Some(&Binding::From { operation: OperationName::new("DescribeRepositories")?, path: MemberPath::new("repositoryName")? }));
+    assert_eq!(
+        operation(&policies, "deadline", "ListQueues")?.identity,
+        Some(Identity::CorrelatedKey(vec![
+            IdentityField::Request(MemberPath::new("farmId")?),
+            IdentityField::Selected(MemberPath::new("queueId")?),
+        ]))
+    );
+    assert_eq!(
+        operation(&policies, "ecr", "DescribeImages")?
+            .bind
+            .get(&MemberPath::new("repositoryName")?),
+        Some(&Binding::From {
+            operation: OperationName::new("DescribeRepositories")?,
+            path: MemberPath::new("repositoryName")?
+        })
+    );
     Ok(())
 }
 
@@ -145,43 +254,93 @@ fn pagination_keeps_actual_cursor_names_and_truncation_signal() -> TestResult {
     let policies = overlay::embedded()?;
     let cases = [
         ("efs", "DescribeFileSystems", "Marker", "NextMarker"),
-        ("dynamodb-streams", "ListStreams", "ExclusiveStartStreamArn", "LastEvaluatedStreamArn"),
-        ("database-migration-service", "DescribeDataProviders", "Marker", "Marker"),
+        (
+            "dynamodb-streams",
+            "ListStreams",
+            "ExclusiveStartStreamArn",
+            "LastEvaluatedStreamArn",
+        ),
+        (
+            "database-migration-service",
+            "DescribeDataProviders",
+            "Marker",
+            "Marker",
+        ),
         ("ecr", "DescribeImages", "nextToken", "nextToken"),
     ];
     // When executing collection descriptors, then continuation never silently stops after the first page.
     for (service, name, input, output) in cases {
-        assert_eq!(operation(&policies, service, name)?.paginator, Some(Paginator::Token(TokenPair {
-            input: MemberPath::new(input)?, output: MemberPath::new(output)?, optional: false,
-        })));
+        assert_eq!(
+            operation(&policies, service, name)?.paginator,
+            Some(Paginator::Token(TokenPair {
+                input: MemberPath::new(input)?,
+                output: MemberPath::new(output)?,
+                optional: false,
+            }))
+        );
     }
-    assert_eq!(operation(&policies, "data-pipeline", "ListPipelines")?.paginator,
-        Some(Paginator::Tokens { pairs: vec![TokenPair { input: MemberPath::new("marker")?,
-            output: MemberPath::new("marker")?, optional: false }],
-            truncated: Some(MemberPath::new("hasMoreResults")?) }));
+    assert_eq!(
+        operation(&policies, "data-pipeline", "ListPipelines")?.paginator,
+        Some(Paginator::Tokens {
+            pairs: vec![TokenPair {
+                input: MemberPath::new("marker")?,
+                output: MemberPath::new("marker")?,
+                optional: false
+            }],
+            truncated: Some(MemberPath::new("hasMoreResults")?)
+        })
+    );
     Ok(())
 }
 
 #[test]
-fn unsupported_last_element_cursor_and_parent_identity_are_explicit_not_fake_collection() -> TestResult {
+fn unsupported_last_element_cursor_and_parent_identity_are_explicit_not_fake_collection()
+-> TestResult {
     // Given runtime paths cannot extract a list's last element or join bound inputs into identity.
     let policies = overlay::embedded()?;
     // When these operations are resolved, then they remain noncallable with exact capability evidence.
     for (service, name, evidence) in [
         ("deadline", "ListWorkers", "credentials"),
-        ("efs", "DescribeMountTargetSecurityGroups", "bound request parent"),
+        (
+            "efs",
+            "DescribeMountTargetSecurityGroups",
+            "bound request parent",
+        ),
         ("eventbridge", "ListTargetsByRule", "bound input"),
         ("dax", "DescribeParameters", "parent-input identity"),
     ] {
         let plan = operation(&policies, service, name)?;
         assert_eq!(plan.class, Some(OverlayClass::Defer));
-        assert!(plan.defer_reason.as_deref().ok_or("missing evidence")?.contains(evidence), "{service}/{name}");
+        assert!(
+            plan.defer_reason
+                .as_deref()
+                .ok_or("missing evidence")?
+                .contains(evidence),
+            "{service}/{name}"
+        );
         assert_eq!(plan.identity, None);
     }
-    assert_eq!(operation(&policies, "ecr-public", "DescribeImages")?.scope, Some(Scope::Account));
-    assert_eq!(operation(&policies, "ecr", "DescribeImages")?.scope, Some(Scope::Region));
-    assert_eq!(operation(&policies, "elasticache", "DescribeGlobalReplicationGroups")?.scope, Some(Scope::Account));
-    assert_eq!(operation(&policies, "direct-connect", "DescribeDirectConnectGatewayAttachments")?.scope, Some(Scope::Account));
+    assert_eq!(
+        operation(&policies, "ecr-public", "DescribeImages")?.scope,
+        Some(Scope::Account)
+    );
+    assert_eq!(
+        operation(&policies, "ecr", "DescribeImages")?.scope,
+        Some(Scope::Region)
+    );
+    assert_eq!(
+        operation(&policies, "elasticache", "DescribeGlobalReplicationGroups")?.scope,
+        Some(Scope::Account)
+    );
+    assert_eq!(
+        operation(
+            &policies,
+            "direct-connect",
+            "DescribeDirectConnectGatewayAttachments"
+        )?
+        .scope,
+        Some(Scope::Account)
+    );
     Ok(())
 }
 
@@ -194,32 +353,72 @@ fn public_checker_accepts_the_real_ecr_parent_and_composite_image_plan() -> Test
     std::fs::write(models.join("ecr.json"), ECR_MODEL)?;
     let embedded = overlay::embedded()?;
     let names = ["DescribeRepositories", "DescribeImages"];
-    let selected = names.into_iter().map(|name| Ok((name, operation(&embedded, "ecr", name)?.clone())))
+    let selected = names
+        .into_iter()
+        .map(|name| Ok((name, operation(&embedded, "ecr", name)?.clone())))
         .collect::<Result<Vec<_>, Box<dyn std::error::Error>>>()?;
     let policy = ServiceOverlay::new("ecr", selected)?;
     // When the public model checker validates the actual policies, not hand-authored substitute policies.
     let checked = overlay::check_policies(root.path(), &[policy], &DenyList::builtin())?;
-    let service = checked.services().first().ok_or("missing checked service")?;
+    let service = checked
+        .services()
+        .first()
+        .ok_or("missing checked service")?;
     // Then both root and expanded APIs are callable, with the real composite identity preserved.
     assert_eq!(service.callable().len(), 2);
-    let images = service.callable().iter().find(|operation| operation.operation() == "DescribeImages")
+    let images = service
+        .callable()
+        .iter()
+        .find(|operation| operation.operation() == "DescribeImages")
         .ok_or("missing image plan")?;
     assert_eq!(images.class(), overlay::EffectiveClass::Expand);
-    assert_eq!(images.plan().identity, Some(Identity::Key(vec![MemberPath::new("registryId")?,
-        MemberPath::new("repositoryName")?, MemberPath::new("imageDigest")?])));
-    assert_eq!(images.plan().items, Some(ItemSelector::Member(MemberPath::new("imageDetails")?)));
+    assert_eq!(
+        images.plan().identity,
+        Some(Identity::Key(vec![
+            MemberPath::new("registryId")?,
+            MemberPath::new("repositoryName")?,
+            MemberPath::new("imageDigest")?
+        ]))
+    );
+    assert_eq!(
+        images.plan().items,
+        Some(ItemSelector::Member(MemberPath::new("imageDetails")?))
+    );
     let status = MemberPath::new("filter.imageStatus")?;
     assert!(!images.plan().fixed.contains_key(&status));
-    assert_eq!(images.plan().branches.iter().map(|branch| (
-        branch.discriminator.as_str(),
-        branch.fixed.get(&status),
-        branch.scope,
-        branch.request_region.as_deref(),
-    )).collect::<Vec<_>>(), [
-        ("ACTIVE", Some(&overlay::FixedValue::String("ACTIVE".to_owned())), Scope::Region, None),
-        ("ARCHIVED", Some(&overlay::FixedValue::String("ARCHIVED".to_owned())), Scope::Region, None),
-        ("ACTIVATING", Some(&overlay::FixedValue::String("ACTIVATING".to_owned())), Scope::Region, None),
-    ]);
+    assert_eq!(
+        images
+            .plan()
+            .branches
+            .iter()
+            .map(|branch| (
+                branch.discriminator.as_str(),
+                branch.fixed.get(&status),
+                branch.scope,
+                branch.request_region.as_deref(),
+            ))
+            .collect::<Vec<_>>(),
+        [
+            (
+                "ACTIVE",
+                Some(&overlay::FixedValue::String("ACTIVE".to_owned())),
+                Scope::Region,
+                None
+            ),
+            (
+                "ARCHIVED",
+                Some(&overlay::FixedValue::String("ARCHIVED".to_owned())),
+                Scope::Region,
+                None
+            ),
+            (
+                "ACTIVATING",
+                Some(&overlay::FixedValue::String("ACTIVATING".to_owned())),
+                Scope::Region,
+                None
+            ),
+        ]
+    );
     Ok(())
 }
 
@@ -228,13 +427,23 @@ mod descendants {
 }
 
 #[test]
-fn search_domain_roots_partition_engine_types_without_changing_canonical_identities() -> TestResult {
+fn search_domain_roots_partition_engine_types_without_changing_canonical_identities() -> TestResult
+{
     let policies = overlay::embedded()?;
     let engine = MemberPath::new("EngineType")?;
-    for (service, value) in [("elasticsearch-service", "Elasticsearch"), ("opensearch", "OpenSearch")] {
+    for (service, value) in [
+        ("elasticsearch-service", "Elasticsearch"),
+        ("opensearch", "OpenSearch"),
+    ] {
         let plan = operation(&policies, service, "ListDomainNames")?;
-        assert_eq!(plan.fixed.get(&engine), Some(&overlay::FixedValue::String(value.to_owned())));
-        assert_eq!(plan.identity, Some(Identity::Key(vec![MemberPath::new("DomainName")?])));
+        assert_eq!(
+            plan.fixed.get(&engine),
+            Some(&overlay::FixedValue::String(value.to_owned()))
+        );
+        assert_eq!(
+            plan.identity,
+            Some(Identity::Key(vec![MemberPath::new("DomainName")?]))
+        );
     }
     Ok(())
 }
@@ -243,8 +452,10 @@ fn search_domain_roots_partition_engine_types_without_changing_canonical_identit
 fn databrew_identity_uses_required_unique_names_not_optional_arns() -> TestResult {
     let policies = overlay::embedded()?;
     for name in ["ListJobs", "ListProjects", "ListRulesets", "ListSchedules"] {
-        assert_eq!(operation(&policies, "databrew", name)?.identity,
-            Some(Identity::Key(vec![MemberPath::new("Name")?])));
+        assert_eq!(
+            operation(&policies, "databrew", name)?.identity,
+            Some(Identity::Key(vec![MemberPath::new("Name")?]))
+        );
     }
     Ok(())
 }
@@ -253,19 +464,40 @@ fn databrew_identity_uses_required_unique_names_not_optional_arns() -> TestResul
 fn selected_scalar_helpers_preserve_strict_request_domains() -> TestResult {
     use super::support;
     // Given a scalar identity and a parent-selected scalar binding.
-    let entry = support::inventory("ListChildren", "names", support::key(&["$"])?,
-        Paginator::None)?;
+    let entry = support::inventory(
+        "ListChildren",
+        "names",
+        support::key(&["$"])?,
+        Paginator::None,
+    )?;
     let bound = support::bound(entry.clone(), &[("parent", "ListParents", "$")])?;
     // Then only the selected side accepts the root marker.
-    assert_eq!(bound.1.bind.get(&MemberPath::new("parent")?), Some(&Binding::From {
-        operation: OperationName::new("ListParents")?, path: MemberPath::selected("$")?,
-    }));
-    assert_eq!(support::arn("$")?, Identity::Arn(MemberPath::selected("$")?));
-    assert_eq!(support::queried(entry.clone(), &["$"])?.1.queryable,
-        vec![MemberPath::selected("$")?]);
-    let error = overlay::NameError { value: "$".to_owned() };
-    assert_eq!(support::bound(entry.clone(), &[("$", "ListParents", "$")]), Err(error.clone()));
-    assert_eq!(support::inherited(entry.clone(), "parent", "ListParents", "$"), Err(error.clone()));
+    assert_eq!(
+        bound.1.bind.get(&MemberPath::new("parent")?),
+        Some(&Binding::From {
+            operation: OperationName::new("ListParents")?,
+            path: MemberPath::selected("$")?,
+        })
+    );
+    assert_eq!(
+        support::arn("$")?,
+        Identity::Arn(MemberPath::selected("$")?)
+    );
+    assert_eq!(
+        support::queried(entry.clone(), &["$"])?.1.queryable,
+        vec![MemberPath::selected("$")?]
+    );
+    let error = overlay::NameError {
+        value: "$".to_owned(),
+    };
+    assert_eq!(
+        support::bound(entry.clone(), &[("$", "ListParents", "$")]),
+        Err(error.clone())
+    );
+    assert_eq!(
+        support::inherited(entry.clone(), "parent", "ListParents", "$"),
+        Err(error.clone())
+    );
     assert_eq!(support::fixed_integer(entry, "$", 10), Err(error.clone()));
     assert_eq!(support::correlated(&["$"], &["$"]), Err(error.clone()));
     assert_eq!(support::token("$", "nextToken"), Err(error.clone()));

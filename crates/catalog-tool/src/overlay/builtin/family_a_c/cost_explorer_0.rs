@@ -45,7 +45,10 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         // Model: Retrieves the reservation coverage for your account, which you can use to see how much of your Amazon Elastic Compute Cloud, Amazon ElastiCache, Amazon Relational Database Service, or Amazon Redshift…
         ("GetReservationCoverage", denied(DenyReason::Paid)),
         // Model: Gets recommendations for reservation purchases. These recommendations might help you to reduce your costs. Reservations provide a discounted hourly rate (up to 75%) compared to On-Demand pricing.…
-        ("GetReservationPurchaseRecommendation", denied(DenyReason::Paid)),
+        (
+            "GetReservationPurchaseRecommendation",
+            denied(DenyReason::Paid),
+        ),
     ])
 }
 
@@ -56,15 +59,24 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         // Model: Creates recommendations that help you save cost by identifying idle and underutilized Amazon EC2 instances. Recommendations are generated to either downsize or terminate instances, along with…
         ("GetRightsizingRecommendation", denied(DenyReason::Paid)),
         // Model: Retrieves the details for a Savings Plan recommendation. These details include the hourly data-points that construct the cost, coverage, and utilization charts.
-        ("GetSavingsPlanPurchaseRecommendationDetails", denied(DenyReason::Paid)),
+        (
+            "GetSavingsPlanPurchaseRecommendationDetails",
+            denied(DenyReason::Paid),
+        ),
         // Model: Retrieves the Savings Plans covered for your account. This enables you to see how much of your cost is covered by a Savings Plan. An organization’s management account can see the coverage of the…
         ("GetSavingsPlansCoverage", denied(DenyReason::Paid)),
         // Model: Retrieves the Savings Plans recommendations for your account. First use StartSavingsPlansPurchaseRecommendationGeneration to generate a new set of recommendations, and then use…
-        ("GetSavingsPlansPurchaseRecommendation", denied(DenyReason::Paid)),
+        (
+            "GetSavingsPlansPurchaseRecommendation",
+            denied(DenyReason::Paid),
+        ),
         // Model: Retrieves the Savings Plans utilization for your account across date ranges with daily or monthly granularity. Management account in an organization have access to member accounts. You can use…
         ("GetSavingsPlansUtilization", denied(DenyReason::Paid)),
         // Model: Retrieves attribute data along with aggregate utilization and savings data for a given time period. This doesn't support granular or grouped data (daily/monthly) in response. You can't retrieve data…
-        ("GetSavingsPlansUtilizationDetails", denied(DenyReason::Paid)),
+        (
+            "GetSavingsPlansUtilizationDetails",
+            denied(DenyReason::Paid),
+        ),
         // Model: Queries for available tag keys and tag values for a specified period. You can search the tag values for an arbitrary string.
         ("GetTags", denied(DenyReason::Paid)),
         // Model: Retrieves a forecast for how much Amazon Web Services predicts that you will use over the forecast time period that you select, based on your past usage.
@@ -72,15 +84,24 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         // Model: Lists the commitment purchase analyses for your account.
         ("ListCommitmentPurchaseAnalyses", denied(DenyReason::Paid)),
         // Model: Retrieves a list of your historical cost allocation tag backfill requests.
-        ("ListCostAllocationTagBackfillHistory", denied(DenyReason::Paid)),
+        (
+            "ListCostAllocationTagBackfillHistory",
+            denied(DenyReason::Paid),
+        ),
         // Model: Get a list of cost allocation tags. All inputs in the API are optional and serve as filters. By default, all cost allocation tags are returned.
         ("ListCostAllocationTags", denied(DenyReason::Paid)),
         // Model: Returns the name, Amazon Resource Name (ARN), NumberOfRules and effective dates of all cost categories defined in the account. You have the option to use EffectiveOn and SupportedResourceTypes to…
         ("ListCostCategoryDefinitions", denied(DenyReason::Paid)),
         // Model: Returns resource associations of all cost categories defined in the account. You have the option to use CostCategoryArn to get the association for a specific cost category.…
-        ("ListCostCategoryResourceAssociations", denied(DenyReason::Paid)),
+        (
+            "ListCostCategoryResourceAssociations",
+            denied(DenyReason::Paid),
+        ),
         // Model: Retrieves a list of your historical recommendation generations within the past 30 days.
-        ("ListSavingsPlansPurchaseRecommendationGeneration", denied(DenyReason::Paid)),
+        (
+            "ListSavingsPlansPurchaseRecommendationGeneration",
+            denied(DenyReason::Paid),
+        ),
         // Model: Returns a list of resource tags associated with the resource specified by the Amazon Resource Name (ARN).
         ("ListTagsForResource", denied(DenyReason::Paid)),
         // Model: Modifies the feedback property of a given cost anomaly.
@@ -90,7 +111,10 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         // Model: Request a cost allocation tag backfill. This will backfill the activation status (either active or inactive ) for all tag keys from para:BackfillFrom up to the time this request is made. You can…
         ("StartCostAllocationTagBackfill", denied(DenyReason::Paid)),
         // Model: Requests a Savings Plans recommendation generation. This enables you to calculate a fresh set of Savings Plans recommendations that takes your latest usage data and current Savings Plans inventory…
-        ("StartSavingsPlansPurchaseRecommendationGeneration", denied(DenyReason::Paid)),
+        (
+            "StartSavingsPlansPurchaseRecommendationGeneration",
+            denied(DenyReason::Paid),
+        ),
         // Model: An API operation for adding one or more tags (key-value pairs) to a resource. You can use the TagResource operation with a resource that already has tags. If you specify a new tag key for the…
         ("TagResource", denied(DenyReason::Paid)),
     ])

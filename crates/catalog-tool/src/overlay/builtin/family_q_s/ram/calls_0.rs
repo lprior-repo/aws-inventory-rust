@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/ram/service/2018-01-04/ram-2018-01-04.json
-use super::super::construction::{Inventory, ResourceIdentity, Input};
+use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 
 pub(super) const CALLS: &[Inventory] = &[

@@ -1,11 +1,11 @@
 mod codec;
 mod projection;
 
+use super::{OperationId, ServiceId};
 use crate::{
     catalog::runtime::{ContextProjectionPlan, ContextSource},
     record::{ContentHash, Exclusions, FieldId, Record, RecordError, ValueRef},
 };
-use super::{OperationId, ServiceId};
 
 pub const MAX_DISCOVERY_FRAMES: usize = 32;
 pub const MAX_DISCOVERY_CONTEXT_BYTES: usize = 1_048_576;
@@ -59,8 +59,13 @@ impl DiscoveryFrame {
     }
 
     pub fn with_branch(mut self, branch: Option<&str>) -> Result<Self, ContextError> {
-        if branch.is_some_and(|name| name.is_empty() || name.len() > 64
-            || !name.bytes().all(|byte| byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'-')) {
+        if branch.is_some_and(|name| {
+            name.is_empty()
+                || name.len() > 64
+                || !name
+                    .bytes()
+                    .all(|byte| byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'-')
+        }) {
             return Err(ContextError::Invalid);
         }
         self.branch = branch.map(Box::from);
@@ -108,7 +113,9 @@ impl DiscoveryContext {
     }
 
     pub fn discriminator(&self) -> Result<ContentHash, ContextError> {
-        codec::encode(self)?.content_hash(&Exclusions::default()).map_err(ContextError::from)
+        codec::encode(self)?
+            .content_hash(&Exclusions::default())
+            .map_err(ContextError::from)
     }
 
     pub fn value<'a>(
@@ -130,10 +137,21 @@ impl DiscoveryContext {
         projection::value(record, path)
     }
 
-    pub fn value_from_branch<'a>(&'a self, service: &str, operation: &str, branch: &str,
-        source: ContextSource, path: &[FieldId]) -> Result<Option<ValueRef<'a>>, ContextError> {
-        let Some(frame) = self.frames.iter().rev().find(|frame| frame.service.as_str() == service
-            && frame.operation.as_str() == operation && frame.branch.as_deref() == Some(branch)) else { return Ok(None); };
+    pub fn value_from_branch<'a>(
+        &'a self,
+        service: &str,
+        operation: &str,
+        branch: &str,
+        source: ContextSource,
+        path: &[FieldId],
+    ) -> Result<Option<ValueRef<'a>>, ContextError> {
+        let Some(frame) = self.frames.iter().rev().find(|frame| {
+            frame.service.as_str() == service
+                && frame.operation.as_str() == operation
+                && frame.branch.as_deref() == Some(branch)
+        }) else {
+            return Ok(None);
+        };
         let record = match source {
             ContextSource::SelectedItem => &frame.selected,
             ContextSource::Response => &frame.response,

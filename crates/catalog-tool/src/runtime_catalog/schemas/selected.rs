@@ -16,9 +16,11 @@ pub(super) fn column(
     if types.len() > 1 {
         return Err(RuntimeCatalogCompileError::Capability);
     }
-    types.first().copied().map(|scalar| {
-        encode::map([(1, Value::List(Vec::new())), (2, Value::Int(scalar))])
-    }).transpose()
+    types
+        .first()
+        .copied()
+        .map(|scalar| encode::map([(1, Value::List(Vec::new())), (2, Value::Int(scalar))]))
+        .transpose()
 }
 
 fn item_types(
@@ -26,11 +28,12 @@ fn item_types(
     checked: &CheckedOverlays,
     kind: &str,
 ) -> Result<BTreeSet<i64>, RuntimeCatalogCompileError> {
-    context.kinds.operations().iter()
+    context
+        .kinds
+        .operations()
+        .iter()
         .filter(|row| row.kind == kind)
-        .filter_map(|row| {
-            callable(checked, row).map(|call| (row.service.as_str(), call))
-        })
+        .filter_map(|row| callable(checked, row).map(|call| (row.service.as_str(), call)))
         .map(|(service, call)| item_type(context, service, call))
         .filter_map(Result::transpose)
         .collect()
@@ -40,11 +43,18 @@ fn callable<'a>(
     checked: &'a CheckedOverlays,
     row: &crate::kind_map::RuntimeOperation,
 ) -> Option<&'a CallableOperation> {
-    checked.services().iter()
+    checked
+        .services()
+        .iter()
         .find(|review| review.service() == row.service)
-        .and_then(|review| review.callable().iter()
-            .find(|call| call.operation() == row.operation && call.plan().emission == crate::overlay::Emission::EmitMetadata
-                && call.plan().tag_endpoint.is_none() && !call.plan().endpoint_discovery))
+        .and_then(|review| {
+            review.callable().iter().find(|call| {
+                call.operation() == row.operation
+                    && call.plan().emission == crate::overlay::Emission::EmitMetadata
+                    && call.plan().tag_endpoint.is_none()
+                    && !call.plan().endpoint_discovery
+            })
+        })
 }
 
 fn item_type(
@@ -54,7 +64,11 @@ fn item_type(
 ) -> Result<Option<i64>, RuntimeCatalogCompileError> {
     let service = plans::catalog_service(context.services, service_name)?;
     let operation = plans::catalog_operation(service, call.operation())?;
-    let target = crate::runtime_catalog::selection::target(service, operation.output()?, call.plan().items.as_ref())?;
+    let target = crate::runtime_catalog::selection::target(
+        service,
+        operation.output()?,
+        call.plan().items.as_ref(),
+    )?;
     scalar_code(model_path::kind(service, target)?)
 }
 

@@ -250,7 +250,14 @@ pub(super) async fn given_a_newer_projection_revision_when_old_revision_is_acked
 pub(super) async fn given_a_failed_edge_insert_when_page_commits_then_all_page_writes_rollback()
 -> TestResult {
     let (directory, store, _) = fixture().await?;
-    store.seed_work(relationship_work("rollback", "us-east-1", None, Some("beta"))?).await?;
+    store
+        .seed_work(relationship_work(
+            "rollback",
+            "us-east-1",
+            None,
+            Some("beta"),
+        )?)
+        .await?;
     let lease = store
         .claim(&SweepId::new("rollback".to_owned())?, 100, 20)
         .await?
@@ -265,15 +272,21 @@ pub(super) async fn given_a_failed_edge_insert_when_page_commits_then_all_page_w
     };
     let mut failed = page(
         lease.clone(),
-        vec![observation("thing-2", "beta")?, observation("thing-1", "alpha")?],
+        vec![
+            observation("thing-2", "beta")?,
+            observation("thing-1", "alpha")?,
+        ],
         true,
         None,
         101,
     );
     failed.edges.push(edge.clone());
-    let pool = SqlitePoolOptions::new().max_connections(1).connect_with(
-        SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite")),
-    ).await?;
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(
+            SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite")),
+        )
+        .await?;
     // Both observations and the request-origin relation are valid. Fail only at
     // the actual edge insert, after the resource/facet/typed prefix was written.
     sqlx::query("CREATE TRIGGER fail_reviewed_edge BEFORE INSERT ON edges WHEN NEW.relation='depends-on' BEGIN SELECT RAISE(ABORT,'reviewed edge storage failure'); END")
@@ -291,18 +304,36 @@ pub(super) async fn given_a_failed_edge_insert_when_page_commits_then_all_page_w
     drop(store);
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     assert_eq!(snapshot::read_durable_state(&pool).await?, before);
-    sqlx::query("DROP TRIGGER fail_reviewed_edge").execute(&pool).await?;
+    sqlx::query("DROP TRIGGER fail_reviewed_edge")
+        .execute(&pool)
+        .await?;
     let mut retry = page(
         lease,
-        vec![observation("thing-2", "beta")?, observation("thing-1", "alpha")?],
-        true, None, 101,
+        vec![
+            observation("thing-2", "beta")?,
+            observation("thing-1", "alpha")?,
+        ],
+        true,
+        None,
+        101,
     );
     retry.edges.push(edge);
-    assert_eq!(store.commit_page(retry).await?.stats, inventory_engine::inventory::ChangeStats {
-        resources_inserted: 2, edges_changed: 1, ..Default::default()
-    });
-    assert_eq!(store.projection_resource(&source).await?.map(|row| row.key), Some(source));
-    assert_eq!(store.projection_resource(&target).await?.map(|row| row.key), Some(target));
+    assert_eq!(
+        store.commit_page(retry).await?.stats,
+        inventory_engine::inventory::ChangeStats {
+            resources_inserted: 2,
+            edges_changed: 1,
+            ..Default::default()
+        }
+    );
+    assert_eq!(
+        store.projection_resource(&source).await?.map(|row| row.key),
+        Some(source)
+    );
+    assert_eq!(
+        store.projection_resource(&target).await?.map(|row| row.key),
+        Some(target)
+    );
     pool.close().await;
     Ok(())
 }
@@ -319,45 +350,120 @@ pub(super) async fn given_a_reviewed_direct_edge_when_the_target_value_changes_t
         relation: Relation::parse("depends-on")?,
         source: "model".to_owned(),
     };
-    store.seed_work(relationship_work("direct-before", "us-east-1", None, Some("beta"))?).await?;
-    let lease = store.claim(&SweepId::new("direct-before".to_owned())?, 100, 20)
-        .await?.ok_or("missing direct-edge lease")?;
+    store
+        .seed_work(relationship_work(
+            "direct-before",
+            "us-east-1",
+            None,
+            Some("beta"),
+        )?)
+        .await?;
+    let lease = store
+        .claim(&SweepId::new("direct-before".to_owned())?, 100, 20)
+        .await?
+        .ok_or("missing direct-edge lease")?;
     let mut initial = page(
         lease,
-        vec![observation("thing-2", "beta")?, observation("thing-3", "beta")?, observation("thing-1", "alpha")?],
-        true, None, 101,
+        vec![
+            observation("thing-2", "beta")?,
+            observation("thing-3", "beta")?,
+            observation("thing-1", "alpha")?,
+        ],
+        true,
+        None,
+        101,
     );
     initial.edges.push(Edge {
-        from: source.clone(), to: target.clone(),
-        relation: Relation::parse("depends-on")?, source: EdgeSource::Model,
+        from: source.clone(),
+        to: target.clone(),
+        relation: Relation::parse("depends-on")?,
+        source: EdgeSource::Model,
     });
-    assert_eq!(store.commit_page(initial).await?.stats.resources_inserted, 3);
-    assert_eq!(store.projection_edges_for(&source, None, 10).await?,
-        inventory_engine::inventory::ProjectionEdgePage { edges: vec![expected], next: None });
+    assert_eq!(
+        store.commit_page(initial).await?.stats.resources_inserted,
+        3
+    );
+    assert_eq!(
+        store.projection_edges_for(&source, None, 10).await?,
+        inventory_engine::inventory::ProjectionEdgePage {
+            edges: vec![expected],
+            next: None
+        }
+    );
 
     // Replace the same target facet, without resubmitting the source or its edge.
-    store.seed_work(relationship_work("direct-after", "us-east-1", None, Some("beta"))?).await?;
-    let lease = store.claim(&SweepId::new("direct-after".to_owned())?, 200, 20)
-        .await?.ok_or("missing target-update lease")?;
-    assert_eq!(store.commit_page(page(
-        lease, vec![observation("thing-2", "gamma")?], true, None, 201,
-    )).await?.stats.resources_changed, 1);
-    assert_eq!(store.projection_edges_for(&source, None, 10).await?,
-        inventory_engine::inventory::ProjectionEdgePage { edges: Vec::new(), next: None });
-    assert_eq!(store.projection_resource(&source).await?.map(|row| row.key), Some(source.clone()));
-    let effective = store.projection_resource(&target).await?.ok_or("updated target disappeared")?;
-    assert_eq!(effective.content_hash.as_slice(), observation("thing-2", "gamma")?.content_hash().as_bytes());
+    store
+        .seed_work(relationship_work(
+            "direct-after",
+            "us-east-1",
+            None,
+            Some("beta"),
+        )?)
+        .await?;
+    let lease = store
+        .claim(&SweepId::new("direct-after".to_owned())?, 200, 20)
+        .await?
+        .ok_or("missing target-update lease")?;
+    assert_eq!(
+        store
+            .commit_page(page(
+                lease,
+                vec![observation("thing-2", "gamma")?],
+                true,
+                None,
+                201,
+            ))
+            .await?
+            .stats
+            .resources_changed,
+        1
+    );
+    assert_eq!(
+        store.projection_edges_for(&source, None, 10).await?,
+        inventory_engine::inventory::ProjectionEdgePage {
+            edges: Vec::new(),
+            next: None
+        }
+    );
+    assert_eq!(
+        store.projection_resource(&source).await?.map(|row| row.key),
+        Some(source.clone())
+    );
+    let effective = store
+        .projection_resource(&target)
+        .await?
+        .ok_or("updated target disappeared")?;
+    assert_eq!(
+        effective.content_hash.as_slice(),
+        observation("thing-2", "gamma")?.content_hash().as_bytes()
+    );
     drop(store);
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
-    assert_eq!(reopened.projection_edges_for(&source, None, 10).await?,
-        inventory_engine::inventory::ProjectionEdgePage { edges: Vec::new(), next: None });
-    let pool = SqlitePoolOptions::new().max_connections(1).connect_with(
-        SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite")),
-    ).await?;
+    assert_eq!(
+        reopened.projection_edges_for(&source, None, 10).await?,
+        inventory_engine::inventory::ProjectionEdgePage {
+            edges: Vec::new(),
+            next: None
+        }
+    );
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(
+            SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite")),
+        )
+        .await?;
     let retained: Vec<(String, String, String, String)> = sqlx::query_as(
         "SELECT from_id,target_value,relation,source FROM unresolved_refs ORDER BY from_id,target_value,relation,source",
     ).fetch_all(&pool).await?;
-    assert_eq!(retained, vec![("thing-1".to_owned(), "beta".to_owned(), "depends-on".to_owned(), "model".to_owned())]);
+    assert_eq!(
+        retained,
+        vec![(
+            "thing-1".to_owned(),
+            "beta".to_owned(),
+            "depends-on".to_owned(),
+            "model".to_owned()
+        )]
+    );
     pool.close().await;
     Ok(())
 }
@@ -370,86 +476,165 @@ pub(super) async fn given_a_higher_priority_target_facet_when_a_direct_edge_uses
     let target = resource("thing-2")?;
     // Both authorities must be declared in the checked catalog; root bindings
     // alone do not create independent facets.
-    let branch_work = |sweep: &str, branch: &str, dependency: Option<&str>| -> TestResult<WorkSpec> {
-        use inventory_core::record::{FieldId, Key, Record, Value};
-        let mut fields = std::collections::BTreeMap::new();
-        if let Some(value) = dependency {
-            fields.insert(Key::Field(FieldId::new(3)?), Value::Text(value.to_owned()));
-        }
-        Ok(WorkSpec::new(
-            SweepId::new(sweep.to_owned())?,
-            scope("us-east-1")?.with_branch(branch.to_owned())?,
-            None,
-            Record::encode(&Value::Map(fields))?.into_bytes(),
-        )?)
-    };
-    store.seed_work(branch_work("higher-target", "detail", None)?).await?;
-    let lease = store.claim(&SweepId::new("higher-target".to_owned())?, 100, 20)
-        .await?.ok_or("missing higher-priority target lease")?;
-    assert_eq!(store.commit_page(page(
-        lease, vec![observation("thing-2", "gamma")?.with_facet_precedence(100)], true, None, 101,
-    )).await?.stats.resources_inserted, 1);
+    let branch_work =
+        |sweep: &str, branch: &str, dependency: Option<&str>| -> TestResult<WorkSpec> {
+            use inventory_core::record::{FieldId, Key, Record, Value};
+            let mut fields = std::collections::BTreeMap::new();
+            if let Some(value) = dependency {
+                fields.insert(Key::Field(FieldId::new(3)?), Value::Text(value.to_owned()));
+            }
+            Ok(WorkSpec::new(
+                SweepId::new(sweep.to_owned())?,
+                scope("us-east-1")?.with_branch(branch.to_owned())?,
+                None,
+                Record::encode(&Value::Map(fields))?.into_bytes(),
+            )?)
+        };
+    store
+        .seed_work(branch_work("higher-target", "detail", None)?)
+        .await?;
+    let lease = store
+        .claim(&SweepId::new("higher-target".to_owned())?, 100, 20)
+        .await?
+        .ok_or("missing higher-priority target lease")?;
+    assert_eq!(
+        store
+            .commit_page(page(
+                lease,
+                vec![observation("thing-2", "gamma")?.with_facet_precedence(100)],
+                true,
+                None,
+                101,
+            ))
+            .await?
+            .stats
+            .resources_inserted,
+        1
+    );
 
-    store.seed_work(branch_work("shadowed-target", "list", Some("beta"))?).await?;
-    let lease = store.claim(&SweepId::new("shadowed-target".to_owned())?, 200, 20)
-        .await?.ok_or("missing lower-priority edge lease")?;
+    store
+        .seed_work(branch_work("shadowed-target", "list", Some("beta"))?)
+        .await?;
+    let lease = store
+        .claim(&SweepId::new("shadowed-target".to_owned())?, 200, 20)
+        .await?
+        .ok_or("missing lower-priority edge lease")?;
     let mut lower = page(
-        lease, vec![observation("thing-1", "alpha")?, observation("thing-2", "beta")?, observation("thing-3", "beta")?],
-        true, None, 201,
+        lease,
+        vec![
+            observation("thing-1", "alpha")?,
+            observation("thing-2", "beta")?,
+            observation("thing-3", "beta")?,
+        ],
+        true,
+        None,
+        201,
     );
     lower.edges.push(Edge {
-        from: source.clone(), to: target.clone(),
-        relation: Relation::parse("depends-on")?, source: EdgeSource::Model,
+        from: source.clone(),
+        to: target.clone(),
+        relation: Relation::parse("depends-on")?,
+        source: EdgeSource::Model,
     });
     assert_eq!(store.commit_page(lower).await?.stats.resources_inserted, 2);
-    let effective = store.projection_resource(&target).await?.ok_or("higher-priority target disappeared")?;
+    let effective = store
+        .projection_resource(&target)
+        .await?
+        .ok_or("higher-priority target disappeared")?;
     let higher_hash = effective.content_hash;
-    let pool = SqlitePoolOptions::new().max_connections(1).connect_with(
-        SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite")),
-    ).await?;
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(
+            SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite")),
+        )
+        .await?;
     let value: String = sqlx::query_scalar("SELECT f_1 FROM thing_table WHERE id='thing-2'")
-        .fetch_one(&pool).await?;
+        .fetch_one(&pool)
+        .await?;
     assert_eq!(value, "gamma");
     let facets: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM resource_facets WHERE id='thing-2'")
-        .fetch_one(&pool).await?;
-    assert_eq!(facets, 2, "the test must retain independent detail and list facets");
+        .fetch_one(&pool)
+        .await?;
+    assert_eq!(
+        facets, 2,
+        "the test must retain independent detail and list facets"
+    );
     pool.close().await;
-    assert_eq!(store.projection_edges_for(&source, None, 10).await?,
-        inventory_engine::inventory::ProjectionEdgePage { edges: Vec::new(), next: None });
+    assert_eq!(
+        store.projection_edges_for(&source, None, 10).await?,
+        inventory_engine::inventory::ProjectionEdgePage {
+            edges: Vec::new(),
+            next: None
+        }
+    );
     drop(store);
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
-    assert_eq!(reopened.projection_edges_for(&source, None, 10).await?,
-        inventory_engine::inventory::ProjectionEdgePage { edges: Vec::new(), next: None });
-    let effective = reopened.projection_resource(&target).await?.ok_or("reopened target disappeared")?;
+    assert_eq!(
+        reopened.projection_edges_for(&source, None, 10).await?,
+        inventory_engine::inventory::ProjectionEdgePage {
+            edges: Vec::new(),
+            next: None
+        }
+    );
+    let effective = reopened
+        .projection_resource(&target)
+        .await?
+        .ok_or("reopened target disappeared")?;
     assert_eq!(effective.content_hash, higher_hash);
-    let pool = SqlitePoolOptions::new().max_connections(1).connect_with(
-        SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite")),
-    ).await?;
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(
+            SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite")),
+        )
+        .await?;
     let expected_edge = inventory_engine::inventory::ProjectionEdgeHeader {
-        from: source.clone(), to: target.clone(),
-        relation: Relation::parse("depends-on")?, source: "model".to_owned(),
+        from: source.clone(),
+        to: target.clone(),
+        relation: Relation::parse("depends-on")?,
+        source: "model".to_owned(),
     };
     for (sweep, at, expected_value, expected_edges) in [
         ("higher-miss-one", 301, "gamma", Vec::new()),
         ("higher-miss-two", 401, "beta", vec![expected_edge.clone()]),
     ] {
-        reopened.seed_work(branch_work(sweep, "detail", None)?).await?;
-        let lease = reopened.claim(&SweepId::new(sweep.to_owned())?, at - 1, 20)
-            .await?.ok_or("missing higher-priority retirement lease")?;
-        reopened.commit_page(page(lease, Vec::new(), true, None, at)).await?;
+        reopened
+            .seed_work(branch_work(sweep, "detail", None)?)
+            .await?;
+        let lease = reopened
+            .claim(&SweepId::new(sweep.to_owned())?, at - 1, 20)
+            .await?
+            .ok_or("missing higher-priority retirement lease")?;
+        reopened
+            .commit_page(page(lease, Vec::new(), true, None, at))
+            .await?;
         let value: String = sqlx::query_scalar("SELECT f_1 FROM thing_table WHERE id='thing-2'")
-            .fetch_one(&pool).await?;
+            .fetch_one(&pool)
+            .await?;
         assert_eq!(value, expected_value);
-        assert_eq!(reopened.projection_edges_for(&source, None, 10).await?,
-            inventory_engine::inventory::ProjectionEdgePage { edges: expected_edges, next: None });
+        assert_eq!(
+            reopened.projection_edges_for(&source, None, 10).await?,
+            inventory_engine::inventory::ProjectionEdgePage {
+                edges: expected_edges,
+                next: None
+            }
+        );
     }
     let facets: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM resource_facets WHERE id='thing-2'")
-        .fetch_one(&pool).await?;
-    assert_eq!(facets, 1, "retiring detail must preserve the lower list facet");
+        .fetch_one(&pool)
+        .await?;
+    assert_eq!(
+        facets, 1,
+        "retiring detail must preserve the lower list facet"
+    );
     pool.close().await;
     drop(reopened);
     let reopened = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
-    assert_eq!(reopened.projection_edges_for(&source, None, 10).await?,
-        inventory_engine::inventory::ProjectionEdgePage { edges: vec![expected_edge], next: None });
+    assert_eq!(
+        reopened.projection_edges_for(&source, None, 10).await?,
+        inventory_engine::inventory::ProjectionEdgePage {
+            edges: vec![expected_edge],
+            next: None
+        }
+    );
     Ok(())
 }

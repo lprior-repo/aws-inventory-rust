@@ -1,7 +1,11 @@
 use super::{Json, TestResult};
 use inventory_core::catalog::{Service, Target};
 
-pub(super) fn json_to_cbor(value: &Json, service: Service<'_>, output_target: Target) -> TestResult<Vec<u8>> {
+pub(super) fn json_to_cbor(
+    value: &Json,
+    service: Service<'_>,
+    output_target: Target,
+) -> TestResult<Vec<u8>> {
     let mut encoder = minicbor::Encoder::new(Vec::new());
     encode_json_with_schema(&mut encoder, value, service, Some(output_target))?;
     Ok(encoder.into_writer())
@@ -18,7 +22,11 @@ fn resolve_target_kind(service: Service<'_>, target: Target) -> TestResult<&'sta
     }
 }
 
-fn find_member_target(service: Service<'_>, structure_target: Target, member_name: &str) -> TestResult<Option<Target>> {
+fn find_member_target(
+    service: Service<'_>,
+    structure_target: Target,
+    member_name: &str,
+) -> TestResult<Option<Target>> {
     match structure_target {
         Target::Shape(index) => {
             let shape = service.shape(index)?.ok_or("modeled CBOR shape absent")?;
@@ -28,7 +36,11 @@ fn find_member_target(service: Service<'_>, structure_target: Target, member_nam
             }
             for member in shape.members().map_err(|e| format!("members error: {e}"))? {
                 let member = member.map_err(|e| format!("member error: {e}"))?;
-                if member.name().map_err(|e| format!("member name error: {e}"))? == member_name {
+                if member
+                    .name()
+                    .map_err(|e| format!("member name error: {e}"))?
+                    == member_name
+                {
                     return Ok(Some(member.target));
                 }
             }
@@ -38,10 +50,16 @@ fn find_member_target(service: Service<'_>, structure_target: Target, member_nam
     }
 }
 
-fn encode_number(encoder: &mut minicbor::Encoder<Vec<u8>>, n: &serde_json::Number, timestamp: bool) -> TestResult {
+fn encode_number(
+    encoder: &mut minicbor::Encoder<Vec<u8>>,
+    n: &serde_json::Number,
+    timestamp: bool,
+) -> TestResult {
     if timestamp {
         let tag = minicbor::data::Tag::from(minicbor::data::IanaTag::Timestamp);
-        encoder.tag(tag).map_err(|e| format!("CBOR tag error: {e}"))?;
+        encoder
+            .tag(tag)
+            .map_err(|e| format!("CBOR tag error: {e}"))?;
         if let Some(i) = n.as_i64() {
             encoder.i64(i).map_err(|e| format!("CBOR i64 error: {e}"))?;
         } else if let Some(f) = n.as_f64() {
@@ -67,14 +85,20 @@ fn encode_json_with_schema(
     service: Service<'_>,
     target: Option<Target>,
 ) -> TestResult {
-    let kind = target.map(|target| resolve_target_kind(service, target)).transpose()?;
+    let kind = target
+        .map(|target| resolve_target_kind(service, target))
+        .transpose()?;
 
     match value {
         Json::Null => {
-            encoder.null().map_err(|e| format!("CBOR null error: {e}"))?;
+            encoder
+                .null()
+                .map_err(|e| format!("CBOR null error: {e}"))?;
         }
         Json::Bool(b) => {
-            encoder.bool(*b).map_err(|e| format!("CBOR bool error: {e}"))?;
+            encoder
+                .bool(*b)
+                .map_err(|e| format!("CBOR bool error: {e}"))?;
         }
         Json::Number(n) => encode_number(encoder, n, kind == Some("timestamp"))?,
         Json::String(s) => {
@@ -83,23 +107,33 @@ fn encode_json_with_schema(
         Json::Array(arr) => {
             let element_target = match (target, kind) {
                 (Some(Target::Shape(index)), Some("list")) => {
-                    let shape = service.shape(index)?.ok_or("modeled CBOR list shape absent")?;
+                    let shape = service
+                        .shape(index)?
+                        .ok_or("modeled CBOR list shape absent")?;
                     shape.element()?
                 }
                 _ => None,
             };
 
-            encoder.array(u64::try_from(arr.len()).map_err(|_| "array length exceeds u64")?).map_err(|e| format!("CBOR array error: {e}"))?;
+            encoder
+                .array(u64::try_from(arr.len()).map_err(|_| "array length exceeds u64")?)
+                .map_err(|e| format!("CBOR array error: {e}"))?;
             for item in arr {
                 encode_json_with_schema(encoder, item, service, element_target)?;
             }
         }
         Json::Object(map) => {
-            encoder.map(u64::try_from(map.len()).map_err(|_| "map length exceeds u64")?).map_err(|e| format!("CBOR map error: {e}"))?;
+            encoder
+                .map(u64::try_from(map.len()).map_err(|_| "map length exceeds u64")?)
+                .map_err(|e| format!("CBOR map error: {e}"))?;
             for (key, val) in map {
-                encoder.str(key).map_err(|e| format!("CBOR key error: {e}"))?;
-                let member_target = target.map(|target| find_member_target(service, target, key))
-                    .transpose()?.flatten();
+                encoder
+                    .str(key)
+                    .map_err(|e| format!("CBOR key error: {e}"))?;
+                let member_target = target
+                    .map(|target| find_member_target(service, target, key))
+                    .transpose()?
+                    .flatten();
                 encode_json_with_schema(encoder, val, service, member_target)?;
             }
         }
@@ -152,7 +186,10 @@ fn decode_string_item(decoder: &mut minicbor::Decoder<'_>) -> TestResult<Json> {
     Ok(Json::String(decoder.str()?.to_owned()))
 }
 
-fn decode_rpc_field(decoder: &mut minicbor::Decoder<'_>, fields: &mut serde_json::Map<String, Json>) -> TestResult {
+fn decode_rpc_field(
+    decoder: &mut minicbor::Decoder<'_>,
+    fields: &mut serde_json::Map<String, Json>,
+) -> TestResult {
     use minicbor::data::Type;
     let name = decoder.str()?.to_owned();
     if fields.contains_key(&name) {
@@ -163,7 +200,11 @@ fn decode_rpc_field(decoder: &mut minicbor::Decoder<'_>, fields: &mut serde_json
         Type::U8 | Type::U16 | Type::U32 | Type::U64 => Json::from(decoder.u64()?),
         Type::I8 | Type::I16 | Type::I32 | Type::I64 => Json::from(decoder.i64()?),
         Type::Array | Type::ArrayIndef => decode_string_array(decoder)?,
-        _ => return Err(format!("unsupported native RPC fixture input value for field {name}").into()),
+        _ => {
+            return Err(
+                format!("unsupported native RPC fixture input value for field {name}").into(),
+            );
+        }
     };
     fields.insert(name, value);
     Ok(())

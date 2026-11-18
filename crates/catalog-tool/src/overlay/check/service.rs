@@ -57,7 +57,6 @@ fn binding_cycle_operations<'a>(
     stages::cycles(overlay, callable)
 }
 
-
 pub(super) fn violation(
     service: &str,
     operation: &str,

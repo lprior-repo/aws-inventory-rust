@@ -6,12 +6,21 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "dlm",
         vec![
-        // Gets summary information about all or the specified data lifecycle policies.
-        queried(tagged(inventory("GetLifecyclePolicies", "Policies", key(&["PolicyId"])?, Paginator::None)?, "Tags")?, &["PolicyId", "State", "PolicyType"])?,
+            // Gets summary information about all or the specified data lifecycle policies.
+            queried(
+                tagged(
+                    inventory(
+                        "GetLifecyclePolicies",
+                        "Policies",
+                        key(&["PolicyId"])?,
+                        Paginator::None,
+                    )?,
+                    "Tags",
+                )?,
+                &["PolicyId", "State", "PolicyType"],
+            )?,
         ],
         &[super::s_dlm_decisions_0::ENTRIES],
-        &[
-
-        ],
+        &[],
     )
 }

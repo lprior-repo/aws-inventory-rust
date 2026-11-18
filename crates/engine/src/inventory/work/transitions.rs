@@ -74,7 +74,13 @@ pub(super) async fn persist_page_state(
             .bind(page.lease.sweep.as_str()).bind(&scope).bind(page.observed_at_ms).execute(&mut **tx).await?;
         sqlx::query("UPDATE work_queue SET state=2,token=NULL,lease_until=0 WHERE sweep_id=?1 AND scope_key=?2 AND generation=?3")
             .bind(page.lease.sweep.as_str()).bind(&scope).bind(page.lease.generation).execute(&mut **tx).await?;
-        return super::super::completion::drain_sweep(store, tx, page.lease.sweep(), page.observed_at_ms).await;
+        return super::super::completion::drain_sweep(
+            store,
+            tx,
+            page.lease.sweep(),
+            page.observed_at_ms,
+        )
+        .await;
     }
     if page.done {
         return finalize_page(store, tx, page, &scope).await;
@@ -127,18 +133,28 @@ pub(super) fn encode_scope(scope: &ScopeKey) -> Result<Vec<u8>, StoreError> {
     encode_scope_context(scope, scope.context())
 }
 
-pub(in super::super) fn ownership_scope_bytes(scope: &ScopeKey, bindings: &[u8]) -> Result<Vec<u8>, StoreError> {
+pub(in super::super) fn ownership_scope_bytes(
+    scope: &ScopeKey,
+    bindings: &[u8],
+) -> Result<Vec<u8>, StoreError> {
     use sha2::Digest;
     let context = if scope.context().is_some() || scope.parent().is_some() {
         let mut hash = sha2::Sha256::new();
         hash.update(b"aws-inventory/semantic-authority/v1\0");
         hash.update(bindings);
-        Some(inventory_core::record::ContentHash::from_bytes(hash.finalize().into()))
-    } else { None };
+        Some(inventory_core::record::ContentHash::from_bytes(
+            hash.finalize().into(),
+        ))
+    } else {
+        None
+    };
     encode_scope_context(scope, context)
 }
 
-fn encode_scope_context(scope: &ScopeKey, context: Option<inventory_core::record::ContentHash>) -> Result<Vec<u8>, StoreError> {
+fn encode_scope_context(
+    scope: &ScopeKey,
+    context: Option<inventory_core::record::ContentHash>,
+) -> Result<Vec<u8>, StoreError> {
     let mut bytes = Vec::new();
     put_text(&mut bytes, scope.account().as_str())?;
     put_text(&mut bytes, scope.region().as_str())?;
@@ -155,7 +171,10 @@ fn encode_scope_context(scope: &ScopeKey, context: Option<inventory_core::record
         bytes.push(1);
         put_text(&mut bytes, scope.branch().map_or("", |branch| branch))?;
         match context {
-            Some(context) => { bytes.push(1); bytes.extend_from_slice(context.as_bytes()); }
+            Some(context) => {
+                bytes.push(1);
+                bytes.extend_from_slice(context.as_bytes());
+            }
             None => bytes.push(0),
         }
     }
@@ -178,23 +197,38 @@ pub(super) fn decode_scope(bytes: &[u8]) -> Result<ScopeKey, StoreError> {
     };
     let mut scope = ScopeKey::new(account, region, service, operation, parent)?;
     if !cursor.finished() {
-        if cursor.byte()? != 1 { return Err(StoreError::Invalid("scope extension version")); }
+        if cursor.byte()? != 1 {
+            return Err(StoreError::Invalid("scope extension version"));
+        }
         let branch = cursor.text()?;
-        if !branch.is_empty() { scope = scope.with_branch(branch.to_owned())?; }
+        if !branch.is_empty() {
+            scope = scope.with_branch(branch.to_owned())?;
+        }
         match cursor.byte()? {
             0 => {}
             1 => {
-                let end = cursor.offset.checked_add(32).ok_or(StoreError::Invalid("scope context offset overflow"))?;
-                let digest = cursor.bytes.get(cursor.offset..end).ok_or(StoreError::Invalid("truncated scope context"))?
-                    .try_into().map_err(|_| StoreError::Invalid("invalid scope context digest"))?;
+                let end = cursor
+                    .offset
+                    .checked_add(32)
+                    .ok_or(StoreError::Invalid("scope context offset overflow"))?;
+                let digest = cursor
+                    .bytes
+                    .get(cursor.offset..end)
+                    .ok_or(StoreError::Invalid("truncated scope context"))?
+                    .try_into()
+                    .map_err(|_| StoreError::Invalid("invalid scope context digest"))?;
                 cursor.offset = end;
                 scope = scope.with_context(inventory_core::record::ContentHash::from_bytes(digest));
             }
             _ => return Err(StoreError::Invalid("scope context marker")),
         }
-        if scope.branch().is_none() && scope.context().is_none() { return Err(StoreError::Invalid("empty scope extension")); }
+        if scope.branch().is_none() && scope.context().is_none() {
+            return Err(StoreError::Invalid("empty scope extension"));
+        }
     }
-    if !cursor.finished() { return Err(StoreError::Invalid("trailing scope bytes")); }
+    if !cursor.finished() {
+        return Err(StoreError::Invalid("trailing scope bytes"));
+    }
     Ok(scope)
 }
 

@@ -5,8 +5,8 @@ use std::path::Path;
 
 use serde_json::Value;
 
-use super::{DEFAULT_JOBS, Layout, MODULE_SHA256, OwnedDirectory, REDIS_SHA256, install, receipt};
 use super::installer_tests::{CLIENT_VERSION, SERVER_VERSION, TestResult, executable, fixture};
+use super::{DEFAULT_JOBS, Layout, MODULE_SHA256, OwnedDirectory, REDIS_SHA256, install, receipt};
 
 fn genuine_fixture() -> Result<(tempfile::TempDir, Layout), Box<dyn std::error::Error>> {
     let artifacts = std::env::var_os("AWS_INVENTORY_GRAPH_ARTIFACTS")
@@ -25,15 +25,23 @@ fn genuine_fixture() -> Result<(tempfile::TempDir, Layout), Box<dyn std::error::
 }
 
 fn version_program(path: &Path, version: &str, marker: &Path) -> TestResult {
-    let marker = marker.to_str().ok_or("non-UTF8 native fixture path")?.replace('\'', "'\\''");
-    executable(path, &format!("printf probe >> '{marker}'\nprintf '%s\\n' '{version}'"))
+    let marker = marker
+        .to_str()
+        .ok_or("non-UTF8 native fixture path")?
+        .replace('\'', "'\\''");
+    executable(
+        path,
+        &format!("printf probe >> '{marker}'\nprintf '%s\\n' '{version}'"),
+    )
 }
 
 fn cache_error(layout: &Layout, expected: &str) -> TestResult {
     let receipt_before = fs::read(&layout.receipt)?;
     let server_before = fs::read(&layout.server)?;
     let client_before = fs::read(&layout.client)?;
-    let error = install(&layout.root, DEFAULT_JOBS).err().ok_or("stale cache accepted")?;
+    let error = install(&layout.root, DEFAULT_JOBS)
+        .err()
+        .ok_or("stale cache accepted")?;
     assert_eq!(error.to_string(), expected);
     assert_eq!(fs::read(&layout.receipt)?, receipt_before);
     assert_eq!(fs::read(&layout.server)?, server_before);
@@ -45,7 +53,10 @@ fn cache_error(layout: &Layout, expected: &str) -> TestResult {
 fn reject_binary_changes(layout: &Layout, path: &Path, digest_field: &str) -> TestResult {
     let original = fs::read(path)?;
     fs::write(path, b"changed binary bytes")?;
-    cache_error(layout, &format!("receipt binary digest mismatch: {digest_field}"))?;
+    cache_error(
+        layout,
+        &format!("receipt binary digest mismatch: {digest_field}"),
+    )?;
     fs::write(path, original)?;
     fs::set_permissions(path, fs::Permissions::from_mode(0o600))?;
     cache_error(layout, "Redis binary has no executable permissions")?;
@@ -69,7 +80,8 @@ fn given_stale_binary_or_chmod_when_reusing_public_cache_then_reuse_is_rejected(
     let (_directory, layout) = genuine_fixture()?;
     install(&layout.root, DEFAULT_JOBS)?;
     for (path, digest_field) in [
-        (&layout.server, "redis_server_sha256"), (&layout.client, "redis_cli_sha256"),
+        (&layout.server, "redis_server_sha256"),
+        (&layout.client, "redis_cli_sha256"),
     ] {
         reject_binary_changes(&layout, path, digest_field)?;
     }
@@ -83,9 +95,14 @@ fn given_wrong_versions_when_reusing_public_cache_then_reuse_is_rejected() -> Te
     let original = serde_json::from_slice::<Value>(&fs::read(&layout.receipt)?)?;
     for name in ["server", "client"] {
         let mut invalid = original.clone();
-        let versions = invalid.get_mut("versions").and_then(Value::as_object_mut)
+        let versions = invalid
+            .get_mut("versions")
+            .and_then(Value::as_object_mut)
             .ok_or("versions object missing")?;
-        versions.insert(name.to_owned(), Value::String("wrong native version".to_owned()));
+        versions.insert(
+            name.to_owned(),
+            Value::String("wrong native version".to_owned()),
+        );
         fs::write(&layout.receipt, serde_json::to_vec(&invalid)?)?;
         cache_error(&layout, "compiled Redis version differs from the pin")?;
     }
@@ -112,15 +129,21 @@ fn given_changed_download_when_reusing_public_cache_then_reuse_is_rejected() -> 
 }
 
 #[test]
-fn given_aliased_genuine_module_when_installing_then_foreign_permissions_are_unchanged() -> TestResult {
+fn given_aliased_genuine_module_when_installing_then_foreign_permissions_are_unchanged()
+-> TestResult {
     let (_directory, layout) = genuine_fixture()?;
     fs::remove_file(&layout.receipt)?;
     OwnedDirectory::capture(&layout.source)?.remove_tree()?;
     fs::set_permissions(&layout.module, fs::Permissions::from_mode(0o600))?;
     let foreign = layout.root.join("foreign-module");
     fs::hard_link(&layout.module, &foreign)?;
-    let error = install(&layout.root, DEFAULT_JOBS).err().ok_or("aliased module accepted")?;
-    assert_eq!(error.to_string(), "refusing executable permission change on aliased inode");
+    let error = install(&layout.root, DEFAULT_JOBS)
+        .err()
+        .ok_or("aliased module accepted")?;
+    assert_eq!(
+        error.to_string(),
+        "refusing executable permission change on aliased inode"
+    );
     assert_eq!(fs::metadata(&foreign)?.permissions().mode() & 0o777, 0o600);
     assert!(!layout.source.exists());
     assert!(!layout.receipt.exists());
@@ -144,8 +167,14 @@ fn given_missing_fields_when_reusing_public_cache_then_receipt_is_preserved() ->
     install(&layout.root, DEFAULT_JOBS)?;
     let original = serde_json::from_slice::<Value>(&fs::read(&layout.receipt)?)?;
     for (name, expected) in [
-        ("redis_server_sha256", "receipt has no string field: redis_server_sha256"),
-        ("redis_cli_sha256", "receipt has no string field: redis_cli_sha256"),
+        (
+            "redis_server_sha256",
+            "receipt has no string field: redis_server_sha256",
+        ),
+        (
+            "redis_cli_sha256",
+            "receipt has no string field: redis_cli_sha256",
+        ),
         ("redis_url", "receipt has no string field: redis_url"),
         ("versions", "receipt has no Redis versions"),
     ] {
@@ -154,10 +183,18 @@ fn given_missing_fields_when_reusing_public_cache_then_receipt_is_preserved() ->
     Ok(())
 }
 
-fn reject_missing_field(layout: &Layout, original: &Value, name: &str, expected: &str) -> TestResult {
+fn reject_missing_field(
+    layout: &Layout,
+    original: &Value,
+    name: &str,
+    expected: &str,
+) -> TestResult {
     let mut invalid = original.clone();
-    invalid.as_object_mut().ok_or("receipt object missing")?
-        .remove(name).ok_or("fixture field missing")?;
+    invalid
+        .as_object_mut()
+        .ok_or("receipt object missing")?
+        .remove(name)
+        .ok_or("fixture field missing")?;
     fs::write(&layout.receipt, serde_json::to_vec(&invalid)?)?;
     cache_error(layout, expected)
 }
@@ -192,19 +229,21 @@ fn given_owner_without_execute_when_reusing_cache_then_other_class_bits_do_not_a
     let (_directory, layout) = genuine_fixture()?;
     let receipt_before = fs::read(&layout.receipt)?;
     let probes_before = fs::read(layout.root.join("probes"))?;
-    [0o601, 0o610].into_iter().try_for_each(|mode| -> TestResult {
-        fs::set_permissions(&layout.server, fs::Permissions::from_mode(mode))?;
-        if fs::metadata(&layout.server)?.uid() == 0 {
-            // Root's effective execution permission includes any execute bit.
-            assert_eq!(
-                install(&layout.root, DEFAULT_JOBS)?,
-                serde_json::from_slice::<Value>(&receipt_before)?,
-            );
-        } else {
-            cache_error(&layout, "Redis binary has no executable permissions")?;
-        }
-        Ok(())
-    })?;
+    [0o601, 0o610]
+        .into_iter()
+        .try_for_each(|mode| -> TestResult {
+            fs::set_permissions(&layout.server, fs::Permissions::from_mode(mode))?;
+            if fs::metadata(&layout.server)?.uid() == 0 {
+                // Root's effective execution permission includes any execute bit.
+                assert_eq!(
+                    install(&layout.root, DEFAULT_JOBS)?,
+                    serde_json::from_slice::<Value>(&receipt_before)?,
+                );
+            } else {
+                cache_error(&layout, "Redis binary has no executable permissions")?;
+            }
+            Ok(())
+        })?;
     assert_eq!(fs::read(&layout.receipt)?, receipt_before);
     assert_eq!(fs::read(layout.root.join("probes"))?, probes_before);
     Ok(())
@@ -217,8 +256,15 @@ fn given_binary_swapped_by_version_probe_when_publishing_then_foreign_receipt_is
     let receipt_before = fs::read(&layout.receipt)?;
     let source = OwnedDirectory::capture(&layout.source)?;
     let saved = layout.server.with_extension("probed");
-    let server = layout.server.to_str().ok_or("non-UTF8 binary path")?.replace('\'', "'\\''");
-    let saved_path = saved.to_str().ok_or("non-UTF8 saved path")?.replace('\'', "'\\''");
+    let server = layout
+        .server
+        .to_str()
+        .ok_or("non-UTF8 binary path")?
+        .replace('\'', "'\\''");
+    let saved_path = saved
+        .to_str()
+        .ok_or("non-UTF8 saved path")?
+        .replace('\'', "'\\''");
     executable(
         &layout.server,
         &format!(
@@ -229,9 +275,14 @@ fn given_binary_swapped_by_version_probe_when_publishing_then_foreign_receipt_is
         ),
     )?;
     let probed = fs::read(&layout.server)?;
-    let error = receipt::publish(&layout, &source).err().ok_or("swapped bytes were published")?;
+    let error = receipt::publish(&layout, &source)
+        .err()
+        .ok_or("swapped bytes were published")?;
     assert!(matches!(&error, receipt::PublicationError::Uncommitted(_)));
-    assert_eq!(error.to_string(), "Redis binary identity changed during attestation");
+    assert_eq!(
+        error.to_string(),
+        "Redis binary identity changed during attestation"
+    );
     assert_eq!(fs::read(&layout.server)?, b"unprobed replacement");
     assert_eq!(fs::read(saved)?, probed);
     assert_eq!(fs::read(&layout.receipt)?, receipt_before);
@@ -254,8 +305,13 @@ fn given_relocated_pinned_root_when_publishing_then_absolute_and_retained_layout
     fs::write(&layout.receipt, b"foreign receipt")?;
     assert_eq!(receipt::digest(&layout, &layout.archive)?, REDIS_SHA256);
     assert_eq!(receipt::digest(&layout, &layout.module)?, MODULE_SHA256);
-    let error = receipt::publish(&layout, &source).err().ok_or("replacement layout was published")?;
-    assert_eq!(error.to_string(), "graph installation root identity changed");
+    let error = receipt::publish(&layout, &source)
+        .err()
+        .ok_or("replacement layout was published")?;
+    assert_eq!(
+        error.to_string(),
+        "graph installation root identity changed"
+    );
     assert_eq!(fs::read(&layout.receipt)?, b"foreign receipt");
     assert_eq!(fs::read(saved.join("installation.json"))?, original_receipt);
     assert_eq!(fs::read(saved.join("probes"))?, b"probeprobe");
@@ -273,7 +329,11 @@ fn given_same_inode_write_by_client_probe_when_publishing_then_old_server_versio
     let source = OwnedDirectory::capture(&layout.source)?;
     let original_receipt = fs::read(&layout.receipt)?;
     let before = fs::metadata(&layout.server)?;
-    let server = layout.server.to_str().ok_or("non-UTF8 binary path")?.replace('\'', "'\\''");
+    let server = layout
+        .server
+        .to_str()
+        .ok_or("non-UTF8 binary path")?
+        .replace('\'', "'\\''");
     executable(
         &layout.client,
         &format!(
@@ -281,8 +341,13 @@ fn given_same_inode_write_by_client_probe_when_publishing_then_old_server_versio
              printf '%s\\n' '{CLIENT_VERSION}'"
         ),
     )?;
-    let error = receipt::publish(&layout, &source).err().ok_or("mutated server inode was published")?;
-    assert_eq!(error.to_string(), "Redis binary bytes changed during attestation");
+    let error = receipt::publish(&layout, &source)
+        .err()
+        .ok_or("mutated server inode was published")?;
+    assert_eq!(
+        error.to_string(),
+        "Redis binary bytes changed during attestation"
+    );
     let after = fs::metadata(&layout.server)?;
     assert_eq!((before.dev(), before.ino()), (after.dev(), after.ino()));
     assert_eq!(fs::read(&layout.server)?, b"unprobed replacement");

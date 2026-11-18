@@ -44,26 +44,40 @@ pub(super) async fn initialize(
 
 pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreError> {
     let mut tx = pool.begin().await?;
-    let version: i64 = sqlx::query_scalar("PRAGMA user_version").fetch_one(&mut *tx).await?;
+    let version: i64 = sqlx::query_scalar("PRAGMA user_version")
+        .fetch_one(&mut *tx)
+        .await?;
     if !matches!(version, 14..=16) {
         return Err(StoreError::SchemaVersion { found: version });
     }
-    sqlx::query("DROP TRIGGER IF EXISTS delete_resource_children").execute(&mut *tx).await?;
+    sqlx::query("DROP TRIGGER IF EXISTS delete_resource_children")
+        .execute(&mut *tx)
+        .await?;
     if version == 14 {
         sqlx::query(TAG_OBSERVATIONS_SQL).execute(&mut *tx).await?;
     }
     if version < 16 {
-        sqlx::query(super::facets::CREATE_SQL).execute(&mut *tx).await?;
+        sqlx::query(super::facets::CREATE_SQL)
+            .execute(&mut *tx)
+            .await?;
         sqlx::query("ALTER TABLE work_queue ADD COLUMN context BLOB NOT NULL DEFAULT X''")
-            .execute(&mut *tx).await?;
-        sqlx::query("ALTER TABLE unresolved_refs ADD COLUMN target_kinds BLOB NOT NULL DEFAULT X''")
-            .execute(&mut *tx).await?;
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query(
+            "ALTER TABLE unresolved_refs ADD COLUMN target_kinds BLOB NOT NULL DEFAULT X''",
+        )
+        .execute(&mut *tx)
+        .await?;
         sqlx::query("ALTER TABLE unresolved_refs ADD COLUMN resolution TEXT NOT NULL DEFAULT 'unresolved' CHECK(resolution IN('unresolved','resolved','ambiguous'))")
             .execute(&mut *tx).await?;
-        sqlx::query("PRAGMA user_version=16").execute(&mut *tx).await?;
+        sqlx::query("PRAGMA user_version=16")
+            .execute(&mut *tx)
+            .await?;
     }
     super::legacy::create(&mut tx).await?;
-    let work_columns = sqlx::query("PRAGMA table_info(work_queue)").fetch_all(&mut *tx).await?;
+    let work_columns = sqlx::query("PRAGMA table_info(work_queue)")
+        .fetch_all(&mut *tx)
+        .await?;
     let has_epoch = work_columns.iter().try_fold(false, |found, row| {
         Ok::<_, sqlx::Error>(found || row.try_get::<&str, _>("name")? == "authority_generation")
     })?;
@@ -78,7 +92,9 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
     }
     super::relation_permissions::initialize_provenance(&mut tx).await?;
     super::authority::migrate(&mut tx).await?;
-    let facet_columns = sqlx::query("PRAGMA table_info(resource_facets)").fetch_all(&mut *tx).await?;
+    let facet_columns = sqlx::query("PRAGMA table_info(resource_facets)")
+        .fetch_all(&mut *tx)
+        .await?;
     let attributed = facet_columns.iter().try_fold(false, |found, row| {
         Ok::<_, sqlx::Error>(found || row.try_get::<String, _>("name")? == "source_key")
     })?;
@@ -91,11 +107,20 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
         // stage/input proof domain. Preserve its data, never promote its proof.
         super::legacy::demote_facets(&mut tx, attributed).await?;
         super::relation_permissions::invalidate_prior_authority(&mut tx).await?;
-        sqlx::query("DROP TABLE resource_facets").execute(&mut *tx).await?;
-        sqlx::query(super::facets::CREATE_SQL).execute(&mut *tx).await?;
-    } else if !facet_columns.iter().any(|row| row.try_get::<&str, _>("name").is_ok_and(|name| name == "bound_request")) {
+        sqlx::query("DROP TABLE resource_facets")
+            .execute(&mut *tx)
+            .await?;
+        sqlx::query(super::facets::CREATE_SQL)
+            .execute(&mut *tx)
+            .await?;
+    } else if !facet_columns.iter().any(|row| {
+        row.try_get::<&str, _>("name")
+            .is_ok_and(|name| name == "bound_request")
+    }) {
         // Existing V3 facets remain readable; absent validated requests cannot authorize bound-context targets.
-        sqlx::query("ALTER TABLE resource_facets ADD COLUMN bound_request BLOB").execute(&mut *tx).await?;
+        sqlx::query("ALTER TABLE resource_facets ADD COLUMN bound_request BLOB")
+            .execute(&mut *tx)
+            .await?;
     }
     sqlx::query("INSERT INTO metadata(key,value) VALUES('canonical_facet_dependencies_v3',X'01') ON CONFLICT(key) DO UPDATE SET value=excluded.value").execute(&mut *tx).await?;
     tx.commit().await?;
@@ -201,7 +226,8 @@ pub(super) async fn load_registry(pool: &SqlitePool) -> Result<SchemaRegistry, S
         .into_iter()
         .map(|row| Ok((row.try_get("service")?, row.try_get("operation")?)))
         .collect::<Result<std::collections::BTreeSet<(String, String)>, StoreError>>()?;
-    super::relation_permissions::load_registry(pool, digest, load_schemas(pool).await?, operations).await
+    super::relation_permissions::load_registry(pool, digest, load_schemas(pool).await?, operations)
+        .await
 }
 
 async fn load_schemas(pool: &SqlitePool) -> Result<Vec<Arc<KindSchema>>, StoreError> {

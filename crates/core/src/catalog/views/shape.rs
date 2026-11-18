@@ -1,5 +1,5 @@
-mod error;
 mod enum_values;
+mod error;
 mod value_constraints;
 use super::super::{CatalogError, CatalogKey, SHAPE_KINDS, integer, number, text};
 use super::{optional_list, wire::WireTraits};
@@ -167,7 +167,11 @@ impl<'a> Shape<'a> {
         self.wire()?.validate()?;
         enum_values::validate(self.map, kind)?;
         value_constraints::validate(self.map)?;
-        for key in [CatalogKey::ElementWire, CatalogKey::MapKeyWire, CatalogKey::MapValueWire] {
+        for key in [
+            CatalogKey::ElementWire,
+            CatalogKey::MapKeyWire,
+            CatalogKey::MapValueWire,
+        ] {
             value_constraints::validate_nested(self.map, key)?;
         }
         self.validate_members(kind)?;

@@ -1,19 +1,67 @@
 // Explicit dispositions from .local/aws-models/models/data-pipeline/service/2012-10-29/data-pipeline-2012-10-29.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
-    ("ActivatePipeline", "Requires pipelineId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Validates the specified pipeline and starts processing pipeline tasks."),
-    ("AddTags", "Requires pipelineId, tags; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds or modifies tags for the specified pipeline."),
-    ("CreatePipeline", "Requires name, uniqueId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new, empty pipeline."),
-    ("DeactivatePipeline", "Requires pipelineId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deactivates the specified running pipeline."),
-    ("DeletePipeline", "Requires pipelineId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a pipeline, its pipeline definition, and its run history."),
-    ("DescribeObjects", "Requires pipelineId, objectIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets the object definitions for a set of objects associated with the pipeline."),
-    ("DescribePipelines", "Requires pipelineIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves metadata about one or more pipelines."),
-    ("PollForTask", "Requires workerGroup; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Task runners call PollForTask to receive a task to perform from AWS Data Pipeline."),
-    ("PutPipelineDefinition", "Requires pipelineId, pipelineObjects; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds tasks, schedules, and preconditions to the specified pipeline."),
-    ("QueryObjects", "Requires pipelineId, sphere; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Queries the specified pipeline for the names of objects that match the specified set of conditions."),
-    ("RemoveTags", "Requires pipelineId, tagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes existing tags from the specified pipeline."),
-    ("ReportTaskProgress", "Requires taskId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Task runners call ReportTaskProgress when assigned a task to acknowledge that it has the task."),
-    ("ReportTaskRunnerHeartbeat", "Requires taskrunnerId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Task runners call ReportTaskRunnerHeartbeat every 15 minutes to indicate that they are operational."),
-    ("SetStatus", "Requires pipelineId, objectIds, status; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Requests that the status of the specified physical or logical pipeline objects be updated in the specified pipeline."),
-    ("SetTaskStatus", "Requires taskId, taskStatus; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Task runners call SetTaskStatus to notify AWS Data Pipeline that a task is completed and provide information about the final status."),
-    ("ValidatePipelineDefinition", "Requires pipelineId, pipelineObjects; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Validates the specified pipeline definition to ensure that it is well formed and can be run without error."),
+    (
+        "ActivatePipeline",
+        "Requires pipelineId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Validates the specified pipeline and starts processing pipeline tasks.",
+    ),
+    (
+        "AddTags",
+        "Requires pipelineId, tags; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds or modifies tags for the specified pipeline.",
+    ),
+    (
+        "CreatePipeline",
+        "Requires name, uniqueId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new, empty pipeline.",
+    ),
+    (
+        "DeactivatePipeline",
+        "Requires pipelineId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deactivates the specified running pipeline.",
+    ),
+    (
+        "DeletePipeline",
+        "Requires pipelineId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a pipeline, its pipeline definition, and its run history.",
+    ),
+    (
+        "DescribeObjects",
+        "Requires pipelineId, objectIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Gets the object definitions for a set of objects associated with the pipeline.",
+    ),
+    (
+        "DescribePipelines",
+        "Requires pipelineIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves metadata about one or more pipelines.",
+    ),
+    (
+        "PollForTask",
+        "Requires workerGroup; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Task runners call PollForTask to receive a task to perform from AWS Data Pipeline.",
+    ),
+    (
+        "PutPipelineDefinition",
+        "Requires pipelineId, pipelineObjects; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds tasks, schedules, and preconditions to the specified pipeline.",
+    ),
+    (
+        "QueryObjects",
+        "Requires pipelineId, sphere; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Queries the specified pipeline for the names of objects that match the specified set of conditions.",
+    ),
+    (
+        "RemoveTags",
+        "Requires pipelineId, tagKeys; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes existing tags from the specified pipeline.",
+    ),
+    (
+        "ReportTaskProgress",
+        "Requires taskId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Task runners call ReportTaskProgress when assigned a task to acknowledge that it has the task.",
+    ),
+    (
+        "ReportTaskRunnerHeartbeat",
+        "Requires taskrunnerId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Task runners call ReportTaskRunnerHeartbeat every 15 minutes to indicate that they are operational.",
+    ),
+    (
+        "SetStatus",
+        "Requires pipelineId, objectIds, status; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Requests that the status of the specified physical or logical pipeline objects be updated in the specified pipeline.",
+    ),
+    (
+        "SetTaskStatus",
+        "Requires taskId, taskStatus; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Task runners call SetTaskStatus to notify AWS Data Pipeline that a task is completed and provide information about the final status.",
+    ),
+    (
+        "ValidatePipelineDefinition",
+        "Requires pipelineId, pipelineObjects; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Validates the specified pipeline definition to ensure that it is well formed and can be run without error.",
+    ),
 ];

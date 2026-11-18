@@ -2,26 +2,52 @@ use super::support::{NameError, ServiceOverlay, service};
 
 pub(super) fn overlays() -> Result<Vec<ServiceOverlay>, NameError> {
     Ok(vec![
-        service("controltower", [
-            super::controltower_0::part_0()?,
-            super::controltower_0::part_1()?,
-        ].into_iter().flatten().collect())?,
-        service("cost-and-usage-report-service", [
-            super::cost_and_usage_report_service_0::part_0()?,
-        ].into_iter().flatten().collect())?,
-        service("cost-explorer", [
-            super::cost_explorer_0::part_0()?,
-            super::cost_explorer_0::part_1()?,
-            super::cost_explorer_0::part_2()?,
-        ].into_iter().flatten().collect())?,
-        service("cost-optimization-hub", [
-            super::cost_optimization_hub_0::part_0()?,
-        ].into_iter().flatten().collect())?,
-        service("customer-profiles", [
-            super::customer_profiles_0::part_0()?,
-            super::customer_profiles_0::part_1()?,
-            super::customer_profiles_0::part_2()?,
-            super::customer_profiles_0::part_3()?,
-        ].into_iter().flatten().collect())?,
+        service(
+            "controltower",
+            [
+                super::controltower_0::part_0()?,
+                super::controltower_0::part_1()?,
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
+        )?,
+        service(
+            "cost-and-usage-report-service",
+            [super::cost_and_usage_report_service_0::part_0()?]
+                .into_iter()
+                .flatten()
+                .collect(),
+        )?,
+        service(
+            "cost-explorer",
+            [
+                super::cost_explorer_0::part_0()?,
+                super::cost_explorer_0::part_1()?,
+                super::cost_explorer_0::part_2()?,
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
+        )?,
+        service(
+            "cost-optimization-hub",
+            [super::cost_optimization_hub_0::part_0()?]
+                .into_iter()
+                .flatten()
+                .collect(),
+        )?,
+        service(
+            "customer-profiles",
+            [
+                super::customer_profiles_0::part_0()?,
+                super::customer_profiles_0::part_1()?,
+                super::customer_profiles_0::part_2()?,
+                super::customer_profiles_0::part_3()?,
+            ]
+            .into_iter()
+            .flatten()
+            .collect(),
+        )?,
     ])
 }

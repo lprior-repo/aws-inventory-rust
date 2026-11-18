@@ -1,22 +1,62 @@
 // Pinned model: .local/aws-models/models/device-farm/service/2015-06-23/device-farm-2015-06-23.json
 use super::support::{arn, inventory, queried, reviewed, token};
-use crate::overlay::{NameError, ServiceOverlay};
 use crate::classes::DenyReason;
+use crate::overlay::{NameError, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "device-farm",
         vec![
-        // Returns information about the private device instances associated with one or more AWS accounts.
-        queried(inventory("ListDeviceInstances", "deviceInstances", arn("arn")?, token("nextToken", "nextToken")?)?, &["arn", "status", "udid"])?,
-        // Returns information about all the instance profiles in an AWS account.
-        queried(inventory("ListInstanceProfiles", "instanceProfiles", arn("arn")?, token("nextToken", "nextToken")?)?, &["arn", "name"])?,
-        // Gets a list of all Selenium testing projects in your account.
-        queried(inventory("ListTestGridProjects", "testGridProjects", arn("arn")?, token("nextToken", "nextToken")?)?, &["arn", "name"])?,
-        // Returns information about all Amazon Virtual Private Cloud (VPC) endpoint configurations in the AWS account.
-        queried(inventory("ListVPCEConfigurations", "vpceConfigurations", arn("arn")?, token("nextToken", "nextToken")?)?, &["arn", "vpceConfigurationName", "vpceServiceName", "serviceDnsName"])?,
+            // Returns information about the private device instances associated with one or more AWS accounts.
+            queried(
+                inventory(
+                    "ListDeviceInstances",
+                    "deviceInstances",
+                    arn("arn")?,
+                    token("nextToken", "nextToken")?,
+                )?,
+                &["arn", "status", "udid"],
+            )?,
+            // Returns information about all the instance profiles in an AWS account.
+            queried(
+                inventory(
+                    "ListInstanceProfiles",
+                    "instanceProfiles",
+                    arn("arn")?,
+                    token("nextToken", "nextToken")?,
+                )?,
+                &["arn", "name"],
+            )?,
+            // Gets a list of all Selenium testing projects in your account.
+            queried(
+                inventory(
+                    "ListTestGridProjects",
+                    "testGridProjects",
+                    arn("arn")?,
+                    token("nextToken", "nextToken")?,
+                )?,
+                &["arn", "name"],
+            )?,
+            // Returns information about all Amazon Virtual Private Cloud (VPC) endpoint configurations in the AWS account.
+            queried(
+                inventory(
+                    "ListVPCEConfigurations",
+                    "vpceConfigurations",
+                    arn("arn")?,
+                    token("nextToken", "nextToken")?,
+                )?,
+                &[
+                    "arn",
+                    "vpceConfigurationName",
+                    "vpceServiceName",
+                    "serviceDnsName",
+                ],
+            )?,
         ],
-        &[super::s_device_farm_decisions_0::ENTRIES, super::s_device_farm_decisions_1::ENTRIES],
+        &[
+            super::s_device_farm_decisions_0::ENTRIES,
+            super::s_device_farm_decisions_1::ENTRIES,
+        ],
         &[
             // Projects includes environmentVariables[].value; no documented omission of secret-bearing environment values. Output projection does not authorize this API.
             ("ListProjects", DenyReason::Secret),

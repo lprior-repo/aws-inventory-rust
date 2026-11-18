@@ -1,14 +1,12 @@
 // Pinned model: .local/aws-models/models/ebs/service/2019-11-02/ebs-2019-11-02.json
-use super::support::{reviewed};
-use crate::overlay::{NameError, ServiceOverlay};
+use super::support::reviewed;
 use crate::classes::DenyReason;
+use crate::overlay::{NameError, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
         "ebs",
-        vec![
-
-        ],
+        vec![],
         &[],
         &[
             // Returns the data in a block in an Amazon Elastic Block Store snapshot.

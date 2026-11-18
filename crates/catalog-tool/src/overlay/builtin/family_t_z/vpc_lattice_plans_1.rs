@@ -1,5 +1,5 @@
-use super::{inventory, path, paths, bind};
-use crate::overlay::{OperationOverlay, NameError, Identity, Paginator, Scope};
+use super::{bind, inventory, path, paths};
+use crate::overlay::{Identity, NameError, OperationOverlay, Paginator, Scope};
 
 pub(super) fn get_domain_verification() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
@@ -8,14 +8,14 @@ pub(super) fn get_domain_verification() -> Result<OperationOverlay, NameError> {
         Paginator::None,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "id",
-        "arn",
-        "domainName",
-        "status",
-    ])?;
+    operation.queryable = paths(&["id", "arn", "domainName", "status"])?;
     operation.tags = Some(path("tags")?);
-    bind(&mut operation, "domainVerificationIdentifier", "ListDomainVerifications", "id")?;
+    bind(
+        &mut operation,
+        "domainVerificationIdentifier",
+        "ListDomainVerifications",
+        "id",
+    )?;
     Ok(operation)
 }
 
@@ -44,7 +44,12 @@ pub(super) fn get_resource_configuration() -> Result<OperationOverlay, NameError
         "domainVerificationStatus",
         "groupDomain",
     ])?;
-    bind(&mut operation, "resourceConfigurationIdentifier", "ListResourceConfigurations", "id")?;
+    bind(
+        &mut operation,
+        "resourceConfigurationIdentifier",
+        "ListResourceConfigurations",
+        "id",
+    )?;
     Ok(operation)
 }
 
@@ -67,7 +72,12 @@ pub(super) fn get_resource_gateway() -> Result<OperationOverlay, NameError> {
         "ipv4AddressesPerEni",
         "resourceConfigDnsResolution",
     ])?;
-    bind(&mut operation, "resourceGatewayIdentifier", "ListResourceGateways", "id")?;
+    bind(
+        &mut operation,
+        "resourceGatewayIdentifier",
+        "ListResourceGateways",
+        "id",
+    )?;
     Ok(operation)
 }
 
@@ -109,7 +119,12 @@ pub(super) fn get_service_network() -> Result<OperationOverlay, NameError> {
         "numberOfAssociatedVPCs",
         "numberOfAssociatedServices",
     ])?;
-    bind(&mut operation, "serviceNetworkIdentifier", "ListServiceNetworks", "id")?;
+    bind(
+        &mut operation,
+        "serviceNetworkIdentifier",
+        "ListServiceNetworks",
+        "id",
+    )?;
     Ok(operation)
 }
 
@@ -137,7 +152,12 @@ pub(super) fn get_service_network_resource_association() -> Result<OperationOver
         "isManagedAssociation",
         "domainVerificationStatus",
     ])?;
-    bind(&mut operation, "serviceNetworkResourceAssociationIdentifier", "ListServiceNetworkResourceAssociations", "id")?;
+    bind(
+        &mut operation,
+        "serviceNetworkResourceAssociationIdentifier",
+        "ListServiceNetworkResourceAssociations",
+        "id",
+    )?;
     Ok(operation)
 }
 
@@ -163,7 +183,12 @@ pub(super) fn get_service_network_service_association() -> Result<OperationOverl
         "failureMessage",
         "failureCode",
     ])?;
-    bind(&mut operation, "serviceNetworkServiceAssociationIdentifier", "ListServiceNetworkServiceAssociations", "id")?;
+    bind(
+        &mut operation,
+        "serviceNetworkServiceAssociationIdentifier",
+        "ListServiceNetworkServiceAssociations",
+        "id",
+    )?;
     Ok(operation)
 }
 
@@ -187,7 +212,12 @@ pub(super) fn get_service_network_vpc_association() -> Result<OperationOverlay, 
         "failureMessage",
         "failureCode",
     ])?;
-    bind(&mut operation, "serviceNetworkVpcAssociationIdentifier", "ListServiceNetworkVpcAssociations", "id")?;
+    bind(
+        &mut operation,
+        "serviceNetworkVpcAssociationIdentifier",
+        "ListServiceNetworkVpcAssociations",
+        "id",
+    )?;
     Ok(operation)
 }
 
@@ -207,6 +237,11 @@ pub(super) fn get_target_group() -> Result<OperationOverlay, NameError> {
         "failureMessage",
         "failureCode",
     ])?;
-    bind(&mut operation, "targetGroupIdentifier", "ListTargetGroups", "id")?;
+    bind(
+        &mut operation,
+        "targetGroupIdentifier",
+        "ListTargetGroups",
+        "id",
+    )?;
     Ok(operation)
 }

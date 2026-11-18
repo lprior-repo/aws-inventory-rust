@@ -3,53 +3,257 @@ use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
-    ("ListAssetBundleExportJobs", Decision::Deferred("Required selectors AwsAccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AssetBundleExportJobSummaryList, NextToken, RequestId, Status. Pinned purpose: Lists all asset bundle export jobs that have been taken place in the last 14 days. Jobs created more than 14 days ago are deleted forever and are not returned. If you are using the same job ID for multiple jobs, ListAssetBundleExportJobs only returns")),
-    ("ListAssetBundleImportJobs", Decision::Deferred("Required selectors AwsAccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AssetBundleImportJobSummaryList, NextToken, RequestId, Status. Pinned purpose: Lists all asset bundle import jobs that have taken place in the last 14 days. Jobs created more than 14 days ago are deleted forever and are not returned. If you are using the same job ID for multiple jobs, ListAssetBundleImportJobs only returns the ")),
-    ("ListDashboardVersions", Decision::Deferred("Required selectors AwsAccountId, DashboardId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members DashboardVersionSummaryList, NextToken, Status, RequestId. Pinned purpose: Lists all the versions of the dashboards in the Amazon Quick Sight subscription.")),
-    ("ListFolderMembers", Decision::Deferred("Required selectors AwsAccountId, FolderId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Status, FolderMemberList, NextToken, RequestId. Pinned purpose: List all assets ( DASHBOARD , ANALYSIS , and DATASET ) in a folder.")),
-    ("ListFoldersForResource", Decision::Deferred("Required selectors AwsAccountId, ResourceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Status, Folders, NextToken, RequestId. Pinned purpose: List all folders that a resource is a member of.")),
-    ("ListGroupMemberships", Decision::Deferred("Required selectors GroupName, AwsAccountId, Namespace are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members GroupMemberList, NextToken, RequestId, Status. Pinned purpose: Lists member users in a group.")),
-    ("ListIAMPolicyAssignments", Decision::Deferred("Required selectors AwsAccountId, Namespace are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members IAMPolicyAssignments, NextToken, RequestId, Status. Pinned purpose: Lists the IAM policy assignments in the current Amazon Quick Sight account.")),
-    ("ListIAMPolicyAssignmentsForUser", Decision::Deferred("Required selectors AwsAccountId, UserName, Namespace are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ActiveAssignments, RequestId, NextToken, Status. Pinned purpose: Lists all of the IAM policy assignments, including the Amazon Resource Names (ARNs), for the IAM policies assigned to the specified user and group, or groups that the user belongs to.")),
-    ("ListIdentityPropagationConfigs", Decision::Deferred("Required selectors AwsAccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Services, NextToken, Status, RequestId. Pinned purpose: Lists all services and authorized targets that the Quick Sight IAM Identity Center application can access. This operation is only supported for Quick Sight accounts that use IAM Identity Center.")),
-    ("ListIngestions", Decision::Deferred("Required selectors DataSetId, AwsAccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Ingestions, NextToken, RequestId, Status. Pinned purpose: Lists the history of SPICE ingestions for a dataset. Limited to 5 TPS per user and 25 TPS per account.")),
-    ("ListKnowledgeBases", Decision::Deferred("Required selectors AwsAccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members KnowledgeBaseSummaries, NextToken, RequestId, Status. Pinned purpose: Lists all knowledge bases in an Amazon QuickSight account.")),
-    ("ListRoleMemberships", Decision::Deferred("Required selectors Role, AwsAccountId, Namespace are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members MembersList, NextToken, RequestId, Status. Pinned purpose: Lists all groups that are associated with a role.")),
-    ("ListSelfUpgrades", Decision::Deferred("Required selectors AwsAccountId, Namespace are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members SelfUpgradeRequestDetails, NextToken, RequestId, Status. Pinned purpose: Lists all self-upgrade requests for a Quick account.")),
-    ("ListSpaceResources", Decision::Deferred("Required selectors AwsAccountId, SpaceId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members spaceId, spaceArn, SpaceResources, RequestId. Pinned purpose: Lists the resources in an Amazon QuickSight space.")),
-    ("ListTagsForResource", Decision::Deferred("Tag-only observation must join the originating resource identity with complete-snapshot semantics, not be persisted as a separate resource. Required request members: ResourceArn. Pinned purpose: Lists the tags assigned to a resource.")),
-    ("ListTemplateAliases", Decision::Deferred("Required selectors AwsAccountId, TemplateId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members TemplateAliasList, Status, RequestId, NextToken. Pinned purpose: Lists all the aliases of a template.")),
-    ("ListTemplateVersions", Decision::Deferred("Required selectors AwsAccountId, TemplateId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members TemplateVersionSummaryList, NextToken, Status, RequestId. Pinned purpose: Lists all the versions of the templates in the current Amazon Quick Sight account.")),
-    ("ListThemeAliases", Decision::Deferred("Required selectors AwsAccountId, ThemeId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ThemeAliasList, Status, RequestId, NextToken. Pinned purpose: Lists all the aliases of a theme.")),
-    ("ListThemeVersions", Decision::Deferred("Required selectors AwsAccountId, ThemeId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ThemeVersionSummaryList, NextToken, Status, RequestId. Pinned purpose: Lists all the versions of the themes in the current Amazon Web Services account.")),
-    ("ListTopicRefreshSchedules", Decision::Deferred("Required selectors AwsAccountId, TopicId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members TopicId, TopicArn, RefreshSchedules, Status, RequestId. Pinned purpose: Lists all of the refresh schedules for a topic.")),
-    ("ListTopicReviewedAnswers", Decision::Deferred("Required selectors AwsAccountId, TopicId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members TopicId, TopicArn, Answers, Status, RequestId. Pinned purpose: Lists all reviewed answers for a Q Topic.")),
-    ("ListUserGroups", Decision::Deferred("Required selectors UserName, AwsAccountId, Namespace are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members GroupList, NextToken, RequestId, Status. Pinned purpose: Lists the Amazon Quick Sight groups that an Amazon Quick Sight user is a member of.")),
-    ("ListUsers", Decision::Deferred("Required selectors AwsAccountId, Namespace are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members UserList, NextToken, RequestId, Status. Pinned purpose: Returns a list of all of the Amazon Quick Sight users belonging to this account.")),
-    ("ListUsersIndexCapacity", Decision::Deferred("Required selectors awsAccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members users, nextToken, requestId. Pinned purpose: Lists per-user index capacity consumption for an account.")),
-    ("PredictQAResults", Decision::Deferred("Required selectors AwsAccountId, QueryText are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members PrimaryResult, AdditionalResults, RequestId, Status. Pinned purpose: Predicts existing visuals or generates new visuals to answer a given query. This API uses trusted identity propagation to ensure that an end user is authenticated and receives the embed URL that is specific to that user. The IAM Identity Center appli")),
+    (
+        "ListAssetBundleExportJobs",
+        Decision::Deferred(
+            "Required selectors AwsAccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AssetBundleExportJobSummaryList, NextToken, RequestId, Status. Pinned purpose: Lists all asset bundle export jobs that have been taken place in the last 14 days. Jobs created more than 14 days ago are deleted forever and are not returned. If you are using the same job ID for multiple jobs, ListAssetBundleExportJobs only returns",
+        ),
+    ),
+    (
+        "ListAssetBundleImportJobs",
+        Decision::Deferred(
+            "Required selectors AwsAccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AssetBundleImportJobSummaryList, NextToken, RequestId, Status. Pinned purpose: Lists all asset bundle import jobs that have taken place in the last 14 days. Jobs created more than 14 days ago are deleted forever and are not returned. If you are using the same job ID for multiple jobs, ListAssetBundleImportJobs only returns the ",
+        ),
+    ),
+    (
+        "ListDashboardVersions",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, DashboardId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members DashboardVersionSummaryList, NextToken, Status, RequestId. Pinned purpose: Lists all the versions of the dashboards in the Amazon Quick Sight subscription.",
+        ),
+    ),
+    (
+        "ListFolderMembers",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, FolderId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Status, FolderMemberList, NextToken, RequestId. Pinned purpose: List all assets ( DASHBOARD , ANALYSIS , and DATASET ) in a folder.",
+        ),
+    ),
+    (
+        "ListFoldersForResource",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, ResourceArn are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Status, Folders, NextToken, RequestId. Pinned purpose: List all folders that a resource is a member of.",
+        ),
+    ),
+    (
+        "ListGroupMemberships",
+        Decision::Deferred(
+            "Required selectors GroupName, AwsAccountId, Namespace are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members GroupMemberList, NextToken, RequestId, Status. Pinned purpose: Lists member users in a group.",
+        ),
+    ),
+    (
+        "ListIAMPolicyAssignments",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, Namespace are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members IAMPolicyAssignments, NextToken, RequestId, Status. Pinned purpose: Lists the IAM policy assignments in the current Amazon Quick Sight account.",
+        ),
+    ),
+    (
+        "ListIAMPolicyAssignmentsForUser",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, UserName, Namespace are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ActiveAssignments, RequestId, NextToken, Status. Pinned purpose: Lists all of the IAM policy assignments, including the Amazon Resource Names (ARNs), for the IAM policies assigned to the specified user and group, or groups that the user belongs to.",
+        ),
+    ),
+    (
+        "ListIdentityPropagationConfigs",
+        Decision::Deferred(
+            "Required selectors AwsAccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Services, NextToken, Status, RequestId. Pinned purpose: Lists all services and authorized targets that the Quick Sight IAM Identity Center application can access. This operation is only supported for Quick Sight accounts that use IAM Identity Center.",
+        ),
+    ),
+    (
+        "ListIngestions",
+        Decision::Deferred(
+            "Required selectors DataSetId, AwsAccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Ingestions, NextToken, RequestId, Status. Pinned purpose: Lists the history of SPICE ingestions for a dataset. Limited to 5 TPS per user and 25 TPS per account.",
+        ),
+    ),
+    (
+        "ListKnowledgeBases",
+        Decision::Deferred(
+            "Required selectors AwsAccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members KnowledgeBaseSummaries, NextToken, RequestId, Status. Pinned purpose: Lists all knowledge bases in an Amazon QuickSight account.",
+        ),
+    ),
+    (
+        "ListRoleMemberships",
+        Decision::Deferred(
+            "Required selectors Role, AwsAccountId, Namespace are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members MembersList, NextToken, RequestId, Status. Pinned purpose: Lists all groups that are associated with a role.",
+        ),
+    ),
+    (
+        "ListSelfUpgrades",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, Namespace are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members SelfUpgradeRequestDetails, NextToken, RequestId, Status. Pinned purpose: Lists all self-upgrade requests for a Quick account.",
+        ),
+    ),
+    (
+        "ListSpaceResources",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, SpaceId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members spaceId, spaceArn, SpaceResources, RequestId. Pinned purpose: Lists the resources in an Amazon QuickSight space.",
+        ),
+    ),
+    (
+        "ListTagsForResource",
+        Decision::Deferred(
+            "Tag-only observation must join the originating resource identity with complete-snapshot semantics, not be persisted as a separate resource. Required request members: ResourceArn. Pinned purpose: Lists the tags assigned to a resource.",
+        ),
+    ),
+    (
+        "ListTemplateAliases",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, TemplateId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members TemplateAliasList, Status, RequestId, NextToken. Pinned purpose: Lists all the aliases of a template.",
+        ),
+    ),
+    (
+        "ListTemplateVersions",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, TemplateId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members TemplateVersionSummaryList, NextToken, Status, RequestId. Pinned purpose: Lists all the versions of the templates in the current Amazon Quick Sight account.",
+        ),
+    ),
+    (
+        "ListThemeAliases",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, ThemeId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ThemeAliasList, Status, RequestId, NextToken. Pinned purpose: Lists all the aliases of a theme.",
+        ),
+    ),
+    (
+        "ListThemeVersions",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, ThemeId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members ThemeVersionSummaryList, NextToken, Status, RequestId. Pinned purpose: Lists all the versions of the themes in the current Amazon Web Services account.",
+        ),
+    ),
+    (
+        "ListTopicRefreshSchedules",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, TopicId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members TopicId, TopicArn, RefreshSchedules, Status, RequestId. Pinned purpose: Lists all of the refresh schedules for a topic.",
+        ),
+    ),
+    (
+        "ListTopicReviewedAnswers",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, TopicId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members TopicId, TopicArn, Answers, Status, RequestId. Pinned purpose: Lists all reviewed answers for a Q Topic.",
+        ),
+    ),
+    (
+        "ListUserGroups",
+        Decision::Deferred(
+            "Required selectors UserName, AwsAccountId, Namespace are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members GroupList, NextToken, RequestId, Status. Pinned purpose: Lists the Amazon Quick Sight groups that an Amazon Quick Sight user is a member of.",
+        ),
+    ),
+    (
+        "ListUsers",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, Namespace are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members UserList, NextToken, RequestId, Status. Pinned purpose: Returns a list of all of the Amazon Quick Sight users belonging to this account.",
+        ),
+    ),
+    (
+        "ListUsersIndexCapacity",
+        Decision::Deferred(
+            "Required selectors awsAccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members users, nextToken, requestId. Pinned purpose: Lists per-user index capacity consumption for an account.",
+        ),
+    ),
+    (
+        "PredictQAResults",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, QueryText are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members PrimaryResult, AdditionalResults, RequestId, Status. Pinned purpose: Predicts existing visuals or generates new visuals to answer a given query. This API uses trusted identity propagation to ensure that an end user is authenticated and receives the embed URL that is specific to that user. The IAM Identity Center appli",
+        ),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Creates or updates the dataset refresh properties for the dataset.
-    ("PutDataSetRefreshProperties", Decision::Denied(DenyReason::Mutating)),
+    (
+        "PutDataSetRefreshProperties",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Creates an Amazon Quick Sight user whose identity is associated with the Identity and Access Management (IAM) identity or role specified in the request. When you register a new user from the Quick Sight API, Quick Sight generates a registration URL. The user accesses this registration URL to create their account. Quick Sight doesn't send a registration email to users who are registered from the Qu
     ("RegisterUser", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Restores an analysis.
     ("RestoreAnalysis", Decision::Denied(DenyReason::Mutating)),
-    ("SearchActionConnectors", Decision::Deferred("Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members NextToken, RequestId, Status, ActionConnectorSummaries. Pinned purpose: Searches for action connectors in the specified Amazon Web Services account using filters. You can search by connector name, type, or user permissions.")),
-    ("SearchAgents", Decision::Deferred("Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AgentSummaries, NextToken, RequestId. Pinned purpose: Searches for agents based on specified filters.")),
-    ("SearchAnalyses", Decision::Deferred("Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AnalysisSummaryList, NextToken, Status, RequestId. Pinned purpose: Searches for analyses that belong to the user specified in the filter. This operation is eventually consistent. The results are best effort and may not reflect very recent updates and changes.")),
-    ("SearchApps", Decision::Deferred("Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AppSummaryList, NextToken, RequestId. Pinned purpose: Searches for apps in an Amazon Web Services account using the specified filters. This operation is eventually consistent; the results might not reflect very recent updates. Results are paginated; use the NextToken parameter to retrieve additional res")),
-    ("SearchDashboards", Decision::Deferred("Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members DashboardSummaryList, NextToken, Status, RequestId. Pinned purpose: Searches for dashboards that belong to a user. This operation is eventually consistent. The results are best effort and may not reflect very recent updates and changes.")),
-    ("SearchDataSets", Decision::Deferred("Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members DataSetSummaries, NextToken, Status, RequestId. Pinned purpose: Use the SearchDataSets operation to search for datasets that belong to an account.")),
-    ("SearchDataSources", Decision::Deferred("Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members DataSourceSummaries, NextToken, Status, RequestId. Pinned purpose: Use the SearchDataSources operation to search for data sources that belong to an account.")),
-    ("SearchFlows", Decision::Deferred("Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members FlowSummaryList, NextToken, RequestId, Status. Pinned purpose: Search for the flows in an Amazon Web Services account.")),
-    ("SearchFolders", Decision::Deferred("Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Status, FolderSummaryList, NextToken, RequestId. Pinned purpose: Searches the subfolders in a folder.")),
-    ("SearchGroups", Decision::Deferred("Required selectors AwsAccountId, Namespace, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members GroupList, NextToken, RequestId, Status. Pinned purpose: Use the SearchGroups operation to search groups in a specified Quick Sight namespace using the supplied filters.")),
-    ("SearchKnowledgeBases", Decision::Deferred("Required selectors AwsAccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members KnowledgeBaseSummaries, NextToken, RequestId, Status. Pinned purpose: Searches for a subset of knowledge bases based on specified filters.")),
-    ("SearchSpaces", Decision::Deferred("Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members spaceId, spaceArn, SpaceSummaries, NextToken, RequestId. Pinned purpose: Searches for Amazon QuickSight spaces that match the specified filters.")),
-    ("SearchTopics", Decision::Deferred("Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members TopicSummaryList, NextToken, Status, RequestId. Pinned purpose: Searches for any Q topic that exists in an Quick account.")),
-    ("SearchTopicsV2", Decision::Deferred("Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members TopicSummaryList, NextToken, Status, RequestId. Pinned purpose: Searches for any Q topic that exists in an Amazon Web Services account.")),
+    (
+        "SearchActionConnectors",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members NextToken, RequestId, Status, ActionConnectorSummaries. Pinned purpose: Searches for action connectors in the specified Amazon Web Services account using filters. You can search by connector name, type, or user permissions.",
+        ),
+    ),
+    (
+        "SearchAgents",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AgentSummaries, NextToken, RequestId. Pinned purpose: Searches for agents based on specified filters.",
+        ),
+    ),
+    (
+        "SearchAnalyses",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AnalysisSummaryList, NextToken, Status, RequestId. Pinned purpose: Searches for analyses that belong to the user specified in the filter. This operation is eventually consistent. The results are best effort and may not reflect very recent updates and changes.",
+        ),
+    ),
+    (
+        "SearchApps",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AppSummaryList, NextToken, RequestId. Pinned purpose: Searches for apps in an Amazon Web Services account using the specified filters. This operation is eventually consistent; the results might not reflect very recent updates. Results are paginated; use the NextToken parameter to retrieve additional res",
+        ),
+    ),
+    (
+        "SearchDashboards",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members DashboardSummaryList, NextToken, Status, RequestId. Pinned purpose: Searches for dashboards that belong to a user. This operation is eventually consistent. The results are best effort and may not reflect very recent updates and changes.",
+        ),
+    ),
+    (
+        "SearchDataSets",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members DataSetSummaries, NextToken, Status, RequestId. Pinned purpose: Use the SearchDataSets operation to search for datasets that belong to an account.",
+        ),
+    ),
+    (
+        "SearchDataSources",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members DataSourceSummaries, NextToken, Status, RequestId. Pinned purpose: Use the SearchDataSources operation to search for data sources that belong to an account.",
+        ),
+    ),
+    (
+        "SearchFlows",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members FlowSummaryList, NextToken, RequestId, Status. Pinned purpose: Search for the flows in an Amazon Web Services account.",
+        ),
+    ),
+    (
+        "SearchFolders",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Status, FolderSummaryList, NextToken, RequestId. Pinned purpose: Searches the subfolders in a folder.",
+        ),
+    ),
+    (
+        "SearchGroups",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, Namespace, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members GroupList, NextToken, RequestId, Status. Pinned purpose: Use the SearchGroups operation to search groups in a specified Quick Sight namespace using the supplied filters.",
+        ),
+    ),
+    (
+        "SearchKnowledgeBases",
+        Decision::Deferred(
+            "Required selectors AwsAccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members KnowledgeBaseSummaries, NextToken, RequestId, Status. Pinned purpose: Searches for a subset of knowledge bases based on specified filters.",
+        ),
+    ),
+    (
+        "SearchSpaces",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members spaceId, spaceArn, SpaceSummaries, NextToken, RequestId. Pinned purpose: Searches for Amazon QuickSight spaces that match the specified filters.",
+        ),
+    ),
+    (
+        "SearchTopics",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members TopicSummaryList, NextToken, Status, RequestId. Pinned purpose: Searches for any Q topic that exists in an Quick account.",
+        ),
+    ),
+    (
+        "SearchTopicsV2",
+        Decision::Deferred(
+            "Required selectors AwsAccountId, Filters are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members TopicSummaryList, NextToken, Status, RequestId. Pinned purpose: Searches for any Q topic that exists in an Amazon Web Services account.",
+        ),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Starts an Asset Bundle export job. An Asset Bundle export job exports specified Amazon Quick Sight assets. You can also choose to export any asset dependencies in the same job. Export jobs run asynchronously and can be polled with a DescribeAssetBundleExportJob API call. When a job is successfully completed, a download URL that contains the exported assets is returned. The URL is valid for 5 minut
-    ("StartAssetBundleExportJob", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: Starts an Asset Bundle import job. An Asset Bundle import job imports specified Amazon Quick Sight assets into an Amazon Quick Sight account. You can also choose to import a naming prefix and specified configuration overrides. The assets that are contained in the bundle file that you provide are used to create or update a new or existing asset in your Amazon Quick Sight account. Each Amazon Quick 
-    ("StartAssetBundleImportJob", Decision::Denied(DenyReason::Mutating)),
+    (
+        "StartAssetBundleExportJob",
+        Decision::Denied(DenyReason::Mutating),
+    ),
+    // Changes service state rather than reading inventory. Pinned purpose: Starts an Asset Bundle import job. An Asset Bundle import job imports specified Amazon Quick Sight assets into an Amazon Quick Sight account. You can also choose to import a naming prefix and specified configuration overrides. The assets that are contained in the bundle file that you provide are used to create or update a new or existing asset in your Amazon Quick Sight account. Each Amazon Quick
+    (
+        "StartAssetBundleImportJob",
+        Decision::Denied(DenyReason::Mutating),
+    ),
 ];

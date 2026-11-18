@@ -89,11 +89,26 @@ fn parse_pipeline(args: &mut impl Iterator<Item = String>) -> Result<Command, Bo
     let pages = parse_count(&required(args)?)?;
     let rows = required(args)?.parse::<usize>()?;
     let concurrency = parse_count(&required(args)?)?;
-    let graph = args.next().map(|endpoint| -> Result<_, Box<dyn Error>> {
-        Ok(pipeline_native::Target { endpoint, graph: required(args)? })
-    }).transpose()?;
-    if args.next().is_some() { return Err(USAGE.into()); }
-    let workload = pipeline::Workload { path, catalog, pages, rows, concurrency, graph };
+    let graph = args
+        .next()
+        .map(|endpoint| -> Result<_, Box<dyn Error>> {
+            Ok(pipeline_native::Target {
+                endpoint,
+                graph: required(args)?,
+            })
+        })
+        .transpose()?;
+    if args.next().is_some() {
+        return Err(USAGE.into());
+    }
+    let workload = pipeline::Workload {
+        path,
+        catalog,
+        pages,
+        rows,
+        concurrency,
+        graph,
+    };
     workload.validate().map_err(|error| error.to_string())?;
     Ok(Command::Pipeline(workload))
 }
@@ -305,7 +320,9 @@ async fn measure(path: PathBuf) -> Result<(), Box<dyn Error>> {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     match parse_command(std::env::args().skip(1))? {
-        Command::Pipeline(workload) => pipeline::run(workload).await.map_err(|error| -> Box<dyn Error> { error }),
+        Command::Pipeline(workload) => pipeline::run(workload)
+            .await
+            .map_err(|error| -> Box<dyn Error> { error }),
         Command::Generate {
             path,
             accounts,

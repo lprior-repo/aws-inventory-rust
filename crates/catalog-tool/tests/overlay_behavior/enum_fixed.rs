@@ -22,7 +22,15 @@ fn required_enum_inputs_accept_only_declared_fixed_values() -> Result<(), Box<dy
             );
             if valid {
                 let checked = checked(&root, vec![("ListThings", plan)])?;
-                assert_eq!(checked.services().first().ok_or("missing service")?.callable().len(), 1);
+                assert_eq!(
+                    checked
+                        .services()
+                        .first()
+                        .ok_or("missing service")?
+                        .callable()
+                        .len(),
+                    1
+                );
             } else {
                 let errors = violations(&root, vec![("ListThings", plan)])?;
                 assert!(errors.iter().any(|error| error.key() == "fixed"

@@ -1,6 +1,6 @@
 mod binding_values;
-mod destinations;
 mod branches;
+mod destinations;
 use super::{State, ViolationRule, pagination, paths};
 use crate::{
     overlay::{Binding, MemberPath, OperationName, OperationOverlay},
@@ -175,10 +175,25 @@ fn binding_valid(
     target: &crate::plans::model::ShapeRef<'_>,
 ) -> bool {
     let binding = match binding {
-        Binding::Transformed { binding, transform: crate::overlay::BindingTransform::StripPrefix(prefix) } => {
-            if prefix.is_empty() || prefix.len() > 256 || prefix.chars().any(char::is_control)
-                || !matches!(plans::model::shape_type(target.value), Some("string" | "enum"))
-                || !matches!(binding.as_ref(), Binding::From { .. } | Binding::Context { .. } | Binding::FromArn { .. } | Binding::FromService { .. }) {
+        Binding::Transformed {
+            binding,
+            transform: crate::overlay::BindingTransform::StripPrefix(prefix),
+        } => {
+            if prefix.is_empty()
+                || prefix.len() > 256
+                || prefix.chars().any(char::is_control)
+                || !matches!(
+                    plans::model::shape_type(target.value),
+                    Some("string" | "enum")
+                )
+                || !matches!(
+                    binding.as_ref(),
+                    Binding::From { .. }
+                        | Binding::Context { .. }
+                        | Binding::FromArn { .. }
+                        | Binding::FromService { .. }
+                )
+            {
                 return false;
             }
             binding.as_ref()
@@ -190,11 +205,28 @@ fn binding_valid(
             plans::model::shape_type(target.value) == Some("string")
         }
         Binding::RegionList => binding_values::region_list(context.model, target),
-        Binding::FromAny(alternatives) => binding_values::alternatives(context, alternatives, target),
-        Binding::From { operation, path: source }
-        | Binding::FromBranch { operation, path: source, .. }
-        | Binding::FromArn { operation, path: source, .. }
-        | Binding::FromUrl { operation, path: source, .. } => source_binding_valid(
+        Binding::FromAny(alternatives) => {
+            binding_values::alternatives(context, alternatives, target)
+        }
+        Binding::From {
+            operation,
+            path: source,
+        }
+        | Binding::FromBranch {
+            operation,
+            path: source,
+            ..
+        }
+        | Binding::FromArn {
+            operation,
+            path: source,
+            ..
+        }
+        | Binding::FromUrl {
+            operation,
+            path: source,
+            ..
+        } => source_binding_valid(
             context.model,
             context.overlays,
             context.vocabulary,
@@ -202,19 +234,46 @@ fn binding_valid(
             source,
             target,
         ),
-        Binding::FromService { service, .. } => inventory_core::inventory::ServiceId::parse(service).is_ok()
-            && matches!(plans::model::shape_type(target.value), Some("string" | "enum" | "byte" | "short" | "integer" | "long" | "boolean")),
-        Binding::Context { operation, source, path }
-        | Binding::ContextFromBranch { operation, source, path, .. } => {
-            match source {
-                crate::overlay::ContextSource::SelectedItem => source_binding_valid(context.model, context.overlays, context.vocabulary, operation, path, target),
-                crate::overlay::ContextSource::Response | crate::overlay::ContextSource::Request => {
-                    let side = if *source == crate::overlay::ContextSource::Response { "output" } else { "input" };
-                    context.model.resolve_path(operation.as_str(), side, path.as_str()).ok().flatten()
-                        .is_some_and(|source| pagination::compatible(context.model, &source, target))
-                }
-            }
+        Binding::FromService { service, .. } => {
+            inventory_core::inventory::ServiceId::parse(service).is_ok()
+                && matches!(
+                    plans::model::shape_type(target.value),
+                    Some("string" | "enum" | "byte" | "short" | "integer" | "long" | "boolean")
+                )
         }
+        Binding::Context {
+            operation,
+            source,
+            path,
+        }
+        | Binding::ContextFromBranch {
+            operation,
+            source,
+            path,
+            ..
+        } => match source {
+            crate::overlay::ContextSource::SelectedItem => source_binding_valid(
+                context.model,
+                context.overlays,
+                context.vocabulary,
+                operation,
+                path,
+                target,
+            ),
+            crate::overlay::ContextSource::Response | crate::overlay::ContextSource::Request => {
+                let side = if *source == crate::overlay::ContextSource::Response {
+                    "output"
+                } else {
+                    "input"
+                };
+                context
+                    .model
+                    .resolve_path(operation.as_str(), side, path.as_str())
+                    .ok()
+                    .flatten()
+                    .is_some_and(|source| pagination::compatible(context.model, &source, target))
+            }
+        },
         Binding::Transformed { .. } => false,
     }
 }
@@ -275,5 +334,3 @@ fn mark_page_size(state: &mut State<'_, '_, '_>) {
         paths::mark_provided(&mut state.provided, path);
     }
 }
-
-

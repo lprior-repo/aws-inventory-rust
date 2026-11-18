@@ -1,18 +1,18 @@
-#[path = "database/support.rs"]
-mod support;
-#[path = "database/snapshots.rs"]
-mod snapshots;
-#[path = "database/graph_offline.rs"]
-mod graph_offline;
-#[path = "database/graph_live.rs"]
-mod graph_live;
 #[path = "database/cursors.rs"]
 mod cursors;
-#[path = "database/tags.rs"]
-mod tags;
+#[path = "database/graph_live.rs"]
+mod graph_live;
+#[path = "database/graph_offline.rs"]
+mod graph_offline;
+#[path = "database/snapshots.rs"]
+mod snapshots;
+#[path = "database/support.rs"]
+mod support;
 #[cfg(feature = "native-graph-integration")]
 #[path = "database/tag_graph_live.rs"]
 mod tag_graph_live;
+#[path = "database/tags.rs"]
+mod tags;
 use cmdb_view::{Database, PageRequest, ResourceFilter};
 use inventory_core::record::{KeyRef, RecordBuilder, ValueRef};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};

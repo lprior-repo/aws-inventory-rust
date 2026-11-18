@@ -16,25 +16,52 @@ impl QueuedWorker {
     }
 }
 
-pub(crate) fn queued(config: WorkerConfig, command_capacity: usize, event_capacity: usize) -> QueuedWorker {
+pub(crate) fn queued(
+    config: WorkerConfig,
+    command_capacity: usize,
+    event_capacity: usize,
+) -> QueuedWorker {
     let (commands, receiver) = tokio::sync::mpsc::channel(command_capacity);
     let (events, outputs) = mpsc::sync_channel(event_capacity);
     let revisions = Arc::new(Revisions::default());
     let (shutdown, cancellation) = shutdown_channel();
-    let context = runner::WorkerContext::new(receiver, events, SignalToUI::default(), cancellation,
-        Arc::clone(&revisions));
+    let context = runner::WorkerContext::new(
+        receiver,
+        events,
+        SignalToUI::default(),
+        cancellation,
+        Arc::clone(&revisions),
+    );
     let (start, gate) = mpsc::channel();
     let thread = thread::spawn(move || {
-        if gate.recv().is_ok() { runner::run_worker(config, context); }
+        if gate.recv().is_ok() {
+            runner::run_worker(config, context);
+        }
     });
-    QueuedWorker { worker: DataWorker { commands, events: Some(outputs), revisions, shutdown,
-        thread: Some(thread) }, start }
+    QueuedWorker {
+        worker: DataWorker {
+            commands,
+            events: Some(outputs),
+            revisions,
+            shutdown,
+            thread: Some(thread),
+        },
+        start,
+    }
 }
 
 pub(crate) fn receive_startup_graph(worker: &DataWorker) -> TestResult {
-    let outputs = worker.events.as_ref().ok_or("worker output receiver missing")?;
-    assert!(matches!(outputs.recv_timeout(Duration::from_secs(2))?,
-        Output { revision: Some(0), event: WorkerEvent::GraphStatus { .. } }));
+    let outputs = worker
+        .events
+        .as_ref()
+        .ok_or("worker output receiver missing")?;
+    assert!(matches!(
+        outputs.recv_timeout(Duration::from_secs(2))?,
+        Output {
+            revision: Some(0),
+            event: WorkerEvent::GraphStatus { .. }
+        }
+    ));
     Ok(())
 }
 
@@ -67,12 +94,21 @@ impl BlockedGraph {
             let result = serve(listener, sent).map_err(|error| error.to_string());
             let _ = closed_sender.send(result);
         });
-        Ok(Self { endpoint, received, closed, thread: Some(thread) })
+        Ok(Self {
+            endpoint,
+            received,
+            closed,
+            thread: Some(thread),
+        })
     }
 
     pub fn config(&self, database: PathBuf) -> WorkerConfig {
-        WorkerConfig { database: Some(database), graph_url: Some(self.endpoint.clone()),
-            graph_name: Some("blocked_shutdown_query".into()), argument_error: None }
+        WorkerConfig {
+            database: Some(database),
+            graph_url: Some(self.endpoint.clone()),
+            graph_name: Some("blocked_shutdown_query".into()),
+            argument_error: None,
+        }
     }
 
     pub fn await_query(&self) -> TestResult<Vec<String>> {
@@ -81,7 +117,11 @@ impl BlockedGraph {
 
     pub fn finish(mut self) -> TestResult {
         self.closed.recv_timeout(Duration::from_secs(2))??;
-        self.thread.take().ok_or("RESP peer thread missing")?.join().map_err(|_| "RESP peer panicked")?;
+        self.thread
+            .take()
+            .ok_or("RESP peer thread missing")?
+            .join()
+            .map_err(|_| "RESP peer panicked")?;
         Ok(())
     }
 }
@@ -98,13 +138,19 @@ impl Drop for BlockedGraph {
 
 fn serve(listener: TcpListener, sent: mpsc::Sender<Vec<String>>) -> TestResult {
     let deadline = std::time::Instant::now() + Duration::from_secs(5);
-    let stream = (0..20_000_000).find_map(|_| match listener.accept() {
-        Ok((stream, _)) => Some(Ok(stream)),
-        Err(error) if error.kind() == std::io::ErrorKind::WouldBlock && std::time::Instant::now() < deadline => {
-            thread::yield_now(); None
-        }
-        Err(error) => Some(Err(error)),
-    }).ok_or("RESP peer accept budget exhausted")??;
+    let stream = (0..20_000_000)
+        .find_map(|_| match listener.accept() {
+            Ok((stream, _)) => Some(Ok(stream)),
+            Err(error)
+                if error.kind() == std::io::ErrorKind::WouldBlock
+                    && std::time::Instant::now() < deadline =>
+            {
+                thread::yield_now();
+                None
+            }
+            Err(error) => Some(Err(error)),
+        })
+        .ok_or("RESP peer accept budget exhausted")??;
     stream.set_read_timeout(Some(Duration::from_secs(5)))?;
     let mut reader = BufReader::new(stream);
     for _ in 0..8 {
@@ -113,7 +159,10 @@ fn serve(listener: TcpListener, sent: mpsc::Sender<Vec<String>>) -> TestResult {
             sent.send(command)?;
             let mut remaining = Vec::new();
             reader.read_to_end(&mut remaining)?;
-            assert!(remaining.is_empty(), "cancelled query must close without another command");
+            assert!(
+                remaining.is_empty(),
+                "cancelled query must close without another command"
+            );
             return Ok(());
         }
         assert_eq!(command.first().map(String::as_str), Some("CLIENT"));
@@ -126,18 +175,32 @@ fn serve(listener: TcpListener, sent: mpsc::Sender<Vec<String>>) -> TestResult {
 fn read_command(reader: &mut BufReader<TcpStream>) -> TestResult<Vec<String>> {
     let mut line = String::new();
     reader.read_line(&mut line)?;
-    let count: usize = line.strip_prefix('*').ok_or("expected RESP array")?.trim().parse()?;
-    if count > 16 { return Err("RESP command exceeds test bound".into()); }
-    (0..count).map(|_| {
-        line.clear();
-        reader.read_line(&mut line)?;
-        let length: usize = line.strip_prefix('$').ok_or("expected RESP bulk string")?.trim().parse()?;
-        if length > 65_536 { return Err("RESP value exceeds test bound".into()); }
-        let mut bytes = vec![0; length];
-        reader.read_exact(&mut bytes)?;
-        let mut end = [0; 2];
-        reader.read_exact(&mut end)?;
-        assert_eq!(end, *b"\r\n");
-        Ok(String::from_utf8(bytes)?)
-    }).collect()
+    let count: usize = line
+        .strip_prefix('*')
+        .ok_or("expected RESP array")?
+        .trim()
+        .parse()?;
+    if count > 16 {
+        return Err("RESP command exceeds test bound".into());
+    }
+    (0..count)
+        .map(|_| {
+            line.clear();
+            reader.read_line(&mut line)?;
+            let length: usize = line
+                .strip_prefix('$')
+                .ok_or("expected RESP bulk string")?
+                .trim()
+                .parse()?;
+            if length > 65_536 {
+                return Err("RESP value exceeds test bound".into());
+            }
+            let mut bytes = vec![0; length];
+            reader.read_exact(&mut bytes)?;
+            let mut end = [0; 2];
+            reader.read_exact(&mut end)?;
+            assert_eq!(end, *b"\r\n");
+            Ok(String::from_utf8(bytes)?)
+        })
+        .collect()
 }

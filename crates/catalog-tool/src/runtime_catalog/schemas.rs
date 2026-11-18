@@ -9,7 +9,11 @@ pub(super) fn compile(
     services: &ServiceIndex<'_>,
     checked: Option<&crate::overlay::CheckedOverlays>,
 ) -> Result<Vec<Value>, RuntimeCatalogCompileError> {
-    let context = Context { kinds, services, checked };
+    let context = Context {
+        kinds,
+        services,
+        checked,
+    };
     mapped_kinds(kinds)
         .chain(
             kinds
@@ -22,14 +26,17 @@ pub(super) fn compile(
 }
 
 fn mapped_kinds(kinds: &KindMap) -> impl Iterator<Item = (&str, &str, Option<&str>)> {
-    kinds.entries().iter().filter_map(|entry| match &entry.target {
-        KindTarget::Mapped { kind, table_name } => Some((
-            kind.as_str(),
-            table_name.as_str(),
-            entry.display_name_path.as_deref(),
-        )),
-        KindTarget::Unmapped { .. } => None,
-    })
+    kinds
+        .entries()
+        .iter()
+        .filter_map(|entry| match &entry.target {
+            KindTarget::Mapped { kind, table_name } => Some((
+                kind.as_str(),
+                table_name.as_str(),
+                entry.display_name_path.as_deref(),
+            )),
+            KindTarget::Unmapped { .. } => None,
+        })
 }
 
 struct Context<'a, 'b> {
@@ -44,8 +51,16 @@ fn schema(
     name_path: Option<&str>,
     context: &Context<'_, '_>,
 ) -> Result<Value, RuntimeCatalogCompileError> {
-    let active = context.checked.is_none_or(|checked| super::model_path::active_kind(
-        &super::model_path::ValidationContext { kinds: context.kinds, checked, services: context.services }, kind));
+    let active = context.checked.is_none_or(|checked| {
+        super::model_path::active_kind(
+            &super::model_path::ValidationContext {
+                kinds: context.kinds,
+                checked,
+                services: context.services,
+            },
+            kind,
+        )
+    });
     let name_path = name_path.filter(|_| active);
     let mut columns = if active {
         text_columns(context, kind, name_path)?
@@ -75,30 +90,65 @@ fn text_columns(
     kind: &str,
     name_path: Option<&str>,
 ) -> Result<Vec<Value>, RuntimeCatalogCompileError> {
-    let targets = context.kinds
+    let targets = context
+        .kinds
         .relations()
         .iter()
         .filter(|relation| relation.target_kinds.iter().any(|target| target == kind))
-        .filter(|relation| context.checked.is_none_or(|checked| super::model_path::active_kind(
-            &super::model_path::ValidationContext { kinds: context.kinds, checked, services: context.services },
-            &relation.source_kind)));
+        .filter(|relation| {
+            context.checked.is_none_or(|checked| {
+                super::model_path::active_kind(
+                    &super::model_path::ValidationContext {
+                        kinds: context.kinds,
+                        checked,
+                        services: context.services,
+                    },
+                    &relation.source_kind,
+                )
+            })
+        });
     let paths = targets.filter_map(|relation| match &relation.target {
-        crate::kind_map::ReviewedRelationTarget::SelectedOutput(crate::kind_map::ReviewedValuePath::Fields(path)) => Some(path.as_str()),
+        crate::kind_map::ReviewedRelationTarget::SelectedOutput(
+            crate::kind_map::ReviewedValuePath::Fields(path),
+        ) => Some(path.as_str()),
         _ => None,
     });
-    let compound_paths = context.kinds.compound_relations().iter()
+    let compound_paths = context
+        .kinds
+        .compound_relations()
+        .iter()
         .filter(|relation| relation.target_kinds.iter().any(|target| target == kind))
-        .filter(|relation| context.checked.is_none_or(|checked| super::model_path::active_kind(
-            &super::model_path::ValidationContext { kinds: context.kinds, checked, services: context.services },
-            &relation.source_kind)))
+        .filter(|relation| {
+            context.checked.is_none_or(|checked| {
+                super::model_path::active_kind(
+                    &super::model_path::ValidationContext {
+                        kinds: context.kinds,
+                        checked,
+                        services: context.services,
+                    },
+                    &relation.source_kind,
+                )
+            })
+        })
         .flat_map(|relation| &relation.components)
         .filter_map(|component| match &component.target {
-            crate::kind_map::ReviewedRelationTarget::SelectedOutput(crate::kind_map::ReviewedValuePath::Fields(path)) => Some(path.as_str()),
+            crate::kind_map::ReviewedRelationTarget::SelectedOutput(
+                crate::kind_map::ReviewedValuePath::Fields(path),
+            ) => Some(path.as_str()),
             _ => None,
         });
-    let text_paths = name_path.into_iter().chain(paths).chain(compound_paths).collect::<BTreeSet<_>>();
+    let text_paths = name_path
+        .into_iter()
+        .chain(paths)
+        .chain(compound_paths)
+        .collect::<BTreeSet<_>>();
     text_paths
         .into_iter()
-        .map(|path| encode::map([(1, encode::path(context.services, path)?), (2, Value::Int(3))]))
+        .map(|path| {
+            encode::map([
+                (1, encode::path(context.services, path)?),
+                (2, Value::Int(3)),
+            ])
+        })
         .collect()
 }

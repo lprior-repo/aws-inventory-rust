@@ -83,7 +83,8 @@ fn overridden(plan: &OperationOverlay, member: &str) -> bool {
     let declared = |path: &MemberPath| path.as_str() == member;
     plan.fixed.keys().any(declared)
         || plan.bind.keys().any(declared)
-        || plan.branches.iter().any(|branch| {
-            branch.fixed.keys().any(declared) || branch.bind.keys().any(declared)
-        })
+        || plan
+            .branches
+            .iter()
+            .any(|branch| branch.fixed.keys().any(declared) || branch.bind.keys().any(declared))
 }

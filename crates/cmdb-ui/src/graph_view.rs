@@ -78,4 +78,3 @@ pub(crate) fn click_id(ui: &WidgetRef, cx: &mut Cx, actions: &Actions) -> Option
     let item = actions.find_widget_action(uid)?;
     Some(item.cast::<DagSelectAction>().id)
 }
-

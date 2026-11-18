@@ -4,20 +4,78 @@ use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        ("CreateApplication", deferred("Model requires identitySource. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates an account access manager instance and its Amazon Web Services account access application in the associated IAM Identity Center instance. This operation is idempotent; calling it multiple times with the same parameters…")),
-        ("CreateEntitlement", deferred("Model requires applicationArn, entitlement. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates an entitlement (assignment) in account access manager. An entitlement (assignment) grants a principal (IAM Identity Center user or group) permission to assume a specified IAM role in an Amazon Web Services account. This…")),
-        ("DeleteApplication", deferred("Model requires applicationArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes an account access manager application. This operation is idempotent; deleting an application that has already been deleted does not return an error.")),
-        ("DeleteEntitlement", deferred("Model requires applicationArn, entitlementId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes an entitlement from an account access manager application. This operation is idempotent; deleting an entitlement that has already been deleted does not return an error.")),
-        ("GetApplication", deferred("Model requires applicationArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves details about an account access manager application, including its status, identity source, and tags.")),
-        ("GetEntitlement", deferred("Model requires applicationArn, entitlementId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves details about a specific entitlement for an account access manager application, including the principal, IAM role, and target account.")),
+        (
+            "CreateApplication",
+            deferred(
+                "Model requires identitySource. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates an account access manager instance and its Amazon Web Services account access application in the associated IAM Identity Center instance. This operation is idempotent; calling it multiple times with the same parameters…",
+            ),
+        ),
+        (
+            "CreateEntitlement",
+            deferred(
+                "Model requires applicationArn, entitlement. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Creates an entitlement (assignment) in account access manager. An entitlement (assignment) grants a principal (IAM Identity Center user or group) permission to assume a specified IAM role in an Amazon Web Services account. This…",
+            ),
+        ),
+        (
+            "DeleteApplication",
+            deferred(
+                "Model requires applicationArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes an account access manager application. This operation is idempotent; deleting an application that has already been deleted does not return an error.",
+            ),
+        ),
+        (
+            "DeleteEntitlement",
+            deferred(
+                "Model requires applicationArn, entitlementId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes an entitlement from an account access manager application. This operation is idempotent; deleting an entitlement that has already been deleted does not return an error.",
+            ),
+        ),
+        (
+            "GetApplication",
+            deferred(
+                "Model requires applicationArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves details about an account access manager application, including its status, identity source, and tags.",
+            ),
+        ),
+        (
+            "GetEntitlement",
+            deferred(
+                "Model requires applicationArn, entitlementId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves details about a specific entitlement for an account access manager application, including the principal, IAM role, and target account.",
+            ),
+        ),
         // Model: Lists the account access manager applications in your account. Use pagination to ensure that the operation returns quickly and successfully.
-        ("ListApplications", OperationOverlay {
-            queryable: vec![path("applicationArn")?],
-            ..read("applications", Identity::Arn(path("applicationArn")?), Scope::Region, token("nextToken", "nextToken")?)?
-        }),
-        ("ListEntitlements", deferred("Model requires applicationArn, filter. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the entitlements for a specified account access manager application. You can filter results by principal, IAM role, or account. Use pagination to ensure that the operation returns quickly and successfully.")),
-        ("ListTagsForResource", deferred("Model requires resourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the tags associated with an account access manager resource.")),
-        ("TagResource", deferred("Model requires resourceArn, tags. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Adds tags to an account access manager resource.")),
-        ("UntagResource", deferred("Model requires resourceArn, tagKeys. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes tags from an account access manager resource.")),
+        (
+            "ListApplications",
+            OperationOverlay {
+                queryable: vec![path("applicationArn")?],
+                ..read(
+                    "applications",
+                    Identity::Arn(path("applicationArn")?),
+                    Scope::Region,
+                    token("nextToken", "nextToken")?,
+                )?
+            },
+        ),
+        (
+            "ListEntitlements",
+            deferred(
+                "Model requires applicationArn, filter. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the entitlements for a specified account access manager application. You can filter results by principal, IAM role, or account. Use pagination to ensure that the operation returns quickly and successfully.",
+            ),
+        ),
+        (
+            "ListTagsForResource",
+            deferred(
+                "Model requires resourceArn. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the tags associated with an account access manager resource.",
+            ),
+        ),
+        (
+            "TagResource",
+            deferred(
+                "Model requires resourceArn, tags. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Adds tags to an account access manager resource.",
+            ),
+        ),
+        (
+            "UntagResource",
+            deferred(
+                "Model requires resourceArn, tagKeys. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Removes tags from an account access manager resource.",
+            ),
+        ),
     ])
 }

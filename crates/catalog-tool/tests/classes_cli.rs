@@ -54,14 +54,19 @@ fn explicit_policy_write_replaces_stale_bytes() -> TestResult {
 fn cli_builtin_policy_failure_never_prints_or_replaces_partial_reports() -> TestResult {
     let dir = fixture()?;
     write(dir.path(), COMMITTED, "preserve\n")?;
-    [vec![], vec!["--write"]].into_iter().try_for_each(|flags| -> TestResult {
-        let output = classes(dir.path(), &flags)?;
-        assert_eq!(output.status.code(), Some(1));
-        assert_eq!(output.stdout, b"");
-        assert!(String::from_utf8(output.stderr)?.contains("matches no operation"));
-        assert_eq!(std::fs::read_to_string(dir.path().join(COMMITTED))?, "preserve\n");
-        Ok(())
-    })?;
+    [vec![], vec!["--write"]]
+        .into_iter()
+        .try_for_each(|flags| -> TestResult {
+            let output = classes(dir.path(), &flags)?;
+            assert_eq!(output.status.code(), Some(1));
+            assert_eq!(output.stdout, b"");
+            assert!(String::from_utf8(output.stderr)?.contains("matches no operation"));
+            assert_eq!(
+                std::fs::read_to_string(dir.path().join(COMMITTED))?,
+                "preserve\n"
+            );
+            Ok(())
+        })?;
     Ok(())
 }
 

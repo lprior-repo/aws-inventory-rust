@@ -1,23 +1,80 @@
 use crate::kind_map::ApiOnlyMapping;
 
 pub(super) const ENTRIES: &[ApiOnlyMapping<'static>] = &[
-    ApiOnlyMapping { kind: "AWS::ApiOnly::QuickSightNamespace", reason: "Distinct API-managed QuickSightNamespace resource identified by @Arn in quicksight ListNamespaces Namespaces. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::RAMPermissionAssociation", reason: "Distinct API-managed RAMPermissionAssociation resource identified by resourceShareArn,arn,permissionVersion in ram ListPermissionAssociations permissions. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::RAMPermissionReplacement", reason: "Distinct API-managed RAMPermissionReplacement resource identified by id in ram ListReplacePermissionAssociationsWork replacePermissionAssociationsWorks. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::RAMResourceShareInvitation", reason: "Distinct API-managed RAMResourceShareInvitation resource identified by @resourceShareInvitationArn in ram GetResourceShareInvitations resourceShareInvitations. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::RAMSourceAssociation", reason: "Distinct API-managed RAMSourceAssociation resource identified by resourceShareArn,sourceId,sourceType in ram ListSourceAssociations sourceAssociations. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::RedshiftDataShare", reason: "Distinct API-managed RedshiftDataShare resource identified by @DataShareArn in redshift DescribeDataSharesForProducer DataShares. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::RedshiftHsmClientCertificate", reason: "Distinct API-managed RedshiftHsmClientCertificate resource identified by HsmClientCertificateIdentifier in redshift DescribeHsmClientCertificates HsmClientCertificates. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::RedshiftHsmConfiguration", reason: "Distinct API-managed RedshiftHsmConfiguration resource identified by HsmConfigurationIdentifier in redshift DescribeHsmConfigurations HsmConfigurations. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::RedshiftIdcApplication", reason: "Distinct API-managed RedshiftIdcApplication resource identified by @RedshiftIdcApplicationArn in redshift DescribeRedshiftIdcApplications RedshiftIdcApplications. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::RedshiftInboundIntegration", reason: "Distinct API-managed RedshiftInboundIntegration resource identified by @IntegrationArn in redshift DescribeInboundIntegrations InboundIntegrations. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::RedshiftQev2IdcApplication", reason: "Distinct API-managed RedshiftQev2IdcApplication resource identified by @Qev2IdcApplicationArn in redshift DescribeQev2IdcApplications Qev2IdcApplications. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::RedshiftRecommendation", reason: "Distinct API-managed RedshiftRecommendation resource identified by Id in redshift ListRecommendations Recommendations. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::RedshiftReservedNode", reason: "Distinct API-managed RedshiftReservedNode resource identified by ReservedNodeId in redshift DescribeReservedNodes ReservedNodes. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::RedshiftReservedNodeExchange", reason: "Distinct API-managed RedshiftReservedNodeExchange resource identified by ReservedNodeExchangeRequestId in redshift DescribeReservedNodeExchangeStatus ReservedNodeExchangeStatusDetails. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::RedshiftServerlessCustomDomainAssociation", reason: "Distinct API-managed RedshiftServerlessCustomDomainAssociation resource identified by customDomainName,workgroupName in redshift-serverless ListCustomDomainAssociations associations. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::RedshiftServerlessEndpointAccess", reason: "Distinct API-managed RedshiftServerlessEndpointAccess resource identified by @endpointArn in redshift-serverless ListEndpointAccess endpoints. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::RedshiftServerlessManagedWorkgroup", reason: "Distinct API-managed RedshiftServerlessManagedWorkgroup resource identified by managedWorkgroupId in redshift-serverless ListManagedWorkgroups managedWorkgroups. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::RedshiftServerlessRecoveryPoint", reason: "Distinct API-managed RedshiftServerlessRecoveryPoint resource identified by recoveryPointId in redshift-serverless ListRecoveryPoints recoveryPoints. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
-    ApiOnlyMapping { kind: "AWS::ApiOnly::RedshiftServerlessReservation", reason: "Distinct API-managed RedshiftServerlessReservation resource identified by @reservationArn in redshift-serverless ListReservations reservationsList. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type." },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::QuickSightNamespace",
+        reason: "Distinct API-managed QuickSightNamespace resource identified by @Arn in quicksight ListNamespaces Namespaces. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::RAMPermissionAssociation",
+        reason: "Distinct API-managed RAMPermissionAssociation resource identified by resourceShareArn,arn,permissionVersion in ram ListPermissionAssociations permissions. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::RAMPermissionReplacement",
+        reason: "Distinct API-managed RAMPermissionReplacement resource identified by id in ram ListReplacePermissionAssociationsWork replacePermissionAssociationsWorks. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::RAMResourceShareInvitation",
+        reason: "Distinct API-managed RAMResourceShareInvitation resource identified by @resourceShareInvitationArn in ram GetResourceShareInvitations resourceShareInvitations. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::RAMSourceAssociation",
+        reason: "Distinct API-managed RAMSourceAssociation resource identified by resourceShareArn,sourceId,sourceType in ram ListSourceAssociations sourceAssociations. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::RedshiftDataShare",
+        reason: "Distinct API-managed RedshiftDataShare resource identified by @DataShareArn in redshift DescribeDataSharesForProducer DataShares. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::RedshiftHsmClientCertificate",
+        reason: "Distinct API-managed RedshiftHsmClientCertificate resource identified by HsmClientCertificateIdentifier in redshift DescribeHsmClientCertificates HsmClientCertificates. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::RedshiftHsmConfiguration",
+        reason: "Distinct API-managed RedshiftHsmConfiguration resource identified by HsmConfigurationIdentifier in redshift DescribeHsmConfigurations HsmConfigurations. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::RedshiftIdcApplication",
+        reason: "Distinct API-managed RedshiftIdcApplication resource identified by @RedshiftIdcApplicationArn in redshift DescribeRedshiftIdcApplications RedshiftIdcApplications. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::RedshiftInboundIntegration",
+        reason: "Distinct API-managed RedshiftInboundIntegration resource identified by @IntegrationArn in redshift DescribeInboundIntegrations InboundIntegrations. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::RedshiftQev2IdcApplication",
+        reason: "Distinct API-managed RedshiftQev2IdcApplication resource identified by @Qev2IdcApplicationArn in redshift DescribeQev2IdcApplications Qev2IdcApplications. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::RedshiftRecommendation",
+        reason: "Distinct API-managed RedshiftRecommendation resource identified by Id in redshift ListRecommendations Recommendations. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::RedshiftReservedNode",
+        reason: "Distinct API-managed RedshiftReservedNode resource identified by ReservedNodeId in redshift DescribeReservedNodes ReservedNodes. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::RedshiftReservedNodeExchange",
+        reason: "Distinct API-managed RedshiftReservedNodeExchange resource identified by ReservedNodeExchangeRequestId in redshift DescribeReservedNodeExchangeStatus ReservedNodeExchangeStatusDetails. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::RedshiftServerlessCustomDomainAssociation",
+        reason: "Distinct API-managed RedshiftServerlessCustomDomainAssociation resource identified by customDomainName,workgroupName in redshift-serverless ListCustomDomainAssociations associations. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::RedshiftServerlessEndpointAccess",
+        reason: "Distinct API-managed RedshiftServerlessEndpointAccess resource identified by @endpointArn in redshift-serverless ListEndpointAccess endpoints. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::RedshiftServerlessManagedWorkgroup",
+        reason: "Distinct API-managed RedshiftServerlessManagedWorkgroup resource identified by managedWorkgroupId in redshift-serverless ListManagedWorkgroups managedWorkgroups. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::RedshiftServerlessRecoveryPoint",
+        reason: "Distinct API-managed RedshiftServerlessRecoveryPoint resource identified by recoveryPointId in redshift-serverless ListRecoveryPoints recoveryPoints. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::RedshiftServerlessReservation",
+        reason: "Distinct API-managed RedshiftServerlessReservation resource identified by @reservationArn in redshift-serverless ListReservations reservationsList. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
 ];

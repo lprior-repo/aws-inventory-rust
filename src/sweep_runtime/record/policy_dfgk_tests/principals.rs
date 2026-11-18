@@ -1,7 +1,8 @@
 use super::*;
 
 #[test]
-fn given_invalid_recognized_principal_arns_when_list_roles_produces_trust_references_then_the_page_fails_closed() -> TestResult {
+fn given_invalid_recognized_principal_arns_when_list_roles_produces_trust_references_then_the_page_fails_closed()
+-> TestResult {
     let catalog = catalog()?;
     let plan = plan(&catalog, "iam", "ListRoles")?;
     for (principal_type, resource) in [
@@ -17,26 +18,48 @@ fn given_invalid_recognized_principal_arns_when_list_roles_produces_trust_refere
         }]}))?;
         let observed = observations(plan, rows(plan, &listed_role(&document))?)?;
         let observation = observed.first().ok_or("projected role absent")?;
-        assert!(matches!(crate::sweep_runtime::resource_projection::trust_references(&catalog, plan, observation),
-            Err(SweepError::Operation("invalid reviewed IAM principal ARN"))), "accepted invalid principal {arn}");
+        assert!(
+            matches!(
+                crate::sweep_runtime::resource_projection::trust_references(
+                    &catalog,
+                    plan,
+                    observation
+                ),
+                Err(SweepError::Operation("invalid reviewed IAM principal ARN"))
+            ),
+            "accepted invalid principal {arn}"
+        );
     }
     Ok(())
 }
 
 #[test]
-fn given_punctuated_iam_paths_when_list_roles_produces_trust_references_then_concrete_role_targets_are_preserved_exactly() -> TestResult {
+fn given_punctuated_iam_paths_when_list_roles_produces_trust_references_then_concrete_role_targets_are_preserved_exactly()
+-> TestResult {
     let catalog = catalog()?;
     let plan = plan(&catalog, "iam", "ListRoles")?;
-    for path in ["team:prod", "team#prod", "team%prod", r"team\prod", r"team:#%\prod"] {
+    for path in [
+        "team:prod",
+        "team#prod",
+        "team%prod",
+        r"team\prod",
+        r"team:#%\prod",
+    ] {
         let arn = format!("arn:aws:iam::210987654321:role/{path}/external_+=,.@-");
         let document = serde_json::to_string(&json!({"Statement":[{
             "Effect":"Allow", "Action":"sts:AssumeRole", "Principal":{"AWS":arn}
         }]}))?;
         let observed = observations(plan, rows(plan, &listed_role(&document))?)?;
         let observation = observed.first().ok_or("projected role absent")?;
-        let references = crate::sweep_runtime::resource_projection::trust_references(&catalog, plan, observation)?;
+        let references = crate::sweep_runtime::resource_projection::trust_references(
+            &catalog,
+            plan,
+            observation,
+        )?;
         assert_eq!(references.len(), 1, "lost valid path principal {arn}");
-        let reference = references.first().ok_or("valid path principal reference absent")?;
+        let reference = references
+            .first()
+            .ok_or("valid path principal reference absent")?;
         assert_eq!(reference.relation.as_str(), "DECLARES_TRUST");
         assert_eq!(reference.target.kind().as_str(), "AWS::IAM::Role");
         assert_eq!(reference.target.account().as_str(), "210987654321");

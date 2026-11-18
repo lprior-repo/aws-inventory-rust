@@ -15,7 +15,10 @@ const MAX_ENTRIES: usize = 65_536;
 /// Reads one Smithy model, keeping only operations inside its service closure.
 pub(crate) fn read_model<T: serde::de::DeserializeOwned>(file: &Path) -> Result<T, Error> {
     let bytes = read_bytes(file, MAX_FILE_BYTES)?;
-    let invalid = |source| Error::InvalidJson { file: file.to_path_buf(), source };
+    let invalid = |source| Error::InvalidJson {
+        file: file.to_path_buf(),
+        source,
+    };
     let unbound = closure::unbound_operations(&bytes).map_err(invalid)?;
     if unbound.is_empty() {
         return serde_json::from_slice(&bytes).map_err(invalid);
@@ -26,13 +29,19 @@ pub(crate) fn read_model<T: serde::de::DeserializeOwned>(file: &Path) -> Result<
 /// Reads one Smithy model as JSON, keeping only operations inside its service closure.
 pub(crate) fn read_value(file: &Path) -> Result<serde_json::Value, Error> {
     let bytes = read_bytes(file, MAX_FILE_BYTES)?;
-    let invalid = |source| Error::InvalidJson { file: file.to_path_buf(), source };
+    let invalid = |source| Error::InvalidJson {
+        file: file.to_path_buf(),
+        source,
+    };
     let unbound = closure::unbound_operations(&bytes).map_err(invalid)?;
     bound_value(&bytes, &unbound).map_err(invalid)
 }
 fn bound_value(bytes: &[u8], unbound: &[String]) -> Result<serde_json::Value, serde_json::Error> {
     let mut value = serde_json::from_slice::<UniqueValue>(bytes)?.0;
-    if let Some(shapes) = value.get_mut("shapes").and_then(serde_json::Value::as_object_mut) {
+    if let Some(shapes) = value
+        .get_mut("shapes")
+        .and_then(serde_json::Value::as_object_mut)
+    {
         shapes.retain(|id, _| unbound.binary_search(id).is_err());
     }
     Ok(value)

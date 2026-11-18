@@ -5,19 +5,87 @@ use super::*;
 // Topic and TopicV2 have separate create/read contracts; preserve both canonical kinds.
 pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
     [
-        ("ListActionConnectors", "ActionConnectorSummaries", "Arn", "AwsAccountId", "NextToken"),
-        ("ListAgents", "AgentSummaries", "Arn", "AwsAccountId", "NextToken"),
-        ("ListApps", "AppSummaryList", "Arn", "AwsAccountId", "NextToken"),
+        (
+            "ListActionConnectors",
+            "ActionConnectorSummaries",
+            "Arn",
+            "AwsAccountId",
+            "NextToken",
+        ),
+        (
+            "ListAgents",
+            "AgentSummaries",
+            "Arn",
+            "AwsAccountId",
+            "NextToken",
+        ),
+        (
+            "ListApps",
+            "AppSummaryList",
+            "Arn",
+            "AwsAccountId",
+            "NextToken",
+        ),
         ("ListBrands", "Brands", "Arn", "AwsAccountId", "NextToken"),
-        ("ListDlpSettings", "DlpSettingSummaries", "Arn", "AwsAccountId", "NextToken"),
-        ("ListFlows", "FlowSummaryList", "Arn", "AwsAccountId", "NextToken"),
-        ("ListLimitsProfiles", "profiles", "arn", "accountId", "nextToken"),
-        ("ListOAuthClientApplications", "OAuthClientApplications", "Arn", "AwsAccountId", "NextToken"),
-        ("ListSpaces", "SpaceSummaries", "spaceArn", "AwsAccountId", "NextToken"),
-        ("ListTemplates", "TemplateSummaryList", "Arn", "AwsAccountId", "NextToken"),
-        ("ListTopics", "TopicsSummaries", "Arn", "AwsAccountId", "NextToken"),
-        ("ListTopicsV2", "TopicSummaryList", "Arn", "AwsAccountId", "NextToken"),
-    ].into_iter().try_for_each(|(operation, items, field, account, token)| {
+        (
+            "ListDlpSettings",
+            "DlpSettingSummaries",
+            "Arn",
+            "AwsAccountId",
+            "NextToken",
+        ),
+        (
+            "ListFlows",
+            "FlowSummaryList",
+            "Arn",
+            "AwsAccountId",
+            "NextToken",
+        ),
+        (
+            "ListLimitsProfiles",
+            "profiles",
+            "arn",
+            "accountId",
+            "nextToken",
+        ),
+        (
+            "ListOAuthClientApplications",
+            "OAuthClientApplications",
+            "Arn",
+            "AwsAccountId",
+            "NextToken",
+        ),
+        (
+            "ListSpaces",
+            "SpaceSummaries",
+            "spaceArn",
+            "AwsAccountId",
+            "NextToken",
+        ),
+        (
+            "ListTemplates",
+            "TemplateSummaryList",
+            "Arn",
+            "AwsAccountId",
+            "NextToken",
+        ),
+        (
+            "ListTopics",
+            "TopicsSummaries",
+            "Arn",
+            "AwsAccountId",
+            "NextToken",
+        ),
+        (
+            "ListTopicsV2",
+            "TopicSummaryList",
+            "Arn",
+            "AwsAccountId",
+            "NextToken",
+        ),
+    ]
+    .into_iter()
+    .try_for_each(|(operation, items, field, account, token)| {
         let mut plan = arn(items, field, Some((token, token)))?;
         plan.bind.insert(path(account)?, Binding::Account);
         put(service, operation, plan)

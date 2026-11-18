@@ -2,8 +2,6 @@
 //! Sources are pinned Smithy model paths beside each literal table.
 
 use super::{NameError, ServiceOverlay};
-mod routing_plans;
-mod tag_plans;
 mod construction;
 mod coverage_plans;
 mod qapps;
@@ -24,13 +22,14 @@ mod resource_explorer_2;
 mod resource_groups;
 mod resource_groups_tagging_api;
 mod rolesanywhere;
-mod route_53_domains;
 mod route53_recovery_cluster;
 mod route53_recovery_control_config;
 mod route53_recovery_readiness;
 mod route53globalresolver;
 mod route53profiles;
 mod route53resolver;
+mod route_53_domains;
+mod routing_plans;
 mod rtbfabric;
 mod rum;
 mod s3_control;
@@ -88,6 +87,7 @@ mod supportauthz;
 mod sustainability;
 mod swf;
 mod synthetics;
+mod tag_plans;
 
 pub(super) fn overlays() -> Result<Vec<ServiceOverlay>, NameError> {
     [

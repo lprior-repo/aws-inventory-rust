@@ -150,21 +150,40 @@ fn graph_neighbor_can_become_the_selected_resource_without_fabricated_sql_metada
 }
 
 #[test]
-fn given_scoped_tags_when_selected_and_filtered_then_values_remain_exact_and_separate_from_dependencies() {
+fn given_scoped_tags_when_selected_and_filtered_then_values_remain_exact_and_separate_from_dependencies()
+ {
     let mut tagged = row("111111111111", "AWS::EC2::VPC", "vpc-a");
-    tagged.tags = vec![cmdb_view::ResourceTag { key: "owner".into(), value: String::new() }];
+    tagged.tags = vec![cmdb_view::ResourceTag {
+        key: "owner".into(),
+        value: String::new(),
+    }];
     let mut data = Data::default();
     data.replace_page(vec![tagged.clone()], 1);
-    let filter = cmdb_view::TagFilter { key: "owner".into(), value: Some(String::new()) };
+    let filter = cmdb_view::TagFilter {
+        key: "owner".into(),
+        value: Some(String::new()),
+    };
     data.set_tag(Some(filter.clone()));
     assert_eq!(data.filter().tag, Some(filter));
     assert_eq!(data.selected_row(), Some(&tagged));
     let affiliation = cmdb_view::TagAffiliation {
-        tag: cmdb_view::ScopedTag { account: tagged.account.clone(), region: tagged.region.clone(),
-            key: "owner".into(), value: String::new() }, provenance: "inventory.tags".into(),
+        tag: cmdb_view::ScopedTag {
+            account: tagged.account.clone(),
+            region: tagged.region.clone(),
+            key: "owner".into(),
+            value: String::new(),
+        },
+        provenance: "inventory.tags".into(),
     };
-    data.set_graph(Graph { tag_root: Some(tagged.key.clone()), tag_affiliations: vec![affiliation.clone()],
-        tags_truncated: true, ..Graph::default() }, None);
+    data.set_graph(
+        Graph {
+            tag_root: Some(tagged.key.clone()),
+            tag_affiliations: vec![affiliation.clone()],
+            tags_truncated: true,
+            ..Graph::default()
+        },
+        None,
+    );
     assert!(data.visual_graph().edges.is_empty());
     assert_eq!(data.visual_graph().tag_affiliations, vec![affiliation]);
     assert!(data.graph_status().contains("tag affiliations truncated"));
@@ -178,9 +197,14 @@ fn given_scoped_tags_when_selected_and_filtered_then_values_remain_exact_and_sep
 #[test]
 fn given_accepted_candidate_filter_when_committed_then_all_owned_fields_replace_atomically() {
     let candidate = Filter {
-        account: Some("111111111111".into()), region: Some("us-west-2".into()),
-        kind: Some("AWS::EC2::VPC".into()), query: "exact query".into(),
-        tag: Some(cmdb_view::TagFilter { key: " owner ".into(), value: Some(String::new()) }),
+        account: Some("111111111111".into()),
+        region: Some("us-west-2".into()),
+        kind: Some("AWS::EC2::VPC".into()),
+        query: "exact query".into(),
+        tag: Some(cmdb_view::TagFilter {
+            key: " owner ".into(),
+            value: Some(String::new()),
+        }),
     };
     let mut data = Data::default();
     data.set_query("obsolete");
@@ -196,7 +220,13 @@ fn given_graph_candidate_when_looked_up_then_selection_changes_only_on_commit() 
     let neighbor = row("111111111111", "AWS::EC2::Subnet", "neighbor");
     let mut data = Data::default();
     data.replace_page(vec![first.clone()], 1);
-    data.set_graph(Graph { nodes: vec![neighbor.clone()], ..Graph::default() }, None);
+    data.set_graph(
+        Graph {
+            nodes: vec![neighbor.clone()],
+            ..Graph::default()
+        },
+        None,
+    );
     let candidate = data.row_for_key(&neighbor.key).cloned();
     assert_eq!(candidate, Some(neighbor.clone()));
     assert_eq!(data.selected_row(), Some(&first));
@@ -210,21 +240,38 @@ fn given_graph_candidate_when_looked_up_then_selection_changes_only_on_commit() 
 }
 
 #[test]
-fn given_accepted_graph_when_request_error_is_reported_then_existing_selection_and_graph_are_retained() {
+fn given_accepted_graph_when_request_error_is_reported_then_existing_selection_and_graph_are_retained()
+ {
     let selected = row("111111111111", "AWS::EC2::VPC", "selected");
     let mut data = Data::default();
     data.replace_page(vec![selected.clone()], 1);
-    let accepted = Graph { nodes: vec![selected.clone()], tag_root: Some(selected.key.clone()),
+    let accepted = Graph {
+        nodes: vec![selected.clone()],
+        tag_root: Some(selected.key.clone()),
         tag_affiliations: vec![cmdb_view::TagAffiliation {
-            tag: cmdb_view::ScopedTag { account: selected.account.clone(), region: selected.region.clone(),
-                key: "owner".into(), value: String::new() }, provenance: "inventory.tags".into(),
-        }], ..Graph::default() };
+            tag: cmdb_view::ScopedTag {
+                account: selected.account.clone(),
+                region: selected.region.clone(),
+                key: "owner".into(),
+                value: String::new(),
+            },
+            provenance: "inventory.tags".into(),
+        }],
+        ..Graph::default()
+    };
     data.set_graph(accepted.clone(), None);
     data.set_graph_error(Some("inventory worker queue is full".into()));
     assert_eq!(data.selected_row(), Some(&selected));
     assert_eq!(data.visual_graph(), accepted);
-    assert!(data.graph_status().contains("inventory worker queue is full"));
+    assert!(
+        data.graph_status()
+            .contains("inventory worker queue is full")
+    );
     data.set_graph_error(None);
     assert_eq!(data.visual_graph(), accepted);
-    assert!(!data.graph_status().contains("inventory worker queue is full"));
+    assert!(
+        !data
+            .graph_status()
+            .contains("inventory worker queue is full")
+    );
 }

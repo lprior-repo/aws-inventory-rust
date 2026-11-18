@@ -217,10 +217,7 @@ fn given_ambient_environment_when_child_runs_then_only_allowed_variables_reach_i
     let variables: std::collections::BTreeSet<_> = environment.lines().collect();
     assert_eq!(
         variables,
-        std::collections::BTreeSet::from([
-            "EMULATOR_TELEMETRY=off",
-            "PATH=/usr/bin:/bin",
-        ]),
+        std::collections::BTreeSet::from(["EMULATOR_TELEMETRY=off", "PATH=/usr/bin:/bin",]),
     );
     Ok(())
 }

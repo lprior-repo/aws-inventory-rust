@@ -1,8 +1,8 @@
+use super::ContextSource;
 use crate::{
     catalog::{Shape, ValueConstraints, runtime::RuntimeCatalogError},
     record::{FieldId, ValueRef},
 };
-use super::ContextSource;
 use regex::{Regex, RegexBuilder};
 use std::{collections::HashMap, sync::Arc};
 
@@ -20,9 +20,16 @@ impl<'a> IdentityPatternCache<'a> {
         if let Some(compiled) = self.patterns.get(pattern) {
             return Ok(Arc::clone(compiled));
         }
-        if pattern.len() > MAX_PATTERN_BYTES { return Err(RuntimeCatalogError::Bounds); }
-        let compiled = Arc::new(RegexBuilder::new(pattern).size_limit(REGEX_SIZE_LIMIT)
-            .dfa_size_limit(REGEX_SIZE_LIMIT).build().map_err(|_| RuntimeCatalogError::Capability)?);
+        if pattern.len() > MAX_PATTERN_BYTES {
+            return Err(RuntimeCatalogError::Bounds);
+        }
+        let compiled = Arc::new(
+            RegexBuilder::new(pattern)
+                .size_limit(REGEX_SIZE_LIMIT)
+                .dfa_size_limit(REGEX_SIZE_LIMIT)
+                .build()
+                .map_err(|_| RuntimeCatalogError::Capability)?,
+        );
         self.patterns.insert(pattern, Arc::clone(&compiled));
         Ok(compiled)
     }
@@ -48,12 +55,19 @@ impl<'a> IdentityTextOperand<'a> {
             return Err(RuntimeCatalogError::Capability);
         }
         let target = match shape {
-            Some(shape) if matches!(shape.kind()?, "string" | "enum") => shape.value_constraints()?,
+            Some(shape) if matches!(shape.kind()?, "string" | "enum") => {
+                shape.value_constraints()?
+            }
             Some(_) => return Err(RuntimeCatalogError::Capability),
             None => ValueConstraints::default(),
         };
         let constraints = CompiledTextConstraints::compile(target, member, cache)?;
-        Ok(Self { source, path: path.into(), shape, constraints })
+        Ok(Self {
+            source,
+            path: path.into(),
+            shape,
+            constraints,
+        })
     }
 
     /// Checks retained shape/member constraints without allocating or recompiling.
@@ -61,7 +75,9 @@ impl<'a> IdentityTextOperand<'a> {
     /// # Errors
     /// Rejects malformed retained enum metadata.
     pub fn accepts(&self, text: &str) -> Result<bool, RuntimeCatalogError> {
-        if !self.constraints.accepts(text) { return Ok(false); }
+        if !self.constraints.accepts(text) {
+            return Ok(false);
+        }
         match self.shape {
             Some(shape) => Ok(shape.accepts_enum_value(ValueRef::Text(text))?),
             None => Ok(true),
@@ -100,13 +116,19 @@ impl CompiledTextConstraints {
         if matches!((minimum, maximum), (Some(min), Some(max)) if min > max) {
             return Err(RuntimeCatalogError::Capability);
         }
-        Ok(Self { minimum, maximum, patterns: patterns.into_boxed_slice() })
+        Ok(Self {
+            minimum,
+            maximum,
+            patterns: patterns.into_boxed_slice(),
+        })
     }
 
     fn accepts(&self, text: &str) -> bool {
         if self.minimum.is_some() || self.maximum.is_some() {
             let length = text.chars().count();
-            if self.minimum.is_some_and(|min| length < min) || self.maximum.is_some_and(|max| length > max) {
+            if self.minimum.is_some_and(|min| length < min)
+                || self.maximum.is_some_and(|max| length > max)
+            {
                 return false;
             }
         }
@@ -122,17 +144,27 @@ pub struct IdentityTextPlan<'a> {
 
 impl<'a> IdentityTextPlan<'a> {
     pub(crate) fn new(mut operands: Vec<IdentityTextOperand<'a>>) -> Self {
-        operands.sort_unstable_by(|left, right| source_order(left.source).cmp(&source_order(right.source))
-            .then_with(|| left.path.cmp(&right.path)));
+        operands.sort_unstable_by(|left, right| {
+            source_order(left.source)
+                .cmp(&source_order(right.source))
+                .then_with(|| left.path.cmp(&right.path))
+        });
         operands.dedup_by(|left, right| left.source == right.source && left.path == right.path);
-        Self { operands: operands.into_boxed_slice() }
+        Self {
+            operands: operands.into_boxed_slice(),
+        }
     }
 
     /// Checks one operand selected by the existing identity dispatch.
     ///
     /// # Errors
     /// Rejects missing compiled operand metadata or malformed retained enums.
-    pub fn accepts(&self, source: ContextSource, path: &[FieldId], text: &str) -> Result<bool, RuntimeCatalogError> {
+    pub fn accepts(
+        &self,
+        source: ContextSource,
+        path: &[FieldId],
+        text: &str,
+    ) -> Result<bool, RuntimeCatalogError> {
         self.operand(source, path)?.accepts(text)
     }
 
@@ -140,15 +172,31 @@ impl<'a> IdentityTextPlan<'a> {
     ///
     /// # Errors
     /// Rejects an operand not compiled from the emission's modeled schema.
-    pub fn operand(&self, source: ContextSource, path: &[FieldId]) -> Result<&IdentityTextOperand<'a>, RuntimeCatalogError> {
-        let index = self.operands.binary_search_by(|operand| source_order(operand.source).cmp(&source_order(source))
-            .then_with(|| operand.path.as_ref().cmp(path))).map_err(|_| RuntimeCatalogError::Capability)?;
-        self.operands.get(index).ok_or(RuntimeCatalogError::Capability)
+    pub fn operand(
+        &self,
+        source: ContextSource,
+        path: &[FieldId],
+    ) -> Result<&IdentityTextOperand<'a>, RuntimeCatalogError> {
+        let index = self
+            .operands
+            .binary_search_by(|operand| {
+                source_order(operand.source)
+                    .cmp(&source_order(source))
+                    .then_with(|| operand.path.as_ref().cmp(path))
+            })
+            .map_err(|_| RuntimeCatalogError::Capability)?;
+        self.operands
+            .get(index)
+            .ok_or(RuntimeCatalogError::Capability)
     }
 }
 
 fn source_order(source: ContextSource) -> u8 {
-    match source { ContextSource::SelectedItem => 0, ContextSource::Request => 1, ContextSource::Response => 2 }
+    match source {
+        ContextSource::SelectedItem => 0,
+        ContextSource::Request => 1,
+        ContextSource::Response => 2,
+    }
 }
 
 #[cfg(test)]
@@ -157,44 +205,80 @@ mod tests {
     type TestResult = Result<(), Box<dyn std::error::Error>>;
 
     #[test]
-    fn given_unicode_text_and_model_bounds_when_validated_then_length_counts_characters() -> TestResult {
+    fn given_unicode_text_and_model_bounds_when_validated_then_length_counts_characters()
+    -> TestResult {
         let path = [FieldId::new(1)?];
         let mut cache = IdentityPatternCache::default();
-        let operand = IdentityTextOperand::compile(ContextSource::SelectedItem, &path, None,
-            Some(ValueConstraints { min_length: Some(2), max_length: Some(2), pattern: Some("^[éβ]+$") }), &mut cache)?;
+        let operand = IdentityTextOperand::compile(
+            ContextSource::SelectedItem,
+            &path,
+            None,
+            Some(ValueConstraints {
+                min_length: Some(2),
+                max_length: Some(2),
+                pattern: Some("^[éβ]+$"),
+            }),
+            &mut cache,
+        )?;
         let plan = IdentityTextPlan::new(vec![operand]);
         assert!(plan.accepts(ContextSource::SelectedItem, &path, "éβ")?);
         assert!(!plan.accepts(ContextSource::SelectedItem, &path, "é")?);
         assert!(!plan.accepts(ContextSource::SelectedItem, &path, "éβé")?);
         assert!(!plan.accepts(ContextSource::SelectedItem, &path, "ab")?);
-        assert!(matches!(plan.accepts(ContextSource::Request, &path, "éβ"), Err(RuntimeCatalogError::Capability)));
+        assert!(matches!(
+            plan.accepts(ContextSource::Request, &path, "éβ"),
+            Err(RuntimeCatalogError::Capability)
+        ));
         Ok(())
     }
 
     #[test]
-    fn given_repeated_model_pattern_when_compiled_then_operands_share_one_bounded_regex() -> TestResult {
+    fn given_repeated_model_pattern_when_compiled_then_operands_share_one_bounded_regex()
+    -> TestResult {
         let oversized = "x".repeat(MAX_PATTERN_BYTES + 1);
         let mut cache = IdentityPatternCache::default();
         let first = cache.pattern("^arn:aws:wisdom:[^:]+:[0-9]{12}:.*$")?;
         let second = cache.pattern("^arn:aws:wisdom:[^:]+:[0-9]{12}:.*$")?;
         assert!(Arc::ptr_eq(&first, &second));
         assert_eq!(cache.patterns.len(), 1);
-        assert!(matches!(cache.pattern("["), Err(RuntimeCatalogError::Capability)));
-        assert!(matches!(cache.pattern(&oversized), Err(RuntimeCatalogError::Bounds)));
+        assert!(matches!(
+            cache.pattern("["),
+            Err(RuntimeCatalogError::Capability)
+        ));
+        assert!(matches!(
+            cache.pattern(&oversized),
+            Err(RuntimeCatalogError::Bounds)
+        ));
         Ok(())
     }
 
     #[test]
-    fn given_shape_and_member_constraints_when_compiled_then_both_patterns_and_tighter_member_bounds_apply() -> TestResult {
+    fn given_shape_and_member_constraints_when_compiled_then_both_patterns_and_tighter_member_bounds_apply()
+    -> TestResult {
         // Given independent modeled shape and member constraints.
-        let target = ValueConstraints { min_length: Some(2), max_length: Some(6), pattern: Some("^a") };
-        let member = ValueConstraints { min_length: Some(4), max_length: Some(5), pattern: Some("z$") };
+        let target = ValueConstraints {
+            min_length: Some(2),
+            max_length: Some(6),
+            pattern: Some("^a"),
+        };
+        let member = ValueConstraints {
+            min_length: Some(4),
+            max_length: Some(5),
+            pattern: Some("z$"),
+        };
         let mut cache = IdentityPatternCache::default();
         // When the immutable intersection is compiled once.
         let rules = CompiledTextConstraints::compile(target, Some(member), &mut cache)?;
         // Then both inclusive bounds and both independent patterns apply.
-        for (text, expected) in [("abcz", true), ("abcdz", true), ("abz", false),
-            ("abcdez", false), ("zzzz", false), ("aaaa", false), ("", false)] {
+        for (text, expected) in [
+            ("abcz", true),
+            ("abcdz", true),
+            ("abz", false),
+            ("abcdez", false),
+            ("zzzz", false),
+            ("aaaa", false),
+            ("", false),
+        ] {
             assert_eq!(rules.accepts(text), expected, "{text:?}");
         }
         assert_eq!(cache.patterns.len(), 2);
@@ -202,29 +286,58 @@ mod tests {
     }
 
     #[test]
-    fn given_looser_member_bounds_when_compiled_then_the_shape_bounds_are_not_overwritten() -> TestResult {
-        let target = ValueConstraints { min_length: Some(4), max_length: Some(5), pattern: None };
-        let member = ValueConstraints { min_length: Some(2), max_length: Some(6), pattern: None };
+    fn given_looser_member_bounds_when_compiled_then_the_shape_bounds_are_not_overwritten()
+    -> TestResult {
+        let target = ValueConstraints {
+            min_length: Some(4),
+            max_length: Some(5),
+            pattern: None,
+        };
+        let member = ValueConstraints {
+            min_length: Some(2),
+            max_length: Some(6),
+            pattern: None,
+        };
         let mut cache = IdentityPatternCache::default();
         let rules = CompiledTextConstraints::compile(target, Some(member), &mut cache)?;
-        for (text, expected) in [("aaa", false), ("aaaa", true), ("aaaaa", true), ("aaaaaa", false)] {
+        for (text, expected) in [
+            ("aaa", false),
+            ("aaaa", true),
+            ("aaaaa", true),
+            ("aaaaaa", false),
+        ] {
             assert_eq!(rules.accepts(text), expected, "{text:?}");
         }
         Ok(())
     }
 
     #[test]
-    fn given_disjoint_shape_and_member_lengths_when_compiled_then_catalog_load_rejects_the_recipe() {
-        let target = ValueConstraints { min_length: Some(2), max_length: Some(3), pattern: None };
-        let member = ValueConstraints { min_length: Some(4), max_length: Some(5), pattern: None };
+    fn given_disjoint_shape_and_member_lengths_when_compiled_then_catalog_load_rejects_the_recipe()
+    {
+        let target = ValueConstraints {
+            min_length: Some(2),
+            max_length: Some(3),
+            pattern: None,
+        };
+        let member = ValueConstraints {
+            min_length: Some(4),
+            max_length: Some(5),
+            pattern: None,
+        };
         let mut cache = IdentityPatternCache::default();
-        assert!(matches!(CompiledTextConstraints::compile(target, Some(member), &mut cache),
-            Err(RuntimeCatalogError::Capability)));
+        assert!(matches!(
+            CompiledTextConstraints::compile(target, Some(member), &mut cache),
+            Err(RuntimeCatalogError::Capability)
+        ));
     }
 
     #[test]
-    fn given_identical_shape_and_member_pattern_when_compiled_then_the_intersection_reuses_one_matcher() -> TestResult {
-        let target = ValueConstraints { pattern: Some("^arn:"), ..ValueConstraints::default() };
+    fn given_identical_shape_and_member_pattern_when_compiled_then_the_intersection_reuses_one_matcher()
+    -> TestResult {
+        let target = ValueConstraints {
+            pattern: Some("^arn:"),
+            ..ValueConstraints::default()
+        };
         let mut cache = IdentityPatternCache::default();
         let rules = CompiledTextConstraints::compile(target, Some(target), &mut cache)?;
         assert_eq!(rules.patterns.len(), 1);
@@ -266,16 +379,34 @@ mod tests {
     }
 
     #[test]
-    fn given_modeled_namespace_element_constraints_when_a_list_validator_is_resolved_then_each_component_obeys_the_source() -> TestResult {
+    fn given_modeled_namespace_element_constraints_when_a_list_validator_is_resolved_then_each_component_obeys_the_source()
+    -> TestResult {
         // Pinned S3Tables NamespaceName: length 1..=255 and ^[0-9a-z_]*$.
         let path = [FieldId::new(1)?];
         let mut cache = IdentityPatternCache::default();
-        let operand = IdentityTextOperand::compile(ContextSource::SelectedItem, &path, None,
-            Some(ValueConstraints { min_length: Some(1), max_length: Some(255), pattern: Some("^[0-9a-z_]*$") }), &mut cache)?;
+        let operand = IdentityTextOperand::compile(
+            ContextSource::SelectedItem,
+            &path,
+            None,
+            Some(ValueConstraints {
+                min_length: Some(1),
+                max_length: Some(255),
+                pattern: Some("^[0-9a-z_]*$"),
+            }),
+            &mut cache,
+        )?;
         let plan = IdentityTextPlan::new(vec![operand]);
         let element = plan.operand(ContextSource::SelectedItem, &path)?;
-        for (component, expected) in [("valid_name", true), ("0", true), ("", false),
-            ("a:b", false), ("Upper", false), ("a-b", false), ("a b", false), ("é", false)] {
+        for (component, expected) in [
+            ("valid_name", true),
+            ("0", true),
+            ("", false),
+            ("a:b", false),
+            ("Upper", false),
+            ("a-b", false),
+            ("a b", false),
+            ("é", false),
+        ] {
             assert_eq!(element.accepts(component)?, expected, "{component:?}");
         }
         assert_eq!(element.accepts(&"a".repeat(255))?, true);

@@ -1,10 +1,24 @@
 use super::*;
 
 #[tokio::test]
-async fn given_two_directory_pool_and_application_parents_when_untraited_pagers_and_typed_association_selectors_execute_then_every_owned_child_survives_sqlite() -> TestResult {
+async fn given_two_directory_pool_and_application_parents_when_untraited_pagers_and_typed_association_selectors_execute_then_every_owned_child_survives_sqlite()
+-> TestResult {
     let catalog = RuntimeCatalog::from_bytes(catalog::bytes()?)?;
     let scenario = Scenario::new(&catalog, "tz-workspaces-completion").await?;
-    scenario.seed(&catalog, "workspaces", &["DescribeWorkspaceDirectories","DescribeWorkspacesPools","DescribeApplications","DescribeWorkspaceBundles","DescribeWorkspaceImages","DescribeWorkspaces"]).await?;
+    scenario
+        .seed(
+            &catalog,
+            "workspaces",
+            &[
+                "DescribeWorkspaceDirectories",
+                "DescribeWorkspacesPools",
+                "DescribeApplications",
+                "DescribeWorkspaceBundles",
+                "DescribeWorkspaceImages",
+                "DescribeWorkspaces",
+            ],
+        )
+        .await?;
     let (scenario, seen) = scenario.drain(&catalog, "workspaces", |plan, request, wire, resumed| {
         let native = if wire.headers().get("smithy-protocol") == Some(&http::HeaderValue::from_static("rpc-v2-cbor")) {
             crate::sweep_runtime::execution::page::child::policy_tz_completion_tests::decode_rpc_body(wire.body())?
@@ -73,59 +87,178 @@ async fn given_two_directory_pool_and_application_parents_when_untraited_pagers_
             other => Err(format!("unexpected WorkSpaces operation {other}").into()),
         }
     }).await?;
-    assert_eq!(seen.len(),12);
-    assert_eq!(seen.get("DescribeConnectClientAddIns"),Some(&4));
-    assert_eq!(seen.get("DescribeWorkspacesPoolSessions"),Some(&4));
-    assert_eq!(seen.get("DescribeApplicationAssociations"),Some(&4));
-    let addins = ["d-one","d-two"].into_iter().flat_map(|parent| ["1","2"].map(move |p| correlated(&[parent,&format!("addin-{p}")]))).collect();
-    scenario.assert_ids("AWS::ApiOnly::WorkSpacesConnectClientAddIn",addins).await?;
-    scenario.assert_edges("AWS::ApiOnly::WorkSpacesConnectClientAddIn","IN_DIRECTORY",
-        ["d-one","d-two"].into_iter().flat_map(|parent| ["1","2"].map(move |p|
-            (correlated(&[parent,&format!("addin-{p}")]),"AWS::WorkSpaces::Directory".to_owned(),parent.to_owned()))).collect()).await?;
-    let sessions = ["wspool-one","wspool-two"].into_iter().flat_map(|parent| ["1","2"].map(move |p| correlated(&[parent,&format!("session-{p}")]))).collect();
-    scenario.assert_ids("AWS::ApiOnly::WorkSpacesPoolSession",sessions).await?;
-    scenario.assert_edges("AWS::ApiOnly::WorkSpacesPoolSession","IN_POOL",
-        ["wspool-one","wspool-two"].into_iter().flat_map(|parent| ["1","2"].map(move |p|
-            (correlated(&[parent,&format!("session-{p}")]),"AWS::WorkSpaces::WorkspacesPool".to_owned(),
-                format!("arn:aws:workspaces:us-east-1:123456789012:workspacespool/{parent}")))).collect()).await?;
+    assert_eq!(seen.len(), 12);
+    assert_eq!(seen.get("DescribeConnectClientAddIns"), Some(&4));
+    assert_eq!(seen.get("DescribeWorkspacesPoolSessions"), Some(&4));
+    assert_eq!(seen.get("DescribeApplicationAssociations"), Some(&4));
+    let addins = ["d-one", "d-two"]
+        .into_iter()
+        .flat_map(|parent| ["1", "2"].map(move |p| correlated(&[parent, &format!("addin-{p}")])))
+        .collect();
+    scenario
+        .assert_ids("AWS::ApiOnly::WorkSpacesConnectClientAddIn", addins)
+        .await?;
+    scenario
+        .assert_edges(
+            "AWS::ApiOnly::WorkSpacesConnectClientAddIn",
+            "IN_DIRECTORY",
+            ["d-one", "d-two"]
+                .into_iter()
+                .flat_map(|parent| {
+                    ["1", "2"].map(move |p| {
+                        (
+                            correlated(&[parent, &format!("addin-{p}")]),
+                            "AWS::WorkSpaces::Directory".to_owned(),
+                            parent.to_owned(),
+                        )
+                    })
+                })
+                .collect(),
+        )
+        .await?;
+    let sessions = ["wspool-one", "wspool-two"]
+        .into_iter()
+        .flat_map(|parent| ["1", "2"].map(move |p| correlated(&[parent, &format!("session-{p}")])))
+        .collect();
+    scenario
+        .assert_ids("AWS::ApiOnly::WorkSpacesPoolSession", sessions)
+        .await?;
+    scenario
+        .assert_edges(
+            "AWS::ApiOnly::WorkSpacesPoolSession",
+            "IN_POOL",
+            ["wspool-one", "wspool-two"]
+                .into_iter()
+                .flat_map(|parent| {
+                    ["1", "2"].map(move |p| {
+                        (
+                            correlated(&[parent, &format!("session-{p}")]),
+                            "AWS::WorkSpaces::WorkspacesPool".to_owned(),
+                            format!(
+                                "arn:aws:workspaces:us-east-1:123456789012:workspacespool/{parent}"
+                            ),
+                        )
+                    })
+                })
+                .collect(),
+        )
+        .await?;
     let mut applications = Vec::new();
     let mut parent_edges = Vec::new();
-    let mut target_edges = BTreeMap::<&str,Vec<(String,String,String)>>::new();
-    for application in ["wsa-one","wsa-two"] { for suffix in ["one","two"] { for (prefix,kind,target_kind,relation) in [
-        ("ws","WORKSPACE","AWS::WorkSpaces::Workspace","ASSOCIATES_WORKSPACE"),
-        ("wsb","BUNDLE","AWS::ApiOnly::WorkSpacesBundle","ASSOCIATES_BUNDLE"),
-        ("wsi","IMAGE","AWS::ApiOnly::WorkSpacesImage","ASSOCIATES_IMAGE"),
-    ] {
-        let target = format!("{prefix}-{suffix}");
-        let id = correlated(&[application,&target,kind]);
-        applications.push(id.clone());
-        parent_edges.push((id.clone(),"AWS::ApiOnly::WorkSpacesApplication".to_owned(),application.to_owned()));
-        target_edges.entry(relation).or_default().push((id,target_kind.to_owned(),target));
-    }}}
-    for application in ["wsa-one","wsa-two"] {
-        let mismatched = correlated(&[application,"wsb-one","WORKSPACE"]);
-        applications.push(mismatched.clone());
-        parent_edges.push((mismatched,"AWS::ApiOnly::WorkSpacesApplication".to_owned(),application.to_owned()));
+    let mut target_edges = BTreeMap::<&str, Vec<(String, String, String)>>::new();
+    for application in ["wsa-one", "wsa-two"] {
+        for suffix in ["one", "two"] {
+            for (prefix, kind, target_kind, relation) in [
+                (
+                    "ws",
+                    "WORKSPACE",
+                    "AWS::WorkSpaces::Workspace",
+                    "ASSOCIATES_WORKSPACE",
+                ),
+                (
+                    "wsb",
+                    "BUNDLE",
+                    "AWS::ApiOnly::WorkSpacesBundle",
+                    "ASSOCIATES_BUNDLE",
+                ),
+                (
+                    "wsi",
+                    "IMAGE",
+                    "AWS::ApiOnly::WorkSpacesImage",
+                    "ASSOCIATES_IMAGE",
+                ),
+            ] {
+                let target = format!("{prefix}-{suffix}");
+                let id = correlated(&[application, &target, kind]);
+                applications.push(id.clone());
+                parent_edges.push((
+                    id.clone(),
+                    "AWS::ApiOnly::WorkSpacesApplication".to_owned(),
+                    application.to_owned(),
+                ));
+                target_edges.entry(relation).or_default().push((
+                    id,
+                    target_kind.to_owned(),
+                    target,
+                ));
+            }
+        }
     }
-    scenario.assert_ids("AWS::ApiOnly::WorkSpacesApplicationAssociation",applications).await?;
-    scenario.assert_edges("AWS::ApiOnly::WorkSpacesApplicationAssociation","FOR_APPLICATION",parent_edges).await?;
-    for (relation,edges) in target_edges { scenario.assert_edges("AWS::ApiOnly::WorkSpacesApplicationAssociation",relation,edges).await?; }
-    for (kind,prefix) in [("WorkSpacesBundleAssociation","wsb"),("WorkSpacesImageAssociation","wsi"),("WorkSpacesWorkspaceAssociation","ws")] {
-        let expected = ["one","two"].map(|suffix| correlated(&[&format!("{prefix}-{suffix}"),"wsa-one","APPLICATION"])).to_vec();
-        scenario.assert_ids(&format!("AWS::ApiOnly::{kind}"),expected).await?;
-        let (target_kind,relation) = match prefix {
-            "wsb" => ("AWS::ApiOnly::WorkSpacesBundle","FOR_BUNDLE"),
-            "wsi" => ("AWS::ApiOnly::WorkSpacesImage","FOR_IMAGE"),
-            _ => ("AWS::WorkSpaces::Workspace","FOR_WORKSPACE"),
+    for application in ["wsa-one", "wsa-two"] {
+        let mismatched = correlated(&[application, "wsb-one", "WORKSPACE"]);
+        applications.push(mismatched.clone());
+        parent_edges.push((
+            mismatched,
+            "AWS::ApiOnly::WorkSpacesApplication".to_owned(),
+            application.to_owned(),
+        ));
+    }
+    scenario
+        .assert_ids(
+            "AWS::ApiOnly::WorkSpacesApplicationAssociation",
+            applications,
+        )
+        .await?;
+    scenario
+        .assert_edges(
+            "AWS::ApiOnly::WorkSpacesApplicationAssociation",
+            "FOR_APPLICATION",
+            parent_edges,
+        )
+        .await?;
+    for (relation, edges) in target_edges {
+        scenario
+            .assert_edges(
+                "AWS::ApiOnly::WorkSpacesApplicationAssociation",
+                relation,
+                edges,
+            )
+            .await?;
+    }
+    for (kind, prefix) in [
+        ("WorkSpacesBundleAssociation", "wsb"),
+        ("WorkSpacesImageAssociation", "wsi"),
+        ("WorkSpacesWorkspaceAssociation", "ws"),
+    ] {
+        let expected = ["one", "two"]
+            .map(|suffix| correlated(&[&format!("{prefix}-{suffix}"), "wsa-one", "APPLICATION"]))
+            .to_vec();
+        scenario
+            .assert_ids(&format!("AWS::ApiOnly::{kind}"), expected)
+            .await?;
+        let (target_kind, relation) = match prefix {
+            "wsb" => ("AWS::ApiOnly::WorkSpacesBundle", "FOR_BUNDLE"),
+            "wsi" => ("AWS::ApiOnly::WorkSpacesImage", "FOR_IMAGE"),
+            _ => ("AWS::WorkSpaces::Workspace", "FOR_WORKSPACE"),
         };
-        let parents = ["one","two"].map(|suffix| {
-            let parent = format!("{prefix}-{suffix}");
-            (correlated(&[&parent,"wsa-one","APPLICATION"]),target_kind.to_owned(),parent)
-        }).to_vec();
-        scenario.assert_edges(&format!("AWS::ApiOnly::{kind}"),relation,parents).await?;
-        scenario.assert_edges(&format!("AWS::ApiOnly::{kind}"),"ASSOCIATES_APPLICATION",
-            ["one","two"].map(|suffix| (correlated(&[&format!("{prefix}-{suffix}"),"wsa-one","APPLICATION"]),
-                "AWS::ApiOnly::WorkSpacesApplication".to_owned(),"wsa-one".to_owned())).to_vec()).await?;
+        let parents = ["one", "two"]
+            .map(|suffix| {
+                let parent = format!("{prefix}-{suffix}");
+                (
+                    correlated(&[&parent, "wsa-one", "APPLICATION"]),
+                    target_kind.to_owned(),
+                    parent,
+                )
+            })
+            .to_vec();
+        scenario
+            .assert_edges(&format!("AWS::ApiOnly::{kind}"), relation, parents)
+            .await?;
+        scenario
+            .assert_edges(
+                &format!("AWS::ApiOnly::{kind}"),
+                "ASSOCIATES_APPLICATION",
+                ["one", "two"]
+                    .map(|suffix| {
+                        (
+                            correlated(&[&format!("{prefix}-{suffix}"), "wsa-one", "APPLICATION"]),
+                            "AWS::ApiOnly::WorkSpacesApplication".to_owned(),
+                            "wsa-one".to_owned(),
+                        )
+                    })
+                    .to_vec(),
+            )
+            .await?;
     }
     Ok(())
 }

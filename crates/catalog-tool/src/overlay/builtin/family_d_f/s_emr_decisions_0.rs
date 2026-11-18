@@ -1,36 +1,135 @@
 // Explicit dispositions from .local/aws-models/models/emr/service/2009-03-31/emr-2009-03-31.json; never a runtime read-name approval rule.
 pub(super) const ENTRIES: &[(&str, &str)] = &[
-    ("AddInstanceFleet", "Requires ClusterId, InstanceFleet; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds an instance fleet to a running cluster."),
-    ("AddInstanceGroups", "Requires InstanceGroups, JobFlowId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds one or more instance groups to a running cluster."),
-    ("AddJobFlowSteps", "Requires JobFlowId, Steps; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: AddJobFlowSteps adds new steps to a running cluster."),
-    ("AddTags", "Requires ResourceId, Tags; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds tags to an Amazon EMR resource, such as a cluster or an Amazon EMR Studio."),
-    ("CancelSteps", "Requires ClusterId, StepIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Cancels a pending step or steps in a running cluster."),
-    ("CreatePersistentAppUI", "Requires TargetResourceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a persistent application user interface."),
-    ("CreateSecurityConfiguration", "Requires Name, SecurityConfiguration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a security configuration, which is stored in the service and can be specified when a cluster is created."),
-    ("CreateStudio", "Requires Name, AuthMode, VpcId, SubnetIds, ServiceRole, WorkspaceSecurityGroupId, EngineSecurityGroupId, DefaultS3Location; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new Amazon EMR Studio."),
-    ("CreateStudioSessionMapping", "Requires StudioId, IdentityType, SessionPolicyArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Maps a user or group to the Amazon EMR Studio specified by StudioId , and applies a session policy to refine Studio permissions for that user or group."),
-    ("DeleteSecurityConfiguration", "Requires Name; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a security configuration."),
-    ("DeleteStudio", "Requires StudioId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes an Amazon EMR Studio from the Studio metadata store."),
-    ("DeleteStudioSessionMapping", "Requires StudioId, IdentityType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes a user or group from an Amazon EMR Studio."),
-    ("DescribeCluster", "Requires ClusterId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides cluster-level details including status, hardware and software configuration, VPC settings, and so on."),
-    ("DescribeJobFlows", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: This API is no longer supported and will eventually be removed."),
-    ("DescribeNotebookExecution", "Requires NotebookExecutionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides details of a notebook execution."),
-    ("DescribePersistentAppUI", "Requires PersistentAppUIId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Describes a persistent application user interface."),
-    ("DescribeReleaseLabel", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Provides Amazon EMR release label details, such as the releases available the Region where the API request is run, and the available applications for a specific Amazon EMR release label."),
-    ("DescribeSecurityConfiguration", "Requires Name; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides the details of a security configuration by returning the configuration JSON."),
-    ("DescribeStep", "Requires ClusterId, StepId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides more detail about the cluster step."),
-    ("DescribeStudio", "Requires StudioId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns details for the specified Amazon EMR Studio including ID, Name, VPC, Studio access URL, and so on."),
-    ("GetAutoTerminationPolicy", "Requires ClusterId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns the auto-termination policy for an Amazon EMR cluster."),
-    ("GetBlockPublicAccessConfiguration", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns the Amazon EMR block public access configuration for your Amazon Web Services account in the current Region."),
-    ("GetClusterSessionCredentials", "Requires ClusterId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides temporary, HTTP basic credentials that are associated with a given runtime IAM role and used by a cluster with fine-grained access control activated."),
-    ("GetManagedScalingPolicy", "Requires ClusterId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Fetches the attached managed scaling policy for an Amazon EMR cluster."),
-    ("GetOnClusterAppUIPresignedURL", "Requires ClusterId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: The presigned URL properties for the cluster's application user interface."),
-    ("GetPersistentAppUIPresignedURL", "Requires PersistentAppUIId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: The presigned URL properties for the cluster's application user interface."),
-    ("GetSession", "Requires ClusterId, SessionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns detailed information about a session."),
-    ("GetStudioSessionMapping", "Requires StudioId, IdentityType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Fetches mapping details for the specified Amazon EMR Studio and identity (user or group)."),
-    ("ListBootstrapActions", "Requires ClusterId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides information about the bootstrap actions associated with a cluster."),
-    ("ListInstanceFleets", "Requires ClusterId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists all available details about the instance fleets in a cluster."),
-    ("ListInstanceGroups", "Requires ClusterId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides all available details about the instance groups in a cluster."),
-    ("ListInstances", "Requires ClusterId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides information for all active Amazon EC2 instances and Amazon EC2 instances terminated in the last 30 days, up to a maximum of 2,000."),
-    ("ListReleaseLabels", "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Retrieves release labels of Amazon EMR services in the Region where the API is called."),
+    (
+        "AddInstanceFleet",
+        "Requires ClusterId, InstanceFleet; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds an instance fleet to a running cluster.",
+    ),
+    (
+        "AddInstanceGroups",
+        "Requires InstanceGroups, JobFlowId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds one or more instance groups to a running cluster.",
+    ),
+    (
+        "AddJobFlowSteps",
+        "Requires JobFlowId, Steps; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: AddJobFlowSteps adds new steps to a running cluster.",
+    ),
+    (
+        "AddTags",
+        "Requires ResourceId, Tags; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Adds tags to an Amazon EMR resource, such as a cluster or an Amazon EMR Studio.",
+    ),
+    (
+        "CancelSteps",
+        "Requires ClusterId, StepIds; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Cancels a pending step or steps in a running cluster.",
+    ),
+    (
+        "CreatePersistentAppUI",
+        "Requires TargetResourceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a persistent application user interface.",
+    ),
+    (
+        "CreateSecurityConfiguration",
+        "Requires Name, SecurityConfiguration; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a security configuration, which is stored in the service and can be specified when a cluster is created.",
+    ),
+    (
+        "CreateStudio",
+        "Requires Name, AuthMode, VpcId, SubnetIds, ServiceRole, WorkspaceSecurityGroupId, EngineSecurityGroupId, DefaultS3Location; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Creates a new Amazon EMR Studio.",
+    ),
+    (
+        "CreateStudioSessionMapping",
+        "Requires StudioId, IdentityType, SessionPolicyArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Maps a user or group to the Amazon EMR Studio specified by StudioId , and applies a session policy to refine Studio permissions for that user or group.",
+    ),
+    (
+        "DeleteSecurityConfiguration",
+        "Requires Name; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Deletes a security configuration.",
+    ),
+    (
+        "DeleteStudio",
+        "Requires StudioId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes an Amazon EMR Studio from the Studio metadata store.",
+    ),
+    (
+        "DeleteStudioSessionMapping",
+        "Requires StudioId, IdentityType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Removes a user or group from an Amazon EMR Studio.",
+    ),
+    (
+        "DescribeCluster",
+        "Requires ClusterId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides cluster-level details including status, hardware and software configuration, VPC settings, and so on.",
+    ),
+    (
+        "DescribeJobFlows",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: This API is no longer supported and will eventually be removed.",
+    ),
+    (
+        "DescribeNotebookExecution",
+        "Requires NotebookExecutionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides details of a notebook execution.",
+    ),
+    (
+        "DescribePersistentAppUI",
+        "Requires PersistentAppUIId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Describes a persistent application user interface.",
+    ),
+    (
+        "DescribeReleaseLabel",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Provides Amazon EMR release label details, such as the releases available the Region where the API request is run, and the available applications for a specific Amazon EMR release label.",
+    ),
+    (
+        "DescribeSecurityConfiguration",
+        "Requires Name; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides the details of a security configuration by returning the configuration JSON.",
+    ),
+    (
+        "DescribeStep",
+        "Requires ClusterId, StepId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides more detail about the cluster step.",
+    ),
+    (
+        "DescribeStudio",
+        "Requires StudioId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns details for the specified Amazon EMR Studio including ID, Name, VPC, Studio access URL, and so on.",
+    ),
+    (
+        "GetAutoTerminationPolicy",
+        "Requires ClusterId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns the auto-termination policy for an Amazon EMR cluster.",
+    ),
+    (
+        "GetBlockPublicAccessConfiguration",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Returns the Amazon EMR block public access configuration for your Amazon Web Services account in the current Region.",
+    ),
+    (
+        "GetClusterSessionCredentials",
+        "Requires ClusterId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides temporary, HTTP basic credentials that are associated with a given runtime IAM role and used by a cluster with fine-grained access control activated.",
+    ),
+    (
+        "GetManagedScalingPolicy",
+        "Requires ClusterId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Fetches the attached managed scaling policy for an Amazon EMR cluster.",
+    ),
+    (
+        "GetOnClusterAppUIPresignedURL",
+        "Requires ClusterId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: The presigned URL properties for the cluster's application user interface.",
+    ),
+    (
+        "GetPersistentAppUIPresignedURL",
+        "Requires PersistentAppUIId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: The presigned URL properties for the cluster's application user interface.",
+    ),
+    (
+        "GetSession",
+        "Requires ClusterId, SessionId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns detailed information about a session.",
+    ),
+    (
+        "GetStudioSessionMapping",
+        "Requires StudioId, IdentityType; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Fetches mapping details for the specified Amazon EMR Studio and identity (user or group).",
+    ),
+    (
+        "ListBootstrapActions",
+        "Requires ClusterId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides information about the bootstrap actions associated with a cluster.",
+    ),
+    (
+        "ListInstanceFleets",
+        "Requires ClusterId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Lists all available details about the instance fleets in a cluster.",
+    ),
+    (
+        "ListInstanceGroups",
+        "Requires ClusterId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides all available details about the instance groups in a cluster.",
+    ),
+    (
+        "ListInstances",
+        "Requires ClusterId; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Provides information for all active Amazon EC2 instances and Amazon EC2 instances terminated in the last 30 days, up to a maximum of 2,000.",
+    ),
+    (
+        "ListReleaseLabels",
+        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Retrieves release labels of Amazon EMR services in the Region where the API is called.",
+    ),
 ];

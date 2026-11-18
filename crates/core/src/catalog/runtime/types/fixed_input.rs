@@ -28,4 +28,3 @@ impl BindingValue {
     pub const MAX_STRING: usize = MAX_FIXED_STRING;
     pub const MAX_TEXT_BYTES: usize = MAX_FIXED_TEXT_BYTES;
 }
-

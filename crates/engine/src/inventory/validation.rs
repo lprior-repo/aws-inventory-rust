@@ -96,12 +96,20 @@ pub(super) fn validate_page(store: &BinaryStore, page: &PageCommit) -> Result<()
 }
 
 fn validate_tags(page: &PageCommit) -> Result<(), StoreError> {
-    let unique = page.tags.iter().map(|tags| tags.resource()).collect::<std::collections::BTreeSet<_>>();
+    let unique = page
+        .tags
+        .iter()
+        .map(|tags| tags.resource())
+        .collect::<std::collections::BTreeSet<_>>();
     if unique.len() != page.tags.len() {
-        return Err(StoreError::Invalid("page contains duplicate resource tag observations"));
+        return Err(StoreError::Invalid(
+            "page contains duplicate resource tag observations",
+        ));
     }
     let count = page.tags.iter().try_fold(0_usize, |count, tags| {
-        count.checked_add(tags.tags().len()).ok_or(StoreError::Invalid("tag count overflow"))
+        count
+            .checked_add(tags.tags().len())
+            .ok_or(StoreError::Invalid("tag count overflow"))
     })?;
     if count > 50_000 {
         return Err(StoreError::Invalid("page exceeds tag pair storage bound"));

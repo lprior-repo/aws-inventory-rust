@@ -37,7 +37,12 @@ pub(super) fn get_account_link() -> Result<OperationOverlay, NameError> {
         "SourceAccountId",
         "TargetAccountId",
     ])?;
-    bind(&mut operation, "LinkId", "ListAccountLinks", "AccountLinkId")?;
+    bind(
+        &mut operation,
+        "LinkId",
+        "ListAccountLinks",
+        "AccountLinkId",
+    )?;
     Ok(operation)
 }
 
@@ -48,10 +53,7 @@ pub(super) fn get_portal_service_provider_metadata() -> Result<OperationOverlay,
         Paginator::None,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "portalArn",
-        "serviceProviderSamlMetadata",
-    ])?;
+    operation.queryable = paths(&["portalArn", "serviceProviderSamlMetadata"])?;
     bind(&mut operation, "portalArn", "ListPortals", "portalArn")?;
     Ok(operation)
 }

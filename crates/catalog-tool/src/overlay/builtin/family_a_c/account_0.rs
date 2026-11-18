@@ -4,35 +4,134 @@ use super::support::*;
 
 pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
     Ok(vec![
-        ("AcceptPrimaryEmailUpdate", deferred("Model requires AccountId, PrimaryEmail, Otp. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Accepts the request that originated from StartPrimaryEmailUpdate to update the primary email address (also known as the root user email address) for the specified account.")),
-        ("DeleteAlternateContact", deferred("Model requires AlternateContactType. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified alternate contact from an Amazon Web Services account. For complete details about how to use the alternate contact operations, see Update the alternate contacts for your Amazon Web Services account . Before…")),
-        ("DisableRegion", deferred("Model requires RegionName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Disables (opts-out) a particular Region for an account. The act of disabling a Region will remove all IAM access to any resources that reside in that Region.")),
-        ("EnableRegion", deferred("Model requires RegionName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Enables (opts-in) a particular Region for an account.")),
+        (
+            "AcceptPrimaryEmailUpdate",
+            deferred(
+                "Model requires AccountId, PrimaryEmail, Otp. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Accepts the request that originated from StartPrimaryEmailUpdate to update the primary email address (also known as the root user email address) for the specified account.",
+            ),
+        ),
+        (
+            "DeleteAlternateContact",
+            deferred(
+                "Model requires AlternateContactType. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Deletes the specified alternate contact from an Amazon Web Services account. For complete details about how to use the alternate contact operations, see Update the alternate contacts for your Amazon Web Services account . Before…",
+            ),
+        ),
+        (
+            "DisableRegion",
+            deferred(
+                "Model requires RegionName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Disables (opts-out) a particular Region for an account. The act of disabling a Region will remove all IAM access to any resources that reside in that Region.",
+            ),
+        ),
+        (
+            "EnableRegion",
+            deferred(
+                "Model requires RegionName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Enables (opts-in) a particular Region for an account.",
+            ),
+        ),
         // Model: Retrieves information about the specified account including its account name, account ID, account creation date and time, and account state. To use this API, an IAM user or role must have the…
-        ("GetAccountInformation", OperationOverlay {
-            queryable: vec![path("AccountId")?],
-            ..read("$", Identity::Key(vec![path("AccountId")?]), Scope::Account, Paginator::None)?
-        }),
-        ("GetAlternateContact", deferred("Model requires AlternateContactType. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the specified alternate contact attached to an Amazon Web Services account. For complete details about how to use the alternate contact operations, see Update the alternate contacts for your Amazon Web Services account…")),
-        ("GetContactInformation", deferred("No safe resource collection plan is approved for this modeled operation. Its output is ContactInformation, VerificationStatus; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Retrieves the primary contact information of an Amazon Web Services account. For complete details about how to use the primary contact operations, see Update the primary contact for your Amazon Web Services account .")),
+        (
+            "GetAccountInformation",
+            OperationOverlay {
+                queryable: vec![path("AccountId")?],
+                ..read(
+                    "$",
+                    Identity::Key(vec![path("AccountId")?]),
+                    Scope::Account,
+                    Paginator::None,
+                )?
+            },
+        ),
+        (
+            "GetAlternateContact",
+            deferred(
+                "Model requires AlternateContactType. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the specified alternate contact attached to an Amazon Web Services account. For complete details about how to use the alternate contact operations, see Update the alternate contacts for your Amazon Web Services account…",
+            ),
+        ),
+        (
+            "GetContactInformation",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is ContactInformation, VerificationStatus; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Retrieves the primary contact information of an Amazon Web Services account. For complete details about how to use the primary contact operations, see Update the primary contact for your Amazon Web Services account .",
+            ),
+        ),
         // Model: Retrieves information about the GovCloud account linked to the specified standard account (if it exists) including the GovCloud account ID and state. To use this API, an IAM user or role must have…
-        ("GetGovCloudAccountInformation", OperationOverlay {
-            queryable: vec![path("GovCloudAccountId")?],
-            ..read("$", Identity::Key(vec![path("GovCloudAccountId")?]), Scope::Account, Paginator::None)?
-        }),
-        ("GetPrimaryEmail", deferred("Model requires AccountId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the primary email address for the specified account.")),
-        ("GetPrimaryEmailUpdateStatus", deferred("No safe resource collection plan is approved for this modeled operation. Its output is Status, UpdatedAt; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Retrieves the status of the most recent primary email update for the specified account. For complete details about how to update the primary email address, see Update the primary email address for your AWS account .")),
-        ("GetRegionOptStatus", deferred("Model requires RegionName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the opt-in status of a particular Region.")),
+        (
+            "GetGovCloudAccountInformation",
+            OperationOverlay {
+                queryable: vec![path("GovCloudAccountId")?],
+                ..read(
+                    "$",
+                    Identity::Key(vec![path("GovCloudAccountId")?]),
+                    Scope::Account,
+                    Paginator::None,
+                )?
+            },
+        ),
+        (
+            "GetPrimaryEmail",
+            deferred(
+                "Model requires AccountId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the primary email address for the specified account.",
+            ),
+        ),
+        (
+            "GetPrimaryEmailUpdateStatus",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is Status, UpdatedAt; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Retrieves the status of the most recent primary email update for the specified account. For complete details about how to update the primary email address, see Update the primary email address for your AWS account .",
+            ),
+        ),
+        (
+            "GetRegionOptStatus",
+            deferred(
+                "Model requires RegionName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Retrieves the opt-in status of a particular Region.",
+            ),
+        ),
         // Model: Lists all the Regions for a given account and their respective opt-in statuses. Optionally, this list can be filtered by the region-opt-status-contains parameter.
-        ("ListRegions", OperationOverlay {
-            queryable: vec![path("RegionName")?],
-            ..read("Regions", Identity::Key(vec![path("RegionName")?]), Scope::Account, token("NextToken", "NextToken")?)?
-        }),
-        ("PutAccountName", deferred("Model requires AccountName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the account name of the specified account. To use this API, IAM principals must have the account:PutAccountName IAM permission.")),
-        ("PutAlternateContact", deferred("Model requires Name, Title, EmailAddress, PhoneNumber, AlternateContactType. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Modifies the specified alternate contact attached to an Amazon Web Services account. For complete details about how to use the alternate contact operations, see Update the alternate contacts for your Amazon Web Services account .…")),
-        ("PutContactInformation", deferred("Model requires ContactInformation. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the primary contact information of an Amazon Web Services account. For complete details about how to use the primary contact operations, see Update the primary contact for your Amazon Web Services account .")),
-        ("SendPhoneNumberVerification", deferred("No safe resource collection plan is approved for this modeled operation. Its output is Status; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Sends a one-time passcode to the phone number in the primary contact information of an Amazon Web Services account. Use VerifyPhoneNumber to submit the passcode and complete the verification. For complete details about how to use…")),
-        ("StartPrimaryEmailUpdate", deferred("Model requires AccountId, PrimaryEmail. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts the process to update the primary email address for the specified account.")),
-        ("VerifyPhoneNumber", deferred("Model requires Otp. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Verifies the phone number in the primary contact information of an Amazon Web Services account by submitting the one-time passcode that SendPhoneNumberVerification sent to that phone number. For complete details about how to use…")),
+        (
+            "ListRegions",
+            OperationOverlay {
+                queryable: vec![path("RegionName")?],
+                ..read(
+                    "Regions",
+                    Identity::Key(vec![path("RegionName")?]),
+                    Scope::Account,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
+        ),
+        (
+            "PutAccountName",
+            deferred(
+                "Model requires AccountName. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the account name of the specified account. To use this API, IAM principals must have the account:PutAccountName IAM permission.",
+            ),
+        ),
+        (
+            "PutAlternateContact",
+            deferred(
+                "Model requires Name, Title, EmailAddress, PhoneNumber, AlternateContactType. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Modifies the specified alternate contact attached to an Amazon Web Services account. For complete details about how to use the alternate contact operations, see Update the alternate contacts for your Amazon Web Services account .…",
+            ),
+        ),
+        (
+            "PutContactInformation",
+            deferred(
+                "Model requires ContactInformation. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Updates the primary contact information of an Amazon Web Services account. For complete details about how to use the primary contact operations, see Update the primary contact for your Amazon Web Services account .",
+            ),
+        ),
+        (
+            "SendPhoneNumberVerification",
+            deferred(
+                "No safe resource collection plan is approved for this modeled operation. Its output is Status; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Sends a one-time passcode to the phone number in the primary contact information of an Amazon Web Services account. Use VerifyPhoneNumber to submit the passcode and complete the verification. For complete details about how to use…",
+            ),
+        ),
+        (
+            "StartPrimaryEmailUpdate",
+            deferred(
+                "Model requires AccountId, PrimaryEmail. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Starts the process to update the primary email address for the specified account.",
+            ),
+        ),
+        (
+            "VerifyPhoneNumber",
+            deferred(
+                "Model requires Otp. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Verifies the phone number in the primary contact information of an Amazon Web Services account by submitting the one-time passcode that SendPhoneNumberVerification sent to that phone number. For complete details about how to use…",
+            ),
+        ),
     ])
 }

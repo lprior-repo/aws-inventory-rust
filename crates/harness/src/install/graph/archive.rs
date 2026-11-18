@@ -6,10 +6,10 @@ use std::process::Command;
 #[cfg(not(test))]
 use std::time::Duration;
 
-#[path = "archive_snapshot.rs"]
-mod snapshot;
 #[path = "archive_process.rs"]
 mod process;
+#[path = "archive_snapshot.rs"]
+mod snapshot;
 
 #[cfg(test)]
 use snapshot::verify;
@@ -17,7 +17,8 @@ use snapshot::verify;
 pub(super) use tests::lifecycle::{download_program, download_timeout};
 
 use super::{
-    EXPECTED_LINKS, MAX_DOWNLOAD, MAX_EXTRACT, MAX_MEMBERS, OwnedDirectory, REDIS_ROOT, REDIS_SHA256,
+    EXPECTED_LINKS, MAX_DOWNLOAD, MAX_EXTRACT, MAX_MEMBERS, OwnedDirectory, REDIS_ROOT,
+    REDIS_SHA256,
 };
 use crate::HarnessError;
 
@@ -42,10 +43,7 @@ fn reject(reason: &str) -> HarnessError {
     HarnessError::invalid(format!("unexpected Redis archive {reason}"))
 }
 
-pub(super) fn extract(
-    archive: &Path,
-    source: &Path,
-) -> Result<OwnedDirectory, HarnessError> {
+pub(super) fn extract(archive: &Path, source: &Path) -> Result<OwnedDirectory, HarnessError> {
     extract_pinned(archive, source, REDIS_SHA256)
 }
 
@@ -54,8 +52,10 @@ fn extract_pinned(
     source: &Path,
     expected: &str,
 ) -> Result<OwnedDirectory, HarnessError> {
-    let input = OpenOptions::new().read(true)
-        .custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW).open(archive)?;
+    let input = OpenOptions::new()
+        .read(true)
+        .custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW)
+        .open(archive)?;
     let mut file = snapshot::capture(input)?;
     snapshot::verify(&mut file, expected)?;
     #[cfg(test)]
@@ -68,10 +68,7 @@ fn extract_open(file: &mut File, source: &Path) -> Result<OwnedDirectory, Harnes
     extract_claimed(file, OwnedDirectory::claim(source)?)
 }
 
-fn extract_claimed(
-    file: &mut File,
-    owned: OwnedDirectory,
-) -> Result<OwnedDirectory, HarnessError> {
+fn extract_claimed(file: &mut File, owned: OwnedDirectory) -> Result<OwnedDirectory, HarnessError> {
     match extract_into(file, &owned) {
         Ok(()) => Ok(owned),
         Err(error) => match owned.remove_tree() {
@@ -95,7 +92,6 @@ fn extract_into(file: &mut File, owned: &OwnedDirectory) -> Result<(), HarnessEr
     )?;
     Ok(())
 }
-
 
 fn tar() -> Command {
     #[cfg(test)]
@@ -165,7 +161,10 @@ fn entry(mode: &str, size: u64, listed: &str) -> Result<Entry, HarnessError> {
     }
     let (kind, name) = match mode.chars().next() {
         Some('-') => (Kind::File, listed),
-        Some('d') => (Kind::Directory, listed.strip_suffix('/').map_or(listed, |s| s)),
+        Some('d') => (
+            Kind::Directory,
+            listed.strip_suffix('/').map_or(listed, |s| s),
+        ),
         Some('l') => {
             let (name, target) = listed
                 .split_once(" -> ")
@@ -174,7 +173,11 @@ fn entry(mode: &str, size: u64, listed: &str) -> Result<Entry, HarnessError> {
         }
         _ => return Err(reject("member type")),
     };
-    Ok(Entry { kind, size, name: name.to_owned() })
+    Ok(Entry {
+        kind,
+        size,
+        name: name.to_owned(),
+    })
 }
 
 pub(super) fn validate(entries: &[Entry]) -> Result<(), HarnessError> {
@@ -215,8 +218,12 @@ fn kind_allowed(entry: &Entry) -> bool {
         return false;
     }
     match &entry.kind {
-        Kind::Symlink(target) => entry.size == 0 && EXPECTED_LINKS
-            .iter().any(|(link, expected)| *link == entry.name && expected == target),
+        Kind::Symlink(target) => {
+            entry.size == 0
+                && EXPECTED_LINKS
+                    .iter()
+                    .any(|(link, expected)| *link == entry.name && expected == target)
+        }
         Kind::Directory => entry.size == 0,
         Kind::File => true,
     }

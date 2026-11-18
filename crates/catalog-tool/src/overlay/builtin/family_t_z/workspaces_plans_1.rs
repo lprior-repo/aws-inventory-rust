@@ -1,5 +1,5 @@
 use super::{inventory, path, paths, token};
-use crate::overlay::{Binding, OperationOverlay, NameError, Identity, Scope};
+use crate::overlay::{Binding, Identity, NameError, OperationOverlay, Scope};
 
 pub(super) fn describe_applications() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
@@ -29,12 +29,7 @@ pub(super) fn describe_connection_aliases() -> Result<OperationOverlay, NameErro
         token("NextToken", "NextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "ConnectionString",
-        "AliasId",
-        "State",
-        "OwnerAccountId",
-    ])?;
+    operation.queryable = paths(&["ConnectionString", "AliasId", "State", "OwnerAccountId"])?;
     Ok(operation)
 }
 
@@ -45,11 +40,7 @@ pub(super) fn describe_ip_groups() -> Result<OperationOverlay, NameError> {
         token("NextToken", "NextToken")?,
         Scope::Region,
     )?;
-    operation.queryable = paths(&[
-        "groupId",
-        "groupName",
-        "groupDesc",
-    ])?;
+    operation.queryable = paths(&["groupId", "groupName", "groupDesc"])?;
     Ok(operation)
 }
 

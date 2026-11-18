@@ -53,9 +53,16 @@ fn validate_page_value(
     valid
 }
 
-fn page_value_matches(model: &Model<'_>, member: &Value, target: plans::model::ShapeRef<'_>, value: i64) -> bool {
-    if value <= 0 || u32::try_from(value).is_err()
-        || !range_matches(page_range(member, target.value), value) {
+fn page_value_matches(
+    model: &Model<'_>,
+    member: &Value,
+    target: plans::model::ShapeRef<'_>,
+    value: i64,
+) -> bool {
+    if value <= 0
+        || u32::try_from(value).is_err()
+        || !range_matches(page_range(member, target.value), value)
+    {
         return false;
     }
     match plans::model::shape_type(target.value) {
@@ -63,8 +70,12 @@ fn page_value_matches(model: &Model<'_>, member: &Value, target: plans::model::S
         Some("short") => i16::try_from(value).is_ok(),
         Some("integer") => i32::try_from(value).is_ok(),
         Some("long") => true,
-        Some("string" | "enum") => crate::overlay::fixed_input::matches(model, member, target,
-            &crate::overlay::FixedValue::String(value.to_string())),
+        Some("string" | "enum") => crate::overlay::fixed_input::matches(
+            model,
+            member,
+            target,
+            &crate::overlay::FixedValue::String(value.to_string()),
+        ),
         _ => false,
     }
 }
@@ -110,11 +121,15 @@ pub(in crate::overlay::check) fn modeled_page_size(
         .resolve_member(operation, "input", path)
         .ok()
         .flatten()?;
-    modeled_page_max(member, target.value).filter(|value| page_value_matches(model, member, target, *value))
+    modeled_page_max(member, target.value)
+        .filter(|value| page_value_matches(model, member, target, *value))
 }
 
 fn modeled_page_max(member: &Value, target: &Value) -> Option<i64> {
-    if !matches!(plans::model::shape_type(target), Some("byte" | "short" | "integer" | "long" | "string" | "enum")) {
+    if !matches!(
+        plans::model::shape_type(target),
+        Some("byte" | "short" | "integer" | "long" | "string" | "enum")
+    ) {
         return None;
     }
     let range = page_range(member, target);

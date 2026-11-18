@@ -1,17 +1,33 @@
 use super::{Exceptions, NameError, TestResult, sql_name};
 
 const INVALID_PAIRS: [(&str, &str); 14] = [
-    ("", "iot"), ("IoT", ""), ("IoT", "Iot"), ("Io-T", "iot"),
-    ("IöT", "iot"), ("IoT", "iöt"), ("IoT", "iot\r"),
-    ("IoT", "_iot"), ("IoT", "iot_"), ("IoT", "i__ot"),
-    ("IoT", "i ot"), ("IoT", "iot\textra"), (" IoT", "iot"), ("IoT\n", "iot"),
+    ("", "iot"),
+    ("IoT", ""),
+    ("IoT", "Iot"),
+    ("Io-T", "iot"),
+    ("IöT", "iot"),
+    ("IoT", "iöt"),
+    ("IoT", "iot\r"),
+    ("IoT", "_iot"),
+    ("IoT", "iot_"),
+    ("IoT", "i__ot"),
+    ("IoT", "i ot"),
+    ("IoT", "iot\textra"),
+    (" IoT", "iot"),
+    ("IoT\n", "iot"),
 ];
 
 #[test]
 fn constructor_rejects_invalid_pairs_at_their_original_position() -> TestResult {
     INVALID_PAIRS.iter().for_each(|pair| {
-        assert_eq!(Exceptions::from_entries(&[*pair]), Err(NameError::InvalidException { line: 1 }));
-        assert_eq!(Exceptions::from_entries(&[("IP", "ip"), *pair]), Err(NameError::InvalidException { line: 2 }));
+        assert_eq!(
+            Exceptions::from_entries(&[*pair]),
+            Err(NameError::InvalidException { line: 1 })
+        );
+        assert_eq!(
+            Exceptions::from_entries(&[("IP", "ip"), *pair]),
+            Err(NameError::InvalidException { line: 2 })
+        );
     });
     Ok(())
 }

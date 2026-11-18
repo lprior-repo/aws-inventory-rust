@@ -1,17 +1,17 @@
-mod compile;
-pub(super) mod identity;
-mod page;
-mod service;
-mod tags;
-mod fixed_input;
-mod selection;
-mod routing;
-mod capabilities;
 mod binding_alternatives;
-mod tag_endpoint;
-mod map_exclusions;
-mod row_policy;
+mod capabilities;
+mod compile;
 pub(super) mod emissions;
+mod fixed_input;
+pub(super) mod identity;
+mod map_exclusions;
+mod page;
+mod routing;
+mod row_policy;
+mod selection;
+mod service;
+mod tag_endpoint;
+mod tags;
 use super::plan_validation;
 use super::{RuntimeCatalogCompileError, encode};
 use crate::{
@@ -71,7 +71,9 @@ fn identity_value(
             ),
         ]),
         Some(Identity::Template(template)) => identity::compile(template, services),
-        Some(value @ (Identity::Choice(_) | Identity::CorrelatedKey(_) | Identity::MapArn { .. })) => selection::identity(value, service, services),
+        Some(
+            value @ (Identity::Choice(_) | Identity::CorrelatedKey(_) | Identity::MapArn { .. }),
+        ) => selection::identity(value, service, services),
         _ => Err(RuntimeCatalogCompileError::Capability),
     }
 }
@@ -88,13 +90,18 @@ fn exclusions(
         .map(Value::List)
 }
 
-fn endpoint_value(endpoint: &VerifiedEndpoint, operation: &str) -> Result<Value, RuntimeCatalogCompileError> {
+fn endpoint_value(
+    endpoint: &VerifiedEndpoint,
+    operation: &str,
+) -> Result<Value, RuntimeCatalogCompileError> {
     let DerivedEndpoint::Resolved {
         class,
         url_template: url,
         signing_name,
         signing_region,
-    } = endpoint.operation_endpoint(operation).ok_or(RuntimeCatalogCompileError::Capability)?
+    } = endpoint
+        .operation_endpoint(operation)
+        .ok_or(RuntimeCatalogCompileError::Capability)?
     else {
         return Err(RuntimeCatalogCompileError::Capability);
     };
@@ -193,11 +200,20 @@ fn binding_values(
             binding_record(
                 path,
                 2,
-                (fixed_input::compile(
-                    catalog_service(services, service)?,
-                    super::model_path::resolve(catalog_service(services, service)?, operation.input()?, path.as_str())?.1,
-                    value,
-                )?, Value::Null, Value::Null),
+                (
+                    fixed_input::compile(
+                        catalog_service(services, service)?,
+                        super::model_path::resolve(
+                            catalog_service(services, service)?,
+                            operation.input()?,
+                            path.as_str(),
+                        )?
+                        .1,
+                        value,
+                    )?,
+                    Value::Null,
+                    Value::Null,
+                ),
                 services,
             )
         }))
@@ -211,13 +227,30 @@ fn binding_value(
     binding: &Binding,
     services: &super::ServiceIndex<'_>,
 ) -> Result<Value, RuntimeCatalogCompileError> {
-    if let Binding::Transformed { binding, transform: crate::overlay::BindingTransform::StripPrefix(prefix) } = binding {
-        if prefix.is_empty() || prefix.len() > 256 || prefix.chars().any(char::is_control)
-            || !matches!(binding.as_ref(), Binding::From { .. } | Binding::Context { .. } | Binding::FromArn { .. } | Binding::FromService { .. }) {
+    if let Binding::Transformed {
+        binding,
+        transform: crate::overlay::BindingTransform::StripPrefix(prefix),
+    } = binding
+    {
+        if prefix.is_empty()
+            || prefix.len() > 256
+            || prefix.chars().any(char::is_control)
+            || !matches!(
+                binding.as_ref(),
+                Binding::From { .. }
+                    | Binding::Context { .. }
+                    | Binding::FromArn { .. }
+                    | Binding::FromService { .. }
+            )
+        {
             return Err(RuntimeCatalogCompileError::Capability);
         }
-        return encode::map([(1, encode::path(services, path.as_str())?), (2, Value::Int(9)),
-            (3, plain_binding_value(service, path, binding, services)?), (4, Value::Text(prefix.clone()))]);
+        return encode::map([
+            (1, encode::path(services, path.as_str())?),
+            (2, Value::Int(9)),
+            (3, plain_binding_value(service, path, binding, services)?),
+            (4, Value::Text(prefix.clone())),
+        ]);
     }
     plain_binding_value(service, path, binding, services)
 }
@@ -235,13 +268,42 @@ fn plain_binding_value(
         Binding::FromAny(alternatives) => {
             return binding_alternatives::encode(service, path, alternatives, services);
         }
-        Binding::FromBranch { operation, branch, path: source_path } => {
-            return branch_binding(service, path, operation, branch, crate::overlay::ContextSource::SelectedItem, source_path, services);
+        Binding::FromBranch {
+            operation,
+            branch,
+            path: source_path,
+        } => {
+            return branch_binding(
+                service,
+                path,
+                operation,
+                branch,
+                crate::overlay::ContextSource::SelectedItem,
+                source_path,
+                services,
+            );
         }
-        Binding::ContextFromBranch { operation, branch, source, path: source_path } => {
-            return branch_binding(service, path, operation, branch, *source, source_path, services);
+        Binding::ContextFromBranch {
+            operation,
+            branch,
+            source,
+            path: source_path,
+        } => {
+            return branch_binding(
+                service,
+                path,
+                operation,
+                branch,
+                *source,
+                source_path,
+                services,
+            );
         }
-        Binding::Context { operation, source, path } => (
+        Binding::Context {
+            operation,
+            source,
+            path,
+        } => (
             match source {
                 crate::overlay::ContextSource::SelectedItem => 5,
                 crate::overlay::ContextSource::Response => 6,
@@ -261,22 +323,51 @@ fn plain_binding_value(
                 selected_path(services, path.as_str())?,
             ),
         ),
-        Binding::FromService { service, operation, path } => (
-            4, (Value::Text(service.clone()), Value::Text(operation.to_string()), selected_path(services, path.as_str())?),
+        Binding::FromService {
+            service,
+            operation,
+            path,
+        } => (
+            4,
+            (
+                Value::Text(service.clone()),
+                Value::Text(operation.to_string()),
+                selected_path(services, path.as_str())?,
+            ),
         ),
-        Binding::FromArn { operation, path: source_path, arn_service, resource_kind } => {
+        Binding::FromArn {
+            operation,
+            path: source_path,
+            arn_service,
+            resource_kind,
+        } => {
             let kind = selection::arn_kind(*resource_kind);
             return encode::map([
-                (1, encode::path(services, path.as_str())?), (2, Value::Int(8)),
-                (3, Value::Text(service.to_owned())), (4, Value::Text(operation.to_string())),
-                (5, selected_path(services, source_path.as_str())?), (6, Value::Text(arn_service.clone())), (7, Value::Int(kind)),
+                (1, encode::path(services, path.as_str())?),
+                (2, Value::Int(8)),
+                (3, Value::Text(service.to_owned())),
+                (4, Value::Text(operation.to_string())),
+                (5, selected_path(services, source_path.as_str())?),
+                (6, Value::Text(arn_service.clone())),
+                (7, Value::Int(kind)),
             ]);
         }
-        Binding::FromUrl { operation, path: source_path, resource_kind } => {
-            let kind = match resource_kind { crate::overlay::UrlResourceKind::SqsQueue => 0 };
-            return encode::map([(1, encode::path(services, path.as_str())?), (2, Value::Int(10)),
-                (3, Value::Text(service.to_owned())), (4, Value::Text(operation.to_string())),
-                (5, selected_path(services, source_path.as_str())?), (6, Value::Int(kind))]);
+        Binding::FromUrl {
+            operation,
+            path: source_path,
+            resource_kind,
+        } => {
+            let kind = match resource_kind {
+                crate::overlay::UrlResourceKind::SqsQueue => 0,
+            };
+            return encode::map([
+                (1, encode::path(services, path.as_str())?),
+                (2, Value::Int(10)),
+                (3, Value::Text(service.to_owned())),
+                (4, Value::Text(operation.to_string())),
+                (5, selected_path(services, source_path.as_str())?),
+                (6, Value::Int(kind)),
+            ]);
         }
         Binding::Transformed { .. } => return Err(RuntimeCatalogCompileError::Capability),
     };
@@ -303,7 +394,6 @@ fn binding_record(
     )
 }
 
-
 fn selected_path(
     services: &super::ServiceIndex<'_>,
     path: &str,
@@ -314,12 +404,25 @@ fn selected_path(
     encode::path(services, path)
 }
 
-fn branch_binding(service: &str, target: &crate::overlay::MemberPath, operation: &crate::overlay::OperationName,
-    branch: &str, source: crate::overlay::ContextSource, path: &crate::overlay::MemberPath,
-    services: &super::ServiceIndex<'_>) -> Result<Value, RuntimeCatalogCompileError> {
-    if !routing::valid_branch_name(branch) { return Err(RuntimeCatalogCompileError::Capability); }
-    encode::map([(1, encode::path(services, target.as_str())?), (2, Value::Int(13)),
-        (3, Value::Text(service.to_owned())), (4, Value::Text(operation.to_string())),
-        (5, selected_path(services, path.as_str())?), (6, Value::Text(branch.to_owned())),
-        (7, Value::Int(selection::source_tag(source)))])
+fn branch_binding(
+    service: &str,
+    target: &crate::overlay::MemberPath,
+    operation: &crate::overlay::OperationName,
+    branch: &str,
+    source: crate::overlay::ContextSource,
+    path: &crate::overlay::MemberPath,
+    services: &super::ServiceIndex<'_>,
+) -> Result<Value, RuntimeCatalogCompileError> {
+    if !routing::valid_branch_name(branch) {
+        return Err(RuntimeCatalogCompileError::Capability);
+    }
+    encode::map([
+        (1, encode::path(services, target.as_str())?),
+        (2, Value::Int(13)),
+        (3, Value::Text(service.to_owned())),
+        (4, Value::Text(operation.to_string())),
+        (5, selected_path(services, path.as_str())?),
+        (6, Value::Text(branch.to_owned())),
+        (7, Value::Int(selection::source_tag(source))),
+    ])
 }

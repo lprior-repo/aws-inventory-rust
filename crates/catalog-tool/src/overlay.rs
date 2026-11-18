@@ -1,34 +1,39 @@
 mod builtin;
 mod check;
+mod emission;
 mod error;
 mod policy;
-mod emission;
-pub use emission::{ResourceEmission, MAX_RESOURCE_EMISSIONS};
-mod fixed_input;
+pub use emission::{MAX_RESOURCE_EMISSIONS, ResourceEmission};
 mod capabilities;
+mod fixed_input;
 mod map_key_exclusion;
-pub use map_key_exclusion::MapKeyExclusion;
+pub use capabilities::{KindClassification, ResourceProjection};
 pub use fixed_input::FixedValue;
-pub use capabilities::{ResourceProjection, KindClassification};
+pub use map_key_exclusion::MapKeyExclusion;
 mod selection;
-pub use selection::{ContextSource, Emission, SelectionKind, IdentityField, IdentityLeaf,
-    IdentityPredicate, IdentityBranch, IdentityChoice, BindingAlternative, BindingTransform, ArnResourceKind, UrlResourceKind};
+pub use selection::{
+    ArnResourceKind, BindingAlternative, BindingTransform, ContextSource, Emission, IdentityBranch,
+    IdentityChoice, IdentityField, IdentityLeaf, IdentityPredicate, SelectionKind, UrlResourceKind,
+};
 mod tag_endpoint;
 pub use tag_endpoint::{TagEndpoint, TagEndpointParent, TagEndpointRequest, TagEndpointSelector};
 mod routing;
 pub use routing::{ExecutionBranch, RequestRouting};
-mod types;
 mod row_policy;
-pub use row_policy::{RowPolicy, RowPredicate, RowOperand, RowValueType, MissingSelected, ChildEligibility};
+mod types;
+pub use row_policy::{
+    ChildEligibility, MissingSelected, RowOperand, RowPolicy, RowPredicate, RowValueType,
+};
 
 pub use check::{
     CallableOperation, CheckError, CheckedOverlays, EffectiveClass, ReviewDisposition,
-    ReviewedDecision, ReviewedService, Violation, ViolationRule, build_report, check, check_policies, run,
+    ReviewedDecision, ReviewedService, Violation, ViolationRule, build_report, check,
+    check_policies, run,
 };
 pub use error::NameError;
 pub use types::{
-    Batch, Binding, Identity, ItemSelector, MemberPath, OperationName,
-    OperationOverlay, OverlayClass, Paginator, Scope, ServiceOverlay, TokenPair,
+    Batch, Binding, Identity, ItemSelector, MemberPath, OperationName, OperationOverlay,
+    OverlayClass, Paginator, Scope, ServiceOverlay, TokenPair,
 };
 
 pub fn embedded() -> Result<Vec<ServiceOverlay>, NameError> {
@@ -38,7 +43,6 @@ pub fn embedded() -> Result<Vec<ServiceOverlay>, NameError> {
 pub const MAX_FILE_BYTES: usize = 1_048_576;
 
 pub const MAX_OPERATIONS: usize = 4_096;
-
 
 fn valid_member(text: &str) -> bool {
     text.starts_with(|character: char| character.is_ascii_alphabetic())

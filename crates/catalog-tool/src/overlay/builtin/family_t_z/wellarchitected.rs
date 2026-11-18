@@ -1,104 +1,319 @@
-use super::{defer, deny, wellarchitected_plans_1};
 use super::super::service;
-use crate::{classes::DenyReason, overlay::{NameError, ServiceOverlay}};
+use super::{defer, deny, wellarchitected_plans_1};
+use crate::{
+    classes::DenyReason,
+    overlay::{NameError, ServiceOverlay},
+};
 
 // Reviewed against pinned Smithy documentation, not operation-name read approval.
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
-    service("wellarchitected", vec![
-        ("AssociateLenses", deny(DenyReason::Mutating)),
-        ("AssociateProfiles", deny(DenyReason::Mutating)),
-        ("CreateAgentContext", deny(DenyReason::Mutating)),
-        ("CreateAgentGoal", deny(DenyReason::Mutating)),
-        ("CreateAgentProfile", deny(DenyReason::Mutating)),
-        ("CreateLensShare", deny(DenyReason::Mutating)),
-        ("CreateLensVersion", deny(DenyReason::Mutating)),
-        ("CreateMilestone", deny(DenyReason::Mutating)),
-        ("CreateProfile", deny(DenyReason::Mutating)),
-        ("CreateProfileShare", deny(DenyReason::Mutating)),
-        ("CreateReviewTemplate", deny(DenyReason::Mutating)),
-        ("CreateTemplateShare", deny(DenyReason::Mutating)),
-        ("CreateWorkload", deny(DenyReason::Mutating)),
-        ("CreateWorkloadShare", deny(DenyReason::Mutating)),
-        ("DeleteAgentContext", deny(DenyReason::Mutating)),
-        ("DeleteAgentGoal", deny(DenyReason::Mutating)),
-        ("DeleteAgentProfile", deny(DenyReason::Mutating)),
-        ("DeleteLens", deny(DenyReason::Mutating)),
-        ("DeleteLensShare", deny(DenyReason::Mutating)),
-        ("DeleteProfile", deny(DenyReason::Mutating)),
-        ("DeleteProfileShare", deny(DenyReason::Mutating)),
-        ("DeleteReviewTemplate", deny(DenyReason::Mutating)),
-        ("DeleteTemplateShare", deny(DenyReason::Mutating)),
-        ("DeleteWorkload", deny(DenyReason::Mutating)),
-        ("DeleteWorkloadShare", deny(DenyReason::Mutating)),
-        ("DisassociateLenses", deny(DenyReason::Mutating)),
-        ("DisassociateProfiles", deny(DenyReason::Mutating)),
-        ("ExportLens", deny(DenyReason::Mutating)),
-        ("GetAgentContext", defer("Missing executable inventory binding for profileArn, id: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetAgentGoal", defer("Missing executable inventory binding for profileArn, id: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetAgentProfile", defer("Missing executable inventory binding for profileArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetAgentRecommendation", defer("Missing executable inventory binding for recommendationArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetAgentRecommendationGeneration", defer("Missing executable inventory binding for profileArn, generationId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetAnswer", defer("Missing executable inventory binding for WorkloadId, LensAlias, QuestionId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetConsolidatedReport", defer("Missing executable inventory binding for Format: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetGlobalSettings", defer("The documented response is aggregate, reference, operational history, or a singleton without an exact returned resource identity; it is not an executable resource enumeration.")),
-        ("GetLens", defer("Missing executable inventory binding for LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetLensReview", defer("Missing executable inventory binding for WorkloadId, LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetLensReviewReport", defer("Missing executable inventory binding for WorkloadId, LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetLensVersionDifference", defer("Missing executable inventory binding for LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetMilestone", defer("Missing executable inventory binding for WorkloadId, MilestoneNumber: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetProfile", deny(DenyReason::Content)),
-        ("GetProfileTemplate", deny(DenyReason::ReferenceData)),
-        ("GetReviewTemplate", deny(DenyReason::Content)),
-        ("GetReviewTemplateAnswer", defer("Missing executable inventory binding for TemplateArn, LensAlias, QuestionId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetReviewTemplateLensReview", defer("Missing executable inventory binding for TemplateArn, LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("GetWorkload", deny(DenyReason::Content)),
-        ("ImportLens", deny(DenyReason::Mutating)),
-        ("ListAgentContexts", defer("Missing executable inventory binding for profileArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListAgentGoals", defer("Missing executable inventory binding for profileArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListAgentProfiles", defer("The documented response is aggregate, reference, operational history, or a singleton without an exact returned resource identity; it is not an executable resource enumeration.")),
-        ("ListAgentRecommendationGenerations", defer("Missing executable inventory binding for profileArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListAgentRecommendationItems", defer("Missing executable inventory binding for recommendationArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListAgentRecommendations", defer("Missing executable inventory binding for profileArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListAnswers", defer("Missing executable inventory binding for WorkloadId, LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListCheckDetails", defer("Missing executable inventory binding for WorkloadId, LensArn, PillarId, QuestionId, ChoiceId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListCheckSummaries", defer("Missing executable inventory binding for WorkloadId, LensArn, PillarId, QuestionId, ChoiceId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListLenses", defer("The documented response is aggregate, reference, operational history, or a singleton without an exact returned resource identity; it is not an executable resource enumeration.")),
-        ("ListLensReviewImprovements", defer("Missing executable inventory binding for WorkloadId, LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListLensReviews", defer("Missing executable inventory binding for WorkloadId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListLensShares", defer("Missing executable inventory binding for LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListMilestones", defer("Missing executable inventory binding for WorkloadId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListNotifications", defer("The documented response is aggregate, reference, operational history, or a singleton without an exact returned resource identity; it is not an executable resource enumeration.")),
-        ("ListProfileNotifications", defer("The documented response is aggregate, reference, operational history, or a singleton without an exact returned resource identity; it is not an executable resource enumeration.")),
-        ("ListProfiles", wellarchitected_plans_1::list_profiles()?),
-        ("ListProfileShares", defer("Missing executable inventory binding for ProfileArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListReviewTemplateAnswers", defer("Missing executable inventory binding for TemplateArn, LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListReviewTemplates", wellarchitected_plans_1::list_review_templates()?),
-        ("ListShareInvitations", defer("The documented response is aggregate, reference, operational history, or a singleton without an exact returned resource identity; it is not an executable resource enumeration.")),
-        ("ListTagsForResource", defer("Tag-only response omits the resource identity; the runtime does not yet merge bound-parent identity into complete tag-only observations.")),
-        ("ListTemplateShares", defer("Missing executable inventory binding for TemplateArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("ListWorkloads", wellarchitected_plans_1::list_workloads()?),
-        ("ListWorkloadShares", defer("Missing executable inventory binding for WorkloadId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("PutAgentRecommendationFeedback", deny(DenyReason::Mutating)),
-        ("StartAgentRecommendationGeneration", deny(DenyReason::Mutating)),
-        ("TagResource", deny(DenyReason::Mutating)),
-        ("UntagResource", deny(DenyReason::Mutating)),
-        ("UpdateAgentContext", deny(DenyReason::Mutating)),
-        ("UpdateAgentGoal", deny(DenyReason::Mutating)),
-        ("UpdateAgentProfile", deny(DenyReason::Mutating)),
-        ("UpdateAgentRecommendationStatus", deny(DenyReason::Mutating)),
-        ("UpdateAnswer", deny(DenyReason::Mutating)),
-        ("UpdateGlobalSettings", deny(DenyReason::Mutating)),
-        ("UpdateIntegration", deny(DenyReason::Mutating)),
-        ("UpdateLensReview", deny(DenyReason::Mutating)),
-        ("UpdateProfile", deny(DenyReason::Mutating)),
-        ("UpdateReviewTemplate", deny(DenyReason::Mutating)),
-        ("UpdateReviewTemplateAnswer", deny(DenyReason::Mutating)),
-        ("UpdateReviewTemplateLensReview", deny(DenyReason::Mutating)),
-        ("UpdateShareInvitation", deny(DenyReason::Mutating)),
-        ("UpdateWorkload", deny(DenyReason::Mutating)),
-        ("UpdateWorkloadShare", deny(DenyReason::Mutating)),
-        ("UpgradeLensReview", defer("Missing executable inventory binding for WorkloadId, LensAlias, MilestoneName: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("UpgradeProfileVersion", defer("Missing executable inventory binding for WorkloadId, ProfileArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-        ("UpgradeReviewTemplateLensReview", defer("Missing executable inventory binding for TemplateArn, LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.")),
-    ])
+    service(
+        "wellarchitected",
+        vec![
+            ("AssociateLenses", deny(DenyReason::Mutating)),
+            ("AssociateProfiles", deny(DenyReason::Mutating)),
+            ("CreateAgentContext", deny(DenyReason::Mutating)),
+            ("CreateAgentGoal", deny(DenyReason::Mutating)),
+            ("CreateAgentProfile", deny(DenyReason::Mutating)),
+            ("CreateLensShare", deny(DenyReason::Mutating)),
+            ("CreateLensVersion", deny(DenyReason::Mutating)),
+            ("CreateMilestone", deny(DenyReason::Mutating)),
+            ("CreateProfile", deny(DenyReason::Mutating)),
+            ("CreateProfileShare", deny(DenyReason::Mutating)),
+            ("CreateReviewTemplate", deny(DenyReason::Mutating)),
+            ("CreateTemplateShare", deny(DenyReason::Mutating)),
+            ("CreateWorkload", deny(DenyReason::Mutating)),
+            ("CreateWorkloadShare", deny(DenyReason::Mutating)),
+            ("DeleteAgentContext", deny(DenyReason::Mutating)),
+            ("DeleteAgentGoal", deny(DenyReason::Mutating)),
+            ("DeleteAgentProfile", deny(DenyReason::Mutating)),
+            ("DeleteLens", deny(DenyReason::Mutating)),
+            ("DeleteLensShare", deny(DenyReason::Mutating)),
+            ("DeleteProfile", deny(DenyReason::Mutating)),
+            ("DeleteProfileShare", deny(DenyReason::Mutating)),
+            ("DeleteReviewTemplate", deny(DenyReason::Mutating)),
+            ("DeleteTemplateShare", deny(DenyReason::Mutating)),
+            ("DeleteWorkload", deny(DenyReason::Mutating)),
+            ("DeleteWorkloadShare", deny(DenyReason::Mutating)),
+            ("DisassociateLenses", deny(DenyReason::Mutating)),
+            ("DisassociateProfiles", deny(DenyReason::Mutating)),
+            ("ExportLens", deny(DenyReason::Mutating)),
+            (
+                "GetAgentContext",
+                defer(
+                    "Missing executable inventory binding for profileArn, id: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "GetAgentGoal",
+                defer(
+                    "Missing executable inventory binding for profileArn, id: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "GetAgentProfile",
+                defer(
+                    "Missing executable inventory binding for profileArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "GetAgentRecommendation",
+                defer(
+                    "Missing executable inventory binding for recommendationArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "GetAgentRecommendationGeneration",
+                defer(
+                    "Missing executable inventory binding for profileArn, generationId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "GetAnswer",
+                defer(
+                    "Missing executable inventory binding for WorkloadId, LensAlias, QuestionId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "GetConsolidatedReport",
+                defer(
+                    "Missing executable inventory binding for Format: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "GetGlobalSettings",
+                defer(
+                    "The documented response is aggregate, reference, operational history, or a singleton without an exact returned resource identity; it is not an executable resource enumeration.",
+                ),
+            ),
+            (
+                "GetLens",
+                defer(
+                    "Missing executable inventory binding for LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "GetLensReview",
+                defer(
+                    "Missing executable inventory binding for WorkloadId, LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "GetLensReviewReport",
+                defer(
+                    "Missing executable inventory binding for WorkloadId, LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "GetLensVersionDifference",
+                defer(
+                    "Missing executable inventory binding for LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "GetMilestone",
+                defer(
+                    "Missing executable inventory binding for WorkloadId, MilestoneNumber: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            ("GetProfile", deny(DenyReason::Content)),
+            ("GetProfileTemplate", deny(DenyReason::ReferenceData)),
+            ("GetReviewTemplate", deny(DenyReason::Content)),
+            (
+                "GetReviewTemplateAnswer",
+                defer(
+                    "Missing executable inventory binding for TemplateArn, LensAlias, QuestionId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "GetReviewTemplateLensReview",
+                defer(
+                    "Missing executable inventory binding for TemplateArn, LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            ("GetWorkload", deny(DenyReason::Content)),
+            ("ImportLens", deny(DenyReason::Mutating)),
+            (
+                "ListAgentContexts",
+                defer(
+                    "Missing executable inventory binding for profileArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListAgentGoals",
+                defer(
+                    "Missing executable inventory binding for profileArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListAgentProfiles",
+                defer(
+                    "The documented response is aggregate, reference, operational history, or a singleton without an exact returned resource identity; it is not an executable resource enumeration.",
+                ),
+            ),
+            (
+                "ListAgentRecommendationGenerations",
+                defer(
+                    "Missing executable inventory binding for profileArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListAgentRecommendationItems",
+                defer(
+                    "Missing executable inventory binding for recommendationArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListAgentRecommendations",
+                defer(
+                    "Missing executable inventory binding for profileArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListAnswers",
+                defer(
+                    "Missing executable inventory binding for WorkloadId, LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListCheckDetails",
+                defer(
+                    "Missing executable inventory binding for WorkloadId, LensArn, PillarId, QuestionId, ChoiceId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListCheckSummaries",
+                defer(
+                    "Missing executable inventory binding for WorkloadId, LensArn, PillarId, QuestionId, ChoiceId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListLenses",
+                defer(
+                    "The documented response is aggregate, reference, operational history, or a singleton without an exact returned resource identity; it is not an executable resource enumeration.",
+                ),
+            ),
+            (
+                "ListLensReviewImprovements",
+                defer(
+                    "Missing executable inventory binding for WorkloadId, LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListLensReviews",
+                defer(
+                    "Missing executable inventory binding for WorkloadId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListLensShares",
+                defer(
+                    "Missing executable inventory binding for LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListMilestones",
+                defer(
+                    "Missing executable inventory binding for WorkloadId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListNotifications",
+                defer(
+                    "The documented response is aggregate, reference, operational history, or a singleton without an exact returned resource identity; it is not an executable resource enumeration.",
+                ),
+            ),
+            (
+                "ListProfileNotifications",
+                defer(
+                    "The documented response is aggregate, reference, operational history, or a singleton without an exact returned resource identity; it is not an executable resource enumeration.",
+                ),
+            ),
+            ("ListProfiles", wellarchitected_plans_1::list_profiles()?),
+            (
+                "ListProfileShares",
+                defer(
+                    "Missing executable inventory binding for ProfileArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListReviewTemplateAnswers",
+                defer(
+                    "Missing executable inventory binding for TemplateArn, LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "ListReviewTemplates",
+                wellarchitected_plans_1::list_review_templates()?,
+            ),
+            (
+                "ListShareInvitations",
+                defer(
+                    "The documented response is aggregate, reference, operational history, or a singleton without an exact returned resource identity; it is not an executable resource enumeration.",
+                ),
+            ),
+            (
+                "ListTagsForResource",
+                defer(
+                    "Tag-only response omits the resource identity; the runtime does not yet merge bound-parent identity into complete tag-only observations.",
+                ),
+            ),
+            (
+                "ListTemplateShares",
+                defer(
+                    "Missing executable inventory binding for TemplateArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            ("ListWorkloads", wellarchitected_plans_1::list_workloads()?),
+            (
+                "ListWorkloadShares",
+                defer(
+                    "Missing executable inventory binding for WorkloadId: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            ("PutAgentRecommendationFeedback", deny(DenyReason::Mutating)),
+            (
+                "StartAgentRecommendationGeneration",
+                deny(DenyReason::Mutating),
+            ),
+            ("TagResource", deny(DenyReason::Mutating)),
+            ("UntagResource", deny(DenyReason::Mutating)),
+            ("UpdateAgentContext", deny(DenyReason::Mutating)),
+            ("UpdateAgentGoal", deny(DenyReason::Mutating)),
+            ("UpdateAgentProfile", deny(DenyReason::Mutating)),
+            (
+                "UpdateAgentRecommendationStatus",
+                deny(DenyReason::Mutating),
+            ),
+            ("UpdateAnswer", deny(DenyReason::Mutating)),
+            ("UpdateGlobalSettings", deny(DenyReason::Mutating)),
+            ("UpdateIntegration", deny(DenyReason::Mutating)),
+            ("UpdateLensReview", deny(DenyReason::Mutating)),
+            ("UpdateProfile", deny(DenyReason::Mutating)),
+            ("UpdateReviewTemplate", deny(DenyReason::Mutating)),
+            ("UpdateReviewTemplateAnswer", deny(DenyReason::Mutating)),
+            ("UpdateReviewTemplateLensReview", deny(DenyReason::Mutating)),
+            ("UpdateShareInvitation", deny(DenyReason::Mutating)),
+            ("UpdateWorkload", deny(DenyReason::Mutating)),
+            ("UpdateWorkloadShare", deny(DenyReason::Mutating)),
+            (
+                "UpgradeLensReview",
+                defer(
+                    "Missing executable inventory binding for WorkloadId, LensAlias, MilestoneName: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "UpgradeProfileVersion",
+                defer(
+                    "Missing executable inventory binding for WorkloadId, ProfileArn: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+            (
+                "UpgradeReviewTemplateLensReview",
+                defer(
+                    "Missing executable inventory binding for TemplateArn, LensAlias: required parent identifiers or request predicates are not present together in a reviewed enumeration item.",
+                ),
+            ),
+        ],
+    )
 }

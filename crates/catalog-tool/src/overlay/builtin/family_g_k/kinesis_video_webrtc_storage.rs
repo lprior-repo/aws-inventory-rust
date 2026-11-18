@@ -4,11 +4,11 @@ use super::policy;
 use crate::overlay::{NameError, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
-    let approved = vec![
-
-    ];
+    let approved = vec![];
     policy::finish(
-        "kinesis-video-webrtc-storage", approved, DEFERRED,
+        "kinesis-video-webrtc-storage",
+        approved,
+        DEFERRED,
         "Joining storage/viewer sessions starts or creates streaming session state; every operation is denied.",
         &[(policy::DenyReason::Mutating, MUTATING)],
     )
@@ -16,10 +16,6 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
 
 // Explicit pinned operation dispositions. No runtime operation-name classifier approves calls.
 // Mutation sets change resource/lifecycle/authorization state; content and credential reads stay denied.
-const DEFERRED: &[&str] = &[
+const DEFERRED: &[&str] = &[];
 
-];
-
-const MUTATING: &[&str] = &[
-    "JoinStorageSession", "JoinStorageSessionAsViewer",
-];
+const MUTATING: &[&str] = &["JoinStorageSession", "JoinStorageSessionAsViewer"];

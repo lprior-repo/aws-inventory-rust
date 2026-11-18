@@ -1,5 +1,5 @@
-use crate::record::FieldId;
 use super::TagPlan;
+use crate::record::FieldId;
 
 /// A single-owner endpoint whose resource key comes exclusively from durable parent work.
 #[derive(Clone, Debug, PartialEq, Eq)]

@@ -1,9 +1,9 @@
-mod fixture;
-mod children;
-mod roots;
-mod proton;
 mod boundaries;
+mod children;
+mod fixture;
 mod metadata;
+mod proton;
+mod roots;
 
 use fixture::*;
 use inventory_core::catalog::runtime::RuntimeCatalog;

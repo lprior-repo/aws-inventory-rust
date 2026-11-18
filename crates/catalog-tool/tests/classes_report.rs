@@ -136,7 +136,10 @@ fn explicit_policy_is_independent_of_source_and_output_roots() -> TestResult {
     let source = fixture()?;
     let root = tempfile::tempdir()?;
     run_with_policy(root.path(), source.path(), ReportMode::Write, &policy()?)?;
-    assert_eq!(std::fs::read_to_string(root.path().join(COMMITTED))?, REPORT);
+    assert_eq!(
+        std::fs::read_to_string(root.path().join(COMMITTED))?,
+        REPORT
+    );
     assert!(!source.path().join("catalog").exists());
     Ok(())
 }

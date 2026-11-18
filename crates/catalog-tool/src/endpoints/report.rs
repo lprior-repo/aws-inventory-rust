@@ -112,8 +112,14 @@ pub fn verified_endpoints(source: &Path) -> Result<BTreeMap<String, VerifiedEndp
                 let mut routed = false;
                 for (operation, modeled) in evidence.operations {
                     let endpoint = super::static_context::compile(
-                        file, &evidence.rules, &evidence.cases, &operation, &modeled, signing,
-                    ).ok();
+                        file,
+                        &evidence.rules,
+                        &evidence.cases,
+                        &operation,
+                        &modeled,
+                        signing,
+                    )
+                    .ok();
                     routed |= endpoint.is_some();
                     verified.bind_operation(operation, endpoint);
                 }
@@ -209,7 +215,9 @@ fn load_services(
 
 fn read_traits(file: &Path) -> Result<(Traits, BTreeMap<String, Operation>), Error> {
     let model: Model = crate::model_source::read_model(file)?;
-    let mut labels = model.shapes.iter()
+    let mut labels = model
+        .shapes
+        .iter()
         .filter(|(_, shape)| shape.kind == "operation" && shape.traits.static_context.is_some())
         .filter_map(|(id, shape)| Some((id.clone(), host_label(&model, shape)?)))
         .collect::<BTreeMap<_, _>>();
@@ -220,13 +228,19 @@ fn read_traits(file: &Path) -> Result<(Traits, BTreeMap<String, Operation>), Err
             if service.replace(shape.traits).is_some() {
                 return Err(malformed(file, "several services"));
             }
-        } else if shape.kind == "operation" && let Some(context) = shape.traits.static_context {
-                let (_, name) = id.rsplit_once('#')
-                    .ok_or_else(|| malformed(file, "invalid operation shape identifier"))?;
-                let operation = Operation { context, label: labels.remove(&id) };
-                if operations.insert(name.to_owned(), operation).is_some() {
-                    return Err(malformed(file, "duplicate operation endpoint context"));
-                }
+        } else if shape.kind == "operation"
+            && let Some(context) = shape.traits.static_context
+        {
+            let (_, name) = id
+                .rsplit_once('#')
+                .ok_or_else(|| malformed(file, "invalid operation shape identifier"))?;
+            let operation = Operation {
+                context,
+                label: labels.remove(&id),
+            };
+            if operations.insert(name.to_owned(), operation).is_some() {
+                return Err(malformed(file, "duplicate operation endpoint context"));
+            }
         }
     }
     let traits = service.ok_or_else(|| malformed(file, "no service"))?;
@@ -249,13 +263,20 @@ fn host_label(model: &Model, operation: &Shape) -> Option<HostLabel> {
         return None;
     }
     let own = format!("{{{member}}}");
-    let prefix = operation.traits.endpoint.as_ref().map(|endpoint| endpoint.prefix.as_str());
+    let prefix = operation
+        .traits
+        .endpoint
+        .as_ref()
+        .map(|endpoint| endpoint.prefix.as_str());
     let prefixed = match prefix {
         Some(prefix) if prefix.strip_suffix('.') == Some(own.as_str()) => true,
         Some(prefix) if prefix.contains(&own) => return None,
         _ => false,
     };
-    Some(HostLabel { parameter: parameter.clone(), prefixed })
+    Some(HostLabel {
+        parameter: parameter.clone(),
+        prefixed,
+    })
 }
 
 fn malformed(file: &Path, message: &str) -> Error {

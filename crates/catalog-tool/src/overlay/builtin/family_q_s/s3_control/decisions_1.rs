@@ -3,58 +3,153 @@ use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
-    ("GetMultiRegionAccessPointPolicy", Decision::Deferred("Required selectors AccountId, Name are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Policy. Pinned purpose: This operation is not supported by directory buckets. Returns the access control policy of the specified Multi-Region Access Point. This action will always be routed to the US West (Oregon) Region. For more information about the restrictions around w")),
-    ("GetMultiRegionAccessPointPolicyStatus", Decision::Deferred("Required selectors AccountId, Name are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Established. Pinned purpose: This operation is not supported by directory buckets. Indicates whether the specified Multi-Region Access Point has an access control policy that allows public access. This action will always be routed to the US West (Oregon) Region. For more informa")),
-    ("GetMultiRegionAccessPointRoutes", Decision::Deferred("Required selectors AccountId, Mrap are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Mrap, Routes. Pinned purpose: This operation is not supported by directory buckets. Returns the routing configuration for a Multi-Region Access Point, indicating which Regions are active or passive. To obtain routing control changes and failover requests, use the Amazon S3 failov")),
-    ("GetPublicAccessBlock", Decision::Deferred("Required selectors AccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members PublicAccessBlockConfiguration. Pinned purpose: This operation is not supported by directory buckets. Retrieves the PublicAccessBlock configuration for an Amazon Web Services account. This operation returns the effective account-level configuration, which may inherit from organization-level polici")),
-    ("GetStorageLensConfiguration", Decision::Deferred("Required selectors ConfigId, AccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members StorageLensConfiguration. Pinned purpose: This operation is not supported by directory buckets. Gets the Amazon S3 Storage Lens configuration. For more information, see Assessing your storage activity and usage with Amazon S3 Storage Lens in the Amazon S3 User Guide . For a complete list of ")),
-    ("GetStorageLensConfigurationTagging", Decision::Deferred("Required selectors ConfigId, AccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Tags. Pinned purpose: This operation is not supported by directory buckets. Gets the tags of Amazon S3 Storage Lens configuration. For more information about S3 Storage Lens, see Assessing your storage activity and usage with Amazon S3 Storage Lens in the Amazon S3 User G")),
-    ("ListAccessPointsForDirectoryBuckets", Decision::Deferred("Required selectors AccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AccessPointList, NextToken. Pinned purpose: Returns a list of the access points that are owned by the Amazon Web Services account and that are associated with the specified directory bucket. To list access points for general purpose buckets, see ListAccesspoints . To use this operation, you mu")),
-    ("ListCallerAccessGrants", Decision::Deferred("Required selectors AccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members NextToken, CallerAccessGrantsList. Pinned purpose: Use this API to list the access grants that grant the caller access to Amazon S3 data through S3 Access Grants. The caller (grantee) can be an Identity and Access Management (IAM) identity or Amazon Web Services Identity Center corporate directory id")),
-    ("ListMultiRegionAccessPoints", Decision::Deferred("Model hostPrefix {AccountId}. and hostLabel are supported, but the documented control-plane request must route/sign in us-west-2. Current Account/HomeRegion scope uses caller home and Region fans out; no fixed service routing contract exists for this global resource.")),
-    ("ListTagsForResource", Decision::Deferred("Tag-only observation must join the originating resource identity with complete-snapshot semantics, not be persisted as a separate resource. Required request members: AccountId, ResourceArn. Pinned purpose: This operation allows you to list all of the tags for a specified resource. Each tag is a label consisting of a key and value. Tags can help you organize, track costs for, and control access to resources. This operation is only supported for the following Amazon S3 resources: General purpose buckets")),
+    (
+        "GetMultiRegionAccessPointPolicy",
+        Decision::Deferred(
+            "Required selectors AccountId, Name are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Policy. Pinned purpose: This operation is not supported by directory buckets. Returns the access control policy of the specified Multi-Region Access Point. This action will always be routed to the US West (Oregon) Region. For more information about the restrictions around w",
+        ),
+    ),
+    (
+        "GetMultiRegionAccessPointPolicyStatus",
+        Decision::Deferred(
+            "Required selectors AccountId, Name are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Established. Pinned purpose: This operation is not supported by directory buckets. Indicates whether the specified Multi-Region Access Point has an access control policy that allows public access. This action will always be routed to the US West (Oregon) Region. For more informa",
+        ),
+    ),
+    (
+        "GetMultiRegionAccessPointRoutes",
+        Decision::Deferred(
+            "Required selectors AccountId, Mrap are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Mrap, Routes. Pinned purpose: This operation is not supported by directory buckets. Returns the routing configuration for a Multi-Region Access Point, indicating which Regions are active or passive. To obtain routing control changes and failover requests, use the Amazon S3 failov",
+        ),
+    ),
+    (
+        "GetPublicAccessBlock",
+        Decision::Deferred(
+            "Required selectors AccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members PublicAccessBlockConfiguration. Pinned purpose: This operation is not supported by directory buckets. Retrieves the PublicAccessBlock configuration for an Amazon Web Services account. This operation returns the effective account-level configuration, which may inherit from organization-level polici",
+        ),
+    ),
+    (
+        "GetStorageLensConfiguration",
+        Decision::Deferred(
+            "Required selectors ConfigId, AccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members StorageLensConfiguration. Pinned purpose: This operation is not supported by directory buckets. Gets the Amazon S3 Storage Lens configuration. For more information, see Assessing your storage activity and usage with Amazon S3 Storage Lens in the Amazon S3 User Guide . For a complete list of ",
+        ),
+    ),
+    (
+        "GetStorageLensConfigurationTagging",
+        Decision::Deferred(
+            "Required selectors ConfigId, AccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members Tags. Pinned purpose: This operation is not supported by directory buckets. Gets the tags of Amazon S3 Storage Lens configuration. For more information about S3 Storage Lens, see Assessing your storage activity and usage with Amazon S3 Storage Lens in the Amazon S3 User G",
+        ),
+    ),
+    (
+        "ListAccessPointsForDirectoryBuckets",
+        Decision::Deferred(
+            "Required selectors AccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members AccessPointList, NextToken. Pinned purpose: Returns a list of the access points that are owned by the Amazon Web Services account and that are associated with the specified directory bucket. To list access points for general purpose buckets, see ListAccesspoints . To use this operation, you mu",
+        ),
+    ),
+    (
+        "ListCallerAccessGrants",
+        Decision::Deferred(
+            "Required selectors AccountId are not caller account/Region context. Must bind the exact documented owning parent and preserve fan-out before enabling; no guessed identifier or partial filtered request is permitted. Response members NextToken, CallerAccessGrantsList. Pinned purpose: Use this API to list the access grants that grant the caller access to Amazon S3 data through S3 Access Grants. The caller (grantee) can be an Identity and Access Management (IAM) identity or Amazon Web Services Identity Center corporate directory id",
+        ),
+    ),
+    (
+        "ListMultiRegionAccessPoints",
+        Decision::Deferred(
+            "Model hostPrefix {AccountId}. and hostLabel are supported, but the documented control-plane request must route/sign in us-west-2. Current Account/HomeRegion scope uses caller home and Region fans out; no fixed service routing contract exists for this global resource.",
+        ),
+    ),
+    (
+        "ListTagsForResource",
+        Decision::Deferred(
+            "Tag-only observation must join the originating resource identity with complete-snapshot semantics, not be persisted as a separate resource. Required request members: AccountId, ResourceArn. Pinned purpose: This operation allows you to list all of the tags for a specified resource. Each tag is a label consisting of a key and value. Tags can help you organize, track costs for, and control access to resources. This operation is only supported for the following Amazon S3 resources: General purpose buckets",
+        ),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Updates the resource policy of the S3 Access Grants instance. Permissions You must have the s3:PutAccessGrantsInstanceResourcePolicy permission to use this operation.
-    ("PutAccessGrantsInstanceResourcePolicy", Decision::Denied(DenyReason::Mutating)),
+    (
+        "PutAccessGrantsInstanceResourcePolicy",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: This operation is not supported by directory buckets. Replaces configuration for an Object Lambda Access Point. The following actions are related to PutAccessPointConfigurationForObjectLambda : GetAccessPointConfigurationForObjectLambda
-    ("PutAccessPointConfigurationForObjectLambda", Decision::Denied(DenyReason::Mutating)),
+    (
+        "PutAccessPointConfigurationForObjectLambda",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Associates an access policy with the specified access point. Each access point can have only one policy, so a request made to this API replaces any existing policy associated with the specified access point. All Amazon S3 on Outposts REST API requests for this action require an additional parameter of x-amz-outpost-id to be passed with the request. In addition, you must use an S3 on Outposts endpo
-    ("PutAccessPointPolicy", Decision::Denied(DenyReason::Mutating)),
+    (
+        "PutAccessPointPolicy",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: This operation is not supported by directory buckets. Creates or replaces resource policy for an Object Lambda Access Point. For an example policy, see Creating Object Lambda Access Points in the Amazon S3 User Guide . The following actions are related to PutAccessPointPolicyForObjectLambda : DeleteAccessPointPolicyForObjectLambda GetAccessPointPolicyForObjectLambda
-    ("PutAccessPointPolicyForObjectLambda", Decision::Denied(DenyReason::Mutating)),
+    (
+        "PutAccessPointPolicyForObjectLambda",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Creates or replaces the access point scope for a directory bucket. You can use the access point scope to restrict access to specific prefixes, API operations, or a combination of both. You can specify any amount of prefixes, but the total length of characters of all prefixes must be less than 256 bytes in size. To use this operation, you must have the permission to perform the s3express:PutAccessP
-    ("PutAccessPointScope", Decision::Denied(DenyReason::Mutating)),
+    (
+        "PutAccessPointScope",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: This action puts a lifecycle configuration to an Amazon S3 on Outposts bucket. To put a lifecycle configuration to an S3 bucket, see PutBucketLifecycleConfiguration in the Amazon S3 API Reference . Creates a new lifecycle configuration for the S3 on Outposts bucket or replaces an existing lifecycle configuration. Outposts buckets only support lifecycle configurations that delete/expire objects aft
-    ("PutBucketLifecycleConfiguration", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: This action puts a bucket policy to an Amazon S3 on Outposts bucket. To put a policy on an S3 bucket, see PutBucketPolicy in the Amazon S3 API Reference . Applies an Amazon S3 bucket policy to an Outposts bucket. For more information, see Using Amazon S3 on Outposts in the Amazon S3 User Guide . If you are using an identity other than the root user of the Amazon Web Services account that owns the 
+    (
+        "PutBucketLifecycleConfiguration",
+        Decision::Denied(DenyReason::Mutating),
+    ),
+    // Changes service state rather than reading inventory. Pinned purpose: This action puts a bucket policy to an Amazon S3 on Outposts bucket. To put a policy on an S3 bucket, see PutBucketPolicy in the Amazon S3 API Reference . Applies an Amazon S3 bucket policy to an Outposts bucket. For more information, see Using Amazon S3 on Outposts in the Amazon S3 User Guide . If you are using an identity other than the root user of the Amazon Web Services account that owns the
     ("PutBucketPolicy", Decision::Denied(DenyReason::Mutating)),
-    // Changes service state rather than reading inventory. Pinned purpose: This action creates an Amazon S3 on Outposts bucket's replication configuration. To create an S3 bucket's replication configuration, see PutBucketReplication in the Amazon S3 API Reference . Creates a replication configuration or replaces an existing one. For information about S3 replication on Outposts configuration, see Replicating objects for S3 on Outposts in the Amazon S3 User Guide . It can 
-    ("PutBucketReplication", Decision::Denied(DenyReason::Mutating)),
+    // Changes service state rather than reading inventory. Pinned purpose: This action creates an Amazon S3 on Outposts bucket's replication configuration. To create an S3 bucket's replication configuration, see PutBucketReplication in the Amazon S3 API Reference . Creates a replication configuration or replaces an existing one. For information about S3 replication on Outposts configuration, see Replicating objects for S3 on Outposts in the Amazon S3 User Guide . It can
+    (
+        "PutBucketReplication",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: This action puts tags on an Amazon S3 on Outposts bucket. To put tags on an S3 bucket, see PutBucketTagging in the Amazon S3 API Reference . Sets the tags for an S3 on Outposts bucket. For more information, see Using Amazon S3 on Outposts in the Amazon S3 User Guide . Use tags to organize your Amazon Web Services bill to reflect your own cost structure. To do this, sign up to get your Amazon Web S
     ("PutBucketTagging", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: This operation sets the versioning state for S3 on Outposts buckets only. To set the versioning state for an S3 bucket, see PutBucketVersioning in the Amazon S3 API Reference . Sets the versioning state for an S3 on Outposts bucket. With S3 Versioning, you can save multiple distinct copies of your objects and recover from unintended user actions and application failures. You can set the versioning
-    ("PutBucketVersioning", Decision::Denied(DenyReason::Mutating)),
+    (
+        "PutBucketVersioning",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Sets the supplied tag-set on an S3 Batch Operations job. A tag is a key-value pair. You can associate S3 Batch Operations tags with any job by sending a PUT request against the tagging subresource that is associated with the job. To modify the existing tag set, you can either replace the existing tag set entirely, or make changes within the existing tag set by retrieving the existing tag set using
     ("PutJobTagging", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: This operation is not supported by directory buckets. Associates an access control policy with the specified Multi-Region Access Point. Each Multi-Region Access Point can have only one policy, so a request made to this action replaces any existing policy that is associated with the specified Multi-Region Access Point. This action will always be routed to the US West (Oregon) Region. For more infor
-    ("PutMultiRegionAccessPointPolicy", Decision::Denied(DenyReason::Mutating)),
+    (
+        "PutMultiRegionAccessPointPolicy",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: This operation is not supported by directory buckets. Creates or modifies the PublicAccessBlock configuration for an Amazon Web Services account. This operation may be restricted when the account is managed by organization-level Block Public Access policies. You might get an Access Denied (403) error when the account is managed by organization-level Block Public Access policies. Organization-level
-    ("PutPublicAccessBlock", Decision::Denied(DenyReason::Mutating)),
+    (
+        "PutPublicAccessBlock",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: This operation is not supported by directory buckets. Puts an Amazon S3 Storage Lens configuration. For more information about S3 Storage Lens, see Working with Amazon S3 Storage Lens in the Amazon S3 User Guide . For a complete list of S3 Storage Lens metrics, see S3 Storage Lens metrics glossary in the Amazon S3 User Guide . To use this action, you must have permission to perform the s3:PutStora
-    ("PutStorageLensConfiguration", Decision::Denied(DenyReason::Mutating)),
+    (
+        "PutStorageLensConfiguration",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: This operation is not supported by directory buckets. Put or replace tags on an existing Amazon S3 Storage Lens configuration. For more information about S3 Storage Lens, see Assessing your storage activity and usage with Amazon S3 Storage Lens in the Amazon S3 User Guide . To use this action, you must have permission to perform the s3:PutStorageLensConfigurationTagging action. For more informatio
-    ("PutStorageLensConfigurationTagging", Decision::Denied(DenyReason::Mutating)),
+    (
+        "PutStorageLensConfigurationTagging",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: This operation is not supported by directory buckets. Submits an updated route configuration for a Multi-Region Access Point. This API operation updates the routing status for the specified Regions from active to passive, or from passive to active. A value of 0 indicates a passive status, which means that traffic won't be routed to the specified Region. A value of 100 indicates an active status, w
-    ("SubmitMultiRegionAccessPointRoutes", Decision::Denied(DenyReason::Mutating)),
+    (
+        "SubmitMultiRegionAccessPointRoutes",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Creates a new user-defined tag or updates an existing tag. Each tag is a label consisting of a key and value that is applied to your resource. Tags can help you organize, track costs for, and control access to your resources. You can add up to 50 Amazon Web Services resource tags for each S3 resource. This operation is only supported for the following Amazon S3 resource: General purpose buckets Ac
     ("TagResource", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: This operation removes the specified user-defined tags from an S3 resource. You can pass one or more tag keys. This operation is only supported for the following Amazon S3 resources: General purpose buckets Access Points for directory buckets Access Points for general purpose buckets Directory buckets S3 Storage Lens groups S3 Access Grants instances, registered locations, and grants . Permissions
     ("UntagResource", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Updates the IAM role of a registered location in your S3 Access Grants instance. Permissions You must have the s3:UpdateAccessGrantsLocation permission to use this operation. Additional Permissions You must also have the following permission: iam:PassRole
-    ("UpdateAccessGrantsLocation", Decision::Denied(DenyReason::Mutating)),
+    (
+        "UpdateAccessGrantsLocation",
+        Decision::Denied(DenyReason::Mutating),
+    ),
     // Changes service state rather than reading inventory. Pinned purpose: Updates an existing S3 Batch Operations job's priority. For more information, see S3 Batch Operations in the Amazon S3 User Guide . Permissions To use the UpdateJobPriority operation, you must have permission to perform the s3:UpdateJobPriority action. Related actions include: CreateJob ListJobs DescribeJob UpdateJobStatus
     ("UpdateJobPriority", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Updates the status for the specified job. Use this operation to confirm that you want to run a job or to cancel an existing job. For more information, see S3 Batch Operations in the Amazon S3 User Guide . Permissions To use the UpdateJobStatus operation, you must have permission to perform the s3:UpdateJobStatus action. Related actions include: CreateJob ListJobs DescribeJob UpdateJobStatus
     ("UpdateJobStatus", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Updates the existing Storage Lens group. To use this operation, you must have the permission to perform the s3:UpdateStorageLensGroup action. For more information about the required Storage Lens Groups permissions, see Setting account permissions to use S3 Storage Lens groups . For information about Storage Lens groups errors, see List of Amazon S3 Storage Lens error codes .
-    ("UpdateStorageLensGroup", Decision::Denied(DenyReason::Mutating)),
+    (
+        "UpdateStorageLensGroup",
+        Decision::Denied(DenyReason::Mutating),
+    ),
 ];

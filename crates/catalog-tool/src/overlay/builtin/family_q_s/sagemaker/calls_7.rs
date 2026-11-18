@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/sagemaker/service/2017-07-24/sagemaker-2017-07-24.json
-use super::super::construction::{Inventory, ResourceIdentity, Input};
+use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 
 pub(super) const CALLS: &[Inventory] = &[
@@ -49,7 +49,11 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Key(&["CandidateName"]),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
-        input: &[Input::Parent("AutoMLJobName", "ListAutoMLJobs", "AutoMLJobName")],
+        input: &[Input::Parent(
+            "AutoMLJobName",
+            "ListAutoMLJobs",
+            "AutoMLJobName",
+        )],
         tags: None,
         queryable: &[],
     },
@@ -79,7 +83,11 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Key(&["TrainingPlanExtensionOfferingId"]),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
-        input: &[Input::Parent("TrainingPlanArn", "ListTrainingPlans", "TrainingPlanArn")],
+        input: &[Input::Parent(
+            "TrainingPlanArn",
+            "ListTrainingPlans",
+            "TrainingPlanArn",
+        )],
         tags: None,
         queryable: &[],
     },

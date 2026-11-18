@@ -1,4 +1,4 @@
-use super::{SweepError, MAX_PAGE_ITEMS, item_record, path_value};
+use super::{MAX_PAGE_ITEMS, SweepError, item_record, path_value};
 use inventory_core::{
     catalog::runtime::{ItemPlan, SelectionKind},
     record::{Key, KeyRef, ListRef, MapRef, Record, Value, ValueRef},
@@ -14,8 +14,15 @@ enum Source<'a> {
 }
 
 pub(super) fn items<'a>(
-    record: &'a Record, plan: &ItemPlan,
-) -> Result<(usize, impl Iterator<Item = Result<Record, SweepError>> + 'a + use<'a>), SweepError> {
+    record: &'a Record,
+    plan: &ItemPlan,
+) -> Result<
+    (
+        usize,
+        impl Iterator<Item = Result<Record, SweepError>> + 'a + use<'a>,
+    ),
+    SweepError,
+> {
     let source = source(record, plan)?;
     let count = match &source {
         Source::Empty => 0,
@@ -24,7 +31,9 @@ pub(super) fn items<'a>(
         Source::Map(map, _) => map.count()?,
     };
     if count > MAX_PAGE_ITEMS {
-        return Err(SweepError::Operation("page exceeds the atomic observation bound"));
+        return Err(SweepError::Operation(
+            "page exceeds the atomic observation bound",
+        ));
     }
     let (root, single, list, map) = match source {
         Source::Empty => (None, None, None, None),
@@ -35,12 +44,24 @@ pub(super) fn items<'a>(
     };
     let roots = root.into_iter().map(|record| Ok(record.clone()));
     let singles = single.into_iter().map(item_record);
-    let lists = list.map(|list| list.iter()).transpose()?.into_iter().flatten()
+    let lists = list
+        .map(|list| list.iter())
+        .transpose()?
+        .into_iter()
+        .flatten()
         .map(|value| item_record(value?));
-    let maps = map.map(|(map, kind)| map.iter().map(|entries| entries.map(move |entry| {
-        let (key, value) = entry?;
-        map_record(kind, key, value)
-    }))).transpose()?.into_iter().flatten();
+    let maps = map
+        .map(|(map, kind)| {
+            map.iter().map(|entries| {
+                entries.map(move |entry| {
+                    let (key, value) = entry?;
+                    map_record(kind, key, value)
+                })
+            })
+        })
+        .transpose()?
+        .into_iter()
+        .flatten();
     Ok((count, roots.chain(singles).chain(lists).chain(maps)))
 }
 
@@ -50,25 +71,49 @@ fn source<'a>(record: &'a Record, plan: &ItemPlan) -> Result<Source<'a>, SweepEr
         ItemPlan::Path(path) => (path.as_ref(), None),
         ItemPlan::Select { path, kind } => (path.as_ref(), Some(*kind)),
     };
-    let value = if kind.is_some() && path.is_empty() { Some(ValueRef::Map(record.root())) }
-        else { path_value(record.root(), path)? };
-    let Some(value) = value else { return Ok(Source::Empty); };
-    if matches!(value, ValueRef::Null) { return Ok(Source::Empty); }
+    let value = if kind.is_some() && path.is_empty() {
+        Some(ValueRef::Map(record.root()))
+    } else {
+        path_value(record.root(), path)?
+    };
+    let Some(value) = value else {
+        return Ok(Source::Empty);
+    };
+    if matches!(value, ValueRef::Null) {
+        return Ok(Source::Empty);
+    }
     match (kind, value) {
-        (None | Some(SelectionKind::Structure), value @ ValueRef::Map(_)) =>
-            Ok(Source::Single(value)),
+        (None | Some(SelectionKind::Structure), value @ ValueRef::Map(_)) => {
+            Ok(Source::Single(value))
+        }
         (None | Some(SelectionKind::List), ValueRef::List(list)) => Ok(Source::List(list)),
         (Some(SelectionKind::Scalar), value)
-            if !matches!(value, ValueRef::Map(_) | ValueRef::List(_)) => Ok(Source::Single(value)),
-        (Some(kind @ (SelectionKind::MapKeys | SelectionKind::MapValues | SelectionKind::MapEntries)),
-            ValueRef::Map(map)) => Ok(Source::Map(map, kind)),
+            if !matches!(value, ValueRef::Map(_) | ValueRef::List(_)) =>
+        {
+            Ok(Source::Single(value))
+        }
+        (
+            Some(
+                kind @ (SelectionKind::MapKeys
+                | SelectionKind::MapValues
+                | SelectionKind::MapEntries),
+            ),
+            ValueRef::Map(map),
+        ) => Ok(Source::Map(map, kind)),
         (None, _) => Err(SweepError::Operation(
-            "compiled enumeration item path is neither a list nor a structure")),
-        _ => Err(SweepError::Operation("response value does not match its compiled item selector")),
+            "compiled enumeration item path is neither a list nor a structure",
+        )),
+        _ => Err(SweepError::Operation(
+            "response value does not match its compiled item selector",
+        )),
     }
 }
 
-fn map_record(kind: SelectionKind, key: KeyRef<'_>, value: ValueRef<'_>) -> Result<Record, SweepError> {
+fn map_record(
+    kind: SelectionKind,
+    key: KeyRef<'_>,
+    value: ValueRef<'_>,
+) -> Result<Record, SweepError> {
     let KeyRef::Name(key) = key else {
         return Err(SweepError::Operation("modeled map has a non-text key"));
     };

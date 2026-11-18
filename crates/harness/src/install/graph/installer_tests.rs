@@ -105,14 +105,21 @@ fn given_receipt_pins_when_any_pin_changes_then_verification_fails() -> TestResu
     let (_directory, layout) = fixture()?;
     let original = value(&layout)?;
     receipt::verify_pins(&original)?;
-    ["redis_version", "falkordb_version", "redis_url", "module_url", "redis_archive_sha256", "module_sha256"]
-        .into_iter()
-        .try_for_each(|key| -> TestResult {
-            let mut changed = original.clone();
-            replace(&mut changed, key, json!("foreign"))?;
-            assert!(receipt::verify_pins(&changed).is_err());
-            Ok(())
-        })?;
+    [
+        "redis_version",
+        "falkordb_version",
+        "redis_url",
+        "module_url",
+        "redis_archive_sha256",
+        "module_sha256",
+    ]
+    .into_iter()
+    .try_for_each(|key| -> TestResult {
+        let mut changed = original.clone();
+        replace(&mut changed, key, json!("foreign"))?;
+        assert!(receipt::verify_pins(&changed).is_err());
+        Ok(())
+    })?;
     Ok(())
 }
 
@@ -169,7 +176,6 @@ fn given_exclusive_lock_when_installing_then_existing_tree_is_untouched() -> Tes
     Ok(())
 }
 
-
 #[test]
 fn given_operation_and_cleanup_failures_when_returning_then_both_are_reported() -> TestResult {
     let result = complete::<()>(
@@ -190,7 +196,10 @@ fn given_complete_receipt_when_publishing_then_only_final_complete_bytes_remain(
     let lock = OwnedDirectory::claim(&layout.lock)?;
     let receipt = value(&layout)?;
     receipt::store(&OwnedDirectory::capture(&layout.source)?, &receipt)?;
-    assert_eq!(serde_json::from_slice::<Value>(&fs::read(&layout.receipt)?)?, receipt);
+    assert_eq!(
+        serde_json::from_slice::<Value>(&fs::read(&layout.receipt)?)?,
+        receipt
+    );
     assert!(!layout.lock.join("installation.json").exists());
     lock.remove_empty()?;
     Ok(())
@@ -222,7 +231,6 @@ fn given_foreign_staging_file_when_publishing_then_it_is_not_removed() -> TestRe
     Ok(())
 }
 
-
 #[test]
 fn given_stalled_version_process_when_querying_then_timeout_reports_failure_and_cleans_output()
 -> TestResult {
@@ -233,8 +241,14 @@ fn given_stalled_version_process_when_querying_then_timeout_reports_failure_and_
     let result = build::versions(&source)
         .map(|_| Value::Null)
         .map_err(receipt::PublicationError::Uncommitted);
-    let error = super::finish_installation(source, result).err().ok_or("stalled version succeeded")?;
-    assert!(error.to_string().contains("version command failed or timed out"));
+    let error = super::finish_installation(source, result)
+        .err()
+        .ok_or("stalled version succeeded")?;
+    assert!(
+        error
+            .to_string()
+            .contains("version command failed or timed out")
+    );
     assert!(!layout.lock.join("server.version").exists());
     assert!(!layout.source.exists());
     lock.remove_empty()?;

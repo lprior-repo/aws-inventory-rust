@@ -1,5 +1,5 @@
-use super::{inventory, path, paths, bind, token};
-use crate::overlay::{OperationOverlay, NameError, Identity, Paginator, Scope};
+use super::{bind, inventory, path, paths, token};
+use crate::overlay::{Identity, NameError, OperationOverlay, Paginator, Scope};
 
 pub(super) fn get_assistant() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
@@ -17,7 +17,12 @@ pub(super) fn get_assistant() -> Result<OperationOverlay, NameError> {
         "description",
     ])?;
     operation.tags = Some(path("tags")?);
-    bind(&mut operation, "assistantId", "ListAssistants", "assistantId")?;
+    bind(
+        &mut operation,
+        "assistantId",
+        "ListAssistants",
+        "assistantId",
+    )?;
     Ok(operation)
 }
 
@@ -37,8 +42,18 @@ pub(super) fn get_assistant_association() -> Result<OperationOverlay, NameError>
         "associationData.knowledgeBaseAssociation.knowledgeBaseArn",
     ])?;
     operation.tags = Some(path("tags")?);
-    bind(&mut operation, "assistantAssociationId", "ListAssistantAssociations", "assistantAssociationId")?;
-    bind(&mut operation, "assistantId", "ListAssistantAssociations", "assistantId")?;
+    bind(
+        &mut operation,
+        "assistantAssociationId",
+        "ListAssistantAssociations",
+        "assistantAssociationId",
+    )?;
+    bind(
+        &mut operation,
+        "assistantId",
+        "ListAssistantAssociations",
+        "assistantId",
+    )?;
     Ok(operation)
 }
 
@@ -58,7 +73,12 @@ pub(super) fn get_knowledge_base() -> Result<OperationOverlay, NameError> {
         "description",
     ])?;
     operation.tags = Some(path("tags")?);
-    bind(&mut operation, "knowledgeBaseId", "ListKnowledgeBases", "knowledgeBaseId")?;
+    bind(
+        &mut operation,
+        "knowledgeBaseId",
+        "ListKnowledgeBases",
+        "knowledgeBaseId",
+    )?;
     Ok(operation)
 }
 
@@ -79,7 +99,12 @@ pub(super) fn list_assistant_associations() -> Result<OperationOverlay, NameErro
     ])?;
     operation.tags = Some(path("tags")?);
     operation.page_size = Some(100);
-    bind(&mut operation, "assistantId", "ListAssistants", "assistantId")?;
+    bind(
+        &mut operation,
+        "assistantId",
+        "ListAssistants",
+        "assistantId",
+    )?;
     Ok(operation)
 }
 

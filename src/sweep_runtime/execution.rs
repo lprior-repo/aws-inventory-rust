@@ -1,9 +1,9 @@
 #[path = "execution/draining.rs"]
 mod draining;
 use draining::*;
+pub(in crate::sweep_runtime) mod discovery;
 pub(in crate::sweep_runtime) mod page;
 pub(in crate::sweep_runtime) mod routing;
-pub(in crate::sweep_runtime) mod discovery;
 #[cfg(test)]
 mod tests;
 
@@ -40,7 +40,7 @@ pub(super) struct RuntimeContext<'a, 'catalog> {
     pub account: AccountId,
     pub lease_ms: i64,
     pub endpoints: discovery::EndpointCache,
-    pub consumers: page::consumer_index::ConsumerIndex<'a,'catalog>,
+    pub consumers: page::consumer_index::ConsumerIndex<'a, 'catalog>,
 }
 
 pub(crate) async fn run(
@@ -66,8 +66,9 @@ pub(crate) async fn run(
         home: &home,
         config: &config,
     };
-    let collection: BoxFuture<'_,Result<SweepSummary,SweepError>> = Box::pin(collect(&bootstrap,store,&sweep,lease_ms));
-    supervise(&executor,collection,tokio::signal::ctrl_c()).await
+    let collection: BoxFuture<'_, Result<SweepSummary, SweepError>> =
+        Box::pin(collect(&bootstrap, store, &sweep, lease_ms));
+    supervise(&executor, collection, tokio::signal::ctrl_c()).await
 }
 
 async fn collect(
@@ -77,10 +78,11 @@ async fn collect(
     lease_ms: i64,
 ) -> Result<SweepSummary, SweepError> {
     let account = bootstrap_account(bootstrap).await?;
-    let consumers = page::consumer_index::ConsumerIndex::build(bootstrap.catalog).map_err(|error| {
-        tracing::error!(%error,"reviewed consumer index construction failed");
-        SweepError::Operation("reviewed consumer index construction failed")
-    })?;
+    let consumers =
+        page::consumer_index::ConsumerIndex::build(bootstrap.catalog).map_err(|error| {
+            tracing::error!(%error,"reviewed consumer index construction failed");
+            SweepError::Operation("reviewed consumer index construction failed")
+        })?;
     let context = RuntimeContext {
         bootstrap: BootstrapContext {
             catalog: bootstrap.catalog,
@@ -123,18 +125,23 @@ fn lease_budget(settings: ExecutorConfig) -> Result<i64, SweepError> {
     // A leased batch is a barrier: no further pages enter this executor until it
     // drains. Bound its entire workload serially, including DescribeEndpoints
     // before each target call, queued permits, adaptive pacing and server hints.
-    let calls = u64::try_from(settings.global_concurrency).ok()
+    let calls = u64::try_from(settings.global_concurrency)
+        .ok()
         .and_then(|pages| pages.checked_mul(2))
         .ok_or(SweepError::Operation("executor page-call budget overflow"))?;
     let attempts = u64::from(settings.max_attempts);
-    let attempt_time = settings.attempt_timeout_ms
+    let attempt_time = settings
+        .attempt_timeout_ms
         .checked_add(inventory_engine::limiter::MAX_RETRY_AFTER_MS)
         .and_then(|value| value.checked_add(1_000))
         .and_then(|value| value.checked_mul(attempts))
         .ok_or(SweepError::Operation("executor attempt budget overflow"))?;
-    let backoff = settings.max_backoff_ms.checked_mul(attempts.saturating_sub(1))
+    let backoff = settings
+        .max_backoff_ms
+        .checked_mul(attempts.saturating_sub(1))
         .ok_or(SweepError::Operation("executor backoff budget overflow"))?;
-    let total = attempt_time.checked_add(backoff)
+    let total = attempt_time
+        .checked_add(backoff)
         .and_then(|value| value.checked_mul(calls))
         // A previous batch/bootstrap call may leave an accepted server cooldown.
         .and_then(|value| value.checked_add(inventory_engine::limiter::MAX_RETRY_AFTER_MS))

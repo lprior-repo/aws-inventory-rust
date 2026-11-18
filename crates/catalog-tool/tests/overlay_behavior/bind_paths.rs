@@ -13,8 +13,14 @@ fn invalid_binding_paths_remain_distinct_in_the_aggregate() -> Result<(), Box<dy
 "n#Thing":{"type":"structure","members":{"Id":{"target":"smithy.api#String"}}}}}"#;
     let root = fixture(model, "")?;
     let mut plan = complete()?;
-    plan.bind.insert(overlay::MemberPath::new("MissingOne")?, binding("GetThing", "Id")?);
-    plan.bind.insert(overlay::MemberPath::new("MissingTwo")?, binding("GetThing", "Id")?);
+    plan.bind.insert(
+        overlay::MemberPath::new("MissingOne")?,
+        binding("GetThing", "Id")?,
+    );
+    plan.bind.insert(
+        overlay::MemberPath::new("MissingTwo")?,
+        binding("GetThing", "Id")?,
+    );
     let mut child = complete()?;
     child.class = Some(OverlayClass::Expand);
     let errors = violations(&root, vec![("ListThings", plan), ("GetThing", child)])?;

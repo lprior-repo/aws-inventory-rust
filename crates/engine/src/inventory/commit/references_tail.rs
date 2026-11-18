@@ -24,7 +24,6 @@ pub(in super::super) fn edge_source(value: &str) -> Result<EdgeSource, StoreErro
     }
 }
 
-
 pub(in super::super) fn reference_scope(
     account: &str,
     region: &str,
@@ -60,7 +59,9 @@ pub(super) async fn persist_tags(
         .bind(resource.account.as_str()).bind(resource.region.as_str())
         .bind(resource.kind.as_str()).bind(resource.id.as_str()).fetch_one(&mut **tx).await?;
     if !exists {
-        return Err(StoreError::Invalid("tag observation has no persisted resource"));
+        return Err(StoreError::Invalid(
+            "tag observation has no persisted resource",
+        ));
     }
     persist_tag_coverage(tx, observation, observed_at).await?;
     if observation.coverage() != super::super::TagCoverage::Complete {
@@ -71,21 +72,34 @@ pub(super) async fn persist_tags(
         .bind(resource.kind.as_str()).bind(resource.id.as_str()).fetch_all(&mut **tx).await?
         .into_iter().map(|row| Ok((row.try_get::<String, _>("tag_key")?, row.try_get::<String, _>("tag_value")?)))
         .collect::<Result<Vec<_>, sqlx::Error>>()?;
-    if existing.iter().map(|(key, value)| (key.as_str(), value.as_str()))
-        .eq(observation.tags().iter().map(|tag| (tag.key(), tag.value()))) {
+    if existing
+        .iter()
+        .map(|(key, value)| (key.as_str(), value.as_str()))
+        .eq(observation
+            .tags()
+            .iter()
+            .map(|tag| (tag.key(), tag.value())))
+    {
         return Ok(());
     }
     sqlx::query("DELETE FROM tags WHERE account=?1 AND region=?2 AND kind=?3 AND id=?4")
-        .bind(resource.account.as_str()).bind(resource.region.as_str())
-        .bind(resource.kind.as_str()).bind(resource.id.as_str()).execute(&mut **tx).await?;
+        .bind(resource.account.as_str())
+        .bind(resource.region.as_str())
+        .bind(resource.kind.as_str())
+        .bind(resource.id.as_str())
+        .execute(&mut **tx)
+        .await?;
     if !observation.tags().is_empty() {
         let mut insert = QueryBuilder::<Sqlite>::new(
             "INSERT INTO tags(account,region,kind,id,tag_key,tag_value) ",
         );
         insert.push_values(observation.tags(), |mut row, tag| {
-            row.push_bind(resource.account.as_str()).push_bind(resource.region.as_str())
-                .push_bind(resource.kind.as_str()).push_bind(resource.id.as_str())
-                .push_bind(tag.key()).push_bind(tag.value());
+            row.push_bind(resource.account.as_str())
+                .push_bind(resource.region.as_str())
+                .push_bind(resource.kind.as_str())
+                .push_bind(resource.id.as_str())
+                .push_bind(tag.key())
+                .push_bind(tag.value());
         });
         insert.build().execute(&mut **tx).await?;
     }
@@ -101,7 +115,8 @@ async fn persist_tag_coverage(
     observed_at: i64,
 ) -> Result<(), StoreError> {
     let key = observation.resource();
-    let complete_at = (observation.coverage() == super::super::TagCoverage::Complete).then_some(observed_at);
+    let complete_at =
+        (observation.coverage() == super::super::TagCoverage::Complete).then_some(observed_at);
     sqlx::query("INSERT INTO tag_observations(account,region,kind,id,coverage,observed_at,last_complete_at) VALUES(?1,?2,?3,?4,?5,?6,?7) ON CONFLICT(account,region,kind,id) DO UPDATE SET coverage=excluded.coverage,observed_at=excluded.observed_at,last_complete_at=COALESCE(excluded.last_complete_at,tag_observations.last_complete_at)")
         .bind(key.account.as_str()).bind(key.region.as_str()).bind(key.kind.as_str()).bind(key.id.as_str())
         .bind(observation.coverage().as_str()).bind(observed_at).bind(complete_at)

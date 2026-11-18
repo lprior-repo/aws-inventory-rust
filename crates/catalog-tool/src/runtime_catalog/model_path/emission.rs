@@ -1,4 +1,7 @@
-use super::{RuntimeCatalogCompileError, ValidationContext, list_element, operation_for, optional_resolve, string_target};
+use super::{
+    RuntimeCatalogCompileError, ValidationContext, list_element, operation_for, optional_resolve,
+    string_target,
+};
 use crate::{overlay::ResourceProjection, runtime_catalog::emission_sources};
 
 /// Which side of the call a relation path is read from.
@@ -16,7 +19,10 @@ pub(super) enum Terminal {
 }
 
 /// A kind is active when any callable emission, primary or additional, produces it.
-pub(in crate::runtime_catalog) fn active_kind(context: &ValidationContext<'_, '_>, kind: &str) -> bool {
+pub(in crate::runtime_catalog) fn active_kind(
+    context: &ValidationContext<'_, '_>,
+    kind: &str,
+) -> bool {
     emission_sources::sources(context.kinds, context.checked).any(|source| source.emits_kind(kind))
 }
 
@@ -52,6 +58,9 @@ pub(super) fn validate_kind_origin_path(
             string_target(service, resolved)?;
             Ok(true)
         })?;
-    if found { Ok(()) } else { Err(RuntimeCatalogCompileError::Capability) }
+    if found {
+        Ok(())
+    } else {
+        Err(RuntimeCatalogCompileError::Capability)
+    }
 }
-

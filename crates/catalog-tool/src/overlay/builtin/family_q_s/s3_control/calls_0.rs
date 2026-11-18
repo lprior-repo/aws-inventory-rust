@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/s3-control/service/2018-08-20/s3-control-2018-08-20.json
-use super::super::construction::{Inventory, ResourceIdentity, Input};
+use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 
 pub(super) const CALLS: &[Inventory] = &[
@@ -9,7 +9,10 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Arn("AccessPointArn"),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
-        input: &[Input::Account("AccountId"), Input::String("DataSourceType", "ALL")],
+        input: &[
+            Input::Account("AccountId"),
+            Input::String("DataSourceType", "ALL"),
+        ],
         tags: None,
         queryable: &[],
     },
@@ -114,7 +117,11 @@ pub(super) const CALLS: &[Inventory] = &[
         scope: Scope::Region,
         input: &[Input::Account("AccountId")],
         tags: None,
-        queryable: &["AccessGrantsInstanceId", "IdentityCenterInstanceArn", "IdentityCenterApplicationArn"],
+        queryable: &[
+            "AccessGrantsInstanceId",
+            "IdentityCenterInstanceArn",
+            "IdentityCenterApplicationArn",
+        ],
     },
     Inventory {
         operation: "GetAccessGrant",
@@ -127,7 +134,12 @@ pub(super) const CALLS: &[Inventory] = &[
             Input::Parent("AccessGrantId", "ListAccessGrants", "AccessGrantId"),
         ],
         tags: None,
-        queryable: &["AccessGrantId", "AccessGrantsLocationId", "Permission", "ApplicationArn"],
+        queryable: &[
+            "AccessGrantId",
+            "AccessGrantsLocationId",
+            "Permission",
+            "ApplicationArn",
+        ],
     },
     Inventory {
         operation: "GetAccessGrantsLocation",
@@ -137,7 +149,11 @@ pub(super) const CALLS: &[Inventory] = &[
         scope: Scope::Region,
         input: &[
             Input::Account("AccountId"),
-            Input::Parent("AccessGrantsLocationId", "ListAccessGrantsLocations", "AccessGrantsLocationId"),
+            Input::Parent(
+                "AccessGrantsLocationId",
+                "ListAccessGrantsLocations",
+                "AccessGrantsLocationId",
+            ),
         ],
         tags: None,
         queryable: &["AccessGrantsLocationId", "LocationScope", "IAMRoleArn"],
