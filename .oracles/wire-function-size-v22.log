@@ -1,6 +1,0 @@
-crates/catalog-tool/src/smithy/compile/defaults/value.rs:77: 30 lines: fn visit<'a>(
-crates/catalog-tool/src/smithy/compile/encode.rs:118: 25 lines: fn prelude_shape(id: &str) -> Option<&'static str>
-crates/catalog-tool/src/smithy/compile/shapes.rs:16: 25 lines: pub(super) fn encode(
-crates/catalog-tool/src/smithy/model/mixins.rs:58: 26 lines: fn visit(
-crates/catalog-tool/src/smithy/model/mixins.rs:145: 25 lines: fn inherit(
-function-length gate failed (max 25 lines)

@@ -1,7 +1,0 @@
-   Compiling catalog-tool v0.6.0 (/home/lewis/src/aws-inventory-worktrees/m2.1-integrated/crates/catalog-tool)
-    Finished `dev` profile [unoptimized] target(s) in 1.98s
-     Running `/home/lewis/src/aws-inventory-rust/target/debug/catalog-tool models compile --source .local/aws-models --root . --write`
-catalog 10995359 bytes
-    Finished `dev` profile [unoptimized] target(s) in 0.08s
-     Running `/home/lewis/src/aws-inventory-rust/target/debug/catalog-tool models compile --source .local/aws-models --root . --check`
-catalog 10995359 bytes

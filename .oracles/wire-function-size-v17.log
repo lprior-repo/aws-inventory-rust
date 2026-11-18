@@ -1,9 +1,0 @@
-crates/catalog-tool/src/smithy/compile/defaults.rs:10: 25 lines: pub(super) fn fields(
-crates/catalog-tool/src/smithy/compile/defaults.rs:78: 57 lines: fn normalize(value: &Json, kind: Option<&str>) -> Result<Value, CompileError>
-crates/catalog-tool/src/smithy/compile/defaults.rs:137: 37 lines: fn number(value: &serde_json::Number, kind: Option<&str>) -> Result<Value, CompileError>
-crates/catalog-tool/src/smithy/compile/defaults.rs:193: 37 lines: fn decode_base64(text: &str) -> Result<Vec<u8>, CompileError>
-crates/catalog-tool/src/smithy/compile/encode.rs:118: 25 lines: fn prelude_shape(id: &str) -> Option<&'static str>
-crates/catalog-tool/src/smithy/compile/shapes.rs:16: 25 lines: pub(super) fn encode(
-crates/catalog-tool/src/smithy/model/mixins.rs:34: 44 lines: fn resolve(
-crates/catalog-tool/src/smithy/model/mixins.rs:80: 43 lines: fn resolved_shape(
-function-length gate failed (max 25 lines)
