@@ -1,2 +1,0 @@
-[["count(r)","sum(CASE WHEN r.unresolved=false THEN 1 ELSE 0 END)"],[[193,"150"]],["Cached execution: 0","Query internal execution time: 0.101019 milliseconds","Graph version: 6"]]
-[["count(r)"],[[340]],["Cached execution: 0","Query internal execution time: 0.005010 milliseconds","Graph version: 6"]]
