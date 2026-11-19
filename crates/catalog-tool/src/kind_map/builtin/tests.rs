@@ -46,7 +46,7 @@ fn digest(rows: impl Iterator<Item = String>) -> String {
 #[test]
 fn embedded_baseline_preserves_all_313_exact_operation_mappings() -> TestResult {
     let map = SOURCE.compile(&Exceptions::builtin())?;
-    assert_eq!(map.operations().len(), 333);
+    assert_eq!(map.operations().len(), 366);
     let actual = digest(
         map.operations()
             .iter()
@@ -69,7 +69,7 @@ fn embedded_baseline_preserves_all_313_exact_operation_mappings() -> TestResult 
 #[test]
 fn embedded_baseline_preserves_168_canonical_cfn_kinds() -> TestResult {
     let map = SOURCE.compile(&Exceptions::builtin())?;
-    assert_eq!(map.entries().len(), 168 + CENTRAL_ADDED_CFN_KINDS.len());
+    assert_eq!(map.entries().len(), 185);
     assert!(map.entries().iter().all(
         |entry| matches!(&entry.target, KindTarget::Mapped { kind, .. } if kind == &entry.cfn_type)
     ));
@@ -94,7 +94,7 @@ fn embedded_baseline_preserves_168_canonical_cfn_kinds() -> TestResult {
 #[test]
 fn embedded_baseline_preserves_all_113_api_only_reasons() -> TestResult {
     let map = SOURCE.compile(&Exceptions::builtin())?;
-    assert_eq!(map.api_only().len(), 113 + CENTRAL_ADDED_API_KINDS.len());
+    assert_eq!(map.api_only().len(), 149);
     let actual = digest(
         map.api_only()
             .iter()
@@ -370,6 +370,11 @@ fn given_reviewed_metadata_operations_when_registry_compiles_then_expected_kinds
             "AWS::S3::StorageLensGroup",
         ),
         ("transfer", "DescribeAgreement", "AWS::Transfer::Agreement"),
+        ("sagemaker", "ListApps", "AWS::ApiOnly::SageMakerApp"),
+        ("ssm-contacts", "ListContactChannels", "AWS::ApiOnly::SSMContactChannel"),
+        ("migrationhubstrategy", "ListServers", "AWS::ApiOnly::MigrationStrategyServer"),
+        ("mediapackage", "ListVodAssets", "AWS::ApiOnly::MediaPackageVodAsset"),
+        ("database-migration-service", "DescribeEndpoints", "AWS::DMS::Endpoint"),
     ];
     // When compiling all reviewed families against the pinned CFN source.
     let map = embedded(include_bytes!(
@@ -771,6 +776,35 @@ const NEW_SAFE_METADATA_OPERATIONS: &[(&str, &str, &str)] = &[
     ),
     ("rds", "DescribeDBSnapshots", "AWS::RDS::DBSnapshot"),
     ("route-53", "GetDNSSEC", "AWS::Route53::DNSSEC"),
+    ("eventbridge", "DescribeEventBus", "AWS::ApiOnly::EventBridgeEventBus"),
+    ("eventbridge", "DescribeEventSource", "AWS::ApiOnly::EventBridgeEventSource"),
+    ("eventbridge", "DescribeRule", "AWS::ApiOnly::EventBridgeEventRule"),
+    ("eventbridge", "DescribeEndpoint", "AWS::ApiOnly::EventBridgeEndpoint"),
+    ("eventbridgev2", "DescribeEventBus", "AWS::ApiOnly::EventBridgeV2EventBus"),
+    ("eventbridgev2", "DescribeEventSource", "AWS::ApiOnly::EventBridgeV2EventSource"),
+    ("eventbridgev2", "DescribeSubscriber", "AWS::ApiOnly::EventBridgeV2Subscriber"),
+    ("sagemaker", "DescribeTrainingPlanExtensionHistory", "AWS::ApiOnly::SageMakerTrainingPlanExtension"),
+    ("sagemaker", "ListAliases", "AWS::ApiOnly::SageMakerAlias"),
+    ("sagemaker", "ListApps", "AWS::ApiOnly::SageMakerApp"),
+    ("sagemaker", "ListCandidatesForAutoMLJob", "AWS::ApiOnly::SageMakerAutoMLCandidate"),
+    ("sagemaker", "ListClusterEvents", "AWS::ApiOnly::SageMakerClusterEvent"),
+    ("sagemaker", "ListClusterExtensions", "AWS::ApiOnly::SageMakerClusterExtension"),
+    ("ssm-contacts", "ListContactChannels", "AWS::ApiOnly::SSMContactChannel"),
+    ("ssm-contacts", "ListPageReceipts", "AWS::ApiOnly::SSMContactPageReceipt"),
+    ("ssm-contacts", "ListPageResolutions", "AWS::ApiOnly::SSMContactPageResolution"),
+    ("ssm-contacts", "ListPagesByContact", "AWS::ApiOnly::SSMContactPage"),
+    ("ssm-contacts", "ListPagesByEngagement", "AWS::ApiOnly::SSMContactPage"),
+    ("ssm-contacts", "ListRotationOverrides", "AWS::ApiOnly::SSMContactRotationOverride"),
+    ("ssm-contacts", "ListRotationShifts", "AWS::ApiOnly::SSMContactRotationShift"),
+    ("database-migration-service", "DescribeFleetAdvisorCollectors", "AWS::ApiOnly::DMSCollector"),
+    ("database-migration-service", "DescribeFleetAdvisorDatabases", "AWS::ApiOnly::DMSScannedDatabase"),
+    ("database-migration-service", "DescribePendingMaintenanceActions", "AWS::ApiOnly::DMSPendingMaintenanceAction"),
+    ("database-migration-service", "DescribeDataMigrations", "AWS::ApiOnly::DMSDataMigration"),
+    ("migrationhubstrategy", "ListAnalyzableServers", "AWS::ApiOnly::MigrationStrategyAnalyzableServer"),
+    ("migrationhubstrategy", "ListApplicationComponents", "AWS::ApiOnly::MigrationStrategyApplicationComponent"),
+    ("migrationhubstrategy", "ListImportFileTask", "AWS::ApiOnly::MigrationStrategyImportFileTask"),
+    ("migrationhubstrategy", "ListServers", "AWS::ApiOnly::MigrationStrategyServer"),
+    ("mediapackage", "ListVodAssets", "AWS::ApiOnly::MediaPackageVodAsset"),
 ];
 
 #[test]
@@ -957,6 +991,9 @@ const CENTRAL_ADDED_CFN_KINDS: &[&str] = &[
     "AWS::KafkaConnect::WorkerConfiguration",
     "AWS::KinesisVideo::SignalingChannel",
     "AWS::KinesisVideo::Stream",
+    "AWS::DMS::Endpoint",
+    "AWS::DMS::ReplicationConfig",
+    "AWS::DMS::ReplicationTask",
 ];
 const CENTRAL_ADDED_API_KINDS: &[&str] = &[
     "AWS::ApiOnly::OrganizationsDelegatedService",
@@ -966,6 +1003,35 @@ const CENTRAL_ADDED_API_KINDS: &[&str] = &[
     "AWS::ApiOnly::KMSKeyPolicy",
     "AWS::ApiOnly::KafkaConnectConnectorOperation",
     "AWS::ApiOnly::KinesisVideoMappedResourceConfiguration",
+    "AWS::ApiOnly::EventBridgeEventBus",
+    "AWS::ApiOnly::EventBridgeEventSource",
+    "AWS::ApiOnly::EventBridgeEventRule",
+    "AWS::ApiOnly::EventBridgeEndpoint",
+    "AWS::ApiOnly::EventBridgeV2EventBus",
+    "AWS::ApiOnly::EventBridgeV2EventSource",
+    "AWS::ApiOnly::EventBridgeV2Subscriber",
+    "AWS::ApiOnly::SageMakerTrainingPlanExtension",
+    "AWS::ApiOnly::SageMakerAlias",
+    "AWS::ApiOnly::SageMakerApp",
+    "AWS::ApiOnly::SageMakerAutoMLCandidate",
+    "AWS::ApiOnly::SageMakerClusterEvent",
+    "AWS::ApiOnly::SageMakerClusterExtension",
+    "AWS::ApiOnly::SSMContactChannel",
+    "AWS::ApiOnly::SSMContactPageReceipt",
+    "AWS::ApiOnly::SSMContactPageResolution",
+    "AWS::ApiOnly::SSMContactPage",
+    "AWS::ApiOnly::SSMContactRotationOverride",
+    "AWS::ApiOnly::SSMContactRotationShift",
+    "AWS::ApiOnly::DMSCertificate",
+    "AWS::ApiOnly::DMSCollector",
+    "AWS::ApiOnly::DMSScannedDatabase",
+    "AWS::ApiOnly::DMSPendingMaintenanceAction",
+    "AWS::ApiOnly::DMSDataMigration",
+    "AWS::ApiOnly::MigrationStrategyAnalyzableServer",
+    "AWS::ApiOnly::MigrationStrategyApplicationComponent",
+    "AWS::ApiOnly::MigrationStrategyImportFileTask",
+    "AWS::ApiOnly::MigrationStrategyServer",
+    "AWS::ApiOnly::MediaPackageVodAsset",
 ];
 
 #[test]

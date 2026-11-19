@@ -16,7 +16,7 @@ pub(super) fn validate_paginator(
     violations: &mut Vec<Violation>,
 ) -> bool {
     match item.paginator.as_ref() {
-        Some(paginator) => overlay_paginator(service, operation, model, paginator, violations),
+        Some(paginator) => overlay_paginator(service, operation, model, pagination, paginator, violations),
         None => modeled_paginator(service, operation, pagination, violations),
     }
 }
@@ -25,11 +25,25 @@ fn overlay_paginator(
     service: &str,
     operation: &str,
     model: &Model<'_>,
+    pagination: Option<&Pagination<'_>>,
     paginator: &Paginator,
     violations: &mut Vec<Violation>,
 ) -> bool {
     match paginator {
-        Paginator::None => true,
+        Paginator::None => {
+            // Reject Paginator::None when the model has pagination.
+            let has_modeled_pagination = pagination.is_some_and(|p| matches!(p, Pagination::Modeled { .. }));
+            if has_modeled_pagination {
+                violations.push(violation(
+                    service,
+                    operation,
+                    "paginator",
+                    "Paginator::None",
+                    ViolationRule::InvalidValue,
+                ));
+            }
+            !has_modeled_pagination
+        }
         Paginator::Token(pair) => {
             validate_single_token(service, operation, model, pair, violations)
         }

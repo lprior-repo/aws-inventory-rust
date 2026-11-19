@@ -279,6 +279,17 @@ fn pagination_keeps_actual_cursor_names_and_truncation_signal() -> TestResult {
             }))
         );
     }
+    // EventBridgeV2 Expand operations have no pagination.
+    for (service, name) in [
+        ("eventbridgev2", "DescribeEventBus"),
+        ("eventbridgev2", "DescribeEventSource"),
+        ("eventbridgev2", "DescribeSubscriber"),
+    ] {
+        assert_eq!(
+            operation(&policies, service, name)?.paginator,
+            Some(Paginator::None)
+        );
+    }
     assert_eq!(
         operation(&policies, "data-pipeline", "ListPipelines")?.paginator,
         Some(Paginator::Tokens {
@@ -308,6 +319,7 @@ fn unsupported_last_element_cursor_and_parent_identity_are_explicit_not_fake_col
         ),
         ("eventbridge", "ListTargetsByRule", "bound input"),
         ("dax", "DescribeParameters", "parent-input identity"),
+        ("chatbot", "ListAssociations", "ChatConfiguration"),
     ] {
         let plan = operation(&policies, service, name)?;
         assert_eq!(plan.class, Some(OverlayClass::Defer));
