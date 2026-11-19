@@ -96,6 +96,11 @@ enum Command {
         output: PathBuf,
         run_workspace_tests: bool,
     },
+    CatalogOperations {
+        root: PathBuf,
+        emulator_summary: Option<PathBuf>,
+    },
+    },
 }
 
 fn workspace_root() -> PathBuf {
@@ -263,6 +268,17 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, HarnessError> {
             verify_delivery::run_verify(args)
                 .await
                 .map(|r| r.to_value())
+        }
+        Command::CatalogOperations {
+            root,
+            emulator_summary,
+        } => {
+            let report = inventory_harness::audit::reconcile(&root)?;
+            if let Some(summary_path) = emulator_summary {
+                inventory_harness::audit::validate_emulator(&report, &root, &summary_path)?;
+            }
+            Ok(report)
+        }
         }
     }
 }

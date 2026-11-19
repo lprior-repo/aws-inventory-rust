@@ -14,6 +14,9 @@ pub(super) fn parse(arguments: &[String]) -> Result<Command, HarnessError> {
         Some("catalog") if arguments.get(1).map(String::as_str) == Some("universal") => {
             parse_universal(arguments.get(2..).unwrap_or_default())
         }
+        Some("catalog") if arguments.get(1).map(String::as_str) == Some("operations") => {
+            parse_catalog_operations(arguments.get(2..).unwrap_or_default())
+        }
         Some("assert") if arguments.get(1).map(String::as_str) == Some("cloud-control") => {
             parse_cloud_control(arguments.get(2..).unwrap_or_default())
         }
@@ -96,6 +99,37 @@ fn parse_universal(arguments: &[String]) -> Result<Command, HarnessError> {
     Ok(Command::CatalogUniversal {
         root: root.unwrap_or_else(workspace_root),
         check,
+    })
+}
+
+fn parse_catalog_operations(arguments: &[String]) -> Result<Command, HarnessError> {
+    let mut root = None;
+    let mut emulator_summary = None;
+    let mut remaining = arguments.iter();
+    while let Some(flag) = remaining.next() {
+        match flag.as_str() {
+            "--root" => {
+                let value = remaining.next().ok_or_else(|| {
+                    HarnessError::invalid(format!("--root requires a value; {USAGE}"))
+                })?;
+                root = Some(PathBuf::from(value));
+            }
+            "--emulator-summary" => {
+                let value = remaining.next().ok_or_else(|| {
+                    HarnessError::invalid(format!("--emulator-summary requires a value; {USAGE}"))
+                })?;
+                emulator_summary = Some(PathBuf::from(value));
+            }
+            other => {
+                return Err(HarnessError::invalid(format!(
+                    "catalog-operations: unknown option {other}; {USAGE}"
+                )));
+            }
+        }
+    }
+    Ok(Command::CatalogOperations {
+        root: root.unwrap_or_else(workspace_root),
+        emulator_summary,
     })
 }
 

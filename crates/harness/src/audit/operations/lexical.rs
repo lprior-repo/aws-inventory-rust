@@ -1,0 +1,425 @@
+use crate::HarnessError;
+use std::collections::HashMap;
+
+pub const MAX_TOKENS: usize = 500_000;
+
+pub struct Token {
+    pub text: String,
+    pub start: usize,
+}
+
+fn identifier(text: &str) -> bool {
+    let bytes = text.as_bytes();
+    if bytes.is_empty() {
+        return false;
+    }
+    let first = bytes[0];
+    if !(first.is_ascii_alphabetic() || first == b'_') {
+        return false;
+    }
+    for byte in bytes.iter().skip(1) {
+        if !byte.is_ascii_alphanumeric() && *byte != b'_' {
+            return false;
+        }
+    }
+    true
+}
+
+fn source_location(text: &str, offset: usize) -> (usize, usize) {
+    let before = &text[..offset];
+    let line = before.bytes().filter(|b| *b == b'\n').count() + 1;
+    let line_start = before.rfind('\n').map(|i| i + 1).unwrap_or(0);
+    let column = offset - line_start + 1;
+    (line, column)
+}
+
+pub fn mask_noncode(path: &str, text: &str) -> Result<String, HarnessError> {
+    let mut output = text.as_bytes().to_vec();
+    let bytes = text.as_bytes();
+    let mut position = 0;
+
+    while position < bytes.len() {
+        // Line comment
+        if bytes[position] == b'/' && position + 1 < bytes.len() && bytes[position + 1] == b'/' {
+            let line_end = text[position..].find('\n');
+            let end = match line_end {
+                Some(offset) => position + offset,
+                None => bytes.len(),
+            };
+            mask_range(&mut output, position, end);
+            position = end;
+        }
+        // Block comment
+        else if bytes[position] == b'/' && position + 1 < bytes.len() && bytes[position + 1] == b'*' {
+            let (ok, end) = mask_block_comment(&mut output, text, position);
+            if !ok {
+                let (line, col) = source_location(text, position);
+                return Err(HarnessError::invalid(format!(
+                    "{}:{}:{}: unterminated Rust block comment",
+                    path, line, col
+                )));
+            }
+            position = end;
+        }
+        // String literal
+        else if bytes[position] == b'"' {
+            let (ok, end) = mask_string_literal(&mut output, text, position);
+            if !ok {
+                let (line, col) = source_location(text, position);
+                return Err(HarnessError::invalid(format!(
+                    "{}:{}:{}: unterminated Rust string",
+                    path, line, col
+                )));
+            }
+            position = end;
+        }
+        // Raw string
+        else if bytes[position] == b'r' {
+            let (ok, end) = mask_raw_string(&mut output, text, position);
+            if ok {
+                position = end;
+            } else {
+                position += 1;
+            }
+        }
+        // Byte string
+        else if bytes[position] == b'b' {
+            let (ok, end) = mask_byte_string(&mut output, text, position);
+            if ok {
+                position = end;
+            } else {
+                position += 1;
+            }
+        }
+        // Character literal
+        else if bytes[position] == b'\'' {
+            let (ok, end) = mask_char_literal(&mut output, text, position);
+            if !ok {
+                // Not a char literal (e.g. lifetime parameter)
+                position += 1;
+            } else {
+                position = end;
+            }
+        } else {
+            position += 1;
+        }
+    }
+
+    Ok(String::from_utf8(output).map_err(|e| HarnessError::invalid(format!(
+        "invalid UTF-8 in masked source: {}", e
+    )))?)
+}
+
+fn mask_range(output: &mut [u8], start: usize, end: usize) {
+    for index in start..end {
+        if output[index] != b'\n' {
+            output[index] = b' ';
+        }
+    }
+}
+
+fn mask_string_literal(
+    output: &mut [u8],
+    text: &str,
+    position: usize,
+) -> (bool, usize) {
+    let bytes = text.as_bytes();
+    let mut cursor = position + 1;
+    while cursor < bytes.len() {
+        if bytes[cursor] == b'\\' {
+            cursor += 2;
+        } else if bytes[cursor] == b'"' {
+            mask_range(output, position, cursor + 1);
+            cursor += 1;
+            break;
+        } else {
+            cursor += 1;
+        }
+    }
+    (cursor < bytes.len() && bytes[cursor - 1] == b'"', cursor)
+}
+
+fn mask_raw_string(
+    output: &mut [u8],
+    text: &str,
+    position: usize,
+) -> (bool, usize) {
+    let bytes = text.as_bytes();
+    // Count # symbols
+    let mut hash_count = 0;
+    let mut cursor = position + 1;
+    while cursor < bytes.len() && bytes[cursor] == b'#' {
+        hash_count += 1;
+        cursor += 1;
+    }
+    // Find opening quote
+    if cursor >= bytes.len() || bytes[cursor] != b'"' {
+        return (false, position + 1);
+    }
+    let start_quote = cursor;
+    cursor += 1;
+    // Find closing quote followed by # symbols
+    while cursor < bytes.len() {
+        if bytes[cursor] == b'"' {
+            let mut hash_cursor = cursor + 1;
+            let mut closing_hash = 0;
+            while hash_cursor < bytes.len() && bytes[hash_cursor] == b'#' {
+                closing_hash += 1;
+                hash_cursor += 1;
+            }
+            if closing_hash == hash_count {
+                mask_range(output, position, hash_cursor);
+                return (true, hash_cursor);
+            }
+        }
+        cursor += 1;
+    }
+    (false, cursor)
+}
+
+fn mask_byte_string(
+    output: &mut [u8],
+    text: &str,
+    position: usize,
+) -> (bool, usize) {
+    let bytes = text.as_bytes();
+    // Check for b" or b'
+    if position + 1 >= bytes.len() {
+        return (false, position + 1);
+    }
+    let quote = bytes[position + 1];
+    if quote != b'"' && quote != b'\'' {
+        return (false, position + 1);
+    }
+    if quote == b'"' {
+        let (ok, end) = mask_string_literal(output, text, position + 1);
+        if ok {
+            output[position] = b' ';
+            return (true, end);
+        }
+    }
+    // Byte character literal
+    if quote == b'\'' {
+        let (ok, end) = mask_byte_char(output, text, position);
+        return ok.then_some(end).map(|e| (true, e)).unwrap_or((false, position + 1));
+    }
+    (false, position + 1)
+}
+
+fn mask_byte_char(
+    output: &mut [u8],
+    text: &str,
+    position: usize,
+) -> (bool, usize) {
+    let bytes = text.as_bytes();
+    if position + 2 >= bytes.len() {
+        return (false, position + 1);
+    }
+    let mut cursor = position + 2;
+    if bytes[cursor] == b'\\' {
+        cursor += 2;
+    } else {
+        cursor += 1;
+    }
+    if cursor < bytes.len() && bytes[cursor] == b'\'' {
+        mask_range(output, position, cursor + 1);
+        return (true, cursor + 1);
+    }
+    (false, position + 1)
+}
+
+fn mask_char_literal(
+    output: &mut [u8],
+    text: &str,
+    position: usize,
+) -> (bool, usize) {
+    let bytes = text.as_bytes();
+    if position + 1 >= bytes.len() {
+        return (false, position + 1);
+    }
+
+    let mut cursor = position + 1;
+
+    // Check for escape sequence or single character
+    if bytes[cursor] == b'\\' && cursor + 1 < bytes.len() {
+        // Escape sequence
+        if bytes[cursor + 1] == b'x' && cursor + 3 < bytes.len() {
+            cursor += 4;
+        } else if bytes[cursor + 1] == b'u' && cursor + 2 < bytes.len() && bytes[cursor + 2] == b'{' {
+            let mut inner = cursor + 3;
+            while inner < bytes.len() && bytes[inner] != b'}' {
+                inner += 1;
+            }
+            if inner < bytes.len() {
+                cursor = inner + 1;
+            }
+        } else {
+            cursor += 2;
+        }
+    } else {
+        // Single character
+        cursor += 1;
+    }
+
+    // Check for closing quote
+    if cursor < bytes.len() && bytes[cursor] == b'\'' {
+        mask_range(output, position, cursor + 1);
+        cursor += 1;
+        return (true, cursor);
+    }
+
+    // Not a valid character literal (e.g., lifetime parameter)
+    (false, position + 1)
+}
+
+fn mask_block_comment(
+    output: &mut [u8],
+    text: &str,
+    position: usize,
+) -> (bool, usize) {
+    let mut cursor = position + 2;
+    let mut depth = 1;
+    let bytes = text.as_bytes();
+    while cursor < bytes.len() && depth > 0 {
+        if bytes[cursor] == b'/' && cursor + 1 < bytes.len() && bytes[cursor + 1] == b'*' {
+            depth += 1;
+            if depth > 64 {
+                return (false, cursor);
+            }
+            cursor += 2;
+        } else if bytes[cursor] == b'*' && cursor + 1 < bytes.len() && bytes[cursor + 1] == b'/' {
+            depth -= 1;
+            if depth == 0 {
+                mask_range(output, position, cursor + 2);
+                cursor += 2;
+            }
+        } else {
+            cursor += 1;
+        }
+    }
+    (depth == 0, cursor)
+}
+
+fn tokenize(text: &str, max_tokens: usize) -> Result<Vec<Token>, HarnessError> {
+    let mut tokens = Vec::new();
+    let mut position = 0;
+    let bytes = text.as_bytes();
+
+    while position < bytes.len() {
+        // Skip whitespace
+        if bytes[position].is_ascii_whitespace() {
+            position += 1;
+            continue;
+        }
+        // Alphanumeric identifier
+        if bytes[position].is_ascii_alphanumeric() || bytes[position] == b'_' {
+            let start = position;
+            while position < bytes.len()
+                && (bytes[position].is_ascii_alphanumeric() || bytes[position] == b'_')
+            {
+                position += 1;
+            }
+            tokens.push(Token {
+                text: text[start..position].to_string(),
+                start,
+            });
+        }
+        // Lifetime parameter: 'name
+        else if bytes[position] == b'\'' && position + 1 < bytes.len()
+            && bytes[position + 1].is_ascii_alphanumeric()
+        {
+            let start = position;
+            position += 1;
+            while position < bytes.len()
+                && (bytes[position].is_ascii_alphanumeric() || bytes[position] == b'_')
+            {
+                position += 1;
+            }
+            tokens.push(Token {
+                text: text[start..position].to_string(),
+                start,
+            });
+        }
+        // Single character token (delimiters, operators, punctuation)
+        else {
+            let start = position;
+            position += 1;
+            tokens.push(Token {
+                text: text[start..position].to_string(),
+                start,
+            });
+        }
+        if tokens.len() > max_tokens {
+            return Err(HarnessError::invalid(
+                "Rust token budget exceeded",
+            ));
+        }
+    }
+
+    Ok(tokens)
+}
+
+pub fn tokens_and_pairs(path: &str, text: &str) -> Result<(Vec<Token>, HashMap<usize, usize>), HarnessError> {
+    tokens_and_pairs_with_budget(path, text, MAX_TOKENS)
+}
+
+pub fn tokens_and_pairs_with_budget(path: &str, text: &str, max_tokens: usize) -> Result<(Vec<Token>, HashMap<usize, usize>), HarnessError> {
+    let tokens = tokenize(text, max_tokens)?;
+    let mut stack: Vec<usize> = Vec::new();
+    let mut pairs = HashMap::new();
+    let mut position = 0;
+
+    while position < tokens.len() {
+        let token = &tokens[position];
+        if token.text == "(" || token.text == "[" || token.text == "{" {
+            stack.push(position);
+        } else if token.text == ")" || token.text == "]" || token.text == "}" {
+            let expected = match token.text.as_str() {
+                ")" => "(",
+                "]" => "[",
+                _ => "{",
+            };
+            if stack.is_empty() {
+                let (line, column) = source_location(text, token.start);
+                return Err(HarnessError::invalid(format!(
+                    "{}:{}:{}: unexpected closing Rust delimiter {}",
+                    path, line, column, token.text
+                )));
+            }
+            if let Some(open) = stack.pop() {
+                if tokens[open].text != expected {
+                    let (line, column) = source_location(text, token.start);
+                    let (open_line, open_column) = source_location(text, tokens[open].start);
+                    return Err(HarnessError::invalid(format!(
+                        "{}:{}:{}: unbalanced Rust delimiters: {} closes {} opened at {}:{}; expected {}",
+                        path, line, column, token.text, tokens[open].text,
+                        open_line, open_column,
+                        match expected {
+                            "(" => ")",
+                            "[" => "]",
+                            _ => "}",
+                        }
+                    )));
+                }
+                pairs.insert(position, open);
+                pairs.insert(open, position);
+            }
+        }
+        position += 1;
+    }
+
+    if let Some(open) = stack.last() {
+        let (line, column) = source_location(text, tokens[*open].start);
+        let expected = match tokens[*open].text.as_str() {
+            "(" => ")",
+            "[" => "]",
+            _ => "}",
+        };
+        return Err(HarnessError::invalid(format!(
+            "{}:{}:{}: unclosed Rust delimiter '{}'; expected '{}'",
+            path, line, column, tokens[*open].text, expected
+        )));
+    }
+
+    Ok((tokens, pairs))
+}
