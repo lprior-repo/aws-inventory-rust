@@ -70,16 +70,14 @@ async fn work_queue_claim_expired_branch_is_bounded() -> Result<(), Box<dyn std:
 
     pool.close().await;
 
-    // Must use an index with SEARCH, not PK or SCAN
-    // SQLite may choose work_queue_ready (for ORDER BY) or work_queue_expired (for lease_until range)
+    // Must use work_queue_ready with SEARCH, not PK or SCAN
+    // SQLite chooses work_queue_ready over work_queue_expired because it can
+    // satisfy ORDER BY scope_key without a temp B-tree.
     if plan.contains("PRIMARY KEY") {
-        return Err(format!("expired branch uses PK, not a dedicated index: {}", plan).into());
+        return Err(format!("expired branch uses PK, not work_queue_ready: {}", plan).into());
     }
-    if !plan.contains("SEARCH") {
-        return Err(format!("expired branch is not a bounded search: {}", plan).into());
-    }
-    if !plan.contains("work_queue_ready") && !plan.contains("work_queue_expired") {
-        return Err(format!("expired branch does not use a dedicated index: {}", plan).into());
+    if !plan.contains("SEARCH") || !plan.contains("work_queue_ready") {
+        return Err(format!("expired branch does not use work_queue_ready: {}", plan).into());
     }
     if !plan.contains("sweep_id=? AND state=?") {
         return Err(format!("expired branch does not filter on sweep_id and state: {}", plan).into());
