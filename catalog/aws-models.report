@@ -1,0 +1,23 @@
+services 436
+operations 19641
+read_named 8366
+readonly 2736
+list_describe 5207
+list_describe_root 2209
+services_with_root 359
+paginated 3787
+resources 763
+arn_templates 385
+members 238070
+distinct_member_names 49069
+json_services 413
+xml_only_services 20
+cbor_services 44
+protocol aws.protocols#awsJson1_0 51
+protocol aws.protocols#awsJson1_1 102
+protocol aws.protocols#awsQuery 16
+protocol aws.protocols#awsQueryCompatible 2
+protocol aws.protocols#ec2Query 1
+protocol aws.protocols#restJson1 260
+protocol aws.protocols#restXml 4
+protocol smithy.protocols#rpcv2Cbor 44

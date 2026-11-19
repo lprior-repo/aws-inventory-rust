@@ -1,0 +1,184 @@
+# Fail-closed global and service-scoped denials; case-sensitive, sorted keys, LF only.
+# Model documentation at api-models-aws 46135f8468cd5cb60d983b97290c9f6661e359c6:
+# GetAuthorizationToken: ECR/ECR Public credentials and CodeArtifact access tokens.
+# GetCostAndUsage: Cost Explorer cost/usage query, billing-limits documentation;
+# VISION 5.1 explicitly excludes its billed-per-call usage.
+# GetFunction: Lambda deployment-package download link; CloudFront function code.
+# GetId: Cognito Identity generates an ID and can create an implicit linked account.
+# GetLogEvents: CloudWatch Logs log-event contents, not resource configuration.
+# GetMetricData: CloudWatch time-series values; documentation cites API pricing.
+# GetObject: S3 object contents and MediaStore object downloads.
+# GetParameter: SSM parameter Value; WithDecryption returns secure-string plaintext.
+# GetPasswordData: EC2 encrypted Windows administrator password.
+# GetRecords: DynamoDB Streams, Keyspaces Streams and Kinesis stream data records.
+# GetSecretValue: Secrets Manager SecretString or SecretBinary contents.
+# GetSessionToken: STS access key, secret access key and security token.
+# Query: DynamoDB table items, Kendra index content and Timestream customer data.
+# ReceiveMessage: SQS retrieves message contents and applies a visibility timeout.
+# Scan: DynamoDB table/index items and item attributes.
+# Global name rules deliberately deny same-named operations in every service,
+# even where their individual documentation describes a less-sensitive result.
+GetAuthorizationToken	secret
+GetCostAndUsage	paid
+GetFunction	content
+GetId	mutating
+GetLogEvents	content
+GetMetricData	paid
+GetObject	content
+GetParameter	secret
+GetPasswordData	secret
+GetRecords	content
+GetSecretValue	secret
+GetSessionToken	secret
+Query	content
+ReceiveMessage	mutating
+Scan	content
+# "Events provide detailed information about the execution progress, including node inputs and outputs, flow inputs and outputs, condition results, and failure events."
+bedrock-agent-runtime/ListFlowExecutionEvents	content
+# Reachable conversation message: "The content of the conversation message."
+bedrock-agentcore/ListEvents	content
+# "The content of the memory record."
+bedrock-agentcore/ListMemoryRecords	content
+# Attendee.JoinToken: "The join token used by the Amazon Chime SDK attendee."
+chime-sdk-meetings/ListAttendees	secret
+# ChannelMessageSummary.Content: "The content of the channel message."
+chime-sdk-messaging/ListChannelMessages	content
+# "Attributes map that is associated with the object. AttributeArn is the key, and attribute value is the value."
+clouddirectory/ListObjectAttributes	content
+# "Returns a list of key value pairs."
+cloudfront-keyvaluestore/ListKeys	content
+# Reachable LogEvent.message: "The message content of the log event."
+cloudwatch-logs/ListAnomalies	content
+# CommandExecution.standardOutputContent: "The text written by the command to stdout."
+codebuild/ListCommandExecutionsForSandbox	content
+# UserImportJobType.PreSignedUrl: "The pre-signed URL target for uploading the CSV file."
+cognito-identity-provider/DescribeUserImportJob	secret
+# UserPoolClientType.ClientSecret: "The app client secret."
+cognito-identity-provider/DescribeUserPoolClient	secret
+# Reachable UserImportJobType.PreSignedUrl: "The pre-signed URL target for uploading the CSV file."
+cognito-identity-provider/ListUserImportJobs	secret
+# "Gets paginated records, optionally changed after a particular sync count for a dataset and identity."
+cognito-sync/ListRecords	content
+# Transcript.Content: "The content of the transcript."
+connect-contact-lens/ListRealtimeContactAnalysisSegments	content
+# "Returns the unique combinations of primary attribute values that identify records in the table."
+connect/ListDataTablePrimaryValues	content
+# "Returns the raw stored values along with metadata such as lock versions and modification timestamps."
+connect/ListDataTableValues	content
+# RealTimeContactAnalysisSegmentTranscript.Content: "The content of the transcript. Can be redacted."
+connect/ListRealtimeContactAnalysisSegmentsV2	content
+# unverified: the output shape has a credential-shaped member and the documentation
+# does not say whether it is returned; denied until a service overlay review decides.
+database-migration-service/DescribeEndpoints	secret
+# unverified: the output shape has a credential-shaped member and the documentation
+# does not say whether it is returned; denied until a service overlay review decides.
+datasync/DescribeLocationFsxOntap	secret
+# unverified: the output shape has a credential-shaped member and the documentation
+# does not say whether it is returned; denied until a service overlay review decides.
+datasync/DescribeLocationFsxOpenZfs	secret
+# unverified: the output shape has a credential-shaped member and the documentation
+# does not say whether it is returned; denied until a service overlay review decides.
+datazone/ListConnections	secret
+# Artifact.url: "The presigned Amazon S3 URL that can be used with a GET request to download the artifact's file."
+device-farm/ListArtifacts	content
+# Sample.url: "The presigned Amazon S3 URL that can be used with a GET request to download the sample's file."
+device-farm/ListSamples	content
+# Upload.url: "The presigned Amazon S3 URL that was used to store a file using a PUT request."
+# The model does not establish that this upload capability is always expired.
+device-farm/ListUploads	secret
+# JournalRecord.content: "The content of this journal record"
+devops-agent/ListJournalRecords	content
+# PendingMessage.message: "The message content."
+devops-agent/ListPendingMessages	content
+# DiskImageDescription.ImportManifestUrl: "A presigned URL for the import manifest stored in Amazon S3."
+ec2/DescribeConversionTasks	content
+# "Describes the specified instance types. By default, all instance types for the current Region are described."
+ec2/DescribeInstanceTypes	reference-data
+# unverified: the output shape has a credential-shaped member and the documentation
+# does not say whether it is returned; denied until a service overlay review decides.
+ec2/DescribeVerifiedAccessTrustProviders	secret
+# Event.PreSignedLogUrl: "Location of stored logs with additional detail that is related to the event."
+# The same member documents that the URL is valid for 15 minutes.
+gamelift/DescribeFleetEvents	content
+# StatementOutput.Data: "The code execution output."
+glue/ListStatements	content
+# "Although this action doesn't return a message payload, it can still incur messaging costs."
+iot-data-plane/ListRetainedMessages	paid
+# "However, Amazon Web Services services use DescribeKey to create Amazon Web Services managed keys from a predefined Amazon Web Services alias with no key ID."
+# This documents an AWS-service path, not proven creation rights for an inventory principal.
+kms/DescribeKey	mutating
+# BotRecommendationResults.associatedTranscriptsUrl: "The presigned url link of the associated transcript."
+lex-models-v2/DescribeBotRecommendation	content
+# "A pre-signed S3 URL that points to the bot or bot locale archive."
+lex-models-v2/DescribeExport	content
+# "Pre-signed Amazon S3 URL to download the test set discrepancy report."
+lex-models-v2/DescribeTestSetDiscrepancyReport	content
+# UtteranceSpecification.utterance: "The text of the utterance."
+lex-models-v2/ListUtteranceAnalyticsData	content
+# Reachable ImportJob.PreSignedUrl: "The pre-signed URL target for uploading the input file."
+mailmanager/ListAddressListImportJobs	secret
+# "The binary data for the thumbnail that the Link device has most recently sent to MediaLive."
+medialive/DescribeInputDeviceThumbnail	content
+# "The binary data for the latest thumbnail."
+medialive/DescribeThumbnails	content
+# IngestEndpoint.Password: "The system generated password for ingest authentication."
+mediapackage/DescribeChannel	secret
+# Reachable IngestEndpoint.Password: "The system generated password for ingest authentication."
+mediapackage/ListChannels	secret
+# "The response submitted for a Q App session."
+qapps/ListQAppSessionData	content
+# Message.body: "The content of the Amazon Q Business web experience message."
+qbusiness/ListMessages	content
+# "The value of the message data in text type."
+qconnect/ListMessages	content
+# "Message content values (text, tool use, tool result, reasoning)"
+qconnect/ListSpans	content
+# "When a job succeeds, a URL is provided to download the exported assets' data from."
+quicksight/DescribeAssetBundleExportJob	content
+# AssetBundleImportSourceDescription.Body: "An HTTPS download URL for the provided asset bundle that you optionally provided at the start of the import job."
+quicksight/DescribeAssetBundleImportJob	content
+# "Describes the properties of specific versions of DB engines."
+rds/DescribeDBEngineVersions	reference-data
+# QueryString: "The SQL statement text."
+redshift-data/DescribeStatement	content
+# StatementData.QueryString: "The SQL statement."
+redshift-data/ListStatements	content
+# "An entry is a JSON Line that contains the information for a single image, including the image location, assigned labels, and object location bounding boxes."
+rekognition/ListDatasetEntries	content
+# ListOutputVector.data: "The vector data of the vector."
+s3vectors/ListVectors	content
+# "The default is AllData, which returns the full model card Content and requires kms:Decrypt permission when a customer-managed key is configured."
+sagemaker/DescribeModelCard	content
+# "Returns comments for a designated case."
+security-ir/ListComments	content
+# "Detailed investigation results in rich markdown format. This field contains the comprehensive findings, analysis, and conclusions from the investigation."
+security-ir/ListInvestigations	content
+# ActorMessage.body: "The plain-text body of the message, containing the MFA code or verification link."
+securityagent/ListActorMessages	secret
+# Output input: "The string that contains the JSON input data of the execution."
+sfn/DescribeExecution	content
+# JobMetadata.JobLogInfo: "Links to Amazon S3 presigned URLs for the job report and logs."
+snowball/DescribeJob	content
+# "The pre-signed Amazon S3 URI used to download the return shipping label."
+snowball/DescribeReturnShippingLabel	content
+# "Lists the assets (Flow JSON definition) of a WhatsApp Flow with presigned download URLs."
+socialmessaging/ListWhatsAppFlowAssets	content
+# "The secure content of the message that was sent to the contact."
+ssm-contacts/DescribeEngagement	content
+# "The secure content of the message that was sent to the contact."
+ssm-contacts/DescribePage	content
+# Details: "(Optional) If set this returns the response of the command executions and any command output. The default value is false."
+ssm/ListCommandInvocations	content
+# ChapInfo.SecretToAuthenticateInitiator: "The secret key that the initiator (for example, the Windows client) must provide to participate in mutual CHAP with the target."
+storage-gateway/DescribeChapCredentials	secret
+# Attachment.data: "The content of the attachment file."
+support/DescribeAttachment	content
+# "By default, communications are included."
+# Reachable body: "The text of the communication between the customer and Amazon Web Services Support."
+support/DescribeCases	content
+# "The text of the communication between the customer and Amazon Web Services Support."
+support/DescribeCommunications	content
+# Comment.Text: "The text of the comment."
+workdocs/DescribeComments	content
+# Output Traces: "Full traces for the specified requests."
+xray/ListRetrievedTraces	content

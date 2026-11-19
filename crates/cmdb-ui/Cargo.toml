@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
-description = "GPU-rendered desktop viewer for schema14 inventory and live graph data"
+description = "GPU-rendered desktop viewer for schema16 inventory and live graph data"
 
 [dependencies]
 # Keep the Makepad 2.0 source pin: the latest published widgets are still 1.0.0.

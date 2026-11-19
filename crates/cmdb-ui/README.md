@@ -1,6 +1,6 @@
 # cmdb-ui
 
-A read-only Makepad desktop viewer for inventory stored in the schema14 SQLite database. SQL inventory access and FalkorDB graph queries run on a crate-owned background worker; the UI thread only applies owned snapshots.
+A read-only Makepad desktop viewer for inventory stored in the schema16 SQLite database. SQL inventory access and FalkorDB graph queries run on a crate-owned background worker; the UI thread only applies owned snapshots.
 
 ## Run
 
