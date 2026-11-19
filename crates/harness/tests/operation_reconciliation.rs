@@ -1,7 +1,6 @@
 use inventory_harness::audit::calls_in_source;
 use inventory_harness::audit::calls_in_source_with_budget;
 use inventory_harness::audit::mask_noncode;
-use inventory_harness::audit::tokens_and_pairs;
 
 fn call_ids(source: &str) -> Vec<String> {
     let (calls, _) = calls_in_source("sample.rs", source).unwrap();

@@ -100,7 +100,6 @@ enum Command {
         root: PathBuf,
         emulator_summary: Option<PathBuf>,
     },
-    },
 }
 
 fn workspace_root() -> PathBuf {
@@ -278,7 +277,6 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, HarnessError> {
                 inventory_harness::audit::validate_emulator(&report, &root, &summary_path)?;
             }
             Ok(report)
-        }
         }
     }
 }
