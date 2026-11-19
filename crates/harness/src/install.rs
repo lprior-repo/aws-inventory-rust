@@ -61,7 +61,7 @@ fn ensure_destination(destination: &Path) -> Result<PathBuf, HarnessError> {
 
 pub fn install(root: &Path, destination: &Path) -> Result<Value, HarnessError> {
     require_platform()?;
-    let metadata = Metadata::read(&root.join("scripts/emulator/upstream.json"))?;
+    let metadata = Metadata::read(&root.join("crates/harness/assets/upstream.json"))?;
     let destination = ensure_destination(destination)?;
     let source = checkout(&metadata, &destination)?;
     let package = download(&metadata, &destination)?;

@@ -17,6 +17,9 @@ pub(super) fn parse(arguments: &[String]) -> Result<Command, HarnessError> {
         Some("assert") if arguments.get(1).map(String::as_str) == Some("cloud-control") => {
             parse_cloud_control(arguments.get(2..).unwrap_or_default())
         }
+        Some("assert-global") => parse_global(arguments.get(1..).unwrap_or_default()),
+        Some("assert-parents") => parse_parents(arguments.get(1..).unwrap_or_default()),
+        Some("assert-regional") => parse_regional(arguments.get(1..).unwrap_or_default()),
         Some("seed") if arguments.get(1).map(String::as_str) == Some("s3") => {
             parse_seed_s3(arguments.get(2..).unwrap_or_default())
         }
@@ -107,6 +110,55 @@ fn parse_cloud_control(arguments: &[String]) -> Result<Command, HarnessError> {
         scan_id,
         seed_results: options.get("--seed-results"),
         root: options.get("--root").unwrap_or_else(workspace_root),
+    })
+}
+
+fn parse_global(arguments: &[String]) -> Result<Command, HarnessError> {
+    let options = options(
+        arguments,
+        &["--db", "--scan-id", "--seed-results", "--root"],
+    )?;
+    let scan_id = options
+        .text("--scan-id")
+        .ok_or_else(|| HarnessError::invalid(USAGE))?;
+    Ok(Command::AssertGlobal {
+        database: options.value("--db")?,
+        scan_id,
+        seed_results: options.get("--seed-results"),
+        root: options.get("--root").unwrap_or_else(workspace_root),
+    })
+}
+
+fn parse_parents(arguments: &[String]) -> Result<Command, HarnessError> {
+    let options = options(
+        arguments,
+        &["--db", "--scan-id", "--seed-results", "--root"],
+    )?;
+    let scan_id = options
+        .text("--scan-id")
+        .ok_or_else(|| HarnessError::invalid(USAGE))?;
+    Ok(Command::AssertParents {
+        database: options.value("--db")?,
+        scan_id,
+        seed_results: options.get("--seed-results"),
+        root: options.get("--root").unwrap_or_else(workspace_root),
+    })
+}
+
+fn parse_regional(arguments: &[String]) -> Result<Command, HarnessError> {
+    let options = options(
+        arguments,
+        &["--db", "--scan-id", "--seed-results", "--root", "--region"],
+    )?;
+    let scan_id = options
+        .text("--scan-id")
+        .ok_or_else(|| HarnessError::invalid(USAGE))?;
+    Ok(Command::AssertRegional {
+        database: options.value("--db")?,
+        scan_id,
+        seed_results: options.get("--seed-results"),
+        root: options.get("--root").unwrap_or_else(workspace_root),
+        region: options.text("--region"),
     })
 }
 

@@ -37,7 +37,7 @@ async fn given_incomplete_pinned_metadata_when_installing_then_it_is_rejected_ea
 {
     let directory = tempfile::tempdir()?;
     let root = directory.path();
-    let metadata = root.join("scripts/emulator/upstream.json");
+    let metadata = root.join("crates/harness/assets/upstream.json");
     std::fs::create_dir_all(metadata.parent().ok_or("metadata parent")?)?;
     std::fs::write(
         &metadata,
@@ -67,7 +67,7 @@ async fn given_pinned_metadata_when_signature_check_runs_then_the_real_key_is_ho
 -> TestResult {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     let metadata: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(
-        root.join("scripts/emulator/upstream.json"),
+        root.join("crates/harness/assets/upstream.json"),
     )?)?;
     let key = metadata
         .get("package_signing_key_fingerprint")
