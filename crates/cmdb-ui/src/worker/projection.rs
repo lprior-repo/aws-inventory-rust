@@ -1,5 +1,5 @@
 use crate::data::{Edge, Graph, Row};
-use cmdb_view::{GraphEdge, GraphNode, StoredResource};
+use cmdb_view::{GraphEdge, GraphNode, ResourceRow, StoredResource};
 use inventory_core::inventory::{AccountId, Kind, Region, ResourceId, ResourceKey};
 
 pub(super) fn row_from_resource(resource: &StoredResource) -> Result<Row, String> {
@@ -20,6 +20,30 @@ pub(super) fn row_from_resource(resource: &StoredResource) -> Result<Row, String
         tags: resource.tags.clone(),
         tags_truncated: resource.tags_truncated,
         tag_observation: resource.tag_observation,
+    })
+}
+
+/// Builds a table row from a lightweight projection that omits the record
+/// payload. The byte size is provided directly by the projection query,
+/// avoiding a full payload load for each table row.
+pub(super) fn row_from_row(row: &ResourceRow) -> Result<Row, String> {
+    let key = &row.key;
+    let hash = hex_digest(row.content_hash.as_bytes())?;
+    Ok(Row {
+        account: key.account.as_str().to_owned(),
+        region: key.region.as_str().to_owned(),
+        kind: key.kind.as_str().to_owned(),
+        id: key.id.as_str().to_owned(),
+        name: row
+            .name
+            .clone()
+            .unwrap_or_else(|| key.id.as_str().to_owned()),
+        key: resource_key_text(key)?,
+        record_bytes: Some(row.record_bytes),
+        content_hash: Some(hash),
+        tags: row.tags.clone(),
+        tags_truncated: row.tags_truncated,
+        tag_observation: row.tag_observation,
     })
 }
 

@@ -94,9 +94,9 @@ impl WorkerContext {
         let _entered = runtime.enter();
         match command {
             Command::Refresh { revision, filter } => {
-                let result =
-                    runtime.block_on(self.cancellation.run(refresh_page(&state.database, filter)));
-                let Some((session, event)) = result else {
+                let Some(event) =
+                    runtime.block_on(self.cancellation.run(refresh_page(&state.database, filter)))
+                else {
                     return false;
                 };
                 let output = Output {
@@ -105,9 +105,6 @@ impl WorkerContext {
                 };
                 if !self.revisions.accepts(&output) {
                     return true;
-                }
-                if let Some(session) = session {
-                    state.session = session;
                 }
                 if !self.publish(output) {
                     return false;

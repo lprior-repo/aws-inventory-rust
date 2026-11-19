@@ -7,8 +7,8 @@ mod graph;
 
 pub use database::{
     Database, DatabaseCounts, DatabaseSnapshot, EdgeCursor, EdgePage, EdgePageRequest, LodSummary,
-    MAX_PAGE_LIMIT, PageCursor, PageRequest, ResourceFilter, ResourcePage, ResourceTag,
-    StoredResource, StoredTagObservation, TagFilter,
+    MAX_PAGE_LIMIT, PageCursor, PageRequest, ResourceFilter, ResourcePage, ResourceRow,
+    ResourceRowPage, ResourceTag, StoredResource, StoredTagObservation, TagFilter,
 };
 pub use error::ViewError;
 pub use graph::{

@@ -23,6 +23,33 @@ pub(super) async fn read_detail(
         .map_err(ViewError::Sql)
 }
 
+/// Returns only the byte length of the persisted record payload, avoiding
+/// loading the full payload for table-page projection.
+pub(super) async fn record_byte_length(
+    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+    table: &SqlName,
+    account: &str,
+    region: &str,
+    id: &str,
+) -> Result<usize, ViewError> {
+    let mut query = sqlx::QueryBuilder::<sqlx::Sqlite>::new("SELECT length(record) FROM \"");
+    query
+        .push(table.as_str())
+        .push("\" WHERE account=")
+        .push_bind(account)
+        .push(" AND region=")
+        .push_bind(region)
+        .push(" AND id=")
+        .push_bind(id);
+    let result: i64 = query
+        .build()
+        .fetch_one(&mut **tx)
+        .await
+        .map_err(ViewError::Sql)?
+        .try_get::<i64, _>(0)?;
+    usize::try_from(result).map_err(|_| ViewError::StoredRow)
+}
+
 pub(super) async fn scalar_count(
     tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
     sql: &'static str,

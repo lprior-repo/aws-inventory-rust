@@ -59,6 +59,25 @@ pub struct StoredResource {
     pub tag_observation: Option<StoredTagObservation>,
 }
 
+/// Lightweight row for table pages; omits the record payload to avoid loading
+/// gigabytes of unused data for bounded pages. Payload is loaded lazily via
+/// `Database::detail` when the user opens a specific resource.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ResourceRow {
+    pub key: ResourceKey,
+    pub name: Option<String>,
+    pub content_hash: ContentHash,
+    /// Byte size of the persisted record payload, loaded without the payload.
+    pub record_bytes: usize,
+    /// Last known persisted pairs; an empty set does not imply a complete scan.
+    pub tags: Vec<ResourceTag>,
+    /// The persisted tag set exceeded the reader's `MAX_PAGE_LIMIT` cap.
+    pub tags_truncated: bool,
+    /// Latest tag observation, independent of the retained last-known pairs.
+    /// `None` means no persisted observation; it does not mean complete-empty.
+    pub tag_observation: Option<StoredTagObservation>,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PageCursor {
     pub account: String,
@@ -76,6 +95,15 @@ pub struct PageRequest {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ResourcePage {
     pub resources: Vec<StoredResource>,
+    pub next: Option<PageCursor>,
+    pub total_matching: u64,
+}
+
+/// Lightweight page for table views; rows omit the record payload to bound
+/// memory on large inventories. Payload is loaded on demand via `detail`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct ResourceRowPage {
+    pub rows: Vec<ResourceRow>,
     pub next: Option<PageCursor>,
     pub total_matching: u64,
 }
@@ -167,6 +195,19 @@ impl Database {
         Ok(page)
     }
 
+    /// Returns lightweight rows without record payloads for table views.
+    /// The record payload is loaded lazily via `detail` when needed.
+    pub async fn page_rows(
+        &self,
+        filter: &ResourceFilter,
+        request: PageRequest,
+    ) -> Result<ResourceRowPage, ViewError> {
+        let mut snapshot = self.snapshot().await?;
+        let page = snapshot.page_rows(filter, request).await?;
+        snapshot.finish().await?;
+        Ok(page)
+    }
+
     pub async fn edges_page(
         &self,
         node: &GraphNode,
@@ -216,6 +257,32 @@ async fn decode_row(
     })
 }
 
+/// Lightweight decode for table pages: skips loading the record payload,
+/// reading only its byte length. Tags are still loaded since they appear
+/// in the table view.
+async fn decode_row_lite(
+    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+    row: sqlx::sqlite::SqliteRow,
+) -> Result<ResourceRow, ViewError> {
+    let account: String = row.try_get("account")?;
+    let region: String = row.try_get("region")?;
+    let kind: String = row.try_get("kind")?;
+    let id: String = row.try_get("id")?;
+    let expected: Vec<u8> = row.try_get("content_hash")?;
+    let table = table_for(tx, &kind).await?;
+    let record_bytes = record_byte_length(tx, &table, &account, &region, &id).await?;
+    let tags = tags::read(tx, [&account, &region, &kind, &id]).await?;
+    Ok(ResourceRow {
+        key: resource_key([&account, &region, &kind, &id])?,
+        name: row.try_get("name")?,
+        content_hash: ContentHash::from_bytes(stored_hash(&expected)?),
+        record_bytes,
+        tags: tags.tags,
+        tags_truncated: tags.truncated,
+        tag_observation: tags.observation,
+    })
+}
+
 fn stored_hash(expected: &[u8]) -> Result<[u8; 32], ViewError> {
     expected.try_into().map_err(|_| ViewError::StoredRow)
 }
@@ -258,11 +325,44 @@ async fn decode_resources(
     Ok((resources, has_more))
 }
 
+async fn decode_rows(
+    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+    filter: &ResourceFilter,
+    request: &PageRequest,
+) -> Result<(Vec<ResourceRow>, bool), ViewError> {
+    let mut rows = fetch_page(tx, filter, request).await?;
+    let has_more = rows.len() > request.limit;
+    rows.truncate(request.limit);
+    let mut result = Vec::with_capacity(rows.len());
+    for row in rows {
+        result.push(decode_row_lite(tx, row).await?);
+    }
+    Ok((result, has_more))
+}
+
 fn next_resource_cursor(resources: &[StoredResource], has_more: bool) -> Option<PageCursor> {
     if has_more {
         resources.last().map(cursor_of)
     } else {
         None
+    }
+}
+
+fn next_row_cursor(rows: &[ResourceRow], has_more: bool) -> Option<PageCursor> {
+    if has_more {
+        rows.last().map(cursor_of_row)
+    } else {
+        None
+    }
+}
+
+fn cursor_of_row(row: &ResourceRow) -> PageCursor {
+    let key = &row.key;
+    PageCursor {
+        account: key.account.as_str().to_owned(),
+        region: key.region.as_str().to_owned(),
+        kind: key.kind.as_str().to_owned(),
+        id: key.id.as_str().to_owned(),
     }
 }
 

@@ -43,8 +43,12 @@ fn duplicate_nodes_and_edges_collapse() {
     let second = graph.add_node(NodeKind::S3, "id", "other");
     assert_eq!(first, second);
     assert_eq!(graph.len(), 1);
+    // Self-loops are now allowed (UI-03).
+    assert!(graph.add_edge(0, 0));
+    assert_eq!(graph.edges().len(), 1);
+    // But duplicate self-loops are collapsed.
     assert!(!graph.add_edge(0, 0));
-    assert_eq!(graph.edges().len(), 0);
+    assert_eq!(graph.edges().len(), 1);
     let mut graph = chain();
     assert!(!graph.add_edge(0, 1));
     assert_eq!(graph.edges().len(), 2);
@@ -284,9 +288,10 @@ fn given_native_tags_when_projecting_then_only_the_requested_resource_gets_affil
         .filter(|edge| edge.to == *tag_index)
         .collect();
     assert_eq!(links.len(), 1);
+    // Tag affiliation edges are overlay edges with relation "has_tag".
     assert_eq!(
         links.first().map(|edge| (edge.from, edge.overlay)),
-        Some((root, false))
+        Some((root, true))
     );
     assert!(
         !graph

@@ -74,11 +74,15 @@ impl DagNode {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct DagEdge {
     pub from: usize,
     pub to: usize,
-
+    /// Relationship kind (e.g., "references", "contains"). Preserved for
+    /// parallel edges between the same endpoints.
+    pub relation: String,
+    /// Provenance of the relationship (e.g., "catalog", "reference").
+    pub provenance: String,
     pub overlay: bool,
 }
 
@@ -87,7 +91,9 @@ pub struct DagGraph {
     nodes: Vec<DagNode>,
     edges: Vec<DagEdge>,
     index: BTreeMap<String, usize>,
-    pairs: BTreeSet<(usize, usize)>,
+    /// Edge identity includes relation and provenance to distinguish parallel
+    /// edges between the same endpoints.
+    pairs: BTreeSet<(usize, usize, String, String)>,
     dropped_nodes: usize,
     dropped_edges: usize,
 }
@@ -118,26 +124,58 @@ impl DagGraph {
     }
 
     pub fn add_edge(&mut self, from: usize, to: usize) -> bool {
-        self.insert_edge(from, to, false)
+        self.insert_edge(from, to, String::new(), String::new(), false)
     }
 
-    pub fn add_overlay_edge(&mut self, from: usize, to: usize) -> bool {
-        self.insert_edge(from, to, true)
+    pub fn add_overlay_edge(
+        &mut self,
+        from: usize,
+        to: usize,
+        relation: String,
+        provenance: String,
+    ) -> bool {
+        self.insert_edge(from, to, relation, provenance, true)
     }
 
-    fn insert_edge(&mut self, from: usize, to: usize, overlay: bool) -> bool {
-        if from == to || self.nodes.get(from).is_none() || self.nodes.get(to).is_none() {
+    /// Adds a hierarchy edge (containment) with an explicit relation name.
+    /// Unlike overlay edges, hierarchy edges are used by the layout algorithm
+    /// for layer assignment.
+    pub fn add_hierarchy_edge(&mut self, from: usize, to: usize, relation: String) -> bool {
+        self.insert_edge(from, to, relation, String::new(), false)
+    }
+
+    /// Inserts an edge, preserving parallel edges with different relations.
+    /// Self-loops (from == to) are allowed and rendered explicitly.
+    fn insert_edge(
+        &mut self,
+        from: usize,
+        to: usize,
+        relation: String,
+        provenance: String,
+        overlay: bool,
+    ) -> bool {
+        if self.nodes.get(from).is_none() || self.nodes.get(to).is_none() {
             return false;
         }
-        if self.pairs.contains(&(from, to)) {
+        // Edge identity includes relation and provenance to distinguish
+        // parallel edges between the same endpoints (e.g., "references"
+        // from catalog vs "references" from reference).
+        let edge_key = (from, to, relation.clone(), provenance.clone());
+        if self.pairs.contains(&edge_key) {
             return false;
         }
         if self.edges.len() >= MAX_EDGES {
             self.dropped_edges = self.dropped_edges.saturating_add(1);
             return false;
         }
-        self.pairs.insert((from, to));
-        self.edges.push(DagEdge { from, to, overlay });
+        self.pairs.insert(edge_key);
+        self.edges.push(DagEdge {
+            from,
+            to,
+            relation,
+            provenance,
+            overlay,
+        });
         true
     }
 

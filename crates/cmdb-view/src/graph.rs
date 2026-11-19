@@ -77,12 +77,18 @@ impl GraphConnection {
         query::neighborhood(&self.client, &self.graph, node, limits).await
     }
 
+    /// Returns upstream dependents only (what is affected if this node
+    /// fails), following incoming edges. Edge orientation is source->target
+    /// (A->B means A refers to B), so dependents of C are nodes that refer
+    /// to C. This differs from `neighbors` which traverses in both
+    /// directions. A node with no incoming edges has empty blast radius.
     pub async fn blast_radius(
         &self,
         node: &GraphNode,
         limits: GraphLimits,
     ) -> Result<GraphNeighborhood, ViewError> {
-        self.neighbors(node, limits).await
+        validate_limits(limits)?;
+        query::blast_radius(&self.client, &self.graph, node, limits).await
     }
 
     pub async fn path(

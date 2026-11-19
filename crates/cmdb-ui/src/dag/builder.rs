@@ -29,7 +29,7 @@ fn add_row(dag: &mut DagGraph, row: &Row) {
     let Some(resource) = dag.add_node(NodeKind::from_facet(&row.kind), &row.key, label) else {
         return;
     };
-    dag.add_edge(kind, resource);
+    add_containment_edge(dag, kind, resource);
 }
 
 fn add_containment(dag: &mut DagGraph, row: &Row) -> Option<(usize, usize, usize)> {
@@ -48,8 +48,8 @@ fn add_containment(dag: &mut DagGraph, row: &Row) -> Option<(usize, usize, usize
         format!("kind:{}/{}/{}", row.account, row.region, row.kind),
         row.kind.clone(),
     )?;
-    dag.add_edge(account, region);
-    dag.add_edge(region, kind);
+    add_containment_edge(dag, account, region);
+    add_containment_edge(dag, region, kind);
     Some((account, region, kind))
 }
 
@@ -58,9 +58,17 @@ fn add_resource_edges(dag: &mut DagGraph, source: &DataGraph) {
         let from = dag.index_of(&edge.from);
         let to = dag.index_of(&edge.to);
         if let (Some(from), Some(to)) = (from, to) {
-            dag.add_overlay_edge(from, to);
+            dag.add_overlay_edge(from, to, edge.label.clone(), edge.provenance.clone());
         }
     }
+}
+
+fn add_containment_edge(dag: &mut DagGraph, from: usize, to: usize) {
+    // Containment edges are not overlay edges; they form the hierarchy that
+    // the layout algorithm uses for layer assignment. Use an explicit
+    // relation name to avoid collision with overlay edges that have empty
+    // relation.
+    dag.add_hierarchy_edge(from, to, "contains".to_owned());
 }
 
 fn add_tag_affiliations(dag: &mut DagGraph, source: &DataGraph) {
@@ -82,7 +90,12 @@ fn add_tag_affiliations(dag: &mut DagGraph, source: &DataGraph) {
             let tag = &entry.tag;
             let label = truncate_label(&format!("tag: {:?}={:?}", tag.key, tag.value));
             if let Some(node) = dag.add_node(NodeKind::Tag, tag_id(tag), label) {
-                dag.add_edge(resource, node);
+                dag.add_overlay_edge(
+                    resource,
+                    node,
+                    "has_tag".to_owned(),
+                    String::new(),
+                );
             }
         });
 }

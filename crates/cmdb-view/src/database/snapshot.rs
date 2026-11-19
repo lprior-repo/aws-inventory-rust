@@ -39,6 +39,23 @@ impl DatabaseSnapshot {
         })
     }
 
+    /// Returns lightweight rows without record payloads for table views.
+    /// Payload is loaded lazily via `detail` when the user opens a resource.
+    pub async fn page_rows(
+        &mut self,
+        filter: &ResourceFilter,
+        request: PageRequest,
+    ) -> Result<ResourceRowPage, ViewError> {
+        validate_page_limit(request.limit)?;
+        let total = count_filtered(&mut self.tx, filter).await?;
+        let (rows, has_more) = decode_rows(&mut self.tx, filter, &request).await?;
+        Ok(ResourceRowPage {
+            next: next_row_cursor(&rows, has_more),
+            rows,
+            total_matching: total,
+        })
+    }
+
     pub async fn edges_page(
         &mut self,
         node: &GraphNode,

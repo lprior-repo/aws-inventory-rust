@@ -85,3 +85,33 @@ pub(super) fn is_arn(value: &str) -> bool {
         && parts.next().is_some()
         && parts.next().is_some_and(|part| !part.is_empty())
 }
+
+/// Extracts the AWS service and resource type from an ARN.
+/// Returns None if the value is not a valid ARN.
+pub(super) fn arn_service_type(value: &str) -> Option<(&str, &str)> {
+    let mut parts = value.splitn(6, ':');
+    if parts.next() != Some("arn") {
+        return None;
+    }
+    parts.next()?; // partition
+    let service = parts.next()?;
+    if service.is_empty() {
+        return None;
+    }
+    parts.next()?; // region
+    parts.next()?; // account
+    let resource = parts.next()?;
+    if resource.is_empty() {
+        return None;
+    }
+    // Resource type is the part before the first '/' or ':'
+    let resource_type = resource
+        .split('/')
+        .next()?
+        .split(':')
+        .next()?;
+    if resource_type.is_empty() {
+        return None;
+    }
+    Some((service, resource_type))
+}

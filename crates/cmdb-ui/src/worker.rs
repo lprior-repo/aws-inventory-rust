@@ -9,15 +9,14 @@ pub(crate) mod tests;
 
 use crate::data::{Counts, Filter, Graph, Row};
 use cmdb_view::{
-    Database, DatabaseSnapshot, GraphConnection, GraphLimits, GraphNode, PageRequest,
-    ResourceFilter,
+    Database, GraphConnection, GraphLimits, GraphNode, PageRequest, ResourceFilter,
 };
 use graph_tasks::{GraphAccess, database_error, graph_failure};
 use lifecycle::{Cancellation, Shutdown, shutdown_channel};
 use makepad_widgets::makepad_platform::thread::SignalToUI;
 use projection::{graph_from_edges, row_from_resource};
 use protocol::{COMMAND_CAPACITY, Command, EVENT_CAPACITY, Output, Revisions, current_events};
-use queries::{QuerySession, query_graph, refresh_page};
+use queries::{query_graph, refresh_page};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::mpsc::{self, Receiver, SyncSender};
@@ -193,9 +192,8 @@ fn command_error(error: tokio::sync::mpsc::error::TrySendError<()>) -> String {
 }
 
 struct WorkerState {
-    database: Database,
     graph: GraphAccess,
-    session: QuerySession,
+    database: Database,
 }
 async fn startup(mut config: WorkerConfig) -> Result<(WorkerState, WorkerEvent), String> {
     let path = match config.database.take() {
@@ -216,13 +214,12 @@ async fn setup(path: PathBuf, config: WorkerConfig) -> Result<(WorkerState, Work
     let database = Database::open(&path)
         .await
         .map_err(|error| error.to_string())?;
-    let mut session = QuerySession::open(&database).await?;
-    let initial = session.page(Filter::default()).await?;
+    // Get the initial page using a short-lived snapshot.
+    let initial = refresh_page(&database, Filter::default()).await;
     let graph = GraphAccess::new(config.graph_url, config.graph_name);
     let state = WorkerState {
-        database,
         graph,
-        session,
+        database,
     };
     Ok((state, initial))
 }
