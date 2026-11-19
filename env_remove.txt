@@ -1,1 +1,0 @@
-    unsafe { env::remove_var(DRAIN_ENVIRONMENT); }
