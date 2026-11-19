@@ -109,13 +109,13 @@ fn verify_matrix(generated: &str, committed: &[u8]) -> Result<(), HarnessError> 
 fn mismatch(file: &str, expected: &str, actual: &[u8]) -> HarnessError {
     let line = first_difference_line(expected, actual);
     let action = if file == PARENT_CATALOG {
-        "parent catalog differs; regenerate with build_parent_catalog.py"
+        "parent catalog differs; regenerate with `inventory-harness catalog universal`"
     } else if file == UPSTREAM_MANIFEST {
-        "upstream manifest differs; regenerate with build_cloudcontrol_catalog.py"
+        "upstream manifest differs; regenerate with `inventory-harness catalog universal`"
     } else if file == CAPABILITY_MATRIX {
-        "capability matrix differs; regenerate with build_cloudcontrol_catalog.py"
+        "capability matrix differs; regenerate with `inventory-harness catalog universal`"
     } else {
-        "catalog differs; regenerate with build_cloudcontrol_catalog.py"
+        "catalog differs; regenerate with `inventory-harness catalog universal`"
     };
     HarnessError::invalid(format!("{action} (first difference at line {line})"))
 }

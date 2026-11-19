@@ -194,13 +194,15 @@ fn given_tampered_root_row_when_checked_then_rejects_with_location()
     let message = error
         .ok_or_else(|| HarnessError::invalid("tampered catalog was accepted"))?
         .to_string();
-    assert!(message.contains("catalog differs; regenerate with build_cloudcontrol_catalog.py"));
+    assert!(
+        message.contains("catalog differs; regenerate with `inventory-harness catalog universal`")
+    );
     assert!(message.contains("first difference at line"));
     Ok(())
 }
 
 #[test]
-fn given_tampered_parent_row_when_checked_then_rejects_with_python_message()
+fn given_tampered_parent_row_when_checked_then_rejects_with_rust_message()
 -> Result<(), Box<dyn std::error::Error>> {
     let temporary = tempfile::tempdir()?;
     copy_tree(&workspace(), temporary.path())?;
@@ -213,7 +215,11 @@ fn given_tampered_parent_row_when_checked_then_rejects_with_python_message()
         .err()
         .ok_or_else(|| HarnessError::invalid("tampered parent catalog was accepted"))?
         .to_string();
-    assert!(message.contains("parent catalog differs; regenerate with build_parent_catalog.py"));
+    assert!(
+        message.contains(
+            "parent catalog differs; regenerate with `inventory-harness catalog universal`"
+        )
+    );
     Ok(())
 }
 
@@ -231,10 +237,9 @@ fn given_tampered_capability_row_when_checked_then_rejects_after_evidence_projec
         .err()
         .ok_or_else(|| HarnessError::invalid("tampered capability matrix was accepted"))?
         .to_string();
-    assert!(
-        message
-            .contains("capability matrix differs; regenerate with build_cloudcontrol_catalog.py")
-    );
+    assert!(message.contains(
+        "capability matrix differs; regenerate with `inventory-harness catalog universal`"
+    ));
     Ok(())
 }
 
