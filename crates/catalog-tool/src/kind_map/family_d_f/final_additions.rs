@@ -89,7 +89,7 @@ pub(super) const SOURCE: MappingSource<'static> = MappingSource {
             reason: "Pending maintenance action status is not a configuration object and has no pinned CFN type.",
         },
         ApiOnlyMapping {
-            kind: "AWS::ApiOnly::DMSPreviousMigration",
+            kind: "AWS::ApiOnly::DMSDataMigration",
             reason: "Historical migration project summary (WithoutSettings=true) is not a project definition and has no pinned CFN type.",
         },
         ApiOnlyMapping {
@@ -225,18 +225,8 @@ pub(super) const SOURCE: MappingSource<'static> = MappingSource {
         },
         OperationMapping {
             service: "database-migration-service",
-            operation: "DescribeCertificates",
-            kind: "AWS::ApiOnly::DMSCertificate",
-        },
-        OperationMapping {
-            service: "database-migration-service",
-            operation: "DescribeEndpoints",
-            kind: "AWS::DMS::Endpoint",
-        },
-        OperationMapping {
-            service: "database-migration-service",
-            operation: "DescribeEventSubscriptions",
-            kind: "AWS::DMS::EventSubscription",
+            operation: "DescribeDataMigrations",
+            kind: "AWS::ApiOnly::DMSDataMigration",
         },
         OperationMapping {
             service: "database-migration-service",
@@ -250,43 +240,8 @@ pub(super) const SOURCE: MappingSource<'static> = MappingSource {
         },
         OperationMapping {
             service: "database-migration-service",
-            operation: "DescribeInstanceProfiles",
-            kind: "AWS::DMS::InstanceProfile",
-        },
-        OperationMapping {
-            service: "database-migration-service",
-            operation: "DescribeMigrationProjects",
-            kind: "AWS::DMS::MigrationProject",
-        },
-        OperationMapping {
-            service: "database-migration-service",
             operation: "DescribePendingMaintenanceActions",
             kind: "AWS::ApiOnly::DMSPendingMaintenanceAction",
-        },
-        OperationMapping {
-            service: "database-migration-service",
-            operation: "DescribeReplicationConfigs",
-            kind: "AWS::DMS::ReplicationConfig",
-        },
-        OperationMapping {
-            service: "database-migration-service",
-            operation: "DescribeReplicationInstances",
-            kind: "AWS::DMS::ReplicationInstance",
-        },
-        OperationMapping {
-            service: "database-migration-service",
-            operation: "DescribeReplicationSubnetGroups",
-            kind: "AWS::DMS::ReplicationSubnetGroup",
-        },
-        OperationMapping {
-            service: "database-migration-service",
-            operation: "DescribeReplicationTasks",
-            kind: "AWS::DMS::ReplicationTask",
-        },
-        OperationMapping {
-            service: "database-migration-service",
-            operation: "DescribeDataMigrations",
-            kind: "AWS::ApiOnly::DMSPreviousMigration",
         },
         OperationMapping {
             service: "detective",
