@@ -45,25 +45,30 @@ fn given_real_blocked_graph_query_when_worker_closes_then_query_socket_and_threa
     })
 }
 
+/// UI-02: No retained snapshot. Each page read opens and closes its own snapshot.
+/// A writer checkpoint must succeed immediately after a read completes, because
+/// no long-lived reader holds the database open.
 #[test]
-fn given_idle_real_worker_retaining_snapshot_when_closed_then_wal_reader_is_released() -> TestResult
-{
+fn given_idle_real_worker_with_short_lived_snapshot_when_closed_then_no_reader_survives()
+-> TestResult {
     supervised_async(|| async {
-        // Given a real retained SQL transaction, and a newer committed writer page.
+        // Given a worker that performed a page read (which opens and closes its own snapshot).
         let fixture = Fixture::new().await?;
         fixture
             .commit("seed", ACCOUNT, REGION, &[("shared", "before")], &[], 1)
             .await?;
         let worker = fixture.worker(None);
         snapshot(&worker).await?;
+        // The read completed; its snapshot is closed. A writer checkpoint must succeed
+        // immediately, proving no retained snapshot is blocking it.
         let expected = fixture
             .commit("later", ACCOUNT, REGION, &[("shared", "after")], &[], 2)
             .await?;
         let writer = writer(&fixture).await?;
         assert_eq!(
-            checkpoint(&writer).await?.0,
-            1,
-            "retained snapshot must block truncation"
+            checkpoint(&writer).await?,
+            (0, 0, 0),
+            "no retained snapshot should block truncation"
         );
         // When the real idle intake is cancelled and joined, no reader survives.
         close_worker(worker)?;
@@ -77,8 +82,11 @@ fn given_idle_real_worker_retaining_snapshot_when_closed_then_wal_reader_is_rele
     })
 }
 
+/// UI-02: No retained snapshot. The worker thread performs a read, sends the result,
+/// and closes its snapshot. A writer checkpoint must succeed immediately after the
+/// read completes, because no long-lived reader holds the database open.
 #[test]
-fn given_real_runner_blocked_on_output_when_closed_then_join_and_snapshot_cleanup_complete()
+fn given_real_runner_blocked_on_output_when_closed_then_join_and_no_retained_reader_complete()
 -> TestResult {
     supervised_async(|| async {
         // Given the actual runner/startup and a rendezvous output channel. Receiving
@@ -106,7 +114,8 @@ fn given_real_runner_blocked_on_output_when_closed_then_join_and_snapshot_cleanu
             .commit("later", ACCOUNT, REGION, &[("shared", "after")], &[], 2)
             .await?;
         let writer = writer(&fixture).await?;
-        assert_eq!(checkpoint(&writer).await?.0, 1);
+        // No retained snapshot: checkpoint succeeds immediately after read completes.
+        assert_eq!(checkpoint(&writer).await?, (0, 0, 0));
         assert!(
             !worker
                 .thread

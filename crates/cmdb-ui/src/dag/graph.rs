@@ -123,6 +123,7 @@ impl DagGraph {
         Some(index)
     }
 
+    #[cfg(test)]
     pub fn add_edge(&mut self, from: usize, to: usize) -> bool {
         self.insert_edge(from, to, String::new(), String::new(), false)
     }
