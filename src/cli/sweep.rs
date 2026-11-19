@@ -25,4 +25,9 @@ pub struct SweepArgs {
     pub concurrency: usize,
     #[arg(long)]
     pub resume: bool,
+    /// Wait for the projection outbox to drain before exiting. When graph delivery
+    /// is still pending after this option is set, the process exits with a distinct
+    /// non-zero status instead of claiming success for collection alone.
+    #[arg(long)]
+    pub drain: bool,
 }

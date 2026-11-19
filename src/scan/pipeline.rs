@@ -149,8 +149,7 @@ pub(super) fn startup_failure(
         scan_id: scan_id.into(),
         event: CollectionEvent::Failure(CollectionFailure {
             scope: CollectionScope {
-                account_id: target_account
-                    .map_or_else(|| "unknown".to_owned(), Into::into),
+                account_id: target_account.map_or_else(|| "unknown".to_owned(), Into::into),
                 region: "global".into(),
                 collector: "scan_orchestration".into(),
                 parent_id: None,
