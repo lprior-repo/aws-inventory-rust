@@ -1,10 +1,12 @@
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use inventory_harness::{HarnessError, assertions, catalog, install, seed, snapshot};
 use inventory_harness::assertions::global as assertions_global;
 use inventory_harness::assertions::parents as assertions_parents;
 use inventory_harness::assertions::regional as assertions_regional;
+use inventory_harness::{
+    HarnessError, assertions, catalog, install, mutate, seed, snapshot, verify_delivery,
+};
 
 mod cli;
 
@@ -76,6 +78,24 @@ enum Command {
         prefix: String,
         count: usize,
     },
+    Mutate {
+        emulator: PathBuf,
+        binary: PathBuf,
+        branch_probe: PathBuf,
+        output: PathBuf,
+        workspace: PathBuf,
+        redis_server: Option<PathBuf>,
+        falkor_module: Option<PathBuf>,
+        command_deadline: i64,
+        command: Vec<String>,
+    },
+    VerifyDelivery {
+        binary: PathBuf,
+        redis_cli: PathBuf,
+        database: PathBuf,
+        output: PathBuf,
+        run_workspace_tests: bool,
+    },
 }
 
 fn workspace_root() -> PathBuf {
@@ -134,8 +154,7 @@ async fn assert_global(
     seed_results: Option<PathBuf>,
 ) -> Result<serde_json::Value, HarnessError> {
     let report = seed_report(seed_results.as_deref())?;
-    let checks =
-        assertions_global::check(&root, &database, &scan_id, report.as_ref()).await?;
+    let checks = assertions_global::check(&root, &database, &scan_id, report.as_ref()).await?;
     Ok(serde_json::Value::Array(checks))
 }
 
@@ -146,8 +165,7 @@ async fn assert_parents(
     seed_results: Option<PathBuf>,
 ) -> Result<serde_json::Value, HarnessError> {
     let report = seed_report(seed_results.as_deref())?;
-    let checks =
-        assertions_parents::check(&root, &database, &scan_id, report.as_ref()).await?;
+    let checks = assertions_parents::check(&root, &database, &scan_id, report.as_ref()).await?;
     Ok(serde_json::Value::Array(checks))
 }
 
@@ -204,6 +222,47 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, HarnessError> {
         Command::SeedS3 { bucket } => seed::s3_bucket(&bucket).await,
         Command::SeedCloudControl { prefix, count } => {
             seed::cloud_control_topics(&prefix, count).await
+        }
+        Command::Mutate {
+            emulator,
+            binary,
+            branch_probe,
+            output,
+            workspace,
+            redis_server,
+            falkor_module,
+            command_deadline,
+            command,
+        } => {
+            let mut args = mutate::Args {
+                emulator,
+                binary,
+                branch_probe,
+                output,
+                workspace,
+                redis_server,
+                falkor_module,
+                command_deadline,
+                command,
+            };
+            mutate::run(&args).await
+        }
+        Command::VerifyDelivery {
+            binary,
+            redis_cli,
+            database,
+            output,
+            run_workspace_tests,
+        } => {
+            let args = verify_delivery::Args {
+                binary,
+                redis_cli,
+                database,
+                output,
+            };
+            verify_delivery::run_verify(args)
+                .await
+                .map(|r| r.to_value())
         }
     }
 }

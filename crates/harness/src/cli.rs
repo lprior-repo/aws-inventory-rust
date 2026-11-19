@@ -26,6 +26,8 @@ pub(super) fn parse(arguments: &[String]) -> Result<Command, HarnessError> {
         Some("seed") if arguments.get(1).map(String::as_str) == Some("cloud-control") => {
             parse_seed_cloud_control(arguments.get(2..).unwrap_or_default())
         }
+        Some("mutate") => parse_mutate(arguments.get(1..).unwrap_or_default()),
+        Some("verify-delivery") => parse_verify_delivery(arguments.get(1..).unwrap_or_default()),
         _ => Err(HarnessError::invalid(USAGE)),
     }
 }
@@ -182,6 +184,62 @@ fn parse_seed_cloud_control(arguments: &[String]) -> Result<Command, HarnessErro
         .and_then(|value| value.parse::<usize>().ok())
         .ok_or_else(|| HarnessError::invalid(USAGE))?;
     Ok(Command::SeedCloudControl { prefix, count })
+}
+
+fn parse_mutate(arguments: &[String]) -> Result<Command, HarnessError> {
+    let options = options(
+        arguments,
+        &[
+            "--emulator",
+            "--binary",
+            "--branch-probe",
+            "--output",
+            "--workspace",
+            "--redis-server",
+            "--falkor-module",
+            "--command-deadline",
+        ],
+    )?;
+    let emulator = options.value("--emulator")?;
+    let binary = options.value("--binary")?;
+    let branch_probe = options.value("--branch-probe")?;
+    let output = options.value("--output")?;
+    let workspace = options.get("--workspace").unwrap_or_else(workspace_root);
+    let redis_server = options.get("--redis-server");
+    let falkor_module = options.get("--falkor-module");
+    let command_deadline = options
+        .text("--command-deadline")
+        .and_then(|value| value.parse::<i64>().ok())
+        .unwrap_or(86_400);
+    Ok(Command::Mutate {
+        emulator,
+        binary,
+        branch_probe,
+        output,
+        workspace,
+        redis_server,
+        falkor_module,
+        command_deadline,
+        command: Vec::new(),
+    })
+}
+
+fn parse_verify_delivery(arguments: &[String]) -> Result<Command, HarnessError> {
+    let options = options(
+        arguments,
+        &["--binary", "--redis-cli", "--database", "--output"],
+    )?;
+    let binary = options.value("--binary")?;
+    let redis_cli = options.value("--redis-cli")?;
+    let database = options.value("--database")?;
+    let output = options.value("--output")?;
+    Ok(Command::VerifyDelivery {
+        binary,
+        redis_cli,
+        database,
+        output,
+        run_workspace_tests: false,
+    })
 }
 
 struct Options {

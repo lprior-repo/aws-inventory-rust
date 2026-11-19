@@ -6,11 +6,13 @@ mod files;
 pub mod install;
 pub mod inventory_seed;
 pub mod json;
+pub mod mutate;
 pub mod package;
 pub mod provenance;
 pub mod proxy;
 pub mod seed;
 pub mod snapshot;
+pub mod verify_delivery;
 
 #[derive(Debug, thiserror::Error)]
 pub enum HarnessError {
