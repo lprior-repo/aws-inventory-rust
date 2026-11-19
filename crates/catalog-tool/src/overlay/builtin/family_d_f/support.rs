@@ -42,7 +42,7 @@ pub(super) fn describe(
             scope: Some(Scope::Region),
             items: Some(ItemSelector::parse(items)?),
             identity: Some(identity),
-            paginator: None,
+            paginator: Some(Paginator::None),
             ..empty()
         },
     ))
@@ -141,20 +141,6 @@ pub(super) fn fixed_boolean(
         .1
         .fixed
         .extend([(MemberPath::new(input)?, FixedValue::Boolean(value))]);
-    Ok(entry)
-}
-
-pub(super) fn fixed_token(
-    mut entry: Entry,
-    pair: (&'static str, &'static str),
-) -> Result<Entry, NameError> {
-    let input = MemberPath::selected(pair.0)?;
-    let output = MemberPath::selected(pair.1)?;
-    entry.1.paginator = Some(Paginator::Token(TokenPair {
-        input,
-        output,
-        optional: false,
-    }));
     Ok(entry)
 }
 

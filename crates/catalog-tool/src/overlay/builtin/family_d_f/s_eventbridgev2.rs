@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/eventbridgev2/service/2025-05-15/eventbridgev2-2025-05-15.json
-use super::support::{arn, bound, describe, fixed_token, inventory, queried, reviewed, token};
+use super::support::{arn, bound, describe, inventory, queried, reviewed, token};
 use crate::overlay::{NameError, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
@@ -58,12 +58,9 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             )?,
             // DescribeEventBus returns the full configuration of an event bus.
             queried(
-                fixed_token(
-                    bound(
-                        describe("DescribeEventBus", "EventBus", arn("EventBusArn")?)?,
-                        &[("EventBusArn", "ListEventBuses", "EventBusArn")],
-                    )?,
-                    ("NextToken", "NextToken"),
+                bound(
+                    describe("DescribeEventBus", "$", arn("EventBusArn")?)?,
+                    &[("EventBusArn", "ListEventBuses", "EventBusArn")],
                 )?,
                 &[
                     "EventBusArn",
@@ -76,12 +73,9 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             )?,
             // DescribeEventSource returns the full configuration of an event source.
             queried(
-                fixed_token(
-                    bound(
-                        describe("DescribeEventSource", "EventSource", arn("EventSourceArn")?)?,
-                        &[("EventSourceArn", "ListEventSources", "EventSourceArn")],
-                    )?,
-                    ("NextToken", "NextToken"),
+                bound(
+                    describe("DescribeEventSource", "$", arn("EventSourceArn")?)?,
+                    &[("EventSourceArn", "ListEventSources", "EventSourceArn")],
                 )?,
                 &[
                     "EventSourceArn",
@@ -95,12 +89,9 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             )?,
             // DescribeSubscriber returns the full configuration of a subscriber.
             queried(
-                fixed_token(
-                    bound(
-                        describe("DescribeSubscriber", "Subscriber", arn("SubscriberArn")?)?,
-                        &[("SubscriberArn", "ListSubscribers", "SubscriberArn")],
-                    )?,
-                    ("NextToken", "NextToken"),
+                bound(
+                    describe("DescribeSubscriber", "$", arn("SubscriberArn")?)?,
+                    &[("SubscriberArn", "ListSubscribers", "SubscriberArn")],
                 )?,
                 &[
                     "SubscriberArn",

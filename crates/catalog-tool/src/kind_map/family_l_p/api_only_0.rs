@@ -70,12 +70,32 @@ pub(super) const ENTRIES: &[ApiOnlyMapping<'static>] = &[
         reason: "ManagedNotificationConfiguration is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
     },
     ApiOnlyMapping {
+        kind: "AWS::ApiOnly::MigrationStrategyAnalyzableServer",
+        reason: "MigrationStrategyAnalyzableServer is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::MigrationStrategyApplicationComponent",
+        reason: "MigrationStrategyApplicationComponent is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::MigrationStrategyImportFileTask",
+        reason: "MigrationStrategyImportFileTask is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::MigrationStrategyServer",
+        reason: "MigrationStrategyServer is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
         kind: "AWS::ApiOnly::MarketplaceAgreement",
         reason: "MarketplaceAgreement is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
     },
     ApiOnlyMapping {
         kind: "AWS::ApiOnly::MediaLiveInputDevice",
         reason: "MediaLiveInputDevice is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::MediaPackageVodAsset",
+        reason: "MediaPackageVodAsset is a native metadata resource absent from the pinned 1881 CloudFormation schemas; preserve its own stable identity rather than aliasing an unrelated CFN resource.",
     },
     ApiOnlyMapping {
         kind: "AWS::ApiOnly::MigrationApplicationState",

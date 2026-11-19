@@ -77,6 +77,26 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
         kind: "AWS::ApiOnly::MigrationStrategyCollector",
     },
     OperationMapping {
+        service: "migrationhubstrategy",
+        operation: "ListAnalyzableServers",
+        kind: "AWS::ApiOnly::MigrationStrategyAnalyzableServer",
+    },
+    OperationMapping {
+        service: "migrationhubstrategy",
+        operation: "ListApplicationComponents",
+        kind: "AWS::ApiOnly::MigrationStrategyApplicationComponent",
+    },
+    OperationMapping {
+        service: "migrationhubstrategy",
+        operation: "ListImportFileTask",
+        kind: "AWS::ApiOnly::MigrationStrategyImportFileTask",
+    },
+    OperationMapping {
+        service: "migrationhubstrategy",
+        operation: "ListServers",
+        kind: "AWS::ApiOnly::MigrationStrategyServer",
+    },
+    OperationMapping {
         service: "mpa",
         operation: "ListApprovalTeams",
         kind: "AWS::MPA::ApprovalTeam",

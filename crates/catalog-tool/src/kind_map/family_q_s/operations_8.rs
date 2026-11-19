@@ -101,4 +101,34 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
         operation: "ListVectorEnrichmentJobs",
         kind: "AWS::ApiOnly::SageMakerVectorEnrichmentJob",
     },
+    OperationMapping {
+        service: "sagemaker",
+        operation: "DescribeTrainingPlanExtensionHistory",
+        kind: "AWS::ApiOnly::SageMakerTrainingPlanExtension",
+    },
+    OperationMapping {
+        service: "sagemaker",
+        operation: "ListAliases",
+        kind: "AWS::ApiOnly::SageMakerAlias",
+    },
+    OperationMapping {
+        service: "sagemaker",
+        operation: "ListApps",
+        kind: "AWS::ApiOnly::SageMakerApp",
+    },
+    OperationMapping {
+        service: "sagemaker",
+        operation: "ListCandidatesForAutoMLJob",
+        kind: "AWS::ApiOnly::SageMakerAutoMLCandidate",
+    },
+    OperationMapping {
+        service: "sagemaker",
+        operation: "ListClusterEvents",
+        kind: "AWS::ApiOnly::SageMakerClusterEvent",
+    },
+    OperationMapping {
+        service: "sagemaker",
+        operation: "ListClusterExtensions",
+        kind: "AWS::ApiOnly::SageMakerClusterExtension",
+    },
 ];

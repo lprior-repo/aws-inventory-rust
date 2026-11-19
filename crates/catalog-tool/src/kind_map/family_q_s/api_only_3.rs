@@ -58,6 +58,30 @@ pub(super) const ENTRIES: &[ApiOnlyMapping<'static>] = &[
         reason: "Distinct API-managed SageMakerTrainingPlan resource identified by @TrainingPlanArn in sagemaker ListTrainingPlans TrainingPlanSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
     },
     ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SageMakerTrainingPlanExtension",
+        reason: "Distinct API-managed SageMakerTrainingPlanExtension resource enumerated by sagemaker DescribeTrainingPlanExtensionHistory. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SageMakerAlias",
+        reason: "Distinct API-managed SageMakerAlias resource enumerated by sagemaker ListAliases. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SageMakerApp",
+        reason: "Distinct API-managed SageMakerApp resource enumerated by sagemaker ListApps. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SageMakerAutoMLCandidate",
+        reason: "Distinct API-managed SageMakerAutoMLCandidate resource enumerated by sagemaker ListCandidatesForAutoMLJob. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SageMakerClusterEvent",
+        reason: "Distinct API-managed SageMakerClusterEvent resource enumerated by sagemaker ListClusterEvents. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SageMakerClusterExtension",
+        reason: "Distinct API-managed SageMakerClusterExtension resource enumerated by sagemaker ListClusterExtensions. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
         kind: "AWS::ApiOnly::SageMakerTrainingSession",
         reason: "Distinct API-managed SageMakerTrainingSession resource identified by @TrainingSessionArn in sagemaker ListTrainingSessions TrainingSessionSummaries. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
     },

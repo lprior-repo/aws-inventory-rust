@@ -57,6 +57,41 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
         kind: "AWS::ApiOnly::SSMContactEngagement",
     },
     OperationMapping {
+        service: "ssm-contacts",
+        operation: "ListContactChannels",
+        kind: "AWS::ApiOnly::SSMContactChannel",
+    },
+    OperationMapping {
+        service: "ssm-contacts",
+        operation: "ListPageReceipts",
+        kind: "AWS::ApiOnly::SSMContactPageReceipt",
+    },
+    OperationMapping {
+        service: "ssm-contacts",
+        operation: "ListPageResolutions",
+        kind: "AWS::ApiOnly::SSMContactPageResolution",
+    },
+    OperationMapping {
+        service: "ssm-contacts",
+        operation: "ListPagesByContact",
+        kind: "AWS::ApiOnly::SSMContactPage",
+    },
+    OperationMapping {
+        service: "ssm-contacts",
+        operation: "ListPagesByEngagement",
+        kind: "AWS::ApiOnly::SSMContactPage",
+    },
+    OperationMapping {
+        service: "ssm-contacts",
+        operation: "ListRotationOverrides",
+        kind: "AWS::ApiOnly::SSMContactRotationOverride",
+    },
+    OperationMapping {
+        service: "ssm-contacts",
+        operation: "ListRotationShifts",
+        kind: "AWS::ApiOnly::SSMContactRotationShift",
+    },
+    OperationMapping {
         service: "ssm-incidents",
         operation: "ListResponsePlans",
         kind: "AWS::SSMIncidents::ResponsePlan",

@@ -81,4 +81,28 @@ pub(super) const ENTRIES: &[ApiOnlyMapping<'static>] = &[
         kind: "AWS::ApiOnly::SSMContactEngagement",
         reason: "Distinct API-managed SSMContactEngagement resource identified by @EngagementArn in ssm-contacts ListEngagements Engagements. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
     },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SSMContactChannel",
+        reason: "Distinct API-managed SSMContactChannel resource enumerated by ssm-contacts ListContactChannels. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SSMContactPageReceipt",
+        reason: "Distinct API-managed SSMContactPageReceipt resource enumerated by ssm-contacts ListPageReceipts. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SSMContactPageResolution",
+        reason: "Distinct API-managed SSMContactPageResolution resource enumerated by ssm-contacts ListPageResolutions. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SSMContactPage",
+        reason: "Distinct API-managed SSMContactPage resource enumerated by ssm-contacts ListPagesByContact and ListPagesByEngagement. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SSMContactRotationOverride",
+        reason: "Distinct API-managed SSMContactRotationOverride resource enumerated by ssm-contacts ListRotationOverrides. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::SSMContactRotationShift",
+        reason: "Distinct API-managed SSMContactRotationShift resource enumerated by ssm-contacts ListRotationShifts. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
 ];

@@ -8,12 +8,27 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
     },
     OperationMapping {
         service: "eventbridgev2",
+        operation: "DescribeEventBus",
+        kind: "AWS::ApiOnly::EventBridgeV2EventBus",
+    },
+    OperationMapping {
+        service: "eventbridgev2",
         operation: "ListEventSources",
         kind: "AWS::ApiOnly::EventBridgeV2EventSource",
     },
     OperationMapping {
         service: "eventbridgev2",
+        operation: "DescribeEventSource",
+        kind: "AWS::ApiOnly::EventBridgeV2EventSource",
+    },
+    OperationMapping {
+        service: "eventbridgev2",
         operation: "ListSubscribers",
+        kind: "AWS::ApiOnly::EventBridgeV2Subscriber",
+    },
+    OperationMapping {
+        service: "eventbridgev2",
+        operation: "DescribeSubscriber",
         kind: "AWS::ApiOnly::EventBridgeV2Subscriber",
     },
     OperationMapping {

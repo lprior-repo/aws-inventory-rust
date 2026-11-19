@@ -148,15 +148,9 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         ),
         (
             "ListAssociations",
-            OperationOverlay {
-                queryable: vec![path("ChatConfiguration")?],
-                ..read(
-                    "Associations",
-                    Identity::Arn(path("Resource")?),
-                    Scope::Account,
-                    token("NextToken", "NextToken")?,
-                )?
-            },
+            deferred(
+                "Model requires ChatConfiguration. No reviewed complete parent binding and selected-item resource identity is authorized for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Lists the resources associated with a channel configuration, for example, a custom action.",
+            ),
         ),
         // Model: Lists custom actions defined in this account.
         (
