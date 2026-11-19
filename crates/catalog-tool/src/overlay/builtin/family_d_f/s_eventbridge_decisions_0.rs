@@ -81,28 +81,12 @@ pub(super) const ENTRIES: &[(&str, &str)] = &[
         "Requires Name; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves details about a connection.",
     ),
     (
-        "DescribeEndpoint",
-        "Requires Name; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Get the information about an existing global endpoint.",
-    ),
-    (
-        "DescribeEventBus",
-        "Not a reviewed resource-enumeration policy; the operation remains noncallable rather than implying complete collection. Pinned operation: Displays details about an event bus in your account.",
-    ),
-    (
-        "DescribeEventSource",
-        "Requires Name; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: This operation lists details about a partner event source that is shared with your account.",
-    ),
-    (
         "DescribePartnerEventSource",
         "Requires Name; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: An SaaS partner can use this operation to list details about a partner event source that they have created.",
     ),
     (
         "DescribeReplay",
         "Requires ReplayName; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Retrieves details about a replay.",
-    ),
-    (
-        "DescribeRule",
-        "Requires Name; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Describes the specified rule.",
     ),
     (
         "DisableRule",

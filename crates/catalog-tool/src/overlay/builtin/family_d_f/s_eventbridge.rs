@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/eventbridge/service/2015-10-07/eventbridge-2015-10-07.json
-use super::support::{arn, bound, inventory, key, queried, reviewed, scoped, token};
+use super::support::{arn, bound, describe, inventory, key, queried, reviewed, scoped, token};
 use crate::overlay::{NameError, Scope, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
@@ -60,6 +60,38 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 ),
                 &["Arn", "Name", "EndpointId", "State", "StateReason"],
             )?,
+            // Expand DescribeEventBus to include event bus details.
+            queried(
+                bound(
+                    describe("DescribeEventBus", "$", arn("Arn")?)?,
+                    &[("Name", "ListEventBuses", "Name")],
+                )?,
+                &["Arn", "Name", "Policy", "Description"],
+            )?,
+            // Expand DescribeEventSource to include partner event source details.
+            queried(
+                bound(
+                    describe(
+                        "DescribeEventSource",
+                        "$",
+                        arn("Arn")?,
+                    )?,
+                    &[("Name", "ListEventSources", "Name")],
+                )?,
+                &["Arn", "Name", "State"],
+            )?,
+            // Expand DescribeEndpoint to include global endpoint details.
+            queried(
+                bound(
+                    describe(
+                        "DescribeEndpoint",
+                        "$",
+                        arn("Arn")?,
+                    )?,
+                    &[("Name", "ListEndpoints", "Name")],
+                )?,
+                &["Arn", "Name", "EndpointId", "State"],
+            )?,
             // Lists all the event buses in your account, including the default event bus, custom event buses, and partner event buses.
             queried(
                 inventory(
@@ -102,6 +134,18 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     &[("EventBusName", "ListEventBuses", "Name")],
                 )?,
                 &["Arn", "RoleArn", "Name", "State", "EventBusName"],
+            )?,
+            // Expand DescribeEventRule to include rule details.
+            queried(
+                bound(
+                    describe(
+                        "DescribeRule",
+                        "$",
+                        arn("Arn")?,
+                    )?,
+                    &[("Name", "ListRules", "Name")],
+                )?,
+                &["Arn", "Name", "State", "EventPattern", "Description"],
             )?,
         ],
         &[

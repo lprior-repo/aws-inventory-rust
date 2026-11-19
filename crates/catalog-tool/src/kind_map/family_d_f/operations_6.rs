@@ -116,4 +116,24 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
         operation: "ListWhatIfForecastExports",
         kind: "AWS::ApiOnly::ForecastWhatIfForecastExport",
     },
+    OperationMapping {
+        service: "eventbridge",
+        operation: "DescribeEventBus",
+        kind: "AWS::ApiOnly::EventBridgeEventBus",
+    },
+    OperationMapping {
+        service: "eventbridge",
+        operation: "DescribeEventSource",
+        kind: "AWS::ApiOnly::EventBridgeEventSource",
+    },
+    OperationMapping {
+        service: "eventbridge",
+        operation: "DescribeRule",
+        kind: "AWS::ApiOnly::EventBridgeEventRule",
+    },
+    OperationMapping {
+        service: "eventbridge",
+        operation: "DescribeEndpoint",
+        kind: "AWS::ApiOnly::EventBridgeEndpoint",
+    },
 ];

@@ -6,6 +6,22 @@ pub(super) const ENTRIES: &[ApiOnlyMapping<'static>] = &[
         reason: "Pinned API resource has no equivalent CFN resource or is an unspecialized polymorphic summary; do not invent a CFN kind.",
     },
     ApiOnlyMapping {
+        kind: "AWS::ApiOnly::EventBridgeEventBus",
+        reason: "Distinct API-managed EventBridgeEventBus resource identified by @Arn in events DescribeEventBus EventBus. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::EventBridgeEventSource",
+        reason: "Distinct API-managed EventBridgeEventSource resource identified by @Arn in events DescribeEventSource EventSource. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::EventBridgeEventRule",
+        reason: "Distinct API-managed EventBridgeEventRule resource identified by @Arn in events DescribeEventRule Rule. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::EventBridgeEndpoint",
+        reason: "Distinct API-managed EventBridgeEndpoint resource identified by @Arn in events DescribeEndpoint Endpoint. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+    },
+    ApiOnlyMapping {
         kind: "AWS::ApiOnly::EventBridgeV2Subscriber",
         reason: "Pinned API resource has no equivalent CFN resource or is an unspecialized polymorphic summary; do not invent a CFN kind.",
     },
