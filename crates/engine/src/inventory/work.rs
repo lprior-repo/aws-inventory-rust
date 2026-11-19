@@ -242,9 +242,9 @@ pub(super) async fn claim(
     validate_active_sweep(&mut tx, Some(sweep)).await?;
 
     // Split the OR query into two index-bounded queries.
-    // Branch 1: ready rows (state=0)
-    // Branch 2: expired lease rows (state=1 AND lease_until<=now)
-    // Each branch uses the work_queue_claim(sweep_id,state,lease_until,scope_key) index.
+    // Branch 1: ready rows (state=0) uses work_queue_ready index
+    // Branch 2: expired lease rows (state=1 AND lease_until<=now) uses work_queue_expired index
+    // Each branch uses a separate index with (sweep_id, state, ...) prefix for bounded search.
     let ready = sqlx::query("SELECT scope_key,token,bindings,generation,authority_complete,context FROM work_queue WHERE sweep_id=?1 AND state=0 ORDER BY scope_key LIMIT 1")
         .bind(sweep.as_str()).fetch_optional(&mut *tx).await?;
     let expired = sqlx::query("SELECT scope_key,token,bindings,generation,authority_complete,context FROM work_queue WHERE sweep_id=?1 AND state=1 AND lease_until<=?2 ORDER BY scope_key LIMIT 1")
