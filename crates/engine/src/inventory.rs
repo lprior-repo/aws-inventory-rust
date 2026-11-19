@@ -70,6 +70,8 @@ pub enum StoreError {
     LeaseGenerationOverflow,
     #[error("multiple active sweep identities exist in the work queue")]
     MultipleActiveSweeps,
+    #[error("sweep has live leases; cannot resume until leases expire")]
+    LiveLease,
 }
 
 #[derive(Clone, Debug)]
@@ -300,6 +302,22 @@ impl BinaryStore {
 
     pub async fn resume_sweep(&self) -> Result<Option<SweepId>, StoreError> {
         work::resume_sweep(self).await
+    }
+    pub async fn discover_active_sweep(&self) -> Result<Option<SweepId>, StoreError> {
+        work::discover_active_sweep(self).await
+    }
+    pub async fn sweep_manifest_account(
+        &self,
+        sweep: &SweepId,
+    ) -> Result<Option<String>, StoreError> {
+        work::sweep_manifest_account(self, sweep).await
+    }
+    pub async fn create_sweep_manifest(
+        &self,
+        sweep: &SweepId,
+        account: &str,
+    ) -> Result<(), StoreError> {
+        work::create_sweep_manifest(self, sweep, account).await
     }
     pub async fn sweep_summary(&self, sweep: &SweepId) -> Result<SweepSummary, StoreError> {
         projection_outbox::sweep_summary(self, sweep).await

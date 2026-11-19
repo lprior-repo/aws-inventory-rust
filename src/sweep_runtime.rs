@@ -94,4 +94,10 @@ pub enum SweepError {
     Signing(#[from] aws_wire::sign::Error),
     #[error("sweep operation failed: {0}")]
     Operation(&'static str),
+    #[error("resumed sweep {sweep} belongs to account {manifest_account:?}, not {expected}")]
+    AccountMismatch {
+        sweep: String,
+        manifest_account: Option<String>,
+        expected: String,
+    },
 }

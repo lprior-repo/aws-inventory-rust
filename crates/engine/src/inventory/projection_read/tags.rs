@@ -1,5 +1,5 @@
 use super::{ResourceKey, Row, Sqlite, StoreError, Transaction, validate_limit};
-use inventory_core::inventory::{MAX_TAG_KEY_BYTES, MAX_TAG_VALUE_BYTES};
+use inventory_core::inventory::{MAX_TAG_KEY_CHARS, MAX_TAG_VALUE_CHARS};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ProjectionTag {
@@ -23,12 +23,13 @@ pub(super) async fn read(
     limit: u16,
 ) -> Result<ProjectionTagPage, StoreError> {
     validate_limit(limit)?;
-    let key_bound = i64::try_from(MAX_TAG_KEY_BYTES)
+    let key_bound = i64::try_from(MAX_TAG_KEY_CHARS)
         .map_err(|_| StoreError::Invalid("projection tag key bound overflow"))?;
-    let value_bound = i64::try_from(MAX_TAG_VALUE_BYTES)
+    let value_bound = i64::try_from(MAX_TAG_VALUE_CHARS)
         .map_err(|_| StoreError::Invalid("projection tag value bound overflow"))?;
-    // Bound bytes inside SQLite, before allocating legacy data in the reader.
-    let rows = sqlx::query("SELECT CASE WHEN length(CAST(tag_key AS BLOB)) BETWEEN 1 AND ?7 THEN tag_key END AS tag_key,CASE WHEN length(CAST(tag_value AS BLOB))<=?8 THEN tag_value END AS tag_value FROM tags WHERE account=?1 AND region=?2 AND kind=?3 AND id=?4 AND (?5 IS NULL OR tag_key>?5) ORDER BY tags.tag_key LIMIT ?6")
+    // Bound character length inside SQLite, before allocating legacy data in the reader.
+    // SQLite length() on TEXT returns the character count, not byte count.
+    let rows = sqlx::query("SELECT CASE WHEN length(tag_key) BETWEEN 1 AND ?7 THEN tag_key END AS tag_key,CASE WHEN length(tag_value)<=?8 THEN tag_value END AS tag_value FROM tags WHERE account=?1 AND region=?2 AND kind=?3 AND id=?4 AND (?5 IS NULL OR tag_key>?5) ORDER BY tags.tag_key LIMIT ?6")
         .bind(key.account.as_str())
         .bind(key.region.as_str())
         .bind(key.kind.as_str())

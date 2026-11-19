@@ -149,7 +149,7 @@ async fn given_oversized_legacy_tags_when_projected_then_the_read_fails_without_
     let (_directory, store, pool) = tagged_fixture().await?;
     let root = resource("shared-id")?;
     sqlx::query("UPDATE tags SET tag_value=?1 WHERE account=?2 AND region=?3 AND kind=?4 AND id=?5 AND tag_key='a'")
-        .bind("x".repeat(inventory_core::inventory::MAX_TAG_VALUE_BYTES + 1))
+        .bind("x".repeat(inventory_core::inventory::MAX_TAG_VALUE_CHARS + 1))
         .bind(root.account.as_str()).bind(root.region.as_str()).bind(root.kind.as_str())
         .bind(root.id.as_str()).execute(&pool).await?;
     let mut snapshot = store.begin_projection_snapshot().await?;
@@ -159,6 +159,46 @@ async fn given_oversized_legacy_tags_when_projected_then_the_read_fails_without_
             "persisted tag exceeds projection bounds"
         ))
     ));
+    snapshot.finish().await?;
+    pool.close().await;
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_multibyte_tags_at_character_boundary_when_projected_then_read_succeeds()
+-> TestResult {
+    let (directory, store, pool) = tagged_fixture().await?;
+    let root = resource("shared-id")?;
+    // 128 Unicode characters, 256 UTF-8 bytes. Well within the character limit.
+    let key = "é".repeat(128);
+    let value = "é".repeat(256);
+    // Use ON CONFLICT because the resource already exists from tagged_fixture().
+    sqlx::query("INSERT OR IGNORE INTO resources(account,region,kind,id,content_hash,first_seen,last_changed) VALUES(?1,?2,?3,?4,?5,0,0)")
+        .bind(root.account.as_str()).bind(root.region.as_str()).bind(root.kind.as_str())
+        .bind(root.id.as_str()).bind(vec![0_u8; 32]).execute(&pool).await?;
+    sqlx::query(
+        "INSERT INTO tags(account,region,kind,id,tag_key,tag_value) VALUES(?1,?2,?3,?4,?5,?6)",
+    )
+    .bind(root.account.as_str())
+    .bind(root.region.as_str())
+    .bind(root.kind.as_str())
+    .bind(root.id.as_str())
+    .bind(&key)
+    .bind(&value)
+    .execute(&pool)
+    .await?;
+    let mut snapshot = store.begin_projection_snapshot().await?;
+    let page = snapshot.tags_for(&root, None, 10).await?;
+    // The fixture created 2 ASCII tags ("a", "b"); we added one multibyte tag.
+    // Verify the multibyte tag is present and readable.
+    let multibyte = page
+        .tags
+        .iter()
+        .find(|tag| tag.value == value)
+        .ok_or("multibyte tag not found in projection")?;
+    assert_eq!(multibyte.key, key);
+    assert_eq!(multibyte.value, value);
+    assert_eq!(page.tags.len(), 3);
     snapshot.finish().await?;
     pool.close().await;
     Ok(())

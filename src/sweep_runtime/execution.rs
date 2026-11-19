@@ -51,7 +51,6 @@ pub(crate) async fn run(
 ) -> Result<SweepSummary, SweepError> {
     config.validate()?;
     store.validate_catalog(catalog.raw_bytes()).await?;
-    let sweep = sweep_id(store, &config).await?;
     let client = Client::new(transport_config(&config)?)?;
     let settings = executor_config(config.concurrency)?;
     let lease_ms = lease_budget(settings)?;
@@ -66,18 +65,13 @@ pub(crate) async fn run(
         home: &home,
         config: &config,
     };
-    let collection: BoxFuture<'_, Result<SweepSummary, SweepError>> =
-        Box::pin(collect(&bootstrap, store, &sweep, lease_ms));
-    supervise(&executor, collection, tokio::signal::ctrl_c()).await
-}
-
-async fn collect(
-    bootstrap: &BootstrapContext<'_, '_>,
-    store: &BinaryStore,
-    sweep: &SweepId,
-    lease_ms: i64,
-) -> Result<SweepSummary, SweepError> {
-    let account = bootstrap_account(bootstrap).await?;
+    // Bootstrap identity before sweep resume so we can verify the account context
+    // of any pending sweep before claiming it.
+    let account = bootstrap_account(&bootstrap).await?;
+    let sweep = sweep_id(store, &config, &account).await?;
+    store
+        .create_sweep_manifest(&sweep, &account.to_string())
+        .await?;
     let consumers =
         page::consumer_index::ConsumerIndex::build(bootstrap.catalog).map_err(|error| {
             tracing::error!(%error,"reviewed consumer index construction failed");
@@ -99,9 +93,13 @@ async fn collect(
         consumers,
     };
     let regions = discover_regions(&context).await?;
-    seed_enumerations(&context, sweep, &regions).await?;
-    drain_work(&context, sweep).await
+    seed_enumerations(&context, &sweep, &regions).await?;
+    let collection: BoxFuture<'_, Result<SweepSummary, SweepError>> =
+        Box::pin(drain_work(&context, &sweep));
+    supervise(&executor, collection, tokio::signal::ctrl_c()).await
 }
+
+
 
 fn transport_config(config: &SweepConfig) -> Result<TransportConfig, SweepError> {
     Ok(TransportConfig {
@@ -175,14 +173,39 @@ async fn supervise(
     }
 }
 
-async fn sweep_id(store: &BinaryStore, config: &SweepConfig) -> Result<SweepId, SweepError> {
-    if config.resume {
-        return store
-            .resume_sweep()
-            .await?
-            .ok_or(SweepError::Operation("no pending sweep to resume"));
+async fn sweep_id(
+    store: &BinaryStore,
+    config: &SweepConfig,
+    account: &AccountId,
+) -> Result<SweepId, SweepError> {
+    if !config.resume {
+        return SweepId::new(uuid::Uuid::new_v4().to_string()).map_err(SweepError::from);
     }
-    SweepId::new(uuid::Uuid::new_v4().to_string()).map_err(SweepError::from)
+    // Discover pending sweep without mutation.
+    let pending = store
+        .discover_active_sweep()
+        .await?
+        .ok_or(SweepError::Operation("no pending sweep to resume"))?;
+    // Verify the pending sweep belongs to this account before claiming.
+    let manifest_account = store.sweep_manifest_account(&pending).await?;
+    let matches = manifest_account
+        .as_ref()
+        .map(|stored| stored == &account.to_string())
+        .unwrap_or(false);
+    if !matches {
+        let sweep_str = pending.to_string();
+        let expected = account.to_string();
+        return Err(SweepError::AccountMismatch {
+            sweep: sweep_str,
+            manifest_account,
+            expected,
+        });
+    }
+    // Account verified; acquire the sweep.
+    store
+        .resume_sweep()
+        .await?
+        .ok_or(SweepError::Operation("no pending sweep to resume after discovery"))
 }
 
 async fn bootstrap_account(context: &BootstrapContext<'_, '_>) -> Result<AccountId, SweepError> {

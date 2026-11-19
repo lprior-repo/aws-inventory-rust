@@ -124,6 +124,16 @@ pub(in super::super) async fn resume_sweep(
     if exhausted != 0 {
         return Err(StoreError::LeaseGenerationOverflow);
     }
+    let now_ms = std::time::UNIX_EPOCH
+        .elapsed()
+        .map_err(|_| StoreError::Invalid("system clock before epoch"))?
+        .as_millis();
+    let now_ms = i64::try_from(now_ms)
+        .map_err(|_| StoreError::Invalid("timestamp exceeds i64 range"))?;
+    let live: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM work_queue WHERE sweep_id=?1 AND state=1 AND lease_until>?2").bind(sweep.as_str()).bind(now_ms).fetch_one(&mut *tx).await?;
+    if live != 0 {
+        return Err(StoreError::LiveLease);
+    }
     sqlx::query("UPDATE work_queue SET state=0,generation=generation+1,lease_until=0 WHERE sweep_id=?1 AND state=1").bind(sweep.as_str()).execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(Some(sweep))
@@ -312,4 +322,51 @@ impl<'a> Cursor<'a> {
 
 pub(in super::super) fn resource_bytes(key: &ResourceKey) -> Result<Vec<u8>, StoreError> {
     encode_resource(key)
+}
+
+pub(in super::super) async fn create_sweep_manifest(
+    store: &BinaryStore,
+    sweep: &SweepId,
+    account: &str,
+) -> Result<(), StoreError> {
+    let now_ms = std::time::UNIX_EPOCH
+        .elapsed()
+        .map_err(|_| StoreError::Invalid("system clock before epoch"))?
+        .as_millis();
+    let now_ms = i64::try_from(now_ms)
+        .map_err(|_| StoreError::Invalid("timestamp exceeds i64 range"))?;
+    let mut tx = store.writer.begin().await?;
+    sqlx::query(
+        "INSERT INTO sweeps(sweep_id,account,started_at) VALUES(?1,?2,?3) ON CONFLICT(sweep_id) DO UPDATE SET sweep_id=sweep_id",
+    )
+    .bind(sweep.as_str())
+    .bind(account)
+    .bind(now_ms)
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+pub(in super::super) async fn sweep_manifest_account(
+    store: &BinaryStore,
+    sweep: &SweepId,
+) -> Result<Option<String>, StoreError> {
+    let row = sqlx::query_scalar("SELECT account FROM sweeps WHERE sweep_id=?1")
+        .bind(sweep.as_str())
+        .fetch_optional(&store.reader)
+        .await?;
+    Ok(row)
+}
+
+pub(in super::super) async fn discover_active_sweep(
+    store: &BinaryStore,
+) -> Result<Option<SweepId>, StoreError> {
+    let row = sqlx::query_scalar("SELECT DISTINCT sweep_id FROM work_queue WHERE state IN(0,1) ORDER BY sweep_id LIMIT 1")
+        .fetch_optional(&store.reader)
+        .await?;
+    if let Some(sweep_str) = row {
+        return SweepId::new(sweep_str).map(Some);
+    }
+    Ok(None)
 }

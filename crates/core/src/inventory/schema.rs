@@ -105,13 +105,17 @@ fn canonical_columns(mut columns: Vec<Column>) -> Result<Box<[Column]>, Inventor
     Ok(columns.into_boxed_slice())
 }
 
+/// Maximum columns in a SQLite row, matching SQLITE_MAX_COLUMN build config.
+/// The engine adds 7 fixed columns, so this is a hard ceiling on the DDL.
+const MAX_SQLITE_COLUMNS: usize = 256;
+
 fn validate_column_budget(columns: &[Column]) -> Result<(), InventoryError> {
     let count = columns.iter().try_fold(7usize, |count, column| {
         count
             .checked_add(column.scalar.physical_columns())
             .ok_or(InventoryError::Columns)
     })?;
-    if count > 2000 {
+    if count > MAX_SQLITE_COLUMNS {
         return Err(InventoryError::Columns);
     }
     Ok(())

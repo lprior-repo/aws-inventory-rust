@@ -6,7 +6,8 @@ use sqlx::{Row, Sqlite, Transaction};
 use std::sync::Arc;
 use transitions::*;
 pub(super) use transitions::{
-    decode_resource, encode_resource, ownership_scope_bytes, resource_bytes, resume_sweep,
+    create_sweep_manifest, decode_resource, discover_active_sweep, encode_resource,
+    ownership_scope_bytes, resource_bytes, resume_sweep, sweep_manifest_account,
 };
 
 pub(super) use super::validation::{validate_active_sweep, validate_page, validate_work};

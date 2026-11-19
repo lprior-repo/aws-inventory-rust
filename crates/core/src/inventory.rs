@@ -24,5 +24,5 @@ pub use query::{Filter, PageRequest, PageSize, ResourcePage};
 pub use reference::{ReferenceComponent, ReferenceTarget, UnresolvedReference};
 pub use schema::{Column, KindSchema, ScalarType};
 pub use tag::{
-    MAX_RESOURCE_TAGS, MAX_TAG_KEY_BYTES, MAX_TAG_VALUE_BYTES, Tag, TagCoverage, TagObservation,
+    MAX_RESOURCE_TAGS, MAX_TAG_KEY_CHARS, MAX_TAG_VALUE_CHARS, Tag, TagCoverage, TagObservation,
 };

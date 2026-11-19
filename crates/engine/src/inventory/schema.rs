@@ -92,6 +92,18 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
     }
     super::relation_permissions::initialize_provenance(&mut tx).await?;
     super::authority::migrate(&mut tx).await?;
+    let table_exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='sweeps')",
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+    if !table_exists {
+        sqlx::query(
+            "CREATE TABLE sweeps(sweep_id TEXT PRIMARY KEY,account TEXT NOT NULL,partition TEXT NOT NULL DEFAULT 'aws',started_at INTEGER NOT NULL,ended_at INTEGER NOT NULL DEFAULT 0,completed INTEGER NOT NULL DEFAULT 0) WITHOUT ROWID",
+        )
+        .execute(&mut *tx)
+        .await?;
+    }
     let facet_columns = sqlx::query("PRAGMA table_info(resource_facets)")
         .fetch_all(&mut *tx)
         .await?;
@@ -146,6 +158,7 @@ async fn create_shared_tables(
         "CREATE TABLE kinds(kind TEXT PRIMARY KEY,table_name TEXT NOT NULL UNIQUE) WITHOUT ROWID",
         "CREATE TABLE kind_schemas(kind TEXT PRIMARY KEY,table_name TEXT NOT NULL,definition BLOB NOT NULL) WITHOUT ROWID",
         "CREATE TABLE resources(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,name TEXT,content_hash BLOB NOT NULL,first_seen INTEGER NOT NULL,last_changed INTEGER NOT NULL,PRIMARY KEY(account,region,kind,id)) WITHOUT ROWID",
+        "CREATE TABLE sweeps(sweep_id TEXT PRIMARY KEY,account TEXT NOT NULL,partition TEXT NOT NULL DEFAULT 'aws',started_at INTEGER NOT NULL,ended_at INTEGER NOT NULL DEFAULT 0,completed INTEGER NOT NULL DEFAULT 0) WITHOUT ROWID",
         super::facets::CREATE_SQL,
         "CREATE TABLE resource_scopes(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,scope_key BLOB NOT NULL,last_seen INTEGER NOT NULL,missing_complete INTEGER NOT NULL DEFAULT 0,observed_sweep TEXT NOT NULL,completed_sweep TEXT NOT NULL DEFAULT '',PRIMARY KEY(account,region,kind,id,scope_key),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID",
         "CREATE TABLE tags(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,tag_key TEXT NOT NULL,tag_value TEXT NOT NULL,PRIMARY KEY(account,region,kind,id,tag_key),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID",

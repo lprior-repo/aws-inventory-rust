@@ -3,7 +3,7 @@ use super::{
 };
 
 #[test]
-fn tags_constructor_exact_cardinality_and_utf8_bounds_preserve_literal_text() -> TestResult {
+fn tags_constructor_exact_cardinality_and_char_bounds_preserve_literal_text() -> TestResult {
     // Given each cardinality edge independently of storage, with reversed input order.
     for count in [0, 1, 100] {
         let tags = (0..count)
@@ -42,28 +42,28 @@ fn tags_constructor_exact_cardinality_and_utf8_bounds_preserve_literal_text() ->
             Err(InventoryError::DuplicateTag)
         ));
     }
-    // UTF-8 limits count bytes, not characters, with exact maximum and one byte above.
-    for key in ["x".to_owned(), "x".repeat(128), "é".repeat(64)] {
+    // Tag limits are Unicode character counts per AWS tag documentation.
+    for key in ["x".to_owned(), "x".repeat(128), "é".repeat(128)] {
         let tag = Tag::new(key.clone(), "")?;
         assert_eq!((tag.key(), tag.value()), (key.as_str(), ""));
     }
     for key in [
         String::new(),
         "x".repeat(129),
-        format!("{}x", "é".repeat(64)),
+        format!("{}x", "é".repeat(128)),
     ] {
         assert!(matches!(
             Tag::new(key, "value"),
             Err(InventoryError::TagKey)
         ));
     }
-    for value in [String::new(), "x".into(), "x".repeat(256), "é".repeat(128)] {
+    for value in [String::new(), "x".into(), "x".repeat(256), "é".repeat(256)] {
         let tag = Tag::new("key", value.clone())?;
         assert_eq!((tag.key(), tag.value()), ("key", value.as_str()));
     }
     for value in [
         "x".repeat(257),
-        format!("{}x", "é".repeat(128)),
+        format!("{}x", "é".repeat(256)),
         "contains\0nul".to_owned(),
     ] {
         assert!(matches!(

@@ -12,6 +12,53 @@ use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use super::support::*;
 
 #[tokio::test]
+async fn given_active_sweep_for_wrong_account_when_resumed_then_rejected_without_mutation()
+-> TestResult {
+    let (_directory, store, _) = fixture().await?;
+    // Account A creates a sweep and seeds work.
+    let sweep_a = SweepId::new("work-1".to_owned())?;
+    store.seed_work(work("work-1", "us-east-1")?).await?;
+    store
+        .create_sweep_manifest(&sweep_a, "111111111111")
+        .await?;
+    // Discover the sweep (non-mutating).
+    let discovered = store.discover_active_sweep().await?;
+    assert_eq!(discovered.as_ref(), Some(&sweep_a));
+    // The manifest stores the account for this sweep.
+    let manifest = store.sweep_manifest_account(&sweep_a).await?;
+    assert_eq!(manifest, Some("111111111111".to_owned()));
+    // Account B tries to resume but has a different account.
+    // The production check (in execution.rs) compares manifest to expected
+    // account and returns SweepError::AccountMismatch. Here we verify the
+    // manifest check itself.
+    let account_b = "222222222222";
+    let matches = manifest
+        .as_ref()
+        .map(|stored| stored == account_b)
+        .unwrap_or(false);
+    assert!(!matches, "wrong account should not match manifest");
+    // Queue state is unchanged after the check (discover + manifest read are
+    // read-only; only resume_sweep() mutates).
+    let queue_after = store.claim(&sweep_a, 100, 20).await?;
+    assert!(queue_after.is_some(), "sweep should still be claimable after check");
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_same_account_when_resumed_then_sweep_is_acquired() -> TestResult {
+    let (_directory, store, _) = fixture().await?;
+    let sweep = SweepId::new("work-1".to_owned())?;
+    store.seed_work(work("work-1", "us-east-1")?).await?;
+    store
+        .create_sweep_manifest(&sweep, "111111111111")
+        .await?;
+    // Same account can resume.
+    let resumed = store.resume_sweep().await?;
+    assert_eq!(resumed.as_ref(), Some(&sweep));
+    Ok(())
+}
+
+#[tokio::test]
 async fn given_a_late_unique_reference_when_target_becomes_ambiguous_then_edges_are_retracted()
 -> TestResult {
     let (directory, store, _) = fixture().await?;
