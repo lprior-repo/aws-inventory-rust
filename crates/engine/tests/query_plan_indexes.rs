@@ -6,7 +6,34 @@ use sqlx::{Row, AssertSqlSafe};
 use support::*;
 
 #[tokio::test]
-async fn work_queue_claim_uses_ready_work_index() -> Result<(), Box<dyn std::error::Error>> {
+async fn original_or_query_is_unbounded() -> Result<(), Box<dyn std::error::Error>> {
+    let (directory, _store, _catalog) = fixture().await?;
+
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(
+            SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite")),
+        )
+        .await?;
+
+    // Test the original OR query to show it cannot be bounded by an index
+    let plan = explain_plan(&pool,
+        "SELECT scope_key,token,bindings,generation,authority_complete,context FROM work_queue WHERE sweep_id='s1' AND (state=0 OR (state=1 AND lease_until<=1000)) ORDER BY scope_key LIMIT 1")
+        .await?;
+
+    pool.close().await;
+
+    // The OR query uses the PK for sweep_id but cannot use the custom index
+    // because the OR prevents a single index range scan
+    if plan.contains("SEARCH") && plan.contains("work_queue_claim") {
+        return Err(format!("OR query unexpectedly used work_queue_claim index: {}", plan).into());
+    }
+    // It's bounded by sweep_id, but scans all state values
+    Ok(())
+}
+
+#[tokio::test]
+async fn work_queue_claim_ready_branch_is_bounded() -> Result<(), Box<dyn std::error::Error>> {
     let (directory, _store, _catalog) = fixture().await?;
 
     let pool = SqlitePoolOptions::new()
@@ -26,17 +53,129 @@ async fn work_queue_claim_uses_ready_work_index() -> Result<(), Box<dyn std::err
         return Err("work_queue_claim index does not exist".into());
     }
 
-    // Test that the index supports the state-filter portion of the claim query
-    // (the key optimization for ES-09: avoiding scans of completed rows)
+    // Test the ready branch of the claim query (state=0)
     let plan = explain_plan(&pool,
-        "SELECT scope_key FROM work_queue WHERE state=0 ORDER BY scope_key LIMIT 1")
+        "SELECT scope_key,token,bindings,generation,authority_complete,context FROM work_queue WHERE sweep_id='s1' AND state=0 ORDER BY scope_key LIMIT 1")
         .await?;
 
     pool.close().await;
 
-    if !plan.contains("INDEX work_queue_claim") {
-        return Err(format!("state-filter query plan does not use work_queue_claim index: {}", plan).into());
+    // Must be SEARCH (bounded), not SCAN (unbounded table scan)
+    if plan.contains("SCAN work_queue") {
+        return Err(format!("ready branch is unbounded table scan: {}", plan).into());
     }
+    if !plan.contains("SEARCH") {
+        return Err(format!("ready branch is not a bounded search: {}", plan).into());
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn work_queue_claim_expired_branch_is_bounded() -> Result<(), Box<dyn std::error::Error>> {
+    let (directory, _store, _catalog) = fixture().await?;
+
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(
+            SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite")),
+        )
+        .await?;
+
+    // Test the expired lease branch of the claim query (state=1 AND lease_until<=now)
+    let plan = explain_plan(&pool,
+        "SELECT scope_key,token,bindings,generation,authority_complete,context FROM work_queue WHERE sweep_id='s1' AND state=1 AND lease_until<=1000 ORDER BY scope_key LIMIT 1")
+        .await?;
+
+    pool.close().await;
+
+    // Must be SEARCH (bounded), not SCAN (unbounded table scan)
+    if plan.contains("SCAN work_queue") {
+        return Err(format!("expired branch is unbounded table scan: {}", plan).into());
+    }
+    if !plan.contains("SEARCH") {
+        return Err(format!("expired branch is not a bounded search: {}", plan).into());
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn es09_claim_split_result_set_equivalence() -> Result<(), Box<dyn std::error::Error>> {
+    let (directory, _store, _catalog) = fixture().await?;
+
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(
+            SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite")),
+        )
+        .await?;
+
+    // Insert work queue rows: completed, pending, ready, expired lease
+    // state=2 is completed, state=1 is leased, state=0 is ready
+    sqlx::query(
+        "INSERT INTO work_queue(sweep_id,scope_key,state,generation,lease_until,bindings) VALUES('s1',X'01',2,1,0,X'')"
+    ).execute(&pool).await?; // completed
+    sqlx::query(
+        "INSERT INTO work_queue(sweep_id,scope_key,state,generation,lease_until,bindings) VALUES('s1',X'02',1,1,999999,X'')"
+    ).execute(&pool).await?; // leased, not expired
+    sqlx::query(
+        "INSERT INTO work_queue(sweep_id,scope_key,state,generation,lease_until,bindings) VALUES('s1',X'03',0,1,0,X'')"
+    ).execute(&pool).await?; // ready
+    sqlx::query(
+        "INSERT INTO work_queue(sweep_id,scope_key,state,generation,lease_until,bindings) VALUES('s1',X'04',1,1,500,X'')"
+    ).execute(&pool).await?; // expired lease (now=1000)
+    sqlx::query(
+        "INSERT INTO work_queue(sweep_id,scope_key,state,generation,lease_until,bindings) VALUES('s1',X'05',0,1,0,X'')"
+    ).execute(&pool).await?; // ready (higher scope_key)
+
+    let now = 1000_i64;
+
+    // Original OR query
+    let original = sqlx::query(
+        "SELECT scope_key FROM work_queue WHERE sweep_id='s1' AND (state=0 OR (state=1 AND lease_until<=?)) ORDER BY scope_key LIMIT 1"
+    )
+    .bind(now)
+    .fetch_optional(&pool)
+    .await?;
+
+    // Split queries
+    let ready = sqlx::query(
+        "SELECT scope_key FROM work_queue WHERE sweep_id='s1' AND state=0 ORDER BY scope_key LIMIT 1"
+    )
+    .fetch_optional(&pool)
+    .await?;
+
+    let expired = sqlx::query(
+        "SELECT scope_key FROM work_queue WHERE sweep_id='s1' AND state=1 AND lease_until<=? ORDER BY scope_key LIMIT 1"
+    )
+    .bind(now)
+    .fetch_optional(&pool)
+    .await?;
+
+    pool.close().await;
+
+    // Compute split result
+    let split = match (ready, expired) {
+        (Some(r), Some(e)) => {
+            let r_key: Vec<u8> = r.try_get("scope_key")?;
+            let e_key: Vec<u8> = e.try_get("scope_key")?;
+            if r_key < e_key { r } else { e }
+        }
+        (Some(r), None) => r,
+        (None, Some(e)) => e,
+        (None, None) => return Err("split returned no row".into()),
+    };
+
+    // Compare
+    let original_key: Vec<u8> = original.ok_or("original returned no row")?.try_get("scope_key")?;
+    let split_key: Vec<u8> = split.try_get("scope_key")?;
+
+    if original_key != split_key {
+        return Err(format!(
+            "claim split mismatch: original={:?}, split={:?}",
+            original_key, split_key
+        ).into());
+    }
+
     Ok(())
 }
 

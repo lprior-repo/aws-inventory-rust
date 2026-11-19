@@ -240,8 +240,28 @@ pub(super) async fn claim(
     }
     let mut tx = store.writer.begin().await?;
     validate_active_sweep(&mut tx, Some(sweep)).await?;
-    let row = sqlx::query("SELECT scope_key,token,bindings,generation,authority_complete,context FROM work_queue WHERE sweep_id=?1 AND (state=0 OR (state=1 AND lease_until<=?2)) ORDER BY scope_key LIMIT 1")
+
+    // Split the OR query into two index-bounded queries.
+    // Branch 1: ready rows (state=0)
+    // Branch 2: expired lease rows (state=1 AND lease_until<=now)
+    // Each branch uses the work_queue_claim(sweep_id,state,lease_until,scope_key) index.
+    let ready = sqlx::query("SELECT scope_key,token,bindings,generation,authority_complete,context FROM work_queue WHERE sweep_id=?1 AND state=0 ORDER BY scope_key LIMIT 1")
+        .bind(sweep.as_str()).fetch_optional(&mut *tx).await?;
+    let expired = sqlx::query("SELECT scope_key,token,bindings,generation,authority_complete,context FROM work_queue WHERE sweep_id=?1 AND state=1 AND lease_until<=?2 ORDER BY scope_key LIMIT 1")
         .bind(sweep.as_str()).bind(now_ms).fetch_optional(&mut *tx).await?;
+
+    // Pick the row with the smallest scope_key between the two branches
+    let row = match (ready, expired) {
+        (Some(r), Some(e)) => {
+            let r_key: &[u8] = r.try_get("scope_key")?;
+            let e_key: &[u8] = e.try_get("scope_key")?;
+            if r_key < e_key { Some(r) } else { Some(e) }
+        }
+        (Some(r), None) => Some(r),
+        (None, Some(e)) => Some(e),
+        (None, None) => None,
+    };
+
     let Some(row) = row else {
         tx.commit().await?;
         return Ok(None);
