@@ -21,6 +21,8 @@ mod cfn_3;
 mod cfn_4;
 #[path = "family_d_f/final_additions.rs"]
 mod final_additions;
+#[path = "family_d_f/final_additions_dms.rs"]
+mod final_additions_dms;
 #[path = "family_d_f/operations_0.rs"]
 mod operations_0;
 #[path = "family_d_f/operations_1.rs"]
@@ -45,6 +47,12 @@ mod relations_1;
 pub(super) const SOURCES: &[MappingSource<'static>] = &[
     complete_additions::SOURCE,
     final_additions::SOURCE,
+    MappingSource {
+        cfn: final_additions_dms::CFN,
+        api_only: final_additions_dms::API_ONLY,
+        operations: final_additions_dms::OPERATIONS,
+        ..super::EMPTY
+    },
     MappingSource {
         cfn: cfn_0::ENTRIES,
         ..super::EMPTY
