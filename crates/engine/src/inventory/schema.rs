@@ -123,6 +123,12 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
             .await?;
     }
     sqlx::query("INSERT INTO metadata(key,value) VALUES('canonical_facet_dependencies_v3',X'01') ON CONFLICT(key) DO UPDATE SET value=excluded.value").execute(&mut *tx).await?;
+    for statement in [
+        "CREATE INDEX IF NOT EXISTS work_queue_claim ON work_queue(sweep_id,state,lease_until,scope_key)",
+        "CREATE INDEX IF NOT EXISTS unresolved_refs_target ON unresolved_refs(target_scope,target_kind)",
+    ] {
+        sqlx::query(statement).execute(&mut *tx).await?;
+    }
     tx.commit().await?;
     Ok(())
 }
@@ -130,6 +136,10 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
 async fn create_shared_tables(
     tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
 ) -> Result<(), StoreError> {
+    let indexes = [
+        "CREATE INDEX IF NOT EXISTS work_queue_claim ON work_queue(sweep_id,state,lease_until,scope_key)",
+        "CREATE INDEX IF NOT EXISTS unresolved_refs_target ON unresolved_refs(target_scope,target_kind)",
+    ];
     for statement in [
         "CREATE TABLE metadata(key TEXT PRIMARY KEY,value BLOB NOT NULL) WITHOUT ROWID",
         "CREATE TABLE kinds(kind TEXT PRIMARY KEY,table_name TEXT NOT NULL UNIQUE) WITHOUT ROWID",
@@ -149,6 +159,9 @@ async fn create_shared_tables(
         "CREATE TABLE projection_outbox(resource_key BLOB PRIMARY KEY,revision INTEGER NOT NULL,deleted INTEGER NOT NULL,full_rebuild INTEGER NOT NULL DEFAULT 0) WITHOUT ROWID",
         "CREATE TABLE learned_rates(service TEXT NOT NULL,operation TEXT NOT NULL,rate REAL NOT NULL,sample_count INTEGER NOT NULL,updated_at INTEGER NOT NULL,PRIMARY KEY(service,operation)) WITHOUT ROWID",
     ] {
+        sqlx::query(statement).execute(&mut **tx).await?;
+    }
+    for statement in indexes {
         sqlx::query(statement).execute(&mut **tx).await?;
     }
     Ok(())
