@@ -139,6 +139,7 @@ async fn create_shared_tables(
     let indexes = [
         "CREATE INDEX IF NOT EXISTS work_queue_claim ON work_queue(sweep_id,state,lease_until,scope_key)",
         "CREATE INDEX IF NOT EXISTS unresolved_refs_target ON unresolved_refs(target_scope,target_kind)",
+        "CREATE INDEX IF NOT EXISTS resource_scopes_key ON resource_scopes(scope_key)",
     ];
     for statement in [
         "CREATE TABLE metadata(key TEXT PRIMARY KEY,value BLOB NOT NULL) WITHOUT ROWID",
