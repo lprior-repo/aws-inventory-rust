@@ -1,15 +1,15 @@
 # enumerate and expand are candidates; callable only with a reviewed service overlay (VISION 5.1).
-operations 19641
+operations 19636
 enumerate 2197
-expand 2940
-denied 11370
+expand 2939
+denied 11366
 unclassified 3134
 denied content 65
 denied secret 22
 denied paid 4
-denied mutating 11277
+denied mutating 11273
 denied reference-data 2
-no_read_verb 11275
+no_read_verb 11271
 readonly_denied 68
 readonly_unclassified 1170
 must_deny_entries 85
@@ -197,7 +197,7 @@ service greengrassv2 3 6 14 6
 service groundstation 5 9 19 7
 service guardduty 8 15 56 24
 service health 7 6 2 0
-service healthlake 2 10 18 1
+service healthlake 2 9 14 1
 service iam 17 19 113 31
 service iam-toolbox 0 0 0 1
 service identitystore 1 8 10 3

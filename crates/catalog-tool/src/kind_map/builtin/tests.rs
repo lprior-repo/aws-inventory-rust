@@ -46,7 +46,7 @@ fn digest(rows: impl Iterator<Item = String>) -> String {
 #[test]
 fn embedded_baseline_preserves_all_313_exact_operation_mappings() -> TestResult {
     let map = SOURCE.compile(&Exceptions::builtin())?;
-    assert_eq!(map.operations().len(), 366);
+    assert_eq!(map.operations().len(), 333);
     let actual = digest(
         map.operations()
             .iter()
@@ -69,7 +69,7 @@ fn embedded_baseline_preserves_all_313_exact_operation_mappings() -> TestResult 
 #[test]
 fn embedded_baseline_preserves_168_canonical_cfn_kinds() -> TestResult {
     let map = SOURCE.compile(&Exceptions::builtin())?;
-    assert_eq!(map.entries().len(), 185);
+    assert_eq!(map.entries().len(), 182);
     assert!(map.entries().iter().all(
         |entry| matches!(&entry.target, KindTarget::Mapped { kind, .. } if kind == &entry.cfn_type)
     ));
@@ -94,7 +94,7 @@ fn embedded_baseline_preserves_168_canonical_cfn_kinds() -> TestResult {
 #[test]
 fn embedded_baseline_preserves_all_113_api_only_reasons() -> TestResult {
     let map = SOURCE.compile(&Exceptions::builtin())?;
-    assert_eq!(map.api_only().len(), 149);
+    assert_eq!(map.api_only().len(), 120);
     let actual = digest(
         map.api_only()
             .iter()

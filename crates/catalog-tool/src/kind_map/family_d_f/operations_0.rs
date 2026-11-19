@@ -13,6 +13,11 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
     },
     OperationMapping {
         service: "database-migration-service",
+        operation: "DescribeEndpoints",
+        kind: "AWS::DMS::Endpoint",
+    },
+    OperationMapping {
+        service: "database-migration-service",
         operation: "DescribeInstanceProfiles",
         kind: "AWS::DMS::InstanceProfile",
     },

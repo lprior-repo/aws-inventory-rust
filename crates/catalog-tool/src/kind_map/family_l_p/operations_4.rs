@@ -37,6 +37,11 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
         kind: "AWS::MediaPackage::OriginEndpoint",
     },
     OperationMapping {
+        service: "mediapackage",
+        operation: "ListVodAssets",
+        kind: "AWS::ApiOnly::MediaPackageVodAsset",
+    },
+    OperationMapping {
         service: "mediapackagev2",
         operation: "ListChannelGroups",
         kind: "AWS::MediaPackageV2::ChannelGroup",

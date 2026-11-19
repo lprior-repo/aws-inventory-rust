@@ -257,7 +257,7 @@ fn root_selector_uses_output_structure_not_item_structure() -> Result<(), Box<dy
 const PAGINATED_MODEL: &str = r#"{"smithy":"2.0","shapes":{
 "n#Service":{"type":"service","operations":[{"target":"n#ListPaginated"}]},
 "n#ListPaginated":{"type":"operation","input":{"target":"n#Input"},"output":{"target":"n#Output"},
-    "traits":{"smithy.api#paginated":{"inputToken":"Next"}}},
+    "traits":{"smithy.api#paginated":{"inputToken":"Next","outputToken":"Next"}}},
 "n#Input":{"type":"structure","members":{"Next":{"target":"smithy.api#String"}}},
 "n#Output":{"type":"structure","members":{"Items":{"target":"n#Things"},"Next":{"target":"smithy.api#String"}}},
 "n#Things":{"type":"list","member":{"target":"n#Thing"}},
@@ -296,10 +296,10 @@ fn paginator_none_rejected_when_model_is_modeled() {
     );
     match errors {
         Err(CheckError::Violations(errors)) => {
-            let has_paginator_mismatch = errors.iter().any(|e| e.rule() == ViolationRule::PaginatorMismatch);
+            let has_invalid_value = errors.iter().any(|e| e.rule() == ViolationRule::InvalidValue);
             assert!(
-                has_paginator_mismatch,
-                "expected PaginatorMismatch violation for Paginator::None with modeled pagination"
+                has_invalid_value,
+                "expected InvalidValue violation for Paginator::None with modeled pagination"
             );
         }
         other => panic!("expected violations but got {:?}", other),

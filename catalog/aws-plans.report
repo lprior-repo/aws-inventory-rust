@@ -1,20 +1,20 @@
 # derivations from the pinned models; nothing here makes an operation callable (VISION 5.1).
-operations 19641
+operations 19636
 enumerate 2197
-expand 2940
-denied 11370
+expand 2939
+denied 11366
 unclassified 3134
 expand_modeled 337
 expand_modeled_with_list_source 313
-expand_needs_overlay 2603
-expand_needs_overlay_not_in_resource 2466
+expand_needs_overlay 2602
+expand_needs_overlay_not_in_resource 2465
 expand_needs_overlay_required_member_not_identifier 137
 ambiguous_resource 0
-list_describe 5207
+list_describe 5206
 list_describe_denied 70
 list_describe_paginated 3361
-list_describe_without_paginator 1846
-unpaginated 1406
+list_describe_without_paginator 1845
+unpaginated 1405
 pagination_needs_overlay 440
 pagination_needs_overlay_token_both_sides 352
 pagination_needs_overlay_token_input_only 25
@@ -217,7 +217,7 @@ service greengrassv2 3 6 0 6 7 2 0
 service groundstation 5 9 4 5 10 4 0
 service guardduty 8 15 0 15 20 2 1
 service health 7 6 0 6 8 5 0
-service healthlake 2 10 1 9 6 6 0
+service healthlake 2 9 1 8 6 5 0
 service iam 17 19 0 19 30 3 3
 service iam-toolbox 0 0 0 0 0 0 0
 service identitystore 1 8 1 7 5 4 0
