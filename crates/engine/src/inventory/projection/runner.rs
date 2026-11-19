@@ -1,3 +1,5 @@
+#[path = "runner/identity.rs"]
+mod identity;
 #[path = "runner/ownership.rs"]
 mod ownership;
 #[path = "runner/rebuild.rs"]
@@ -91,7 +93,7 @@ async fn run_owned_projection(
 ) -> Result<ProjectionReport, ProjectionError> {
     let state = store.projection_state().await?;
     if state.pending == 0 {
-        return Ok(report(state.pending, 0, false, false));
+        return target_identity_check(store, endpoint, graph, state.pending).await;
     }
     let mut client = match GraphClient::connect(endpoint, graph, generation).await {
         Ok(client) => client,
@@ -100,7 +102,38 @@ async fn run_owned_projection(
     if let Err(error) = client.ensure_index().await {
         return failed_delivery(store, error, 0).await;
     }
-    deliver_batch(store, &mut client, batch_limit).await
+    let report = deliver_batch(store, &mut client, batch_limit).await?;
+    if report.acknowledged > 0 {
+        identity::write_identity(
+            store,
+            &identity::ProjectionIdentity {
+                endpoint: endpoint.to_owned(),
+                graph: graph.to_owned(),
+            },
+        )
+        .await?;
+    }
+    Ok(report)
+}
+
+/// When the outbox is empty, verify the target graph identity is still correct.
+/// If the graph endpoint or name changed since the last delivery, the graph is
+/// stale and a rebuild is required. This prevents silently claiming synchronization
+/// when the target was lost or recreated.
+async fn target_identity_check(
+    store: &BinaryStore,
+    endpoint: &str,
+    graph: &str,
+    pending: u64,
+) -> Result<ProjectionReport, ProjectionError> {
+    let stored = identity::read_identity(store).await?;
+    match stored {
+        Some(identity) if identity.differs(endpoint, graph) => {
+            identity::mark_rebuild_required(store).await?;
+            Ok(report(pending, 0, false, true))
+        }
+        _ => Ok(report(pending, 0, false, false)),
+    }
 }
 
 async fn deliver_batch(
@@ -242,6 +275,35 @@ mod tests {
         assert!(offline.offline);
         assert_eq!(partial.pending, 2);
         assert!(partial.rebuild_incomplete);
+    }
+
+    #[test]
+    fn identity_differs_on_endpoint_change() {
+        use super::identity::ProjectionIdentity;
+        let stored = ProjectionIdentity {
+            endpoint: "redis://localhost:6379".to_owned(),
+            graph: "inventory".to_owned(),
+        };
+        assert!(!stored.differs("redis://localhost:6379", "inventory"));
+        assert!(stored.differs("redis://localhost:7000", "inventory"));
+    }
+
+    #[test]
+    fn identity_differs_on_graph_name_change() {
+        use super::identity::ProjectionIdentity;
+        let stored = ProjectionIdentity {
+            endpoint: "redis://localhost:6379".to_owned(),
+            graph: "inventory".to_owned(),
+        };
+        assert!(stored.differs("redis://localhost:6379", "other_graph"));
+    }
+
+    #[test]
+    fn stale_graph_identity_requires_rebuild() {
+        let stale = report(0, 0, false, true);
+        assert!(stale.rebuild_incomplete);
+        assert_eq!(stale.pending, 0);
+        assert_eq!(stale.acknowledged, 0);
     }
     #[test]
     fn response_errors_are_fatal_but_transport_errors_are_offline() {
