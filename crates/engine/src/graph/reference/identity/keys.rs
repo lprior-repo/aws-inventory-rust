@@ -104,11 +104,7 @@ pub(super) fn arn_service_type(value: &str) -> Option<(&str, &str)> {
         return None;
     }
     // Resource type is the part before the first '/' or ':'
-    let resource_type = resource
-        .split('/')
-        .next()?
-        .split(':')
-        .next()?;
+    let resource_type = resource.split('/').next()?.split(':').next()?;
     if resource_type.is_empty() {
         return None;
     }
@@ -131,7 +127,9 @@ pub(super) fn resource_service_type(resource: &Resource) -> (Option<String>, Opt
         .properties
         .get("resource_identifier")
         .and_then(Value::as_str);
-    if let Some(rid) = identifier && is_arn(rid) {
+    if let Some(rid) = identifier
+        && is_arn(rid)
+    {
         return match arn_service_type(rid) {
             Some((s, t)) => (Some(s.to_owned()), Some(t.to_owned())),
             None => (None, None),

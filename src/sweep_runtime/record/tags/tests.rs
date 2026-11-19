@@ -91,6 +91,8 @@ fn given_mixed_valid_and_invalid_tags_when_normalized_then_valid_tags_are_preser
     let first = obs.tags().first().ok_or("expected one tag")?;
     assert_eq!(first.key(), "env");
     assert_eq!(first.value(), "prod");
+    // One tag was skipped, so coverage should be Partial.
+    assert_eq!(obs.coverage(), TagCoverage::Partial);
     Ok(())
 }
 
@@ -109,9 +111,10 @@ fn given_exactly_100_valid_tags_when_observed_then_complete() -> TestResult {
 #[test]
 fn given_60_invalid_and_90_valid_tags_when_observed_then_partial() -> TestResult {
     let mut tags: Vec<Value> = Vec::new();
-    // 60 invalid tags (too-long keys)
+    // 60 invalid tags (129-char keys, exceeding 128 limit)
     for i in 0..60 {
-        tags.push(pair(&format!("key-{i}"), "value")?);
+        let key = "é".repeat(129);
+        tags.push(pair(&key, "value")?);
     }
     // 90 valid tags
     for i in 0..90 {
@@ -187,16 +190,17 @@ fn given_missing_and_explicit_empty_tags_when_normalized_then_coverage_is_not_co
 }
 
 #[test]
-fn given_duplicate_or_malformed_snapshot_when_normalized_then_no_complete_snapshot_is_returned()
+fn given_duplicate_or_malformed_snapshot_when_normalized_then_partial_coverage()
 -> TestResult {
+    // Duplicate keys are skipped, and coverage becomes Partial.
     let duplicates = record(Some(Value::List(vec![
         pair("same", "a")?,
         pair("same", "b")?,
     ])))?;
-    assert!(matches!(
-        tag_observation(&duplicates, &resource()?, &list_plan()?),
-        Err(SweepError::Inventory(InventoryError::DuplicateTag))
-    ));
+    let dup_obs = tag_observation(&duplicates, &resource()?, &list_plan()?)?;
+    assert_eq!(dup_obs.tags().len(), 1);
+    assert_eq!(dup_obs.coverage(), TagCoverage::Partial);
+    // Malformed values still fail the entire observation.
     let malformed = record(Some(Value::List(vec![
         pair("good", "a")?,
         Value::Text("bad".into()),

@@ -7,8 +7,6 @@ use keys::{
     resource_service_type,
 };
 
-
-
 struct Target {
     id: String,
     account_id: String,
@@ -131,7 +129,14 @@ impl IdentityIndex {
             None => return Lookup::Unresolved,
         };
         if let Some(positions) = self.identifiers.get(value) {
-            match self.unique_target(positions, account_id, region, &service, &resource_type, source) {
+            match self.unique_target(
+                positions,
+                account_id,
+                region,
+                &service,
+                &resource_type,
+                source,
+            ) {
                 Lookup::Unresolved => {}
                 resolved => return resolved,
             }
@@ -140,9 +145,14 @@ impl IdentityIndex {
             return Lookup::Unresolved;
         }
         match self.identifiers.get(component) {
-            Some(positions) => {
-                self.unique_target(positions, account_id, region, &service, &resource_type, source)
-            }
+            Some(positions) => self.unique_target(
+                positions,
+                account_id,
+                region,
+                &service,
+                &resource_type,
+                source,
+            ),
             None => Lookup::Unresolved,
         }
     }
@@ -164,7 +174,8 @@ impl IdentityIndex {
         resource_type: &Option<String>,
         source: &Resource,
     ) -> Lookup<'a> {
-        let (count, only) = self.scoped_targets(positions, account_id, region, service, resource_type);
+        let (count, only) =
+            self.scoped_targets(positions, account_id, region, service, resource_type);
         match (count, only) {
             (0, _) => Lookup::Unresolved,
             (1, Some(target)) if target.id == source.id => Lookup::Ignored,

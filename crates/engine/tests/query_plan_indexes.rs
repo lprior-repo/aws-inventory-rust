@@ -2,7 +2,7 @@
 mod support;
 
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
-use sqlx::{Row, AssertSqlSafe};
+use sqlx::{AssertSqlSafe, Row};
 use support::*;
 
 #[tokio::test]
@@ -44,7 +44,11 @@ async fn work_queue_claim_ready_branch_uses_index() -> Result<(), Box<dyn std::e
         return Err(format!("ready branch does not use work_queue_ready index: {}", plan).into());
     }
     if !plan.contains("sweep_id=? AND state=?") {
-        return Err(format!("ready branch does not filter on sweep_id and state: {}", plan).into());
+        return Err(format!(
+            "ready branch does not filter on sweep_id and state: {}",
+            plan
+        )
+        .into());
     }
     Ok(())
 }
@@ -80,7 +84,11 @@ async fn work_queue_claim_expired_branch_is_bounded() -> Result<(), Box<dyn std:
         return Err(format!("expired branch does not use work_queue_ready: {}", plan).into());
     }
     if !plan.contains("sweep_id=? AND state=?") {
-        return Err(format!("expired branch does not filter on sweep_id and state: {}", plan).into());
+        return Err(format!(
+            "expired branch does not filter on sweep_id and state: {}",
+            plan
+        )
+        .into());
     }
     Ok(())
 }
@@ -153,14 +161,17 @@ async fn es09_claim_split_result_set_equivalence() -> Result<(), Box<dyn std::er
     };
 
     // Compare
-    let original_key: Vec<u8> = original.ok_or("original returned no row")?.try_get("scope_key")?;
+    let original_key: Vec<u8> = original
+        .ok_or("original returned no row")?
+        .try_get("scope_key")?;
     let split_key: Vec<u8> = split.try_get("scope_key")?;
 
     if original_key != split_key {
         return Err(format!(
             "claim split mismatch: original={:?}, split={:?}",
             original_key, split_key
-        ).into());
+        )
+        .into());
     }
 
     Ok(())
@@ -217,14 +228,16 @@ async fn es09_claim_skips_completed_rows() -> Result<(), Box<dyn std::error::Err
         return Err(format!(
             "claim returned wrong row: expected [0xFF], got {:?}",
             ready_key
-        ).into());
+        )
+        .into());
     }
 
     Ok(())
 }
 
 #[tokio::test]
-async fn resource_scopes_completeness_uses_scope_key_index() -> Result<(), Box<dyn std::error::Error>> {
+async fn resource_scopes_completeness_uses_scope_key_index()
+-> Result<(), Box<dyn std::error::Error>> {
     let (directory, _store, _catalog) = fixture().await?;
 
     let pool = SqlitePoolOptions::new()
@@ -251,7 +264,11 @@ async fn resource_scopes_completeness_uses_scope_key_index() -> Result<(), Box<d
     pool.close().await;
 
     if !plan.contains("INDEX resource_scopes_key") {
-        return Err(format!("resource_scopes scope_key query plan does not use index: {}", plan).into());
+        return Err(format!(
+            "resource_scopes scope_key query plan does not use index: {}",
+            plan
+        )
+        .into());
     }
     Ok(())
 }
@@ -284,7 +301,11 @@ async fn unresolved_refs_exact_kind_uses_target_index() -> Result<(), Box<dyn st
     pool.close().await;
 
     if !plan.contains("INDEX unresolved_refs_target") {
-        return Err(format!("exact kind query plan does not use unresolved_refs_target index: {}", plan).into());
+        return Err(format!(
+            "exact kind query plan does not use unresolved_refs_target index: {}",
+            plan
+        )
+        .into());
     }
     Ok(())
 }
@@ -307,7 +328,11 @@ async fn unresolved_refs_blob_kind_uses_target_index() -> Result<(), Box<dyn std
     pool.close().await;
 
     if !plan.contains("INDEX unresolved_refs_target") {
-        return Err(format!("blob kind query plan does not use unresolved_refs_target index: {}", plan).into());
+        return Err(format!(
+            "blob kind query plan does not use unresolved_refs_target index: {}",
+            plan
+        )
+        .into());
     }
     Ok(())
 }
@@ -390,22 +415,29 @@ async fn es10_split_query_result_set_equivalence() -> Result<(), Box<dyn std::er
             "row count mismatch: original={}, split={}",
             original_rows.len(),
             exact_rows.len() + blob_rows.len()
-        ).into());
+        )
+        .into());
     }
 
     let mut original_ids = Vec::new();
     for row in &original_rows {
-        let id: String = row.try_get("from_id").map_err(|e: sqlx::Error| format!("try_get failed: {}", e))?;
+        let id: String = row
+            .try_get("from_id")
+            .map_err(|e: sqlx::Error| format!("try_get failed: {}", e))?;
         original_ids.push(id);
     }
 
     let mut split_ids = Vec::new();
     for row in &exact_rows {
-        let id: String = row.try_get("from_id").map_err(|e: sqlx::Error| format!("try_get failed: {}", e))?;
+        let id: String = row
+            .try_get("from_id")
+            .map_err(|e: sqlx::Error| format!("try_get failed: {}", e))?;
         split_ids.push(id);
     }
     for row in &blob_rows {
-        let id: String = row.try_get("from_id").map_err(|e: sqlx::Error| format!("try_get failed: {}", e))?;
+        let id: String = row
+            .try_get("from_id")
+            .map_err(|e: sqlx::Error| format!("try_get failed: {}", e))?;
         split_ids.push(id);
     }
 
@@ -413,20 +445,26 @@ async fn es10_split_query_result_set_equivalence() -> Result<(), Box<dyn std::er
         return Err(format!(
             "row content mismatch: original={:?}, split={:?}",
             original_ids, split_ids
-        ).into());
+        )
+        .into());
     }
 
     Ok(())
 }
 
-async fn explain_plan(pool: &sqlx::SqlitePool, query: &str) -> Result<String, Box<dyn std::error::Error>> {
+async fn explain_plan(
+    pool: &sqlx::SqlitePool,
+    query: &str,
+) -> Result<String, Box<dyn std::error::Error>> {
     let plan_rows = sqlx::query(AssertSqlSafe(format!("EXPLAIN QUERY PLAN {}", query)))
         .fetch_all(pool)
         .await?;
 
     let mut plan = String::new();
     for row in &plan_rows {
-        let detail: String = row.try_get("detail").map_err(|e: sqlx::Error| format!("try_get detail failed: {}", e))?;
+        let detail: String = row
+            .try_get("detail")
+            .map_err(|e: sqlx::Error| format!("try_get detail failed: {}", e))?;
         if !plan.is_empty() {
             plan.push('\n');
         }
@@ -457,12 +495,17 @@ async fn seed_work_queue(pool: &sqlx::SqlitePool) -> Result<(), Box<dyn std::err
     Ok(())
 }
 
-fn reference_scope_bytes(account: &str, region: &str) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+fn reference_scope_bytes(
+    account: &str,
+    region: &str,
+) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let mut bytes = Vec::new();
-    let account_len = u32::try_from(account.len()).map_err(|e| format!("account len conversion failed: {}", e))?;
+    let account_len = u32::try_from(account.len())
+        .map_err(|e| format!("account len conversion failed: {}", e))?;
     bytes.extend_from_slice(&account_len.to_be_bytes());
     bytes.extend_from_slice(account.as_bytes());
-    let region_len = u32::try_from(region.len()).map_err(|e| format!("region len conversion failed: {}", e))?;
+    let region_len =
+        u32::try_from(region.len()).map_err(|e| format!("region len conversion failed: {}", e))?;
     bytes.extend_from_slice(&region_len.to_be_bytes());
     bytes.extend_from_slice(region.as_bytes());
     Ok(bytes)

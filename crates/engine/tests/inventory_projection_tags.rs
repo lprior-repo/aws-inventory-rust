@@ -144,29 +144,26 @@ async fn given_a_tag_snapshot_when_page_limit_is_invalid_then_reads_fail_explici
 }
 
 #[tokio::test]
-async fn given_oversized_legacy_tags_when_projected_then_the_read_fails_without_unbounded_values()
--> TestResult {
-    let (_directory, store, pool) = tagged_fixture().await?;
+async fn given_oversized_legacy_tags_when_projected_then_excluded_without_error() -> TestResult {
+    let (directory, store, pool) = tagged_fixture().await?;
     let root = resource("shared-id")?;
     sqlx::query("UPDATE tags SET tag_value=?1 WHERE account=?2 AND region=?3 AND kind=?4 AND id=?5 AND tag_key='a'")
         .bind("x".repeat(inventory_core::inventory::MAX_TAG_VALUE_CHARS + 1))
         .bind(root.account.as_str()).bind(root.region.as_str()).bind(root.kind.as_str())
         .bind(root.id.as_str()).execute(&pool).await?;
     let mut snapshot = store.begin_projection_snapshot().await?;
-    assert!(matches!(
-        snapshot.tags_for(&root, None, 1).await,
-        Err(StoreError::Invalid(
-            "persisted tag exceeds projection bounds"
-        ))
-    ));
+    // The oversized tag is excluded; remaining tags are still readable.
+    let page = snapshot.tags_for(&root, None, 10).await?;
+    assert_eq!(page.tags.len(), 1);
+    assert_eq!(page.tags[0].key, "b");
     snapshot.finish().await?;
     pool.close().await;
     Ok(())
 }
 
 #[tokio::test]
-async fn given_multibyte_tags_at_character_boundary_when_projected_then_read_succeeds()
--> TestResult {
+async fn given_multibyte_tags_at_character_boundary_when_projected_then_read_succeeds() -> TestResult
+{
     let (directory, store, pool) = tagged_fixture().await?;
     let root = resource("shared-id")?;
     // 128 Unicode characters, 256 UTF-8 bytes. Well within the character limit.
@@ -199,6 +196,36 @@ async fn given_multibyte_tags_at_character_boundary_when_projected_then_read_suc
     assert_eq!(multibyte.key, key);
     assert_eq!(multibyte.value, value);
     assert_eq!(page.tags.len(), 3);
+    snapshot.finish().await?;
+    pool.close().await;
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_oversized_tag_key_when_projected_then_excluded() -> TestResult {
+    let (directory, store, pool) = tagged_fixture().await?;
+    let root = resource("shared-id")?;
+    // Key with 129 characters exceeds the 128 limit.
+    let long_key = "é".repeat(129);
+    let value = "value";
+    sqlx::query(
+        "INSERT INTO tags(account,region,kind,id,tag_key,tag_value) VALUES(?1,?2,?3,?4,?5,?6)",
+    )
+    .bind(root.account.as_str())
+    .bind(root.region.as_str())
+    .bind(root.kind.as_str())
+    .bind(root.id.as_str())
+    .bind(&long_key)
+    .bind(value)
+    .execute(&pool)
+    .await?;
+    let mut snapshot = store.begin_projection_snapshot().await?;
+    let page = snapshot.tags_for(&root, None, 10).await?;
+    // The oversized key should be excluded; only the 2 fixture tags remain.
+    assert_eq!(page.tags.len(), 2);
+    for tag in page.tags.iter() {
+        assert_eq!(tag.key.chars().count(), 1);
+    }
     snapshot.finish().await?;
     pool.close().await;
     Ok(())

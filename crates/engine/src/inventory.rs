@@ -16,7 +16,7 @@ mod validation;
 mod work;
 use inventory_core::catalog::runtime::RuntimeCatalog;
 use inventory_core::inventory::{
-    Edge, KindSchema, Observation, ScopeKey, ScopeOutcome, UnresolvedReference,
+    AccountId, Edge, KindSchema, Observation, ScopeKey, ScopeOutcome, UnresolvedReference,
 };
 pub use inventory_core::inventory::{Tag, TagCoverage, TagObservation};
 pub use projection::{ProjectionError, ProjectionReport, run_projection};
@@ -72,6 +72,11 @@ pub enum StoreError {
     MultipleActiveSweeps,
     #[error("sweep has live leases; cannot resume until leases expire")]
     LiveLease,
+    #[error("sweep manifest account mismatch")]
+    AccountMismatch(
+        inventory_core::inventory::AccountId,
+        Option<inventory_core::inventory::AccountId>,
+    ),
 }
 
 #[derive(Clone, Debug)]
@@ -300,8 +305,12 @@ impl BinaryStore {
         Ok(())
     }
 
-    pub async fn resume_sweep(&self) -> Result<Option<SweepId>, StoreError> {
-        work::resume_sweep(self).await
+    pub async fn resume_sweep(
+        &self,
+        sweep: &SweepId,
+        account: &AccountId,
+    ) -> Result<(), StoreError> {
+        work::resume_sweep(self, sweep, account).await
     }
     pub async fn discover_active_sweep(&self) -> Result<Option<SweepId>, StoreError> {
         work::discover_active_sweep(self).await

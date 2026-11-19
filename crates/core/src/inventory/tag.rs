@@ -16,7 +16,10 @@ pub struct Tag {
 impl Tag {
     pub fn new(key: impl Into<String>, value: impl Into<String>) -> Result<Self, InventoryError> {
         let key: String = key.into();
-        if key.is_empty() || key.chars().count() > MAX_TAG_KEY_CHARS || key.chars().any(char::is_control) {
+        if key.is_empty()
+            || key.chars().count() > MAX_TAG_KEY_CHARS
+            || key.chars().any(char::is_control)
+        {
             return Err(InventoryError::TagKey);
         }
         let value: String = value.into();

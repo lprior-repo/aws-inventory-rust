@@ -31,7 +31,7 @@ pub enum InventoryError {
     ReferenceKinds,
     #[error("kind contains duplicate column paths")]
     DuplicateColumn,
-    #[error("kind exceeds SQLite's 2000-column bound")]
+    #[error("kind exceeds SQLite's 256-column bound")]
     Columns,
     #[error("table name uses SQLite's reserved prefix")]
     ReservedTable,

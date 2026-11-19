@@ -18,7 +18,13 @@ pub(super) async fn given_a_final_page_when_committed_then_complete_outcome_is_a
         .await?;
 
     assert_eq!(result.stats.resources_inserted, 1);
-    assert_eq!(store.resume_sweep().await?, None);
+    // No active sweep, so resume returns Ok(()) with no mutation.
+    let dummy = SweepId::new("dummy".to_owned())?;
+    let account = inventory_core::inventory::AccountId::parse("111111111111")?;
+    store
+        .create_sweep_manifest(&dummy, account.as_str())
+        .await?;
+    store.resume_sweep(&dummy, &account).await?;
     assert_eq!(
         store
             .projection_resource(&resource("thing-1")?)

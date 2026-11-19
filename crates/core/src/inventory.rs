@@ -22,7 +22,7 @@ pub use keys::{EpochMillis, ResourceKey, ResourceKeyHash, ScopeKey};
 pub use observation::{Edge, EdgeSource, Observation, ScopeOutcome};
 pub use query::{Filter, PageRequest, PageSize, ResourcePage};
 pub use reference::{ReferenceComponent, ReferenceTarget, UnresolvedReference};
-pub use schema::{Column, KindSchema, ScalarType};
+pub use schema::{Column, KindSchema, MAX_SQLITE_COLUMNS, ScalarType};
 pub use tag::{
     MAX_RESOURCE_TAGS, MAX_TAG_KEY_CHARS, MAX_TAG_VALUE_CHARS, Tag, TagCoverage, TagObservation,
 };

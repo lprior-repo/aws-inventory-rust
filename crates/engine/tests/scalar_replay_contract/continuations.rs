@@ -349,10 +349,12 @@ async fn given_equal_native_cursors_in_two_regions_when_reopened_resumed_and_reu
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     let pool = read_pool(&directory).await?;
     assert_eq!(stored_state(&pool).await?, before_restart);
-    assert_eq!(
-        store.resume_sweep().await?,
-        Some(SweepId::new("history".to_owned())?)
-    );
+    let sweep = SweepId::new("history".to_owned())?;
+    let account = inventory_core::inventory::AccountId::parse("111111111111")?;
+    store
+        .create_sweep_manifest(&sweep, account.as_str())
+        .await?;
+    store.resume_sweep(&sweep, &account).await?;
     finish_resumed_regions(&store, &pool, &east, &west).await?;
 
     // Then: the west completes normally and both scopes accept the digest in a later sweep.
@@ -363,7 +365,13 @@ async fn given_equal_native_cursors_in_two_regions_when_reopened_resumed_and_reu
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     let pool = read_pool(&directory).await?;
     assert_eq!(stored_state(&pool).await?, finished);
-    assert_eq!(store.resume_sweep().await?, None);
+    // No active sweep to resume.
+    store
+        .resume_sweep(
+            &SweepId::new("dummy".to_owned())?,
+            &inventory_core::inventory::AccountId::parse("111111111111")?,
+        )
+        .await?;
     pool.close().await;
     drop(store);
     directory.close()?;

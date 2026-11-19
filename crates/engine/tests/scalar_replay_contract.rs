@@ -451,10 +451,12 @@ async fn given_inflight_scalar_work_when_reopened_and_resumed_then_old_lease_can
 
     // When: restart fencing invalidates the old lease and a new worker commits a change.
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
-    assert_eq!(
-        store.resume_sweep().await?,
-        Some(SweepId::new("inflight".to_owned())?)
-    );
+    let sweep = SweepId::new("inflight".to_owned())?;
+    let account = inventory_core::inventory::AccountId::parse("111111111111")?;
+    store
+        .create_sweep_manifest(&sweep, account.as_str())
+        .await?;
+    store.resume_sweep(&sweep, &account).await?;
     let pool = read_pool(&directory).await?;
     let before = stored_state(&pool).await?;
     assert!(matches!(
@@ -609,10 +611,12 @@ async fn given_parent_scoped_scalar_work_when_resumed_then_fenced_replay_cannot_
 
     // When: resume the persisted parent-specific work and reject its pre-restart lease.
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
-    assert_eq!(
-        store.resume_sweep().await?,
-        Some(SweepId::new("child".to_owned())?)
-    );
+    let sweep = SweepId::new("child".to_owned())?;
+    let account = inventory_core::inventory::AccountId::parse("111111111111")?;
+    store
+        .create_sweep_manifest(&sweep, account.as_str())
+        .await?;
+    store.resume_sweep(&sweep, &account).await?;
     let pool = read_pool(&directory).await?;
     let before = stored_state(&pool).await?;
     assert!(matches!(

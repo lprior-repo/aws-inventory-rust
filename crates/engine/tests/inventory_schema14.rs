@@ -1,4 +1,4 @@
-use inventory_core::inventory::{Kind, KindSchema, ScalarType, SqlName};
+use inventory_core::inventory::{Kind, KindSchema, MAX_SQLITE_COLUMNS, ScalarType, SqlName};
 use inventory_core::record::FieldId;
 use inventory_engine::inventory::{BinaryStore, StoreError};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
@@ -46,7 +46,10 @@ fn given_schema_exceeding_sqlite_column_limit_when_validated_then_rejected_at_ad
     let table = SqlName::parse("test_oversized")?;
     let result = KindSchema::new(kind.clone(), table.clone(), columns);
     assert!(
-        matches!(result, Err(inventory_core::inventory::InventoryError::Columns)),
+        matches!(
+            result,
+            Err(inventory_core::inventory::InventoryError::Columns)
+        ),
         "schema with 256 projected columns (263 total) should exceed SQLite limit"
     );
     // 249 projected columns (256 total) is the maximum allowed.
@@ -59,10 +62,7 @@ fn given_schema_exceeding_sqlite_column_limit_when_validated_then_rejected_at_ad
         )?);
     }
     let result = KindSchema::new(kind.clone(), table.clone(), ok_columns);
-    assert!(
-        result.is_ok(),
-        "schema with 249 projected columns (256 total) should be accepted"
-    );
+    result?;
     // 250 projected columns (257 total) exceeds the limit.
     let mut over_columns = Vec::new();
     for i in 1..=250 {
@@ -74,27 +74,32 @@ fn given_schema_exceeding_sqlite_column_limit_when_validated_then_rejected_at_ad
     }
     let result = KindSchema::new(kind.clone(), table.clone(), over_columns);
     assert!(
-        matches!(result, Err(inventory_core::inventory::InventoryError::Columns)),
+        matches!(
+            result,
+            Err(inventory_core::inventory::InventoryError::Columns)
+        ),
         "schema with 250 projected columns (257 total) should exceed SQLite limit"
     );
     // Drift guard: ensure the constant in core matches the build config.
     // Parse manually to extract the value without regex dependency.
     let config = CARGO_CONFIG;
-    let start = config.find("SQLITE_MAX_COLUMN=").expect("SQLITE_MAX_COLUMN not found in config");
-    let value_start = start + 18; // len("SQLITE_MAX_COLUMN=")
-    let after = &config[value_start..];
-    let value_end = after
-        .find(|c: char| !c.is_ascii_digit())
-        .unwrap_or(after.len());
-    let expected: u16 = after[..value_end]
+    let config_value = config
+        .split("SQLITE_MAX_COLUMN=")
+        .nth(1)
+        .ok_or("SQLITE_MAX_COLUMN not found in config")?;
+    let digits: String = config_value
+        .chars()
+        .take_while(|c| c.is_ascii_digit())
+        .collect();
+    let expected: u16 = digits
         .parse()
-        .expect("non-numeric SQLITE_MAX_COLUMN value");
-    // The constant is in inventory-core; import it via the Column constructor.
-    // 7 fixed + projected = total SQLite columns. Validate the boundary.
-    let boundary = expected - 7;
-    assert!(
-        boundary > 0 && boundary < 256,
-        "computed boundary {boundary} is outside expected range"
+        .map_err(|_| "non-numeric SQLITE_MAX_COLUMN value")?;
+    assert_eq!(
+        usize::from(expected),
+        MAX_SQLITE_COLUMNS,
+        "MAX_SQLITE_COLUMNS ({}) must equal SQLITE_MAX_COLUMN build config ({})",
+        MAX_SQLITE_COLUMNS,
+        expected
     );
     Ok(())
 }

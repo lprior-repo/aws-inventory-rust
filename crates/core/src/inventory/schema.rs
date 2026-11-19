@@ -1,4 +1,7 @@
 use super::{InventoryError, Kind, SqlName};
+
+/// SQLite's maximum column count. Bound projected columns before CREATE TABLE.
+pub const MAX_SQLITE_COLUMNS: usize = 256;
 use crate::record::FieldId;
 use std::fmt::Write;
 
@@ -104,10 +107,6 @@ fn canonical_columns(mut columns: Vec<Column>) -> Result<Box<[Column]>, Inventor
     validate_column_budget(&columns)?;
     Ok(columns.into_boxed_slice())
 }
-
-/// Maximum columns in a SQLite row, matching SQLITE_MAX_COLUMN build config.
-/// The engine adds 7 fixed columns, so this is a hard ceiling on the DDL.
-const MAX_SQLITE_COLUMNS: usize = 256;
 
 fn validate_column_budget(columns: &[Column]) -> Result<(), InventoryError> {
     let count = columns.iter().try_fold(7usize, |count, column| {

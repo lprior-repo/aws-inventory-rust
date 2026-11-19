@@ -14,47 +14,132 @@ use super::support::*;
 #[tokio::test]
 async fn given_active_sweep_for_wrong_account_when_resumed_then_rejected_without_mutation()
 -> TestResult {
-    let (_directory, store, _) = fixture().await?;
+    let (directory, store, _) = fixture().await?;
     // Account A creates a sweep and seeds work.
     let sweep_a = SweepId::new("work-1".to_owned())?;
+    let account_a = AccountId::parse("111111111111")?;
     store.seed_work(work("work-1", "us-east-1")?).await?;
     store
-        .create_sweep_manifest(&sweep_a, "111111111111")
+        .create_sweep_manifest(&sweep_a, account_a.as_str())
         .await?;
     // Discover the sweep (non-mutating).
     let discovered = store.discover_active_sweep().await?;
     assert_eq!(discovered.as_ref(), Some(&sweep_a));
-    // The manifest stores the account for this sweep.
-    let manifest = store.sweep_manifest_account(&sweep_a).await?;
-    assert_eq!(manifest, Some("111111111111".to_owned()));
     // Account B tries to resume but has a different account.
-    // The production check (in execution.rs) compares manifest to expected
-    // account and returns SweepError::AccountMismatch. Here we verify the
-    // manifest check itself.
-    let account_b = "222222222222";
-    let matches = manifest
-        .as_ref()
-        .map(|stored| stored == account_b)
-        .unwrap_or(false);
-    assert!(!matches, "wrong account should not match manifest");
-    // Queue state is unchanged after the check (discover + manifest read are
-    // read-only; only resume_sweep() mutates).
-    let queue_after = store.claim(&sweep_a, 100, 20).await?;
-    assert!(queue_after.is_some(), "sweep should still be claimable after check");
+    // resume_sweep now verifies the manifest and claims atomically.
+    let account_b = AccountId::parse("222222222222")?;
+    let result = store.resume_sweep(&sweep_a, &account_b).await;
+    match result {
+        Err(StoreError::AccountMismatch(expected, manifest)) => {
+            assert_eq!(expected, account_b);
+            assert_eq!(manifest, Some(account_a));
+        }
+        other => panic!("expected AccountMismatch, got: {other:?}"),
+    }
+    // Queue state is unchanged: sweep is still claimable.
+    let lease = store.claim(&sweep_a, 100, 20).await?;
+    assert!(
+        lease.is_some(),
+        "sweep should still be claimable after wrong-account resume"
+    );
     Ok(())
 }
 
 #[tokio::test]
 async fn given_same_account_when_resumed_then_sweep_is_acquired() -> TestResult {
-    let (_directory, store, _) = fixture().await?;
+    let (directory, store, _) = fixture().await?;
     let sweep = SweepId::new("work-1".to_owned())?;
+    let account = AccountId::parse("111111111111")?;
     store.seed_work(work("work-1", "us-east-1")?).await?;
     store
-        .create_sweep_manifest(&sweep, "111111111111")
+        .create_sweep_manifest(&sweep, account.as_str())
         .await?;
     // Same account can resume.
-    let resumed = store.resume_sweep().await?;
-    assert_eq!(resumed.as_ref(), Some(&sweep));
+    store.resume_sweep(&sweep, &account).await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_sweep_without_manifest_when_resumed_then_fails_account_mismatch() -> TestResult {
+    let (directory, store, _) = fixture().await?;
+    let sweep = SweepId::new("no-manifest".to_owned())?;
+    store.seed_work(work("no-manifest", "us-east-1")?).await?;
+    // No manifest created - legacy case.
+    let account = AccountId::parse("111111111111")?;
+    let result = store.resume_sweep(&sweep, &account).await;
+    match result {
+        Err(StoreError::AccountMismatch(expected, manifest)) => {
+            assert_eq!(expected, account);
+            assert_eq!(manifest, None);
+        }
+        other => panic!("expected AccountMismatch with None manifest, got: {other:?}"),
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_live_lease_when_resumed_then_fails_live_lease() -> TestResult {
+    let (directory, store, _) = fixture().await?;
+    let sweep = SweepId::new("live-lease".to_owned())?;
+    let account = AccountId::parse("111111111111")?;
+    store.seed_work(work("live-lease", "us-east-1")?).await?;
+    store
+        .create_sweep_manifest(&sweep, account.as_str())
+        .await?;
+    // Claim with a long lease (60 seconds) so it's definitely live.
+    let now = std::time::UNIX_EPOCH
+        .elapsed()
+        .expect("system clock before epoch")
+        .as_millis();
+    let now_ms = i64::try_from(now).expect("timestamp exceeds i64");
+    let lease = store.claim(&sweep, now_ms, 60000).await?;
+    assert!(lease.is_some());
+    // Try to resume - should fail with LiveLease.
+    let result = store.resume_sweep(&sweep, &account).await;
+    match result {
+        Err(StoreError::LiveLease) => {}
+        other => panic!("expected LiveLease, got: {other:?}"),
+    }
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_expired_lease_when_resumed_then_succeeds() -> TestResult {
+    let (directory, store, _) = fixture().await?;
+    let sweep = SweepId::new("expired-lease".to_owned())?;
+    let account = AccountId::parse("111111111111")?;
+    store.seed_work(work("expired-lease", "us-east-1")?).await?;
+    store
+        .create_sweep_manifest(&sweep, account.as_str())
+        .await?;
+    // Claim with a very short lease and a past timestamp so it's expired.
+    let lease = store.claim(&sweep, 0, 1).await?;
+    assert!(lease.is_some());
+    // Resume should succeed because the lease is expired.
+    store.resume_sweep(&sweep, &account).await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_duplicate_manifest_when_created_then_original_is_kept() -> TestResult {
+    let (directory, store, _) = fixture().await?;
+    let sweep = SweepId::new("duplicate-manifest".to_owned())?;
+    let account_a = AccountId::parse("111111111111")?;
+    let account_b = AccountId::parse("222222222222")?;
+    store
+        .seed_work(work("duplicate-manifest", "us-east-1")?)
+        .await?;
+    // Create manifest with account A.
+    store
+        .create_sweep_manifest(&sweep, account_a.as_str())
+        .await?;
+    // Try to create a second manifest with account B.
+    store
+        .create_sweep_manifest(&sweep, account_b.as_str())
+        .await?;
+    // The original manifest should still be there (ON CONFLICT DO UPDATE SET sweep_id=sweep_id).
+    let manifest = store.sweep_manifest_account(&sweep).await?;
+    assert_eq!(manifest, Some("111111111111".to_owned()));
     Ok(())
 }
 
@@ -174,6 +259,10 @@ async fn given_an_expired_lease_when_reclaimed_then_old_commit_is_fenced_and_cur
     let (_directory, store, _) = fixture().await?;
     store.seed_work(work("resume-id", "us-east-1")?).await?;
     let sweep = SweepId::new("resume-id".to_owned())?;
+    let account = AccountId::parse("111111111111")?;
+    store
+        .create_sweep_manifest(&sweep, account.as_str())
+        .await?;
     let stale = store
         .claim(&sweep, 100, 10)
         .await?
@@ -197,7 +286,8 @@ async fn given_an_expired_lease_when_reclaimed_then_old_commit_is_fenced_and_cur
         .ok_or("missing resumed lease")?;
 
     assert_eq!(resumed.token(), Some([9, 8, 7].as_slice()));
-    assert_eq!(store.resume_sweep().await?, Some(sweep));
+    let account = AccountId::parse("111111111111")?;
+    store.resume_sweep(&sweep, &account).await?;
     Ok(())
 }
 
@@ -207,12 +297,17 @@ async fn given_an_active_sweep_when_resumed_then_lease_is_fenced_and_work_is_imm
     let (_directory, store, _) = fixture().await?;
     store.seed_work(work("takeover", "us-east-1")?).await?;
     let sweep = SweepId::new("takeover".to_owned())?;
+    let account = AccountId::parse("111111111111")?;
+    store
+        .create_sweep_manifest(&sweep, account.as_str())
+        .await?;
     let old = store
         .claim(&sweep, 100, 100)
         .await?
         .ok_or("missing original lease")?;
 
-    assert_eq!(store.resume_sweep().await?, Some(sweep.clone()));
+    let account = AccountId::parse("111111111111")?;
+    store.resume_sweep(&sweep, &account).await?;
     let current = store
         .claim(&sweep, 101, 100)
         .await?

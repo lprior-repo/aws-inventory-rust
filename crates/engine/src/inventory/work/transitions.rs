@@ -1,4 +1,5 @@
 use super::*;
+use inventory_core::inventory::AccountId;
 
 pub(super) async fn validate_lease(
     tx: &mut Transaction<'_, Sqlite>,
@@ -105,38 +106,82 @@ pub(super) async fn finalize_page(
 
 pub(in super::super) async fn resume_sweep(
     store: &BinaryStore,
-) -> Result<Option<SweepId>, StoreError> {
+    sweep: &SweepId,
+    expected_account: &AccountId,
+) -> Result<(), StoreError> {
     let mut tx = store.writer.begin().await?;
-    let rows = sqlx::query(
-        "SELECT DISTINCT sweep_id FROM work_queue WHERE state IN(0,1) ORDER BY sweep_id LIMIT 2",
+
+    // Ensure the sweeps table exists (may not exist in legacy databases).
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS sweeps(sweep_id TEXT NOT NULL PRIMARY KEY,account TEXT,started_at INTEGER NOT NULL DEFAULT 0)",
     )
-    .fetch_all(&mut *tx)
+    .execute(&mut *tx)
     .await?;
-    if rows.len() > 1 {
+
+    // Verify this sweep is active
+    let count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM work_queue WHERE sweep_id=?1 AND state IN(0,1)")
+            .bind(sweep.as_str())
+            .fetch_one(&mut *tx)
+            .await?;
+    if count == 0 {
+        tx.commit().await?;
+        return Ok(());
+    }
+
+    // Check for other active sweeps
+    let other: i64 = sqlx::query_scalar(
+        "SELECT COUNT(DISTINCT sweep_id) FROM work_queue WHERE sweep_id != ?1 AND state IN(0,1)",
+    )
+    .bind(sweep.as_str())
+    .fetch_one(&mut *tx)
+    .await?;
+    if other != 0 {
         return Err(StoreError::MultipleActiveSweeps);
     }
-    let Some(row) = rows.into_iter().next() else {
-        tx.commit().await?;
-        return Ok(None);
-    };
-    let sweep = SweepId::new(row.try_get("sweep_id")?)?;
+
+    // Verify manifest account matches expected
+    let manifest: Option<String> =
+        sqlx::query_scalar("SELECT account FROM sweeps WHERE sweep_id=?1")
+            .bind(sweep.as_str())
+            .fetch_optional(&mut *tx)
+            .await?;
+
+    let manifest_account = manifest.as_ref().map(|s| AccountId::parse(s)).transpose()?;
+    if manifest_account != Some(expected_account.to_owned()) {
+        return Err(StoreError::AccountMismatch(
+            expected_account.to_owned(),
+            manifest_account,
+        ));
+    }
+
+    // Check for generation overflow
     let exhausted: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM work_queue WHERE sweep_id=?1 AND state=1 AND generation=9223372036854775807").bind(sweep.as_str()).fetch_one(&mut *tx).await?;
     if exhausted != 0 {
         return Err(StoreError::LeaseGenerationOverflow);
     }
+
+    // Check for live leases
     let now_ms = std::time::UNIX_EPOCH
         .elapsed()
         .map_err(|_| StoreError::Invalid("system clock before epoch"))?
         .as_millis();
-    let now_ms = i64::try_from(now_ms)
-        .map_err(|_| StoreError::Invalid("timestamp exceeds i64 range"))?;
-    let live: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM work_queue WHERE sweep_id=?1 AND state=1 AND lease_until>?2").bind(sweep.as_str()).bind(now_ms).fetch_one(&mut *tx).await?;
+    let now_ms =
+        i64::try_from(now_ms).map_err(|_| StoreError::Invalid("timestamp exceeds i64 range"))?;
+    let live: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM work_queue WHERE sweep_id=?1 AND state=1 AND lease_until>?2",
+    )
+    .bind(sweep.as_str())
+    .bind(now_ms)
+    .fetch_one(&mut *tx)
+    .await?;
     if live != 0 {
         return Err(StoreError::LiveLease);
     }
+
     sqlx::query("UPDATE work_queue SET state=0,generation=generation+1,lease_until=0 WHERE sweep_id=?1 AND state=1").bind(sweep.as_str()).execute(&mut *tx).await?;
     tx.commit().await?;
-    Ok(Some(sweep))
+    Ok(())
 }
 
 pub(super) fn encode_scope(scope: &ScopeKey) -> Result<Vec<u8>, StoreError> {
@@ -333,8 +378,8 @@ pub(in super::super) async fn create_sweep_manifest(
         .elapsed()
         .map_err(|_| StoreError::Invalid("system clock before epoch"))?
         .as_millis();
-    let now_ms = i64::try_from(now_ms)
-        .map_err(|_| StoreError::Invalid("timestamp exceeds i64 range"))?;
+    let now_ms =
+        i64::try_from(now_ms).map_err(|_| StoreError::Invalid("timestamp exceeds i64 range"))?;
     let mut tx = store.writer.begin().await?;
     sqlx::query(
         "INSERT INTO sweeps(sweep_id,account,started_at) VALUES(?1,?2,?3) ON CONFLICT(sweep_id) DO UPDATE SET sweep_id=sweep_id",
@@ -362,9 +407,11 @@ pub(in super::super) async fn sweep_manifest_account(
 pub(in super::super) async fn discover_active_sweep(
     store: &BinaryStore,
 ) -> Result<Option<SweepId>, StoreError> {
-    let row = sqlx::query_scalar("SELECT DISTINCT sweep_id FROM work_queue WHERE state IN(0,1) ORDER BY sweep_id LIMIT 1")
-        .fetch_optional(&store.reader)
-        .await?;
+    let row = sqlx::query_scalar(
+        "SELECT DISTINCT sweep_id FROM work_queue WHERE state IN(0,1) ORDER BY sweep_id LIMIT 1",
+    )
+    .fetch_optional(&store.reader)
+    .await?;
     if let Some(sweep_str) = row {
         return SweepId::new(sweep_str).map(Some);
     }

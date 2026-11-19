@@ -167,14 +167,18 @@ pub(super) async fn given_a_catalogued_database_when_reopened_then_only_matching
 -> TestResult {
     let (directory, store, catalog) = fixture().await?;
     store.seed_work(work("stable-id", "us-east-1")?).await?;
+    let sweep = SweepId::new("stable-id".to_owned())?;
+    let account = inventory_core::inventory::AccountId::parse("111111111111")?;
+    store
+        .create_sweep_manifest(&sweep, account.as_str())
+        .await?;
     store.validate_catalog(&catalog).await?;
     let database = directory.path().join("inventory.sqlite");
     let reopened = BinaryStore::open(&database).await?;
 
-    assert_eq!(
-        reopened.resume_sweep().await?,
-        Some(SweepId::new("stable-id".to_owned())?)
-    );
+    let sweep = SweepId::new("stable-id".to_owned())?;
+    let account = inventory_core::inventory::AccountId::parse("111111111111")?;
+    reopened.resume_sweep(&sweep, &account).await?;
     assert!(matches!(
         reopened.validate_catalog(b"different catalog").await,
         Err(StoreError::CatalogMismatch)

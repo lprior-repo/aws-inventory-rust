@@ -165,10 +165,12 @@ async fn given_a_pre_v3_generation_valid_lease_when_failed_or_partial_is_reporte
         ));
         assert_eq!(snapshot::read_durable_state(&pool).await?, before);
     }
-    let sweep = store
-        .resume_sweep()
-        .await?
-        .ok_or("stale epoch was not resumable")?;
+    let sweep = SweepId::new("stage-authority".to_owned())?;
+    let account = inventory_core::inventory::AccountId::parse("111111111111")?;
+    store
+        .create_sweep_manifest(&sweep, account.as_str())
+        .await?;
+    store.resume_sweep(&sweep, &account).await?;
     let current = store
         .claim(&sweep, 102, 100)
         .await?
@@ -216,10 +218,12 @@ async fn given_a_v2_cursor_with_an_old_head_when_only_the_migrated_tail_complete
     assert_eq!(migrated_work, old_work);
     let before = baseline(&pool).await?;
     assert_eq!(before.pending.len(), 2);
-    let sweep = store
-        .resume_sweep()
-        .await?
-        .ok_or("interrupted work absent")?;
+    let sweep = SweepId::new("interrupted".to_owned())?;
+    let account = inventory_core::inventory::AccountId::parse("111111111111")?;
+    store
+        .create_sweep_manifest(&sweep, account.as_str())
+        .await?;
+    store.resume_sweep(&sweep, &account).await?;
     let tail = store
         .claim(&sweep, 100, 100)
         .await?

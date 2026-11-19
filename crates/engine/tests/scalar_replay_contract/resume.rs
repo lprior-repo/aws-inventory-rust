@@ -44,6 +44,9 @@ async fn resume_fixture(west_generation: i64) -> TestResult<ResumeFixture> {
         .with_context(context.clone())?,
     ];
     store.seed_works(&works).await?;
+    store
+        .create_sweep_manifest(&SweepId::new("resume".to_owned())?, "111111111111")
+        .await?;
     let leases = claim_pair(&store, &context, 200).await?;
     for lease in leases {
         let row = observation(lease.scope().region().as_str(), "on", "Enabled")?;
@@ -190,8 +193,10 @@ async fn given_ordinary_and_exhausted_inflight_leases_when_resumed_then_exact_ov
 
     // When: overflow is detected inside resume_sweep, not opening or claiming the fixture.
     // Kills RESUME-SKIPS-GENERATION-GUARD, including partial release of the ordinary row.
+    let sweep = SweepId::new("resume".to_owned())?;
+    let account = inventory_core::inventory::AccountId::parse("111111111111")?;
     assert!(matches!(
-        fixture.store.resume_sweep().await,
+        fixture.store.resume_sweep(&sweep, &account).await,
         Err(StoreError::LeaseGenerationOverflow)
     ));
 
@@ -237,8 +242,10 @@ async fn given_two_active_sweeps_when_resumed_then_exact_multiple_active_error_h
     let before = stored_state(&pool).await?;
 
     // When: Kills RESUME-FIRST-ACTIVE-WINS; choosing either identity must not release its rows.
+    let sweep = SweepId::new("resume".to_owned())?;
+    let account = inventory_core::inventory::AccountId::parse("111111111111")?;
     assert!(matches!(
-        store.resume_sweep().await,
+        store.resume_sweep(&sweep, &account).await,
         Err(StoreError::MultipleActiveSweeps)
     ));
 
@@ -262,10 +269,9 @@ async fn given_near_max_inflight_generation_when_resumed_and_claimed_then_max_ge
     assert_queue(&before, &fixture, 2, near_max, 1, 230, true)?;
 
     // When: resume advances once and a real claim advances again to the inclusive maximum.
-    assert_eq!(
-        fixture.store.resume_sweep().await?,
-        Some(SweepId::new("resume".to_owned())?)
-    );
+    let sweep = SweepId::new("resume".to_owned())?;
+    let account = inventory_core::inventory::AccountId::parse("111111111111")?;
+    fixture.store.resume_sweep(&sweep, &account).await?;
     let resumed = stored_state(&fixture.pool).await?;
     assert_queue(&resumed, &fixture, 3, after_resume, 0, 0, true)?;
     let [east, west] = claim_pair(&fixture.store, &fixture.context, 300).await?;

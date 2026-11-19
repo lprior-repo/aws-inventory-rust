@@ -186,26 +186,11 @@ async fn sweep_id(
         .discover_active_sweep()
         .await?
         .ok_or(SweepError::Operation("no pending sweep to resume"))?;
-    // Verify the pending sweep belongs to this account before claiming.
-    let manifest_account = store.sweep_manifest_account(&pending).await?;
-    let matches = manifest_account
-        .as_ref()
-        .map(|stored| stored == &account.to_string())
-        .unwrap_or(false);
-    if !matches {
-        let sweep_str = pending.to_string();
-        let expected = account.to_string();
-        return Err(SweepError::AccountMismatch {
-            sweep: sweep_str,
-            manifest_account,
-            expected,
-        });
-    }
-    // Account verified; acquire the sweep.
+    // Verify manifest and claim the sweep atomically.
     store
-        .resume_sweep()
-        .await?
-        .ok_or(SweepError::Operation("no pending sweep to resume after discovery"))
+        .resume_sweep(&pending, account)
+        .await?;
+    Ok(pending)
 }
 
 async fn bootstrap_account(context: &BootstrapContext<'_, '_>) -> Result<AccountId, SweepError> {

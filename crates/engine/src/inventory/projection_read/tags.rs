@@ -29,7 +29,8 @@ pub(super) async fn read(
         .map_err(|_| StoreError::Invalid("projection tag value bound overflow"))?;
     // Bound character length inside SQLite, before allocating legacy data in the reader.
     // SQLite length() on TEXT returns the character count, not byte count.
-    let rows = sqlx::query("SELECT CASE WHEN length(tag_key) BETWEEN 1 AND ?7 THEN tag_key END AS tag_key,CASE WHEN length(tag_value)<=?8 THEN tag_value END AS tag_value FROM tags WHERE account=?1 AND region=?2 AND kind=?3 AND id=?4 AND (?5 IS NULL OR tag_key>?5) ORDER BY tags.tag_key LIMIT ?6")
+    // Exclude rows containing NUL bytes which length() would truncate.
+    let rows = sqlx::query("SELECT tag_key,tag_value FROM tags WHERE account=?1 AND region=?2 AND kind=?3 AND id=?4 AND (?5 IS NULL OR tag_key>?5) AND length(tag_key) BETWEEN 1 AND ?7 AND length(tag_value)<=?8 AND instr(tag_key,char(0))=0 AND instr(tag_value,char(0))=0 ORDER BY tags.tag_key LIMIT ?6")
         .bind(key.account.as_str())
         .bind(key.region.as_str())
         .bind(key.kind.as_str())
@@ -55,16 +56,10 @@ pub(super) async fn read(
 }
 
 fn tag_row(row: sqlx::sqlite::SqliteRow) -> Result<ProjectionTag, StoreError> {
-    let key = row
-        .try_get::<Option<String>, _>("tag_key")?
-        .ok_or(StoreError::Invalid(
-            "persisted tag exceeds projection bounds",
-        ))?;
+    let key = row.try_get::<String, _>("tag_key")?;
     let value = row
         .try_get::<Option<String>, _>("tag_value")?
-        .ok_or(StoreError::Invalid(
-            "persisted tag exceeds projection bounds",
-        ))?;
+        .unwrap_or_default();
     if key.chars().any(char::is_control) || value.contains('\0') {
         return Err(StoreError::Invalid(
             "persisted tag contains forbidden controls",
