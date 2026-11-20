@@ -1,4 +1,4 @@
-totals	services_with_overlay=436	callable_enumerate=1554	callable_expand=632	denied_by_overlay=7350	deferred=9470	services_without_overlay=0	unreviewed_enumerate=0	unreviewed_expand=0	unreviewed_unclassified=0
+totals	services_with_overlay=436	callable_enumerate=1558	callable_expand=632	denied_by_overlay=7350	deferred=9466	services_without_overlay=0	unreviewed_enumerate=0	unreviewed_expand=0	unreviewed_unclassified=0
 operation	accessanalyzer	ApplyArchiveRule	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	accessanalyzer	CancelPolicyGeneration	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	accessanalyzer	CheckAccessNotGranted	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
@@ -12925,7 +12925,7 @@ operation	network-firewall	DisassociateAvailabilityZones	denied	class=overlay,it
 operation	network-firewall	DisassociateSubnets	denied	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	network-firewall	GetAnalysisReportResults	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	network-firewall	ListAnalysisReports	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
-operation	network-firewall	ListContainerAssociations	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	network-firewall	ListContainerAssociations	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	network-firewall	ListFirewallPolicies	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	network-firewall	ListFirewallPoliciesV2	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	network-firewall	ListFirewalls	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
@@ -14033,7 +14033,7 @@ operation	personalize	ListMetricAttributions	enumerate	class=overlay,items=overl
 operation	personalize	ListRecipes	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	personalize	ListRecommenders	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	personalize	ListSchemas	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
-operation	personalize	ListSolutionVersions	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	personalize	ListSolutionVersions	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	personalize	ListSolutions	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	personalize	ListTagsForResource	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	personalize	StartRecommender	denied	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
@@ -14282,7 +14282,7 @@ operation	pinpoint-sms-voice-v2	DescribeAccountAttributes	deferred	class=overlay
 operation	pinpoint-sms-voice-v2	DescribeAccountLimits	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	pinpoint-sms-voice-v2	DescribeConfigurationSets	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	pinpoint-sms-voice-v2	DescribeKeywords	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
-operation	pinpoint-sms-voice-v2	DescribeNotifyConfigurations	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	pinpoint-sms-voice-v2	DescribeNotifyConfigurations	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	pinpoint-sms-voice-v2	DescribeNotifyTemplates	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	pinpoint-sms-voice-v2	DescribeOptOutLists	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	pinpoint-sms-voice-v2	DescribeOptedOutNumbers	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
@@ -14290,7 +14290,7 @@ operation	pinpoint-sms-voice-v2	DescribePhoneNumbers	enumerate	class=overlay,ite
 operation	pinpoint-sms-voice-v2	DescribePools	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	pinpoint-sms-voice-v2	DescribeProtectConfigurations	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	pinpoint-sms-voice-v2	DescribeRcsAgentCountryLaunchStatus	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
-operation	pinpoint-sms-voice-v2	DescribeRcsAgents	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	pinpoint-sms-voice-v2	DescribeRcsAgents	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	pinpoint-sms-voice-v2	DescribeRegistrationAttachments	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	pinpoint-sms-voice-v2	DescribeRegistrationFieldDefinitions	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	pinpoint-sms-voice-v2	DescribeRegistrationFieldValues	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
