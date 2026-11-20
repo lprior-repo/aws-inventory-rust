@@ -155,7 +155,7 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                     Paginator::Token(crate::overlay::TokenPair {
                         input: path("NextToken")?,
                         output: path("NextToken")?,
-                        optional: true,
+                        optional: false,
                     }),
                 )?
             },
