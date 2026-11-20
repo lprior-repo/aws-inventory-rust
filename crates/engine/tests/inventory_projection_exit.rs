@@ -2,15 +2,15 @@
 //!
 //! Four exit-evidence sentences, each mapped to a test:
 //! 1. After a re-sweep with one change, only that key is sent
-//! 2. A rebuilt graph equals the incrementally updated one
-//! 3. With FalkorDB stopped a sweep completes, and the queue drains after FalkorDB returns
-//! 4. Overflowing the queue ends in a graph equal to a rebuild
+//! 2. A rebuilt graph equals the incrementally updated one (resource-set
+//!    equality at the store snapshot; graph CONTENT equality needs live FalkorDB)
+//! 3. With FalkorDB stopped a sweep completes and the queue is retained
+//!    (the drain-after-return half needs live FalkorDB; see `graph_retry.rs`)
+//! 4. Overflowing the queue ends in a full rebuild enumeration with nothing lost
 #[path = "inventory_store/support.rs"]
 mod support;
 
-use inventory_engine::inventory::{
-    BinaryStore, ProjectionAck, SweepId, run_projection,
-};
+use inventory_engine::inventory::{ProjectionAck, SweepId, run_projection};
 use inventory_core::inventory::ResourceId;
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use std::collections::BTreeMap;
@@ -197,9 +197,9 @@ async fn given_incremental_and_rebuilt_graphs_when_compared_then_they_are_equal(
     Ok(())
 }
 
-/// Test 3: With FalkorDB stopped a sweep completes, and the queue drains after FalkorDB returns.
+/// Test 3: With FalkorDB stopped a sweep completes and the queue is retained.
 #[tokio::test]
-async fn given_offline_falkordb_when_sweeping_then_queue_drains_after_falkordb_returns() -> TestResult {
+async fn given_offline_falkordb_when_sweeping_then_the_queue_is_retained_for_later_delivery() -> TestResult {
     let (_directory, store, _) = fixture().await?;
 
     // Add a resource
