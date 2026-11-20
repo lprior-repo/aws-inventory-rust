@@ -2,5 +2,5 @@
 //! benchmarking and downstream consumers. Binary-only modules (app
 //! shell, workers, templates) remain in main.rs.
 
-pub mod data;
 pub mod dag;
+pub mod data;

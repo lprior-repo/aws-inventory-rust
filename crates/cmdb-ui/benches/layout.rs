@@ -11,7 +11,7 @@ use std::hint::black_box;
 
 use cmdb_ui::dag::graph::{DagGraph, NodeKind};
 use cmdb_ui::dag::layout::DagLayout;
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 
 /// Simple xorshift64 PRNG for deterministic graph generation.
 struct Rng(u64);
@@ -25,13 +25,16 @@ impl Rng {
         self.0 ^= self.0 << 13;
         self.0 ^= self.0 >> 7;
         self.0 ^= self.0 << 17;
-        (self.0 >> 32) as u32
+        u32::try_from(self.0 >> 32).unwrap_or(u32::MAX)
     }
 
-    fn range(&mut self, low: i32, high: i32) -> i32 {
-        let span = (high - low) as u32;
-        let val = (self.next_u32() as i64).wrapping_rem(span as i64) as i32;
-        low + val
+    /// Uniform-ish value in `low..high` (high exclusive). Returns `low` if the range is empty.
+    fn range(&mut self, low: usize, high: usize) -> usize {
+        let span = u64::try_from(high.saturating_sub(low))
+            .unwrap_or(u64::MAX)
+            .max(1);
+        let offset = u64::from(self.next_u32()).checked_rem(span).unwrap_or(0);
+        low.saturating_add(usize::try_from(offset).unwrap_or(0))
     }
 }
 
@@ -39,10 +42,14 @@ impl Rng {
 fn build_chain(n: usize) -> DagGraph {
     let mut g = DagGraph::default();
     for i in 0..n {
-        g.add_node(NodeKind::Ec2, format!("chain-{}", i), format!("Chain {}", i));
+        g.add_node(
+            NodeKind::Ec2,
+            format!("chain-{}", i),
+            format!("Chain {}", i),
+        );
     }
-    for i in 0..n - 1 {
-        g.add_hierarchy_edge(i, i + 1, String::new());
+    for i in 0..n.saturating_sub(1) {
+        g.add_hierarchy_edge(i, i.saturating_add(1), String::new());
     }
     g
 }
@@ -68,26 +75,30 @@ fn build_layered(n: usize) -> DagGraph {
 
     // Add nodes
     for i in 0..n {
-        g.add_node(NodeKind::Lambda, format!("node-{}", i), format!("Node {}", i));
+        g.add_node(
+            NodeKind::Lambda,
+            format!("node-{}", i),
+            format!("Node {}", i),
+        );
     }
 
     // Edges: each node connects to 1-3 nodes with higher indices
-    let target_edges = 2 * n;
-    let mut edge_count = 0;
+    let target_edges = n.saturating_mul(2);
+    let mut edge_count = 0_usize;
     for i in 0..n {
-        let num_out = if edge_count + 3 > target_edges {
+        let num_out = if edge_count.saturating_add(3) > target_edges {
             target_edges.saturating_sub(edge_count)
         } else {
             3
         };
         for _ in 0..num_out {
-            if i + 1 >= n {
+            if i.saturating_add(1) >= n {
                 break;
             }
-            let j = rng.range(i as i32 + 1, n as i32) as usize;
+            let j = rng.range(i.saturating_add(1), n);
             // add_hierarchy_edge returns false for duplicates
             if g.add_hierarchy_edge(i, j, String::new()) {
-                edge_count += 1;
+                edge_count = edge_count.saturating_add(1);
             }
         }
         if edge_count >= target_edges {
@@ -107,15 +118,15 @@ fn build_cyclic(n: usize) -> DagGraph {
     for i in 0..n {
         g.add_node(NodeKind::S3, format!("node-{}", i), format!("Node {}", i));
     }
-    for i in 0..n - 1 {
-        g.add_hierarchy_edge(i, i + 1, String::new());
+    for i in 0..n.saturating_sub(1) {
+        g.add_hierarchy_edge(i, i.saturating_add(1), String::new());
     }
 
     // Add back-edges to create cycles (~10% of nodes)
     let num_back_edges = n / 10;
     for _ in 0..num_back_edges {
-        let i = rng.range(0, n as i32 - 2) as usize;
-        let j = rng.range((i + 2) as i32, n as i32) as usize;
+        let i = rng.range(0, n.saturating_sub(2));
+        let j = rng.range(i.saturating_add(2), n);
         g.add_hierarchy_edge(j, i, String::new());
     }
 
@@ -178,5 +189,11 @@ fn bench_cyclic(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, bench_chain, bench_fanout, bench_layered, bench_cyclic);
+criterion_group!(
+    benches,
+    bench_chain,
+    bench_fanout,
+    bench_layered,
+    bench_cyclic
+);
 criterion_main!(benches);

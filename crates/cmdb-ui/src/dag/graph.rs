@@ -201,6 +201,11 @@ impl DagGraph {
         self.nodes.len()
     }
 
+    #[cfg(test)]
+    pub fn is_empty(&self) -> bool {
+        self.nodes.is_empty()
+    }
+
     pub fn dropped_nodes(&self) -> usize {
         self.dropped_nodes
     }

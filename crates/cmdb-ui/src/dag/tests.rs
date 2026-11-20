@@ -40,9 +40,11 @@ fn labels_are_capped() {
 #[test]
 fn duplicate_nodes_and_edges_collapse() {
     let mut graph = DagGraph::default();
+    assert!(graph.is_empty());
     let first = graph.add_node(NodeKind::Ec2, "id", "label");
     let second = graph.add_node(NodeKind::S3, "id", "other");
     assert_eq!(first, second);
+    assert!(!graph.is_empty());
     assert_eq!(graph.len(), 1);
     // Self-loops are now allowed (UI-03).
     assert!(graph.add_edge(0, 0));
