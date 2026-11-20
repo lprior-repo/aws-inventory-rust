@@ -2,6 +2,15 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- `cmdb-ui` gains property tests for `DagLayout::compute` (node accounting,
+  non-overlap, bounds, determinism, edge direction with strictly increasing
+  layers on forward edges), a criterion layout benchmark
+  (`cargo bench -p cmdb-ui --bench layout`) over chain, fan-out, layered and
+  cyclic graphs at 100/500/2000 nodes, an end-to-end README walkthrough, and
+  a library target exposing `dag` and `data` for benchmarks. Bin test code is
+  clippy-clean under `-D warnings`. The frame-time budget is not measured by
+  the layout bench.
+
 - Relationship scopes gain `arn_region`: a global source (Route 53
   key-signing key) naming a regional ARN (its us-east-1 KMS key) takes the
   target region from the ARN itself. Only same-account regional `arn:` values
