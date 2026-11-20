@@ -117,7 +117,7 @@ async fn check_neighbors(graph: &GraphConnection) -> TestResult {
 }
 
 async fn check_path_and_blast(graph: &GraphConnection) -> TestResult {
-    let [a, b, c, d] = nodes();
+    let [_a, b, c, d] = nodes();
     let bounds = GraphLimits {
         depth: 3,
         nodes: 4,

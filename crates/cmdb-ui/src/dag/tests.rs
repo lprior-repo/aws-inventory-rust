@@ -1,9 +1,6 @@
-use makepad_widgets::{Rect, dvec2};
-
 use super::builder;
 use super::graph::{DagGraph, MAX_LABEL_CHARS, MAX_NODES, NodeKind, truncate_label};
 use super::layout::DagLayout;
-use super::view::{MAX_SCALE, MIN_SCALE, ViewTransform};
 use crate::data::Data;
 
 #[cfg(test)]

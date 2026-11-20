@@ -3,12 +3,12 @@ use std::collections::BTreeSet;
 use inventory_core::{Resource, validate_identifier};
 use serde_json::Value;
 
-pub(super) const MIN_IDENTIFIER_BYTES: usize = 3;
+pub(super) const MIN_IDENTIFIER_BYTES: usize = 8;
 
 const ARN_PREFIX: &str = "arn:";
 
-/// Returns the minimum required byte length for an ARN component.
-pub(super) const MIN_ARN_COMPONENT_BYTES: usize = 5;
+/// Minimum byte length for an ARN component to be indexed as an identifier.
+pub(super) const MIN_ARN_COMPONENT_BYTES: usize = 3;
 
 /// Returns the (account_id, region, resource_id) components of an ARN.
 pub(super) fn arn_component(value: &str) -> Option<(&str, &str, &str)> {
@@ -64,7 +64,7 @@ pub(super) fn identity_strings(resource: &Resource) -> BTreeSet<&str> {
     let mut result = values;
     for value in arn_values {
         if let Some((_, _, component)) = arn_component(value)
-            && component.len() >= MIN_IDENTIFIER_BYTES
+            && component.len() >= MIN_ARN_COMPONENT_BYTES
         {
             result.insert(component);
         }

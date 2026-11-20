@@ -67,7 +67,7 @@ async fn identifier_at_the_floor_emits_the_weakest_accepted_edge() -> TestResult
 async fn arn_component_floor_is_unchanged_by_the_identifier_floor() -> TestResult {
     let target = "arn:aws:sns:us-east-1:111111111111:abc";
     let source = "arn:aws:sqs:us-east-1:111111111111:consumer-component";
-    let reference_arn = "arn:aws:sqs:us-east-1:111111111111:abc";
+    let reference_arn = "arn:aws:sns:us-east-1:111111111111:abc";
     assert_eq!(reference_arn.rsplit(':').next(), Some("abc"));
     let store = store_with(vec![
         resource(target, "aws_sns_topic", json!({})),
@@ -79,7 +79,7 @@ async fn arn_component_floor_is_unchanged_by_the_identifier_floor() -> TestResul
     let edge = result.edges.first().ok_or("missing edge")?;
     assert_eq!(edge.from_id, source);
     assert_eq!(edge.to_id, target);
-    assert_eq!(property(edge, "reference"), Some("identifier"));
+    assert_eq!(property(edge, "reference"), Some("arn"));
     assert_eq!(result.summary.ambiguous, 0);
     store.close().await;
     Ok(())

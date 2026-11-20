@@ -1,7 +1,7 @@
 use makepad_widgets::{Rect, dvec2};
 
 use super::super::builder;
-use super::super::graph::{DagGraph, NodeKind, MAX_NODES};
+use super::super::graph::{NodeKind, MAX_NODES};
 use super::super::layout::DagLayout;
 use super::super::view::{MAX_SCALE, MIN_SCALE, ViewTransform};
 use crate::data::{Data, Graph};
@@ -26,27 +26,6 @@ fn projected_row(
         tags_truncated: false,
         tag_observation: None,
     }
-}
-
-fn chain() -> DagGraph {
-    let mut graph = DagGraph::default();
-    for index in 0..3 {
-        graph.add_node(NodeKind::Ec2, format!("n{index}"), format!("node {index}"));
-    }
-    graph.add_edge(0, 1);
-    graph.add_edge(1, 2);
-    graph
-}
-
-fn cycle() -> DagGraph {
-    let mut graph = DagGraph::default();
-    for index in 0..3 {
-        graph.add_node(NodeKind::S3, format!("c{index}"), format!("cycle {index}"));
-    }
-    graph.add_edge(0, 1);
-    graph.add_edge(1, 2);
-    graph.add_edge(2, 0);
-    graph
 }
 
 #[test]
