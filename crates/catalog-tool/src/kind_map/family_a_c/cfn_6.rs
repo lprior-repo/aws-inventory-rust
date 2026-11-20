@@ -21,4 +21,5 @@ pub(super) const ENTRIES: &[CfnMapping<'static>] = &[
     CfnMapping::canonical("AWS::CodeStarConnections::Connection"),
     CfnMapping::canonical("AWS::CodeStarConnections::RepositoryLink"),
     CfnMapping::canonical("AWS::CodeStarNotifications::NotificationRule"),
+    CfnMapping::canonical("AWS::CodeBuild::SourceCredential"),
 ];

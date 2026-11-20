@@ -96,4 +96,24 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
         operation: "ListSubscriptions",
         kind: "AWS::ApiOnly::FlatRatePricingSubscription",
     },
+    OperationMapping {
+        service: "network-firewall",
+        operation: "ListContainerAssociations",
+        kind: "AWS::NetworkFirewall::ContainerAssociation",
+    },
+    OperationMapping {
+        service: "personalize",
+        operation: "ListSolutionVersions",
+        kind: "AWS::ApiOnly::PersonalizeSolutionVersion",
+    },
+    OperationMapping {
+        service: "pinpoint-sms-voice-v2",
+        operation: "DescribeNotifyConfigurations",
+        kind: "AWS::SMSVOICE::NotifyConfiguration",
+    },
+    OperationMapping {
+        service: "pinpoint-sms-voice-v2",
+        operation: "DescribeRcsAgents",
+        kind: "AWS::SMSVOICE::RcsAgent",
+    },
 ];

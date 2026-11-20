@@ -21,4 +21,5 @@ pub(super) const ENTRIES: &[CfnMapping<'static>] = &[
     CfnMapping::canonical("AWS::NetworkManager::ConnectPeer"),
     CfnMapping::canonical("AWS::NetworkManager::CoreNetwork"),
     CfnMapping::canonical("AWS::NetworkManager::Device"),
+    CfnMapping::canonical("AWS::NetworkFirewall::ContainerAssociation"),
 ];

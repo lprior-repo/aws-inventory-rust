@@ -106,4 +106,69 @@ pub(super) const ENTRIES: &[OperationMapping<'static>] = &[
         operation: "ListDomains",
         kind: "AWS::CustomerProfiles::Domain",
     },
+    OperationMapping {
+        service: "cloudwatch-logs",
+        operation: "ListLogGroups",
+        kind: "AWS::Logs::LogGroup",
+    },
+    OperationMapping {
+        service: "config-service",
+        operation: "ListConfigurationRecorders",
+        kind: "AWS::Config::ConfigurationRecorder",
+    },
+    OperationMapping {
+        service: "config-service",
+        operation: "DescribeConfigRuleEvaluationStatus",
+        kind: "AWS::ApiOnly::ConfigRuleEvaluationStatus",
+    },
+    OperationMapping {
+        service: "config-service",
+        operation: "DescribeConfigurationRecorderStatus",
+        kind: "AWS::ApiOnly::ConfigurationRecorderStatus",
+    },
+    OperationMapping {
+        service: "config-service",
+        operation: "DescribeConformancePackStatus",
+        kind: "AWS::ApiOnly::ConformancePackStatus",
+    },
+    OperationMapping {
+        service: "arc-region-switch",
+        operation: "ListPlansInRegion",
+        kind: "AWS::ARCRegionSwitch::Plan",
+    },
+    OperationMapping {
+        service: "batch",
+        operation: "ListServiceJobs",
+        kind: "AWS::ApiOnly::BatchServiceJob",
+    },
+    OperationMapping {
+        service: "chime-sdk-media-pipelines",
+        operation: "ListMediaCapturePipelines",
+        kind: "AWS::ApiOnly::ChimeSDKMediaPipelinesMediaPipeline",
+    },
+    OperationMapping {
+        service: "chime-sdk-voice",
+        operation: "ListPhoneNumbers",
+        kind: "AWS::ApiOnly::ChimeSDKVoicePhoneNumber",
+    },
+    OperationMapping {
+        service: "chime-sdk-voice",
+        operation: "ListVoiceProfileDomains",
+        kind: "AWS::ApiOnly::ChimeSDKVoiceProfileDomain",
+    },
+    OperationMapping {
+        service: "cloudformation",
+        operation: "ListTypes",
+        kind: "AWS::ApiOnly::CloudFormationRegistryType",
+    },
+    OperationMapping {
+        service: "cloudformation",
+        operation: "ListTypeVersions",
+        kind: "AWS::ApiOnly::CloudFormationRegistryTypeVersion",
+    },
+    OperationMapping {
+        service: "codebuild",
+        operation: "ListSourceCredentials",
+        kind: "AWS::CodeBuild::SourceCredential",
+    },
 ];
