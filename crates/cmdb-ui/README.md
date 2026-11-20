@@ -36,24 +36,24 @@ created_synthetic_reader_fixture schema_version=15 resources=100 database=/home/
 ```
 The command creates a SQLite database with 100 synthetic AWS resources across 2 accounts.
 
-**Step 4 — Open the viewer**
+**Step 4 — Open the viewer** (requires a graphical session: a running Wayland or X11 desktop with `WAYLAND_DISPLAY` or `DISPLAY` set)
 
 ```bash
 ./target/release/cmdb-ui --database ~/aws-inventory-demo/inventory.db
 ```
 
-Expected result: The Makepad application window opens. The hierarchy view shows accounts, regions, services, and resources. Click an account, region, or resource kind to filter. Click a resource row to select it; the graph tab shows its neighbors and relationships.
+Expected result: The Makepad application window opens. The left panel lists the account, region and resource-kind chips derived from the database; the header shows account, resource, region and service totals. The Resources list (Table or Graph tab) shows a bounded page of resources. Click an account, region, or resource kind to filter. Click a resource row to select it; the graph tab shows its neighbors and relationships.
 
 **Step 5 (optional) — Enable the resource graph**
 
-If you have FalkorDB running:
+Prerequisites: a running FalkorDB server, and an `inventory` graph already populated from the inventory. This walkthrough does not cover starting FalkorDB or populating the graph. With an unpopulated graph, the viewer reports the graph as offline with a query error (for example, `Invalid graph operation on empty key`).
 
 ```bash
 ./target/release/cmdb-ui --database ~/aws-inventory-demo/inventory.db \
   --graph-url redis://localhost:6379 --graph-name inventory
 ```
 
-Expected result: Graph queries execute against FalkorDB. Without these flags, inventory remains fully usable and the graph panel reports its offline state.
+Expected result: Graph queries execute against FalkorDB and the graph tab shows stored relationships for the selected resource. Without these flags, inventory remains fully usable and the graph panel reports its offline state.
 
 ## Build
 
