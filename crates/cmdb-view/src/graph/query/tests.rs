@@ -158,7 +158,11 @@ fn given_valid_row_when_parsing_then_full_identity_and_provenance_survive() -> T
 fn given_frontier_when_compiling_query_then_limit_precedes_any_combinatorial_work() -> TestResult {
     let root = key_digest(&node("a"))?;
     let previous = key_digest(&node("b"))?;
-    let query = traversal_query(&[root.clone()], &[previous.clone()], 2001);
+    let query = traversal_query(
+        std::slice::from_ref(&root),
+        std::slice::from_ref(&previous),
+        2001,
+    );
     assert!(query.starts_with(&format!("UNWIND ['{root}'] AS frontier_key MATCH")));
     assert!(query.contains(&format!("NOT n.key IN ['{previous}']")));
     assert!(query.ends_with("LIMIT 2001"));
@@ -180,8 +184,6 @@ fn given_frontier_when_compiling_query_then_limit_precedes_any_combinatorial_wor
 // Graph: A->B->C. Blast radius of C should find A and B.
 #[test]
 fn directed_blast_radius_finds_upstream_dependents() -> TestResult {
-    let a = node("a");
-    let b = node("b");
     let c = node("c");
     let root = key_digest(&c)?;
     let expanded = vec![key_digest(&c)?];
@@ -192,8 +194,10 @@ fn directed_blast_radius_finds_upstream_dependents() -> TestResult {
         query.contains("(n:Resource)-[r]->(s:Resource {key:frontier_key})"),
         "blast radius query must follow incoming edges"
     );
-    assert!(!query.contains("(s:Resource {key:frontier_key})-[r]-(n:Resource)"),
-        "blast radius query must not follow undirected edges");
+    assert!(
+        !query.contains("(s:Resource {key:frontier_key})-[r]-(n:Resource)"),
+        "blast radius query must not follow undirected edges"
+    );
     Ok(())
 }
 

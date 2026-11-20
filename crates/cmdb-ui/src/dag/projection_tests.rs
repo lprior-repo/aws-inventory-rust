@@ -1,18 +1,12 @@
 use makepad_widgets::{Rect, dvec2};
 
 use super::super::builder;
-use super::super::graph::{NodeKind, MAX_NODES};
+use super::super::graph::{MAX_NODES, NodeKind};
 use super::super::layout::DagLayout;
 use super::super::view::{MAX_SCALE, MIN_SCALE, ViewTransform};
 use crate::data::{Data, Graph};
 
-fn projected_row(
-    account: &str,
-    region: &str,
-    kind: &str,
-    id: &str,
-    key: &str,
-) -> crate::data::Row {
+fn projected_row(account: &str, region: &str, kind: &str, id: &str, key: &str) -> crate::data::Row {
     crate::data::Row {
         account: account.to_owned(),
         region: region.to_owned(),
@@ -133,7 +127,8 @@ fn native_tag_graph(account: &str, region: &str) -> Graph {
 }
 
 #[test]
-fn given_native_tags_when_projecting_then_only_the_requested_resource_gets_affiliation_links() {
+fn given_native_tags_when_projecting_then_only_the_requested_resource_gets_affiliation_links()
+-> Result<(), Box<dyn std::error::Error>> {
     // Given one native affiliation and two resources, with a different SQL-only tag.
     let source = native_tag_graph("111111111111", "us-east-1");
     // When the actual graph surface projection is constructed.
@@ -146,11 +141,11 @@ fn given_native_tags_when_projecting_then_only_the_requested_resource_gets_affil
         .filter(|(_, node)| node.kind() == NodeKind::Tag)
         .collect();
     assert_eq!(tags.len(), 1);
-    let (tag_index, tag) = tags.first().expect("native tag vertex");
+    let (tag_index, tag) = tags.first().ok_or("native tag vertex")?;
     assert!(!tag.kind().is_resource());
     assert!(tag.label().starts_with("tag:"));
-    let root = graph.index_of("root").expect("root vertex");
-    let neighbor = graph.index_of("neighbor").expect("neighbor vertex");
+    let root = graph.index_of("root").ok_or("root vertex")?;
+    let neighbor = graph.index_of("neighbor").ok_or("neighbor vertex")?;
     let links: Vec<_> = graph
         .edges()
         .iter()
@@ -170,36 +165,40 @@ fn given_native_tags_when_projecting_then_only_the_requested_resource_gets_affil
     );
     assert_eq!(graph.len(), 6);
     assert_eq!(graph.edges().len(), 5);
+    Ok(())
 }
 
 #[test]
-fn given_identical_tag_text_when_scopes_differ_then_tag_vertex_identities_do_not_alias() {
+fn given_identical_tag_text_when_scopes_differ_then_tag_vertex_identities_do_not_alias()
+-> Result<(), Box<dyn std::error::Error>> {
     // Given identical key/value text in different account or region scopes.
     let source = native_tag_graph("111111111111", "us-east-1");
     let other_account = native_tag_graph("222222222222", "us-east-1");
     let other_region = native_tag_graph("111111111111", "eu-west-1");
     // When each native affiliation is projected.
-    let tag_id = |source: &Graph| {
+    let tag_id = |source: &Graph| -> Result<String, &'static str> {
         builder::from_data_graph(source)
             .nodes()
             .iter()
             .find(|node| node.kind() == NodeKind::Tag)
             .map(|node| node.id().to_owned())
-            .expect("tag vertex")
+            .ok_or("tag vertex")
     };
     // Then stable scoped identity is separate even though labels match.
-    assert_ne!(tag_id(&source), tag_id(&other_account));
-    assert_ne!(tag_id(&source), tag_id(&other_region));
+    assert_ne!(tag_id(&source)?, tag_id(&other_account)?);
+    assert_ne!(tag_id(&source)?, tag_id(&other_region)?);
+    Ok(())
 }
 
 #[test]
-fn given_missing_or_foreign_tag_root_when_projecting_then_no_affiliation_is_invented() {
+fn given_missing_or_foreign_tag_root_when_projecting_then_no_affiliation_is_invented()
+-> Result<(), Box<dyn std::error::Error>> {
     // Given native-looking tag data not bound to the displayed resource scope.
     let mut source = native_tag_graph("111111111111", "us-east-1");
     source
         .tag_affiliations
         .first_mut()
-        .expect("affiliation")
+        .ok_or("affiliation")?
         .tag
         .account = "222222222222".to_owned();
     // When projected, foreign-scope data cannot attach to the root.
@@ -224,6 +223,7 @@ fn given_missing_or_foreign_tag_root_when_projecting_then_no_affiliation_is_inve
         0
     );
     assert_eq!(graph.edges().len(), 4);
+    Ok(())
 }
 
 #[test]
