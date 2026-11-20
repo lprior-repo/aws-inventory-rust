@@ -22,6 +22,7 @@ pub(super) async fn drain_sweep(
     if pending {
         return Ok(ChangeStats::default());
     }
+    super::unobserved::record(tx, sweep).await?;
     let rows = sqlx::query("SELECT work.scope_key,work.bindings,work.authority_complete,coalesce(outcomes.outcome,'partial') AS outcome FROM work_queue work LEFT JOIN scope_outcomes outcomes ON outcomes.sweep_id=work.sweep_id AND outcomes.scope_key=work.scope_key WHERE work.sweep_id=?1 AND work.authority_generation=work.generation AND work.generation>0")
         .bind(sweep.as_str()).fetch_all(&mut **tx).await?;
     let mut authorities = BTreeMap::<Vec<u8>, (bool, bool)>::new();

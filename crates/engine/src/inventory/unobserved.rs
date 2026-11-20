@@ -1,0 +1,79 @@
+use super::work::{SweepId, persisted_scope};
+use super::{BinaryStore, StoreError};
+use inventory_core::inventory::ScopeKey;
+use sqlx::{Row, Sqlite, Transaction};
+use std::collections::BTreeSet;
+
+/// A top-level scope an earlier sweep of the same account observed that the
+/// given sweep did not run. Its resources are untouched by that sweep.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UnobservedScope {
+    pub scope: ScopeKey,
+    pub last_observed_ms: i64,
+    pub age_ms: i64,
+}
+
+/// Records, once a sweep has drained, every top-level scope of the sweep's
+/// accounts that earlier sweeps observed and this one did not run. The stored
+/// `observed_at` of an `unobserved` row is the scope's last observation, so
+/// age is derived on read and never invented here.
+pub(super) async fn record(
+    tx: &mut Transaction<'_, Sqlite>,
+    sweep: &SweepId,
+) -> Result<(), StoreError> {
+    let current = sqlx::query("SELECT scope_key FROM work_queue WHERE sweep_id=?1")
+        .bind(sweep.as_str())
+        .fetch_all(&mut **tx)
+        .await?;
+    let mut keys = BTreeSet::<Vec<u8>>::new();
+    let mut accounts = BTreeSet::new();
+    for row in current {
+        let bytes: Vec<u8> = row.try_get("scope_key")?;
+        accounts.insert(persisted_scope(&bytes)?.account().clone());
+        keys.insert(bytes);
+    }
+    let history = sqlx::query("SELECT scope_key,MAX(observed_at) AS last FROM scope_outcomes WHERE sweep_id<>?1 AND outcome<>'unobserved' GROUP BY scope_key")
+        .bind(sweep.as_str())
+        .fetch_all(&mut **tx)
+        .await?;
+    for row in history {
+        let bytes: Vec<u8> = row.try_get("scope_key")?;
+        if keys.contains(&bytes) {
+            continue;
+        }
+        let scope = persisted_scope(&bytes)?;
+        if scope.parent().is_some() || !accounts.contains(scope.account()) {
+            continue;
+        }
+        let last: i64 = row.try_get("last")?;
+        sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES(?1,?2,'unobserved',?3) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome='unobserved',observed_at=excluded.observed_at")
+            .bind(sweep.as_str())
+            .bind(&bytes)
+            .bind(last)
+            .execute(&mut **tx)
+            .await?;
+    }
+    Ok(())
+}
+
+pub(super) async fn list(
+    store: &BinaryStore,
+    sweep: &SweepId,
+    now_ms: i64,
+) -> Result<Vec<UnobservedScope>, StoreError> {
+    let rows = sqlx::query("SELECT scope_key,observed_at FROM scope_outcomes WHERE sweep_id=?1 AND outcome='unobserved' ORDER BY scope_key")
+        .bind(sweep.as_str())
+        .fetch_all(&store.reader)
+        .await?;
+    rows.into_iter()
+        .map(|row| {
+            let bytes: Vec<u8> = row.try_get("scope_key")?;
+            let last_observed_ms: i64 = row.try_get("observed_at")?;
+            Ok(UnobservedScope {
+                scope: persisted_scope(&bytes)?,
+                last_observed_ms,
+                age_ms: now_ms.saturating_sub(last_observed_ms).max(0),
+            })
+        })
+        .collect()
+}

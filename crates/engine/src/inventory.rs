@@ -13,6 +13,7 @@ mod relation_permissions;
 mod schema;
 mod tag_mapping;
 mod typed;
+mod unobserved;
 mod validation;
 mod work;
 use inventory_core::catalog::runtime::RuntimeCatalog;
@@ -33,6 +34,7 @@ pub use projection_read::{
     ProjectionEdgeCursor, ProjectionEdgeHeader, ProjectionEdgePage, ProjectionResource,
     ProjectionSnapshot, ProjectionState, ProjectionTag, ProjectionTagCursor, ProjectionTagPage,
 };
+pub use unobserved::UnobservedScope;
 pub use work::{
     ChangeStats, CommitResult, PendingProjection, ProjectionAck, SweepId, SweepSummary, WorkLease,
     WorkSpec,
@@ -334,6 +336,15 @@ impl BinaryStore {
         account: &str,
     ) -> Result<(), StoreError> {
         work::create_sweep_manifest(self, sweep, account).await
+    }
+    /// Top-level scopes earlier sweeps observed that `sweep` did not run,
+    /// with the time since their last observation.
+    pub async fn unobserved_scopes(
+        &self,
+        sweep: &SweepId,
+        now_ms: i64,
+    ) -> Result<Vec<UnobservedScope>, StoreError> {
+        unobserved::list(self, sweep, now_ms).await
     }
     pub async fn sweep_summary(&self, sweep: &SweepId) -> Result<SweepSummary, StoreError> {
         projection_outbox::sweep_summary(self, sweep).await
