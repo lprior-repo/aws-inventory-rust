@@ -115,7 +115,7 @@ cargo test -p inventory-harness --test assert_parents
 cargo run --locked -p inventory-engine --example resource_views -- --check
 ```
 
-The root generator `catalog/upstream/build_cloudcontrol_catalog.py` is for intentional root-catalog regeneration; it resets executed evidence. After a fresh asserted emulator run with the current sources and binary, bind root-provider request statuses to persisted typed reads:
+The root generator (historical Python; now the `inventory-harness freeze` subcommand) is for intentional root-catalog regeneration; it resets executed evidence. After a fresh asserted emulator run with the current sources and binary, bind root-provider request statuses to persisted typed reads:
 
 ```bash
 cargo run --locked -p inventory-harness -- refresh-coverage \

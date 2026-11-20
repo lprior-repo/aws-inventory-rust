@@ -148,7 +148,7 @@ fn mask_raw_string(
             let mut closing_hash = 0;
             while hash_cursor < bytes.len() && bytes[hash_cursor] == b'#' {
                 closing_hash += 1;
-                hash_cursor = cursor.saturating_add(1);
+                hash_cursor = hash_cursor.saturating_add(1);
             }
             if closing_hash == hash_count {
                 mask_range(output, position, hash_cursor);
@@ -261,7 +261,7 @@ fn mask_block_comment(
     position: usize,
 ) -> (bool, usize) {
     let mut cursor = position + 2;
-    let mut depth = 1;
+    let mut depth: usize = 1;
     let bytes = text.as_bytes();
     while cursor < bytes.len() && depth > 0 {
         if bytes[cursor] == b'/' && cursor + 1 < bytes.len() && bytes[cursor + 1] == b'*' {
@@ -271,7 +271,7 @@ fn mask_block_comment(
             }
             cursor += 2;
         } else if bytes[cursor] == b'*' && cursor + 1 < bytes.len() && bytes[cursor + 1] == b'/' {
-            depth -= 1;
+            depth = depth.saturating_sub(1);
             if depth == 0 {
                 mask_range(output, position, cursor + 2);
                 cursor += 2;
@@ -324,9 +324,20 @@ fn tokenize(text: &str, max_tokens: usize) -> Result<Vec<Token>, HarnessError> {
             });
         }
         // Single character token (delimiters, operators, punctuation)
+        // Multi-byte UTF-8 characters are treated as a single token
         else {
             let start = position;
-            position = position.saturating_add(1);
+            // Find the end of the UTF-8 character
+            if bytes[position] >= 0x80 {
+                // Multi-byte character: find the end
+                let mut end = position + 1;
+                while end < bytes.len() && (bytes[end] & 0xC0) == 0x80 {
+                    end = end.saturating_add(1);
+                }
+                position = end;
+            } else {
+                position = position.saturating_add(1);
+            }
             tokens.push(Token {
                 text: text[start..position].to_string(),
                 start,
