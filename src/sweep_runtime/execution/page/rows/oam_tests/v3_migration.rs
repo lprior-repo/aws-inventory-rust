@@ -282,7 +282,7 @@ async fn given_pre_v3_active_lease_when_migration_keeps_its_generation_then_comm
     );
     sql.close().await;
     let sweep = store
-        .resume_sweep()
+        .discover_active_sweep()
         .await?
         .ok_or("old work was not resumable")?;
     let lease = store

@@ -82,7 +82,7 @@ fn given_mixed_valid_and_invalid_tags_when_normalized_then_valid_tags_are_preser
     let valid_pair = pair("env", "prod")?;
     let invalid_pair = Value::Map(BTreeMap::from([
         (Key::Field(FieldId::new(2)?), Value::Text(too_long)),
-        (Key::Field(FieldId::new(3)?), Value::Text("value")),
+        (Key::Field(FieldId::new(3)?), Value::Text("value".to_owned())),
     ]));
     let rec = record(Some(Value::List(vec![valid_pair, invalid_pair])))?;
     let plan = list_plan()?;

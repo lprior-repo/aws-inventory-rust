@@ -20,7 +20,7 @@ pub(in crate::sweep_runtime) fn tag_observation(
             .map_err(SweepError::from);
     };
     let mut valid_tags = Vec::new();
-    let mut skipped = 0;
+    let mut skipped: u32 = 0;
     let mut exceeded = false;
     match (plan, value) {
         (TagPlan::List { key, value, .. }, ValueRef::List(list)) => {
