@@ -30,4 +30,10 @@ pub struct SweepArgs {
     /// non-zero status instead of claiming success for collection alone.
     #[arg(long)]
     pub drain: bool,
+    /// Slice timeout in seconds. When set, this sweep invocation runs for at most
+    /// this duration, then stops and leaves remaining work for the next slice.
+    /// Use with --resume to continue an incomplete sweep. Useful for Lambda
+    /// packaging and bounded-duration invocations.
+    #[arg(long, default_value_t = 0)]
+    pub slice_timeout: u64,
 }

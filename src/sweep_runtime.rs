@@ -26,6 +26,11 @@ pub struct SweepConfig {
     pub resume: bool,
     pub endpoint: Option<String>,
     pub ca_bundle: Option<PathBuf>,
+    /// Optional slice timeout in seconds. When set, the sweep runs for at most
+    /// this duration per invocation, then stops and leaves remaining work in the
+    /// queue for the next slice. A later invocation with resume=true continues
+    /// where this slice stopped.
+    pub slice_timeout_secs: Option<u64>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]

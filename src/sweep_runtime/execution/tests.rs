@@ -1,6 +1,7 @@
 mod admission;
 mod lease_budget;
 mod shutdown;
+mod slice_budget;
 mod support;
 
 use super::*;

@@ -138,10 +138,37 @@ pub(super) fn scope_key(
 pub(super) async fn drain_work(
     context: &RuntimeContext<'_, '_>,
     sweep: &SweepId,
+    slice_timeout_ms: Option<i64>,
+    max_work_items: Option<i64>,
 ) -> Result<SweepSummary, SweepError> {
     let mut summary = SweepSummary::default();
     let mut leases = Vec::new();
+    let start_ms = slice_timeout_ms.map(|_| now_ms()?);
+    let mut items_claimed: i64 = 0;
     loop {
+        if let Some(start) = start_ms {
+            let elapsed = now_ms()?.saturating_sub(start);
+            if let Some(timeout) = slice_timeout_ms {
+                if elapsed >= timeout {
+                    tracing::info!(
+                        elapsed_ms = elapsed,
+                        timeout_ms = timeout,
+                        "slice time budget reached; leaving remaining work for next slice"
+                    );
+                    break;
+                }
+            }
+        }
+        if let Some(budget) = max_work_items {
+            if items_claimed >= budget {
+                tracing::info!(
+                    items_claimed,
+                    budget,
+                    "slice step budget reached; leaving remaining work for next slice"
+                );
+                break;
+            }
+        }
         admission::claim_batch(
             context.store,
             context.bootstrap.executor,
@@ -159,8 +186,11 @@ pub(super) async fn drain_work(
         if leases.is_empty() {
             break;
         }
-        // Retain ownership credentials for bounded cancellation recovery; page
-        // futures otherwise consume their lease when dispatching a transaction.
+        let lease_count = match i64::try_from(leases.len()) {
+            Ok(count) => count,
+            Err(_) => 0,
+        };
+        items_claimed = items_claimed.saturating_add(lease_count);
         let owned = leases.clone();
         let work = stream::iter(leases.drain(..).map(|lease| page::process(context, lease)))
             .buffer_unordered(context.bootstrap.config.concurrency);

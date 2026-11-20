@@ -94,8 +94,12 @@ pub(crate) async fn run(
     };
     let regions = discover_regions(&context).await?;
     seed_enumerations(&context, &sweep, &regions).await?;
+    let slice_timeout_ms = config
+        .slice_timeout_secs
+        .map(|secs| i64::try_from(secs).ok().and_then(|s| s.checked_mul(1_000)))
+        .flatten();
     let collection: BoxFuture<'_, Result<SweepSummary, SweepError>> =
-        Box::pin(drain_work(&context, &sweep));
+        Box::pin(drain_work(&context, &sweep, slice_timeout_ms, None));
     supervise(&executor, collection, tokio::signal::ctrl_c()).await
 }
 

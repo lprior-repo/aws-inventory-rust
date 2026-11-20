@@ -92,6 +92,11 @@ fn config(options: &SweepArgs) -> SweepConfig {
         resume: options.resume,
         endpoint: options.endpoint.clone(),
         ca_bundle: options.ca_bundle.clone(),
+        slice_timeout_secs: if options.slice_timeout > 0 {
+            Some(options.slice_timeout)
+        } else {
+            None
+        },
     }
 }
 
