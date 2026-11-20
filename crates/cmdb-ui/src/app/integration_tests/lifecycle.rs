@@ -32,7 +32,6 @@ fn given_successful_empty_database_when_startup_page_commits_then_graph_access_d
                     database: Some(fixture.path.clone()),
                     graph_url: url.map(str::to_owned),
                     graph_name: name.map(str::to_owned),
-                    argument_error: None,
                 },
             );
             let expected = format!("Graph offline · {diagnostic}");
@@ -137,7 +136,6 @@ fn given_failed_resource_query_when_filter_removes_selection_then_new_empty_page
                 database: Some(fixture.path.clone()),
                 graph_url: Some(native.endpoint.clone()),
                 graph_name: Some(native.name.clone()),
-                argument_error: None,
             },
         );
         wait_for(&mut app, &mut cx, |app, cx| graph(app, cx).nodes.len() == 2)?;

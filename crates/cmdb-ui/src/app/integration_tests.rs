@@ -319,14 +319,7 @@ fn given_failed_startup_with_accepted_filter_when_app_drains_then_unrevisioned_e
 -> TestResult {
     supervised(|| {
         let (mut cx, mut app) = app()?;
-        let QueuedWorker { worker, start } = support::queued(
-            WorkerConfig {
-                argument_error: Some("missing --database PATH".into()),
-                ..WorkerConfig::default()
-            },
-            2,
-            64,
-        );
+        let QueuedWorker { worker, start } = support::queued(WorkerConfig::default(), 2, 64);
         app.worker = Some(worker);
         // Given an actual admitted action before startup failure is produced.
         text_action(&mut app, &mut cx, ids!(search_input), "recovered");

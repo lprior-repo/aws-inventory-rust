@@ -65,13 +65,17 @@ Makepad is a git dependency pinned in the workspace Cargo.toml; the first build 
 
 ## Arguments
 
+`cmdb-ui --help` (or `-h`) prints the usage and exits 0 without opening the window. An unknown or incomplete argument prints the error and usage to stderr and exits nonzero, also without opening the window.
+
 | Flag | Required | Description |
 |------|----------|-------------|
 | `--database PATH` | Yes | Path to the SQLite inventory database |
 | `--graph-url URL` | No | FalkorDB endpoint (use with `--graph-name`) |
 | `--graph-name NAME` | No | FalkorDB graph name (use with `--graph-url`) |
-| `--linux-backend=x11` | No | Force X11 display backend (must use `=`; a space-separated value is rejected as an unknown argument) |
-| `--linux-backend=wayland` | No | Force Wayland display backend (same `=` form) |
+| `--linux-backend=BACKEND` | No | Force the Linux display backend, e.g. `x11` or `wayland` (must use `=`; a space-separated value is rejected as an unknown argument) |
+| `--hot` | No | Makepad hot reload (development) |
+| `--stdin-loop` | No | Makepad hosted-child mode (started by a Makepad host) |
+| `-h`, `--help` | No | Print usage and exit |
 
 ## Viewer behavior
 

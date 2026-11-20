@@ -35,7 +35,6 @@ fn config(fixture: &Fixture, native: &NativeGraph) -> WorkerConfig {
         database: Some(fixture.path.clone()),
         graph_url: Some(native.endpoint.clone()),
         graph_name: Some(native.name.clone()),
-        argument_error: None,
     }
 }
 

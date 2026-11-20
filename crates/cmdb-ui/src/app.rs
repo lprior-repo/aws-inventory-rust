@@ -151,7 +151,7 @@ impl App {
         let config = self
             .worker_config
             .as_ref()
-            .map_or_else(WorkerConfig::from_process_args, Clone::clone);
+            .map_or_else(crate::cli::startup_config, Clone::clone);
         self.start_worker_with_config(cx, config);
     }
 

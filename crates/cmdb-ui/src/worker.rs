@@ -33,57 +33,11 @@ const GRAPH_LIMITS: GraphLimits = GraphLimits {
     edges: 500,
 };
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct WorkerConfig {
     pub database: Option<PathBuf>,
     pub graph_url: Option<String>,
     pub graph_name: Option<String>,
-    pub argument_error: Option<String>,
-}
-
-impl WorkerConfig {
-    pub fn from_process_args() -> Self {
-        let arguments: Vec<String> = std::env::args().skip(1).collect();
-        let mut config = Self::default();
-        match parse_arguments(&arguments, &mut config) {
-            Ok(()) => config,
-            Err(error) => Self {
-                argument_error: Some(error),
-                ..Self::default()
-            },
-        }
-    }
-}
-
-fn parse_arguments(arguments: &[String], config: &mut WorkerConfig) -> Result<(), String> {
-    match arguments {
-        [] => Ok(()),
-        [flag, remaining @ ..] if flag == "--hot" || flag == "--stdin-loop" => {
-            parse_arguments(remaining, config)
-        }
-        [flag, remaining @ ..] if flag.starts_with("--linux-backend=") => {
-            parse_arguments(remaining, config)
-        }
-        [flag, value, remaining @ ..] => {
-            set_argument(config, flag, value)?;
-            parse_arguments(remaining, config)
-        }
-        [flag] => Err(format!("missing value for {flag}")),
-    }
-}
-
-fn set_argument(config: &mut WorkerConfig, flag: &str, value: &str) -> Result<(), String> {
-    match flag {
-        "--database" => config.database = Some(PathBuf::from(value)),
-        "--graph-url" => config.graph_url = Some(value.to_owned()),
-        "--graph-name" => config.graph_name = Some(value.to_owned()),
-        _ => {
-            return Err(format!(
-                "unknown argument {flag}; expected --database PATH [--graph-url URL --graph-name NAME]"
-            ));
-        }
-    }
-    Ok(())
 }
 
 #[derive(Debug)]
@@ -198,12 +152,7 @@ struct WorkerState {
 async fn startup(mut config: WorkerConfig) -> Result<(WorkerState, WorkerEvent), String> {
     let path = match config.database.take() {
         Some(path) => path,
-        None => {
-            return Err(match config.argument_error {
-                Some(error) => error,
-                None => "missing --database PATH".to_owned(),
-            });
-        }
+        None => return Err("missing --database PATH".to_owned()),
     };
     tokio::time::timeout(Duration::from_secs(10), setup(path, config))
         .await

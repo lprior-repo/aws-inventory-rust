@@ -107,7 +107,6 @@ impl BlockedGraph {
             database: Some(database),
             graph_url: Some(self.endpoint.clone()),
             graph_name: Some("blocked_shutdown_query".into()),
-            argument_error: None,
         }
     }
 

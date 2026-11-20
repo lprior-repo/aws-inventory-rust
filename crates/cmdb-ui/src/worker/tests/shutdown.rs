@@ -138,10 +138,7 @@ fn given_advanced_revision_when_real_startup_fails_then_both_terminal_events_are
     supervised(|| {
         // Given intake revisions already moved before the actual runner starts.
         let queued = queued(
-            WorkerConfig {
-                argument_error: Some("unknown argument --broken".into()),
-                ..WorkerConfig::default()
-            },
+            WorkerConfig::default(),
             2,
             EVENT_CAPACITY,
         );
@@ -159,7 +156,7 @@ fn given_advanced_revision_when_real_startup_fails_then_both_terminal_events_are
                 assert_eq!(graph, Graph::default());
                 assert_eq!(
                     error.as_deref(),
-                    Some("database unavailable · unknown argument --broken")
+                    Some("database unavailable · missing --database PATH")
                 );
             }
             other => return Err(format!("expected startup graph, got {other:?}").into()),
@@ -172,7 +169,7 @@ fn given_advanced_revision_when_real_startup_fails_then_both_terminal_events_are
                 error,
             } => {
                 assert_eq!((counts, rows, total), (Counts::default(), Vec::new(), 0));
-                assert_eq!(error.as_deref(), Some("unknown argument --broken"));
+                assert_eq!(error.as_deref(), Some("missing --database PATH"));
             }
             other => return Err(format!("expected startup snapshot, got {other:?}").into()),
         }

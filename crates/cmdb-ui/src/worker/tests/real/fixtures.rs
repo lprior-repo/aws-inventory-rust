@@ -267,7 +267,6 @@ impl Fixture {
                 database: Some(self.path.clone()),
                 graph_url: graph.map(|value| value.endpoint.clone()),
                 graph_name: graph.map(|value| value.name.clone()),
-                argument_error: None,
             },
             SignalToUI::default(),
         )
