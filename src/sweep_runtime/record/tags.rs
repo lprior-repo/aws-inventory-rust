@@ -61,6 +61,14 @@ pub(in crate::sweep_runtime) fn tag_observation(
             ));
         }
     }
+    // A repeated key cannot be stored: keep the first occurrence, report Partial.
+    valid_tags.sort_by(|left, right| left.key().cmp(right.key()));
+    let before = valid_tags.len();
+    valid_tags.dedup_by(|later, earlier| later.key() == earlier.key());
+    if valid_tags.len() < before {
+        tracing::warn!("skipping duplicate tag keys");
+        skipped = skipped.saturating_add(1);
+    }
     let truncated = valid_tags.len() > MAX_RESOURCE_TAGS;
     if truncated {
         valid_tags.truncate(MAX_RESOURCE_TAGS);

@@ -200,17 +200,21 @@ fn given_duplicate_or_malformed_snapshot_when_normalized_then_partial_coverage()
     let dup_obs = tag_observation(&duplicates, &resource()?, &list_plan()?)?;
     assert_eq!(dup_obs.tags().len(), 1);
     assert_eq!(dup_obs.coverage(), TagCoverage::Partial);
-    // Malformed values still fail the entire observation.
+    // A malformed pair is skipped; the valid one survives with Partial coverage.
     let malformed = record(Some(Value::List(vec![
         pair("good", "a")?,
         Value::Text("bad".into()),
     ])))?;
-    assert!(matches!(
-        tag_observation(&malformed, &resource()?, &list_plan()?),
-        Err(SweepError::Operation(
-            "modeled tag list contains a non-map pair"
-        ))
-    ));
+    let observation = tag_observation(&malformed, &resource()?, &list_plan()?)?;
+    assert_eq!(observation.coverage(), TagCoverage::Partial);
+    assert_eq!(
+        observation
+            .tags()
+            .iter()
+            .map(|tag| (tag.key(), tag.value()))
+            .collect::<Vec<_>>(),
+        vec![("good", "a")]
+    );
     let oversized = (0..101)
         .map(|index| pair(&index.to_string(), "v"))
         .collect::<Result<Vec<_>, _>>()?;
@@ -226,7 +230,7 @@ fn given_duplicate_or_malformed_snapshot_when_normalized_then_partial_coverage()
 }
 
 #[test]
-fn given_missing_or_wrong_typed_pair_fields_when_normalized_then_exact_pair_error_is_reported()
+fn given_missing_or_wrong_typed_pair_fields_when_normalized_then_pair_is_skipped_as_partial()
 -> TestResult {
     let bad_pairs = [
         BTreeMap::from([(Key::Field(FieldId::new(2)?), Value::Text("key".into()))]),
@@ -242,29 +246,23 @@ fn given_missing_or_wrong_typed_pair_fields_when_normalized_then_exact_pair_erro
     ];
     for pair in bad_pairs {
         let malformed = record(Some(Value::List(vec![Value::Map(pair)])))?;
-        assert!(matches!(
-            tag_observation(&malformed, &resource()?, &list_plan()?),
-            Err(SweepError::Operation(
-                "modeled tag pair requires string key and value"
-            ))
-        ));
+        let observation = tag_observation(&malformed, &resource()?, &list_plan()?)?;
+        assert_eq!(observation.coverage(), TagCoverage::Partial);
+        assert!(observation.tags().is_empty());
     }
     Ok(())
 }
 
 #[test]
-fn given_nontext_map_or_nonmap_ancestor_when_normalized_then_exact_shape_error_is_reported()
+fn given_nontext_map_value_or_nonmap_ancestor_when_normalized_then_entry_skipped_or_shape_error()
 -> TestResult {
     let malformed = record(Some(Value::Map(BTreeMap::from([(
         Key::Name("key".into()),
         Value::Int(1),
     )]))))?;
-    assert!(matches!(
-        tag_observation(&malformed, &resource()?, &map_plan()?),
-        Err(SweepError::Operation(
-            "modeled tag map requires string keys and values"
-        ))
-    ));
+    let observation = tag_observation(&malformed, &resource()?, &map_plan()?)?;
+    assert_eq!(observation.coverage(), TagCoverage::Partial);
+    assert!(observation.tags().is_empty());
     let plan = TagPlan::Map {
         path: vec![field()?, FieldId::new(2)?].into_boxed_slice(),
     };
