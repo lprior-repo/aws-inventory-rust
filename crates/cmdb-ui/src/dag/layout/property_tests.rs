@@ -165,7 +165,7 @@ proptest! {
                         "back edge from {} (layer {}) to {} (layer {})",
                         edge.from, from_layer, edge.to, to_layer);
                 } else {
-                    prop_assert!(from_layer <= to_layer,
+                    prop_assert!(from_layer < to_layer,
                         "forward edge from {} (layer {}) to {} (layer {})",
                         edge.from, from_layer, edge.to, to_layer);
                 }
