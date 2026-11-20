@@ -15,8 +15,12 @@ mod migration;
 mod scopes;
 #[path = "inventory_tags/state.rs"]
 mod state;
+#[path = "inventory_tags/tag_roles.rs"]
+mod tag_roles;
 
-use inventory_core::inventory::{InventoryError, Region, Tag, TagCoverage, TagObservation};
+use inventory_core::inventory::{
+    InventoryError, Observation, Region, Tag, TagCoverage, TagMapping, TagObservation,
+};
 use inventory_engine::inventory::{BinaryStore, ProjectionAck, StoreError, SweepId};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use support::TestResult;

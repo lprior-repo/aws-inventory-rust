@@ -1,9 +1,11 @@
 mod decode;
 mod tag_endpoint;
+mod tag_sources;
 mod types;
 pub use tag_endpoint::{
     TagEndpointParentPlan, TagEndpointPlan, TagEndpointRequestPlan, TagEndpointSource,
 };
+pub use tag_sources::kinds_without_tag_source;
 
 use crate::{
     catalog::{Catalog, CatalogError},

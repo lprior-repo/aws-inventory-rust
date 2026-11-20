@@ -8,6 +8,7 @@ mod query;
 mod reference;
 mod schema;
 mod tag;
+mod tag_mapping;
 
 pub use discovery_context::{
     ContextError, DiscoveryContext, DiscoveryFrame, MAX_DISCOVERY_CONTEXT_BYTES,
@@ -26,3 +27,4 @@ pub use schema::{Column, KindSchema, MAX_SQLITE_COLUMNS, ScalarType};
 pub use tag::{
     MAX_RESOURCE_TAGS, MAX_TAG_KEY_CHARS, MAX_TAG_VALUE_CHARS, Tag, TagCoverage, TagObservation,
 };
+pub use tag_mapping::{MAX_MAPPING_KEYS, TagMapping, TagMappingError, TagRole};

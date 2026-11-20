@@ -19,6 +19,7 @@ pub(super) async fn initialize(
         return Err(StoreError::SchemaVersion { found: version });
     }
     create_shared_tables(&mut tx).await?;
+    super::tag_mapping::create(&mut tx).await?;
     super::legacy::create(&mut tx).await?;
     super::relation_permissions::initialize_provenance(&mut tx).await?;
     sqlx::query("INSERT INTO metadata(key,value) VALUES('catalog_digest',?1),('projection_rebuild',?2),('projection_revision',0),('projection_pending',0),('canonical_facet_dependencies_v3',X'01')")
@@ -145,6 +146,7 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
         sqlx::query(statement).execute(&mut *tx).await?;
     }
     create_scope_freshness_view(&mut tx).await?;
+    super::tag_mapping::create(&mut tx).await?;
     tx.commit().await?;
     Ok(())
 }

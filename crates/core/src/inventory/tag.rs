@@ -16,19 +16,27 @@ pub struct Tag {
 impl Tag {
     pub fn new(key: impl Into<String>, value: impl Into<String>) -> Result<Self, InventoryError> {
         let key: String = key.into();
-        if key.is_empty()
-            || key.chars().count() > MAX_TAG_KEY_CHARS
-            || key.chars().any(char::is_control)
-        {
-            return Err(InventoryError::TagKey);
-        }
+        check_key(&key)?;
         let value: String = value.into();
         if value.chars().count() > MAX_TAG_VALUE_CHARS || value.contains('\0') {
             return Err(InventoryError::TagValue);
         }
         Ok(Self { key, value })
     }
+}
 
+/// Shared by tag observations and tag-key mappings: one rule for what a key may be.
+pub fn check_key(key: &str) -> Result<(), InventoryError> {
+    if key.is_empty()
+        || key.chars().count() > MAX_TAG_KEY_CHARS
+        || key.chars().any(char::is_control)
+    {
+        return Err(InventoryError::TagKey);
+    }
+    Ok(())
+}
+
+impl Tag {
     pub fn key(&self) -> &str {
         &self.key
     }

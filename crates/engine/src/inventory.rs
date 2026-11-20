@@ -11,6 +11,7 @@ mod reference_candidates;
 mod references;
 mod relation_permissions;
 mod schema;
+mod tag_mapping;
 mod typed;
 mod validation;
 mod work;
