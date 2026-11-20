@@ -13,6 +13,7 @@ use command_output::{CommandOutput, execute, output};
 mod coverage;
 mod delivery;
 mod demo;
+mod graph_rebuild;
 mod jobs;
 mod models_catalog;
 mod plan;
@@ -108,6 +109,12 @@ fn dispatch(command: Command) -> BoxFuture<'static, Result<CommandOutput>> {
             url_env,
             attempts,
         } => Box::pin(push_graph(input, checkpoint, url_env, attempts)),
+        Command::RebuildGraph {
+            database,
+            catalog,
+            graph_url,
+            graph_name,
+        } => Box::pin(graph_rebuild::run(database, catalog, graph_url, graph_name)),
         Command::Scan(options) => Box::pin(run_scan(options)),
         Command::Sweep(options) => {
             return Box::pin(async move {

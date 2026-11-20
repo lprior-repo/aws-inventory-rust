@@ -214,6 +214,12 @@ impl BinaryStore {
         relation_permissions::open_with_catalog(path, catalog).await
     }
 
+    /// Replaces pending projection work with one full graph rebuild from SQLite.
+    /// Delivery happens through `run_projection`; no graph endpoint is contacted here.
+    pub async fn request_graph_rebuild(&self) -> Result<(), StoreError> {
+        commit::request_graph_rebuild(self).await
+    }
+
     pub async fn unattributed_authority_count(&self) -> Result<u64, StoreError> {
         legacy::count(&self.writer).await
     }

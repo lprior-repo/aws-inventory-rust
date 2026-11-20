@@ -41,12 +41,21 @@ impl GraphError {
     }
 }
 
+/// Index creation runs inside the fenced MULTI pipeline, so FalkorDB's reply
+/// surfaces as a pipeline error whose code and detail live on the inner server
+/// error. Unwrap both shapes before matching.
 fn index_already_exists(error: &redis::RedisError) -> bool {
-    matches!(error.code(), Some("Attribute") | Some("ERR"))
-        && matches!(
-            error.detail(),
-            Some("'key' is already indexed") | Some("\"Attribute\": 'key' is already indexed")
-        )
+    error.clone().into_server_errors().is_some_and(|errors| {
+        !errors.is_empty()
+            && errors.iter().all(|(_, server)| {
+                matches!(server.code(), "Attribute" | "ERR")
+                    && matches!(
+                        server.details(),
+                        Some("'key' is already indexed")
+                            | Some("\"Attribute\": 'key' is already indexed")
+                    )
+            })
+    })
 }
 
 impl GraphClient {
@@ -140,5 +149,29 @@ impl GraphClient {
         tokio::time::timeout(Duration::from_secs(10), self.fenced_request(query))
             .await
             .map_err(|_| GraphError::Timeout)?
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::index_already_exists;
+
+    fn server_error(reply: &[u8]) -> redis::RedisError {
+        match redis::parse_redis_value(reply) {
+            Ok(redis::Value::ServerError(server)) => redis::RedisError::from(server),
+            _ => redis::RedisError::from((redis::ErrorKind::Client, "not a server error")),
+        }
+    }
+
+    #[test]
+    fn already_indexed_reply_is_benign_only_for_that_exact_server_error() {
+        let existing = server_error(b"-Attribute 'key' is already indexed\r\n");
+        assert!(index_already_exists(&existing));
+        assert!(!index_already_exists(&server_error(
+            b"-Attribute 'name' is already indexed\r\n"
+        )));
+        assert!(!index_already_exists(&server_error(
+            b"-ERR syntax error\r\n"
+        )));
     }
 }

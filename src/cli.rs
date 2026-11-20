@@ -154,6 +154,18 @@ pub enum Command {
         attempts: u32,
     },
 
+    /// Rebuild a FalkorDB graph from the stored inventory, with no AWS calls.
+    RebuildGraph {
+        #[arg(long)]
+        database: PathBuf,
+        #[arg(long, default_value = "catalog/aws-api.catalog")]
+        catalog: PathBuf,
+        #[arg(long)]
+        graph_url: String,
+        #[arg(long)]
+        graph_name: String,
+    },
+
     Scan(ScanArgs),
     Sweep(SweepArgs),
 }

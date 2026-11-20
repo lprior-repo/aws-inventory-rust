@@ -97,3 +97,43 @@ pub(super) async fn given_a_partial_scope_and_two_complete_misses_then_only_the_
     assert_eq!(typed_rows, 0);
     Ok(())
 }
+
+#[tokio::test]
+pub(super) async fn given_pending_projection_work_when_graph_rebuild_is_requested_then_one_full_rebuild_replaces_it()
+-> TestResult {
+    let (_directory, store, _) = fixture().await?;
+    store.seed_work(work("rebuild-request", "us-east-1")?).await?;
+    let lease = store
+        .claim(&SweepId::new("rebuild-request".to_owned())?, 100, 20)
+        .await?
+        .ok_or("missing rebuild lease")?;
+    store
+        .commit_page(page(
+            lease,
+            vec![observation("thing-1", "alpha")?],
+            true,
+            None,
+            101,
+        ))
+        .await?;
+    assert!(!store.projection_state().await?.rebuild_required);
+
+    store.request_graph_rebuild().await?;
+
+    let state = store.projection_state().await?;
+    assert_eq!(state.pending, 1);
+    assert!(state.rebuild_required);
+    let entries = store.drain_projection(10).await?;
+    assert_eq!(entries.len(), 1);
+    let marker = entries.first().ok_or("missing rebuild marker")?;
+    assert!(marker.full_rebuild);
+    store
+        .ack_projection(inventory_engine::inventory::ProjectionAck::full_rebuild(
+            marker.revision,
+        )?)
+        .await?;
+    let after = store.projection_state().await?;
+    assert_eq!(after.pending, 0);
+    assert!(!after.rebuild_required);
+    Ok(())
+}
