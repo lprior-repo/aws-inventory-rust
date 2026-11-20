@@ -1,8 +1,8 @@
 use super::paths::violation;
 use super::{Violation, ViolationRule};
 use crate::{
-    overlay::{OperationOverlay, Paginator},
     overlay::check::validation::compatibility::compatible,
+    overlay::{OperationOverlay, Paginator},
     plans::{self, Model, Pagination},
 };
 
@@ -15,7 +15,9 @@ pub(super) fn validate_paginator(
     violations: &mut Vec<Violation>,
 ) -> bool {
     match item.paginator.as_ref() {
-        Some(paginator) => overlay_paginator(service, operation, model, pagination, paginator, violations),
+        Some(paginator) => {
+            overlay_paginator(service, operation, model, pagination, paginator, violations)
+        }
         None => modeled_paginator(service, operation, pagination, violations),
     }
 }
@@ -74,7 +76,10 @@ fn overlay_paginator(
                 });
             if !valid {
                 super::pagination_tokens::invalid_token(
-                    service, operation, input.as_str(), violations,
+                    service,
+                    operation,
+                    input.as_str(),
+                    violations,
                 );
             }
             let flag_valid =
@@ -131,18 +136,16 @@ fn validate_tokens(
     truncated: Option<&crate::overlay::MemberPath>,
     violations: &mut Vec<Violation>,
 ) -> bool {
-    let valid_pairs = pairs
-        .iter()
-        .all(|pair| {
-            super::pagination_tokens::validate_token_pair(
-                service,
-                operation,
-                model,
-                pair.input.as_str(),
-                pair.output.as_str(),
-                violations,
-            )
-        });
+    let valid_pairs = pairs.iter().all(|pair| {
+        super::pagination_tokens::validate_token_pair(
+            service,
+            operation,
+            model,
+            pair.input.as_str(),
+            pair.output.as_str(),
+            violations,
+        )
+    });
     let valid_truncated = validate_truncated(service, operation, model, truncated, violations);
     valid_pairs && valid_truncated
 }
@@ -204,5 +207,3 @@ fn missing_paginator(
     ));
     false
 }
-
-

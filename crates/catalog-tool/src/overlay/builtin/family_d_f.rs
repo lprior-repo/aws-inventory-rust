@@ -182,10 +182,10 @@ pub(super) fn overlays() -> Result<Vec<ServiceOverlay>, NameError> {
 #[cfg(test)]
 mod tests;
 #[cfg(test)]
-mod tests_eventbridge;
-#[cfg(test)]
 mod tests_d_f_misc;
 #[cfg(test)]
 mod tests_d_f_registry;
 #[cfg(test)]
 mod tests_descendants;
+#[cfg(test)]
+mod tests_eventbridge;

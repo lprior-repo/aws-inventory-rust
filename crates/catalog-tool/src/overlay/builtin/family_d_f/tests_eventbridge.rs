@@ -13,11 +13,7 @@ fn operation<'a>(
     policies
         .iter()
         .find(|policy| policy.service() == service)
-        .and_then(|policy| {
-            policy
-                .operations()
-                .get(&OperationName::new(name).ok()?)
-        })
+        .and_then(|policy| policy.operations().get(&OperationName::new(name).ok()?))
         .ok_or_else(|| format!("missing policy {service}/{name}").into())
 }
 

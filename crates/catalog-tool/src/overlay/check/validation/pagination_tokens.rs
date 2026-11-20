@@ -1,5 +1,5 @@
 use super::paths::violation;
-use super::{compatibility, Violation, ViolationRule};
+use super::{Violation, ViolationRule, compatibility};
 use crate::plans;
 
 pub(super) fn validate_token_pair(
@@ -30,7 +30,10 @@ pub(super) fn resolve_token_pair<'a>(
     input: &str,
     output: &str,
     violations: &mut Vec<Violation>,
-) -> (Option<plans::model::ShapeRef<'a>>, Option<plans::model::ShapeRef<'a>>) {
+) -> (
+    Option<plans::model::ShapeRef<'a>>,
+    Option<plans::model::ShapeRef<'a>>,
+) {
     let [input_shape, output_shape] = [
         ("paginator.input", input, "input"),
         ("paginator.output", output, "output"),
@@ -89,10 +92,17 @@ fn token_shapes_valid(
     input: &plans::model::ShapeRef<'_>,
     output: &plans::model::ShapeRef<'_>,
 ) -> bool {
-    supported_token(input) && supported_token(output) && compatibility::compatible(model, input, output)
+    supported_token(input)
+        && supported_token(output)
+        && compatibility::compatible(model, input, output)
 }
 
-pub(super) fn invalid_token(service: &str, operation: &str, input: &str, violations: &mut Vec<Violation>) {
+pub(super) fn invalid_token(
+    service: &str,
+    operation: &str,
+    input: &str,
+    violations: &mut Vec<Violation>,
+) {
     violations.push(violation(
         service,
         operation,

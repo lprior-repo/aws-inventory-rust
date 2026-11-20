@@ -371,10 +371,26 @@ fn given_reviewed_metadata_operations_when_registry_compiles_then_expected_kinds
         ),
         ("transfer", "DescribeAgreement", "AWS::Transfer::Agreement"),
         ("sagemaker", "ListApps", "AWS::ApiOnly::SageMakerApp"),
-        ("ssm-contacts", "ListContactChannels", "AWS::ApiOnly::SSMContactChannel"),
-        ("migrationhubstrategy", "ListServers", "AWS::ApiOnly::MigrationStrategyServer"),
-        ("mediapackage", "ListVodAssets", "AWS::ApiOnly::MediaPackageVodAsset"),
-        ("database-migration-service", "DescribeEndpoints", "AWS::DMS::Endpoint"),
+        (
+            "ssm-contacts",
+            "ListContactChannels",
+            "AWS::ApiOnly::SSMContactChannel",
+        ),
+        (
+            "migrationhubstrategy",
+            "ListServers",
+            "AWS::ApiOnly::MigrationStrategyServer",
+        ),
+        (
+            "mediapackage",
+            "ListVodAssets",
+            "AWS::ApiOnly::MediaPackageVodAsset",
+        ),
+        (
+            "database-migration-service",
+            "DescribeEndpoints",
+            "AWS::DMS::Endpoint",
+        ),
     ];
     // When compiling all reviewed families against the pinned CFN source.
     let map = embedded(include_bytes!(
@@ -776,35 +792,143 @@ const NEW_SAFE_METADATA_OPERATIONS: &[(&str, &str, &str)] = &[
     ),
     ("rds", "DescribeDBSnapshots", "AWS::RDS::DBSnapshot"),
     ("route-53", "GetDNSSEC", "AWS::Route53::DNSSEC"),
-    ("eventbridge", "DescribeEventBus", "AWS::ApiOnly::EventBridgeEventBus"),
-    ("eventbridge", "DescribeEventSource", "AWS::ApiOnly::EventBridgeEventSource"),
-    ("eventbridge", "DescribeRule", "AWS::ApiOnly::EventBridgeEventRule"),
-    ("eventbridge", "DescribeEndpoint", "AWS::ApiOnly::EventBridgeEndpoint"),
-    ("eventbridgev2", "DescribeEventBus", "AWS::ApiOnly::EventBridgeV2EventBus"),
-    ("eventbridgev2", "DescribeEventSource", "AWS::ApiOnly::EventBridgeV2EventSource"),
-    ("eventbridgev2", "DescribeSubscriber", "AWS::ApiOnly::EventBridgeV2Subscriber"),
-    ("sagemaker", "DescribeTrainingPlanExtensionHistory", "AWS::ApiOnly::SageMakerTrainingPlanExtension"),
+    (
+        "eventbridge",
+        "DescribeEventBus",
+        "AWS::ApiOnly::EventBridgeEventBus",
+    ),
+    (
+        "eventbridge",
+        "DescribeEventSource",
+        "AWS::ApiOnly::EventBridgeEventSource",
+    ),
+    (
+        "eventbridge",
+        "DescribeRule",
+        "AWS::ApiOnly::EventBridgeEventRule",
+    ),
+    (
+        "eventbridge",
+        "DescribeEndpoint",
+        "AWS::ApiOnly::EventBridgeEndpoint",
+    ),
+    (
+        "eventbridgev2",
+        "DescribeEventBus",
+        "AWS::ApiOnly::EventBridgeV2EventBus",
+    ),
+    (
+        "eventbridgev2",
+        "DescribeEventSource",
+        "AWS::ApiOnly::EventBridgeV2EventSource",
+    ),
+    (
+        "eventbridgev2",
+        "DescribeSubscriber",
+        "AWS::ApiOnly::EventBridgeV2Subscriber",
+    ),
+    (
+        "sagemaker",
+        "DescribeTrainingPlanExtensionHistory",
+        "AWS::ApiOnly::SageMakerTrainingPlanExtension",
+    ),
     ("sagemaker", "ListAliases", "AWS::ApiOnly::SageMakerAlias"),
     ("sagemaker", "ListApps", "AWS::ApiOnly::SageMakerApp"),
-    ("sagemaker", "ListCandidatesForAutoMLJob", "AWS::ApiOnly::SageMakerAutoMLCandidate"),
-    ("sagemaker", "ListClusterEvents", "AWS::ApiOnly::SageMakerClusterEvent"),
-    ("sagemaker", "ListClusterExtensions", "AWS::ApiOnly::SageMakerClusterExtension"),
-    ("ssm-contacts", "ListContactChannels", "AWS::ApiOnly::SSMContactChannel"),
-    ("ssm-contacts", "ListPageReceipts", "AWS::ApiOnly::SSMContactPageReceipt"),
-    ("ssm-contacts", "ListPageResolutions", "AWS::ApiOnly::SSMContactPageResolution"),
-    ("ssm-contacts", "ListPagesByContact", "AWS::ApiOnly::SSMContactPage"),
-    ("ssm-contacts", "ListPagesByEngagement", "AWS::ApiOnly::SSMContactPage"),
-    ("ssm-contacts", "ListRotationOverrides", "AWS::ApiOnly::SSMContactRotationOverride"),
-    ("ssm-contacts", "ListRotationShifts", "AWS::ApiOnly::SSMContactRotationShift"),
-    ("database-migration-service", "DescribeFleetAdvisorCollectors", "AWS::ApiOnly::DMSCollector"),
-    ("database-migration-service", "DescribeFleetAdvisorDatabases", "AWS::ApiOnly::DMSScannedDatabase"),
-    ("database-migration-service", "DescribePendingMaintenanceActions", "AWS::ApiOnly::DMSPendingMaintenanceAction"),
-    ("database-migration-service", "DescribeDataMigrations", "AWS::ApiOnly::DMSDataMigration"),
-    ("migrationhubstrategy", "ListAnalyzableServers", "AWS::ApiOnly::MigrationStrategyAnalyzableServer"),
-    ("migrationhubstrategy", "ListApplicationComponents", "AWS::ApiOnly::MigrationStrategyApplicationComponent"),
-    ("migrationhubstrategy", "ListImportFileTask", "AWS::ApiOnly::MigrationStrategyImportFileTask"),
-    ("migrationhubstrategy", "ListServers", "AWS::ApiOnly::MigrationStrategyServer"),
-    ("mediapackage", "ListVodAssets", "AWS::ApiOnly::MediaPackageVodAsset"),
+    (
+        "sagemaker",
+        "ListCandidatesForAutoMLJob",
+        "AWS::ApiOnly::SageMakerAutoMLCandidate",
+    ),
+    (
+        "sagemaker",
+        "ListClusterEvents",
+        "AWS::ApiOnly::SageMakerClusterEvent",
+    ),
+    (
+        "sagemaker",
+        "ListClusterExtensions",
+        "AWS::ApiOnly::SageMakerClusterExtension",
+    ),
+    (
+        "ssm-contacts",
+        "ListContactChannels",
+        "AWS::ApiOnly::SSMContactChannel",
+    ),
+    (
+        "ssm-contacts",
+        "ListPageReceipts",
+        "AWS::ApiOnly::SSMContactPageReceipt",
+    ),
+    (
+        "ssm-contacts",
+        "ListPageResolutions",
+        "AWS::ApiOnly::SSMContactPageResolution",
+    ),
+    (
+        "ssm-contacts",
+        "ListPagesByContact",
+        "AWS::ApiOnly::SSMContactPage",
+    ),
+    (
+        "ssm-contacts",
+        "ListPagesByEngagement",
+        "AWS::ApiOnly::SSMContactPage",
+    ),
+    (
+        "ssm-contacts",
+        "ListRotationOverrides",
+        "AWS::ApiOnly::SSMContactRotationOverride",
+    ),
+    (
+        "ssm-contacts",
+        "ListRotationShifts",
+        "AWS::ApiOnly::SSMContactRotationShift",
+    ),
+    (
+        "database-migration-service",
+        "DescribeFleetAdvisorCollectors",
+        "AWS::ApiOnly::DMSCollector",
+    ),
+    (
+        "database-migration-service",
+        "DescribeFleetAdvisorDatabases",
+        "AWS::ApiOnly::DMSScannedDatabase",
+    ),
+    (
+        "database-migration-service",
+        "DescribePendingMaintenanceActions",
+        "AWS::ApiOnly::DMSPendingMaintenanceAction",
+    ),
+    (
+        "database-migration-service",
+        "DescribeDataMigrations",
+        "AWS::ApiOnly::DMSDataMigration",
+    ),
+    (
+        "migrationhubstrategy",
+        "ListAnalyzableServers",
+        "AWS::ApiOnly::MigrationStrategyAnalyzableServer",
+    ),
+    (
+        "migrationhubstrategy",
+        "ListApplicationComponents",
+        "AWS::ApiOnly::MigrationStrategyApplicationComponent",
+    ),
+    (
+        "migrationhubstrategy",
+        "ListImportFileTask",
+        "AWS::ApiOnly::MigrationStrategyImportFileTask",
+    ),
+    (
+        "migrationhubstrategy",
+        "ListServers",
+        "AWS::ApiOnly::MigrationStrategyServer",
+    ),
+    (
+        "mediapackage",
+        "ListVodAssets",
+        "AWS::ApiOnly::MediaPackageVodAsset",
+    ),
 ];
 
 #[test]
@@ -1441,14 +1565,24 @@ fn given_unregistered_relation_target_when_compiled_with_pin_then_unknown_kind_i
 fn production_embedded_map_pins_the_complete_api_only_count() -> TestResult {
     // Given the production embedded map compiled from the overlay registry,
     // the api_only count is a complete, reviewed pin.
-    let map = crate::kind_map::builtin::embedded(include_bytes!("../../../../../catalog/cloudcontrol-universal.json"))?;
+    let map = crate::kind_map::builtin::embedded(include_bytes!(
+        "../../../../../catalog/cloudcontrol-universal.json"
+    ))?;
     let api_only = map.api_only();
     // The production map includes family_d_f rows that the source-only map does not.
     // This count is measured by running this test and observed, not guessed.
     assert_eq!(api_only.len(), 666);
     // DMSCertificate was removed from api_only in this overlay update.
-    assert!(!api_only.iter().any(|r| r.kind == "AWS::ApiOnly::DMSCertificate"));
+    assert!(
+        !api_only
+            .iter()
+            .any(|r| r.kind == "AWS::ApiOnly::DMSCertificate")
+    );
     // The rename from DescribeEventRule to DescribeRule was completed.
-    assert!(!api_only.iter().any(|r| r.reason.contains("DescribeEventRule")));
+    assert!(
+        !api_only
+            .iter()
+            .any(|r| r.reason.contains("DescribeEventRule"))
+    );
     Ok(())
 }

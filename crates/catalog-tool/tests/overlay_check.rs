@@ -294,4 +294,3 @@ fn describe_rule_disambiguates_by_event_bus() -> Result<(), Box<dyn std::error::
     );
     Ok(())
 }
-

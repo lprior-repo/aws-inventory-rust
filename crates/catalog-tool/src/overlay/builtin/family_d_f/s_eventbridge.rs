@@ -71,11 +71,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             // Expand DescribeEventSource to include partner event source details.
             queried(
                 bound(
-                    describe(
-                        "DescribeEventSource",
-                        "$",
-                        arn("Arn")?,
-                    )?,
+                    describe("DescribeEventSource", "$", arn("Arn")?)?,
                     &[("Name", "ListEventSources", "Name")],
                 )?,
                 &["Arn", "Name", "State"],
@@ -83,11 +79,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             // Expand DescribeEndpoint to include global endpoint details.
             queried(
                 bound(
-                    describe(
-                        "DescribeEndpoint",
-                        "$",
-                        arn("Arn")?,
-                    )?,
+                    describe("DescribeEndpoint", "$", arn("Arn")?)?,
                     &[("Name", "ListEndpoints", "Name")],
                 )?,
                 &["Arn", "Name", "EndpointId", "State"],
@@ -138,11 +130,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             // Expand DescribeRule to include rule details.
             queried(
                 bound(
-                    describe(
-                        "DescribeRule",
-                        "$",
-                        arn("Arn")?,
-                    )?,
+                    describe("DescribeRule", "$", arn("Arn")?)?,
                     &[
                         ("Name", "ListRules", "Name"),
                         ("EventBusName", "ListRules", "EventBusName"),

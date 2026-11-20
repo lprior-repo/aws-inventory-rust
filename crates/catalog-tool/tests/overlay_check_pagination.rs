@@ -1,7 +1,7 @@
 use catalog_tool::classes::DenyList;
 use catalog_tool::overlay::{
-    self, CheckError, Identity, ItemSelector, MemberPath, OperationOverlay, OverlayClass, Paginator,
-    ServiceOverlay, ViolationRule,
+    self, CheckError, Identity, ItemSelector, MemberPath, OperationOverlay, OverlayClass,
+    Paginator, ServiceOverlay, ViolationRule,
 };
 use std::path::Path;
 
@@ -29,7 +29,9 @@ const NEEDS_OVERLAY_MODEL: &str = r#"{"smithy":"2.0","shapes":{
 
 fn paginated_fixture() -> Result<tempfile::TempDir, Box<dyn std::error::Error>> {
     let root = tempfile::tempdir()?;
-    let models = root.path().join("source/models/paginated/service/2020-01-01");
+    let models = root
+        .path()
+        .join("source/models/paginated/service/2020-01-01");
     std::fs::create_dir_all(&models)?;
     std::fs::write(models.join("paginated.json"), PAGINATED_MODEL)?;
     Ok(root)
@@ -45,7 +47,10 @@ fn paginated_policy() -> Result<ServiceOverlay, Box<dyn std::error::Error>> {
     plan.items = Some(ItemSelector::parse("Items")?);
     plan.paginator = Some(Paginator::None);
     plan.identity = Some(Identity::Key(vec![MemberPath::selected("Id")?]));
-    Ok(ServiceOverlay::new("paginated", vec![("ListPaginated", plan)])?)
+    Ok(ServiceOverlay::new(
+        "paginated",
+        vec![("ListPaginated", plan)],
+    )?)
 }
 
 fn needs_overlay_fixture() -> Result<tempfile::TempDir, Box<dyn std::error::Error>> {
@@ -66,7 +71,10 @@ fn needs_overlay_policy() -> Result<ServiceOverlay, Box<dyn std::error::Error>> 
     plan.items = Some(ItemSelector::parse("Items")?);
     plan.paginator = Some(Paginator::None);
     plan.identity = Some(Identity::Key(vec![MemberPath::selected("Id")?]));
-    Ok(ServiceOverlay::new("needs", vec![("ListNeedsOverlay", plan)])?)
+    Ok(ServiceOverlay::new(
+        "needs",
+        vec![("ListNeedsOverlay", plan)],
+    )?)
 }
 
 #[test]
@@ -79,9 +87,11 @@ fn paginator_none_rejected_when_model_is_modeled() -> Result<(), Box<dyn std::er
         &DenyList::builtin(),
     ) {
         Err(CheckError::Violations(errors)) => {
-            let has_invalid_value = errors
-                .iter()
-                .any(|e| e.rule() == ViolationRule::InvalidValue && e.key() == "paginator" && e.value() == "Paginator::None");
+            let has_invalid_value = errors.iter().any(|e| {
+                e.rule() == ViolationRule::InvalidValue
+                    && e.key() == "paginator"
+                    && e.value() == "Paginator::None"
+            });
             assert!(
                 has_invalid_value,
                 "expected InvalidValue violation for Paginator::None with modeled pagination; got {:?}",
@@ -96,7 +106,8 @@ fn paginator_none_rejected_when_model_is_modeled() -> Result<(), Box<dyn std::er
 }
 
 #[test]
-fn paginator_none_accepted_for_needs_overlay_pagination() -> Result<(), Box<dyn std::error::Error>> {
+fn paginator_none_accepted_for_needs_overlay_pagination() -> Result<(), Box<dyn std::error::Error>>
+{
     let root = needs_overlay_fixture()?;
     let policy = needs_overlay_policy()?;
     let checked = overlay::check_policies(
@@ -108,7 +119,13 @@ fn paginator_none_accepted_for_needs_overlay_pagination() -> Result<(), Box<dyn 
     match &checked {
         Err(overlay::CheckError::Violations(errors)) => {
             for e in errors {
-                eprintln!("violation: {} {} {} {}", e.service(), e.operation(), e.key(), e.value());
+                eprintln!(
+                    "violation: {} {} {} {}",
+                    e.service(),
+                    e.operation(),
+                    e.key(),
+                    e.value()
+                );
             }
         }
         Err(other) => eprintln!("error: {:?}", other),
