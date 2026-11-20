@@ -4,11 +4,10 @@ use std::collections::{BTreeMap, BTreeSet};
 mod keys;
 use keys::{
     MIN_ARN_COMPONENT_BYTES, arn_component, arn_service_type, identity_strings, is_arn,
+    resource_service_type,
 };
 
-/// Helper type for deserializing the resource_identifier field.
-#[derive(serde::Deserialize)]
-struct ResourceIdentifier(String);
+
 
 struct Target {
     id: String,
@@ -58,25 +57,7 @@ impl IdentityIndex {
         }
         let position = self.targets.len();
         self.seen.insert(resource.id.clone(), position);
-        // Derive service and type from the resource's identifiers. Prefer the
-        // id if it's an ARN; otherwise check the resource_identifier field.
-        let (service, resource_type) = if is_arn(&resource.id) {
-            match arn_service_type(&resource.id) {
-                Some((s, t)) => (Some(s.to_owned()), Some(t.to_owned())),
-                None => (None, None),
-            }
-        } else {
-            // Check resource_identifier for ARN format.
-            match serde_json::from_value::<ResourceIdentifier>(
-                resource.properties.get("resource_identifier").cloned().unwrap_or_default(),
-            ) {
-                Ok(rid) if is_arn(&rid.0) => match arn_service_type(&rid.0) {
-                    Some((s, t)) => (Some(s.to_owned()), Some(t.to_owned())),
-                    None => (None, None),
-                },
-                _ => (None, None),
-            }
-        };
+        let (service, resource_type) = resource_service_type(resource);
         self.targets.push(Target {
             id: resource.id.clone(),
             account_id: resource.account_id.clone(),
@@ -143,9 +124,12 @@ impl IdentityIndex {
         };
         // Extract service and resource type from the ARN to prevent
         // ARN-tail inference from matching across different services.
-        let (service, resource_type) = arn_service_type(value)
-            .map(|(s, t)| (Some(s.to_owned()), Some(t.to_owned())))
-            .unwrap_or((None, None));
+        // If the ARN has an unparseable service/type, fail open rather than
+        // dropping the filter (which would allow cross-service resolution).
+        let (service, resource_type) = match arn_service_type(value) {
+            Some((s, t)) => (Some(s.to_owned()), Some(t.to_owned())),
+            None => return Lookup::Unresolved,
+        };
         if let Some(positions) = self.identifiers.get(value) {
             match self.unique_target(positions, account_id, region, &service, &resource_type, source) {
                 Lookup::Unresolved => {}
@@ -203,22 +187,7 @@ impl IdentityIndex {
             let Some(target) = self.targets.get(*position) else {
                 continue;
             };
-            if target.account_id != account_id || target.region != region {
-                continue;
-            }
-            // Require service and resource type to match when the lookup ARN
-            // has them. This prevents ARN-tail inference from matching a
-            // Lambda function ARN to an RDS instance with the same tail.
-            // Bare identifier lookups (service=None) do not filter by
-            // service/type, so they can still match ARN-identified targets.
-            if let Some(lookup_service) = service
-                && target.service.as_deref() != Some(lookup_service.as_str())
-            {
-                continue;
-            }
-            if let Some(lookup_type) = resource_type
-                && target.resource_type.as_deref() != Some(lookup_type.as_str())
-            {
+            if !target_matches(target, account_id, region, service, resource_type) {
                 continue;
             }
             count = count.saturating_add(1);
@@ -240,73 +209,30 @@ impl IdentityIndex {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-use inventory_core::Source;
-
-    fn make_resource(id: &str, account: &str, region: &str) -> Resource {
-        Resource {
-            id: id.to_owned(),
-            account_id: account.to_owned(),
-            region: region.to_owned(),
-            kind: "test".to_owned(),
-            name: None,
-            properties: serde_json::Value::Object(serde_json::Map::new()),
-            tags: std::collections::BTreeMap::new(),
-            source: Source::Direct,
-            observed_at: 0,
-        }
+/// Checks if a target matches the lookup criteria (account, region, service, type).
+/// Service and type filters are only applied when the lookup has them (ARN lookups).
+fn target_matches(
+    target: &Target,
+    account_id: &str,
+    region: &str,
+    service: &Option<String>,
+    resource_type: &Option<String>,
+) -> bool {
+    if target.account_id != account_id || target.region != region {
+        return false;
     }
-
-    #[test]
-    fn bare_name_still_resolves_to_arn_identified_target() {
-        // UI-05: A bare identifier lookup (service=None) must still match
-        // ARN-identified targets. Only ARN lookups require service/type match.
-        let mut index = IdentityIndex::default();
-        let resource = make_resource(
-            "arn:aws:lambda:us-east-1:123456789012:function:my-func",
-            "123456789012",
-            "us-east-1",
-        );
-        index.insert(&resource);
-
-        // Bare name lookup should resolve.
-        let source = make_resource("my-func", "123456789012", "us-east-1");
-        let lookup = index.lookup(&source, "my-func", 1024);
-        assert!(
-            matches!(lookup, Lookup::Identifier(_)),
-            "bare name should resolve to ARN target"
-        );
+    if let Some(lookup_service) = service
+        && target.service.as_deref() != Some(lookup_service.as_str())
+    {
+        return false;
     }
-
-    #[test]
-    fn arn_lookup_requires_service_type_match() {
-        // UI-05: An ARN lookup must require service and type match to prevent
-        // cross-service resolution.
-        let mut index = IdentityIndex::default();
-        // Target is a Lambda function.
-        let resource = make_resource(
-            "arn:aws:lambda:us-east-1:123456789012:function:my-func",
-            "123456789012",
-            "us-east-1",
-        );
-        index.insert(&resource);
-
-        // Lookup with an RDS ARN (same tail, different service).
-        let source = make_resource(
-            "arn:aws:rds:us-east-1:123456789012:db:my-func",
-            "123456789012",
-            "us-east-1",
-        );
-        let lookup = index.lookup(
-            &source,
-            "arn:aws:rds:us-east-1:123456789012:db:my-func",
-            1024,
-        );
-        assert!(
-            matches!(lookup, Lookup::Unresolved),
-            "ARN lookup should not resolve across services"
-        );
+    if let Some(lookup_type) = resource_type
+        && target.resource_type.as_deref() != Some(lookup_type.as_str())
+    {
+        return false;
     }
+    true
 }
+
+#[cfg(test)]
+mod tests;

@@ -1,13 +1,51 @@
-use inventory_core::{Resource, validate_identifier};
-use serde_json::Value;
 use std::collections::BTreeSet;
 
-const MIN_IDENTIFIER_BYTES: usize = 8;
+use inventory_core::{Resource, validate_identifier};
+use serde_json::Value;
 
-pub(super) const MIN_ARN_COMPONENT_BYTES: usize = 3;
+pub(super) const MIN_IDENTIFIER_BYTES: usize = 3;
 
-const PRIMARY_IDENTIFIER: &str = "resource_identifier";
+const ARN_PREFIX: &str = "arn:";
 
+/// Returns the minimum required byte length for an ARN component.
+pub(super) const MIN_ARN_COMPONENT_BYTES: usize = 5;
+
+/// Returns the (account_id, region, resource_id) components of an ARN.
+pub(super) fn arn_component(value: &str) -> Option<(&str, &str, &str)> {
+    let mut parts = value.splitn(6, ':');
+    if parts.next() != Some("arn") {
+        return None;
+    }
+    parts.next()?; // partition
+    parts.next()?; // service
+    let region = parts.next()?;
+    let account_id = parts.next()?;
+    let resource = parts.next()?;
+    if resource.is_empty() {
+        return None;
+    }
+    // Extract the resource name: part after last '/' then part after last ':'
+    let after_slash = resource
+        .rsplit_once('/')
+        .map_or(resource, |(_, component)| component);
+    let component = after_slash
+        .rsplit_once(':')
+        .map_or(after_slash, |(_, component)| component);
+    if component.is_empty() {
+        return None;
+    }
+    Some((account_id, region, component))
+}
+
+/// Returns the primary identifier from a resource's properties, if any.
+fn primary_identifier(properties: &Value) -> Option<&str> {
+    properties
+        .get("resource_identifier")
+        .and_then(Value::as_str)
+        .filter(|identifier| identifier.len() >= MIN_IDENTIFIER_BYTES)
+}
+
+/// Returns all the identity strings for a resource that should be indexed.
 pub(super) fn identity_strings(resource: &Resource) -> BTreeSet<&str> {
     let mut values: BTreeSet<&str> = BTreeSet::new();
     if !resource.id.is_empty() && validate_identifier(&resource.id, "identity").is_ok() {
@@ -20,70 +58,31 @@ pub(super) fn identity_strings(resource: &Resource) -> BTreeSet<&str> {
     }
     let arn_values: Vec<&str> = values
         .iter()
+        .filter(|value| value.starts_with(ARN_PREFIX))
         .copied()
-        .filter(|value| is_arn(value))
         .collect();
+    let mut result = values;
     for value in arn_values {
-        if let Some(component) = trailing_identifier(value)
-            && component.len() >= MIN_ARN_COMPONENT_BYTES
+        if let Some((_, _, component)) = arn_component(value)
+            && component.len() >= MIN_IDENTIFIER_BYTES
         {
-            values.insert(component);
+            result.insert(component);
         }
     }
-    values
+    result
 }
 
-fn primary_identifier(properties: &Value) -> Option<&str> {
-    properties
-        .get(PRIMARY_IDENTIFIER)
-        .and_then(Value::as_str)
-        .filter(|value| !value.is_empty())
-}
-
-fn trailing_identifier(id: &str) -> Option<&str> {
-    if !is_arn(id) {
-        return None;
-    }
-    let resource = id.splitn(6, ':').nth(5)?;
-    let after_slash = resource
-        .rsplit_once('/')
-        .map_or(resource, |(_, trailing)| trailing);
-    let trailing = after_slash
-        .rsplit_once(':')
-        .map_or(after_slash, |(_, trailing)| trailing);
-    (!trailing.is_empty()).then_some(trailing)
-}
-
-pub(super) fn arn_component(value: &str) -> Option<(&str, &str, &str)> {
-    let mut parts = value.splitn(6, ':');
-    if parts.next() != Some("arn") {
-        return None;
-    }
-    parts.next()?;
-    parts.next()?;
-    let region = parts.next()?;
-    let account_id = parts.next()?;
-    let resource = parts.next()?;
-    if resource.is_empty() {
-        return None;
-    }
-    let after_slash = resource
-        .rsplit_once('/')
-        .map_or(resource, |(_, component)| component);
-    let component = after_slash
-        .rsplit_once(':')
-        .map_or(after_slash, |(_, component)| component);
-    (!component.is_empty()).then_some((account_id, region, component))
-}
-
+/// Returns true if the value is a valid ARN with the required components.
 pub(super) fn is_arn(value: &str) -> bool {
-    let mut parts = value.splitn(6, ':');
-    parts.next() == Some("arn")
-        && parts.next().is_some_and(|part| !part.is_empty())
-        && parts.next().is_some_and(|part| !part.is_empty())
-        && parts.next().is_some()
-        && parts.next().is_some()
-        && parts.next().is_some_and(|part| !part.is_empty())
+    value.starts_with(ARN_PREFIX)
+        && value.len() >= 11
+        && value[4..].contains(':')
+        && value
+            .splitn(6, ':')
+            .enumerate()
+            .filter(|(_, part)| !part.is_empty())
+            .count()
+            >= 5
 }
 
 /// Extracts the AWS service and resource type from an ARN.
@@ -114,4 +113,29 @@ pub(super) fn arn_service_type(value: &str) -> Option<(&str, &str)> {
         return None;
     }
     Some((service, resource_type))
+}
+
+/// Derives the AWS service and resource type from a resource's identifiers.
+/// Prefers the resource id if it's an ARN; otherwise checks the
+/// resource_identifier property. Returns (None, None) if neither is an
+/// ARN or if the ARN is unparseable.
+pub(super) fn resource_service_type(resource: &Resource) -> (Option<String>, Option<String>) {
+    if is_arn(&resource.id) {
+        return match arn_service_type(&resource.id) {
+            Some((s, t)) => (Some(s.to_owned()), Some(t.to_owned())),
+            None => (None, None),
+        };
+    }
+    // Check resource_identifier for ARN format.
+    let identifier = resource
+        .properties
+        .get("resource_identifier")
+        .and_then(Value::as_str);
+    if let Some(rid) = identifier && is_arn(rid) {
+        return match arn_service_type(rid) {
+            Some((s, t)) => (Some(s.to_owned()), Some(t.to_owned())),
+            None => (None, None),
+        };
+    }
+    (None, None)
 }

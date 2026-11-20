@@ -141,7 +141,12 @@ async fn check_path_and_blast(graph: &GraphConnection) -> TestResult {
     if !shallow.truncated || !shallow.edges.is_empty() {
         return Err(format!("inexact incomplete path: {shallow:?}").into());
     }
-    let blast = graph.blast_radius(&a, bounds).await?;
+    // UI-04: Directed blast radius - follow incoming edges to find
+    // upstream dependents. For graph A->B, A->C, B->C, C->D (edges
+    // represent "source depends on target"), blast radius of D should
+    // find all 4 edges (everything depends on D transitively).
+    let [_, _, _, d] = nodes();
+    let blast = graph.blast_radius(&d, bounds).await?;
     if blast.truncated
         || blast.edges.len() != 4
         || !expected().iter().all(|edge| blast.edges.contains(edge))

@@ -14,14 +14,15 @@ pub(super) async fn neighborhood(
 ) -> Result<GraphNeighborhood, ViewError> {
     tokio::time::timeout(
         Duration::from_secs(10),
-        traverse(client, graph, root, limits),
+        traverse_with_query(client, graph, root, limits, traversal_query),
     )
     .await
     .map_err(|_| ViewError::GraphTimeout)?
 }
 
-/// Directed blast-radius: follows only outgoing edges to find downstream
-/// dependents (what is affected if the root fails), not upstream dependencies.
+/// Directed blast-radius: follows only incoming edges to find upstream
+/// dependents (what is affected if the root fails). Edge orientation is
+/// source->target, so dependents of C are nodes with edges pointing to C.
 pub(super) async fn blast_radius(
     client: &redis::Client,
     graph: &str,
@@ -30,38 +31,36 @@ pub(super) async fn blast_radius(
 ) -> Result<GraphNeighborhood, ViewError> {
     tokio::time::timeout(
         Duration::from_secs(10),
-        blast_radius_traverse(client, graph, root, limits),
+        traverse_with_query(client, graph, root, limits, blast_radius_query),
     )
     .await
     .map_err(|_| ViewError::GraphTimeout)?
 }
 
-async fn traverse(
+/// Generic graph traversal: expands admitted layers using the provided
+/// query builder. For neighborhood queries this is the undirected traversal
+/// query; for blast-radius it is the directed incoming-edge query.
+async fn traverse_with_query<F>(
     client: &redis::Client,
     graph: &str,
     root: &GraphNode,
     limits: GraphLimits,
-) -> Result<GraphNeighborhood, ViewError> {
+    make_query: F,
+) -> Result<GraphNeighborhood, ViewError>
+where
+    F: Fn(&[String], &[String], usize) -> String,
+{
     let mut traversal = Traversal::new(key_digest(root)?, limits);
     let mut connection = client
         .get_multiplexed_async_connection()
         .await
         .map_err(ViewError::Graph)?;
-    // At most three admitted layers and one depth-boundary lookahead.
-    for depth in 0..=limits.depth {
+    for depth in 0u8..=limits.depth {
         if traversal.frontier.is_empty() || traversal.truncated {
             break;
         }
-        let remaining = limits
-            .edges
-            .checked_sub(traversal.edges.len())
-            .ok_or(ViewError::GraphLimits)?;
-        let fetch = if depth == limits.depth {
-            1
-        } else {
-            remaining.checked_add(1).ok_or(ViewError::GraphLimits)?
-        };
-        let query = traversal_query(&traversal.frontier, &traversal.expanded, fetch);
+        let fetch = compute_fetch(&traversal, limits, depth)?;
+        let query = make_query(&traversal.frontier, &traversal.expanded, fetch);
         let rows = read_layer(&mut connection, graph, &query, fetch).await?;
         if depth == limits.depth {
             traversal.truncated = !rows.is_empty();
@@ -75,44 +74,16 @@ async fn traverse(
     })
 }
 
-/// Directed blast-radius traversal: follows only outgoing edges to find
-/// downstream dependents (what is affected if the root fails).
-async fn blast_radius_traverse(
-    client: &redis::Client,
-    graph: &str,
-    root: &GraphNode,
-    limits: GraphLimits,
-) -> Result<GraphNeighborhood, ViewError> {
-    let mut traversal = Traversal::new(key_digest(root)?, limits);
-    let mut connection = client
-        .get_multiplexed_async_connection()
-        .await
-        .map_err(ViewError::Graph)?;
-    for depth in 0..=limits.depth {
-        if traversal.frontier.is_empty() || traversal.truncated {
-            break;
-        }
-        let remaining = limits
-            .edges
-            .checked_sub(traversal.edges.len())
-            .ok_or(ViewError::GraphLimits)?;
-        let fetch = if depth == limits.depth {
-            1
-        } else {
-            remaining.checked_add(1).ok_or(ViewError::GraphLimits)?
-        };
-        let query = blast_radius_query(&traversal.frontier, &traversal.expanded, fetch);
-        let rows = read_layer(&mut connection, graph, &query, fetch).await?;
-        if depth == limits.depth {
-            traversal.truncated = !rows.is_empty();
-            break;
-        }
-        traversal.add_layer(rows)?;
+fn compute_fetch(traversal: &Traversal, limits: GraphLimits, depth: u8) -> Result<usize, ViewError> {
+    let remaining = limits
+        .edges
+        .checked_sub(traversal.edges.len())
+        .ok_or(ViewError::GraphLimits)?;
+    if depth == limits.depth {
+        Ok(1)
+    } else {
+        remaining.checked_add(1).ok_or(ViewError::GraphLimits)
     }
-    Ok(GraphNeighborhood {
-        edges: traversal.edges,
-        truncated: traversal.truncated,
-    })
 }
 
 async fn read_layer(
@@ -144,11 +115,14 @@ fn traversal_query(frontier: &[String], expanded: &[String], limit: usize) -> St
 /// upstream dependents (what is affected if this resource fails). The edge
 /// orientation is source->target (A->B means A refers to B), so dependents
 /// of C are nodes with edges pointing to C.
+///
+/// Excludes edges to already-expanded nodes but includes edges to frontier
+/// nodes, so cycles are captured (e.g., A->C and C->A both appear).
 fn blast_radius_query(frontier: &[String], expanded: &[String], limit: usize) -> String {
     let frontier = key_list(frontier);
     let expanded = key_list(expanded);
     format!(
-        "UNWIND [{frontier}] AS frontier_key MATCH (n:Resource)-[r]->(s:Resource {{key:frontier_key}}) WHERE NOT n.key IN [{expanded}] AND (NOT n.key IN [{frontier}] OR startNode(r)=n) RETURN {FIELDS} LIMIT {limit}"
+        "UNWIND [{frontier}] AS frontier_key MATCH (n:Resource)-[r]->(s:Resource {{key:frontier_key}}) WHERE NOT n.key IN [{expanded}] RETURN {FIELDS} LIMIT {limit}"
     )
 }
 

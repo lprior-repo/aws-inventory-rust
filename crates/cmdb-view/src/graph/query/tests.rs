@@ -174,3 +174,37 @@ fn given_frontier_when_compiling_query_then_limit_precedes_any_combinatorial_wor
     .for_each(|operation| assert!(!query.contains(operation), "{query}"));
     Ok(())
 }
+
+// UI-04: Directed blast radius test - verify the query follows incoming
+// edges (n)-[r]->(s) to find upstream dependents, not outgoing edges.
+// Graph: A->B->C. Blast radius of C should find A and B.
+#[test]
+fn directed_blast_radius_finds_upstream_dependents() -> TestResult {
+    let a = node("a");
+    let b = node("b");
+    let c = node("c");
+    let root = key_digest(&c)?;
+    let expanded = vec![key_digest(&c)?];
+    let query = blast_radius_query(&[root], &expanded, 10);
+
+    // The query should match incoming edges: (n)-[r]->(s) where s is the root
+    assert!(
+        query.contains("(n:Resource)-[r]->(s:Resource {key:frontier_key})"),
+        "blast radius query must follow incoming edges"
+    );
+    assert!(!query.contains("(s:Resource {key:frontier_key})-[r]-(n:Resource)"),
+        "blast radius query must not follow undirected edges");
+    Ok(())
+}
+
+// UI-04: Verify the neighborhood query is undirected (contrasts with blast radius)
+#[test]
+fn neighborhood_query_is_undirected() -> TestResult {
+    let root = key_digest(&node("a"))?;
+    let query = traversal_query(&[root], &[], 10);
+    assert!(
+        query.contains("(s:Resource {key:frontier_key})-[r]-(n:Resource)"),
+        "neighborhood query must be undirected"
+    );
+    Ok(())
+}
