@@ -1,4 +1,4 @@
-totals	services_with_overlay=436	callable_enumerate=1558	callable_expand=632	denied_by_overlay=7350	deferred=9466	services_without_overlay=0	unreviewed_enumerate=0	unreviewed_expand=0	unreviewed_unclassified=0
+totals	services_with_overlay=436	callable_enumerate=1565	callable_expand=632	denied_by_overlay=7350	deferred=9459	services_without_overlay=0	unreviewed_enumerate=0	unreviewed_expand=0	unreviewed_unclassified=0
 operation	accessanalyzer	ApplyArchiveRule	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	accessanalyzer	CancelPolicyGeneration	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	accessanalyzer	CheckAccessNotGranted	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
@@ -8326,8 +8326,8 @@ operation	gamelift	DescribeGameSessionQueues	denied	class=overlay,items=model,pa
 operation	gamelift	DescribeGameSessions	denied	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	gamelift	DescribeInstances	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	gamelift	DescribeMatchmaking	denied	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
-operation	gamelift	DescribeMatchmakingConfigurations	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
-operation	gamelift	DescribeMatchmakingRuleSets	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	gamelift	DescribeMatchmakingConfigurations	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
+operation	gamelift	DescribeMatchmakingRuleSets	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	gamelift	DescribePlayerSessions	denied	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	gamelift	DescribeRuntimeConfiguration	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	gamelift	DescribeScalingPolicies	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
@@ -8344,7 +8344,7 @@ operation	gamelift	ListBuilds	enumerate	class=overlay,items=overlay,page_size=mo
 operation	gamelift	ListCompute	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	gamelift	ListContainerFleets	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	gamelift	ListContainerGroupDefinitionVersions	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
-operation	gamelift	ListContainerGroupDefinitions	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	gamelift	ListContainerGroupDefinitions	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	gamelift	ListFleetDeployments	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	gamelift	ListFleets	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	gamelift	ListGameServerGroups	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
@@ -8495,7 +8495,7 @@ operation	global-accelerator	DescribeCustomRoutingListener	deferred	class=overla
 operation	global-accelerator	DescribeEndpointGroup	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	global-accelerator	DescribeListener	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	global-accelerator	ListAccelerators	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
-operation	global-accelerator	ListByoipCidrs	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	global-accelerator	ListByoipCidrs	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	global-accelerator	ListCrossAccountAttachments	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	global-accelerator	ListCrossAccountResourceAccounts	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	global-accelerator	ListCrossAccountResources	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
@@ -8624,7 +8624,7 @@ operation	glue	DeleteWorkflow	denied	class=overlay,items=missing,page_size=missi
 operation	glue	DescribeConnectionType	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	glue	DescribeEntity	deferred	class=overlay,items=model,page_size=missing,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	glue	DescribeInboundIntegrations	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
-operation	glue	DescribeIntegrations	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	glue	DescribeIntegrations	enumerate	class=overlay,items=overlay,page_size=missing,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	glue	DisassociateGlossaryTerms	denied	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	glue	GetAsset	denied	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	glue	GetAssetType	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
@@ -8659,7 +8659,7 @@ operation	glue	GetDataQualityRuleRecommendationRun	deferred	class=overlay,items=
 operation	glue	GetDataQualityRuleset	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	glue	GetDataQualityRulesetEvaluationRun	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	glue	GetDatabase	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
-operation	glue	GetDatabases	deferred	class=overlay,items=missing,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	glue	GetDatabases	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	glue	GetDataflowGraph	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	glue	GetDevEndpoint	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	glue	GetDevEndpoints	deferred	class=overlay,items=missing,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
@@ -8916,7 +8916,7 @@ operation	greengrass	GetSubscriptionDefinition	deferred	class=overlay,items=miss
 operation	greengrass	GetSubscriptionDefinitionVersion	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	greengrass	GetThingRuntimeConfiguration	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	greengrass	ListBulkDeploymentDetailedReports	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
-operation	greengrass	ListBulkDeployments	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	greengrass	ListBulkDeployments	enumerate	class=overlay,items=overlay,page_size=missing,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	greengrass	ListConnectorDefinitionVersions	expand	class=overlay,items=overlay,page_size=missing,paginator=overlay,identity=overlay,bindings=overlay,scope=overlay,batch=missing
 operation	greengrass	ListConnectorDefinitions	enumerate	class=overlay,items=overlay,page_size=missing,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	greengrass	ListCoreDefinitionVersions	expand	class=overlay,items=overlay,page_size=missing,paginator=overlay,identity=overlay,bindings=overlay,scope=overlay,batch=missing
