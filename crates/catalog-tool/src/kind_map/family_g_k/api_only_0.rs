@@ -2,6 +2,14 @@ use crate::kind_map::ApiOnlyMapping;
 
 pub(super) const ENTRIES: &[ApiOnlyMapping<'static>] = &[
     ApiOnlyMapping {
+        kind: "AWS::ApiOnly::GlobalAcceleratorByoipCidr",
+        reason: "Bring-your-own-IP CIDR is a customer address range registration with no pinned CFN Accelerator, Listener or EndpointGroup equivalent; the listed Cidr is its identifier.",
+    },
+    ApiOnlyMapping {
+        kind: "AWS::ApiOnly::GreengrassBulkDeployment",
+        reason: "Greengrass v1 bulk deployment is a deployment record distinct from its Group; the pinned CFN registry has no bulk-deployment resource type, and BulkDeploymentArn identifies it.",
+    },
+    ApiOnlyMapping {
         kind: "AWS::ApiOnly::GameLiftStreamsApplication",
         reason: "Pinned CFN registry has no GameLift Streams application type; API summary identifies the application ARN.",
     },

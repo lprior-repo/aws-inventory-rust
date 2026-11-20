@@ -145,6 +145,17 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             versions("SubscriptionDefinitionId", "ListSubscriptionDefinitions")?,
         ),
         ("ListGroupVersions", versions("GroupId", "ListGroups")?),
+        (
+            "ListBulkDeployments",
+            policy::query(
+                policy::enumerate(
+                    "BulkDeployments",
+                    policy::arn("BulkDeploymentArn")?,
+                    Some(("NextToken", "NextToken")),
+                )?,
+                &["BulkDeploymentArn"],
+            )?,
+        ),
     ];
     policy::finish(
         "greengrass",
@@ -209,7 +220,6 @@ const DEFERRED: &[&str] = &[
     "GetSubscriptionDefinitionVersion",
     "GetThingRuntimeConfiguration",
     "ListBulkDeploymentDetailedReports",
-    "ListBulkDeployments",
     "ListDeployments",
     "ListGroupCertificateAuthorities",
     "ListTagsForResource",

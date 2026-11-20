@@ -17,6 +17,8 @@ mod cfn_4;
 mod final_children;
 #[path = "family_g_k/final_gamelift_fleets.rs"]
 mod final_gamelift_fleets;
+#[path = "family_g_k/final_glue_expansion.rs"]
+mod final_glue_expansion;
 #[path = "family_g_k/final_integrations.rs"]
 mod final_integrations;
 #[path = "family_g_k/final_iot.rs"]
@@ -152,6 +154,11 @@ pub(super) const SOURCES: &[MappingSource<'static>] = &[
     MappingSource {
         cfn: final_gamelift_fleets::CFN,
         operations: final_gamelift_fleets::OPERATIONS,
+        ..super::EMPTY
+    },
+    MappingSource {
+        cfn: final_glue_expansion::CFN,
+        operations: final_glue_expansion::OPERATIONS,
         ..super::EMPTY
     },
     MappingSource {

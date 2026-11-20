@@ -124,6 +124,20 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
             }
             .operation(Scope::Account, Paginator::None)?,
         ),
+        (
+            "ListByoipCidrs",
+            policy::query(
+                policy::scope(
+                    policy::enumerate(
+                        "ByoipCidrs",
+                        policy::key("Cidr")?,
+                        Some(("NextToken", "NextToken")),
+                    )?,
+                    crate::overlay::Scope::Account,
+                ),
+                &["Cidr"],
+            )?,
+        ),
     ];
     for (_, operation) in &mut approved {
         operation.routing = RequestRouting::FixedRegion {
@@ -174,7 +188,6 @@ const DEFERRED: &[&str] = &[
     "DescribeCustomRoutingListener",
     "DescribeEndpointGroup",
     "DescribeListener",
-    "ListByoipCidrs",
     "ListCrossAccountResourceAccounts",
     "ListCrossAccountResources",
     "ListCustomRoutingPortMappings",

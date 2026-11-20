@@ -137,6 +137,28 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 &["Name", "EncryptionConfiguration"],
             )?,
         ),
+        (
+            "GetDatabases",
+            policy::query(
+                policy::enumerate(
+                    "DatabaseList",
+                    policy::key("Name")?,
+                    Some(("NextToken", "NextToken")),
+                )?,
+                &["Name"],
+            )?,
+        ),
+        (
+            "DescribeIntegrations",
+            policy::query(
+                policy::enumerate(
+                    "Integrations",
+                    policy::arn("IntegrationArn")?,
+                    Some(("Marker", "Marker")),
+                )?,
+                &["IntegrationArn"],
+            )?,
+        ),
     ];
     policy::finish(
         "glue",
@@ -169,7 +191,6 @@ const DEFERRED: &[&str] = &[
     "DescribeConnectionType",
     "DescribeEntity",
     "DescribeInboundIntegrations",
-    "DescribeIntegrations",
     "GetAssetType",
     "GetBlueprintRuns",
     "GetCatalog",
@@ -197,7 +218,6 @@ const DEFERRED: &[&str] = &[
     "GetDataQualityRuleset",
     "GetDataQualityRulesetEvaluationRun",
     "GetDatabase",
-    "GetDatabases",
     "GetDataflowGraph",
     "GetDevEndpoint",
     "GetDevEndpoints",
