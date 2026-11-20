@@ -24,6 +24,8 @@ mod sweep_command;
 #[cfg(feature = "aws")]
 mod sweep_runtime;
 mod targets;
+mod tag_mapping;
+mod tag_sources;
 
 use anyhow::{Context, Result};
 use cli::Command;
@@ -44,6 +46,10 @@ fn main() -> ExitCode {
 
 fn dispatch(command: Command) -> BoxFuture<'static, Result<CommandOutput>> {
     let legacy: BoxFuture<'static, Result<Value>> = match command {
+        Command::Catalog {
+            tag_sources: true, ..
+        } => Box::pin(std::future::ready(tag_sources::report())),
+        Command::TagMapping { command } => Box::pin(tag_mapping::execute(command)),
         Command::Catalog { .. } => Box::pin(std::future::ready(plan::full_catalog())),
         Command::Coverage {
             service,

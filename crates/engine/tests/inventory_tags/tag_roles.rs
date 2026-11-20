@@ -25,46 +25,37 @@ fn role(id: &str, role: &str, key: Option<&str>, value: Option<&str>) -> RoleRow
     )
 }
 
-/// Stands in for the AWS fetch. Every call is an API call, so the count proves
-/// how many times a sweep reached the service.
-#[derive(Default)]
-struct CountingFake {
-    calls: usize,
-}
-
-impl CountingFake {
-    fn fetch(&mut self) -> TestResult<(Vec<Observation>, Vec<TagObservation>)> {
-        self.calls = self.calls.saturating_add(1);
-        Ok((
-            vec![
-                support::observation("one", "a")?,
-                support::observation("two", "b")?,
-                support::observation("three", "c")?,
-            ],
-            vec![
-                snapshot(
-                    "one",
-                    TagCoverage::Complete,
-                    &[
-                        ("owner", "alice"),
-                        ("Owner", "bob"),
-                        ("team", ""),
-                        ("app", "checkout"),
-                    ],
-                )?,
-                snapshot("two", TagCoverage::Complete, &[("Owner", "carol")])?,
-                snapshot("three", TagCoverage::Complete, &[])?,
-            ],
-        ))
-    }
+/// Observations and tag snapshots for three resources: all tags, a case-variant owner
+/// only, and no tags. Plain data: nothing here reaches a service.
+fn baseline() -> TestResult<(Vec<Observation>, Vec<TagObservation>)> {
+    Ok((
+        vec![
+            support::observation("one", "a")?,
+            support::observation("two", "b")?,
+            support::observation("three", "c")?,
+        ],
+        vec![
+            snapshot(
+                "one",
+                TagCoverage::Complete,
+                &[
+                    ("owner", "alice"),
+                    ("Owner", "bob"),
+                    ("team", ""),
+                    ("app", "checkout"),
+                ],
+            )?,
+            snapshot("two", TagCoverage::Complete, &[("Owner", "carol")])?,
+            snapshot("three", TagCoverage::Complete, &[])?,
+        ],
+    ))
 }
 
 #[tokio::test]
 async fn seeded_tags_derive_literal_roles_and_unmapped_roles_are_unassigned() -> TestResult {
     // Given three resources: all tags, a case-variant owner only, and no tags.
     let (directory, store, _) = support::fixture().await?;
-    let mut fake = CountingFake::default();
-    let (observations, tags) = fake.fetch()?;
+    let (observations, tags) = baseline()?;
     state::commit_resources(&store, "baseline", observations, tags, 100).await?;
     let pool = state::pool(&directory).await?;
 
@@ -105,11 +96,11 @@ async fn seeded_tags_derive_literal_roles_and_unmapped_roles_are_unassigned() ->
 }
 
 #[tokio::test]
-async fn mapping_change_recomputes_roles_with_zero_api_calls_and_sweeps_keep_it() -> TestResult {
-    // Given observed resources committed by one fetch.
+async fn mapping_change_recomputes_roles_without_fetch_and_sweeps_keep_it() -> TestResult {
+    // Given observed resources committed once. The fixture data is plain values:
+    // no fetch seam is involved, and replace_tag_mapping takes only a store and a mapping.
     let (directory, store, _) = support::fixture().await?;
-    let mut fake = CountingFake::default();
-    let (observations, tags) = fake.fetch()?;
+    let (observations, tags) = baseline()?;
     state::commit_resources(&store, "baseline", observations, tags, 100).await?;
     let pool = state::pool(&directory).await?;
     store
@@ -127,7 +118,7 @@ async fn mapping_change_recomputes_roles_with_zero_api_calls_and_sweeps_keep_it(
         .await?;
 
     // Then the derived roles follow the new mapping, with no fetch.
-    assert_eq!(fake.calls, 1);
+    // The mapping write is store-only: no fetch seam exists to call here.
     assert_eq!(
         roles(&pool, "one").await?,
         vec![
@@ -180,6 +171,36 @@ async fn mapping_change_recomputes_roles_with_zero_api_calls_and_sweeps_keep_it(
         vec![
             role("one", "application", None, None),
             role("one", "owner", None, None),
+            role("one", "team", None, None),
+        ]
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn whitespace_only_tag_value_is_blank_and_falls_through_to_next_key() -> TestResult {
+    // Given one resource whose first owner key is whitespace-only.
+    let (directory, store, _) = support::fixture().await?;
+    let observations = vec![support::observation("one", "a")?];
+    let tags = vec![snapshot(
+        "one",
+        TagCoverage::Complete,
+        &[("owner", " "), ("Owner", "bob")],
+    )?];
+    state::commit_resources(&store, "baseline", observations, tags, 100).await?;
+    let pool = state::pool(&directory).await?;
+
+    // When owner lists the blank key first, then Owner.
+    store
+        .replace_tag_mapping(&TagMapping::parse("owner = [\"owner\", \"Owner\"]\n")?)
+        .await?;
+
+    // Then the blank value is not an owner and the next key supplies it.
+    assert_eq!(
+        roles(&pool, "one").await?,
+        vec![
+            role("one", "application", None, None),
+            role("one", "owner", Some("Owner"), Some("bob")),
             role("one", "team", None, None),
         ]
     );

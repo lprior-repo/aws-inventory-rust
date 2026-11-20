@@ -1,7 +1,8 @@
 -- resource_roles: derived owner, team and application for every resource (M8.2).
 -- Each resource has exactly three rows, one per role. A role takes the value of
--- the first tag key in its tag_mapping priority order whose tag has a nonempty
--- value. A role with no such tag is unassigned: tag_key and value are NULL.
+-- the first tag key in its tag_mapping priority order whose tag value is not blank
+-- (whitespace-only counts as blank). A role with no such tag is unassigned:
+-- tag_key and value are NULL.
 --
 -- The view is computed from the observed tags table, so a changed mapping or a
 -- changed tag applies on the next read with no AWS call. It never writes to the
@@ -11,7 +12,7 @@ WITH candidates AS (
   SELECT t.account,t.region,t.kind,t.id,m.role,m.position,t.tag_key,t.tag_value
   FROM tag_mapping m
   JOIN tags t ON t.tag_key=m.tag_key
-  WHERE t.tag_value<>''
+  WHERE TRIM(t.tag_value)<>''
 ),
 ranked AS (
   SELECT account,region,kind,id,role,tag_key,tag_value,

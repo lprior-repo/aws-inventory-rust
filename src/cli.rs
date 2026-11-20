@@ -17,6 +17,10 @@ pub enum Command {
     Catalog {
         #[arg(long)]
         models: bool,
+        /// Lists resource kinds that no tag source reaches, so their owner/team/application
+        /// roles cannot be derived from observed tags.
+        #[arg(long)]
+        tag_sources: bool,
     },
 
     Coverage {
@@ -166,6 +170,11 @@ pub enum Command {
         graph_name: String,
     },
 
+    TagMapping {
+        #[command(subcommand)]
+        command: TagMappingCommand,
+    },
+
     Scan(ScanArgs),
     Sweep(SweepArgs),
 }
@@ -196,6 +205,9 @@ pub use outputs::ExportProvenance;
 
 mod jobs;
 pub use jobs::JobCommand;
+
+mod tag_mapping;
+pub use tag_mapping::TagMappingCommand;
 
 mod traversal;
 pub use traversal::TraversalArgs;
