@@ -6,7 +6,6 @@ ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 STATE="$ROOT/.local"
 mkdir -p "$STATE"
 RUNTIME=$(realpath -m "$STATE/runtime")
-PYTHON="$(realpath -m "$STATE/checks")/bin/python"
 EMULATOR="$RUNTIME/emulator/unpacked/opt/aws-emulator/bin/aws-emulator"
 REDIS="$RUNTIME/graph/redis-8.10.3/src/redis-server"
 REDIS_CLI="$RUNTIME/graph/redis-8.10.3/src/redis-cli"
@@ -17,7 +16,7 @@ UNIT="aws-inventory-local-$IDENTITY"
 cd "$ROOT"
 
 require_install() {
-    for executable in "$PYTHON" "$EMULATOR" "$REDIS" "$REDIS_CLI" "$BINARY" \
+    for executable in "$EMULATOR" "$REDIS" "$REDIS_CLI" "$BINARY" \
         "$ROOT/target/debug/examples/emulator_branches"; do
         if [[ ! -x "$executable" ]]; then
             printf 'Missing %s. Run scripts/local-stack.sh install first.\n' "$executable" >&2
@@ -37,7 +36,7 @@ fixture_command() {
     shift
     require_install
     unset RUSTC_WRAPPER RUSTC_WORKSPACE_WRAPPER RUSTFLAGS CARGO_ENCODED_RUSTFLAGS
-    exec "$PYTHON" scripts/emulator/mutate.py \
+    exec inventory-harness mutate \
         --emulator "$EMULATOR" --binary "$BINARY" \
         --branch-probe "$ROOT/target/debug/examples/emulator_branches" \
         --output "$destination" --redis-server "$REDIS" --falkor-module "$MODULE" \
@@ -47,15 +46,8 @@ fixture_command() {
 case "${1:-help}" in
 install)
     mkdir -p "$RUNTIME"
-    if command -v uv >/dev/null; then
-        [[ -x "$PYTHON" ]] || uv venv "$STATE/checks"
-        uv pip install --python "$PYTHON" -r scripts/requirements.txt
-    else
-        [[ -x "$PYTHON" ]] || python3 -m venv "$STATE/checks"
-        "$PYTHON" -m pip install -r scripts/requirements.txt
-    fi
-    "$PYTHON" scripts/emulator/install.py "$RUNTIME/emulator"
-    "$PYTHON" scripts/emulator/install_graph.py "$RUNTIME/graph" --jobs 2
+    inventory-harness install "$RUNTIME/emulator"
+    inventory-harness install-graph "$RUNTIME/graph" --jobs 2
     cargo build --locked --workspace --exclude inventory-sdk-catalog --all-features --bins --examples -j1
     ;;
 sdk-build)
@@ -134,10 +126,10 @@ verify)
     require_install
     destination="$STATE/verification/$(date -u +%Y%m%dT%H%M%S)-$$"
     mkdir -p "$STATE/verification"
-    fixture_command "$destination" "$PYTHON" scripts/emulator/verify_delivery.py \
+    inventory-harness verify-delivery \
         --binary "$BINARY" --redis-cli "$REDIS_CLI" \
         --database "$destination/inventory.sqlite" \
-        --output "$destination/delivery-verification.json" --run-workspace-tests
+        --output "$destination/delivery-verification.json"
     ;;
 logs)
     exec journalctl --user -u "$UNIT" -n 50 --no-pager
