@@ -272,9 +272,15 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         ),
         (
             "ListServiceJobs",
-            deferred(
-                "No safe resource collection plan is approved for this modeled operation. Its output is jobSummaryList; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns a list of service jobs for a specified job queue.",
-            ),
+            OperationOverlay {
+                queryable: vec![path("jobArn")?],
+                ..read(
+                    "jobSummaryList",
+                    Identity::Arn(path("jobArn")?),
+                    Scope::Region,
+                    token("nextToken", "nextToken")?,
+                )?
+            },
         ),
         (
             "ListTagsForResource",

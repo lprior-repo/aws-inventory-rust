@@ -409,9 +409,15 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         ),
         (
             "ListPhoneNumbers",
-            deferred(
-                "No safe resource collection plan is approved for this modeled operation. Its output is PhoneNumbers; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Lists the phone numbers for the specified Amazon Chime SDK account, Amazon Chime SDK user, Amazon Chime SDK Voice Connector, or Amazon Chime SDK Voice Connector group.",
-            ),
+            OperationOverlay {
+                queryable: vec![path("PhoneNumberArn")?],
+                ..read(
+                    "PhoneNumbers",
+                    Identity::Arn(path("PhoneNumberArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
         ),
         (
             "ListProxySessions",
@@ -496,9 +502,15 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         ),
         (
             "ListVoiceProfileDomains",
-            deferred(
-                "No safe resource collection plan is approved for this modeled operation. Its output is VoiceProfileDomains; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Lists the specified voice profile domains in the administrator's AWS account.",
-            ),
+            OperationOverlay {
+                queryable: vec![path("VoiceProfileDomainArn")?],
+                ..read(
+                    "VoiceProfileDomains",
+                    Identity::Arn(path("VoiceProfileDomainArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
         ),
         (
             "ListVoiceProfiles",

@@ -79,9 +79,15 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         ),
         (
             "ListPlansInRegion",
-            deferred(
-                "No safe resource collection plan is approved for this modeled operation. Its output is plans; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Lists all Region switch plans in your Amazon Web Services account that are available in the current Amazon Web Services Region.",
-            ),
+            OperationOverlay {
+                queryable: vec![path("arn")?],
+                ..read(
+                    "plans",
+                    Identity::Arn(path("arn")?),
+                    Scope::Region,
+                    token("nextToken", "nextToken")?,
+                )?
+            },
         ),
         (
             "ListRoute53HealthChecks",

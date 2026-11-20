@@ -108,9 +108,15 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         ),
         (
             "ListMediaCapturePipelines",
-            deferred(
-                "No safe resource collection plan is approved for this modeled operation. Its output is MediaCapturePipelines; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns a list of media pipelines.",
-            ),
+            OperationOverlay {
+                queryable: vec![path("MediaPipelineArn")?],
+                ..read(
+                    "MediaCapturePipelines",
+                    Identity::Arn(path("MediaPipelineArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
         ),
         // Model: Lists the available media insights pipeline configurations.
         (

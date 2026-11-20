@@ -299,9 +299,15 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         ),
         (
             "ListSourceCredentials",
-            deferred(
-                "No safe resource collection plan is approved for this modeled operation. Its output is sourceCredentialsInfos; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns a list of SourceCredentialsInfo objects.",
-            ),
+            OperationOverlay {
+                queryable: vec![path("arn")?],
+                ..read(
+                    "sourceCredentialsInfos",
+                    Identity::Arn(path("arn")?),
+                    Scope::Region,
+                    Paginator::None,
+                )?
+            },
         ),
         (
             "PutResourcePolicy",

@@ -169,9 +169,15 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         ),
         (
             "DescribeConfigRuleEvaluationStatus",
-            deferred(
-                "No safe resource collection plan is approved for this modeled operation. Its output is ConfigRulesEvaluationStatus; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns status information for each of your Config managed rules. The status includes information such as the last time Config invoked the rule, the last time Config failed to invoke the rule, and the related error for the last…",
-            ),
+            OperationOverlay {
+                queryable: vec![path("ConfigRuleArn")?],
+                ..read(
+                    "ConfigRulesEvaluationStatus",
+                    Identity::Arn(path("ConfigRuleArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
         ),
         // Model: Returns details about your Config rules.
         (
@@ -212,9 +218,15 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
     Ok(vec![
         (
             "DescribeConfigurationRecorderStatus",
-            deferred(
-                "No safe resource collection plan is approved for this modeled operation. Its output is ConfigurationRecordersStatus; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns the current status of the configuration recorder you specify as well as the status of the last recording event for the configuration recorders. For a detailed status of recording events over time, add your Config events…",
-            ),
+            OperationOverlay {
+                queryable: vec![path("arn")?],
+                ..read(
+                    "ConfigurationRecordersStatus",
+                    Identity::Arn(path("arn")?),
+                    Scope::Region,
+                    Paginator::None,
+                )?
+            },
         ),
         // Model: Returns details for the configuration recorder you specify. If a configuration recorder is not specified, this operation returns details for the customer managed configuration recorder configured for…
         (
@@ -237,9 +249,15 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         ),
         (
             "DescribeConformancePackStatus",
-            deferred(
-                "No safe resource collection plan is approved for this modeled operation. Its output is ConformancePackStatusDetails; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Provides one or more conformance packs deployment status. If there are no conformance packs then you will see an empty result.",
-            ),
+            OperationOverlay {
+                queryable: vec![path("ConformancePackArn")?],
+                ..read(
+                    "ConformancePackStatusDetails",
+                    Identity::Arn(path("ConformancePackArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
         ),
         // Model: Returns a list of one or more conformance packs.
         (
@@ -487,9 +505,15 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         ),
         (
             "ListConfigurationRecorders",
-            deferred(
-                "No safe resource collection plan is approved for this modeled operation. Its output is ConfigurationRecorderSummaries; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns a list of configuration recorders depending on the filters you specify.",
-            ),
+            OperationOverlay {
+                queryable: vec![path("arn")?],
+                ..read(
+                    "ConfigurationRecorderSummaries",
+                    Identity::Arn(path("arn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
         ),
         (
             "ListConformancePackComplianceScores",

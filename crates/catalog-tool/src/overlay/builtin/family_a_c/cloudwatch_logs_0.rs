@@ -617,9 +617,15 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         ),
         (
             "ListLogGroups",
-            deferred(
-                "No safe resource collection plan is approved for this modeled operation. Its output is logGroups; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns a list of log groups in the Region in your account. If you are performing this action in a monitoring account, you can choose to also return log groups from source accounts that are linked to the monitoring account. For…",
-            ),
+            OperationOverlay {
+                queryable: vec![path("logGroupArn")?],
+                ..read(
+                    "logGroups",
+                    Identity::Arn(path("logGroupArn")?),
+                    Scope::Region,
+                    token("nextToken", "nextToken")?,
+                )?
+            },
         ),
         (
             "ListLogGroupsForQuery",

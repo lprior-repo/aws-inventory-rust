@@ -493,15 +493,27 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         ),
         (
             "ListTypeVersions",
-            deferred(
-                "No safe resource collection plan is approved for this modeled operation. Its output is TypeVersionSummaries; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns summary information about the versions of an extension.",
-            ),
+            OperationOverlay {
+                queryable: vec![path("Arn")?],
+                ..read(
+                    "TypeVersionSummaries",
+                    Identity::Arn(path("Arn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
         ),
         (
             "ListTypes",
-            deferred(
-                "No safe resource collection plan is approved for this modeled operation. Its output is TypeSummaries; settings, reference data, histories, content, and state-changing calls are not promoted by a read-like name. Model: Returns summary information about all extensions, including your private resource types, modules, and Hooks as well as all public extensions from Amazon Web Services and third-party publishers.",
-            ),
+            OperationOverlay {
+                queryable: vec![path("TypeArn")?],
+                ..read(
+                    "TypeSummaries",
+                    Identity::Arn(path("TypeArn")?),
+                    Scope::Region,
+                    token("NextToken", "NextToken")?,
+                )?
+            },
         ),
         (
             "PublishType",
