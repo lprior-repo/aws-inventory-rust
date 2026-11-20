@@ -62,7 +62,7 @@ pub fn mask_noncode(path: &str, text: &str) -> Result<String, HarnessError> {
             if ok {
                 position = end;
             } else {
-                position += 1;
+                position = position.saturating_add(1);
             }
         }
         // Byte string
@@ -71,7 +71,7 @@ pub fn mask_noncode(path: &str, text: &str) -> Result<String, HarnessError> {
             if ok {
                 position = end;
             } else {
-                position += 1;
+                position = position.saturating_add(1);
             }
         }
         // Character literal
@@ -79,12 +79,12 @@ pub fn mask_noncode(path: &str, text: &str) -> Result<String, HarnessError> {
             let (ok, end) = mask_char_literal(&mut output, text, position);
             if !ok {
                 // Not a char literal (e.g. lifetime parameter)
-                position += 1;
+                position = position.saturating_add(1);
             } else {
                 position = end;
             }
         } else {
-            position += 1;
+            position = position.saturating_add(1);
         }
     }
 
@@ -113,10 +113,10 @@ fn mask_string_literal(
             cursor += 2;
         } else if bytes[cursor] == b'"' {
             mask_range(output, position, cursor + 1);
-            cursor += 1;
+            cursor = cursor.saturating_add(1);
             break;
         } else {
-            cursor += 1;
+            cursor = cursor.saturating_add(1);
         }
     }
     (cursor < bytes.len() && bytes[cursor - 1] == b'"', cursor)
@@ -133,14 +133,14 @@ fn mask_raw_string(
     let mut cursor = position + 1;
     while cursor < bytes.len() && bytes[cursor] == b'#' {
         hash_count += 1;
-        cursor += 1;
+        cursor = cursor.saturating_add(1);
     }
     // Find opening quote
     if cursor >= bytes.len() || bytes[cursor] != b'"' {
         return (false, position + 1);
     }
     let _start_quote = cursor;
-    cursor += 1;
+    cursor = cursor.saturating_add(1);
     // Find closing quote followed by # symbols
     while cursor < bytes.len() {
         if bytes[cursor] == b'"' {
@@ -148,14 +148,14 @@ fn mask_raw_string(
             let mut closing_hash = 0;
             while hash_cursor < bytes.len() && bytes[hash_cursor] == b'#' {
                 closing_hash += 1;
-                hash_cursor += 1;
+                hash_cursor = cursor.saturating_add(1);
             }
             if closing_hash == hash_count {
                 mask_range(output, position, hash_cursor);
                 return (true, hash_cursor);
             }
         }
-        cursor += 1;
+        cursor = cursor.saturating_add(1);
     }
     (false, cursor)
 }
@@ -202,7 +202,7 @@ fn mask_byte_char(
     if bytes[cursor] == b'\\' {
         cursor += 2;
     } else {
-        cursor += 1;
+        cursor = cursor.saturating_add(1);
     }
     if cursor < bytes.len() && bytes[cursor] == b'\'' {
         mask_range(output, position, cursor + 1);
@@ -241,13 +241,13 @@ fn mask_char_literal(
         }
     } else {
         // Single character
-        cursor += 1;
+        cursor = cursor.saturating_add(1);
     }
 
     // Check for closing quote
     if cursor < bytes.len() && bytes[cursor] == b'\'' {
         mask_range(output, position, cursor + 1);
-        cursor += 1;
+        cursor = cursor.saturating_add(1);
         return (true, cursor);
     }
 
@@ -265,7 +265,7 @@ fn mask_block_comment(
     let bytes = text.as_bytes();
     while cursor < bytes.len() && depth > 0 {
         if bytes[cursor] == b'/' && cursor + 1 < bytes.len() && bytes[cursor + 1] == b'*' {
-            depth += 1;
+            depth = depth.saturating_add(1);
             if depth > 64 {
                 return (false, cursor);
             }
@@ -277,7 +277,7 @@ fn mask_block_comment(
                 cursor += 2;
             }
         } else {
-            cursor += 1;
+            cursor = cursor.saturating_add(1);
         }
     }
     (depth == 0, cursor)
@@ -291,7 +291,7 @@ fn tokenize(text: &str, max_tokens: usize) -> Result<Vec<Token>, HarnessError> {
     while position < bytes.len() {
         // Skip whitespace
         if bytes[position].is_ascii_whitespace() {
-            position += 1;
+            position = position.saturating_add(1);
             continue;
         }
         // Alphanumeric identifier
@@ -300,7 +300,7 @@ fn tokenize(text: &str, max_tokens: usize) -> Result<Vec<Token>, HarnessError> {
             while position < bytes.len()
                 && (bytes[position].is_ascii_alphanumeric() || bytes[position] == b'_')
             {
-                position += 1;
+                position = position.saturating_add(1);
             }
             tokens.push(Token {
                 text: text[start..position].to_string(),
@@ -312,11 +312,11 @@ fn tokenize(text: &str, max_tokens: usize) -> Result<Vec<Token>, HarnessError> {
             && bytes[position + 1].is_ascii_alphanumeric()
         {
             let start = position;
-            position += 1;
+            position = position.saturating_add(1);
             while position < bytes.len()
                 && (bytes[position].is_ascii_alphanumeric() || bytes[position] == b'_')
             {
-                position += 1;
+                position = position.saturating_add(1);
             }
             tokens.push(Token {
                 text: text[start..position].to_string(),
@@ -326,7 +326,7 @@ fn tokenize(text: &str, max_tokens: usize) -> Result<Vec<Token>, HarnessError> {
         // Single character token (delimiters, operators, punctuation)
         else {
             let start = position;
-            position += 1;
+            position = position.saturating_add(1);
             tokens.push(Token {
                 text: text[start..position].to_string(),
                 start,
@@ -388,7 +388,7 @@ pub fn tokens_and_pairs_with_budget(path: &str, text: &str, max_tokens: usize) -
                 pairs.insert(open, position);
             }
         }
-        position += 1;
+        position = position.saturating_add(1);
     }
 
     if let Some(open) = stack.last() {
@@ -396,8 +396,8 @@ pub fn tokens_and_pairs_with_budget(path: &str, text: &str, max_tokens: usize) -
             Some(t) => t,
             None => {
                 return Err(HarnessError::invalid(format!(
-                    "{}:{}:{}: unclosed Rust delimiter; stack corruption",
-                    path, line, column
+                    "{}: unclosed Rust delimiter; stack corruption at token index {}",
+                    path, open
                 )));
             }
         };

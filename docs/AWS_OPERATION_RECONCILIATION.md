@@ -57,7 +57,8 @@ The two Cloud Control send sites moved from the historical lines 275/287 to **33
 After the harness has completed its collection and assertions, bind a fresh reconciliation receipt to the actual run directory:
 
 ```bash
-python3 scripts/catalog/reconcile_aws_operations.py \
+cargo build -p inventory-harness
+target/debug/inventory-harness reconcile-aws-operations \
   --emulator-summary artifacts/emulator-v06-complete/summary.json \
   --output artifacts/aws-operation-source-reconciliation-local-bound.json
 ```
@@ -158,8 +159,7 @@ The historical operation matrix and historical reconciliation receipts retain th
 ## Auditor tests
 
 ```bash
-python3 -m unittest discover -s scripts/catalog \
-  -p test_operation_reconciliation.py -v
+cargo test -p inventory-harness --test operation_reconciliation --test execution_binding
 ```
 
 The auditor tests cover misleading comments and literals, nested arguments, namespace changes, channel sends, unsupported call shapes, lexical bounds, stale source/catalog evidence, provider relabeling, missing operation identities, fixture-traffic exclusion and inflated request histograms. They validate the audit mechanism. They are not AWS operation execution or mutation-score evidence; current test receipts are indexed in [VERIFICATION.md](VERIFICATION.md).

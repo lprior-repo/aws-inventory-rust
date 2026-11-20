@@ -138,7 +138,7 @@ pub fn calls_in_source_with_budget(path: &str, source: &str, max_tokens: usize) 
         if tokens[index].text == "." && tokens[index + 1].text == "send" && tokens[index + 2].text == "(" {
             if *pairs.get(&(index + 2)).unwrap_or(&index) != index + 3 {
                 nonempty_sends += 1;
-                index += 1;
+                index = index.saturating_add(1);
                 continue;
             }
 
@@ -214,7 +214,7 @@ pub fn calls_in_source_with_budget(path: &str, source: &str, max_tokens: usize) 
                 return Err(HarnessError::invalid("SDK send call budget exceeded"));
             }
         }
-        index += 1;
+        index = index.saturating_add(1);
     }
 
     Ok((calls, nonempty_sends))

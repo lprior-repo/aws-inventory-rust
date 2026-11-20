@@ -109,16 +109,16 @@ Config and Resource Explorer keep their own source contracts. Their lower-cased 
 The archive and its SHA-256 are retained under `catalog/upstream`; generation never reads live credentials or calls account APIs. Check the separate parent catalog and its literal schema/oracle tests without changing historical root evidence:
 
 ```bash
-python3 catalog/upstream/build_parent_catalog.py --check
-python3 -m unittest discover -s catalog/upstream -p test_parent_catalog.py -v
-python3 -m unittest discover -s scripts/emulator -p test_assert_parents.py -v
+cargo run --locked -p inventory-harness -- freeze --check
+cargo test -p inventory-harness --test freeze
+cargo test -p inventory-harness --test assert_parents
 cargo run --locked -p inventory-engine --example resource_views -- --check
 ```
 
 The root generator `catalog/upstream/build_cloudcontrol_catalog.py` is for intentional root-catalog regeneration; it resets executed evidence. After a fresh asserted emulator run with the current sources and binary, bind root-provider request statuses to persisted typed reads:
 
 ```bash
-python3 scripts/catalog/refresh_cloudcontrol_coverage.py \
+cargo run --locked -p inventory-harness -- refresh-coverage \
   --emulator-summary artifacts/emulator-v06-local/summary.json
 ```
 
