@@ -31,7 +31,9 @@ impl Drop for ChildOwner {
 }
 
 fn await_child(child: &mut ChildOwner) -> TestResult<ExitStatus> {
-    let deadline = Instant::now() + Duration::from_secs(45);
+    let deadline = Instant::now()
+        .checked_add(Duration::from_secs(45))
+        .ok_or("deadline overflow")?;
     while Instant::now() < deadline {
         if let Some(status) = child.0.try_wait()? {
             return Ok(status);
@@ -126,7 +128,7 @@ fn cleanup_ledger(path: &Path) -> TestResult {
 
 pub(crate) fn delete_graph(name: &str) -> TestResult {
     let endpoint = std::env::var("CMDB_VIEW_FALKOR_ENDPOINT")
-        .map_or_else(|_| "redis://127.0.0.1:6379".to_owned(), |value| value);
+        .unwrap_or_else(|_| "redis://127.0.0.1:6379".to_owned());
     let client = redis::Client::open(endpoint)?;
     let limit = Duration::from_secs(2);
     let mut connection = client.get_connection_with_timeout(limit)?;

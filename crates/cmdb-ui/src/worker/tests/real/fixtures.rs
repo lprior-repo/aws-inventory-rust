@@ -114,15 +114,14 @@ impl Fixture {
         links: &[cmdb_view::GraphEdge],
         at: i64,
     ) -> TestResult<Vec<Row>> {
-        self.commit_tagged(sweep, account, region, rows, links, vec![], at)
+        self.commit_tagged(sweep, (account, region), rows, links, vec![], at)
             .await
     }
 
     pub async fn commit_tagged(
         &self,
         sweep: &str,
-        account: &str,
-        region: &str,
+        (account, region): (&str, &str),
         rows: &[(&str, &str)],
         links: &[cmdb_view::GraphEdge],
         tags: Vec<TagObservation>,
@@ -285,7 +284,7 @@ pub(crate) struct NativeGraph {
 impl NativeGraph {
     pub async fn new(edges: &[cmdb_view::GraphEdge]) -> TestResult<Self> {
         let endpoint = std::env::var("CMDB_VIEW_FALKOR_ENDPOINT")
-            .map_or_else(|_| "redis://127.0.0.1:6379".to_owned(), |value| value);
+            .unwrap_or_else(|_| "redis://127.0.0.1:6379".to_owned());
         let stamp = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)?
             .as_nanos();

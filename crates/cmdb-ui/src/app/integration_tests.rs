@@ -56,7 +56,9 @@ fn graph(app: &App, cx: &mut Cx) -> Graph {
 }
 
 fn wait_for(app: &mut App, cx: &mut Cx, predicate: impl Fn(&App, &mut Cx) -> bool) -> TestResult {
-    let deadline = Instant::now() + Duration::from_secs(5);
+    let deadline = Instant::now()
+        .checked_add(Duration::from_secs(5))
+        .ok_or("deadline overflow")?;
     for _ in 0..20_000_000 {
         app.handle_event(cx, &Event::Signal);
         if predicate(app, cx) {
@@ -123,8 +125,7 @@ fn given_tag_input_actions_when_real_app_filters_then_exact_empty_and_key_only_h
         };
         let expected = runtime.block_on(fixture.commit_tagged(
             "seed",
-            ACCOUNT,
-            REGION,
+            (ACCOUNT, REGION),
             &[
                 ("shared", "empty-owner"),
                 ("b", "nonempty-owner"),
@@ -169,14 +170,11 @@ fn given_tag_input_actions_when_real_app_filters_then_exact_empty_and_key_only_h
             selected(&app, &mut cx),
             expected.iter().find(|row| row.id == "shared").cloned()
         );
+        assert_eq!(app.ui.text_input(&cx, ids!(tag_key_input)).text(), "owner");
+        assert_eq!(app.ui.text_input(&cx, ids!(tag_value_input)).text(), "");
+        assert!(app.ui.check_box(&cx, ids!(tag_value_exact)).active(&cx));
         assert_eq!(
-            app.ui.text_input(&mut cx, ids!(tag_key_input)).text(),
-            "owner"
-        );
-        assert_eq!(app.ui.text_input(&mut cx, ids!(tag_value_input)).text(), "");
-        assert!(app.ui.check_box(&mut cx, ids!(tag_value_exact)).active(&cx));
-        assert_eq!(
-            app.ui.label(&mut cx, ids!(table_status)).text(),
+            app.ui.label(&cx, ids!(table_status)).text(),
             "1 matching · 1 loaded"
         );
         text_action(&mut app, &mut cx, ids!(tag_value_input), "team");
@@ -282,12 +280,12 @@ fn given_saturated_real_intake_when_app_rejects_actions_then_inputs_selection_an
         // When the real filter and selection calls are rejected, inputs roll back.
         text_action(&mut app, &mut cx, ids!(tag_key_input), "rejected-key");
         assert_eq!(app.filter(&mut cx), accepted);
-        assert_eq!(app.ui.text_input(&mut cx, ids!(tag_key_input)).text(), "");
+        assert_eq!(app.ui.text_input(&cx, ids!(tag_key_input)).text(), "");
         assert_eq!(
-            app.ui.text_input(&mut cx, ids!(search_input)).text(),
+            app.ui.text_input(&cx, ids!(search_input)).text(),
             "accepted"
         );
-        assert!(!app.ui.check_box(&mut cx, ids!(tag_value_exact)).active(&cx));
+        assert!(!app.ui.check_box(&cx, ids!(tag_value_exact)).active(&cx));
         assert_eq!(
             status(&app, &mut cx),
             "Database error · inventory worker queue is full"

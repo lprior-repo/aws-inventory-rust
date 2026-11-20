@@ -237,7 +237,7 @@ async fn given_active_query_when_shutdown_requested_then_pending_io_is_cancelled
 #[test]
 fn given_full_result_queue_when_worker_dropped_then_blocked_producer_is_released() -> TestResult {
     let (mut worker, _commands, events, _cancellation) = harness(1);
-    (0..EVENT_CAPACITY).try_for_each(|_| events.send(page(0, 1)))?;
+    (0..EVENT_CAPACITY).try_for_each(|_| events.send(page(0, 1)).map_err(Box::new))?;
     let (started, ready) = mpsc::sync_channel(1);
     let (outcome, result) = mpsc::sync_channel(1);
     worker.thread = Some(thread::spawn(move || {
@@ -261,7 +261,7 @@ fn given_full_result_queue_when_worker_dropped_then_blocked_producer_is_released
 #[test]
 fn given_full_results_when_ui_drains_then_critical_output_is_preserved() -> TestResult {
     let (worker, _commands, events, _cancellation) = harness(1);
-    (0..EVENT_CAPACITY).try_for_each(|_| events.send(page(0, 1)))?;
+    (0..EVENT_CAPACITY).try_for_each(|_| events.send(page(0, 1)).map_err(Box::new))?;
     let (started, ready) = mpsc::sync_channel(1);
     let producer = thread::spawn(move || {
         if started.send(()).is_err() {
@@ -434,14 +434,14 @@ fn serve_graph_connection(
         .set_write_timeout(Some(Duration::from_secs(5)))
         .map_err(|error| error.to_string())?;
     let mut reader = std::io::BufReader::new(socket);
-    let mut queries = 0;
+    let mut queries = 0_u32;
     for _ in 0..8 {
         let command = resp_command(&mut reader)?;
         let response = match command.first().map(String::as_str) {
             Some("CLIENT" | "SELECT") => "+OK\r\n".to_owned(),
             Some("GRAPH.RO_QUERY") if fail => "-ERR temporarily unavailable\r\n".to_owned(),
             Some("GRAPH.RO_QUERY") => {
-                queries += 1;
+                queries = queries.saturating_add(1);
                 graph_reply(neighborhood && queries == 1)
             }
             other => return Err(format!("unexpected command {other:?}")),

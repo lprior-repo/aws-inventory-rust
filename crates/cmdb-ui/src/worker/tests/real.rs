@@ -228,7 +228,10 @@ fn given_divergent_stores_and_concurrent_sweep_when_expanding_then_native_topolo
             // Native-only identities remain selectable, without replacing authority.
             worker.expand(c)?;
             let from_native_only = graph(&worker).await?;
-            assert_edges(&from_native_only, &native_edges[..2])?;
+            assert_edges(
+                &from_native_only,
+                native_edges.get(..2).ok_or("native edges missing")?,
+            )?;
             Ok(())
         }
         .await;
@@ -284,7 +287,7 @@ fn given_depth_boundary_chain_when_real_worker_expands_then_truncation_warning_p
             // When: traversing the long component through the actual producer.
             worker.expand(a)?;
             let truncated = graph(&worker).await?;
-            assert_edges(&truncated, &edges[..2])?;
+            assert_edges(&truncated, edges.get(..2).ok_or("edges missing")?)?;
             assert_eq!(truncated.nodes.len(), 3);
             assert!(truncated.truncated);
             let mut data = crate::data::Data::default();
@@ -297,7 +300,7 @@ fn given_depth_boundary_chain_when_real_worker_expands_then_truncation_warning_p
             // the actual Data status formatter removes the prior warning.
             worker.expand(x)?;
             let complete = graph(&worker).await?;
-            assert_edges(&complete, &edges[3..])?;
+            assert_edges(&complete, edges.get(3..).ok_or("edges missing")?)?;
             assert!(!complete.truncated);
             data.set_graph(complete, None);
             assert!(

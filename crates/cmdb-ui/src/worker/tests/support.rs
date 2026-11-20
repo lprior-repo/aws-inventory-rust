@@ -137,7 +137,9 @@ impl Drop for BlockedGraph {
 }
 
 fn serve(listener: TcpListener, sent: mpsc::Sender<Vec<String>>) -> TestResult {
-    let deadline = std::time::Instant::now() + Duration::from_secs(5);
+    let deadline = std::time::Instant::now()
+        .checked_add(Duration::from_secs(5))
+        .ok_or("deadline overflow")?;
     let stream = (0..20_000_000)
         .find_map(|_| match listener.accept() {
             Ok((stream, _)) => Some(Ok(stream)),

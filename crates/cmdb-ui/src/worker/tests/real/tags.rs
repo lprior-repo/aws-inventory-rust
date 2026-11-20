@@ -20,8 +20,7 @@ fn given_committed_scoped_tags_when_real_worker_filters_then_exact_empty_value_a
         let expected = fixture
             .commit_tagged(
                 "east",
-                ACCOUNT,
-                REGION,
+                (ACCOUNT, REGION),
                 &[("shared", "east")],
                 &[],
                 vec![observed(&root(), tag_key, "")?],
@@ -32,8 +31,7 @@ fn given_committed_scoped_tags_when_real_worker_filters_then_exact_empty_value_a
         fixture
             .commit_tagged(
                 "west",
-                ACCOUNT,
-                "us-west-2",
+                (ACCOUNT, "us-west-2"),
                 &[("shared", "west")],
                 &[],
                 vec![observed(&west, tag_key, "different")?],
@@ -44,8 +42,7 @@ fn given_committed_scoped_tags_when_real_worker_filters_then_exact_empty_value_a
         fixture
             .commit_tagged(
                 "foreign",
-                "222222222222",
-                REGION,
+                ("222222222222", REGION),
                 &[("shared", "foreign")],
                 &[],
                 vec![observed(&foreign, "other", "")?],
@@ -115,8 +112,7 @@ fn given_live_native_tags_and_retained_sql_tags_when_expanding_then_affiliations
         fixture
             .commit_tagged(
                 "before",
-                ACCOUNT,
-                REGION,
+                (ACCOUNT, REGION),
                 &[("shared", "root"), ("b", "neighbor")],
                 &[],
                 vec![observed(&a, "owner", "before")?],
@@ -128,7 +124,7 @@ fn given_live_native_tags_and_retained_sql_tags_when_expanding_then_affiliations
         let result: TestResult = async {
         let (_, initial, _) = snapshot(&worker).await?;
         let old_root = initial.iter().find(|row| row.id == "shared").ok_or("initial root missing")?;
-        fixture.commit_tagged("after", ACCOUNT, REGION, &[("shared", "root"), ("b", "neighbor")], &[],
+        fixture.commit_tagged("after", (ACCOUNT, REGION), &[("shared", "root"), ("b", "neighbor")], &[],
             vec![observed(&a, "owner", "after")?], 2).await?;
         native.query(&format!("MATCH (s:Resource {{key:'{}'}}) CREATE (s)-[:HAS_TAG {{provenance:'inventory.tags'}}]->(:Tag {{account:'{ACCOUNT}',region:'{REGION}',tag_key:'owner',tag_value:'after'}}), (s)-[:HAS_TAG {{provenance:'inventory.tags'}}]->(:Tag {{account:'222222222222',region:'{REGION}',tag_key:'owner',tag_value:'foreign'}})", digest(&a)?)).await?;
         // When the actual worker reads live native tags and pinned SQL details.
@@ -166,8 +162,7 @@ fn given_complete_tags_when_later_observation_fails_then_real_worker_exposes_ret
         fixture
             .commit_tagged(
                 "complete",
-                ACCOUNT,
-                REGION,
+                (ACCOUNT, REGION),
                 &[("shared", "root")],
                 &[],
                 vec![observed(&root(), "owner", "")?],
@@ -189,8 +184,7 @@ fn given_complete_tags_when_later_observation_fails_then_real_worker_exposes_ret
         fixture
             .commit_tagged(
                 "failed",
-                ACCOUNT,
-                REGION,
+                (ACCOUNT, REGION),
                 &[("shared", "root")],
                 &[],
                 vec![TagObservation::new(

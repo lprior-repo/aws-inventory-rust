@@ -115,7 +115,10 @@ pub(super) fn catalog() -> TestResult<Vec<u8>> {
         (CatalogKey::Resources, Value::List(vec![])),
     ])?;
     let offsets = (0_u32..8)
-        .flat_map(|index| [index * 2, (index + 1) * 2])
+        .flat_map(|index: u32| {
+            let start = index.saturating_mul(2);
+            [start, start.saturating_add(2)]
+        })
         .flat_map(u32::to_be_bytes)
         .collect();
     let root = fields([

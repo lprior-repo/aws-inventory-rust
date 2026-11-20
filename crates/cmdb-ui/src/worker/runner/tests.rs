@@ -178,7 +178,8 @@ fn given_obsolete_selection_queued_before_latest_refresh_when_real_runner_drains
             worker.expand(b)?;
             worker.refresh(Filter::default())?;
             let stop = worker.commands.clone();
-            let stopper = thread::spawn(move || stop.blocking_send(Command::Stop));
+            let stopper =
+                thread::spawn(move || stop.blocking_send(Command::Stop).map_err(Box::new));
             runner.run_commands(&runtime, state);
             stopper.join().map_err(|_| "stop sender panicked")??;
             let events = worker.drain();
