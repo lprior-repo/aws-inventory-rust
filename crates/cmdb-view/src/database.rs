@@ -1,3 +1,5 @@
+#[path = "database/freshness.rs"]
+mod freshness;
 #[path = "database/queries.rs"]
 mod queries;
 #[path = "database/snapshot.rs"]
@@ -6,6 +8,7 @@ mod snapshot;
 mod tags;
 use crate::ViewError;
 use crate::graph::{GraphEdge, GraphNode};
+pub use freshness::{ScopeFreshness, ScopeFreshnessReport, ScopeOutcomeCounts};
 use inventory_core::inventory::{AccountId, Kind, Region, ResourceId, ResourceKey, SqlName};
 use inventory_core::record::{ContentHash, Record};
 use queries::*;

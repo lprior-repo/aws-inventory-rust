@@ -4,6 +4,7 @@ use sqlx::{Row, SqlitePool};
 use std::sync::Arc;
 
 const TAG_OBSERVATIONS_SQL: &str = "CREATE TABLE tag_observations(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,coverage TEXT NOT NULL CHECK(coverage IN('complete','partial','failed','unobserved')),observed_at INTEGER NOT NULL CHECK(observed_at>=0),last_complete_at INTEGER CHECK(last_complete_at>=0),PRIMARY KEY(account,region,kind,id),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID";
+const SCOPE_FRESHNESS_SQL: &str = include_str!("../../sql/inventory_scope_freshness.sql");
 
 pub(super) async fn initialize(
     pool: &SqlitePool,
@@ -35,6 +36,7 @@ pub(super) async fn initialize(
         create_kind(&mut tx, schema).await?;
     }
     super::relation_permissions::persist(&mut tx, registry).await?;
+    create_scope_freshness_view(&mut tx).await?;
     sqlx::query("PRAGMA user_version=16")
         .execute(&mut *tx)
         .await?;
@@ -142,7 +144,20 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
     ] {
         sqlx::query(statement).execute(&mut *tx).await?;
     }
+    create_scope_freshness_view(&mut tx).await?;
     tx.commit().await?;
+    Ok(())
+}
+
+/// The scope freshness view is derived data: it is replaced on every open so a
+/// definition change reaches existing databases without a schema version bump.
+async fn create_scope_freshness_view(
+    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+) -> Result<(), StoreError> {
+    sqlx::query("DROP VIEW IF EXISTS scope_freshness")
+        .execute(&mut **tx)
+        .await?;
+    sqlx::query(SCOPE_FRESHNESS_SQL).execute(&mut **tx).await?;
     Ok(())
 }
 
