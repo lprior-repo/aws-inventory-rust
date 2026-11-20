@@ -7,7 +7,7 @@ use super::lexical;
 const MAX_FILES: usize = 4_096;
 const MAX_SOURCE_BYTES: usize = 32 * 1024 * 1024;
 const MAX_CALLS: usize = 4_096;
-const SOURCE_PREFIX: &str = "crates/aws/src/";
+
 
 pub struct Callsite {
     pub id: String,
@@ -134,7 +134,7 @@ pub fn calls_in_source_with_budget(path: &str, source: &str, max_tokens: usize) 
     let mut nonempty_sends: usize = 0;
 
     let mut index = 0;
-    while index < tokens.len() - 2 {
+    while index + 2 < tokens.len() {
         if tokens[index].text == "." && tokens[index + 1].text == "send" && tokens[index + 2].text == "(" {
             if *pairs.get(&(index + 2)).unwrap_or(&index) != index + 3 {
                 nonempty_sends += 1;
@@ -142,14 +142,16 @@ pub fn calls_in_source_with_budget(path: &str, source: &str, max_tokens: usize) 
                 continue;
             }
 
-            let mut cursor = index - 1;
-            let mut methods: Vec<String> = Vec::new();
-            let mut last_open = 0;
+            // Walk backwards through the method call chain
+            // Python: cursor = index - 1, walk while token is ")"
+            let mut cursor = index;
+            cursor = cursor.saturating_sub(1);
+            let mut methods: Vec<(String, usize)> = Vec::new();
             loop {
-                if cursor < 0 {
-                    break;
-                }
-                let tok = &tokens[cursor];
+                let tok = match tokens.get(cursor) {
+                    Some(t) => t,
+                    None => break,
+                };
                 if tok.text != ")" {
                     break;
                 }
@@ -157,40 +159,37 @@ pub fn calls_in_source_with_budget(path: &str, source: &str, max_tokens: usize) 
                 if open < 2 {
                     break;
                 }
-                let method_name = &tokens[open - 1].text;
-                if tokens[open - 2].text != "." {
+                let method_token = match tokens.get(open - 1) {
+                    Some(t) => t,
+                    None => break,
+                };
+                let method_name = &method_token.text;
+                let prev_token = match tokens.get(open - 2) {
+                    Some(t) => t,
+                    None => break,
+                };
+                if prev_token.text != "." {
                     break;
                 }
                 if !method_name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
                     break;
                 }
-                last_open = open;
-                methods.push(method_name.clone());
-                let new_cursor = open - 3;
-                eprintln!("DEBUG LOOP: collected {}, cursor {} -> {}", method_name, cursor, new_cursor);
-                if new_cursor >= 0 && new_cursor < tokens.len() {
-                    eprintln!("DEBUG LOOP: tokens[new_cursor] = {}", tokens[new_cursor].text);
+                methods.push((method_name.clone(), open));
+                cursor = open - 3;
+            }
+
+            // Python uses methods[-1] (last method found)
+            let (operation, last_open) = match methods.last() {
+                Some((m, o)) => (m.clone(), *o),
+                None => {
+                    return Err(source_error(
+                        path,
+                        source,
+                        tokens[index].start,
+                        "unrecognized empty send call chain",
+                    ));
                 }
-                cursor = new_cursor;
-            }
-            eprintln!("DEBUG: collected methods: {:?}", methods);
-            eprintln!("DEBUG: cursor: {}", cursor);
-            eprintln!("DEBUG: index: {}", index);
-            eprintln!("DEBUG: index - 1: {}", index - 1);
-            if index - 1 >= 0 {
-                eprintln!("DEBUG: tokens[index - 1]: {}", tokens[index - 1].text);
-            }
-
-            if methods.is_empty() || cursor < 0 {
-                return Err(source_error(
-                    path,
-                    source,
-                    tokens[index].start,
-                    "unrecognized empty send call chain",
-                ));
-            }
-
-            let operation = methods.last().unwrap().clone();
+            };
             let operation_offset = tokens[last_open - 1].start;
             let receiver = tokens[cursor].text.clone();
 
@@ -221,29 +220,43 @@ pub fn calls_in_source_with_budget(path: &str, source: &str, max_tokens: usize) 
     Ok((calls, nonempty_sends))
 }
 
-pub fn source_inventory(root: &std::path::Path) -> Result<(HashMap<String, String>, Vec<Callsite>, usize), HarnessError> {
-    let mut sources: HashMap<String, String> = HashMap::new();
-    let mut total: usize = 0;
-    let aws_dir = root.join("crates/aws/src");
-    let entries = aws_dir
+fn walk_directory(
+    root: &std::path::Path,
+    dir: &std::path::Path,
+    sources: &mut HashMap<String, String>,
+    total: &mut usize,
+) -> Result<(), HarnessError> {
+    let entries = dir
         .read_dir()
-        .map_err(|e| HarnessError::invalid(format!("failed to read AWS source directory: {}", e)))?;
+        .map_err(|e| HarnessError::invalid(format!("failed to read directory {}: {}", dir.display(), e)))?;
 
     for entry in entries {
         let entry = entry.map_err(|e| HarnessError::invalid(format!("directory entry error: {}", e)))?;
-        if entry.file_name().to_string_lossy().ends_with(".rs") {
-            let path_buf = entry.path();
-            let rel = path_buf.strip_prefix(root).unwrap_or(&path_buf);
+        let path = entry.path();
+
+        if path.is_symlink() {
+            return Err(HarnessError::invalid(format!(
+                "AWS source inventory found a symlink: {}",
+                path.display()
+            )));
+        }
+
+        if path.is_dir() {
+            walk_directory(root, &path, sources, total)?;
+        } else if path.extension().map(|e| e == "rs").unwrap_or(false) {
+            let rel = path.strip_prefix(root).unwrap_or(&path);
             let rel_str = rel.to_string_lossy().to_string();
+
             if sources.len() >= MAX_FILES {
                 return Err(HarnessError::invalid(
                     "unsupported AWS source inventory",
                 ));
             }
-            let content = std::fs::read_to_string(&entry.path())
+
+            let content = std::fs::read_to_string(&path)
                 .map_err(|e| HarnessError::invalid(format!("failed to read {}: {}", rel_str, e)))?;
-            total += content.len();
-            if total > MAX_SOURCE_BYTES {
+            *total = total.saturating_add(content.len());
+            if *total > MAX_SOURCE_BYTES {
                 return Err(HarnessError::invalid(
                     "AWS source byte budget exceeded",
                 ));
@@ -251,6 +264,20 @@ pub fn source_inventory(root: &std::path::Path) -> Result<(HashMap<String, Strin
             sources.insert(rel_str, content);
         }
     }
+
+    Ok(())
+}
+
+pub fn source_inventory(root: &std::path::Path) -> Result<(HashMap<String, String>, Vec<Callsite>, usize), HarnessError> {
+    let mut sources: HashMap<String, String> = HashMap::new();
+    let mut total: usize = 0;
+    let aws_dir = root.join("crates/aws/src");
+
+    if !aws_dir.exists() {
+        return Ok((sources, Vec::new(), 0));
+    }
+
+    walk_directory(root, &aws_dir, &mut sources, &mut total)?;
 
     let mut calls: Vec<Callsite> = Vec::new();
     let mut nonempty: usize = 0;

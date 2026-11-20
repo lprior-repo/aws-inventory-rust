@@ -34,7 +34,7 @@ pub use operations::calls::calls_in_source_with_budget;
 pub use operations::lexical::mask_noncode;
 pub use operations::lexical::tokens_and_pairs;
 pub use operations::lexical::tokens_and_pairs_with_budget;
-pub use operations::additions::{load_additions, addition_expected};
+
 pub use persisted::persisted_reads;
 pub use pins::{dependency_evidence, registry_file};
 pub use refresh::run_refresh;

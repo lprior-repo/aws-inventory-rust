@@ -8,23 +8,6 @@ pub struct Token {
     pub start: usize,
 }
 
-fn identifier(text: &str) -> bool {
-    let bytes = text.as_bytes();
-    if bytes.is_empty() {
-        return false;
-    }
-    let first = bytes[0];
-    if !(first.is_ascii_alphabetic() || first == b'_') {
-        return false;
-    }
-    for byte in bytes.iter().skip(1) {
-        if !byte.is_ascii_alphanumeric() && *byte != b'_' {
-            return false;
-        }
-    }
-    true
-}
-
 fn source_location(text: &str, offset: usize) -> (usize, usize) {
     let before = &text[..offset];
     let line = before.bytes().filter(|b| *b == b'\n').count() + 1;
@@ -156,7 +139,7 @@ fn mask_raw_string(
     if cursor >= bytes.len() || bytes[cursor] != b'"' {
         return (false, position + 1);
     }
-    let start_quote = cursor;
+    let _start_quote = cursor;
     cursor += 1;
     // Find closing quote followed by # symbols
     while cursor < bytes.len() {
@@ -409,15 +392,24 @@ pub fn tokens_and_pairs_with_budget(path: &str, text: &str, max_tokens: usize) -
     }
 
     if let Some(open) = stack.last() {
-        let (line, column) = source_location(text, tokens[*open].start);
-        let expected = match tokens[*open].text.as_str() {
+        let open_token = match tokens.get(*open) {
+            Some(t) => t,
+            None => {
+                return Err(HarnessError::invalid(format!(
+                    "{}:{}:{}: unclosed Rust delimiter; stack corruption",
+                    path, line, column
+                )));
+            }
+        };
+        let (line, column) = source_location(text, open_token.start);
+        let expected = match open_token.text.as_str() {
             "(" => ")",
             "[" => "]",
             _ => "}",
         };
         return Err(HarnessError::invalid(format!(
             "{}:{}:{}: unclosed Rust delimiter '{}'; expected '{}'",
-            path, line, column, tokens[*open].text, expected
+            path, line, column, open_token.text, expected
         )));
     }
 

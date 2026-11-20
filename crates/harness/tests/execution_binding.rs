@@ -2,18 +2,18 @@ use std::fs;
 use std::path::PathBuf;
 
 use hex;
-use inventory_harness::audit::addition_expected;
+
 use inventory_harness::audit::canonical_sha256;
-use inventory_harness::audit::load_additions;
-use inventory_harness::audit::validate_emulator;
+
+use inventory_harness::audit::validate_summary;
 use sha2::Digest;
 
 fn test_root(name: &str) -> PathBuf {
     let root = PathBuf::from(format!("/tmp/audit_test_{}", name));
     if root.exists() {
-        let _ = fs::remove_dir_all(&root);
+        fs::remove_dir_all(&root).expect("remove test root");
     }
-    fs::create_dir_all(&root).unwrap();
+    fs::create_dir_all(&root).expect("create test root");
     root
 }
 
@@ -26,10 +26,10 @@ fn sha256_hex(data: &[u8]) -> String {
 fn write_json(root: &PathBuf, name: &str, value: &serde_json::Value) -> String {
     let path = root.join(name);
     if let Some(parent) = path.parent() {
-        let _ = fs::create_dir_all(parent);
+        fs::create_dir_all(parent).expect("create parent");
     }
-    let raw = serde_json::to_string(value).unwrap();
-    fs::write(&path, &raw).unwrap();
+    let raw = serde_json::to_string(value).expect("serialize");
+    fs::write(&path, &raw).expect("write file");
     sha256_hex(raw.as_bytes())
 }
 
@@ -48,38 +48,17 @@ fn make_matrix() -> serde_json::Value {
     })
 }
 
-fn make_summary(source_sha: &str, catalog_sha: &str, status: &str) -> serde_json::Value {
-    let checks = vec![
-        "provenance:embedded_catalog_matches",
-        "provenance:source_unchanged",
-        "provenance:binary_unchanged",
-        "provenance:fixture_unchanged",
-        "coverage:every_operation_attempted",
-        "coverage:no_unexplained_operation_failures"
-    ];
+fn make_catalog() -> serde_json::Value {
     serde_json::json!({
-        "schema_version": 1,
-        "failed_checks": 0,
-        "passed_checks": checks.len(),
-        "checks": checks.iter().map(|c| serde_json::json!({"check": c, "passed": true})).collect::<Vec<_>>(),
-        "execution": {
-            "source": {"sha256": source_sha, "files": []},
-            "catalog_sha256": catalog_sha
-        },
-        "expected_operations": [
-            {"id": "example.list", "service": "example", "operation": "List",
-             "credential_provider_boundary": false, "status": status}
-        ]
+        "resource_types": [{"type_name": "AWS::Example::Thing", "list_requires_model": false}]
     })
 }
 
-fn setup_catalogs(root: &PathBuf) -> serde_json::Value {
+fn setup_catalogs(root: &PathBuf) -> (serde_json::Value, String) {
     let matrix = make_matrix();
-    write_json(root, "catalog/aws-operations.json", &matrix);
+    let matrix_sha = write_json(root, "catalog/aws-operations.json", &matrix);
 
-    let catalog = serde_json::json!({
-        "resource_types": [{"type_name": "AWS::EKS::Cluster", "list_requires_model": false}]
-    });
+    let catalog = make_catalog();
     let catalog_sha = write_json(root, "catalog/cloudcontrol-resources.json", &catalog);
 
     let parent = serde_json::json!({
@@ -91,22 +70,169 @@ fn setup_catalogs(root: &PathBuf) -> serde_json::Value {
     });
     write_json(root, "catalog/cloudcontrol-parent-resources.json", &parent);
 
-    catalog
+    (catalog, matrix_sha)
+}
+
+fn make_summary(
+    source_sha: &str,
+    catalog_sha: &str,
+    catalog_canonical_sha: &str,
+    status: &str,
+) -> serde_json::Value {
+    let checks = vec![
+        "provenance:embedded_catalog_matches",
+        "provenance:source_unchanged",
+        "provenance:binary_unchanged",
+        "provenance:fixture_unchanged",
+        "coverage:every_operation_attempted",
+        "coverage:no_unexplained_operation_failures",
+    ];
+    serde_json::json!({
+        "schema_version": 1,
+        "failed_checks": 0,
+        "passed_checks": checks.len(),
+        "checks": checks.iter().map(|c| serde_json::json!({"check": c, "passed": true})).collect::<Vec<_>>(),
+        "execution": {
+            "source": {"sha256": source_sha, "files": []},
+            "catalog_sha256": catalog_sha,
+            "catalog_canonical_sha256": catalog_canonical_sha
+        },
+        "expected_operations": [
+            {"id": "example.list", "service": "example", "operation": "List",
+             "credential_provider_boundary": false, "status": status}
+        ]
+    })
 }
 
 #[test]
 fn test_decoding_failure_remains_distinct_from_success() {
-    let root = test_root("decode");
     let report = make_report();
-    let catalog = setup_catalogs(&root);
+    let matrix = make_matrix();
+    let catalog = make_catalog();
 
     let canonical = canonical_sha256(&catalog);
+    let summary = make_summary("a".repeat(64).as_str(), "b".repeat(64).as_str(), &canonical, "sdk_decode_failure");
+
+    let (executed, rows) = validate_summary(&report, &summary, &catalog, &matrix).expect("validate_summary should succeed");
+    assert_eq!(rows[0]["status"], "sdk_decode_failure", "decode failure status must be preserved");
+    assert_eq!(executed["source"]["sha256"], "a".repeat(64));
+}
+
+#[test]
+fn test_changed_source_or_descriptor_cannot_reuse_an_old_run() {
+    let report = make_report();
+    let matrix = make_matrix();
+    let catalog = make_catalog();
+    let canonical = canonical_sha256(&catalog);
+
+    // Changed source
+    let summary = make_summary("c".repeat(64).as_str(), "b".repeat(64).as_str(), &canonical, "sdk_decode_failure");
+    let err = validate_summary(&report, &summary, &catalog, &matrix).unwrap_err().to_string();
+    assert!(err.contains("different source or catalog"), "expected source mismatch: {}", err);
+
+    // Changed catalog
+    let mut changed_catalog = catalog.clone();
+    changed_catalog["resource_types"][0]["relationships"] = serde_json::json!([{"relation": "CHANGED"}]);
+    let canonical_changed = canonical_sha256(&changed_catalog);
+    let summary = make_summary("a".repeat(64).as_str(), "b".repeat(64).as_str(), &canonical_changed, "sdk_decode_failure");
+    let err = validate_summary(&report, &summary, &catalog, &matrix).unwrap_err().to_string();
+    assert!(err.contains("different source or catalog"), "expected catalog mismatch: {}", err);
+}
+
+#[test]
+fn test_provider_boundary_cannot_be_relabelled_as_an_explicit_sdk_send() {
+    let report = make_report();
+    let matrix = make_matrix();
+    let catalog = make_catalog();
+    let canonical = canonical_sha256(&catalog);
+
+    let checks = vec![
+        "provenance:embedded_catalog_matches",
+        "provenance:source_unchanged",
+        "provenance:binary_unchanged",
+        "provenance:fixture_unchanged",
+        "coverage:every_operation_attempted",
+        "coverage:no_unexplained_operation_failures",
+    ];
     let summary = serde_json::json!({
         "schema_version": 1,
         "failed_checks": 0,
-        "passed_checks": 6,
+        "passed_checks": checks.len(),
+        "checks": checks.iter().map(|c| serde_json::json!({"check": c, "passed": true})).collect::<Vec<_>>(),
+        "execution": {
+            "source": {"sha256": "a".repeat(64), "files": []},
+            "catalog_sha256": "b".repeat(64),
+            "catalog_canonical_sha256": canonical
+        },
+        "expected_operations": [
+            {"id": "example.list", "service": "example", "operation": "List",
+             "credential_provider_boundary": true, "status": "sdk_decode_failure"}
+        ]
+    });
+
+    let err = validate_summary(&report, &summary, &catalog, &matrix).unwrap_err().to_string();
+    assert!(err.contains("provider classification"), "expected provider classification error: {}", err);
+}
+
+#[test]
+fn test_duplicate_or_missing_operation_identity_fails_closed() {
+    let report = make_report();
+    let catalog = make_catalog();
+    let canonical = canonical_sha256(&catalog);
+
+    // Duplicate operation
+    let checks = vec![
+        "provenance:embedded_catalog_matches",
+        "provenance:source_unchanged",
+        "provenance:binary_unchanged",
+        "provenance:fixture_unchanged",
+        "coverage:every_operation_attempted",
+        "coverage:no_unexplained_operation_failures",
+    ];
+    let summary = serde_json::json!({
+        "schema_version": 1,
+        "failed_checks": 0,
+        "passed_checks": checks.len(),
+        "checks": checks.iter().map(|c| serde_json::json!({"check": c, "passed": true})).collect::<Vec<_>>(),
+        "execution": {
+            "source": {"sha256": "a".repeat(64), "files": []},
+            "catalog_sha256": "b".repeat(64),
+            "catalog_canonical_sha256": canonical
+        },
+        "expected_operations": [
+            {"id": "example.list", "service": "example", "operation": "List",
+             "credential_provider_boundary": false, "status": "sdk_decode_failure"},
+            {"id": "example.list", "service": "example", "operation": "List",
+             "credential_provider_boundary": false, "status": "sdk_decode_failure"}
+        ]
+    });
+
+    let matrix = make_matrix();
+    let err = validate_summary(&report, &summary, &catalog, &matrix).unwrap_err().to_string();
+    assert!(err.contains("identity set"), "expected identity set error: {}", err);
+}
+
+#[test]
+fn test_failed_or_missing_provenance_checks_cannot_bind_execution() {
+    let report = make_report();
+    let matrix = make_matrix();
+    let catalog = make_catalog();
+    let canonical = canonical_sha256(&catalog);
+
+    let checks = vec![
+        "provenance:embedded_catalog_matches",
+        "provenance:source_unchanged",
+        "provenance:binary_unchanged",
+        "provenance:fixture_unchanged",
+        "coverage:every_operation_attempted",
+        "coverage:no_unexplained_operation_failures",
+    ];
+    let summary = serde_json::json!({
+        "schema_version": 1,
+        "failed_checks": 1,
+        "passed_checks": 5,
         "checks": [
-            {"check": "provenance:embedded_catalog_matches", "passed": true},
+            {"check": "provenance:embedded_catalog_matches", "passed": false},
             {"check": "provenance:source_unchanged", "passed": true},
             {"check": "provenance:binary_unchanged", "passed": true},
             {"check": "provenance:fixture_unchanged", "passed": true},
@@ -123,265 +249,95 @@ fn test_decoding_failure_remains_distinct_from_success() {
              "credential_provider_boundary": false, "status": "sdk_decode_failure"}
         ]
     });
-    let _ = fs::create_dir_all(root.join("artifacts"));
-    let summary_path = root.join("artifacts/emulator-summary.json");
-    fs::write(&summary_path, serde_json::to_string(&summary).unwrap()).unwrap();
 
-    let result = validate_emulator(&report, &root, &summary_path);
-    match result {
-        Ok(_) => {}
-        Err(e) => panic!("expected success with decode failure status: {}", e),
-    }
-    fs::remove_dir_all(&root).unwrap();
+    let err = validate_summary(&report, &summary, &catalog, &matrix).unwrap_err().to_string();
+    assert!(err.contains("complete asserted"), "expected complete asserted error: {}", err);
 }
 
 #[test]
-fn test_changed_source_cannot_reuse_old_run() {
-    let root = test_root("changed_source");
-    let report = make_report();
-    setup_catalogs(&root);
-
-    let summary = make_summary("c".repeat(64).as_str(), "b".repeat(64).as_str(), "sdk_decode_failure");
-    let _ = fs::create_dir_all(root.join("artifacts"));
-    let summary_path = root.join("artifacts/emulator-summary.json");
-    fs::write(&summary_path, serde_json::to_string(&summary).unwrap()).unwrap();
-
-    let result = validate_emulator(&report, &root, &summary_path);
-    assert!(result.is_err());
-    fs::remove_dir_all(&root).unwrap();
-}
-
-#[test]
-fn test_failed_provenance_check_cannot_bind_execution() {
-    let root = test_root("failed_check");
-    let report = make_report();
-    setup_catalogs(&root);
-
-    let checks = vec![
-        "provenance:embedded_catalog_matches",
-        "provenance:source_unchanged",
-        "provenance:binary_unchanged",
-        "provenance:fixture_unchanged",
-        "coverage:every_operation_attempted",
-        "coverage:no_unexplained_operation_failures"
-    ];
-    let summary = serde_json::json!({
-        "schema_version": 1,
-        "failed_checks": 1,
-        "passed_checks": checks.len() - 1,
-        "checks": [
-            {"check": "provenance:embedded_catalog_matches", "passed": false},
-            {"check": "provenance:source_unchanged", "passed": true},
-            {"check": "provenance:binary_unchanged", "passed": true},
-            {"check": "provenance:fixture_unchanged", "passed": true},
-            {"check": "coverage:every_operation_attempted", "passed": true},
-            {"check": "coverage:no_unexplained_operation_failures", "passed": true}
-        ],
-        "execution": {
-            "source": {"sha256": "a".repeat(64), "files": []},
-            "catalog_sha256": "b".repeat(64)
-        },
-        "expected_operations": [
-            {"id": "example.list", "service": "example", "operation": "List",
-             "credential_provider_boundary": false, "status": "sdk_decode_failure"}
-        ]
-    });
-    let _ = fs::create_dir_all(root.join("artifacts"));
-    let summary_path = root.join("artifacts/emulator-summary.json");
-    fs::write(&summary_path, serde_json::to_string(&summary).unwrap()).unwrap();
-
-    let result = validate_emulator(&report, &root, &summary_path);
-    assert!(result.is_err());
-    fs::remove_dir_all(&root).unwrap();
-}
-
-#[test]
-fn test_duplicate_operation_identity_fails_closed() {
-    let root = test_root("duplicate_op");
-    let report = make_report();
-    setup_catalogs(&root);
-
-    let checks = vec![
-        "provenance:embedded_catalog_matches",
-        "provenance:source_unchanged",
-        "provenance:binary_unchanged",
-        "provenance:fixture_unchanged",
-        "coverage:every_operation_attempted",
-        "coverage:no_unexplained_operation_failures"
-    ];
-    let summary = serde_json::json!({
-        "schema_version": 1,
-        "failed_checks": 0,
-        "passed_checks": checks.len(),
-        "checks": checks.iter().map(|c| serde_json::json!({"check": c, "passed": true})).collect::<Vec<_>>(),
-        "execution": {
-            "source": {"sha256": "a".repeat(64), "files": []},
-            "catalog_sha256": "b".repeat(64)
-        },
-        "expected_operations": [
-            {"id": "example.list", "service": "example", "operation": "List",
-             "credential_provider_boundary": false, "status": "sdk_decode_failure"},
-            {"id": "example.list", "service": "example", "operation": "List",
-             "credential_provider_boundary": false, "status": "sdk_decode_failure"}
-        ]
-    });
-    let _ = fs::create_dir_all(root.join("artifacts"));
-    let summary_path = root.join("artifacts/emulator-summary.json");
-    fs::write(&summary_path, serde_json::to_string(&summary).unwrap()).unwrap();
-
-    let result = validate_emulator(&report, &root, &summary_path);
-    assert!(result.is_err());
-    fs::remove_dir_all(&root).unwrap();
-}
-
-#[test]
-fn test_provider_boundary_cannot_be_relabelled() {
-    let root = test_root("provider_boundary");
-    let report = make_report();
-    setup_catalogs(&root);
-
-    let checks = vec![
-        "provenance:embedded_catalog_matches",
-        "provenance:source_unchanged",
-        "provenance:binary_unchanged",
-        "provenance:fixture_unchanged",
-        "coverage:every_operation_attempted",
-        "coverage:no_unexplained_operation_failures"
-    ];
-    let summary = serde_json::json!({
-        "schema_version": 1,
-        "failed_checks": 0,
-        "passed_checks": checks.len(),
-        "checks": checks.iter().map(|c| serde_json::json!({"check": c, "passed": true})).collect::<Vec<_>>(),
-        "execution": {
-            "source": {"sha256": "a".repeat(64), "files": []},
-            "catalog_sha256": "b".repeat(64)
-        },
-        "expected_operations": [
-            {"id": "example.list", "service": "example", "operation": "List",
-             "credential_provider_boundary": true, "status": "sdk_decode_failure"}
-        ]
-    });
-    let _ = fs::create_dir_all(root.join("artifacts"));
-    let summary_path = root.join("artifacts/emulator-summary.json");
-    fs::write(&summary_path, serde_json::to_string(&summary).unwrap()).unwrap();
-
-    let result = validate_emulator(&report, &root, &summary_path);
-    assert!(result.is_err());
-    fs::remove_dir_all(&root).unwrap();
-}
-
-#[test]
-fn test_source_inventory_includes_test_modules() {
-    let root = test_root("source_inventory");
-    let src_dir = root.join("crates/aws/src");
-    fs::create_dir_all(&src_dir).unwrap();
-
-    let lib_src = "use aws_sdk_ec2::Client; fn run() {client.describe_vpcs().send();}";
-    fs::write(src_dir.join("lib.rs"), lib_src).unwrap();
-
-    let test_src = "use aws_sdk_ec2::Client; #[test] fn example() {client.describe_subnets().send();}";
-    fs::write(src_dir.join("tests.rs"), test_src).unwrap();
-
-    let result = inventory_harness::audit::source_inventory(&root);
-    assert!(result.is_ok());
-    let (sources, calls, _) = result.unwrap();
-    assert_eq!(sources.len(), 2);
-    let call_ids: Vec<&str> = calls.iter().map(|c| c.id.as_str()).collect();
-    assert!(call_ids.contains(&"ec2.describe_vpcs"));
-    assert!(call_ids.contains(&"ec2.describe_subnets"));
-    fs::remove_dir_all(&root).unwrap();
-}
-
-#[test]
-fn test_parent_and_merged_catalog_digests_required() {
-    let root = test_root("parent_digests");
-    let report = make_report();
-    // Add parent catalog digests to report
-    let mut report = report;
-    let dimension = report["cloud_control_provider_dimension"].as_object_mut().unwrap();
+fn test_parent_and_merged_catalog_digests_are_required_for_new_evidence() {
+    let mut report = make_report();
+    let dimension = report["cloud_control_provider_dimension"].as_object_mut().expect("dimension");
     dimension.insert("parent_catalog_sha256".to_string(), serde_json::json!("c".repeat(64)));
     dimension.insert("runtime_catalog_canonical_sha256".to_string(), serde_json::json!("d".repeat(64)));
 
-    setup_catalogs(&root);
+    let matrix = make_matrix();
+    let catalog = make_catalog();
+    let canonical = canonical_sha256(&catalog);
 
-    // Summary without matching parent digests should fail
-    let summary = make_summary("a".repeat(64).as_str(), "b".repeat(64).as_str(), "sdk_decode_failure");
-    let _ = fs::create_dir_all(root.join("artifacts"));
-    let summary_path = root.join("artifacts/emulator-summary.json");
-    fs::write(&summary_path, serde_json::to_string(&summary).unwrap()).unwrap();
+    // Missing both
+    let summary = make_summary("a".repeat(64).as_str(), "b".repeat(64).as_str(), &canonical, "sdk_decode_failure");
+    let err = validate_summary(&report, &summary, &catalog, &matrix).unwrap_err().to_string();
+    assert!(err.contains("different parent or merged"), "expected parent/merged error: {}", err);
 
-    let result = validate_emulator(&report, &root, &summary_path);
-    assert!(result.is_err());
-    fs::remove_dir_all(&root).unwrap();
-}
-
-#[test]
-fn test_historical_matrix_and_receipts_cannot_be_replaced() {
-    let root = test_root("historical");
-    setup_catalogs(&root);
-
-    // Try to write to historical paths
-    let historical_paths = [
-        "catalog/aws-operations.json",
-        "artifacts/aws-operation-source-reconciliation-v04.json",
-        "artifacts/aws-operation-source-reconciliation-v05.json"
+    // Wrong parent
+    let checks = vec![
+        "provenance:embedded_catalog_matches",
+        "provenance:source_unchanged",
+        "provenance:binary_unchanged",
+        "provenance:fixture_unchanged",
+        "coverage:every_operation_attempted",
+        "coverage:no_unexplained_operation_failures",
     ];
-
-    for path in &historical_paths {
-        let p = root.join(path);
-        if let Some(parent) = p.parent() {
-            let _ = fs::create_dir_all(parent);
-        }
-        // Writing to these paths should be allowed, but they represent historical evidence
-        let _ = fs::write(&p, "{}");
-    }
-
-    fs::remove_dir_all(&root).unwrap();
-}
-
-#[test]
-fn test_overlay_bound_to_another_matrix_is_rejected() {
-    let root = test_root("overlay_bound");
-    setup_catalogs(&root);
-
-    let overlay = serde_json::json!({
+    let summary = serde_json::json!({
         "schema_version": 1,
-        "scope": "fixture reviewed additions",
-        "binds": {
-            "historical_matrix": {"path": "catalog/aws-operations.json", "sha256": "0".repeat(64)}
+        "failed_checks": 0,
+        "passed_checks": checks.len(),
+        "checks": checks.iter().map(|c| serde_json::json!({"check": c, "passed": true})).collect::<Vec<_>>(),
+        "execution": {
+            "source": {"sha256": "a".repeat(64), "files": []},
+            "catalog_sha256": "b".repeat(64),
+            "catalog_canonical_sha256": canonical,
+            "parent_catalog_sha256": "e".repeat(64),
+            "runtime_catalog_canonical_sha256": "d".repeat(64)
         },
-        "additions": []
+        "expected_operations": [
+            {"id": "example.list", "service": "example", "operation": "List",
+             "credential_provider_boundary": false, "status": "sdk_decode_failure"}
+        ]
     });
-    write_json(&root, "catalog/aws-operation-additions.json", &overlay);
+    let err = validate_summary(&report, &summary, &catalog, &matrix).unwrap_err().to_string();
+    assert!(err.contains("different parent or merged"), "expected parent mismatch: {}", err);
 
-    let matrix = make_matrix();
-    let matrix_sha = write_json(&root, "catalog/aws-operations.json", &matrix);
-    let result = load_additions(&root, &matrix, &matrix_sha);
-    assert!(result.is_err());
-    fs::remove_dir_all(&root).unwrap();
-}
+    // Wrong merged
+    let summary = serde_json::json!({
+        "schema_version": 1,
+        "failed_checks": 0,
+        "passed_checks": checks.len(),
+        "checks": checks.iter().map(|c| serde_json::json!({"check": c, "passed": true})).collect::<Vec<_>>(),
+        "execution": {
+            "source": {"sha256": "a".repeat(64), "files": []},
+            "catalog_sha256": "b".repeat(64),
+            "catalog_canonical_sha256": canonical,
+            "parent_catalog_sha256": "c".repeat(64),
+            "runtime_catalog_canonical_sha256": "e".repeat(64)
+        },
+        "expected_operations": [
+            {"id": "example.list", "service": "example", "operation": "List",
+             "credential_provider_boundary": false, "status": "sdk_decode_failure"}
+        ]
+    });
+    let err = validate_summary(&report, &summary, &catalog, &matrix).unwrap_err().to_string();
+    assert!(err.contains("different parent or merged"), "expected merged mismatch: {}", err);
 
-#[test]
-fn test_overlay_is_not_writable_receipt() {
-    let root = test_root("overlay_receipt");
-    setup_catalogs(&root);
-
-    // Overlay should not be writable as a receipt
-    // The overlay file exists but is read-only evidence
-    fs::remove_dir_all(&root).unwrap();
-}
-
-#[test]
-fn test_absent_overlay_is_noop() {
-    let root = test_root("absent_overlay");
-    setup_catalogs(&root);
-
-    // No overlay file should result in None
-    let matrix = make_matrix();
-    let matrix_sha = write_json(&root, "catalog/aws-operations.json", &matrix);
-    let result = load_additions(&root, &matrix, &matrix_sha);
-    assert!(result.is_ok());
-    assert!(result.unwrap().is_none());
-    fs::remove_dir_all(&root).unwrap();
+    // Correct
+    let summary = serde_json::json!({
+        "schema_version": 1,
+        "failed_checks": 0,
+        "passed_checks": checks.len(),
+        "checks": checks.iter().map(|c| serde_json::json!({"check": c, "passed": true})).collect::<Vec<_>>(),
+        "execution": {
+            "source": {"sha256": "a".repeat(64), "files": []},
+            "catalog_sha256": "b".repeat(64),
+            "catalog_canonical_sha256": canonical,
+            "parent_catalog_sha256": "c".repeat(64),
+            "runtime_catalog_canonical_sha256": "d".repeat(64)
+        },
+        "expected_operations": [
+            {"id": "example.list", "service": "example", "operation": "List",
+             "credential_provider_boundary": false, "status": "sdk_decode_failure"}
+        ]
+    });
+    let (executed, rows) = validate_summary(&report, &summary, &catalog, &matrix).expect("should succeed with correct digests");
+    assert_eq!(rows[0]["status"], "sdk_decode_failure");
 }

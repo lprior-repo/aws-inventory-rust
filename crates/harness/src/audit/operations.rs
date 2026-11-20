@@ -1,4 +1,4 @@
-pub mod additions;
+
 pub mod calls;
 pub mod lexical;
 
@@ -31,9 +31,76 @@ pub fn reconcile(root: &std::path::Path) -> Result<serde_json::Value, HarnessErr
         ));
     }
 
-    let additions = additions::load_additions(root, &matrix, &matrix_sha)?;
+
 
     let (sources, calls, nonempty) = calls::source_inventory(root)?;
+
+
+    // Compare calls against matrix operations
+    let mut matrix_ops = HashMap::new();
+    if let Some(ops) = matrix.get("operations").and_then(serde_json::Value::as_array) {
+        for op in ops {
+            if let (Some(id), Some(calls_arr)) = (
+                op.get("id").and_then(serde_json::Value::as_str),
+                op.get("source_calls").and_then(serde_json::Value::as_array)
+            ) {
+                let mut callsites = Vec::new();
+                for call in calls_arr {
+                    if let (Some(path), Some(func)) = (
+                        call.get("path").and_then(serde_json::Value::as_str),
+                        call.get("function").and_then(serde_json::Value::as_str)
+                    ) {
+                        callsites.push((path.to_string(), func.to_string()));
+                    }
+                }
+                matrix_ops.insert(id.to_string(), callsites);
+            }
+        }
+    }
+
+    // Build multiset of observed calls
+    let mut observed = HashMap::new();
+    for call in &calls {
+        observed.entry(call.id.clone())
+            .or_insert_with(Vec::new)
+            .push((call.path.clone(), call.function.clone()));
+    }
+
+    // Compare: every matrix operation must be observed, and vice versa
+    for (id, expected_calls) in &matrix_ops {
+        let actual = observed.get(id.as_str());
+        match actual {
+            None => {
+                return Err(HarnessError::invalid(
+                    format!("matrix operation {} not observed in source", id),
+                ));
+            }
+            Some(actual_calls) => {
+                if expected_calls.len() != actual_calls.len() {
+                    return Err(HarnessError::invalid(
+                        format!("operation {} has {} expected calls but {} observed", 
+                            id, expected_calls.len(), actual_calls.len()),
+                    ));
+                }
+                for exp in expected_calls {
+                    if !actual_calls.contains(exp) {
+                        return Err(HarnessError::invalid(
+                            format!("operation {} missing expected callsite {}/{}", id, exp.0, exp.1),
+                        ));
+                    }
+                }
+            }
+        }
+    }
+
+    // Check for unexpected observed calls not in matrix
+    for id in observed.keys() {
+        if !matrix_ops.contains_key(id) {
+            return Err(HarnessError::invalid(
+                format!("observed operation {} not in matrix", id),
+            ));
+        }
+    }
 
     let closure_files: HashMap<String, String> = before
         .get("files")
@@ -91,16 +158,22 @@ pub fn reconcile(root: &std::path::Path) -> Result<serde_json::Value, HarnessErr
             "left_unchanged": true
         },
         "summary": {
-            "explicit_unique_operations": calls.len(),
+            "explicit_unique_operations": calls.iter().map(|c| c.id.as_str()).collect::<std::collections::HashSet<_>>().len(),
             "explicit_sdk_send_callsites": calls.len(),
-            "sdk_services": 0,
+            "sdk_services": calls.iter().map(|c| c.id.as_str()).collect::<std::collections::HashSet<_>>().iter().map(|s| s.split('.').next().unwrap_or("")).collect::<std::collections::HashSet<_>>().len(),
             "credential_provider_operation_boundaries": 0,
             "callsite_positions_changed": 0,
             "nonempty_channel_send_sites_excluded": nonempty,
             "aws_source_files": sources.len()
         },
         "method": "Mask comments/string/character literals; enumerate every empty send under crates/aws/src; resolve each direct receiver/method chain and SDK client namespace; require the exact historical path/function/operation multiset. Verify pinned operation/provider module hashes against Cargo.lock and the local registry source.",
-        "callsites": [],
+        "callsites": calls.iter().map(|c| serde_json::json!({
+                "id": c.id,
+                "path": c.path,
+                "function": c.function,
+                "operation_line": c.operation_line,
+                "send_line": c.send_line
+            })).collect::<Vec<_>>(),
         "credential_provider": {
             "id": "sts.assume_role",
             "explicit_sdk_send": false,
@@ -108,7 +181,7 @@ pub fn reconcile(root: &std::path::Path) -> Result<serde_json::Value, HarnessErr
             "pinned_dependency": provider_dependency
         },
         "pinned_sdk_operation_modules": modules,
-        "aws_source_files": [],
+        "aws_source_files": sources.keys().cloned().collect::<Vec<_>>(),
         "source": before,
         "cloud_control_provider_dimension": {
             "historical_type_count": 0,
@@ -143,14 +216,12 @@ pub fn validate_emulator(
     report: &serde_json::Value,
     root: &std::path::Path,
     summary_path: &std::path::Path,
-) -> Result<serde_json::Value, HarnessError> {
+) -> Result<(serde_json::Value, Vec<serde_json::Value>), HarnessError> {
     let (summary, _) = read_json_audit(summary_path)?;
     let (matrix, _) = read_json_audit(&root.join("catalog/aws-operations.json"))?;
     let catalog = catalogs(root)?;
 
-    validate_summary(report, &summary, &catalog.catalog, &matrix)?;
+    let (executed, rows) = validate_summary(report, &summary, &catalog.catalog, &matrix)?;
 
-    Ok(serde_json::json!({
-        "status": "emulator_evidence_validated"
-    }))
+    Ok((executed, rows))
 }
