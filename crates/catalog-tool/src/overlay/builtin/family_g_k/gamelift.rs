@@ -125,6 +125,39 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 &["BuildArn"],
             )?,
         ),
+        (
+            "ListContainerGroupDefinitions",
+            policy::query(
+                policy::enumerate(
+                    "ContainerGroupDefinitions",
+                    policy::arn("ContainerGroupDefinitionArn")?,
+                    Some(("NextToken", "NextToken")),
+                )?,
+                &["ContainerGroupDefinitionArn"],
+            )?,
+        ),
+        (
+            "DescribeMatchmakingConfigurations",
+            policy::query(
+                policy::enumerate(
+                    "Configurations",
+                    policy::arn("ConfigurationArn")?,
+                    Some(("NextToken", "NextToken")),
+                )?,
+                &["ConfigurationArn"],
+            )?,
+        ),
+        (
+            "DescribeMatchmakingRuleSets",
+            policy::query(
+                policy::enumerate(
+                    "RuleSets",
+                    policy::arn("RuleSetArn")?,
+                    Some(("NextToken", "NextToken")),
+                )?,
+                &["RuleSetArn"],
+            )?,
+        ),
     ];
     policy::finish(
         "gamelift",
@@ -159,8 +192,6 @@ const DEFERRED: &[&str] = &[
     "DescribeGameServerInstances",
     "DescribeGameSessionPlacement",
     "DescribeInstances",
-    "DescribeMatchmakingConfigurations",
-    "DescribeMatchmakingRuleSets",
     "DescribeRuntimeConfiguration",
     "DescribeScalingPolicies",
     "DescribeScript",
@@ -169,7 +200,6 @@ const DEFERRED: &[&str] = &[
     "GetPlayerConnectionDetails",
     "ListCompute",
     "ListContainerGroupDefinitionVersions",
-    "ListContainerGroupDefinitions",
     "ListFleetDeployments",
     "ListFleets",
     "ListGameServers",

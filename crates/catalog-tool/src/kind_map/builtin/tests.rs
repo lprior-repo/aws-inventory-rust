@@ -1571,7 +1571,7 @@ fn production_embedded_map_pins_the_complete_api_only_count() -> TestResult {
     let api_only = map.api_only();
     // The production map includes family_d_f rows that the source-only map does not.
     // This count is measured by running this test and observed, not guessed.
-    assert_eq!(api_only.len(), 666);
+    assert_eq!(api_only.len(), 668);
     // DMSCertificate was removed from api_only in this overlay update.
     assert!(
         !api_only
