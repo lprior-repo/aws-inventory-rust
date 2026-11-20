@@ -70,8 +70,8 @@ Makepad is a git dependency pinned in the workspace Cargo.toml; the first build 
 | `--database PATH` | Yes | Path to the SQLite inventory database |
 | `--graph-url URL` | No | FalkorDB endpoint (use with `--graph-name`) |
 | `--graph-name NAME` | No | FalkorDB graph name (use with `--graph-url`) |
-| `--linux-backend x11` | No | Force X11 display backend |
-| `--linux-backend wayland` | No | Force Wayland display backend |
+| `--linux-backend=x11` | No | Force X11 display backend (must use `=`; a space-separated value is rejected as an unknown argument) |
+| `--linux-backend=wayland` | No | Force Wayland display backend (same `=` form) |
 
 ## Viewer behavior
 
