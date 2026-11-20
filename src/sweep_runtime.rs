@@ -50,6 +50,8 @@ pub struct SweepSummary {
     pub scopes: u64,
     pub outcomes: ScopeOutcomes,
     pub graph_pending: u64,
+    /// Scopes still queued when a time-bounded slice ended; zero for a drained sweep.
+    pub work_remaining: u64,
 }
 
 impl ScopeOutcomes {

@@ -22,6 +22,7 @@ pub(super) async fn run(options: SweepArgs) -> Result<std::process::ExitCode> {
     summary.graph_pending = state.pending;
     let code = exit_code(
         &summary.outcomes,
+        summary.work_remaining,
         unattributed_resources,
         options.drain,
         &state,
@@ -40,12 +41,18 @@ async fn collect(options: &SweepArgs) -> Result<(BinaryStore, SweepSummary)> {
     Ok((store, summary))
 }
 
+/// Exit 4: a time-bounded slice ended with work queued; rerun with `--resume`.
+/// It outranks every other code because the sweep is not finished at all.
 fn exit_code(
     outcomes: &sweep_runtime::ScopeOutcomes,
+    work_remaining: u64,
     unattributed_resources: u64,
     drain: bool,
     state: &inventory_engine::inventory::ProjectionState,
 ) -> std::process::ExitCode {
+    if work_remaining > 0 {
+        return std::process::ExitCode::from(4);
+    }
     if drain && (state.pending > 0 || state.rebuild_required) {
         return std::process::ExitCode::from(3);
     }
@@ -117,7 +124,7 @@ fn print_summary(summary: SweepSummary, unattributed_resources: u64) -> Result<(
     let outcomes = summary.outcomes;
     writeln!(
         std::io::stdout().lock(),
-        "resource_writes_scope=invocation resource_writes={} rows={} scopes={} complete={} partial={} inaccessible={} unsupported={} failed={} unobserved={} graph_pending={} unattributed_resources={}",
+        "resource_writes_scope=invocation resource_writes={} rows={} scopes={} complete={} partial={} inaccessible={} unsupported={} failed={} unobserved={} graph_pending={} work_remaining={} unattributed_resources={}",
         summary.resource_writes,
         summary.rows,
         summary.scopes,
@@ -128,6 +135,7 @@ fn print_summary(summary: SweepSummary, unattributed_resources: u64) -> Result<(
         outcomes.failed,
         outcomes.unobserved,
         summary.graph_pending,
+        summary.work_remaining,
         unattributed_resources
     )?;
     Ok(())
@@ -149,13 +157,13 @@ mod tests {
             pending: 0,
             rebuild_required: false,
         };
-        assert_eq!(exit_code(&outcomes, 1, false, &state), ExitCode::from(2));
-        assert_eq!(exit_code(&outcomes, 0, false, &state), ExitCode::SUCCESS);
+        assert_eq!(exit_code(&outcomes, 0, 1, false, &state), ExitCode::from(2));
+        assert_eq!(exit_code(&outcomes, 0, 0, false, &state), ExitCode::SUCCESS);
         let partial = ScopeOutcomes {
             partial: 1,
             ..outcomes
         };
-        assert_eq!(exit_code(&partial, 0, false, &state), ExitCode::from(2));
+        assert_eq!(exit_code(&partial, 0, 0, false, &state), ExitCode::from(2));
     }
 
     #[test]
@@ -168,8 +176,8 @@ mod tests {
             pending: 3,
             rebuild_required: false,
         };
-        assert_eq!(exit_code(&outcomes, 0, true, &state), ExitCode::from(3));
-        assert_eq!(exit_code(&outcomes, 0, false, &state), ExitCode::SUCCESS);
+        assert_eq!(exit_code(&outcomes, 0, 0, true, &state), ExitCode::from(3));
+        assert_eq!(exit_code(&outcomes, 0, 0, false, &state), ExitCode::SUCCESS);
     }
 
     #[test]
@@ -182,8 +190,8 @@ mod tests {
             pending: 0,
             rebuild_required: true,
         };
-        assert_eq!(exit_code(&outcomes, 0, true, &state), ExitCode::from(3));
-        assert_eq!(exit_code(&outcomes, 0, false, &state), ExitCode::SUCCESS);
+        assert_eq!(exit_code(&outcomes, 0, 0, true, &state), ExitCode::from(3));
+        assert_eq!(exit_code(&outcomes, 0, 0, false, &state), ExitCode::SUCCESS);
     }
 
     #[test]
@@ -196,6 +204,22 @@ mod tests {
             pending: 0,
             rebuild_required: false,
         };
-        assert_eq!(exit_code(&outcomes, 0, true, &state), ExitCode::SUCCESS);
+        assert_eq!(exit_code(&outcomes, 0, 0, true, &state), ExitCode::SUCCESS);
+    }
+
+    #[test]
+    fn given_slice_ended_with_work_remaining_when_exit_code_chosen_then_four_outranks_every_other_status()
+     {
+        let failed = ScopeOutcomes {
+            complete: 3,
+            failed: 2,
+            ..ScopeOutcomes::default()
+        };
+        let pending = ProjectionState {
+            pending: 9,
+            rebuild_required: true,
+        };
+        assert_eq!(exit_code(&failed, 5, 1, true, &pending), ExitCode::from(4));
+        assert_eq!(exit_code(&failed, 0, 1, true, &pending), ExitCode::from(3));
     }
 }

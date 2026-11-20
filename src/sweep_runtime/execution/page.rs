@@ -270,5 +270,6 @@ fn summary(outcome: StoredOutcome, rows: u64, writes: u64) -> SweepSummary {
         scopes: 1,
         outcomes,
         graph_pending: 0,
+        work_remaining: 0,
     }
 }

@@ -47,7 +47,7 @@ async fn given_an_owned_prefix_then_hostile_filtered_row_after_chunk_boundary_wh
     let credentials = inventory_aws::model_credentials::ProfileCredentials::load(
         Some("isolated-row-assertion-page"),Some("us-east-1")).await?;
     let config = crate::sweep_runtime::SweepConfig { region:Some("us-east-1".to_owned()),
-        max_pages:10,concurrency:1,resume:false,endpoint:None,ca_bundle:None };
+        max_pages:10,concurrency:1,resume:false,endpoint:None,ca_bundle:None,slice_timeout_secs:None };
     let context = crate::sweep_runtime::execution::RuntimeContext {
         bootstrap:crate::sweep_runtime::execution::BootstrapContext {
             catalog:&catalog,client:&client,executor:&executor,credentials:&credentials,home:&home,config:&config,

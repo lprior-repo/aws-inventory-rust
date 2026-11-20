@@ -138,36 +138,16 @@ pub(super) fn scope_key(
 pub(super) async fn drain_work(
     context: &RuntimeContext<'_, '_>,
     sweep: &SweepId,
-    slice_timeout_ms: Option<i64>,
-    max_work_items: Option<i64>,
+    budget: SliceBudget,
 ) -> Result<SweepSummary, SweepError> {
     let mut summary = SweepSummary::default();
     let mut leases = Vec::new();
-    let start_ms = slice_timeout_ms.map(|_| now_ms()?);
-    let mut items_claimed: i64 = 0;
+    let mut slice_exhausted = false;
     loop {
-        if let Some(start) = start_ms {
-            let elapsed = now_ms()?.saturating_sub(start);
-            if let Some(timeout) = slice_timeout_ms {
-                if elapsed >= timeout {
-                    tracing::info!(
-                        elapsed_ms = elapsed,
-                        timeout_ms = timeout,
-                        "slice time budget reached; leaving remaining work for next slice"
-                    );
-                    break;
-                }
-            }
-        }
-        if let Some(budget) = max_work_items {
-            if items_claimed >= budget {
-                tracing::info!(
-                    items_claimed,
-                    budget,
-                    "slice step budget reached; leaving remaining work for next slice"
-                );
-                break;
-            }
+        if budget.exhausted(now_ms()?) {
+            slice_exhausted = true;
+            tracing::info!("slice time budget reached; leaving remaining work for the next slice");
+            break;
         }
         admission::claim_batch(
             context.store,
@@ -186,11 +166,6 @@ pub(super) async fn drain_work(
         if leases.is_empty() {
             break;
         }
-        let lease_count = match i64::try_from(leases.len()) {
-            Ok(count) => count,
-            Err(_) => 0,
-        };
-        items_claimed = items_claimed.saturating_add(lease_count);
         let owned = leases.clone();
         let work = stream::iter(leases.drain(..).map(|lease| page::process(context, lease)))
             .buffer_unordered(context.bootstrap.config.concurrency);
@@ -205,7 +180,7 @@ pub(super) async fn drain_work(
     if context.bootstrap.executor.is_cancelled() {
         return Err(inventory_engine::limiter::ApiError::Cancelled.into());
     }
-    apply_persisted_summary(context.store, sweep, &mut summary).await?;
+    apply_persisted_summary(context.store, sweep, &mut summary, slice_exhausted).await?;
     summary.graph_pending = context.store.projection_state().await?.pending;
     Ok(summary)
 }
@@ -304,6 +279,7 @@ pub(super) async fn apply_persisted_summary(
     store: &BinaryStore,
     sweep: &SweepId,
     summary: &mut SweepSummary,
+    slice_exhausted: bool,
 ) -> Result<(), SweepError> {
     let stored = store.sweep_summary(sweep).await?;
     summary.rows = stored.resources_observed;
@@ -317,9 +293,14 @@ pub(super) async fn apply_persisted_summary(
     };
     summary.scopes = scope_total(&summary.outcomes)?;
     if stored.work_pending != 0 {
-        return Err(SweepError::Operation(
-            "sweep ended with active work; incomplete completion is not reportable",
-        ));
+        // Only a slice that ran out of time may leave work behind; the next
+        // invocation resumes it. Any other pending work is an engine fault.
+        if !slice_exhausted {
+            return Err(SweepError::Operation(
+                "sweep ended with active work; incomplete completion is not reportable",
+            ));
+        }
+        summary.work_remaining = stored.work_pending;
     }
     Ok(())
 }

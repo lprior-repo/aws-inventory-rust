@@ -29,6 +29,7 @@ impl Driver {
                 resume: false,
                 endpoint: None,
                 ca_bundle: None,
+                slice_timeout_secs: None,
             },
         })
     }

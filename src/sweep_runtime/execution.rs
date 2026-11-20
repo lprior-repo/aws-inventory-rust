@@ -1,6 +1,8 @@
 #[path = "execution/draining.rs"]
 mod draining;
 use draining::*;
+mod slice;
+use slice::SliceBudget;
 pub(in crate::sweep_runtime) mod discovery;
 pub(in crate::sweep_runtime) mod page;
 pub(in crate::sweep_runtime) mod routing;
@@ -94,12 +96,12 @@ pub(crate) async fn run(
     };
     let regions = discover_regions(&context).await?;
     seed_enumerations(&context, &sweep, &regions).await?;
-    let slice_timeout_ms = config
-        .slice_timeout_secs
-        .map(|secs| i64::try_from(secs).ok().and_then(|s| s.checked_mul(1_000)))
-        .flatten();
+    let budget = match config.slice_timeout_secs {
+        Some(secs) => SliceBudget::starting_at(now_ms()?, secs),
+        None => SliceBudget::unbounded(),
+    };
     let collection: BoxFuture<'_, Result<SweepSummary, SweepError>> =
-        Box::pin(drain_work(&context, &sweep, slice_timeout_ms, None));
+        Box::pin(drain_work(&context, &sweep, budget));
     supervise(&executor, collection, tokio::signal::ctrl_c()).await
 }
 
