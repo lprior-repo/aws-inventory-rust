@@ -254,3 +254,44 @@ fn root_selector_uses_output_structure_not_item_structure() -> Result<(), Box<dy
     Ok(())
 }
 
+#[test]
+fn describe_rule_disambiguates_by_event_bus() -> Result<(), Box<dyn std::error::Error>> {
+    let policies = overlay::embedded()?;
+    let eventbridge_policy = policies
+        .iter()
+        .find(|p| p.service() == "eventbridge")
+        .ok_or("eventbridge overlay not found")?;
+
+    let describe_rule = eventbridge_policy
+        .operations()
+        .get(&overlay::OperationName::new("DescribeRule")?)
+        .ok_or("DescribeRule operation not found")?;
+
+    // DescribeRule must bind Name from ListRules
+    let name_binding = describe_rule
+        .bind
+        .get(&overlay::MemberPath::new("Name")?)
+        .ok_or("DescribeRule Name binding not found")?;
+    assert_eq!(
+        name_binding,
+        &overlay::Binding::From {
+            operation: overlay::OperationName::new("ListRules")?,
+            path: overlay::MemberPath::new("Name")?
+        }
+    );
+
+    // DescribeRule must bind EventBusName from ListRules to disambiguate across event buses
+    let event_bus_binding = describe_rule
+        .bind
+        .get(&overlay::MemberPath::new("EventBusName")?)
+        .ok_or("DescribeRule EventBusName binding not found")?;
+    assert_eq!(
+        event_bus_binding,
+        &overlay::Binding::From {
+            operation: overlay::OperationName::new("ListRules")?,
+            path: overlay::MemberPath::new("EventBusName")?
+        }
+    );
+    Ok(())
+}
+

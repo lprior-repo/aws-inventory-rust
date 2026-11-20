@@ -152,7 +152,11 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                     "Buckets",
                     Identity::Template("arn:{partition}:s3:::{Name}".to_owned()),
                     Scope::Account,
-                    Paginator::None,
+                    Paginator::Token(crate::overlay::TokenPair {
+                        input: path("NextToken")?,
+                        output: path("NextToken")?,
+                        optional: true,
+                    }),
                 )?
             },
         ),

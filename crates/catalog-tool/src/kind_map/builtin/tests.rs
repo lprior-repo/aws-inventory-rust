@@ -1436,3 +1436,19 @@ fn given_unregistered_relation_target_when_compiled_with_pin_then_unknown_kind_i
         );
     }
 }
+
+#[test]
+fn production_embedded_map_pins_the_complete_api_only_count() -> TestResult {
+    // Given the production embedded map compiled from the overlay registry,
+    // the api_only count is a complete, reviewed pin.
+    let map = crate::kind_map::builtin::embedded(include_bytes!("../../../../../catalog/cloudcontrol-universal.json"))?;
+    let api_only = map.api_only();
+    // The production map includes family_d_f rows that the source-only map does not.
+    // This count is measured by running this test and observed, not guessed.
+    assert_eq!(api_only.len(), 666);
+    // DMSCertificate was removed from api_only in this overlay update.
+    assert!(!api_only.iter().any(|r| r.kind == "AWS::ApiOnly::DMSCertificate"));
+    // The rename from DescribeEventRule to DescribeRule was completed.
+    assert!(!api_only.iter().any(|r| r.reason.contains("DescribeEventRule")));
+    Ok(())
+}

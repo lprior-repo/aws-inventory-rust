@@ -1,5 +1,27 @@
-use super::*;
-use crate::overlay::FixedValue;
+use crate::classes::DenyReason;
+use crate::overlay;
+use crate::overlay::{
+    Binding, FixedValue, Identity, ItemSelector, MemberPath, OperationName, OverlayClass,
+    Paginator, Scope, TokenPair,
+};
+
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+
+fn operation<'a>(
+    policies: &'a [crate::overlay::ServiceOverlay],
+    service: &str,
+    name: &str,
+) -> Result<&'a crate::overlay::OperationOverlay, Box<dyn std::error::Error>> {
+    policies
+        .iter()
+        .find(|policy| policy.service() == service)
+        .and_then(|policy| {
+            policy
+                .operations()
+                .get(&OperationName::new(name).ok()?)
+        })
+        .ok_or_else(|| format!("missing policy {service}/{name}").into())
+}
 
 const BOUND_CASES: &[(&str, &str, &str, &str, &str)] = &[
     ("dsql", "ListStreams", "clusterIdentifier", "ListClusters", "identifier"),

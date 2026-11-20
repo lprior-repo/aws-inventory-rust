@@ -32,10 +32,12 @@ fn overlay_paginator(
         Paginator::None => {
             let has_modeled_pagination =
                 pagination.is_some_and(|p| matches!(p, Pagination::Modeled { .. }));
+            let has_needs_overlay_pagination =
+                pagination.is_some_and(|p| matches!(p, Pagination::NeedsOverlay { .. }));
             super::pagination_none::validate_none(
                 service,
                 operation,
-                has_modeled_pagination,
+                has_modeled_pagination || has_needs_overlay_pagination,
                 violations,
             )
         }
@@ -131,7 +133,7 @@ fn validate_tokens(
 ) -> bool {
     let valid_pairs = pairs
         .iter()
-        .map(|pair| {
+        .all(|pair| {
             super::pagination_tokens::validate_token_pair(
                 service,
                 operation,
@@ -140,8 +142,7 @@ fn validate_tokens(
                 pair.output.as_str(),
                 violations,
             )
-        })
-        .all(|valid| valid);
+        });
     let valid_truncated = validate_truncated(service, operation, model, truncated, violations);
     valid_pairs && valid_truncated
 }
