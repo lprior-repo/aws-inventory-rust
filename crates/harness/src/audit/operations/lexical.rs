@@ -10,9 +10,16 @@ pub struct Token {
 
 fn source_location(text: &str, offset: usize) -> (usize, usize) {
     let before = &text[..offset];
-    let line = before.bytes().filter(|b| *b == b'\n').count() + 1;
-    let line_start = before.rfind('\n').map(|i| i + 1).unwrap_or(0);
-    let column = offset - line_start + 1;
+    let line = before
+        .bytes()
+        .filter(|b| *b == b'\n')
+        .count()
+        .saturating_add(1);
+    let line_start = before
+        .rfind('\n')
+        .map(|i| i.saturating_add(1))
+        .unwrap_or(0);
+    let column = offset.saturating_sub(line_start).saturating_add(1);
     (line, column)
 }
 
@@ -22,18 +29,31 @@ pub fn mask_noncode(path: &str, text: &str) -> Result<String, HarnessError> {
     let mut position = 0;
 
     while position < bytes.len() {
+        let current = match bytes.get(position) {
+            Some(b) => *b,
+            None => break,
+        };
+        let next_pos = position.saturating_add(1);
+        let next_byte = match bytes.get(next_pos) {
+            Some(b) => *b,
+            None => {
+                position = next_pos;
+                continue;
+            }
+        };
         // Line comment
-        if bytes[position] == b'/' && position + 1 < bytes.len() && bytes[position + 1] == b'/' {
-            let line_end = text[position..].find('\n');
+        if current == b'/' && next_byte == b'/' {
+            let remaining = &text[position..];
+            let line_end = remaining.find('\n');
             let end = match line_end {
-                Some(offset) => position + offset,
+                Some(offset) => position.saturating_add(offset),
                 None => bytes.len(),
             };
             mask_range(&mut output, position, end);
             position = end;
         }
         // Block comment
-        else if bytes[position] == b'/' && position + 1 < bytes.len() && bytes[position + 1] == b'*' {
+        else if current == b'/' && next_byte == b'*' {
             let (ok, end) = mask_block_comment(&mut output, text, position);
             if !ok {
                 let (line, col) = source_location(text, position);
@@ -45,7 +65,7 @@ pub fn mask_noncode(path: &str, text: &str) -> Result<String, HarnessError> {
             position = end;
         }
         // String literal
-        else if bytes[position] == b'"' {
+        else if current == b'"' {
             let (ok, end) = mask_string_literal(&mut output, text, position);
             if !ok {
                 let (line, col) = source_location(text, position);
@@ -57,34 +77,34 @@ pub fn mask_noncode(path: &str, text: &str) -> Result<String, HarnessError> {
             position = end;
         }
         // Raw string
-        else if bytes[position] == b'r' {
+        else if current == b'r' {
             let (ok, end) = mask_raw_string(&mut output, text, position);
             if ok {
                 position = end;
             } else {
-                position = position.saturating_add(1);
+                position = next_pos;
             }
         }
         // Byte string
-        else if bytes[position] == b'b' {
+        else if current == b'b' {
             let (ok, end) = mask_byte_string(&mut output, text, position);
             if ok {
                 position = end;
             } else {
-                position = position.saturating_add(1);
+                position = next_pos;
             }
         }
         // Character literal
-        else if bytes[position] == b'\'' {
+        else if current == b'\'' {
             let (ok, end) = mask_char_literal(&mut output, text, position);
             if !ok {
                 // Not a char literal (e.g. lifetime parameter)
-                position = position.saturating_add(1);
+                position = next_pos;
             } else {
                 position = end;
             }
         } else {
-            position = position.saturating_add(1);
+            position = next_pos;
         }
     }
 
@@ -289,17 +309,26 @@ fn tokenize(text: &str, max_tokens: usize) -> Result<Vec<Token>, HarnessError> {
     let bytes = text.as_bytes();
 
     while position < bytes.len() {
+        let current = match bytes.get(position) {
+            Some(b) => *b,
+            None => break,
+        };
         // Skip whitespace
-        if bytes[position].is_ascii_whitespace() {
+        if current.is_ascii_whitespace() {
             position = position.saturating_add(1);
             continue;
         }
         // Alphanumeric identifier
-        if bytes[position].is_ascii_alphanumeric() || bytes[position] == b'_' {
+        if current.is_ascii_alphanumeric() || current == b'_' {
             let start = position;
-            while position < bytes.len()
-                && (bytes[position].is_ascii_alphanumeric() || bytes[position] == b'_')
-            {
+            while position < bytes.len() {
+                let byte = match bytes.get(position) {
+                    Some(b) => *b,
+                    None => break,
+                };
+                if !(byte.is_ascii_alphanumeric() || byte == b'_') {
+                    break;
+                }
                 position = position.saturating_add(1);
             }
             tokens.push(Token {
@@ -308,30 +337,58 @@ fn tokenize(text: &str, max_tokens: usize) -> Result<Vec<Token>, HarnessError> {
             });
         }
         // Lifetime parameter: 'name
-        else if bytes[position] == b'\'' && position + 1 < bytes.len()
-            && bytes[position + 1].is_ascii_alphanumeric()
-        {
+        else if current == b'\'' {
             let start = position;
-            position = position.saturating_add(1);
-            while position < bytes.len()
-                && (bytes[position].is_ascii_alphanumeric() || bytes[position] == b'_')
-            {
+            let next_pos = position.saturating_add(1);
+            if next_pos < bytes.len() {
+                let next_byte = bytes[next_pos];
+                if next_byte.is_ascii_alphanumeric() {
+                    position = next_pos;
+                    while position < bytes.len() {
+                        let byte = match bytes.get(position) {
+                            Some(b) => *b,
+                            None => break,
+                        };
+                        if !(byte.is_ascii_alphanumeric() || byte == b'_') {
+                            break;
+                        }
+                        position = position.saturating_add(1);
+                    }
+                    tokens.push(Token {
+                        text: text[start..position].to_string(),
+                        start,
+                    });
+                } else {
+                    position = position.saturating_add(1);
+                    tokens.push(Token {
+                        text: text[start..position].to_string(),
+                        start,
+                    });
+                }
+            } else {
                 position = position.saturating_add(1);
+                tokens.push(Token {
+                    text: text[start..position].to_string(),
+                    start,
+                });
             }
-            tokens.push(Token {
-                text: text[start..position].to_string(),
-                start,
-            });
         }
         // Single character token (delimiters, operators, punctuation)
         // Multi-byte UTF-8 characters are treated as a single token
         else {
             let start = position;
             // Find the end of the UTF-8 character
-            if bytes[position] >= 0x80 {
+            if current >= 0x80 {
                 // Multi-byte character: find the end
-                let mut end = position + 1;
-                while end < bytes.len() && (bytes[end] & 0xC0) == 0x80 {
+                let mut end = position.saturating_add(1);
+                while end < bytes.len() {
+                    let byte = match bytes.get(end) {
+                        Some(b) => *b,
+                        None => break,
+                    };
+                    if (byte & 0xC0) != 0x80 {
+                        break;
+                    }
                     end = end.saturating_add(1);
                 }
                 position = end;

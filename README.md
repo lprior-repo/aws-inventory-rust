@@ -31,10 +31,9 @@ yet. Cloud Control collection is not the way forward: it gets no new work and
 is deleted in ROADMAP M9.5 (decisions V01, V04).
 
 All product code is Rust. SQLx's bundled SQLite engine is native SQLite C and
-FalkorDB is an external database. Python helper scripts remain under `scripts/`
-as legacy development tooling (emulator fixture seeding, request recording,
-FalkorDB installation, the mutation gate, SDK catalog generation). The build
-and the maintainer gate do not use them, and they are deleted in ROADMAP M2.10.
+FalkorDB is an external database. Legacy Python development tooling has been
+replaced by the Rust `inventory-harness` CLI; it provides fixture seeding,
+request recording, installation, the mutation gate, and catalog generation.
 
 **The sections below document the baseline.** For the local emulator stack see
 [setup and commands](docs/LOCAL_SETUP.md); for the baseline build-and-verify

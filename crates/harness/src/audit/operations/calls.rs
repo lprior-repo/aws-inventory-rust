@@ -22,8 +22,12 @@ pub struct Callsite {
 
 fn line_column(source: &str, offset: usize) -> (usize, usize) {
     let before = &source[..offset];
-    let line = before.matches('\n').count() + 1;
-    let column = offset - before.rfind('\n').unwrap_or(0);
+    let line = before.matches('\n').count().saturating_add(1);
+    let line_start = before
+        .rfind('\n')
+        .map(|i| i.saturating_add(1))
+        .unwrap_or(0);
+    let column = offset.saturating_sub(line_start);
     (line, column)
 }
 
@@ -37,13 +41,14 @@ fn function_at(masked: &str, offset: usize) -> Result<(String, usize), HarnessEr
     let mut last_pos = 0;
     let mut found = false;
     for (pos, _) in before.match_indices("fn ") {
-        let name_start = pos + 3;
+        let name_start = pos.saturating_add(3);
         if name_start >= masked.len() {
             continue;
         }
         let rest = &masked[name_start..];
         if let Some(first) = rest.as_bytes().first() {
-            if first.is_ascii_alphabetic() || *first == b'_' {
+            let byte_value = u8::from(*first);
+            if byte_value.is_ascii_alphabetic() || byte_value == b'_' {
                 last_pos = pos;
                 found = true;
             }
@@ -56,7 +61,7 @@ fn function_at(masked: &str, offset: usize) -> Result<(String, usize), HarnessEr
         ));
     }
 
-    let name_start = last_pos + 3;
+    let name_start = last_pos.saturating_add(3);
     let rest = &masked[name_start..];
     let name_end = rest
         .find(|c: char| !c.is_alphanumeric() && c != '_')
@@ -77,7 +82,8 @@ fn receiver_service(
     // Check for qualified client assignment: let sdk = aws_sdk_<service>::Client::new(...)
     let pattern = format!("{} = aws_sdk_", receiver);
     if let Some(pos) = scope.find(&pattern) {
-        let after = &scope[pos + pattern.len()..];
+        let after_start = pos.saturating_add(pattern.len());
+        let after = &scope[after_start..];
         let service_end = after
             .find(|c: char| !c.is_ascii_lowercase() && !c.is_ascii_digit() && c != '_')
             .unwrap_or(after.len());
@@ -87,7 +93,8 @@ fn receiver_service(
     // Check for type-annotated parameter: fn foo(sdk: &aws_sdk_<service>::Client)
     let pattern2 = format!("{}: &aws_sdk_", receiver);
     if let Some(pos) = scope.find(&pattern2) {
-        let after = &scope[pos + pattern2.len()..];
+        let after_start = pos.saturating_add(pattern2.len());
+        let after = &scope[after_start..];
         let service_end = after
             .find(|c: char| !c.is_ascii_lowercase() && !c.is_ascii_digit() && c != '_')
             .unwrap_or(after.len());
@@ -98,7 +105,8 @@ fn receiver_service(
     let use_pattern = "use aws_sdk_";
     let mut imports: Vec<String> = Vec::new();
     for use_match in masked.match_indices(use_pattern) {
-        let after = &masked[use_match.0 + use_pattern.len()..];
+        let after_start = use_match.0.saturating_add(use_pattern.len());
+        let after = &masked[after_start..];
         let service_end = after
             .find(|c: char| !c.is_ascii_lowercase() && !c.is_ascii_digit() && c != '_')
             .unwrap_or(64);
@@ -134,18 +142,33 @@ pub fn calls_in_source_with_budget(path: &str, source: &str, max_tokens: usize) 
     let mut nonempty_sends: usize = 0;
 
     let mut index = 0;
-    while index + 2 < tokens.len() {
-        if tokens[index].text == "." && tokens[index + 1].text == "send" && tokens[index + 2].text == "(" {
-            if *pairs.get(&(index + 2)).unwrap_or(&index) != index + 3 {
-                nonempty_sends += 1;
+    let limit = tokens.len().saturating_sub(2);
+    while index < limit {
+        let current = match tokens.get(index) {
+            Some(t) => t,
+            None => break,
+        };
+        let next_index = index.saturating_add(1);
+        let send_index = index.saturating_add(2);
+        let next = match tokens.get(next_index) {
+            Some(t) => t,
+            None => break,
+        };
+        let open = match tokens.get(send_index) {
+            Some(t) => t,
+            None => break,
+        };
+        if current.text == "." && next.text == "send" && open.text == "(" {
+            let open_pair = send_index.saturating_add(1);
+            if *pairs.get(&send_index).unwrap_or(&send_index) != open_pair {
+                nonempty_sends = nonempty_sends.saturating_add(1);
                 index = index.saturating_add(1);
                 continue;
             }
 
             // Walk backwards through the method call chain
             // Python: cursor = index - 1, walk while token is ")"
-            let mut cursor = index;
-            cursor = cursor.saturating_sub(1);
+            let mut cursor = index.saturating_sub(1);
             let mut methods: Vec<(String, usize)> = Vec::new();
             loop {
                 let tok = match tokens.get(cursor) {
@@ -155,16 +178,18 @@ pub fn calls_in_source_with_budget(path: &str, source: &str, max_tokens: usize) 
                 if tok.text != ")" {
                     break;
                 }
-                let open = *pairs.get(&cursor).unwrap_or(&0);
+                let open = pairs.get(&cursor).copied().unwrap_or(0);
                 if open < 2 {
                     break;
                 }
-                let method_token = match tokens.get(open - 1) {
+                let method_index = open.saturating_sub(1);
+                let method_token = match tokens.get(method_index) {
                     Some(t) => t,
                     None => break,
                 };
                 let method_name = &method_token.text;
-                let prev_token = match tokens.get(open - 2) {
+                let prev_index = open.saturating_sub(2);
+                let prev_token = match tokens.get(prev_index) {
                     Some(t) => t,
                     None => break,
                 };
@@ -175,7 +200,7 @@ pub fn calls_in_source_with_budget(path: &str, source: &str, max_tokens: usize) 
                     break;
                 }
                 methods.push((method_name.clone(), open));
-                cursor = open - 3;
+                cursor = open.saturating_sub(3);
             }
 
             // Python uses methods[-1] (last method found)
@@ -190,7 +215,8 @@ pub fn calls_in_source_with_budget(path: &str, source: &str, max_tokens: usize) 
                     ));
                 }
             };
-            let operation_offset = tokens[last_open - 1].start;
+            let op_index = last_open.saturating_sub(1);
+            let operation_offset = tokens[op_index].start;
             let receiver = tokens[cursor].text.clone();
 
             let (function, function_start) = function_at(&masked, tokens[index].start)?;

@@ -45,8 +45,8 @@ The generator reads this archive and the frozen root catalog without modifying
 either. Reproduce and check the additional descriptors with:
 
 ```bash
-python3 catalog/upstream/build_parent_catalog.py
-python3 catalog/upstream/build_parent_catalog.py --check
+cargo run --locked -p catalog-tool -- universal
+cargo run --locked -p catalog-tool -- universal --check
 ```
 
 ## Selection and execution

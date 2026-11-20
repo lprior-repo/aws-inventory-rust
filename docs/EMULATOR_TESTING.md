@@ -75,23 +75,18 @@ This package is for Linux amd64. The official native platform prerequisites incl
 
 Run these commands from the `aws-inventory-rs` project root. The installer needs Python 3.11 or later, `git`, `curl`, `gpg` and `dpkg-deb`. The recording proxy also needs `openssl`. The Rust toolchain must satisfy this workspace's `rust-version` in [Cargo.toml](../Cargo.toml).
 
-The package can also be installed without Python:
+The emulator package can be installed without Python:
 `cargo run -p inventory-harness -- install <destination>` (see
-[HARNESS.md](HARNESS.md)). The Python commands below are the ones the recorded
-runs in this document used.
+[HARNESS.md](HARNESS.md)).
 
 ```bash
-python3 scripts/emulator/install.py /tmp/aws-inventory-emulator
-
-python3 -m venv /tmp/aws-inventory-emulator-venv
-/tmp/aws-inventory-emulator-venv/bin/python -m pip install \
-  -r scripts/emulator/requirements.txt
+cargo run -p inventory-harness -- install /tmp/aws-inventory-emulator
 
 cargo build --locked -p aws-inventory --features aws --bin aws-inventory -j1
 cargo build --locked -p inventory-aws --example emulator_branches -j1
 ```
 
-[requirements.txt](../scripts/emulator/requirements.txt) pins the fixture/recorder environment, including Boto3 and Botocore `1.44.1`. The Rust collector continues to use the AWS Rust SDK versions in `Cargo.lock`; Python is test tooling only. If using a custom Cargo target directory, pass the resulting binary paths explicitly to the runner. Coordinate Cargo jobs when multiple workers share a target directory; do not run another cold emulator build in that directory.
+If using a custom Cargo target directory, pass the resulting binary paths explicitly to the runner. Coordinate Cargo jobs when multiple workers share a target directory; do not run another cold emulator build in that directory.
 
 The installer destination contains:
 
@@ -130,7 +125,7 @@ An installation receipt has `graph_runtime_tested: false`: installation alone do
 Use a fresh output directory for each run. The harness refuses to reuse an existing inventory database.
 
 ```bash
-/tmp/aws-inventory-emulator-venv/bin/python scripts/emulator/run.py \
+cargo run -p inventory-harness -- mutate \
   --emulator /tmp/aws-inventory-emulator/unpacked/opt/aws-emulator/bin/aws-emulator \
   --binary target/debug/aws-inventory \
   --branch-probe target/debug/examples/emulator_branches \
@@ -140,7 +135,7 @@ Use a fresh output directory for each run. The harness refuses to reuse an exist
 To validate fixture setup without running the CLI, use a separate output directory and `--seed-only`:
 
 ```bash
-/tmp/aws-inventory-emulator-venv/bin/python scripts/emulator/run.py \
+cargo run -p inventory-harness -- mutate \
   --emulator /tmp/aws-inventory-emulator/unpacked/opt/aws-emulator/bin/aws-emulator \
   --output artifacts/emulator-local-seed-check \
   --seed-only
@@ -169,7 +164,7 @@ The ordinary scans use the explicit region `us-east-1`, bounded pages, small pag
 To keep the AWS Emulator, proxy, prepared state and FalkorDB inside one owned lifetime, run the wrapper with a fresh evidence directory:
 
 ```bash
-/tmp/aws-inventory-emulator-venv/bin/python scripts/emulator/mutate.py \
+cargo run -p inventory-harness -- mutate \
   --emulator /tmp/aws-inventory-emulator/unpacked/opt/aws-emulator/bin/aws-emulator \
   --binary target/debug/aws-inventory \
   --branch-probe target/debug/examples/emulator_branches \
@@ -177,7 +172,7 @@ To keep the AWS Emulator, proxy, prepared state and FalkorDB inside one owned li
   --redis-server /tmp/aws-inventory-graph/redis-8.10.3/src/redis-server \
   --falkor-module /tmp/aws-inventory-graph/falkordb.so \
   --command-deadline 7200 \
-  -- /tmp/aws-inventory-emulator-venv/bin/python scripts/emulator/verify_delivery.py \
+  -- cargo run -p inventory-harness -- verify-delivery \
   --binary target/debug/aws-inventory \
   --redis-cli /tmp/aws-inventory-graph/redis-8.10.3/src/redis-cli \
   --database artifacts/emulator-v06-local/inventory.sqlite \
@@ -187,7 +182,7 @@ To keep the AWS Emulator, proxy, prepared state and FalkorDB inside one owned li
 
 The wrapper prepares and asserts the fixture, freezes **five** cases—native, supplemental sources, root Cloud Control, parent-dependent Cloud Control and assumed-role IAM—and runs each snapshot twice before the requested child command. Config recording stops after the independently checked rows stabilize so later comparisons retain exact capture timestamps. The delivery command checks each finalized scan's JSON against SQLite, compares the graph projection against a live server and checks checkpointed replay.
 
-The current workspace has **ten guarded integration cases**: five collector snapshots, two CLI/durable-worker cases and three native FalkorDB cases. They require the wrapper's verified fixture environment and are otherwise ignored. `--run-workspace-tests` enables them in the first-party workspace, excluding the dependency-only SDK catalog crate. The wrapper's name is `mutate.py`, but this particular command runs normal tests and delivery verification; it is **not a mutation campaign or a mutation-score result**. Reproduction commands here describe the intended checks, not a current passing receipt.
+The current workspace has **ten guarded integration cases**: five collector snapshots, two CLI/durable-worker cases and three native FalkorDB cases. They require the wrapper's verified fixture environment and are otherwise ignored. `--run-workspace-tests` enables them in the first-party workspace, excluding the dependency-only SDK catalog crate. Reproduction commands here describe the intended checks, not a current passing receipt.
 
 ### Separate Rust branch probes
 
@@ -495,24 +490,21 @@ The production supplemental collector uses Resource Explorer **`ListResources`**
 
 ### Offline recorder checks
 
+The Rust harness includes comprehensive offline tests for transport, evidence capacity, phase preservation, credential/cursor exclusion, and receipt validation. Run them with:
+
 ```bash
-/tmp/aws-inventory-emulator-venv/bin/python -m unittest discover \
-  -s scripts/emulator -p test_transport.py -v
+cargo test -p inventory-harness
 ```
 
-The retained [test_transport.py](../scripts/emulator/test_transport.py) receipt contains **19 passing tests**, including independent Botocore serialization for all 72 explicit operation mappings and 41 pagination mappings, the additional provider boundary, endpoint validation, evidence capacity, phase preservation and credential/cursor exclusion. Receipt regressions cover successful and partial commands, rejected process exits, missing or invalid JSON, unrelated commands, incomplete typed receipts, service-error classification, decode failures overriding HTTP success, and failed semantic assertions. Seed and Python-probe traffic cannot become Rust collector coverage even when a success receipt exists. These tests are offline; they do not validate TLS handshakes or emulator operation implementations. The historical passing output is retained in [emulator-recorder-receipts.log](../artifacts/emulator-recorder-receipts.log).
+These tests are offline; they do not validate TLS handsha…
 
 The retained **v0.5** combined emulator Python suite passed **29 tests**, including those 19 recorder tests, seven independent Cloud Control assertion negative controls and three subprocess-supervision regressions. Its separate suites passed thirteen schema/enrichment tests and twelve coverage-binding negative controls. The latter reject stale catalog/source/fixture/binary evidence, duplicate matrix rows and HTTP-success records without matching typed persisted reads. These historical counts do not include the new parent oracle or graph installer checks. [Combined Python receipt](../artifacts/emulator-python-tests-v05.json) · [Schema receipt](../artifacts/cloudcontrol-schema-tests-v05.json) · [Coverage-binding receipt](../artifacts/cloudcontrol-coverage-tests-v05.json)
 
-Run the parent fixture/schema checks independently. The schema test also needs
-`jsonschema` 4.26.0; the emulator transport requirements alone do not install it.
+Run the parent fixture/schema checks independently:
 
 ```bash
-/tmp/aws-inventory-emulator-venv/bin/python -m pip install jsonschema==4.26.0
-/tmp/aws-inventory-emulator-venv/bin/python -m unittest discover \
-  -s catalog/upstream -p test_parent_catalog.py -v
-/tmp/aws-inventory-emulator-venv/bin/python -m unittest discover \
-  -s scripts/emulator -p test_assert_parents.py -v
+cargo run --locked -p catalog-tool -- universal --check
+cargo test -p inventory-aws --test assert_parents
 ```
 
 ### Offline Rust SDK protocol fixtures

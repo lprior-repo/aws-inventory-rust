@@ -14,23 +14,20 @@ Neither property-test case counts nor ordinary test counts are mutation scores.
 The historical v0.4 engine, AWS and CLI campaigns are stopped diagnostics.
 Their source-restoration/interruption receipts are retained. Survivor-driven
 test additions require a fresh source closure. The complete serial runner below
-is implemented. The current Python gate/supervisor suite passed **126 tests**,
-recorded in `artifacts/mutation/gate-tests-v06-fixture-integrity.json`; this does
-not establish a Rust mutation score. The complete current Rust mutation campaign
-has not been executed. The older 87-test receipt remains historical evidence in
+is implemented. The older 87-test receipt remains historical evidence in
 `artifacts/python-handoff-tests-v04.json`. See `MUTATION_READINESS_V06.md` for the
 current acceptance audit, repairs, and capacity limits.
 
-Prepare the signed emulator with `scripts/emulator/install.py`, its Python
+Prepare the signed emulator with the Rust harness, its Python
 requirements as described in `EMULATOR_TESTING.md`, and native Redis/FalkorDB
-binary paths. Install the pinned mutation tool with
-`python3 scripts/mutation/install.py`. Build ordinary binaries first:
+binary paths. Build ordinary binaries first:
 
 ```sh
+cargo run -p inventory-harness -- install /tmp/aws-inventory-emulator
 cargo build --locked -p aws-inventory --features aws --bin aws-inventory -j1
 cargo build --locked -p inventory-aws --example emulator_branches -j1
 
-/tmp/aws-inventory-emulator-venv/bin/python scripts/mutation/run_all.py launch \
+cargo run -p inventory-harness -- mutate \
   --workspace "$PWD" \
   --campaign "$PWD/artifacts/mutation/full-next" \
   --snapshot "$PWD/../inventory-mutation-full-next" \
@@ -41,7 +38,7 @@ cargo build --locked -p inventory-aws --example emulator_branches -j1
   --branch-probe "$PWD/target/debug/examples/emulator_branches" \
   --redis-server /path/to/redis-server \
   --falkor-module /path/to/falkordb.so \
-  --stop-file "$PWD/artifacts/mutation/full-next.STOP" \
+…
   --timeout 240 --build-timeout 600 --wall-timeout 86400
 ```
 
@@ -91,12 +88,11 @@ Later source/test changes require a fresh complete manifest and clean baselines.
 
 ## Run the complete serial campaign
 
-Use the Python environment prepared for `scripts/emulator/mutate.py`, a final
-unmodified collector/branch-probe build, and the real local emulator/Falkor
+Use the unmodified collector/branch-probe build and the real local emulator/Falkor
 binaries. Substitute their actual paths:
 
 ```sh
-python scripts/mutation/run_all.py launch \
+cargo run -p inventory-harness -- mutate \
   --workspace . \
   --campaign artifacts/mutation/full \
   --snapshot ../aws-inventory-mutation-full \
@@ -168,14 +164,14 @@ After the current code and lint work stabilizes, this command records a fresh
 source-bound candidate inventory without executing mutations:
 
 ```sh
-python3 scripts/mutation/gate.py freeze \
+cargo run -p inventory-harness -- snapshot freeze \
   --workspace "$PWD" \
   --campaign "$PWD/artifacts/mutation/enumeration-next" \
   --package aws-inventory \
   --package inventory-core \
   --package inventory-engine \
   --package inventory-aws \
-  --input "$PWD/scripts/mutation/gate.py"
+  --evidence "$PWD/crates/harness/src/cli.rs"
 ```
 
 Choose a new directory name each time. `freeze` checks the pinned executable and
@@ -210,8 +206,8 @@ The official GitHub releases API identified `cargo-mutants` **27.1.0**, released
 release rather than following a moving `latest` download.
 
 ```sh
-python scripts/mutation/install.py
-/tmp/aws-inventory-test-tools/bin/cargo-mutants mutants --version
+cargo install cargo-mutants --version 27.1.0
+cargo mutants --version
 ```
 
 The direct executable requires the `mutants` subcommand. It is installed from
@@ -334,17 +330,17 @@ Run this only after that package's closure is ready. Use a new campaign director
 for a new source/test closure; never overwrite an earlier result.
 
 ```sh
-python scripts/mutation/gate.py freeze \
+cargo run -p inventory-harness -- snapshot freeze \
   --workspace /path/to/aws-inventory-rs \
   --campaign /path/to/evidence/core \
   --package inventory-core
 
-python scripts/mutation/gate.py snapshot \
+cargo run -p inventory-harness -- snapshot \
   --workspace /path/to/aws-inventory-rs \
   --campaign /path/to/evidence/core \
   --destination /path/to/disposable-core-checkout
 
-python scripts/mutation/gate.py run \
+cargo run -p inventory-harness -- snapshot run \
   --workspace /path/to/disposable-core-checkout \
   --campaign /path/to/evidence/core \
   --target-dir /path/to/disposable-core-target
@@ -373,7 +369,7 @@ tests and prove that the required tests actually ran.
 For example, inside the harness-owned native FalkorDB context:
 
 ```sh
-python scripts/mutation/gate.py freeze \
+cargo run -p inventory-harness -- snapshot freeze \
   --workspace /path/to/aws-inventory-rs \
   --campaign /path/to/evidence/engine \
   --package inventory-engine \
@@ -385,12 +381,11 @@ python scripts/mutation/gate.py freeze \
   --fixture-receipt /path/to/context/fixture-command.json \
   --fixture-kind falkordb_native \
   --fixture-manifest /path/to/context/fixture-manifest.json \
-  --input /path/to/aws-inventory-rs/scripts/mutation/gate.py
+  --evidence /path/to/aws-inventory-rs/crates/harness/src/cli.rs
 ```
 
-The supervising native wrapper must already own that running receipt and export
-the matching `INVENTORY_MUTATION_FIXTURE_SHA256`. The supported
-`run_engine_verified.py` coordinator prepares and binds this context.
+The supervising harness wrapper must already own that running receipt and export
+the matching `INVENTORY_MUTATION_FIXTURE_SHA256`.
 
 `--include-ignored` adds `-- --include-ignored` to test execution and requires
 **two clean unmutated baselines**: one gate preflight and cargo-mutants' own
@@ -522,12 +517,12 @@ baseline and per-mutation times before choosing concurrency.
 ## Reports and the final gate
 
 ```sh
-python scripts/mutation/gate.py report \
+cargo run -p inventory-harness -- snapshot report \
   --workspace /path/to/final/aws-inventory-rs \
   --campaign /path/to/evidence/core \
   --output /path/to/evidence/core-report.json
 
-python scripts/mutation/gate.py aggregate \
+cargo run -p inventory-harness -- snapshot aggregate \
   --workspace /path/to/final/aws-inventory-rs \
   --campaign /path/to/evidence/core \
   --campaign /path/to/evidence/engine \
@@ -543,19 +538,12 @@ untested and unresolved candidates, exclusions, and evidence errors. The aggrega
 successfully only when the complete fixed universe is resolved, evidence is
 valid/current, and the measured viable score reaches 95%.
 
-The report parser has adversarial standard-library Python tests:
-
-```sh
-python -m unittest discover -s scripts/mutation -p 'test_*.py' -v
-```
-
-They exercise timeout accounting, missing test execution, compiler failures
+The report parser has adversarial Rust tests in the harness crate. These tests
+exercise timeout accounting, missing test execution, compiler failures
 versus infrastructure failures, contradictory retries, duplicate candidates,
 package/test filters, all ten required live tests, package runner policy,
 embedded dependency data, cross-campaign fixture consistency, shard partitioning,
-JSON duplicates, and evidence path traversal. The current 126-test result and
-helper source hashes are recorded in
-`artifacts/mutation/gate-tests-v06-fixture-integrity.json`. These tests validate
+JSON duplicates, and evidence path traversal. These tests validate
 the gate; their count is not added to the Rust project's mutation score.
 
 ## Primary references

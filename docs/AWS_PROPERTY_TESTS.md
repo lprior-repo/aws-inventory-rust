@@ -103,10 +103,10 @@ The test runs the public collector and drains its events into an in-memory SQLx 
 
 ## Preparing a mutation oracle
 
-The Python lifecycle wrapper starts and seeds the pinned local emulator, runs the ordinary CLI and independent fixture assertions, exports the snapshot, and then executes the Rust snapshot target twice without mutations. Only after both unchanged runs pass may it run the supplied mutation command. The recorder closes before those repeated scans; they use the same authenticated upstream loopback server directly to avoid exhausting the original evidence recorder's request cap.
+The Rust lifecycle wrapper starts and seeds the pinned local emulator, runs the ordinary CLI and independent fixture assertions, exports the snapshot, and then executes the Rust snapshot target twice without mutations. Only after both unchanged runs pass may it run the supplied mutation command. The recorder closes before those repeated scans; they use the same authenticated upstream loopback server directly to avoid exhausting the original evidence recorder's request cap.
 
 ```sh
-python scripts/emulator/mutate.py \
+cargo run -p inventory-harness -- mutate \
   --emulator /absolute/path/to/aws-emulator \
   --binary /absolute/path/to/unmodified/aws-inventory \
   --branch-probe /absolute/path/to/unmodified/emulator_branches \

@@ -157,15 +157,14 @@ The next increments should follow evidence: validate the admitted parent workflo
 
 ## Reproduction and tests
 
-The Python helpers are build-time acquisition/validation tooling. Production collection and mapping are Rust in `crates/aws/src/cloud_control.rs` and its `parents` module. Check the additive catalog from retained bytes:
+The Rust catalog tool is build-time acquisition/validation tooling. Production collection and mapping are Rust in `crates/aws/src/cloud_control.rs` and its `parents` module. Check the additive catalog from retained bytes:
 
 ```bash
-python3 catalog/upstream/build_parent_catalog.py --check
-python3 -m unittest discover -s catalog/upstream -p test_parent_catalog.py -v
+cargo run --locked -p catalog-tool -- universal --check
 cargo run --locked -p inventory-engine --example resource_views -- --check
 ```
 
-The helpers require `jsonschema` (validated with 4.26.0), verify the archive checksum, revalidate handler eligibility and property columns, and produce deterministic JSON. The parent helper also validates literal request models and the frozen root checksum. It does not call an AWS account. The root generator remains `catalog/upstream/build_cloudcontrol_catalog.py`; running it intentionally rewrites root outputs and resets their executed evidence. The manifests retain source provenance and schema checksums. Runtime does not pin or change AWS's default provider version.
+The tool verifies the archive checksum, revalidates handler eligibility and property columns, and produces deterministic JSON. The parent helper also validates literal request models and the frozen root checksum. It does not call an AWS account. The root generator remains `catalog/upstream/build_cloudcontrol_catalog.py`; running it intentionally rewrites root outputs and resets their executed evidence. The manifests retain source provenance and schema checksums. Runtime does not pin or change AWS's default provider version.
 
 Adapter tests use official SDK model builders and injected request functions. They cover catalog/selector constraints, canonical and composite IDs, schema and readable-field redaction, relationship deduplication, byte/tree limits, duplicate pages, optional list properties, terminal/continuation pages, unsupported reads, mixed denied/malformed/successful siblings, a closed consumer, and pre-/mid-page cancellation. The consolidated verification report records which compile, test and integration gates actually ran. Synthetic fixtures and local tests do not establish live regional provider coverage.
 

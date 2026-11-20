@@ -162,14 +162,11 @@ checksums. Both are local synthetic fixtures.
 
 The emulator package can be installed without Python:
 `cargo run -p inventory-harness -- install /DISK/aws-inventory-emulator`; the graph runtime installs the same way with
-`install-graph /DISK/aws-inventory-graph`. The fixture and recording scripts below are still
-Python; they are replaced or dropped, then deleted, in ROADMAP M2.9 and M2.10.
+`install-graph /DISK/aws-inventory-graph`.
 
 ```sh
-python3 scripts/emulator/install.py /DISK/aws-inventory-emulator
+cargo run -p inventory-harness -- install /DISK/aws-inventory-emulator
 cargo run -p inventory-harness -- install-graph /DISK/aws-inventory-graph
-python3 -m venv /DISK/aws-inventory-checks
-/DISK/aws-inventory-checks/bin/python -m pip install -r scripts/requirements.txt
 ```
 
 `docs/EMULATOR_TESTING.md` contains the owned-lifetime command that starts the
