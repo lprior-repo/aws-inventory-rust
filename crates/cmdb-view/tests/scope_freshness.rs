@@ -5,6 +5,8 @@
 mod modeled_catalog;
 #[path = "support/scope_freshness_script.rs"]
 mod script;
+#[path = "support/scope_freshness_view.rs"]
+mod view;
 
 use cmdb_view::{Database, ScopeFreshness, ScopeOutcome, ScopeOutcomeCounts, ViewError};
 use inventory_core::catalog::runtime::RuntimeCatalog;
@@ -13,29 +15,9 @@ use modeled_catalog::{Model, modeled_catalog};
 use script::{
     Attempt, Expected, KIND, TestResult, expected, modeled, ordered_script, raw_scope_key, scope,
 };
-use sqlx::Row;
-use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions, SqliteRow};
+use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use std::path::Path;
-use std::time::{SystemTime, UNIX_EPOCH};
-
-const VIEW_ROWS_SQL: &str = "SELECT account, region, service, operation, has_parent, sweep_id, \
-     outcome, observed_at, last_complete_at, age_ms, complete_age_ms FROM scope_freshness \
-     ORDER BY observed_at, account, region, service, operation";
-
-#[derive(Debug)]
-struct ViewRow {
-    account: String,
-    region: String,
-    service: String,
-    operation: String,
-    has_parent: bool,
-    sweep_id: String,
-    outcome: String,
-    observed_at: i64,
-    last_complete_at: Option<i64>,
-    age_ms: i64,
-    complete_age_ms: Option<i64>,
-}
+use view::{ViewRow, assert_view_ages, assert_view_row, view_rows};
 
 async fn seed(path: &Path) -> TestResult<BinaryStore> {
     let bytes = modeled_catalog(&Model {
@@ -97,45 +79,6 @@ async fn seed_raw<'a>(path: &Path, attempts: impl Iterator<Item = &'a Attempt>) 
     Ok(())
 }
 
-/// Reads the view with the SQLite clock bracketed around the query.
-async fn view_rows(path: &Path) -> TestResult<(Vec<ViewRow>, i64, i64)> {
-    let pool = SqlitePoolOptions::new()
-        .max_connections(1)
-        .connect_with(SqliteConnectOptions::new().filename(path).read_only(true))
-        .await?;
-    let before = now_ms()?;
-    let rows = sqlx::query(VIEW_ROWS_SQL).fetch_all(&pool).await?;
-    let after = now_ms()?;
-    let rows = rows
-        .iter()
-        .map(view_row)
-        .collect::<Result<Vec<_>, sqlx::Error>>()?;
-    pool.close().await;
-    Ok((rows, before, after))
-}
-
-fn view_row(row: &SqliteRow) -> Result<ViewRow, sqlx::Error> {
-    Ok(ViewRow {
-        account: row.try_get("account")?,
-        region: row.try_get("region")?,
-        service: row.try_get("service")?,
-        operation: row.try_get("operation")?,
-        has_parent: row.try_get::<i64, _>("has_parent")? == 1,
-        sweep_id: row.try_get("sweep_id")?,
-        outcome: row.try_get("outcome")?,
-        observed_at: row.try_get("observed_at")?,
-        last_complete_at: row.try_get("last_complete_at")?,
-        age_ms: row.try_get("age_ms")?,
-        complete_age_ms: row.try_get("complete_age_ms")?,
-    })
-}
-
-fn now_ms() -> TestResult<i64> {
-    Ok(i64::try_from(
-        SystemTime::now().duration_since(UNIX_EPOCH)?.as_millis(),
-    )?)
-}
-
 fn count(rows: &[Expected]) -> u64 {
     u64::try_from(rows.len()).unwrap_or(u64::MAX)
 }
@@ -156,37 +99,6 @@ fn outcome_counts(rows: &[Expected]) -> ScopeOutcomeCounts {
 
 fn clamped_age(now: i64, at: i64) -> u64 {
     u64::try_from(now.saturating_sub(at)).unwrap_or_default()
-}
-
-fn assert_view_row(row: &ViewRow, want: &Expected) {
-    assert_eq!(row.account, want.account);
-    assert_eq!(row.region, want.region);
-    assert_eq!(row.service, want.service);
-    assert_eq!(row.operation, want.operation);
-    assert_eq!(row.has_parent, want.has_parent);
-    assert_eq!(row.sweep_id, want.sweep_id);
-    assert_eq!(row.outcome, want.outcome.as_str());
-    assert_eq!(row.observed_at, want.observed_at_ms);
-    assert_eq!(row.last_complete_at, want.last_complete_at_ms);
-}
-
-/// The view's ages come from the SQLite clock read during the query.
-fn assert_view_ages(row: &ViewRow, before: i64, after: i64) -> TestResult {
-    let lower = before.saturating_sub(row.observed_at);
-    let upper = after.saturating_sub(row.observed_at);
-    assert!(
-        (lower..=upper).contains(&row.age_ms),
-        "age {} outside [{lower}, {upper}]",
-        row.age_ms,
-    );
-    match (row.last_complete_at, row.complete_age_ms) {
-        (None, None) => {}
-        (Some(at), Some(age)) => {
-            assert!((before.saturating_sub(at)..=after.saturating_sub(at)).contains(&age));
-        }
-        other => return Err(format!("complete age and time disagree: {other:?}").into()),
-    }
-    Ok(())
 }
 
 #[tokio::test]
