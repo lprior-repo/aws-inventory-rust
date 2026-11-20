@@ -172,3 +172,7 @@ fn collect_edges(graph: &DagGraph, node_count: usize, kept: &[bool]) -> (Vec<Lay
 fn f32_index(index: usize) -> f32 {
     f32::from(u16::try_from(index).unwrap_or(u16::MAX))
 }
+
+#[cfg(test)]
+#[path = "property_tests.rs"]
+mod property_tests;
