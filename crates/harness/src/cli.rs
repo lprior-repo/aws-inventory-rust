@@ -33,7 +33,7 @@ pub(super) fn parse(arguments: &[String]) -> Result<Command, HarnessError> {
 }
 
 fn parse_freeze(arguments: &[String]) -> Result<Command, HarnessError> {
-    let options = options(arguments, &["--evidence", "--output", "--binary", "--root"])?;
+    let options = options(arguments, &["--evidence", "--output", "--binary", "--root"], &[])?;
     Ok(Command::Freeze {
         evidence: options.value("--evidence")?,
         output: options.value("--output")?,
@@ -48,7 +48,7 @@ fn parse_install(arguments: &[String]) -> Result<Command, HarnessError> {
         .filter(|value| !value.starts_with("--"))
         .map(PathBuf::from)
         .ok_or_else(|| HarnessError::invalid(USAGE))?;
-    let options = options(arguments.get(1..).unwrap_or_default(), &["--root"])?;
+    let options = options(arguments.get(1..).unwrap_or_default(), &["--root"], &[])?;
     Ok(Command::Install {
         destination,
         root: options.get("--root").unwrap_or_else(workspace_root),
@@ -103,6 +103,7 @@ fn parse_cloud_control(arguments: &[String]) -> Result<Command, HarnessError> {
     let options = options(
         arguments,
         &["--db", "--scan-id", "--seed-results", "--root"],
+        &[],
     )?;
     let scan_id = options
         .text("--scan-id")
@@ -119,6 +120,7 @@ fn parse_global(arguments: &[String]) -> Result<Command, HarnessError> {
     let options = options(
         arguments,
         &["--db", "--scan-id", "--seed-results", "--root"],
+        &[],
     )?;
     let scan_id = options
         .text("--scan-id")
@@ -135,6 +137,7 @@ fn parse_parents(arguments: &[String]) -> Result<Command, HarnessError> {
     let options = options(
         arguments,
         &["--db", "--scan-id", "--seed-results", "--root"],
+        &[],
     )?;
     let scan_id = options
         .text("--scan-id")
@@ -151,6 +154,7 @@ fn parse_regional(arguments: &[String]) -> Result<Command, HarnessError> {
     let options = options(
         arguments,
         &["--db", "--scan-id", "--seed-results", "--root", "--region"],
+        &[],
     )?;
     let scan_id = options
         .text("--scan-id")
@@ -165,7 +169,7 @@ fn parse_regional(arguments: &[String]) -> Result<Command, HarnessError> {
 }
 
 fn parse_seed_s3(arguments: &[String]) -> Result<Command, HarnessError> {
-    let options = options(arguments, &["--bucket"])?;
+    let options = options(arguments, &["--bucket"], &[])?;
     let bucket = options
         .text("--bucket")
         .filter(|name| !name.is_empty())
@@ -174,7 +178,7 @@ fn parse_seed_s3(arguments: &[String]) -> Result<Command, HarnessError> {
 }
 
 fn parse_seed_cloud_control(arguments: &[String]) -> Result<Command, HarnessError> {
-    let options = options(arguments, &["--prefix", "--count"])?;
+    let options = options(arguments, &["--prefix", "--count"], &[])?;
     let prefix = options
         .text("--prefix")
         .filter(|value| !value.is_empty())
@@ -199,6 +203,7 @@ fn parse_mutate(arguments: &[String]) -> Result<Command, HarnessError> {
             "--falkor-module",
             "--command-deadline",
         ],
+        &[],
     )?;
     let emulator = options.value("--emulator")?;
     let binary = options.value("--binary")?;
@@ -227,7 +232,8 @@ fn parse_mutate(arguments: &[String]) -> Result<Command, HarnessError> {
 fn parse_verify_delivery(arguments: &[String]) -> Result<Command, HarnessError> {
     let options = options(
         arguments,
-        &["--binary", "--redis-cli", "--database", "--output"],
+        &["--binary", "--redis-cli", "--database", "--output", "--run-workspace-tests"],
+        &["--run-workspace-tests"],
     )?;
     let binary = options.value("--binary")?;
     let redis_cli = options.value("--redis-cli")?;
@@ -238,7 +244,7 @@ fn parse_verify_delivery(arguments: &[String]) -> Result<Command, HarnessError> 
         redis_cli,
         database,
         output,
-        run_workspace_tests: false,
+        run_workspace_tests: options.has("--run-workspace-tests"),
     })
 }
 
@@ -264,9 +270,17 @@ impl Options {
     fn value(&self, flag: &str) -> Result<PathBuf, HarnessError> {
         self.get(flag).ok_or_else(|| HarnessError::invalid(USAGE))
     }
+
+    fn has(&self, flag: &str) -> bool {
+        self.pairs.iter().any(|(name, _)| name == flag)
+    }
 }
 
-fn options(arguments: &[String], allowed: &[&str]) -> Result<Options, HarnessError> {
+fn options(
+    arguments: &[String],
+    allowed: &[&str],
+    boolean_flags: &[&str],
+) -> Result<Options, HarnessError> {
     let mut pairs: Vec<(String, String)> = Vec::new();
     let mut remaining = arguments.iter();
     while let Some(flag) = remaining.next() {
@@ -274,10 +288,14 @@ fn options(arguments: &[String], allowed: &[&str]) -> Result<Options, HarnessErr
         if repeated || !allowed.contains(&flag.as_str()) {
             return Err(HarnessError::invalid(format!("unexpected {flag}; {USAGE}")));
         }
-        let value = remaining
-            .next()
-            .ok_or_else(|| HarnessError::invalid(format!("{flag} requires a value")))?;
-        pairs.push((flag.clone(), value.clone()));
+        if boolean_flags.contains(&flag.as_str()) {
+            pairs.push((flag.clone(), "true".to_string()));
+        } else {
+            let value = remaining
+                .next()
+                .ok_or_else(|| HarnessError::invalid(format!("{flag} requires a value")))?;
+            pairs.push((flag.clone(), value.clone()));
+        }
     }
     Ok(Options { pairs })
 }

@@ -11,12 +11,13 @@ REDIS="$RUNTIME/graph/redis-8.10.3/src/redis-server"
 REDIS_CLI="$RUNTIME/graph/redis-8.10.3/src/redis-cli"
 MODULE="$RUNTIME/graph/falkordb.so"
 BINARY="$ROOT/target/debug/aws-inventory"
+HARNESS="$ROOT/target/debug/inventory-harness"
 IDENTITY=$(printf '%s' "$ROOT" | sha256sum | cut -c1-12)
 UNIT="aws-inventory-local-$IDENTITY"
 cd "$ROOT"
 
 require_install() {
-    for executable in "$EMULATOR" "$REDIS" "$REDIS_CLI" "$BINARY" \
+    for executable in "$EMULATOR" "$REDIS" "$REDIS_CLI" "$BINARY" "$HARNESS" \
         "$ROOT/target/debug/examples/emulator_branches"; do
         if [[ ! -x "$executable" ]]; then
             printf 'Missing %s. Run scripts/local-stack.sh install first.\n' "$executable" >&2
@@ -36,7 +37,7 @@ fixture_command() {
     shift
     require_install
     unset RUSTC_WRAPPER RUSTC_WORKSPACE_WRAPPER RUSTFLAGS CARGO_ENCODED_RUSTFLAGS
-    exec inventory-harness mutate \
+    exec "$HARNESS" mutate \
         --emulator "$EMULATOR" --binary "$BINARY" \
         --branch-probe "$ROOT/target/debug/examples/emulator_branches" \
         --output "$destination" --redis-server "$REDIS" --falkor-module "$MODULE" \
@@ -46,8 +47,9 @@ fixture_command() {
 case "${1:-help}" in
 install)
     mkdir -p "$RUNTIME"
-    inventory-harness install "$RUNTIME/emulator"
-    inventory-harness install-graph "$RUNTIME/graph" --jobs 2
+    cargo build --locked -p inventory-harness --all-features -j1
+    "$HARNESS" install "$RUNTIME/emulator"
+    "$HARNESS" install-graph "$RUNTIME/graph" --jobs 2
     cargo build --locked --workspace --exclude inventory-sdk-catalog --all-features --bins --examples -j1
     ;;
 sdk-build)
@@ -126,10 +128,11 @@ verify)
     require_install
     destination="$STATE/verification/$(date -u +%Y%m%dT%H%M%S)-$$"
     mkdir -p "$STATE/verification"
-    inventory-harness verify-delivery \
+    "$HARNESS" verify-delivery \
         --binary "$BINARY" --redis-cli "$REDIS_CLI" \
         --database "$destination/inventory.sqlite" \
-        --output "$destination/delivery-verification.json"
+        --output "$destination/delivery-verification.json" \
+        --run-workspace-tests
     ;;
 logs)
     exec journalctl --user -u "$UNIT" -n 50 --no-pager

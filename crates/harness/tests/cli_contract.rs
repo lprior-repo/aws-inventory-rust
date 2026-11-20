@@ -59,3 +59,61 @@ fn repeated_flag_is_rejected_before_any_request() -> TestResult {
     assert!(stderr.starts_with("unexpected --bucket;"), "{stderr}");
     Ok(())
 }
+
+#[test]
+fn verify_delivery_accepts_run_workspace_tests_flag() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let database = directory.path().join("inventory.sqlite");
+    let output_path = directory.path().join("output.json");
+    let root = format!("{}/../..", env!("CARGO_MANIFEST_DIR"));
+    let binary = text(directory.path())?;
+    let redis_cli = text(directory.path())?;
+
+    let output = harness(&[
+        "verify-delivery",
+        "--binary",
+        binary,
+        "--redis-cli",
+        redis_cli,
+        "--database",
+        text(&database)?,
+        "--output",
+        text(&output_path)?,
+        "--run-workspace-tests",
+    ])?;
+
+    // Expect failure (missing database) but not a CLI parse error
+    let stderr = String::from_utf8(output.stderr)?;
+    assert!(
+        !stderr.starts_with("unexpected --run-workspace-tests;"),
+        "flag should be recognized: {stderr}",
+    );
+    Ok(())
+}
+
+#[test]
+fn verify_delivery_rejects_unknown_flag() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let database = directory.path().join("inventory.sqlite");
+    let output_path = directory.path().join("output.json");
+    let binary = text(directory.path())?;
+    let redis_cli = text(directory.path())?;
+
+    let output = harness(&[
+        "verify-delivery",
+        "--binary",
+        binary,
+        "--redis-cli",
+        redis_cli,
+        "--database",
+        text(&database)?,
+        "--output",
+        text(&output_path)?,
+        "--unknown-flag",
+    ])?;
+
+    assert_eq!(output.status.code(), Some(1));
+    let stderr = String::from_utf8(output.stderr)?;
+    assert!(stderr.starts_with("unexpected --unknown-flag;"), "{stderr}");
+    Ok(())
+}
