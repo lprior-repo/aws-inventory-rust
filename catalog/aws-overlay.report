@@ -1,4 +1,4 @@
-totals	services_with_overlay=436	callable_enumerate=1541	callable_expand=632	denied_by_overlay=7350	deferred=9483	services_without_overlay=0	unreviewed_enumerate=0	unreviewed_expand=0	unreviewed_unclassified=0
+totals	services_with_overlay=436	callable_enumerate=1554	callable_expand=632	denied_by_overlay=7350	deferred=9470	services_without_overlay=0	unreviewed_enumerate=0	unreviewed_expand=0	unreviewed_unclassified=0
 operation	accessanalyzer	ApplyArchiveRule	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	accessanalyzer	CancelPolicyGeneration	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	accessanalyzer	CheckAccessNotGranted	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
@@ -1024,7 +1024,7 @@ operation	arc-region-switch	GetPlanInRegion	deferred	class=overlay,items=missing
 operation	arc-region-switch	ListPlanExecutionEvents	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	arc-region-switch	ListPlanExecutions	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	arc-region-switch	ListPlans	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
-operation	arc-region-switch	ListPlansInRegion	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	arc-region-switch	ListPlansInRegion	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	arc-region-switch	ListRoute53HealthChecks	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	arc-region-switch	ListRoute53HealthChecksInRegion	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	arc-region-switch	ListServiceQuotaWarnings	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
@@ -1490,7 +1490,7 @@ operation	batch	ListJobs	expand	class=overlay,items=overlay,page_size=model,pagi
 operation	batch	ListJobsByConsumableResource	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	batch	ListQuotaShares	expand	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=overlay,scope=overlay,batch=missing
 operation	batch	ListSchedulingPolicies	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
-operation	batch	ListServiceJobs	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	batch	ListServiceJobs	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	batch	ListTagsForResource	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	batch	RegisterJobDefinition	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	batch	SubmitJob	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
@@ -2337,7 +2337,7 @@ operation	chime-sdk-media-pipelines	GetMediaPipeline	deferred	class=overlay,item
 operation	chime-sdk-media-pipelines	GetMediaPipelineKinesisVideoStreamPool	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	chime-sdk-media-pipelines	GetSpeakerSearchTask	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	chime-sdk-media-pipelines	GetVoiceToneAnalysisTask	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
-operation	chime-sdk-media-pipelines	ListMediaCapturePipelines	deferred	class=overlay,items=missing,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	chime-sdk-media-pipelines	ListMediaCapturePipelines	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	chime-sdk-media-pipelines	ListMediaInsightsPipelineConfigurations	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	chime-sdk-media-pipelines	ListMediaPipelineKinesisVideoStreamPools	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	chime-sdk-media-pipelines	ListMediaPipelines	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
@@ -2473,7 +2473,7 @@ operation	chime-sdk-voice	GetVoiceProfileDomain	deferred	class=overlay,items=mis
 operation	chime-sdk-voice	GetVoiceToneAnalysisTask	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	chime-sdk-voice	ListAvailableVoiceConnectorRegions	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	chime-sdk-voice	ListPhoneNumberOrders	deferred	class=overlay,items=missing,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
-operation	chime-sdk-voice	ListPhoneNumbers	deferred	class=overlay,items=missing,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	chime-sdk-voice	ListPhoneNumbers	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	chime-sdk-voice	ListProxySessions	deferred	class=overlay,items=missing,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	chime-sdk-voice	ListSipMediaApplications	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	chime-sdk-voice	ListSipRules	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
@@ -2482,7 +2482,7 @@ operation	chime-sdk-voice	ListTagsForResource	deferred	class=overlay,items=missi
 operation	chime-sdk-voice	ListVoiceConnectorGroups	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	chime-sdk-voice	ListVoiceConnectorTerminationCredentials	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	chime-sdk-voice	ListVoiceConnectors	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
-operation	chime-sdk-voice	ListVoiceProfileDomains	deferred	class=overlay,items=missing,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	chime-sdk-voice	ListVoiceProfileDomains	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	chime-sdk-voice	ListVoiceProfiles	deferred	class=overlay,items=missing,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	chime-sdk-voice	PutSipMediaApplicationAlexaSkillConfiguration	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	chime-sdk-voice	PutSipMediaApplicationLoggingConfiguration	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
@@ -2833,8 +2833,8 @@ operation	cloudformation	ListStackSetOperations	deferred	class=overlay,items=mod
 operation	cloudformation	ListStackSets	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	cloudformation	ListStacks	enumerate	class=overlay,items=overlay,page_size=missing,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	cloudformation	ListTypeRegistrations	deferred	class=overlay,items=missing,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
-operation	cloudformation	ListTypeVersions	deferred	class=overlay,items=missing,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
-operation	cloudformation	ListTypes	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	cloudformation	ListTypeVersions	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
+operation	cloudformation	ListTypes	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	cloudformation	PublishType	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	cloudformation	RecordHandlerProgress	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	cloudformation	RegisterPublisher	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
@@ -3343,7 +3343,7 @@ operation	cloudwatch-logs	ListAggregateLogGroupSummaries	deferred	class=overlay,
 operation	cloudwatch-logs	ListAnomalies	denied	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	cloudwatch-logs	ListIntegrations	enumerate	class=overlay,items=overlay,page_size=missing,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	cloudwatch-logs	ListLogAnomalyDetectors	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
-operation	cloudwatch-logs	ListLogGroups	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	cloudwatch-logs	ListLogGroups	enumerate	class=overlay,items=overlay,page_size=missing,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	cloudwatch-logs	ListLogGroupsForQuery	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	cloudwatch-logs	ListScheduledQueries	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	cloudwatch-logs	ListSourcesForS3TableIntegration	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
@@ -3536,7 +3536,7 @@ operation	codebuild	ListSandboxes	enumerate	class=overlay,items=overlay,page_siz
 operation	codebuild	ListSandboxesForProject	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	codebuild	ListSharedProjects	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	codebuild	ListSharedReportGroups	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
-operation	codebuild	ListSourceCredentials	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	codebuild	ListSourceCredentials	enumerate	class=overlay,items=overlay,page_size=missing,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	codebuild	PutResourcePolicy	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	codebuild	RetryBuild	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	codebuild	RetryBuildBatch	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
@@ -4247,14 +4247,14 @@ operation	config-service	DescribeAggregateComplianceByConformancePacks	deferred	
 operation	config-service	DescribeAggregationAuthorizations	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	config-service	DescribeComplianceByConfigRule	deferred	class=overlay,items=model,page_size=missing,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	config-service	DescribeComplianceByResource	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
-operation	config-service	DescribeConfigRuleEvaluationStatus	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	config-service	DescribeConfigRuleEvaluationStatus	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	config-service	DescribeConfigRules	enumerate	class=overlay,items=overlay,page_size=missing,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	config-service	DescribeConfigurationAggregatorSourcesStatus	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	config-service	DescribeConfigurationAggregators	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
-operation	config-service	DescribeConfigurationRecorderStatus	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	config-service	DescribeConfigurationRecorderStatus	enumerate	class=overlay,items=overlay,page_size=missing,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	config-service	DescribeConfigurationRecorders	enumerate	class=overlay,items=overlay,page_size=missing,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	config-service	DescribeConformancePackCompliance	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
-operation	config-service	DescribeConformancePackStatus	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	config-service	DescribeConformancePackStatus	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	config-service	DescribeConformancePacks	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	config-service	DescribeDeliveryChannelStatus	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	config-service	DescribeDeliveryChannels	enumerate	class=overlay,items=overlay,page_size=missing,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
@@ -4289,7 +4289,7 @@ operation	config-service	GetResourceConfigHistory	deferred	class=overlay,items=m
 operation	config-service	GetResourceEvaluationSummary	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	config-service	GetStoredQuery	deferred	class=overlay,items=missing,page_size=missing,paginator=missing,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	config-service	ListAggregateDiscoveredResources	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
-operation	config-service	ListConfigurationRecorders	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
+operation	config-service	ListConfigurationRecorders	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	config-service	ListConformancePackComplianceScores	deferred	class=overlay,items=missing,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
 operation	config-service	ListConnectors	enumerate	class=overlay,items=overlay,page_size=model,paginator=overlay,identity=overlay,bindings=missing,scope=overlay,batch=missing
 operation	config-service	ListDiscoveredResources	deferred	class=overlay,items=model,page_size=model,paginator=model,identity=missing,bindings=missing,scope=missing,batch=missing
