@@ -22,7 +22,7 @@ workspace = true
 
 [dev-dependencies]
 proptest.workspace = true
-inventory-engine = { workspace = true, default-features = false }
+inventory-engine = { workspace = true }
 sqlx.workspace = true
 tokio.workspace = true
 

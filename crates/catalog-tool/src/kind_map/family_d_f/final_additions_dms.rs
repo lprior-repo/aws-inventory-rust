@@ -1,13 +1,6 @@
 // DMS and migration hub operation mappings.
 
-use crate::kind_map::{ApiOnlyMapping, CfnMapping, OperationMapping};
-
-pub(super) const CFN: &[CfnMapping] = &[
-    CfnMapping::canonical("AWS::DMS::DataProvider"),
-    CfnMapping::canonical("AWS::DMS::Endpoint"),
-    CfnMapping::canonical("AWS::DMS::ReplicationConfig"),
-    CfnMapping::canonical("AWS::DMS::ReplicationTask"),
-];
+use crate::kind_map::{ApiOnlyMapping, OperationMapping};
 
 pub(super) const API_ONLY: &[ApiOnlyMapping<'static>] = &[
     ApiOnlyMapping {
@@ -25,10 +18,6 @@ pub(super) const API_ONLY: &[ApiOnlyMapping<'static>] = &[
     ApiOnlyMapping {
         kind: "AWS::ApiOnly::DMSIndividualAssessment",
         reason: "Individual replication-task assessment status is distinct from assessment report contents and has no pinned CFN type.",
-    },
-    ApiOnlyMapping {
-        kind: "AWS::ApiOnly::DMSCertificate",
-        reason: "DMS endpoint encryption certificate metadata is not an endpoint definition or secret payload and has no pinned CFN type.",
     },
     ApiOnlyMapping {
         kind: "AWS::ApiOnly::DMSCollector",

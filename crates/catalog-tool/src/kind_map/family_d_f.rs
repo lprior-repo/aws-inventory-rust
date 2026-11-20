@@ -48,7 +48,7 @@ pub(super) const SOURCES: &[MappingSource<'static>] = &[
     complete_additions::SOURCE,
     final_additions::SOURCE,
     MappingSource {
-        cfn: final_additions_dms::CFN,
+        cfn: &[],
         api_only: final_additions_dms::API_ONLY,
         operations: final_additions_dms::OPERATIONS,
         ..super::EMPTY

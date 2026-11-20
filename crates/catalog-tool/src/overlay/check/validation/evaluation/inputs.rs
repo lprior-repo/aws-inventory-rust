@@ -1,7 +1,8 @@
 mod binding_values;
 mod branches;
 mod destinations;
-use super::{State, ViolationRule, pagination, paths};
+use super::{State, ViolationRule, paths};
+use crate::overlay::check::validation::compatibility::compatible;
 use crate::{
     overlay::{Binding, MemberPath, OperationName, OperationOverlay},
     plans::{self, Model, Vocabulary},
@@ -271,7 +272,7 @@ fn binding_valid(
                     .resolve_path(operation.as_str(), side, path.as_str())
                     .ok()
                     .flatten()
-                    .is_some_and(|source| pagination::compatible(context.model, &source, target))
+                    .is_some_and(|source| compatible(context.model, &source, target))
             }
         },
         Binding::Transformed { .. } => false,
@@ -293,7 +294,7 @@ fn source_binding_valid(
         vocabulary,
     )
     .and_then(|selected| paths::resolve_selected(model, selected, source_path.as_str()))
-    .is_some_and(|source| pagination::compatible(model, &source, target))
+    .is_some_and(|source| compatible(model, &source, target))
 }
 
 fn push(

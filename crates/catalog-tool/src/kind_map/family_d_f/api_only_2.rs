@@ -15,7 +15,7 @@ pub(super) const ENTRIES: &[ApiOnlyMapping<'static>] = &[
     },
     ApiOnlyMapping {
         kind: "AWS::ApiOnly::EventBridgeEventRule",
-        reason: "Distinct API-managed EventBridgeEventRule resource identified by @Arn in events DescribeEventRule Rule. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
+        reason: "Distinct API-managed EventBridgeEventRule resource identified by @Arn in events DescribeRule Rule. It is not the containing service, parent resource or operation execution itself; preserve this explicit resource identity rather than inventing a CFN resource type.",
     },
     ApiOnlyMapping {
         kind: "AWS::ApiOnly::EventBridgeEndpoint",

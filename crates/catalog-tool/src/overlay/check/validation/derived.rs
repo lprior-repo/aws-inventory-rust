@@ -1,4 +1,4 @@
-use super::{pagination::compatible, paths::selected_for_parent};
+use super::{compatibility::compatible, paths::selected_for_parent};
 use crate::{
     classes::DenyList,
     overlay::{Binding, MemberPath, OperationName, OperationOverlay},

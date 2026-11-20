@@ -135,7 +135,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 )?,
                 &["Arn", "RoleArn", "Name", "State", "EventBusName"],
             )?,
-            // Expand DescribeEventRule to include rule details.
+            // Expand DescribeRule to include rule details.
             queried(
                 bound(
                     describe(
@@ -143,7 +143,10 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                         "$",
                         arn("Arn")?,
                     )?,
-                    &[("Name", "ListRules", "Name")],
+                    &[
+                        ("Name", "ListRules", "Name"),
+                        ("EventBusName", "ListRules", "EventBusName"),
+                    ],
                 )?,
                 &["Arn", "Name", "State", "EventPattern", "Description"],
             )?,

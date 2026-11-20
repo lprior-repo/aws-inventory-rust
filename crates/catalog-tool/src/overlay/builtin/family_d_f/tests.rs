@@ -290,6 +290,18 @@ fn pagination_keeps_actual_cursor_names_and_truncation_signal() -> TestResult {
             Some(Paginator::None)
         );
     }
+    // EventBridgeV2 Describe operations are unpaginated in the pinned model and use Paginator::None.
+    // Verify the overlay policies are correctly structured for these unpaginated operations.
+    for (service, name) in [
+        ("eventbridgev2", "DescribeEventBus"),
+        ("eventbridgev2", "DescribeEventSource"),
+        ("eventbridgev2", "DescribeSubscriber"),
+    ] {
+        let plan = operation(&policies, service, name)?;
+        assert_eq!(plan.paginator, Some(Paginator::None));
+        assert!(plan.items.is_some());
+        assert!(plan.identity.is_some());
+    }
     assert_eq!(
         operation(&policies, "data-pipeline", "ListPipelines")?.paginator,
         Some(Paginator::Tokens {

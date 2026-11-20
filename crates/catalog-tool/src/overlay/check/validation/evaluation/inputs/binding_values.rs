@@ -1,4 +1,5 @@
-use super::{Binding, InputContext, Model, State, ViolationRule, pagination, paths};
+use super::{Binding, InputContext, Model, State, ViolationRule, paths};
+use crate::overlay::check::validation::compatibility::compatible;
 use crate::{
     overlay::{BindingAlternative, ContextSource},
     plans::model::{ShapeRef, shape_type},
@@ -59,7 +60,7 @@ fn alternative_valid(
                 .resolve_path(operation.as_str(), side, alternative.path.as_str())
                 .ok()
                 .flatten()
-                .is_some_and(|source| pagination::compatible(context.model, &source, target))
+                .is_some_and(|source| compatible(context.model, &source, target))
         }
     }
 }

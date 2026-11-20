@@ -44,7 +44,7 @@ fn digest(rows: impl Iterator<Item = String>) -> String {
 }
 
 #[test]
-fn embedded_baseline_preserves_all_313_exact_operation_mappings() -> TestResult {
+fn embedded_baseline_preserves_all_333_exact_operation_mappings() -> TestResult {
     let map = SOURCE.compile(&Exceptions::builtin())?;
     assert_eq!(map.operations().len(), 333);
     let actual = digest(
@@ -67,7 +67,7 @@ fn embedded_baseline_preserves_all_313_exact_operation_mappings() -> TestResult 
 }
 
 #[test]
-fn embedded_baseline_preserves_168_canonical_cfn_kinds() -> TestResult {
+fn embedded_baseline_preserves_182_canonical_cfn_kinds() -> TestResult {
     let map = SOURCE.compile(&Exceptions::builtin())?;
     assert_eq!(map.entries().len(), 182);
     assert!(map.entries().iter().all(
@@ -92,7 +92,7 @@ fn embedded_baseline_preserves_168_canonical_cfn_kinds() -> TestResult {
 }
 
 #[test]
-fn embedded_baseline_preserves_all_113_api_only_reasons() -> TestResult {
+fn embedded_baseline_preserves_all_120_api_only_reasons() -> TestResult {
     let map = SOURCE.compile(&Exceptions::builtin())?;
     assert_eq!(map.api_only().len(), 120);
     let actual = digest(
@@ -1022,7 +1022,6 @@ const CENTRAL_ADDED_API_KINDS: &[&str] = &[
     "AWS::ApiOnly::SSMContactPage",
     "AWS::ApiOnly::SSMContactRotationOverride",
     "AWS::ApiOnly::SSMContactRotationShift",
-    "AWS::ApiOnly::DMSCertificate",
     "AWS::ApiOnly::DMSCollector",
     "AWS::ApiOnly::DMSScannedDatabase",
     "AWS::ApiOnly::DMSPendingMaintenanceAction",
