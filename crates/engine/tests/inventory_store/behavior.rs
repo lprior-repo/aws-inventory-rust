@@ -2,6 +2,8 @@
 mod lifecycle;
 #[path = "behavior/projection.rs"]
 mod projection;
+#[path = "behavior/stalest_first.rs"]
+mod stalest_first;
 use inventory_core::inventory::{
     AccountId, Edge, EdgeSource, OperationId, Region, Relation, ResourceId, ResourceKey, ScopeKey,
     ScopeOutcome, ServiceId,

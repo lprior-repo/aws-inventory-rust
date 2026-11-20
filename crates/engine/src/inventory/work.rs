@@ -230,6 +230,29 @@ pub(super) async fn seed_works(store: &BinaryStore, works: &[WorkSpec]) -> Resul
     Ok(())
 }
 
+/// Millisecond of the scope's latest complete outcome in any sweep; 0 when it has never completed.
+macro_rules! last_complete {
+    () => {
+        "COALESCE((SELECT MAX(o.observed_at) FROM scope_outcomes o WHERE o.scope_key=w.scope_key AND o.outcome='complete'),0)"
+    };
+}
+
+const READY_STALEST_FIRST: &str = concat!(
+    "SELECT w.scope_key,w.token,w.bindings,w.generation,w.authority_complete,w.context,",
+    last_complete!(),
+    " AS last_complete FROM work_queue w WHERE w.sweep_id=?1 AND w.state=0 ORDER BY last_complete,w.scope_key LIMIT 1"
+);
+
+const EXPIRED_STALEST_FIRST: &str = concat!(
+    "SELECT w.scope_key,w.token,w.bindings,w.generation,w.authority_complete,w.context,",
+    last_complete!(),
+    " AS last_complete FROM work_queue w WHERE w.sweep_id=?1 AND w.state=1 AND w.lease_until<=?2 ORDER BY last_complete,w.scope_key LIMIT 1"
+);
+
+fn staleness_key(row: &sqlx::sqlite::SqliteRow) -> Result<(i64, Vec<u8>), StoreError> {
+    Ok((row.try_get("last_complete")?, row.try_get("scope_key")?))
+}
+
 pub(super) async fn claim(
     store: &BinaryStore,
     sweep: &SweepId,
@@ -242,21 +265,17 @@ pub(super) async fn claim(
     let mut tx = store.writer.begin().await?;
     validate_active_sweep(&mut tx, Some(sweep)).await?;
 
-    // Split the OR query into two index-bounded queries.
-    // Branch 1: ready rows (state=0) uses work_queue_ready index
-    // Branch 2: expired lease rows (state=1 AND lease_until<=now) uses work_queue_ready index
-    // Both branches use work_queue_ready(sweep_id, state, scope_key) for bounded search.
-    let ready = sqlx::query("SELECT scope_key,token,bindings,generation,authority_complete,context FROM work_queue WHERE sweep_id=?1 AND state=0 ORDER BY scope_key LIMIT 1")
+    // Stalest scope first: never-completed scopes (0), then the oldest last
+    // completion, then scope_key as the deterministic tie-break. The ready and
+    // expired-lease branches are queried separately so each stays index-bounded.
+    let ready = sqlx::query(READY_STALEST_FIRST)
         .bind(sweep.as_str()).fetch_optional(&mut *tx).await?;
-    let expired = sqlx::query("SELECT scope_key,token,bindings,generation,authority_complete,context FROM work_queue WHERE sweep_id=?1 AND state=1 AND lease_until<=?2 ORDER BY scope_key LIMIT 1")
+    let expired = sqlx::query(EXPIRED_STALEST_FIRST)
         .bind(sweep.as_str()).bind(now_ms).fetch_optional(&mut *tx).await?;
 
-    // Pick the row with the smallest scope_key between the two branches
     let row = match (ready, expired) {
         (Some(r), Some(e)) => {
-            let r_key: &[u8] = r.try_get("scope_key")?;
-            let e_key: &[u8] = e.try_get("scope_key")?;
-            if r_key < e_key { Some(r) } else { Some(e) }
+            if staleness_key(&r)? < staleness_key(&e)? { Some(r) } else { Some(e) }
         }
         (Some(r), None) => Some(r),
         (None, Some(e)) => Some(e),

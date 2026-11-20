@@ -137,6 +137,7 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
     sqlx::query("INSERT INTO metadata(key,value) VALUES('canonical_facet_dependencies_v3',X'01') ON CONFLICT(key) DO UPDATE SET value=excluded.value").execute(&mut *tx).await?;
     for statement in [
         "CREATE INDEX IF NOT EXISTS work_queue_ready ON work_queue(sweep_id,state,scope_key)",
+        "CREATE INDEX IF NOT EXISTS scope_outcomes_complete ON scope_outcomes(scope_key,outcome,observed_at)",
         "CREATE INDEX IF NOT EXISTS unresolved_refs_target ON unresolved_refs(target_scope,target_kind)",
     ] {
         sqlx::query(statement).execute(&mut *tx).await?;
@@ -150,6 +151,7 @@ async fn create_shared_tables(
 ) -> Result<(), StoreError> {
     let indexes = [
         "CREATE INDEX IF NOT EXISTS work_queue_ready ON work_queue(sweep_id,state,scope_key)",
+        "CREATE INDEX IF NOT EXISTS scope_outcomes_complete ON scope_outcomes(scope_key,outcome,observed_at)",
         "CREATE INDEX IF NOT EXISTS unresolved_refs_target ON unresolved_refs(target_scope,target_kind)",
         "CREATE INDEX IF NOT EXISTS resource_scopes_key ON resource_scopes(scope_key)",
     ];
