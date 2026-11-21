@@ -4,6 +4,7 @@ pub(crate) mod report;
 pub use report::{ReportError, ReportMode};
 pub mod classes;
 pub mod endpoints;
+pub mod iam_policy;
 pub mod kind_map;
 pub mod manifest;
 pub mod names;
