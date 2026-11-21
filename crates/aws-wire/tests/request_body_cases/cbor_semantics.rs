@@ -1,3 +1,4 @@
+use super::BoxError;
 use minicbor::{
     Decoder,
     data::{Int, Type},
@@ -73,37 +74,42 @@ fn rpc_data(value: &str) -> Cbor {
     Cbor::Map(vec![(Cbor::Text("data".into()), Cbor::Text(value.into()))])
 }
 
-pub(super) fn assert_rpc_data(body: &[u8], value: &str, label: &str) {
-    assert_eq!(
-        decode(body, label),
-        rpc_data(value),
-        "{label} RPCv2 CBOR data parity"
-    );
+pub(super) fn assert_rpc_data(body: &[u8], value: &str, label: &str) -> Result<(), BoxError> {
+    let actual = decode(body, label)?;
+    let expected = rpc_data(value);
+    if actual == expected {
+        Ok(())
+    } else {
+        Err(format!("{label} RPCv2 CBOR data parity: {actual:?} != {expected:?}").into())
+    }
 }
 
-pub(super) fn assert_semantically_equal(actual: &[u8], expected: &[u8], label: &str) {
-    assert_eq!(
-        decode(actual, label),
-        decode(expected, label),
-        "{label} CBOR semantic equality"
-    );
+pub(super) fn assert_semantically_equal(
+    actual: &[u8],
+    expected: &[u8],
+    label: &str,
+) -> Result<(), BoxError> {
+    let actual = decode(actual, label)?;
+    let expected = decode(expected, label)?;
+    if actual == expected {
+        Ok(())
+    } else {
+        Err(format!("{label} CBOR semantic equality: {actual:?} != {expected:?}").into())
+    }
 }
 
-fn decode(input: &[u8], label: &str) -> Cbor {
-    assert!(
-        input.len() <= MAX_BYTES,
-        "{label}: CBOR input exceeds processing bound"
-    );
+fn decode(input: &[u8], label: &str) -> Result<Cbor, BoxError> {
+    if input.len() > MAX_BYTES {
+        return Err(format!("{label}: CBOR input exceeds processing bound").into());
+    }
     let mut decoder = Decoder::new(input);
     let mut budget = MAX_ITEMS;
     let value = parse_value(&mut decoder, 0, &mut budget)
-        .unwrap_or_else(|error| panic!("{label}: invalid CBOR: {error}"));
-    assert_eq!(
-        decoder.position(),
-        input.len(),
-        "{label}: trailing CBOR data"
-    );
-    value
+        .map_err(|error| format!("{label}: invalid CBOR: {error}"))?;
+    if decoder.position() != input.len() {
+        return Err(format!("{label}: trailing CBOR data").into());
+    }
+    Ok(value)
 }
 
 fn parse_value(
@@ -114,7 +120,7 @@ fn parse_value(
     if depth > MAX_DEPTH || *budget == 0 {
         return Err("CBOR nesting/item bound exceeded".into());
     }
-    *budget -= 1;
+    *budget = budget.saturating_sub(1);
     let kind = decoder.datatype().map_err(|error| error.to_string())?;
     parse_kind(decoder, depth, budget, kind)
 }
@@ -185,7 +191,7 @@ fn parse_tag(decoder: &mut Decoder<'_>, depth: usize, budget: &mut usize) -> Res
     let tag = decoder.tag().map_err(|error| error.to_string())?.as_u64();
     Ok(Cbor::Tag(
         tag,
-        Box::new(parse_value(decoder, depth + 1, budget)?),
+        Box::new(parse_value(decoder, depth.saturating_add(1), budget)?),
     ))
 }
 
@@ -197,7 +203,7 @@ fn parse_array(
     let length = decoder.array().map_err(|error| error.to_string())?;
     let mut values = Vec::new();
     while has_item(decoder, length, values.len())? {
-        values.push(parse_value(decoder, depth + 1, budget)?);
+        values.push(parse_value(decoder, depth.saturating_add(1), budget)?);
     }
     Ok(Cbor::Array(values))
 }
@@ -206,14 +212,14 @@ fn parse_map(decoder: &mut Decoder<'_>, depth: usize, budget: &mut usize) -> Res
     let length = decoder.map().map_err(|error| error.to_string())?;
     let mut entries: Vec<(Cbor, Cbor)> = Vec::new();
     while has_item(decoder, length, entries.len())? {
-        let key = parse_value(decoder, depth + 1, budget)?;
+        let key = parse_value(decoder, depth.saturating_add(1), budget)?;
         if entries.iter().any(|(existing, _)| *existing == key) {
             return Err("duplicate CBOR map key".into());
         }
         if decoder.datatype().map_err(|error| error.to_string())? == Type::Break {
             return Err("CBOR map key has no value".into());
         }
-        let value = parse_value(decoder, depth + 1, budget)?;
+        let value = parse_value(decoder, depth.saturating_add(1), budget)?;
         entries.push((key, value));
     }
     Ok(Cbor::Map(entries))
