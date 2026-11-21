@@ -1,14 +1,12 @@
 mod archive_rules;
 mod children_ab;
-#[path = "../../../crates/catalog-tool/src/overlay/builtin/family_a_c/consumer_fixture.rs"]
-mod fixture;
+use crate::sweep_runtime::consumer_fixture as fixture;
 mod gateway_audit_batch;
 mod membership;
 use crate::sweep_runtime::execution::page::cursor;
 use crate::sweep_runtime::execution::routing;
 
 use super::*;
-use catalog_tool as fixture_catalog;
 use fixture::{TestResult, compile};
 use inventory_core::catalog::runtime::{CallablePlan, RuntimeCatalog, RuntimeProtocol};
 use serde_json::{Value as Json, json};

@@ -3,8 +3,13 @@ use std::path::PathBuf;
 use inventory_core::inventory::ScopeOutcome;
 use thiserror::Error;
 
+#[cfg(test)]
+use catalog_tool as fixture_catalog;
 mod call;
 mod config;
+#[cfg(test)]
+#[path = "../crates/catalog-tool/src/overlay/builtin/family_a_c/consumer_fixture.rs"]
+pub(in crate::sweep_runtime) mod consumer_fixture;
 mod execution;
 mod input;
 #[cfg(test)]

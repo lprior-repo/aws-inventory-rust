@@ -150,7 +150,7 @@ async fn run(
     sweep: &SweepId,
 ) -> TestResult<BTreeSet<(String, String)>> {
     let mut requests = BTreeSet::new();
-    for _ in 0..catalog.plans().len().saturating_sub(1) * 4 {
+    for _ in 0..catalog.plans().len().saturating_sub(1).saturating_mul(4) {
         // Reopen the durable queue before every page, including empty parent pages.
         let store = BinaryStore::open_with_catalog(path, catalog.raw_bytes()).await?;
         let lease = store
@@ -256,7 +256,7 @@ pub(super) async fn synthetic(count: usize) -> TestResult {
             .iter()
             .filter(|(kind, _, _)| kind == "AWS::ApiOnly::BindingChild")
             .count(),
-        count * 2
+        count.saturating_mul(2)
     );
     let second = SweepId::new("alternatives-reordered".to_owned())?;
     let store = BinaryStore::open_with_catalog(&path, catalog.raw_bytes()).await?;

@@ -1,5 +1,4 @@
-#[path = "../../../../../crates/catalog-tool/src/overlay/builtin/family_a_c/consumer_fixture.rs"]
-mod native;
+use crate::sweep_runtime::consumer_fixture as native;
 mod native_pages;
 mod persistence;
 #[path = "../../../../../crates/catalog-tool/tests/support/bindings.rs"]
@@ -7,7 +6,6 @@ mod synthetic;
 
 use super::*;
 use crate::sweep_runtime::{execution::routing, record::policy_dfgk_tests::fixture::decode};
-use catalog_tool as fixture_catalog;
 use inventory_core::catalog::runtime::RuntimeCatalog;
 use serde_json::{Value as Json, json};
 use synthetic::TestResult;

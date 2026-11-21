@@ -1,6 +1,5 @@
 mod branches;
-#[path = "../../../../../crates/catalog-tool/src/overlay/builtin/family_a_c/consumer_fixture.rs"]
-mod fixture;
+use crate::sweep_runtime::consumer_fixture as fixture;
 mod presence;
 mod sources;
 mod support;

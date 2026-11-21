@@ -1,6 +1,5 @@
 mod cases;
-#[path = "../../../../../crates/catalog-tool/src/overlay/builtin/family_a_c/consumer_fixture.rs"]
-mod fixture;
+use crate::sweep_runtime::consumer_fixture as fixture;
 mod parent_assertions;
 
 use super::super::{consumer_index::ConsumerIndex, cursor};
