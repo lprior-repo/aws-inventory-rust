@@ -4,10 +4,10 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use catalog_tool::{
-    ReportMode, classes, endpoints, iam_policy, manifest, overlay, package, plans, smithy,
+    ReportMode, classes, coverage, endpoints, iam_policy, manifest, overlay, package, plans, smithy,
 };
 
-const USAGE: &str = "usage:\n  catalog-tool parent-candidates [--root <dir>] [--write | --check]\n  catalog-tool package --destination <zip path> [--root <dir>]\n  catalog-tool manifest [--root <dir>] [--check | --write]\n  catalog-tool models <report|fields|compile|endpoints> [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool classes [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool plans [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool overlay [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool iam-policy [--root <dir>] [--allow-unmapped-report] [--check | --write]";
+const USAGE: &str = "usage:\n  catalog-tool parent-candidates [--root <dir>] [--write | --check]\n  catalog-tool package --destination <zip path> [--root <dir>]\n  catalog-tool manifest [--root <dir>] [--check | --write]\n  catalog-tool models <report|fields|compile|endpoints> [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool classes [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool plans [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool overlay [--source <dir>] [--root <dir>] [--check | --write]\n  catalog-tool iam-policy [--root <dir>] [--allow-unmapped-report] [--check | --write]\n  catalog-tool coverage [--root <dir>] [--check | --write]";
 
 fn main() -> ExitCode {
     match run(std::env::args().skip(1).collect()) {
@@ -30,6 +30,7 @@ fn run(arguments: Vec<String>) -> Result<(), Box<dyn std::error::Error>> {
         Some("plans") => plans_arguments(&mut arguments),
         Some("overlay") => overlay_arguments(&mut arguments),
         Some("iam-policy") => iam_policy_arguments(&mut arguments),
+        Some("coverage") => coverage_arguments(&mut arguments),
         _ => Err(USAGE.into()),
     }
 }
@@ -104,6 +105,22 @@ fn manifest_arguments(
         }
     }
     Ok(manifest::run(&root, mode)?)
+}
+
+fn coverage_arguments(
+    arguments: &mut std::slice::Iter<'_, String>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let mut root = default_root();
+    let mut mode = ReportMode::Print;
+    while let Some(flag) = arguments.next() {
+        match flag.as_str() {
+            "--root" => root = PathBuf::from(next_value(arguments, "--root")?),
+            "--write" => mode = ReportMode::Write,
+            "--check" => mode = ReportMode::Check,
+            other => return Err(format!("unexpected {other}; {USAGE}").into()),
+        }
+    }
+    Ok(coverage::run(&root, mode)?)
 }
 
 fn default_root() -> PathBuf {

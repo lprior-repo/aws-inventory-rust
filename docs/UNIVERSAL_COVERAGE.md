@@ -71,6 +71,29 @@ aws-inventory scan --db inventory.sqlite --region us-east-1 \
   --attempts 1 --concurrency 16 --rps 200
 ```
 
+## Coverage denominator
+
+`catalog-tool coverage [--check | --write]` writes
+`catalog/coverage-denominator.report`, a deterministic funnel computed only from
+committed artifacts: `aws-models.report`, `aws-plans.report`,
+`aws-classes.report`, `aws-overlay.report`, `aws-operations.json`,
+`cloudcontrol-capabilities.json`, and `cloudcontrol-resources.json`.
+
+- One `catalog-digest` (SHA-256 over the seven input paths and digests) ties
+  every count to one catalog state.
+- Four funnels: `operations`, `native_sdk_operations`,
+  `cloud_control_types`, `resource_kinds`. Each stage is no larger than the
+  stage before it; the report is refused otherwise.
+- Excluded buckets (`denied_by_overlay`, `missing_read_or_list_handler`, …)
+  partition the funnel's starting population and are checked against the
+  source's own totals.
+- `fixture_tested`, `emulator_tested`, `real_aws_tested` are recorded only
+  where the catalog holds that evidence. `not_recorded` marks a stage the
+  catalog does not measure; it is never read as zero. `real_aws_tested 0` is
+  stated with its basis (`evidence.live_validated=false`).
+- `unsupported`, `inaccessible`, `skipped`, and `unobserved` are always listed
+  as `not_recorded` unless a committed artifact records them.
+
 ## Verified emulator baseline
 
 The pinned emulator (1.0.336, commit `f5155815`) implements a Cloud Control

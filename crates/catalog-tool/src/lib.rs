@@ -3,6 +3,7 @@ pub use model_source::Error as ModelSourceError;
 pub(crate) mod report;
 pub use report::{ReportError, ReportMode};
 pub mod classes;
+pub mod coverage;
 pub mod endpoints;
 pub mod iam_policy;
 pub mod kind_map;
