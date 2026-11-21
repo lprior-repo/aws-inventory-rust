@@ -4,10 +4,13 @@ use crate::cli::ServeArgs;
 use std::process::ExitCode;
 
 #[cfg(feature = "aws")]
+mod config;
+#[cfg(feature = "aws")]
 mod enabled;
+#[cfg(feature = "aws")]
+mod store;
 
-#[cfg(all(feature = "aws", test))]
-pub use enabled::parse_interval;
+
 
 /// Run the cadence scheduler.
 #[cfg(feature = "aws")]

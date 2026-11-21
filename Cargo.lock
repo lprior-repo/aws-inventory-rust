@@ -250,9 +250,6 @@ name = "aws-inventory"
 version = "0.6.0"
 dependencies = [
  "anyhow",
- "aws-config",
- "aws-sdk-sts",
- "aws-types",
  "aws-wire",
  "bytes",
  "catalog-tool",
