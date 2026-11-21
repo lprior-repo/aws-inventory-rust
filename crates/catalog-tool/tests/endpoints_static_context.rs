@@ -4,12 +4,17 @@ use serde_json::{Map, Value, json};
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 fn endpoint(agent: bool, region: &str) -> Value {
-    let (host, name, signing_region) = if agent {
-        ("research", "agent-signer", "us-east-1")
+    let host = if agent { "research" } else { "control" };
+    endpoint_url(agent, region, &format!("https://{host}.{region}.example.test"))
+}
+
+fn endpoint_url(agent: bool, region: &str, url: &str) -> Value {
+    let (name, signing_region) = if agent {
+        ("agent-signer", "us-east-1")
     } else {
-        ("control", "service-signing", region)
+        ("service-signing", region)
     };
-    json!({"url":format!("https://{host}.{region}.example.test"),
+    json!({"url":url,
         "properties":{"authSchemes":[{"name":"sigv4","signingName":name,
             "signingRegion":signing_region}]}})
 }
@@ -556,8 +561,11 @@ fn label_rules(account_host: &str) -> Value {
     if let Some(conditions) = account.as_array_mut() {
         conditions.push(json!({"fn":"isSet","argv":[{"ref":"AccountId"}]}));
     }
-    let mut account_endpoint = endpoint(false, "{Region}");
-    account_endpoint["url"] = json!(format!("https://{account_host}.{{Region}}.example.test"));
+    let account_endpoint = endpoint_url(
+        false,
+        "{Region}",
+        &format!("https://{account_host}.{{Region}}.example.test"),
+    );
     json!({"version":"1.0","parameters":{
         "Region":{"type":"string"},
         "UseFIPS":{"type":"boolean","required":true,"default":false},
@@ -577,17 +585,15 @@ fn label_rules(account_host: &str) -> Value {
 }
 
 fn account_case(region: &str, account: Option<&str>, flag: &str, expect: Value) -> Value {
-    let mut params = json!({"Region":region,"UseFIPS":false,flag:true});
-    if let Some(account) = account {
-        params["AccountId"] = json!(account);
-    }
+    let params = match account {
+        Some(account) => json!({"Region":region,"UseFIPS":false,flag:true,"AccountId":account}),
+        None => json!({"Region":region,"UseFIPS":false,flag:true}),
+    };
     json!({"params":params,"expect":expect})
 }
 
 fn account_endpoint(host: &str, region: &str) -> Value {
-    let mut expect = endpoint(false, region);
-    expect["url"] = json!(format!("https://{host}.{region}.example.test"));
-    json!({"endpoint":expect})
+    json!({"endpoint":endpoint_url(false, region, &format!("https://{host}.{region}.example.test"))})
 }
 
 /// Compiles `ListJobs`, whose required `AccountId` member is a host label bound
@@ -602,10 +608,12 @@ fn label_route(
         json!({"params":{"Region":"us-west-2"},"expect":{"endpoint":endpoint(false,"us-west-2")}}),
     ];
     all.extend(cases);
-    let mut traits = json!({"smithy.rules#staticContextParams":{flag:{"value":true}}});
+    let mut traits = Map::new();
+    traits.insert("smithy.rules#staticContextParams".into(), json!({flag:{"value":true}}));
     if let Some(prefix) = prefix {
-        traits["smithy.api#endpoint"] = json!({"hostPrefix":prefix});
+        traits.insert("smithy.api#endpoint".into(), json!({"hostPrefix":prefix}));
     }
+    let traits = Value::Object(traits);
     let mut shapes = Map::new();
     shapes.insert(
         "example#ListJobs".into(),
