@@ -12,6 +12,7 @@ use serde_json::{Value, json};
 use sha2::Digest;
 use sqlx::Row;
 
+mod graph_diff;
 use crate::HarnessError;
 
 /// Helper for safe JSON indexing with error reporting.
@@ -410,7 +411,12 @@ async fn verify_graph(
     );
 
     let edge_query = format!(
-        "MATCH (a)-[e]->(b) RETURN a.id,b.id,type(e),e.kind,e.source,a.scan_id,b.scan_id,e.observed_at,e.properties_json,size(keys(e)),a.key,b.key ORDER BY a.id,b.id,e.kind,e.source LIMIT {}",
+        "MATCH (a)-[e]->(b) WHERE type(e) <> 'HAS_TAG' RETURN a.id,b.id,type(e),e.kind,e.source,a.scan_id,b.scan_id,e.observed_at,e.properties_json,size(keys(e)),a.key,b.key ORDER BY a.id,b.id,e.kind,e.source LIMIT {}",
+        MAX_FIXTURE_ROWS + 1
+    );
+
+    let tag_query = format!(
+        "MATCH (r:Resource)-[e:HAS_TAG]->(t:Tag) RETURN r.id,r.key,t.account,t.region,t.tag_key,t.tag_value,e.provenance ORDER BY r.key,t.tag_key,t.tag_value,e.provenance LIMIT {}",
         MAX_FIXTURE_ROWS + 1
     );
 
@@ -423,10 +429,12 @@ async fn verify_graph(
 
     let node_rows = graph_rows(redis_cli, port, graph, &node_query, 14)?;
     let edge_rows = graph_rows(redis_cli, port, graph, &edge_query, 12)?;
+    let tag_rows = graph_rows(redis_cli, port, graph, &tag_query, 7)?;
     let marker = graph_rows(redis_cli, port, graph, &marker_query, 6)?;
     let total = graph_rows(redis_cli, port, graph, total_query, 1)?;
 
-    let verdict = compare_graph_snapshot(model, &node_rows, &edge_rows, &marker, &total)?;
+    let verdict =
+        compare_graph_snapshot(model, &node_rows, &edge_rows, &tag_rows, &marker, &total)?;
     if let GraphComparison::Inconclusive(reason) = verdict {
         return Err(HarnessError::invalid(format!(
             "inconclusive graph verification, not a pass: {reason}"
@@ -458,12 +466,14 @@ pub enum GraphComparison {
 ///
 /// The generation is fenced before any content is compared: a missing marker, another scan
 /// id, or a marker state other than the model status is `Inconclusive`, never a pass. Once
-/// the generation matches, any stale property, extra or missing edge, or missing tag
-/// membership (tags are carried in node and edge rows) is a hard error.
+/// the generation matches, every node (with its projected properties and tag payload), every
+/// relation edge, and every HAS_TAG membership must equal the model; the first divergence is
+/// a hard error that names the node, edge or resource-tag it concerns.
 pub fn compare_graph_snapshot(
     model: &Value,
     node_rows: &Value,
     edge_rows: &Value,
+    tag_rows: &Value,
     marker: &Value,
     total: &Value,
 ) -> Result<GraphComparison, HarnessError> {
@@ -496,16 +506,8 @@ pub fn compare_graph_snapshot(
         )));
     }
 
-    if canonical(node_rows) != canonical(get_field(model, "node_rows")?) {
-        return Err(HarnessError::invalid(
-            "FalkorDB node IDs, snapshot keys, labels or projected properties differ from SQLite",
-        ));
-    }
-
-    if canonical(edge_rows) != canonical(get_field(model, "edge_rows")?) {
-        return Err(HarnessError::invalid(
-            "FalkorDB edge endpoints, relations, provenance or projected properties differ from SQLite",
-        ));
+    if let Some(problem) = graph_diff::first_difference(model, node_rows, edge_rows, tag_rows)? {
+        return Err(HarnessError::invalid(problem));
     }
 
     let wanted_marker = json!([[
@@ -866,6 +868,7 @@ pub async fn build_expected(pool: &sqlx::SqlitePool, scan_id: &str) -> Result<Va
         },
         "node_rows": node_rows,
         "edge_rows": edge_rows,
+        "tag_rows": [],
     }))
 }
 

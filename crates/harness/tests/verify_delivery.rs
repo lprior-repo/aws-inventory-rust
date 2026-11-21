@@ -810,6 +810,9 @@ fn graph_model() -> serde_json::Value {
         ],
         "edge_rows": [
             ["r1", "r2", "RELATES_TO", "collector", "{}", "scan-a", "scan-a", 1, "{}", 4, "scan-a::r1", "scan-a::r2"]
+        ],
+        "tag_rows": [
+            ["r1", "scan-a::r1", "000000000000", "us-east-1", "env", "prod", "inventory.tags"]
         ]
     })
 }
@@ -817,6 +820,7 @@ fn graph_model() -> serde_json::Value {
 struct Observed {
     nodes: serde_json::Value,
     edges: serde_json::Value,
+    tags: serde_json::Value,
     marker: serde_json::Value,
     total: serde_json::Value,
 }
@@ -825,18 +829,27 @@ fn observed_from(model: &serde_json::Value) -> Observed {
     Observed {
         nodes: model["node_rows"].clone(),
         edges: model["edge_rows"].clone(),
+        tags: model["tag_rows"].clone(),
         marker: json!([["scan-a", "complete", 2, 1, 4, 1]]),
         total: json!([[3]]),
     }
+}
+
+fn compare(
+    model: &serde_json::Value,
+    o: &Observed,
+) -> Result<verify_delivery::GraphComparison, inventory_harness::HarnessError> {
+    verify_delivery::compare_graph_snapshot(model, &o.nodes, &o.edges, &o.tags, &o.marker, &o.total)
 }
 
 #[test]
 fn graph_comparison_matches_identical_generation() -> Result<(), Box<dyn std::error::Error>> {
     let model = graph_model();
     let o = observed_from(&model);
-    let verdict =
-        verify_delivery::compare_graph_snapshot(&model, &o.nodes, &o.edges, &o.marker, &o.total);
-    assert_eq!(verdict?, verify_delivery::GraphComparison::Matched);
+    assert_eq!(
+        compare(&model, &o)?,
+        verify_delivery::GraphComparison::Matched
+    );
     Ok(())
 }
 
@@ -848,11 +861,33 @@ fn graph_comparison_fails_stale_property() -> Result<(), Box<dyn std::error::Err
         .get_mut(0)
         .and_then(|row| row.get_mut(8))
         .ok_or("node row cell missing")? = json!("{\"size\":\"large\"}");
-    let verdict =
-        verify_delivery::compare_graph_snapshot(&model, &o.nodes, &o.edges, &o.marker, &o.total);
+    let verdict = compare(&model, &o);
     assert!(
         verdict.is_err(),
         "stale property must fail, got {verdict:?}"
+    );
+    Ok(())
+}
+
+#[test]
+fn graph_comparison_names_node_when_property_diverges() -> Result<(), Box<dyn std::error::Error>> {
+    let model = graph_model();
+    let mut o = observed_from(&model);
+    *o.nodes
+        .get_mut(0)
+        .and_then(|row| row.get_mut(8))
+        .ok_or("node row cell missing")? = json!("{\"size\":\"large\"}");
+    let message = match compare(&model, &o) {
+        Err(error) => error.to_string(),
+        other => return Err(format!("property divergence must fail, got {other:?}").into()),
+    };
+    assert!(
+        message.contains("scan-a::r1"),
+        "message must name node: {message}"
+    );
+    assert!(
+        message.contains("properties_json"),
+        "message must name property: {message}"
     );
     Ok(())
 }
@@ -878,8 +913,7 @@ fn graph_comparison_fails_extra_edge() -> Result<(), Box<dyn std::error::Error>>
             "scan-a::r2",
             "scan-a::r1"
         ]));
-    let verdict =
-        verify_delivery::compare_graph_snapshot(&model, &o.nodes, &o.edges, &o.marker, &o.total);
+    let verdict = compare(&model, &o);
     assert!(verdict.is_err(), "extra edge must fail, got {verdict:?}");
     Ok(())
 }
@@ -889,8 +923,7 @@ fn graph_comparison_fails_missing_edge() -> Result<(), Box<dyn std::error::Error
     let model = graph_model();
     let mut o = observed_from(&model);
     o.edges = json!([]);
-    let verdict =
-        verify_delivery::compare_graph_snapshot(&model, &o.nodes, &o.edges, &o.marker, &o.total);
+    let verdict = compare(&model, &o);
     assert!(verdict.is_err(), "missing edge must fail, got {verdict:?}");
     Ok(())
 }
@@ -903,11 +936,50 @@ fn graph_comparison_fails_missing_tag_membership() -> Result<(), Box<dyn std::er
         .get_mut(0)
         .and_then(|row| row.get_mut(9))
         .ok_or("node row cell missing")? = json!("[]");
-    let verdict =
-        verify_delivery::compare_graph_snapshot(&model, &o.nodes, &o.edges, &o.marker, &o.total);
+    let verdict = compare(&model, &o);
     assert!(
         verdict.is_err(),
         "missing tag membership must fail, got {verdict:?}"
+    );
+    Ok(())
+}
+
+#[test]
+fn graph_comparison_fails_has_tag_edge_divergence_naming_resource_and_tag()
+-> Result<(), Box<dyn std::error::Error>> {
+    let model = graph_model();
+    let mut o = observed_from(&model);
+    *o.tags
+        .get_mut(0)
+        .and_then(|row| row.get_mut(5))
+        .ok_or("tag row cell missing")? = json!("staging");
+    let message = match compare(&model, &o) {
+        Err(error) => error.to_string(),
+        other => return Err(format!("HAS_TAG divergence must fail, got {other:?}").into()),
+    };
+    assert!(
+        message.contains("scan-a::r1"),
+        "message must name node: {message}"
+    );
+    assert!(
+        message.contains("tag"),
+        "message must name HAS_TAG: {message}"
+    );
+    Ok(())
+}
+
+#[test]
+fn graph_comparison_fails_missing_has_tag_edge() -> Result<(), Box<dyn std::error::Error>> {
+    let model = graph_model();
+    let mut o = observed_from(&model);
+    o.tags = json!([]);
+    let message = match compare(&model, &o) {
+        Err(error) => error.to_string(),
+        other => return Err(format!("missing HAS_TAG must fail, got {other:?}").into()),
+    };
+    assert!(
+        message.contains("scan-a::r1"),
+        "message must name node: {message}"
     );
     Ok(())
 }
@@ -918,8 +990,7 @@ fn graph_comparison_is_inconclusive_for_other_scan_generation()
     let model = graph_model();
     let mut o = observed_from(&model);
     o.marker = json!([["scan-b", "complete", 2, 1, 4, 1]]);
-    let verdict =
-        verify_delivery::compare_graph_snapshot(&model, &o.nodes, &o.edges, &o.marker, &o.total);
+    let verdict = compare(&model, &o);
     assert!(
         matches!(
             verdict,
@@ -936,8 +1007,7 @@ fn graph_comparison_is_inconclusive_while_sweep_is_writing()
     let model = graph_model();
     let mut o = observed_from(&model);
     o.marker = json!([["scan-a", "writing", 2, 1, 4, 1]]);
-    let verdict =
-        verify_delivery::compare_graph_snapshot(&model, &o.nodes, &o.edges, &o.marker, &o.total);
+    let verdict = compare(&model, &o);
     assert!(
         matches!(
             verdict,
@@ -953,8 +1023,7 @@ fn graph_comparison_is_inconclusive_without_marker() -> Result<(), Box<dyn std::
     let model = graph_model();
     let mut o = observed_from(&model);
     o.marker = json!([]);
-    let verdict =
-        verify_delivery::compare_graph_snapshot(&model, &o.nodes, &o.edges, &o.marker, &o.total);
+    let verdict = compare(&model, &o);
     assert!(
         matches!(
             verdict,
