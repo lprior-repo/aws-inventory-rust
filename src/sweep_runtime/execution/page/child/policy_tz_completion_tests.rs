@@ -227,7 +227,8 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
             );
             let (request, wire) = self.request(plan, &lease)?;
             let body = respond(plan, &request, &wire, lease.token().is_some())?;
-            *seen.entry(operation.to_owned()).or_insert(0) += 1;
+            let count = seen.entry(operation.to_owned()).or_insert(0);
+            *count = count.saturating_add(1);
             assert!(
                 seen.values().sum::<usize>() < 512,
                 "fixture unexpectedly repeated work"
@@ -340,7 +341,19 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
         expected: Vec<(String, String, String, String)>,
     ) -> TestResult {
         let reader = self.reader().await?;
-        let mut actual: Vec<(String,String,String,String,String,String,String,String,String,String)> =
+        type EdgeRow = (
+            String,
+            String,
+            String,
+            String,
+            String,
+            String,
+            String,
+            String,
+            String,
+            String,
+        );
+        let mut actual: Vec<EdgeRow> =
             sqlx::query_as("SELECT from_account,from_region,from_kind,from_id,to_account,to_region,to_kind,to_id,relation,source FROM edges WHERE from_kind=? AND relation=?")
                 .bind(kind).bind(relation).fetch_all(&reader).await?;
         reader.close().await;
