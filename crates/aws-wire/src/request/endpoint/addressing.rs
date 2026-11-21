@@ -395,50 +395,52 @@ mod tests {
     }
 
     #[test]
-    fn s3_regular_virtual_hosted_produces_regional_host() {
+    fn s3_regular_virtual_hosted_produces_regional_host() -> Result<(), Box<dyn std::error::Error>>
+    {
         let resolved = s3_endpoint(cfg(
             Some("mybucket"),
             Some(AddressingStyle::Virtual),
             None,
             false,
             false,
-        ))
-        .expect("regular virtual bucket should succeed");
+        ))?;
         assert_eq!(
             resolved.endpoint.as_ref(),
             "https://s3.us-west-2.amazonaws.com/"
         );
-        let addressing = resolved.addressing.expect("virtual hosted addressing");
+        let addressing = resolved.addressing.ok_or("virtual hosted addressing")?;
         assert_eq!(addressing.host_prefix, "{Bucket}.");
         assert_eq!(addressing.path_label, "Bucket");
+        Ok(())
     }
 
     #[test]
-    fn s3_regular_path_produces_no_addressing() {
+    fn s3_regular_path_produces_no_addressing() -> Result<(), Box<dyn std::error::Error>> {
         let resolved = s3_endpoint(cfg(
             Some("mybucket"),
             Some(AddressingStyle::Path),
             None,
             false,
             false,
-        ))
-        .expect("regular path bucket should succeed");
+        ))?;
         assert!(resolved.addressing.is_none());
         assert_eq!(
             resolved.endpoint.as_ref(),
             "https://s3.us-west-2.amazonaws.com/"
         );
+        Ok(())
     }
 
     #[test]
-    fn s3_regular_auto_selects_virtual_for_valid_bucket() {
-        let resolved = s3_endpoint(cfg(Some("mybucket"), None, None, false, false))
-            .expect("auto valid bucket should succeed");
+    fn s3_regular_auto_selects_virtual_for_valid_bucket() -> Result<(), Box<dyn std::error::Error>>
+    {
+        let resolved = s3_endpoint(cfg(Some("mybucket"), None, None, false, false))?;
         assert!(resolved.addressing.is_some());
+        Ok(())
     }
 
     #[test]
-    fn s3express_directory_bucket_uses_zonal_endpoint() {
+    fn s3express_directory_bucket_uses_zonal_endpoint() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = "mybucket--usw2-az1--x-s3";
         let resolved = s3_endpoint(cfg(
             Some(bucket),
@@ -446,36 +448,37 @@ mod tests {
             None,
             false,
             false,
-        ))
-        .expect("directory bucket virtual should succeed");
+        ))?;
         assert_eq!(
             resolved.endpoint.as_ref(),
             "https://s3express-usw2-az1.us-west-2.amazonaws.com/"
         );
         assert!(resolved.addressing.is_some());
+        Ok(())
     }
 
     #[test]
-    fn s3express_directory_bucket_auto_also_virtual() {
+    fn s3express_directory_bucket_auto_also_virtual() -> Result<(), Box<dyn std::error::Error>> {
         let bucket = "mybucket--use1-az4--x-s3";
-        let resolved = s3_endpoint(cfg(Some(bucket), None, None, false, false))
-            .expect("directory bucket auto should succeed");
+        let resolved = s3_endpoint(cfg(Some(bucket), None, None, false, false))?;
         assert_eq!(
             resolved.endpoint.as_ref(),
             "https://s3express-use1-az4.us-west-2.amazonaws.com/"
         );
         assert!(resolved.addressing.is_some());
+        Ok(())
     }
 
     #[test]
-    fn s3express_directory_bucket_dualstack_uses_zonal_dualstack() {
+    fn s3express_directory_bucket_dualstack_uses_zonal_dualstack()
+    -> Result<(), Box<dyn std::error::Error>> {
         let bucket = "mybucket--usw2-az1--x-s3";
-        let resolved = s3_endpoint(cfg(Some(bucket), None, None, true, false))
-            .expect("directory bucket dualstack should succeed");
+        let resolved = s3_endpoint(cfg(Some(bucket), None, None, true, false))?;
         assert_eq!(
             resolved.endpoint.as_ref(),
             "https://s3express-usw2-az1.dualstack.us-west-2.amazonaws.com/"
         );
+        Ok(())
     }
 
     #[test]
@@ -536,7 +539,8 @@ mod tests {
     }
 
     #[test]
-    fn s3express_operation_style_overrides_client_style() {
+    fn s3express_operation_style_overrides_client_style() -> Result<(), Box<dyn std::error::Error>>
+    {
         let bucket = "mybucket--usw2-az1--x-s3";
         // Client says path, operation says virtual -> should succeed as virtual
         let resolved = s3_endpoint(cfg(
@@ -545,8 +549,7 @@ mod tests {
             Some(AddressingStyle::Virtual),
             false,
             false,
-        ))
-        .expect("operation virtual should win");
+        ))?;
         assert!(resolved.addressing.is_some());
         // Client virtual, operation path -> should error because path not allowed for directory
         let result = s3_endpoint(cfg(
@@ -560,10 +563,12 @@ mod tests {
             result,
             Err(super::super::EncodeError::InvalidEndpoint)
         ));
+        Ok(())
     }
 
     #[test]
-    fn account_prefix_not_applied_in_s3_endpoint_data_plane() {
+    fn account_prefix_not_applied_in_s3_endpoint_data_plane()
+    -> Result<(), Box<dyn std::error::Error>> {
         // s3_endpoint only deals with bucket prefix; account prefix (s3-control) is handled
         // via operation host_prefix in endpoint::resolve. This test ensures s3_endpoint
         // does not inject account prefix into data plane endpoint.
@@ -573,14 +578,13 @@ mod tests {
             None,
             false,
             false,
-        ))
-        .expect("regular virtual should succeed");
+        ))?;
         assert!(resolved.endpoint.as_ref().starts_with("https://s3."));
         // Directory bucket zonal host should not contain account id prefix
         let bucket = "mybucket--usw2-az1--x-s3";
-        let resolved = s3_endpoint(cfg(Some(bucket), None, None, false, false))
-            .expect("directory bucket should succeed");
+        let resolved = s3_endpoint(cfg(Some(bucket), None, None, false, false))?;
         assert!(resolved.endpoint.as_ref().contains("s3express-"));
         assert!(!resolved.endpoint.as_ref().contains("s3-control"));
+        Ok(())
     }
 }
