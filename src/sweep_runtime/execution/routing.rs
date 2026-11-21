@@ -83,6 +83,21 @@ fn routed_url(service: &str, region: &RegionId, modeled_url: &str) -> Result<Str
 }
 
 #[cfg(test)]
+pub(in crate::sweep_runtime) fn branch_bindings(
+    plan: &CallablePlan<'_>,
+    branch: &inventory_core::catalog::runtime::ExecutionBranch,
+    account: &inventory_core::inventory::AccountId,
+    region: &Region,
+) -> Result<inventory_core::record::Record, SweepError> {
+    crate::sweep_runtime::input::root_bindings_branch(
+        plan,
+        Some(branch),
+        Some(account),
+        Some(region),
+    )
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     #[test]
@@ -111,19 +126,4 @@ mod tests {
         }
         Ok(())
     }
-}
-
-#[cfg(test)]
-pub(in crate::sweep_runtime) fn branch_bindings(
-    plan: &CallablePlan<'_>,
-    branch: &inventory_core::catalog::runtime::ExecutionBranch,
-    account: &inventory_core::inventory::AccountId,
-    region: &Region,
-) -> Result<inventory_core::record::Record, SweepError> {
-    crate::sweep_runtime::input::root_bindings_branch(
-        plan,
-        Some(branch),
-        Some(account),
-        Some(region),
-    )
 }

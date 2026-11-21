@@ -5,8 +5,7 @@ mod package_assertions;
 mod scenario;
 mod suppressions;
 use crate::sweep_runtime::execution::page::cursor;
-#[path = "../execution/routing.rs"]
-mod routing;
+use crate::sweep_runtime::execution::routing;
 
 use super::*;
 use crate::sweep_runtime::input;

@@ -5,8 +5,7 @@ mod fixture;
 mod gateway_audit_batch;
 mod membership;
 use crate::sweep_runtime::execution::page::cursor;
-#[path = "../execution/routing.rs"]
-mod routing;
+use crate::sweep_runtime::execution::routing;
 
 use super::*;
 use catalog_tool as fixture_catalog;
