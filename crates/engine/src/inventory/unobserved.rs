@@ -4,8 +4,6 @@ use inventory_core::inventory::ScopeKey;
 use sqlx::{Row, Sqlite, Transaction};
 use std::collections::BTreeSet;
 
-const MAX_UNOBSERVED_HISTORY: i64 = 10_000;
-
 /// A top-level scope an earlier sweep of the same account observed that the
 /// given sweep did not run. Its resources are untouched by that sweep.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -15,8 +13,8 @@ pub struct UnobservedScope {
     pub age_ms: i64,
 }
 
-/// Records, once a sweep has drained, every top-level scope of configured
-/// accounts that earlier sweeps observed and this one did not run. The stored
+/// Records, once a sweep has drained, every top-level scope that an earlier
+/// sweep completed and this one did not run (profile removed, region narrowed).
 /// `observed_at` of an `unobserved` row is the scope's last complete
 /// observation, so age is derived on read and never invented here.
 pub(super) async fn record(
@@ -24,7 +22,6 @@ pub(super) async fn record(
     sweep: &SweepId,
 ) -> Result<(), StoreError> {
     let current = current_scope_keys(tx, sweep).await?;
-    let configured = configured_accounts(tx).await?;
     let history = historical_last_complete(tx, sweep).await?;
     for (bytes, last) in history {
         if current.contains(&bytes) {
@@ -32,9 +29,6 @@ pub(super) async fn record(
         }
         let scope = persisted_scope(&bytes)?;
         if scope.parent().is_some() {
-            continue;
-        }
-        if !configured.contains(scope.account().as_str()) {
             continue;
         }
         record_unobserved(tx, sweep, &bytes, last).await?;
@@ -55,22 +49,12 @@ async fn current_scope_keys(
         .collect()
 }
 
-async fn configured_accounts(
-    tx: &mut Transaction<'_, Sqlite>,
-) -> Result<BTreeSet<String>, StoreError> {
-    let rows = sqlx::query_scalar::<_, String>("SELECT DISTINCT account FROM sweeps")
-        .fetch_all(&mut **tx)
-        .await?;
-    Ok(rows.into_iter().collect())
-}
-
 async fn historical_last_complete(
     tx: &mut Transaction<'_, Sqlite>,
     sweep: &SweepId,
 ) -> Result<Vec<(Vec<u8>, i64)>, StoreError> {
-    let rows = sqlx::query("SELECT scope_key,MAX(observed_at) AS last FROM scope_outcomes WHERE sweep_id<>?1 AND outcome='complete' GROUP BY scope_key LIMIT ?2")
+    let rows = sqlx::query("SELECT scope_key,MAX(observed_at) AS last FROM scope_outcomes WHERE sweep_id<>?1 AND outcome='complete' GROUP BY scope_key")
         .bind(sweep.as_str())
-        .bind(MAX_UNOBSERVED_HISTORY)
         .fetch_all(&mut **tx)
         .await?;
     rows.into_iter()

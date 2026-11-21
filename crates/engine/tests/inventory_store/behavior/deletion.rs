@@ -75,6 +75,16 @@ fn regional(id: &str, value: &str, region: &str) -> TestResult<Observation> {
     Ok(observed)
 }
 
+fn account_observation(id: &str, value: &str, account: &str, region: &str) -> TestResult<Observation> {
+    let key = ResourceKey {
+        account: AccountId::parse(account)?,
+        region: Region::parse(region)?,
+        ..resource(id)?
+    };
+    let record = observation(id, value)?.record().clone();
+    Ok(Observation::new(key, record, &Exclusions::none(), None)?)
+}
+
 use inventory_core::inventory::Observation;
 use inventory_core::record::{Exclusions, FieldId, Record, Value};
 
@@ -344,19 +354,19 @@ async fn given_removed_account_profile_when_later_sweep_runs_only_other_account_
     store.seed_work(work_a).await?;
     store.create_sweep_manifest(&SweepId::new("s1".to_owned())?, "111111111111").await?;
     let lease_a = store.claim(&SweepId::new("s1".to_owned())?, 100, 20).await?.ok_or("missing lease a")?;
-    store.commit_page(page(lease_a, vec![observation("a", "va")?], true, None, 101)).await?;
+    store.commit_page(page(lease_a, vec![account_observation("a", "va", "111111111111", "us-east-1")?], true, None, 101)).await?;
     // S2: account B complete
     let work_b = account_work("s2", "222222222222", "us-west-2")?;
     store.seed_work(work_b).await?;
     store.create_sweep_manifest(&SweepId::new("s2".to_owned())?, "222222222222").await?;
     let lease_b = store.claim(&SweepId::new("s2".to_owned())?, 200, 20).await?.ok_or("missing lease b")?;
-    store.commit_page(page(lease_b, vec![observation("b", "vb")?], true, None, 201)).await?;
+    store.commit_page(page(lease_b, vec![account_observation("b", "vb", "222222222222", "us-west-2")?], true, None, 201)).await?;
     // S3: only account A runs again; account B should be reported unobserved
     let work_a3 = account_work("s3", "111111111111", "us-east-1")?;
     store.seed_work(work_a3).await?;
     store.create_sweep_manifest(&SweepId::new("s3".to_owned())?, "111111111111").await?;
     let lease_a3 = store.claim(&SweepId::new("s3".to_owned())?, 300, 20).await?.ok_or("missing lease a3")?;
-    store.commit_page(page(lease_a3, vec![observation("a2", "va2")?], true, None, 301)).await?;
+    store.commit_page(page(lease_a3, vec![account_observation("a2", "va2", "111111111111", "us-east-1")?], true, None, 301)).await?;
     // Verify account B's scope is reported unobserved
     let s3 = SweepId::new("s3".to_owned())?;
     let unobserved = store.unobserved_scopes(&s3, 1_000).await?;
