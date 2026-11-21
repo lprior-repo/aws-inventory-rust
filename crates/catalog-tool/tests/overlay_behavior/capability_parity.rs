@@ -39,7 +39,7 @@ fn reviewed_operations(
 fn checked(
     root: &Fixture<'_>,
     operations: Vec<(&str, OperationOverlay)>,
-) -> Result<overlay::CheckedOverlays, CheckError> {
+) -> Result<overlay::CheckedOverlays, Box<CheckError>> {
     super::checked(root, reviewed_operations(operations))
 }
 
@@ -354,10 +354,11 @@ fn config_model(required: bool) -> Result<String, Box<dyn std::error::Error>> {
         .and_then(|shape| shape.get_mut("members"))
         .and_then(serde_json::Value::as_object_mut)
         .ok_or("input members")?;
-    let mut config = serde_json::json!({"target":"n#Config"});
-    if required {
-        config["traits"] = serde_json::json!({"smithy.api#required":{}});
-    }
+    let config = if required {
+        serde_json::json!({"target":"n#Config","traits":{"smithy.api#required":{}}})
+    } else {
+        serde_json::json!({"target":"n#Config"})
+    };
     members.insert("Config".into(), config);
     Ok(serde_json::to_string(&model)?)
 }
