@@ -157,3 +157,24 @@ fn conflicting_publication_modes_are_rejected() -> TestResult {
     assert!(!root.path().join("catalog/aws-api.catalog").exists());
     Ok(())
 }
+
+#[test]
+fn pending_report_is_deterministic_and_default_compile_is_silent() -> TestResult {
+    let source = source()?;
+    let root = root()?;
+    let first = root.path().join("pending-first.txt");
+    let second = root.path().join("pending-second.txt");
+    for report in [&first, &second] {
+        let report = report.to_string_lossy();
+        success(&compile(
+            source.path(),
+            root.path(),
+            &["--write", "--pending-report", report.as_ref()],
+        )?);
+    }
+    let first = fs::read(first)?;
+    assert_eq!(first, fs::read(second)?);
+    assert!(!first.is_empty());
+    success(&compile(source.path(), root.path(), &["--write"])?);
+    Ok(())
+}

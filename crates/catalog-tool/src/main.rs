@@ -142,7 +142,7 @@ fn report_inputs(
         Some(mode) => mode,
         None => ReportMode::Print,
     };
-    let pending_report = flags.pending.map(ToOwned::to_owned);
+    let pending_report = flags.pending_report.map(ToOwned::to_owned);
     Ok(ReportInputs {
         root,
         source,
@@ -172,7 +172,8 @@ struct ModelsFlags<'a> {
     root: Option<&'a str>,
     source: Option<&'a str>,
     mode: Option<ReportMode>,
-    pending: Option<&'a str>,
+    awaiting: Option<&'a str>,
+    pending_report: Option<&'a str>,
 }
 
 fn parse_models_flags<'a>(
@@ -181,7 +182,7 @@ fn parse_models_flags<'a>(
     let flags = arguments.try_fold(ModelsFlags::default(), |flags, arg| {
         parse_models_flag(flags, arg)
     })?;
-    if let Some(flag) = flags.pending {
+    if let Some(flag) = flags.awaiting {
         return Err(format!("{flag} requires a value; {USAGE}").into());
     }
     Ok(flags)
@@ -191,13 +192,13 @@ fn parse_models_flag<'a>(
     mut flags: ModelsFlags<'a>,
     value: &'a str,
 ) -> Result<ModelsFlags<'a>, Box<dyn std::error::Error>> {
-    if let Some(flag) = flags.pending.take() {
+    if let Some(flag) = flags.awaiting.take() {
         if value.starts_with("--") {
             return Err(format!("{flag} requires a value; {USAGE}").into());
         }
         match flag {
             "--root" => flags.root = Some(value),
-            "--pending-report" => flags.pending = Some(value),
+            "--pending-report" => flags.pending_report = Some(value),
             _ => flags.source = Some(value),
         }
     } else {
@@ -211,9 +212,11 @@ fn apply_models_flag(
     value: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match value {
-        "--root" if flags.root.is_none() => flags.pending = Some("--root"),
-        "--source" if flags.source.is_none() => flags.pending = Some("--source"),
-        "--pending-report" if flags.pending.is_none() => flags.pending = Some("--pending-report"),
+        "--root" if flags.root.is_none() => flags.awaiting = Some("--root"),
+        "--source" if flags.source.is_none() => flags.awaiting = Some("--source"),
+        "--pending-report" if flags.pending_report.is_none() => {
+            flags.awaiting = Some("--pending-report");
+        }
         "--check" | "--write" if flags.mode.is_none() => {
             flags.mode = Some(if value == "--check" {
                 ReportMode::Check
