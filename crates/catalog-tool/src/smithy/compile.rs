@@ -103,15 +103,23 @@ impl CompileError {
     }
 }
 
-pub fn compile(root: &Path, source: &Path, mode: ReportMode) -> Result<(), Error> {
+pub fn compile(
+    root: &Path,
+    source: &Path,
+    mode: ReportMode,
+    pending_report: Option<String>,
+) -> Result<(), Error> {
     let registry = fields::load_registry(&root.join("catalog/field-ids.txt"))?;
     let path = root.join("catalog/aws-api.catalog");
     let limit = u64::try_from(MAX_CATALOG_BYTES).map_err(|_| CompileError::Kind)?;
     let original = fields::publish::read_bytes(&path, limit)?;
     let source_pin = provenance::capture(source)?;
     let bytes = build_catalog(source, &registry, &source_pin.commit)?;
-    let bytes =
+    let (bytes, relations) =
         runtime_inputs::augment(root, source, &bytes, &source_pin).map_err(CompileError::from)?;
+    if let Some(report_path) = &pending_report {
+        write_pending_report(report_path, &relations.inactive)?;
+    }
     provenance::verify(source, &source_pin)?;
     match mode {
         ReportMode::Write => {
@@ -125,6 +133,20 @@ pub fn compile(root: &Path, source: &Path, mode: ReportMode) -> Result<(), Error
     if mode == ReportMode::Print {
         write_stdout(&format!("catalog {} bytes\n", bytes.len()))?;
     }
+    Ok(())
+}
+
+fn write_pending_report(
+    path: &str,
+    inactive: &std::collections::BTreeMap<String, String>,
+) -> Result<(), Error> {
+    let mut lines = Vec::new();
+    for (id, reason) in inactive {
+        lines.push(format!("{id}\t{reason}"));
+    }
+    let content = lines.join("\n");
+    let mut file = std::fs::File::create(path).map_err(|_| CompileError::Kind)?;
+    std::io::Write::write_all(&mut file, content.as_bytes()).map_err(|_| CompileError::Kind)?;
     Ok(())
 }
 

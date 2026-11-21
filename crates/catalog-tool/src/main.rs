@@ -94,7 +94,13 @@ fn models_arguments(
         .map(String::as_str)
         .ok_or_else(|| format!("expected 'report' subcommand; {USAGE}"))?;
     let inputs = report_inputs(arguments)?;
-    run_models(subcommand, &inputs.root, &inputs.source, inputs.mode)
+    run_models(
+        subcommand,
+        &inputs.root,
+        &inputs.source,
+        inputs.mode,
+        inputs.pending_report,
+    )
 }
 
 fn classes_arguments(
@@ -121,6 +127,7 @@ struct ReportInputs {
     root: PathBuf,
     source: PathBuf,
     mode: ReportMode,
+    pending_report: Option<String>,
 }
 
 fn report_inputs(
@@ -135,7 +142,13 @@ fn report_inputs(
         Some(mode) => mode,
         None => ReportMode::Print,
     };
-    Ok(ReportInputs { root, source, mode })
+    let pending_report = flags.pending.map(ToOwned::to_owned);
+    Ok(ReportInputs {
+        root,
+        source,
+        mode,
+        pending_report,
+    })
 }
 
 fn run_models(
@@ -143,12 +156,13 @@ fn run_models(
     root: &std::path::Path,
     source: &std::path::Path,
     mode: ReportMode,
+    pending_report: Option<String>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match command {
         "report" => Ok(smithy::run(root, source, mode)?),
         "fields" => Ok(smithy::fields(root, source, mode)?),
         "endpoints" => Ok(endpoints::run(root, source, mode)?),
-        "compile" => Ok(smithy::compile(root, source, mode)?),
+        "compile" => Ok(smithy::compile(root, source, mode, pending_report)?),
         other => Err(format!("unexpected '{other}'; {USAGE}").into()),
     }
 }
@@ -158,7 +172,7 @@ struct ModelsFlags<'a> {
     root: Option<&'a str>,
     source: Option<&'a str>,
     mode: Option<ReportMode>,
-    pending: Option<&'static str>,
+    pending: Option<&'a str>,
 }
 
 fn parse_models_flags<'a>(
@@ -183,6 +197,7 @@ fn parse_models_flag<'a>(
         }
         match flag {
             "--root" => flags.root = Some(value),
+            "--pending-report" => flags.pending = Some(value),
             _ => flags.source = Some(value),
         }
     } else {
@@ -198,6 +213,7 @@ fn apply_models_flag(
     match value {
         "--root" if flags.root.is_none() => flags.pending = Some("--root"),
         "--source" if flags.source.is_none() => flags.pending = Some("--source"),
+        "--pending-report" if flags.pending.is_none() => flags.pending = Some("--pending-report"),
         "--check" | "--write" if flags.mode.is_none() => {
             flags.mode = Some(if value == "--check" {
                 ReportMode::Check

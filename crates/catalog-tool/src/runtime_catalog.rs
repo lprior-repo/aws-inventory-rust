@@ -1,5 +1,5 @@
 mod emission_sources;
-mod encode;
+pub mod encode;
 mod model_path;
 mod plan_validation;
 mod plans;
@@ -127,6 +127,7 @@ pub fn augment(
         verified_endpoints,
         &CatalogSources::compiled(base_bytes),
     )
+    .map(|(bytes, _)| bytes)
 }
 
 pub fn augment_with_sources(
@@ -135,7 +136,7 @@ pub fn augment_with_sources(
     kind_map: &crate::kind_map::KindMap,
     verified_endpoints: &BTreeMap<String, crate::endpoints::VerifiedEndpoint>,
     sources: &CatalogSources,
-) -> Result<Vec<u8>, RuntimeCatalogCompileError> {
+) -> Result<(Vec<u8>, encode::RelationsResult), RuntimeCatalogCompileError> {
     let mut root = decode_root(base_bytes)?;
     if root.contains_key(&Key::Field(FieldId::new(60_000)?)) {
         return Err(RuntimeCatalogCompileError::Capability);
@@ -150,16 +151,11 @@ pub fn augment_with_sources(
     })?;
     let plans = plans::compile(checked, kind_map, verified_endpoints, &services)?;
     let (extension, inactive) = compile_extension(checked, kind_map, &services, plans, sources)?;
-    if !inactive.is_empty() {
-        for (id, reason) in &inactive {
-            eprintln!("inactive relation: {id}: {reason}");
-        }
-    }
     root.insert(Key::Field(FieldId::new(60_000)?), extension);
     let bytes = inventory_core::record::encode_container(&Value::Map(root), MAX_CATALOG_BYTES)?;
     inventory_core::catalog::runtime::RuntimeCatalog::from_bytes(&bytes)
         .map_err(|_| RuntimeCatalogCompileError::Capability)?;
-    Ok(bytes)
+    Ok((bytes, inactive))
 }
 fn decode_root(bytes: &[u8]) -> Result<BTreeMap<Key, Value>, RuntimeCatalogCompileError> {
     inventory_core::record::MapRef::from_container_bytes(bytes, MAX_CATALOG_BYTES)?
@@ -178,16 +174,17 @@ fn compile_extension(
     services: &ServiceIndex<'_>,
     plans: Vec<Value>,
     sources: &CatalogSources,
-) -> Result<(Value, std::collections::BTreeMap<String, String>), RuntimeCatalogCompileError> {
-    let relations = encode::relations(kinds, services, checked)?;
+) -> Result<(Value, encode::RelationsResult), RuntimeCatalogCompileError> {
+    let mut relations = encode::relations(kinds, services, checked)?;
+    let rows = std::mem::take(&mut relations.rows);
     let extension = encode::extension(
         plans,
         schemas::compile(kinds, services, Some(checked))?,
-        relations.rows,
+        rows,
         encode::coverage(kinds)?,
         plans::decisions(checked, services)?,
         sources,
         kinds,
     )?;
-    Ok((extension, relations.inactive))
+    Ok((extension, relations))
 }

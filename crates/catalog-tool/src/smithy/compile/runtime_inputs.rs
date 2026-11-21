@@ -39,7 +39,7 @@ pub(super) fn augment(
     source: &Path,
     bytes: &[u8],
     source_pin: &super::provenance::SourcePin,
-) -> Result<Vec<u8>, RuntimeInputsError> {
+) -> Result<(Vec<u8>, runtime_catalog::encode::RelationsResult), RuntimeInputsError> {
     let cfn = report::read_text(&root.join("catalog/cloudcontrol-universal.json"))?;
     let kinds = kind_map::embedded(cfn.as_bytes())?;
     let checked = overlay::check(root, source)?;
@@ -49,11 +49,11 @@ pub(super) fn augment(
         source_pin.sha256,
         Sha256::digest(cfn.as_bytes()).into(),
     );
-    let augmented =
+    let (augmented, relations) =
         runtime_catalog::augment_with_sources(bytes, &checked, &kinds, &endpoints, &sources)?;
     inventory_core::catalog::runtime::RuntimeCatalog::from_bytes(&augmented)?;
     if report::read_text(&root.join("catalog/cloudcontrol-universal.json"))? != cfn {
         return Err(RuntimeInputsError::SourceChanged);
     }
-    Ok(augmented)
+    Ok((augmented, relations))
 }

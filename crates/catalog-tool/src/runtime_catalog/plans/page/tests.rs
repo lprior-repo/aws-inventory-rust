@@ -413,8 +413,8 @@ fn given_rest_json_query_bindings_when_catalog_is_loaded_then_pagination_keeps_q
 }
 
 #[test]
+#[allow(clippy::expect_used)]
 fn given_endpoint_exception_when_encoded_then_fields_are_present() {
-    use crate::runtime_catalog::encode::map;
     use inventory_core::record::{FieldId, Key, Value};
 
     let exception = crate::endpoints::EndpointException {
@@ -430,7 +430,7 @@ fn given_endpoint_exception_when_encoded_then_fields_are_present() {
             .get(&Key::Field(FieldId::new(1).expect("field id")))
             .expect("region field");
         if let Value::Text(text) = region {
-            assert_eq!(text, "eu-west-1");
+            assert!(text == "eu-west-1");
         }
     }
 }

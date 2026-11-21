@@ -121,13 +121,11 @@ fn endpoint_value(
         (4, Value::Int(class)),
         (5, Value::Int(0)),
     ])?;
-    if !exceptions.is_empty() {
-        if let Value::Map(fields) = &mut endpoint_map {
-            fields.insert(
-                inventory_core::record::Key::Field(inventory_core::record::FieldId::new(6)?),
-                Value::List(exceptions),
-            );
-        }
+    if let (true, Value::Map(fields)) = (!exceptions.is_empty(), &mut endpoint_map) {
+        fields.insert(
+            inventory_core::record::Key::Field(inventory_core::record::FieldId::new(6)?),
+            Value::List(exceptions),
+        );
     }
     Ok(endpoint_map)
 }

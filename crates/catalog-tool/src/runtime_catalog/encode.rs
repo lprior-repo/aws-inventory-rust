@@ -3,7 +3,7 @@ use crate::kind_map::{KindMap, KindTarget};
 use inventory_core::record::{FieldId, Key, Value};
 use std::collections::BTreeMap;
 
-pub(in crate::runtime_catalog) struct RelationsResult {
+pub struct RelationsResult {
     pub rows: Vec<Value>,
     pub inactive: BTreeMap<String, String>,
 }
