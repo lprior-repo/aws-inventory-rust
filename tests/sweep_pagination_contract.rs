@@ -201,7 +201,18 @@ async fn sweep_persists_every_scalar_when_full_tuple_advances_and_optional_token
     let output = fixture.collect(&peer, false).await?;
     // Then both the invocation summary and independently reopened durable data
     // contain all six scalars, with no replayed pages or lost scalar identities.
-    assert_summary(&output, 0, 6, 6, 1, 0, 0, 6)?;
+    assert_summary(
+        &output,
+        0,
+        Counts {
+            writes: 6,
+            rows: 6,
+            complete: 1,
+            partial: 0,
+            failed: 0,
+            pending: 6,
+        },
+    )?;
     assert_resources(
         &fixture.database,
         &["five", "four", "one", "three", "two", "zero"],
@@ -221,7 +232,18 @@ async fn sweep_reports_partial_and_stops_when_the_entire_continuation_tuple_repe
     let output = fixture.collect(&peer, false).await?;
     // Then repetition is explicitly partial, not success or an endless replay;
     // observations on the final received page remain durably visible.
-    assert_summary(&output, 2, 3, 3, 0, 1, 0, 3)?;
+    assert_summary(
+        &output,
+        2,
+        Counts {
+            writes: 3,
+            rows: 3,
+            complete: 0,
+            partial: 1,
+            failed: 0,
+            pending: 3,
+        },
+    )?;
     assert_resources(&fixture.database, &["one", "two", "zero"]).await?;
     assert_queue(&fixture.database, 0, &[("partial", 1)], 1).await?;
     peer.stop().await
@@ -236,7 +258,18 @@ async fn sweep_rejects_a_truncated_page_missing_a_required_tuple_component_atomi
     // When request assembly, transport and decoding feed that page to the runtime.
     let output = fixture.collect(&peer, false).await?;
     // Then its scalar is not committed and the scope is failed, not complete.
-    assert_summary(&output, 2, 0, 0, 0, 0, 1, 0)?;
+    assert_summary(
+        &output,
+        2,
+        Counts {
+            writes: 0,
+            rows: 0,
+            complete: 0,
+            partial: 0,
+            failed: 1,
+            pending: 0,
+        },
+    )?;
     assert_resources(&fixture.database, &[]).await?;
     assert_queue(&fixture.database, 0, &[("failed", 1)], 0).await?;
     peer.stop().await
@@ -261,7 +294,7 @@ async fn sweep_resumes_the_durable_full_tuple_without_replaying_already_committe
     interrupted.kill().await?;
     let interrupted_output =
         tokio::time::timeout(DEADLINE, interrupted.wait_with_output()).await??;
-    assert_eq!(interrupted_output.status.success(), false);
+    assert!(!interrupted_output.status.success());
     assert_resources(&fixture.database, &["one", "two", "zero"]).await?;
     assert_queue(&fixture.database, 1, &[], 2).await?;
     release_tx
@@ -269,7 +302,18 @@ async fn sweep_resumes_the_durable_full_tuple_without_replaying_already_committe
         .map_err(|_| anyhow::anyhow!("checkpoint gate stopped before release"))?;
     // When a new process resumes the same on-disk store.
     let output = fixture.collect(&peer, true).await?;
-    assert_summary(&output, 0, 3, 6, 1, 0, 0, 6)?;
+    assert_summary(
+        &output,
+        0,
+        Counts {
+            writes: 3,
+            rows: 6,
+            complete: 1,
+            partial: 0,
+            failed: 0,
+            pending: 6,
+        },
+    )?;
     assert_resources(
         &fixture.database,
         &["five", "four", "one", "three", "two", "zero"],
@@ -385,16 +429,25 @@ fn verified_endpoint() -> Result<endpoints::VerifiedEndpoint> {
         .map_err(|error| anyhow::anyhow!("fixture endpoint derivation failed: {error:?}"))
 }
 
-fn assert_summary(
-    output: &Output,
-    code: i32,
+#[derive(Clone, Copy)]
+struct Counts {
     writes: u64,
     rows: u64,
     complete: u64,
     partial: u64,
     failed: u64,
     pending: u64,
-) -> Result<()> {
+}
+
+fn assert_summary(output: &Output, code: i32, counts: Counts) -> Result<()> {
+    let Counts {
+        writes,
+        rows,
+        complete,
+        partial,
+        failed,
+        pending,
+    } = counts;
     assert_eq!(
         output.status.code(),
         Some(code),
@@ -404,7 +457,7 @@ fn assert_summary(
     assert_eq!(
         std::str::from_utf8(&output.stdout)?,
         format!(
-            "resource_writes_scope=invocation resource_writes={writes} rows={rows} scopes=1 complete={complete} partial={partial} inaccessible=0 unsupported=0 failed={failed} unobserved=0 graph_pending={pending} unattributed_resources=0\n"
+            "resource_writes_scope=invocation resource_writes={writes} rows={rows} scopes=1 complete={complete} partial={partial} inaccessible=0 unsupported=0 failed={failed} unobserved=0 graph_pending={pending} work_remaining=0 unattributed_resources=0\n"
         )
     );
     Ok(())
@@ -581,10 +634,9 @@ async fn timed_out_peer_shutdown_drops_the_serving_owner_before_returning() -> R
         shutdown: None,
         task: Some(task),
     };
-    let error = peer
-        .stop()
-        .await
-        .expect_err("the pending owner must hit the shutdown deadline");
+    let Err(error) = peer.stop().await else {
+        anyhow::bail!("the pending owner must hit the shutdown deadline");
+    };
     assert!(
         error
             .downcast_ref::<tokio::time::error::Elapsed>()
@@ -645,15 +697,16 @@ async fn serve_connection(
     let mut tls = acceptor.accept(stream).await?;
     let uri = read_request(&mut tls).await?;
     let tuple = query_tuple(&uri)?;
-    if uri.path() == "/items" && tuple == Some(("same.example.", "A", None)) {
-        if let Some(checkpoint) = gate.take() {
-            checkpoint
-                .arrived
-                .send(())
-                .map_err(|_| anyhow::anyhow!("checkpoint observer dropped"))?;
-            checkpoint.release.await?;
-            return Ok(()); // The test killed and reaped this request's process.
-        }
+    if uri.path() == "/items"
+        && tuple == Some(("same.example.", "A", None))
+        && let Some(checkpoint) = gate.take()
+    {
+        checkpoint
+            .arrived
+            .send(())
+            .map_err(|_| anyhow::anyhow!("checkpoint observer dropped"))?;
+        checkpoint.release.await?;
+        return Ok(()); // The test killed and reaped this request's process.
     }
     let (status, body) = page_response(&uri, tuple, pages);
     let reply = format!(
