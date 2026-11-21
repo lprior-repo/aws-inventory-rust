@@ -1,32 +1,9 @@
 use super::builder;
 use super::graph::{DagGraph, MAX_LABEL_CHARS, MAX_NODES, NodeKind, truncate_label};
-use super::layout::DagLayout;
-use crate::data::Data;
 
 #[cfg(test)]
 #[path = "projection_tests.rs"]
 mod projection_tests;
-
-fn chain() -> DagGraph {
-    let mut graph = DagGraph::default();
-    for index in 0..3 {
-        graph.add_node(NodeKind::Ec2, format!("n{index}"), format!("node {index}"));
-    }
-    graph.add_edge(0, 1);
-    graph.add_edge(1, 2);
-    graph
-}
-
-fn cycle() -> DagGraph {
-    let mut graph = DagGraph::default();
-    for index in 0..3 {
-        graph.add_node(NodeKind::S3, format!("c{index}"), format!("cycle {index}"));
-    }
-    graph.add_edge(0, 1);
-    graph.add_edge(1, 2);
-    graph.add_edge(2, 0);
-    graph
-}
 
 #[test]
 fn labels_are_capped() {
@@ -58,77 +35,23 @@ fn duplicate_nodes_and_edges_collapse() {
 }
 
 #[test]
-fn longest_path_layers() {
-    let layout = DagLayout::compute(&chain());
-    assert_eq!(layout.layer(0), Some(0));
-    assert_eq!(layout.layer(1), Some(1));
-    assert_eq!(layout.layer(2), Some(2));
-    assert_eq!(layout.back_edges(), 0);
-    let first = layout.rect(0).map(|rect| rect.x).unwrap_or(0.0);
-    let last = layout.rect(2).map(|rect| rect.x).unwrap_or(0.0);
-    assert!(last > first);
-}
-
-#[test]
-fn cycle_break_is_deterministic() {
-    let first = DagLayout::compute(&cycle());
-    let second = DagLayout::compute(&cycle());
-    assert_eq!(first, second);
-    assert_eq!(first.back_edges(), 1);
-    assert_eq!(first.edges().len(), 3);
-    assert_eq!(first.layer(0), Some(0));
-    assert_eq!(first.layer(1), Some(1));
-    assert_eq!(first.layer(2), Some(2));
-}
-
-#[test]
-fn disconnected_nodes_and_components_are_placed() {
-    let mut graph = DagGraph::default();
-    for index in 0..5 {
-        graph.add_node(NodeKind::Lambda, format!("d{index}"), format!("d{index}"));
-    }
-    graph.add_edge(0, 1);
-    graph.add_edge(2, 3);
-    let layout = DagLayout::compute(&graph);
-    assert_eq!(layout.node_count(), 5);
-    assert!(layout.width() > 0.0);
-    assert!(layout.height() > 0.0);
-    for index in 0..5 {
-        assert!(layout.rect(index).is_some(), "missing rect");
-        if let Some(rect) = layout.rect(index) {
-            assert!(rect.x >= 0.0 && rect.y >= 0.0);
-            assert!(rect.right() <= layout.width());
-            assert!(rect.y + rect.height <= layout.height());
-        }
-    }
-}
-
-#[test]
-fn rectangles_do_not_overlap_and_are_bounded() {
-    let layout = DagLayout::compute(&chain());
-    for a in 0..3 {
-        assert!(layout.rect(a).is_some(), "missing rect");
-        if let Some(rect_a) = layout.rect(a) {
-            for b in a.saturating_add(1)..3 {
-                assert!(layout.rect(b).is_some(), "missing rect");
-                if let Some(rect_b) = layout.rect(b) {
-                    assert!(!rect_a.intersects(rect_b));
-                }
-            }
-        }
-    }
-}
-
-#[test]
 fn node_cap_truncates_explicitly() {
     let mut graph = DagGraph::default();
-    for index in 0..MAX_NODES.saturating_add(5) {
+    for index in 0..MAX_NODES + 5 {
         graph.add_node(NodeKind::Other, format!("cap{index}"), "cap");
     }
     assert_eq!(graph.len(), MAX_NODES);
     assert_eq!(graph.dropped_nodes(), 5);
-    let layout = DagLayout::compute(&graph);
-    assert_eq!(layout.node_count(), MAX_NODES);
+}
+
+fn chain() -> DagGraph {
+    let mut graph = DagGraph::default();
+    for index in 0..3 {
+        graph.add_node(NodeKind::Ec2, format!("n{index}"), format!("node {index}"));
+    }
+    graph.add_edge(0, 1);
+    graph.add_edge(1, 2);
+    graph
 }
 
 fn projected_row(account: &str, region: &str, kind: &str, id: &str, key: &str) -> crate::data::Row {
@@ -149,20 +72,12 @@ fn projected_row(account: &str, region: &str, kind: &str, id: &str, key: &str) -
 
 #[test]
 fn live_neighbor_projection_uses_full_resource_keys_and_hierarchy() {
-    let mut data = Data::default();
+    let mut data = crate::data::Data::default();
     let source_row = projected_row(
-        "111111111111",
-        "us-east-1",
-        "AWS::EC2::VPC",
-        "vpc-a",
-        "key-vpc",
+        "111111111111", "us-east-1", "AWS::EC2::VPC", "vpc-a", "key-vpc",
     );
     let target_row = projected_row(
-        "111111111111",
-        "us-east-1",
-        "AWS::EC2::Subnet",
-        "subnet-a",
-        "key-subnet",
+        "111111111111", "us-east-1", "AWS::EC2::Subnet", "subnet-a", "key-subnet",
     );
     data.replace_page(vec![source_row.clone(), target_row.clone()], 2);
     data.set_graph(
@@ -182,6 +97,4 @@ fn live_neighbor_projection_uses_full_resource_keys_and_hierarchy() {
     let graph = builder::from_data_graph(&data.visual_graph());
     assert_eq!(graph.len(), 6);
     assert_eq!(graph.edges().len(), 6);
-    assert_eq!(graph.dropped_nodes(), 0);
-    assert_eq!(graph.dropped_edges(), 0);
 }

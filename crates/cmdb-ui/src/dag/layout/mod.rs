@@ -79,7 +79,7 @@ impl DagLayout {
         Self::placed(graph, node_count, dropped_nodes)
     }
 
-    fn placed(graph: &DagGraph, node_count: usize, dropped_nodes: usize) -> Self {
+    pub fn placed(graph: &DagGraph, node_count: usize, dropped_nodes: usize) -> Self {
         let adj = adjacency::Adjacency::build(graph, node_count);
         let broken = order::break_cycles(&adj.out, graph.edges().len());
         let (edges, dropped_edges) = collect_edges(graph, node_count, &broken.kept);
