@@ -109,7 +109,7 @@ async fn given_empty_status_when_key_exists_then_zone_identified_status_and_key_
         "AWS::Route53::KeySigningKey"
     );
     assert_eq!(parts.children.len(), 0);
-    assert_eq!(parts.next.is_none(), true);
+    assert!(parts.next.is_none());
     Ok(())
 }
 
