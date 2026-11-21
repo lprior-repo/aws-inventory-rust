@@ -411,3 +411,26 @@ fn given_rest_json_query_bindings_when_catalog_is_loaded_then_pagination_keeps_q
     assert_eq!(size.max, 10);
     Ok(())
 }
+
+#[test]
+fn given_endpoint_exception_when_encoded_then_fields_are_present() {
+    use crate::runtime_catalog::encode::map;
+    use inventory_core::record::{FieldId, Key, Value};
+
+    let exception = crate::endpoints::EndpointException {
+        region: "eu-west-1".to_owned(),
+        url: "https://example.eu-west-1.amazonaws.com".to_owned(),
+        signing_name: "example".to_owned(),
+        signing_region: "eu-west-1".to_owned(),
+    };
+    let value = crate::runtime_catalog::plans::encode_endpoint_exception(&exception)
+        .expect("encode_endpoint_exception");
+    if let Value::Map(fields) = value {
+        let region = fields
+            .get(&Key::Field(FieldId::new(1).expect("field id")))
+            .expect("region field");
+        if let Value::Text(text) = region {
+            assert_eq!(text, "eu-west-1");
+        }
+    }
+}

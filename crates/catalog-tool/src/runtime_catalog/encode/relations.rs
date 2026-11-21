@@ -1,14 +1,15 @@
-use super::{RuntimeCatalogCompileError, ServiceIndex, map, path};
+use super::{RelationsResult, RuntimeCatalogCompileError, ServiceIndex, map, path};
 use crate::kind_map::{
     KindMap, ReviewedRelation, ReviewedRelationSource, ReviewedRelationTarget, ReviewedValuePath,
 };
 use inventory_core::record::Value;
+use std::collections::BTreeMap;
 
 pub(super) fn compile(
     kinds: &KindMap,
     services: &ServiceIndex<'_>,
     checked: &crate::overlay::CheckedOverlays,
-) -> Result<Vec<Value>, RuntimeCatalogCompileError> {
+) -> Result<RelationsResult, RuntimeCatalogCompileError> {
     let context = super::super::model_path::ValidationContext {
         kinds,
         checked,
@@ -20,17 +21,29 @@ pub(super) fn compile(
                 .iter()
                 .all(|kind| super::super::model_path::active_kind(&context, kind))
     };
-    let mut rows = kinds
-        .relations()
-        .iter()
-        .filter(|row| active(&row.source_kind, &row.target_kinds))
-        .map(|row| encode(row, services))
-        .collect::<Result<Vec<_>, _>>()?;
+    let mut rows = Vec::new();
+    let mut inactive = BTreeMap::new();
+    for row in kinds.relations().iter() {
+        if !active(&row.source_kind, &row.target_kinds) {
+            inactive.insert(
+                format!("{} -> {} (inactive source kind)", row.source_kind, row.target_kinds.primary()),
+                format!("source kind {} is inactive", row.source_kind),
+            );
+            continue;
+        }
+        rows.push(encode(row, services)?);
+    }
     for row in kinds
         .parent_relations()
         .iter()
-        .filter(|row| active(&row.source_kind, &row.target_kinds))
     {
+        if !active(&row.source_kind, &row.target_kinds) {
+            inactive.insert(
+                format!("{} -> {} (inactive source kind, parent)", row.source_kind, row.target_kinds.primary()),
+                format!("source kind {} is inactive", row.source_kind),
+            );
+            continue;
+        }
         rows.push(map([
             (1, Value::Text(row.source_kind.clone())),
             (2, Value::List(Vec::new())),
@@ -55,8 +68,14 @@ pub(super) fn compile(
     for row in kinds
         .compound_relations()
         .iter()
-        .filter(|row| active(&row.source_kind, &row.target_kinds))
     {
+        if !active(&row.source_kind, &row.target_kinds) {
+            inactive.insert(
+                format!("{} -> {} (inactive source kind, compound)", row.source_kind, row.target_kinds.primary()),
+                format!("source kind {} is inactive", row.source_kind),
+            );
+            continue;
+        }
         let (first, rest) = row
             .components
             .split_first()
@@ -93,7 +112,7 @@ pub(super) fn compile(
         );
         rows.push(Value::Map(fields));
     }
-    Ok(rows)
+    Ok(RelationsResult { rows, inactive })
 }
 
 fn encode(
@@ -212,5 +231,28 @@ pub(super) fn scope(scope: &str) -> Result<i64, RuntimeCatalogCompileError> {
         "home_region" => Ok(2),
         "arn_region" => Ok(3),
         _ => Err(RuntimeCatalogCompileError::Capability),
+    }
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn compile_returns_relations_result_type() {
+        // Test that compile returns RelationsResult type
+        fn _check_type(
+            result: Result<RelationsResult, RuntimeCatalogCompileError>,
+        ) -> bool {
+            result.is_ok()
+        }
+        // Can't actually call compile without setup, but we can verify the type signature
+        let _: fn(
+            &KindMap,
+            &ServiceIndex<'_>,
+            &crate::overlay::CheckedOverlays,
+        ) -> Result<RelationsResult, RuntimeCatalogCompileError> = compile;
     }
 }

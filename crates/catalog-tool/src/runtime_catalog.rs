@@ -149,7 +149,12 @@ pub fn augment_with_sources(
         services: &services,
     })?;
     let plans = plans::compile(checked, kind_map, verified_endpoints, &services)?;
-    let extension = compile_extension(checked, kind_map, &services, plans, sources)?;
+    let (extension, inactive) = compile_extension(checked, kind_map, &services, plans, sources)?;
+    if !inactive.is_empty() {
+        for (id, reason) in &inactive {
+            eprintln!("inactive relation: {id}: {reason}");
+        }
+    }
     root.insert(Key::Field(FieldId::new(60_000)?), extension);
     let bytes = inventory_core::record::encode_container(&Value::Map(root), MAX_CATALOG_BYTES)?;
     inventory_core::catalog::runtime::RuntimeCatalog::from_bytes(&bytes)
@@ -173,14 +178,16 @@ fn compile_extension(
     services: &ServiceIndex<'_>,
     plans: Vec<Value>,
     sources: &CatalogSources,
-) -> Result<Value, RuntimeCatalogCompileError> {
-    encode::extension(
+) -> Result<(Value, std::collections::BTreeMap<String, String>), RuntimeCatalogCompileError> {
+    let relations = encode::relations(kinds, services, checked)?;
+    let extension = encode::extension(
         plans,
         schemas::compile(kinds, services, Some(checked))?,
-        encode::relations(kinds, services, checked)?,
+        relations.rows,
         encode::coverage(kinds)?,
         plans::decisions(checked, services)?,
         sources,
         kinds,
-    )
+    )?;
+    Ok((extension, relations.inactive))
 }

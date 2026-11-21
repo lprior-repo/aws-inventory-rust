@@ -3,6 +3,11 @@ use crate::kind_map::{KindMap, KindTarget};
 use inventory_core::record::{FieldId, Key, Value};
 use std::collections::BTreeMap;
 
+pub(in crate::runtime_catalog) struct RelationsResult {
+    pub rows: Vec<Value>,
+    pub inactive: BTreeMap<String, String>,
+}
+
 pub(super) fn extension(
     plans: Vec<Value>,
     schemas: Vec<Value>,
@@ -63,11 +68,11 @@ fn coverage_row(
         (5, Value::Bool(api_only)),
     ])
 }
-pub(super) fn relations(
+pub(in crate::runtime_catalog) fn relations(
     kinds: &KindMap,
     services: &ServiceIndex<'_>,
     checked: &crate::overlay::CheckedOverlays,
-) -> Result<Vec<Value>, RuntimeCatalogCompileError> {
+) -> Result<RelationsResult, RuntimeCatalogCompileError> {
     relations::compile(kinds, services, checked)
 }
 

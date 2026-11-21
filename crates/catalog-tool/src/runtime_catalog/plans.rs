@@ -109,12 +109,37 @@ fn endpoint_value(
         ServiceClass::Global => 0,
         ServiceClass::Regional => 1,
     };
-    encode::map([
+    let exceptions = endpoint
+        .exceptions()
+        .iter()
+        .map(encode_endpoint_exception)
+        .collect::<Result<Vec<_>, _>>()?;
+    let mut endpoint_map = encode::map([
         (1, Value::Text(url.clone())),
         (2, Value::Text(signing_region.clone())),
         (3, Value::Text(signing_name.clone())),
         (4, Value::Int(class)),
         (5, Value::Int(0)),
+    ])?;
+    if !exceptions.is_empty() {
+        if let Value::Map(fields) = &mut endpoint_map {
+            fields.insert(
+                inventory_core::record::Key::Field(inventory_core::record::FieldId::new(6)?),
+                Value::List(exceptions),
+            );
+        }
+    }
+    Ok(endpoint_map)
+}
+
+fn encode_endpoint_exception(
+    exception: &crate::endpoints::EndpointException,
+) -> Result<Value, RuntimeCatalogCompileError> {
+    encode::map([
+        (1, Value::Text(exception.region.clone())),
+        (2, Value::Text(exception.url.clone())),
+        (3, Value::Text(exception.signing_name.clone())),
+        (4, Value::Text(exception.signing_region.clone())),
     ])
 }
 
@@ -426,3 +451,4 @@ fn branch_binding(
         (7, Value::Int(selection::source_tag(source))),
     ])
 }
+
