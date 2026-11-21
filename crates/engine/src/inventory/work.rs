@@ -226,28 +226,20 @@ pub(super) async fn seed_works(store: &BinaryStore, works: &[WorkSpec]) -> Resul
         sqlx::query("INSERT OR IGNORE INTO work_queue(sweep_id,scope_key,token,bindings,state,generation,lease_until,context) VALUES(?1,?2,?3,?4,0,0,0,?5)")
             .bind(work.sweep.as_str()).bind(scope).bind(&work.token).bind(&work.bindings).bind(&work.context).execute(&mut *tx).await?;
     }
+    // Compute last_complete from scope_outcomes for any scopes that have completed before.
+    sqlx::query("UPDATE work_queue SET last_complete=(SELECT MAX(o.observed_at) FROM scope_outcomes o WHERE o.scope_key=work_queue.scope_key AND o.outcome='complete') WHERE sweep_id=?1 AND last_complete=-1 AND (SELECT COUNT(1) FROM scope_outcomes o WHERE o.scope_key=work_queue.scope_key AND o.outcome='complete')>0")
+        .bind(first.sweep.as_str()).execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(())
 }
 
-/// Millisecond of the scope's latest complete outcome in any sweep; 0 when it has never completed.
-macro_rules! last_complete {
-    () => {
-        "COALESCE((SELECT MAX(o.observed_at) FROM scope_outcomes o WHERE o.scope_key=w.scope_key AND o.outcome='complete'),0)"
-    };
-}
+// last_complete is now a stored column; query it directly.
+// -1 sentinel means never completed (stalest). 0 and above are actual completion timestamps.
+const READY_STALEST_FIRST: &str =
+    "SELECT w.scope_key,w.token,w.bindings,w.generation,w.authority_complete,w.context,w.last_complete FROM work_queue w WHERE w.sweep_id=?1 AND w.state=0 ORDER BY w.last_complete ASC,w.scope_key LIMIT 1";
 
-const READY_STALEST_FIRST: &str = concat!(
-    "SELECT w.scope_key,w.token,w.bindings,w.generation,w.authority_complete,w.context,",
-    last_complete!(),
-    " AS last_complete FROM work_queue w WHERE w.sweep_id=?1 AND w.state=0 ORDER BY last_complete,w.scope_key LIMIT 1"
-);
-
-const EXPIRED_STALEST_FIRST: &str = concat!(
-    "SELECT w.scope_key,w.token,w.bindings,w.generation,w.authority_complete,w.context,",
-    last_complete!(),
-    " AS last_complete FROM work_queue w WHERE w.sweep_id=?1 AND w.state=1 AND w.lease_until<=?2 ORDER BY last_complete,w.scope_key LIMIT 1"
-);
+const EXPIRED_STALEST_FIRST: &str =
+    "SELECT w.scope_key,w.token,w.bindings,w.generation,w.authority_complete,w.context,w.last_complete FROM work_queue w WHERE w.sweep_id=?1 AND w.state=1 AND w.lease_until<=?2 ORDER BY w.last_complete ASC,w.scope_key LIMIT 1";
 
 fn staleness_key(row: &sqlx::sqlite::SqliteRow) -> Result<(i64, Vec<u8>), StoreError> {
     Ok((row.try_get("last_complete")?, row.try_get("scope_key")?))
@@ -353,11 +345,18 @@ pub(super) async fn finish_scope(
     }
     let mut tx = store.writer.begin().await?;
     validate_lease(&mut tx, &lease, observed_at_ms).await?;
+    let scope = encode_scope(&lease.scope)?;
     sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES(?1,?2,?3,?4) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome=excluded.outcome,observed_at=excluded.observed_at")
-        .bind(lease.sweep.as_str()).bind(encode_scope(&lease.scope)?).bind(outcome.as_str()).bind(observed_at_ms)
+        .bind(lease.sweep.as_str()).bind(&scope).bind(outcome.as_str()).bind(observed_at_ms)
         .execute(&mut *tx).await?;
-    sqlx::query("UPDATE work_queue SET state=2,lease_until=0 WHERE sweep_id=?1 AND scope_key=?2 AND generation=?3")
-        .bind(lease.sweep.as_str()).bind(encode_scope(&lease.scope)?).bind(lease.generation).execute(&mut *tx).await?;
+    if matches!(outcome, ScopeOutcome::Complete) {
+        // Update last_complete for future claim ordering.
+        sqlx::query("UPDATE work_queue SET state=2,lease_until=0,last_complete=?4 WHERE sweep_id=?1 AND scope_key=?2 AND generation=?3")
+            .bind(lease.sweep.as_str()).bind(&scope).bind(lease.generation).bind(observed_at_ms).execute(&mut *tx).await?;
+    } else {
+        sqlx::query("UPDATE work_queue SET state=2,lease_until=0 WHERE sweep_id=?1 AND scope_key=?2 AND generation=?3")
+            .bind(lease.sweep.as_str()).bind(&scope).bind(lease.generation).execute(&mut *tx).await?;
+    }
     let stats =
         super::completion::drain_sweep(store, &mut tx, lease.sweep(), observed_at_ms).await?;
     tx.commit().await?;

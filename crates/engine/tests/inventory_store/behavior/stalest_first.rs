@@ -131,3 +131,68 @@ async fn given_expired_leases_and_ready_work_when_claiming_then_the_stalest_of_b
     assert!(store.claim(&sweep, 2_000, 1_000).await?.is_none());
     Ok(())
 }
+
+#[tokio::test]
+async fn given_scope_completed_at_time_zero_when_claiming_then_it_sorts_after_never_completed()
+-> TestResult {
+    let (_directory, store, _) = fixture().await?;
+    // Complete one scope at observed_at=0
+    store.seed_work(work("zero", "us-east-1")?).await?;
+    let sweep = SweepId::new("zero".to_owned())?;
+    let lease = store
+        .claim(&sweep, 0, 1_000)
+        .await?
+        .ok_or("missing lease")?;
+    store.finish_scope(lease, ScopeOutcome::Complete, 0).await?;
+
+    // New sweep: us-east-1 completed at 0, ap-south-1 never completed.
+    store.seed_work(work("second", "us-east-1")?).await?;
+    store.seed_work(work("second", "ap-south-1")?).await?;
+    let second = SweepId::new("second".to_owned())?;
+    assert_eq!(
+        claim_regions(&store, &second, 1_000, 1_000, 2).await?,
+        // -1 (never) sorts before 0
+        ["ap-south-1", "us-east-1"]
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_migrated_database_when_claiming_then_stalest_first_ordering_is_preserved()
+-> TestResult {
+    let (_directory, store, _) = fixture().await?;
+    // Complete first sweep with outcomes at different times
+    store.seed_work(work("migrate", "us-east-1")?).await?;
+    store.seed_work(work("migrate", "us-east-2")?).await?;
+    let first = SweepId::new("migrate".to_owned())?;
+    {
+        let lease = store
+            .claim(&first, 100, 1_000)
+            .await?
+            .ok_or("missing lease")?;
+        store
+            .finish_scope(lease, ScopeOutcome::Complete, 100)
+            .await?;
+    }
+    {
+        let lease = store
+            .claim(&first, 200, 1_000)
+            .await?
+            .ok_or("missing lease")?;
+        store
+            .finish_scope(lease, ScopeOutcome::Complete, 200)
+            .await?;
+    }
+
+    // New sweep with both old scopes and a never-completed one
+    store.seed_work(work("second", "us-east-1")?).await?;
+    store.seed_work(work("second", "us-east-2")?).await?;
+    store.seed_work(work("second", "eu-west-1")?).await?;
+    let second = SweepId::new("second".to_owned())?;
+    assert_eq!(
+        claim_regions(&store, &second, 1_000, 1_000, 3).await?,
+        // Never-completed first, then oldest completion (100), then newest (200)
+        ["eu-west-1", "us-east-1", "us-east-2"]
+    );
+    Ok(())
+}
