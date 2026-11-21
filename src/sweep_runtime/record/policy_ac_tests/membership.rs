@@ -110,8 +110,7 @@ fn response(items: &str, row: Json, token: &str, later: bool) -> Json {
 }
 
 async fn run(
-    service: &str,
-    date: &str,
+    model: (&str, &str),
     root: &str,
     root_owner_field: &str,
     root_body: Json,
@@ -119,6 +118,7 @@ async fn run(
     excluded: &[&str],
     cases: Vec<Case>,
 ) -> TestResult {
+    let (service, date) = model;
     // Given the actual pinned model, embedded policy, mappings, and two independently selected parents.
     let compiled = if service == "cleanrooms" {
         let mut operations = operations.to_vec();

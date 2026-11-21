@@ -58,13 +58,10 @@ impl Page {
 
 // Fixture values are independent of runtime requests: a cross-parent request has no matching page.
 fn later_pages(
-    operation: &'static str,
-    request: Value,
+    (operation, request): (&'static str, Value),
     parent: &str,
-    items: &str,
-    token: &str,
-    item: Value,
-    id: String,
+    (items, token): (&str, &str),
+    (item, id): (Value, String),
     uri: &str,
     query_token: Option<&str>,
     absent: &[&'static str],

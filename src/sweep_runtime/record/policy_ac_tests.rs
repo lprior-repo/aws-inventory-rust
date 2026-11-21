@@ -64,11 +64,13 @@ fn only_id(plan: &CallablePlan<'_>, body: &Json) -> TestResult<ResourceId> {
     )?)
 }
 
+type RootCase = (&'static str, &'static str, &'static str, &'static str);
+
 #[test]
 fn given_eight_real_paged_roots_when_resumed_then_wire_requests_and_terminal_pages_are_consumed()
 -> TestResult {
     // Given: actual embedded policies checked against pinned Smithy operations, not invented plans.
-    let groups: &[(&str, &str, &[(&str, &str, &str, &str)])] = &[
+    let groups: &[(&str, &str, &[RootCase])] = &[
         (
             "accessanalyzer",
             "2019-11-01",

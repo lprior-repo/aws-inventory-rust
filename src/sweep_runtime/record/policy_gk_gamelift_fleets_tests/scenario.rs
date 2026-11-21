@@ -2,6 +2,13 @@ use super::*;
 use inventory_core::catalog::runtime::CallablePlan;
 use inventory_engine::inventory::WorkLease;
 
+struct Delivery<'a> {
+    actual: &'a Record,
+    response: &'a Record,
+    at: i64,
+    page: usize,
+}
+
 pub(super) struct Scenario {
     pub(super) store: BinaryStore,
     pub(super) sweep: SweepId,
@@ -89,8 +96,13 @@ impl Scenario {
             plan,
             &crate::sweep_runtime::record::policy_gk_root_tests::cbor::response(plan, &body)?,
         )?;
-        self.commit(catalog, plan, lease, cursor, &actual, &response, at, page)
-            .await
+        let delivery = Delivery {
+            actual: &actual,
+            response: &response,
+            at,
+            page,
+        };
+        self.commit(catalog, plan, lease, cursor, delivery).await
     }
 
     async fn commit(
@@ -99,11 +111,14 @@ impl Scenario {
         plan: &CallablePlan<'_>,
         lease: WorkLease,
         cursor: Cursor,
-        actual: &Record,
-        response: &Record,
-        at: i64,
-        page: usize,
+        delivery: Delivery<'_>,
     ) -> TestResult {
+        let Delivery {
+            actual,
+            response,
+            at,
+            page,
+        } = delivery;
         let consumers = ConsumerIndex::build(catalog)?;
         let context = child::Context::new(plan, &self.sweep, &self.account, &self.home, &consumers);
         let (observations, children) = child::policy_dfgk_tests::project_children(

@@ -215,8 +215,7 @@ async fn given_two_memberships_when_all_seven_metadata_lists_resume_then_exact_o
         .chain(excluded)
         .collect::<Vec<_>>();
     run(
-        "cleanrooms",
-        "2022-02-17",
+        ("cleanrooms", "2022-02-17"),
         "ListMemberships",
         "id",
         json!({"membershipSummaries":OWNERS.map(membership)}),

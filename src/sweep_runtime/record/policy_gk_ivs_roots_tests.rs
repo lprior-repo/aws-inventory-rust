@@ -104,7 +104,10 @@ async fn given_valid_owned_row_before_hostile_arn_when_native_page_is_consumed_t
             scenario.seed(&catalog, case).await?;
             let lease = scenario.claim(case, 0).await?;
             let mut foreign = case.row("later");
-            foreign["arn"] = json!(forged);
+            foreign
+                .as_object_mut()
+                .ok_or("IVS row is not an object")?
+                .insert("arn".to_owned(), json!(forged));
             // When the native wire response mixes a valid row with an invalid one.
             let body = json!({case.items:[case.row("first"), foreign]});
             let error = scenario

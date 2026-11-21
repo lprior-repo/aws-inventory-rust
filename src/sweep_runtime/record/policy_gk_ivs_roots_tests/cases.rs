@@ -33,19 +33,37 @@ impl Case {
     pub fn row(&self, ordinal: &str) -> Json {
         let mut row = json!({"arn":self.id(ordinal), "name":format!("owned-{ordinal}"), "tags":{"owner":"inventory", "page":ordinal}});
         if self.operation == "ListAdConfigurations" {
-            row["mediaTailorPlaybackConfigurations"] = json!([
+            let Some(fields) = row.as_object_mut() else {
+                return row;
+            };
+            fields.insert("mediaTailorPlaybackConfigurations".to_owned(), json!([
                 {"playbackConfigurationArn":format!("arn:aws:mediatailor:us-east-1:123456789012:playbackConfiguration/{ordinal}")}
-            ]);
-            row["postRollConfiguration"] = json!({"durationSeconds":if ordinal == "first" {15} else {30}, "enabled":ordinal == "later"});
+            ]));
+            fields.insert("postRollConfiguration".to_owned(), json!({"durationSeconds":if ordinal == "first" {15} else {30}, "enabled":ordinal == "later"}));
         } else {
-            row["activationThresholdSeconds"] = json!(if ordinal == "first" { 3 } else { 5 });
-            row["minSlateDisplaySeconds"] = json!(if ordinal == "first" { 3 } else { 10 });
-            row["maxSlateDisplaySeconds"] = json!(if ordinal == "first" { 60 } else { 180 });
-            row["state"] = json!(if ordinal == "first" {
-                "CREATING"
-            } else {
-                "CREATED"
-            });
+            let Some(fields) = row.as_object_mut() else {
+                return row;
+            };
+            fields.insert(
+                "activationThresholdSeconds".to_owned(),
+                json!(if ordinal == "first" { 3 } else { 5 }),
+            );
+            fields.insert(
+                "minSlateDisplaySeconds".to_owned(),
+                json!(if ordinal == "first" { 3 } else { 10 }),
+            );
+            fields.insert(
+                "maxSlateDisplaySeconds".to_owned(),
+                json!(if ordinal == "first" { 60 } else { 180 }),
+            );
+            fields.insert(
+                "state".to_owned(),
+                json!(if ordinal == "first" {
+                    "CREATING"
+                } else {
+                    "CREATED"
+                }),
+            );
         }
         row
     }
@@ -58,8 +76,8 @@ impl Case {
             _ => return Err("unexpected IVS response page".into()),
         };
         let mut body = json!({self.items: rows});
-        if let Some(token) = token {
-            body["nextToken"] = json!(token);
+        if let (Some(token), Some(fields)) = (token, body.as_object_mut()) {
+            fields.insert("nextToken".to_owned(), json!(token));
         }
         Ok(body)
     }

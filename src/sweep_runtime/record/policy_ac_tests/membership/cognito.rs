@@ -115,8 +115,7 @@ async fn given_equal_owned_configuration_ids_and_provider_resource_servers_in_tw
         "AdminGetUser",
     ];
     run(
-        "cognito-identity-provider",
-        "2016-04-18",
+        ("cognito-identity-provider", "2016-04-18"),
         "ListUserPools",
         "Id",
         pools(),

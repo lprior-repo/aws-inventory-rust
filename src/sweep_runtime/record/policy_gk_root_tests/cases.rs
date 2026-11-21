@@ -12,15 +12,13 @@ pub(super) struct Case {
 }
 
 fn case(
-    service: &'static str,
-    operation: &'static str,
-    kind: &'static str,
-    items: &'static str,
+    meta: (&'static str, &'static str, &'static str, &'static str),
     identity: &str,
     ids: [String; 2],
     token: Option<&'static str>,
     fixed: Json,
 ) -> Case {
+    let (service, operation, kind, items) = meta;
     let rows = ids.each_ref().map(|id| {
         if identity == "$" {
             json!(id)
@@ -52,10 +50,12 @@ fn arns(service: &str, resource: &str) -> [String; 2] {
 
 pub(super) fn all() -> Vec<Case> {
     let mut scripts = case(
-        "gamelift",
-        "ListScripts",
-        "AWS::GameLift::Script",
-        "Scripts",
+        (
+            "gamelift",
+            "ListScripts",
+            "AWS::GameLift::Script",
+            "Scripts",
+        ),
         "ScriptArn",
         arns("gamelift", "script"),
         Some("NextToken"),
@@ -70,10 +70,12 @@ pub(super) fn all() -> Vec<Case> {
         row["StorageLocation"] = json!({"Bucket":"owned-source", "Key":"script.zip", "RoleArn":"arn:aws:iam::123456789012:role/script-read", "ObjectVersion":"v1"});
     }
     let mut locations = case(
-        "gamelift",
-        "ListLocations",
-        "AWS::GameLift::Location",
-        "Locations",
+        (
+            "gamelift",
+            "ListLocations",
+            "AWS::GameLift::Location",
+            "Locations",
+        ),
         "LocationArn",
         [
             "arn:aws:gamelift:us-east-1::location/custom-first".to_owned(),
@@ -135,10 +137,7 @@ pub(super) fn all() -> Vec<Case> {
             )
         });
         let mut entry = case(
-            "imagebuilder",
-            operation,
-            kind,
-            items,
+            ("imagebuilder", operation, kind, items),
             "arn",
             ids,
             Some("nextToken"),
@@ -190,10 +189,7 @@ pub(super) fn all() -> Vec<Case> {
             "ListBlueprints" | "ListDevEndpoints" | "ListMLTransforms" | "ListTriggers"
         );
         let mut entry = case(
-            "glue",
-            operation,
-            kind,
-            items,
+            ("glue", operation, kind, items),
             if scalar { "$" } else { "Name" },
             names(),
             Some("NextToken"),
@@ -213,10 +209,12 @@ pub(super) fn all() -> Vec<Case> {
         result.push(entry);
     }
     let mut capacity = case(
-        "glacier",
-        "ListProvisionedCapacity",
-        "AWS::ApiOnly::GlacierProvisionedCapacity",
-        "ProvisionedCapacityList",
+        (
+            "glacier",
+            "ListProvisionedCapacity",
+            "AWS::ApiOnly::GlacierProvisionedCapacity",
+            "ProvisionedCapacityList",
+        ),
         "CapacityId",
         names(),
         None,
@@ -231,10 +229,12 @@ pub(super) fn all() -> Vec<Case> {
     let config_ids = ["first", "later"]
         .map(|name| format!("arn:aws:config:us-east-1:123456789012:connector/azure/tenant/{name}"));
     let mut connectors = case(
-        "inspector2",
-        "ListConnectors",
-        "AWS::InspectorV2::Connector",
-        "items",
+        (
+            "inspector2",
+            "ListConnectors",
+            "AWS::InspectorV2::Connector",
+            "items",
+        ),
         "connectorArn",
         connector_ids.clone(),
         Some("nextToken"),
@@ -251,10 +251,12 @@ pub(super) fn all() -> Vec<Case> {
         row["tags"] = json!({"environment":"fixture"});
     }
     let mut scans = case(
-        "inspector2",
-        "ListConnectorScanConfigurations",
-        "AWS::ApiOnly::Inspector2ConnectorScanConfiguration",
-        "scanConfigurations",
+        (
+            "inspector2",
+            "ListConnectorScanConfigurations",
+            "AWS::ApiOnly::Inspector2ConnectorScanConfiguration",
+            "scanConfigurations",
+        ),
         "awsConfigConnectorArn",
         config_ids,
         Some("nextToken"),
@@ -270,10 +272,12 @@ pub(super) fn all() -> Vec<Case> {
         format!("arn:aws:invoicing::123456789012:procurement-portal-preference/{name}")
     });
     let mut preferences = case(
-        "invoicing",
-        "ListProcurementPortalPreferences",
-        "AWS::Invoicing::ProcurementPortalPreference",
-        "ProcurementPortalPreferences",
+        (
+            "invoicing",
+            "ListProcurementPortalPreferences",
+            "AWS::Invoicing::ProcurementPortalPreference",
+            "ProcurementPortalPreferences",
+        ),
         "ProcurementPortalPreferenceArn",
         ids,
         Some("NextToken"),

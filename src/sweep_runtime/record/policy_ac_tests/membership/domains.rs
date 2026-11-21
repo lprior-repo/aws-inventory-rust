@@ -77,8 +77,7 @@ async fn given_two_cases_domains_when_condensed_layout_and_template_pages_resume
         ),
     ];
     run(
-        "connectcases",
-        "2022-10-03",
+        ("connectcases", "2022-10-03"),
         "ListDomains",
         "domainId",
         json!({"domains":OWNERS.map(cases_domain)}),
@@ -143,8 +142,7 @@ async fn given_inactive_and_active_health_subscriptions_when_domain_pages_resume
         "StartMedicalScribeListeningSession",
     ];
     run(
-        "connecthealth",
-        "2025-01-29",
+        ("connecthealth", "2025-01-29"),
         "ListDomains",
         "domainId",
         json!({"domains":domains}),

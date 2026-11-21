@@ -30,8 +30,9 @@ fn verify_wire(case: &cases::Case, page: usize, wire: &http::Request<bytes::Byte
         _ => return Err("unexpected page".into()),
     };
     let mut expected = case.fixed.clone();
-    if let (Some(field), Some(value)) = (case.token, token) {
-        expected[field] = json!(value);
+    if let (Some(field), Some(value), Some(fields)) = (case.token, token, expected.as_object_mut())
+    {
+        fields.insert(field.to_owned(), json!(value));
     }
     if case.service == "glacier" {
         assert_eq!(wire.method(), http::Method::GET);
@@ -102,8 +103,8 @@ fn response(case: &cases::Case, page: usize) -> TestResult<Json> {
         }
     };
     let mut body = json!({case.items:items});
-    if let (Some(name), Some(token)) = (case.token, token) {
-        body[name] = json!(token);
+    if let (Some(name), Some(token), Some(fields)) = (case.token, token, body.as_object_mut()) {
+        fields.insert(name.to_owned(), json!(token));
     }
     Ok(body)
 }
@@ -151,12 +152,10 @@ async fn consume(
     catalog: &RuntimeCatalog<'_>,
     consumers: &ConsumerIndex<'_, '_>,
     case: &cases::Case,
-    sweep: &SweepId,
-    account: &AccountId,
-    home: &RegionId,
-    at: i64,
+    (sweep, account, home): (&SweepId, &AccountId, &RegionId),
     page: usize,
 ) -> TestResult<bool> {
+    let at = i64::try_from(page)?;
     let Some(lease) = store.claim(sweep, at, 10_000).await? else {
         return Ok(false);
     };
@@ -285,11 +284,8 @@ async fn given_unattached_safe_roots_when_empty_pages_resume_after_sqlite_reopen
                     &catalog,
                     &consumers,
                     case,
-                    &sweep,
-                    &account,
-                    &home,
-                    i64::try_from(page)?,
-                    page
+                    (&sweep, &account, &home),
+                    page,
                 )
                 .await?
             );
@@ -443,7 +439,10 @@ fn given_trusted_root_scope_when_an_arn_is_malformed_or_foreign_then_no_observat
             format!("arn:{partition}:{service}:us-west-2:{arn_account}:{resource}"),
         ] {
             let mut forged_row = row.clone();
-            forged_row[identity] = json!(forged);
+            forged_row
+                .as_object_mut()
+                .ok_or("row is not an object")?
+                .insert(identity.to_owned(), json!(forged));
             let response = cbor::response(plan, &json!({case.items:[forged_row]}))?;
             let response = record::policy_dfgk_tests::fixture::decode(plan, &response)?;
             let error = child::policy_dfgk_tests::project_children(

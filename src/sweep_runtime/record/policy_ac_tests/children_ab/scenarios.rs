@@ -49,13 +49,10 @@ async fn given_two_workspaces_when_empty_first_child_pages_resume_then_both_amp_
                 fields.insert("name".to_owned(), json!("same"));
             }
             pages.extend(later_pages(
-                operation,
-                json!({"workspaceId":workspace}),
+                (operation, json!({"workspaceId":workspace})),
                 &parent,
-                items,
-                "nextToken",
-                item,
-                id,
+                (items, "nextToken"),
+                (item, id),
                 &format!("/workspaces/{workspace}/{suffix}"),
                 Some("nextToken"),
                 &[],
@@ -83,10 +80,8 @@ async fn given_two_workspaces_when_empty_first_child_pages_resume_then_both_amp_
 fn mesh_ref(mesh: &str, field: Option<&str>, suffix: &str) -> Value {
     let mut item = json!({"meshName":mesh,"meshOwner":"123456789012","resourceOwner":"123456789012",
         "arn":arn("appmesh", suffix),"version":1,"createdAt":0,"lastUpdatedAt":0});
-    if let Some(field) = field {
-        if let Some(obj) = item.as_object_mut() {
-            obj.insert(field.to_owned(), json!("same"));
-        }
+    if let (Some(field), Some(obj)) = (field, item.as_object_mut()) {
+        obj.insert(field.to_owned(), json!("same"));
     }
     item
 }
@@ -157,13 +152,13 @@ async fn given_equal_router_and_gateway_names_in_two_meshes_when_routes_resume_t
                 .ok_or("fixture item is not an object")?
                 .insert(child_field.to_owned(), json!("same"));
             pages.extend(later_pages(
-                operation,
-                json!({"meshName":mesh,field:"same","meshOwner":"123456789012"}),
+                (
+                    operation,
+                    json!({"meshName":mesh,field:"same","meshOwner":"123456789012"}),
+                ),
                 &parent,
-                items,
-                "nextToken",
-                item,
-                id,
+                (items, "nextToken"),
+                (item, id),
                 &format!(
                     "/v20190125/meshes/{mesh}/{segment}/same/{child_segment}?meshOwner=123456789012"
                 ),
@@ -200,22 +195,31 @@ async fn given_two_backup_and_restore_plans_when_equal_selection_names_resume_th
     ];
     for plan in ["a", "b"] {
         pages.extend(later_pages(
-            "ListBackupSelections",
-            json!({"BackupPlanId":plan}),
+            ("ListBackupSelections", json!({"BackupPlanId":plan})),
             &arn("backup", &format!("backup-plan:{plan}")),
-            "BackupSelectionsList",
-            "NextToken",
-            json!({"BackupPlanId":plan,"SelectionId":"same","SelectionName":"same","CreationDate":0,
-                "IamRoleArn":"arn:aws:iam::123456789012:role/backup"}),
-            scoped(plan, "same"),
+            ("BackupSelectionsList", "NextToken"),
+            (
+                json!({"BackupPlanId":plan,"SelectionId":"same","SelectionName":"same","CreationDate":0,
+                    "IamRoleArn":"arn:aws:iam::123456789012:role/backup"}),
+                scoped(plan, "same"),
+            ),
             &format!("/backup/plans/{plan}/selections"),
             Some("nextToken"),
             &[],
         ));
-        pages.extend(later_pages("ListRestoreTestingSelections", json!({"RestoreTestingPlanName":plan}), &arn("backup", &format!("restore-testing-plan:{plan}")),
-            "RestoreTestingSelections", "NextToken", json!({"RestoreTestingPlanName":plan,"RestoreTestingSelectionName":"same","CreationTime":0,
-                "IamRoleArn":"arn:aws:iam::123456789012:role/backup","ProtectedResourceType":"EBS","ValidationWindowHours":1}),
-            scoped(plan, "same"), &format!("/restore-testing/plans/{plan}/selections"), Some("NextToken"), &[]));
+        pages.extend(later_pages(
+            ("ListRestoreTestingSelections", json!({"RestoreTestingPlanName":plan})),
+            &arn("backup", &format!("restore-testing-plan:{plan}")),
+            ("RestoreTestingSelections", "NextToken"),
+            (
+                json!({"RestoreTestingPlanName":plan,"RestoreTestingSelectionName":"same","CreationTime":0,
+                    "IamRoleArn":"arn:aws:iam::123456789012:role/backup","ProtectedResourceType":"EBS","ValidationWindowHours":1}),
+                scoped(plan, "same"),
+            ),
+            &format!("/restore-testing/plans/{plan}/selections"),
+            Some("NextToken"),
+            &[],
+        ));
     }
     consume(
         "backup",
@@ -248,14 +252,33 @@ async fn given_two_agents_and_knowledge_bases_when_shared_child_ids_resume_then_
             .rest("/knowledgebases/".to_owned(), None),
     ];
     for agent in ["AGENT00001", "AGENT00002"] {
-        pages.extend(later_pages("ListAgentAliases", json!({"agentId":agent}), agent, "agentAliasSummaries", "nextToken",
-            json!({"agentAliasId":"TSTALIASID","agentAliasName":"test","agentAliasStatus":"PREPARED","createdAt":"2026-01-01T00:00:00Z","updatedAt":"2026-01-01T00:00:00Z",
-                "routingConfiguration":[{"agentVersion":"DRAFT"}]}), scoped(agent, "TSTALIASID"), &format!("/agents/{agent}/agentaliases/"), None, &["agentId"]));
+        pages.extend(later_pages(
+            ("ListAgentAliases", json!({"agentId":agent})),
+            agent,
+            ("agentAliasSummaries", "nextToken"),
+            (
+                json!({"agentAliasId":"TSTALIASID","agentAliasName":"test","agentAliasStatus":"PREPARED","createdAt":"2026-01-01T00:00:00Z","updatedAt":"2026-01-01T00:00:00Z",
+                    "routingConfiguration":[{"agentVersion":"DRAFT"}]}),
+                scoped(agent, "TSTALIASID"),
+            ),
+            &format!("/agents/{agent}/agentaliases/"),
+            None,
+            &["agentId"],
+        ));
     }
     for knowledge_base in ["KB00000001", "KB00000002"] {
-        pages.extend(later_pages("ListDataSources", json!({"knowledgeBaseId":knowledge_base}), knowledge_base, "dataSourceSummaries", "nextToken",
-            json!({"knowledgeBaseId":knowledge_base,"dataSourceId":"SOURCE0001","name":"same","status":"AVAILABLE","updatedAt":"2026-01-01T00:00:00Z"}),
-            scoped(knowledge_base, "SOURCE0001"), &format!("/knowledgebases/{knowledge_base}/datasources/"), None, &[]));
+        pages.extend(later_pages(
+            ("ListDataSources", json!({"knowledgeBaseId":knowledge_base})),
+            knowledge_base,
+            ("dataSourceSummaries", "nextToken"),
+            (
+                json!({"knowledgeBaseId":knowledge_base,"dataSourceId":"SOURCE0001","name":"same","status":"AVAILABLE","updatedAt":"2026-01-01T00:00:00Z"}),
+                scoped(knowledge_base, "SOURCE0001"),
+            ),
+            &format!("/knowledgebases/{knowledge_base}/datasources/"),
+            None,
+            &[],
+        ));
     }
     consume(
         "bedrock-agent",
@@ -287,25 +310,22 @@ async fn given_non_primary_workgroups_when_saved_queries_and_equal_statement_nam
     )];
     for workgroup in ["analytics", "reporting"] {
         pages.extend(later_pages(
-            "ListNamedQueries",
-            json!({"WorkGroup":workgroup}),
+            ("ListNamedQueries", json!({"WorkGroup":workgroup})),
             workgroup,
-            "NamedQueryIds",
-            "NextToken",
-            json!("query-id"),
-            scoped(workgroup, "query-id"),
+            ("NamedQueryIds", "NextToken"),
+            (json!("query-id"), scoped(workgroup, "query-id")),
             "/",
             None,
             &["WorkGroup"],
         ));
         pages.extend(later_pages(
-            "ListPreparedStatements",
-            json!({"WorkGroup":workgroup}),
+            ("ListPreparedStatements", json!({"WorkGroup":workgroup})),
             workgroup,
-            "PreparedStatements",
-            "NextToken",
-            json!({"StatementName":"same","LastModifiedTime":0}),
-            scoped(workgroup, "same"),
+            ("PreparedStatements", "NextToken"),
+            (
+                json!({"StatementName":"same","LastModifiedTime":0}),
+                scoped(workgroup, "same"),
+            ),
             "/",
             None,
             &["WorkGroup"],
@@ -340,13 +360,13 @@ async fn given_two_scalar_applications_when_equal_deployment_group_names_resume_
     )];
     for application in ["A", "B"] {
         pages.extend(later_pages(
-            "ListDeploymentGroups",
-            json!({"applicationName":application}),
+            (
+                "ListDeploymentGroups",
+                json!({"applicationName":application}),
+            ),
             application,
-            "deploymentGroups",
-            "nextToken",
-            json!("prod"),
-            scoped(application, "prod"),
+            ("deploymentGroups", "nextToken"),
+            (json!("prod"), scoped(application, "prod")),
             "/",
             None,
             &["applicationName"],
@@ -395,25 +415,25 @@ async fn given_two_bundles_when_ingestion_and_destination_pages_resume_then_requ
             &format!("appbundle/{name}/ingestion/same/ingestiondestination/same"),
         );
         pages.extend(later_pages(
-            "ListIngestions",
-            json!({"appBundleIdentifier":bundle}),
+            ("ListIngestions", json!({"appBundleIdentifier":bundle})),
             &bundle,
-            "ingestions",
-            "nextToken",
-            json!({"arn":ingestion,"app":"fixture","tenantId":"tenant","state":"enabled"}),
-            ingestion.clone(),
+            ("ingestions", "nextToken"),
+            (
+                json!({"arn":ingestion,"app":"fixture","tenantId":"tenant","state":"enabled"}),
+                ingestion.clone(),
+            ),
             &format!("/appbundles/{}/ingestions", escaped_label(&bundle)),
             Some("nextToken"),
             &["appBundleIdentifier"],
         ));
         pages.extend(later_pages(
-            "ListIngestionDestinations",
-            json!({"appBundleIdentifier":bundle,"ingestionIdentifier":ingestion}),
+            (
+                "ListIngestionDestinations",
+                json!({"appBundleIdentifier":bundle,"ingestionIdentifier":ingestion}),
+            ),
             &ingestion,
-            "ingestionDestinations",
-            "nextToken",
-            json!({"arn":destination}),
-            destination.clone(),
+            ("ingestionDestinations", "nextToken"),
+            (json!({"arn":destination}), destination.clone()),
             &format!(
                 "/appbundles/{}/ingestions/{}/ingestiondestinations",
                 escaped_label(&bundle),
@@ -450,12 +470,21 @@ async fn given_owned_domains_when_package_group_pages_resume_then_all_group_arns
         vec![arn("codeartifact", "domain/a"),arn("codeartifact", "domain/b")]).rest("/v1/domains".to_owned(), None)];
     for domain in ["a", "b"] {
         let id = arn("codeartifact", &format!("package-group/{domain}/same"));
-        pages.extend(later_pages("ListPackageGroups", json!({"domain":domain,"domainOwner":"123456789012"}),
-            &arn("codeartifact", &format!("domain/{domain}")), "packageGroups", "nextToken", json!({"arn":id,"pattern":"/npm/*",
-                "domainName":domain,"domainOwner":"123456789012","createdTime":0,"description":"metadata","contactInfo":"ops@example.test",
-                "originConfiguration":{"restrictions":{"EXTERNAL_UPSTREAM":{"mode":"BLOCK","effectiveMode":"BLOCK","repositoriesCount":0}}},
-                "parent":{"arn":arn("codeartifact", &format!("package-group/{domain}/root")),"pattern":"/*"}}), id.clone(),
-            &format!("/v1/package-groups?domain={domain}&domain-owner=123456789012"), Some("next-token"), &[]));
+        pages.extend(later_pages(
+            ("ListPackageGroups", json!({"domain":domain,"domainOwner":"123456789012"})),
+            &arn("codeartifact", &format!("domain/{domain}")),
+            ("packageGroups", "nextToken"),
+            (
+                json!({"arn":id,"pattern":"/npm/*",
+                    "domainName":domain,"domainOwner":"123456789012","createdTime":0,"description":"metadata","contactInfo":"ops@example.test",
+                    "originConfiguration":{"restrictions":{"EXTERNAL_UPSTREAM":{"mode":"BLOCK","effectiveMode":"BLOCK","repositoriesCount":0}}},
+                    "parent":{"arn":arn("codeartifact", &format!("package-group/{domain}/root")),"pattern":"/*"}}),
+                id.clone(),
+            ),
+            &format!("/v1/package-groups?domain={domain}&domain-owner=123456789012"),
+            Some("next-token"),
+            &[],
+        ));
     }
     consume(
         "codeartifact",

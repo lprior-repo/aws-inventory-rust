@@ -127,8 +127,7 @@ async fn given_two_instances_when_custom_statuses_owned_views_and_other_summary_
         .collect::<Vec<_>>();
     // Exact native query assertions reject removing CUSTOM/CUSTOMER_MANAGED or replacing them with provider types.
     run(
-        "connect",
-        "2017-08-08",
+        ("connect", "2017-08-08"),
         "ListInstances",
         "Id",
         json!({"InstanceSummaryList":OWNERS.map(instance)}),
