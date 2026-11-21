@@ -1,4 +1,5 @@
 use super::*;
+use crate::frame_time::FrameTimeRecorder;
 
 impl MatchEvent for App {
     fn handle_actions(&mut self, cx: &mut Cx, actions: &Actions) {
@@ -162,19 +163,52 @@ impl AppMain for App {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
         if matches!(event, Event::Shutdown) {
             self.stop_worker(cx);
+            self.shutdown_frame_recorder();
             return;
         }
         if self.shutting_down {
             return;
         }
         if matches!(event, Event::Startup) {
+            self.start_frame_recorder();
             self.start_worker(cx);
         }
         if matches!(event, Event::Signal) {
             self.drain_worker(cx);
         }
+        if matches!(event, Event::Draw(_)) {
+            self.record_frame(cx);
+        }
         self.match_event(cx, event);
         self.ui.handle_event(cx, event, &mut Scope::empty());
+    }
+}
+
+impl App {
+    fn start_frame_recorder(&mut self) {
+        self.frame_time_recorder = match FrameTimeRecorder::from_env() {
+            Ok(recorder) => Some(recorder),
+            Err(error) => {
+                eprintln!("{error}");
+                None
+            }
+        };
+    }
+
+    fn shutdown_frame_recorder(&mut self) {
+        if let Some(mut recorder) = self.frame_time_recorder.take() {
+            recorder.shutdown();
+        }
+    }
+
+    fn record_frame(&mut self, cx: &mut Cx) {
+        let node_count = self
+            .table(cx)
+            .borrow::<ResourceTable>()
+            .map_or(0, |table| table.graph().nodes.len());
+        if let Some(recorder) = self.frame_time_recorder.as_mut() {
+            recorder.frame(node_count);
+        }
     }
 }
 

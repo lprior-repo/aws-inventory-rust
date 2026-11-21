@@ -3,6 +3,7 @@ use crate::worker::tests::isolation::supervised;
 use crate::worker::tests::real::fixtures::{
     self, ACCOUNT, Fixture, KIND, NativeGraph, REGION, TestResult, assert_edges, edge, root,
 };
+use crate::worker::DEFAULT_GRAPH_LIMITS;
 
 fn runtime() -> TestResult<tokio::runtime::Runtime> {
     Ok(Builder::new_current_thread().enable_all().build()?)
@@ -35,6 +36,7 @@ fn config(fixture: &Fixture, native: &NativeGraph) -> WorkerConfig {
         database: Some(fixture.path.clone()),
         graph_url: Some(native.endpoint.clone()),
         graph_name: Some(native.name.clone()),
+        graph_limits: DEFAULT_GRAPH_LIMITS,
     }
 }
 
@@ -269,6 +271,7 @@ fn given_full_queue_when_refresh_is_rejected_then_real_runner_commits_accepted_s
         ))?;
         let config = WorkerConfig {
             database: Some(fixture.path.clone()),
+            graph_limits: DEFAULT_GRAPH_LIMITS,
             ..WorkerConfig::default()
         };
         let (mut state, _) = runtime.block_on(setup(fixture.path.clone(), config))?;

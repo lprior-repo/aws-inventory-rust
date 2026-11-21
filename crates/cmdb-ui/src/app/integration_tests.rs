@@ -7,6 +7,7 @@ use crate::worker::tests::real::fixtures::{
     self, ACCOUNT, Fixture, KIND, NativeGraph, REGION, TestResult,
 };
 use crate::worker::tests::support::{self, BlockedGraph, QueuedWorker};
+use crate::worker::DEFAULT_GRAPH_LIMITS;
 use inventory_core::inventory::{Tag, TagCoverage, TagObservation};
 use std::time::{Duration, Instant};
 
@@ -267,6 +268,7 @@ fn given_saturated_real_intake_when_app_rejects_actions_then_inputs_selection_an
         let QueuedWorker { worker, start } = support::queued(
             WorkerConfig {
                 database: Some(fixture.path.clone()),
+                graph_limits: DEFAULT_GRAPH_LIMITS,
                 ..WorkerConfig::default()
             },
             1,
@@ -383,6 +385,7 @@ fn given_live_app_with_blocked_output_when_shutdown_event_arrives_then_timer_and
         let worker = support::queued(
             WorkerConfig {
                 database: Some(fixture.path.clone()),
+                graph_limits: DEFAULT_GRAPH_LIMITS,
                 ..WorkerConfig::default()
             },
             1,

@@ -16,7 +16,7 @@ async fn enrich_graph(
     mut snapshot: cmdb_view::DatabaseSnapshot,
     graph: &mut Graph,
 ) -> Result<(), String> {
-    for row in graph.nodes.iter_mut().take(GRAPH_LIMITS.nodes) {
+    for row in graph.nodes.iter_mut().take(DEFAULT_GRAPH_LIMITS.nodes) {
         let node = cmdb_view::GraphNode {
             account: row.account.clone(),
             region: row.region.clone(),

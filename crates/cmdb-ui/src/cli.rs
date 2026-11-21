@@ -1,6 +1,6 @@
 //! Command line of the viewer, read once before any window exists.
 
-use crate::worker::WorkerConfig;
+use crate::worker::{WorkerConfig, parse_lod_config};
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
@@ -25,10 +25,22 @@ pub enum Command {
 
 static STARTUP: OnceLock<WorkerConfig> = OnceLock::new();
 
-/// Parses the process arguments. Nothing here touches the GUI.
+/// Parses the process arguments and `CMDB_UI_LOD`. Nothing here touches the GUI.
 pub fn from_process_args() -> Result<Command, String> {
     let arguments: Vec<String> = std::env::args().skip(1).collect();
-    parse(&arguments)
+    let lod = std::env::var("CMDB_UI_LOD").ok();
+    with_lod(parse(&arguments)?, lod.as_deref())
+}
+
+/// Applies a level-of-detail override; an invalid value is a startup error, never a silent default.
+pub fn with_lod(command: Command, lod: Option<&str>) -> Result<Command, String> {
+    match (command, lod) {
+        (Command::Run(config), Some(value)) => Ok(Command::Run(WorkerConfig {
+            graph_limits: parse_lod_config(value)?,
+            ..config
+        })),
+        (command, _) => Ok(command),
+    }
 }
 
 /// Records the validated configuration for the app's worker. Set once, before the window.
@@ -125,6 +137,7 @@ mod tests {
                 database: Some(PathBuf::from("inventory.db")),
                 graph_url: Some("redis://127.0.0.1:6379".to_owned()),
                 graph_name: Some("cmdb".to_owned()),
+                ..WorkerConfig::default()
             }))
         );
     }
@@ -182,5 +195,33 @@ mod tests {
         ] {
             assert!(USAGE.contains(flag), "usage lacks {flag}");
         }
+    }
+}
+
+#[cfg(test)]
+mod lod_tests {
+    use super::*;
+
+    #[test]
+    fn given_invalid_lod_when_applied_then_startup_fails() {
+        let run = Command::Run(WorkerConfig::default());
+        assert!(with_lod(run, Some("2:abc:5")).is_err());
+    }
+
+    #[test]
+    fn given_valid_lod_when_applied_then_limits_replace_defaults() {
+        let run = Command::Run(WorkerConfig::default());
+        let Ok(Command::Run(config)) = with_lod(run, Some("3:10:20")) else {
+            panic!("valid lod must apply");
+        };
+        assert_eq!(
+            (config.graph_limits.depth, config.graph_limits.nodes, config.graph_limits.edges),
+            (3, 10, 20)
+        );
+    }
+
+    #[test]
+    fn given_help_when_lod_is_invalid_then_help_still_wins() {
+        assert_eq!(with_lod(Command::Help, Some("bad")), Ok(Command::Help));
     }
 }

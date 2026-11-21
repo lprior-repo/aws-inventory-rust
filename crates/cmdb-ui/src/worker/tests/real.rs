@@ -204,7 +204,7 @@ fn given_divergent_stores_and_concurrent_sweep_when_expanding_then_native_topolo
                 None
             );
             let direct = GraphConnection::connect(&native.endpoint, &native.name)?
-                .neighbors(&a, GRAPH_LIMITS)
+                .neighbors(&a, DEFAULT_GRAPH_LIMITS)
                 .await?;
             assert_edges(&retained, &direct.edges)?;
             assert_eq!(retained.truncated, direct.truncated);

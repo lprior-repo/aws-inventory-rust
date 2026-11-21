@@ -1,4 +1,5 @@
 pub(crate) mod isolation;
+pub(crate) mod no_socket;
 pub(crate) mod real;
 mod shutdown;
 pub(crate) mod support;
@@ -283,7 +284,7 @@ fn given_full_results_when_ui_drains_then_critical_output_is_preserved() -> Test
 
 #[test]
 fn given_unconfigured_graph_when_retried_then_configuration_error_remains_visible() {
-    let mut access = GraphAccess::new(None, None);
+    let mut access = GraphAccess::new(None, None, DEFAULT_GRAPH_LIMITS);
     access.reconnect();
     assert!(
         matches!(access.status(), WorkerEvent::GraphStatus { error: Some(error) } if error.contains("not configured"))
@@ -295,6 +296,7 @@ fn given_invalid_graph_name_when_refreshed_then_configuration_failure_is_classif
     let mut access = GraphAccess::new(
         Some("redis://127.0.0.1:6379".to_owned()),
         Some(String::new()),
+        DEFAULT_GRAPH_LIMITS,
     );
     access.reconnect();
     assert!(
@@ -321,7 +323,7 @@ fn given_full_queue_when_new_selection_rejected_then_accepted_graph_is_preserved
 async fn given_unconfigured_graph_when_user_refreshes_then_sqlite_counts_stay_usable() -> TestResult
 {
     let (worker, mut commands, events, _cancellation) = harness(1);
-    let mut access = GraphAccess::new(None, None);
+    let mut access = GraphAccess::new(None, None, DEFAULT_GRAPH_LIMITS);
     worker.refresh(Filter::default())?;
     let request = revision(commands.try_recv()?)?;
     events.send(Output {
@@ -472,7 +474,11 @@ async fn given_graph_query_failure_when_refreshing_then_recovered_neighborhood_i
         }
         Ok::<_, String>(())
     });
-    let mut access = GraphAccess::new(Some(endpoint), Some("inventory".to_owned()));
+    let mut access = GraphAccess::new(
+        Some(endpoint),
+        Some("inventory".to_owned()),
+        DEFAULT_GRAPH_LIMITS,
+    );
     let first = access.expand(node("vpc-root")).await;
     assert!(
         matches!(first, WorkerEvent::Graph { error: Some(error), .. } if error.contains("temporarily unavailable"))
@@ -508,4 +514,39 @@ fn given_full_or_disconnected_intake_when_checking_worker_then_only_disconnectio
     drop(commands);
     assert!(worker.is_closed());
     Ok(())
+}
+
+#[test]
+fn given_valid_lod_config_string_then_parse_returns_custom_limits() {
+    let limits = parse_lod_config("3:500:1000").unwrap();
+    assert_eq!(limits.depth, 3);
+    assert_eq!(limits.nodes, 500);
+    assert_eq!(limits.edges, 1000);
+}
+
+#[test]
+fn given_invalid_lod_format_when_parsing_then_error_is_returned() {
+    let error = parse_lod_config("invalid").unwrap_err();
+    assert!(error.contains("depth:nodes:edges"));
+}
+
+#[test]
+fn given_lod_with_partial_numbers_when_parsing_then_error_is_returned() {
+    let error = parse_lod_config("1:2:abc").unwrap_err();
+    assert!(error.contains("invalid edges"));
+}
+
+#[test]
+fn given_default_config_then_default_lod_limits_are_used() {
+    let config = WorkerConfig::default();
+    assert_eq!(config.graph_limits, DEFAULT_GRAPH_LIMITS);
+    assert_eq!(config.graph_limits.depth, 2);
+    assert_eq!(config.graph_limits.nodes, 200);
+    assert_eq!(config.graph_limits.edges, 500);
+}
+
+#[test]
+fn given_lod_with_wrong_field_count_when_parsing_then_error_is_returned() {
+    assert!(parse_lod_config("1:2").is_err());
+    assert!(parse_lod_config("1:2:3:4").is_err());
 }

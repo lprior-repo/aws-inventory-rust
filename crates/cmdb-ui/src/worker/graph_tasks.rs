@@ -10,10 +10,15 @@ pub(super) struct GraphAccess {
     connection: Option<GraphConnection>,
     error: Option<String>,
     last_node: Option<GraphNode>,
+    limits: GraphLimits,
 }
 
 impl GraphAccess {
-    pub fn new(url: Option<String>, name: Option<String>) -> Self {
+    pub fn new(
+        url: Option<String>,
+        name: Option<String>,
+        limits: GraphLimits,
+    ) -> Self {
         let config = match (url, name) {
             (None, None) => {
                 GraphConfig::Unavailable("not configured (--graph-url and --graph-name)".to_owned())
@@ -26,6 +31,7 @@ impl GraphAccess {
             connection: None,
             last_node: None,
             error: Some("connection not yet checked".to_owned()),
+            limits,
         };
         access.reconnect();
         access
@@ -64,7 +70,7 @@ impl GraphAccess {
             return self.status();
         };
         let result = tokio::time::timeout(Duration::from_secs(8), async {
-            let neighborhood = connection.neighbors(&node, GRAPH_LIMITS).await?;
+            let neighborhood = connection.neighbors(&node, self.limits).await?;
             let tags = connection.tag_affiliations(&node, TAG_LIMIT).await?;
             Ok::<_, cmdb_view::ViewError>((neighborhood, tags))
         })
@@ -141,6 +147,7 @@ mod tests {
         let mut access = GraphAccess::new(
             Some("redis://127.0.0.1:6379".to_owned()),
             Some("inventory".to_owned()),
+            DEFAULT_GRAPH_LIMITS,
         );
         access.record(&graph_failure("connection refused".to_owned()));
         assert!(access.connection.is_none());
@@ -164,6 +171,7 @@ mod tests {
         let mut access = GraphAccess::new(
             Some("redis://127.0.0.1:6379".to_owned()),
             Some("inventory".to_owned()),
+            DEFAULT_GRAPH_LIMITS,
         );
         assert!(
             matches!(access.refresh().await, WorkerEvent::GraphStatus { error: Some(error) } if error == "connection not yet checked")

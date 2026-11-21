@@ -1,4 +1,5 @@
 use super::*;
+use crate::worker::DEFAULT_GRAPH_LIMITS;
 
 fn graph_status(app: &App, cx: &mut Cx) -> String {
     app.table(cx)
@@ -32,6 +33,7 @@ fn given_successful_empty_database_when_startup_page_commits_then_graph_access_d
                     database: Some(fixture.path.clone()),
                     graph_url: url.map(str::to_owned),
                     graph_name: name.map(str::to_owned),
+                    graph_limits: DEFAULT_GRAPH_LIMITS,
                 },
             );
             let expected = format!("Graph offline · {diagnostic}");
@@ -75,6 +77,7 @@ fn given_failed_real_database_when_repaired_and_filter_action_retries_then_close
             &mut cx,
             WorkerConfig {
                 database: Some(fixture.path.clone()),
+                graph_limits: DEFAULT_GRAPH_LIMITS,
                 ..WorkerConfig::default()
             },
         );
@@ -136,6 +139,7 @@ fn given_failed_resource_query_when_filter_removes_selection_then_new_empty_page
                 database: Some(fixture.path.clone()),
                 graph_url: Some(native.endpoint.clone()),
                 graph_name: Some(native.name.clone()),
+                graph_limits: DEFAULT_GRAPH_LIMITS,
             },
         );
         wait_for(&mut app, &mut cx, |app, cx| graph(app, cx).nodes.len() == 2)?;
@@ -190,6 +194,7 @@ fn given_cached_access_failure_and_current_selection_when_stale_success_arrives_
             &mut cx,
             WorkerConfig {
                 database: Some(fixture.path.clone()),
+                graph_limits: DEFAULT_GRAPH_LIMITS,
                 ..WorkerConfig::default()
             },
         );

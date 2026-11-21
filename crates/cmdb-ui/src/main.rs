@@ -7,6 +7,7 @@ mod chrome;
 mod cli;
 mod dag;
 mod data;
+mod frame_time;
 mod graph_view;
 mod table;
 mod templates;

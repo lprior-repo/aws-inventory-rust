@@ -7,6 +7,7 @@ use makepad_widgets::makepad_platform::thread::SignalToUI;
 use makepad_widgets::*;
 
 use crate::data::{Facet, Filter};
+use crate::frame_time::FrameTimeRecorder;
 use crate::table::ResourceTable;
 use crate::worker::{DataWorker, WorkerConfig, WorkerEvent};
 
@@ -37,6 +38,8 @@ pub struct App {
     retry_worker: bool,
     #[rust]
     shutting_down: bool,
+    #[rust]
+    frame_time_recorder: Option<FrameTimeRecorder>,
 }
 
 impl App {
