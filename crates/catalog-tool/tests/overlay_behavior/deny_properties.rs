@@ -21,7 +21,7 @@ proptest! {
         plan.class = Some(class);
         plan.items = Some(ItemSelector::parse(items)
             .map_err(|error| TestCaseError::fail(error.to_string()))?);
-        match checked(&root, vec![("ListThings", plan)]) {
+        match checked(&root, vec![("ListThings", plan)]).map_err(|error| *error) {
             Ok(checked) => {
                 prop_assert!(checked.services().iter()
                     .flat_map(|service| service.callable())

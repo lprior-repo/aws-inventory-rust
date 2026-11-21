@@ -127,7 +127,7 @@ fn given_modeled_string_page_limit_when_explicit_then_decimal_text_constraints_a
         let root = fixture(&model, "")?;
         let mut plan = inferred()?;
         plan.page_size = Some(value);
-        match (value, checked(&root, vec![("ListThings", plan)])) {
+        match (value, checked(&root, vec![("ListThings", plan)]).map_err(|error| *error)) {
             (1 | 10, Ok(when)) => {
                 let plan = when
                     .services()

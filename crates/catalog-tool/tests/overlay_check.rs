@@ -40,8 +40,11 @@ fn policy(items: &str, identity: &str) -> Result<ServiceOverlay, overlay::NameEr
     ServiceOverlay::new("things", vec![("ListThings", plan)])
 }
 
-fn check(root: &Path, policies: &[ServiceOverlay]) -> Result<overlay::CheckedOverlays, CheckError> {
-    overlay::check_policies(&source(root), policies, &DenyList::builtin())
+fn check(
+    root: &Path,
+    policies: &[ServiceOverlay],
+) -> Result<overlay::CheckedOverlays, Box<CheckError>> {
+    overlay::check_policies(&source(root), policies, &DenyList::builtin()).map_err(Box::new)
 }
 
 #[test]
@@ -141,7 +144,7 @@ fn duplicate_service_policy_is_rejected_before_a_conflicting_denial_can_be_ignor
         vec![policy("Items", "Id")?, denial.clone()],
         vec![denial, policy("Items", "Id")?],
     ] {
-        assert!(matches!(check(root.path(), &policies),
+        assert!(matches!(check(root.path(), &policies).map_err(|error| *error),
             Err(CheckError::Invalid { service, key, rule, .. })
                 if service == "things" && key == "service" && rule == "duplicate service policy"));
     }
@@ -152,7 +155,7 @@ fn duplicate_service_policy_is_rejected_before_a_conflicting_denial_can_be_ignor
 fn custom_policy_still_rejects_unknown_service_names() -> Result<(), Box<dyn std::error::Error>> {
     let root = fixture()?;
     let policies = [ServiceOverlay::new("missing", Vec::new())?];
-    match check(root.path(), &policies) {
+    match check(root.path(), &policies).map_err(|error| *error) {
         Err(CheckError::Violations(violations)) => assert!(
             violations
                 .iter()
@@ -239,7 +242,7 @@ fn root_selector_uses_output_structure_not_item_structure() -> Result<(), Box<dy
         callable.plan().identity,
         Some(Identity::Key(vec![overlay::MemberPath::new("RootId")?]))
     );
-    let errors = match check(root.path(), &[policy("$", "ItemId")?]) {
+    let errors = match check(root.path(), &[policy("$", "ItemId")?]).map_err(|error| *error) {
         Err(CheckError::Violations(errors)) => errors,
         Err(error) => return Err(error.into()),
         Ok(_) => return Err("root selector accepted item-only identity".into()),

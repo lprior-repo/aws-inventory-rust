@@ -214,7 +214,8 @@ fn given_typed_identity_fields_when_shape_or_bounds_are_invalid_then_plan_is_rej
                     ("ListB", deferred()),
                     ("ListChildren", deferred()),
                 ],
-            ),
+            )
+            .map_err(|error| *error),
             policy_error,
         ) {
             (Err(CheckError::Policy(error)), Some(expected)) => assert_eq!(error.value, expected),
@@ -271,7 +272,8 @@ fn given_scalar_presence_predicates_when_checked_then_numeric_and_boolean_presen
                 ("ListB", deferred()),
                 ("ListChildren", deferred()),
             ],
-        );
+        )
+        .map_err(|error| *error);
         match (result, accepted) {
             (Ok(when), true) => assert_eq!(
                 when.services()

@@ -161,7 +161,7 @@ fn given_fixed_and_derived_value_for_one_input_when_reviewed_then_overwrite_is_r
         &model("n#FunctionConfiguration", "n#FunctionConfiguration", false),
         &review,
     )?;
-    let violations = match root.check() {
+    let violations = match root.check().map_err(|error| *error) {
         Err(overlay::CheckError::Violations(violations)) => violations,
         Err(other) => return Err(other.into()),
         Ok(_) => return Err("conflicting input writers were admitted".into()),

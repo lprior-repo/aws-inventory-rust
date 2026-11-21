@@ -71,17 +71,19 @@ fn source(root: &Path) -> std::path::PathBuf {
 fn checked(
     root: &Fixture<'_>,
     operations: Vec<(&str, OperationOverlay)>,
-) -> Result<overlay::CheckedOverlays, CheckError> {
-    let policies = [ServiceOverlay::new("things", operations)?];
-    let deny = catalog_tool::classes::DenyList::parse(root.deny)?;
-    overlay::check_policies(&source(root.path()), &policies, &deny)
+) -> Result<overlay::CheckedOverlays, Box<CheckError>> {
+    let policies = [ServiceOverlay::new("things", operations)
+        .map_err(|error| Box::new(CheckError::from(error)))?];
+    let deny = catalog_tool::classes::DenyList::parse(root.deny)
+        .map_err(|error| Box::new(CheckError::from(error)))?;
+    overlay::check_policies(&source(root.path()), &policies, &deny).map_err(Box::new)
 }
 
 fn violations(
     root: &Fixture<'_>,
     operations: Vec<(&str, OperationOverlay)>,
 ) -> Result<Vec<Violation>, Box<dyn std::error::Error>> {
-    match checked(root, operations) {
+    match checked(root, operations).map_err(|error| *error) {
         Err(CheckError::Violations(found)) => Ok(found),
         Err(other) => Err(other.into()),
         Ok(_) => Err("expected semantic violations".into()),

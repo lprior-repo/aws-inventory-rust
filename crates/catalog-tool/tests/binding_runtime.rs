@@ -147,11 +147,12 @@ fn tamper(bytes: &[u8], corrupt: usize) -> TestResult<Record> {
     let Value::List(bindings) = map(child)?.get_mut(&field(7)?).ok_or("bindings missing")? else {
         return Err("not bindings".into());
     };
+    let key = field(2)?;
     let binding = bindings
         .iter_mut()
         .find(|binding| match binding {
             Value::Map(fields) => fields
-                .get(&field(2).expect("field"))
+                .get(&key)
                 .is_some_and(|value| matches!(value, Value::Int(12))),
             _ => false,
         })

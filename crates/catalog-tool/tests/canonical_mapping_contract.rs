@@ -106,12 +106,14 @@ impl Fixture {
     fn close(self) -> std::io::Result<()> {
         self.directory.close()
     }
-    fn check(&self) -> Result<overlay::CheckedOverlays, overlay::CheckError> {
+    fn check(&self) -> Result<overlay::CheckedOverlays, Box<overlay::CheckError>> {
         overlay::check_policies(
             &self.path().join("source"),
             std::slice::from_ref(&self.policy),
-            &catalog_tool::classes::DenyList::parse("").map_err(overlay::CheckError::from)?,
+            &catalog_tool::classes::DenyList::parse("")
+                .map_err(|error| Box::new(overlay::CheckError::from(error)))?,
         )
+        .map_err(Box::new)
     }
 }
 
@@ -432,7 +434,7 @@ fn given_unknown_enum_in_fixed_list_when_reviewed_then_precompile_gate_reports_e
         )?;
 
         // When: only the public precompile semantic gate runs; no artifact is built.
-        let violations = match root.check() {
+        let violations = match root.check().map_err(|error| *error) {
             Err(overlay::CheckError::Violations(violations)) => violations,
             Err(other) => return Err(other.into()),
             Ok(_) => return Err("unknown enum fixed-list value passed precompile gate".into()),
