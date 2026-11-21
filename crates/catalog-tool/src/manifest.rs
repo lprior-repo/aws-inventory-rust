@@ -31,7 +31,8 @@ pub fn run(root: &Path, mode: ReportMode) -> Result<(), Error> {
     let manifest_path = root.join(MANIFEST_PATH);
 
     let aws_models_rev = aws_models_revision(root)?;
-    let models_lock_content = format!("# AWS models source revision\naws-models: {aws_models_rev}\n");
+    let models_lock_content =
+        format!("# AWS models source revision\naws-models: {aws_models_rev}\n");
 
     crate::report::publish(&models_lock_path, &models_lock_content, mode)?;
 
@@ -58,11 +59,9 @@ fn aws_models_revision(root: &Path) -> Result<String, Error> {
     let stdout = String::from_utf8_lossy(&output.stdout);
     // Expected: "160000 commit <sha>\t.local/aws-models\n"
     let fields: Vec<&str> = stdout.split_whitespace().collect();
-    let sha = fields
-        .get(2)
-        .ok_or_else(|| Error::GitModelsRevision {
-            source: io::Error::other("unexpected git output"),
-        })?;
+    let sha = fields.get(2).ok_or_else(|| Error::GitModelsRevision {
+        source: io::Error::other("unexpected git output"),
+    })?;
 
     Ok(sha.to_string())
 }

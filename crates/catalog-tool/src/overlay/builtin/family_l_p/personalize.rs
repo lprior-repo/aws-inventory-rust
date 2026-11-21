@@ -304,7 +304,12 @@ const RESOURCES: &[Resource] = &[
         id: Id::Arn("solutionVersionArn"),
         scope: Scope::Region,
         tokens: Some(("nextToken", "nextToken")),
-        query: &["solutionVersionArn", "status", "trainingMode", "trainingType"],
+        query: &[
+            "solutionVersionArn",
+            "status",
+            "trainingMode",
+            "trainingType",
+        ],
         tags: None,
         bindings: &[],
         fixed: &[],

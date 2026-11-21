@@ -26,20 +26,25 @@ pub(super) fn compile(
     for row in kinds.relations().iter() {
         if !active(&row.source_kind, &row.target_kinds) {
             inactive.insert(
-                format!("{} -> {} (inactive source kind)", row.source_kind, row.target_kinds.primary()),
+                format!(
+                    "{} -> {} (inactive source kind)",
+                    row.source_kind,
+                    row.target_kinds.primary()
+                ),
                 format!("source kind {} is inactive", row.source_kind),
             );
             continue;
         }
         rows.push(encode(row, services)?);
     }
-    for row in kinds
-        .parent_relations()
-        .iter()
-    {
+    for row in kinds.parent_relations().iter() {
         if !active(&row.source_kind, &row.target_kinds) {
             inactive.insert(
-                format!("{} -> {} (inactive source kind, parent)", row.source_kind, row.target_kinds.primary()),
+                format!(
+                    "{} -> {} (inactive source kind, parent)",
+                    row.source_kind,
+                    row.target_kinds.primary()
+                ),
                 format!("source kind {} is inactive", row.source_kind),
             );
             continue;
@@ -65,13 +70,14 @@ pub(super) fn compile(
             (12, Value::Int(4)),
         ])?);
     }
-    for row in kinds
-        .compound_relations()
-        .iter()
-    {
+    for row in kinds.compound_relations().iter() {
         if !active(&row.source_kind, &row.target_kinds) {
             inactive.insert(
-                format!("{} -> {} (inactive source kind, compound)", row.source_kind, row.target_kinds.primary()),
+                format!(
+                    "{} -> {} (inactive source kind, compound)",
+                    row.source_kind,
+                    row.target_kinds.primary()
+                ),
                 format!("source kind {} is inactive", row.source_kind),
             );
             continue;
@@ -234,8 +240,6 @@ pub(super) fn scope(scope: &str) -> Result<i64, RuntimeCatalogCompileError> {
     }
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -243,9 +247,7 @@ mod tests {
     #[test]
     fn compile_returns_relations_result_type() {
         // Test that compile returns RelationsResult type
-        fn _check_type(
-            result: Result<RelationsResult, RuntimeCatalogCompileError>,
-        ) -> bool {
+        fn _check_type(result: Result<RelationsResult, RuntimeCatalogCompileError>) -> bool {
             result.is_ok()
         }
         // Can't actually call compile without setup, but we can verify the type signature

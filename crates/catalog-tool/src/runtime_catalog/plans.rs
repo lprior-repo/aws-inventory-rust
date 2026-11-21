@@ -449,4 +449,3 @@ fn branch_binding(
         (7, Value::Int(selection::source_tag(source))),
     ])
 }
-
