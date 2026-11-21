@@ -1,5 +1,6 @@
 use super::builder;
-use super::graph::{DagGraph, MAX_LABEL_CHARS, MAX_NODES, NodeKind, truncate_label};
+use super::graph::{DagGraph, MAX_EDGES, MAX_LABEL_CHARS, MAX_NODES, NodeKind, truncate_label};
+use super::layout::DagLayout;
 
 #[cfg(test)]
 #[path = "projection_tests.rs"]
@@ -42,6 +43,29 @@ fn node_cap_truncates_explicitly() {
     }
     assert_eq!(graph.len(), MAX_NODES);
     assert_eq!(graph.dropped_nodes(), 5);
+}
+
+#[test]
+fn edge_cap_drops_exact_overflow_and_layout_stays_acyclic() {
+    // Given a dense DAG (all forward pairs over 100 nodes = 4950 edges) that
+    // exceeds MAX_EDGES.
+    let mut graph = DagGraph::default();
+    for index in 0..100 {
+        graph.add_node(NodeKind::Other, format!("e{index}"), "e");
+    }
+    for from in 0..100 {
+        for to in from + 1..100 {
+            graph.add_overlay_edge(from, to, "rel".to_owned(), String::new());
+        }
+    }
+    // Then admission stops exactly at the cap and the overflow is counted.
+    assert_eq!(graph.edges().len(), MAX_EDGES);
+    assert_eq!(graph.dropped_edges(), 4950 - MAX_EDGES);
+    // And layout consumes only admitted edges, with no cycle-induced back edges.
+    let layout = DagLayout::compute(&graph);
+    assert_eq!(layout.edges().len(), MAX_EDGES);
+    assert_eq!(layout.dropped_edges(), 0);
+    assert_eq!(layout.back_edges(), 0);
 }
 
 fn chain() -> DagGraph {
