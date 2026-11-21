@@ -1,5 +1,9 @@
 use super::*;
 #[path = "../../../crates/engine/tests/inventory_store/support.rs"]
+#[allow(
+    dead_code,
+    reason = "shared via #[path]; each includer uses a subset of the helpers"
+)]
 mod support;
 use inventory_core::record::Exclusions;
 use inventory_engine::inventory::SweepId;
