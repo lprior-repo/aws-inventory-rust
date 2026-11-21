@@ -1,5 +1,4 @@
 use super::*;
-use sqlx::SqlitePool;
 
 #[path = "../../scalar_replay_contract/snapshot.rs"]
 mod snapshot;

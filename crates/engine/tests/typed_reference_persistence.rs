@@ -118,8 +118,7 @@ async fn commit_partial_observation(
     store: &BinaryStore,
     sweep: &str,
     at: i64,
-    request: Option<&str>,
-    namespace: Option<&str>,
+    (request, namespace): (Option<&str>, Option<&str>),
     observations: Vec<Observation>,
     references: Vec<UnresolvedReference>,
     direct: bool,
@@ -133,7 +132,8 @@ async fn commit_partial_observation(
         .ok_or("lease missing")?;
     // These are deliberately per-resource observations, not exhaustive root listings.
     // Commit a real continuation page, then explicitly settle its scope as Partial.
-    let mut page = page(lease, observations, false, Some(vec![1]), at + 1);
+    let next = at.checked_add(1).ok_or("time overflow")?;
+    let mut page = page(lease, observations, false, Some(vec![1]), next);
     page.unresolved = references;
     if direct {
         page.edges.push(Edge {
@@ -146,11 +146,15 @@ async fn commit_partial_observation(
     store.commit_page(page).await?;
     let sweep_id = SweepId::new(sweep.to_owned())?;
     let continuation = store
-        .claim(&sweep_id, at + 2, 20)
+        .claim(&sweep_id, at.checked_add(2).ok_or("time overflow")?, 20)
         .await?
         .ok_or("continuation lease missing")?;
     store
-        .finish_scope(continuation, ScopeOutcome::Partial, at + 3)
+        .finish_scope(
+            continuation,
+            ScopeOutcome::Partial,
+            at.checked_add(3).ok_or("time overflow")?,
+        )
         .await?;
     assert_eq!(store.sweep_summary(&sweep_id).await?.partial_scopes, 1);
     Ok(())
@@ -215,8 +219,7 @@ async fn given_canonical_id_reference_when_target_arrives_in_either_order_then_n
                 &store,
                 "target-first",
                 10,
-                None,
-                None,
+                (None, None),
                 vec![observation("target", "unrelated-name")?],
                 vec![],
                 false,
@@ -228,8 +231,7 @@ async fn given_canonical_id_reference_when_target_arrives_in_either_order_then_n
             &store,
             "source",
             100,
-            Some("target"),
-            None,
+            (Some("target"), None),
             vec![observation("source", "source-name")?],
             vec![reference(
                 RelationTargetMode::CanonicalId,
@@ -251,8 +253,7 @@ async fn given_canonical_id_reference_when_target_arrives_in_either_order_then_n
             &reopened,
             "target-late-or-renamed",
             200,
-            None,
-            None,
+            (None, None),
             vec![observation("target", "still-not-its-id")?],
             vec![],
             false,
@@ -264,8 +265,7 @@ async fn given_canonical_id_reference_when_target_arrives_in_either_order_then_n
             &reopened,
             "source-replay",
             300,
-            Some("target"),
-            None,
+            (Some("target"), None),
             vec![observation("source", "source-name")?],
             vec![reference(
                 RelationTargetMode::CanonicalId,
@@ -290,8 +290,7 @@ async fn given_bound_context_target_when_only_output_name_matches_then_only_the_
         &store,
         "source",
         100,
-        Some("namespace-x"),
-        Some("source-context"),
+        (Some("namespace-x"), Some("source-context")),
         vec![observation("source", "source-name")?],
         vec![reference(
             RelationTargetMode::BoundContextFields,
@@ -306,8 +305,7 @@ async fn given_bound_context_target_when_only_output_name_matches_then_only_the_
         &store,
         "wrong-context",
         200,
-        None,
-        Some("namespace-y"),
+        (None, Some("namespace-y")),
         vec![observation("decoy", "namespace-x")?],
         vec![],
         false,
@@ -319,8 +317,7 @@ async fn given_bound_context_target_when_only_output_name_matches_then_only_the_
         &store,
         "right-context",
         300,
-        None,
-        Some("namespace-x"),
+        (None, Some("namespace-x")),
         vec![observation("target", "unrelated-name")?],
         vec![],
         false,
@@ -341,8 +338,7 @@ async fn given_bound_primary_reference_when_distinct_targets_match_then_ambiguit
         &store,
         "source",
         100,
-        Some("namespace-x"),
-        Some("source-context"),
+        (Some("namespace-x"), Some("source-context")),
         vec![observation("source", "source-name")?],
         vec![reference(
             RelationTargetMode::BoundContextFields,
@@ -357,8 +353,7 @@ async fn given_bound_primary_reference_when_distinct_targets_match_then_ambiguit
         &store,
         "unique",
         200,
-        None,
-        Some("namespace-x"),
+        (None, Some("namespace-x")),
         vec![observation("target", "unrelated-name")?],
         vec![],
         false,
@@ -377,8 +372,7 @@ async fn given_bound_primary_reference_when_distinct_targets_match_then_ambiguit
         &store,
         "ambiguous",
         300,
-        None,
-        Some("namespace-x"),
+        (None, Some("namespace-x")),
         vec![observation("second", "another-name")?],
         vec![],
         false,
@@ -397,8 +391,7 @@ async fn given_bound_primary_reference_when_distinct_targets_match_then_ambiguit
             &reopened,
             source_sweep,
             source_at,
-            Some("namespace-x"),
-            Some("source-context"),
+            (Some("namespace-x"), Some("source-context")),
             vec![observation("source", "source-name")?],
             vec![reference(
                 RelationTargetMode::BoundContextFields,
@@ -482,8 +475,7 @@ async fn given_ambiguous_bound_primary_and_explicit_pin_when_candidates_refresh_
         &store,
         "pin-and-wildcard",
         100,
-        Some("namespace-x"),
-        Some("namespace-x"),
+        (Some("namespace-x"), Some("namespace-x")),
         vec![
             observation("source", "source-name")?,
             observation("target", "unrelated-name")?,
@@ -499,8 +491,7 @@ async fn given_ambiguous_bound_primary_and_explicit_pin_when_candidates_refresh_
         &store,
         "another-match",
         200,
-        None,
-        Some("namespace-x"),
+        (None, Some("namespace-x")),
         vec![observation("second", "another-name")?],
         vec![],
         false,
@@ -513,8 +504,7 @@ async fn given_ambiguous_bound_primary_and_explicit_pin_when_candidates_refresh_
         &store,
         "remove-pin",
         300,
-        Some("namespace-x"),
-        Some("namespace-x"),
+        (Some("namespace-x"), Some("namespace-x")),
         vec![observation("source", "source-name")?],
         vec![wildcard()?],
         false,
@@ -535,8 +525,7 @@ async fn given_compound_selected_and_bound_terms_when_targets_become_ambiguous_o
         &store,
         "source",
         100,
-        Some("shared-name"),
-        Some("namespace-x"),
+        (Some("shared-name"), Some("namespace-x")),
         vec![observation("source", "source-name")?],
         vec![reference(
             RelationTargetMode::SelectedFields,
@@ -551,8 +540,7 @@ async fn given_compound_selected_and_bound_terms_when_targets_become_ambiguous_o
         &store,
         "wrong-namespace",
         200,
-        None,
-        Some("namespace-y"),
+        (None, Some("namespace-y")),
         vec![observation("decoy", "shared-name")?],
         vec![],
         false,
@@ -563,8 +551,7 @@ async fn given_compound_selected_and_bound_terms_when_targets_become_ambiguous_o
         &store,
         "unique",
         300,
-        None,
-        Some("namespace-x"),
+        (None, Some("namespace-x")),
         vec![observation("target", "shared-name")?],
         vec![],
         false,
@@ -576,8 +563,7 @@ async fn given_compound_selected_and_bound_terms_when_targets_become_ambiguous_o
         &store,
         "ambiguous",
         400,
-        None,
-        Some("namespace-x"),
+        (None, Some("namespace-x")),
         vec![observation("second", "shared-name")?],
         vec![],
         false,
@@ -589,8 +575,7 @@ async fn given_compound_selected_and_bound_terms_when_targets_become_ambiguous_o
         &reopened,
         "unique-again",
         500,
-        None,
-        Some("namespace-x"),
+        (None, Some("namespace-x")),
         vec![observation("second", "different")?],
         vec![],
         false,
@@ -601,8 +586,7 @@ async fn given_compound_selected_and_bound_terms_when_targets_become_ambiguous_o
         &reopened,
         "last-conjunct-lost",
         600,
-        None,
-        Some("namespace-x"),
+        (None, Some("namespace-x")),
         vec![observation("target", "different")?],
         vec![],
         false,
@@ -629,8 +613,7 @@ async fn given_bound_components_from_different_target_facets_when_no_single_requ
         &store,
         "facet-left",
         100,
-        Some("left"),
-        Some("wrong"),
+        (Some("left"), Some("wrong")),
         vec![observation("target", "target-name")?],
         vec![],
         false,
@@ -640,8 +623,7 @@ async fn given_bound_components_from_different_target_facets_when_no_single_requ
         &store,
         "facet-right",
         200,
-        Some("wrong"),
-        Some("right"),
+        (Some("wrong"), Some("right")),
         vec![observation("target", "target-name")?],
         vec![],
         false,
@@ -665,8 +647,7 @@ async fn given_bound_components_from_different_target_facets_when_no_single_requ
         &store,
         "source",
         300,
-        Some("target"),
-        Some("right"),
+        (Some("target"), Some("right")),
         vec![observation("source", "left")?],
         vec![reference],
         false,
@@ -681,8 +662,7 @@ async fn given_bound_components_from_different_target_facets_when_no_single_requ
         &reopened,
         "complete-facet",
         400,
-        Some("left"),
-        Some("right"),
+        (Some("left"), Some("right")),
         vec![observation("target", "target-name")?],
         vec![],
         false,
@@ -757,8 +737,7 @@ async fn given_canonical_rule_when_a_same_page_direct_edge_is_committed_then_its
         &store,
         "direct",
         100,
-        Some("target"),
-        None,
+        (Some("target"), None),
         vec![
             observation("source", "source-name")?,
             observation("target", "different-name")?,
@@ -856,8 +835,7 @@ async fn given_v3_facets_without_request_column_when_opened_then_legacy_selected
         &store,
         "legacy-selected",
         100,
-        Some("target-name"),
-        None,
+        (Some("target-name"), None),
         vec![
             observation("source", "source-name")?,
             observation("target", "target-name")?,

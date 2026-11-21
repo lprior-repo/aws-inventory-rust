@@ -33,10 +33,7 @@ async fn process_region(
         .map(|(id, value)| regional(id, value, &region))
         .collect::<TestResult<Vec<_>>>()?;
     let mut commit = page(lease, observations, true, None, committed_at);
-    commit.edges = match edges {
-        Some(list) => list,
-        None => Vec::new(),
-    };
+    commit.edges = edges.unwrap_or_default();
     let result = store.commit_page(commit).await?;
     Ok(result.stats)
 }
@@ -86,7 +83,7 @@ fn account_observation(id: &str, value: &str, account: &str, region: &str) -> Te
 }
 
 use inventory_core::inventory::Observation;
-use inventory_core::record::{Exclusions, FieldId, Record, Value};
+use inventory_core::record::Exclusions;
 
 fn account_scope(account: &str, region: &str) -> TestResult<ScopeKey> {
     Ok(ScopeKey::new(

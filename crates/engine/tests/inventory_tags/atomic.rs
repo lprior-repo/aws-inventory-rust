@@ -113,7 +113,7 @@ async fn tags_invalid_member_rolls_back_entire_page_and_allows_same_lease_retry(
             ..ChangeStats::default()
         }
     );
-    assert_eq!(result.repeated_token, false);
+    assert!(!result.repeated_token);
     assert_eq!(
         state::read_tags(&store, &support::resource("one")?).await?,
         vec![state::pair("new", "changed")]
@@ -205,7 +205,7 @@ async fn tags_late_checkpoint_failure_rolls_back_children_cursor_coverage_and_ou
         .await?;
     let result = store.commit_page(page()?).await?;
     assert_eq!(result.stats.resources_changed, 1);
-    assert_eq!(result.repeated_token, false);
+    assert!(!result.repeated_token);
     assert_eq!(
         state::read_tags(&store, &support::resource("one")?).await?,
         vec![state::pair("new", "changed")]

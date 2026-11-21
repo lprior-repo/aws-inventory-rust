@@ -23,7 +23,7 @@ pub(super) async fn commit_tags(
     let target = tags.first().ok_or("tag fetch needs a target")?.resource();
     store.seed_work(support::child_work(sweep, target)?).await?;
     let lease = store
-        .claim(&SweepId::new(sweep.to_owned())?, at - 1, 100)
+        .claim(&SweepId::new(sweep.to_owned())?, at.saturating_sub(1), 100)
         .await?
         .ok_or("tag fetch lease missing")?;
     let mut page = support::page(lease, vec![], true, None, at);
@@ -40,7 +40,7 @@ pub(super) async fn commit_resources(
 ) -> TestResult<CommitResult> {
     store.seed_work(support::work(sweep, "us-east-1")?).await?;
     let lease = store
-        .claim(&SweepId::new(sweep.to_owned())?, at - 1, 100)
+        .claim(&SweepId::new(sweep.to_owned())?, at.saturating_sub(1), 100)
         .await?
         .ok_or("resource lease missing")?;
     let mut page = support::page(lease, observations, true, None, at);
@@ -136,7 +136,7 @@ pub(super) async fn scoped_work(
     let sweep = work.sweep().clone();
     store.seed_work(work).await?;
     Ok(store
-        .claim(&sweep, at - 1, 100)
+        .claim(&sweep, at.saturating_sub(1), 100)
         .await?
         .ok_or("scoped lease missing")?)
 }

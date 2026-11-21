@@ -131,7 +131,7 @@ async fn complete_branch(
         .await?
         .ok_or("branch scope absent")?;
     store
-        .commit_page(page(lease, rows, true, None, at + 1))
+        .commit_page(page(lease, rows, true, None, at.saturating_add(1)))
         .await?;
     Ok(())
 }
@@ -239,7 +239,7 @@ async fn complete_context(
         .await?
         .ok_or("contextual detail scope absent")?;
     store
-        .commit_page(page(lease, rows, true, None, at + 1))
+        .commit_page(page(lease, rows, true, None, at.saturating_add(1)))
         .await?;
     Ok(())
 }

@@ -7,7 +7,7 @@ mod projection;
 #[path = "behavior/stalest_first.rs"]
 mod stalest_first;
 use inventory_core::inventory::{
-    AccountId, Edge, EdgeSource, OperationId, Region, Relation, ResourceId, ResourceKey, ScopeKey,
+    AccountId, Edge, EdgeSource, OperationId, Region, Relation, ResourceKey, ScopeKey,
     ScopeOutcome, ServiceId,
 };
 use inventory_engine::inventory::{BinaryStore, StoreError, SweepId, WorkSpec};
@@ -18,7 +18,7 @@ use super::support::*;
 #[tokio::test]
 async fn given_active_sweep_for_wrong_account_when_resumed_then_rejected_without_mutation()
 -> TestResult {
-    let (directory, store, _) = fixture().await?;
+    let (_directory, store, _) = fixture().await?;
     // Account A creates a sweep and seeds work.
     let sweep_a = SweepId::new("work-1".to_owned())?;
     let account_a = AccountId::parse("111111111111")?;
@@ -38,7 +38,7 @@ async fn given_active_sweep_for_wrong_account_when_resumed_then_rejected_without
             assert_eq!(expected, account_b);
             assert_eq!(manifest, Some(account_a));
         }
-        other => panic!("expected AccountMismatch, got: {other:?}"),
+        other => return Err(format!("expected AccountMismatch, got: {other:?}").into()),
     }
     // Queue state is unchanged: sweep is still claimable.
     let lease = store.claim(&sweep_a, 100, 20).await?;
@@ -51,7 +51,7 @@ async fn given_active_sweep_for_wrong_account_when_resumed_then_rejected_without
 
 #[tokio::test]
 async fn given_same_account_when_resumed_then_sweep_is_acquired() -> TestResult {
-    let (directory, store, _) = fixture().await?;
+    let (_directory, store, _) = fixture().await?;
     let sweep = SweepId::new("work-1".to_owned())?;
     let account = AccountId::parse("111111111111")?;
     store.seed_work(work("work-1", "us-east-1")?).await?;
@@ -65,7 +65,7 @@ async fn given_same_account_when_resumed_then_sweep_is_acquired() -> TestResult 
 
 #[tokio::test]
 async fn given_sweep_without_manifest_when_resumed_then_fails_account_mismatch() -> TestResult {
-    let (directory, store, _) = fixture().await?;
+    let (_directory, store, _) = fixture().await?;
     let sweep = SweepId::new("no-manifest".to_owned())?;
     store.seed_work(work("no-manifest", "us-east-1")?).await?;
     // No manifest created - legacy case.
@@ -76,14 +76,14 @@ async fn given_sweep_without_manifest_when_resumed_then_fails_account_mismatch()
             assert_eq!(expected, account);
             assert_eq!(manifest, None);
         }
-        other => panic!("expected AccountMismatch with None manifest, got: {other:?}"),
+        other => return Err(format!("expected AccountMismatch with None manifest, got: {other:?}").into()),
     }
     Ok(())
 }
 
 #[tokio::test]
 async fn given_live_lease_when_resumed_then_fails_live_lease() -> TestResult {
-    let (directory, store, _) = fixture().await?;
+    let (_directory, store, _) = fixture().await?;
     let sweep = SweepId::new("live-lease".to_owned())?;
     let account = AccountId::parse("111111111111")?;
     store.seed_work(work("live-lease", "us-east-1")?).await?;
@@ -91,25 +91,21 @@ async fn given_live_lease_when_resumed_then_fails_live_lease() -> TestResult {
         .create_sweep_manifest(&sweep, account.as_str())
         .await?;
     // Claim with a long lease (60 seconds) so it's definitely live.
-    let now = std::time::UNIX_EPOCH
-        .elapsed()
-        .expect("system clock before epoch")
-        .as_millis();
-    let now_ms = i64::try_from(now).expect("timestamp exceeds i64");
+    let now_ms = i64::try_from(std::time::UNIX_EPOCH.elapsed()?.as_millis())?;
     let lease = store.claim(&sweep, now_ms, 60000).await?;
     assert!(lease.is_some());
     // Try to resume - should fail with LiveLease.
     let result = store.resume_sweep(&sweep, &account).await;
     match result {
         Err(StoreError::LiveLease) => {}
-        other => panic!("expected LiveLease, got: {other:?}"),
+        other => return Err(format!("expected LiveLease, got: {other:?}").into()),
     }
     Ok(())
 }
 
 #[tokio::test]
 async fn given_expired_lease_when_resumed_then_succeeds() -> TestResult {
-    let (directory, store, _) = fixture().await?;
+    let (_directory, store, _) = fixture().await?;
     let sweep = SweepId::new("expired-lease".to_owned())?;
     let account = AccountId::parse("111111111111")?;
     store.seed_work(work("expired-lease", "us-east-1")?).await?;
@@ -126,7 +122,7 @@ async fn given_expired_lease_when_resumed_then_succeeds() -> TestResult {
 
 #[tokio::test]
 async fn given_duplicate_manifest_when_created_then_original_is_kept() -> TestResult {
-    let (directory, store, _) = fixture().await?;
+    let (_directory, store, _) = fixture().await?;
     let sweep = SweepId::new("duplicate-manifest".to_owned())?;
     let account_a = AccountId::parse("111111111111")?;
     let account_b = AccountId::parse("222222222222")?;

@@ -145,7 +145,7 @@ async fn given_a_tag_snapshot_when_page_limit_is_invalid_then_reads_fail_explici
 
 #[tokio::test]
 async fn given_oversized_legacy_tags_when_projected_then_excluded_without_error() -> TestResult {
-    let (directory, store, pool) = tagged_fixture().await?;
+    let (_directory, store, pool) = tagged_fixture().await?;
     let root = resource("shared-id")?;
     sqlx::query("UPDATE tags SET tag_value=?1 WHERE account=?2 AND region=?3 AND kind=?4 AND id=?5 AND tag_key='a'")
         .bind("x".repeat(inventory_core::inventory::MAX_TAG_VALUE_CHARS + 1))
@@ -155,7 +155,7 @@ async fn given_oversized_legacy_tags_when_projected_then_excluded_without_error(
     // The oversized tag is excluded; remaining tags are still readable.
     let page = snapshot.tags_for(&root, None, 10).await?;
     assert_eq!(page.tags.len(), 1);
-    assert_eq!(page.tags[0].key, "b");
+    assert!(page.tags.first().is_some_and(|tag| tag.key == "b"));
     snapshot.finish().await?;
     pool.close().await;
     Ok(())
@@ -164,7 +164,7 @@ async fn given_oversized_legacy_tags_when_projected_then_excluded_without_error(
 #[tokio::test]
 async fn given_multibyte_tags_at_character_boundary_when_projected_then_read_succeeds() -> TestResult
 {
-    let (directory, store, pool) = tagged_fixture().await?;
+    let (_directory, store, pool) = tagged_fixture().await?;
     let root = resource("shared-id")?;
     // 128 Unicode characters, 256 UTF-8 bytes. Well within the character limit.
     let key = "é".repeat(128);
@@ -203,7 +203,7 @@ async fn given_multibyte_tags_at_character_boundary_when_projected_then_read_suc
 
 #[tokio::test]
 async fn given_oversized_tag_key_when_projected_then_excluded() -> TestResult {
-    let (directory, store, pool) = tagged_fixture().await?;
+    let (_directory, store, pool) = tagged_fixture().await?;
     let root = resource("shared-id")?;
     // Key with 129 characters exceeds the 128 limit.
     let long_key = "é".repeat(129);
