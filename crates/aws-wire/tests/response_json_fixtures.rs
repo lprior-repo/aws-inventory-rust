@@ -13,6 +13,8 @@ use http::{
 use inventory_core::catalog::{Catalog, HttpBinding, Target};
 use serde_json::Value as Json;
 
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+
 struct Suite {
     name: &'static str,
     protocol_id: &'static str,
@@ -23,7 +25,7 @@ struct Suite {
 }
 
 #[test]
-fn published_aws_json_10_response_cases_decode() {
+fn published_aws_json_10_response_cases_decode() -> TestResult {
     run_suite(Suite {
         name: "awsJson1_0",
         protocol_id: "aws.protocols#awsJson1_0",
@@ -31,11 +33,11 @@ fn published_aws_json_10_response_cases_decode() {
         fixture: include_str!("fixtures/protocol-tests/awsJson1_0.json"),
         client_cases: 25,
         server_cases: 2,
-    });
+    })
 }
 
 #[test]
-fn published_aws_json_11_response_cases_decode() {
+fn published_aws_json_11_response_cases_decode() -> TestResult {
     run_suite(Suite {
         name: "awsJson1_1",
         protocol_id: "aws.protocols#awsJson1_1",
@@ -43,11 +45,11 @@ fn published_aws_json_11_response_cases_decode() {
         fixture: include_str!("fixtures/protocol-tests/awsJson1_1.json"),
         client_cases: 48,
         server_cases: 1,
-    });
+    })
 }
 
 #[test]
-fn published_rest_json_1_response_cases_decode() {
+fn published_rest_json_1_response_cases_decode() -> TestResult {
     run_suite(Suite {
         name: "restJson1",
         protocol_id: "aws.protocols#restJson1",
@@ -55,10 +57,10 @@ fn published_rest_json_1_response_cases_decode() {
         fixture: include_str!("fixtures/protocol-tests/restJson1.json"),
         client_cases: 94,
         server_cases: 8,
-    });
+    })
 }
 
-fn run_suite(suite: Suite) {
+fn run_suite(suite: Suite) -> TestResult {
     let fixture: Json = serde_json::from_str(suite.fixture).expect("valid published fixture");
     let shapes = fixture["shapes"].as_object().expect("fixture shape table");
     let service_ids: Vec<String> = shapes
@@ -266,6 +268,7 @@ fn run_suite(suite: Suite) {
         "{} ignored malformed accounting",
         suite.name
     );
+    Ok(())
 }
 
 fn supports_object_body(

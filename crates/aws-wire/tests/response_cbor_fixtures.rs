@@ -11,8 +11,9 @@ use http::{HeaderMap, StatusCode};
 use inventory_core::catalog::Catalog;
 use serde_json::Value as Json;
 
+type TestResult = Result<(), Box<dyn std::error::Error>>;
 #[test]
-fn published_rpcv2_cbor_success_responses_decode_to_exact_records() {
+fn published_rpcv2_cbor_success_responses_decode_to_exact_records() -> TestResult {
     let fixture: Json =
         serde_json::from_str(include_str!("fixtures/protocol-tests/rpcv2Cbor.json"))
             .expect("valid CBOR fixture");
@@ -167,6 +168,7 @@ fn published_rpcv2_cbor_success_responses_decode_to_exact_records() {
     }
     assert_eq!(client_cases, 40, "published client success response cases");
     assert_eq!(server_cases, 2, "server-only cases are tracked separately");
+    Ok(())
 }
 
 fn has_response_cases(shapes: &serde_json::Map<String, Json>, service: &Json) -> bool {
