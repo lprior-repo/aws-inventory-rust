@@ -209,10 +209,11 @@ mod lod_tests {
     }
 
     #[test]
-    fn given_valid_lod_when_applied_then_limits_replace_defaults() {
+    fn given_valid_lod_when_applied_then_limits_replace_defaults()
+    -> Result<(), Box<dyn std::error::Error>> {
         let run = Command::Run(WorkerConfig::default());
-        let Ok(Command::Run(config)) = with_lod(run, Some("3:10:20")) else {
-            panic!("valid lod must apply");
+        let Command::Run(config) = with_lod(run, Some("3:10:20"))? else {
+            return Err("valid lod must yield a run command".into());
         };
         assert_eq!(
             (
@@ -222,6 +223,7 @@ mod lod_tests {
             ),
             (3, 10, 20)
         );
+        Ok(())
     }
 
     #[test]
