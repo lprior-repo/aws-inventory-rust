@@ -1,4 +1,4 @@
-use super::xml_infoset;
+use super::{TestResult, xml_infoset};
 use crate::request::Protocol;
 use inventory_core::catalog::{HttpBinding, Operation, Service, Target};
 use serde_json::Value as Json;
@@ -6,27 +6,33 @@ use serde_json::Value as Json;
 #[path = "../../../../../tests/request_body_cases/json_semantics.rs"]
 mod json_semantics;
 
-pub(super) fn check_headers(case: &Json, request: &http::Request<bytes::Bytes>, label: &str) {
+pub(super) fn check_headers(
+    case: &Json,
+    request: &http::Request<bytes::Bytes>,
+    label: &str,
+) -> TestResult {
     let expected = case.get("headers").and_then(Json::as_object);
-    check_header_values(expected, request, label);
-    check_header_presence(case, request, label);
+    check_header_values(expected, request, label)?;
+    check_header_presence(case, request, label)?;
     check_signing_headers(request, label);
+    Ok(())
 }
 
 fn check_header_values(
     expected: Option<&serde_json::Map<String, Json>>,
     request: &http::Request<bytes::Bytes>,
     label: &str,
-) {
+) -> TestResult {
     for (name, value) in expected.into_iter().flatten() {
         let actual =
-            header_text(request, name).unwrap_or_else(|| panic!("{label}: missing header {name}"));
+            header_text(request, name).ok_or_else(|| format!("{label}: missing header {name}"))?;
         assert_eq!(
             actual,
-            value.as_str().expect("header fixture text"),
+            value.as_str().ok_or("header fixture text")?,
             "{label} header {name}"
         );
     }
+    Ok(())
 }
 
 fn header_text(request: &http::Request<bytes::Bytes>, name: &str) -> Option<String> {
@@ -39,7 +45,11 @@ fn header_text(request: &http::Request<bytes::Bytes>, name: &str) -> Option<Stri
     (!values.is_empty()).then(|| values.join(", "))
 }
 
-fn check_header_presence(case: &Json, request: &http::Request<bytes::Bytes>, label: &str) {
+fn check_header_presence(
+    case: &Json,
+    request: &http::Request<bytes::Bytes>,
+    label: &str,
+) -> TestResult {
     for (field, present) in [("requireHeaders", true), ("forbidHeaders", false)] {
         for name in case
             .get(field)
@@ -47,7 +57,7 @@ fn check_header_presence(case: &Json, request: &http::Request<bytes::Bytes>, lab
             .into_iter()
             .flatten()
         {
-            let name = name.as_str().expect("fixture header name");
+            let name = name.as_str().ok_or("fixture header name")?;
             assert_eq!(
                 request.headers().contains_key(name),
                 present,
@@ -55,6 +65,7 @@ fn check_header_presence(case: &Json, request: &http::Request<bytes::Bytes>, lab
             );
         }
     }
+    Ok(())
 }
 
 fn check_signing_headers(request: &http::Request<bytes::Bytes>, label: &str) {
@@ -74,16 +85,16 @@ pub(super) fn check_body(
     label: &str,
     service: Service<'_>,
     operation: Operation<'_>,
-) {
-    let (body, compressed) = decoded_body(request, label);
+) -> TestResult {
+    let (body, compressed) = decoded_body(request, label)?;
     let Some(expected) = case.get("body").and_then(Json::as_str) else {
         check_omitted_body(&body, compressed, plain, label);
-        return;
+        return Ok(());
     };
-    compare_body(case, &body, expected, protocol, label, service, operation);
+    compare_body(case, &body, expected, protocol, label, service, operation)
 }
 
-fn decoded_body(request: &http::Request<bytes::Bytes>, label: &str) -> (Vec<u8>, bool) {
+fn decoded_body(request: &http::Request<bytes::Bytes>, label: &str) -> TestResult<(Vec<u8>, bool)> {
     let body = request.body().as_ref();
     let gzip = header_text(request, "content-encoding").is_some_and(|value| {
         value
@@ -91,9 +102,9 @@ fn decoded_body(request: &http::Request<bytes::Bytes>, label: &str) -> (Vec<u8>,
             .any(|encoding| encoding.trim().eq_ignore_ascii_case("gzip"))
     });
     if gzip {
-        (decompress_gzip(body, label), true)
+        Ok((decompress_gzip(body, label)?, true))
     } else {
-        (body.to_vec(), false)
+        Ok((body.to_vec(), false))
     }
 }
 
@@ -114,10 +125,10 @@ fn compare_body(
     label: &str,
     service: Service<'_>,
     operation: Operation<'_>,
-) {
-    if raw_payload(service, operation) {
+) -> TestResult {
+    if raw_payload(service, operation)? {
         assert_eq!(body, expected.as_bytes(), "{label} raw payload");
-        return;
+        return Ok(());
     }
     let media_type = case
         .get("bodyMediaType")
@@ -141,57 +152,45 @@ fn compare_body(
     if expected.is_empty() {
         assert!(body.is_empty(), "{label}: expected empty body");
     } else if media_type == "application/json" || media_type.ends_with("+json") {
-        compare_json_body(body, expected, label);
+        compare_json_body(body, expected, label)?;
     } else if matches!(media_type, "application/xml" | "text/xml") || media_type.ends_with("+xml") {
         compare_xml_body(body, expected, label, service, operation);
     } else {
         assert_eq!(body, expected.as_bytes(), "{label} raw payload");
     }
+    Ok(())
 }
 
-fn compare_json_body(body: &[u8], expected: &str, label: &str) {
+fn compare_json_body(body: &[u8], expected: &str, label: &str) -> TestResult {
     let actual: Json = serde_json::from_slice(body)
-        .unwrap_or_else(|error| panic!("{label}: invalid JSON body: {error}"));
+        .map_err(|error| format!("{label}: invalid JSON body: {error}"))?;
     let expected: Json = serde_json::from_str(expected)
-        .unwrap_or_else(|error| panic!("{label}: invalid fixture JSON body: {error}"));
+        .map_err(|error| format!("{label}: invalid fixture JSON body: {error}"))?;
     assert!(
         json_semantics::equivalent(&actual, &expected),
         "{label} JSON body: actual={actual}, expected={expected}"
     );
+    Ok(())
 }
 
-fn raw_payload(service: Service<'_>, operation: Operation<'_>) -> bool {
-    let Target::Shape(index) = operation.input().expect("fixture input") else {
-        return false;
+fn raw_payload(service: Service<'_>, operation: Operation<'_>) -> TestResult<bool> {
+    let Target::Shape(index) = operation.input()? else {
+        return Ok(false);
     };
-    let input = service
-        .shape(index)
-        .expect("input shape lookup")
-        .expect("input shape");
-    for member in input.members().expect("input members") {
-        let member = member.expect("input member");
-        if member
-            .wire()
-            .expect("member wire")
-            .binding()
-            .expect("binding")
-            != HttpBinding::Payload
-        {
+    let input = service.shape(index)?.ok_or("input shape")?;
+    for member in input.members()? {
+        let member = member?;
+        if member.wire()?.binding()? != HttpBinding::Payload {
             continue;
         }
         let kind = match member.target {
-            Target::Shape(index) => service
-                .shape(index)
-                .expect("payload lookup")
-                .expect("payload shape")
-                .kind()
-                .expect("payload kind"),
+            Target::Shape(index) => service.shape(index)?.ok_or("payload shape")?.kind()?,
             Target::Prelude(kind) => kind,
-            _ => panic!("unknown fixture payload target"),
+            _ => return Err("unknown fixture payload target".into()),
         };
-        return matches!(kind, "blob" | "string" | "enum");
+        return Ok(matches!(kind, "blob" | "string" | "enum"));
     }
-    false
+    Ok(false)
 }
 
 fn compare_xml_body(
@@ -208,16 +207,16 @@ fn compare_xml_body(
     );
 }
 
-fn decompress_gzip(body: &[u8], label: &str) -> Vec<u8> {
+fn decompress_gzip(body: &[u8], label: &str) -> TestResult<Vec<u8>> {
     use std::io::Read;
     let mut output = Vec::new();
     flate2::read::GzDecoder::new(body)
         .take(16 * 1024 * 1024 + 1)
         .read_to_end(&mut output)
-        .unwrap_or_else(|error| panic!("{label}: invalid gzip request body: {error}"));
+        .map_err(|error| format!("{label}: invalid gzip request body: {error}"))?;
     assert!(
         output.len() <= 16 * 1024 * 1024,
         "{label}: decompressed fixture body exceeds the catalog body bound"
     );
-    output
+    Ok(output)
 }
