@@ -36,17 +36,17 @@ pub(super) fn assert_query_limits(
     let mut params = JsonMap::new();
     for item in input_shape.members()? {
         let member = item?;
-        if let Target::Shape(list_index) = member.target {
-            if let Some(shape) = service.shape(list_index)? {
-                if shape.kind()? == "list" && is_string_list(service, shape)? {
-                    let name = service.field_name(member.id)?;
-                    params.insert(
-                        name.to_owned(),
-                        Json::Array(vec![Json::String("x".to_owned()); 4_097]),
-                    );
-                    break;
-                }
-            }
+        if let Target::Shape(list_index) = member.target
+            && let Some(shape) = service.shape(list_index)?
+            && shape.kind()? == "list"
+            && is_string_list(service, shape)?
+        {
+            let name = service.field_name(member.id)?;
+            params.insert(
+                name.to_owned(),
+                Json::Array(vec![Json::String("x".to_owned()); 4_097]),
+            );
+            break;
         }
     }
     assert!(
