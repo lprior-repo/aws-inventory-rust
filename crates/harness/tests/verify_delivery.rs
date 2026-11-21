@@ -392,7 +392,8 @@ fn test_verify_push_edge_count_mismatch() -> Result<(), Box<dyn std::error::Erro
 }
 
 #[test]
-fn test_verify_push_first_partial_with_replayed_batches() -> Result<(), Box<dyn std::error::Error>> {
+fn test_verify_push_first_partial_with_replayed_batches() -> Result<(), Box<dyn std::error::Error>>
+{
     let receipt = json!({
         "outputs": {
             "falkor": {
@@ -445,7 +446,8 @@ fn test_verify_push_first_partial_with_replayed_batches() -> Result<(), Box<dyn 
 }
 
 #[test]
-fn test_verify_push_first_partial_without_replayed_batches() -> Result<(), Box<dyn std::error::Error>> {
+fn test_verify_push_first_partial_without_replayed_batches()
+-> Result<(), Box<dyn std::error::Error>> {
     let receipt = json!({
         "outputs": {
             "falkor": {
@@ -744,9 +746,7 @@ async fn test_build_expected_partial_scan() -> Result<(), Box<dyn std::error::Er
         Some(&json!(1))
     );
     assert_eq!(
-        model
-            .get("observations")
-            .and_then(|o| o.get("failure")),
+        model.get("observations").and_then(|o| o.get("failure")),
         Some(&json!(1))
     );
 

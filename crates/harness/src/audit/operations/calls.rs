@@ -9,8 +9,8 @@ const MAX_FILES: usize = 4_096;
 const MAX_SOURCE_BYTES: usize = 32 * 1024 * 1024;
 const MAX_CALLS: usize = 4_096;
 
-pub type SourceInventoryResult = Result<(HashMap<String, String>, Vec<Callsite>, usize), HarnessError>;
-
+pub type SourceInventoryResult =
+    Result<(HashMap<String, String>, Vec<Callsite>, usize), HarnessError>;
 
 pub struct Callsite {
     pub id: String,
@@ -26,10 +26,7 @@ pub struct Callsite {
 fn line_column(source: &str, offset: usize) -> (usize, usize) {
     let before = &source[..offset];
     let line = before.matches('\n').count().saturating_add(1);
-    let line_start = before
-        .rfind('\n')
-        .map(|i| i.saturating_add(1))
-        .unwrap_or(0);
+    let line_start = before.rfind('\n').map(|i| i.saturating_add(1)).unwrap_or(0);
     let column = offset.saturating_sub(line_start);
     (line, column)
 }
@@ -138,7 +135,11 @@ pub fn calls_in_source(path: &str, source: &str) -> Result<(Vec<Callsite>, usize
     calls_in_source_with_budget(path, source, lexical::MAX_TOKENS)
 }
 
-pub fn calls_in_source_with_budget(path: &str, source: &str, max_tokens: usize) -> Result<(Vec<Callsite>, usize), HarnessError> {
+pub fn calls_in_source_with_budget(
+    path: &str,
+    source: &str,
+    max_tokens: usize,
+) -> Result<(Vec<Callsite>, usize), HarnessError> {
     let masked = mask::mask_noncode(path, source)?;
     let (tokens, pairs) = lexical::tokens_and_pairs_with_budget(path, &masked, max_tokens)?;
     let mut calls: Vec<Callsite> = Vec::new();
@@ -195,7 +196,10 @@ pub fn calls_in_source_with_budget(path: &str, source: &str, max_tokens: usize) 
                 if prev_token.text != "." {
                     break;
                 }
-                if !method_name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
+                if !method_name
+                    .chars()
+                    .all(|c| c.is_ascii_alphanumeric() || c == '_')
+                {
                     break;
                 }
                 methods.push((method_name.clone(), open));
@@ -235,8 +239,9 @@ pub fn calls_in_source_with_budget(path: &str, source: &str, max_tokens: usize) 
                 None => break,
             };
             let (function, function_start) = function_at(&masked, index_token.start)?;
-            let service = receiver_service(&masked, &receiver, function_start, index_token.start)
-                .map_err(|e| source_error(path, source, index_token.start, &e.to_string()))?;
+            let service =
+                receiver_service(&masked, &receiver, function_start, index_token.start)
+                    .map_err(|e| source_error(path, source, index_token.start, &e.to_string()))?;
             let operation_line = line_column(source, operation_offset).0;
             let next_index = index.saturating_add(1);
             let next_token = match tokens.get(next_index) {
@@ -272,12 +277,13 @@ fn walk_directory(
     sources: &mut HashMap<String, String>,
     total: &mut usize,
 ) -> Result<(), HarnessError> {
-    let entries = dir
-        .read_dir()
-        .map_err(|e| HarnessError::invalid(format!("failed to read directory {}: {}", dir.display(), e)))?;
+    let entries = dir.read_dir().map_err(|e| {
+        HarnessError::invalid(format!("failed to read directory {}: {}", dir.display(), e))
+    })?;
 
     for entry in entries {
-        let entry = entry.map_err(|e| HarnessError::invalid(format!("directory entry error: {}", e)))?;
+        let entry =
+            entry.map_err(|e| HarnessError::invalid(format!("directory entry error: {}", e)))?;
         let path = entry.path();
 
         if path.is_symlink() {
@@ -294,18 +300,14 @@ fn walk_directory(
             let rel_str = rel.to_string_lossy().to_string();
 
             if sources.len() >= MAX_FILES {
-                return Err(HarnessError::invalid(
-                    "unsupported AWS source inventory",
-                ));
+                return Err(HarnessError::invalid("unsupported AWS source inventory"));
             }
 
             let content = std::fs::read_to_string(&path)
                 .map_err(|e| HarnessError::invalid(format!("failed to read {}: {}", rel_str, e)))?;
             *total = total.saturating_add(content.len());
             if *total > MAX_SOURCE_BYTES {
-                return Err(HarnessError::invalid(
-                    "AWS source byte budget exceeded",
-                ));
+                return Err(HarnessError::invalid("AWS source byte budget exceeded"));
             }
             sources.insert(rel_str, content);
         }

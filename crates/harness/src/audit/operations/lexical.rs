@@ -2,8 +2,6 @@
 use crate::HarnessError;
 use std::collections::HashMap;
 
-
-
 pub const MAX_TOKENS: usize = 500_000;
 
 pub struct Token {
@@ -18,10 +16,7 @@ fn source_location(text: &str, offset: usize) -> (usize, usize) {
         .filter(|b| *b == b'\n')
         .count()
         .saturating_add(1);
-    let line_start = before
-        .rfind('\n')
-        .map(|i| i.saturating_add(1))
-        .unwrap_or(0);
+    let line_start = before.rfind('\n').map(|i| i.saturating_add(1)).unwrap_or(0);
     let column = offset.saturating_sub(line_start).saturating_add(1);
     (line, column)
 }
@@ -123,9 +118,7 @@ fn tokenize(text: &str, max_tokens: usize) -> Result<Vec<Token>, HarnessError> {
             });
         }
         if tokens.len() > max_tokens {
-            return Err(HarnessError::invalid(
-                "Rust token budget exceeded",
-            ));
+            return Err(HarnessError::invalid("Rust token budget exceeded"));
         }
     }
 
@@ -133,7 +126,10 @@ fn tokenize(text: &str, max_tokens: usize) -> Result<Vec<Token>, HarnessError> {
 }
 
 /// Tokenize Rust source and pair matching delimiters.
-pub fn tokens_and_pairs(path: &str, text: &str) -> Result<(Vec<Token>, HashMap<usize, usize>), HarnessError> {
+pub fn tokens_and_pairs(
+    path: &str,
+    text: &str,
+) -> Result<(Vec<Token>, HashMap<usize, usize>), HarnessError> {
     tokens_and_pairs_with_budget(path, text, MAX_TOKENS)
 }
 
@@ -179,8 +175,13 @@ pub fn tokens_and_pairs_with_budget(
                     let (open_line, open_column) = source_location(text, open_token.start);
                     return Err(HarnessError::invalid(format!(
                         "{}:{}:{}: unbalanced Rust delimiters: {} closes {} opened at {}:{}; expected {}",
-                        path, line, column, token.text, open_token.text,
-                        open_line, open_column,
+                        path,
+                        line,
+                        column,
+                        token.text,
+                        open_token.text,
+                        open_line,
+                        open_column,
                         match expected {
                             "(" => ")",
                             "[" => "]",

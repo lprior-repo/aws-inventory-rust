@@ -61,49 +61,87 @@ fn test_decoding_failure_remains_distinct_from_success() -> Result<(), Box<dyn s
     let catalog = make_catalog();
 
     let canonical = canonical_sha256(&catalog);
-    let summary = make_summary("a".repeat(64).as_str(), "b".repeat(64).as_str(), &canonical, "sdk_decode_failure");
+    let summary = make_summary(
+        "a".repeat(64).as_str(),
+        "b".repeat(64).as_str(),
+        &canonical,
+        "sdk_decode_failure",
+    );
 
     let (executed, rows) = validate_summary(&report, &summary, &catalog, &matrix)?;
     let first = rows.first().ok_or("expected at least one row")?;
-    assert_eq!(first["status"], "sdk_decode_failure", "decode failure status must be preserved");
+    assert_eq!(
+        first["status"], "sdk_decode_failure",
+        "decode failure status must be preserved"
+    );
     let source = executed.get("source").ok_or("expected source")?;
-    let sha = source.get("sha256").ok_or("expected sha256")?.as_str().ok_or("expected string")?;
+    let sha = source
+        .get("sha256")
+        .ok_or("expected sha256")?
+        .as_str()
+        .ok_or("expected string")?;
     assert_eq!(sha, "a".repeat(64));
     Ok(())
 }
 
 #[test]
-fn test_changed_source_or_descriptor_cannot_reuse_an_old_run() -> Result<(), Box<dyn std::error::Error>> {
+fn test_changed_source_or_descriptor_cannot_reuse_an_old_run()
+-> Result<(), Box<dyn std::error::Error>> {
     let report = make_report();
     let matrix = make_matrix();
     let catalog = make_catalog();
     let canonical = canonical_sha256(&catalog);
 
     // Changed source
-    let summary = make_summary("c".repeat(64).as_str(), "b".repeat(64).as_str(), &canonical, "sdk_decode_failure");
+    let summary = make_summary(
+        "c".repeat(64).as_str(),
+        "b".repeat(64).as_str(),
+        &canonical,
+        "sdk_decode_failure",
+    );
     let r = validate_summary(&report, &summary, &catalog, &matrix);
-    let Err(e) = r else { return Err("expected source mismatch error".into()) };
+    let Err(e) = r else {
+        return Err("expected source mismatch error".into());
+    };
     let err = e.to_string();
-    assert!(err.contains("different source or catalog"), "expected source mismatch: {}", err);
+    assert!(
+        err.contains("different source or catalog"),
+        "expected source mismatch: {}",
+        err
+    );
 
     // Changed catalog
     let mut changed_catalog = catalog.clone();
-    if let Some(rt) = changed_catalog.get_mut("resource_types").and_then(|v| v.as_array_mut())
+    if let Some(rt) = changed_catalog
+        .get_mut("resource_types")
+        .and_then(|v| v.as_array_mut())
         && let Some(first) = rt.first_mut()
     {
         first["relationships"] = serde_json::json!([{"relation": "CHANGED"}]);
     }
     let canonical_changed = canonical_sha256(&changed_catalog);
-    let summary = make_summary("a".repeat(64).as_str(), "b".repeat(64).as_str(), &canonical_changed, "sdk_decode_failure");
+    let summary = make_summary(
+        "a".repeat(64).as_str(),
+        "b".repeat(64).as_str(),
+        &canonical_changed,
+        "sdk_decode_failure",
+    );
     let r = validate_summary(&report, &summary, &catalog, &matrix);
-    let Err(e) = r else { return Err("expected catalog mismatch error".into()) };
+    let Err(e) = r else {
+        return Err("expected catalog mismatch error".into());
+    };
     let err = e.to_string();
-    assert!(err.contains("different source or catalog"), "expected catalog mismatch: {}", err);
+    assert!(
+        err.contains("different source or catalog"),
+        "expected catalog mismatch: {}",
+        err
+    );
     Ok(())
 }
 
 #[test]
-fn test_provider_boundary_cannot_be_relabelled_as_an_explicit_sdk_send() -> Result<(), Box<dyn std::error::Error>> {
+fn test_provider_boundary_cannot_be_relabelled_as_an_explicit_sdk_send()
+-> Result<(), Box<dyn std::error::Error>> {
     let report = make_report();
     let matrix = make_matrix();
     let catalog = make_catalog();
@@ -134,14 +172,21 @@ fn test_provider_boundary_cannot_be_relabelled_as_an_explicit_sdk_send() -> Resu
     });
 
     let r = validate_summary(&report, &summary, &catalog, &matrix);
-    let Err(e) = r else { return Err("expected provider classification error".into()) };
+    let Err(e) = r else {
+        return Err("expected provider classification error".into());
+    };
     let err = e.to_string();
-    assert!(err.contains("provider classification"), "expected provider classification error: {}", err);
+    assert!(
+        err.contains("provider classification"),
+        "expected provider classification error: {}",
+        err
+    );
     Ok(())
 }
 
 #[test]
-fn test_duplicate_or_missing_operation_identity_fails_closed() -> Result<(), Box<dyn std::error::Error>> {
+fn test_duplicate_or_missing_operation_identity_fails_closed()
+-> Result<(), Box<dyn std::error::Error>> {
     let report = make_report();
     let catalog = make_catalog();
     let canonical = canonical_sha256(&catalog);
@@ -175,14 +220,21 @@ fn test_duplicate_or_missing_operation_identity_fails_closed() -> Result<(), Box
 
     let matrix = make_matrix();
     let r = validate_summary(&report, &summary, &catalog, &matrix);
-    let Err(e) = r else { return Err("expected identity set error".into()) };
+    let Err(e) = r else {
+        return Err("expected identity set error".into());
+    };
     let err = e.to_string();
-    assert!(err.contains("identity set"), "expected identity set error: {}", err);
+    assert!(
+        err.contains("identity set"),
+        "expected identity set error: {}",
+        err
+    );
     Ok(())
 }
 
 #[test]
-fn test_failed_or_missing_provenance_checks_cannot_bind_execution() -> Result<(), Box<dyn std::error::Error>> {
+fn test_failed_or_missing_provenance_checks_cannot_bind_execution()
+-> Result<(), Box<dyn std::error::Error>> {
     let report = make_report();
     let matrix = make_matrix();
     let catalog = make_catalog();
@@ -212,31 +264,56 @@ fn test_failed_or_missing_provenance_checks_cannot_bind_execution() -> Result<()
     });
 
     let r = validate_summary(&report, &summary, &catalog, &matrix);
-    let Err(e) = r else { return Err("expected complete asserted error".into()) };
+    let Err(e) = r else {
+        return Err("expected complete asserted error".into());
+    };
     let err = e.to_string();
-    assert!(err.contains("complete asserted"), "expected complete asserted error: {}", err);
+    assert!(
+        err.contains("complete asserted"),
+        "expected complete asserted error: {}",
+        err
+    );
     Ok(())
 }
 
 #[test]
-fn test_parent_and_merged_catalog_digests_are_required_for_new_evidence() -> Result<(), Box<dyn std::error::Error>> {
+fn test_parent_and_merged_catalog_digests_are_required_for_new_evidence()
+-> Result<(), Box<dyn std::error::Error>> {
     let mut report = make_report();
-    let dimension = report.get_mut("cloud_control_provider_dimension")
+    let dimension = report
+        .get_mut("cloud_control_provider_dimension")
         .and_then(|v| v.as_object_mut())
         .ok_or("expected dimension object")?;
-    dimension.insert("parent_catalog_sha256".to_string(), serde_json::json!("c".repeat(64)));
-    dimension.insert("runtime_catalog_canonical_sha256".to_string(), serde_json::json!("d".repeat(64)));
+    dimension.insert(
+        "parent_catalog_sha256".to_string(),
+        serde_json::json!("c".repeat(64)),
+    );
+    dimension.insert(
+        "runtime_catalog_canonical_sha256".to_string(),
+        serde_json::json!("d".repeat(64)),
+    );
 
     let matrix = make_matrix();
     let catalog = make_catalog();
     let canonical = canonical_sha256(&catalog);
 
     // Missing both
-    let summary = make_summary("a".repeat(64).as_str(), "b".repeat(64).as_str(), &canonical, "sdk_decode_failure");
+    let summary = make_summary(
+        "a".repeat(64).as_str(),
+        "b".repeat(64).as_str(),
+        &canonical,
+        "sdk_decode_failure",
+    );
     let r = validate_summary(&report, &summary, &catalog, &matrix);
-    let Err(e) = r else { return Err("expected parent/merged error".into()) };
+    let Err(e) = r else {
+        return Err("expected parent/merged error".into());
+    };
     let err = e.to_string();
-    assert!(err.contains("different parent or merged"), "expected parent/merged error: {}", err);
+    assert!(
+        err.contains("different parent or merged"),
+        "expected parent/merged error: {}",
+        err
+    );
 
     // Wrong parent
     let checks = [
@@ -265,9 +342,15 @@ fn test_parent_and_merged_catalog_digests_are_required_for_new_evidence() -> Res
         ]
     });
     let r = validate_summary(&report, &summary, &catalog, &matrix);
-    let Err(e) = r else { return Err("expected parent mismatch error".into()) };
+    let Err(e) = r else {
+        return Err("expected parent mismatch error".into());
+    };
     let err = e.to_string();
-    assert!(err.contains("different parent or merged"), "expected parent mismatch: {}", err);
+    assert!(
+        err.contains("different parent or merged"),
+        "expected parent mismatch: {}",
+        err
+    );
 
     // Wrong merged
     let summary = serde_json::json!({
@@ -288,9 +371,15 @@ fn test_parent_and_merged_catalog_digests_are_required_for_new_evidence() -> Res
         ]
     });
     let r = validate_summary(&report, &summary, &catalog, &matrix);
-    let Err(e) = r else { return Err("expected merged mismatch error".into()) };
+    let Err(e) = r else {
+        return Err("expected merged mismatch error".into());
+    };
     let err = e.to_string();
-    assert!(err.contains("different parent or merged"), "expected merged mismatch: {}", err);
+    assert!(
+        err.contains("different parent or merged"),
+        "expected merged mismatch: {}",
+        err
+    );
 
     // Correct
     let summary = serde_json::json!({
@@ -314,7 +403,11 @@ fn test_parent_and_merged_catalog_digests_are_required_for_new_evidence() -> Res
     let first = rows.first().ok_or("expected at least one row")?;
     assert_eq!(first["status"], "sdk_decode_failure");
     let source = executed.get("source").ok_or("expected source")?;
-    let sha = source.get("sha256").ok_or("expected sha256")?.as_str().ok_or("expected string")?;
+    let sha = source
+        .get("sha256")
+        .ok_or("expected sha256")?
+        .as_str()
+        .ok_or("expected string")?;
     assert_eq!(sha, "a".repeat(64));
     Ok(())
 }

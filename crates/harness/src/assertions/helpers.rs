@@ -2,12 +2,7 @@
 
 use serde_json::Value;
 
-pub fn check(
-    checks: &mut Vec<Value>,
-    name: &str,
-    passed: bool,
-    detail: Option<&Value>,
-) {
+pub fn check(checks: &mut Vec<Value>, name: &str, passed: bool, detail: Option<&Value>) {
     let mut item = serde_json::json!({
         "check": name,
         "passed": passed,

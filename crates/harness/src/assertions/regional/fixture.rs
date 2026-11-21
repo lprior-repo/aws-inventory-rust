@@ -4,8 +4,8 @@ use std::path::{Path, PathBuf};
 
 use serde_json::Value;
 
-use crate::provenance;
 use crate::HarnessError;
+use crate::provenance;
 
 pub fn fixture_path(root: &Path) -> PathBuf {
     root.join("crates/aws/tests/fixtures/cloudcontrol-regional.json")
@@ -24,11 +24,7 @@ fn validate_fixtures(document: &Value) -> Result<(), HarnessError> {
     if document.get("schema_version").and_then(Value::as_i64) != Some(1) {
         return Err(HarnessError::invalid("fixture schema version"));
     }
-    if document
-        .get("region")
-        .and_then(Value::as_str)
-        != Some("us-east-1")
-    {
+    if document.get("region").and_then(Value::as_str) != Some("us-east-1") {
         return Err(HarnessError::invalid("fixture region"));
     }
     Ok(())

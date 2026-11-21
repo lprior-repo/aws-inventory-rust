@@ -8,10 +8,7 @@ fn source_location(text: &str, offset: usize) -> (usize, usize) {
         .filter(|b| *b == b'\n')
         .count()
         .saturating_add(1);
-    let line_start = before
-        .rfind('\n')
-        .map(|i| i.saturating_add(1))
-        .unwrap_or(0);
+    let line_start = before.rfind('\n').map(|i| i.saturating_add(1)).unwrap_or(0);
     let column = offset.saturating_sub(line_start).saturating_add(1);
     (line, column)
 }
@@ -101,9 +98,8 @@ pub fn mask_noncode(path: &str, text: &str) -> Result<String, HarnessError> {
         }
     }
 
-    String::from_utf8(output).map_err(|e| HarnessError::invalid(format!(
-        "invalid UTF-8 in masked source: {}", e
-    )))
+    String::from_utf8(output)
+        .map_err(|e| HarnessError::invalid(format!("invalid UTF-8 in masked source: {}", e)))
 }
 
 fn mask_range(output: &mut [u8], start: usize, end: usize) {
@@ -117,11 +113,7 @@ fn mask_range(output: &mut [u8], start: usize, end: usize) {
     }
 }
 
-fn mask_string_literal(
-    output: &mut [u8],
-    text: &str,
-    position: usize,
-) -> (bool, usize) {
+fn mask_string_literal(output: &mut [u8], text: &str, position: usize) -> (bool, usize) {
     let bytes = text.as_bytes();
     let mut cursor = position.saturating_add(1);
     while let Some(b) = bytes.get(cursor) {
@@ -139,11 +131,7 @@ fn mask_string_literal(
     (found_close, cursor)
 }
 
-fn mask_raw_string(
-    output: &mut [u8],
-    text: &str,
-    position: usize,
-) -> (bool, usize) {
+fn mask_raw_string(output: &mut [u8], text: &str, position: usize) -> (bool, usize) {
     let bytes = text.as_bytes();
     // Count # symbols
     let mut hash_count: usize = 0;
@@ -176,11 +164,7 @@ fn mask_raw_string(
     (false, cursor)
 }
 
-fn mask_byte_string(
-    output: &mut [u8],
-    text: &str,
-    position: usize,
-) -> (bool, usize) {
+fn mask_byte_string(output: &mut [u8], text: &str, position: usize) -> (bool, usize) {
     let bytes = text.as_bytes();
     // Check for b" or b'
     let next = position.saturating_add(1);
@@ -207,11 +191,7 @@ fn mask_byte_string(
     (false, next)
 }
 
-fn mask_byte_char(
-    output: &mut [u8],
-    text: &str,
-    position: usize,
-) -> (bool, usize) {
+fn mask_byte_char(output: &mut [u8], text: &str, position: usize) -> (bool, usize) {
     let bytes = text.as_bytes();
     let start = position.saturating_add(2);
     if bytes.get(start).is_none() {
@@ -230,11 +210,7 @@ fn mask_byte_char(
     (false, position.saturating_add(1))
 }
 
-fn mask_char_literal(
-    output: &mut [u8],
-    text: &str,
-    position: usize,
-) -> (bool, usize) {
+fn mask_char_literal(output: &mut [u8], text: &str, position: usize) -> (bool, usize) {
     let bytes = text.as_bytes();
     let mut cursor = position.saturating_add(1);
     let Some(first) = bytes.get(cursor) else {
@@ -267,16 +243,15 @@ fn mask_char_literal(
     (false, position.saturating_add(1))
 }
 
-fn mask_block_comment(
-    output: &mut [u8],
-    text: &str,
-    position: usize,
-) -> (bool, usize) {
+fn mask_block_comment(output: &mut [u8], text: &str, position: usize) -> (bool, usize) {
     let mut cursor = position.saturating_add(2);
     let mut depth: usize = 1;
     let bytes = text.as_bytes();
     while cursor < bytes.len() && depth > 0 {
-        let pair = (bytes.get(cursor).copied(), bytes.get(cursor.saturating_add(1)).copied());
+        let pair = (
+            bytes.get(cursor).copied(),
+            bytes.get(cursor.saturating_add(1)).copied(),
+        );
         if pair == (Some(b'/'), Some(b'*')) {
             depth = depth.saturating_add(1);
             if depth > 64 {

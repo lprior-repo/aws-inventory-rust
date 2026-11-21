@@ -4,8 +4,8 @@ use std::path::Path;
 
 use serde_json::Value;
 
-use crate::assertions::helpers::check as add_check;
 use crate::HarnessError;
+use crate::assertions::helpers::check as add_check;
 
 pub async fn check(
     _root: &Path,
@@ -27,12 +27,7 @@ pub async fn check(
         None,
     );
 
-    add_check(
-        &mut checks,
-        "global:authoritative_flag",
-        fixture_ok,
-        None,
-    );
+    add_check(&mut checks, "global:authoritative_flag", fixture_ok, None);
 
     Ok(checks)
 }

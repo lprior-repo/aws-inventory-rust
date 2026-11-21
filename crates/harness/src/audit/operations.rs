@@ -1,4 +1,3 @@
-
 pub mod calls;
 pub mod lexical;
 pub mod mask;
@@ -6,21 +5,19 @@ pub mod mask;
 use std::collections::HashMap;
 
 use crate::HarnessError;
+use crate::audit::files::read_json_audit;
 use crate::audit::matrix::catalogs;
 use crate::audit::pins::dependency_evidence;
 use crate::audit::validate::validate_summary;
-use crate::audit::files::read_json_audit;
-use crate::provenance::{source_fingerprint, sha256_hex};
+use crate::provenance::{sha256_hex, source_fingerprint};
 
 pub fn reconcile(root: &std::path::Path) -> Result<serde_json::Value, HarnessError> {
     let before = source_fingerprint(root)?;
     let (matrix, matrix_sha) = read_json_audit(&root.join("catalog/aws-operations.json"))?;
 
     let previous_path = root.join("artifacts/aws-operation-source-reconciliation-v04.json");
-    let (previous, previous_sha) =
-        read_json_audit(&previous_path).map_err(|_| HarnessError::invalid(
-            "historical reconciliation artifact is missing",
-        ))?;
+    let (previous, previous_sha) = read_json_audit(&previous_path)
+        .map_err(|_| HarnessError::invalid("historical reconciliation artifact is missing"))?;
 
     let prev_bound = previous
         .get("historical_matrix")
@@ -32,24 +29,24 @@ pub fn reconcile(root: &std::path::Path) -> Result<serde_json::Value, HarnessErr
         ));
     }
 
-
-
     let (sources, calls, nonempty) = calls::source_inventory(root)?;
-
 
     // Compare calls against matrix operations
     let mut matrix_ops = HashMap::new();
-    if let Some(ops) = matrix.get("operations").and_then(serde_json::Value::as_array) {
+    if let Some(ops) = matrix
+        .get("operations")
+        .and_then(serde_json::Value::as_array)
+    {
         for op in ops {
             if let (Some(id), Some(calls_arr)) = (
                 op.get("id").and_then(serde_json::Value::as_str),
-                op.get("source_calls").and_then(serde_json::Value::as_array)
+                op.get("source_calls").and_then(serde_json::Value::as_array),
             ) {
                 let mut callsites = Vec::new();
                 for call in calls_arr {
                     if let (Some(path), Some(func)) = (
                         call.get("path").and_then(serde_json::Value::as_str),
-                        call.get("function").and_then(serde_json::Value::as_str)
+                        call.get("function").and_then(serde_json::Value::as_str),
                     ) {
                         callsites.push((path.to_string(), func.to_string()));
                     }
@@ -62,7 +59,8 @@ pub fn reconcile(root: &std::path::Path) -> Result<serde_json::Value, HarnessErr
     // Build multiset of observed calls
     let mut observed = HashMap::new();
     for call in &calls {
-        observed.entry(call.id.clone())
+        observed
+            .entry(call.id.clone())
             .or_insert_with(Vec::new)
             .push((call.path.clone(), call.function.clone()));
     }
@@ -72,22 +70,26 @@ pub fn reconcile(root: &std::path::Path) -> Result<serde_json::Value, HarnessErr
         let actual = observed.get(id.as_str());
         match actual {
             None => {
-                return Err(HarnessError::invalid(
-                    format!("matrix operation {} not observed in source", id),
-                ));
+                return Err(HarnessError::invalid(format!(
+                    "matrix operation {} not observed in source",
+                    id
+                )));
             }
             Some(actual_calls) => {
                 if expected_calls.len() != actual_calls.len() {
-                    return Err(HarnessError::invalid(
-                        format!("operation {} has {} expected calls but {} observed", 
-                            id, expected_calls.len(), actual_calls.len()),
-                    ));
+                    return Err(HarnessError::invalid(format!(
+                        "operation {} has {} expected calls but {} observed",
+                        id,
+                        expected_calls.len(),
+                        actual_calls.len()
+                    )));
                 }
                 for exp in expected_calls {
                     if !actual_calls.contains(exp) {
-                        return Err(HarnessError::invalid(
-                            format!("operation {} missing expected callsite {}/{}", id, exp.0, exp.1),
-                        ));
+                        return Err(HarnessError::invalid(format!(
+                            "operation {} missing expected callsite {}/{}",
+                            id, exp.0, exp.1
+                        )));
                     }
                 }
             }
@@ -97,9 +99,10 @@ pub fn reconcile(root: &std::path::Path) -> Result<serde_json::Value, HarnessErr
     // Check for unexpected observed calls not in matrix
     for id in observed.keys() {
         if !matrix_ops.contains_key(id) {
-            return Err(HarnessError::invalid(
-                format!("observed operation {} not in matrix", id),
-            ));
+            return Err(HarnessError::invalid(format!(
+                "observed operation {} not in matrix",
+                id
+            )));
         }
     }
 
@@ -287,9 +290,10 @@ fn validate_additions_document(
     let mut checked = Vec::new();
 
     for row in rows {
-        let id = row.get("id").and_then(|i| i.as_str()).ok_or_else(|| {
-            HarnessError::invalid("addition missing id")
-        })?;
+        let id = row
+            .get("id")
+            .and_then(|i| i.as_str())
+            .ok_or_else(|| HarnessError::invalid("addition missing id"))?;
 
         if matrix_ids.contains(id) {
             return Err(HarnessError::invalid(format!(
@@ -319,14 +323,16 @@ pub fn write_reconciliation(
     let output = output.to_path_buf();
 
     // Validate output is within root
-    let output = output.canonicalize().map_err(|e| {
-        HarnessError::invalid(format!("failed to canonicalize output path: {}", e))
-    })?;
-    let root = root.canonicalize().map_err(|e| {
-        HarnessError::invalid(format!("failed to canonicalize root path: {}", e))
-    })?;
+    let output = output
+        .canonicalize()
+        .map_err(|e| HarnessError::invalid(format!("failed to canonicalize output path: {}", e)))?;
+    let root = root
+        .canonicalize()
+        .map_err(|e| HarnessError::invalid(format!("failed to canonicalize root path: {}", e)))?;
     if !output.starts_with(&root) {
-        return Err(HarnessError::invalid("output path must be within the repository root"));
+        return Err(HarnessError::invalid(
+            "output path must be within the repository root",
+        ));
     }
 
     // Check protected historical paths
@@ -338,20 +344,20 @@ pub fn write_reconciliation(
     ];
     for p in &protected {
         if output == *p {
-            return Err(HarnessError::invalid("historical evidence cannot be replaced"));
+            return Err(HarnessError::invalid(
+                "historical evidence cannot be replaced",
+            ));
         }
     }
 
     // Atomic write: write to .partial temp, then rename
     let temp = output.with_extension("partial");
     let content = serde_json::to_string_pretty(report)?;
-    std::fs::write(&temp, content + "\n").map_err(|e| {
-        HarnessError::invalid(format!("failed to write temporary file: {}", e))
-    })?;
+    std::fs::write(&temp, content + "\n")
+        .map_err(|e| HarnessError::invalid(format!("failed to write temporary file: {}", e)))?;
 
-    std::fs::rename(&temp, &output).map_err(|e| {
-        HarnessError::invalid(format!("failed to rename temporary file: {}", e))
-    })?;
+    std::fs::rename(&temp, &output)
+        .map_err(|e| HarnessError::invalid(format!("failed to rename temporary file: {}", e)))?;
 
     Ok(())
 }

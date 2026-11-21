@@ -38,43 +38,25 @@ pub fn child_checks(checks: &mut Vec<Value>, ctx: &ChildCheckContext) {
         .collect();
 
     for child in children {
-        let name = child
-            .get("name")
-            .and_then(Value::as_str)
-            .unwrap_or("");
-        let type_name = child
-            .get("type_name")
-            .and_then(Value::as_str)
-            .unwrap_or("");
+        let name = child.get("name").and_then(Value::as_str).unwrap_or("");
+        let type_name = child.get("type_name").and_then(Value::as_str).unwrap_or("");
         let parent_key = child
             .get("parent_key")
             .and_then(Value::as_str)
             .unwrap_or("");
 
-        let parent = parents
-            .get(parent_key)
-            .cloned()
-            .unwrap_or(Value::Null);
+        let parent = parents.get(parent_key).cloned().unwrap_or(Value::Null);
         let _parent_type = parent
             .get("type_name")
             .and_then(Value::as_str)
             .unwrap_or("");
 
         let child_seed_key = format!("child:{name}");
-        let seed = seeds
-            .get(&child_seed_key)
-            .cloned()
-            .unwrap_or(Value::Null);
+        let seed = seeds.get(&child_seed_key).cloned().unwrap_or(Value::Null);
         let parent_seed_key = format!("parent:{parent_key}");
-        let parent_seed = seeds
-            .get(&parent_seed_key)
-            .cloned()
-            .unwrap_or(Value::Null);
+        let parent_seed = seeds.get(&parent_seed_key).cloned().unwrap_or(Value::Null);
 
-        let seed_status = seed
-            .get("status")
-            .and_then(Value::as_str)
-            .unwrap_or("");
+        let seed_status = seed.get("status").and_then(Value::as_str).unwrap_or("");
         let parent_seed_status = parent_seed
             .get("status")
             .and_then(Value::as_str)
@@ -103,12 +85,7 @@ pub fn child_checks(checks: &mut Vec<Value>, ctx: &ChildCheckContext) {
             (Some(id), Some(_pid)) => {
                 let matches: Vec<&Value> = observed_children
                     .iter()
-                    .filter(|r| {
-                        r.get("id")
-                            .and_then(Value::as_str)
-                            .unwrap_or("")
-                            == id
-                    })
+                    .filter(|r| r.get("id").and_then(Value::as_str).unwrap_or("") == id)
                     .collect();
 
                 add_check(
@@ -123,10 +100,7 @@ pub fn child_checks(checks: &mut Vec<Value>, ctx: &ChildCheckContext) {
                         Some(r) => r,
                         None => continue,
                     };
-                    let properties = resource
-                        .get("properties")
-                        .cloned()
-                        .unwrap_or(Value::Null);
+                    let properties = resource.get("properties").cloned().unwrap_or(Value::Null);
 
                     let child_type_ok = properties
                         .get("cloudformation_type")
@@ -154,21 +128,11 @@ pub fn child_checks(checks: &mut Vec<Value>, ctx: &ChildCheckContext) {
                         "empty" => !actual_kind,
                         _ => true,
                     };
-                    add_check(
-                        checks,
-                        &format!("{name}:resource_kind"),
-                        kind_ok,
-                        None,
-                    );
+                    add_check(checks, &format!("{name}:resource_kind"), kind_ok, None);
 
                     let actual_edges: Vec<&Value> = parent_edges
                         .iter()
-                        .filter(|e| {
-                            e.get("from_id")
-                                .and_then(Value::as_str)
-                                .unwrap_or("")
-                                == id
-                        })
+                        .filter(|e| e.get("from_id").and_then(Value::as_str).unwrap_or("") == id)
                         .collect();
 
                     let expected_count = child
@@ -197,19 +161,12 @@ pub fn child_checks(checks: &mut Vec<Value>, ctx: &ChildCheckContext) {
                         let observed_rels: std::collections::HashSet<String> = actual_edges
                             .iter()
                             .filter_map(|e| {
-                                e.get("relation")
-                                    .and_then(Value::as_str)
-                                    .map(str::to_owned)
+                                e.get("relation").and_then(Value::as_str).map(str::to_owned)
                             })
                             .collect();
 
                         let rel_ok = expected_rels.iter().all(|r| observed_rels.contains(r));
-                        add_check(
-                            checks,
-                            &format!("{name}:edge_relations"),
-                            rel_ok,
-                            None,
-                        );
+                        add_check(checks, &format!("{name}:edge_relations"), rel_ok, None);
                     }
 
                     let expected_architecture = child
@@ -221,13 +178,8 @@ pub fn child_checks(checks: &mut Vec<Value>, ctx: &ChildCheckContext) {
                     let architecture: Vec<Value> = all_edges
                         .iter()
                         .filter(|e| {
-                            e.get("from_id")
-                                .and_then(Value::as_str)
-                                .unwrap_or("")
-                                == id
-                                && e.get("relation")
-                                    .and_then(Value::as_str)
-                                    .unwrap_or("")
+                            e.get("from_id").and_then(Value::as_str).unwrap_or("") == id
+                                && e.get("relation").and_then(Value::as_str).unwrap_or("")
                                     != "CHILD_OF"
                         })
                         .cloned()
@@ -238,46 +190,33 @@ pub fn child_checks(checks: &mut Vec<Value>, ctx: &ChildCheckContext) {
                             .get("relationship")
                             .and_then(Value::as_str)
                             .unwrap_or("");
-                        let target = edge
-                            .get("target")
-                            .and_then(Value::as_str)
-                            .unwrap_or("");
-                        let type_name = edge
-                            .get("type_name")
-                            .and_then(Value::as_str)
-                            .unwrap_or("");
+                        let target = edge.get("target").and_then(Value::as_str).unwrap_or("");
+                        let type_name = edge.get("type_name").and_then(Value::as_str).unwrap_or("");
                         let _owner_resolution = edge
                             .get("owner_resolution")
                             .and_then(Value::as_str)
                             .unwrap_or("");
-                        let _paths = edge
-                            .get("paths")
-                            .cloned()
-                            .unwrap_or(Value::Array(vec![]));
+                        let _paths = edge.get("paths").cloned().unwrap_or(Value::Array(vec![]));
 
                         let matching: Vec<Value> = architecture
                             .iter()
                             .filter(|e| {
-                                e.get("relation")
-                                    .and_then(Value::as_str)
-                                    .unwrap_or("")
-                                    == rel
-                                && e.get("to_id")
-                                    .and_then(Value::as_str)
-                                    .unwrap_or("")
-                                    == target
+                                e.get("relation").and_then(Value::as_str).unwrap_or("") == rel
+                                    && e.get("to_id").and_then(Value::as_str).unwrap_or("")
+                                        == target
                             })
                             .cloned()
                             .collect();
 
                         let edge_passed = matching.len() == 1
                             && match matching.first() {
-                                Some(m) => m
-                                    .get("properties")
-                                    .and_then(|p| p.get("cloudformation_type"))
-                                    .and_then(Value::as_str)
-                                    .unwrap_or("")
-                                    == type_name,
+                                Some(m) => {
+                                    m.get("properties")
+                                        .and_then(|p| p.get("cloudformation_type"))
+                                        .and_then(Value::as_str)
+                                        .unwrap_or("")
+                                        == type_name
+                                }
                                 None => false,
                             };
 
@@ -291,12 +230,7 @@ pub fn child_checks(checks: &mut Vec<Value>, ctx: &ChildCheckContext) {
                 }
             }
             _ => {
-                add_check(
-                    checks,
-                    &format!("{name}:one_exact_child"),
-                    false,
-                    None,
-                );
+                add_check(checks, &format!("{name}:one_exact_child"), false, None);
             }
         }
     }
@@ -309,19 +243,11 @@ pub fn identity_checks(
 ) {
     for (key, parent) in parents {
         let seed_key = format!("parent:{key}");
-        let seed = seeds
-            .get(&seed_key)
-            .cloned()
-            .unwrap_or(Value::Null);
+        let seed = seeds.get(&seed_key).cloned().unwrap_or(Value::Null);
 
         let identity = normalized_id(parent, &seed);
         if identity.is_some() {
-            add_check(
-                checks,
-                &format!("{key}:normalized_identity"),
-                true,
-                None,
-            );
+            add_check(checks, &format!("{key}:normalized_identity"), true, None);
         }
     }
 }

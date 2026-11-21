@@ -9,8 +9,8 @@ use std::path::Path;
 
 use serde_json::Value;
 
-use crate::assertions::helpers::check as add_check;
 use crate::HarnessError;
+use crate::assertions::helpers::check as add_check;
 
 pub async fn check(
     root: &Path,

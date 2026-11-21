@@ -7,8 +7,8 @@ use std::path::Path;
 
 use serde_json::Value;
 
-use crate::assertions::helpers::check as add_check;
 use crate::HarnessError;
+use crate::assertions::helpers::check as add_check;
 
 pub async fn check(
     root: &Path,
@@ -33,12 +33,11 @@ pub async fn check(
     );
 
     // Try to read observations
-    let (resources, edges, status) =
-        observations::for_scan(database, scan_id).await.unwrap_or((
-            Vec::new(),
-            Vec::new(),
-            String::from("absent"),
-        ));
+    let (resources, edges, status) = observations::for_scan(database, scan_id).await.unwrap_or((
+        Vec::new(),
+        Vec::new(),
+        String::from("absent"),
+    ));
 
     add_check(
         &mut checks,

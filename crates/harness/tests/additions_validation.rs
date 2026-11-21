@@ -74,7 +74,9 @@ fn test_absent_overlay_leaves_reconciliation_output_untouched() -> TestResult {
 
     let result = check_additions(&root)?;
     assert!(
-        result.get("additions").is_some_and(serde_json::Value::is_null),
+        result
+            .get("additions")
+            .is_some_and(serde_json::Value::is_null),
         "additions should be null when file is absent"
     );
     Ok(())
@@ -95,7 +97,11 @@ fn test_additions_schema_version_must_be_1() -> TestResult {
         },
         "additions": []
     });
-    write_json(&root, "catalog/aws-operation-additions.json", &bad_additions)?;
+    write_json(
+        &root,
+        "catalog/aws-operation-additions.json",
+        &bad_additions,
+    )?;
 
     let result = check_additions(&root);
     let Err(e) = result else {
@@ -123,7 +129,11 @@ fn test_additions_must_bind_correct_matrix() -> TestResult {
         },
         "additions": []
     });
-    write_json(&root, "catalog/aws-operation-additions.json", &bad_additions)?;
+    write_json(
+        &root,
+        "catalog/aws-operation-additions.json",
+        &bad_additions,
+    )?;
 
     let result = check_additions(&root);
     let Err(e) = result else {
@@ -160,7 +170,11 @@ fn test_duplicate_operation_identity_fails() -> TestResult {
             "explicit_sdk_send": true
         }]
     });
-    write_json(&root, "catalog/aws-operation-additions.json", &bad_additions)?;
+    write_json(
+        &root,
+        "catalog/aws-operation-additions.json",
+        &bad_additions,
+    )?;
 
     let result = check_additions(&root);
     let Err(e) = result else {
@@ -197,12 +211,22 @@ fn test_valid_additions_pass() -> TestResult {
             "explicit_sdk_send": true
         }]
     });
-    write_json(&root, "catalog/aws-operation-additions.json", &valid_additions)?;
+    write_json(
+        &root,
+        "catalog/aws-operation-additions.json",
+        &valid_additions,
+    )?;
 
     let value = check_additions(&root)?;
-    assert_eq!(value.get("status").and_then(|v| v.as_str()), Some("applied"));
     assert_eq!(
-        value.get("additions").and_then(|a| a.get("additions_count")).and_then(|v| v.as_i64()),
+        value.get("status").and_then(|v| v.as_str()),
+        Some("applied")
+    );
+    assert_eq!(
+        value
+            .get("additions")
+            .and_then(|a| a.get("additions_count"))
+            .and_then(|v| v.as_i64()),
         Some(1)
     );
     Ok(())
@@ -306,6 +330,9 @@ fn test_atomic_write_replaces_existing_file() -> TestResult {
 
     let content = fs::read_to_string(&output)?;
     let parsed: serde_json::Value = serde_json::from_str(&content)?;
-    assert_eq!(parsed.get("status").and_then(|v| v.as_str()), Some("second"));
+    assert_eq!(
+        parsed.get("status").and_then(|v| v.as_str()),
+        Some("second")
+    );
     Ok(())
 }

@@ -4,10 +4,10 @@ use std::process::ExitCode;
 use inventory_harness::assertions::global as assertions_global;
 use inventory_harness::assertions::parents as assertions_parents;
 use inventory_harness::assertions::regional as assertions_regional;
+use inventory_harness::audit::write_reconciliation;
 use inventory_harness::{
     HarnessError, assertions, audit, catalog, install, mutate, seed, snapshot, verify_delivery,
 };
-use inventory_harness::audit::write_reconciliation;
 
 mod cli;
 
@@ -288,7 +288,10 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, HarnessError> {
                         obj.insert("emulator_evidence".to_string(), emulator);
                     }
                     write_reconciliation(&root, &extended, &output)?;
-                    let status = extended.get("status").cloned().unwrap_or(serde_json::json!("unknown"));
+                    let status = extended
+                        .get("status")
+                        .cloned()
+                        .unwrap_or(serde_json::json!("unknown"));
                     Ok(serde_json::json!({
                         "output": output.to_string_lossy(),
                         "status": status,
@@ -296,8 +299,14 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, HarnessError> {
                     }))
                 } else {
                     write_reconciliation(&root, &report, &output)?;
-                    let status = report.get("status").cloned().unwrap_or(serde_json::json!("unknown"));
-                    let summary = report.get("summary").cloned().unwrap_or(serde_json::json!(""));
+                    let status = report
+                        .get("status")
+                        .cloned()
+                        .unwrap_or(serde_json::json!("unknown"));
+                    let summary = report
+                        .get("summary")
+                        .cloned()
+                        .unwrap_or(serde_json::json!(""));
                     Ok(serde_json::json!({
                         "output": output.to_string_lossy(),
                         "status": status,

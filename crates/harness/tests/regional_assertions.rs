@@ -13,12 +13,9 @@ fn root() -> std::path::PathBuf {
 }
 
 fn has_failed_check(checks: &[serde_json::Value]) -> bool {
-    checks.iter().any(|check| {
-        check
-            .get("passed")
-            .and_then(serde_json::Value::as_bool)
-            == Some(false)
-    })
+    checks
+        .iter()
+        .any(|check| check.get("passed").and_then(serde_json::Value::as_bool) == Some(false))
 }
 
 #[test]
@@ -27,7 +24,10 @@ fn fixture_validation_requires_vpc_ids() -> TestResult {
     let mut checks = Vec::new();
     let valid = regional::fixture::validate(&fixtures, &mut checks);
     assert!(!valid, "empty fixtures should not validate");
-    assert!(has_failed_check(&checks), "validation should report failures");
+    assert!(
+        has_failed_check(&checks),
+        "validation should report failures"
+    );
     Ok(())
 }
 
@@ -79,12 +79,17 @@ async fn given_empty_database_when_asserting_regional_then_failures() -> TestRes
     let mut connection = SqliteConnection::connect_with(&options).await?;
     connection.execute("CREATE TABLE resource_observations (id INTEGER PRIMARY KEY, scan_id TEXT, source TEXT, resource_json TEXT)").await?;
     connection.execute("CREATE TABLE edge_observations (id INTEGER PRIMARY KEY, scan_id TEXT, source TEXT, edge_json TEXT)").await?;
-    connection.execute("CREATE TABLE scans (scan_id TEXT PRIMARY KEY, status TEXT)").await?;
+    connection
+        .execute("CREATE TABLE scans (scan_id TEXT PRIMARY KEY, status TEXT)")
+        .await?;
     connection.close().await?;
 
     let fixtures = json!({});
     let checks = regional::check(&root(), &db_path, "scan", Some(&fixtures), None).await?;
 
-    assert!(has_failed_check(&checks), "empty database should produce failures");
+    assert!(
+        has_failed_check(&checks),
+        "empty database should produce failures"
+    );
     Ok(())
 }

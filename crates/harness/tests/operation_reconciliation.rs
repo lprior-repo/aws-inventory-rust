@@ -39,13 +39,17 @@ fn test_comments_strings_chars_and_lifetimes_do_not_create_calls() -> TestResult
 fn test_qualified_client_assignment_and_parameter_resolve_service() -> TestResult {
     let source = "fn one() { let sdk = aws_sdk_config::Client::new(config); sdk.get_status().send(); }\nfn two(sdk: &aws_sdk_resourceexplorer2::Client) { sdk.get_status().send(); }\n";
     let ids = call_ids(source)?;
-    assert_eq!(ids, vec!["config.get_status", "resourceexplorer2.get_status"]);
+    assert_eq!(
+        ids,
+        vec!["config.get_status", "resourceexplorer2.get_status"]
+    );
     Ok(())
 }
 
 #[test]
 fn test_changed_sdk_namespace_is_not_inferred_from_old_method_names() -> TestResult {
-    let source = "use aws_sdk_eks::Client; fn list(client: &Client) {client.list_clusters().send();}\n";
+    let source =
+        "use aws_sdk_eks::Client; fn list(client: &Client) {client.list_clusters().send();}\n";
     let ids = call_ids(source)?;
     assert_eq!(ids, vec!["eks.list_clusters"]);
     Ok(())
@@ -196,7 +200,11 @@ fn test_char_literal_apostrophe() -> TestResult {
 fn test_unterminated_string_has_location() -> TestResult {
     let source = "fn collect() {\n    let s = \"unterminated\n}";
     let err = error_text(calls_in_source("sample.rs", source))?;
-    assert!(err.contains("sample.rs:2:13"), "expected location in error: {}", err);
+    assert!(
+        err.contains("sample.rs:2:13"),
+        "expected location in error: {}",
+        err
+    );
     Ok(())
 }
 
@@ -204,8 +212,16 @@ fn test_unterminated_string_has_location() -> TestResult {
 fn test_unbalanced_delimiters_has_both_locations() -> TestResult {
     let source = "fn collect() {\n    let values = [1, 2);\n}\n";
     let err = error_text(calls_in_source("sample.rs", source))?;
-    assert!(err.contains("sample.rs:2:23"), "expected closing location in error: {}", err);
-    assert!(err.contains("opened at 2:18"), "expected opening location in error: {}", err);
+    assert!(
+        err.contains("sample.rs:2:23"),
+        "expected closing location in error: {}",
+        err
+    );
+    assert!(
+        err.contains("opened at 2:18"),
+        "expected opening location in error: {}",
+        err
+    );
     Ok(())
 }
 
@@ -213,7 +229,11 @@ fn test_unbalanced_delimiters_has_both_locations() -> TestResult {
 fn test_unexpected_closing_delimiter_has_location() -> TestResult {
     let source = "fn collect() {}\n}\n";
     let err = error_text(calls_in_source("sample.rs", source))?;
-    assert!(err.contains("sample.rs:2:1"), "expected location in error: {}", err);
+    assert!(
+        err.contains("sample.rs:2:1"),
+        "expected location in error: {}",
+        err
+    );
     Ok(())
 }
 
@@ -221,7 +241,11 @@ fn test_unexpected_closing_delimiter_has_location() -> TestResult {
 fn test_unclosed_delimiter_has_location() -> TestResult {
     let source = "fn collect() {\n    Ok(())\n";
     let err = error_text(calls_in_source("parent_cases.rs", source))?;
-    assert!(err.contains("parent_cases.rs:1:14"), "expected location in error: {}", err);
+    assert!(
+        err.contains("parent_cases.rs:1:14"),
+        "expected location in error: {}",
+        err
+    );
     Ok(())
 }
 
@@ -229,7 +253,11 @@ fn test_unclosed_delimiter_has_location() -> TestResult {
 fn test_client_resolution_error_has_path() -> TestResult {
     let source = "fn collect(client: OtherClient) {\n    client.describe_vpcs().send();\n}\n";
     let err = error_text(calls_in_source("unknown_client.rs", source))?;
-    assert!(err.contains("unknown_client.rs"), "expected path in error: {}", err);
+    assert!(
+        err.contains("unknown_client.rs"),
+        "expected path in error: {}",
+        err
+    );
     Ok(())
 }
 
@@ -239,7 +267,10 @@ fn test_debug_non_ascii_masking() -> TestResult {
     let masked = mask_noncode("sample.rs", source)?;
     println!("Original: {:?}", source);
     println!("Masked: {:?}", masked);
-    println!("Masked bytes around 60-70: {:?}", masked.as_bytes().get(60..70));
+    println!(
+        "Masked bytes around 60-70: {:?}",
+        masked.as_bytes().get(60..70)
+    );
     Ok(())
 }
 

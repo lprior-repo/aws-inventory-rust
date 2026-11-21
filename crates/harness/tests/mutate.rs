@@ -49,10 +49,15 @@ fn test_receipt_json_serialization() -> TestResult {
         log_sha256: Some("abc123".to_string()),
     };
     let json = receipt.to_json();
-    assert_eq!(json.get("status").and_then(|v| v.as_str()), Some("completed"));
+    assert_eq!(
+        json.get("status").and_then(|v| v.as_str()),
+        Some("completed")
+    );
     assert_eq!(json.get("exit_code").and_then(|v| v.as_i64()), Some(0));
     assert_eq!(
-        json.get("argv").and_then(|v| v.get(0)).and_then(|v| v.as_str()),
+        json.get("argv")
+            .and_then(|v| v.get(0))
+            .and_then(|v| v.as_str()),
         Some("test")
     );
     Ok(())
@@ -247,7 +252,10 @@ fn test_write_receipt_file() -> TestResult {
 
     let content = fs::read_to_string(&receipt_path)?;
     let parsed: serde_json::Value = serde_json::from_str(&content)?;
-    assert_eq!(parsed.get("status").and_then(|v| v.as_str()), Some("running"));
+    assert_eq!(
+        parsed.get("status").and_then(|v| v.as_str()),
+        Some("running")
+    );
 
     drop(temp);
     Ok(())

@@ -36,7 +36,11 @@ pub(super) fn parse(arguments: &[String]) -> Result<Command, HarnessError> {
 }
 
 fn parse_freeze(arguments: &[String]) -> Result<Command, HarnessError> {
-    let options = options(arguments, &["--evidence", "--output", "--binary", "--root"], &[])?;
+    let options = options(
+        arguments,
+        &["--evidence", "--output", "--binary", "--root"],
+        &[],
+    )?;
     Ok(Command::Freeze {
         evidence: options.value("--evidence")?,
         output: options.value("--output")?,
@@ -283,7 +287,13 @@ fn parse_mutate(arguments: &[String]) -> Result<Command, HarnessError> {
 fn parse_verify_delivery(arguments: &[String]) -> Result<Command, HarnessError> {
     let options = options(
         arguments,
-        &["--binary", "--redis-cli", "--database", "--output", "--run-workspace-tests"],
+        &[
+            "--binary",
+            "--redis-cli",
+            "--database",
+            "--output",
+            "--run-workspace-tests",
+        ],
         &["--run-workspace-tests"],
     )?;
     let binary = options.value("--binary")?;
@@ -320,7 +330,6 @@ impl Options {
     fn value(&self, flag: &str) -> Result<PathBuf, HarnessError> {
         self.get(flag).ok_or_else(|| HarnessError::invalid(USAGE))
     }
-
 }
 
 fn options(

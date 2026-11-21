@@ -4,8 +4,8 @@ use serde_json::json;
 use sqlx::sqlite::{SqliteConnectOptions, SqliteConnection};
 use sqlx::{Connection, Executor};
 
-use inventory_harness::assertions::parents;
 use inventory_harness::HarnessError;
+use inventory_harness::assertions::parents;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
@@ -14,12 +14,9 @@ fn root() -> std::path::PathBuf {
 }
 
 fn has_failed_check(checks: &[serde_json::Value]) -> bool {
-    checks.iter().any(|check| {
-        check
-            .get("passed")
-            .and_then(serde_json::Value::as_bool)
-            == Some(false)
-    })
+    checks
+        .iter()
+        .any(|check| check.get("passed").and_then(serde_json::Value::as_bool) == Some(false))
 }
 
 #[test]
@@ -27,10 +24,7 @@ fn fixture_loading_validates_byte_bound() -> TestResult {
     // Load the real fixture and verify it's under the byte bound
     let path = root().join("crates/aws/tests/fixtures/cloudcontrol-parents.json");
     let bytes = std::fs::read(&path)?;
-    assert!(
-        bytes.len() <= 1_048_576,
-        "fixture exceeds 1 MiB byte bound"
-    );
+    assert!(bytes.len() <= 1_048_576, "fixture exceeds 1 MiB byte bound");
     Ok(())
 }
 
@@ -66,7 +60,11 @@ fn fixture_loading_validates_unique_parent_keys() -> TestResult {
 
     let keys: std::collections::HashSet<String> = parents
         .iter()
-        .filter_map(|p| p.get("key").and_then(serde_json::Value::as_str).map(str::to_owned))
+        .filter_map(|p| {
+            p.get("key")
+                .and_then(serde_json::Value::as_str)
+                .map(str::to_owned)
+        })
         .collect();
     assert_eq!(keys.len(), 12, "unique parent keys");
     Ok(())
@@ -82,7 +80,11 @@ fn fixture_loading_validates_child_type_coverage() -> TestResult {
 
     let types: std::collections::HashSet<String> = children
         .iter()
-        .filter_map(|c| c.get("type_name").and_then(serde_json::Value::as_str).map(str::to_owned))
+        .filter_map(|c| {
+            c.get("type_name")
+                .and_then(serde_json::Value::as_str)
+                .map(str::to_owned)
+        })
         .collect();
     assert_eq!(types.len(), 24, "child-type coverage");
     Ok(())
@@ -98,19 +100,25 @@ async fn given_empty_database_when_asserting_parents_then_failures() -> TestResu
     let mut connection = SqliteConnection::connect_with(&options).await?;
     connection.execute("CREATE TABLE resource_observations (id INTEGER PRIMARY KEY, scan_id TEXT, source TEXT, resource_json TEXT)").await?;
     connection.execute("CREATE TABLE edge_observations (id INTEGER PRIMARY KEY, scan_id TEXT, source TEXT, edge_json TEXT)").await?;
-    connection.execute("CREATE TABLE scans (scan_id TEXT PRIMARY KEY, status TEXT)").await?;
+    connection
+        .execute("CREATE TABLE scans (scan_id TEXT PRIMARY KEY, status TEXT)")
+        .await?;
     connection.close().await?;
 
     let seed_report = json!({"fixture_sha256": "wrong", "status": "incomplete"});
     let checks = parents::check(&root(), &db_path, "scan", Some(&seed_report)).await?;
 
-    assert!(has_failed_check(&checks), "empty database should produce failures");
+    assert!(
+        has_failed_check(&checks),
+        "empty database should produce failures"
+    );
     Ok(())
 }
 
 #[test]
 fn normalized_identity_uses_expected_id_when_present() -> TestResult {
-    let child = json!({"expected_resource_id": "arn:aws:fake:us-east-1:000000000000:resource/test"});
+    let child =
+        json!({"expected_resource_id": "arn:aws:fake:us-east-1:000000000000:resource/test"});
     let seed = json!({});
     let id = parents::identity::normalized_id(&child, &seed);
     assert_eq!(
