@@ -32,11 +32,10 @@ fn fixture_error(reason: impl Into<String>) -> Box<dyn Error> {
     ))
 }
 fn fixture_endpoint(case: &Json) -> String {
-    let host = case.get("host").and_then(Json::as_str);
-    let host = match host {
-        Some(host) => host,
-        None => "example.com",
-    };
+    let host = case
+        .get("host")
+        .and_then(Json::as_str)
+        .unwrap_or("example.com");
     if let Some((scheme, authority_and_base_path)) = host.split_once("://") {
         format!("{scheme}://{authority_and_base_path}")
     } else {
