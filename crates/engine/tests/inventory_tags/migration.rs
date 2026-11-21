@@ -240,3 +240,69 @@ async fn schema15_upgrade_preserves_existing_coverage_instead_of_recreating_it()
     pool.close().await;
     Ok(())
 }
+
+#[tokio::test]
+async fn failed_upgrade_leaves_pre_provenance_schema14_unmutated_and_retry_completes() -> TestResult
+{
+    // Given schema14 without reviewed-reference provenance tables, as created before that DDL existed.
+    let (directory, store, _) = support::fixture().await?;
+    drop(store);
+    let pool = state::pool(&directory).await?;
+    reconstruct_schema14(&pool).await?;
+    let mut tx = pool.begin().await?;
+    sqlx::query("DROP TABLE reviewed_reference_evidence")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("DROP TABLE reviewed_reference_grants")
+        .execute(&mut *tx)
+        .await?;
+    tx.commit().await?;
+    // And a migration fault that fails during the 14→17 transaction's facet DDL.
+    sqlx::query("CREATE VIEW resource_facets AS SELECT 'owned migration fault' AS fault")
+        .execute(&pool)
+        .await?;
+    let before = state::database_state(&pool).await?;
+    // When open runs the migration, the failure must roll back every phase, provenance included.
+    let error = BinaryStore::open(&directory.path().join("inventory.sqlite"))
+        .await
+        .err()
+        .ok_or("migration fault unexpectedly succeeded")?;
+    assert!(
+        matches!(&error, StoreError::Sqlite(sqlx::Error::Database(error))
+        if error.message() == "view resource_facets already exists")
+    );
+    // Then the old version and schema are unchanged.
+    let after = state::database_state(&pool).await?;
+    assert_eq!(after, before);
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>("PRAGMA user_version")
+            .fetch_one(&pool)
+            .await?,
+        14
+    );
+    // And removing only the fault lets a retry complete the upgrade.
+    sqlx::query("DROP VIEW resource_facets")
+        .execute(&pool)
+        .await?;
+    pool.close().await;
+    let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
+    let pool = state::pool(&directory).await?;
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>("PRAGMA user_version")
+            .fetch_one(&pool)
+            .await?,
+        17
+    );
+    let provenance: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM sqlite_schema WHERE name='reviewed_reference_grants'",
+    )
+    .fetch_one(&pool)
+    .await?;
+    assert_eq!(provenance, 1);
+    assert_eq!(
+        state::read_tags(&store, &support::resource("one")?).await?,
+        vec![]
+    );
+    pool.close().await;
+    Ok(())
+}

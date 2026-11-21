@@ -79,15 +79,7 @@ pub(in crate::inventory) async fn load_registry(
     } else {
         SchemaRegistry::stored(digest, schemas, operations, Permissions::Unavailable)?
     };
-    initialize(pool).await?;
     Ok(registry)
-}
-
-async fn initialize(pool: &SqlitePool) -> Result<(), StoreError> {
-    let mut tx = pool.begin().await?;
-    super::provenance::initialize(&mut tx).await?;
-    tx.commit().await?;
-    Ok(())
 }
 
 pub(in crate::inventory) async fn open_with_catalog(
