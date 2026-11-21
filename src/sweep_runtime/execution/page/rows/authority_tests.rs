@@ -109,7 +109,7 @@ async fn single(
     } else {
         Vec::new()
     };
-    page(store, lease, observations, Vec::new(), at + 1).await
+    page(store, lease, observations, Vec::new(), at.saturating_add(1)).await
 }
 
 async fn pair(
@@ -330,7 +330,7 @@ async fn parent_detail(
         .transpose()?
         .into_iter()
         .collect();
-    page(store, lease, observations, Vec::new(), at + 1).await
+    page(store, lease, observations, Vec::new(), at.saturating_add(1)).await
 }
 
 #[tokio::test]
