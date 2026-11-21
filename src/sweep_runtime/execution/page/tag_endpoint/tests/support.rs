@@ -139,7 +139,7 @@ pub(super) fn xml(
                     .collect::<String>()
             )
         })
-        .map_or_else(String::new, |value| value);
+        .unwrap_or_default();
     let token = marker.map_or_else(
         || "<IsTruncated>false</IsTruncated>".to_owned(),
         |token| format!("<IsTruncated>true</IsTruncated><Marker>{token}</Marker>"),
