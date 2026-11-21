@@ -1,3 +1,4 @@
+#[allow(dead_code, reason = "shared via #[path]; each test target uses a subset of the helpers")]
 mod support {
     include!("inventory_store/support.rs");
 

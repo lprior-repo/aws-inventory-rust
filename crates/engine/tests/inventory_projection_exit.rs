@@ -8,6 +8,7 @@
 //!    (the drain-after-return half needs live FalkorDB; see `graph_retry.rs`)
 //! 4. Overflowing the queue ends in a full rebuild enumeration with nothing lost
 #[path = "inventory_store/support.rs"]
+#[allow(dead_code, reason = "shared via #[path]; each test target uses a subset of the helpers")]
 mod support;
 
 use inventory_engine::inventory::{ProjectionAck, SweepId, run_projection};
