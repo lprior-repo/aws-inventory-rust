@@ -14,6 +14,8 @@ const SCAN: &str = "reference-scan";
 
 #[path = "reference/exact_arn.rs"]
 mod exact_arn;
+#[path = "reference/exact_match_scope.rs"]
+mod exact_match_scope;
 #[path = "reference/identifier_floor.rs"]
 mod identifier_floor;
 #[path = "reference/identifier_scope.rs"]
