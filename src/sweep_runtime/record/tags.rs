@@ -1,6 +1,6 @@
 use inventory_core::{
     catalog::runtime::TagPlan,
-    inventory::{InventoryError, MAX_RESOURCE_TAGS, ResourceKey, Tag, TagCoverage, TagObservation},
+    inventory::{MAX_RESOURCE_TAGS, ResourceKey, Tag, TagCoverage, TagObservation},
     record::{FieldId, KeyRef, MapRef, Record, ValueRef},
 };
 
