@@ -426,39 +426,11 @@ async fn verify_graph(
     let marker = graph_rows(redis_cli, port, graph, &marker_query, 6)?;
     let total = graph_rows(redis_cli, port, graph, total_query, 1)?;
 
-    if canonical(&node_rows) != canonical(get_field(model, "node_rows")?) {
-        return Err(HarnessError::invalid(
-            "FalkorDB node IDs, snapshot keys, labels or projected properties differ from SQLite",
-        ));
-    }
-
-    if canonical(&edge_rows) != canonical(get_field(model, "edge_rows")?) {
-        return Err(HarnessError::invalid(
-            "FalkorDB edge endpoints, relations, provenance or projected properties differ from SQLite",
-        ));
-    }
-
-    let wanted_marker = json!([[
-        get_field(model_scan, "scan_id")?,
-        get_field(model_scan, "status")?,
-        get_field(counts, "resources")?,
-        get_field(counts, "edges")?,
-        4,
-        1
-    ]]);
-
-    if canonical(&marker) != canonical(&wanted_marker) {
-        return Err(HarnessError::invalid(
-            "FalkorDB scan marker differs from SQLite",
-        ));
-    }
-
-    let node_count = node_rows.as_array().map(|a| a.len()).unwrap_or(0);
-    let expected_total = json!([[node_count.saturating_add(1)]]);
-    if canonical(&total) != canonical(&expected_total) {
-        return Err(HarnessError::invalid(
-            "FalkorDB complete graph node count differs from SQLite",
-        ));
+    let verdict = compare_graph_snapshot(model, &node_rows, &edge_rows, &marker, &total)?;
+    if let GraphComparison::Inconclusive(reason) = verdict {
+        return Err(HarnessError::invalid(format!(
+            "inconclusive graph verification, not a pass: {reason}"
+        )));
     }
 
     Ok(json!({
@@ -471,6 +443,95 @@ async fn verify_graph(
         "exact_sql_projected_properties_match": true,
         "exact_property_and_label_cardinality_match": true,
     }))
+}
+
+/// Outcome of comparing one SQLite snapshot generation with the graph.
+#[derive(Debug, PartialEq, Eq)]
+pub enum GraphComparison {
+    /// The graph is at this generation and every row, edge, tag-bearing property and count matches.
+    Matched,
+    /// The graph is not provably at this generation (absent, other scan, other state, mid-write).
+    Inconclusive(String),
+}
+
+/// Compares observed graph rows with the SQLite-derived model for one scan generation.
+///
+/// The generation is fenced before any content is compared: a missing marker, another scan
+/// id, or a marker state other than the model status is `Inconclusive`, never a pass. Once
+/// the generation matches, any stale property, extra or missing edge, or missing tag
+/// membership (tags are carried in node and edge rows) is a hard error.
+pub fn compare_graph_snapshot(
+    model: &Value,
+    node_rows: &Value,
+    edge_rows: &Value,
+    marker: &Value,
+    total: &Value,
+) -> Result<GraphComparison, HarnessError> {
+    let model_scan = get_field(model, "scan")?;
+    let counts = get_field(model, "counts")?;
+    let wanted_scan_id = get_field(model_scan, "scan_id")?;
+    let wanted_status = get_field(model_scan, "status")?;
+
+    let markers = marker
+        .as_array()
+        .ok_or_else(|| HarnessError::invalid("graph marker response is not an array"))?;
+    let row = match markers.as_slice() {
+        [] => {
+            return Ok(GraphComparison::Inconclusive(
+                "graph has no InventoryScan marker (not yet written or sweep in progress)".into(),
+            ));
+        }
+        [row] => row,
+        _ => {
+            return Err(HarnessError::invalid(
+                "graph has multiple InventoryScan markers",
+            ));
+        }
+    };
+    let observed_scan = row.get(0);
+    let observed_state = row.get(1);
+    if observed_scan != Some(wanted_scan_id) || observed_state != Some(wanted_status) {
+        return Ok(GraphComparison::Inconclusive(format!(
+            "graph marker is at scan {observed_scan:?} state {observed_state:?}; SQLite expects scan {wanted_scan_id} state {wanted_status}"
+        )));
+    }
+
+    if canonical(node_rows) != canonical(get_field(model, "node_rows")?) {
+        return Err(HarnessError::invalid(
+            "FalkorDB node IDs, snapshot keys, labels or projected properties differ from SQLite",
+        ));
+    }
+
+    if canonical(edge_rows) != canonical(get_field(model, "edge_rows")?) {
+        return Err(HarnessError::invalid(
+            "FalkorDB edge endpoints, relations, provenance or projected properties differ from SQLite",
+        ));
+    }
+
+    let wanted_marker = json!([[
+        wanted_scan_id,
+        wanted_status,
+        get_field(counts, "resources")?,
+        get_field(counts, "edges")?,
+        4,
+        1
+    ]]);
+
+    if canonical(marker) != canonical(&wanted_marker) {
+        return Err(HarnessError::invalid(
+            "FalkorDB scan marker counts differ from SQLite",
+        ));
+    }
+
+    let node_count = node_rows.as_array().map(|a| a.len()).unwrap_or(0);
+    let expected_total = json!([[node_count.saturating_add(1)]]);
+    if canonical(total) != canonical(&expected_total) {
+        return Err(HarnessError::invalid(
+            "FalkorDB complete graph node count differs from SQLite",
+        ));
+    }
+
+    Ok(GraphComparison::Matched)
 }
 
 fn graph_rows(
