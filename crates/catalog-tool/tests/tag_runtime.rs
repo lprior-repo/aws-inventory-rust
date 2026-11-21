@@ -352,18 +352,30 @@ fn given_self_tag_path_on_structured_items_when_checked_then_invalid_tag_selecti
     Ok(())
 }
 
+fn child<'a>(value: &'a mut serde_json::Value, key: &str) -> TestResult<&'a mut serde_json::Value> {
+    value
+        .get_mut(key)
+        .ok_or_else(|| format!("missing member {key}").into())
+}
+
+fn set(value: &mut serde_json::Value, key: &str, new: serde_json::Value) -> TestResult {
+    value
+        .as_object_mut()
+        .ok_or("object expected")?
+        .insert(key.to_owned(), new);
+    Ok(())
+}
+
 fn relation_fixture(detail_callable: bool, same_kind: bool) -> TestResult<Vec<u8>> {
     let mut model: serde_json::Value =
         serde_json::from_str(&MODEL.replace("TAG_SHAPE", MAP).replace("TAG_ITEM", ITEM))?;
-    model["shapes"]["n#Service"]["operations"] =
-        json!([{"target":"n#ListFirst"},{"target":"n#ListThings"}]);
-    model["shapes"]["n#ListFirst"] = json!({"type":"operation","output":{"target":"n#SummaryOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/summary"}}});
-    model["shapes"]["n#SummaryOutput"] =
-        json!({"type":"structure","members":{"Items":{"target":"n#Summaries"}}});
-    model["shapes"]["n#Summaries"] = json!({"type":"list","member":{"target":"n#Summary"}});
-    model["shapes"]["n#Summary"] =
-        json!({"type":"structure","members":{"Id":{"target":"smithy.api#String"}}});
-    model["shapes"]["n#Container"]["members"]["Id"] = json!({"target":"smithy.api#String"});
+    let shapes = child(&mut model, "shapes")?;
+    set(child(shapes, "n#Service")?, "operations", json!([{"target":"n#ListFirst"},{"target":"n#ListThings"}]))?;
+    set(shapes, "n#ListFirst", json!({"type":"operation","output":{"target":"n#SummaryOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/summary"}}}))?;
+    set(shapes, "n#SummaryOutput", json!({"type":"structure","members":{"Items":{"target":"n#Summaries"}}}))?;
+    set(shapes, "n#Summaries", json!({"type":"list","member":{"target":"n#Summary"}}))?;
+    set(shapes, "n#Summary", json!({"type":"structure","members":{"Id":{"target":"smithy.api#String"}}}))?;
+    set(child(child(shapes, "n#Container")?, "members")?, "Id", json!({"target":"smithy.api#String"}))?;
     let mut first = overlay::OperationOverlay::default();
     first.class = Some(overlay::OverlayClass::Enumerate);
     first.scope = Some(overlay::Scope::Region);
