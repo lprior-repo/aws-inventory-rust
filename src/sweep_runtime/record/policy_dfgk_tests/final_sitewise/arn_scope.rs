@@ -83,7 +83,7 @@ fn given_summary_arn_identities_when_returned_scope_is_malformed_or_foreign_then
             format!("arn:aws:{service}:us-east-1:invalid:{resource}"),
             format!("arn:aws:{service}:us-east-1:123456789012:"),
         ] {
-            assert_eq!(
+            assert!(
                 matches!(
                     record::resource_id(
                         &row(&invalid)?,
@@ -95,7 +95,6 @@ fn given_summary_arn_identities_when_returned_scope_is_malformed_or_foreign_then
                     ),
                     Err(SweepError::Operation("modeled ARN is malformed"))
                 ),
-                true,
                 "{service}.{operation}"
             );
         }
@@ -105,7 +104,7 @@ fn given_summary_arn_identities_when_returned_scope_is_malformed_or_foreign_then
             format!("arn:aws:{service}:us-west-2:123456789012:{resource}"),
             format!("arn:aws-cn:{service}:us-east-1:123456789012:{resource}"),
         ] {
-            assert_eq!(
+            assert!(
                 matches!(
                     record::resource_id(
                         &row(&invalid)?,
@@ -119,7 +118,6 @@ fn given_summary_arn_identities_when_returned_scope_is_malformed_or_foreign_then
                         "modeled ARN does not match trusted request scope"
                     ))
                 ),
-                true,
                 "{service}.{operation}"
             );
         }

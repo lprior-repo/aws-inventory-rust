@@ -34,7 +34,9 @@ pub(super) fn child_body(
     };
     let mut body = json!({case.items:values});
     if !resumed {
-        body[family.token] = json!("later");
+        body.as_object_mut()
+            .ok_or("native body is not an object")?
+            .insert(family.token.to_owned(), json!("later"));
     }
     Ok(body)
 }

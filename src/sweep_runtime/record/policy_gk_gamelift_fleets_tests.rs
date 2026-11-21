@@ -42,13 +42,12 @@ async fn given_owned_container_fleets_when_empty_continuation_reopens_then_disti
     scenario.page(&catalog, 2, 2, fixture::response(2)?).await?;
     drop(scenario.store);
     scenario.store = BinaryStore::open(&scenario.path).await?;
-    assert_eq!(
+    assert!(
         scenario
             .store
             .claim(&scenario.sweep, 3, 10_000)
             .await?
             .is_none(),
-        true
     );
     // Then query the real SQLite facets, not a second mock/projection of the response.
     let reader = scenario.reader().await?;
@@ -108,9 +107,8 @@ fn given_reviewed_container_metadata_when_embedded_plan_compiles_then_detail_con
     assert_eq!(scenario::plan(&catalog)?.kind().as_str(), KIND);
     // Then neither a public reference nor a nested configuration authorizes more API calls.
     for operation in fixture::FORBIDDEN {
-        assert_eq!(
+        assert!(
             catalog.lookup("gamelift", operation).is_none(),
-            true,
             "forbidden {operation} became callable"
         );
     }
@@ -144,7 +142,10 @@ async fn given_actual_request_scope_when_a_fleet_arn_is_hostile_then_the_whole_p
         let scenario = scenario::Scenario::new(&catalog, ordinal).await?;
         scenario.page(&catalog, 0, 0, fixture::response(0)?).await?;
         let mut hostile = fixture::row("bad");
-        hostile["FleetArn"] = json!(arn);
+        hostile
+            .as_object_mut()
+            .ok_or("hostile row is not an object")?
+            .insert("FleetArn".to_owned(), json!(arn));
         // When the real row gate processes the mixed page, no partial observation can commit.
         let error = scenario
             .page(

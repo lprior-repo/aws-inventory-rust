@@ -39,11 +39,14 @@ async fn given_two_workspaces_when_empty_first_child_pages_resume_then_both_amp_
         ] {
             let id = arn("aps", &format!("workspace/{workspace}/{suffix}/same"));
             let mut item = json!({"arn":id,"status":{"statusCode":"ACTIVE"},"createdAt":0,"modifiedAt":0,"tags":{"owner":"inventory"}});
+            let fields = item
+                .as_object_mut()
+                .ok_or("fixture item is not an object")?;
             if operation == "ListAnomalyDetectors" {
-                item["anomalyDetectorId"] = json!("same");
-                item["alias"] = json!("same");
+                fields.insert("anomalyDetectorId".to_owned(), json!("same"));
+                fields.insert("alias".to_owned(), json!("same"));
             } else {
-                item["name"] = json!("same");
+                fields.insert("name".to_owned(), json!("same"));
             }
             pages.extend(later_pages(
                 operation,
@@ -81,7 +84,9 @@ fn mesh_ref(mesh: &str, field: Option<&str>, suffix: &str) -> Value {
     let mut item = json!({"meshName":mesh,"meshOwner":"123456789012","resourceOwner":"123456789012",
         "arn":arn("appmesh", suffix),"version":1,"createdAt":0,"lastUpdatedAt":0});
     if let Some(field) = field {
-        item[field] = json!("same");
+        if let Some(obj) = item.as_object_mut() {
+            obj.insert(field.to_owned(), json!("same"));
+        }
     }
     item
 }
@@ -148,7 +153,9 @@ async fn given_equal_router_and_gateway_names_in_two_meshes_when_routes_resume_t
                 Some(field),
                 &format!("{parent_suffix}/{child_segment}/same"),
             );
-            item[child_field] = json!("same");
+            item.as_object_mut()
+                .ok_or("fixture item is not an object")?
+                .insert(child_field.to_owned(), json!("same"));
             pages.extend(later_pages(
                 operation,
                 json!({"meshName":mesh,field:"same","meshOwner":"123456789012"}),

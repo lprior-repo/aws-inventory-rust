@@ -39,7 +39,7 @@ async fn given_both_dataset_sources_and_unattached_series_when_real_pages_resume
         }
         let source = if operation == "ListDatasets" {
             let source = query(&wire, "sourceType")?.to_owned();
-            assert_eq!(["KENDRA", "SITEWISE"].contains(&source.as_str()), true);
+            assert!(["KENDRA", "SITEWISE"].contains(&source.as_str()));
             assert_eq!(lease.scope().branch(), Some(source.as_str()));
             assert_eq!(wire.uri().query().map(|query| query.contains("workspaceName=") || query.contains("datasetType=")), Some(false));
             source
@@ -54,7 +54,7 @@ async fn given_both_dataset_sources_and_unattached_series_when_real_pages_resume
                 .nth(2)
                 .ok_or("workspace path label absent")?
                 .to_owned();
-            assert_eq!(WORKSPACES.contains(&name.as_str()), true);
+            assert!(WORKSPACES.contains(&name.as_str()));
             assert_eq!(
                 lease
                     .scope()
@@ -69,22 +69,18 @@ async fn given_both_dataset_sources_and_unattached_series_when_real_pages_resume
             String::new()
         };
         if operation == "ListTimeSeries" {
-            assert_eq!(
-                wire.uri().query().is_none_or(|query| [
+            assert!(wire.uri().query().is_none_or(|query| {
+                [
                     "assetId=",
                     "aliasPrefix=",
                     "timeSeriesType=",
-                    "workspaceName="
+                    "workspaceName=",
                 ]
                 .iter()
-                .all(|filter| !query.contains(filter))),
-                true
-            );
+                .all(|filter| !query.contains(filter))
+            }),);
         }
-        assert_eq!(
-            requests.insert((operation.clone(), source.clone(), workspace.clone(), later)),
-            true
-        );
+        assert!(requests.insert((operation.clone(), source.clone(), workspace.clone(), later)),);
         let (items, rows) = summaries(&operation, &source, &workspace)?;
         let response = if later {
             json!({items:rows})
@@ -108,13 +104,12 @@ async fn given_both_dataset_sources_and_unattached_series_when_real_pages_resume
     }
     // Then every producer has visible SQL rows and canonical graph nodes after reopen.
     assert_eq!(requests.len(), 18);
-    assert_eq!(
+    assert!(
         scenario
             .store
             .claim(&scenario.sweep, 1001, 10_000)
             .await?
             .is_none(),
-        true
     );
     let reader = scenario.reader().await?;
     let counts: Vec<(String, i64)> =
@@ -155,7 +150,7 @@ async fn given_both_dataset_sources_and_unattached_series_when_real_pages_resume
             .rsplit('/')
             .next()
             .ok_or("workspace suffix absent")?;
-        assert_eq!(edge.from.id.as_str().contains(workspace), true);
+        assert!(edge.from.id.as_str().contains(workspace));
     }
     let nodes = scenario.store.projection_resources(None, 30).await?;
     assert_eq!(nodes.len(), 12);

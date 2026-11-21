@@ -34,7 +34,7 @@ impl Scenario {
         let plan = plan(catalog)?;
         assert_eq!(plan.scope(), PlanScope::Region);
         assert_eq!(plan.kind().as_str(), KIND);
-        assert_eq!(input::requires_parent(plan), false);
+        assert!(!input::requires_parent(plan));
         let region = Region::Regional(RegionId::parse("us-east-1")?);
         let scope = ScopeKey::new(
             self.account.clone(),

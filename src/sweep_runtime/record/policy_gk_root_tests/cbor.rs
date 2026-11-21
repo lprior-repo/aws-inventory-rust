@@ -129,7 +129,7 @@ fn decode(decoder: &mut Decoder<'_>) -> TestResult<Json> {
             loop {
                 match remaining {
                     Some(0) => break,
-                    Some(left) => remaining = Some(left - 1),
+                    Some(left) => remaining = Some(left.saturating_sub(1)),
                     None if decoder.datatype()? == Type::Break => {
                         decoder.skip()?;
                         break;
@@ -146,7 +146,7 @@ fn decode(decoder: &mut Decoder<'_>) -> TestResult<Json> {
             loop {
                 match remaining {
                     Some(0) => break,
-                    Some(left) => remaining = Some(left - 1),
+                    Some(left) => remaining = Some(left.saturating_sub(1)),
                     None if decoder.datatype()? == Type::Break => {
                         decoder.skip()?;
                         break;

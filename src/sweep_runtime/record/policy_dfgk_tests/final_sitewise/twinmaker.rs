@@ -36,10 +36,7 @@ async fn given_two_workspaces_when_scene_and_sync_job_pages_resume_then_same_nam
                 .nth(2)
                 .ok_or("workspace path absent")?
                 .to_owned();
-            assert_eq!(
-                ["factory-a", "factory-b"].contains(&workspace.as_str()),
-                true
-            );
+            assert!(["factory-a", "factory-b"].contains(&workspace.as_str()),);
             assert_eq!(
                 lease
                     .scope()
@@ -51,10 +48,7 @@ async fn given_two_workspaces_when_scene_and_sync_job_pages_resume_then_same_nam
             );
             workspace
         };
-        assert_eq!(
-            requests.insert((operation.clone(), workspace.clone(), later)),
-            true
-        );
+        assert!(requests.insert((operation.clone(), workspace.clone(), later)),);
         let (items, rows) = match operation.as_str() {
             "ListWorkspaces" => ("workspaceSummaries", ["factory-a", "factory-b"].iter().map(|id| json!({"workspaceId":id,"arn":arn("iottwinmaker", &format!("workspace/{id}")),"creationDateTime":1.0,"updateDateTime":2.0})).collect::<Vec<_>>()),
             "ListScenes" => {
@@ -78,13 +72,12 @@ async fn given_two_workspaces_when_scene_and_sync_job_pages_resume_then_same_nam
     }
     // Then both workspaces' same-named resources are independent SQL rows and exact graph nodes.
     assert_eq!(requests.len(), 10);
-    assert_eq!(
+    assert!(
         scenario
             .store
             .claim(&scenario.sweep, 1001, 10_000)
             .await?
             .is_none(),
-        true
     );
     let reader = scenario.reader().await?;
     let rows: Vec<(String, String)> =
@@ -113,12 +106,11 @@ async fn given_two_workspaces_when_scene_and_sync_job_pages_resume_then_same_nam
     for edge in edges.edges {
         assert_eq!(edge.relation.as_str(), "IN_WORKSPACE");
         assert_eq!(edge.to.kind.as_str(), "AWS::IoTTwinMaker::Workspace");
-        assert_eq!(
+        assert!(
             edge.from
                 .id
                 .as_str()
                 .starts_with(&format!("{}/", edge.to.id.as_str())),
-            true
         );
     }
     assert_eq!(
@@ -154,9 +146,8 @@ fn given_metadata_inventory_when_catalog_is_compiled_then_content_and_provider_t
         ),
     ] {
         for operation in operations {
-            assert_eq!(
+            assert!(
                 catalog.lookup(service, operation).is_none(),
-                true,
                 "{service}.{operation} must not run for metadata inventory"
             );
         }

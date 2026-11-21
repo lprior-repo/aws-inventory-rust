@@ -46,10 +46,10 @@ async fn given_two_portals_when_empty_child_pages_resume_then_monitor_resources_
             },
             "ListDashboards" => {
                 let project = query(&wire, "projectId")?.to_owned();
-                assert_eq!(PROJECTS.contains(&project.as_str()), true);
+                assert!(PROJECTS.contains(&project.as_str()));
                 let parent = lease.scope().parent().ok_or("dashboard lost project")?;
                 assert_eq!(parent.kind.as_str(), "AWS::IoTSiteWise::Project");
-                assert_eq!(parent.id.as_str().ends_with(&format!("{}:{project}", project.len())), true);
+                assert!(parent.id.as_str().ends_with(&format!("{}:{project}", project.len())));
                 ("dashboardSummaries", vec![json!({"id":DASHBOARD,"name":"shared-dashboard","creationDate":1.0,"lastUpdateDate":2.0})], project)
             },
             "ListAccessPolicies" => {
@@ -59,18 +59,18 @@ async fn given_two_portals_when_empty_child_pages_resume_then_monitor_resources_
                 let bound = lease.scope().parent().ok_or("policy lost resource owner")?;
                 match resource_type {
                     "PORTAL" => {
-                        assert_eq!(PORTALS.contains(&resource_id), true);
+                        assert!(PORTALS.contains(&resource_id));
                         assert_eq!(bound.kind.as_str(), "AWS::IoTSiteWise::Portal");
                         assert_eq!(bound.id.as_str(), resource_id);
                     },
                     "PROJECT" => {
-                        assert_eq!(PROJECTS.contains(&resource_id), true);
+                        assert!(PROJECTS.contains(&resource_id));
                         assert_eq!(bound.kind.as_str(), "AWS::IoTSiteWise::Project");
-                        assert_eq!(bound.id.as_str().ends_with(&format!("{}:{resource_id}", resource_id.len())), true);
+                        assert!(bound.id.as_str().ends_with(&format!("{}:{resource_id}", resource_id.len())));
                     },
                     _ => return Err("unreviewed policy resource branch".into()),
                 }
-                assert_eq!(wire.uri().query().is_none_or(|query| ["identityType=", "identityId=", "iamArn="].iter().all(|filter| !query.contains(filter))), true);
+                assert!(wire.uri().query().is_none_or(|query| ["identityType=", "identityId=", "iamArn="].iter().all(|filter| !query.contains(filter))));
                 let key = resource_type.to_ascii_lowercase();
                 ("accessPolicySummaries", vec![json!({"id":POLICY,
                     "identity":{"iamUser":{"arn":"arn:aws:iam::123456789012:user/inventory-reference"}},
@@ -79,10 +79,7 @@ async fn given_two_portals_when_empty_child_pages_resume_then_monitor_resources_
             },
             _ => return Err(format!("forbidden unexpected Monitor child {operation}").into()),
         };
-        assert_eq!(
-            requests.insert((operation.clone(), parent.clone(), later)),
-            true
-        );
+        assert!(requests.insert((operation.clone(), parent.clone(), later)),);
         let response = if later {
             json!({items:rows})
         } else {
@@ -118,13 +115,12 @@ async fn given_two_portals_when_empty_child_pages_resume_then_monitor_resources_
     // Then every page/parent request ran, both identically named dashboards remain queryable,
     // and the real relationship resolver links each child to its canonical owner.
     assert_eq!(requests.len(), 18);
-    assert_eq!(
+    assert!(
         scenario
             .store
             .claim(&scenario.sweep, 1001, 10_000)
             .await?
             .is_none(),
-        true
     );
     let reader = scenario.reader().await?;
     let counts: Vec<(String, i64)> =
@@ -185,14 +181,11 @@ async fn given_two_portals_when_empty_child_pages_resume_then_monitor_resources_
                 } else {
                     ""
                 };
-                assert_eq!(
-                    edge.from.id.as_str().starts_with(&format!(
-                        "{prefix}{}:{}|",
-                        edge.to.id.as_str().len(),
-                        edge.to.id.as_str()
-                    )),
-                    true
-                );
+                assert!(edge.from.id.as_str().starts_with(&format!(
+                    "{prefix}{}:{}|",
+                    edge.to.id.as_str().len(),
+                    edge.to.id.as_str()
+                )),);
             }
             "IN_PROJECT" => {
                 let project = edge
@@ -270,14 +263,11 @@ fn given_same_project_id_when_parent_request_changes_then_identity_is_parent_qua
         .collect::<TestResult<Vec<_>>>()?;
     assert_ne!(keys.first(), keys.get(1));
     assert_eq!(keys.len(), 2);
-    assert_eq!(
-        matches!(
-            record::resource_id(row, plan.identity(), None),
-            Err(crate::sweep_runtime::SweepError::Operation(
-                "identity requires actual request context"
-            ))
-        ),
-        true
-    );
+    assert!(matches!(
+        record::resource_id(row, plan.identity(), None),
+        Err(crate::sweep_runtime::SweepError::Operation(
+            "identity requires actual request context"
+        ))
+    ),);
     Ok(())
 }

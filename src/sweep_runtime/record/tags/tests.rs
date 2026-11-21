@@ -56,7 +56,7 @@ fn given_unicode_tag_at_character_limit_when_normalized_then_tag_is_accepted() -
     let key = "é".repeat(128);
     let value = "é".repeat(256);
     let rec = record(Some(Value::Map(BTreeMap::from([(
-        Key::Name(key.clone().into()),
+        Key::Name(key.clone()),
         Value::Text(value.clone()),
     )]))))?;
     let plan = map_plan()?;
@@ -73,7 +73,7 @@ fn given_unicode_tag_over_character_limit_when_normalized_then_tag_is_skipped() 
     let key = "é".repeat(129);
     let value = "value";
     let rec = record(Some(Value::Map(BTreeMap::from([(
-        Key::Name(key.into()),
+        Key::Name(key),
         Value::Text(value.to_owned()),
     )]))))?;
     let plan = map_plan()?;
@@ -122,7 +122,7 @@ fn given_exactly_100_valid_tags_when_observed_then_complete() -> TestResult {
 fn given_60_invalid_and_90_valid_tags_when_observed_then_partial() -> TestResult {
     let mut tags: Vec<Value> = Vec::new();
     // 60 invalid tags (129-char keys, exceeding 128 limit)
-    for i in 0..60 {
+    for _ in 0..60 {
         let key = "é".repeat(129);
         tags.push(pair(&key, "value")?);
     }

@@ -70,7 +70,9 @@ fn later_pages(
     absent: &[&'static str],
 ) -> Vec<Page> {
     let mut continued_request = request.clone();
-    continued_request[token] = json!("later");
+    if let Some(obj) = continued_request.as_object_mut() {
+        obj.insert(token.to_owned(), json!("later"));
+    }
     let mut first = Page::new(
         operation,
         request,

@@ -128,7 +128,9 @@ pub(super) async fn filtered_roots(
         );
         let mut body = json!({*items:[{*id:arn}]});
         if !resumed {
-            body["nextToken"] = json!("later");
+            body.as_object_mut()
+                .ok_or("owned roots body is not an object")?
+                .insert("nextToken".to_owned(), json!("later"));
         }
         let response = decode(plan, &body)?;
         let context = child::Context::new(plan, &sweep, &account, &home, &consumers);
