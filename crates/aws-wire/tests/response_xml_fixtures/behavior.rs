@@ -6,9 +6,11 @@ use aws_wire::{
 use http::{HeaderMap, StatusCode};
 use inventory_core::catalog::Catalog;
 use serde_json::json;
+use std::error::Error;
 
 #[test]
-fn xml_union_has_exactly_one_known_variant_and_missing_required_scalars_are_corrected() {
+fn xml_union_has_exactly_one_known_variant_and_missing_required_scalars_are_corrected()
+-> Result<(), Box<dyn Error>> {
     let fixture = json!({"shapes": {
         "example#XmlBoundaries": {"type":"service","version":"1","operations":[{"target":"example#Read"}],"traits":{"aws.protocols#restXml":{}}},
         "example#Read": {"type":"operation","output":{"target":"example#Output"}},
@@ -22,18 +24,15 @@ fn xml_union_has_exactly_one_known_variant_and_missing_required_scalars_are_corr
             "none":{"target":"smithy.api#Unit"}
         }}
     }});
-    let bytes = model::compile_service(&fixture, "example#XmlBoundaries");
-    let catalog = Catalog::borrow(&bytes).expect("valid compiled model");
+    let bytes = model::compile_service(&fixture, "example#XmlBoundaries")?;
+    let catalog = Catalog::borrow(&bytes)?;
     let service = catalog
-        .service("XmlBoundaries")
-        .expect("lookup")
-        .expect("service");
+        .service("XmlBoundaries")?
+        .ok_or("compiled service exists")?;
     let operation = service
-        .operations()
-        .expect("operations")
+        .operations()?
         .next()
-        .expect("operation")
-        .expect("valid operation");
+        .ok_or("compiled operation exists")??;
     let headers = HeaderMap::new();
     let context = ResponseContext {
         service,
@@ -54,12 +53,11 @@ fn xml_union_has_exactly_one_known_variant_and_missing_required_scalars_are_corr
             json!({"choice":{"none":{}},"count":0}),
         ),
     ] {
-        let record =
-            response::decode(ResponseContext { body, ..context }).expect("one known variant");
+        let record = response::decode(ResponseContext { body, ..context })?;
         fixture_oracle::assert_fixture_root(
             &record,
             service,
-            operation.output().expect("output"),
+            operation.output()?,
             &expected,
             "XML union and required scalar",
         );
@@ -78,4 +76,5 @@ fn xml_union_has_exactly_one_known_variant_and_missing_required_scalars_are_corr
             "{body:?}"
         );
     }
+    Ok(())
 }
