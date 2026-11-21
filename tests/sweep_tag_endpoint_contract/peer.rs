@@ -17,7 +17,7 @@ use tokio_rustls::{
     },
 };
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub(super) enum Mode {
     Complete,
     MapComplete,

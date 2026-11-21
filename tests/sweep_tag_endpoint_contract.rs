@@ -96,16 +96,18 @@ async fn given_signed_paginated_tags_when_collected_then_all_pages_replace_only_
 }
 
 #[tokio::test]
-async fn given_strict_wire_failure_absence_or_partial_completion_when_collected_then_previous_known_tags_are_not_replaced()
+async fn given_malformed_absent_or_partial_tags_when_collected_then_previous_known_tags_are_not_replaced()
 -> Result<()> {
     for (map, mode, code, max_pages, expected_calls, outcome) in [
-        (false, Mode::MissingKey, 2, 20, 1, Some("failed")),
-        (false, Mode::MissingValue, 2, 20, 1, Some("failed")),
-        (false, Mode::MissingCompletion, 2, 20, 1, Some("failed")),
+        // Pair-level malformations (missing Key/Value) are skipped under ES-01: scope completes, known tags stay.
+        (false, Mode::MissingKey, 0, 20, 1, None),
+        (false, Mode::MissingValue, 0, 20, 1, None),
+        // Null elements/members and missing completion flags are rejected by the strict wire decoder.
         (false, Mode::NullEntry, 2, 20, 1, Some("failed")),
         (false, Mode::MixedNullEntry, 2, 20, 1, Some("failed")),
         (true, Mode::NullMap, 2, 20, 1, Some("failed")),
         (true, Mode::MixedNullMap, 2, 20, 1, Some("failed")),
+        (false, Mode::MissingCompletion, 2, 20, 1, Some("failed")),
         (false, Mode::Absent, 0, 20, 1, None),
         (false, Mode::Repeat, 2, 20, 2, Some("partial")),
         (false, Mode::Denied, 2, 20, 2, Some("inaccessible")),
@@ -117,7 +119,8 @@ async fn given_strict_wire_failure_absence_or_partial_completion_when_collected_
         assert_eq!(
             output.status.code(),
             Some(code),
-            "{}",
+            "{mode:?}: stdout={} stderr={}",
+            String::from_utf8_lossy(&output.stdout),
             String::from_utf8_lossy(&output.stderr)
         );
         assert_eq!(peer.tag_calls(), expected_calls);
@@ -200,6 +203,24 @@ async fn given_checkpointed_partial_tags_when_process_restarts_then_pending_pair
     );
     pool.close().await;
     assert_identity_isolation(&fixture.database, &[("known", "old")]).await?;
+    // The killed run's leases are still live: resume must refuse without mutating work.
+    let refused = fixture.collect(&peer, true, 20).await?;
+    assert!(
+        !refused.status.success(),
+        "resume must wait for the killed run's leases to expire"
+    );
+    assert!(
+        String::from_utf8_lossy(&refused.stderr).contains("live leases"),
+        "{}",
+        String::from_utf8_lossy(&refused.stderr)
+    );
+    assert_identity_isolation(&fixture.database, &[("known", "old")]).await?;
+    // Production leases last for the full executor budget; expire them instead of sleeping.
+    let pool = connect(&fixture.database).await?;
+    sqlx::query("UPDATE work_queue SET lease_until=0 WHERE state=1")
+        .execute(&pool)
+        .await?;
+    pool.close().await;
     let output = fixture.collect(&peer, true, 20).await?;
     assert!(
         output.status.success(),
