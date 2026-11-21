@@ -517,23 +517,30 @@ fn given_full_or_disconnected_intake_when_checking_worker_then_only_disconnectio
 }
 
 #[test]
-fn given_valid_lod_config_string_then_parse_returns_custom_limits() {
-    let limits = parse_lod_config("3:500:1000").unwrap();
+fn given_valid_lod_config_string_then_parse_returns_custom_limits() -> TestResult {
+    let limits = parse_lod_config("3:500:1000")?;
     assert_eq!(limits.depth, 3);
     assert_eq!(limits.nodes, 500);
     assert_eq!(limits.edges, 1000);
+    Ok(())
 }
 
 #[test]
-fn given_invalid_lod_format_when_parsing_then_error_is_returned() {
-    let error = parse_lod_config("invalid").unwrap_err();
+fn given_invalid_lod_format_when_parsing_then_error_is_returned() -> TestResult {
+    let Err(error) = parse_lod_config("invalid") else {
+        return Err("invalid lod format must fail".into());
+    };
     assert!(error.contains("depth:nodes:edges"));
+    Ok(())
 }
 
 #[test]
-fn given_lod_with_partial_numbers_when_parsing_then_error_is_returned() {
-    let error = parse_lod_config("1:2:abc").unwrap_err();
+fn given_lod_with_partial_numbers_when_parsing_then_error_is_returned() -> TestResult {
+    let Err(error) = parse_lod_config("1:2:abc") else {
+        return Err("partial lod numbers must fail".into());
+    };
     assert!(error.contains("invalid edges"));
+    Ok(())
 }
 
 #[test]
