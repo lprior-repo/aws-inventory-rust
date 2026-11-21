@@ -63,7 +63,7 @@ pub(super) fn native_page(
     })?;
     let mut rows = record::item_records(&response, plan.items())?;
     for row in &mut rows {
-        *row = resource_projection::project(&plan, row)?;
+        *row = resource_projection::project(plan, row)?;
     }
     let home = RegionId::parse("us-east-1")?;
     let account = AccountId::parse("123456789012")?;
@@ -77,7 +77,7 @@ pub(super) fn native_page(
                     account: &account,
                     region: &home,
                 },
-                &plan,
+                plan,
                 &Region::Regional(home.clone()),
                 row,
                 &request,
@@ -87,7 +87,7 @@ pub(super) fn native_page(
         .collect::<Result<Vec<_>, _>>()?;
     let unresolved = references(
         catalog,
-        &plan,
+        plan,
         &home,
         &rows,
         &observations,
@@ -278,7 +278,7 @@ pub(super) async fn complete_empty(store: &BinaryStore, operation: &str, at: i64
             next_token: None,
             continuation_digest: None,
             done: true,
-            observed_at_ms: at + 1,
+            observed_at_ms: at.saturating_add(1),
         })
         .await?;
     Ok(())
@@ -351,7 +351,7 @@ pub(super) async fn child_run(
         |name| json!({"portal":{"portalArn":id,"displayName":name}}),
     );
     store
-        .commit_page(native_page(catalog, lease, body, at + 1)?)
+        .commit_page(native_page(catalog, lease, body, at.saturating_add(1))?)
         .await?;
     Ok(())
 }
