@@ -283,6 +283,40 @@ fn given_full_results_when_ui_drains_then_critical_output_is_preserved() -> Test
 }
 
 #[test]
+fn given_saturated_queue_when_terminal_graph_failure_is_blocked_then_it_is_delivered_exactly_once()
+-> TestResult {
+    let (worker, _commands, events, _cancellation) = harness(1);
+    (0..EVENT_CAPACITY).try_for_each(|_| events.send(page(0, 1)).map_err(Box::new))?;
+    let (started, ready) = mpsc::sync_channel(1);
+    let producer = thread::spawn(move || {
+        if started.send(()).is_err() {
+            return;
+        }
+        assert!(events.send(graph(0, "terminal graph failure")).is_ok());
+    });
+    ready.recv_timeout(Duration::from_secs(1))?;
+    let first = worker.drain();
+    assert!(producer.join().is_ok());
+    let second = worker.drain();
+    let third = worker.drain();
+    let terminal = |events: &[WorkerEvent]| {
+        events
+            .iter()
+            .filter(|event| {
+                matches!(event, WorkerEvent::Graph { error: Some(error), .. } if error == "terminal graph failure")
+            })
+            .count()
+    };
+    assert_eq!(
+        terminal(&first) + terminal(&second) + terminal(&third),
+        1,
+        "terminal failure must survive saturation exactly once"
+    );
+    assert!(third.is_empty(), "delivered terminal state must not replay");
+    Ok(())
+}
+
+#[test]
 fn given_unconfigured_graph_when_retried_then_configuration_error_remains_visible() {
     let mut access = GraphAccess::new(None, None, DEFAULT_GRAPH_LIMITS);
     access.reconnect();
