@@ -282,22 +282,24 @@ pub(super) fn keys(kind: &str, ids: &[String]) -> Vec<(String, String, String, S
     keys
 }
 
+type EdgeRow = (
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+    String,
+);
+
 pub(super) fn edges(
     kind: &str,
     target_kind: &str,
     relation: &str,
     pairs: &[(String, String)],
-) -> Vec<(
-    String,
-    String,
-    String,
-    String,
-    String,
-    String,
-    String,
-    String,
-    String,
-)> {
+) -> Vec<EdgeRow> {
     let mut edges = pairs
         .iter()
         .map(|(from, to)| {
