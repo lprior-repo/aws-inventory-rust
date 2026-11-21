@@ -55,12 +55,15 @@ rust-version.workspace = true
 
 [features]
 default = []
-aws = ["dep:inventory-aws"]
+aws = ["dep:inventory-aws", "dep:aws-sdk-sts", "dep:aws-config"]
 
 [dependencies]
 inventory-core.workspace = true
 inventory-engine.workspace = true
 inventory-aws = { path = "crates/aws", optional = true }
+aws-sdk-sts = { version = "1.126.0", default-features = false, optional = true, features = ["sigv4a", "default-https-client", "rt-tokio"] }
+aws-config = { version = "1.13.2", default-features = false, optional = true, features = ["default-https-client", "rt-tokio"] }
+aws-types = "1.7.0"
 aws-wire = { path = "crates/aws-wire" }
 thiserror.workspace = true
 http = "1.5.0"

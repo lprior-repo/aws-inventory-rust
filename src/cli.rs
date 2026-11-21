@@ -177,6 +177,7 @@ pub enum Command {
 
     Scan(ScanArgs),
     Sweep(SweepArgs),
+    Serve(ServeArgs),
 }
 
 impl From<TraversalArgs> for crate::analysis::TraversalOptions {
@@ -214,3 +215,6 @@ pub use traversal::TraversalArgs;
 
 mod sweep;
 pub use sweep::SweepArgs;
+
+mod serve;
+pub use serve::ServeArgs;

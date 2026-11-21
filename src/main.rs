@@ -23,6 +23,9 @@ mod scan;
 mod sweep_command;
 #[cfg(feature = "aws")]
 mod sweep_runtime;
+mod serve_command;
+#[cfg(test)]
+mod serve_tests;
 mod targets;
 mod tag_mapping;
 mod tag_sources;
@@ -125,6 +128,12 @@ fn dispatch(command: Command) -> BoxFuture<'static, Result<CommandOutput>> {
         Command::Sweep(options) => {
             return Box::pin(async move {
                 let code = sweep_command::run(options).await?;
+                Ok(CommandOutput::Native(code))
+            });
+        }
+        Command::Serve(options) => {
+            return Box::pin(async move {
+                let code = serve_command::run(options).await?;
                 Ok(CommandOutput::Native(code))
             });
         }

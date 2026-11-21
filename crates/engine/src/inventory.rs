@@ -13,6 +13,7 @@ mod relation_permissions;
 mod schema;
 mod tag_mapping;
 mod typed;
+mod sweep_history;
 mod unobserved;
 mod validation;
 mod work;
@@ -34,6 +35,7 @@ pub use projection_read::{
     ProjectionEdgeCursor, ProjectionEdgeHeader, ProjectionEdgePage, ProjectionResource,
     ProjectionSnapshot, ProjectionState, ProjectionTag, ProjectionTagCursor, ProjectionTagPage,
 };
+pub use sweep_history::{LastSweep, last_completed_sweep};
 pub use unobserved::UnobservedScope;
 pub use work::{
     ChangeStats, CommitResult, PendingProjection, ProjectionAck, SweepId, SweepSummary, WorkLease,

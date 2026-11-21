@@ -306,6 +306,44 @@ aws-inventory scan --db inventory.sqlite --profile management \
 aws-inventory scan --db inventory.sqlite --service s3,iam,route53,cloudfront
 ```
 
+Continuous collection via `serve`:
+
+```bash
+# Serve mode: sweep profiles on an interval, idling in between.
+# Runs until stopped with Ctrl+C; resumes from stored completion times on restart.
+cargo run --locked --features aws -- serve \
+  --db inventory.sqlite \
+  --profile audit \
+  --interval 15m
+
+# Multi-profile serve: sweeps each profile once per interval.
+# Stalest profiles run first within a sweep; if a sweep overruns the interval,
+# the next starts immediately. Sweeps never overlap.
+cargo run --locked --features aws -- serve \
+  --db inventory.sqlite \
+  --profile development,production,staging \
+  --region us-east-1,us-west-2 \
+  --interval 30m \
+  --concurrency 32
+```
+
+The `serve` command reads the catalog once, opens the store once, and then
+repeats: for each configured profile, run a full sweep (all its configured
+regions), then sleep until the next interval. Within a sweep, scopes that have
+not been swept in the longest time run first. Killing and restarting the
+process resumes the cycle without losing in-progress work; the stored
+completion times determine which profiles are stale.
+
+```bash
+# With custom endpoint and CA bundle
+cargo run --locked --features aws -- serve \
+  --db inventory.sqlite \
+  --profile audit \
+  --interval 10m \
+  --endpoint https://emulator.example.com \
+  --ca-bundle /etc/ssl/emulator-ca.pem
+```
+
 Organizations listing must complete before automatic account fan-out starts.
 Inactive or missing accounts are not silently accepted by an explicit filter.
 `--max-accounts` defaults to 128 and is capped at 1,024. An optional
