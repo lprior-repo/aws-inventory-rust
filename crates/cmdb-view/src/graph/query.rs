@@ -74,7 +74,11 @@ where
     })
 }
 
-fn compute_fetch(traversal: &Traversal, limits: GraphLimits, depth: u8) -> Result<usize, ViewError> {
+fn compute_fetch(
+    traversal: &Traversal,
+    limits: GraphLimits,
+    depth: u8,
+) -> Result<usize, ViewError> {
     let remaining = limits
         .edges
         .checked_sub(traversal.edges.len())

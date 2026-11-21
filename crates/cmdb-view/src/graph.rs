@@ -39,6 +39,18 @@ pub struct GraphLimits {
     pub edges: usize,
 }
 
+/// Result of a shortest-path query: distinguishes no path, zero-hop
+/// (source and target are the same node), and a found path with edges.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PathResult {
+    /// No path exists between the source and target within the depth limit.
+    NotFound,
+    /// Source and target are the same node; the path has zero hops.
+    SameNode,
+    /// A path was found. Edges are returned in traversal order.
+    Path(Vec<GraphEdge>),
+}
+
 pub struct GraphConnection {
     client: redis::Client,
     graph: String,
@@ -91,24 +103,26 @@ impl GraphConnection {
         query::blast_radius(&self.client, &self.graph, node, limits).await
     }
 
+    /// Finds the shortest path between two nodes. Returns a PathResult that
+    /// distinguishes NotFound (no path within depth limit), SameNode (source
+    /// and target are the same node with zero hops), and Path(edges) when a
+    /// path is found.
     pub async fn path(
         &self,
         from: &GraphNode,
         to: &GraphNode,
         limits: GraphLimits,
-    ) -> Result<GraphNeighborhood, ViewError> {
+    ) -> Result<PathResult, ViewError> {
         validate_limits(limits)?;
+        key_digest(from)?;
         key_digest(to)?;
+        if from == to {
+            return Ok(PathResult::SameNode);
+        }
         let neighborhood = self.neighbors(from, limits).await?;
         match path::shortest(&neighborhood.edges, from, to, limits.depth)? {
-            Some(edges) => Ok(GraphNeighborhood {
-                edges,
-                truncated: neighborhood.truncated,
-            }),
-            None => Ok(GraphNeighborhood {
-                edges: Vec::new(),
-                truncated: neighborhood.truncated,
-            }),
+            Some(edges) => Ok(PathResult::Path(edges)),
+            None => Ok(PathResult::NotFound),
         }
     }
 }

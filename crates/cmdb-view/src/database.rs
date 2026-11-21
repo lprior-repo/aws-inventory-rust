@@ -109,6 +109,9 @@ pub struct ResourceRowPage {
     pub rows: Vec<ResourceRow>,
     pub next: Option<PageCursor>,
     pub total_matching: u64,
+    /// The page was truncated because the byte budget was exceeded;
+    /// additional rows matched but were not returned.
+    pub truncated: bool,
 }
 
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -260,32 +263,6 @@ async fn decode_row(
     })
 }
 
-/// Lightweight decode for table pages: skips loading the record payload,
-/// reading only its byte length. Tags are still loaded since they appear
-/// in the table view.
-async fn decode_row_lite(
-    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
-    row: sqlx::sqlite::SqliteRow,
-) -> Result<ResourceRow, ViewError> {
-    let account: String = row.try_get("account")?;
-    let region: String = row.try_get("region")?;
-    let kind: String = row.try_get("kind")?;
-    let id: String = row.try_get("id")?;
-    let expected: Vec<u8> = row.try_get("content_hash")?;
-    let table = table_for(tx, &kind).await?;
-    let record_bytes = record_byte_length(tx, &table, &account, &region, &id).await?;
-    let tags = tags::read(tx, [&account, &region, &kind, &id]).await?;
-    Ok(ResourceRow {
-        key: resource_key([&account, &region, &kind, &id])?,
-        name: row.try_get("name")?,
-        content_hash: ContentHash::from_bytes(stored_hash(&expected)?),
-        record_bytes,
-        tags: tags.tags,
-        tags_truncated: tags.truncated,
-        tag_observation: tags.observation,
-    })
-}
-
 fn stored_hash(expected: &[u8]) -> Result<[u8; 32], ViewError> {
     expected.try_into().map_err(|_| ViewError::StoredRow)
 }
@@ -332,15 +309,99 @@ async fn decode_rows(
     tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
     filter: &ResourceFilter,
     request: &PageRequest,
-) -> Result<(Vec<ResourceRow>, bool), ViewError> {
+) -> Result<(Vec<ResourceRow>, bool, bool), ViewError> {
     let mut rows = fetch_page(tx, filter, request).await?;
     let has_more = rows.len() > request.limit;
     rows.truncate(request.limit);
-    let mut result = Vec::with_capacity(rows.len());
-    for row in rows {
-        result.push(decode_row_lite(tx, row).await?);
+
+    if rows.is_empty() {
+        return Ok((Vec::new(), has_more, false));
     }
-    Ok((result, has_more))
+
+    // Extract row metadata as full 4-tuples.
+    let mut row_keys: Vec<(String, String, String, String)> = Vec::with_capacity(rows.len());
+    let mut kind_rows: std::collections::HashMap<String, Vec<(String, String, String)>> =
+        std::collections::HashMap::new();
+    let mut kind_set: std::collections::HashSet<String> = std::collections::HashSet::new();
+    for row in &rows {
+        let account: String = row.try_get("account")?;
+        let region: String = row.try_get("region")?;
+        let kind: String = row.try_get("kind")?;
+        let id: String = row.try_get("id")?;
+        row_keys.push((account.clone(), region.clone(), kind.clone(), id.clone()));
+        kind_rows
+            .entry(kind.clone())
+            .or_default()
+            .push((account, region, id));
+        kind_set.insert(kind);
+    }
+
+    // Batch 1: kind -> table name mapping (one query).
+    let kinds_vec: Vec<&str> = kind_set.iter().map(|k| k.as_str()).collect();
+    let table_map = tables_for_kinds(tx, &kinds_vec).await?;
+
+    // Batch 2: record byte lengths, grouped by kind (one query per kind).
+    let mut lengths: std::collections::HashMap<(String, String, String), usize> =
+        std::collections::HashMap::new();
+    for (kind, table_rows) in kind_rows {
+        if let Some(table) = table_map.get(&kind) {
+            let kind_lengths = record_byte_lengths(tx, table, &table_rows).await?;
+            lengths.extend(kind_lengths);
+        }
+    }
+
+    // Batch 3: tags for all rows (one query).
+    let page_tags = tags::read_many(tx, &row_keys).await?;
+
+    // Build result rows with byte budget check.
+    let page_budget_bytes = 10_485_760usize; // 10 MiB
+    let mut result = Vec::with_capacity(rows.len());
+    let mut total_bytes = 0usize;
+    let mut truncated = false;
+
+    for (row, (account, region, kind, id)) in rows.into_iter().zip(row_keys) {
+        let expected: Vec<u8> = row.try_get("content_hash")?;
+
+        let length_key = (account.clone(), region.clone(), id.clone());
+        let record_bytes = lengths.get(&length_key).copied().unwrap_or(0);
+
+        let tag_key = (account.clone(), region.clone(), kind.clone(), id.clone());
+        let (tags, tags_truncated) = page_tags
+            .tags
+            .get(&tag_key)
+            .map(|(t, tr)| (t.clone(), *tr))
+            .unwrap_or((Vec::new(), false));
+        let observation = page_tags.observations.get(&tag_key).cloned().flatten();
+
+        let row_bytes = record_bytes.saturating_add(
+            tags.iter()
+                .map(|t| t.key.len().saturating_add(t.value.len()))
+                .sum(),
+        );
+
+        if total_bytes.saturating_add(row_bytes) > page_budget_bytes {
+            truncated = true;
+            break;
+        }
+        total_bytes = total_bytes.saturating_add(row_bytes);
+
+        result.push(ResourceRow {
+            key: resource_key([
+                account.as_str(),
+                region.as_str(),
+                kind.as_str(),
+                id.as_str(),
+            ])?,
+            name: row.try_get("name")?,
+            content_hash: ContentHash::from_bytes(stored_hash(&expected)?),
+            record_bytes,
+            tags,
+            tags_truncated,
+            tag_observation: observation,
+        });
+    }
+
+    Ok((result, has_more, truncated || page_tags.tags_truncated))
 }
 
 fn next_resource_cursor(resources: &[StoredResource], has_more: bool) -> Option<PageCursor> {

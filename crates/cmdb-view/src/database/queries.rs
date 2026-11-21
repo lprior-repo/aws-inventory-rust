@@ -23,31 +23,86 @@ pub(super) async fn read_detail(
         .map_err(ViewError::Sql)
 }
 
-/// Returns only the byte length of the persisted record payload, avoiding
-/// loading the full payload for table-page projection.
-pub(super) async fn record_byte_length(
+/// Batched lookup of table names for multiple kinds in one query.
+pub(super) async fn tables_for_kinds(
+    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+    kinds: &[&str],
+) -> Result<std::collections::HashMap<String, SqlName>, ViewError> {
+    if kinds.is_empty() {
+        return Ok(std::collections::HashMap::new());
+    }
+    let unique_kinds: Vec<&str> = kinds
+        .iter()
+        .copied()
+        .collect::<std::collections::HashSet<_>>()
+        .into_iter()
+        .collect();
+    let mut builder = sqlx::QueryBuilder::<sqlx::Sqlite>::new(
+        "SELECT kind,table_name FROM kinds WHERE kind IN (",
+    );
+    for (index, kind) in unique_kinds.iter().enumerate() {
+        if index > 0 {
+            builder.push(",");
+        }
+        builder.push_bind(kind);
+    }
+    builder.push(")");
+    let rows = builder.build().fetch_all(&mut **tx).await?;
+    let mut tables = std::collections::HashMap::new();
+    for row in rows {
+        let kind: String = row.try_get("kind")?;
+        let table: String = row.try_get("table_name")?;
+        tables.insert(
+            kind,
+            SqlName::parse(&table).map_err(|_| ViewError::SqlName)?,
+        );
+    }
+    Ok(tables)
+}
+
+/// Batched record length query for multiple rows of the same kind.
+/// Takes a table name and a list of (account, region, id) tuples.
+pub(super) async fn record_byte_lengths(
     tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
     table: &SqlName,
-    account: &str,
-    region: &str,
-    id: &str,
-) -> Result<usize, ViewError> {
-    let mut query = sqlx::QueryBuilder::<sqlx::Sqlite>::new("SELECT length(record) FROM \"");
-    query
+    rows: &[(String, String, String)],
+) -> Result<std::collections::HashMap<(String, String, String), usize>, ViewError> {
+    if rows.is_empty() {
+        return Ok(std::collections::HashMap::new());
+    }
+    let mut builder = sqlx::QueryBuilder::<sqlx::Sqlite>::new(
+        "SELECT account,region,id,length(record) as bytes FROM \"",
+    );
+    builder
         .push(table.as_str())
-        .push("\" WHERE account=")
-        .push_bind(account)
-        .push(" AND region=")
-        .push_bind(region)
-        .push(" AND id=")
-        .push_bind(id);
-    let result: i64 = query
-        .build()
-        .fetch_one(&mut **tx)
-        .await
-        .map_err(ViewError::Sql)?
-        .try_get::<i64, _>(0)?;
-    usize::try_from(result).map_err(|_| ViewError::StoredRow)
+        .push("\" WHERE (account,region,id) IN (");
+    for (index, (account, region, id)) in rows.iter().enumerate() {
+        if index > 0 {
+            builder.push(",");
+        }
+        builder.push("(");
+        builder.push_bind(account);
+        builder.push(",");
+        builder.push_bind(region);
+        builder.push(",");
+        builder.push_bind(id);
+        builder.push(")");
+    }
+    builder.push(")");
+    let query = builder.build();
+    let result_rows = query.fetch_all(&mut **tx).await?;
+    let mut lengths = std::collections::HashMap::new();
+    for row in result_rows {
+        let account: String = row.try_get("account")?;
+        let region: String = row.try_get("region")?;
+        let id: String = row.try_get("id")?;
+        let bytes: i64 = row.try_get("bytes")?;
+        lengths.insert(
+            (account, region, id),
+            usize::try_from(bytes).map_err(|_| ViewError::StoredRow)?,
+        );
+    }
+    Ok(lengths)
 }
 
 pub(super) async fn scalar_count(

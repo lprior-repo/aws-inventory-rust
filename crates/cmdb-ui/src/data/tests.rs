@@ -109,12 +109,52 @@ fn graph_state_reports_actual_edges_and_offline_error_separately() {
     );
     assert_eq!(
         data.graph_status(),
-        "2 nodes · 1 relationships · provenance: collector"
+        "2 nodes · 1 relationships · collector(1)"
     );
     let mut truncated = data.visual_graph();
     truncated.truncated = true;
     data.set_graph(truncated, None);
     assert!(data.graph_status().contains("neighborhood truncated"));
+}
+
+#[test]
+fn mixed_provenance_graph_summary_lists_all_provenances_with_counts() {
+    let mut data = Data::default();
+    let root = row("111", "AWS::S3::Bucket", "root");
+    data.select_row(root);
+    let graph = Graph {
+        nodes: vec![
+            row("111", "AWS::S3::Bucket", "root"),
+            row("111", "AWS::EC2::Instance", "a"),
+            row("111", "AWS::EC2::Instance", "b"),
+        ],
+        edges: vec![
+            Edge {
+                from: "root".to_owned(),
+                to: "a".to_owned(),
+                label: "depends_on".to_owned(),
+                provenance: "model".to_owned(),
+            },
+            Edge {
+                from: "root".to_owned(),
+                to: "b".to_owned(),
+                label: "depends_on".to_owned(),
+                provenance: "observed".to_owned(),
+            },
+            Edge {
+                from: "a".to_owned(),
+                to: "b".to_owned(),
+                label: "peer".to_owned(),
+                provenance: "model".to_owned(),
+            },
+        ],
+        ..Graph::default()
+    };
+    data.set_graph(graph, None);
+    assert!(data.graph_status().contains("model(2)"));
+    assert!(data.graph_status().contains("observed(1)"));
+    assert!(!data.graph_status().contains("provenance: model"));
+    assert!(!data.graph_status().contains("provenance: observed"));
 }
 
 #[test]

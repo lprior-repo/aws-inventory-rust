@@ -13,7 +13,7 @@ pub use database::{
 };
 pub use error::ViewError;
 pub use graph::{
-    GraphConnection, GraphEdge, GraphLimits, GraphNeighborhood, GraphNode, ScopedTag,
+    GraphConnection, GraphEdge, GraphLimits, GraphNeighborhood, GraphNode, PathResult, ScopedTag,
     TagAffiliation, TagAffiliations,
 };
 pub use inventory_core::inventory::{ScopeOutcome, TagCoverage};

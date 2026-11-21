@@ -232,12 +232,27 @@ impl Data {
             };
         }
         let edges = &self.graph.edges;
-        let provenance = edges
-            .first()
-            .map_or("unknown", |edge| edge.provenance.as_str());
         let nodes = self.graph.nodes.len();
         let count = edges.len();
-        format!("{nodes} nodes · {count} relationships · provenance: {provenance}")
+        if edges.is_empty() {
+            return format!("{nodes} nodes · 0 relationships");
+        }
+        // Count distinct provenances and display all of them with counts.
+        // UI-03: previously this took only the first edge's provenance,
+        // which mislabeled mixed-provenance graphs.
+        let mut counts = std::collections::HashMap::new();
+        edges.iter().for_each(|edge| {
+            let entry = counts.entry(edge.provenance.clone()).or_insert(0usize);
+            *entry = entry.saturating_add(1);
+        });
+        let mut entries: Vec<_> = counts.into_iter().collect();
+        entries.sort_by(|a, b| a.0.cmp(&b.0));
+        let labels = entries
+            .iter()
+            .map(|(name, count)| format!("{name}({count})"))
+            .collect::<Vec<_>>()
+            .join(" · ");
+        format!("{nodes} nodes · {count} relationships · {labels}")
     }
 
     pub fn visual_graph(&self) -> Graph {

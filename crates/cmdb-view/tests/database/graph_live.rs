@@ -123,9 +123,12 @@ async fn check_path_and_blast(graph: &GraphConnection) -> TestResult {
         nodes: 4,
         edges: 4,
     };
-    let path = graph.path(&b, &d, bounds).await?;
-    if path.truncated || path.edges != vec![edge(&b, &c), edge(&c, &d)] {
-        return Err(format!("inexact shortest path: {path:?}").into());
+    let result = graph.path(&b, &d, bounds).await?;
+    let cmdb_view::PathResult::Path(edges) = result else {
+        return Err(format!("expected Path variant, got {result:?}").into());
+    };
+    if edges != vec![edge(&b, &c), edge(&c, &d)] {
+        return Err(format!("inexact shortest path: {edges:?}").into());
     }
     let shallow = graph
         .path(
@@ -138,8 +141,13 @@ async fn check_path_and_blast(graph: &GraphConnection) -> TestResult {
             },
         )
         .await?;
-    if !shallow.truncated || !shallow.edges.is_empty() {
-        return Err(format!("inexact incomplete path: {shallow:?}").into());
+    if !matches!(shallow, cmdb_view::PathResult::NotFound) {
+        return Err(format!("expected NotFound, got {shallow:?}").into());
+    }
+    // UI-04: Same node returns SameNode variant (zero-hop path).
+    let same = graph.path(&b, &b, bounds).await?;
+    if !matches!(same, cmdb_view::PathResult::SameNode) {
+        return Err(format!("expected SameNode, got {same:?}").into());
     }
     // UI-04: Directed blast radius - follow incoming edges to find
     // upstream dependents. For graph A->B, A->C, B->C, C->D (edges

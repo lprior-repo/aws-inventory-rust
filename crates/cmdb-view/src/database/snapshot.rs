@@ -48,11 +48,12 @@ impl DatabaseSnapshot {
     ) -> Result<ResourceRowPage, ViewError> {
         validate_page_limit(request.limit)?;
         let total = count_filtered(&mut self.tx, filter).await?;
-        let (rows, has_more) = decode_rows(&mut self.tx, filter, &request).await?;
+        let (rows, has_more, truncated) = decode_rows(&mut self.tx, filter, &request).await?;
         Ok(ResourceRowPage {
             next: next_row_cursor(&rows, has_more),
             rows,
             total_matching: total,
+            truncated,
         })
     }
 
