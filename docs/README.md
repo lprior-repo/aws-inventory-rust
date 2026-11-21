@@ -39,6 +39,7 @@ machine that kept the files.
 | [cmdb-spec/](cmdb-spec/README.md) | Superseded detailed draft of the CMDB requirements. Still the reference for behavior VISION does not restate; VISION replaces it where they differ. Frozen. |
 | [CMDB_ARCHITECTURE.md](CMDB_ARCHITECTURE.md) | Superseded draft of a multi-tenant continuous service. Passages that contradict a decision are marked with its ID; the "current anchor" columns still describe the tree. Replaced at M10.3. |
 | [CMDB_PERFORMANCE_CONTRACT.md](CMDB_PERFORMANCE_CONTRACT.md) | Superseded draft of budgets and hypotheses, marked where VISION changes them. Its definitions and comparison protocol are kept (V19, M4.4, M5.6, M10.2). |
+| [AUDIT_DECISIONS.md](AUDIT_DECISIONS.md) | Decisions and evidence for the external audit findings UI-07, UI-12, UI-15, UI-16, UI-17 and UI-18: trust boundary, frame-time measurement, legacy deletion gates, real-account timing, graph backend contract, licensing. |
 
 ## Kept and extended
 

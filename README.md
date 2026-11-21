@@ -598,6 +598,8 @@ with an independent oracle (`cmdb-bench`), a bounded read model (`cmdb-view`)
 over one JSON export, and a Makepad viewer (`cmdb-ui`) with a filterable table
 and an account→region→kind→resource DAG over a synthetic fixture.
 
+Decisions taken on the external audit findings, with what is and is not verified, are in [docs/AUDIT_DECISIONS.md](docs/AUDIT_DECISIONS.md).
+
 That slice was built against an earlier draft: the
 [performance contract](docs/CMDB_PERFORMANCE_CONTRACT.md) and the
 [CMDB architecture](docs/CMDB_ARCHITECTURE.md). [The vision](docs/VISION.md)
