@@ -30,8 +30,8 @@ impl FrameTimeRecorder {
     }
 
     pub fn to_path(path: &Path) -> Result<Self, String> {
-        let file = File::create(path)
-            .map_err(|error| format!("frame log {}: {error}", path.display()))?;
+        let file =
+            File::create(path).map_err(|error| format!("frame log {}: {error}", path.display()))?;
         Ok(Self::with_output(Some(file)))
     }
 
@@ -84,11 +84,20 @@ mod tests {
         recorder.frame(25);
         recorder.shutdown();
         let content = std::fs::read_to_string(&path)?;
-        let rows: Vec<Vec<&str>> = content.lines().map(|line| line.split(',').collect()).collect();
+        let rows: Vec<Vec<&str>> = content
+            .lines()
+            .map(|line| line.split(',').collect())
+            .collect();
         assert_eq!(rows.len(), 2);
         assert_eq!(rows.iter().map(|row| row.len()).collect::<Vec<_>>(), [3, 3]);
-        assert_eq!(rows.iter().map(|row| row[0]).collect::<Vec<_>>(), ["1", "2"]);
-        assert_eq!(rows.iter().map(|row| row[2]).collect::<Vec<_>>(), ["10", "25"]);
+        assert_eq!(
+            rows.iter().map(|row| row[0]).collect::<Vec<_>>(),
+            ["1", "2"]
+        );
+        assert_eq!(
+            rows.iter().map(|row| row[2]).collect::<Vec<_>>(),
+            ["10", "25"]
+        );
         assert!(rows.iter().all(|row| row[1].parse::<u64>().is_ok()));
         Ok(())
     }

@@ -36,7 +36,9 @@ mod tests {
         );
         let kinds = unsourced()?;
         assert!(
-            !kinds.iter().any(|kind| kind == "AWS::CertificateManager::Certificate"),
+            !kinds
+                .iter()
+                .any(|kind| kind == "AWS::CertificateManager::Certificate"),
             "ACM certificate is sourced via ListTagsForCertificate"
         );
         Ok(())

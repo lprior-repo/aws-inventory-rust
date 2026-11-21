@@ -14,11 +14,7 @@ pub(super) struct GraphAccess {
 }
 
 impl GraphAccess {
-    pub fn new(
-        url: Option<String>,
-        name: Option<String>,
-        limits: GraphLimits,
-    ) -> Self {
+    pub fn new(url: Option<String>, name: Option<String>, limits: GraphLimits) -> Self {
         let config = match (url, name) {
             (None, None) => {
                 GraphConfig::Unavailable("not configured (--graph-url and --graph-name)".to_owned())

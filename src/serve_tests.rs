@@ -13,11 +13,7 @@ fn serve_cli_parses_required_args() {
         "--profile",
         "audit",
     ]);
-    assert!(
-        cli.is_ok(),
-        "parse failed: {:?}",
-        cli
-    );
+    assert!(cli.is_ok(), "parse failed: {:?}", cli);
 }
 
 #[test]
@@ -41,12 +37,8 @@ fn serve_cli_interval_value() {
 
 #[test]
 fn serve_cli_default_interval() {
-    let cli = crate::cli::Cli::try_parse_from([
-        "aws-inventory",
-        "serve",
-        "--database",
-        "test.sqlite",
-    ]);
+    let cli =
+        crate::cli::Cli::try_parse_from(["aws-inventory", "serve", "--database", "test.sqlite"]);
     let args = match cli.unwrap().command {
         crate::cli::Command::Serve(args) => args,
         other => panic!("expected Serve command, got {other:?}"),
@@ -57,8 +49,5 @@ fn serve_cli_default_interval() {
 #[test]
 fn serve_cli_requires_database() {
     let result = crate::cli::Cli::try_parse_from(["aws-inventory", "serve"]);
-    assert!(
-        result.is_err(),
-        "expected parse error without --database"
-    );
+    assert!(result.is_err(), "expected parse error without --database");
 }

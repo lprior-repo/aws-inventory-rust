@@ -90,12 +90,7 @@ fn add_tag_affiliations(dag: &mut DagGraph, source: &DataGraph) {
             let tag = &entry.tag;
             let label = truncate_label(&format!("tag: {:?}={:?}", tag.key, tag.value));
             if let Some(node) = dag.add_node(NodeKind::Tag, tag_id(tag), label) {
-                dag.add_overlay_edge(
-                    resource,
-                    node,
-                    "has_tag".to_owned(),
-                    String::new(),
-                );
+                dag.add_overlay_edge(resource, node, "has_tag".to_owned(), String::new());
             }
         });
 }

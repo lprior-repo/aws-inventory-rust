@@ -11,9 +11,16 @@ pub fn read_catalog(path: &Path) -> Result<Vec<u8>> {
     let limit = inventory_core::catalog::MAX_CATALOG_BYTES;
     let file = File::open(path).with_context(|| format!("opening catalog {}", path.display()))?;
     let mut bytes = Vec::new();
-    file.take(u64::try_from(limit).context("limit exceeds u64")?.saturating_add(1))
-        .read_to_end(&mut bytes)?;
-    anyhow::ensure!(bytes.len() <= limit, "runtime catalog exceeds {limit} bytes");
+    file.take(
+        u64::try_from(limit)
+            .context("limit exceeds u64")?
+            .saturating_add(1),
+    )
+    .read_to_end(&mut bytes)?;
+    anyhow::ensure!(
+        bytes.len() <= limit,
+        "runtime catalog exceeds {limit} bytes"
+    );
     Ok(bytes)
 }
 

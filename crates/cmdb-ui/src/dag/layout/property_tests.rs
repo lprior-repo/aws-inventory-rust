@@ -72,12 +72,8 @@ fn dag_strategy(max_nodes: usize, max_edges: usize) -> impl Strategy<Value = Gra
         // Generate two distinct indices and enforce from < to.
         let edge_pairs = (0..node_count)
             .prop_flat_map(move |a| (0..node_count).prop_map(move |b| (a, b)))
-            .prop_filter_map("a != b", |(a, b)| {
-                if a == b { None } else { Some((a, b)) }
-            })
-            .prop_map(|(a, b)| {
-                if a < b { (a, b) } else { (b, a) }
-            });
+            .prop_filter_map("a != b", |(a, b)| if a == b { None } else { Some((a, b)) })
+            .prop_map(|(a, b)| if a < b { (a, b) } else { (b, a) });
         prop::collection::vec(edge_pairs, 0..=edge_limit)
             .prop_map(move |edges| GraphSpec { node_count, edges })
     })

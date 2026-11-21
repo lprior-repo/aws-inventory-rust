@@ -3,8 +3,8 @@ use inventory_aws::model_credentials::ProfileCredentials;
 use inventory_engine::cadence::{Environment, Millis, RunOutcome, Wake, serve};
 use inventory_engine::inventory::BinaryStore;
 use std::process::ExitCode;
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use tracing::{error, info};
 
 use super::config::ServeConfig;
@@ -80,10 +80,11 @@ async fn load_profiles(options: &ServeArgs) -> Result<Vec<ProfileConfig>> {
     let mut profiles = Vec::with_capacity(profile_names.len());
     for name in profile_names {
         info!(profile = name, "loading credentials");
-        let credentials = match ProfileCredentials::load(Some(&name), options.region.as_deref()).await {
-            Ok(c) => c,
-            Err(e) => anyhow::bail!("loading credentials for profile {name}: {e}"),
-        };
+        let credentials =
+            match ProfileCredentials::load(Some(&name), options.region.as_deref()).await {
+                Ok(c) => c,
+                Err(e) => anyhow::bail!("loading credentials for profile {name}: {e}"),
+            };
         profiles.push(ProfileConfig {
             name,
             credentials,

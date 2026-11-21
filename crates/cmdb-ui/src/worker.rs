@@ -8,9 +8,7 @@ mod runner;
 pub(crate) mod tests;
 
 use crate::data::{Counts, Filter, Graph, Row};
-use cmdb_view::{
-    Database, GraphConnection, GraphLimits, GraphNode, PageRequest, ResourceFilter,
-};
+use cmdb_view::{Database, GraphConnection, GraphLimits, GraphNode, PageRequest, ResourceFilter};
 use graph_tasks::{GraphAccess, database_error, graph_failure};
 use lifecycle::{Cancellation, Shutdown, shutdown_channel};
 use makepad_widgets::makepad_platform::thread::SignalToUI;
@@ -36,13 +34,19 @@ pub const DEFAULT_GRAPH_LIMITS: GraphLimits = GraphLimits {
 pub fn parse_lod_config(config: &str) -> Result<GraphLimits, String> {
     let parts: Vec<&str> = config.split(':').collect();
     if parts.len() != 3 {
-        return Err(format!("CMDB_UI_LOD requires depth:nodes:edges, got: {config}"));
+        return Err(format!(
+            "CMDB_UI_LOD requires depth:nodes:edges, got: {config}"
+        ));
     }
-    let depth: u8 = parts[0].parse().map_err(|_| format!("invalid depth: {}", parts[0]))?;
-    let nodes: usize =
-        parts[1].parse().map_err(|_| format!("invalid nodes: {}", parts[1]))?;
-    let edges: usize =
-        parts[2].parse().map_err(|_| format!("invalid edges: {}", parts[2]))?;
+    let depth: u8 = parts[0]
+        .parse()
+        .map_err(|_| format!("invalid depth: {}", parts[0]))?;
+    let nodes: usize = parts[1]
+        .parse()
+        .map_err(|_| format!("invalid nodes: {}", parts[1]))?;
+    let edges: usize = parts[2]
+        .parse()
+        .map_err(|_| format!("invalid edges: {}", parts[2]))?;
     Ok(GraphLimits {
         depth,
         nodes,
@@ -194,14 +198,7 @@ async fn setup(path: PathBuf, config: WorkerConfig) -> Result<(WorkerState, Work
         .map_err(|error| error.to_string())?;
     // Get the initial page using a short-lived snapshot.
     let initial = refresh_page(&database, Filter::default()).await;
-    let graph = GraphAccess::new(
-        config.graph_url,
-        config.graph_name,
-        config.graph_limits,
-    );
-    let state = WorkerState {
-        graph,
-        database,
-    };
+    let graph = GraphAccess::new(config.graph_url, config.graph_name, config.graph_limits);
+    let state = WorkerState { graph, database };
     Ok((state, initial))
 }

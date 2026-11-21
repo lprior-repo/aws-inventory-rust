@@ -10,8 +10,6 @@ mod enabled;
 #[cfg(feature = "aws")]
 mod store;
 
-
-
 /// Run the cadence scheduler.
 #[cfg(feature = "aws")]
 pub async fn run(options: ServeArgs) -> anyhow::Result<ExitCode> {

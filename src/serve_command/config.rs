@@ -9,9 +9,9 @@ impl ServeConfig {
     pub fn parse_interval(input: &str) -> Result<Duration> {
         let input = input.trim();
         let (value, unit) = split_interval(input)?;
-        let numeric = value.parse::<u64>().with_context(|| {
-            format!("interval value '{value}' is not a number")
-        })?;
+        let numeric = value
+            .parse::<u64>()
+            .with_context(|| format!("interval value '{value}' is not a number"))?;
         let multiplier = match unit {
             "s" => 1,
             "m" => 60,

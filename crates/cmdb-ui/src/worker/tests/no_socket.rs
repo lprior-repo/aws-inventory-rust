@@ -31,7 +31,9 @@ fn start_cmdb_ui(database: &str) -> Result<std::process::Child, String> {
         .arg("--")
         .arg("--database")
         .arg(database);
-    let child = command.spawn().map_err(|error| format!("spawn failed: {error}"))?;
+    let child = command
+        .spawn()
+        .map_err(|error| format!("spawn failed: {error}"))?;
     Ok(child)
 }
 
@@ -39,8 +41,8 @@ fn start_cmdb_ui(database: &str) -> Result<std::process::Child, String> {
 #[test]
 fn test_cmdb_ui_opens_no_listening_socket() {
     // Find an existing test database.
-    let database = std::env::var("CMDB_UI_TEST_DB")
-        .unwrap_or_else(|_| "/tmp/cmdb_test.db".to_owned());
+    let database =
+        std::env::var("CMDB_UI_TEST_DB").unwrap_or_else(|_| "/tmp/cmdb_test.db".to_owned());
 
     // Start the UI process.
     let mut child = match start_cmdb_ui(&database) {

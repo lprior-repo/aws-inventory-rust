@@ -6,11 +6,11 @@ mod parent_assertions;
 use super::super::{consumer_index::ConsumerIndex, cursor};
 use super::policy_dfgk_tests::{complete_df::json_to_cbor, project_children, projected_references};
 use super::*;
+use crate::sweep_runtime::{execution::routing, record::policy_dfgk_tests::fixture as decoder};
 use catalog_tool as fixture_catalog;
 use fixture::{TestResult, compile};
 use inventory_core::catalog::runtime::{RuntimeCatalog, RuntimeProtocol};
 use inventory_engine::inventory::{BinaryStore, PageCommit, SchemaRegistry, WorkLease};
-use crate::sweep_runtime::{execution::routing, record::policy_dfgk_tests::fixture as decoder};
 use serde_json::{Value as Json, json};
 use std::collections::BTreeSet;
 

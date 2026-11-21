@@ -55,7 +55,10 @@ fn pair(key: &str, value: &str) -> Result<Value, inventory_core::record::RecordE
 fn given_unicode_tag_at_character_limit_when_normalized_then_tag_is_accepted() -> TestResult {
     let key = "é".repeat(128);
     let value = "é".repeat(256);
-    let rec = record(Some(Value::Map(BTreeMap::from([(Key::Name(key.clone().into()), Value::Text(value.clone()))]))))?;
+    let rec = record(Some(Value::Map(BTreeMap::from([(
+        Key::Name(key.clone().into()),
+        Value::Text(value.clone()),
+    )]))))?;
     let plan = map_plan()?;
     let obs = tag_observation(&rec, &resource()?, &plan)?;
     assert_eq!(obs.tags().len(), 1);
@@ -69,7 +72,10 @@ fn given_unicode_tag_at_character_limit_when_normalized_then_tag_is_accepted() -
 fn given_unicode_tag_over_character_limit_when_normalized_then_tag_is_skipped() -> TestResult {
     let key = "é".repeat(129);
     let value = "value";
-    let rec = record(Some(Value::Map(BTreeMap::from([(Key::Name(key.into()), Value::Text(value.to_owned()))]))))?;
+    let rec = record(Some(Value::Map(BTreeMap::from([(
+        Key::Name(key.into()),
+        Value::Text(value.to_owned()),
+    )]))))?;
     let plan = map_plan()?;
     let obs = tag_observation(&rec, &resource()?, &plan)?;
     assert_eq!(obs.tags().len(), 0);
@@ -77,12 +83,16 @@ fn given_unicode_tag_over_character_limit_when_normalized_then_tag_is_skipped() 
 }
 
 #[test]
-fn given_mixed_valid_and_invalid_tags_when_normalized_then_valid_tags_are_preserved() -> TestResult {
+fn given_mixed_valid_and_invalid_tags_when_normalized_then_valid_tags_are_preserved() -> TestResult
+{
     let too_long = "é".repeat(129);
     let valid_pair = pair("env", "prod")?;
     let invalid_pair = Value::Map(BTreeMap::from([
         (Key::Field(FieldId::new(2)?), Value::Text(too_long)),
-        (Key::Field(FieldId::new(3)?), Value::Text("value".to_owned())),
+        (
+            Key::Field(FieldId::new(3)?),
+            Value::Text("value".to_owned()),
+        ),
     ]));
     let rec = record(Some(Value::List(vec![valid_pair, invalid_pair])))?;
     let plan = list_plan()?;
@@ -190,8 +200,7 @@ fn given_missing_and_explicit_empty_tags_when_normalized_then_coverage_is_not_co
 }
 
 #[test]
-fn given_duplicate_or_malformed_snapshot_when_normalized_then_partial_coverage()
--> TestResult {
+fn given_duplicate_or_malformed_snapshot_when_normalized_then_partial_coverage() -> TestResult {
     // Duplicate keys are skipped, and coverage becomes Partial.
     let duplicates = record(Some(Value::List(vec![
         pair("same", "a")?,

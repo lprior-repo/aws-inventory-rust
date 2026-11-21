@@ -105,8 +105,6 @@ pub(crate) async fn run(
     supervise(&executor, collection, tokio::signal::ctrl_c()).await
 }
 
-
-
 fn transport_config(config: &SweepConfig) -> Result<TransportConfig, SweepError> {
     Ok(TransportConfig {
         max_connections: config.concurrency,
@@ -193,9 +191,7 @@ async fn sweep_id(
         .await?
         .ok_or(SweepError::Operation("no pending sweep to resume"))?;
     // Verify manifest and claim the sweep atomically.
-    store
-        .resume_sweep(&pending, account)
-        .await?;
+    store.resume_sweep(&pending, account).await?;
     Ok(pending)
 }
 

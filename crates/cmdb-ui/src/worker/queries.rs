@@ -1,5 +1,5 @@
-use super::*;
 use super::projection::row_from_row;
+use super::*;
 
 // Each UI read opens its own short-lived SQLite snapshot and closes it
 // immediately. No read transaction is held across user idle time or between
@@ -8,7 +8,6 @@ use super::projection::row_from_row;
 // consistent snapshot, but two consecutive reads may observe different states.
 // That is acceptable for an inventory view; strong snapshot isolation across
 // the entire session would block WAL checkpointing indefinitely.
-
 
 /// Enriches graph node details from a short-lived snapshot. Each call opens
 /// its own snapshot; the caller is responsible for closing it.
@@ -31,19 +30,13 @@ async fn enrich_graph(
             *row = row_from_resource(&resource)?;
         }
     }
-    snapshot
-        .finish()
-        .await
-        .map_err(|error| error.to_string())
+    snapshot.finish().await.map_err(|error| error.to_string())
 }
 
 /// Reads a fresh page in its own short-lived snapshot. Each call opens and
 /// closes its own read transaction, so the result is consistent within the
 /// page but consecutive reads may reflect different committed state.
-pub(super) async fn refresh_page(
-    database: &Database,
-    filter: Filter,
-) -> WorkerEvent {
+pub(super) async fn refresh_page(database: &Database, filter: Filter) -> WorkerEvent {
     let resource_filter = ResourceFilter {
         account: filter.account,
         region: filter.region,
@@ -68,10 +61,7 @@ pub(super) async fn refresh_page(
             .await
             .map_err(|error| error.to_string())?;
         // Compute counts within the same snapshot to ensure consistency.
-        let snapshot_counts = snapshot
-            .counts()
-            .await
-            .map_err(|error| error.to_string())?;
+        let snapshot_counts = snapshot.counts().await.map_err(|error| error.to_string())?;
         let rows = page
             .rows
             .iter()

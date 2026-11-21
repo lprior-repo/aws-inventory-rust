@@ -215,7 +215,11 @@ mod lod_tests {
             panic!("valid lod must apply");
         };
         assert_eq!(
-            (config.graph_limits.depth, config.graph_limits.nodes, config.graph_limits.edges),
+            (
+                config.graph_limits.depth,
+                config.graph_limits.nodes,
+                config.graph_limits.edges
+            ),
             (3, 10, 20)
         );
     }

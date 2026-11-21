@@ -74,10 +74,18 @@ fn projected_row(account: &str, region: &str, kind: &str, id: &str, key: &str) -
 fn live_neighbor_projection_uses_full_resource_keys_and_hierarchy() {
     let mut data = crate::data::Data::default();
     let source_row = projected_row(
-        "111111111111", "us-east-1", "AWS::EC2::VPC", "vpc-a", "key-vpc",
+        "111111111111",
+        "us-east-1",
+        "AWS::EC2::VPC",
+        "vpc-a",
+        "key-vpc",
     );
     let target_row = projected_row(
-        "111111111111", "us-east-1", "AWS::EC2::Subnet", "subnet-a", "key-subnet",
+        "111111111111",
+        "us-east-1",
+        "AWS::EC2::Subnet",
+        "subnet-a",
+        "key-subnet",
     );
     data.replace_page(vec![source_row.clone(), target_row.clone()], 2);
     data.set_graph(

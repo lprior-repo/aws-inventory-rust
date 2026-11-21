@@ -138,11 +138,7 @@ fn given_advanced_revision_when_real_startup_fails_then_both_terminal_events_are
 -> TestResult {
     supervised(|| {
         // Given intake revisions already moved before the actual runner starts.
-        let queued = queued(
-            WorkerConfig::default(),
-            2,
-            EVENT_CAPACITY,
-        );
+        let queued = queued(WorkerConfig::default(), 2, EVENT_CAPACITY);
         queued.worker.refresh(Filter {
             query: "already accepted".into(),
             ..Filter::default()

@@ -1,7 +1,5 @@
 use super::graph::{DagGraph, NodeKind};
-use super::layout::{
-    DagLayout, H_GAP, NODE_W, PADDING, MAX_LAYERS,
-};
+use super::layout::{DagLayout, H_GAP, MAX_LAYERS, NODE_W, PADDING};
 
 fn chain() -> DagGraph {
     let mut graph = DagGraph::default();
@@ -51,10 +49,7 @@ fn cycle_break_is_deterministic() {
 #[test]
 fn cycle_break_flags_correct_back_edge() {
     let layout = DagLayout::compute(&cycle());
-    let back_edges: Vec<_> = layout.edges()
-        .iter()
-        .filter(|e| e.back)
-        .collect();
+    let back_edges: Vec<_> = layout.edges().iter().filter(|e| e.back).collect();
     assert_eq!(back_edges.len(), 1);
     assert_eq!(back_edges[0].from, 2);
     assert_eq!(back_edges[0].to, 0);
@@ -113,7 +108,12 @@ fn long_chain_clamps_layers() {
 
     for index in 0..node_count {
         let layer = layout.layer(index).expect("layer should be assigned");
-        assert!(layer < MAX_LAYERS, "node {} at layer {} >= MAX_LAYERS", index, layer);
+        assert!(
+            layer < MAX_LAYERS,
+            "node {} at layer {} >= MAX_LAYERS",
+            index,
+            layer
+        );
     }
 
     for index in 0..64 {
@@ -121,15 +121,21 @@ fn long_chain_clamps_layers() {
     }
 
     for index in 64..node_count {
-        assert_eq!(layout.layer(index), Some(63),
-            "node {} should be clamped to layer 63", index);
+        assert_eq!(
+            layout.layer(index),
+            Some(63),
+            "node {} should be clamped to layer 63",
+            index
+        );
     }
 
-    let expected_width = PADDING * 2.0
-        + f32::from(MAX_LAYERS as i16) * (NODE_W + H_GAP)
-        - H_GAP;
-    assert!((layout.width() - expected_width).abs() < 0.001,
-        "width mismatch: got {}, expected {}", layout.width(), expected_width);
+    let expected_width = PADDING * 2.0 + f32::from(MAX_LAYERS as i16) * (NODE_W + H_GAP) - H_GAP;
+    assert!(
+        (layout.width() - expected_width).abs() < 0.001,
+        "width mismatch: got {}, expected {}",
+        layout.width(),
+        expected_width
+    );
 
     assert_eq!(layout.node_count(), node_count);
 
@@ -138,8 +144,10 @@ fn long_chain_clamps_layers() {
         .collect();
     for (k, (i, ra)) in placed.iter().enumerate() {
         for (_, (j, rb)) in placed.iter().enumerate().skip(k + 1) {
-            let overlap = ra.x < rb.x + rb.width && rb.x < ra.x + ra.width
-                && ra.y < rb.y + rb.height && rb.y < ra.y + ra.height;
+            let overlap = ra.x < rb.x + rb.width
+                && rb.x < ra.x + ra.width
+                && ra.y < rb.y + rb.height
+                && rb.y < ra.y + ra.height;
             assert!(!overlap, "rects {}/{} overlap", i, j);
         }
     }
@@ -152,8 +160,13 @@ fn x_positions_are_layer_aligned() {
         let layer = layout.layer(index).expect("layer assigned");
         let rect = layout.rect(index).expect("rect assigned");
         let expected_x = PADDING + f32::from(layer as i16) * (NODE_W + H_GAP);
-        assert!((rect.x - expected_x).abs() < 0.001,
-            "node {} x mismatch: got {}, expected {}", index, rect.x, expected_x);
+        assert!(
+            (rect.x - expected_x).abs() < 0.001,
+            "node {} x mismatch: got {}, expected {}",
+            index,
+            rect.x,
+            expected_x
+        );
     }
 }
 
@@ -164,8 +177,12 @@ fn forward_edges_go_right() {
         if !edge.back {
             let from_rect = layout.rect(edge.from).expect("from rect");
             let to_rect = layout.rect(edge.to).expect("to rect");
-            assert!(from_rect.right() < to_rect.x,
-                "forward edge {}->{} should go right", edge.from, edge.to);
+            assert!(
+                from_rect.right() < to_rect.x,
+                "forward edge {}->{} should go right",
+                edge.from,
+                edge.to
+            );
         }
     }
 }
@@ -183,8 +200,11 @@ fn diamond_shapes_layer_correctly() {
     let layout = DagLayout::compute(&graph);
     assert_eq!(layout.layer(0), Some(0));
     assert_eq!(layout.layer(1), Some(1));
-    assert_eq!(layout.layer(2), Some(2),
-        "node 2 should be at layer 2 due to path 0->1->2");
+    assert_eq!(
+        layout.layer(2),
+        Some(2),
+        "node 2 should be at layer 2 due to path 0->1->2"
+    );
 }
 
 #[test]
@@ -203,7 +223,8 @@ fn overlay_edges_do_not_affect_layout() {
         assert_eq!(layout_base.rect(index), layout_overlay.rect(index));
     }
 
-    let overlay_edges: Vec<_> = layout_overlay.edges()
+    let overlay_edges: Vec<_> = layout_overlay
+        .edges()
         .iter()
         .filter(|e| e.overlay && !e.back)
         .collect();
@@ -245,7 +266,11 @@ fn placed_with_node_cut() {
     assert_eq!(layout.node_count(), 3);
 
     for index in 0..3 {
-        assert!(layout.rect(index).is_some(), "node {} should be placed", index);
+        assert!(
+            layout.rect(index).is_some(),
+            "node {} should be placed",
+            index
+        );
     }
     assert!(layout.rect(3).is_none(), "node 3 should be dropped");
     assert!(layout.rect(4).is_none(), "node 4 should be dropped");
@@ -274,8 +299,12 @@ fn hit_test_finds_correct_node() {
         let rect = layout.rect(index).expect("rect exists");
         let center_x = rect.x + rect.width * 0.5;
         let center_y = rect.y + rect.height * 0.5;
-        assert_eq!(layout.hit_test(center_x, center_y), Some(index),
-            "hit test failed for node {}", index);
+        assert_eq!(
+            layout.hit_test(center_x, center_y),
+            Some(index),
+            "hit test failed for node {}",
+            index
+        );
     }
 }
 
@@ -293,6 +322,8 @@ fn crossing_edges_order_nodes_to_reduce_crossings() {
     let layout = DagLayout::compute(&graph);
     let rect2 = layout.rect(2).expect("rect for 2");
     let rect3 = layout.rect(3).expect("rect for 3");
-    assert!(rect3.y > rect2.y,
-        "node 3 should be below node 2 to reduce crossings");
+    assert!(
+        rect3.y > rect2.y,
+        "node 3 should be below node 2 to reduce crossings"
+    );
 }

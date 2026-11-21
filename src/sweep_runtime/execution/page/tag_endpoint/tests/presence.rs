@@ -74,8 +74,14 @@ async fn given_missing_required_tag_scalars_or_completion_flag_when_decoded_then
     // Malformed tag pairs are skipped (ES-01); the snapshot stays stale.
     // Only the completion-flag case still hard-fails at decode time.
     let skip = [
-        ("value", "<Tags><member><Key>Owner</Key></member></Tags><IsTruncated>false</IsTruncated>"),
-        ("key", "<Tags><member><Value>value</Value></member></Tags><IsTruncated>false</IsTruncated>"),
+        (
+            "value",
+            "<Tags><member><Key>Owner</Key></member></Tags><IsTruncated>false</IsTruncated>",
+        ),
+        (
+            "key",
+            "<Tags><member><Value>value</Value></member></Tags><IsTruncated>false</IsTruncated>",
+        ),
     ];
     for (name, body) in skip {
         let (directory, store, owner, sweep) =
@@ -109,8 +115,7 @@ async fn given_missing_required_tag_scalars_or_completion_flag_when_decoded_then
         directory.close()?;
     }
     // Completion flag still hard-fails.
-    let (directory, store, owner, sweep) =
-        seeded(&compiled, "missing-completion").await?;
+    let (directory, store, owner, sweep) = seeded(&compiled, "missing-completion").await?;
     let lease = claim(&store, &sweep, 2).await?;
     let body =
         "<ListRoleTagsResponse><ListRoleTagsResult><Tags/></ListRoleTagsResult></ListRoleTagsResponse>".to_owned();

@@ -20,15 +20,15 @@ mod plan;
 mod report;
 #[cfg(feature = "aws")]
 mod scan;
-mod sweep_command;
-#[cfg(feature = "aws")]
-mod sweep_runtime;
 mod serve_command;
 #[cfg(test)]
 mod serve_tests;
-mod targets;
+mod sweep_command;
+#[cfg(feature = "aws")]
+mod sweep_runtime;
 mod tag_mapping;
 mod tag_sources;
+mod targets;
 
 use anyhow::{Context, Result};
 use cli::Command;

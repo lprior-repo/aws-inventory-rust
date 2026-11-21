@@ -2,12 +2,12 @@
 //! Rendering/hit testing remains the separate native screenshot acceptance gate.
 use super::super::*;
 use crate::data::{Graph, Row};
+use crate::worker::DEFAULT_GRAPH_LIMITS;
 use crate::worker::tests::isolation::supervised;
 use crate::worker::tests::real::fixtures::{
     self, ACCOUNT, Fixture, KIND, NativeGraph, REGION, TestResult,
 };
 use crate::worker::tests::support::{self, BlockedGraph, QueuedWorker};
-use crate::worker::DEFAULT_GRAPH_LIMITS;
 use inventory_core::inventory::{Tag, TagCoverage, TagObservation};
 use std::time::{Duration, Instant};
 

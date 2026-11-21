@@ -1,9 +1,9 @@
 use super::*;
+use crate::worker::DEFAULT_GRAPH_LIMITS;
 use crate::worker::tests::isolation::supervised;
 use crate::worker::tests::real::fixtures::{
     self, ACCOUNT, Fixture, KIND, NativeGraph, REGION, TestResult, assert_edges, edge, root,
 };
-use crate::worker::DEFAULT_GRAPH_LIMITS;
 
 fn runtime() -> TestResult<tokio::runtime::Runtime> {
     Ok(Builder::new_current_thread().enable_all().build()?)
