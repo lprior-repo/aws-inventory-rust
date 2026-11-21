@@ -54,27 +54,31 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_interval_seconds() {
-        let d = ServeConfig::parse_interval("30s").expect("parse 30s");
+    fn parse_interval_seconds() -> Result<()> {
+        let d = ServeConfig::parse_interval("30s")?;
         assert_eq!(d, Duration::from_secs(30));
+        Ok(())
     }
 
     #[test]
-    fn parse_interval_minutes() {
-        let d = ServeConfig::parse_interval("5m").expect("parse 5m");
+    fn parse_interval_minutes() -> Result<()> {
+        let d = ServeConfig::parse_interval("5m")?;
         assert_eq!(d, Duration::from_secs(300));
+        Ok(())
     }
 
     #[test]
-    fn parse_interval_hours() {
-        let d = ServeConfig::parse_interval("2h").expect("parse 2h");
+    fn parse_interval_hours() -> Result<()> {
+        let d = ServeConfig::parse_interval("2h")?;
         assert_eq!(d, Duration::from_secs(7200));
+        Ok(())
     }
 
     #[test]
-    fn parse_interval_days() {
-        let d = ServeConfig::parse_interval("1d").expect("parse 1d");
+    fn parse_interval_days() -> Result<()> {
+        let d = ServeConfig::parse_interval("1d")?;
         assert_eq!(d, Duration::from_secs(86400));
+        Ok(())
     }
 
     #[test]
