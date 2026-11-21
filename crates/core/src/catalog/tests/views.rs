@@ -111,7 +111,7 @@ fn member_defaults_are_absent_by_default() -> TestResult {
         .members()?
         .next()
         .ok_or("member")??;
-    assert!(matches!(member.default_value()?, None));
+    assert!(member.default_value()?.is_none());
     assert!(!member.client_optional()?);
     Ok(())
 }
