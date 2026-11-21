@@ -227,7 +227,7 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
             );
             let (request, wire) = self.request(plan, &lease)?;
             let body = respond(plan, &request, &wire, lease.token().is_some())?;
-            let count = seen.entry(operation.to_owned()).or_insert(0);
+            let count = seen.entry(operation.to_owned()).or_insert(0_usize);
             *count = count.saturating_add(1);
             assert!(
                 seen.values().sum::<usize>() < 512,
