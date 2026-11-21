@@ -44,7 +44,7 @@ fn cursor_preserves_and_resumes_a_request_of_exactly_65000_encoded_bytes() -> Te
         Some(*expected.content_hash(&Exclusions::none())?.as_bytes())
     );
     assert_eq!(resumed.pages, 1);
-    assert_eq!(resumed.partial, false);
+    assert!(!resumed.partial);
     assert_eq!(
         resumed
             .current
@@ -81,7 +81,7 @@ fn cursor_marks_a_65001_byte_encoded_request_partial_without_persisting_its_toke
         Some(*expected.content_hash(&Exclusions::none())?.as_bytes())
     );
     assert_eq!(resumed.pages, 1);
-    assert_eq!(resumed.partial, true);
+    assert!(resumed.partial);
     assert_eq!(
         resumed
             .current
