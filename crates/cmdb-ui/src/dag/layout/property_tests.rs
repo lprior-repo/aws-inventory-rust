@@ -251,7 +251,7 @@ proptest! {
             e.from >= node_count_actual || e.to >= node_count_actual
         }).count();
 
-        prop_assert_eq!(layout.edges().len() + layout.dropped_edges(),
+        prop_assert_eq!(layout.edges().len().saturating_add(layout.dropped_edges()),
             graph.edges().len(),
             "edge count mismatch: layout {} + dropped {} != graph {}",
             layout.edges().len(), layout.dropped_edges(), graph.edges().len());
