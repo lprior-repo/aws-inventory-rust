@@ -5,8 +5,9 @@ use inventory_harness::assertions::global as assertions_global;
 use inventory_harness::assertions::parents as assertions_parents;
 use inventory_harness::assertions::regional as assertions_regional;
 use inventory_harness::{
-    HarnessError, assertions, catalog, install, mutate, seed, snapshot, verify_delivery,
+    HarnessError, assertions, audit, catalog, install, mutate, seed, snapshot, verify_delivery,
 };
+use inventory_harness::audit::{check_additions, write_reconciliation};
 
 mod cli;
 
@@ -99,6 +100,8 @@ enum Command {
     CatalogOperations {
         root: PathBuf,
         emulator_summary: Option<PathBuf>,
+        check_additions: bool,
+        output: PathBuf,
     },
 }
 
@@ -271,12 +274,34 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, HarnessError> {
         Command::CatalogOperations {
             root,
             emulator_summary,
+            check_additions,
+            output,
         } => {
-            let report = inventory_harness::audit::reconcile(&root)?;
-            if let Some(summary_path) = emulator_summary {
-                inventory_harness::audit::validate_emulator(&report, &root, &summary_path)?;
+            if check_additions {
+                let result = audit::check_additions(&root)?;
+                Ok(serde_json::json!({ "status": "ok", "additions": result }))
+            } else {
+                let report = inventory_harness::audit::reconcile(&root)?;
+                if let Some(summary_path) = emulator_summary {
+                    let (emulator, rows) =
+                        inventory_harness::audit::validate_emulator(&report, &root, &summary_path)?;
+                    let mut extended = report.clone();
+                    extended["emulator_evidence"] = emulator;
+                    write_reconciliation(&root, &extended, &output)?;
+                    Ok(serde_json::json!({
+                        "output": output.to_string_lossy(),
+                        "status": extended["status"],
+                        "operation_results": rows
+                    }))
+                } else {
+                    write_reconciliation(&root, &report, &output)?;
+                    Ok(serde_json::json!({
+                        "output": output.to_string_lossy(),
+                        "status": report["status"],
+                        "summary": report["summary"]
+                    }))
+                }
             }
-            Ok(report)
         }
     }
 }

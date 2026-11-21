@@ -105,6 +105,8 @@ fn parse_universal(arguments: &[String]) -> Result<Command, HarnessError> {
 fn parse_catalog_operations(arguments: &[String]) -> Result<Command, HarnessError> {
     let mut root = None;
     let mut emulator_summary = None;
+    let mut check_additions = false;
+    let mut output = None;
     let mut remaining = arguments.iter();
     while let Some(flag) = remaining.next() {
         match flag.as_str() {
@@ -120,6 +122,15 @@ fn parse_catalog_operations(arguments: &[String]) -> Result<Command, HarnessErro
                 })?;
                 emulator_summary = Some(PathBuf::from(value));
             }
+            "--check-additions" => {
+                check_additions = true;
+            }
+            "--output" => {
+                let value = remaining.next().ok_or_else(|| {
+                    HarnessError::invalid(format!("--output requires a value; {USAGE}"))
+                })?;
+                output = Some(PathBuf::from(value));
+            }
             other => {
                 return Err(HarnessError::invalid(format!(
                     "catalog-operations: unknown option {other}; {USAGE}"
@@ -127,9 +138,15 @@ fn parse_catalog_operations(arguments: &[String]) -> Result<Command, HarnessErro
             }
         }
     }
+    let root_path = root.unwrap_or_else(workspace_root);
+    let output_path = output.unwrap_or_else(|| {
+        root_path.join("artifacts/aws-operation-source-reconciliation-v06.json")
+    });
     Ok(Command::CatalogOperations {
-        root: root.unwrap_or_else(workspace_root),
+        root: root_path,
         emulator_summary,
+        check_additions,
+        output: output_path,
     })
 }
 

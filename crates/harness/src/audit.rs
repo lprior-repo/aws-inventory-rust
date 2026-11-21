@@ -26,6 +26,8 @@ pub use json_write::{dumps_default, pretty};
 pub use ledger::request_evidence;
 pub use matrix::catalogs;
 pub use operations::reconcile;
+pub use operations::check_additions;
+pub use operations::write_reconciliation;
 pub use crate::provenance::canonical_sha256;
 pub use operations::calls::source_inventory;
 pub use operations::validate_emulator;

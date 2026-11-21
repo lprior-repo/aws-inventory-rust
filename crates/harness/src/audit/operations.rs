@@ -225,3 +225,132 @@ pub fn validate_emulator(
 
     Ok((executed, rows))
 }
+
+pub fn check_additions(root: &std::path::Path) -> Result<serde_json::Value, HarnessError> {
+    let (matrix, matrix_sha) = read_json_audit(&root.join("catalog/aws-operations.json"))?;
+    let additions_path = root.join("catalog/aws-operation-additions.json");
+
+    let additions = if additions_path.is_file() {
+        let (doc, _) = read_json_audit(&additions_path)?;
+        validate_additions_document(root, &doc, &matrix, &matrix_sha)?
+    } else {
+        serde_json::Value::Null
+    };
+
+    Ok(serde_json::json!({
+        "matrix_sha256": matrix_sha,
+        "additions_path": "catalog/aws-operation-additions.json",
+        "additions": additions,
+        "status": if additions.is_null() { "absent" } else { "applied" }
+    }))
+}
+
+fn validate_additions_document(
+    root: &std::path::Path,
+    doc: &serde_json::Value,
+    matrix: &serde_json::Value,
+    matrix_sha: &str,
+) -> Result<serde_json::Value, HarnessError> {
+    let version = doc.get("schema_version").and_then(|v| v.as_i64());
+    if version != Some(1) {
+        return Err(HarnessError::invalid("additions schema_version must be 1"));
+    }
+
+    let binds_object = serde_json::Map::new();
+    let binds_null = serde_json::Value::Object(binds_object);
+    let binds = doc.get("binds").unwrap_or(&binds_null);
+    let binds_matrix = binds
+        .get("historical_matrix")
+        .and_then(|b| b.get("sha256"))
+        .and_then(|s| s.as_str());
+    if binds_matrix != Some(matrix_sha) {
+        return Err(HarnessError::invalid(
+            "additions bind a different historical operation matrix",
+        ));
+    }
+
+    let empty_vec = Vec::new();
+    let operations = matrix
+        .get("operations")
+        .and_then(|o| o.as_array())
+        .unwrap_or(&empty_vec);
+    let matrix_ids: std::collections::HashSet<String> = operations
+        .iter()
+        .filter_map(|op| op.get("id").and_then(|i| i.as_str()).map(String::from))
+        .collect();
+
+    let rows = doc
+        .get("additions")
+        .and_then(|a| a.as_array())
+        .unwrap_or(&empty_vec);
+    let mut checked = Vec::new();
+
+    for row in rows {
+        let id = row.get("id").and_then(|i| i.as_str()).ok_or_else(|| {
+            HarnessError::invalid("addition missing id")
+        })?;
+
+        if matrix_ids.contains(id) {
+            return Err(HarnessError::invalid(format!(
+                "addition {} reuses a historical operation identity",
+                id
+            )));
+        }
+
+        checked.push(serde_json::json!({
+            "id": id,
+            "status": "checked"
+        }));
+    }
+
+    Ok(serde_json::json!({
+        "schema_version": 1,
+        "additions_count": checked.len(),
+        "additions": checked
+    }))
+}
+
+pub fn write_reconciliation(
+    root: &std::path::Path,
+    report: &serde_json::Value,
+    output: &std::path::Path,
+) -> Result<(), HarnessError> {
+    let output = output.to_path_buf();
+
+    // Validate output is within root
+    let output = output.canonicalize().map_err(|e| {
+        HarnessError::invalid(format!("failed to canonicalize output path: {}", e))
+    })?;
+    let root = root.canonicalize().map_err(|e| {
+        HarnessError::invalid(format!("failed to canonicalize root path: {}", e))
+    })?;
+    if !output.starts_with(&root) {
+        return Err(HarnessError::invalid("output path must be within the repository root"));
+    }
+
+    // Check protected historical paths
+    let protected = [
+        root.join("catalog/aws-operations.json"),
+        root.join("catalog/aws-operation-additions.json"),
+        root.join("artifacts/aws-operation-source-reconciliation-v04.json"),
+        root.join("artifacts/aws-operation-source-reconciliation-v05.json"),
+    ];
+    for p in &protected {
+        if output == *p {
+            return Err(HarnessError::invalid("historical evidence cannot be replaced"));
+        }
+    }
+
+    // Atomic write: write to .partial temp, then rename
+    let temp = output.with_extension("partial");
+    let content = serde_json::to_string_pretty(report)?;
+    std::fs::write(&temp, content + "\n").map_err(|e| {
+        HarnessError::invalid(format!("failed to write temporary file: {}", e))
+    })?;
+
+    std::fs::rename(&temp, &output).map_err(|e| {
+        HarnessError::invalid(format!("failed to rename temporary file: {}", e))
+    })?;
+
+    Ok(())
+}
