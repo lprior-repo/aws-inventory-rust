@@ -28,7 +28,7 @@ fn given_retained_binaries_when_attesting_then_versions_and_hashes_describe_same
     let (_directory, layout) = fixture()?;
     let expected = value(&layout)?;
     let source = OwnedDirectory::capture(&layout.source)?;
-    let mut probes = 0;
+    let mut probes = 0_u32;
     let attestation = attest(&source, |file| {
         probes = probes.saturating_add(1);
         observed_version(file, probes == 1)
