@@ -12,8 +12,26 @@ use futures_util::{TryStreamExt, stream};
 use inventory_core::inventory::{
     Edge, Kind, ReferenceTarget, ResourceId, ResourceKey, ScalarType, UnresolvedReference,
 };
-use inventory_core::record::{FieldId, Record, Value, ValueRef};
+use inventory_core::record::{FieldId, Key, Record, Value, ValueRef};
 use sqlx::{Row, Sqlite, Transaction};
+use std::collections::BTreeMap;
+
+pub(super) fn encode(target: &ReferenceTarget) -> Result<Vec<u8>, StoreError> {
+    if target.candidate_kinds().len() == 1 {
+        return Ok(Vec::new());
+    }
+    Ok(Record::encode(&Value::Map(BTreeMap::from([(
+        Key::Field(FieldId::new(1)?),
+        Value::List(
+            target
+                .candidate_kinds()
+                .iter()
+                .map(|kind| Value::Text(kind.as_str().to_owned()))
+                .collect(),
+        ),
+    )])))?
+    .into_bytes())
+}
 
 pub(super) fn decode(bytes: &[u8], primary: &Kind) -> Result<Vec<Kind>, StoreError> {
     if bytes.is_empty() {
