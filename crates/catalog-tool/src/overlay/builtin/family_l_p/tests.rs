@@ -104,13 +104,10 @@ fn given_pinned_models_when_policies_load_then_every_partition_operation_has_a_d
         for operation in policy.operations().values() {
             assert_ne!(operation.class, None);
             if operation.class == Some(OverlayClass::Defer) {
-                assert_eq!(
-                    operation
-                        .defer_reason
-                        .as_ref()
-                        .is_some_and(|reason| !reason.is_empty()),
-                    true
-                );
+                assert!(operation
+                    .defer_reason
+                    .as_ref()
+                    .is_some_and(|reason| !reason.is_empty()));
             }
         }
     }
@@ -225,21 +222,21 @@ fn given_safe_metadata_resources_when_loaded_then_all_callable_plans_have_comple
             if policy.items.is_none() {
                 eprintln!("L-P missing items: {}/{}", service.service(), name);
             }
-            assert_eq!(policy.items.is_some(), true);
+            assert!(policy.items.is_some());
             if policy.scope.is_none() {
                 eprintln!("L-P missing scope: {}/{}", service.service(), name);
             }
-            assert_eq!(policy.scope.is_some(), true);
+            assert!(policy.scope.is_some());
             if policy.paginator.is_none() {
                 eprintln!("L-P missing paginator: {}/{}", service.service(), name);
             }
-            assert_eq!(policy.paginator.is_some(), true);
+            assert!(policy.paginator.is_some());
             if let Some(endpoint) = &policy.tag_endpoint {
                 assert!(!endpoint.parents.is_empty());
                 assert!(policy.identity.is_none());
             } else {
-                assert_eq!(policy.identity.is_some(), true);
-                assert_eq!(policy.queryable.is_empty(), false);
+                assert!(policy.identity.is_some());
+                assert!(!policy.queryable.is_empty());
             }
         }
     }

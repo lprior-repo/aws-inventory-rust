@@ -1,5 +1,4 @@
-#[path = "../family_g_k/tests/contracts.rs"]
-mod gz_contracts;
+use crate::overlay::builtin::family_g_k::tests::contracts as gz_contracts;
 
 use crate::{
     classes::DenyReason,

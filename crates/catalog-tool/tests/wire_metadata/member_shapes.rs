@@ -60,9 +60,9 @@ fn member_wire_names_flags_and_shape_wire_traits_survive_compilation() -> TestRe
         member.wire()?.timestamp_format()?,
         Some(TimestampFormat::HttpDate)
     );
-    assert_eq!(member.wire()?.sensitive()?, true);
-    assert_eq!(member.wire()?.idempotency_token()?, true);
-    assert_eq!(member.wire()?.host_label()?, true);
+    assert!(member.wire()?.sensitive()?);
+    assert!(member.wire()?.idempotency_token()?);
+    assert!(member.wire()?.host_label()?);
     let date = input
         .members()?
         .find_map(|member| match member {
@@ -85,8 +85,8 @@ fn member_wire_names_flags_and_shape_wire_traits_survive_compilation() -> TestRe
         })
         .transpose()?
         .ok_or("flat member missing")?;
-    assert_eq!(flat.wire()?.xml_flattened()?, true);
-    assert_eq!(flat.wire()?.xml_attribute()?, true);
+    assert!(flat.wire()?.xml_flattened()?);
+    assert!(flat.wire()?.xml_attribute()?);
     let secret = input
         .members()?
         .find_map(|member| match member {
@@ -96,13 +96,8 @@ fn member_wire_names_flags_and_shape_wire_traits_survive_compilation() -> TestRe
         })
         .transpose()?
         .ok_or("secret member missing")?;
-    assert_eq!(secret.wire()?.sensitive()?, false);
-    assert_eq!(
-        named_shape(service, "example#Secret")?
-            .wire()?
-            .sensitive()?,
-        true
-    );
+    assert!(!secret.wire()?.sensitive()?);
+    assert!(named_shape(service, "example#Secret")?.wire()?.sensitive()?);
     assert_eq!(
         named_shape(service, "example#Secret")?
             .wire()?
@@ -122,7 +117,7 @@ fn member_wire_names_flags_and_shape_wire_traits_survive_compilation() -> TestRe
         packet.wire()?.timestamp_format()?,
         Some(TimestampFormat::EpochSeconds)
     );
-    assert_eq!(packet.wire()?.sensitive()?, true);
+    assert!(packet.wire()?.sensitive()?);
     assert_eq!(packet.wire()?.media_type()?, Some("application/shape"));
     assert_eq!(packet.element_wire()?.xml_name()?, None);
     Ok(())
@@ -175,21 +170,21 @@ fn pseudo_member_traits_and_optional_member_metadata_are_retained() -> TestResul
     let (_source, bytes) = compile_model(model, "")?;
     let service = fixture_service(&bytes)?;
     let values = named_shape(service, "example#Values")?;
-    assert_eq!(values.wire()?.sparse()?, true);
+    assert!(values.wire()?.sparse()?);
     assert_eq!(
         values.element()?,
         Some(inventory_core::catalog::Target::Prelude("string"))
     );
     assert_eq!(values.element_wire()?.xml_name()?, Some("value-wire"));
     assert_eq!(values.element_wire()?.binding()?, HttpBinding::Document);
-    assert_eq!(values.element_wire()?.xml_flattened()?, true);
-    assert_eq!(values.element_wire()?.streaming()?, true);
-    assert_eq!(values.wire()?.sensitive()?, false);
+    assert!(values.element_wire()?.xml_flattened()?);
+    assert!(values.element_wire()?.streaming()?);
+    assert!(!values.wire()?.sensitive()?);
     let labels = named_shape(service, "example#Labels")?;
-    assert_eq!(labels.wire()?.sparse()?, true);
+    assert!(labels.wire()?.sparse()?);
     assert_eq!(labels.map_key_wire()?.xml_name()?, Some("key-wire"));
     assert_eq!(labels.map_value_wire()?.xml_name()?, Some("value-wire"));
-    assert_eq!(labels.map_value_wire()?.sensitive()?, true);
-    assert_eq!(labels.map_key_wire()?.xml_attribute()?, false);
+    assert!(labels.map_value_wire()?.sensitive()?);
+    assert!(!labels.map_key_wire()?.xml_attribute()?);
     Ok(())
 }

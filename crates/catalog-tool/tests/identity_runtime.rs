@@ -1,11 +1,46 @@
 #[path = "support/identity.rs"]
 mod fixture;
 
-use fixture::{TestResult, arn, compiled, compiled_fixed, key};
+use catalog_tool::overlay;
+use fixture::{TestResult, compile_fixture, compiled};
 use inventory_core::catalog::runtime::{
     BindingSource, BindingValue, IdentityPart, IdentityPlan, RuntimeCatalog,
 };
 use inventory_core::{inventory::ScalarType, record::FieldId};
+pub fn key(path: &str) -> Result<overlay::Identity, overlay::NameError> {
+    Ok(overlay::Identity::Key(vec![overlay::MemberPath::selected(
+        path,
+    )?]))
+}
+
+pub fn arn(path: &str) -> Result<overlay::Identity, overlay::NameError> {
+    Ok(overlay::Identity::Arn(overlay::MemberPath::selected(path)?))
+}
+
+
+pub fn compiled_singleton(identity: overlay::Identity) -> TestResult<Vec<u8>> {
+    compile_fixture(identity, "active-wire", None, false, true, None)
+}
+
+pub fn compiled_fixed(
+    identity: overlay::Identity,
+    mode: &str,
+    modes: &[&str],
+    scalar: bool,
+) -> TestResult<Vec<u8>> {
+    compile_fixture(identity, mode, Some(modes), scalar, false, None)
+}
+
+pub fn compiled_self_binding(source: overlay::ContextSource) -> TestResult<Vec<u8>> {
+    compile_fixture(
+        key("Name")?,
+        "active-wire",
+        None,
+        false,
+        false,
+        Some(source),
+    )
+}
 
 #[test]
 fn given_enum_identity_when_compiled_then_text_identity_paths_roundtrip() -> TestResult {
@@ -170,7 +205,7 @@ fn given_invalid_template_paths_when_checked_then_compile_denies_them() {
 #[test]
 fn given_singleton_structure_selection_when_compiled_then_identity_is_relative_to_item()
 -> TestResult {
-    let bytes = fixture::compiled_singleton(key("Name")?)?;
+    let bytes = compiled_singleton(key("Name")?)?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = catalog
         .lookup("things", "ListThings")
@@ -366,7 +401,7 @@ fn given_current_response_or_request_identity_context_when_loaded_then_exact_pro
             RuntimeSource::Request => &plan.context_projection().request,
             RuntimeSource::SelectedItem => return Err("unexpected fixture context".into()),
         };
-        assert_eq!(projected.as_ref(), [path.clone()]);
+        assert_eq!(projected.as_ref(), std::slice::from_ref(path));
     }
     Ok(())
 }
@@ -390,7 +425,7 @@ fn given_current_request_or_response_binding_when_compiled_then_future_context_i
 -> TestResult {
     use catalog_tool::overlay::ContextSource;
     for source in [ContextSource::Request, ContextSource::Response] {
-        assert!(fixture::compiled_self_binding(source).is_err());
+        assert!(compiled_self_binding(source).is_err());
     }
     Ok(())
 }

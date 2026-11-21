@@ -1,7 +1,7 @@
 use crate::classes::DenyReason;
 use crate::overlay;
 use crate::overlay::{
-    Binding, FixedValue, Identity, ItemSelector, MemberPath, OperationName, OverlayClass,
+    Binding, FixedValue, Identity, MemberPath, OperationName, OverlayClass,
     Paginator, Scope, TokenPair,
 };
 
@@ -98,10 +98,10 @@ fn descendants_bind_real_selected_parent_identifiers_not_invented_arn_components
         assert_eq!(plan.class, Some(OverlayClass::Expand), "{service}/{name}");
         assert_eq!(plan.bind.len(), 1);
         assert_eq!(
-            plan.bind.get(&MemberPath::new(*input)?),
+            plan.bind.get(&MemberPath::new(input)?),
             Some(&Binding::From {
-                operation: OperationName::new(*parent)?,
-                path: MemberPath::new(*member)?,
+                operation: OperationName::new(parent)?,
+                path: MemberPath::new(member)?,
             })
         );
         assert_eq!(plan.scope, Some(Scope::Region));

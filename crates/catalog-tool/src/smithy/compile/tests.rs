@@ -241,7 +241,7 @@ fn shared_reader_compiles_inherited_blob_default_and_client_optional() -> TestRe
         .ok_or("member")??;
     assert_eq!(member.target, Target::Prelude("blob"));
     assert!(
-        matches!(member.default_value()?, Some(inventory_core::record::ValueRef::Bytes(bytes)) if bytes == &[1, 2, 3])
+        matches!(member.default_value()?, Some(inventory_core::record::ValueRef::Bytes(bytes)) if bytes == [1, 2, 3])
     );
     assert!(member.client_optional()?);
     Ok(())

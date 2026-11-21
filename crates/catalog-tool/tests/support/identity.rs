@@ -15,45 +15,11 @@ const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 "n#Choices":{"type":"list","member":{"target":"n#Choice"}}
 }}"#;
 
-pub fn key(path: &str) -> Result<overlay::Identity, overlay::NameError> {
-    Ok(overlay::Identity::Key(vec![overlay::MemberPath::selected(
-        path,
-    )?]))
-}
-
-pub fn arn(path: &str) -> Result<overlay::Identity, overlay::NameError> {
-    Ok(overlay::Identity::Arn(overlay::MemberPath::selected(path)?))
-}
-
 pub fn compiled(identity: overlay::Identity, fixed: &str, scalar: bool) -> TestResult<Vec<u8>> {
     compile_fixture(identity, fixed, None, scalar, false, None)
 }
 
-pub fn compiled_singleton(identity: overlay::Identity) -> TestResult<Vec<u8>> {
-    compile_fixture(identity, "active-wire", None, false, true, None)
-}
-
-pub fn compiled_fixed(
-    identity: overlay::Identity,
-    mode: &str,
-    modes: &[&str],
-    scalar: bool,
-) -> TestResult<Vec<u8>> {
-    compile_fixture(identity, mode, Some(modes), scalar, false, None)
-}
-
-pub fn compiled_self_binding(source: overlay::ContextSource) -> TestResult<Vec<u8>> {
-    compile_fixture(
-        key("Name")?,
-        "active-wire",
-        None,
-        false,
-        false,
-        Some(source),
-    )
-}
-
-fn compile_fixture(
+pub fn compile_fixture(
     identity: overlay::Identity,
     mode: &str,
     modes: Option<&[&str]>,

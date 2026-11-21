@@ -30,7 +30,7 @@ pub fn masks(entries: &[(&str, &str)]) -> TestResult<Vec<overlay::MapKeyExclusio
         .iter()
         .map(|(path, key)| {
             Ok(overlay::MapKeyExclusion {
-                path: overlay::MemberPath::new(*path)?,
+                path: overlay::MemberPath::new(path)?,
                 key: (*key).to_owned(),
             })
         })

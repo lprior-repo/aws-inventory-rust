@@ -109,7 +109,7 @@ fn given_pinpoint_scalar_names_when_pinned_pair_compiles_then_detail_keeps_root_
     assert_eq!(list.kind(), detail.kind());
     assert_eq!(
         list.identity(),
-        &IdentityPlan::Key(vec![Box::new([]) as Box<[FieldId]>].into_boxed_slice())
+        &IdentityPlan::Key(vec![Box::<[FieldId]>::default()].into_boxed_slice())
     );
     assert_eq!(detail.items(), &ItemPlan::Root);
     assert_eq!(

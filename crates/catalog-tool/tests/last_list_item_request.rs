@@ -156,7 +156,7 @@ fn last_list_item_checker_preserves_scalar_request_cursors_through_native_compil
             );
             assert_eq!(token.selection, TokenSelection::LastListItem);
             assert_eq!(token.value_type, TokenType::String);
-            assert_eq!(token.optional, false);
+            assert!(!token.optional);
             assert_eq!(
                 plan.pagination().truncated_path.as_deref(),
                 Some([truncated].as_slice())

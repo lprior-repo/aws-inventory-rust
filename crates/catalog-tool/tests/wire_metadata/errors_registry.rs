@@ -67,16 +67,16 @@ fn operation_errors_merge_local_and_service_common_references() -> TestResult {
     assert_eq!(client.status, Some(409));
     assert_eq!(client.http_status, Some(409));
     assert_eq!(client.aws_query_status, Some(422));
-    assert_eq!(client.retryable, true);
-    assert_eq!(client.throttling, true);
+    assert!(client.retryable);
+    assert!(client.throttling);
     let server = named_shape(service, "example#ServerFailure")?
         .error()?
         .ok_or("server error missing")?;
     assert_eq!(server.kind, ErrorKind::Server);
     assert_eq!(server.code, None);
     assert_eq!(server.status, Some(503));
-    assert_eq!(server.retryable, true);
-    assert_eq!(server.throttling, false);
+    assert!(server.retryable);
+    assert!(!server.throttling);
     assert_eq!(named_shape(service, "example#Input")?.error()?, None);
     Ok(())
 }
@@ -129,11 +129,11 @@ fn absent_error_and_wire_traits_return_empty_or_none_without_invented_ids() -> T
         member.wire()?.binding()?,
         inventory_core::catalog::HttpBinding::Document
     );
-    assert_eq!(member.wire()?.xml_flattened()?, false);
-    assert_eq!(member.wire()?.xml_attribute()?, false);
-    assert_eq!(member.wire()?.streaming()?, false);
-    assert_eq!(member.wire()?.sensitive()?, false);
-    assert_eq!(member.wire()?.idempotency_token()?, false);
+    assert!(!member.wire()?.xml_flattened()?);
+    assert!(!member.wire()?.xml_attribute()?);
+    assert!(!member.wire()?.streaming()?);
+    assert!(!member.wire()?.sensitive()?);
+    assert!(!member.wire()?.idempotency_token()?);
     assert_eq!(shape.element_wire()?.xml_name()?, None);
     let mut operations = service.operations()?;
     assert_eq!(

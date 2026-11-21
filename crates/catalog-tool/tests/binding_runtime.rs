@@ -80,10 +80,26 @@ fn given_empty_nine_duplicate_missing_or_incompatible_producers_when_compiled_th
             if let Some(Binding::FromAny(alternatives)) = child.bind.values_mut().find(|binding|
                 matches!(binding, Binding::FromAny(values) if values.first().is_some_and(|alternative| alternative.source == ContextSource::SelectedItem))) {
                 match corruption {
-                    0 => alternatives.push(alternatives.first().expect("fixture has producer").clone()),
-                    1 => alternatives.first_mut().expect("fixture has producer").path = overlay::MemberPath::new("Missing").expect("valid path"),
-                    2 => alternatives.last_mut().expect("fixture has producer").path = overlay::MemberPath::new("Count").expect("valid path"),
-                    3 => alternatives.last_mut().expect("fixture has producer").operation = overlay::OperationName::new("ListMissing").expect("valid operation"),
+                    0 => {
+                        if let Some(first) = alternatives.first().cloned() {
+                            alternatives.push(first);
+                        }
+                    }
+                    1 => {
+                        if let (Some(first), Ok(path)) = (alternatives.first_mut(), overlay::MemberPath::new("Missing")) {
+                            first.path = path;
+                        }
+                    }
+                    2 => {
+                        if let (Some(last), Ok(path)) = (alternatives.last_mut(), overlay::MemberPath::new("Count")) {
+                            last.path = path;
+                        }
+                    }
+                    3 => {
+                        if let (Some(last), Ok(operation)) = (alternatives.last_mut(), overlay::OperationName::new("ListMissing")) {
+                            last.operation = operation;
+                        }
+                    }
                     _ => { alternatives.pop(); }
                 }
             }
@@ -92,10 +108,9 @@ fn given_empty_nine_duplicate_missing_or_incompatible_producers_when_compiled_th
     }
     assert!(
         compiled(1, |child| {
-            child.bind.insert(
-                overlay::MemberPath::new("EntityId").expect("valid path"),
-                Binding::RegionList,
-            );
+            if let Ok(path) = overlay::MemberPath::new("EntityId") {
+                child.bind.insert(path, Binding::RegionList);
+            }
         })
         .is_err(),
         "region list accepted for scalar destination"

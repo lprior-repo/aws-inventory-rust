@@ -1,12 +1,10 @@
-use crate::classes::{DenyList, DenyReason};
+use crate::classes::DenyReason;
 use crate::overlay::{
-    self, Binding, Identity, IdentityField, ItemSelector, MemberPath, OperationName,
+    self, Binding, Identity, IdentityField, MemberPath, OperationName,
     OperationOverlay, OverlayClass, Paginator, Scope, ServiceOverlay, TokenPair,
 };
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-
-include!("test_model.rs");
 
 fn operation<'a>(
     policies: &'a [ServiceOverlay],

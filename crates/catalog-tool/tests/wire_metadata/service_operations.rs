@@ -38,12 +38,9 @@ fn service_protocol_and_identity_metadata_is_borrowed_from_compiled_catalog() ->
     assert_eq!(service.sdk_id()?, Some("Fixture SDK"));
     assert_eq!(service.endpoint_prefix()?, Some("fixture-prefix"));
     assert_eq!(service.arn_namespace()?, Some("fixture-arn"));
-    assert_eq!(service.aws_query_compatible()?, true);
-    assert_eq!(service.no_error_wrapping("aws.protocols#restJson1")?, true);
-    assert_eq!(
-        service.no_error_wrapping("aws.protocols#awsJson1_1")?,
-        false
-    );
+    assert!(service.aws_query_compatible()?);
+    assert!(service.no_error_wrapping("aws.protocols#restJson1")?);
+    assert!(!service.no_error_wrapping("aws.protocols#awsJson1_1")?);
     assert_eq!(
         service
             .wire()?
@@ -82,7 +79,7 @@ fn operation_metadata_merges_service_defaults_and_keeps_operation_overrides() ->
         })
     );
     assert_eq!(operation.host_prefix()?, Some("{Region}."));
-    assert_eq!(operation.checksum_required()?, true);
+    assert!(operation.checksum_required()?);
     let paginator = operation.paginator()?.ok_or("merged paginator missing")?;
     assert_eq!(paginator.input_token, Some("Token"));
     assert_eq!(paginator.output_token, Some("NextPage.Token"));
@@ -107,14 +104,14 @@ fn absent_optional_service_and_operation_metadata_is_empty_or_none() -> TestResu
     assert_eq!(service.endpoint_prefix()?, None);
     assert_eq!(service.arn_namespace()?, None);
     assert_eq!(service.signing_name()?, None);
-    assert_eq!(service.aws_query_compatible()?, false);
-    assert_eq!(service.no_error_wrapping("aws.protocols#restJson1")?, false);
+    assert!(!service.aws_query_compatible()?);
+    assert!(!service.no_error_wrapping("aws.protocols#restJson1")?);
     assert_eq!(service.wire()?.xml_namespace()?, None);
     let mut operations = service.operations()?;
     let operation = operations.next().ok_or("operation missing")??;
     assert_eq!(operation.http()?, None);
     assert_eq!(operation.host_prefix()?, None);
-    assert_eq!(operation.checksum_required()?, false);
+    assert!(!operation.checksum_required()?);
     assert_eq!(operation.paginator()?, None);
     assert_eq!(operation.errors()?.count(), 0);
     Ok(())

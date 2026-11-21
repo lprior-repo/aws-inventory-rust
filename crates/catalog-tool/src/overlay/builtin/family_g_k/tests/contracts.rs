@@ -42,7 +42,7 @@ fn pinned_operations(service: &str) -> TestResult<BTreeSet<String>> {
     Ok(operations)
 }
 
-pub(super) fn assert_reviewed(policies: &[ServiceOverlay]) -> TestResult {
+pub(crate) fn assert_reviewed(policies: &[ServiceOverlay]) -> TestResult {
     // Given independent pinned models, compare operation keys rather than raw shape counts.
     for policy in policies {
         assert_eq!(

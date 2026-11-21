@@ -1,4 +1,4 @@
-mod contracts;
+pub(crate) mod contracts;
 
 use crate::classes::DenyReason;
 use crate::overlay::{

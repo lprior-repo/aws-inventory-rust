@@ -51,8 +51,8 @@ mod tests {
         )?;
         assert_eq!(endpoint.url, "https://s3-outposts.us-west-2.amazonaws.com");
         assert_eq!(
-            endpoint.properties["authSchemes"][0]["signingName"],
-            "s3-outposts"
+            endpoint.properties.pointer("/authSchemes/0/signingName"),
+            Some(&json!("s3-outposts"))
         );
         Ok(())
     }

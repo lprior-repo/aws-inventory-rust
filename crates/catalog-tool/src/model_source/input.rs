@@ -196,10 +196,8 @@ mod tests {
         fn members<'a>(&'a self, target: &str, visit: &mut dyn FnMut(&'a str, bool)) {
             self.member_reads
                 .set(self.member_reads.get().saturating_add(1));
-            if let Some(node) = self.shapes.get(target) {
-                if node.required {
-                    visit("Required", true);
-                }
+            if self.shapes.get(target).is_some_and(|node| node.required) {
+                visit("Required", true);
             }
         }
     }
@@ -242,8 +240,8 @@ mod tests {
             1 => node(&["n#0"], false),
             _ => Node {
                 mixins: vec![
-                    format!("n#{}", level.checked_sub(1).unwrap_or(0)),
-                    format!("n#{}", level.checked_sub(2).unwrap_or(0)),
+                    format!("n#{}", level.saturating_sub(1)),
+                    format!("n#{}", level.saturating_sub(2)),
                 ],
                 required: false,
             },
@@ -266,7 +264,7 @@ mod tests {
                     node(&[], false)
                 } else {
                     Node {
-                        mixins: vec![format!("n#{}", level.checked_sub(1).unwrap_or(0))],
+                        mixins: vec![format!("n#{}", level.saturating_sub(1))],
                         required: false,
                     }
                 };

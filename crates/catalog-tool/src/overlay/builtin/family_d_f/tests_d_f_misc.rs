@@ -1,8 +1,7 @@
-use crate::classes::DenyList;
 use crate::overlay;
 use crate::overlay::{
     Binding, FixedValue, Identity, ItemSelector, MemberPath, OperationName, OverlayClass,
-    Paginator, Scope, ServiceOverlay, TokenPair,
+    Paginator, Scope, ServiceOverlay,
 };
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;

@@ -172,7 +172,9 @@ fn deep_graph() -> Result<ModelFile, String> {
         let mut shape = serde_json::json!({"type":"structure","traits":{"smithy.api#mixin":{}}});
         if index < MAX_MIXIN_DEPTH + 1 {
             let target = index.checked_add(1).unwrap_or(0);
-            shape["mixins"] = serde_json::json!([{"target": format!("n#{}", target)}]);
+            if let Some(obj) = shape.as_object_mut() {
+                obj.insert("mixins".to_owned(), serde_json::json!([{"target": format!("n#{}", target)}]));
+            }
         }
         shapes.insert(format!("n#{index}"), shape);
     }

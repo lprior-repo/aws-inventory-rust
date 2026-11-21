@@ -1,6 +1,5 @@
 use crate::overlay::{
-    self, Binding, Identity, ItemSelector, MemberPath, OperationName, OverlayClass, Paginator,
-    TokenPair,
+    self, Binding, MemberPath, OperationName, Paginator, TokenPair,
 };
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;

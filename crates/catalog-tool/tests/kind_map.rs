@@ -242,7 +242,7 @@ fn operation_associations_reject_unknown_kinds_and_duplicate_keys() {
     assert!(
         matches!(unknown.compile(&Exceptions::none()), Err(KindMapError::UnknownKind { kind, .. }) if kind == "AWS::Missing::Kind")
     );
-    let operations = [MAP.operations, &MAP.operations[..1]].concat();
+    let operations = [MAP.operations, MAP.operations.get(..1).unwrap_or_default()].concat();
     let duplicate = MappingSource {
         operations: &operations,
         ..MAP
@@ -254,7 +254,7 @@ fn operation_associations_reject_unknown_kinds_and_duplicate_keys() {
 
 #[test]
 fn bootstrap_roles_require_unique_reviewed_api_only_operations() {
-    let bootstraps = [MAP.bootstraps, &MAP.bootstraps[..1]].concat();
+    let bootstraps = [MAP.bootstraps, MAP.bootstraps.get(..1).unwrap_or_default()].concat();
     let duplicate = MappingSource {
         bootstraps: &bootstraps,
         ..MAP

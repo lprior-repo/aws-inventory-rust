@@ -53,7 +53,7 @@ mod kinesis_video_signaling;
 mod kinesis_video_webrtc_storage;
 mod policy;
 #[cfg(test)]
-mod tests;
+pub(super) mod tests;
 
 use crate::overlay::{NameError, ServiceOverlay};
 
