@@ -1,7 +1,9 @@
 use super::*;
 
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+
 #[test]
-fn epoch_preserves_nanoseconds_across_sign_exponents_and_second_boundaries() {
+fn epoch_preserves_nanoseconds_across_sign_exponents_and_second_boundaries() -> TestResult {
     for (wire, seconds, nanos) in [
         ("-0.1", -1, 900_000_000),
         ("1.2345678905", 1, 234_567_891),
@@ -12,12 +14,9 @@ fn epoch_preserves_nanoseconds_across_sign_exponents_and_second_boundaries() {
         ("9223372036854775807.999999999", i64::MAX, 999_999_999),
         ("-9223372036854775808", i64::MIN, 0),
     ] {
-        assert_eq!(
-            parse(wire, None).expect(wire),
-            Time::new(seconds, nanos).expect("valid instant"),
-            "{wire}"
-        );
+        assert_eq!(parse(wire, None)?, Time::new(seconds, nanos)?, "{wire}");
     }
+    Ok(())
 }
 
 #[test]
@@ -36,16 +35,14 @@ fn epoch_rejects_instants_outside_record_seconds_and_malformed_numbers() {
 }
 
 #[test]
-fn binary_float_timestamp_uses_decimal_nanoseconds_without_precision_artifacts() {
+fn binary_float_timestamp_uses_decimal_nanoseconds_without_precision_artifacts() -> TestResult {
     assert_eq!(
-        from_float(946_845_296.123).expect("finite timestamp"),
-        Time::new(946_845_296, 123_000_000).expect("instant")
+        from_float(946_845_296.123)?,
+        Time::new(946_845_296, 123_000_000)?
     );
-    assert_eq!(
-        from_float(-0.1).expect("negative timestamp"),
-        Time::new(-1, 900_000_000).expect("instant")
-    );
+    assert_eq!(from_float(-0.1)?, Time::new(-1, 900_000_000)?);
     for wire in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
         assert!(from_float(wire).is_err());
     }
+    Ok(())
 }
