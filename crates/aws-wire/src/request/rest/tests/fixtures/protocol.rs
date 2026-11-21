@@ -1,10 +1,10 @@
-use super::{CompressionPolicy, Protocol, RequestContext, RequestLimits, input, model};
+use super::{CompressionPolicy, Protocol, RequestContext, RequestLimits, TestResult, input, model};
 use crate::request::{EncodeError, rest};
 use inventory_core::catalog::Catalog;
 use serde_json::json;
 
 #[test]
-fn rest_requests_reject_protocols_absent_from_service_metadata() {
+fn rest_requests_reject_protocols_absent_from_service_metadata() -> TestResult {
     for (protocol_id, selected, wrong) in [
         (
             "aws.protocols#restJson1",
@@ -31,19 +31,11 @@ fn rest_requests_reject_protocols_absent_from_service_metadata() {
                 "type": "structure", "members": {"Value": {"target": "smithy.api#String"}}
             }
         }});
-        let bytes = model::compile_service(&fixture, "test#Boundary");
-        let catalog = Catalog::borrow(&bytes).expect("valid regression catalog");
-        let service = catalog
-            .service("Boundary")
-            .expect("service lookup")
-            .expect("service");
-        let operation = service
-            .operations()
-            .expect("operations")
-            .next()
-            .expect("operation")
-            .expect("valid operation");
-        let record = input::record(service, operation, &json!({}));
+        let bytes = model::compile_service(&fixture, "test#Boundary")?;
+        let catalog = Catalog::borrow(&bytes)?;
+        let service = catalog.service("Boundary")?.ok_or("service")?;
+        let operation = service.operations()?.next().ok_or("operation")??;
+        let record = input::record(service, operation, &json!({}))?;
         let context = RequestContext {
             service,
             operation,
@@ -55,7 +47,7 @@ fn rest_requests_reject_protocols_absent_from_service_metadata() {
             compression: CompressionPolicy::Disabled,
             addressing: None,
         };
-        let request = rest::encode(context).expect("declared protocol encodes");
+        let request = rest::encode(context)?;
         assert_eq!(request.method(), http::Method::POST);
         assert_eq!(request.uri().to_string(), "https://example.test/probe");
         assert!(
@@ -71,4 +63,5 @@ fn rest_requests_reject_protocols_absent_from_service_metadata() {
             "{protocol_id} must reject {wrong:?}"
         );
     }
+    Ok(())
 }
