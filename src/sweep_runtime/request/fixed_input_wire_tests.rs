@@ -58,7 +58,7 @@ fn given_empty_list_and_map_when_all_protocols_are_signed_then_each_wire_empty_s
         let bytes = compiled_inputs(
             protocol,
             FixedValue::list([]),
-            FixedValue::map([] as [(&str, FixedValue); 0])?,
+            FixedValue::map(std::iter::empty::<(&str, FixedValue)>())?,
         )?;
         let request = signed_bytes(&bytes)?;
         assert!(request.headers().contains_key("authorization"));
