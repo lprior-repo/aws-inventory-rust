@@ -203,8 +203,8 @@ async fn sweep_persists_every_scalar_when_full_tuple_advances_and_optional_token
     // contain all six scalars, with no replayed pages or lost scalar identities.
     assert_summary(
         &output,
-        0,
-        Counts {
+        Summary {
+            code: 0,
             writes: 6,
             rows: 6,
             complete: 1,
@@ -234,8 +234,8 @@ async fn sweep_reports_partial_and_stops_when_the_entire_continuation_tuple_repe
     // observations on the final received page remain durably visible.
     assert_summary(
         &output,
-        2,
-        Counts {
+        Summary {
+            code: 2,
             writes: 3,
             rows: 3,
             complete: 0,
@@ -260,8 +260,8 @@ async fn sweep_rejects_a_truncated_page_missing_a_required_tuple_component_atomi
     // Then its scalar is not committed and the scope is failed, not complete.
     assert_summary(
         &output,
-        2,
-        Counts {
+        Summary {
+            code: 2,
             writes: 0,
             rows: 0,
             complete: 0,
@@ -300,12 +300,20 @@ async fn sweep_resumes_the_durable_full_tuple_without_replaying_already_committe
     release_tx
         .send(())
         .map_err(|_| anyhow::anyhow!("checkpoint gate stopped before release"))?;
-    // When a new process resumes the same on-disk store.
+    // Then a new process cannot reclaim the killed process's lease while it is
+    // still live (ES-02). The refused attempt must leave the durable queue intact.
+    let refused = fixture.collect(&peer, true).await?;
+    assert!(!refused.status.success());
+    assert!(String::from_utf8_lossy(&refused.stderr).contains("sweep has live leases"));
+    assert_queue(&fixture.database, 1, &[], 2).await?;
+    // The lease lapses only after its full budget (about an hour at concurrency 1).
+    // Lapse it directly; resume's live-lease predicate is `lease_until > now`.
+    expire_leases(&fixture.database).await?;
     let output = fixture.collect(&peer, true).await?;
     assert_summary(
         &output,
-        0,
-        Counts {
+        Summary {
+            code: 0,
             writes: 3,
             rows: 6,
             complete: 1,
@@ -429,8 +437,8 @@ fn verified_endpoint() -> Result<endpoints::VerifiedEndpoint> {
         .map_err(|error| anyhow::anyhow!("fixture endpoint derivation failed: {error:?}"))
 }
 
-#[derive(Clone, Copy)]
-struct Counts {
+struct Summary {
+    code: i32,
     writes: u64,
     rows: u64,
     complete: u64,
@@ -439,21 +447,23 @@ struct Counts {
     pending: u64,
 }
 
-fn assert_summary(output: &Output, code: i32, counts: Counts) -> Result<()> {
-    let Counts {
+fn assert_summary(output: &Output, expected: Summary) -> Result<()> {
+    let Summary {
+        code,
         writes,
         rows,
         complete,
         partial,
         failed,
         pending,
-    } = counts;
+    } = expected;
     assert_eq!(
         output.status.code(),
         Some(code),
         "{}",
         String::from_utf8_lossy(&output.stderr)
     );
+    // No slice budget is configured, so no work is left for a later slice.
     assert_eq!(
         std::str::from_utf8(&output.stdout)?,
         format!(
@@ -498,6 +508,18 @@ async fn assert_resources(path: &Path, ids: &[&str]) -> Result<()> {
         .map(|id| (ACCOUNT, REGION, KIND, *id, *id))
         .collect::<Vec<_>>();
     assert_eq!(actual, expected);
+    Ok(())
+}
+
+async fn expire_leases(path: &Path) -> Result<()> {
+    let options = SqliteConnectOptions::new().filename(path);
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(options)
+        .await?;
+    sqlx::query("UPDATE work_queue SET lease_until=0 WHERE state=1")
+        .execute(&pool)
+        .await?;
     Ok(())
 }
 
@@ -635,7 +657,9 @@ async fn timed_out_peer_shutdown_drops_the_serving_owner_before_returning() -> R
         task: Some(task),
     };
     let Err(error) = peer.stop().await else {
-        anyhow::bail!("the pending owner must hit the shutdown deadline");
+        return Err(anyhow::anyhow!(
+            "the pending owner must hit the shutdown deadline"
+        ));
     };
     assert!(
         error
