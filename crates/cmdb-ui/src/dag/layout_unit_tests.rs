@@ -1,6 +1,8 @@
 use super::graph::{DagGraph, NodeKind};
 use super::layout::{DagLayout, H_GAP, MAX_LAYERS, NODE_W, PADDING};
 
+type TestResult = Result<(), Box<dyn std::error::Error>>;
+
 fn chain() -> DagGraph {
     let mut graph = DagGraph::default();
     for index in 0..3 {
@@ -47,12 +49,14 @@ fn cycle_break_is_deterministic() {
 }
 
 #[test]
-fn cycle_break_flags_correct_back_edge() {
+fn cycle_break_flags_correct_back_edge() -> TestResult {
     let layout = DagLayout::compute(&cycle());
     let back_edges: Vec<_> = layout.edges().iter().filter(|e| e.back).collect();
     assert_eq!(back_edges.len(), 1);
-    assert_eq!(back_edges[0].from, 2);
-    assert_eq!(back_edges[0].to, 0);
+    let back_edge = back_edges.first().ok_or("expected one back edge")?;
+    assert_eq!(back_edge.from, 2);
+    assert_eq!(back_edge.to, 0);
+    Ok(())
 }
 
 #[test]
@@ -94,7 +98,7 @@ fn rectangles_do_not_overlap_and_are_bounded() {
 }
 
 #[test]
-fn long_chain_clamps_layers() {
+fn long_chain_clamps_layers() -> TestResult {
     let node_count = MAX_LAYERS + 5;
     let mut graph = DagGraph::default();
     for index in 0..node_count {
@@ -107,7 +111,7 @@ fn long_chain_clamps_layers() {
     let layout = DagLayout::compute(&graph);
 
     for index in 0..node_count {
-        let layer = layout.layer(index).expect("layer should be assigned");
+        let layer = layout.layer(index).ok_or("layer should be assigned")?;
         assert!(
             layer < MAX_LAYERS,
             "node {} at layer {} >= MAX_LAYERS",
@@ -129,7 +133,8 @@ fn long_chain_clamps_layers() {
         );
     }
 
-    let expected_width = PADDING * 2.0 + f32::from(MAX_LAYERS as i16) * (NODE_W + H_GAP) - H_GAP;
+    let expected_width =
+        PADDING * 2.0 + f32::from(i16::try_from(MAX_LAYERS)?) * (NODE_W + H_GAP) - H_GAP;
     assert!(
         (layout.width() - expected_width).abs() < 0.001,
         "width mismatch: got {}, expected {}",
@@ -151,15 +156,16 @@ fn long_chain_clamps_layers() {
             assert!(!overlap, "rects {}/{} overlap", i, j);
         }
     }
+    Ok(())
 }
 
 #[test]
-fn x_positions_are_layer_aligned() {
+fn x_positions_are_layer_aligned() -> TestResult {
     let layout = DagLayout::compute(&chain());
     for index in 0..3 {
-        let layer = layout.layer(index).expect("layer assigned");
-        let rect = layout.rect(index).expect("rect assigned");
-        let expected_x = PADDING + f32::from(layer as i16) * (NODE_W + H_GAP);
+        let layer = layout.layer(index).ok_or("layer assigned")?;
+        let rect = layout.rect(index).ok_or("rect assigned")?;
+        let expected_x = PADDING + f32::from(i16::try_from(layer)?) * (NODE_W + H_GAP);
         assert!(
             (rect.x - expected_x).abs() < 0.001,
             "node {} x mismatch: got {}, expected {}",
@@ -168,15 +174,16 @@ fn x_positions_are_layer_aligned() {
             expected_x
         );
     }
+    Ok(())
 }
 
 #[test]
-fn forward_edges_go_right() {
+fn forward_edges_go_right() -> TestResult {
     let layout = DagLayout::compute(&chain());
     for edge in layout.edges() {
         if !edge.back {
-            let from_rect = layout.rect(edge.from).expect("from rect");
-            let to_rect = layout.rect(edge.to).expect("to rect");
+            let from_rect = layout.rect(edge.from).ok_or("from rect")?;
+            let to_rect = layout.rect(edge.to).ok_or("to rect")?;
             assert!(
                 from_rect.right() < to_rect.x,
                 "forward edge {}->{} should go right",
@@ -185,6 +192,7 @@ fn forward_edges_go_right() {
             );
         }
     }
+    Ok(())
 }
 
 #[test]
@@ -208,7 +216,7 @@ fn diamond_shapes_layer_correctly() {
 }
 
 #[test]
-fn overlay_edges_do_not_affect_layout() {
+fn overlay_edges_do_not_affect_layout() -> TestResult {
     let mut graph = DagGraph::default();
     for index in 0..3 {
         graph.add_node(NodeKind::Ec2, format!("n{index}"), format!("node {index}"));
@@ -229,12 +237,14 @@ fn overlay_edges_do_not_affect_layout() {
         .filter(|e| e.overlay && !e.back)
         .collect();
     assert_eq!(overlay_edges.len(), 1);
-    assert_eq!(overlay_edges[0].from, 0);
-    assert_eq!(overlay_edges[0].to, 2);
+    let overlay_edge = overlay_edges.first().ok_or("expected one overlay edge")?;
+    assert_eq!(overlay_edge.from, 0);
+    assert_eq!(overlay_edge.to, 2);
+    Ok(())
 }
 
 #[test]
-fn self_loop_is_back_edge() {
+fn self_loop_is_back_edge() -> TestResult {
     let mut graph = DagGraph::default();
     graph.add_node(NodeKind::Ec2, "self", "self");
     graph.add_edge(0, 0);
@@ -243,10 +253,11 @@ fn self_loop_is_back_edge() {
     assert_eq!(layout.back_edges(), 1);
     assert_eq!(layout.layer(0), Some(0));
 
-    let edge = layout.edges().first().expect("edge exists");
+    let edge = layout.edges().first().ok_or("edge exists")?;
     assert!(edge.back);
     assert_eq!(edge.from, 0);
     assert_eq!(edge.to, 0);
+    Ok(())
 }
 
 #[test]
@@ -291,12 +302,12 @@ fn order_is_permutation_of_nodes() {
 }
 
 #[test]
-fn hit_test_finds_correct_node() {
+fn hit_test_finds_correct_node() -> TestResult {
     let graph = chain();
     let layout = DagLayout::compute(&graph);
 
     for index in 0..3 {
-        let rect = layout.rect(index).expect("rect exists");
+        let rect = layout.rect(index).ok_or("rect exists")?;
         let center_x = rect.x + rect.width * 0.5;
         let center_y = rect.y + rect.height * 0.5;
         assert_eq!(
@@ -306,10 +317,11 @@ fn hit_test_finds_correct_node() {
             index
         );
     }
+    Ok(())
 }
 
 #[test]
-fn crossing_edges_order_nodes_to_reduce_crossings() {
+fn crossing_edges_order_nodes_to_reduce_crossings() -> TestResult {
     let mut graph = DagGraph::default();
     for index in 0..4 {
         graph.add_node(NodeKind::Ec2, format!("n{index}"), format!("node {index}"));
@@ -320,10 +332,11 @@ fn crossing_edges_order_nodes_to_reduce_crossings() {
     graph.add_edge(1, 3);
 
     let layout = DagLayout::compute(&graph);
-    let rect2 = layout.rect(2).expect("rect for 2");
-    let rect3 = layout.rect(3).expect("rect for 3");
+    let rect2 = layout.rect(2).ok_or("rect for 2")?;
+    let rect3 = layout.rect(3).ok_or("rect for 3")?;
     assert!(
         rect3.y > rect2.y,
         "node 3 should be below node 2 to reduce crossings"
     );
+    Ok(())
 }
