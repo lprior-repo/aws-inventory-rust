@@ -79,7 +79,7 @@ fn run_suite(suite: Suite) {
     let mut depth_limit_tested = false;
     let ignored = br#"{"unknown":{"nested":[{"value":1},{"value":2}]}}"#;
     for service_id in service_ids {
-        let bytes = fixture_catalog::compile_service(&fixture, &service_id);
+        let bytes = fixture_catalog::compile_service(&fixture, &service_id)?;
         let catalog = Catalog::borrow(&bytes).expect("fixture catalog validates");
         let service_name = service_id.rsplit('#').next().expect("service name");
         let model_name = service_name.replace('.', "-");

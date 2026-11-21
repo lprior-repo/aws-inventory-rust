@@ -30,7 +30,7 @@ fn published_rpcv2_cbor_success_responses_decode_to_exact_records() {
     let mut server_cases = 0usize;
     let mut bounds_tested = false;
     for service_id in service_ids {
-        let bytes = fixture_catalog::compile_service(&fixture, &service_id);
+        let bytes = fixture_catalog::compile_service(&fixture, &service_id)?;
         let catalog = Catalog::borrow(&bytes).expect("fixture catalog validates");
         let service_name = service_id.rsplit('#').next().expect("service name");
         let service = catalog

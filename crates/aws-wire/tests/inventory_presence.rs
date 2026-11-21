@@ -20,7 +20,7 @@ const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 fn given_json_and_cbor_null_tag_entries_when_inventory_presence_is_required_then_they_cannot_become_empty_snapshots()
 -> TestResult {
     let model = serde_json::from_str(MODEL)?;
-    let bytes = fixture_catalog::compile_service(&model, "n#InventoryPresence");
+    let bytes = fixture_catalog::compile_service(&model, "n#InventoryPresence")?;
     let catalog = Catalog::borrow(&bytes)?;
     let service = catalog
         .service("InventoryPresence")?

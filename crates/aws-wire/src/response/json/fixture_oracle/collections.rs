@@ -76,7 +76,7 @@ pub(super) fn compare_object(
         };
         actual_count = next;
     }
-    let expected_count = if matches!(kind(service, target), "structure" | "union") {
+    let expected_count = if matches!(kind(service, target), Some("structure" | "union")) {
         expected.values().filter(|value| !value.is_null()).count()
     } else {
         expected.len()
@@ -85,13 +85,13 @@ pub(super) fn compare_object(
         return false;
     }
     match kind(service, target) {
-        "structure" | "union" => expected
+        Some("structure" | "union") => expected
             .iter()
             .all(|(name, value)| compare_member(map, name, value, target, service, label)),
-        "map" | "document" => expected
+        Some("map" | "document") => expected
             .iter()
             .all(|(name, value)| compare_named(map, name, value, target, service, label)),
-        "unit" => expected.is_empty(),
+        Some("unit") => expected.is_empty(),
         _ => false,
     }
 }

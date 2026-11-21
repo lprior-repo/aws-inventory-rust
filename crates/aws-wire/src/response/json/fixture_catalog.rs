@@ -2,28 +2,26 @@ use catalog_tool::smithy::{Registry, build_catalog};
 use serde_json::{Map as JsonMap, Value as Json};
 use std::{collections::BTreeSet, fs};
 
-pub fn compile_service(fixture: &Json, service_id: &str) -> Vec<u8> {
-    let all_shapes = fixture["shapes"].as_object().expect("fixture shapes");
+type FixtureResult<T> = Result<T, Box<dyn std::error::Error>>;
+
+pub fn compile_service(fixture: &Json, service_id: &str) -> FixtureResult<Vec<u8>> {
+    let all_shapes = fixture["shapes"].as_object().ok_or("fixture shapes")?;
     let selected = reachable_shapes(all_shapes, service_id);
-    let registry = fixture_registry(&selected);
-    let service_name = service_id.rsplit('#').next().expect("service name");
-    let root = tempfile::tempdir().expect("temporary model root");
+    let registry = fixture_registry(&selected)?;
+    let service_name = service_id.rsplit('#').next().ok_or("service name")?;
+    let root = tempfile::tempdir()?;
     let model_dir = root
         .path()
         .join("models")
         .join(service_name.replace('.', "-"));
-    fs::create_dir_all(&model_dir).expect("create fixture model directory");
+    fs::create_dir_all(&model_dir)?;
     let model = serde_json::json!({ "shapes": selected });
-    fs::write(
-        model_dir.join("model.json"),
-        serde_json::to_vec(&model).expect("encode fixture model"),
-    )
-    .expect("write fixture model");
+    fs::write(model_dir.join("model.json"), serde_json::to_vec(&model)?)?;
     build_catalog(root.path(), &registry, "response-fixture")
-        .unwrap_or_else(|error| panic!("compile {service_id}: {error}"))
+        .map_err(|error| format!("compile {service_id}: {error}").into())
 }
 
-fn fixture_registry(shapes: &JsonMap<String, Json>) -> Registry {
+fn fixture_registry(shapes: &JsonMap<String, Json>) -> FixtureResult<Registry> {
     let names: BTreeSet<String> = shapes
         .values()
         .filter_map(|shape| shape.get("members").and_then(Json::as_object))
@@ -33,7 +31,7 @@ fn fixture_registry(shapes: &JsonMap<String, Json>) -> Registry {
     if !text.is_empty() {
         text.push('\n');
     }
-    Registry::parse(&text).expect("fixture field registry")
+    Registry::parse(&text).map_err(|error| format!("fixture field registry: {error}").into())
 }
 
 fn reachable_shapes(shapes: &JsonMap<String, Json>, service_id: &str) -> JsonMap<String, Json> {

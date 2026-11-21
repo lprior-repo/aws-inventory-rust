@@ -23,9 +23,11 @@ pub fn assert_fixture_root(
             0,
             "{label}"
         );
-        assert_eq!(
-            record.root().iter().expect("root iteration").count(),
-            0,
+        assert!(
+            record
+                .root()
+                .iter()
+                .is_ok_and(|entries| entries.count() == 0),
             "{label}"
         );
         return;
@@ -49,17 +51,18 @@ fn compare_value(
     label: &str,
 ) {
     let kind = kind(service, target);
-    let matches = match expected {
+    let matches = kind.is_some_and(|kind| match expected {
         Json::Null => matches!(actual, ValueRef::Null),
         Json::Bool(value) => matches!(actual, ValueRef::Bool(found) if found == *value),
         Json::Number(value) => compare_number(actual, value, kind),
         Json::String(value) => compare_string(actual, value, kind, target, service, format),
         Json::Array(values) => compare_list(actual, values, target, service, label),
         Json::Object(values) => compare_object(actual, values, target, service, label),
-    };
+    });
     assert!(
         matches,
-        "{label}: decoded {kind} value {actual:?} differs from published fixture {expected}"
+        "{label}: decoded {} value {actual:?} differs from published fixture {expected}",
+        kind.unwrap_or("unknown shape"),
     );
 }
 
@@ -101,16 +104,11 @@ fn compare_string(
     }
 }
 
-fn kind<'a>(service: Service<'a>, target: Target) -> &'a str {
+fn kind<'a>(service: Service<'a>, target: Target) -> Option<&'a str> {
     match target {
-        Target::Prelude(name) => name,
-        Target::Shape(index) => service
-            .shape(index)
-            .expect("shape lookup")
-            .expect("shape exists")
-            .kind()
-            .expect("shape kind"),
-        _ => "unknown",
+        Target::Prelude(name) => Some(name),
+        Target::Shape(index) => service.shape(index).ok()??.kind().ok(),
+        _ => Some("unknown"),
     }
 }
 

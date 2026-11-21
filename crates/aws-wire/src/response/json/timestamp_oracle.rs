@@ -52,9 +52,15 @@ fn datetime(value: &str) -> Option<Time> {
     let (hour, minute, second, nanos) = time_parts(time)?;
     let seconds = days(year, month, day)?
         .checked_mul(86_400)?
-        .checked_add(hour * 3_600 + minute * 60 + second)?
+        .checked_add(clock_seconds(hour, minute, second)?)?
         .checked_sub(offset)?;
     Time::new(seconds, nanos).ok()
+}
+
+fn clock_seconds(hour: i64, minute: i64, second: i64) -> Option<i64> {
+    hour.checked_mul(3_600)?
+        .checked_add(minute.checked_mul(60)?)?
+        .checked_add(second)
 }
 
 fn date_parts(value: &str) -> Option<(i64, i64, i64)> {
@@ -146,7 +152,7 @@ fn http_date(value: &str) -> Option<Time> {
     }
     let seconds = days(year, month, day)?
         .checked_mul(86_400)?
-        .checked_add(hour * 3_600 + minute * 60 + second)?;
+        .checked_add(clock_seconds(hour, minute, second)?)?;
     Time::new(seconds, 0).ok()
 }
 
