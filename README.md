@@ -224,6 +224,9 @@ chain. The scanner does not persist credentials from that credential provider
 chain. These examples perform inventory
 reads when you run them with your own credentials.
 
+To scan other accounts through an assumed role, deploy the read-only role
+described in [docs/DEPLOY.md](docs/DEPLOY.md).
+
 ```bash
 # Inspect the 421-type breadth plan and direct architecture collectors offline.
 cargo run --locked -- plan --cloud-control --region us-east-1,us-west-2

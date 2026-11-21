@@ -1,0 +1,147 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Cross-account read-only IAM role assumed by aws-inventory. The action list is
+  copied from catalog/iam-read-only-policy.json, which is generated from the
+  reviewed operation catalog. Deploy in each account to be scanned.
+
+Parameters:
+  TrustedPrincipalArn:
+    Type: String
+    Description: >-
+      IAM role ARN (not an assumed-role session ARN) in the account that runs
+      aws-inventory. That principal must also hold sts:AssumeRole for this role.
+    AllowedPattern: '^arn:aws[a-zA-Z-]*:iam::[0-9]{12}:(role|user)/[A-Za-z0-9_+=,.@/-]+$'
+    ConstraintDescription: must be an IAM role or user ARN such as arn:aws:iam::123456789012:role/InventoryRunner
+
+  ExternalId:
+    Type: String
+    NoEcho: true
+    Description: Shared secret required in the trust policy. Export the same value to the tool's external ID variable.
+    MinLength: 2
+    MaxLength: 1224
+    AllowedPattern: '^[A-Za-z0-9_+=,.@:/-]+$'
+    ConstraintDescription: '2-1224 characters from A-Z a-z 0-9 _ + = , . @ : / -'
+
+  RoleName:
+    Type: String
+    Default: aws-inventory-read-only
+    Description: Role name in every scanned account. Must match --organization-role when scanning an Organization.
+    MinLength: 1
+    MaxLength: 64
+    AllowedPattern: '^[A-Za-z0-9_+=,.@-]+$'
+    ConstraintDescription: 1-64 characters from A-Z a-z 0-9 _ + = , . @ -
+
+Resources:
+  InventoryReadOnlyPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      Description: Read-only actions used by aws-inventory catalog collection.
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Sid: CatalogReadOnly
+            Effect: Allow
+            Action:
+              - cloudformation:GetResource
+              - cloudformation:ListResources
+              - cloudfront:ListDistributions
+              - cloudfront:ListTagsForResource
+              - config:DescribeConfigurationAggregators
+              - config:SelectAggregateResourceConfig
+              - dynamodb:DescribeTable
+              - dynamodb:ListTables
+              - ec2:DescribeInstances
+              - ec2:DescribeInternetGateways
+              - ec2:DescribeNatGateways
+              - ec2:DescribeNetworkAcls
+              - ec2:DescribeNetworkInterfaces
+              - ec2:DescribeRegions
+              - ec2:DescribeRouteTables
+              - ec2:DescribeSecurityGroups
+              - ec2:DescribeSubnets
+              - ec2:DescribeVolumes
+              - ec2:DescribeVpcEndpoints
+              - ec2:DescribeVpcPeeringConnections
+              - ec2:DescribeVpcs
+              - ecs:DescribeClusters
+              - ecs:DescribeServices
+              - ecs:DescribeTaskDefinition
+              - ecs:DescribeTasks
+              - ecs:ListClusters
+              - ecs:ListServices
+              - ecs:ListTaskDefinitions
+              - ecs:ListTasks
+              - eks:DescribeCluster
+              - eks:DescribeNodegroup
+              - eks:ListClusters
+              - eks:ListNodegroups
+              - elasticloadbalancing:DescribeListeners
+              - elasticloadbalancing:DescribeLoadBalancers
+              - elasticloadbalancing:DescribeRules
+              - elasticloadbalancing:DescribeTargetGroups
+              - elasticloadbalancing:DescribeTargetHealth
+              - iam:GetInstanceProfile
+              - iam:GetPolicy
+              - iam:GetRole
+              - iam:ListAttachedRolePolicies
+              - iam:ListInstanceProfiles
+              - iam:ListPolicies
+              - iam:ListRoles
+              - lambda:ListFunctions
+              - organizations:ListAccounts
+              - organizations:ListChildren
+              - organizations:ListOrganizationalUnitsForParent
+              - organizations:ListRoots
+              - resource-explorer-2:GetDefaultView
+              - resource-explorer-2:GetIndex
+              - resource-explorer-2:GetView
+              - resource-explorer-2:ListViews
+              - resource-explorer-2:Search
+              - route53:GetHostedZone
+              - route53:ListHostedZones
+              - route53:ListResourceRecordSets
+              - route53:ListTagsForResource
+              - s3:GetBucketLogging
+              - s3:GetBucketNotification
+              - s3:GetBucketOwnershipControls
+              - s3:GetBucketPolicyStatus
+              - s3:GetBucketPublicAccessBlock
+              - s3:GetBucketTagging
+              - s3:GetBucketVersioning
+              - s3:GetBucketWebsite
+              - s3:GetEncryptionConfiguration
+              - s3:GetReplicationConfiguration
+              - s3:ListAllMyBuckets
+              - s3:ListBucket
+              - sns:GetTopicAttributes
+              - sns:ListSubscriptions
+              - sns:ListTagsForResource
+              - sns:ListTopics
+              - sqs:GetQueueAttributes
+              - sqs:ListQueueTags
+              - sqs:ListQueues
+              - sts:GetCallerIdentity
+            Resource: "*"
+
+  InventoryReadOnlyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Ref RoleName
+      Description: Read-only role assumed by aws-inventory from TrustedPrincipalArn.
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Ref TrustedPrincipalArn
+            Action: sts:AssumeRole
+            Condition:
+              StringEquals:
+                sts:ExternalId: !Ref ExternalId
+      ManagedPolicyArns:
+        - !Ref InventoryReadOnlyPolicy
+
+Outputs:
+  RoleArn:
+    Description: Pass to aws-inventory scan --role-arn for a single account.
+    Value: !GetAtt InventoryReadOnlyRole.Arn

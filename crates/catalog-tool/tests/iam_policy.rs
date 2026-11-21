@@ -9,6 +9,7 @@ use catalog_tool::{
     ReportMode,
     iam_policy::{Error as PolicyError, UnmappedPolicy, render, run},
 };
+use regex::Regex;
 use serde_json::{Value, json};
 
 type TestResult = Result<(), Box<dyn Error>>;
@@ -310,5 +311,27 @@ fn write_then_check_round_trips_and_detects_drift() -> TestResult {
 #[test]
 fn committed_policy_matches_the_reviewed_catalog() -> TestResult {
     run(&repo_root(), ReportMode::Check, UnmappedPolicy::Refuse)?;
+    Ok(())
+}
+
+#[test]
+fn deploy_template_grants_exactly_the_committed_policy_actions() -> TestResult {
+    let template = fs::read_to_string(repo_root().join("deploy/read-only-role.yaml"))?;
+    let action_line = Regex::new(r"^\s+- ([a-z0-9-]+:[A-Za-z0-9]+)$")?;
+    let template_actions: Vec<String> = template
+        .lines()
+        .filter_map(|line| action_line.captures(line).map(|found| found[1].to_owned()))
+        .collect();
+    let policy = fs::read_to_string(repo_root().join("catalog/iam-read-only-policy.json"))?;
+    let expected: BTreeSet<String> = policy_actions(&policy)?.into_iter().collect();
+    let found: BTreeSet<String> = template_actions.iter().cloned().collect();
+    assert!(!expected.is_empty());
+    assert_eq!(
+        template_actions.len(),
+        found.len(),
+        "duplicate template action"
+    );
+    assert_eq!(found, expected);
+    assert!(found.iter().all(|action| !action.contains('*')));
     Ok(())
 }
