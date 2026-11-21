@@ -15,6 +15,8 @@ use http::Uri;
 use inventory_core::catalog::{Operation, Service};
 use serde_json::Value as Json;
 
+pub(super) type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+
 #[derive(Clone, Copy)]
 pub(super) struct Suite {
     pub(super) name: &'static str,
@@ -25,8 +27,9 @@ pub(super) struct Suite {
     pub(super) servers: &'static [&'static str],
     pub(super) events: usize,
 }
+
 #[test]
-fn every_published_rest_request_client_fixture_runs() {
+fn every_published_rest_request_client_fixture_runs() -> TestResult {
     let suites = [
         Suite {
             name: "restJson1",
@@ -68,15 +71,16 @@ fn every_published_rest_request_client_fixture_runs() {
             events: 0,
         },
     ];
-    let failures = suites
-        .into_iter()
-        .flat_map(runner::run_suite)
-        .collect::<Vec<_>>();
+    let mut failures = Vec::new();
+    for suite in suites {
+        failures.extend(runner::run_suite(suite)?);
+    }
     assert!(
         failures.is_empty(),
         "{} failing published cases: {failures:#?}",
         failures.len()
     );
+    Ok(())
 }
 
 fn run_case(
@@ -85,17 +89,17 @@ fn run_case(
     operation: Operation<'_>,
     operation_name: &str,
     case: &Json,
-) {
-    let request = encode_case(suite, service, operation, operation_name, case, true);
-    let plain = encode_case(suite, service, operation, operation_name, case, false);
+) -> TestResult {
+    let request = encode_case(suite, service, operation, operation_name, case, true)?;
+    let plain = encode_case(suite, service, operation, operation_name, case, false)?;
     let label = format!(
         "{} {operation_name} {}",
         suite.name,
-        case["id"].as_str().expect("fixture case id")
+        case["id"].as_str().ok_or("fixture case id")?
     );
-    check_method(case, &request, &label);
-    check_uri(case, &request, &label);
-    assertions::check_headers(case, &request, &label);
+    check_method(case, &request, &label)?;
+    check_uri(case, &request, &label)?;
+    assertions::check_headers(case, &request, &label)?;
     assertions::check_body(
         case,
         &request,
@@ -104,7 +108,7 @@ fn run_case(
         &label,
         service,
         operation,
-    );
+    )
 }
 
 fn encode_case(
@@ -114,15 +118,15 @@ fn encode_case(
     operation_name: &str,
     case: &Json,
     compress: bool,
-) -> http::Request<bytes::Bytes> {
-    let id = case["id"].as_str().expect("fixture case id");
+) -> TestResult<http::Request<bytes::Bytes>> {
+    let id = case["id"].as_str().ok_or("fixture case id")?;
     let input = input::record(
         service,
         operation,
         case.get("params").unwrap_or(&Json::Null),
-    );
+    )?;
     let base_endpoint = fixture_endpoint(case);
-    let endpoint = fixture_addressing(service, case, &base_endpoint);
+    let endpoint = fixture_addressing(service, case, &base_endpoint)?;
     let endpoint_url = endpoint
         .as_ref()
         .map_or(base_endpoint.as_str(), |value| value.endpoint.as_ref());
@@ -143,23 +147,20 @@ fn encode_case(
         addressing,
     };
     super::super::encode(context)
-        .unwrap_or_else(|error| panic!("{} {operation_name} {id}: {error}", suite.name))
+        .map_err(|error| format!("{} {operation_name} {id}: {error}", suite.name).into())
 }
 
-fn check_method(case: &Json, request: &http::Request<bytes::Bytes>, label: &str) {
+fn check_method(case: &Json, request: &http::Request<bytes::Bytes>, label: &str) -> TestResult {
     assert_eq!(
         request.method().as_str(),
-        case["method"].as_str().expect("fixture method"),
+        case["method"].as_str().ok_or("fixture method")?,
         "{label} method"
     );
+    Ok(())
 }
 
-fn check_uri(case: &Json, request: &http::Request<bytes::Bytes>, label: &str) {
-    let expected = case["uri"]
-        .as_str()
-        .unwrap_or("/")
-        .parse::<Uri>()
-        .expect("fixture URI");
+fn check_uri(case: &Json, request: &http::Request<bytes::Bytes>, label: &str) -> TestResult {
+    let expected = case["uri"].as_str().unwrap_or("/").parse::<Uri>()?;
     assert_eq!(request.uri().path(), expected.path(), "{label} path");
 
     let mut expected_query = expected
@@ -168,18 +169,19 @@ fn check_uri(case: &Json, request: &http::Request<bytes::Bytes>, label: &str) {
         .flat_map(|query| query.split('&'))
         .map(str::to_owned)
         .collect::<Vec<_>>();
-    expected_query.extend(
-        case.get("queryParams")
-            .and_then(Json::as_array)
-            .into_iter()
-            .flatten()
-            .map(|parameter| {
-                parameter
-                    .as_str()
-                    .expect("fixture query parameter")
-                    .to_owned()
-            }),
-    );
+    for parameter in case
+        .get("queryParams")
+        .and_then(Json::as_array)
+        .into_iter()
+        .flatten()
+    {
+        expected_query.push(
+            parameter
+                .as_str()
+                .ok_or("fixture query parameter")?
+                .to_owned(),
+        );
+    }
     let mut actual_query = request
         .uri()
         .query()
@@ -191,6 +193,7 @@ fn check_uri(case: &Json, request: &http::Request<bytes::Bytes>, label: &str) {
     actual_query.sort_unstable();
     assert_eq!(actual_query, expected_query, "{label} query parameters");
     check_resolved_host(case, request, label);
+    Ok(())
 }
 
 fn check_resolved_host(case: &Json, request: &http::Request<bytes::Bytes>, label: &str) {
@@ -202,13 +205,15 @@ fn check_resolved_host(case: &Json, request: &http::Request<bytes::Bytes>, label
         );
     }
 }
-fn find_operation<'a>(service: Service<'a>, name: &str) -> Operation<'a> {
-    service
-        .operations()
-        .expect("service operations")
-        .map(|item| item.expect("valid operation"))
-        .find(|operation| operation.name().expect("operation name") == name)
-        .expect("fixture operation in catalog")
+
+fn find_operation<'a>(service: Service<'a>, name: &str) -> TestResult<Operation<'a>> {
+    for item in service.operations()? {
+        let operation = item?;
+        if operation.name()? == name {
+            return Ok(operation);
+        }
+    }
+    Err("fixture operation in catalog".into())
 }
 
 fn fixture_endpoint(case: &Json) -> String {
@@ -222,22 +227,33 @@ fn fixture_endpoint(case: &Json) -> String {
         format!("https://{host}")
     }
 }
+
 fn fixture_addressing<'a>(
     service: Service<'_>,
     case: &'a Json,
     endpoint: &'a str,
-) -> Option<crate::request::ResolvedAddressing<'a>> {
-    if service.endpoint_prefix().expect("service endpoint prefix") != Some("s3") {
-        return None;
+) -> TestResult<Option<crate::request::ResolvedAddressing<'a>>> {
+    if service.endpoint_prefix()? != Some("s3") {
+        return Ok(None);
     }
-    let vendor = case.get("vendorParams")?;
-    let client = vendor.get("scopedConfig")?.get("client")?;
-    let region = client.get("region")?.as_str()?;
-    let bucket = case.get("params")?.get("Bucket")?.as_str();
-    Some(
-        s3_endpoint(fixture_s3_config(endpoint, region, bucket, client, vendor))
-            .expect("valid S3 endpoint fixture configuration"),
-    )
+    let Some(vendor) = case.get("vendorParams") else {
+        return Ok(None);
+    };
+    let Some(client) = vendor
+        .get("scopedConfig")
+        .and_then(|config| config.get("client"))
+    else {
+        return Ok(None);
+    };
+    let Some(region) = client.get("region").and_then(Json::as_str) else {
+        return Ok(None);
+    };
+    let Some(bucket_value) = case.get("params").and_then(|params| params.get("Bucket")) else {
+        return Ok(None);
+    };
+    let bucket = bucket_value.as_str();
+    let config = fixture_s3_config(endpoint, region, bucket, client, vendor)?;
+    Ok(Some(s3_endpoint(config)?))
 }
 
 fn fixture_s3_config<'a>(
@@ -246,39 +262,42 @@ fn fixture_s3_config<'a>(
     bucket: Option<&'a str>,
     client: &Json,
     vendor: &Json,
-) -> S3EndpointConfig<'a> {
+) -> TestResult<S3EndpointConfig<'a>> {
     let s3 = client.get("s3").unwrap_or(&Json::Null);
     let operation = vendor
         .get("scopedConfig")
         .and_then(|value| value.get("operation"))
         .and_then(|value| value.get("s3"))
         .unwrap_or(&Json::Null);
-    S3EndpointConfig {
+    Ok(S3EndpointConfig {
         endpoint,
         region,
         bucket,
-        style: fixture_style(s3.get("addressing_style")),
-        dualstack: fixture_flag(s3.get("use_dualstack_endpoint")),
-        accelerate: fixture_flag(s3.get("use_accelerate_endpoint")),
-        operation_style: fixture_style(operation.get("addressing_style")),
+        style: fixture_style(s3.get("addressing_style"))?,
+        dualstack: fixture_flag(s3.get("use_dualstack_endpoint"))?,
+        accelerate: fixture_flag(s3.get("use_accelerate_endpoint"))?,
+        operation_style: fixture_style(operation.get("addressing_style"))?,
         explicit_endpoint: false,
-    }
-}
-
-fn fixture_style(value: Option<&Json>) -> Option<AddressingStyle> {
-    let Some(value) = value else {
-        return None;
-    };
-    match value.as_str().expect("fixture S3 addressing style") {
-        "auto" => Some(AddressingStyle::Auto),
-        "path" => Some(AddressingStyle::Path),
-        "virtual" => Some(AddressingStyle::Virtual),
-        _ => panic!("unknown S3 addressing style"),
-    }
-}
-
-fn fixture_flag(value: Option<&Json>) -> bool {
-    value.map_or(false, |value| {
-        value.as_bool().expect("fixture S3 endpoint flag")
     })
+}
+
+fn fixture_style(value: Option<&Json>) -> TestResult<Option<AddressingStyle>> {
+    let Some(value) = value else {
+        return Ok(None);
+    };
+    match value.as_str().ok_or("fixture S3 addressing style")? {
+        "auto" => Ok(Some(AddressingStyle::Auto)),
+        "path" => Ok(Some(AddressingStyle::Path)),
+        "virtual" => Ok(Some(AddressingStyle::Virtual)),
+        _ => Err("unknown S3 addressing style".into()),
+    }
+}
+
+fn fixture_flag(value: Option<&Json>) -> TestResult<bool> {
+    match value {
+        None => Ok(false),
+        Some(value) => value
+            .as_bool()
+            .ok_or_else(|| "fixture S3 endpoint flag".into()),
+    }
 }
