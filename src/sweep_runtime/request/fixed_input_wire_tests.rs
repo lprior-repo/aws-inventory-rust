@@ -1,4 +1,4 @@
-use super::{TestResult, compiled_inputs, signed, signed_bytes};
+use super::{TestResult, compiled_inputs, fixed_endpoint, signed, signed_bytes};
 use catalog_tool::overlay::FixedValue;
 use serde_json::json;
 
@@ -59,6 +59,7 @@ fn given_empty_list_and_map_when_all_protocols_are_signed_then_each_wire_empty_s
             protocol,
             FixedValue::list([]),
             FixedValue::map(std::iter::empty::<(&str, FixedValue)>())?,
+            fixed_endpoint()?,
         )?;
         let request = signed_bytes(&bytes)?;
         assert!(request.headers().contains_key("authorization"));

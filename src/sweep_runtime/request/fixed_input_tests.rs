@@ -1,8 +1,9 @@
 use super::encode;
-use crate::sweep_runtime::input::root_bindings;
+use crate::sweep_runtime::{execution::routing, input::root_bindings};
 use catalog_tool::{endpoints, kind_map, names, overlay, runtime_catalog, smithy};
 use inventory_core::{
     catalog::runtime::{RuntimeCatalog, RuntimeCatalogError},
+    inventory::RegionId,
     record::{FieldId, Key, Record, Value},
 };
 use serde_json::json;
@@ -76,12 +77,14 @@ fn compiled(
         protocol,
         literal,
         overlay::FixedValue::map([("owner", overlay::FixedValue::String("inventory".into()))])?,
+        fixed_endpoint()?,
     )
 }
 fn compiled_inputs(
     protocol: &str,
     literal: overlay::FixedValue,
     attributes: overlay::FixedValue,
+    verified: endpoints::VerifiedEndpoint,
 ) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let directory = tempfile::tempdir()?;
     let model = directory.path().join("models/fixed/service/2020-01-01");
@@ -117,6 +120,15 @@ fn compiled_inputs(
         "Attributes\nEngine\nFilters\nId\nItems\nLabel\nLegacy\nMode\nName\nPayload\nRatio\nSingle\nThreshold\nUnicode\nUnsupported\nValues\nWide\n",
     )?;
     let base = smithy::build_catalog(directory.path(), &registry, "fixed-input-fixture")?;
+    let kinds = KINDS.compile(&names::Exceptions::none())?;
+    Ok(runtime_catalog::augment(
+        &base,
+        &checked,
+        &kinds,
+        &BTreeMap::from([("fixed".to_owned(), verified)]),
+    )?)
+}
+fn fixed_endpoint() -> Result<endpoints::VerifiedEndpoint, Box<dyn std::error::Error>> {
     let properties =
         json!({"authSchemes":[{"name":"sigv4","signingName":"fixed","signingRegion":"us-east-1"}]});
     let endpoint = json!({"version":"1.0","parameters":{"Region":{"type":"string"}},"rules":[{"type":"endpoint","conditions":[],"endpoint":{"url":"https://fixed.test","properties":properties}}]});
@@ -128,13 +140,44 @@ fn compiled_inputs(
         .run_cases(&cases)?
         .verified_endpoint(Some("fixed"))
         .map_err(|error| format!("fixed-input fixture endpoint failed: {error:?}"))?;
-    let kinds = KINDS.compile(&names::Exceptions::none())?;
-    Ok(runtime_catalog::augment(
-        &base,
-        &checked,
-        &kinds,
-        &BTreeMap::from([("fixed".to_owned(), verified)]),
-    )?)
+    Ok(verified)
+}
+fn exception_endpoint() -> Result<endpoints::VerifiedEndpoint, Box<dyn std::error::Error>> {
+    let document = json!({"version":"1.0","parameters":{"Region":{"type":"string"}},"rules":[
+        {"type":"endpoint","conditions":[{"fn":"stringEquals","argv":[{"ref":"Region"},"eu-west-1"]}],"endpoint":{"url":"https://fixed-fips.eu-west-1.test","properties":{"authSchemes":[{"name":"sigv4","signingName":"fixed","signingRegion":"eu-west-1"}]}}},
+        {"type":"endpoint","conditions":[],"endpoint":{"url":"https://fixed.{Region}.test","properties":{"authSchemes":[{"name":"sigv4","signingName":"fixed","signingRegion":"{Region}"}]}}}
+    ]});
+    let rules = endpoints::RuleSet::parse(Path::new("fixed-exception-endpoint.json"), &document)?;
+    let cases: Vec<endpoints::Case> = serde_json::from_value(json!([
+        {"params":{"Region":"us-west-2"},"expect":{"endpoint":{"url":"https://fixed.us-west-2.test","properties":{"authSchemes":[{"name":"sigv4","signingName":"fixed","signingRegion":"us-west-2"}]}}}},
+        {"params":{"Region":"eu-west-1"},"expect":{"endpoint":{"url":"https://fixed-fips.eu-west-1.test","properties":{"authSchemes":[{"name":"sigv4","signingName":"fixed","signingRegion":"eu-west-1"}]}}}}
+    ]))?;
+    let verified = rules
+        .run_cases(&cases)?
+        .verified_endpoint(Some("fixed"))
+        .map_err(|error| format!("fixed-exception endpoint failed: {error:?}"))?;
+    Ok(verified)
+}
+#[test]
+fn given_regional_exception_when_request_resolved_then_only_its_region_is_overridden() -> TestResult
+{
+    let bytes = compiled_inputs(
+        "aws.protocols#awsQuery",
+        filters("neptune")?,
+        overlay::FixedValue::map([("owner", overlay::FixedValue::String("inventory".into()))])?,
+        exception_endpoint()?,
+    )?;
+    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+    let plan = catalog
+        .lookup("fixed", "ListClusters")
+        .ok_or("missing plan")?;
+    let exception = routing::resolve(plan, &RegionId::parse("eu-west-1")?)?;
+    assert_eq!(exception.url, "https://fixed-fips.eu-west-1.test");
+    assert_eq!(exception.signing_region, "eu-west-1");
+    let template = routing::resolve(plan, &RegionId::parse("us-west-2")?)?;
+    assert_eq!(template.url, "https://fixed.us-west-2.test");
+    assert_eq!(template.signing_region, "us-west-2");
+    Ok(())
 }
 fn signed(
     protocol: &str,
