@@ -1141,6 +1141,7 @@ dependencies = [
  "hyper-rustls",
  "hyper-util",
  "inventory-core",
+ "inventory-engine",
  "jiter",
  "md-5",
  "minicbor",

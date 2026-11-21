@@ -136,11 +136,26 @@ fn validate_status(plan: &CallablePlan<'_>, response: Response) -> Result<Respon
 
 fn classify_service(error: aws_wire::response::errors::ServiceError) -> ApiError {
     let message = error.to_string();
-    match error.class {
-        aws_wire::response::errors::ErrorClass::Throttle => ApiError::Throttled(message),
+    let class = error.class;
+    match class {
+        aws_wire::response::errors::ErrorClass::Throttle => match error.retry_after {
+            Some(duration) => ApiError::RetryAfter {
+                kind: inventory_engine::limiter::RetryKind::Throttled,
+                message,
+                retry_after: inventory_engine::limiter::RetryAfter::Delay(duration),
+            },
+            None => ApiError::Throttled(message),
+        },
         aws_wire::response::errors::ErrorClass::Retryable
         | aws_wire::response::errors::ErrorClass::ExpiredToken
-        | aws_wire::response::errors::ErrorClass::ExpiredSignature => ApiError::Transient(message),
+        | aws_wire::response::errors::ErrorClass::ExpiredSignature => match error.retry_after {
+            Some(duration) => ApiError::RetryAfter {
+                kind: inventory_engine::limiter::RetryKind::Transient,
+                message,
+                retry_after: inventory_engine::limiter::RetryAfter::Delay(duration),
+            },
+            None => ApiError::Transient(message),
+        },
         aws_wire::response::errors::ErrorClass::AccessDenied => ApiError::Denied(message),
         aws_wire::response::errors::ErrorClass::NotSupported => ApiError::UnsupportedType(message),
         aws_wire::response::errors::ErrorClass::Fatal => ApiError::Permanent(message),

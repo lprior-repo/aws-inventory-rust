@@ -24,6 +24,7 @@ pub enum ErrorClass {
 pub struct ServiceError {
     pub class: ErrorClass,
     pub code: Option<String>,
+    pub retry_after: Option<std::time::Duration>,
 }
 
 impl std::fmt::Display for ServiceError {
@@ -55,7 +56,12 @@ pub fn decode(context: super::ResponseContext<'_>) -> Result<ServiceError, super
             None => class_from_status(context.status),
         },
     };
-    Ok(ServiceError { class, code })
+    let retry_after = parse_retry_after_header(context.headers)?;
+    Ok(ServiceError {
+        class,
+        code,
+        retry_after,
+    })
 }
 
 fn body_code(context: super::ResponseContext<'_>) -> Result<Option<String>, super::DecodeError> {
@@ -196,6 +202,32 @@ fn class_from_code(code: Option<&str>) -> Option<ErrorClass> {
         | "RequestLimitExceeded" => Some(ErrorClass::Throttle),
         _ => None,
     }
+}
+
+/// Upper bound on a server retry hint; larger hints are clamped, not dropped.
+const MAX_RETRY_AFTER_SECONDS: u64 = 300;
+
+/// Decode a delta-seconds `retry-after` header, clamped to `MAX_RETRY_AFTER_SECONDS`.
+/// Non-numeric values (including HTTP-date) carry no usable hint and yield `None`.
+fn parse_retry_after_header(
+    headers: &http::HeaderMap,
+) -> Result<Option<std::time::Duration>, super::DecodeError> {
+    let Some(value) = headers.get("retry-after") else {
+        return Ok(None);
+    };
+    let text = value
+        .to_str()
+        .map_err(|_| super::DecodeError::Invalid("invalid retry-after header value"))?
+        .trim();
+    if text.is_empty() || !text.bytes().all(|byte| byte.is_ascii_digit()) {
+        return Ok(None);
+    }
+    // All-digit text only fails to parse on u64 overflow, which exceeds the cap.
+    let seconds = text
+        .parse::<u64>()
+        .unwrap_or(MAX_RETRY_AFTER_SECONDS)
+        .min(MAX_RETRY_AFTER_SECONDS);
+    Ok(Some(std::time::Duration::from_secs(seconds)))
 }
 
 fn class_from_status(status: StatusCode) -> ErrorClass {

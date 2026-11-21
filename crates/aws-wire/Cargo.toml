@@ -37,6 +37,7 @@ jiter = { version = "=0.19.0", default-features = false }
 
 [dev-dependencies]
 catalog-tool = { path = "../catalog-tool" }
+inventory-engine = { path = "../engine" }
 serde_json = { workspace = true, features = ["arbitrary_precision"] }
 tempfile = "3.27.0"
 hyper = { version = "1.12.0", features = ["server"] }

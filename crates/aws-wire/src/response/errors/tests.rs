@@ -97,6 +97,7 @@ fn service_error_display_includes_code_for_diagnosis() {
     let error = ServiceError {
         class: ErrorClass::AccessDenied,
         code: Some("SecretAccessDenied".to_owned()),
+        retry_after: None,
     };
     assert_eq!(
         error.to_string(),
@@ -105,6 +106,7 @@ fn service_error_display_includes_code_for_diagnosis() {
     let no_code = ServiceError {
         class: ErrorClass::AccessDenied,
         code: None,
+        retry_after: None,
     };
     assert_eq!(no_code.to_string(), "AWS service failure: AccessDenied");
 }
