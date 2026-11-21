@@ -65,7 +65,6 @@ fn verify_delivery_accepts_run_workspace_tests_flag() -> TestResult {
     let directory = tempfile::tempdir()?;
     let database = directory.path().join("inventory.sqlite");
     let output_path = directory.path().join("output.json");
-    let root = format!("{}/../..", env!("CARGO_MANIFEST_DIR"));
     let binary = text(directory.path())?;
     let redis_cli = text(directory.path())?;
 

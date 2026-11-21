@@ -91,7 +91,7 @@ fn given_predictable_temp_symlink_when_pinned_then_victim_and_link_are_untouched
 fn read_request(stream: &mut TcpStream) -> std::io::Result<()> {
     stream.set_read_timeout(Some(std::time::Duration::from_secs(5)))?;
     let mut tail = [0_u8; 4];
-    let result = stream.take(16_384).bytes().find_map(|byte| match byte {
+    let result = std::io::BufReader::new(stream.take(16_384)).bytes().find_map(|byte| match byte {
         Err(error) => Some(Err(error)),
         Ok(byte) => {
             tail.rotate_left(1);

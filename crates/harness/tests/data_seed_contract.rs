@@ -277,7 +277,7 @@ fn signed(request: &[u8], service: &str) -> TestResult {
     let day = date.get(..8).ok_or("short signing date")?;
     let credential =
         format!("AWS4-HMAC-SHA256 Credential=SEEDCONTRACT/{day}/{REGION}/{service}/aws4_request, ");
-    assert_eq!(auth.strip_prefix(&credential).is_some(), true, "{auth}");
+    assert!(auth.strip_prefix(&credential).is_some(), "{auth}");
     let signature = auth.split("Signature=").nth(1).ok_or("missing signature")?;
     let names = auth
         .split("SignedHeaders=")

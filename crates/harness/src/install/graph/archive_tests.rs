@@ -25,7 +25,7 @@ fn member<'a>(name: &'a str, bytes: &'a [u8]) -> Member<'a> {
         kind: b'0',
         target: "",
         bytes,
-        size: u64::try_from(bytes.len()).map_or(u64::MAX, |n| n),
+        size: u64::try_from(bytes.len()).unwrap_or(u64::MAX),
     }
 }
 
@@ -147,7 +147,7 @@ fn given_hostile_names_when_extracted_then_nothing_escapes() -> TestResult {
 
 #[test]
 fn given_unapproved_links_and_devices_when_extracted_then_source_is_cleaned() -> TestResult {
-    [b'1', b'2', b'3', b'4', b'6']
+    b"12346"
         .iter()
         .try_for_each(|kind| rejected(&[link("redis-8.10.3/link", *kind, "../../escaped")]))
 }
