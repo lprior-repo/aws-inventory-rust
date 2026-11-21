@@ -40,12 +40,11 @@ pub(super) fn find_list_operation(service: Service<'_>) -> FixtureResult<Operati
         };
         for member in shape.members()? {
             let member = member?;
-            if let Target::Shape(index) = member.target {
-                if let Some(shape) = service.shape(index)? {
-                    if shape.kind()? == "list" {
-                        return Ok(operation);
-                    }
-                }
+            if let Target::Shape(index) = member.target
+                && let Some(shape) = service.shape(index)?
+                && shape.kind()? == "list"
+            {
+                return Ok(operation);
             }
         }
     }
