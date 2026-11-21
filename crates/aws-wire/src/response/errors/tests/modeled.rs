@@ -1,19 +1,14 @@
 use super::*;
 #[test]
-fn public_decode_uses_modeled_retryability_and_expiry_precedence() {
+fn public_decode_uses_modeled_retryability_and_expiry_precedence() -> TestResult {
     let fixture = modeled_error_fixture();
-    let bytes = compile_service_model(&fixture, "example#ErrorService");
-    let catalog = Catalog::borrow(&bytes).expect("compiled model");
-    let service = catalog
-        .service("ErrorService")
-        .expect("service lookup")
-        .expect("service");
+    let bytes = compile_service_model(&fixture, "example#ErrorService")?;
+    let catalog = Catalog::borrow(&bytes)?;
+    let service = catalog.service("ErrorService")?.ok_or("service")?;
     let operation = service
-        .operations()
-        .expect("operations")
+        .operations()?
         .next()
-        .expect("operation reference")
-        .expect("valid operation");
+        .ok_or("operation reference")??;
     let expected = [
         ("ThrottleError", ErrorClass::Throttle, 400),
         ("RetryableFailure", ErrorClass::Retryable, 400),
@@ -31,11 +26,12 @@ fn public_decode_uses_modeled_retryability_and_expiry_precedence() {
             protocol: Protocol::AwsJson11,
             body: body.as_bytes(),
             headers: &headers,
-            status: http::StatusCode::from_u16(status).expect("valid status"),
+            status: http::StatusCode::from_u16(status)?,
             limits: DecodeLimits::default(),
         };
-        let decoded = super::decode(response).expect("modeled public error");
+        let decoded = super::decode(response)?;
         assert_eq!(decoded.code.as_deref(), Some(code));
         assert_eq!(decoded.class, class);
     }
+    Ok(())
 }
