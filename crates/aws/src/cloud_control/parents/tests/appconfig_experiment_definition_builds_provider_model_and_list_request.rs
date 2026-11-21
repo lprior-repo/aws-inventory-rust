@@ -99,9 +99,13 @@ async fn appconfig_experiment_definition_builds_provider_model_and_list_request(
         .filter(|r| r.type_name == "AWS::AppConfig::ExperimentDefinition")
         .collect();
     assert_eq!(list_requests.len(), 1);
-    assert!(list_requests[0].resource_model.is_some());
-    let model: Value = serde_json::from_str(&list_requests[0].resource_model.as_ref().unwrap())
-        .map_err(|e| format!("invalid model: {e}"))?;
+    let list_request = list_requests.first().ok_or("list request")?;
+    let model_json = list_request
+        .resource_model
+        .as_ref()
+        .ok_or("resource model missing")?;
+    let model: Value =
+        serde_json::from_str(model_json).map_err(|e| format!("invalid model: {e}"))?;
     assert_eq!(model, json!({"ApplicationIdentifier": "app123"}));
     Ok(())
 }
