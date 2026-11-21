@@ -103,16 +103,17 @@ async fn given_evs_integral_vlans_on_two_parents_and_pages_when_persisted_then_i
             .flat_map(|id| [(id.into(), None), (id.into(), Some(format!("for-{id}")))])
             .collect()
     );
-    let ids = vec![
+    let ids = [
         correlated(ENV_ONE, &i32::MIN.to_string()),
         correlated(ENV_ONE, &i32::MAX.to_string()),
         correlated(ENV_TWO, &i32::MIN.to_string()),
     ];
+    let [id0, id1, id2] = &ids;
     assert_eq!(scenario.keys(VLAN).await?, live::keys(VLAN, &ids));
     let pairs = vec![
-        (ids[0].clone(), environment(ENV_ONE)),
-        (ids[1].clone(), environment(ENV_ONE)),
-        (ids[2].clone(), environment(ENV_TWO)),
+        (id0.clone(), environment(ENV_ONE)),
+        (id1.clone(), environment(ENV_ONE)),
+        (id2.clone(), environment(ENV_TWO)),
     ];
     assert_eq!(
         scenario.edges(VLAN).await?,
@@ -190,11 +191,12 @@ async fn given_qconnect_long_versions_when_decoded_then_exact_max_and_prompt_iso
     );
     let one = prompt(PROMPT_ONE);
     let two = prompt(PROMPT_TWO);
-    let ids = vec![
+    let ids = [
         correlated(&one, "1"),
         correlated(&one, &i64::MAX.to_string()),
         correlated(&two, "1"),
     ];
+    let [id0, id1, id2] = &ids;
     assert_eq!(scenario.keys(VERSION).await?, live::keys(VERSION, &ids));
     assert_eq!(
         scenario.edges(VERSION).await?,
@@ -203,9 +205,9 @@ async fn given_qconnect_long_versions_when_decoded_then_exact_max_and_prompt_iso
             "AWS::Wisdom::AIPrompt",
             "VERSION_OF",
             &[
-                (ids[0].clone(), one.clone()),
-                (ids[1].clone(), one),
-                (ids[2].clone(), two)
+                (id0.clone(), one.clone()),
+                (id1.clone(), one),
+                (id2.clone(), two)
             ]
         )
     );
@@ -275,11 +277,12 @@ async fn given_modeled_namespace_components_when_persisted_then_lists_and_bucket
     );
     let one = bucket("table-one");
     let two = bucket("table-two");
-    let ids = vec![
+    let ids = [
         correlated(&one, "list:2|2:ab|1:c"),
         correlated(&one, "list:2|1:a|2:bc"),
         correlated(&two, "list:2|2:ab|1:c"),
     ];
+    let [id0, id1, id2] = &ids;
     assert_eq!(scenario.keys(NAMESPACE).await?, live::keys(NAMESPACE, &ids));
     assert_eq!(
         scenario.edges(NAMESPACE).await?,
@@ -288,9 +291,9 @@ async fn given_modeled_namespace_components_when_persisted_then_lists_and_bucket
             "AWS::S3Tables::TableBucket",
             "IN_TABLE_BUCKET",
             &[
-                (ids[0].clone(), one.clone()),
-                (ids[1].clone(), one),
-                (ids[2].clone(), two)
+                (id0.clone(), one.clone()),
+                (id1.clone(), one),
+                (id2.clone(), two)
             ]
         )
     );
