@@ -550,7 +550,11 @@ async fn given_freshness_from_the_store_when_serving_then_the_stalest_profile_ru
     sim.seed_freshness(vec![Some(Millis::new(300)), None, Some(Millis::new(100))]);
     sim.stop_after_runs.set(Some(3));
     serve(&sim, ms(100), 3).await?;
-    let order: Vec<usize> = sim.starts().into_iter().map(|(profile, _)| profile).collect();
+    let order: Vec<usize> = sim
+        .starts()
+        .into_iter()
+        .map(|(profile, _)| profile)
+        .collect();
     assert_eq!(order, vec![1, 2, 0]);
     Ok(())
 }
@@ -575,14 +579,21 @@ async fn given_a_stop_and_a_restart_when_serving_then_no_profile_is_skipped_and_
     first.stop_after_runs.set(Some(2));
     serve(&first, ms(100), 3).await?;
     let freshness = freshness_of(&first, 3);
-    assert_eq!(freshness, vec![Some(Millis::new(10)), Some(Millis::new(20)), None]);
+    assert_eq!(
+        freshness,
+        vec![Some(Millis::new(10)), Some(Millis::new(20)), None]
+    );
 
     // Restart from the stored freshness: never-run profile 2 first, then 0, then 1.
     let second = Sim::new(10);
     second.seed_freshness(freshness);
     second.stop_after_runs.set(Some(3));
     serve(&second, ms(100), 3).await?;
-    let order: Vec<usize> = second.starts().into_iter().map(|(profile, _)| profile).collect();
+    let order: Vec<usize> = second
+        .starts()
+        .into_iter()
+        .map(|(profile, _)| profile)
+        .collect();
     assert_eq!(order, vec![2, 0, 1]);
     Ok(())
 }

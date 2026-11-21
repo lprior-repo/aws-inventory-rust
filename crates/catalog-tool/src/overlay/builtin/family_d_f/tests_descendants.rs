@@ -1,8 +1,8 @@
 use crate::classes::DenyReason;
 use crate::overlay;
 use crate::overlay::{
-    Binding, FixedValue, Identity, MemberPath, OperationName, OverlayClass,
-    Paginator, Scope, TokenPair,
+    Binding, FixedValue, Identity, MemberPath, OperationName, OverlayClass, Paginator, Scope,
+    TokenPair,
 };
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;

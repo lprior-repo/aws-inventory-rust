@@ -129,7 +129,9 @@ fn known_service_operation_member_and_shape_traits_reject_wrong_json_types_with_
         std::fs::write(&model_path, model)?;
         let fields = "Name\n";
         let registry = catalog_tool::smithy::Registry::parse(fields)?;
-        let Err(error) = catalog_tool::smithy::build_catalog(source.path(), &registry, "fixture-commit") else {
+        let Err(error) =
+            catalog_tool::smithy::build_catalog(source.path(), &registry, "fixture-commit")
+        else {
             return Err("wrong JSON type of a known trait must fail compilation".into());
         };
         let rendered = error.to_string();

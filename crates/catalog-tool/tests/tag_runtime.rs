@@ -370,12 +370,36 @@ fn relation_fixture(detail_callable: bool, same_kind: bool) -> TestResult<Vec<u8
     let mut model: serde_json::Value =
         serde_json::from_str(&MODEL.replace("TAG_SHAPE", MAP).replace("TAG_ITEM", ITEM))?;
     let shapes = child(&mut model, "shapes")?;
-    set(child(shapes, "n#Service")?, "operations", json!([{"target":"n#ListFirst"},{"target":"n#ListThings"}]))?;
-    set(shapes, "n#ListFirst", json!({"type":"operation","output":{"target":"n#SummaryOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/summary"}}}))?;
-    set(shapes, "n#SummaryOutput", json!({"type":"structure","members":{"Items":{"target":"n#Summaries"}}}))?;
-    set(shapes, "n#Summaries", json!({"type":"list","member":{"target":"n#Summary"}}))?;
-    set(shapes, "n#Summary", json!({"type":"structure","members":{"Id":{"target":"smithy.api#String"}}}))?;
-    set(child(child(shapes, "n#Container")?, "members")?, "Id", json!({"target":"smithy.api#String"}))?;
+    set(
+        child(shapes, "n#Service")?,
+        "operations",
+        json!([{"target":"n#ListFirst"},{"target":"n#ListThings"}]),
+    )?;
+    set(
+        shapes,
+        "n#ListFirst",
+        json!({"type":"operation","output":{"target":"n#SummaryOutput"},"traits":{"smithy.api#http":{"method":"GET","uri":"/summary"}}}),
+    )?;
+    set(
+        shapes,
+        "n#SummaryOutput",
+        json!({"type":"structure","members":{"Items":{"target":"n#Summaries"}}}),
+    )?;
+    set(
+        shapes,
+        "n#Summaries",
+        json!({"type":"list","member":{"target":"n#Summary"}}),
+    )?;
+    set(
+        shapes,
+        "n#Summary",
+        json!({"type":"structure","members":{"Id":{"target":"smithy.api#String"}}}),
+    )?;
+    set(
+        child(child(shapes, "n#Container")?, "members")?,
+        "Id",
+        json!({"target":"smithy.api#String"}),
+    )?;
     let mut first = overlay::OperationOverlay::default();
     first.class = Some(overlay::OverlayClass::Enumerate);
     first.scope = Some(overlay::Scope::Region);

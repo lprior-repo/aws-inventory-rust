@@ -97,7 +97,11 @@ fn member_wire_names_flags_and_shape_wire_traits_survive_compilation() -> TestRe
         .transpose()?
         .ok_or("secret member missing")?;
     assert!(!secret.wire()?.sensitive()?);
-    assert!(named_shape(service, "example#Secret")?.wire()?.sensitive()?);
+    assert!(
+        named_shape(service, "example#Secret")?
+            .wire()?
+            .sensitive()?
+    );
     assert_eq!(
         named_shape(service, "example#Secret")?
             .wire()?

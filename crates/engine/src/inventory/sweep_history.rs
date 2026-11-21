@@ -25,8 +25,10 @@ pub async fn last_completed_sweep(
     row.map(|row| {
         let sweep_id: String = row.try_get("sweep_id").map_err(StoreError::Sqlite)?;
         let ended_at: i64 = row.try_get("ended_at").map_err(StoreError::Sqlite)?;
-        Ok(LastSweep { sweep_id, ended_at_ms: ended_at })
+        Ok(LastSweep {
+            sweep_id,
+            ended_at_ms: ended_at,
+        })
     })
     .transpose()
 }
-

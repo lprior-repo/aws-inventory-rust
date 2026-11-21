@@ -204,9 +204,7 @@ impl Scheduler {
                 Some(profile) => Some(Action::Run { profile }),
                 None => {
                     if !pass.requeue_deferred() {
-                        self.phase = Phase::Idle {
-                            due: pass.next_due,
-                        };
+                        self.phase = Phase::Idle { due: pass.next_due };
                     }
                     None
                 }
@@ -229,12 +227,8 @@ impl Scheduler {
     /// smaller index.
     fn stalest_first(&self) -> Vec<usize> {
         let mut order: Vec<usize> = (0..self.last_completed.len()).collect();
-        order.sort_by_key(|&profile| {
-            (
-                self.last_completed.get(profile).copied().flatten(),
-                profile,
-            )
-        });
+        order
+            .sort_by_key(|&profile| (self.last_completed.get(profile).copied().flatten(), profile));
         order
     }
 }

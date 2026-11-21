@@ -235,11 +235,9 @@ pub(super) async fn seed_works(store: &BinaryStore, works: &[WorkSpec]) -> Resul
 
 // last_complete is now a stored column; query it directly.
 // -1 sentinel means never completed (stalest). 0 and above are actual completion timestamps.
-const READY_STALEST_FIRST: &str =
-    "SELECT w.scope_key,w.token,w.bindings,w.generation,w.authority_complete,w.context,w.last_complete FROM work_queue w WHERE w.sweep_id=?1 AND w.state=0 ORDER BY w.last_complete ASC,w.scope_key LIMIT 1";
+const READY_STALEST_FIRST: &str = "SELECT w.scope_key,w.token,w.bindings,w.generation,w.authority_complete,w.context,w.last_complete FROM work_queue w WHERE w.sweep_id=?1 AND w.state=0 ORDER BY w.last_complete ASC,w.scope_key LIMIT 1";
 
-const EXPIRED_STALEST_FIRST: &str =
-    "SELECT w.scope_key,w.token,w.bindings,w.generation,w.authority_complete,w.context,w.last_complete FROM work_queue w WHERE w.sweep_id=?1 AND w.state=1 AND w.lease_until<=?2 ORDER BY w.last_complete ASC,w.scope_key LIMIT 1";
+const EXPIRED_STALEST_FIRST: &str = "SELECT w.scope_key,w.token,w.bindings,w.generation,w.authority_complete,w.context,w.last_complete FROM work_queue w WHERE w.sweep_id=?1 AND w.state=1 AND w.lease_until<=?2 ORDER BY w.last_complete ASC,w.scope_key LIMIT 1";
 
 fn staleness_key(row: &sqlx::sqlite::SqliteRow) -> Result<(i64, Vec<u8>), StoreError> {
     Ok((row.try_get("last_complete")?, row.try_get("scope_key")?))
@@ -261,13 +259,22 @@ pub(super) async fn claim(
     // completion, then scope_key as the deterministic tie-break. The ready and
     // expired-lease branches are queried separately so each stays index-bounded.
     let ready = sqlx::query(READY_STALEST_FIRST)
-        .bind(sweep.as_str()).fetch_optional(&mut *tx).await?;
+        .bind(sweep.as_str())
+        .fetch_optional(&mut *tx)
+        .await?;
     let expired = sqlx::query(EXPIRED_STALEST_FIRST)
-        .bind(sweep.as_str()).bind(now_ms).fetch_optional(&mut *tx).await?;
+        .bind(sweep.as_str())
+        .bind(now_ms)
+        .fetch_optional(&mut *tx)
+        .await?;
 
     let row = match (ready, expired) {
         (Some(r), Some(e)) => {
-            if staleness_key(&r)? < staleness_key(&e)? { Some(r) } else { Some(e) }
+            if staleness_key(&r)? < staleness_key(&e)? {
+                Some(r)
+            } else {
+                Some(e)
+            }
         }
         (Some(r), None) => Some(r),
         (None, Some(e)) => Some(e),

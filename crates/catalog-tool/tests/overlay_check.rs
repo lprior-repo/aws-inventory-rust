@@ -144,9 +144,11 @@ fn duplicate_service_policy_is_rejected_before_a_conflicting_denial_can_be_ignor
         vec![policy("Items", "Id")?, denial.clone()],
         vec![denial, policy("Items", "Id")?],
     ] {
-        assert!(matches!(check(root.path(), &policies).map_err(|error| *error),
+        assert!(
+            matches!(check(root.path(), &policies).map_err(|error| *error),
             Err(CheckError::Invalid { service, key, rule, .. })
-                if service == "things" && key == "service" && rule == "duplicate service policy"));
+                if service == "things" && key == "service" && rule == "duplicate service policy")
+        );
     }
     Ok(())
 }

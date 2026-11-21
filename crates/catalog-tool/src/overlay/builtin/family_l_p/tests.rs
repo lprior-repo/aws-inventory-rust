@@ -104,10 +104,12 @@ fn given_pinned_models_when_policies_load_then_every_partition_operation_has_a_d
         for operation in policy.operations().values() {
             assert_ne!(operation.class, None);
             if operation.class == Some(OverlayClass::Defer) {
-                assert!(operation
-                    .defer_reason
-                    .as_ref()
-                    .is_some_and(|reason| !reason.is_empty()));
+                assert!(
+                    operation
+                        .defer_reason
+                        .as_ref()
+                        .is_some_and(|reason| !reason.is_empty())
+                );
             }
         }
     }

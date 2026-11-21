@@ -5,7 +5,11 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 
 fn endpoint(agent: bool, region: &str) -> Value {
     let host = if agent { "research" } else { "control" };
-    endpoint_url(agent, region, &format!("https://{host}.{region}.example.test"))
+    endpoint_url(
+        agent,
+        region,
+        &format!("https://{host}.{region}.example.test"),
+    )
 }
 
 fn endpoint_url(agent: bool, region: &str, url: &str) -> Value {
@@ -609,7 +613,10 @@ fn label_route(
     ];
     all.extend(cases);
     let mut traits = Map::new();
-    traits.insert("smithy.rules#staticContextParams".into(), json!({flag:{"value":true}}));
+    traits.insert(
+        "smithy.rules#staticContextParams".into(),
+        json!({flag:{"value":true}}),
+    );
     if let Some(prefix) = prefix {
         traits.insert("smithy.api#endpoint".into(), json!({"hostPrefix":prefix}));
     }

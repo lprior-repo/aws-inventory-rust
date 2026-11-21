@@ -13,7 +13,11 @@ fn field(fields: &crate::smithy::Registry, name: &str) -> TestResult<FieldId> {
         .ok_or_else(|| format!("missing fixture field {name}").into())
 }
 
-type CursorCase = (&'static str, &'static str, &'static [(&'static str, &'static str, &'static str)]);
+type CursorCase = (
+    &'static str,
+    &'static str,
+    &'static [(&'static str, &'static str, &'static str)],
+);
 
 #[test]
 fn given_items_only_smithy_pagination_when_compiled_and_decoded_then_all_eight_real_cursors_survive()

@@ -17,7 +17,6 @@ pub fn arn(path: &str) -> Result<overlay::Identity, overlay::NameError> {
     Ok(overlay::Identity::Arn(overlay::MemberPath::selected(path)?))
 }
 
-
 pub fn compiled_singleton(identity: overlay::Identity) -> TestResult<Vec<u8>> {
     compile_fixture(identity, "active-wire", None, false, true, None)
 }
