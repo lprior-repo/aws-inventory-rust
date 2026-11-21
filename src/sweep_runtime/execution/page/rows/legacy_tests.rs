@@ -1,7 +1,7 @@
 use super::*;
 #[path = "legacy_fixture.rs"]
-mod legacy;
-use legacy::*;
+mod legacy_fixture;
+use legacy_fixture::*;
 
 async fn populated_upgrade(version: u8) -> TestResult {
     // Given real native facets, both resolved and unresolved relationships, and leased paginated work.
@@ -34,7 +34,7 @@ async fn populated_upgrade(version: u8) -> TestResult {
         .claim(&sweep, 20_000, 100)
         .await?
         .ok_or("old leased work did not resume")?;
-    assert_eq!(lease.generation(), generation + 1);
+    assert_eq!(lease.generation(), generation.saturating_add(1));
     assert_eq!(lease.bindings(), bindings);
     assert_eq!(lease.token(), Some(token.as_slice()));
     assert!(lease.context().is_empty());
