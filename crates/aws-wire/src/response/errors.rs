@@ -21,10 +21,19 @@ pub enum ErrorClass {
 }
 
 #[derive(Debug, thiserror::Error)]
-#[error("AWS service failure: {class:?}")]
 pub struct ServiceError {
     pub class: ErrorClass,
     pub code: Option<String>,
+}
+
+impl std::fmt::Display for ServiceError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "AWS service failure: {:?}", self.class)?;
+        if let Some(code) = &self.code {
+            write!(f, " ({code})")?;
+        }
+        Ok(())
+    }
 }
 
 pub fn decode(context: super::ResponseContext<'_>) -> Result<ServiceError, super::DecodeError> {

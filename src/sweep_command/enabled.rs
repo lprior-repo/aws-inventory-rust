@@ -15,6 +15,10 @@ use std::{
 pub(super) async fn run(options: SweepArgs) -> Result<std::process::ExitCode> {
     let (store, mut summary) = collect(&options).await?;
     let unattributed_resources = store.unattributed_authority_count().await?;
+    if options.rebuild {
+        store.request_graph_rebuild().await?;
+    }
+    let projection_attempted = options.graph_url.is_some();
     if let Some(endpoint) = &options.graph_url {
         project(&store, endpoint, &options.graph_name).await?;
     }
@@ -25,6 +29,7 @@ pub(super) async fn run(options: SweepArgs) -> Result<std::process::ExitCode> {
         summary.work_remaining,
         unattributed_resources,
         options.drain,
+        projection_attempted,
         &state,
     );
     print_summary(summary, unattributed_resources)?;
@@ -48,6 +53,7 @@ fn exit_code(
     work_remaining: u64,
     unattributed_resources: u64,
     drain: bool,
+    projection_attempted: bool,
     state: &inventory_engine::inventory::ProjectionState,
 ) -> std::process::ExitCode {
     if work_remaining > 0 {
@@ -64,9 +70,14 @@ fn exit_code(
         || outcomes.unobserved > 0
     {
         std::process::ExitCode::from(2)
-    } else {
-        std::process::ExitCode::SUCCESS
     }
+    // Collection succeeded; if a graph was requested but delivery is not
+    // complete, report it with a distinct exit code so that automation
+    // does not confuse "graph synchronized" with "nothing to collect."
+    if projection_attempted && (state.pending > 0 || state.rebuild_required) {
+        return std::process::ExitCode::from(5);
+    }
+    std::process::ExitCode::SUCCESS
 }
 
 fn read_catalog(path: &Path) -> Result<Vec<u8>> {
@@ -157,13 +168,22 @@ mod tests {
             pending: 0,
             rebuild_required: false,
         };
-        assert_eq!(exit_code(&outcomes, 0, 1, false, &state), ExitCode::from(2));
-        assert_eq!(exit_code(&outcomes, 0, 0, false, &state), ExitCode::SUCCESS);
+        assert_eq!(
+            exit_code(&outcomes, 0, 1, false, false, &state),
+            ExitCode::from(2)
+        );
+        assert_eq!(
+            exit_code(&outcomes, 0, 0, false, false, &state),
+            ExitCode::SUCCESS
+        );
         let partial = ScopeOutcomes {
             partial: 1,
             ..outcomes
         };
-        assert_eq!(exit_code(&partial, 0, 0, false, &state), ExitCode::from(2));
+        assert_eq!(
+            exit_code(&partial, 0, 0, false, false, &state),
+            ExitCode::from(2)
+        );
     }
 
     #[test]
@@ -176,8 +196,30 @@ mod tests {
             pending: 3,
             rebuild_required: false,
         };
-        assert_eq!(exit_code(&outcomes, 0, 0, true, &state), ExitCode::from(3));
-        assert_eq!(exit_code(&outcomes, 0, 0, false, &state), ExitCode::SUCCESS);
+        assert_eq!(
+            exit_code(&outcomes, 0, 0, true, true, &state),
+            ExitCode::from(3)
+        );
+        assert_eq!(
+            exit_code(&outcomes, 0, 0, false, false, &state),
+            ExitCode::SUCCESS
+        );
+    }
+
+    #[test]
+    fn given_complete_scopes_when_graph_attempted_and_pending_then_exit_is_pending() {
+        let outcomes = ScopeOutcomes {
+            complete: 7,
+            ..ScopeOutcomes::default()
+        };
+        let state = ProjectionState {
+            pending: 3,
+            rebuild_required: false,
+        };
+        assert_eq!(
+            exit_code(&outcomes, 0, 0, false, true, &state),
+            ExitCode::from(5)
+        );
     }
 
     #[test]
@@ -190,8 +232,30 @@ mod tests {
             pending: 0,
             rebuild_required: true,
         };
-        assert_eq!(exit_code(&outcomes, 0, 0, true, &state), ExitCode::from(3));
-        assert_eq!(exit_code(&outcomes, 0, 0, false, &state), ExitCode::SUCCESS);
+        assert_eq!(
+            exit_code(&outcomes, 0, 0, true, true, &state),
+            ExitCode::from(3)
+        );
+        assert_eq!(
+            exit_code(&outcomes, 0, 0, false, false, &state),
+            ExitCode::SUCCESS
+        );
+    }
+
+    #[test]
+    fn given_complete_scopes_when_graph_attempted_and_rebuild_then_exit_is_pending() {
+        let outcomes = ScopeOutcomes {
+            complete: 7,
+            ..ScopeOutcomes::default()
+        };
+        let state = ProjectionState {
+            pending: 0,
+            rebuild_required: true,
+        };
+        assert_eq!(
+            exit_code(&outcomes, 0, 0, false, true, &state),
+            ExitCode::from(5)
+        );
     }
 
     #[test]
@@ -204,7 +268,10 @@ mod tests {
             pending: 0,
             rebuild_required: false,
         };
-        assert_eq!(exit_code(&outcomes, 0, 0, true, &state), ExitCode::SUCCESS);
+        assert_eq!(
+            exit_code(&outcomes, 0, 0, true, false, &state),
+            ExitCode::SUCCESS
+        );
     }
 
     #[test]
@@ -219,7 +286,30 @@ mod tests {
             pending: 9,
             rebuild_required: true,
         };
-        assert_eq!(exit_code(&failed, 5, 1, true, &pending), ExitCode::from(4));
-        assert_eq!(exit_code(&failed, 0, 1, true, &pending), ExitCode::from(3));
+        assert_eq!(
+            exit_code(&failed, 5, 1, true, true, &pending),
+            ExitCode::from(4)
+        );
+        assert_eq!(
+            exit_code(&failed, 0, 1, true, true, &pending),
+            ExitCode::from(3)
+        );
+    }
+
+    #[test]
+    fn given_complete_scopes_when_graph_complete_then_exit_is_success() {
+        let outcomes = ScopeOutcomes {
+            complete: 7,
+            ..ScopeOutcomes::default()
+        };
+        let state = ProjectionState {
+            pending: 0,
+            rebuild_required: false,
+        };
+        // Even with projection attempted, exit is success when drained
+        assert_eq!(
+            exit_code(&outcomes, 0, 0, false, true, &state),
+            ExitCode::SUCCESS
+        );
     }
 }

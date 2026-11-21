@@ -199,11 +199,12 @@ fn all_published_client_error_responses_decode_through_compiled_models() {
                         error_shape_id
                     );
                     assert!(!decoded.to_string().contains("private"));
-                    assert!(
-                        !decoded
-                            .to_string()
-                            .contains(decoded.code.as_deref().unwrap_or(""))
-                    );
+                    if let Some(code) = &decoded.code {
+                        assert!(
+                            decoded.to_string().contains(code),
+                            "service error code should appear in display for diagnosis"
+                        );
+                    }
                     decoded_cases += 1;
                     fixture_shapes.insert(error_shape_id.clone());
                 }

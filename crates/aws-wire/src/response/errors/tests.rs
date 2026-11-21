@@ -93,13 +93,20 @@ fn every_public_class_has_a_deterministic_rule() {
 }
 
 #[test]
-fn service_error_display_does_not_disclose_wire_code() {
+fn service_error_display_includes_code_for_diagnosis() {
     let error = ServiceError {
         class: ErrorClass::AccessDenied,
-        code: Some("secret-service-code".to_owned()),
+        code: Some("SecretAccessDenied".to_owned()),
     };
-    assert_eq!(error.to_string(), "AWS service failure: AccessDenied");
-    assert!(!error.to_string().contains("secret-service-code"));
+    assert_eq!(
+        error.to_string(),
+        "AWS service failure: AccessDenied (SecretAccessDenied)"
+    );
+    let no_code = ServiceError {
+        class: ErrorClass::AccessDenied,
+        code: None,
+    };
+    assert_eq!(no_code.to_string(), "AWS service failure: AccessDenied");
 }
 
 #[test]

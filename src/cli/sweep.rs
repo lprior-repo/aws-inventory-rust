@@ -36,4 +36,9 @@ pub struct SweepArgs {
     /// packaging and bounded-duration invocations.
     #[arg(long, default_value_t = 0)]
     pub slice_timeout: u64,
+    /// Force a full graph rebuild on this invocation. Clears the existing graph and
+    /// replays the entire outbox. Use after target identity changes, graph corruption,
+    /// or when the projection generation has drifted from the inventory.
+    #[arg(long)]
+    pub rebuild: bool,
 }
