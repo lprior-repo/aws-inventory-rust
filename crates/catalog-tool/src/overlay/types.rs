@@ -68,10 +68,25 @@ pub struct ServiceOverlay {
     pub(super) format: i64,
     pub(super) reviewed: String,
     pub(super) reviewer: String,
+    pub(super) evidence: ReviewEvidence,
     pub(super) operations: BTreeMap<OperationName, OperationOverlay>,
 }
 
+/// Evidence kinds are separate: a machine review never implies a human, fixture or emulator check.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ReviewEvidence {
+    pub machine_reviewed: bool,
+    pub manually_reviewed: bool,
+    pub fixture_tested: bool,
+    pub emulator_tested: bool,
+}
+
 impl ServiceOverlay {
+    #[must_use]
+    pub fn evidence(&self) -> &ReviewEvidence {
+        &self.evidence
+    }
+
     pub fn new(
         service: &str,
         operations: Vec<(&str, OperationOverlay)>,

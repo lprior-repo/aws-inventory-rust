@@ -81,8 +81,15 @@ pub(super) fn review(
         source: metadata::text(map_value, 1)?,
         reviewer: metadata::text(map_value, 2)?,
         reviewed_on: metadata::text(map_value, 3)?,
+        tool_version: metadata::text(map_value, 4)?,
+        evidence: ReviewEvidence {
+            machine_reviewed: metadata::flag(map_value, 5)?,
+            manually_reviewed: metadata::flag(map_value, 6)?,
+            fixture_tested: metadata::flag(map_value, 7)?,
+            emulator_tested: metadata::flag(map_value, 8)?,
+        },
     };
-    metadata::only_fields(map_value, &[1, 2, 3])?;
+    metadata::only_fields(map_value, &[1, 2, 3, 4, 5, 6, 7, 8])?;
     Ok(review)
 }
 

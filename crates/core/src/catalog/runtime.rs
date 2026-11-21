@@ -24,9 +24,9 @@ pub use types::{
     PlanScope, ReferenceOwnerRule, RelationGuard, RelationPathMode, RelationScope, RelationSource,
     RelationTargetMode, RelationshipComponentPlan, RelationshipPlan, RequestRouting,
     ResolvedEndpoint, ResourceEmissionPlan, ResourceEmissions, ResourceProjectionPlan,
-    ReviewDecision, ReviewDisposition, ReviewProvenance, RowOperandPlan, RowPolicyPlan,
-    RowPredicatePlan, RowValueType, RuntimeProtocol, SelectionKind, TagPlan, TokenBinding,
-    TokenPlacement, TokenSelection, TokenType, UrlResourceKind,
+    ReviewDecision, ReviewDisposition, ReviewEvidence, ReviewProvenance, RowOperandPlan,
+    RowPolicyPlan, RowPredicatePlan, RowValueType, RuntimeProtocol, SelectionKind, TagPlan,
+    TokenBinding, TokenPlacement, TokenSelection, TokenType, UrlResourceKind,
 };
 
 const MAX_PLANS: usize = 65_536;

@@ -33,7 +33,7 @@ pub use check::{
 pub use error::NameError;
 pub use types::{
     Batch, Binding, Identity, ItemSelector, MemberPath, OperationName, OperationOverlay,
-    OverlayClass, Paginator, Scope, ServiceOverlay, TokenPair,
+    OverlayClass, Paginator, ReviewEvidence, Scope, ServiceOverlay, TokenPair,
 };
 
 pub fn embedded() -> Result<Vec<ServiceOverlay>, NameError> {

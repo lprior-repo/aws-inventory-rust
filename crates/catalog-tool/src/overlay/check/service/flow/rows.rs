@@ -32,6 +32,7 @@ pub(super) fn finish(
             service: overlay.service().to_owned(),
             reviewer: overlay.reviewer().to_owned(),
             reviewed: overlay.reviewed().to_owned(),
+            evidence: *overlay.evidence(),
             callable,
             decisions,
         },

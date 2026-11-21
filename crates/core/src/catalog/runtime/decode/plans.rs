@@ -35,7 +35,7 @@ mod tests;
 use super::super::types::{
     BindingPlan, BindingSource, BindingValue, CallablePlan, EndpointClass, EndpointException,
     EndpointPathMode, EndpointTemplate, IdentityPart, IdentityPatternCache, IdentityPlan, ItemPlan,
-    PagePlan, PageSizeBinding, PlanParts, PlanPurpose, PlanScope, ReviewProvenance,
+    PagePlan, PageSizeBinding, PlanParts, PlanPurpose, PlanScope, ReviewEvidence, ReviewProvenance,
     RuntimeProtocol, TokenBinding, TokenPlacement, TokenType,
 };
 use super::{RuntimeCatalogError, list_value, map, metadata, services::Services};

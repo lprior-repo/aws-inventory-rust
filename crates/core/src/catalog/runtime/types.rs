@@ -323,11 +323,21 @@ pub struct PagePlan {
     pub truncated_path: Option<Box<[FieldId]>>,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct ReviewEvidence {
+    pub machine_reviewed: bool,
+    pub manually_reviewed: bool,
+    pub fixture_tested: bool,
+    pub emulator_tested: bool,
+}
+
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ReviewProvenance {
     pub source: String,
     pub reviewer: String,
     pub reviewed_on: String,
+    pub tool_version: String,
+    pub evidence: ReviewEvidence,
 }
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct ReviewDecision {

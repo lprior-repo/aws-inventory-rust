@@ -2,6 +2,7 @@ mod orchestration;
 mod report;
 mod service;
 mod validation;
+use super::ReviewEvidence;
 use crate::{
     ReportMode,
     classes::{self, Class, DenyList},
@@ -164,11 +165,16 @@ pub struct ReviewedService {
     service: String,
     reviewer: String,
     reviewed: String,
+    evidence: ReviewEvidence,
     callable: Vec<CallableOperation>,
     decisions: Vec<ReviewedDecision>,
 }
 
 impl ReviewedService {
+    pub fn evidence(&self) -> &ReviewEvidence {
+        &self.evidence
+    }
+
     pub fn service(&self) -> &str {
         &self.service
     }

@@ -10,6 +10,14 @@ pub(super) fn integer(map_value: MapRef<'_>, key: u32) -> Result<i64, RuntimeCat
     integer_value(lookup(map_value, key)?)
 }
 
+pub(super) fn flag(map_value: MapRef<'_>, key: u32) -> Result<bool, RuntimeCatalogError> {
+    match integer(map_value, key)? {
+        0 => Ok(false),
+        1 => Ok(true),
+        _ => Err(RuntimeCatalogError::Capability),
+    }
+}
+
 pub(super) fn text(map_value: MapRef<'_>, key: u32) -> Result<String, RuntimeCatalogError> {
     text_value(lookup(map_value, key)?)
 }

@@ -92,7 +92,13 @@ pub(super) fn service(
         service: service.to_owned(),
         format: 1,
         reviewed: "2026-11-15".to_owned(),
-        reviewer: "Automated Sol model review; not emulator verified".to_owned(),
+        reviewer: "Automated pinned-model review".to_owned(),
+        evidence: super::ReviewEvidence {
+            machine_reviewed: true,
+            manually_reviewed: false,
+            fixture_tested: false,
+            emulator_tested: false,
+        },
         operations,
     })
 }

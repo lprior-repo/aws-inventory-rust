@@ -144,10 +144,16 @@ fn encode_endpoint_exception(
 fn review_value(
     review: &crate::overlay::ReviewedService,
 ) -> Result<Value, RuntimeCatalogCompileError> {
+    let evidence = review.evidence();
     encode::map([
         (1, Value::Text("catalog/aws-overlay".to_owned())),
         (2, Value::Text(review.reviewer().to_owned())),
         (3, Value::Text(review.reviewed().to_owned())),
+        (4, Value::Text(env!("CARGO_PKG_VERSION").to_owned())),
+        (5, Value::Int(i64::from(evidence.machine_reviewed))),
+        (6, Value::Int(i64::from(evidence.manually_reviewed))),
+        (7, Value::Int(i64::from(evidence.fixture_tested))),
+        (8, Value::Int(i64::from(evidence.emulator_tested))),
     ])
 }
 
