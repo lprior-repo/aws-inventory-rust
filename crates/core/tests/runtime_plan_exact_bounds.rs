@@ -6,6 +6,7 @@ use inventory_core::{
     record::{FieldId, Key, Value},
 };
 use std::collections::BTreeMap;
+use synthetic_catalog::{catalog, column, item_root, member, structure};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 type Fields = BTreeMap<Key, Value>;
@@ -23,6 +24,27 @@ fn map(entries: impl IntoIterator<Item = (u32, Value)>) -> TestResult<Value> {
     ))
 }
 
+fn identity_catalog(output_fields: &[u32], identity: Value) -> TestResult<Vec<u8>> {
+    let members = output_fields
+        .iter()
+        .map(|&id| member(id, -3))
+        .collect::<TestResult<Vec<_>>>()?;
+    let shapes = vec![structure("Input", vec![])?, structure("Output", members)?];
+    let columns = output_fields
+        .iter()
+        .map(|&id| column([id]))
+        .collect::<TestResult<Vec<_>>>()?;
+    catalog(
+        0,
+        1,
+        shapes,
+        item_root()?,
+        identity,
+        map([(1, Value::List(vec![]))])?,
+        columns,
+    )
+}
+
 #[test]
 fn loader_preserves_all_eight_identity_keys_at_the_exact_tuple_bound() -> TestResult {
     // Given distinct ordered paths at the accepted bound; nine is already
@@ -32,7 +54,7 @@ fn loader_preserves_all_eight_identity_keys_at_the_exact_tuple_bound() -> TestRe
         .collect();
     let identity = map([(1, Value::Int(2)), (2, Value::List(parts))])?;
     let output_fields: Vec<u32> = (1..=8).collect();
-    let bytes = synthetic_catalog::identity_catalog(&output_fields, identity)?;
+    let bytes = identity_catalog(&output_fields, identity)?;
     // When the public consumer loads a modeled catalog artifact.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = runtime
@@ -67,7 +89,7 @@ fn loader_preserves_all_sixty_four_template_parts_at_the_exact_bound() -> TestRe
         (2, Value::List(pairs.into_iter().flatten().collect())),
     ])?;
     let output_fields: Vec<u32> = (1..=32).collect();
-    let bytes = synthetic_catalog::identity_catalog(&output_fields, identity)?;
+    let bytes = identity_catalog(&output_fields, identity)?;
     // When loading through the public artifact decoder.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = runtime
