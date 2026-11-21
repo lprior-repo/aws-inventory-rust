@@ -15,45 +15,48 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 #[test]
 fn published_rpcv2_cbor_success_responses_decode_to_exact_records() -> TestResult {
     let fixture: Json =
-        serde_json::from_str(include_str!("fixtures/protocol-tests/rpcv2Cbor.json"))
-            .expect("valid CBOR fixture");
-    let shapes = fixture["shapes"].as_object().expect("fixture shapes");
-    let service_ids: Vec<String> = shapes
-        .iter()
-        .filter_map(|(id, shape)| {
-            (shape["type"] == "service"
-                && shape["traits"].get("smithy.protocols#rpcv2Cbor").is_some()
-                && has_response_cases(shapes, shape))
-            .then(|| id.clone())
-        })
-        .collect();
+        serde_json::from_str(include_str!("fixtures/protocol-tests/rpcv2Cbor.json"))?;
+    let shapes = field(&fixture, "shapes")?
+        .as_object()
+        .ok_or("fixture shapes")?;
+    let mut service_ids: Vec<String> = Vec::new();
+    for (id, entry) in shapes {
+        if entry["type"] == "service"
+            && entry["traits"].get("smithy.protocols#rpcv2Cbor").is_some()
+            && has_response_cases(shapes, entry)?
+        {
+            service_ids.push(id.clone());
+        }
+    }
     let mut client_cases = 0usize;
     let mut server_cases = 0usize;
     let mut bounds_tested = false;
     for service_id in service_ids {
         let bytes = fixture_catalog::compile_service(&fixture, &service_id)?;
-        let catalog = Catalog::borrow(&bytes).expect("fixture catalog validates");
-        let service_name = service_id.rsplit('#').next().expect("service name");
+        let catalog = Catalog::borrow(&bytes)?;
+        let service_name = service_id.rsplit('#').next().ok_or("service name")?;
         let service = catalog
-            .service(&service_name.replace('.', "-"))
-            .expect("service lookup")
-            .expect("fixture service");
-        for operation_ref in shapes[&service_id]["operations"]
+            .service(&service_name.replace('.', "-"))?
+            .ok_or("fixture service")?;
+        let service_shape = shape(shapes, &service_id)?;
+        let operation_refs = field(service_shape, "operations")?
             .as_array()
-            .expect("operations")
-        {
-            let operation_id = operation_ref["target"].as_str().expect("operation target");
-            let operation_name = operation_id.rsplit('#').next().expect("operation name");
-            let operation = service
-                .operations()
-                .expect("operation iterator")
-                .map(|entry| entry.expect("valid operation"))
-                .find(|item| item.name().expect("operation name") == operation_name)
-                .expect("catalog operation");
-            let cases = shapes[operation_id]["traits"]["smithy.test#httpResponseTests"]
-                .as_array()
-                .into_iter()
-                .flatten();
+            .ok_or("operations")?;
+        for operation_ref in operation_refs {
+            let operation_id = field(operation_ref, "target")?
+                .as_str()
+                .ok_or("operation target")?;
+            let operation_name = operation_id.rsplit('#').next().ok_or("operation name")?;
+            let mut found = None;
+            for entry in service.operations()? {
+                let item = entry?;
+                if item.name()? == operation_name {
+                    found = Some(item);
+                    break;
+                }
+            }
+            let operation = found.ok_or("catalog operation")?;
+            let cases = http_response_cases(shape(shapes, operation_id)?);
             for case in cases {
                 if case["appliesTo"] == "server" {
                     server_cases += 1;
@@ -63,15 +66,14 @@ fn published_rpcv2_cbor_success_responses_decode_to_exact_records() -> TestResul
                 if !(200..300).contains(&code) {
                     continue;
                 }
-                let id = case["id"].as_str().expect("fixture case id");
+                let id = case["id"].as_str().ok_or("fixture case id")?;
                 let body = match case["body"].as_str() {
                     Some(encoded) => STANDARD
                         .decode(encoded)
-                        .unwrap_or_else(|error| panic!("{id}: {error}")),
+                        .map_err(|error| format!("{id}: {error}"))?,
                     None => Vec::new(),
                 };
-                let status = StatusCode::from_u16(u16::try_from(code).expect("status code"))
-                    .expect("valid status");
+                let status = StatusCode::from_u16(u16::try_from(code)?)?;
                 let headers = HeaderMap::new();
                 let context = ResponseContext {
                     service,
@@ -114,7 +116,7 @@ fn published_rpcv2_cbor_success_responses_decode_to_exact_records() -> TestResul
                         .is_err()
                     );
                     let unknown_nested = [0xa1, 0x61, b'?', 0xa1, 0x61, b'x', 0x80];
-                    let body_limits = DecodeLimits::new(1, 65_536, 32).expect("valid body limits");
+                    let body_limits = DecodeLimits::new(1, 65_536, 32)?;
                     assert!(matches!(
                         response::cbor::decode(ResponseContext {
                             body: &unknown_nested,
@@ -123,8 +125,7 @@ fn published_rpcv2_cbor_success_responses_decode_to_exact_records() -> TestResul
                         }),
                         Err(DecodeError::Limit("response body"))
                     ));
-                    let node_limits =
-                        DecodeLimits::new(16_777_216, 2, 32).expect("valid node limits");
+                    let node_limits = DecodeLimits::new(16_777_216, 2, 32)?;
                     assert!(matches!(
                         response::cbor::decode(ResponseContext {
                             body: &unknown_nested,
@@ -133,8 +134,7 @@ fn published_rpcv2_cbor_success_responses_decode_to_exact_records() -> TestResul
                         }),
                         Err(DecodeError::Limit("response nodes"))
                     ));
-                    let depth_limits =
-                        DecodeLimits::new(16_777_216, 65_536, 1).expect("valid depth limits");
+                    let depth_limits = DecodeLimits::new(16_777_216, 65_536, 1)?;
                     assert!(matches!(
                         response::cbor::decode(ResponseContext {
                             body: &unknown_nested,
@@ -154,11 +154,11 @@ fn published_rpcv2_cbor_success_responses_decode_to_exact_records() -> TestResul
                     status,
                     limits: DecodeLimits::default(),
                 })
-                .unwrap_or_else(|error| panic!("{id}: {error}"));
+                .map_err(|error| format!("{id}: {error}"))?;
                 fixture_oracle::assert_fixture_root(
                     &record,
                     service,
-                    operation.output().expect("output shape"),
+                    operation.output()?,
                     &case["params"],
                     id,
                 );
@@ -171,13 +171,44 @@ fn published_rpcv2_cbor_success_responses_decode_to_exact_records() -> TestResul
     Ok(())
 }
 
-fn has_response_cases(shapes: &serde_json::Map<String, Json>, service: &Json) -> bool {
-    service["operations"].as_array().is_some_and(|operations| {
-        operations.iter().any(|operation| {
-            let target = operation["target"].as_str().expect("operation target");
-            shapes[target]["traits"]["smithy.test#httpResponseTests"]
-                .as_array()
-                .is_some_and(|cases| !cases.is_empty())
-        })
-    })
+fn field<'a>(value: &'a Json, key: &str) -> Result<&'a Json, Box<dyn std::error::Error>> {
+    value
+        .get(key)
+        .ok_or_else(|| format!("fixture field `{key}` missing").into())
+}
+
+fn shape<'a>(
+    shapes: &'a serde_json::Map<String, Json>,
+    id: &str,
+) -> Result<&'a Json, Box<dyn std::error::Error>> {
+    shapes
+        .get(id)
+        .ok_or_else(|| format!("fixture shape `{id}` missing").into())
+}
+
+fn http_response_cases(shape: &Json) -> impl Iterator<Item = &Json> {
+    shape
+        .get("traits")
+        .and_then(|traits| traits.get("smithy.test#httpResponseTests"))
+        .and_then(Json::as_array)
+        .into_iter()
+        .flatten()
+}
+
+fn has_response_cases(
+    shapes: &serde_json::Map<String, Json>,
+    service: &Json,
+) -> Result<bool, Box<dyn std::error::Error>> {
+    let Some(operations) = service.get("operations").and_then(Json::as_array) else {
+        return Ok(false);
+    };
+    for operation in operations {
+        let target = field(operation, "target")?
+            .as_str()
+            .ok_or("operation target")?;
+        if http_response_cases(shape(shapes, target)?).next().is_some() {
+            return Ok(true);
+        }
+    }
+    Ok(false)
 }
