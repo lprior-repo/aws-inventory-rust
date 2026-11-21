@@ -1,19 +1,14 @@
 use super::*;
 #[test]
-fn public_decode_enforces_malformed_body_and_resource_limits() {
+fn public_decode_enforces_malformed_body_and_resource_limits() -> TestResult {
     let fixture = modeled_error_fixture();
-    let bytes = compile_service_model(&fixture, "example#ErrorService");
-    let catalog = Catalog::borrow(&bytes).expect("compiled model");
-    let service = catalog
-        .service("ErrorService")
-        .expect("service lookup")
-        .expect("service");
+    let bytes = compile_service_model(&fixture, "example#ErrorService")?;
+    let catalog = Catalog::borrow(&bytes)?;
+    let service = catalog.service("ErrorService")?.ok_or("service")?;
     let operation = service
-        .operations()
-        .expect("operations")
+        .operations()?
         .next()
-        .expect("operation reference")
-        .expect("valid operation");
+        .ok_or("operation reference")??;
     let headers = http::HeaderMap::new();
     let malformed = ResponseContext {
         service,
@@ -36,7 +31,7 @@ fn public_decode_enforces_malformed_body_and_resource_limits() {
         body: b"{}",
         headers: &headers,
         status: http::StatusCode::BAD_REQUEST,
-        limits: DecodeLimits::new(1, 64, 16).expect("valid body test limits"),
+        limits: DecodeLimits::new(1, 64, 16)?,
     };
     assert!(matches!(
         super::decode(oversized),
@@ -51,7 +46,7 @@ fn public_decode_enforces_malformed_body_and_resource_limits() {
         body: unknown,
         headers: &headers,
         status: http::StatusCode::BAD_REQUEST,
-        limits: DecodeLimits::new(1024, 1, 16).expect("valid node test limits"),
+        limits: DecodeLimits::new(1024, 1, 16)?,
     };
     assert!(matches!(
         super::decode(node_limited),
@@ -67,7 +62,7 @@ fn public_decode_enforces_malformed_body_and_resource_limits() {
         status: http::StatusCode::BAD_REQUEST,
         limits: DecodeLimits::default(),
     };
-    let decoded_unknown = super::decode(unknown_response).expect("unknown root values are scanned");
+    let decoded_unknown = super::decode(unknown_response)?;
     assert_eq!(decoded_unknown.code, None);
     assert_eq!(decoded_unknown.class, ErrorClass::Fatal);
     assert!(!decoded_unknown.to_string().contains("unknown"));
@@ -79,7 +74,7 @@ fn public_decode_enforces_malformed_body_and_resource_limits() {
         body: br#"{"unknown":{"nested":1}}"#,
         headers: &headers,
         status: http::StatusCode::BAD_REQUEST,
-        limits: DecodeLimits::new(1024, 64, 1).expect("valid depth test limits"),
+        limits: DecodeLimits::new(1024, 64, 1)?,
     };
     assert!(matches!(
         super::decode(depth_limited),
@@ -101,4 +96,5 @@ fn public_decode_enforces_malformed_body_and_resource_limits() {
             "success response is not a service error"
         ))
     ));
+    Ok(())
 }
