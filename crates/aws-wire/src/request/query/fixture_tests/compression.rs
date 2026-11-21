@@ -1,5 +1,9 @@
 use super::*;
 
+fn body_limit_plus_one() -> FixtureResult<u64> {
+    Ok(u64::try_from(RequestLimits::default().body_bytes())?.saturating_add(1))
+}
+
 pub(super) fn decode_request_body(request: &http::Request<bytes::Bytes>) -> FixtureResult<Vec<u8>> {
     let encodings = request.headers().get_all(http::header::CONTENT_ENCODING);
     let is_gzip = encodings
@@ -10,7 +14,7 @@ pub(super) fn decode_request_body(request: &http::Request<bytes::Bytes>) -> Fixt
     }
     let mut decoded = Vec::new();
     GzDecoder::new(request.body().as_ref())
-        .take((RequestLimits::default().body_bytes() as u64) + 1)
+        .take(body_limit_plus_one()?)
         .read_to_end(&mut decoded)?;
     if decoded.len() > RequestLimits::default().body_bytes() {
         return Err(fixture_error("decompressed request exceeds body limit"));
@@ -122,7 +126,7 @@ fn decode_header_body(headers: &http::HeaderMap, body: &[u8]) -> FixtureResult<V
         .any(|value| value.to_str().ok() == Some("gzip"))
     {
         GzDecoder::new(body)
-            .take((RequestLimits::default().body_bytes() as u64) + 1)
+            .take(body_limit_plus_one()?)
             .read_to_end(&mut decoded)?;
         if decoded.len() > RequestLimits::default().body_bytes() {
             return Err(fixture_error(
