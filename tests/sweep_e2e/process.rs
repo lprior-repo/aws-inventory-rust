@@ -138,7 +138,7 @@ fn wait_bounded(child: &mut ChildOwner) -> Result<std::process::ExitStatus> {
             }
             Err(error) => Some(Err(error.into())),
         })
-        .map_or_else(|| timeout_child(child), |result| result)
+        .unwrap_or_else(|| timeout_child(child))
 }
 
 fn timeout_child(child: &mut ChildOwner) -> Result<std::process::ExitStatus> {
