@@ -307,7 +307,8 @@ async fn assert_shared_facets(
     retired: bool,
 ) -> TestResult {
     let reader = scenario.reader().await?;
-    let rows: Vec<(String,String,String,String,String,String,Vec<u8>)> = sqlx::query_as(
+    type Row = (String, String, String, String, String, String, Vec<u8>);
+    let rows: Vec<Row> = sqlx::query_as(
         "SELECT f.account,f.region,f.kind,f.id,p.parent_kind,p.parent_id,f.record FROM resource_facets f JOIN resource_parents p ON p.child_account=f.account AND p.child_region=f.region AND p.child_kind=f.kind AND p.child_id=f.id AND p.scope_key=f.source_key WHERE f.kind IN ('AWS::ApiOnly::WorkMailAlias','AWS::ApiOnly::WorkMailEntityGroup','AWS::ApiOnly::WorkMailMailboxPermission') ORDER BY f.account,f.region,f.kind,f.id,p.parent_kind,p.parent_id"
     ).fetch_all(&reader).await?;
     let mut actual = Vec::new();
