@@ -59,12 +59,7 @@ fn inspect_shape(shape: Shape<'_>, count: usize) -> Result<(), CatalogError> {
     assert!(kind_code(shape.kind()?).is_some());
     shape.arn()?;
     shape.members()?.try_for_each(|member| {
-        let Member {
-            id,
-            target,
-            required: _,
-            ..
-        } = member?;
+        let Member { id, target, .. } = member?;
         assert_ne!(id.value(), 0);
         check_target(target, count);
         Ok::<_, CatalogError>(())
