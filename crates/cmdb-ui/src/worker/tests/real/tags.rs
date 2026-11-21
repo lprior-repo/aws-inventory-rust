@@ -104,6 +104,9 @@ fn given_committed_scoped_tags_when_real_worker_filters_then_exact_empty_value_a
 fn given_live_native_tags_and_committed_sql_tags_when_expanding_then_affiliations_keep_root_scope_and_authority()
 -> TestResult {
     supervised_async(|| async {
+        if !falkor_available().await? {
+            return Ok(());
+        }
         // Given real SQLite tags and native topology with an independently current tag.
         let fixture = Fixture::new().await?;
         let a = root();

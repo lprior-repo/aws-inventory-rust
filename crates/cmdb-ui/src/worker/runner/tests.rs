@@ -2,7 +2,8 @@ use super::*;
 use crate::worker::DEFAULT_GRAPH_LIMITS;
 use crate::worker::tests::isolation::supervised;
 use crate::worker::tests::real::fixtures::{
-    self, ACCOUNT, Fixture, KIND, NativeGraph, REGION, TestResult, assert_edges, edge, root,
+    self, ACCOUNT, Fixture, KIND, NativeGraph, REGION, TestResult, assert_edges, edge,
+    falkor_available, root,
 };
 
 fn runtime() -> TestResult<tokio::runtime::Runtime> {
@@ -56,6 +57,9 @@ fn given_superseded_refresh_after_admission_when_runner_completes_then_next_expa
         // Enter the real process boundary after admission, then accept a newer
         // refresh before completion. No outputs or QuerySession values are injected.
         let runtime = runtime()?;
+        if !runtime.block_on(falkor_available())? {
+            return Ok(());
+        }
         let _entered = runtime.enter();
         let fixture = runtime.block_on(Fixture::new())?;
         let a = root();
@@ -147,6 +151,9 @@ fn given_obsolete_selection_queued_before_latest_refresh_when_real_runner_drains
         // drain also reject stale results: a skipped selection must not become the
         // selection re-expanded by the following current refresh.
         let runtime = runtime()?;
+        if !runtime.block_on(falkor_available())? {
+            return Ok(());
+        }
         let _entered = runtime.enter();
         let fixture = runtime.block_on(Fixture::new())?;
         runtime.block_on(fixture.commit(
@@ -220,6 +227,9 @@ fn given_selection_superseded_after_admission_when_native_query_completes_then_p
         // A producer-boundary test, NOT drain filtering: all observations below are
         // real process/query_graph/native transport outputs before current_events.
         let runtime = runtime()?;
+        if !runtime.block_on(falkor_available())? {
+            return Ok(());
+        }
         let _entered = runtime.enter();
         let fixture = runtime.block_on(Fixture::new())?;
         runtime.block_on(fixture.commit(
@@ -323,6 +333,9 @@ fn given_full_queue_when_expansion_is_rejected_then_real_graph_is_delivered_unti
 -> TestResult {
     supervised(|| {
         let runtime = runtime()?;
+        if !runtime.block_on(falkor_available())? {
+            return Ok(());
+        }
         let _entered = runtime.enter();
         let fixture = runtime.block_on(Fixture::new())?;
         runtime.block_on(fixture.commit(

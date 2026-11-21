@@ -120,6 +120,9 @@ fn given_failed_resource_query_when_filter_removes_selection_then_new_empty_page
 -> TestResult {
     supervised(|| {
         let runtime = runtime()?;
+        if !runtime.block_on(falkor_available())? {
+            return Ok(());
+        }
         let fixture = runtime.block_on(Fixture::new())?;
         runtime.block_on(fixture.commit(
             "seed",

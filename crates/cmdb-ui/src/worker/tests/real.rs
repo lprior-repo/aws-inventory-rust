@@ -5,8 +5,8 @@ mod tags;
 use super::super::*;
 use super::isolation::supervised_async;
 use fixtures::{
-    ACCOUNT, Fixture, KIND, NativeGraph, REGION, TestResult, assert_edges, digest, edge, graph,
-    node, root, snapshot,
+    ACCOUNT, Fixture, KIND, NativeGraph, REGION, TestResult, assert_edges, digest, edge,
+    falkor_available, graph, node, root, snapshot,
 };
 
 fn sort_rows(rows: &mut [Row]) {
@@ -24,6 +24,9 @@ fn sort_rows(rows: &mut [Row]) {
 fn given_divergent_stores_and_concurrent_sweep_when_expanding_then_native_topology_uses_committed_sql_details()
 -> TestResult {
     supervised_async(|| async {
+        if !falkor_available().await? {
+            return Ok(());
+        }
         // Given: exact common, SQL-only, native-only edges and same-id collisions in
         // account, region AND kind. Expected rows originate in writer observations.
         let fixture = Fixture::new().await?;
@@ -242,6 +245,9 @@ fn given_divergent_stores_and_concurrent_sweep_when_expanding_then_native_topolo
 fn given_depth_boundary_chain_when_real_worker_expands_then_truncation_warning_propagates_and_clears()
 -> TestResult {
     supervised_async(|| async {
+        if !falkor_available().await? {
+            return Ok(());
+        }
         // Given: a deterministic 3-edge chain exceeds the real worker's depth=2;
         // another disjoint, complete 1-edge component must clear truncation.
         let fixture = Fixture::new().await?;

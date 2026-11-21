@@ -5,7 +5,7 @@ use crate::data::{Graph, Row};
 use crate::worker::DEFAULT_GRAPH_LIMITS;
 use crate::worker::tests::isolation::supervised;
 use crate::worker::tests::real::fixtures::{
-    self, ACCOUNT, Fixture, KIND, NativeGraph, REGION, TestResult,
+    self, ACCOUNT, Fixture, KIND, NativeGraph, REGION, TestResult, falkor_available,
 };
 use crate::worker::tests::support::{self, BlockedGraph, QueuedWorker};
 use inventory_core::inventory::{Tag, TagCoverage, TagObservation};
@@ -197,6 +197,9 @@ fn given_real_native_graph_when_app_receives_resource_action_then_selected_root_
 -> TestResult {
     supervised(|| {
         let runtime = runtime()?;
+        if !runtime.block_on(falkor_available())? {
+            return Ok(());
+        }
         let fixture = runtime.block_on(Fixture::new())?;
         let expected = runtime.block_on(fixture.commit(
             "seed",

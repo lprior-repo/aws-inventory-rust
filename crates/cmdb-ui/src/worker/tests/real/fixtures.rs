@@ -281,10 +281,46 @@ pub(crate) struct NativeGraph {
     deleted: std::cell::Cell<bool>,
 }
 
+const REQUIRE_FALKOR: &str = "AWS_INVENTORY_REQUIRE_FALKOR";
+
+pub(crate) fn falkor_endpoint() -> String {
+    std::env::var("CMDB_VIEW_FALKOR_ENDPOINT")
+        .unwrap_or_else(|_| "redis://127.0.0.1:6379".to_owned())
+}
+
+/// Availability gate for every test that needs a native FalkorDB graph.
+/// `Ok(true)`: reachable. Unreachable: `Ok(false)` with a stderr skip reason,
+/// unless `AWS_INVENTORY_REQUIRE_FALKOR=1`, which fails loudly.
+pub(crate) async fn falkor_available() -> TestResult<bool> {
+    let endpoint = falkor_endpoint();
+    let probe = async {
+        let client = redis::Client::open(endpoint.clone())?;
+        let mut connection = client.get_multiplexed_async_connection().await?;
+        redis::cmd("PING")
+            .query_async::<String>(&mut connection)
+            .await?;
+        Ok::<_, Box<dyn Error>>(())
+    };
+    let reason = match tokio::time::timeout(Duration::from_millis(500), probe).await {
+        Ok(Ok(())) => return Ok(true),
+        Ok(Err(error)) => error.to_string(),
+        Err(_) => "no response within 500ms".to_owned(),
+    };
+    if std::env::var(REQUIRE_FALKOR).is_ok_and(|value| value == "1") {
+        return Err(format!(
+            "FalkorDB unreachable at {endpoint} ({reason}); {REQUIRE_FALKOR}=1 requires a running server"
+        )
+        .into());
+    }
+    eprintln!(
+        "skipping native FalkorDB test: unreachable at {endpoint} ({reason}); set {REQUIRE_FALKOR}=1 to fail instead"
+    );
+    Ok(false)
+}
+
 impl NativeGraph {
     pub async fn new(edges: &[cmdb_view::GraphEdge]) -> TestResult<Self> {
-        let endpoint = std::env::var("CMDB_VIEW_FALKOR_ENDPOINT")
-            .unwrap_or_else(|_| "redis://127.0.0.1:6379".to_owned());
+        let endpoint = falkor_endpoint();
         let stamp = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)?
             .as_nanos();
