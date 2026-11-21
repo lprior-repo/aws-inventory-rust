@@ -86,7 +86,9 @@ fn path(path: &Path) -> Result<String> {
 fn fixture(name: &str) -> Result<String> {
     path(
         &Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("examples")
+            .join("tests")
+            .join("cli_properties")
+            .join("fixtures")
             .join(name),
     )
 }
