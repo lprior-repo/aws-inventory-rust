@@ -1,39 +1,32 @@
 //! Mutation testing harness tests.
 
-use std::env;
+use std::error::Error;
 use std::fs::{self, File};
-use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
-use std::process::Command;
-use std::time::Duration;
+use std::io::Read;
+use std::path::PathBuf;
 
-use inventory_harness::HarnessError;
 use inventory_harness::mutate;
-use serde_json::json;
 use tempfile::TempDir;
 
-const DRAIN_ENVIRONMENT: &str = "INVENTORY_COMMAND_DRAIN_SECONDS";
+type TestResult = Result<(), Box<dyn Error>>;
 
-fn create_temp_dir(prefix: &str) -> TempDir {
-    tempfile::Builder::new()
-        .prefix(prefix)
-        .tempdir()
-        .expect("tempdir")
+fn create_temp_dir(prefix: &str) -> Result<TempDir, Box<dyn Error>> {
+    Ok(tempfile::Builder::new().prefix(prefix).tempdir()?)
 }
 
 #[test]
-fn test_drain_budget_default() {
+fn test_drain_budget_default() -> TestResult {
     // Don't use unsafe env functions - just test default behavior
-    let result = mutate::command_drain_budget();
-    assert!(result.is_ok());
-    assert_eq!(result.unwrap(), 35);
+    let budget = mutate::command_drain_budget()?;
+    assert_eq!(budget, 35);
+    Ok(())
 }
 
 // Custom and invalid drain budget tests require setting environment variables,
 // which uses unsafe functions. These are tested via integration tests instead.
 
 #[test]
-fn test_receipt_json_serialization() {
+fn test_receipt_json_serialization() -> TestResult {
     let receipt = mutate::Receipt {
         argv: vec![String::from("test")],
         workspace: PathBuf::from("/tmp"),
@@ -56,14 +49,18 @@ fn test_receipt_json_serialization() {
         log_sha256: Some("abc123".to_string()),
     };
     let json = receipt.to_json();
-    assert_eq!(json["status"], "completed");
-    assert_eq!(json["exit_code"], 0);
-    assert_eq!(json["argv"][0], "test");
+    assert_eq!(json.get("status").and_then(|v| v.as_str()), Some("completed"));
+    assert_eq!(json.get("exit_code").and_then(|v| v.as_i64()), Some(0));
+    assert_eq!(
+        json.get("argv").and_then(|v| v.get(0)).and_then(|v| v.as_str()),
+        Some("test")
+    );
+    Ok(())
 }
 
 #[test]
-fn test_receipt_new_defaults() {
-    let temp = create_temp_dir("mutate-test-");
+fn test_receipt_new_defaults() -> TestResult {
+    let temp = create_temp_dir("mutate-test-")?;
     let output = temp.path().to_path_buf();
     let receipt = mutate::Receipt::new(
         vec![String::from("echo")],
@@ -77,13 +74,14 @@ fn test_receipt_new_defaults() {
     assert_eq!(receipt.pid, None);
     assert_eq!(receipt.log, output.join("test-label.log"));
     drop(temp);
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_execute_command_simple() {
-    let temp = create_temp_dir("mutate-execute-");
+async fn test_execute_command_simple() -> TestResult {
+    let temp = create_temp_dir("mutate-execute-")?;
     let output = temp.path().to_path_buf();
-    let result = mutate::execute_command(mutate::CommandRequest {
+    let receipt = mutate::execute_command(mutate::CommandRequest {
         arguments: vec![String::from("echo"), String::from("hello")],
         workspace: PathBuf::from("/tmp"),
         output: output.clone(),
@@ -93,10 +91,8 @@ async fn test_execute_command_simple() {
         deadline_seconds: 30,
         health_check: Some(Box::new(|| Ok(()))),
     })
-    .await;
+    .await?;
 
-    assert!(result.is_ok());
-    let receipt = result.unwrap();
     assert_eq!(receipt.status, "completed");
     assert_eq!(receipt.exit_code, Some(0));
     assert!(receipt.elapsed_seconds >= 0.0);
@@ -104,9 +100,9 @@ async fn test_execute_command_simple() {
     // Check log file exists and contains output
     let log_path = output.join("simple.log");
     assert!(log_path.exists());
-    let mut log = File::open(&log_path).expect("open log");
+    let mut log = File::open(&log_path)?;
     let mut content = String::new();
-    log.read_to_string(&mut content).expect("read log");
+    log.read_to_string(&mut content)?;
     assert!(content.contains("hello"));
 
     // Check receipt file exists
@@ -114,13 +110,14 @@ async fn test_execute_command_simple() {
     assert!(receipt_path.exists());
 
     drop(temp);
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_execute_command_nonzero_exit() {
-    let temp = create_temp_dir("mutate-nonzero-");
+async fn test_execute_command_nonzero_exit() -> TestResult {
+    let temp = create_temp_dir("mutate-nonzero-")?;
     let output = temp.path().to_path_buf();
-    let result = mutate::execute_command(mutate::CommandRequest {
+    let receipt = mutate::execute_command(mutate::CommandRequest {
         arguments: vec![
             String::from("sh"),
             String::from("-c"),
@@ -134,21 +131,20 @@ async fn test_execute_command_nonzero_exit() {
         deadline_seconds: 30,
         health_check: Some(Box::new(|| Ok(()))),
     })
-    .await;
+    .await?;
 
-    assert!(result.is_ok());
-    let receipt = result.unwrap();
     assert_eq!(receipt.status, "completed");
     assert_eq!(receipt.exit_code, Some(42));
 
     drop(temp);
+    Ok(())
 }
 
 #[tokio::test]
-async fn test_execute_command_timeout() {
-    let temp = create_temp_dir("mutate-timeout-");
+async fn test_execute_command_timeout() -> TestResult {
+    let temp = create_temp_dir("mutate-timeout-")?;
     let output = temp.path().to_path_buf();
-    let result = mutate::execute_command(mutate::CommandRequest {
+    let receipt = mutate::execute_command(mutate::CommandRequest {
         arguments: vec![
             String::from("sh"),
             String::from("-c"),
@@ -162,16 +158,15 @@ async fn test_execute_command_timeout() {
         deadline_seconds: 2,
         health_check: Some(Box::new(|| Ok(()))),
     })
-    .await;
+    .await?;
 
-    assert!(result.is_ok());
-    let receipt = result.unwrap();
     assert_eq!(receipt.status, "timeout");
     assert_eq!(receipt.exit_code, Some(124));
     assert!(receipt.elapsed_seconds >= 1.0);
     assert!(receipt.elapsed_seconds <= 4.0);
 
     drop(temp);
+    Ok(())
 }
 
 #[tokio::test]
@@ -211,10 +206,10 @@ async fn test_execute_command_too_many_args() {
 }
 
 #[tokio::test]
-async fn test_execute_command_spawn_failure() {
-    let temp = create_temp_dir("mutate-spawn-");
+async fn test_execute_command_spawn_failure() -> TestResult {
+    let temp = create_temp_dir("mutate-spawn-")?;
     let output = temp.path().to_path_buf();
-    let result = mutate::execute_command(mutate::CommandRequest {
+    let receipt = mutate::execute_command(mutate::CommandRequest {
         arguments: vec![String::from("/nonexistent/binary")],
         workspace: PathBuf::from("/tmp"),
         output: output.clone(),
@@ -224,19 +219,18 @@ async fn test_execute_command_spawn_failure() {
         deadline_seconds: 30,
         health_check: Some(Box::new(|| Ok(()))),
     })
-    .await;
+    .await?;
 
-    assert!(result.is_ok());
-    let receipt = result.unwrap();
     assert_eq!(receipt.status, "supervisor_error");
     assert!(receipt.supervisor_error.is_some());
 
     drop(temp);
+    Ok(())
 }
 
 #[test]
-fn test_write_receipt_file() {
-    let temp = create_temp_dir("mutate-receipt-");
+fn test_write_receipt_file() -> TestResult {
+    let temp = create_temp_dir("mutate-receipt-")?;
     let output = temp.path().to_path_buf();
     let receipt = mutate::Receipt::new(
         vec![String::from("test")],
@@ -246,15 +240,15 @@ fn test_write_receipt_file() {
         "test-label",
     );
 
-    let result = mutate::write_receipt(&receipt, &output, "test-label");
-    assert!(result.is_ok());
+    mutate::write_receipt(&receipt, &output, "test-label")?;
 
     let receipt_path = output.join("test-label.json");
     assert!(receipt_path.exists());
 
-    let content = fs::read_to_string(&receipt_path).expect("read receipt");
-    let parsed: serde_json::Value = serde_json::from_str(&content).expect("parse receipt");
-    assert_eq!(parsed["status"], "running");
+    let content = fs::read_to_string(&receipt_path)?;
+    let parsed: serde_json::Value = serde_json::from_str(&content)?;
+    assert_eq!(parsed.get("status").and_then(|v| v.as_str()), Some("running"));
 
     drop(temp);
+    Ok(())
 }
