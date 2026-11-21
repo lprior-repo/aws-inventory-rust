@@ -55,12 +55,13 @@ fn given_one_or_eight_producers_when_decoded_then_all_namespaces_paths_and_order
             );
             assert_eq!(alternative.path.as_ref(), &[FieldId::new(7)?]);
             assert_eq!(
-                alternative.source,
                 [
                     ContextSource::SelectedItem,
                     ContextSource::Response,
                     ContextSource::Request
-                ][index % 3]
+                ]
+                .get(index % 3),
+                Some(&alternative.source)
             );
         }
     }
