@@ -3,10 +3,13 @@ use std::collections::HashMap;
 use crate::HarnessError;
 
 use super::lexical;
+use super::mask;
 
 const MAX_FILES: usize = 4_096;
 const MAX_SOURCE_BYTES: usize = 32 * 1024 * 1024;
 const MAX_CALLS: usize = 4_096;
+
+pub type SourceInventoryResult = Result<(HashMap<String, String>, Vec<Callsite>, usize), HarnessError>;
 
 
 pub struct Callsite {
@@ -47,7 +50,7 @@ fn function_at(masked: &str, offset: usize) -> Result<(String, usize), HarnessEr
         }
         let rest = &masked[name_start..];
         if let Some(first) = rest.as_bytes().first() {
-            let byte_value = u8::from(*first);
+            let byte_value = *first;
             if byte_value.is_ascii_alphabetic() || byte_value == b'_' {
                 last_pos = pos;
                 found = true;
@@ -136,7 +139,7 @@ pub fn calls_in_source(path: &str, source: &str) -> Result<(Vec<Callsite>, usize
 }
 
 pub fn calls_in_source_with_budget(path: &str, source: &str, max_tokens: usize) -> Result<(Vec<Callsite>, usize), HarnessError> {
-    let masked = lexical::mask_noncode(path, source)?;
+    let masked = mask::mask_noncode(path, source)?;
     let (tokens, pairs) = lexical::tokens_and_pairs_with_budget(path, &masked, max_tokens)?;
     let mut calls: Vec<Callsite> = Vec::new();
     let mut nonempty_sends: usize = 0;
@@ -170,11 +173,7 @@ pub fn calls_in_source_with_budget(path: &str, source: &str, max_tokens: usize) 
             // Python: cursor = index - 1, walk while token is ")"
             let mut cursor = index.saturating_sub(1);
             let mut methods: Vec<(String, usize)> = Vec::new();
-            loop {
-                let tok = match tokens.get(cursor) {
-                    Some(t) => t,
-                    None => break,
-                };
+            while let Some(tok) = tokens.get(cursor) {
                 if tok.text != ")" {
                     break;
                 }
@@ -207,23 +206,44 @@ pub fn calls_in_source_with_budget(path: &str, source: &str, max_tokens: usize) 
             let (operation, last_open) = match methods.last() {
                 Some((m, o)) => (m.clone(), *o),
                 None => {
+                    let tok = match tokens.get(index) {
+                        Some(t) => t,
+                        None => break,
+                    };
                     return Err(source_error(
                         path,
                         source,
-                        tokens[index].start,
+                        tok.start,
                         "unrecognized empty send call chain",
                     ));
                 }
             };
             let op_index = last_open.saturating_sub(1);
-            let operation_offset = tokens[op_index].start;
-            let receiver = tokens[cursor].text.clone();
+            let op_token = match tokens.get(op_index) {
+                Some(t) => t,
+                None => break,
+            };
+            let operation_offset = op_token.start;
+            let cursor_token = match tokens.get(cursor) {
+                Some(t) => t,
+                None => break,
+            };
+            let receiver = cursor_token.text.clone();
 
-            let (function, function_start) = function_at(&masked, tokens[index].start)?;
-            let service = receiver_service(&masked, &receiver, function_start, tokens[index].start)
-                .map_err(|e| source_error(path, source, tokens[index].start, &e.to_string()))?;
+            let index_token = match tokens.get(index) {
+                Some(t) => t,
+                None => break,
+            };
+            let (function, function_start) = function_at(&masked, index_token.start)?;
+            let service = receiver_service(&masked, &receiver, function_start, index_token.start)
+                .map_err(|e| source_error(path, source, index_token.start, &e.to_string()))?;
             let operation_line = line_column(source, operation_offset).0;
-            let send_line = line_column(source, tokens[index + 1].start).0;
+            let next_index = index.saturating_add(1);
+            let next_token = match tokens.get(next_index) {
+                Some(t) => t,
+                None => break,
+            };
+            let send_line = line_column(source, next_token.start).0;
 
             calls.push(Callsite {
                 id: format!("{}.{}", service, operation),
@@ -294,7 +314,7 @@ fn walk_directory(
     Ok(())
 }
 
-pub fn source_inventory(root: &std::path::Path) -> Result<(HashMap<String, String>, Vec<Callsite>, usize), HarnessError> {
+pub fn source_inventory(root: &std::path::Path) -> SourceInventoryResult {
     let mut sources: HashMap<String, String> = HashMap::new();
     let mut total: usize = 0;
     let aws_dir = root.join("crates/aws/src");
@@ -310,7 +330,7 @@ pub fn source_inventory(root: &std::path::Path) -> Result<(HashMap<String, Strin
     for (path, content) in &sources {
         let (found, skipped) = calls_in_source(path, content)?;
         calls.extend(found);
-        nonempty += skipped;
+        nonempty = nonempty.saturating_add(skipped);
     }
 
     Ok((sources, calls, nonempty))

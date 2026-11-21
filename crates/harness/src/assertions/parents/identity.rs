@@ -8,10 +8,9 @@ pub fn normalized_id(fixture: &Value, seed: &Value) -> Option<String> {
     if let Some(explicit_id) = fixture
         .get("expected_resource_id")
         .and_then(Value::as_str)
+        && !explicit_id.is_empty()
     {
-        if !explicit_id.is_empty() {
-            return Some(explicit_id.to_owned());
-        }
+        return Some(explicit_id.to_owned());
     }
 
     let id = fixture

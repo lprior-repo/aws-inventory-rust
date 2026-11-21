@@ -1,6 +1,7 @@
 
 pub mod calls;
 pub mod lexical;
+pub mod mask;
 
 use std::collections::HashMap;
 
@@ -246,7 +247,7 @@ pub fn check_additions(root: &std::path::Path) -> Result<serde_json::Value, Harn
 }
 
 fn validate_additions_document(
-    root: &std::path::Path,
+    _root: &std::path::Path,
     doc: &serde_json::Value,
     matrix: &serde_json::Value,
     matrix_sha: &str,

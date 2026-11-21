@@ -12,8 +12,8 @@ pub fn check(
         "check": name,
         "passed": passed,
     });
-    if let Some(d) = detail {
-        item["detail"] = d.clone();
+    if let (Some(d), Some(obj)) = (detail, item.as_object_mut()) {
+        obj.insert("detail".to_string(), d.clone());
     }
     checks.push(item);
 }

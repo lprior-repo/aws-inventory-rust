@@ -5,7 +5,6 @@ use sqlx::sqlite::{SqliteConnectOptions, SqliteConnection};
 use sqlx::{Connection, Executor};
 
 use inventory_harness::assertions::regional;
-use inventory_harness::HarnessError;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 

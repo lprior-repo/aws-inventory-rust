@@ -8,6 +8,7 @@ description = "Development harness: fixture provenance, oracle snapshots and rel
 publish = false
 
 [features]
+aws = []
 native-graph-integration = []
 native-emulator-tests = []
 

@@ -8,9 +8,9 @@ use crate::assertions::helpers::check as add_check;
 use crate::HarnessError;
 
 pub async fn check(
-    root: &Path,
-    database: &Path,
-    scan_id: &str,
+    _root: &Path,
+    _database: &Path,
+    _scan_id: &str,
     seed_report: Option<&Value>,
 ) -> Result<Vec<Value>, HarnessError> {
     let mut checks = Vec::new();

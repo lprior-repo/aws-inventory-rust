@@ -283,8 +283,8 @@ fn parse_mutate(arguments: &[String]) -> Result<Command, HarnessError> {
 fn parse_verify_delivery(arguments: &[String]) -> Result<Command, HarnessError> {
     let options = options(
         arguments,
-        &["--binary", "--redis-cli", "--database", "--output", "--run-workspace-tests"],
-        &["--run-workspace-tests"],
+        &["--binary", "--redis-cli", "--database", "--output"],
+        &[],
     )?;
     let binary = options.value("--binary")?;
     let redis_cli = options.value("--redis-cli")?;
@@ -295,7 +295,6 @@ fn parse_verify_delivery(arguments: &[String]) -> Result<Command, HarnessError> 
         redis_cli,
         database,
         output,
-        run_workspace_tests: options.has("--run-workspace-tests"),
     })
 }
 
@@ -322,9 +321,6 @@ impl Options {
         self.get(flag).ok_or_else(|| HarnessError::invalid(USAGE))
     }
 
-    fn has(&self, flag: &str) -> bool {
-        self.pairs.iter().any(|(name, _)| name == flag)
-    }
 }
 
 fn options(

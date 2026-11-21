@@ -5,19 +5,29 @@ use serde_json::Value;
 use crate::assertions::helpers::check as add_check;
 use crate::assertions::parents::identity::normalized_id;
 
-pub fn child_checks(
-    checks: &mut Vec<Value>,
-    children: &[Value],
-    pages: &[Value],
-    parents: &std::collections::HashMap<String, Value>,
-    seeds: &std::collections::HashMap<String, Value>,
-    observed_children: &[Value],
-    parent_edges: &[Value],
-    all_edges: &[Value],
-    resources: &[Value],
-    fixture: &Value,
-) {
-    let child_types: std::collections::HashSet<String> = children
+pub struct ChildCheckContext<'a> {
+    pub children: &'a [Value],
+    pub pages: &'a [Value],
+    pub parents: &'a std::collections::HashMap<String, Value>,
+    pub seeds: &'a std::collections::HashMap<String, Value>,
+    pub observed_children: &'a [Value],
+    pub parent_edges: &'a [Value],
+    pub all_edges: &'a [Value],
+    pub resources: &'a [Value],
+    pub fixture: &'a Value,
+}
+
+pub fn child_checks(checks: &mut Vec<Value>, ctx: &ChildCheckContext) {
+    let children = ctx.children;
+    let pages = ctx.pages;
+    let parents = ctx.parents;
+    let seeds = ctx.seeds;
+    let observed_children = ctx.observed_children;
+    let parent_edges = ctx.parent_edges;
+    let all_edges = ctx.all_edges;
+    let _resources = ctx.resources;
+    let _fixture = ctx.fixture;
+    let _child_types: std::collections::HashSet<String> = children
         .iter()
         .chain(pages.iter())
         .filter_map(|c| {
@@ -45,7 +55,7 @@ pub fn child_checks(
             .get(parent_key)
             .cloned()
             .unwrap_or(Value::Null);
-        let parent_type = parent
+        let _parent_type = parent
             .get("type_name")
             .and_then(Value::as_str)
             .unwrap_or("");
@@ -90,7 +100,7 @@ pub fn child_checks(
         let parent_identity = normalized_id(&parent, &parent_seed);
 
         match (identity, parent_identity) {
-            (Some(id), Some(pid)) => {
+            (Some(id), Some(_pid)) => {
                 let matches: Vec<&Value> = observed_children
                     .iter()
                     .filter(|r| {
@@ -109,7 +119,10 @@ pub fn child_checks(
                 );
 
                 if matches.len() == 1 {
-                    let resource = matches[0];
+                    let resource = match matches.first() {
+                        Some(r) => r,
+                        None => continue,
+                    };
                     let properties = resource
                         .get("properties")
                         .cloned()
@@ -163,10 +176,11 @@ pub fn child_checks(
                         .and_then(Value::as_i64)
                         .unwrap_or(-1);
                     if expected_count >= 0 {
+                        let expected = usize::try_from(expected_count).unwrap_or(0);
                         add_check(
                             checks,
                             &format!("{name}:edge_count"),
-                            actual_edges.len() == expected_count as usize,
+                            actual_edges.len() == expected,
                             None,
                         );
                     }
@@ -179,7 +193,7 @@ pub fn child_checks(
                         .filter_map(|v| v.as_str().map(str::to_owned))
                         .collect();
 
-                    if expected_rels.len() > 0 {
+                    if !expected_rels.is_empty() {
                         let observed_rels: std::collections::HashSet<String> = actual_edges
                             .iter()
                             .filter_map(|e| {
@@ -232,11 +246,11 @@ pub fn child_checks(
                             .get("type_name")
                             .and_then(Value::as_str)
                             .unwrap_or("");
-                        let owner_resolution = edge
+                        let _owner_resolution = edge
                             .get("owner_resolution")
                             .and_then(Value::as_str)
                             .unwrap_or("");
-                        let paths = edge
+                        let _paths = edge
                             .get("paths")
                             .cloned()
                             .unwrap_or(Value::Array(vec![]));
@@ -257,12 +271,15 @@ pub fn child_checks(
                             .collect();
 
                         let edge_passed = matching.len() == 1
-                            && matching[0]
-                                .get("properties")
-                                .and_then(|p| p.get("cloudformation_type"))
-                                .and_then(Value::as_str)
-                                .unwrap_or("")
-                                == type_name;
+                            && match matching.first() {
+                                Some(m) => m
+                                    .get("properties")
+                                    .and_then(|p| p.get("cloudformation_type"))
+                                    .and_then(Value::as_str)
+                                    .unwrap_or("")
+                                    == type_name,
+                                None => false,
+                            };
 
                         add_check(
                             checks,

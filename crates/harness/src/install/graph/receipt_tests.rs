@@ -30,7 +30,7 @@ fn given_retained_binaries_when_attesting_then_versions_and_hashes_describe_same
     let source = OwnedDirectory::capture(&layout.source)?;
     let mut probes = 0;
     let attestation = attest(&source, |file| {
-        probes += 1;
+        probes = probes.saturating_add(1);
         observed_version(file, probes == 1)
     })?;
     assert_eq!(probes, 2);
@@ -63,9 +63,9 @@ fn reject_swap(server: bool, after_first_probe: bool) -> TestResult {
     let original = fs::read(path)?;
     let saved = path.with_extension("probed");
     fs::write(&layout.receipt, b"foreign receipt")?;
-    let mut probes = 0;
+    let mut probes: usize = 0;
     let result = attest(&source, |file| {
-        probes += 1;
+        probes = probes.saturating_add(1);
         let version = observed_version(file, probes == 1)?;
         if probes == if after_first_probe { 1 } else { 2 } {
             fs::rename(path, &saved)?;
@@ -169,9 +169,9 @@ fn given_same_inode_write_during_client_probe_when_attesting_then_unprobed_bytes
     let before = fs::metadata(&layout.server)?;
     let writer = fs::OpenOptions::new().write(true).open(&layout.server)?;
     fs::write(&layout.receipt, b"foreign receipt")?;
-    let mut probes = 0;
+    let mut probes: usize = 0;
     let result = attest(&source, |file| {
-        probes += 1;
+        probes = probes.saturating_add(1);
         let version = observed_version(file, probes == 1)?;
         if probes == 2 {
             writer.write_all_at(b"xyz", 0)?;

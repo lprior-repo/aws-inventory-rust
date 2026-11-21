@@ -1,7 +1,8 @@
 use super::*;
 
 #[cfg(test)]
-mod tests;
+#[path = "oracle/oracle_tests.rs"]
+mod oracle_tests;
 
 impl SeedState {
     pub(super) fn generic_oracle(

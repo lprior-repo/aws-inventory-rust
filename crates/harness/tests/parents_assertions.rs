@@ -126,7 +126,7 @@ fn normalized_identity_computes_hash_when_no_expected_id() -> TestResult {
     let seed = json!({"identifier": "my-unique-identifier"});
     let id = parents::identity::normalized_id(&child, &seed);
     assert!(id.is_some());
-    let computed = id.unwrap();
+    let computed = id.ok_or("normalized_id should compute a hash")?;
     assert!(computed.starts_with("awscc:aws:us-east-1:000000000000:AWS::Test::Type:"));
     assert_eq!(computed.len(), 55 + 64, "computed identity length");
     Ok(())

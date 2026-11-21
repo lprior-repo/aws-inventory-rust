@@ -33,7 +33,7 @@ pub use operations::calls::source_inventory;
 pub use operations::validate_emulator;
 pub use operations::calls::calls_in_source;
 pub use operations::calls::calls_in_source_with_budget;
-pub use operations::lexical::mask_noncode;
+pub use operations::mask::mask_noncode;
 pub use operations::lexical::tokens_and_pairs;
 pub use operations::lexical::tokens_and_pairs_with_budget;
 

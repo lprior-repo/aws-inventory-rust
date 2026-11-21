@@ -14,8 +14,8 @@ pub async fn check(
     root: &Path,
     database: &Path,
     scan_id: &str,
-    seed_report: Option<&Value>,
-    region: Option<&str>,
+    _seed_report: Option<&Value>,
+    _region: Option<&str>,
 ) -> Result<Vec<Value>, HarnessError> {
     let mut checks = Vec::new();
 
@@ -43,7 +43,7 @@ pub async fn check(
     add_check(
         &mut checks,
         "regional:readable_bounded_evidence",
-        resources.len() > 0 || edges.len() > 0,
+        !resources.is_empty() || !edges.is_empty(),
         Some(&Value::from(status)),
     );
 

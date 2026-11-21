@@ -14,8 +14,8 @@ use crate::HarnessError;
 
 pub async fn check(
     root: &Path,
-    database: &Path,
-    scan_id: &str,
+    _database: &Path,
+    _scan_id: &str,
     seed_report: Option<&Value>,
 ) -> Result<Vec<Value>, HarnessError> {
     let mut checks = Vec::new();
@@ -33,7 +33,7 @@ pub async fn check(
         None,
     );
 
-    if let Some((fixture, sha)) = fixtures {
+    if let Some((_fixture, sha)) = fixtures {
         // Check seed report hash if provided
         let reported_hash = seed_report
             .and_then(|sr| sr.get("fixture_sha256"))

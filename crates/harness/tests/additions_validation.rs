@@ -3,16 +3,15 @@
 use std::fs;
 use std::path::PathBuf;
 
-use hex;
 use inventory_harness::audit::{check_additions, write_reconciliation};
 use sha2::{Digest, Sha256};
 
 fn test_root(name: &str) -> PathBuf {
     let root = PathBuf::from(format!("/tmp/additions_test_{}", name));
     if root.exists() {
-        fs::remove_dir_all(&root).expect("remove test root");
+        fs::remove_dir_all(&root).unwrap();
     }
-    fs::create_dir_all(&root).expect("create test root");
+    fs::create_dir_all(&root).unwrap();
     root
 }
 

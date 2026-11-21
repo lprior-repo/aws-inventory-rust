@@ -7,7 +7,7 @@ use inventory_harness::assertions::regional as assertions_regional;
 use inventory_harness::{
     HarnessError, assertions, audit, catalog, install, mutate, seed, snapshot, verify_delivery,
 };
-use inventory_harness::audit::{check_additions, write_reconciliation};
+use inventory_harness::audit::write_reconciliation;
 
 mod cli;
 
@@ -95,7 +95,6 @@ enum Command {
         redis_cli: PathBuf,
         database: PathBuf,
         output: PathBuf,
-        run_workspace_tests: bool,
     },
     CatalogOperations {
         root: PathBuf,
@@ -241,7 +240,7 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, HarnessError> {
             command_deadline,
             command,
         } => {
-            let mut args = mutate::Args {
+            let args = mutate::Args {
                 emulator,
                 binary,
                 branch_probe,
@@ -259,7 +258,6 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, HarnessError> {
             redis_cli,
             database,
             output,
-            run_workspace_tests,
         } => {
             let args = verify_delivery::Args {
                 binary,
@@ -286,19 +284,24 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, HarnessError> {
                     let (emulator, rows) =
                         inventory_harness::audit::validate_emulator(&report, &root, &summary_path)?;
                     let mut extended = report.clone();
-                    extended["emulator_evidence"] = emulator;
+                    if let Some(obj) = extended.as_object_mut() {
+                        obj.insert("emulator_evidence".to_string(), emulator);
+                    }
                     write_reconciliation(&root, &extended, &output)?;
+                    let status = extended.get("status").cloned().unwrap_or(serde_json::json!("unknown"));
                     Ok(serde_json::json!({
                         "output": output.to_string_lossy(),
-                        "status": extended["status"],
+                        "status": status,
                         "operation_results": rows
                     }))
                 } else {
                     write_reconciliation(&root, &report, &output)?;
+                    let status = report.get("status").cloned().unwrap_or(serde_json::json!("unknown"));
+                    let summary = report.get("summary").cloned().unwrap_or(serde_json::json!(""));
                     Ok(serde_json::json!({
                         "output": output.to_string_lossy(),
-                        "status": report["status"],
-                        "summary": report["summary"]
+                        "status": status,
+                        "summary": summary
                     }))
                 }
             }
