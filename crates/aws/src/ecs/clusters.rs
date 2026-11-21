@@ -28,31 +28,25 @@ pub(super) async fn describe_clusters(
                 .await
                 .map_err(sdk_error)
         })
-        .await;
-    match output {
-        Ok(output) => {
-            let returned = output
-                .clusters()
-                .iter()
-                .filter_map(|cluster| cluster.cluster_arn())
-                .collect();
-            missing(ctx, "aws_ecs_cluster_description", arns, &returned).await?;
-            output
-                .clusters()
-                .iter()
-                .map(|cluster| map_cluster(ctx, cluster))
-                .collect()
-        }
-        Err(error) => {
-            describe_failure(
-                ctx,
-                &ctx.scope("aws_ecs_cluster_description", None, Source::Direct),
-                error.into(),
-            )
-            .await?;
-            Ok(Vec::new())
-        }
-    }
+        .await?;
+    let returned = output
+        .clusters()
+        .iter()
+        .filter_map(|cluster| cluster.cluster_arn())
+        .collect();
+    unresolved(
+        ctx,
+        "aws_ecs_cluster_description",
+        arns,
+        &returned,
+        output.failures(),
+    )
+    .await?;
+    output
+        .clusters()
+        .iter()
+        .map(|cluster| map_cluster(ctx, cluster))
+        .collect()
 }
 
 pub(super) fn map_cluster(ctx: &Context, cluster: &Cluster) -> Result<Resource, AwsScanError> {
@@ -79,16 +73,80 @@ pub(super) async fn children(
     Ok(())
 }
 
+/// Classification of the requested ARNs that one batch Describe response did not return.
+#[derive(Debug, Default, PartialEq, Eq)]
+pub(super) struct Resolution {
+    /// Absent from the response with no reason, or with reason `MISSING`.
+    pub(super) missing: Vec<String>,
+    /// Not described for another reason, paired with the reason and detail the service gave.
+    pub(super) unavailable: Vec<(String, String)>,
+}
+
+/// Correlates by ARN, so order and duplicates in either input do not matter. Only a `MISSING`
+/// (or absent) reason counts as the resource being gone; any other reason is unresolved.
+pub(super) fn resolve(
+    requested: &[String],
+    returned: &BTreeSet<&str>,
+    failures: &[Failure],
+) -> Resolution {
+    let mut reasons: BTreeMap<&str, (Option<&str>, Option<&str>)> = BTreeMap::new();
+    for failure in failures {
+        if let Some(arn) = failure.arn() {
+            reasons
+                .entry(arn)
+                .or_insert((failure.reason(), failure.detail()));
+        }
+    }
+    let unreturned: BTreeSet<&str> = requested
+        .iter()
+        .map(String::as_str)
+        .filter(|arn| !returned.contains(arn))
+        .collect();
+    let mut resolution = Resolution::default();
+    for arn in unreturned {
+        match reasons.get(arn).copied().unwrap_or((None, None)) {
+            (None | Some("MISSING"), _) => resolution.missing.push(arn.to_owned()),
+            (Some(reason), detail) => resolution.unavailable.push((
+                arn.to_owned(),
+                format!("{reason}: {}", detail.unwrap_or("no detail returned")),
+            )),
+        }
+    }
+    resolution
+}
+
 #[tracing::instrument(skip_all)]
-pub(super) async fn missing(
+pub(super) async fn unresolved(
     ctx: &Context,
     collector: &str,
     requested: &[String],
     returned: &BTreeSet<&str>,
+    failures: &[Failure],
 ) -> Result<(), AwsScanError> {
-    collect_bounded(requested.iter().filter(|arn|!returned.contains(arn.as_str())), 8, |arn| async move {
+    let resolution = resolve(requested, returned, failures);
+    collect_bounded(resolution.missing.iter(), 8, |arn| async move {
         ctx.failure(&ctx.scope(collector, Some(arn), Source::Direct), "describe_missing",
             "resource enumerated by List but absent from Describe response; it may have changed or access may be restricted").await
     }).await?;
-    Ok(())
+    let Some((first, reason)) = resolution.unavailable.first() else {
+        return Ok(());
+    };
+    let message = format!(
+        "{collector}: {} requested resource(s) not described; first {first} reported {reason}",
+        resolution.unavailable.len()
+    );
+    collect_bounded(
+        resolution.unavailable.iter(),
+        8,
+        |(arn, reason)| async move {
+            ctx.failure(
+                &ctx.scope(collector, Some(arn), Source::Direct),
+                "describe_failed",
+                reason.as_str(),
+            )
+            .await
+        },
+    )
+    .await?;
+    Err(AwsScanError::Api(ApiError::Transient(message)))
 }

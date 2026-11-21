@@ -14,6 +14,10 @@ const SERVICE: &str = "arn:aws:ecs:us-east-1:111111111111:service/demo/web";
 const GROUP: &str =
     "arn:aws:elasticloadbalancing:us-west-2:222222222222:targetgroup/web/0123456789abcdef";
 const DEFINITION: &str = "arn:aws:ecs:us-east-1:111111111111:task-definition/web:7";
+const TASK_A: &str = "arn:aws:ecs:us-east-1:111111111111:task/demo/a";
+const TASK_B: &str = "arn:aws:ecs:us-east-1:111111111111:task/demo/b";
+const TASK_C: &str = "arn:aws:ecs:us-east-1:111111111111:task/demo/c";
+const TASK_D: &str = "arn:aws:ecs:us-east-1:111111111111:task/demo/d";
 
 fn context() -> Result<(Context, mpsc::Receiver<CollectionEvent>), ApiError> {
     let (sender, receiver) = mpsc::channel(8);
@@ -229,4 +233,65 @@ fn service_reference_bound_precedes_mapping() -> TestResult {
     ));
     assert!(body.resources.is_empty() && body.edges.is_empty());
     Ok(())
+}
+
+fn arns(values: &[&str]) -> Vec<String> {
+    values.iter().map(|value| (*value).to_owned()).collect()
+}
+
+fn failure(arn: Option<&str>, reason: Option<&str>, detail: Option<&str>) -> Failure {
+    Failure::builder()
+        .set_arn(arn.map(str::to_owned))
+        .set_reason(reason.map(str::to_owned))
+        .set_detail(detail.map(str::to_owned))
+        .build()
+}
+
+#[test]
+fn unordered_duplicate_and_partial_responses_are_correlated_by_arn() {
+    let requested = arns(&[TASK_C, TASK_A, TASK_B, TASK_A]);
+    let returned = BTreeSet::from([TASK_B]);
+    assert_eq!(
+        resolve(&requested, &returned, &[]),
+        Resolution {
+            missing: arns(&[TASK_A, TASK_C]),
+            unavailable: Vec::new(),
+        }
+    );
+}
+
+#[test]
+fn only_a_missing_or_absent_reason_marks_an_unreturned_arn_as_gone() {
+    let requested = arns(&[TASK_A, TASK_B, TASK_C, TASK_D]);
+    let failures = [
+        failure(Some(TASK_A), Some("MISSING"), None),
+        failure(Some(TASK_B), Some("AGENT"), Some("agent disconnected")),
+        failure(Some(TASK_D), None, None),
+    ];
+    assert_eq!(
+        resolve(&requested, &BTreeSet::new(), &failures),
+        Resolution {
+            missing: arns(&[TASK_A, TASK_C, TASK_D]),
+            unavailable: vec![(TASK_B.to_owned(), "AGENT: agent disconnected".to_owned())],
+        }
+    );
+}
+
+#[test]
+fn returned_arns_and_unmatchable_or_duplicate_failures_do_not_misclassify() {
+    let requested = arns(&[TASK_B, TASK_A]);
+    let returned = BTreeSet::from([TASK_A]);
+    let failures = [
+        failure(None, Some("AGENT"), None),
+        failure(Some(TASK_A), Some("AGENT"), None),
+        failure(Some(TASK_B), Some("UNAVAILABLE"), Some("first")),
+        failure(Some(TASK_B), Some("MISSING"), None),
+    ];
+    assert_eq!(
+        resolve(&requested, &returned, &failures),
+        Resolution {
+            missing: Vec::new(),
+            unavailable: vec![(TASK_B.to_owned(), "UNAVAILABLE: first".to_owned())],
+        }
+    );
 }

@@ -2,17 +2,17 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use aws_sdk_ecs::{
     Client,
-    types::{Cluster, ClusterField, DesiredStatus, Service, ServiceField, Tag, Task, TaskField},
+    types::{
+        Cluster, ClusterField, DesiredStatus, Failure, Service, ServiceField, Tag, Task, TaskField,
+    },
 };
-use inventory_core::{CollectionScope, Edge, Resource, Source};
+use inventory_core::{Edge, Resource, Source};
+use inventory_engine::limiter::ApiError;
 use serde_json::{Value, json};
 
 use crate::{
     AwsScanError,
-    common::{
-        Context, PageBody, collect_bounded, error_category, paginate, require_budget, required,
-        sdk_error,
-    },
+    common::{Context, PageBody, collect_bounded, paginate, require_budget, required, sdk_error},
 };
 
 #[tracing::instrument(skip_all)]

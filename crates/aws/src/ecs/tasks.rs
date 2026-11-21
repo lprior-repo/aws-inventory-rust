@@ -45,32 +45,22 @@ pub(super) async fn tasks(
                                 .await
                                 .map_err(sdk_error)
                         })
-                        .await;
-                    match described {
-                        Ok(output) => {
-                            let returned = output
-                                .tasks()
-                                .iter()
-                                .filter_map(|task| task.task_arn())
-                                .collect();
-                            missing(ctx, "aws_ecs_task_description", list.task_arns(), &returned)
-                                .await?;
-                            for task in output.tasks() {
-                                map_task(ctx, &mut body, task)?;
-                            }
-                        }
-                        Err(error) => {
-                            describe_failure(
-                                ctx,
-                                &ctx.scope(
-                                    "aws_ecs_task_description",
-                                    Some(cluster),
-                                    Source::Direct,
-                                ),
-                                error.into(),
-                            )
-                            .await?
-                        }
+                        .await?;
+                    let returned = described
+                        .tasks()
+                        .iter()
+                        .filter_map(|task| task.task_arn())
+                        .collect();
+                    unresolved(
+                        ctx,
+                        "aws_ecs_task_description",
+                        list.task_arns(),
+                        &returned,
+                        described.failures(),
+                    )
+                    .await?;
+                    for task in described.tasks() {
+                        map_task(ctx, &mut body, task)?;
                     }
                 }
                 Ok(body)
@@ -123,14 +113,4 @@ pub(super) fn map_task(
     }
     body.resources.push(resource);
     Ok(())
-}
-
-#[tracing::instrument(skip_all)]
-pub(super) async fn describe_failure(
-    ctx: &Context,
-    scope: &CollectionScope,
-    error: AwsScanError,
-) -> Result<(), AwsScanError> {
-    ctx.failure(scope, error_category(&error), error.to_string())
-        .await
 }

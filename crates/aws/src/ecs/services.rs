@@ -60,29 +60,23 @@ pub(super) async fn describe_services(
                 .await
                 .map_err(sdk_error)
         })
-        .await;
-    match output {
-        Ok(output) => {
-            let returned = output
-                .services()
-                .iter()
-                .filter_map(|service| service.service_arn())
-                .collect();
-            missing(ctx, "aws_ecs_service_description", arns, &returned).await?;
-            let mut body = PageBody::default();
-            for service in output.services() {
-                map_service(ctx, &mut body, service)?;
-            }
-            Ok(body)
-        }
-        Err(error) => {
-            describe_failure(
-                ctx,
-                &ctx.scope("aws_ecs_service_description", Some(cluster), Source::Direct),
-                error.into(),
-            )
-            .await?;
-            Ok(PageBody::default())
-        }
+        .await?;
+    let returned = output
+        .services()
+        .iter()
+        .filter_map(|service| service.service_arn())
+        .collect();
+    unresolved(
+        ctx,
+        "aws_ecs_service_description",
+        arns,
+        &returned,
+        output.failures(),
+    )
+    .await?;
+    let mut body = PageBody::default();
+    for service in output.services() {
+        map_service(ctx, &mut body, service)?;
     }
+    Ok(body)
 }
