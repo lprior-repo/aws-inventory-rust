@@ -210,7 +210,7 @@ pub(super) fn request(
     } else {
         input::root_bindings(plan, Some(&account), Some(&region))?
     };
-    let endpoint = plan.endpoint(&RegionId::parse("us-east-1")?)?;
+    let endpoint = plan.endpoint(&RegionId::parse("us-east-1")?, &region)?;
     Ok(super::super::super::request::encode(
         plan,
         &endpoint.url,

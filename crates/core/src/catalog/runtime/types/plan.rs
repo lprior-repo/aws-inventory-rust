@@ -6,7 +6,7 @@ use super::{
     ReviewProvenance, RowPolicyPlan, RuntimeProtocol, TagPlan,
 };
 use crate::{
-    inventory::{Kind, RegionId},
+    inventory::{Kind, Region, RegionId},
     record::Exclusions,
 };
 
@@ -23,7 +23,7 @@ pub(crate) struct EndpointTemplate {
 /// Concrete endpoint that overrides the template for one region label.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct EndpointException {
-    /// Region the compiled catalog names; `-` for a request without a region.
+    /// Region the compiled catalog names; `-` for the global pseudo-region.
     pub(crate) region: String,
     pub(crate) url: String,
     pub(crate) signing_name: String,
@@ -31,12 +31,14 @@ pub(crate) struct EndpointException {
 }
 
 impl EndpointTemplate {
+    /// Resolves one request. An exception keyed to the request region wins; the
+    /// `-` exception applies only to a Global-class endpoint at `Region::Global` scope.
     pub(crate) fn resolve(
         &self,
-        region: Option<&RegionId>,
+        region: &RegionId,
+        scope: &Region,
     ) -> Result<ResolvedEndpoint, RuntimeCatalogError> {
-        let label = region.map_or("-", RegionId::as_str);
-        if let Some(exception) = self.exceptions.iter().find(|item| item.region == label) {
+        if let Some(exception) = self.exception(region, scope) {
             return Ok(ResolvedEndpoint {
                 url: exception.url.clone(),
                 signing_region: exception.signing_region.clone(),
@@ -46,13 +48,10 @@ impl EndpointTemplate {
             });
         }
         let (url, signing_region) = match self.class {
-            EndpointClass::Regional => {
-                let region = region.ok_or(RuntimeCatalogError::Endpoint)?;
-                (
-                    substitute_region(&self.url, region.as_str())?,
-                    substitute_region(&self.signing_region, region.as_str())?,
-                )
-            }
+            EndpointClass::Regional => (
+                substitute_region(&self.url, region.as_str())?,
+                substitute_region(&self.signing_region, region.as_str())?,
+            ),
             EndpointClass::Global => (self.url.clone(), self.signing_region.clone()),
         };
         Ok(ResolvedEndpoint {
@@ -62,6 +61,20 @@ impl EndpointTemplate {
             class: self.class,
             path_mode: self.path_mode,
         })
+    }
+
+    fn exception(&self, region: &RegionId, scope: &Region) -> Option<&EndpointException> {
+        if let Some(keyed) = self
+            .exceptions
+            .iter()
+            .find(|item| item.region == region.as_str())
+        {
+            return Some(keyed);
+        }
+        if self.class == EndpointClass::Global && *scope == Region::Global {
+            return self.exceptions.iter().find(|item| item.region == "-");
+        }
+        None
     }
 }
 
@@ -247,15 +260,12 @@ impl<'a> CallablePlan<'a> {
             .map_err(RuntimeCatalogError::Catalog)
     }
 
-    pub fn endpoint(&self, region: &RegionId) -> Result<ResolvedEndpoint, RuntimeCatalogError> {
-        self.parts.endpoint.resolve(Some(region))
-    }
-
-    pub fn endpoint_for(
+    pub fn endpoint(
         &self,
-        region: Option<&RegionId>,
+        region: &RegionId,
+        scope: &Region,
     ) -> Result<ResolvedEndpoint, RuntimeCatalogError> {
-        self.parts.endpoint.resolve(region)
+        self.parts.endpoint.resolve(region, scope)
     }
 
     pub fn endpoint_class(&self) -> EndpointClass {

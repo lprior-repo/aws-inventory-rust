@@ -204,7 +204,7 @@ async fn bootstrap_account(context: &BootstrapContext<'_, '_>) -> Result<Account
             "account identity plan purpose changed",
         ));
     };
-    let endpoint = plan.endpoint(context.home)?;
+    let endpoint = plan.endpoint(context.home, &Region::Regional(context.home.clone()))?;
     let url = endpoint_url(context.config, &endpoint.url)?;
     let region = Region::Regional(context.home.clone());
     let base = input::root_bindings(plan, None, Some(&region))?;
@@ -273,7 +273,10 @@ async fn discover_regions(context: &RuntimeContext<'_, '_>) -> Result<Vec<Region
             "region discovery plan purpose changed",
         ));
     };
-    let endpoint = plan.endpoint(context.bootstrap.home)?;
+    let endpoint = plan.endpoint(
+        context.bootstrap.home,
+        &Region::Regional(context.bootstrap.home.clone()),
+    )?;
     let url = endpoint_url(context.bootstrap.config, &endpoint.url)?;
     let region = Region::Regional(context.bootstrap.home.clone());
     let base = input::root_bindings(plan, Some(&context.account), Some(&region))?;

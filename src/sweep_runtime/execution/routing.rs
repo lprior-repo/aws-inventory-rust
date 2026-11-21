@@ -1,6 +1,8 @@
 use crate::sweep_runtime::SweepError;
 use inventory_core::{
-    catalog::runtime::{CallablePlan, ExecutionBranch, RequestRouting, ResolvedEndpoint},
+    catalog::runtime::{
+        CallablePlan, ExecutionBranch, PlanScope, RequestRouting, ResolvedEndpoint,
+    },
     inventory::{Region, RegionId},
 };
 
@@ -52,7 +54,12 @@ pub(in crate::sweep_runtime) fn resolve(
     plan: &CallablePlan<'_>,
     region: &RegionId,
 ) -> Result<ResolvedEndpoint, SweepError> {
-    let mut endpoint = plan.endpoint(region)?;
+    // Account-scoped plans run at `Region::Global`, matching `child_region` and `plan_regions`.
+    let scope = match plan.scope() {
+        PlanScope::Account => Region::Global,
+        PlanScope::Region | PlanScope::HomeRegion => Region::Regional(region.clone()),
+    };
+    let mut endpoint = plan.endpoint(region, &scope)?;
     if matches!(plan.routing(), RequestRouting::S3Outposts) {
         endpoint.url = routed_url("s3-outposts", region, &endpoint.url)?;
         endpoint.signing_name = "s3-outposts".to_owned();

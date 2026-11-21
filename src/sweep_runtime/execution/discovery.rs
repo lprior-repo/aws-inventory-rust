@@ -89,7 +89,10 @@ pub(super) async fn resolve(
             "reviewed endpoint discovery operation is missing",
         ))?;
     let region = inventory_core::inventory::RegionId::parse(&endpoint.signing_region)?;
-    let bootstrap_endpoint = discovery.endpoint(&region)?;
+    let bootstrap_endpoint = discovery.endpoint(
+        &region,
+        &inventory_core::inventory::Region::Regional(region.clone()),
+    )?;
     let url = super::endpoint_url(context.bootstrap.config, &bootstrap_endpoint.url)?;
     let base = input::root_bindings(
         discovery,
