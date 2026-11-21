@@ -247,7 +247,7 @@ fn given_enum_text_that_is_not_an_arn_when_arn_identity_is_extracted_then_it_fai
     [("Name", "active-wire", false), ("$", "second-wire", true)]
         .into_iter()
         .try_for_each(|(member, wire, scalar)| -> TestResult {
-            let bytes = compiled(Identity::Arn(MemberPath::new(member)?), wire, scalar)?;
+            let bytes = compiled(Identity::Arn(MemberPath::selected(member)?), wire, scalar)?;
             let catalog = RuntimeCatalog::from_bytes(&bytes)?;
             let plan = catalog
                 .lookup("things", "ListThings")
@@ -269,7 +269,10 @@ fn given_enum_text_that_is_not_an_arn_when_arn_identity_is_extracted_then_it_fai
 fn given_enum_scalar_identity_when_compiled_then_self_extraction_preserves_exact_text() -> TestResult
 {
     [
-        (Identity::Key(vec![MemberPath::new("$")?]), "second-wire"),
+        (
+            Identity::Key(vec![MemberPath::selected("$")?]),
+            "second-wire",
+        ),
         (
             Identity::Template("prefix/{$}".to_owned()),
             "prefix/second-wire",
