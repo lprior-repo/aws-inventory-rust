@@ -73,7 +73,7 @@ async fn persist_scoped(
     })?;
     let mut rows = record::item_records(&response, plan.items())?;
     for row in &mut rows {
-        *row = resource_projection::project(&plan, row)?;
+        *row = resource_projection::project(plan, row)?;
     }
     let home = RegionId::parse(region)?;
     let account = AccountId::parse(account)?;
@@ -87,7 +87,7 @@ async fn persist_scoped(
                     account: &account,
                     region: &home,
                 },
-                &plan,
+                plan,
                 &Region::Regional(home.clone()),
                 row,
                 &request,
@@ -95,7 +95,7 @@ async fn persist_scoped(
             )
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let unresolved = references(catalog, &plan, &home, &rows, &observations, &request, None)?;
+    let unresolved = references(catalog, plan, &home, &rows, &observations, &request, None)?;
     let sweep = SweepId::new(format!("facet-{at}"))?;
     let scope = ScopeKey::new(
         account,
