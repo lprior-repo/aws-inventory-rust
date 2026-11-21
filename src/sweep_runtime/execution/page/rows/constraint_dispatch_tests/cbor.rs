@@ -89,7 +89,7 @@ fn more(decoder: &mut minicbor::Decoder<'_>, remaining: &mut Option<u64>) -> Tes
     match remaining {
         Some(0) => Ok(false),
         Some(count) => {
-            *count -= 1;
+            *count = count.saturating_sub(1);
             Ok(true)
         }
         None if decoder.datatype()? == minicbor::data::Type::Break => {
