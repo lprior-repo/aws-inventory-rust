@@ -6,7 +6,7 @@
 > comes from M6. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
 
 The repository includes a deterministic configuration example in
-[`examples/architecture-events.jsonl`](../examples/architecture-events.jsonl).
+[`tests/cli_properties/fixtures/architecture-events.jsonl`](../tests/cli_properties/fixtures/architecture-events.jsonl).
 It exercises the same `CollectionEvent` / `CollectionPage` schema consumed by
 the CLI. Every resource and edge is synthetic. The account, IDs, addresses,
 DNS names, health state, and permission failure do not describe a live account.
@@ -29,7 +29,7 @@ set -e
 
 cargo run --locked -- ingest \
   --db architecture.sqlite \
-  --input examples/architecture-events.jsonl \
+  --input tests/cli_properties/fixtures/architecture-events.jsonl \
   --scan-id synthetic-architecture-001 || test "$?" -eq 2
 
 cargo run --locked -- report \

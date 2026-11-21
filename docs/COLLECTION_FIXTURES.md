@@ -20,11 +20,11 @@ provider evidence are documented separately in
 
 | Fixture | Event pages | Failure events | Resources | Relationships | Expected status |
 | --- | ---: | ---: | ---: | ---: | --- |
-| [breadth-events.jsonl](../examples/breadth-events.jsonl) | 1 | 0 | 200 | 0 | `complete` |
-| [ecs-events.jsonl](../examples/ecs-events.jsonl) | 1 | 0 | 3 | 2 | `complete` |
-| [architecture-events.jsonl](../examples/architecture-events.jsonl) | 14 | 1 | 19 | 40 | `partial` |
-| [global-events-before.jsonl](../examples/global-events-before.jsonl) | 1 | 0 | 7 | 7 | `complete` |
-| [global-events-after.jsonl](../examples/global-events-after.jsonl) | 1 | 0 | 7 | 7 | `complete` |
+| breadth-events.jsonl (removed from repository) | 1 | 0 | 200 | 0 | `complete` |
+| ecs-events.jsonl (removed from repository) | 1 | 0 | 3 | 2 | `complete` |
+| [architecture-events.jsonl](../tests/cli_properties/fixtures/architecture-events.jsonl) | 14 | 1 | 19 | 40 | `partial` |
+| [global-events-before.jsonl](../tests/cli_properties/fixtures/global-events-before.jsonl) | 1 | 0 | 7 | 7 | `complete` |
+| global-events-after.jsonl (removed from repository) | 1 | 0 | 7 | 7 | `complete` |
 
 `complete` means the fixture's declared scopes ended with terminal pages. It
 does not mean an AWS account, service, or region was completely inventoried.
@@ -91,16 +91,17 @@ the same resource kind does not make their column layouts interchangeable.
 
 ## Run and query the breadth fixture
 
-From the repository root, choose a fresh database path. These commands build
-the local CLI, ingest the fixture, and query SQLite. They do not require AWS
-credentials or the `aws` Cargo feature.
+The breadth fixture is no longer in the repository (removed with `examples/` in
+commit 27ad5349). The commands below need a breadth event file supplied by the
+caller in place of `<breadth-events.jsonl>`. They do not require AWS credentials
+or the `aws` Cargo feature.
 
 ```bash
 cargo build --locked
 
 ./target/debug/aws-inventory ingest \
   --db breadth.sqlite \
-  --input examples/breadth-events.jsonl \
+  --input <breadth-events.jsonl> \
   --scan-id synthetic-breadth-001
 
 ./target/debug/aws-inventory report \
@@ -192,7 +193,7 @@ filesystem access, public exposure, or packet reachability.
 ```bash
 ./target/debug/aws-inventory ingest \
   --db ecs-fixture.sqlite \
-  --input examples/ecs-events.jsonl \
+  --input <ecs-events.jsonl> \
   --scan-id synthetic-ecs-001
 
 ./target/debug/aws-inventory query --db ecs-fixture.sqlite --limit 10 \
@@ -224,7 +225,7 @@ expected code:
 ```bash
 ./target/debug/aws-inventory ingest \
   --db architecture.sqlite \
-  --input examples/architecture-events.jsonl \
+  --input tests/cli_properties/fixtures/architecture-events.jsonl \
   --scan-id synthetic-architecture-001 || test "$?" -eq 2
 ```
 
@@ -235,6 +236,10 @@ another import. The ingestion command starts and finalizes a scan rather than
 resuming an already finalized CLI import.
 
 ## Global before/after pair
+
+The after fixture (`global-events-after.jsonl`) was removed with `examples/` in
+commit 27ad5349 and is not in the repository. The before fixture remains at
+tests/cli_properties/fixtures/global-events-before.jsonl.
 
 The two global fixtures exercise all seven native kinds introduced in v0.4 and
 seven architecture relationships. They are small selected-property examples,
