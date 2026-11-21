@@ -1,4 +1,4 @@
-use super::{Suite, find_operation, model::compile_service, run_case};
+use super::{Suite, TestResult, find_operation, model::compile_service, run_case};
 use inventory_core::catalog::Catalog;
 use serde_json::Value as Json;
 use std::collections::BTreeSet;
@@ -11,22 +11,26 @@ struct Ledger {
     failures: Vec<String>,
 }
 
-pub(super) fn run_suite(suite: Suite) -> Vec<String> {
-    let fixture: Json = serde_json::from_str(suite.fixture).expect("published fixture JSON");
-    let shapes = fixture["shapes"].as_object().expect("fixture shapes");
+pub(super) fn run_suite(suite: Suite) -> TestResult<Vec<String>> {
+    let fixture: Json = serde_json::from_str(suite.fixture)?;
+    let shapes = fixture
+        .get("shapes")
+        .and_then(Json::as_object)
+        .ok_or("fixture shapes")?;
     let mut ledger = Ledger::default();
     for service_id in service_ids(shapes) {
-        run_service(suite, &fixture, shapes, &service_id, &mut ledger);
+        run_service(suite, &fixture, shapes, &service_id, &mut ledger)?;
     }
     let mut failures = verify_ledger(suite, &ledger);
     failures.append(&mut ledger.failures);
-    failures
+    Ok(failures)
 }
 
 fn service_ids(shapes: &serde_json::Map<String, Json>) -> Vec<String> {
     shapes
         .iter()
-        .filter_map(|(id, shape)| (shape["type"] == "service").then(|| id.clone()))
+        .filter(|(_, shape)| shape["type"] == "service")
+        .map(|(id, _)| id.clone())
         .collect()
 }
 
@@ -36,23 +40,21 @@ fn run_service(
     shapes: &serde_json::Map<String, Json>,
     service_id: &str,
     ledger: &mut Ledger,
-) {
+) -> TestResult {
     let Some(service_shape) = protocol_service(suite, shapes, service_id) else {
-        return;
+        return Ok(());
     };
-    let bytes = compile_service(fixture, service_id);
-    let catalog = Catalog::borrow(&bytes).expect("compiled fixture catalog");
-    let name = service_name(service_id);
-    let service = catalog
-        .service(&name)
-        .expect("service lookup")
-        .expect("compiled service");
+    let bytes = compile_service(fixture, service_id)?;
+    let catalog = Catalog::borrow(&bytes)?;
+    let name = service_name(service_id)?;
+    let service = catalog.service(&name)?.ok_or("compiled service")?;
     for reference in service_shape["operations"]
         .as_array()
-        .expect("service operation list")
+        .ok_or("service operation list")?
     {
-        process_operation(suite, shapes, service, reference, ledger);
+        process_operation(suite, shapes, service, reference, ledger)?;
     }
+    Ok(())
 }
 
 fn protocol_service<'a>(
@@ -64,12 +66,12 @@ fn protocol_service<'a>(
     shape["traits"].get(suite.protocol_id).map(|_| shape)
 }
 
-fn service_name(service_id: &str) -> String {
-    service_id
+fn service_name(service_id: &str) -> TestResult<String> {
+    Ok(service_id
         .rsplit('#')
         .next()
-        .expect("service name")
-        .replace('.', "-")
+        .ok_or("service name")?
+        .replace('.', "-"))
 }
 
 fn process_operation(
@@ -78,18 +80,26 @@ fn process_operation(
     service: inventory_core::catalog::Service<'_>,
     reference: &Json,
     ledger: &mut Ledger,
-) {
-    let operation_id = reference["target"].as_str().expect("operation target");
-    let name = operation_id.rsplit('#').next().expect("operation name");
-    let operation = find_operation(service, name);
-    let operation_shape = &shapes[operation_id];
-    let cases = operation_shape["traits"]["smithy.test#httpRequestTests"].as_array();
+) -> TestResult {
+    let operation_id = reference["target"].as_str().ok_or("operation target")?;
+    let name = operation_id.rsplit('#').next().ok_or("operation name")?;
+    let operation = find_operation(service, name)?;
+    let operation_shape = shapes.get(operation_id).ok_or("operation shape")?;
+    let cases = operation_shape
+        .get("traits")
+        .and_then(|traits| traits.get("smithy.test#httpRequestTests"))
+        .and_then(Json::as_array);
     if let Some(cases) = cases {
-        run_cases(suite, service, operation, operation_id, name, cases, ledger);
+        run_cases(suite, service, operation, operation_id, name, cases, ledger)?;
     }
-    ledger.events += operation_shape["traits"]["smithy.test#eventStreamTests"]
-        .as_array()
-        .map_or(0, Vec::len);
+    ledger.events = ledger.events.saturating_add(
+        operation_shape
+            .get("traits")
+            .and_then(|traits| traits.get("smithy.test#eventStreamTests"))
+            .and_then(Json::as_array)
+            .map_or(0, Vec::len),
+    );
+    Ok(())
 }
 
 fn run_cases(
@@ -100,10 +110,10 @@ fn run_cases(
     operation_name: &str,
     cases: &[Json],
     ledger: &mut Ledger,
-) {
+) -> TestResult {
     for case in cases {
         if case["appliesTo"] == "server" {
-            record_server(case, ledger);
+            record_server(case, ledger)?;
         } else {
             run_client_case(
                 suite,
@@ -113,15 +123,17 @@ fn run_cases(
                 operation_name,
                 case,
                 ledger,
-            );
+            )?;
         }
     }
+    Ok(())
 }
 
-fn record_server(case: &Json, ledger: &mut Ledger) {
+fn record_server(case: &Json, ledger: &mut Ledger) -> TestResult {
     ledger
         .servers
-        .insert(case["id"].as_str().expect("server case id").to_owned());
+        .insert(case["id"].as_str().ok_or("server case id")?.to_owned());
+    Ok(())
 }
 
 fn run_client_case(
@@ -132,15 +144,15 @@ fn run_client_case(
     operation_name: &str,
     case: &Json,
     ledger: &mut Ledger,
-) {
+) -> TestResult {
     assert!(
         case["appliesTo"]
             .as_str()
-            .map_or(true, |value| value == "client" || value == "both")
+            .is_none_or(|value| value == "client" || value == "both")
     );
     let id = format!(
         "{operation_id}::{}",
-        case["id"].as_str().expect("client case id")
+        case["id"].as_str().ok_or("client case id")?
     );
     assert!(
         ledger.clients.insert(id.clone()),
@@ -149,9 +161,10 @@ fn run_client_case(
     let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
         run_case(suite, service, operation, operation_name, case)
     }));
-    if outcome.is_err() {
+    if !matches!(outcome, Ok(Ok(()))) {
         ledger.failures.push(format!("{} {id}", suite.name));
     }
+    Ok(())
 }
 
 fn verify_ledger(suite: Suite, ledger: &Ledger) -> Vec<String> {
