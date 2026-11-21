@@ -303,11 +303,11 @@ pub(super) async fn partial(
     store.commit_page(page).await?;
     let sweep = SweepId::new("fresh-partial".to_owned())?;
     let lease = store
-        .claim(&sweep, at + 1, 10_000)
+        .claim(&sweep, at.saturating_add(1), 10_000)
         .await?
         .ok_or("partial continuation absent")?;
     store
-        .finish_scope(lease, ScopeOutcome::Partial, at + 2)
+        .finish_scope(lease, ScopeOutcome::Partial, at.saturating_add(2))
         .await?;
     Ok(())
 }
