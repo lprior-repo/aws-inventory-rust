@@ -262,34 +262,21 @@ mod tests {
     use inventory_core::record::Time;
 
     #[test]
-    fn timestamps_follow_query_wire_formats_including_negative_fractional_epochs() {
-        let time = match Time::new(1_422_172_800, 0) {
-            Ok(time) => time,
-            Err(error) => panic!("{error}"),
-        };
-        let date_time = match timestamp(time, None) {
-            Ok(value) => value,
-            Err(error) => panic!("{error}"),
-        };
+    fn timestamps_follow_query_wire_formats_including_negative_fractional_epochs()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let time = Time::new(1_422_172_800, 0)?;
+        let date_time = timestamp(time, None)?;
         assert_eq!(date_time.as_str().ok(), Some("2015-01-25T08:00:00Z"));
 
-        let http_date = match timestamp(time, Some("http-date")) {
-            Ok(value) => value,
-            Err(error) => panic!("{error}"),
-        };
+        let http_date = timestamp(time, Some("http-date"))?;
         assert_eq!(
             http_date.as_str().ok(),
             Some("Sun, 25 Jan 2015 08:00:00 GMT")
         );
 
-        let negative = match Time::new(-1, 500_000_000) {
-            Ok(time) => time,
-            Err(error) => panic!("{error}"),
-        };
-        let epoch = match timestamp(negative, Some("epoch-seconds")) {
-            Ok(value) => value,
-            Err(error) => panic!("{error}"),
-        };
+        let negative = Time::new(-1, 500_000_000)?;
+        let epoch = timestamp(negative, Some("epoch-seconds"))?;
         assert_eq!(epoch.as_str().ok(), Some("-0.5"));
+        Ok(())
     }
 }
