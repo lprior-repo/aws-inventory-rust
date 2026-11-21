@@ -14,7 +14,7 @@ async fn complete<'a, 'c>(
         .ok_or("DNSSEC child absent")?;
     assert_eq!(lease.scope().operation().as_str(), "GetDNSSEC");
     let parts = prepare(&scenario, catalog, &lease, status, keys).await?;
-    assert_eq!(parts.next.is_none(), true);
+    assert!(parts.next.is_none());
     let observed = parts
         .observations
         .iter()
@@ -99,13 +99,12 @@ async fn given_two_kinds_from_one_response_when_only_keys_disappear_then_complet
         "<KeySigningKeys/>",
     )
     .await?;
-    assert_eq!(
+    assert!(
         scenario
             .store
             .projection_resource(signing_key)
             .await?
-            .is_some(),
-        true
+            .is_some()
     );
     scenario = repeat(
         scenario,
@@ -116,13 +115,12 @@ async fn given_two_kinds_from_one_response_when_only_keys_disappear_then_complet
     )
     .await?;
     // Then retained status keeps its original hash while only the absent key retires.
-    assert_eq!(
+    assert!(
         scenario
             .store
             .projection_resource(signing_key)
             .await?
-            .is_none(),
-        true
+            .is_none()
     );
     assert_eq!(
         scenario
