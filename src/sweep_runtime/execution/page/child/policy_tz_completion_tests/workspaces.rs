@@ -72,7 +72,12 @@ async fn given_two_directory_pool_and_application_parents_when_untraited_pagers_
                         .ok_or("native application associations array absent")?
                         .push(json!({"ApplicationId":application,"AssociatedResourceId":"wsb-one","AssociatedResourceType":"WORKSPACE","State":"COMPLETED"}));
                 }
-                if !resumed { response["NextToken"] = json!("page-two"); }
+                if !resumed {
+                    response
+                        .as_object_mut()
+                        .ok_or("native response object absent")?
+                        .insert("NextToken".to_owned(), json!("page-two"));
+                }
                 Ok(response)
             }
             "DescribeBundleAssociations" | "DescribeImageAssociations" | "DescribeWorkspaceAssociations" => {
