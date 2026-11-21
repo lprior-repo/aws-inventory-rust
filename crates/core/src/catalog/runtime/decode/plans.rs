@@ -33,10 +33,10 @@ use page_codec::token;
 #[cfg(test)]
 mod tests;
 use super::super::types::{
-    BindingPlan, BindingSource, BindingValue, CallablePlan, EndpointClass, EndpointPathMode,
-    EndpointTemplate, IdentityPart, IdentityPatternCache, IdentityPlan, ItemPlan, PagePlan,
-    PageSizeBinding, PlanParts, PlanPurpose, PlanScope, ReviewProvenance, RuntimeProtocol,
-    TokenBinding, TokenPlacement, TokenType,
+    BindingPlan, BindingSource, BindingValue, CallablePlan, EndpointClass, EndpointException,
+    EndpointPathMode, EndpointTemplate, IdentityPart, IdentityPatternCache, IdentityPlan, ItemPlan,
+    PagePlan, PageSizeBinding, PlanParts, PlanPurpose, PlanScope, ReviewProvenance,
+    RuntimeProtocol, TokenBinding, TokenPlacement, TokenType,
 };
 use super::{RuntimeCatalogError, list_value, map, metadata, services::Services};
 use crate::{

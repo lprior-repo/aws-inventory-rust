@@ -17,6 +17,17 @@ pub(crate) struct EndpointTemplate {
     pub(crate) signing_name: String,
     pub(crate) path_mode: EndpointPathMode,
     pub(crate) class: EndpointClass,
+    pub(crate) exceptions: Box<[EndpointException]>,
+}
+
+/// Concrete endpoint that overrides the template for one region label.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub(crate) struct EndpointException {
+    /// Region the compiled catalog names; `-` for a request without a region.
+    pub(crate) region: String,
+    pub(crate) url: String,
+    pub(crate) signing_name: String,
+    pub(crate) signing_region: String,
 }
 
 impl EndpointTemplate {
@@ -24,6 +35,16 @@ impl EndpointTemplate {
         &self,
         region: Option<&RegionId>,
     ) -> Result<ResolvedEndpoint, RuntimeCatalogError> {
+        let label = region.map_or("-", RegionId::as_str);
+        if let Some(exception) = self.exceptions.iter().find(|item| item.region == label) {
+            return Ok(ResolvedEndpoint {
+                url: exception.url.clone(),
+                signing_region: exception.signing_region.clone(),
+                signing_name: exception.signing_name.clone(),
+                class: self.class,
+                path_mode: self.path_mode,
+            });
+        }
         let (url, signing_region) = match self.class {
             EndpointClass::Regional => {
                 let region = region.ok_or(RuntimeCatalogError::Endpoint)?;

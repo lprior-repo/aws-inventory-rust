@@ -18,7 +18,7 @@ pub use fixed_input::BindingValue;
 pub(crate) use identity_text::IdentityPatternCache;
 pub use identity_text::{IdentityTextOperand, IdentityTextPlan};
 pub use plan::CallablePlan;
-pub(crate) use plan::{EndpointTemplate, PlanParts};
+pub(crate) use plan::{EndpointException, EndpointTemplate, PlanParts};
 pub use provenance::{CatalogSourceProvenance, ModelSourceProvenance};
 pub use routing::{ExecutionBranch, RequestRouting};
 pub use row_policy::{

@@ -16,7 +16,22 @@ pub(super) fn endpoint(
         1 => EndpointPathMode::S3,
         _ => return Err(RuntimeCatalogError::Capability),
     };
-    metadata::only_fields(map_value, &[1, 2, 3, 4, 5])?;
+    let exceptions: Box<[EndpointException]> = match map_value
+        .get_field(crate::record::FieldId::new(6)?)?
+    {
+        None | Some(ValueRef::Null) => Box::default(),
+        Some(value) => {
+            metadata::bounded(list_value(value)?, endpoint_exception, metadata::MAX_ITEMS)?.into()
+        }
+    };
+    let mut regions = std::collections::BTreeSet::new();
+    if !exceptions
+        .iter()
+        .all(|item| regions.insert(item.region.as_str()))
+    {
+        return Err(RuntimeCatalogError::Capability);
+    }
+    metadata::only_fields(map_value, &[1, 2, 3, 4, 5, 6])?;
     let regional_marker = url.contains("{region}") || signing_region.contains("{region}");
     if (!url.starts_with("https://") && !url.starts_with("http://"))
         || (class == EndpointClass::Regional) != regional_marker
@@ -29,6 +44,33 @@ pub(super) fn endpoint(
         signing_name,
         path_mode,
         class,
+        exceptions,
+    })
+}
+
+fn endpoint_exception(value: ValueRef<'_>) -> Result<EndpointException, RuntimeCatalogError> {
+    let fields = map(value)?;
+    // The compiler names the global pseudo-region `aws-global`; the runtime names a request without a region `-`. Both are that request.
+    let region = match metadata::text(fields, 1)?.as_str() {
+        "aws-global" => "-".to_owned(),
+        other => other.to_owned(),
+    };
+    let url = metadata::text(fields, 2)?;
+    let signing_name = metadata::text(fields, 3)?;
+    let signing_region = metadata::text(fields, 4)?;
+    metadata::only_fields(fields, &[1, 2, 3, 4])?;
+    let region_valid = region == "-" || crate::inventory::RegionId::parse(&region).is_ok();
+    if !region_valid
+        || !(url.starts_with("https://") || url.starts_with("http://"))
+        || url.contains(['{', '}'])
+    {
+        return Err(RuntimeCatalogError::Endpoint);
+    }
+    Ok(EndpointException {
+        region,
+        url,
+        signing_name,
+        signing_region,
     })
 }
 
