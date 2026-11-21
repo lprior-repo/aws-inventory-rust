@@ -20,7 +20,10 @@ mod tests {
     fn unsourced() -> Result<Vec<String>> {
         let value = report()?;
         Ok(serde_json::from_value(
-            value["kinds_without_tag_source"].clone(),
+            value
+                .get("kinds_without_tag_source")
+                .cloned()
+                .unwrap_or(serde_json::Value::Null),
         )?)
     }
 
