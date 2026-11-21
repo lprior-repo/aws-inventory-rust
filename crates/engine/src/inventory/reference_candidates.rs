@@ -144,10 +144,14 @@ async fn update_status(
     status: &str,
 ) -> Result<(), StoreError> {
     let target = &reference.target;
-    sqlx::query("UPDATE unresolved_refs SET resolution=?1 WHERE from_account=?2 AND from_region=?3 AND from_kind=?4 AND from_id=?5 AND target_scope=?6 AND target_kind=?7 AND target_path=?8 AND target_value=?9 AND relation=?10 AND source=?11")
-        .bind(status).bind(reference.from.account.as_str()).bind(reference.from.region.as_str()).bind(reference.from.kind.as_str()).bind(reference.from.id.as_str())
-        .bind(commit::reference_scope(target.account().as_str(), target.region().as_str())?).bind(target.kind().as_str()).bind(stored_path(target)?)
-        .bind(target.value().as_str()).bind(reference.relation.as_str()).bind(reference.source.as_str()).execute(&mut **tx).await?;
+    // ES-10: Update all rows for this reference (one per candidate kind).
+    let path = stored_path(target)?;
+    sqlx::query("UPDATE unresolved_refs SET resolution=?1 WHERE from_account=?2 AND from_region=?3 AND from_kind=?4 AND from_id=?5 AND target_scope=?6 AND target_path=?7 AND target_value=?8 AND relation=?9 AND source=?10")
+        .bind(status).bind(reference.from.account.as_str()).bind(reference.from.region.as_str())
+        .bind(reference.from.kind.as_str()).bind(reference.from.id.as_str())
+        .bind(commit::reference_scope(target.account().as_str(), target.region().as_str())?)
+        .bind(&path).bind(target.value().as_str()).bind(reference.relation.as_str())
+        .bind(reference.source.as_str()).execute(&mut **tx).await?;
     Ok(())
 }
 

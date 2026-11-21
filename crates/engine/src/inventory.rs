@@ -56,7 +56,7 @@ pub enum StoreError {
     #[error("runtime catalog capability metadata is invalid: {0}")]
     RuntimeCatalog(#[from] inventory_core::catalog::runtime::RuntimeCatalogError),
     #[error(
-        "database uses schema version {found}; expected schema16 (schema14/15 upgrade on open)"
+        "database uses schema version {found}; expected schema17 (schema14/15/16 upgrade on open)"
     )]
     SchemaVersion { found: i64 },
     #[error("catalog digest differs from the immutable database catalog")]

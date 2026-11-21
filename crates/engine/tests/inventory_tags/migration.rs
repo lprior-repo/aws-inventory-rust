@@ -61,14 +61,14 @@ async fn tags_upgrade_preserves_legacy_record_hash_timestamps_pairs_and_pending_
     assert_eq!(absent, 0);
     pool.close().await;
 
-    // When BinaryStore performs the 14→15 tag step and current schema16 additions on open.
+    // When BinaryStore performs the 14→17 migration on open.
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     let pool = state::pool(&directory).await?;
     assert_eq!(
         sqlx::query_scalar::<_, i64>("PRAGMA user_version")
             .fetch_one(&pool)
             .await?,
-        16
+        17
     );
     // Then old pairs remain readable, but no freshness or complete-empty evidence is invented.
     assert_eq!(state::resource_image(&pool).await?, image);
@@ -212,7 +212,7 @@ async fn schema15_upgrade_preserves_existing_coverage_instead_of_recreating_it()
     tx.commit().await?;
     let image = state::resource_image(&pool).await?;
     pool.close().await;
-    // When current migration adds facets, work context and polymorphic reference storage.
+    // When current migration adds facets, work context, polymorphic reference storage, and ES-10 normalization.
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
     // Then prior pairs, pending work, and both coverage facts survive.
     assert_eq!(
@@ -230,7 +230,7 @@ async fn schema15_upgrade_preserves_existing_coverage_instead_of_recreating_it()
         sqlx::query_scalar::<_, i64>("PRAGMA user_version")
             .fetch_one(&pool)
             .await?,
-        16
+        17
     );
     let context: Vec<Vec<u8>> =
         sqlx::query_scalar("SELECT context FROM work_queue ORDER BY sweep_id")

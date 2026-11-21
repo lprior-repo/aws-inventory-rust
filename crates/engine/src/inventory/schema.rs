@@ -1,6 +1,6 @@
-use super::{SchemaRegistry, StoreError};
-use inventory_core::inventory::{KindSchema, ScalarType};
-use sqlx::{Row, SqlitePool};
+use super::{SchemaRegistry, StoreError, reference_candidates};
+use inventory_core::inventory::{Kind, KindSchema, ScalarType};
+use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 use std::sync::Arc;
 
 const TAG_OBSERVATIONS_SQL: &str = "CREATE TABLE tag_observations(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,coverage TEXT NOT NULL CHECK(coverage IN('complete','partial','failed','unobserved')),observed_at INTEGER NOT NULL CHECK(observed_at>=0),last_complete_at INTEGER CHECK(last_complete_at>=0),PRIMARY KEY(account,region,kind,id),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID";
@@ -38,7 +38,7 @@ pub(super) async fn initialize(
     }
     super::relation_permissions::persist(&mut tx, registry).await?;
     create_scope_freshness_view(&mut tx).await?;
-    sqlx::query("PRAGMA user_version=16")
+    sqlx::query("PRAGMA user_version=17")
         .execute(&mut *tx)
         .await?;
     tx.commit().await?;
@@ -50,7 +50,7 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
     let version: i64 = sqlx::query_scalar("PRAGMA user_version")
         .fetch_one(&mut *tx)
         .await?;
-    if !matches!(version, 14..=16) {
+    if !matches!(version, 14..=17) {
         return Err(StoreError::SchemaVersion { found: version });
     }
     sqlx::query("DROP TRIGGER IF EXISTS delete_resource_children")
@@ -74,6 +74,15 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
         sqlx::query("ALTER TABLE unresolved_refs ADD COLUMN resolution TEXT NOT NULL DEFAULT 'unresolved' CHECK(resolution IN('unresolved','resolved','ambiguous'))")
             .execute(&mut *tx).await?;
         sqlx::query("PRAGMA user_version=16")
+            .execute(&mut *tx)
+            .await?;
+    }
+    if version < 17 {
+        // ES-10: Normalize multi-kind unresolved refs so each candidate kind is a
+        // separate row. This lets the target-kind index drive resolution lookups
+        // without scanning a packed candidate-kind blob.
+        migrate_normalize_unresolved_refs(&mut tx).await?;
+        sqlx::query("PRAGMA user_version=17")
             .execute(&mut *tx)
             .await?;
     }
@@ -126,7 +135,7 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
         Ok::<_, sqlx::Error>(found || row.try_get::<&str, _>("name")? == "source_authority")
     })?;
     let checked: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM metadata WHERE key='canonical_facet_dependencies_v3' AND value=X'01')").fetch_one(&mut *tx).await?;
-    if version < 16 || !attributed || !source_authority || !has_epoch || !has_prefix || !checked {
+    if version < 17 || !attributed || !source_authority || !has_epoch || !has_prefix || !checked {
         // Catalog equality cannot certify a dependency written under the old
         // stage/input proof domain. Preserve its data, never promote its proof.
         super::legacy::demote_facets(&mut tx, attributed).await?;
@@ -157,6 +166,53 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
     create_scope_freshness_view(&mut tx).await?;
     super::tag_mapping::create(&mut tx).await?;
     tx.commit().await?;
+    Ok(())
+}
+
+/// ES-10: Normalize multi-kind unresolved refs so each candidate kind becomes a
+/// separate row. After migration, the target_kind index drives all resolution
+/// lookups; no packed candidate-kind blob scan is needed.
+async fn migrate_normalize_unresolved_refs(
+    tx: &mut Transaction<'_, Sqlite>,
+) -> Result<(), StoreError> {
+    // Find all rows with non-empty target_kinds blobs.
+    let blob_rows = sqlx::query("SELECT from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source,target_kinds,resolution FROM unresolved_refs WHERE target_kinds<>X''")
+        .fetch_all(&mut **tx).await?;
+
+    for row in blob_rows {
+        let from_account: String = row.try_get("from_account")?;
+        let from_region: String = row.try_get("from_region")?;
+        let from_kind: String = row.try_get("from_kind")?;
+        let from_id: String = row.try_get("from_id")?;
+        let target_scope: Vec<u8> = row.try_get("target_scope")?;
+        let primary_kind: String = row.try_get("target_kind")?;
+        let target_path: Vec<u8> = row.try_get("target_path")?;
+        let target_value: String = row.try_get("target_value")?;
+        let relation: String = row.try_get("relation")?;
+        let source: String = row.try_get("source")?;
+        let blob: Vec<u8> = row.try_get("target_kinds")?;
+        let resolution: String = row.try_get("resolution")?;
+
+        let primary = Kind::parse(&primary_kind)?;
+        let kinds = reference_candidates::decode(&blob, &primary)?;
+
+        // Insert one row per non-primary candidate kind.
+        for kind in kinds.iter().filter(|k| **k != primary) {
+            sqlx::query("INSERT INTO unresolved_refs(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source,target_kinds,resolution) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,X'',?11)")
+                .bind(&from_account).bind(&from_region).bind(&from_kind).bind(&from_id)
+                .bind(&target_scope).bind(kind.as_str()).bind(&target_path).bind(&target_value)
+                .bind(&relation).bind(&source).bind(&resolution)
+                .execute(&mut **tx).await?;
+        }
+
+        // Clear the blob on the original row.
+        sqlx::query("UPDATE unresolved_refs SET target_kinds=X'' WHERE from_account=?1 AND from_region=?2 AND from_kind=?3 AND from_id=?4 AND target_scope=?5 AND target_kind=?6 AND target_path=?7 AND target_value=?8 AND relation=?9 AND source=?10")
+            .bind(&from_account).bind(&from_region).bind(&from_kind).bind(&from_id)
+            .bind(&target_scope).bind(&primary_kind).bind(&target_path).bind(&target_value)
+            .bind(&relation).bind(&source)
+            .execute(&mut **tx).await?;
+    }
+
     Ok(())
 }
 

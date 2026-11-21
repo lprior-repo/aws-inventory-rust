@@ -29,12 +29,8 @@ async fn refresh_columns(
 ) -> Result<u64, StoreError> {
     let mut inserted = 0_u64;
     let scope = commit::reference_scope(target.account.as_str(), target.region.as_str())?;
-    let exact = sqlx::query("SELECT from_account,from_region,from_kind,from_id,target_kind,target_kinds,target_path,target_value,relation,source FROM unresolved_refs WHERE target_scope=?1 AND target_kind=?2")
-        .bind(scope.clone()).bind(target.kind.as_str()).fetch_all(&mut **tx).await?;
-    let blob = sqlx::query("SELECT from_account,from_region,from_kind,from_id,target_kind,target_kinds,target_path,target_value,relation,source FROM unresolved_refs WHERE target_scope=?1 AND target_kind<>?2 AND target_kinds<>X''")
+    let rows = sqlx::query("SELECT from_account,from_region,from_kind,from_id,target_kind,target_kinds,target_path,target_value,relation,source FROM unresolved_refs WHERE target_scope=?1 AND target_kind=?2")
         .bind(scope).bind(target.kind.as_str()).fetch_all(&mut **tx).await?;
-    let mut rows = exact;
-    rows.extend(blob);
     for row in rows {
         let kind = Kind::parse(&row.try_get::<String, _>("target_kind")?)?;
         let encoded: &[u8] = row.try_get("target_kinds")?;

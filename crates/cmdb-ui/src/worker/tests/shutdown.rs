@@ -209,7 +209,7 @@ fn given_missing_path_or_invalid_schema_when_real_worker_starts_then_database_di
             ),
             (
                 invalid,
-                "unsupported schema version 0; expected 15 or 16 (open with the writer to migrate schema 14)",
+                "unsupported schema version 0; expected 15, 16, or 17 (open with the writer to migrate schema 14/15/16)",
             ),
         ] {
             let worker = DataWorker::start(

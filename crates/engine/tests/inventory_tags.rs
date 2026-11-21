@@ -538,7 +538,7 @@ async fn given_valid_schema14_with_tags_when_opened_then_migrates_without_invent
     let version: i64 = sqlx::query_scalar("PRAGMA user_version")
         .fetch_one(&pool)
         .await?;
-    assert_eq!(version, 16);
+    assert_eq!(version, 17);
     pool.close().await;
     commit_at(
         &store,

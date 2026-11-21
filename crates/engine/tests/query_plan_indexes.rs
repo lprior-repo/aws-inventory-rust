@@ -311,7 +311,7 @@ async fn unresolved_refs_exact_kind_uses_target_index() -> Result<(), Box<dyn st
 }
 
 #[tokio::test]
-async fn unresolved_refs_blob_kind_uses_target_index() -> Result<(), Box<dyn std::error::Error>> {
+async fn unresolved_refs_multi_kind_uses_target_index() -> Result<(), Box<dyn std::error::Error>> {
     let (directory, _store, _catalog) = fixture().await?;
 
     let pool = SqlitePoolOptions::new()
@@ -321,15 +321,17 @@ async fn unresolved_refs_blob_kind_uses_target_index() -> Result<(), Box<dyn std
         )
         .await?;
 
+    // ES-10: After normalization, multi-kind refs are separate rows. The exact
+    // match query is the only resolution lookup, and it must use the index.
     let plan = explain_plan(&pool,
-        "SELECT from_account,from_region,from_kind,from_id,target_kind,target_kinds,target_path,target_value,relation,source FROM unresolved_refs WHERE target_scope=X'00' AND target_kind<>'AWS::Example::Thing' AND target_kinds<>X''")
+        "SELECT from_account,from_region,from_kind,from_id,target_kind,target_kinds,target_path,target_value,relation,source FROM unresolved_refs WHERE target_scope=X'00' AND target_kind='AWS::Example::Thing'")
         .await?;
 
     pool.close().await;
 
     if !plan.contains("INDEX unresolved_refs_target") {
         return Err(format!(
-            "blob kind query plan does not use unresolved_refs_target index: {}",
+            "multi-kind query plan does not use unresolved_refs_target index: {}",
             plan
         )
         .into());
@@ -360,7 +362,8 @@ async fn es10_split_query_result_set_equivalence() -> Result<(), Box<dyn std::er
         .await?;
     }
 
-    // Insert test data: one exact match, one blob match, one neither
+    // ES-10: After normalization, multi-kind refs are separate rows. Insert one
+    // exact match, one multi-kind ref (as separate rows), and one non-matching.
     sqlx::query(
         "INSERT INTO unresolved_refs(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source) VALUES('a','r','k','f1',?1,'AWS::Example::Thing','p','v1','references','s')"
     )
@@ -368,8 +371,15 @@ async fn es10_split_query_result_set_equivalence() -> Result<(), Box<dyn std::er
     .execute(&pool)
     .await?;
 
+    // Multi-kind ref: two rows, one for each candidate kind
     sqlx::query(
-        "INSERT INTO unresolved_refs(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source,target_kinds) VALUES('a','r','k','f2',?1,'AWS::Other::Kind','p','v2','references','s','blob')"
+        "INSERT INTO unresolved_refs(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source) VALUES('a','r','k','f2',?1,'AWS::Example::Thing','p','v2','references','s')"
+    )
+    .bind(&scope)
+    .execute(&pool)
+    .await?;
+    sqlx::query(
+        "INSERT INTO unresolved_refs(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source) VALUES('a','r','k','f2',?1,'AWS::Other::Kind','p','v2','references','s')"
     )
     .bind(&scope)
     .execute(&pool)
@@ -382,7 +392,7 @@ async fn es10_split_query_result_set_equivalence() -> Result<(), Box<dyn std::er
     .execute(&pool)
     .await?;
 
-    // Original query with OR
+    // Original OR query (what the old code would have run)
     let original_rows = sqlx::query(
         "SELECT from_id FROM unresolved_refs WHERE target_scope=? AND (target_kind=? OR target_kinds<>X'') ORDER BY from_id",
     )
@@ -391,7 +401,7 @@ async fn es10_split_query_result_set_equivalence() -> Result<(), Box<dyn std::er
     .fetch_all(&pool)
     .await?;
 
-    // Split queries
+    // New exact match query (what the code now runs)
     let exact_rows = sqlx::query(
         "SELECT from_id FROM unresolved_refs WHERE target_scope=? AND target_kind=? ORDER BY from_id",
     )
@@ -400,21 +410,12 @@ async fn es10_split_query_result_set_equivalence() -> Result<(), Box<dyn std::er
     .fetch_all(&pool)
     .await?;
 
-    let blob_rows = sqlx::query(
-        "SELECT from_id FROM unresolved_refs WHERE target_scope=? AND target_kind<>? AND target_kinds<>X'' ORDER BY from_id",
-    )
-    .bind(&scope)
-    .bind("AWS::Example::Thing")
-    .fetch_all(&pool)
-    .await?;
-
     pool.close().await;
 
-    if original_rows.len() != exact_rows.len() + blob_rows.len() {
+    if original_rows.len() != exact_rows.len() {
         return Err(format!(
-            "row count mismatch: original={}, split={}",
-            original_rows.len(),
-            exact_rows.len() + blob_rows.len()
+            "row count mismatch: original={}, exact={}",
+            original_rows.len(), exact_rows.len()
         )
         .into());
     }
@@ -427,24 +428,18 @@ async fn es10_split_query_result_set_equivalence() -> Result<(), Box<dyn std::er
         original_ids.push(id);
     }
 
-    let mut split_ids = Vec::new();
+    let mut exact_ids = Vec::new();
     for row in &exact_rows {
         let id: String = row
             .try_get("from_id")
             .map_err(|e: sqlx::Error| format!("try_get failed: {}", e))?;
-        split_ids.push(id);
-    }
-    for row in &blob_rows {
-        let id: String = row
-            .try_get("from_id")
-            .map_err(|e: sqlx::Error| format!("try_get failed: {}", e))?;
-        split_ids.push(id);
+        exact_ids.push(id);
     }
 
-    if original_ids != split_ids {
+    if original_ids != exact_ids {
         return Err(format!(
-            "row content mismatch: original={:?}, split={:?}",
-            original_ids, split_ids
+            "row content mismatch: original={:?}, exact={:?}",
+            original_ids, exact_ids
         )
         .into());
     }

@@ -169,7 +169,7 @@ impl Database {
         let version = sqlx::query_scalar::<_, i64>("PRAGMA user_version")
             .fetch_one(&pool)
             .await?;
-        if !matches!(version, 15 | 16) {
+        if !matches!(version, 15 | 16 | 17) {
             return Err(ViewError::Version(version));
         }
         Ok(Self { pool })
