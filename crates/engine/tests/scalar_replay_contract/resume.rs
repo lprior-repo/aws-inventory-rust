@@ -311,6 +311,9 @@ async fn given_near_max_inflight_generation_when_resumed_and_claimed_then_max_ge
         SweepSummary {
             complete_scopes: 2,
             resources_observed: 2,
+            // The initial sweep's scopes lack this sweep's discovery context, so they
+            // are distinct scopes this sweep did not run and are reported unobserved.
+            unobserved_scopes: 2,
             ..SweepSummary::default()
         }
     );

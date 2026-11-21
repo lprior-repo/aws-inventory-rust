@@ -31,7 +31,7 @@ fn topic(region: &str, suffix: &str) -> Resource {
         &format!("awscc:aws:{region}:{ACCOUNT}:AWS::SNS::Topic:{suffix}"),
         region,
         "aws_sns_topic",
-        json!({"resource_identifier":"inventory-probe-topic-two"}),
+        json!({"resource_identifier":format!("arn:aws:sns:{region}:{ACCOUNT}:inventory-probe-topic-two")}),
     )
 }
 
