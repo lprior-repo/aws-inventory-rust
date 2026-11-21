@@ -164,13 +164,15 @@ fn compare_structure(
                 };
                 l.iter()
                     .zip(&r)
-                    .all(|(a, b)| compare(a, b, service, element, depth + 1))
+                    .all(|(a, b)| compare(a, b, service, element, depth.saturating_add(1)))
             }
-            (true, _, Some(map)) => maps::compare_map_nodes(&l, &r, service, map, depth + 1, name),
+            (true, _, Some(map)) => {
+                maps::compare_map_nodes(&l, &r, service, map, depth.saturating_add(1), name)
+            }
             _ => l
                 .iter()
                 .zip(&r)
-                .all(|(a, b)| compare(a, b, service, member.target, depth + 1)),
+                .all(|(a, b)| compare(a, b, service, member.target, depth.saturating_add(1))),
         }
     }) && known_children(left, service, shape)
         && known_children(right, service, shape)
@@ -238,7 +240,7 @@ fn compare_list(
         && left.children.iter().zip(&right.children).all(|(l, r)| {
             local_name(&l.name) == name
                 && local_name(&r.name) == name
-                && compare(l, r, service, target, depth + 1)
+                && compare(l, r, service, target, depth.saturating_add(1))
         })
 }
 

@@ -66,9 +66,17 @@ pub(super) fn compare_map_nodes(
                 entry.name == other.name
                     && entry.attributes == other.attributes
                     && text_matches(&entry.text, &other.text, true)
-                    && compare(key, other_key, service, key_target, depth + 1)
+                    && compare(key, other_key, service, key_target, depth.saturating_add(1))
                     && entry_parts(entry, entry_name, key_name, value_name).is_some_and(
-                        |(_, value)| compare(value, other_value, service, value_target, depth + 1),
+                        |(_, value)| {
+                            compare(
+                                value,
+                                other_value,
+                                service,
+                                value_target,
+                                depth.saturating_add(1),
+                            )
+                        },
                     )
             }
             _ => false,
