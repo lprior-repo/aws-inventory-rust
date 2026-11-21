@@ -2,7 +2,7 @@ use inventory_core::inventory::Region;
 
 #[test]
 fn rust_region_cursors_follow_sqlite_binary_text_order() -> Result<(), Box<dyn std::error::Error>> {
-    let mut regions = vec![
+    let mut regions = [
         Region::parse("us-east-1")?,
         Region::Global,
         Region::parse("eu-west-1")?,
