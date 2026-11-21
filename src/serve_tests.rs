@@ -17,7 +17,7 @@ fn serve_cli_parses_required_args() {
 }
 
 #[test]
-fn serve_cli_interval_value() {
+fn serve_cli_interval_value() -> anyhow::Result<()> {
     let cli = crate::cli::Cli::try_parse_from([
         "aws-inventory",
         "serve",
@@ -27,23 +27,25 @@ fn serve_cli_interval_value() {
         "audit",
         "--interval",
         "15m",
-    ]);
-    let args = match cli.unwrap().command {
+    ])?;
+    let args = match cli.command {
         crate::cli::Command::Serve(args) => args,
-        other => panic!("expected Serve command, got {other:?}"),
+        other => anyhow::bail!("expected Serve command, got {other:?}"),
     };
     assert_eq!(args.interval, "15m");
+    Ok(())
 }
 
 #[test]
-fn serve_cli_default_interval() {
+fn serve_cli_default_interval() -> anyhow::Result<()> {
     let cli =
-        crate::cli::Cli::try_parse_from(["aws-inventory", "serve", "--database", "test.sqlite"]);
-    let args = match cli.unwrap().command {
+        crate::cli::Cli::try_parse_from(["aws-inventory", "serve", "--database", "test.sqlite"])?;
+    let args = match cli.command {
         crate::cli::Command::Serve(args) => args,
-        other => panic!("expected Serve command, got {other:?}"),
+        other => anyhow::bail!("expected Serve command, got {other:?}"),
     };
     assert_eq!(args.interval, "15m");
+    Ok(())
 }
 
 #[test]
