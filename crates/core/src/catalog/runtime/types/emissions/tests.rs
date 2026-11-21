@@ -31,7 +31,7 @@ fn given_primary_only_when_normalized_then_collection_is_nonempty_and_preserves_
     let emissions = ResourceEmissions::new(primary.clone(), Vec::new())?;
     // Then no empty fallback or duplicated primary enters the runtime collection.
     assert_eq!(emissions.len(), 1);
-    assert_eq!(emissions.is_empty(), false);
+    assert!(!emissions.is_empty());
     assert_eq!(emissions.primary(), &primary);
     assert_eq!(emissions.iter().collect::<Vec<_>>(), vec![&primary]);
     Ok(())
