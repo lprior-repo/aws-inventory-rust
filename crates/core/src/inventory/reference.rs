@@ -248,7 +248,7 @@ mod tests {
             target()?
                 .with_candidate_kinds(vec![primary.clone()])?
                 .candidate_kinds(),
-            &[primary.clone()]
+            std::slice::from_ref(&primary)
         );
         let maximum = std::iter::once(primary)
             .chain(
