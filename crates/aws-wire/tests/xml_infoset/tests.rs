@@ -1,7 +1,7 @@
 use inventory_core::catalog::Catalog;
 use serde_json::json;
 
-fn fixture() -> Vec<u8> {
+fn fixture() -> Result<Vec<u8>, Box<dyn std::error::Error>> {
     let model = json!({
         "shapes": {
             "test#Service": {
@@ -34,20 +34,23 @@ fn fixture() -> Vec<u8> {
 }
 
 fn equal(left: &str, right: &str) -> Result<bool, Box<dyn std::error::Error>> {
-    let bytes = fixture();
+    let bytes = fixture()?;
     let catalog = Catalog::borrow(&bytes)?;
     let service = catalog
         .service("Service")?
         .ok_or("fixture service exists")?;
-    let mut inspect = None;
-    for operation in service.operations()? {
-        let operation = operation?;
-        if operation.name()? == "Inspect" {
-            inspect = Some(operation);
-            break;
-        }
-    }
-    let operation = inspect.ok_or("fixture Inspect operation exists")?;
+    let operation = service
+        .operations()?
+        .map(|operation| operation.map_err(Box::<dyn std::error::Error>::from))
+        .find_map(|operation| match operation {
+            Ok(operation) => match operation.name() {
+                Ok("Inspect") => Some(Ok(operation)),
+                Ok(_) => None,
+                Err(error) => Some(Err(Box::<dyn std::error::Error>::from(error))),
+            },
+            Err(error) => Some(Err(error)),
+        })
+        .ok_or("fixture Inspect operation exists")??;
     Ok(super::equal(
         left.as_bytes(),
         right.as_bytes(),
