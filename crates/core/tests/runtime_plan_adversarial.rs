@@ -3,6 +3,7 @@ mod runtime_provenance;
 #[path = "support/synthetic_catalog.rs"]
 mod synthetic_catalog;
 
+use inventory_core::catalog::CatalogKey;
 use inventory_core::{
     catalog::runtime::{
         IdentityPart, IdentityPlan, RuntimeCatalog, RuntimeCatalogError, TokenType,
@@ -10,6 +11,7 @@ use inventory_core::{
     record::{FieldId, Key, MapRef, RecordError, Value, ValueRef},
 };
 use std::collections::BTreeMap;
+use synthetic_catalog::{catalog, catalog_map, column, item_root, member, structure};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 type Fields = BTreeMap<Key, Value>;
@@ -34,6 +36,97 @@ fn map(entries: impl IntoIterator<Item = (u32, Value)>) -> TestResult<Value> {
             .map(|(id, value)| Ok((key(id)?, value)))
             .collect::<Result<Fields, RecordError>>()?,
     ))
+}
+
+pub fn scalar_item_catalog(identity: Value, pagination: Value) -> TestResult<Vec<u8>> {
+    let items = catalog_map([
+        (CatalogKey::Name, Value::Text("Items".to_owned())),
+        (CatalogKey::Kind, Value::Int(16)),
+        (CatalogKey::Element, Value::Int(-3)),
+    ])?;
+    let shapes = vec![
+        structure("Input", vec![])?,
+        items,
+        structure("Output", vec![member(1, 1)?])?,
+    ];
+    let item = map([(1, Value::Int(1)), (2, path([1]))])?;
+    catalog(0, 2, shapes, item, identity, pagination, vec![column([])?])
+}
+
+pub fn nested_structure_catalog(
+    depth: u32,
+    identity: Value,
+    pagination: Value,
+) -> TestResult<Vec<u8>> {
+    let mut shapes = vec![catalog_map([
+        (CatalogKey::Name, Value::Text("Scalar".to_owned())),
+        (CatalogKey::Kind, Value::Int(2)),
+    ])?];
+    for level in 1..=depth {
+        shapes.push(structure(
+            &format!("Level{level}"),
+            vec![member(
+                1,
+                i64::from(level.checked_sub(1).ok_or("zero level")?),
+            )?],
+        )?);
+    }
+    let input = u32::try_from(shapes.len())?;
+    shapes.push(structure("Input", vec![])?);
+    let ids = vec![1; usize::try_from(depth)?];
+    catalog(
+        input,
+        depth,
+        shapes,
+        item_root()?,
+        identity,
+        pagination,
+        vec![column(ids)?],
+    )
+}
+
+pub fn pagination_catalog(
+    input_fields: &[u32],
+    output_fields: &[u32],
+    pagination: Value,
+) -> TestResult<Vec<u8>> {
+    let input = input_fields
+        .iter()
+        .map(|&id| member(id, -3))
+        .collect::<TestResult<Vec<_>>>()?;
+    let output = output_fields
+        .iter()
+        .map(|&id| member(id, -3))
+        .collect::<TestResult<Vec<_>>>()?;
+    let shapes = vec![structure("Input", input)?, structure("Output", output)?];
+    let identity = map([(1, Value::Int(2)), (2, Value::List(vec![path([11])]))])?;
+    catalog(
+        0,
+        1,
+        shapes,
+        item_root()?,
+        identity,
+        pagination,
+        vec![column([11])?],
+    )
+}
+
+pub fn pagination_token(
+    request_path: Vec<Value>,
+    response_path: Vec<Value>,
+    optional: bool,
+    value_type: i64,
+) -> TestResult<Value> {
+    let request_placement = map([(1, Value::Int(3)), (2, Value::List(request_path.clone()))])?;
+    let response_placement = map([(1, Value::Int(3)), (2, Value::List(response_path.clone()))])?;
+    map([
+        (1, Value::List(request_path)),
+        (2, Value::List(response_path)),
+        (3, Value::Int(value_type)),
+        (4, request_placement),
+        (5, response_placement),
+        (6, Value::Bool(optional)),
+    ])
 }
 
 fn path(ids: impl IntoIterator<Item = i64>) -> Value {
@@ -141,7 +234,7 @@ fn loader_preserves_scalar_self_and_each_identity_context_when_template_is_canon
         ),
     ])?;
     let pagination = map([(1, Value::List(vec![]))])?;
-    let bytes = synthetic_catalog::scalar_item_catalog(identity, pagination)?;
+    let bytes = scalar_item_catalog(identity, pagination)?;
     // When: loading through the production public consumer boundary.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = runtime
@@ -279,7 +372,7 @@ fn loader_preserves_eight_segment_selected_path_at_the_exact_bound() -> TestResu
     // so eight-segment selected paths resolve to scalar fields.
     let identity = identity(2, vec![path([1; 8]); 8])?;
     let pagination = map([(1, Value::List(vec![]))])?;
-    let bytes = synthetic_catalog::nested_structure_catalog(8, identity, pagination)?;
+    let bytes = nested_structure_catalog(8, identity, pagination)?;
     // When.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = runtime
@@ -384,7 +477,7 @@ fn loader_preserves_required_and_optional_components_at_cursor_tuple_limit() -> 
     let output_fields: Vec<u32> = (11..=18).collect();
     let tokens = (1..=8)
         .map(|id| {
-            synthetic_catalog::pagination_token(
+            pagination_token(
                 vec![Value::Int(i64::from(id))],
                 vec![Value::Int(i64::from(id + 10))],
                 id != 1,
@@ -393,7 +486,7 @@ fn loader_preserves_required_and_optional_components_at_cursor_tuple_limit() -> 
         })
         .collect::<TestResult<Vec<_>>>()?;
     let pagination = map([(1, Value::List(tokens))])?;
-    let bytes = synthetic_catalog::pagination_catalog(&input_fields, &output_fields, pagination)?;
+    let bytes = pagination_catalog(&input_fields, &output_fields, pagination)?;
     // When.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = runtime
