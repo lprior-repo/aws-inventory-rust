@@ -342,8 +342,8 @@ mod tests {
         let rules = CompiledTextConstraints::compile(target, Some(target), &mut cache)?;
         assert_eq!(rules.patterns.len(), 1);
         assert_eq!(cache.patterns.len(), 1);
-        assert_eq!(rules.accepts("arn:value"), true);
-        assert_eq!(rules.accepts("value"), false);
+        assert!(rules.accepts("arn:value"));
+        assert!(!rules.accepts("value"));
         Ok(())
     }
 
@@ -409,8 +409,8 @@ mod tests {
         ] {
             assert_eq!(element.accepts(component)?, expected, "{component:?}");
         }
-        assert_eq!(element.accepts(&"a".repeat(255))?, true);
-        assert_eq!(element.accepts(&"a".repeat(256))?, false);
+        assert!(element.accepts(&"a".repeat(255))?);
+        assert!(!element.accepts(&"a".repeat(256))?);
         Ok(())
     }
 }
