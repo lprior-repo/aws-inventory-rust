@@ -3,7 +3,7 @@ mod fixture;
 
 use super::*;
 use catalog_tool::overlay::{Identity, MemberPath};
-use fixture::{TestResult, compiled};
+use fixture::{TestResult, compile_fixture, compiled};
 use inventory_core::{
     catalog::runtime::RuntimeCatalog,
     record::{Key, Value},
@@ -186,7 +186,14 @@ fn given_compiled_template_when_required_field_is_missing_or_oversized_then_extr
 #[test]
 fn given_compiled_singleton_structure_when_selected_then_one_relative_identity_is_extracted()
 -> TestResult {
-    let bytes = fixture::compiled_singleton(fixture::key("Name")?)?;
+    let bytes = compile_fixture(
+        Identity::Key(vec![MemberPath::new("Name")?]),
+        "active-wire",
+        None,
+        false,
+        true,
+        None,
+    )?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = catalog
         .lookup("things", "ListThings")
@@ -213,7 +220,7 @@ fn given_compiled_singleton_structure_when_selected_then_one_relative_identity_i
 fn given_enum_member_identity_when_compiled_then_each_plan_extracts_exact_resource_text()
 -> TestResult {
     [
-        (fixture::key("Name")?, "active-wire"),
+        (Identity::Key(vec![MemberPath::new("Name")?]), "active-wire"),
         (
             Identity::Template("name/{Name}".to_owned()),
             "name/active-wire",
@@ -240,7 +247,7 @@ fn given_enum_text_that_is_not_an_arn_when_arn_identity_is_extracted_then_it_fai
     [("Name", "active-wire", false), ("$", "second-wire", true)]
         .into_iter()
         .try_for_each(|(member, wire, scalar)| -> TestResult {
-            let bytes = compiled(fixture::arn(member)?, wire, scalar)?;
+            let bytes = compiled(Identity::Arn(MemberPath::new(member)?), wire, scalar)?;
             let catalog = RuntimeCatalog::from_bytes(&bytes)?;
             let plan = catalog
                 .lookup("things", "ListThings")
@@ -262,7 +269,7 @@ fn given_enum_text_that_is_not_an_arn_when_arn_identity_is_extracted_then_it_fai
 fn given_enum_scalar_identity_when_compiled_then_self_extraction_preserves_exact_text() -> TestResult
 {
     [
-        (fixture::key("$")?, "second-wire"),
+        (Identity::Key(vec![MemberPath::new("$")?]), "second-wire"),
         (
             Identity::Template("prefix/{$}".to_owned()),
             "prefix/second-wire",
