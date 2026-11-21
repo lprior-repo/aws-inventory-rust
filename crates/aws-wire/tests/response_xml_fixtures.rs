@@ -204,7 +204,7 @@ fn decode_case(
     }
     if test_invalid {
         malformed_xml_is_rejected(context);
-        limits_are_enforced(context);
+        limits_are_enforced(context)?;
     }
     Ok(())
 }
