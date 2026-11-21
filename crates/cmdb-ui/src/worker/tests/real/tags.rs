@@ -101,7 +101,7 @@ fn given_committed_scoped_tags_when_real_worker_filters_then_exact_empty_value_a
 }
 
 #[test]
-fn given_live_native_tags_and_retained_sql_tags_when_expanding_then_affiliations_keep_root_scope_and_authority()
+fn given_live_native_tags_and_committed_sql_tags_when_expanding_then_affiliations_keep_root_scope_and_authority()
 -> TestResult {
     supervised_async(|| async {
         // Given real SQLite tags and native topology with an independently current tag.
@@ -122,10 +122,17 @@ fn given_live_native_tags_and_retained_sql_tags_when_expanding_then_affiliations
         let native = NativeGraph::new(std::slice::from_ref(&link)).await?;
         let worker = fixture.worker(Some(&native));
         let result: TestResult = async {
-        let (_, initial, _) = snapshot(&worker).await?;
-        let old_root = initial.iter().find(|row| row.id == "shared").ok_or("initial root missing")?;
-        fixture.commit_tagged("after", (ACCOUNT, REGION), &[("shared", "root"), ("b", "neighbor")], &[],
-            vec![observed(&a, "owner", "after")?], 2).await?;
+        snapshot(&worker).await?;
+        let after = fixture
+            .commit_tagged(
+                "after",
+                (ACCOUNT, REGION),
+                &[("shared", "root"), ("b", "neighbor")],
+                &[],
+                vec![observed(&a, "owner", "after")?],
+                2,
+            )
+            .await?;
         native.query(&format!("MATCH (s:Resource {{key:'{}'}}) CREATE (s)-[:HAS_TAG {{provenance:'inventory.tags'}}]->(:Tag {{account:'{ACCOUNT}',region:'{REGION}',tag_key:'owner',tag_value:'after'}}), (s)-[:HAS_TAG {{provenance:'inventory.tags'}}]->(:Tag {{account:'222222222222',region:'{REGION}',tag_key:'owner',tag_value:'foreign'}})", digest(&a)?)).await?;
         // When the actual worker reads live native tags and pinned SQL details.
         worker.expand(a.clone())?;
@@ -138,7 +145,7 @@ fn given_live_native_tags_and_retained_sql_tags_when_expanding_then_affiliations
                 key: "owner".into(), value: "after".into() }, provenance: "inventory.tags".into(),
         }]);
         assert!(!expanded.tags_truncated);
-        assert_eq!(expanded.nodes.iter().find(|row| row.id == "shared"), Some(old_root));
+        assert_eq!(expanded.nodes.iter().find(|row| row.id == "shared"), after.iter().find(|row| row.id == "shared"));
         worker.expand(b)?;
         let untagged = graph(&worker).await?;
         assert!(untagged.tag_affiliations.is_empty());

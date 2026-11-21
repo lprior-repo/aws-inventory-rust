@@ -61,7 +61,7 @@ fn given_superseded_refresh_after_admission_when_runner_completes_then_next_expa
         let a = root();
         let b = fixtures::node(ACCOUNT, REGION, KIND, "b");
         let link = edge(&a, &b, "references", "model");
-        let before = runtime.block_on(fixture.commit(
+        runtime.block_on(fixture.commit(
             "before",
             ACCOUNT,
             REGION,
@@ -73,7 +73,7 @@ fn given_superseded_refresh_after_admission_when_runner_completes_then_next_expa
         let result: TestResult = (|| {
             let (mut state, _) =
                 runtime.block_on(setup(fixture.path.clone(), config(&fixture, &native)))?;
-            runtime.block_on(fixture.commit(
+            let after = runtime.block_on(fixture.commit(
                 "after",
                 ACCOUNT,
                 REGION,
@@ -121,11 +121,14 @@ fn given_superseded_refresh_after_admission_when_runner_completes_then_next_expa
             assert_edges(&graph, &[link])?;
             let mut actual = graph.nodes;
             actual.sort_by_key(|row| row.id.clone());
-            let mut expected = before;
+            let mut expected: Vec<_> = after
+                .into_iter()
+                .filter(|row| matches!(row.id.as_str(), "shared" | "b"))
+                .collect();
             expected.sort_by_key(|row| row.id.clone());
             assert_eq!(
                 actual, expected,
-                "obsolete refresh must not replace the retained SQL session"
+                "obsolete refresh must not replace the last committed SQL session"
             );
             drop(worker);
             Ok(())

@@ -21,7 +21,7 @@ fn sort_rows(rows: &mut [Row]) {
 }
 
 #[test]
-fn given_divergent_stores_and_concurrent_sweep_when_expanding_then_native_topology_uses_retained_sql_details()
+fn given_divergent_stores_and_concurrent_sweep_when_expanding_then_native_topology_uses_committed_sql_details()
 -> TestResult {
     supervised_async(|| async {
         // Given: exact common, SQL-only, native-only edges and same-id collisions in
@@ -115,7 +115,7 @@ fn given_divergent_stores_and_concurrent_sweep_when_expanding_then_native_topolo
             assert_eq!(sql.next, None);
 
             // When: a complete later writer sweep changes every SQL payload/hash and
-            // the database count, while the real worker's original session stays open.
+            // the database count; the worker keeps no SQL session between requests.
             let mut after = fixture
                 .commit(
                     "after-west",
@@ -160,18 +160,14 @@ fn given_divergent_stores_and_concurrent_sweep_when_expanding_then_native_topolo
             let retained = graph(&worker).await?;
 
             // Then: exact topology is native (never SQL-only), every existing node's
-            // metadata is exactly its INITIAL table row, and the other-kind native
-            // node with the same id/account/region has no invented SQL metadata.
+            // metadata is exactly its latest committed table row, and the other-kind
+            // native node with the same id/account/region has no invented SQL metadata.
             assert_edges(&retained, &native_edges)?;
             assert!(!retained.truncated);
             assert_eq!(retained.nodes.len(), 4);
             for identity in [&a, &b, &e] {
                 let key = digest(identity)?;
                 assert_eq!(
-                    retained.nodes.iter().find(|row| row.key == key),
-                    initial.iter().find(|row| row.key == key)
-                );
-                assert_ne!(
                     retained.nodes.iter().find(|row| row.key == key),
                     after.iter().find(|row| row.key == key)
                 );
