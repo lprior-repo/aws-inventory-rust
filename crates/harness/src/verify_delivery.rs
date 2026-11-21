@@ -12,6 +12,7 @@ use serde_json::{Value, json};
 use sha2::Digest;
 use sqlx::Row;
 
+mod expected_rows;
 mod graph_diff;
 use crate::HarnessError;
 
@@ -793,62 +794,34 @@ pub async fn build_expected(pool: &sqlx::SqlitePool, scan_id: &str) -> Result<Va
     graph_ids.sort();
     graph_ids.dedup();
 
+    let mut resource_json_by_id = std::collections::BTreeMap::new();
+    for row in &resources {
+        let id = row.try_get::<String, _>(0)?;
+        let json = row.try_get::<String, _>(1)?;
+        if resource_json_by_id.insert(id.clone(), json).is_some() {
+            return Err(HarnessError::invalid(format!(
+                "scan {scan_id} has duplicate resource id {id}"
+            )));
+        }
+    }
+
     let node_rows = graph_ids
         .iter()
-        .map(|id| {
-            let resource = resources.iter().find(|row| {
-                row.try_get::<String, _>(0)
-                    .map(|s| s == *id)
-                    .unwrap_or(false)
-            });
-            let resource_json = resource.and_then(|row| row.try_get::<String, _>(1).ok());
-            json!([
-                id,
-                scan_id,
-                if resource_json.is_some() {
-                    "observed"
-                } else {
-                    "unresolved"
-                },
-                format!("{scan_id}::{id}"),
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                if resource_json.is_some() { 12 } else { 4 },
-                1
-            ])
+        .map(|id| match resource_json_by_id.get(id) {
+            Some(json) => expected_rows::observed_node(scan_id, id, json),
+            None => Ok(expected_rows::unresolved_node(scan_id, id)),
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, HarnessError>>()?;
 
     let edge_rows = edges
         .iter()
         .map(|row| {
-            let from = row.try_get::<String, _>(0).unwrap_or_default();
-            let to = row.try_get::<String, _>(1).unwrap_or_default();
-            let relation = row.try_get::<String, _>(2).unwrap_or_default();
-            let source = row.try_get::<String, _>(3).unwrap_or_default();
-            let edge_json = row.try_get::<String, _>(4).ok();
-            json!([
-                from,
-                to,
-                relation,
-                source,
-                edge_json,
-                scan_id,
-                scan_id,
-                null,
-                json!({}),
-                4,
-                format!("{scan_id}::{from}"),
-                format!("{scan_id}::{to}")
-            ])
+            let relation = row.try_get::<String, _>(2)?;
+            let source = row.try_get::<String, _>(3)?;
+            let edge_json = row.try_get::<String, _>(4)?;
+            expected_rows::edge_row(scan_id, &relation, &source, &edge_json)
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, HarnessError>>()?;
 
     Ok(json!({
         "scan": {
