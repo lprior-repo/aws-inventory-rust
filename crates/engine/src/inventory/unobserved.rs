@@ -4,6 +4,8 @@ use inventory_core::inventory::ScopeKey;
 use sqlx::{Row, Sqlite, Transaction};
 use std::collections::BTreeSet;
 
+const MAX_UNOBSERVED_HISTORY: i64 = 10_000;
+
 /// A top-level scope an earlier sweep of the same account observed that the
 /// given sweep did not run. Its resources are untouched by that sweep.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -13,46 +15,85 @@ pub struct UnobservedScope {
     pub age_ms: i64,
 }
 
-/// Records, once a sweep has drained, every top-level scope of the sweep's
+/// Records, once a sweep has drained, every top-level scope of configured
 /// accounts that earlier sweeps observed and this one did not run. The stored
-/// `observed_at` of an `unobserved` row is the scope's last observation, so
-/// age is derived on read and never invented here.
+/// `observed_at` of an `unobserved` row is the scope's last complete
+/// observation, so age is derived on read and never invented here.
 pub(super) async fn record(
     tx: &mut Transaction<'_, Sqlite>,
     sweep: &SweepId,
 ) -> Result<(), StoreError> {
-    let current = sqlx::query("SELECT scope_key FROM work_queue WHERE sweep_id=?1")
-        .bind(sweep.as_str())
-        .fetch_all(&mut **tx)
-        .await?;
-    let mut keys = BTreeSet::<Vec<u8>>::new();
-    let mut accounts = BTreeSet::new();
-    for row in current {
-        let bytes: Vec<u8> = row.try_get("scope_key")?;
-        accounts.insert(persisted_scope(&bytes)?.account().clone());
-        keys.insert(bytes);
-    }
-    let history = sqlx::query("SELECT scope_key,MAX(observed_at) AS last FROM scope_outcomes WHERE sweep_id<>?1 AND outcome<>'unobserved' GROUP BY scope_key")
-        .bind(sweep.as_str())
-        .fetch_all(&mut **tx)
-        .await?;
-    for row in history {
-        let bytes: Vec<u8> = row.try_get("scope_key")?;
-        if keys.contains(&bytes) {
+    let current = current_scope_keys(tx, sweep).await?;
+    let configured = configured_accounts(tx).await?;
+    let history = historical_last_complete(tx, sweep).await?;
+    for (bytes, last) in history {
+        if current.contains(&bytes) {
             continue;
         }
         let scope = persisted_scope(&bytes)?;
-        if scope.parent().is_some() || !accounts.contains(scope.account()) {
+        if scope.parent().is_some() {
             continue;
         }
-        let last: i64 = row.try_get("last")?;
-        sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES(?1,?2,'unobserved',?3) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome='unobserved',observed_at=excluded.observed_at")
-            .bind(sweep.as_str())
-            .bind(&bytes)
-            .bind(last)
-            .execute(&mut **tx)
-            .await?;
+        if !configured.contains(scope.account().as_str()) {
+            continue;
+        }
+        record_unobserved(tx, sweep, &bytes, last).await?;
     }
+    Ok(())
+}
+
+async fn current_scope_keys(
+    tx: &mut Transaction<'_, Sqlite>,
+    sweep: &SweepId,
+) -> Result<BTreeSet<Vec<u8>>, StoreError> {
+    let rows = sqlx::query("SELECT scope_key FROM work_queue WHERE sweep_id=?1")
+        .bind(sweep.as_str())
+        .fetch_all(&mut **tx)
+        .await?;
+    rows.into_iter()
+        .map(|row| Ok(row.try_get::<Vec<u8>, _>("scope_key")?))
+        .collect()
+}
+
+async fn configured_accounts(
+    tx: &mut Transaction<'_, Sqlite>,
+) -> Result<BTreeSet<String>, StoreError> {
+    let rows = sqlx::query_scalar::<_, String>("SELECT DISTINCT account FROM sweeps")
+        .fetch_all(&mut **tx)
+        .await?;
+    Ok(rows.into_iter().collect())
+}
+
+async fn historical_last_complete(
+    tx: &mut Transaction<'_, Sqlite>,
+    sweep: &SweepId,
+) -> Result<Vec<(Vec<u8>, i64)>, StoreError> {
+    let rows = sqlx::query("SELECT scope_key,MAX(observed_at) AS last FROM scope_outcomes WHERE sweep_id<>?1 AND outcome='complete' GROUP BY scope_key LIMIT ?2")
+        .bind(sweep.as_str())
+        .bind(MAX_UNOBSERVED_HISTORY)
+        .fetch_all(&mut **tx)
+        .await?;
+    rows.into_iter()
+        .map(|row| {
+            let bytes = row.try_get::<Vec<u8>, _>("scope_key")?;
+            let last = row.try_get::<i64, _>("last")?;
+            Ok((bytes, last))
+        })
+        .collect()
+}
+
+async fn record_unobserved(
+    tx: &mut Transaction<'_, Sqlite>,
+    sweep: &SweepId,
+    scope_key: &[u8],
+    last_observed: i64,
+) -> Result<(), StoreError> {
+    sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES(?1,?2,'unobserved',?3) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome='unobserved',observed_at=excluded.observed_at")
+        .bind(sweep.as_str())
+        .bind(scope_key)
+        .bind(last_observed)
+        .execute(&mut **tx)
+        .await?;
     Ok(())
 }
 
