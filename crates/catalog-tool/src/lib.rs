@@ -5,6 +5,7 @@ pub use report::{ReportError, ReportMode};
 pub mod classes;
 pub mod endpoints;
 pub mod kind_map;
+pub mod manifest;
 pub mod names;
 pub mod overlay;
 pub mod package;

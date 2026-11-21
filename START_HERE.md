@@ -212,6 +212,5 @@ checkout and generated credentials. It retains pins, installers and synthetic
 verification databases. `MANIFEST.sha256` covers every packaged payload file;
 the packaging tool verifies ZIP CRCs and payload hashes before publication.
 
-The working copy of `MANIFEST.sha256` is stale: it has not been regenerated
-from tracked files since both packagers began excluding `.local` (ROADMAP
-M0.5).
+Run `cargo run -p catalog-tool -- manifest --write` to regenerate `MANIFEST.sha256`
+and `models.lock` from tracked files. Verify with `catalog-tool manifest --check`.

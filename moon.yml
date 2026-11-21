@@ -121,7 +121,7 @@ tasks:
       mutex: cargo-workspace
       runInCI: always
   native-test-inputs:
-    command: bash scripts/provision-native-tests.sh
+    command: cargo build --package aws-inventory --package inventory-harness --features aws-inventory/aws --bins --locked -j1
     deps:
       - lint-src
     options:
