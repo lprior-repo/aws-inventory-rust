@@ -60,10 +60,10 @@ impl FrameTimeRecorder {
     }
 
     pub fn shutdown(&mut self) {
-        if let Some(mut file) = self.output.take() {
-            if let Err(error) = file.flush() {
-                eprintln!("frame log flush failed: {error}");
-            }
+        if let Some(mut file) = self.output.take()
+            && let Err(error) = file.flush()
+        {
+            eprintln!("frame log flush failed: {error}");
         }
     }
 }
@@ -91,14 +91,21 @@ mod tests {
         assert_eq!(rows.len(), 2);
         assert_eq!(rows.iter().map(|row| row.len()).collect::<Vec<_>>(), [3, 3]);
         assert_eq!(
-            rows.iter().map(|row| row[0]).collect::<Vec<_>>(),
-            ["1", "2"]
+            rows.iter()
+                .map(|row| row.first().copied())
+                .collect::<Vec<_>>(),
+            [Some("1"), Some("2")]
         );
         assert_eq!(
-            rows.iter().map(|row| row[2]).collect::<Vec<_>>(),
-            ["10", "25"]
+            rows.iter()
+                .map(|row| row.get(2).copied())
+                .collect::<Vec<_>>(),
+            [Some("10"), Some("25")]
         );
-        assert!(rows.iter().all(|row| row[1].parse::<u64>().is_ok()));
+        assert!(
+            rows.iter()
+                .all(|row| row.get(1).is_some_and(|field| field.parse::<u64>().is_ok()))
+        );
         Ok(())
     }
 
