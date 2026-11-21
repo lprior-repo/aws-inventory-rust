@@ -33,20 +33,20 @@ pub const DEFAULT_GRAPH_LIMITS: GraphLimits = GraphLimits {
 
 pub fn parse_lod_config(config: &str) -> Result<GraphLimits, String> {
     let parts: Vec<&str> = config.split(':').collect();
-    if parts.len() != 3 {
+    let [depth_part, nodes_part, edges_part] = parts.as_slice() else {
         return Err(format!(
             "CMDB_UI_LOD requires depth:nodes:edges, got: {config}"
         ));
-    }
-    let depth: u8 = parts[0]
+    };
+    let depth: u8 = depth_part
         .parse()
-        .map_err(|_| format!("invalid depth: {}", parts[0]))?;
-    let nodes: usize = parts[1]
+        .map_err(|_| format!("invalid depth: {depth_part}"))?;
+    let nodes: usize = nodes_part
         .parse()
-        .map_err(|_| format!("invalid nodes: {}", parts[1]))?;
-    let edges: usize = parts[2]
+        .map_err(|_| format!("invalid nodes: {nodes_part}"))?;
+    let edges: usize = edges_part
         .parse()
-        .map_err(|_| format!("invalid edges: {}", parts[2]))?;
+        .map_err(|_| format!("invalid edges: {edges_part}"))?;
     Ok(GraphLimits {
         depth,
         nodes,
