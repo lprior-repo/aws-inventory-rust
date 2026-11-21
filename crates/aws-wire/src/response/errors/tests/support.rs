@@ -1,4 +1,7 @@
 use super::*;
+
+pub(super) type TestResult = Result<(), Box<dyn std::error::Error>>;
+
 #[derive(Clone, Copy)]
 pub(super) struct Fixture<'a> {
     pub(super) source: &'a str,
@@ -22,23 +25,26 @@ impl<'a> Fixture<'a> {
         }
     }
 
-    pub(super) fn index(self) -> usize {
+    pub(super) fn index(self) -> Option<usize> {
         match self.name {
-            "awsJson1_0" => 0,
-            "awsJson1_1" => 1,
-            "awsQuery" => 2,
-            "ec2Query" => 3,
-            "restJson1" => 4,
-            "restXml" => 5,
-            "rpcv2Cbor" => 6,
-            _ => panic!("unknown fixture"),
+            "awsJson1_0" => Some(0),
+            "awsJson1_1" => Some(1),
+            "awsQuery" => Some(2),
+            "ec2Query" => Some(3),
+            "restJson1" => Some(4),
+            "restXml" => Some(5),
+            "rpcv2Cbor" => Some(6),
+            _ => None,
         }
     }
 }
 
-pub(super) fn compile_service_model(fixture: &Value, service_id: &str) -> Vec<u8> {
-    let shapes = fixture["shapes"].as_object().expect("fixture shapes");
-    let service_name = service_id.rsplit('#').next().expect("service name");
+pub(super) fn compile_service_model(
+    fixture: &Value,
+    service_id: &str,
+) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    let shapes = fixture["shapes"].as_object().ok_or("fixture shapes")?;
+    let service_name = service_id.rsplit('#').next().ok_or("service name")?;
     let mut selected = serde_json::Map::new();
     let mut pending = vec![service_id.to_owned()];
     while let Some(id) = pending.pop() {
@@ -59,16 +65,16 @@ pub(super) fn compile_service_model(fixture: &Value, service_id: &str) -> Vec<u8
     if !registry_text.is_empty() {
         registry_text.push('\n');
     }
-    let registry = Registry::parse(&registry_text).expect("fixture registry");
-    let root = tempfile::tempdir().expect("temporary model root");
+    let registry = Registry::parse(&registry_text)?;
+    let root = tempfile::tempdir()?;
     let model_dir = root
         .path()
         .join("models")
         .join(service_name.replace('.', "-"));
-    std::fs::create_dir_all(&model_dir).expect("model directory");
-    let model = serde_json::to_vec(&json!({ "shapes": selected })).expect("model JSON");
-    std::fs::write(model_dir.join("model.json"), model).expect("model file");
-    build_catalog(root.path(), &registry, "error-fixture").expect("compiled fixture catalog")
+    std::fs::create_dir_all(&model_dir)?;
+    let model = serde_json::to_vec(&json!({ "shapes": selected }))?;
+    std::fs::write(model_dir.join("model.json"), model)?;
+    Ok(build_catalog(root.path(), &registry, "error-fixture")?)
 }
 
 fn collect_targets(value: &Value, pending: &mut Vec<String>) {
@@ -95,84 +101,87 @@ pub(super) fn fixture_operation_for_error<'a>(
     shapes: &serde_json::Map<String, Value>,
     service_shape: &'a Value,
     error_shape_id: &str,
-) -> Option<&'a str> {
-    for target in service_shape.get("operations")?.as_array()? {
-        let operation_id = target["target"].as_str().expect("operation target");
-        let operation_errors = shapes[operation_id]["errors"].as_array();
+) -> Result<Option<&'a str>, Box<dyn std::error::Error>> {
+    for target in service_shape
+        .get("operations")
+        .and_then(Value::as_array)
+        .ok_or("service operations")?
+    {
+        let operation_id = target["target"].as_str().ok_or("operation target")?;
+        let operation_errors =
+            shapes.get(operation_id).ok_or("operation shape")?["errors"].as_array();
         if operation_errors.is_some_and(|errors| {
             errors
                 .iter()
                 .any(|error| error["target"].as_str() == Some(error_shape_id))
         }) {
-            return Some(operation_id);
+            return Ok(Some(operation_id));
         }
     }
-    None
+    Ok(None)
 }
 
-pub(super) fn fixture_body(case: &Value, protocol: Protocol) -> Vec<u8> {
-    let body = case
-        .get("body")
-        .map_or("", |body| body.as_str().expect("fixture response body"));
+pub(super) fn fixture_body(
+    case: &Value,
+    protocol: Protocol,
+) -> Result<Vec<u8>, Box<dyn std::error::Error>> {
+    let body = match case.get("body") {
+        Some(body) => body.as_str().ok_or("fixture response body")?,
+        None => "",
+    };
     if protocol == Protocol::RpcV2Cbor {
         use base64::Engine;
-        return base64::engine::general_purpose::STANDARD
-            .decode(body)
-            .expect("valid CBOR fixture body");
+        return Ok(base64::engine::general_purpose::STANDARD.decode(body)?);
     }
-    body.as_bytes().to_vec()
+    Ok(body.as_bytes().to_vec())
 }
 
-pub(super) fn fixture_status(case: &Value) -> http::StatusCode {
-    http::StatusCode::from_u16(
-        u16::try_from(case["code"].as_u64().expect("fixture HTTP status"))
-            .expect("fixture status fits u16"),
-    )
-    .expect("valid fixture HTTP status")
+pub(super) fn fixture_status(case: &Value) -> Result<http::StatusCode, Box<dyn std::error::Error>> {
+    let code = u16::try_from(case["code"].as_u64().ok_or("fixture HTTP status")?)?;
+    Ok(http::StatusCode::from_u16(code)?)
 }
 
-pub(super) fn fixture_headers(case: &Value) -> http::HeaderMap {
+pub(super) fn fixture_headers(case: &Value) -> Result<http::HeaderMap, Box<dyn std::error::Error>> {
     let mut headers = http::HeaderMap::new();
     if let Some(values) = case["headers"].as_object() {
         for (name, value) in values {
             headers.insert(
-                http::header::HeaderName::from_bytes(name.as_bytes())
-                    .expect("valid fixture header name"),
+                http::header::HeaderName::from_bytes(name.as_bytes())?,
                 http::header::HeaderValue::from_bytes(
-                    value.as_str().expect("fixture header value").as_bytes(),
-                )
-                .expect("valid fixture header value"),
+                    value.as_str().ok_or("fixture header value")?.as_bytes(),
+                )?,
             );
         }
     }
-    headers
+    Ok(headers)
 }
 
 pub(super) fn expected_fixture_code(
     shape_id: &str,
     modeled_error: inventory_core::catalog::ModeledError<'_>,
     headers: &http::HeaderMap,
-) -> String {
+) -> Result<String, Box<dyn std::error::Error>> {
     for name in ["x-amzn-errortype", "x-amzn-query-error"] {
         if let Some(value) = headers.get(name) {
-            let raw = value.to_str().expect("fixture code header").trim();
+            let raw = value.to_str()?.trim();
             let namespace = raw.split_once('#').map_or(raw, |(_, suffix)| suffix);
             let name = namespace
                 .split_once(';')
                 .map_or(namespace, |(name, _)| name);
-            return name
+            return Ok(name
                 .split_once(':')
                 .map_or(name, |(name, _)| name)
-                .to_owned();
+                .to_owned());
         }
     }
-    modeled_error.code.map(str::to_owned).unwrap_or_else(|| {
-        shape_id
+    match modeled_error.code {
+        Some(code) => Ok(code.to_owned()),
+        None => Ok(shape_id
             .rsplit('#')
             .next()
-            .expect("error shape name")
-            .to_owned()
-    })
+            .ok_or("error shape name")?
+            .to_owned()),
+    }
 }
 
 pub(super) fn expected_fixture_class(shape_id: &str) -> ErrorClass {
