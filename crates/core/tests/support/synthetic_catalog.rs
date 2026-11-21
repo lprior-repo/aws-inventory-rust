@@ -15,7 +15,7 @@ fn key(id: u32) -> TestResult<Key> {
     Ok(Key::Field(FieldId::new(id)?))
 }
 
-fn map(entries: impl IntoIterator<Item = (u32, Value)>) -> TestResult<Value> {
+pub fn map(entries: impl IntoIterator<Item = (u32, Value)>) -> TestResult<Value> {
     Ok(Value::Map(
         entries
             .into_iter()
@@ -24,7 +24,7 @@ fn map(entries: impl IntoIterator<Item = (u32, Value)>) -> TestResult<Value> {
     ))
 }
 
-fn catalog_map(entries: impl IntoIterator<Item = (CatalogKey, Value)>) -> TestResult<Value> {
+pub fn catalog_map(entries: impl IntoIterator<Item = (CatalogKey, Value)>) -> TestResult<Value> {
     Ok(Value::Map(
         entries
             .into_iter()
@@ -40,7 +40,7 @@ fn fields(value: &mut Value) -> TestResult<&mut Fields> {
     }
 }
 
-fn path(ids: impl IntoIterator<Item = u32>) -> Value {
+pub fn path(ids: impl IntoIterator<Item = u32>) -> Value {
     Value::List(
         ids.into_iter()
             .map(|id| Value::Int(i64::from(id)))
@@ -48,7 +48,7 @@ fn path(ids: impl IntoIterator<Item = u32>) -> Value {
     )
 }
 
-fn structure(name: &str, members: Vec<Value>) -> TestResult<Value> {
+pub fn structure(name: &str, members: Vec<Value>) -> TestResult<Value> {
     catalog_map([
         (CatalogKey::Name, Value::Text(name.to_owned())),
         (CatalogKey::Kind, Value::Int(14)),
@@ -56,7 +56,7 @@ fn structure(name: &str, members: Vec<Value>) -> TestResult<Value> {
     ])
 }
 
-fn member(id: u32, target: i64) -> TestResult<Value> {
+pub fn member(id: u32, target: i64) -> TestResult<Value> {
     catalog_map([
         (CatalogKey::MemberId, Value::Int(i64::from(id))),
         (CatalogKey::MemberTarget, Value::Int(target)),
@@ -122,7 +122,7 @@ fn root(service: Value) -> TestResult<Value> {
     ])
 }
 
-fn item_root() -> TestResult<Value> {
+pub fn item_root() -> TestResult<Value> {
     map([(1, Value::Int(0))])
 }
 
@@ -167,7 +167,7 @@ fn plan(item: Value, identity: Value, mut pagination: Value) -> TestResult<Value
     ])
 }
 
-fn column(ids: impl IntoIterator<Item = u32>) -> TestResult<Value> {
+pub fn column(ids: impl IntoIterator<Item = u32>) -> TestResult<Value> {
     map([(1, path(ids)), (2, Value::Int(3))])
 }
 
@@ -196,7 +196,7 @@ fn seal(mut root: Value, mut extension: Value) -> TestResult<Vec<u8>> {
     Ok(encode_container(&root, MAX_CATALOG_BYTES)?)
 }
 
-fn catalog(
+pub fn catalog(
     input: u32,
     output: u32,
     shapes: Vec<Value>,
@@ -238,116 +238,4 @@ fn catalog(
         ),
     ])?;
     seal(root(service(input, output, shapes)?)?, extension)
-}
-
-pub fn identity_catalog(output_fields: &[u32], identity: Value) -> TestResult<Vec<u8>> {
-    let members = output_fields
-        .iter()
-        .map(|&id| member(id, -3))
-        .collect::<TestResult<Vec<_>>>()?;
-    let shapes = vec![structure("Input", vec![])?, structure("Output", members)?];
-    let columns = output_fields
-        .iter()
-        .map(|&id| column([id]))
-        .collect::<TestResult<Vec<_>>>()?;
-    catalog(
-        0,
-        1,
-        shapes,
-        item_root()?,
-        identity,
-        map([(1, Value::List(vec![]))])?,
-        columns,
-    )
-}
-
-pub fn scalar_item_catalog(identity: Value, pagination: Value) -> TestResult<Vec<u8>> {
-    let items = catalog_map([
-        (CatalogKey::Name, Value::Text("Items".to_owned())),
-        (CatalogKey::Kind, Value::Int(16)),
-        (CatalogKey::Element, Value::Int(-3)),
-    ])?;
-    let shapes = vec![
-        structure("Input", vec![])?,
-        items,
-        structure("Output", vec![member(1, 1)?])?,
-    ];
-    let item = map([(1, Value::Int(1)), (2, path([1]))])?;
-    catalog(0, 2, shapes, item, identity, pagination, vec![column([])?])
-}
-
-pub fn nested_structure_catalog(
-    depth: u32,
-    identity: Value,
-    pagination: Value,
-) -> TestResult<Vec<u8>> {
-    let mut shapes = vec![catalog_map([
-        (CatalogKey::Name, Value::Text("Scalar".to_owned())),
-        (CatalogKey::Kind, Value::Int(2)),
-    ])?];
-    for level in 1..=depth {
-        shapes.push(structure(
-            &format!("Level{level}"),
-            vec![member(
-                1,
-                i64::from(level.checked_sub(1).ok_or("zero level")?),
-            )?],
-        )?);
-    }
-    let input = u32::try_from(shapes.len())?;
-    shapes.push(structure("Input", vec![])?);
-    let ids = vec![1; usize::try_from(depth)?];
-    catalog(
-        input,
-        depth,
-        shapes,
-        item_root()?,
-        identity,
-        pagination,
-        vec![column(ids)?],
-    )
-}
-
-pub fn pagination_catalog(
-    input_fields: &[u32],
-    output_fields: &[u32],
-    pagination: Value,
-) -> TestResult<Vec<u8>> {
-    let input = input_fields
-        .iter()
-        .map(|&id| member(id, -3))
-        .collect::<TestResult<Vec<_>>>()?;
-    let output = output_fields
-        .iter()
-        .map(|&id| member(id, -3))
-        .collect::<TestResult<Vec<_>>>()?;
-    let shapes = vec![structure("Input", input)?, structure("Output", output)?];
-    let identity = map([(1, Value::Int(2)), (2, Value::List(vec![path([11])]))])?;
-    catalog(
-        0,
-        1,
-        shapes,
-        item_root()?,
-        identity,
-        pagination,
-        vec![column([11])?],
-    )
-}
-
-pub fn pagination_token(
-    request_path: Vec<Value>,
-    response_path: Vec<Value>,
-    optional: bool,
-    value_type: i64,
-) -> TestResult<Value> {
-    let request_placement = map([(1, Value::Int(3)), (2, Value::List(request_path.clone()))])?;
-    let response_placement = map([(1, Value::Int(3)), (2, Value::List(response_path.clone()))])?;
-    map([
-        (1, Value::List(request_path)),
-        (2, Value::List(response_path)),
-        (3, Value::Int(value_type)),
-        (4, request_placement),
-        (5, response_placement),
-        (6, Value::Bool(optional)),
-    ])
 }
