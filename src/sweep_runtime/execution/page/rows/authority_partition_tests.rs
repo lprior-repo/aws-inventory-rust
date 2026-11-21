@@ -70,7 +70,7 @@ async fn projected_page(
         .await?
         .ok_or("projected work absent")?;
     let bindings = lease.bindings().to_vec();
-    page(store, lease, observations, Vec::new(), at + 1).await?;
+    page(store, lease, observations, Vec::new(), at.saturating_add(1)).await?;
     Ok(bindings)
 }
 
