@@ -286,7 +286,7 @@ async fn given_pre_v3_active_lease_when_migration_keeps_its_generation_then_comm
         .await?
         .ok_or("old work was not resumable")?;
     let lease = store
-        .claim(&sweep, 5, 10_000)
+        .claim(&sweep, 10_010, 10_000)
         .await?
         .ok_or("new claim absent")?;
     store.finish_scope(lease, ScopeOutcome::Complete, 6).await?;

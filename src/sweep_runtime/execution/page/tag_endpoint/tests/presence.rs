@@ -71,24 +71,13 @@ async fn given_missing_required_tag_scalars_or_completion_flag_when_decoded_then
     let plan = catalog
         .lookup("iam", "ListRoleTags")
         .ok_or("tag endpoint missing")?;
-    let malformed = [
-        (
-            "value",
-            "<Tags><member><Key>Owner</Key></member></Tags><IsTruncated>false</IsTruncated>",
-            "modeled tag pair requires string key and value",
-        ),
-        (
-            "key",
-            "<Tags><member><Value>value</Value></member></Tags><IsTruncated>false</IsTruncated>",
-            "modeled tag pair requires string key and value",
-        ),
-        (
-            "completion",
-            "<Tags/>",
-            "tag response omitted explicit pagination completion evidence",
-        ),
+    // Malformed tag pairs are skipped (ES-01); the snapshot stays stale.
+    // Only the completion-flag case still hard-fails at decode time.
+    let skip = [
+        ("value", "<Tags><member><Key>Owner</Key></member></Tags><IsTruncated>false</IsTruncated>"),
+        ("key", "<Tags><member><Value>value</Value></member></Tags><IsTruncated>false</IsTruncated>"),
     ];
-    for (name, body, expected) in malformed {
+    for (name, body) in skip {
         let (directory, store, owner, sweep) =
             seeded(&compiled, &format!("missing-{name}")).await?;
         let lease = claim(&store, &sweep, 2).await?;
@@ -104,16 +93,45 @@ async fn given_missing_required_tag_scalars_or_completion_flag_when_decoded_then
             record,
             headers: http::HeaderMap::new(),
         };
+        // Malformed pair is skipped; consume returns Ok with Partial coverage.
+        let result = consume(&catalog, &lease, response, 10);
         assert!(
-            matches!(consume(&catalog, &lease, response, 10), Err(error) if matches!(error.downcast_ref::<SweepError>(), Some(SweepError::Operation(message)) if *message == expected))
+            matches!(result, Ok(PageParts { .. })),
+            "malformed tag pair should be skipped, not fail: {name}"
         );
         store.finish_scope(lease, ScopeOutcome::Failed, 3).await?;
         assert_eq!(
             tags(&store, &owner).await?,
-            vec![("known".into(), "old".into())]
+            vec![("known".into(), "old".into())],
+            "snapshot unchanged after skipped malformed pair: {name}"
         );
         drop(store);
         directory.close()?;
     }
+    // Completion flag still hard-fails.
+    let (directory, store, owner, sweep) =
+        seeded(&compiled, "missing-completion").await?;
+    let lease = claim(&store, &sweep, 2).await?;
+    let body =
+        "<ListRoleTagsResponse><ListRoleTagsResult><Tags/></ListRoleTagsResult></ListRoleTagsResponse>".to_owned();
+    let record = decode(
+        plan,
+        &body,
+        aws_wire::response::DecodeLimits::default().preserve_field_presence(),
+    )?;
+    let response = call::DecodedResponse {
+        record,
+        headers: http::HeaderMap::new(),
+    };
+    assert!(
+        matches!(consume(&catalog, &lease, response, 10), Err(error) if matches!(error.downcast_ref::<SweepError>(), Some(SweepError::Operation(message)) if *message == "tag response omitted explicit pagination completion evidence"))
+    );
+    store.finish_scope(lease, ScopeOutcome::Failed, 3).await?;
+    assert_eq!(
+        tags(&store, &owner).await?,
+        vec![("known".into(), "old".into())]
+    );
+    drop(store);
+    directory.close()?;
     Ok(())
 }
