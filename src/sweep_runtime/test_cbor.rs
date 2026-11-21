@@ -75,7 +75,7 @@ fn decode(decoder: &mut Decoder<'_>) -> TestResult<Json> {
             let mut seen = 0u64;
             while more(decoder, length, seen)? {
                 items.push(decode(decoder)?);
-                seen += 1;
+                seen = seen.saturating_add(1);
             }
             Json::Array(items)
         }
@@ -86,7 +86,7 @@ fn decode(decoder: &mut Decoder<'_>) -> TestResult<Json> {
             while more(decoder, length, seen)? {
                 let key = decoder.str()?.to_owned();
                 map.insert(key, decode(decoder)?);
-                seen += 1;
+                seen = seen.saturating_add(1);
             }
             Json::Object(map)
         }
