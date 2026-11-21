@@ -194,8 +194,8 @@ fn given_one_production_constraint_operation_when_compiled_then_all_five_canonic
         );
         assert_eq!(relation.target_path.as_ref(), &[field("Id")?]);
         assert_eq!(relation.relation.as_str(), "FOR_PORTFOLIO");
-        assert_eq!(plan.supports_relationship(relation)?, true);
-        assert_eq!(parent.supports_relationship(relation)?, false);
+        assert!(plan.supports_relationship(relation)?);
+        assert!(!parent.supports_relationship(relation)?);
     }
     Ok(())
 }
