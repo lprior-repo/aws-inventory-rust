@@ -6,10 +6,13 @@ use aws_wire::{
     transport::{Client, Response},
 };
 use inventory_aws::model_credentials::{CredentialError, ProfileCredentials};
-use inventory_core::catalog::runtime::{CallablePlan, ResolvedEndpoint, RuntimeProtocol};
+use inventory_core::catalog::runtime::{
+    CallablePlan, PlanPurpose, ResolvedEndpoint, RuntimeProtocol,
+};
 use inventory_core::record::Record;
 use inventory_engine::limiter::{ApiError, ApiExecutor};
 
+use super::execution::page::cursor;
 use super::{SweepError, input::InputField, request};
 
 pub(super) struct Call<'a, 'catalog> {
@@ -90,11 +93,24 @@ fn decode_response(
     plan: &CallablePlan<'_>,
     response: Response,
 ) -> Result<DecodedResponse, SweepError> {
+    let tag_endpoint = matches!(plan.purpose(), PlanPurpose::TagEndpoint(_));
+    let record = decode_record(plan, &response, tag_endpoint)?;
+    if !tag_endpoint {
+        confirm_truncation_presence(plan, &response, &record)?;
+    }
+    Ok(DecodedResponse {
+        record,
+        headers: response.headers,
+    })
+}
+
+fn decode_record(
+    plan: &CallablePlan<'_>,
+    response: &Response,
+    preserve_presence: bool,
+) -> Result<Record, SweepError> {
     let limits = aws_wire::response::DecodeLimits::default();
-    let limits = if matches!(
-        plan.purpose(),
-        inventory_core::catalog::runtime::PlanPurpose::TagEndpoint(_)
-    ) {
+    let limits = if preserve_presence {
         limits.preserve_field_presence()
     } else {
         limits
@@ -108,11 +124,24 @@ fn decode_response(
         status: response.status,
         limits,
     };
-    let record = aws_wire::response::decode(context).map_err(SweepError::from)?;
-    Ok(DecodedResponse {
-        record,
-        headers: response.headers,
-    })
+    aws_wire::response::decode(context).map_err(SweepError::from)
+}
+
+/// Enumeration decodes apply SDK defaults, which turn an omitted required or defaulted
+/// truncation flag into `false`; the cursor reads `false` as completion. A `false` flag is
+/// therefore accepted only when the presence-preserving decode also carries it, so an omitted
+/// flag fails here instead of ending enumeration.
+fn confirm_truncation_presence(
+    plan: &CallablePlan<'_>,
+    response: &Response,
+    record: &Record,
+) -> Result<(), SweepError> {
+    let pagination = plan.pagination();
+    if cursor::truncation_flag(pagination, record)? != Some(false) {
+        return Ok(());
+    }
+    let evidence = decode_record(plan, response, true)?;
+    cursor::truncation_flag(pagination, &evidence).map(|_| ())
 }
 
 fn validate_status(plan: &CallablePlan<'_>, response: Response) -> Result<Response, ApiError> {
@@ -214,18 +243,4 @@ fn path_mode(mode: inventory_core::catalog::runtime::EndpointPathMode) -> PathMo
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn denied_http_status_is_not_retried() {
-        assert!(matches!(
-            status_fallback(http::StatusCode::FORBIDDEN),
-            ApiError::Denied(_)
-        ));
-        assert!(matches!(
-            status_fallback(http::StatusCode::TOO_MANY_REQUESTS),
-            ApiError::Throttled(_)
-        ));
-    }
-}
+mod tests;

@@ -47,7 +47,7 @@ pub(super) fn validate_tuple(
     Ok(())
 }
 
-fn truncated(plan: &PagePlan, response: &Record) -> Result<Option<bool>, SweepError> {
+pub(super) fn truncated(plan: &PagePlan, response: &Record) -> Result<Option<bool>, SweepError> {
     let Some(path) = plan.truncated_path.as_ref() else {
         return Ok(None);
     };

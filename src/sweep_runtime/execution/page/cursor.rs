@@ -12,6 +12,15 @@ use inventory_core::{
 
 use crate::sweep_runtime::{SweepError, input, record};
 
+/// Reads the completion flag as the cursor does: `None` when the operation has no flag, and an
+/// error when a declared flag is absent or not boolean.
+pub(in crate::sweep_runtime) fn truncation_flag(
+    plan: &PagePlan,
+    response: &Record,
+) -> Result<Option<bool>, SweepError> {
+    tokens::truncated(plan, response)
+}
+
 const PAGES: u32 = 65_530;
 const CURRENT: u32 = 65_532;
 const PARTIAL: u32 = 65_533;
