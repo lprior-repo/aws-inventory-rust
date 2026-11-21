@@ -377,10 +377,47 @@ async fn persist_reference(
     let target = &reference.target;
     let scope = reference_scope(target.account().as_str(), target.region().as_str())?;
     let path = super::reference_candidates::stored_path(target)?;
-    sqlx::query("INSERT INTO unresolved_refs(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source,target_kinds) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11) ON CONFLICT(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source) DO UPDATE SET target_kinds=excluded.target_kinds")
-        .bind(reference.from.account.as_str()).bind(reference.from.region.as_str()).bind(reference.from.kind.as_str()).bind(reference.from.id.as_str())
-        .bind(scope).bind(target.kind().as_str()).bind(path).bind(target.value().as_str()).bind(reference.relation.as_str()).bind(reference.source.as_str())
-        .bind(reference_candidates::encode(target)?).execute(&mut **tx).await?;
+    // Persist the reference row with the full candidate-kind blob.
+    let blob_bytes = reference_candidates::encode(target)?;
+    sqlx::query("INSERT INTO unresolved_refs(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source,target_kinds) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11) ON CONFLICT(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source) DO UPDATE SET target_kinds=?11")
+        .bind(reference.from.account.as_str()).bind(reference.from.region.as_str())
+        .bind(reference.from.kind.as_str()).bind(reference.from.id.as_str())
+        .bind(&scope).bind(target.kind().as_str()).bind(&path).bind(target.value().as_str())
+        .bind(reference.relation.as_str()).bind(reference.source.as_str())
+        .bind(&blob_bytes)
+        .execute(&mut **tx).await?;
+    // Refresh the derived candidate index rows for this reference.
+    refresh_ref_candidates(tx, reference, &scope, &path).await?;
+    Ok(())
+}
+
+async fn refresh_ref_candidates(
+    tx: &mut Transaction<'_, Sqlite>,
+    reference: &UnresolvedReference,
+    scope: &[u8],
+    path: &[u8],
+) -> Result<(), StoreError> {
+    let target = &reference.target;
+    // Delete old candidate rows for this reference.
+    sqlx::query("DELETE FROM unresolved_ref_candidates WHERE from_account=?1 AND from_region=?2 AND from_kind=?3 AND from_id=?4 AND target_scope=?5 AND target_kind=?6 AND target_path=?7 AND target_value=?8 AND relation=?9 AND source=?10")
+        .bind(reference.from.account.as_str()).bind(reference.from.region.as_str())
+        .bind(reference.from.kind.as_str()).bind(reference.from.id.as_str())
+        .bind(scope).bind(target.kind().as_str()).bind(path)
+        .bind(target.value().as_str())
+        .bind(reference.relation.as_str()).bind(reference.source.as_str())
+        .execute(&mut **tx).await?;
+    // Insert one candidate row per candidate kind (including primary).
+    let kinds = target.candidate_kinds();
+    for kind in kinds.iter() {
+        sqlx::query("INSERT INTO unresolved_ref_candidates(target_scope,candidate_kind,from_account,from_region,from_kind,from_id,target_kind,target_path,target_value,relation,source) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)")
+            .bind(scope).bind(kind.as_str())
+            .bind(reference.from.account.as_str()).bind(reference.from.region.as_str())
+            .bind(reference.from.kind.as_str()).bind(reference.from.id.as_str())
+            .bind(target.kind().as_str()).bind(path)
+            .bind(target.value().as_str())
+            .bind(reference.relation.as_str()).bind(reference.source.as_str())
+            .execute(&mut **tx).await?;
+    }
     Ok(())
 }
 async fn resolve_reference(

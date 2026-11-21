@@ -404,6 +404,10 @@ async fn given_legacy_matching_foreign_reference_when_catalog_is_attached_then_o
         let path = directory.path().join("inventory.sqlite");
         let pool = sqlx::SqlitePool::connect(&format!("sqlite://{}", path.display())).await?;
         let mut tx = pool.begin().await?;
+        // A historical store predates the derived candidate index.
+        sqlx::query("DROP TABLE unresolved_ref_candidates")
+            .execute(&mut *tx)
+            .await?;
         // This historical unchecked tuple matches a reviewed rule but not its actual source value.
         sqlx::query("UPDATE unresolved_refs SET target_value=?1")
             .bind(SINK)

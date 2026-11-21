@@ -1,6 +1,6 @@
-use super::{SchemaRegistry, StoreError};
-use inventory_core::inventory::{KindSchema, ScalarType};
-use sqlx::{Row, SqlitePool};
+use super::{SchemaRegistry, StoreError, reference_candidates};
+use inventory_core::inventory::{Kind, KindSchema, ScalarType};
+use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 use std::sync::Arc;
 
 const TAG_OBSERVATIONS_SQL: &str = "CREATE TABLE tag_observations(account TEXT NOT NULL,region TEXT NOT NULL,kind TEXT NOT NULL,id TEXT NOT NULL,coverage TEXT NOT NULL CHECK(coverage IN('complete','partial','failed','unobserved')),observed_at INTEGER NOT NULL CHECK(observed_at>=0),last_complete_at INTEGER CHECK(last_complete_at>=0),PRIMARY KEY(account,region,kind,id),FOREIGN KEY(account,region,kind,id) REFERENCES resources(account,region,kind,id) ON DELETE CASCADE) WITHOUT ROWID";
@@ -19,6 +19,7 @@ pub(super) async fn initialize(
         return Err(StoreError::SchemaVersion { found: version });
     }
     create_shared_tables(&mut tx).await?;
+    create_ref_candidates_table(&mut tx).await?;
     super::tag_mapping::create(&mut tx).await?;
     super::legacy::create(&mut tx).await?;
     super::relation_permissions::initialize_provenance(&mut tx).await?;
@@ -38,7 +39,7 @@ pub(super) async fn initialize(
     }
     super::relation_permissions::persist(&mut tx, registry).await?;
     create_scope_freshness_view(&mut tx).await?;
-    sqlx::query("PRAGMA user_version=16")
+    sqlx::query("PRAGMA user_version=17")
         .execute(&mut *tx)
         .await?;
     tx.commit().await?;
@@ -50,7 +51,7 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
     let version: i64 = sqlx::query_scalar("PRAGMA user_version")
         .fetch_one(&mut *tx)
         .await?;
-    if !matches!(version, 14..=16) {
+    if !matches!(version, 14..=17) {
         return Err(StoreError::SchemaVersion { found: version });
     }
     sqlx::query("DROP TRIGGER IF EXISTS delete_resource_children")
@@ -74,6 +75,21 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
         sqlx::query("ALTER TABLE unresolved_refs ADD COLUMN resolution TEXT NOT NULL DEFAULT 'unresolved' CHECK(resolution IN('unresolved','resolved','ambiguous'))")
             .execute(&mut *tx).await?;
         sqlx::query("PRAGMA user_version=16")
+            .execute(&mut *tx)
+            .await?;
+    }
+    if version < 17 {
+        // ES-10: Add derived index table for unresolved reference candidate kinds.
+        // One row per candidate kind (including primary), indexed by candidate kind
+        // to drive resolution lookups without scanning the candidate-kind blob.
+        // Derived data: rebuild from unresolved_refs so a stale table never survives.
+        sqlx::query("DROP TABLE IF EXISTS unresolved_ref_candidates")
+            .execute(&mut *tx)
+            .await?;
+        create_ref_candidates_table(&mut tx).await?;
+        // Backfill from existing unresolved_refs rows.
+        migrate_backfill_ref_candidates(&mut tx).await?;
+        sqlx::query("PRAGMA user_version=17")
             .execute(&mut *tx)
             .await?;
     }
@@ -157,6 +173,81 @@ pub(super) async fn migrate_inventory(pool: &SqlitePool) -> Result<(), StoreErro
     create_scope_freshness_view(&mut tx).await?;
     super::tag_mapping::create(&mut tx).await?;
     tx.commit().await?;
+    Ok(())
+}
+
+/// ES-10: derived index with one row per candidate kind of each unresolved
+/// reference, so resolution lookups never scan the packed candidate-kind blob.
+async fn create_ref_candidates_table(
+    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+) -> Result<(), StoreError> {
+    sqlx::query(
+        "CREATE TABLE IF NOT EXISTS unresolved_ref_candidates(
+            target_scope BLOB NOT NULL,
+            candidate_kind TEXT NOT NULL,
+            from_account TEXT NOT NULL,
+            from_region TEXT NOT NULL,
+            from_kind TEXT NOT NULL,
+            from_id TEXT NOT NULL,
+            target_kind TEXT NOT NULL,
+            target_path BLOB NOT NULL,
+            target_value TEXT NOT NULL,
+            relation TEXT NOT NULL,
+            source TEXT NOT NULL,
+            PRIMARY KEY(target_scope,candidate_kind,from_account,from_region,from_kind,from_id,target_kind,target_path,target_value,relation,source),
+            FOREIGN KEY(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source)
+                REFERENCES unresolved_refs(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source)
+                ON DELETE CASCADE
+        ) WITHOUT ROWID",
+    )
+    .execute(&mut **tx)
+    .await?;
+    // The reference key leads this index so cascade deletes and per-reference
+    // refreshes are index lookups, not scans of the candidate table.
+    sqlx::query("CREATE INDEX IF NOT EXISTS unresolved_ref_candidates_ref ON unresolved_ref_candidates(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source)")
+        .execute(&mut **tx)
+        .await?;
+    Ok(())
+}
+
+async fn migrate_backfill_ref_candidates(
+    tx: &mut Transaction<'_, Sqlite>,
+) -> Result<(), StoreError> {
+    // Backfill from existing unresolved_refs rows.
+    // For each reference, insert one candidate row per candidate kind.
+    let rows = sqlx::query("SELECT from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source,target_kinds FROM unresolved_refs")
+        .fetch_all(&mut **tx).await?;
+
+    for row in rows {
+        let from_account: String = row.try_get("from_account")?;
+        let from_region: String = row.try_get("from_region")?;
+        let from_kind: String = row.try_get("from_kind")?;
+        let from_id: String = row.try_get("from_id")?;
+        let target_scope: Vec<u8> = row.try_get("target_scope")?;
+        let primary_kind: String = row.try_get("target_kind")?;
+        let target_path: Vec<u8> = row.try_get("target_path")?;
+        let target_value: String = row.try_get("target_value")?;
+        let relation: String = row.try_get("relation")?;
+        let source: String = row.try_get("source")?;
+        let blob: Vec<u8> = row.try_get("target_kinds")?;
+
+        let primary = Kind::parse(&primary_kind)?;
+        let kinds = if blob.is_empty() {
+            vec![primary.clone()]
+        } else {
+            reference_candidates::decode(&blob, &primary)?
+        };
+
+        for kind in kinds {
+            sqlx::query("INSERT INTO unresolved_ref_candidates(target_scope,candidate_kind,from_account,from_region,from_kind,from_id,target_kind,target_path,target_value,relation,source) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11)")
+                .bind(&target_scope).bind(kind.as_str())
+                .bind(&from_account).bind(&from_region).bind(&from_kind).bind(&from_id)
+                .bind(&primary_kind).bind(&target_path).bind(&target_value)
+                .bind(&relation).bind(&source)
+                .execute(&mut **tx).await?;
+        }
+    }
+
     Ok(())
 }
 
