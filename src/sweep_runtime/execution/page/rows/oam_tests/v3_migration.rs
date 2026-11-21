@@ -2,8 +2,7 @@ use super::*;
 #[path = "v3_fixture.rs"]
 mod fixture;
 use fixture::{catalog_bytes, facet_row, frozen, old_image, page, partial, pool};
-use inventory_core::inventory::{AccountId, ScopeOutcome};
-use inventory_engine::inventory::SweepId;
+use inventory_core::inventory::ScopeOutcome;
 
 #[path = "v3_replay.rs"]
 mod replay;
@@ -282,11 +281,12 @@ async fn given_pre_v3_active_lease_when_migration_keeps_its_generation_then_comm
         0
     );
     sql.close().await;
-    let sweep_id = SweepId::new("pending-old".to_owned())?;
-    let account_id = AccountId::parse("210987654321")?;
-    store.resume_sweep(&sweep_id, &account_id).await?;
+    let sweep = store
+        .discover_active_sweep()
+        .await?
+        .ok_or("old work was not resumable")?;
     let lease = store
-        .claim(&sweep_id, 5, 10_000)
+        .claim(&sweep, 10_010, 10_000)
         .await?
         .ok_or("new claim absent")?;
     store.finish_scope(lease, ScopeOutcome::Complete, 6).await?;
