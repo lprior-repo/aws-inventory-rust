@@ -108,7 +108,7 @@ pub(super) async fn consume_and_check(
         acknowledged
     };
     println!(
-        "pipeline_graph={} input_pending={pending} acknowledged={acknowledged} resource_refreshes={refreshes} pending=0 wall_us={} resource_refreshes_per_second={:.3} exact_native_state=true graph={}",
+        "pipeline_graph={} input_pending={pending} acknowledged={acknowledged} acknowledged_unit=outbox_rows_one_per_resource_or_rebuild_marker resource_refreshes={refreshes} pending=0 wall_us={} resource_refreshes_per_second={} rate_clock=projection_delivery_wall rate_scope=delivery_calls_and_pending_check_excluding_topology_oracle exact_native_state=true graph={}",
         phase.name(),
         elapsed.as_micros(),
         super::pipeline::rate(refreshes, elapsed)?,

@@ -19,6 +19,24 @@ fn workload(directory: &std::path::Path, rows: usize) -> BenchResult<Workload> {
     })
 }
 
+#[test]
+fn given_zero_elapsed_clock_when_rating_then_unavailable_not_failure() -> BenchResult {
+    // Given a completed phase whose monotonic clock reads zero elapsed time.
+    // When formatting its throughput, Then the rate is explicitly unavailable.
+    assert_eq!(pipeline::rate(5, std::time::Duration::ZERO)?, "unavailable");
+    Ok(())
+}
+
+#[test]
+fn given_nonzero_elapsed_clock_when_rating_then_fixed_three_decimal_rate() -> BenchResult {
+    // Given five resources over two seconds, When formatting, Then 2.500 per second.
+    assert_eq!(
+        pipeline::rate(5, std::time::Duration::from_secs(2))?,
+        "2.500"
+    );
+    Ok(())
+}
+
 #[tokio::test]
 async fn given_real_wire_model_when_committing_tags_and_replay_then_exact_durable_state()
 -> BenchResult {

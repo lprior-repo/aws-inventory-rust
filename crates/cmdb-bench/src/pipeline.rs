@@ -186,8 +186,8 @@ async fn run_phase(
         })
         .collect::<BenchResult<Vec<_>>>()?;
     let revision_before = oracle::revision(&workload.path).await?;
-    let started = Instant::now();
     store.seed_works(&works).await?;
+    let started = Instant::now();
     let totals = stream::iter(0..workload.pages)
         .then(|page| run_round(workload, catalog, store, &sweep, phase, page))
         .try_fold(Totals::default(), |mut total, round| async move {
@@ -226,7 +226,7 @@ async fn run_phase(
     }
     oracle::check(workload, store, &sweep, phase, revision_before).await?;
     println!(
-        "pipeline_phase={} pages={} resources={} inserted={} changed={} deleted={} wall_us={} pages_per_second={:.3} resources_per_second={:.3} decode_worker_us={} commit_worker_us={} timings_include=fixture_generation_decode_tag_normalization_claim_commit timings_exclude=setup_state_oracles_native_projection",
+        "pipeline_phase={} pages={} resources={} inserted={} changed={} deleted={} wall_us={} pages_per_second={} resources_per_second={} decode_caller_sum_us={} commit_caller_sum_us={} rate_clock=wall_after_seed_before_oracles rate_scope=end_to_end_phase_with_concurrency sum_scope=per_page_caller_time_summed_over_concurrent_pages commit_scope=store_commit_call_including_writer_queue_wait_no_service_time timings_include=fixture_generation_decode_tag_normalization_claim_commit timings_exclude=seed_state_oracles_native_projection",
         phase.name(),
         totals.pages,
         workload.resources()?,
@@ -245,12 +245,17 @@ async fn run_phase(
     Ok(())
 }
 
-pub(super) fn rate(count: u64, duration: Duration) -> BenchResult<f64> {
+/// Formats a per-second rate. A zero clock reading is reported as `unavailable`
+/// rather than as a rate or as a failure of an otherwise completed phase.
+pub(super) fn rate(count: u64, duration: Duration) -> BenchResult<String> {
     if duration.is_zero() {
-        return Err("measurement clock returned zero elapsed time".into());
+        return Ok("unavailable".to_owned());
     }
     // Every validated workload is below u32::MAX, so presentation is lossless.
-    Ok(f64::from(u32::try_from(count)?) / duration.as_secs_f64())
+    Ok(format!(
+        "{:.3}",
+        f64::from(u32::try_from(count)?) / duration.as_secs_f64()
+    ))
 }
 
 type PageResult = (ChangeStats, Duration, Duration);
