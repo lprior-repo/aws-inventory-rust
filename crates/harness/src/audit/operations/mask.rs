@@ -237,20 +237,17 @@ fn mask_char_literal(
 ) -> (bool, usize) {
     let bytes = text.as_bytes();
     let mut cursor = position.saturating_add(1);
-    if bytes.get(cursor).is_none() {
-        return (false, position.saturating_add(1));
-    }
-
-    // Check for escape sequence or single character
-    if bytes.get(cursor) == Some(&b'\\') {
-        // Escape sequence
-        let next = cursor.saturating_add(1);
-        if bytes.get(next) == Some(&b'x') {
+    let Some(first) = bytes.get(cursor) else {
+        return (false, cursor);
+    };
+    let after = cursor.saturating_add(1);
+    if *first == b'\\' && bytes.get(after).is_some() {
+        let escape = bytes.get(after).copied();
+        if escape == Some(b'x') && bytes.get(cursor.saturating_add(3)).is_some() {
             cursor = cursor.saturating_add(4);
-        } else if bytes.get(next) == Some(&b'u') {
-            let inner_start = cursor.saturating_add(3);
-            let mut inner = inner_start;
-            while bytes.get(inner) != Some(&b'}') {
+        } else if escape == Some(b'u') && bytes.get(cursor.saturating_add(2)) == Some(&b'{') {
+            let mut inner = cursor.saturating_add(3);
+            while bytes.get(inner).is_some_and(|byte| *byte != b'}') {
                 inner = inner.saturating_add(1);
             }
             if bytes.get(inner).is_some() {
@@ -260,18 +257,13 @@ fn mask_char_literal(
             cursor = cursor.saturating_add(2);
         }
     } else {
-        // Single character
         cursor = cursor.saturating_add(1);
     }
-
-    // Check for closing quote
     if bytes.get(cursor) == Some(&b'\'') {
-        mask_range(output, position, cursor.saturating_add(1));
-        cursor = cursor.saturating_add(1);
-        return (true, cursor);
+        let end = cursor.saturating_add(1);
+        mask_range(output, position, end);
+        return (true, end);
     }
-
-    // Not a valid character literal (e.g., lifetime parameter)
     (false, position.saturating_add(1))
 }
 
@@ -283,22 +275,23 @@ fn mask_block_comment(
     let mut cursor = position.saturating_add(2);
     let mut depth: usize = 1;
     let bytes = text.as_bytes();
-    while depth > 0 {
-        if bytes.get(cursor) == Some(&b'/') && bytes.get(cursor.saturating_add(1)) == Some(&b'*') {
+    while cursor < bytes.len() && depth > 0 {
+        let pair = (bytes.get(cursor).copied(), bytes.get(cursor.saturating_add(1)).copied());
+        if pair == (Some(b'/'), Some(b'*')) {
             depth = depth.saturating_add(1);
             if depth > 64 {
                 return (false, cursor);
             }
             cursor = cursor.saturating_add(2);
-        } else if bytes.get(cursor) == Some(&b'*') && bytes.get(cursor.saturating_add(1)) == Some(&b'/') {
+        } else if pair == (Some(b'*'), Some(b'/')) {
             depth = depth.saturating_sub(1);
             if depth == 0 {
-                mask_range(output, position, cursor.saturating_add(2));
                 cursor = cursor.saturating_add(2);
+                mask_range(output, position, cursor);
             }
         } else {
             cursor = cursor.saturating_add(1);
         }
     }
-    (true, cursor)
+    (depth == 0, cursor)
 }

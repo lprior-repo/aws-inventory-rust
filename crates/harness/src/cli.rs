@@ -283,8 +283,8 @@ fn parse_mutate(arguments: &[String]) -> Result<Command, HarnessError> {
 fn parse_verify_delivery(arguments: &[String]) -> Result<Command, HarnessError> {
     let options = options(
         arguments,
-        &["--binary", "--redis-cli", "--database", "--output"],
-        &[],
+        &["--binary", "--redis-cli", "--database", "--output", "--run-workspace-tests"],
+        &["--run-workspace-tests"],
     )?;
     let binary = options.value("--binary")?;
     let redis_cli = options.value("--redis-cli")?;
