@@ -134,6 +134,30 @@ mod tests {
         assert_eq!(rate.interval_ns()?, 20_000);
         Ok(())
     }
+
+    #[test]
+    fn per_second_recovery_is_monotone_across_the_thousand_rps_boundary() -> Result<(), ApiError> {
+        for ceiling in [999_u32, 1_000, 1_001] {
+            let mut rate = AdaptiveRate::PerSecond {
+                current: ceiling,
+                maximum: ceiling,
+            };
+            rate.throttle()?;
+            let recoveries = ceiling - ceiling / 2;
+            let mut previous = rate.interval_ns()?;
+            for _ in 0..recoveries {
+                rate.recover();
+                let next = rate.interval_ns()?;
+                assert!(next < previous, "ceiling {ceiling}: {previous} -> {next}");
+                previous = next;
+            }
+            let ceiling_interval = 1_000_000_000_u64.div_ceil(u64::from(ceiling));
+            assert_eq!(previous, ceiling_interval);
+            rate.recover();
+            assert_eq!(rate.interval_ns()?, ceiling_interval);
+        }
+        Ok(())
+    }
 }
 mod policy;
 pub use policy::*;
