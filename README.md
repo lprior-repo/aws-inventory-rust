@@ -310,9 +310,9 @@ Continuous collection via `serve`:
 
 ```bash
 # Serve mode: sweep profiles on an interval, idling in between.
-# Runs until stopped with Ctrl+C; resumes from stored completion times on restart.
+# Runs until stopped with Ctrl+C.
 cargo run --locked --features aws -- serve \
-  --db inventory.sqlite \
+  --database inventory.sqlite \
   --profile audit \
   --interval 15m
 
@@ -320,24 +320,23 @@ cargo run --locked --features aws -- serve \
 # Stalest profiles run first within a sweep; if a sweep overruns the interval,
 # the next starts immediately. Sweeps never overlap.
 cargo run --locked --features aws -- serve \
-  --db inventory.sqlite \
+  --database inventory.sqlite \
   --profile development,production,staging \
-  --region us-east-1,us-west-2 \
+  --region us-east-1 \
   --interval 30m \
   --concurrency 32
 ```
 
 The `serve` command reads the catalog once, opens the store once, and then
-repeats: for each configured profile, run a full sweep (all its configured
-regions), then sleep until the next interval. Within a sweep, scopes that have
-not been swept in the longest time run first. Killing and restarting the
-process resumes the cycle without losing in-progress work; the stored
-completion times determine which profiles are stale.
+repeats: for each configured profile, run a full sweep, then sleep until the
+next interval. Within a sweep, scopes that have not been swept in the longest
+time run first. The command runs until stopped with Ctrl+C; it exits with code 0
+on clean stop, 2 if any sweep pass had failures.
 
 ```bash
 # With custom endpoint and CA bundle
 cargo run --locked --features aws -- serve \
-  --db inventory.sqlite \
+  --database inventory.sqlite \
   --profile audit \
   --interval 10m \
   --endpoint https://emulator.example.com \
