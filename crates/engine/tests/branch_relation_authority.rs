@@ -3,7 +3,10 @@ mod epoch_and_prefix;
 #[path = "scalar_replay_contract/snapshot.rs"]
 mod snapshot;
 #[path = "inventory_store/support.rs"]
-#[allow(dead_code, reason = "shared via #[path]; each test target uses a subset of the helpers")]
+#[allow(
+    dead_code,
+    reason = "shared via #[path]; each test target uses a subset of the helpers"
+)]
 mod support;
 
 use inventory_core::{

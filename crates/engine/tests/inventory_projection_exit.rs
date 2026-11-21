@@ -8,16 +8,17 @@
 //!    (the drain-after-return half needs live FalkorDB; see `graph_retry.rs`)
 //! 4. Overflowing the queue ends in a full rebuild enumeration with nothing lost
 #[path = "inventory_store/support.rs"]
-#[allow(dead_code, reason = "shared via #[path]; each test target uses a subset of the helpers")]
+#[allow(
+    dead_code,
+    reason = "shared via #[path]; each test target uses a subset of the helpers"
+)]
 mod support;
 
-use inventory_engine::inventory::{ProjectionAck, SweepId, run_projection};
 use inventory_core::inventory::ResourceId;
+use inventory_engine::inventory::{ProjectionAck, SweepId, run_projection};
 use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
 use std::collections::BTreeMap;
-use support::{
-    TestResult, fixture, observation, page, work,
-};
+use support::{TestResult, fixture, observation, page, work};
 
 /// Test 1: After a re-sweep with one change, only that key is sent.
 #[tokio::test]
@@ -77,7 +78,11 @@ async fn given_one_changed_resource_when_reprojecting_then_only_that_key_is_sent
 
     // Only the changed resource should be pending
     let pending = store.drain_projection(100).await?;
-    assert_eq!(pending.len(), 1, "only the changed resource should be pending");
+    assert_eq!(
+        pending.len(),
+        1,
+        "only the changed resource should be pending"
+    );
     let expected_id = ResourceId::parse("thing-1")?;
     let Some(entry) = pending.first() else {
         return Err("expected one pending entry".into());
@@ -86,8 +91,7 @@ async fn given_one_changed_resource_when_reprojecting_then_only_that_key_is_sent
         return Err("pending entry missing key".into());
     };
     assert_eq!(
-        key.id,
-        expected_id,
+        key.id, expected_id,
         "pending entry should be for the changed resource"
     );
 
@@ -132,14 +136,17 @@ async fn given_incremental_and_rebuilt_graphs_when_compared_then_they_are_equal(
             )?)
             .await?;
     }
-    assert_eq!(incremental_keys.len(), 3, "incremental projection delivered 3 resources");
+    assert_eq!(
+        incremental_keys.len(),
+        3,
+        "incremental projection delivered 3 resources"
+    );
 
     // Now force overflow BEFORE making a change, so the change triggers a rebuild marker
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
         .connect_with(
-            SqliteConnectOptions::new()
-                .filename(directory.path().join("inventory.sqlite")),
+            SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite")),
         )
         .await?;
     sqlx::query("UPDATE metadata SET value=100000 WHERE key='projection_pending'")
@@ -148,7 +155,9 @@ async fn given_incremental_and_rebuilt_graphs_when_compared_then_they_are_equal(
     pool.close().await;
 
     // Make a change that should trigger a rebuild marker due to overflow
-    store.seed_work(work("overflow-sweep", "us-east-1")?).await?;
+    store
+        .seed_work(work("overflow-sweep", "us-east-1")?)
+        .await?;
     let lease = store
         .claim(&SweepId::new("overflow-sweep".to_owned())?, 200, 20)
         .await?
@@ -200,7 +209,8 @@ async fn given_incremental_and_rebuilt_graphs_when_compared_then_they_are_equal(
 
 /// Test 3: With FalkorDB stopped a sweep completes and the queue is retained.
 #[tokio::test]
-async fn given_offline_falkordb_when_sweeping_then_the_queue_is_retained_for_later_delivery() -> TestResult {
+async fn given_offline_falkordb_when_sweeping_then_the_queue_is_retained_for_later_delivery()
+-> TestResult {
     let (_directory, store, _) = fixture().await?;
 
     // Add a resource
@@ -232,10 +242,7 @@ async fn given_offline_falkordb_when_sweeping_then_the_queue_is_retained_for_lat
     );
 
     // Verify entries are still deliverable (not corrupted by offline attempt)
-    let deliverable = pending
-        .iter()
-        .filter(|e| e.key.is_some())
-        .count();
+    let deliverable = pending.iter().filter(|e| e.key.is_some()).count();
     assert!(
         deliverable > 0,
         "entries remain deliverable after FalkorDB returns"
@@ -283,8 +290,7 @@ async fn given_outbox_overflow_when_rebuilt_then_graph_is_complete() -> TestResu
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
         .connect_with(
-            SqliteConnectOptions::new()
-                .filename(directory.path().join("inventory.sqlite")),
+            SqliteConnectOptions::new().filename(directory.path().join("inventory.sqlite")),
         )
         .await?;
     sqlx::query("UPDATE metadata SET value=100000 WHERE key='projection_pending'")
@@ -293,7 +299,9 @@ async fn given_outbox_overflow_when_rebuilt_then_graph_is_complete() -> TestResu
     pool.close().await;
 
     // Make a change that should trigger a rebuild marker
-    store.seed_work(work("overflow-sweep", "us-east-1")?).await?;
+    store
+        .seed_work(work("overflow-sweep", "us-east-1")?)
+        .await?;
     let lease = store
         .claim(&SweepId::new("overflow-sweep".to_owned())?, 200, 20)
         .await?

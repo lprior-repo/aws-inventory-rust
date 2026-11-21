@@ -76,7 +76,11 @@ async fn given_sweep_without_manifest_when_resumed_then_fails_account_mismatch()
             assert_eq!(expected, account);
             assert_eq!(manifest, None);
         }
-        other => return Err(format!("expected AccountMismatch with None manifest, got: {other:?}").into()),
+        other => {
+            return Err(
+                format!("expected AccountMismatch with None manifest, got: {other:?}").into(),
+            );
+        }
     }
     Ok(())
 }

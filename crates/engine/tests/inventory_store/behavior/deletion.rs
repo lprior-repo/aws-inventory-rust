@@ -1,9 +1,6 @@
 use super::*;
 
-fn sweep_works(
-    sweep: &str,
-    regions: &[(&str, &[(&str, &str)])],
-) -> TestResult<Vec<WorkSpec>> {
+fn sweep_works(sweep: &str, regions: &[(&str, &[(&str, &str)])]) -> TestResult<Vec<WorkSpec>> {
     regions
         .iter()
         .map(|(region, _)| relationship_work(sweep, region, None, Some("beta")))
@@ -53,8 +50,18 @@ async fn sweep_once(
     for offset in 0..i64::try_from(regions.len())? {
         let claimed_at = base.saturating_add(offset);
         let committed_at = claimed_at.saturating_add(1);
-        let stats = process_region(store, &id, regions, claimed_at, committed_at, edge_opt.take()).await?;
-        total.resources_deleted = total.resources_deleted.saturating_add(stats.resources_deleted);
+        let stats = process_region(
+            store,
+            &id,
+            regions,
+            claimed_at,
+            committed_at,
+            edge_opt.take(),
+        )
+        .await?;
+        total.resources_deleted = total
+            .resources_deleted
+            .saturating_add(stats.resources_deleted);
     }
     Ok(total)
 }
@@ -72,7 +79,12 @@ fn regional(id: &str, value: &str, region: &str) -> TestResult<Observation> {
     Ok(observed)
 }
 
-fn account_observation(id: &str, value: &str, account: &str, region: &str) -> TestResult<Observation> {
+fn account_observation(
+    id: &str,
+    value: &str,
+    account: &str,
+    region: &str,
+) -> TestResult<Observation> {
     let key = ResourceKey {
         account: AccountId::parse(account)?,
         region: Region::parse(region)?,
@@ -110,10 +122,12 @@ async fn get_scope_key_bytes(
     sweep: &str,
     _region: &str,
 ) -> TestResult<Vec<u8>> {
-    let bytes: Vec<u8> = sqlx::query_scalar("SELECT scope_key FROM scope_outcomes WHERE sweep_id=?1 AND outcome='complete' LIMIT 1")
-        .bind(sweep)
-        .fetch_one(pool)
-        .await?;
+    let bytes: Vec<u8> = sqlx::query_scalar(
+        "SELECT scope_key FROM scope_outcomes WHERE sweep_id=?1 AND outcome='complete' LIMIT 1",
+    )
+    .bind(sweep)
+    .fetch_one(pool)
+    .await?;
     Ok(bytes)
 }
 
@@ -242,13 +256,23 @@ async fn given_a_resource_that_vanishes_when_two_complete_sweeps_miss_it_then_ro
 async fn given_narrowed_regions_when_sweeps_complete_then_nothing_is_deleted_and_skipped_scope_is_unobserved_with_age()
 -> TestResult {
     let (_directory, store, _) = fixture().await?;
-    let both = [("us-east-1", &[("east", "beta")][..]), ("us-west-2", &[("west", "beta")][..])];
+    let both = [
+        ("us-east-1", &[("east", "beta")][..]),
+        ("us-west-2", &[("west", "beta")][..]),
+    ];
     sweep_once(&store, "n1", &both, 100, Vec::new()).await?;
     let narrowed = [("us-east-1", &[("east", "beta")][..])];
     let mut deleted: u64 = 0;
     for (index, sweep) in ["n2", "n3", "n4"].into_iter().enumerate() {
         let offset = i64::try_from(index)?;
-        let result = sweep_once(&store, sweep, &narrowed, 1_000_i64.saturating_add(offset.saturating_mul(100_i64)), Vec::new()).await?;
+        let result = sweep_once(
+            &store,
+            sweep,
+            &narrowed,
+            1_000_i64.saturating_add(offset.saturating_mul(100_i64)),
+            Vec::new(),
+        )
+        .await?;
         deleted = deleted.saturating_add(result.resources_deleted);
     }
     assert_eq!(deleted, 0);
@@ -280,7 +304,14 @@ async fn given_failed_outcome_when_scope_becomes_absent_then_age_measured_from_l
 -> TestResult {
     let (directory, store, _) = fixture().await?;
     // S1: complete observation at t=100
-    sweep_once(&store, "s1", &[("us-east-1", &[("x", "v1")][..])], 100, Vec::new()).await?;
+    sweep_once(
+        &store,
+        "s1",
+        &[("us-east-1", &[("x", "v1")][..])],
+        100,
+        Vec::new(),
+    )
+    .await?;
     // Manually record a failed outcome at t=200 (simulating a failed sweep)
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
@@ -295,14 +326,24 @@ async fn given_failed_outcome_when_scope_becomes_absent_then_age_measured_from_l
         .await?;
     pool.close().await;
     // S3: scope absent (different scope entirely); should report unobserved with last_observed=101 (from complete), not 200 (from failed)
-    sweep_once(&store, "s3", &[("us-west-2", &[("y", "v2")][..])], 300, Vec::new()).await?;
+    sweep_once(
+        &store,
+        "s3",
+        &[("us-west-2", &[("y", "v2")][..])],
+        300,
+        Vec::new(),
+    )
+    .await?;
     let s3 = SweepId::new("s3".to_owned())?;
     let unobserved = store.unobserved_scopes(&s3, 1_000).await?;
     let [only] = unobserved.as_slice() else {
         return Err("expected exactly one unobserved scope".into());
     };
     assert_eq!(only.scope, scope("us-east-1")?);
-    assert_eq!(only.last_observed_ms, 101, "age measured from last complete, not failed outcome");
+    assert_eq!(
+        only.last_observed_ms, 101,
+        "age measured from last complete, not failed outcome"
+    );
     Ok(())
 }
 
@@ -311,7 +352,14 @@ async fn given_scope_with_non_complete_last_outcome_when_scope_becomes_absent_th
 -> TestResult {
     let (directory, store, _) = fixture().await?;
     // S1: complete observation
-    sweep_once(&store, "s1", &[("us-east-1", &[("x", "v1")][..])], 100, Vec::new()).await?;
+    sweep_once(
+        &store,
+        "s1",
+        &[("us-east-1", &[("x", "v1")][..])],
+        100,
+        Vec::new(),
+    )
+    .await?;
     // Manually record a partial outcome at t=200 (last outcome is not complete)
     let pool = SqlitePoolOptions::new()
         .max_connections(1)
@@ -326,7 +374,14 @@ async fn given_scope_with_non_complete_last_outcome_when_scope_becomes_absent_th
         .await?;
     pool.close().await;
     // S3: scope absent; should NOT report as unobserved because last outcome was not complete
-    sweep_once(&store, "s3", &[("us-east-1", &[("y", "v2")][..])], 300, Vec::new()).await?;
+    sweep_once(
+        &store,
+        "s3",
+        &[("us-east-1", &[("y", "v2")][..])],
+        300,
+        Vec::new(),
+    )
+    .await?;
     let s3 = SweepId::new("s3".to_owned())?;
     let unobserved = store.unobserved_scopes(&s3, 1_000).await?;
     // The us-east-1 scope should not be reported because its last outcome was 'partial', not 'complete'
@@ -349,21 +404,65 @@ async fn given_removed_account_profile_when_later_sweep_runs_only_other_account_
     // S1: account A complete
     let work_a = account_work("s1", "111111111111", "us-east-1")?;
     store.seed_work(work_a).await?;
-    store.create_sweep_manifest(&SweepId::new("s1".to_owned())?, "111111111111").await?;
-    let lease_a = store.claim(&SweepId::new("s1".to_owned())?, 100, 20).await?.ok_or("missing lease a")?;
-    store.commit_page(page(lease_a, vec![account_observation("a", "va", "111111111111", "us-east-1")?], true, None, 101)).await?;
+    store
+        .create_sweep_manifest(&SweepId::new("s1".to_owned())?, "111111111111")
+        .await?;
+    let lease_a = store
+        .claim(&SweepId::new("s1".to_owned())?, 100, 20)
+        .await?
+        .ok_or("missing lease a")?;
+    store
+        .commit_page(page(
+            lease_a,
+            vec![account_observation("a", "va", "111111111111", "us-east-1")?],
+            true,
+            None,
+            101,
+        ))
+        .await?;
     // S2: account B complete
     let work_b = account_work("s2", "222222222222", "us-west-2")?;
     store.seed_work(work_b).await?;
-    store.create_sweep_manifest(&SweepId::new("s2".to_owned())?, "222222222222").await?;
-    let lease_b = store.claim(&SweepId::new("s2".to_owned())?, 200, 20).await?.ok_or("missing lease b")?;
-    store.commit_page(page(lease_b, vec![account_observation("b", "vb", "222222222222", "us-west-2")?], true, None, 201)).await?;
+    store
+        .create_sweep_manifest(&SweepId::new("s2".to_owned())?, "222222222222")
+        .await?;
+    let lease_b = store
+        .claim(&SweepId::new("s2".to_owned())?, 200, 20)
+        .await?
+        .ok_or("missing lease b")?;
+    store
+        .commit_page(page(
+            lease_b,
+            vec![account_observation("b", "vb", "222222222222", "us-west-2")?],
+            true,
+            None,
+            201,
+        ))
+        .await?;
     // S3: only account A runs again; account B should be reported unobserved
     let work_a3 = account_work("s3", "111111111111", "us-east-1")?;
     store.seed_work(work_a3).await?;
-    store.create_sweep_manifest(&SweepId::new("s3".to_owned())?, "111111111111").await?;
-    let lease_a3 = store.claim(&SweepId::new("s3".to_owned())?, 300, 20).await?.ok_or("missing lease a3")?;
-    store.commit_page(page(lease_a3, vec![account_observation("a2", "va2", "111111111111", "us-east-1")?], true, None, 301)).await?;
+    store
+        .create_sweep_manifest(&SweepId::new("s3".to_owned())?, "111111111111")
+        .await?;
+    let lease_a3 = store
+        .claim(&SweepId::new("s3".to_owned())?, 300, 20)
+        .await?
+        .ok_or("missing lease a3")?;
+    store
+        .commit_page(page(
+            lease_a3,
+            vec![account_observation(
+                "a2",
+                "va2",
+                "111111111111",
+                "us-east-1",
+            )?],
+            true,
+            None,
+            301,
+        ))
+        .await?;
     // Verify account B's scope is reported unobserved
     let s3 = SweepId::new("s3".to_owned())?;
     let unobserved = store.unobserved_scopes(&s3, 1_000).await?;
@@ -376,8 +475,7 @@ async fn given_removed_account_profile_when_later_sweep_runs_only_other_account_
     );
     let b_scope = b_unobserved.ok_or("account B scope not found")?;
     assert_eq!(
-        b_scope.last_observed_ms,
-        201,
+        b_scope.last_observed_ms, 201,
         "age measured from account B's last complete observation"
     );
     Ok(())

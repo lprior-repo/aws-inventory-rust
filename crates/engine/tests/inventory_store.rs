@@ -7,5 +7,8 @@ mod reference;
 #[path = "inventory_store/scalar.rs"]
 mod scalar;
 #[path = "inventory_store/support.rs"]
-#[allow(dead_code, reason = "shared via #[path]; each test target uses a subset of the helpers")]
+#[allow(
+    dead_code,
+    reason = "shared via #[path]; each test target uses a subset of the helpers"
+)]
 mod support;
