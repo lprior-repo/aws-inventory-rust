@@ -1,3 +1,4 @@
+use super::TestResult;
 use catalog_tool::smithy::{Registry, build_catalog};
 use serde_json::{Map as JsonMap, Value as Json};
 use std::{
@@ -9,19 +10,19 @@ use std::{
 
 static NEXT_TEMP: AtomicUsize = AtomicUsize::new(0);
 
-pub(super) fn compile_service(fixture: &Json, service_id: &str) -> Vec<u8> {
-    let selected = select_service_shapes(fixture, service_id);
-    let registry = fixture_registry(&selected);
-    let name = service_id.rsplit('#').next().expect("service name");
+pub(super) fn compile_service(fixture: &Json, service_id: &str) -> TestResult<Vec<u8>> {
+    let selected = select_service_shapes(fixture, service_id)?;
+    let registry = fixture_registry(&selected)?;
+    let name = service_id.rsplit('#').next().ok_or("service name")?;
     let root = temp_root(name);
     let model_dir = root.join("models").join(name.replace('.', "-"));
-    fs::create_dir_all(&model_dir).expect("fixture model directory");
-    write_fixture_model(&model_dir, selected);
+    fs::create_dir_all(&model_dir)?;
+    write_fixture_model(&model_dir, selected)?;
     compile_fixture_catalog(&root, &registry, service_id)
 }
 
-fn select_service_shapes(fixture: &Json, service_id: &str) -> JsonMap<String, Json> {
-    let shapes = fixture["shapes"].as_object().expect("fixture shapes");
+fn select_service_shapes(fixture: &Json, service_id: &str) -> TestResult<JsonMap<String, Json>> {
+    let shapes = fixture["shapes"].as_object().ok_or("fixture shapes")?;
     let mut selected = JsonMap::new();
     let mut pending = vec![service_id.to_owned()];
     while let Some(id) = pending.pop() {
@@ -32,7 +33,7 @@ fn select_service_shapes(fixture: &Json, service_id: &str) -> JsonMap<String, Js
             collect_targets(shape, &mut pending);
         }
     }
-    selected
+    Ok(selected)
 }
 
 fn collect_targets(value: &Json, pending: &mut Vec<String>) {
@@ -46,7 +47,7 @@ fn collect_targets(value: &Json, pending: &mut Vec<String>) {
     }
 }
 
-fn fixture_registry(shapes: &JsonMap<String, Json>) -> Registry {
+fn fixture_registry(shapes: &JsonMap<String, Json>) -> TestResult<Registry> {
     let names = shapes
         .values()
         .filter_map(|shape| shape.get("members").and_then(Json::as_object))
@@ -56,25 +57,26 @@ fn fixture_registry(shapes: &JsonMap<String, Json>) -> Registry {
     if !serialized.is_empty() {
         serialized.push('\n');
     }
-    Registry::parse(&serialized).expect("fixture field registry")
+    Ok(Registry::parse(&serialized).map_err(|error| format!("fixture field registry: {error}"))?)
 }
 
-fn write_fixture_model(model_dir: &std::path::Path, shapes: JsonMap<String, Json>) {
+fn write_fixture_model(model_dir: &std::path::Path, shapes: JsonMap<String, Json>) -> TestResult {
     let mut model = JsonMap::new();
     model.insert("shapes".to_owned(), Json::Object(shapes));
-    let bytes = serde_json::to_vec(&model).expect("encode fixture model");
-    fs::write(model_dir.join("model.json"), bytes).expect("write fixture model");
+    let bytes = serde_json::to_vec(&model)?;
+    fs::write(model_dir.join("model.json"), bytes)?;
+    Ok(())
 }
 
 fn compile_fixture_catalog(
     root: &std::path::Path,
     registry: &Registry,
     service_id: &str,
-) -> Vec<u8> {
+) -> TestResult<Vec<u8>> {
     let result = build_catalog(root, registry, "rest-protocol-fixture")
-        .unwrap_or_else(|error| panic!("compile {service_id}: {error}"));
-    fs::remove_dir_all(root).expect("remove fixture model directory");
-    result
+        .map_err(|error| format!("compile {service_id}: {error}"))?;
+    fs::remove_dir_all(root)?;
+    Ok(result)
 }
 
 fn temp_root(service: &str) -> PathBuf {
