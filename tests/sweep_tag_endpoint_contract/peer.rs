@@ -75,10 +75,10 @@ impl Peer {
         let (shutdown, mut stop) = oneshot::channel();
         let task = tokio::spawn(async move {
             let mut handlers = tokio::task::JoinSet::new();
-            let mut requests = 0;
+            let mut requests: u32 = 0;
             loop {
                 let socket = tokio::select! { _ = &mut stop => break, accepted = listener.accept() => accepted?.0 };
-                requests += 1;
+                requests = requests.saturating_add(1);
                 anyhow::ensure!(
                     requests <= 32,
                     "TLS tag fixture exhausted its fixed request budget"
