@@ -69,7 +69,7 @@ fn exit_code(
         || outcomes.failed > 0
         || outcomes.unobserved > 0
     {
-        std::process::ExitCode::from(2)
+        return std::process::ExitCode::from(2);
     }
     // Collection succeeded; if a graph was requested but delivery is not
     // complete, report it with a distinct exit code so that automation
