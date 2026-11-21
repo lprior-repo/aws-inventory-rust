@@ -377,16 +377,10 @@ async fn persist_reference(
     let target = &reference.target;
     let scope = reference_scope(target.account().as_str(), target.region().as_str())?;
     let path = super::reference_candidates::stored_path(target)?;
-    // ES-10: Insert one row per candidate kind so the target_kind index drives
-    // resolution lookups without scanning a packed candidate-kind blob.
-    for kind in target.candidate_kinds() {
-        sqlx::query("INSERT INTO unresolved_refs(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source,target_kinds) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,X'') ON CONFLICT(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source) DO UPDATE SET target_kinds=X''")
-            .bind(reference.from.account.as_str()).bind(reference.from.region.as_str())
-            .bind(reference.from.kind.as_str()).bind(reference.from.id.as_str())
-            .bind(&scope).bind(kind.as_str()).bind(&path).bind(target.value().as_str())
-            .bind(reference.relation.as_str()).bind(reference.source.as_str())
-            .execute(&mut **tx).await?;
-    }
+    sqlx::query("INSERT INTO unresolved_refs(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source,target_kinds) VALUES(?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11) ON CONFLICT(from_account,from_region,from_kind,from_id,target_scope,target_kind,target_path,target_value,relation,source) DO UPDATE SET target_kinds=excluded.target_kinds")
+        .bind(reference.from.account.as_str()).bind(reference.from.region.as_str()).bind(reference.from.kind.as_str()).bind(reference.from.id.as_str())
+        .bind(scope).bind(target.kind().as_str()).bind(path).bind(target.value().as_str()).bind(reference.relation.as_str()).bind(reference.source.as_str())
+        .bind(reference_candidates::encode(target)?).execute(&mut **tx).await?;
     Ok(())
 }
 async fn resolve_reference(

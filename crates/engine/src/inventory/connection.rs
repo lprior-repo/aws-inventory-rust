@@ -39,7 +39,7 @@ pub(super) async fn open(path: &Path) -> Result<BinaryStore, StoreError> {
         .fetch_one(&writer)
         .await?
         .try_get(0)?;
-    if !matches!(version, 14..=17) {
+    if !matches!(version, 14..=16) {
         writer.close().await;
         return Err(StoreError::SchemaVersion { found: version });
     }

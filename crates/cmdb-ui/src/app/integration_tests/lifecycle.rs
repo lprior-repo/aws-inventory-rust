@@ -81,14 +81,14 @@ fn given_failed_real_database_when_repaired_and_filter_action_retries_then_close
                 ..WorkerConfig::default()
             },
         );
-        let failure = "Database error · unsupported schema version 0; expected 15, 16, or 17 (open with the writer to migrate schema 14/15/16)";
+        let failure = "Database error · unsupported schema version 0; expected 15 or 16 (open with the writer to migrate schema 14)";
         wait_for(&mut app, &mut cx, |app, cx| {
             status(app, cx) == failure && app.worker.as_ref().is_some_and(DataWorker::is_closed)
         })?;
         assert!(app.retry_worker);
         assert_eq!(selected(&app, &mut cx), None);
         // Repair the actual file, without invoking any App lifecycle method.
-        runtime.block_on(sqlx::query("PRAGMA user_version=17").execute(&pool))?;
+        runtime.block_on(sqlx::query("PRAGMA user_version=16").execute(&pool))?;
         text_action(&mut app, &mut cx, ids!(search_input), "recovered");
         assert_eq!(status(&app, &mut cx), "Loading inventory…");
         wait_for(&mut app, &mut cx, |app, cx| {
