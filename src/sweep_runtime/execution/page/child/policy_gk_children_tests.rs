@@ -5,12 +5,20 @@ mod parent_assertions;
 
 use super::super::{consumer_index::ConsumerIndex, cursor};
 use super::policy_dfgk_tests::{complete_df::json_to_cbor, project_children, projected_references};
-use super::*;
+use crate::sweep_runtime::execution::page::child::Context;
+use crate::sweep_runtime::execution::page::{PageCommit, WorkLease};
+use crate::sweep_runtime::execution::routing;
+use crate::sweep_runtime::input;
+use crate::sweep_runtime::record;
+use crate::sweep_runtime::record::policy_dfgk_tests::fixture::decode_as_sweep;
 use catalog_tool as fixture_catalog;
 use fixture::{TestResult, compile};
-use inventory_core::catalog::runtime::{RuntimeCatalog, RuntimeProtocol};
-use inventory_engine::inventory::{BinaryStore, PageCommit, SchemaRegistry, WorkLease};
-use crate::sweep_runtime::{execution::routing, record::policy_dfgk_tests::fixture as decoder};
+use inventory_core::catalog::runtime::{CallablePlan, RuntimeCatalog, RuntimeProtocol};
+use inventory_core::inventory::{
+    AccountId, DiscoveryContext, OperationId, Region, RegionId, ScopeKey, ServiceId,
+};
+use inventory_core::record::{Record, Value, ValueRef};
+use inventory_engine::inventory::{BinaryStore, SchemaRegistry, SweepId, WorkSpec};
 use serde_json::{Value as Json, json};
 use std::collections::BTreeSet;
 
@@ -139,7 +147,7 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
         } else {
             serde_json::to_vec(&body)?
         };
-        let response = decoder::decode_as_sweep(plan, &bytes)?;
+        let response = decode_as_sweep(plan, &bytes)?;
         let restored = cursor::Cursor::decode(lease.token())?;
         let next = restored.next(plan.pagination(), &response, &http::HeaderMap::new(), 10)?;
         let branch = routing::execution_branch(plan, lease.scope().branch())?;

@@ -46,7 +46,8 @@ async fn given_paged_role_tags_when_process_reopens_then_pending_pairs_finish_as
     drop(store);
     // When: a new store handle resumes only persisted work/cursor/accumulation bytes.
     let store = BinaryStore::open(&directory.path().join("inventory.sqlite")).await?;
-    assert_eq!(store.discover_active_sweep().await?.as_ref(), Some(&sweep));
+    let account_id = owner.account.clone();
+    store.resume_sweep(&sweep, &account_id).await?;
     let lease = claim(&store, &sweep, 4).await?;
     let cursor = decode_cursor(lease.token())?;
     assert_eq!(cursor.pages, 1);
