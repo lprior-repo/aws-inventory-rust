@@ -1,7 +1,7 @@
 use std::process::Command;
 
 #[test]
-fn rebuild_graph_rejects_missing_database_before_contacting_the_graph() {
+fn rebuild_graph_rejects_missing_database_before_contacting_the_graph() -> anyhow::Result<()> {
     let output = Command::new(env!("CARGO_BIN_EXE_aws-inventory"))
         .args([
             "rebuild-graph",
@@ -12,8 +12,7 @@ fn rebuild_graph_rejects_missing_database_before_contacting_the_graph() {
             "--graph-name",
             "inventory",
         ])
-        .output()
-        .expect("run aws-inventory rebuild-graph");
+        .output()?;
     assert!(!output.status.success());
     let text = format!(
         "{}{}",
@@ -21,4 +20,5 @@ fn rebuild_graph_rejects_missing_database_before_contacting_the_graph() {
         String::from_utf8_lossy(&output.stderr)
     );
     assert!(text.contains("database does not exist"), "{text}");
+    Ok(())
 }
