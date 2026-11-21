@@ -190,7 +190,7 @@ fn denied_review_decision_is_retained_without_minting_a_plan()
     assert!(runtime.plans().is_empty());
     assert_eq!(runtime.decisions().len(), 1);
     assert_eq!(
-        runtime.decisions()[0].disposition,
+        runtime.decisions().first().ok_or("decision")?.disposition,
         ReviewDisposition::Denied {
             reason: "explicitly reviewed denial".to_owned(),
         }
@@ -204,7 +204,10 @@ fn relationship_scope_preserves_home_region_as_distinct_typed_value()
     let bytes = relationship_runtime_bytes()?;
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     assert_eq!(runtime.relationships().len(), 1);
-    assert_eq!(runtime.relationships()[0].scope, RelationScope::HomeRegion);
+    assert_eq!(
+        runtime.relationships().first().ok_or("relationship")?.scope,
+        RelationScope::HomeRegion
+    );
     Ok(())
 }
 
@@ -281,7 +284,7 @@ fn assembled_extension_preserves_true_source_pins_without_claiming_repository_or
         inventory_core::catalog::MAX_CATALOG_BYTES,
     )?)
     .to_value()?;
-    assert_eq!(fields(&mut restored)?.contains_key(&key(60_000)?), false);
+    assert!(!fields(&mut restored)?.contains_key(&key(60_000)?));
     let original_extension =
         MapRef::from_container_bytes(BASE, inventory_core::catalog::MAX_CATALOG_BYTES)?
             .get_field(FieldId::new(60_000)?)?
@@ -494,7 +497,7 @@ fn loader_rejects_capability_when_valid_reviewed_metadata_changes_without_reseal
     )?;
     let runtime = RuntimeCatalog::from_bytes(&sealed)?;
     assert_eq!(
-        runtime.decisions()[0].disposition,
+        runtime.decisions().first().ok_or("decision")?.disposition,
         ReviewDisposition::Denied {
             reason: "different but valid reviewed denial".to_owned(),
         }
