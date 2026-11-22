@@ -1,0 +1,21 @@
+stages:
+  - verify
+
+variables:
+  CARGO_TERM_COLOR: "never"
+  GIT_SUBMODULE_STRATEGY: "none"
+  GIT_LFS_SKIP_SMUDGE: "1"
+
+catalog-and-test:
+  stage: verify
+  image: rust:1.100.0
+  before_script:
+    - apt-get update -qq
+    - apt-get install -y -qq git-lfs
+    - git lfs install --local
+  script:
+    - cargo fmt --all --check
+    - scripts/check-source-size.sh
+    - scripts/bootstrap-catalog.sh
+    - cargo test -p catalog-tool --locked
+    - cargo test -p inventory-core --locked
