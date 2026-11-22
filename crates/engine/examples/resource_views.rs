@@ -20,8 +20,15 @@ fn main() -> Result<()> {
     };
     let manifest: Value =
         serde_json::from_str(include_str!("../../../catalog/cloudcontrol-resources.json"))?;
-    let legacy_names: BTreeSet<String> =
-        serde_json::from_str(include_str!("../../../catalog/cloudcontrol-v04-types.json"))?;
+    let legacy_document: Value = serde_json::to_value(toml::from_str::<toml::Table>(
+        include_str!("../../../catalog/cloudcontrol-v04-types.toml"),
+    )?)?;
+    let legacy_names: BTreeSet<String> = serde_json::from_value(
+        legacy_document
+            .get("types")
+            .cloned()
+            .ok_or("v04 types missing")?,
+    )?;
     if legacy_names.len() != 200 {
         return Err("the schema-v4 baseline must contain exactly 200 types".into());
     }
@@ -42,9 +49,9 @@ fn main() -> Result<()> {
     new_sql.push_str("PRAGMA user_version = 5;\n");
     publish("003_cloudcontrol_views.sql", &old_sql, check)?;
     publish("005_cloudcontrol_expansion.sql", &new_sql, check)?;
-    let parents: Value = serde_json::from_str(include_str!(
-        "../../../catalog/cloudcontrol-parent-resources.json"
-    ))?;
+    let parents: Value = serde_json::to_value(toml::from_str::<toml::Table>(include_str!(
+        "../../../catalog/cloudcontrol-parent-resources.toml"
+    ))?)?;
     let parent_rows = parents
         .get("resource_types")
         .and_then(Value::as_array)

@@ -5,7 +5,7 @@ pub mod mask;
 use std::collections::HashMap;
 
 use crate::HarnessError;
-use crate::audit::files::read_json_audit;
+use crate::audit::files::{read_json_audit, read_toml_audit};
 use crate::audit::matrix::catalogs;
 use crate::audit::pins::dependency_evidence;
 use crate::audit::validate::validate_summary;
@@ -13,7 +13,7 @@ use crate::provenance::{sha256_hex, source_fingerprint};
 
 pub fn reconcile(root: &std::path::Path) -> Result<serde_json::Value, HarnessError> {
     let before = source_fingerprint(root)?;
-    let (matrix, matrix_sha) = read_json_audit(&root.join("catalog/aws-operations.json"))?;
+    let (matrix, matrix_sha) = read_toml_audit(&root.join("catalog/aws-operations.toml"))?;
 
     let previous_path = root.join("artifacts/aws-operation-source-reconciliation-v04.json");
     let (previous, previous_sha) = read_json_audit(&previous_path)
@@ -152,7 +152,7 @@ pub fn reconcile(root: &std::path::Path) -> Result<serde_json::Value, HarnessErr
         "schema_version": 1,
         "status": "source_boundaries_reconciled",
         "historical_matrix": {
-            "path": "catalog/aws-operations.json",
+            "path": "catalog/aws-operations.toml",
             "sha256": matrix_sha,
             "left_unchanged": true
         },
@@ -222,7 +222,7 @@ pub fn validate_emulator(
     summary_path: &std::path::Path,
 ) -> Result<(serde_json::Value, Vec<serde_json::Value>), HarnessError> {
     let (summary, _) = read_json_audit(summary_path)?;
-    let (matrix, _) = read_json_audit(&root.join("catalog/aws-operations.json"))?;
+    let (matrix, _) = read_toml_audit(&root.join("catalog/aws-operations.toml"))?;
     let catalog = catalogs(root)?;
 
     let (executed, rows) = validate_summary(report, &summary, &catalog.catalog, &matrix)?;
@@ -231,7 +231,7 @@ pub fn validate_emulator(
 }
 
 pub fn check_additions(root: &std::path::Path) -> Result<serde_json::Value, HarnessError> {
-    let (matrix, matrix_sha) = read_json_audit(&root.join("catalog/aws-operations.json"))?;
+    let (matrix, matrix_sha) = read_toml_audit(&root.join("catalog/aws-operations.toml"))?;
     let additions_path = root.join("catalog/aws-operation-additions.json");
 
     let additions = if additions_path.is_file() {
@@ -337,7 +337,7 @@ pub fn write_reconciliation(
 
     // Check protected historical paths
     let protected = [
-        root.join("catalog/aws-operations.json"),
+        root.join("catalog/aws-operations.toml"),
         root.join("catalog/aws-operation-additions.json"),
         root.join("artifacts/aws-operation-source-reconciliation-v04.json"),
         root.join("artifacts/aws-operation-source-reconciliation-v05.json"),

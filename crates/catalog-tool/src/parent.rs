@@ -16,7 +16,7 @@ use model::{
 use schema::{Archive, schema_filename, schema_required};
 
 const UNIVERSAL: &str = "catalog/cloudcontrol-universal.json";
-const REVIEWED: &str = "catalog/cloudcontrol-parent-resources.json";
+const REVIEWED: &str = "catalog/cloudcontrol-parent-resources.toml";
 const ARCHIVE: &str = "catalog/upstream/cloudformation-us-east-1-2026-11-12.zip";
 const OUTPUT: &str = "catalog/cloudcontrol-parent-candidates.json";
 
@@ -46,7 +46,7 @@ pub fn run(root: &Path, write: bool, check: bool) -> Result<(), Box<dyn std::err
 
 fn build(root: &Path) -> Result<Report, Box<dyn std::error::Error>> {
     let universal: UniversalCatalog = load(root, UNIVERSAL)?;
-    let reviewed: ReviewedCatalog = load(root, REVIEWED)?;
+    let reviewed: ReviewedCatalog = load_toml(root, REVIEWED)?;
     let type_names = type_names(&universal);
     let implemented = reviewed_parents(&reviewed, &type_names);
     let global = names_by_suffix(&type_names);
@@ -74,6 +74,13 @@ fn load<T: serde::de::DeserializeOwned>(
     Ok(serde_json::from_str(&fs::read_to_string(
         root.join(relative),
     )?)?)
+}
+
+fn load_toml<T: serde::de::DeserializeOwned>(
+    root: &Path,
+    relative: &str,
+) -> Result<T, Box<dyn std::error::Error>> {
+    Ok(toml::from_str(&fs::read_to_string(root.join(relative))?)?)
 }
 
 fn type_names(universal: &UniversalCatalog) -> Vec<&str> {

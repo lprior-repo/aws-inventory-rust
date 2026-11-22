@@ -34,7 +34,7 @@ route, and an unresolved reference.
 ## Breadth fixture: the frozen original 200 descriptors
 
 The breadth universe is the exact type list retained in
-[cloudcontrol-v04-types.json](../catalog/cloudcontrol-v04-types.json): **200
+[cloudcontrol-v04-types.toml](../catalog/cloudcontrol-v04-types.toml): **200
 descriptors across 65 catalog service families**. Those descriptors remain in
 [cloudcontrol-resources.json](../catalog/cloudcontrol-resources.json), whose
 current 397-type selection is larger. There is exactly one fixture resource per
@@ -135,9 +135,9 @@ Use the fresh database imported above.
 set -euo pipefail
 
 mapfile -t fixture_views < <(
-  jq -r --slurpfile legacy catalog/cloudcontrol-v04-types.json \
+  jq -r --argjson legacy "$(grep -o '"AWS::[^"]*"' catalog/cloudcontrol-v04-types.toml | jq -s '.')" \
     '.resource_types[]
-     | select(.type_name as $type | $legacy[0] | index($type) != null)
+     | select(.type_name as $type | $legacy | index($type) != null)
      | .view_name' catalog/cloudcontrol-resources.json
 )
 test "${#fixture_views[@]}" -eq 200

@@ -24,6 +24,13 @@ pub fn write_json(path: &Path, value: &Value) -> Result<String, Box<dyn std::err
     Ok(file_sha256(path)?)
 }
 
+pub fn write_toml(path: &Path, value: &Value) -> Result<String, Box<dyn std::error::Error>> {
+    create_parent(path)?;
+    let encoded = toml::to_string_pretty(value)?;
+    std::fs::write(path, encoded.as_bytes())?;
+    Ok(file_sha256(path)?)
+}
+
 pub(super) fn insert(
     target: &mut Value,
     key: &str,

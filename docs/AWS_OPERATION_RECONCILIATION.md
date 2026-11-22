@@ -28,7 +28,7 @@ The different uses of **73** must remain distinct: 73 explicit send sites corres
 
 Cloud Control has **421 configured resource types across 76 service families**, split into **397 frozen root descriptors and 24 parent-dependent descriptors**. They still use only `cloudcontrol.list_resources` and `cloudcontrol.get_resource`. The parent workflow supplies `ResourceModel` on each relevant list request and reuses the exact returned identifier for each read. It does not introduce another SDK operation identity.
 
-The merged descriptors define **4,309 provider columns**, **968 property relationship rules across 255 types**, and **24 runtime `CHILD_OF` workflows**. In total, **268 distinct types** have a property rule or a parent workflow. SQLite schema 13 contains the 421 source-specific provider views. These are implemented schema and mapping counts; they do not establish that every relationship rule or every real AWS provider was exercised. [Root catalog](../catalog/cloudcontrol-resources.json) · [Parent catalog](../catalog/cloudcontrol-parent-resources.json) · [Parent workflow contract](PARENT_COLLECTIONS.md)
+The merged descriptors define **4,309 provider columns**, **968 property relationship rules across 255 types**, and **24 runtime `CHILD_OF` workflows**. In total, **268 distinct types** have a property rule or a parent workflow. SQLite schema 13 contains the 421 source-specific provider views. These are implemented schema and mapping counts; they do not establish that every relationship rule or every real AWS provider was exercised. [Root catalog](../catalog/cloudcontrol-resources.json) · [Parent catalog](../catalog/cloudcontrol-parent-resources.toml) · [Parent workflow contract](PARENT_COLLECTIONS.md)
 
 ## Historical reviewed additive operations
 
@@ -46,7 +46,7 @@ current inventory or proof that every operation was exercised. The Rust
 operation scanner and its SDK-inventory audit were removed in M1.7. This
 document no longer provides a reproduction command for that retired audit.
 
-A source-only receipt has `emulator_evidence.status = "pending"` and `current_run_bound = false`. It must not replace an execution-bound receipt as though both had the same scope. The auditor protects `catalog/aws-operations.json` and the historical v0.4/v0.5 reconciliation files from overwrite.
+A source-only receipt has `emulator_evidence.status = "pending"` and `current_run_bound = false`. It must not replace an execution-bound receipt as though both had the same scope. The auditor protects `catalog/aws-operations.toml` and the historical v0.4/v0.5 reconciliation files from overwrite.
 
 The auditor masks Rust comments, string literals, raw strings and character literals while preserving line positions. It enumerates empty-argument `.send()` calls under `crates/aws/src`, resolves direct builder chains and SDK client namespaces, and compares the complete path/function/operation multiset with the reviewed matrix. Nonempty channel sends are excluded. New or unrecognized call shapes fail closed rather than inheriting a nearby operation. Pinned SDK operation and credential-provider module hashes are checked against the lockfile and retained provenance.
 

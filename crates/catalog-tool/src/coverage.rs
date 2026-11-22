@@ -25,7 +25,7 @@ const MODELS: &str = "catalog/aws-models.report";
 const PLANS: &str = "catalog/aws-plans.report";
 const CLASSES: &str = "catalog/aws-classes.report";
 const OVERLAY: &str = "catalog/aws-overlay.report";
-const OPERATIONS: &str = "catalog/aws-operations.json";
+const OPERATIONS: &str = "catalog/aws-operations.toml";
 const CAPABILITIES: &str = "catalog/cloudcontrol-capabilities.json";
 const RESOURCES: &str = "catalog/cloudcontrol-resources.json";
 
@@ -234,6 +234,10 @@ impl Input {
 
     fn json(&self) -> Result<Value, Error> {
         serde_json::from_str(&self.text).map_err(|source| self.invalid(source.to_string()))
+    }
+
+    fn toml(&self) -> Result<Value, Error> {
+        toml::from_str(&self.text).map_err(|source| self.invalid(source.to_string()))
     }
 
     fn expect_equal(&self, what: &str, actual: u64, expected: u64) -> Result<(), Error> {
@@ -484,7 +488,7 @@ fn overlay_partition(callable: u64, excluded: u64, known: u64) -> Result<(), Err
 }
 
 fn native_funnel(input: &Input) -> Result<Funnel, Error> {
-    let document = input.json()?;
+    let document = input.toml()?;
     let known = json_number(input, &document, "/counts/explicit_unique_operations")?;
     let operations = document
         .get("operations")

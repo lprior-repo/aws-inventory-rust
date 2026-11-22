@@ -10,7 +10,7 @@ use inventory_harness::provenance::{canonical_sha256, file_sha256, source_finger
 use evidence::{create_database, seed_commands};
 use io::{create_parent, insert};
 
-pub use io::{free, save_summary, write_json};
+pub use io::{free, save_summary, write_json, write_toml};
 
 pub const CASE_COMMANDS: [&str; 5] = [
     "native",
@@ -93,8 +93,8 @@ pub async fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
         "binary": {"path": binary, "sha256": binary_sha},
         "catalog_sha256": write_json(&root.join("catalog/cloudcontrol-resources.json"), &catalog)?,
         "catalog_canonical_sha256": canonical_sha256(&catalog),
-        "parent_catalog_sha256": write_json(
-            &root.join("catalog/cloudcontrol-parent-resources.json"), &parents)?,
+        "parent_catalog_sha256": write_toml(
+            &root.join("catalog/cloudcontrol-parent-resources.toml"), &parents)?,
         "runtime_catalog_canonical_sha256": canonical_sha256(&runtime),
         "architecture_fixture_sha256": write_json(
             &root.join("crates/aws/tests/fixtures/cloudcontrol-architecture.json"),

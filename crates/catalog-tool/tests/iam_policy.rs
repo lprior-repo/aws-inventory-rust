@@ -20,16 +20,21 @@ fn repo_root() -> PathBuf {
 
 fn reviewed_catalog() -> Result<String, Box<dyn Error>> {
     Ok(fs::read_to_string(
-        repo_root().join("catalog/aws-operations.json"),
+        repo_root().join("catalog/aws-operations.toml"),
     )?)
 }
 
 fn catalog(operations: &[(&str, Vec<&str>)]) -> String {
-    let operations: Vec<Value> = operations
+    operations
         .iter()
-        .map(|(id, actions)| json!({ "id": id, "iam_actions": actions }))
-        .collect();
-    json!({ "operations": operations }).to_string()
+        .map(|(id, actions)| {
+            let actions: Vec<String> = actions.iter().map(|action| format!("{action:?}")).collect();
+            format!(
+                "[[operations]]\nid = {id:?}\niam_actions = [{}]\n",
+                actions.join(", ")
+            )
+        })
+        .collect()
 }
 
 fn policy_actions(text: &str) -> Result<Vec<String>, Box<dyn Error>> {
@@ -59,7 +64,7 @@ fn list_buckets_maps_to_its_reviewed_iam_action_not_the_sdk_name() -> TestResult
 fn policy_actions_are_exactly_the_reviewed_operation_actions() -> TestResult {
     // Given every callable operation's reviewed actions, read from the catalog itself.
     let source = reviewed_catalog()?;
-    let document: Value = serde_json::from_str(&source)?;
+    let document: Value = toml::from_str(&source)?;
     let expected: BTreeSet<String> = document
         .get("operations")
         .and_then(Value::as_array)
@@ -133,14 +138,13 @@ fn multi_action_operation_contributes_every_action_sorted_and_deduplicated() -> 
 #[test]
 fn unmapped_operations_fail_closed_and_every_one_is_listed() -> TestResult {
     // Given one operation with an empty mapping and one with no mapping field at all.
-    let source = json!({
-        "operations": [
-            { "id": "s3.list_buckets", "iam_actions": ["s3:ListAllMyBuckets"] },
-            { "id": "s3.empty", "iam_actions": [] },
-            { "id": "s3.missing" }
-        ]
-    })
-    .to_string();
+    let source = format!(
+        "{}[[operations]]\nid = \"s3.missing\"\n",
+        catalog(&[
+            ("s3.list_buckets", vec!["s3:ListAllMyBuckets"]),
+            ("s3.empty", vec![]),
+        ])
+    );
     // When rendered in the default refusing mode.
     let error = render(&source, UnmappedPolicy::Refuse)
         .err()
@@ -155,13 +159,10 @@ fn unmapped_operations_fail_closed_and_every_one_is_listed() -> TestResult {
 
 #[test]
 fn report_mode_lists_unmapped_operations_and_excludes_them_from_the_policy() -> TestResult {
-    let source = json!({
-        "operations": [
-            { "id": "s3.list_buckets", "iam_actions": ["s3:ListAllMyBuckets"] },
-            { "id": "s3.empty", "iam_actions": [] }
-        ]
-    })
-    .to_string();
+    let source = catalog(&[
+        ("s3.list_buckets", vec!["s3:ListAllMyBuckets"]),
+        ("s3.empty", vec![]),
+    ]);
     let rendered = render(&source, UnmappedPolicy::Report)?;
     assert_eq!(rendered.unmapped, vec!["s3.empty"]);
     assert_eq!(policy_actions(&rendered.text)?, vec!["s3:ListAllMyBuckets"]);
@@ -174,14 +175,8 @@ fn report_mode_cannot_publish_a_partial_policy() -> TestResult {
     let dir = tempfile::tempdir()?;
     fs::create_dir_all(dir.path().join("catalog"))?;
     fs::write(
-        dir.path().join("catalog/aws-operations.json"),
-        json!({
-            "operations": [
-                { "id": "s3.list_buckets", "iam_actions": ["s3:ListAllMyBuckets"] },
-                { "id": "s3.empty", "iam_actions": [] }
-            ]
-        })
-        .to_string(),
+        dir.path().join("catalog/aws-operations.toml"),
+        "[[operations]]\nid = \"s3.list_buckets\"\niam_actions = [\"s3:ListAllMyBuckets\"]\n\n[[operations]]\nid = \"s3.empty\"\niam_actions = []\n",
     )?;
     // When report mode is asked to write or check the policy.
     let written = run(dir.path(), ReportMode::Write, UnmappedPolicy::Report);
@@ -295,7 +290,7 @@ fn write_then_check_round_trips_and_detects_drift() -> TestResult {
     let dir = tempfile::tempdir()?;
     fs::create_dir_all(dir.path().join("catalog"))?;
     fs::write(
-        dir.path().join("catalog/aws-operations.json"),
+        dir.path().join("catalog/aws-operations.toml"),
         catalog(&[("s3.list_buckets", vec!["s3:ListAllMyBuckets"])]),
     )?;
     let policy_path = dir.path().join("catalog/iam-read-only-policy.json");

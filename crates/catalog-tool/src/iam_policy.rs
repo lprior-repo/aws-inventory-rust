@@ -15,7 +15,7 @@ use thiserror::Error;
 
 use crate::report::{ReportError, ReportMode};
 
-const OPERATIONS_PATH: &str = "catalog/aws-operations.json";
+const OPERATIONS_PATH: &str = "catalog/aws-operations.toml";
 const POLICY_PATH: &str = "catalog/iam-read-only-policy.json";
 const POLICY_VERSION: &str = "2012-10-17";
 // Resource and condition data are absent from the catalog, so the policy
@@ -36,6 +36,9 @@ pub enum Error {
     Io { file: PathBuf, source: io::Error },
 
     #[error("invalid operation catalog: {0}")]
+    Toml(#[from] toml::de::Error),
+
+    #[error("policy serialization: {0}")]
     Json(#[from] serde_json::Error),
 
     #[error("no callable operations in the catalog")]
@@ -124,8 +127,8 @@ pub fn run(root: &Path, mode: ReportMode, unmapped: UnmappedPolicy) -> Result<Ve
 
 /// Renders the policy document for a catalog. Output is byte-stable: actions
 /// are sorted and deduplicated, and the document ends with one newline.
-pub fn render(catalog_json: &str, unmapped: UnmappedPolicy) -> Result<Rendered, Error> {
-    let catalog: Catalog = serde_json::from_str(catalog_json)?;
+pub fn render(catalog_toml: &str, unmapped: UnmappedPolicy) -> Result<Rendered, Error> {
+    let catalog: Catalog = toml::from_str(catalog_toml)?;
     if catalog.operations.is_empty() {
         return Err(Error::Empty);
     }

@@ -13,6 +13,7 @@ inventory-core.workspace = true
 inventory-engine.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+toml.workspace = true
 thiserror.workspace = true
 tokio.workspace = true
 futures-util.workspace = true

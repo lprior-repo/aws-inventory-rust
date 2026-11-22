@@ -5,8 +5,8 @@ use serde_json::{Value, json};
 
 use inventory_harness::HarnessError;
 use inventory_harness::catalog::{
-    ARCHIVE, ARCHIVE_SHA256, CAPABILITY_MATRIX, Json, PARENT_CATALOG, ROOT_CATALOG,
-    UPSTREAM_MANIFEST, check, reproduce,
+    ARCHIVE, ARCHIVE_SHA256, CAPABILITY_MATRIX, PARENT_CATALOG, ROOT_CATALOG, UPSTREAM_MANIFEST,
+    check, reproduce,
 };
 use inventory_harness::provenance::{canonical_sha256, file_sha256, sha256_hex};
 
@@ -14,7 +14,7 @@ const FILES: [&str; 6] = [
     ROOT_CATALOG,
     CAPABILITY_MATRIX,
     PARENT_CATALOG,
-    "catalog/cloudcontrol-regional-additions.json",
+    "catalog/cloudcontrol-regional-additions.toml",
     ARCHIVE,
     UPSTREAM_MANIFEST,
 ];
@@ -84,11 +84,12 @@ fn given_committed_tree_when_reproduced_then_documents_match_bytes()
     }
     let resources = report(&reports, ROOT_CATALOG)?;
     assert_eq!(sha256_hex(resources.contents.as_bytes()), root_digest);
-    let parent = Json::parse(&std::fs::read_to_string(root.join(PARENT_CATALOG))?)?;
+    let parent: toml::Value = toml::from_str(&std::fs::read_to_string(root.join(PARENT_CATALOG))?)?;
     assert_eq!(
         parent
-            .at(&["evidence", "root_catalog_sha256"])
-            .and_then(Json::as_str),
+            .get("evidence")
+            .and_then(|evidence| evidence.get("root_catalog_sha256"))
+            .and_then(toml::Value::as_str),
         Some(root_digest.as_str())
     );
     check(&root)?;
@@ -208,8 +209,8 @@ fn given_tampered_parent_row_when_checked_then_rejects_with_rust_message()
     copy_tree(&workspace(), temporary.path())?;
     replace(
         &temporary.path().join(PARENT_CATALOG),
-        "\"kind\": \"aws_eks_node_group\"",
-        "\"kind\": \"aws_eks_node_group_tampered\"",
+        "kind = \"aws_eks_node_group\"",
+        "kind = \"aws_eks_node_group_tampered\"",
     )?;
     let message = check(temporary.path())
         .err()

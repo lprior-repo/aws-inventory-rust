@@ -149,6 +149,24 @@ impl Json {
             }
         })
     }
+
+    pub fn from_serde(value: &serde_json::Value) -> Self {
+        match value {
+            serde_json::Value::Null => Self::Null,
+            serde_json::Value::Bool(value) => Self::Bool(*value),
+            serde_json::Value::Number(raw) => Self::Number(raw.to_string()),
+            serde_json::Value::String(value) => Self::String(value.clone()),
+            serde_json::Value::Array(items) => {
+                Self::Array(items.iter().map(Self::from_serde).collect())
+            }
+            serde_json::Value::Object(entries) => Self::Object(
+                entries
+                    .iter()
+                    .map(|(key, value)| (key.clone(), Self::from_serde(value)))
+                    .collect(),
+            ),
+        }
+    }
 }
 
 fn write_value(out: &mut String, value: &Json, depth: usize) {

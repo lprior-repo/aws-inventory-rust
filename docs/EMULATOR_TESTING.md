@@ -22,7 +22,7 @@ The test has two separate coverage dimensions:
 | Cloud Control root resource types | 397 frozen entries using `ListResources` and `GetResource` | Per-type list/read results and stored resource observations |
 | Parent-dependent Cloud Control types | 24 additional entries using the same two operations | Prerequisite discovery, exact request models, independent pagination, detailed child rows and parent edges |
 
-The resource types exercise different providers through the same two Cloud Control operations; the parent workflows introduce no additional SDK operation identities. SDK dependencies also do not establish collector coverage. The authoritative operation inventory is [catalog/aws-operations.json](../catalog/aws-operations.json), explained in [AWS_CALL_MATRIX.md](AWS_CALL_MATRIX.md). Type inventories are [cloudcontrol-resources.json](../catalog/cloudcontrol-resources.json) and [cloudcontrol-parent-resources.json](../catalog/cloudcontrol-parent-resources.json); the full capability audit covers all 1,881 retained schemas.
+The resource types exercise different providers through the same two Cloud Control operations; the parent workflows introduce no additional SDK operation identities. SDK dependencies also do not establish collector coverage. The authoritative operation inventory is [catalog/aws-operations.toml](../catalog/aws-operations.toml), explained in [AWS_CALL_MATRIX.md](AWS_CALL_MATRIX.md). Type inventories are [cloudcontrol-resources.json](../catalog/cloudcontrol-resources.json) and [cloudcontrol-parent-resources.toml](../catalog/cloudcontrol-parent-resources.toml); the full capability audit covers all 1,881 retained schemas.
 
 ## Pinned upstream source and binary
 
