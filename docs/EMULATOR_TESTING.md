@@ -42,7 +42,7 @@ both scenarios; its command and compatibility constraint are in the same guide.
 | Package SHA-256 | `279a243ac342922d0d0741e31e2912ddb9a78f6efac34ec25c94086df029d4a8` |
 | AWS publishing primary-key fingerprint | `98BCF336A3BE53B734E967C52E5BF49BD940F624` |
 
-`scripts/emulator/upstream.json` records the
+`crates/harness/assets/upstream.toml` records the
 exact download URL, signing-key URL, commit and hash. The current installer is
 `cargo run -p inventory-harness -- install <destination>`; it verifies the
 source pin, package hash, detached GPG signature and publishing-key fingerprint.
@@ -52,13 +52,13 @@ The retained package verification
 and checkout verification are
 historical 1.0.336 evidence, not proof for the current pin. Legacy Python runner
 and snapshot commands below retain that older pin and must not be used to claim
-1.0.348 coverage. The original
+1.0.348 coverage. The superseded
 `crates/harness/fixtures/universal-unsupported-aws-emulator-1.0.336.json`
-also remains untouched historical evidence.
+is no longer in the tree; it remains recoverable from git history.
 
 A separate authenticated CLI capture on 2026-11-13 against version 1.0.348,
 commit `7461ab1bbe540afe8063ce03ee5477ebb649df48`, produced
-`crates/harness/fixtures/universal-unsupported-aws-emulator-1.0.348.json`.
+`crates/harness/fixtures/universal-unsupported-aws-emulator-1.0.348.toml`.
 Its 292 names were extracted from the new SQLite database and exactly match the
 older set; the complete partition also remains unchanged (1,291 attempted,
 999 succeeded, 292 unsupported, 0 failed). The new fixture includes capture
@@ -99,7 +99,7 @@ The installer destination contains:
 | `keyring/` | Verification keyring |
 | `unpacked/opt/aws-emulator/bin/aws-emulator` | Verified executable |
 
-The source commit is an immutable pin. Replacing it with an unreviewed latest release changes the test target. Update `upstream.json`, inspect the relevant operation implementations, verify the replacement package, and produce a new evidence directory when deliberately changing releases.
+The source commit is an immutable pin. Replacing it with an unreviewed latest release changes the test target. Update `crates/harness/assets/upstream.toml`, inspect the relevant operation implementations, verify the replacement package, and produce a new evidence directory when deliberately changing releases.
 
 ### Install the local graph runtime
 
@@ -274,7 +274,7 @@ Thirteen supported generic-provider types are seeded with independently authored
 
 ### Parent models and forced pagination
 
-[cloudcontrol-parents.json](../crates/aws/tests/fixtures/cloudcontrol-parents.json) is an independently authored fixture with two parents for each of six roots. Each of the original 21 fixture-backed child types has two semantic records under parent A and one under parent B. Ninety-eight additional EKS Addon records bring that one type to **101 records** and the complete child fixture to **161 records**. These repetitive extras test pagination; they are separate from the 63 semantic records. The three newer catalog-only types have literal model tests but no live fixture records yet.
+[cloudcontrol-parents.toml](../crates/aws/tests/fixtures/cloudcontrol-parents.toml) is an independently authored fixture with two parents for each of six roots. Each of the original 21 fixture-backed child types has two semantic records under parent A and one under parent B. Ninety-eight additional EKS Addon records bring that one type to **101 records** and the complete child fixture to **161 records**. These repetitive extras test pagination; they are separate from the 63 semantic records. The three newer catalog-only types have literal model tests but no live fixture records yet.
 
 The pinned emulator applies `ResourceModel` to each examined window, whose default size is 100. The fixture orders all 100 A addons before B's addon, so B's first page is empty with a continuation token and its second page contains its child. Both parent chains must reach at least page two and complete. The collector deliberately omits the reserved `MaxResults` field; this test forces pagination by fixture size. See the [pinned ListResources implementation][cloudcontrol-list] and [AWS API contract](https://docs.aws.amazon.com/cloudcontrolapi/latest/APIReference/API_ListResources.html).
 

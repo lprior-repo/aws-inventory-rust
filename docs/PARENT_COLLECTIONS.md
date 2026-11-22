@@ -151,7 +151,7 @@ bindings, selection closure/idempotence properties, context bounds, denied and
 empty discovery, parent-page limits, malformed and mismatched responses,
 redaction, per-parent cursors, bounded admission, and cancellation.
 
-The additional literal `cloudcontrol-parents.json` fixture covers two parents
+The additional literal `cloudcontrol-parents.toml` fixture covers two parents
 for each of the six roots, with two semantic children under A and one under B
 for every child type. Ninety-eight extra EKS addons bring that type to 101
 resources and force pagination through the emulator's default 100-item window.

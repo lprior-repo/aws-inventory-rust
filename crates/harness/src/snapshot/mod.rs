@@ -42,6 +42,19 @@ fn read_json_with_limit(path: &Path, limit: usize) -> Result<(Value, String), Ha
     Ok((serde_json::from_slice(&bytes)?, digest))
 }
 
+/// Reads a hand-authored TOML document as a JSON-shaped value plus its byte digest.
+pub fn read_toml(path: &Path) -> Result<(Value, String), HarnessError> {
+    let file = std::fs::File::open(path)?;
+    let bytes =
+        read_limited(file, MAX_DOCUMENT_BYTES).map_err(|error| document_error(path, error))?;
+    let digest = sha256_hex(&bytes);
+    let text = std::str::from_utf8(&bytes)
+        .map_err(|_| HarnessError::invalid(format!("{} is not UTF-8", path.display())))?;
+    let table: toml::Table = toml::from_str(text)
+        .map_err(|error| HarnessError::invalid(format!("{}: {error}", path.display())))?;
+    Ok((serde_json::to_value(table)?, digest))
+}
+
 fn document_error(path: &Path, error: ReadError) -> HarnessError {
     match error {
         ReadError::Io(error) => HarnessError::Io(error),

@@ -1,5 +1,3 @@
-use serde_json::json;
-
 use inventory_harness::install::{install, signed_by};
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
@@ -37,14 +35,14 @@ async fn given_incomplete_pinned_metadata_when_installing_then_it_is_rejected_ea
 {
     let directory = tempfile::tempdir()?;
     let root = directory.path();
-    let metadata = root.join("crates/harness/assets/upstream.json");
+    let metadata = root.join("crates/harness/assets/upstream.toml");
     std::fs::create_dir_all(metadata.parent().ok_or("metadata parent")?)?;
     std::fs::write(
         &metadata,
-        serde_json::to_string(&json!({
-            "repository": "https://github.com/aws/aws-emulator.git",
-            "commit": inventory_harness::emulator::PINNED_COMMIT
-        }))?,
+        format!(
+            "repository = \"https://github.com/aws/aws-emulator.git\"\ncommit = \"{}\"\n",
+            inventory_harness::emulator::PINNED_COMMIT
+        ),
     )?;
     let destination = root.join("runtime");
     let error = install(root, &destination)
@@ -53,7 +51,7 @@ async fn given_incomplete_pinned_metadata_when_installing_then_it_is_rejected_ea
     assert!(
         error
             .to_string()
-            .contains("upstream.json lacks package_url")
+            .contains("upstream.toml lacks package_url")
     );
     assert!(
         !destination.exists(),
@@ -66,12 +64,12 @@ async fn given_incomplete_pinned_metadata_when_installing_then_it_is_rejected_ea
 async fn given_pinned_metadata_when_signature_check_runs_then_the_real_key_is_honoured()
 -> TestResult {
     let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
-    let metadata: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(
-        root.join("crates/harness/assets/upstream.json"),
+    let metadata: toml::Table = toml::from_str(&std::fs::read_to_string(
+        root.join("crates/harness/assets/upstream.toml"),
     )?)?;
     let key = metadata
         .get("package_signing_key_fingerprint")
-        .and_then(serde_json::Value::as_str)
+        .and_then(toml::Value::as_str)
         .ok_or("pinned fingerprint")?;
     assert_eq!(key.len(), 40);
     let status = format!("[GNUPG:] VALIDSIG {key} 2026-11-12 1893456000 0 4 0 1 10 00 {key}\n");

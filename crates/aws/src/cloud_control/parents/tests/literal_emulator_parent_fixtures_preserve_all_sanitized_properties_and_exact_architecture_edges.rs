@@ -3,9 +3,9 @@ use super::*;
 #[test]
 fn literal_emulator_parent_fixtures_preserve_all_sanitized_properties_and_exact_architecture_edges()
 -> TestResult {
-    let fixture: Value = serde_json::from_str(include_str!(
-        "../../../../tests/fixtures/cloudcontrol-parents.json"
-    ))?;
+    let fixture: Value = serde_json::to_value(toml::from_str::<toml::Table>(include_str!(
+        "../../../../tests/fixtures/cloudcontrol-parents.toml"
+    ))?)?;
     let (mut ctx, _receiver) = context(3)?;
     ctx.account = "000000000000".into();
     let catalog = crate::cloud_control::catalog()?;

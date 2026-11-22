@@ -83,14 +83,10 @@ fn path(path: &Path) -> Result<String> {
         .context("temporary path is not UTF-8")
 }
 
-fn fixture(name: &str) -> Result<String> {
-    path(
-        &Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("tests")
-            .join("cli_properties")
-            .join("fixtures")
-            .join(name),
-    )
+fn fixture(directory: &Path, name: &str, content: &str) -> Result<String> {
+    let file = directory.join(name);
+    std::fs::write(&file, content)?;
+    path(&file)
 }
 
 fn property<T>(result: Result<T>) -> Result<T, TestCaseError> {
@@ -126,6 +122,8 @@ fn entrypoint_version_catalog_and_error_exit_are_real() -> Result<()> {
     Ok(())
 }
 
+#[path = "cli_properties/event_fixtures.rs"]
+mod event_fixtures;
 #[path = "cli_properties/exports.rs"]
 mod exports;
 #[path = "cli_properties/jobs.rs"]

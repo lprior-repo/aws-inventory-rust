@@ -26,9 +26,50 @@ const RESOURCE: &str = "arn:aws:sqs:us-east-1:000000000000:wire-fixture";
 const CREATED_MILLIS: i64 = 1_704_164_645_006;
 const UPDATED_MILLIS: i64 = 1_704_164_646_007;
 const NUMERIC_EPOCH: f64 = 1_704_164_645.006;
-const INDEX_BODY: &str = include_str!("../fixtures/get_index_iso8601.json");
-const VIEW_BODY: &str = include_str!("../fixtures/get_view_iso8601.json");
-const RESOURCES_BODY: &str = include_str!("../fixtures/list_resources_iso8601.json");
+const INDEX_BODY: &str = r#"
+{
+  "Arn": "arn:aws:resource-explorer-2:us-east-1:000000000000:index/00000000-0000-0000-0000-000000000001",
+  "CreatedAt": "2024-01-02T03:04:05.006Z",
+  "LastUpdatedAt": "2024-01-02T04:04:06.007+01:00",
+  "State": "ACTIVE",
+  "Type": "LOCAL",
+  "Tags": {"Fixture": "offline-sdk-wire"}
+}
+"#;
+const VIEW_BODY: &str = r#"
+{
+  "View": {
+    "ViewArn": "arn:aws:resource-explorer-2:us-east-1:000000000000:view/wire-fixture/00000000-0000-0000-0000-000000000002",
+    "ViewName": "wire-fixture",
+    "Owner": "000000000000",
+    "Scope": "arn:aws:iam::000000000000:root",
+    "LastUpdatedAt": "2024-01-02T03:04:05.006Z",
+    "IncludedProperties": [{"Name": "tags"}],
+    "Filters": {"FilterString": "region:us-east-1"}
+  },
+  "Tags": {"Fixture": "offline-sdk-wire"}
+}
+"#;
+const RESOURCES_BODY: &str = r#"
+{
+  "ViewArn": "arn:aws:resource-explorer-2:us-east-1:000000000000:view/wire-fixture/00000000-0000-0000-0000-000000000002",
+  "NextToken": "offline-fixture-next-page",
+  "Resources": [{
+    "Arn": "arn:aws:sqs:us-east-1:000000000000:wire-fixture",
+    "OwningAccountId": "000000000000",
+    "Region": "us-east-1",
+    "ResourceType": "sqs:queue",
+    "CfnResourceType": "AWS::SQS::Queue",
+    "Service": "sqs",
+    "LastReportedAt": "2024-01-02T03:04:05.006Z",
+    "Properties": [{
+      "Name": "tags",
+      "LastReportedAt": "2024-01-02T04:04:06.007+01:00",
+      "Data": [{"Key": "Fixture", "Value": "offline-sdk-wire"}]
+    }]
+  }]
+}
+"#;
 
 fn replay_client(
     operation: &str,

@@ -109,11 +109,11 @@ fn expected_digests(
         ),
         (
             "architecture_fixture_sha256",
-            file_sha256(&root.join("crates/aws/tests/fixtures/cloudcontrol-architecture.json"))?,
+            file_sha256(&root.join("crates/aws/tests/fixtures/cloudcontrol-architecture.toml"))?,
         ),
         (
             "parent_fixture_sha256",
-            file_sha256(&root.join("crates/aws/tests/fixtures/cloudcontrol-parents.json"))?,
+            file_sha256(&root.join("crates/aws/tests/fixtures/cloudcontrol-parents.toml"))?,
         ),
     ])
 }
