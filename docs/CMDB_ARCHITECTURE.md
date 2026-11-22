@@ -28,7 +28,7 @@ Unlabelled normative sentences in sections 2, 4, 5, 6 and 8 describe the target
 contract. A sentence that describes existing behavior cites its source, and the
 gap table in section 9 is authoritative when a component is partial.
 
-The measured baseline is [CMDB_BASELINE_2026-11-13.md](CMDB_BASELINE_2026-11-13.md)
+The measured baseline is
 at source commit `57ee7de687be3f445a39bf2e2eb81807e5d68959`: three short runs of
 local SQLite ingestion and mock scheduling. It establishes neither fleet
 capacity, live AWS behavior, query latency, nor UI frame time. All performance

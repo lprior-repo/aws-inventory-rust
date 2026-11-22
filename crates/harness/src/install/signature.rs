@@ -40,7 +40,12 @@ pub(super) fn verify_signature(
     std::fs::create_dir_all(&keyring)?;
     let public_keys = import_keys(&keyring, destination)?;
     check_fingerprint(metadata, &keyring, &public_keys)?;
-    let verified = verify_status(destination, package, &keyring, &public_keys)?;
+    let verified = verify_status(
+        &metadata.signature_file(destination),
+        package,
+        &keyring,
+        &public_keys,
+    )?;
     if !signed_by(&verified, &metadata.signing_fingerprint) {
         return Err(HarnessError::invalid(
             "Package was not signed by the pinned AWS primary key",
@@ -67,7 +72,7 @@ fn check_fingerprint(
 }
 
 fn verify_status(
-    destination: &Path,
+    signature: &Path,
     package: &Path,
     keyring: &Path,
     public_keys: &str,
@@ -81,7 +86,7 @@ fn verify_status(
             "--status-fd",
             "1",
             "--verify",
-            &path_text(&destination.join("aws-emulator_amd64.deb.sig"))?,
+            &path_text(signature)?,
             &path_text(package)?,
         ],
     ))

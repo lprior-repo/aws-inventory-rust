@@ -2,9 +2,8 @@
 
 > Status: Historical evidence. It is the review of the imported archive of
 > 2026-11-12; tool availability, SDK compilation, dependency audit and
-> source-size statements describe that archive, later work is in
-> [DEPENDENCY_UPDATE.md](DEPENDENCY_UPDATE.md), and its failures are retained,
-> not overwritten. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
+> source-size statements describe that archive. Later work and its failures are
+> retained, not overwritten. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
 
 **Date:** 2026-11-12. **Scope:** targeted implementation review with observed
 test and compiler evidence. **Full requested skill approval: REJECTED pending

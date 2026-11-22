@@ -3,8 +3,7 @@
 > Status: Baseline being replaced. Cloud Control is not used by the new
 > architecture (V01, V04) and its collectors and catalogs are deleted in ROADMAP
 > M9.5; only the CloudFormation type list survives, as an offline checklist and
-> naming authority (M1.5, M9.4). Links into `artifacts/` point to an ignored
-> local directory and do not resolve in a clone. See [VISION](VISION.md) and
+> naming authority (M1.5, M9.4). See [VISION](VISION.md) and
 > [ROADMAP](ROADMAP.md).
 
 The executable Cloud Control catalog contains **421 reviewed regional resource types across 76 service families**: the frozen **397 root types** plus **24 parent-dependent types**. It uses the official Rust Cloud Control SDK's `ListResources` and `GetResource` operations through the shared executor. Parent discovery supplies an explicit `ResourceModel` for each reviewed child list. The same adapter handles each selected descriptor; adding a service SDK dependency alone does not add a collector.
@@ -13,9 +12,9 @@ The retained [capability matrix](../catalog/cloudcontrol-capabilities.json) audi
 
 ## Retained v0.5 evidence
 
-The final v0.5 emulator run attempted all **397 selected type lists** and stored detailed observations for **386 types**. The Cloud Control scan contains **389 resource observations and 32 relationships**, with **775 successful scopes and 11 failed type-list scopes**. All **1,188 harness checks passed**, including the 111 independent architecture checks. The scan remains partial because the pinned emulator does not register the eleven failed namespaces. [Final collection summary](../artifacts/emulator-v05/summary.json) · [Exact scan receipt](../artifacts/emulator-v05/cloud-control.json)
+The final v0.5 emulator run attempted all **397 selected type lists** and stored detailed observations for **386 types**. The Cloud Control scan contains **389 resource observations and 32 relationships**, with **775 successful scopes and 11 failed type-list scopes**. All **1,188 harness checks passed**, including the 111 independent architecture checks. The scan remains partial because the pinned emulator does not register the eleven failed namespaces.
 
-The v0.5 coverage rows were bound only after the final health-supervised wrapper completed, two unmutated four-case snapshot repetitions passed, and the live first-party workspace passed all 503 tests. The four exports matched SQLite payloads and provenance; the real local FalkorDB checks compared resource identities, reference-only endpoints, relationship identities and provenance. Checkpointed replay sent no graph commands. These are retained v0.5 results, not a Rust or live-emulator pass claim for the new parent workflows. See [VERIFICATION.md](VERIFICATION.md) for current command outcomes. [Delivery verification](../artifacts/emulator-v05/delivery-verification.json) · [Detailed historical results](EMULATOR_TESTING.md#historical-v05-integration-results)
+The v0.5 coverage rows were bound only after the final health-supervised wrapper completed, two unmutated four-case snapshot repetitions passed, and the live first-party workspace passed all 503 tests. The four exports matched SQLite payloads and provenance; the real local FalkorDB checks compared resource identities, reference-only endpoints, relationship identities and provenance. Checkpointed replay sent no graph commands. These are retained v0.5 results, not a Rust or live-emulator pass claim for the new parent workflows. See [VERIFICATION.md](VERIFICATION.md) for current command outcomes. [Detailed historical results](EMULATOR_TESTING.md#historical-v05-integration-results)
 
 ## Selection and exclusions
 

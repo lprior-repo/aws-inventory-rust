@@ -18,26 +18,31 @@ landed, and [docs/README.md](docs/README.md) indexes every document by whether
 it is plan, kept subsystem, baseline or history.
 
 **What works today** is the baseline collector that the plan replaces. The
-`catalog` and `coverage` commands of the built binary report 39 native resource
-kinds collected by hand-written typed SDK adapters behind 16 service selectors,
-421 reviewed Cloud Control resource types (431 distinct kinds together), 968
-property relationship rules, and SQLite schema 13. The baseline also has a
-FalkorDB snapshot projection, a rate limiter that is the single retry owner,
-fenced durable scan jobs, an emulator harness (`inventory-harness`), a workload
-generator (`cmdb-bench`), a bounded export read model (`cmdb-view`) and a
-Makepad viewer (`cmdb-ui`) that renders a synthetic fixture. Of the new architecture only
-groundwork has landed; there is no wire engine, binary record store or sweep
-yet. Cloud Control collection is not the way forward: it gets no new work and
-is deleted in ROADMAP M9.5 (decisions V01, V04).
+`catalog` and `coverage` commands report 39 native resource kinds collected by
+hand-written typed SDK adapters behind 16 service selectors, 421 reviewed Cloud
+Control resource types (431 distinct kinds together), 968 property relationship
+rules, and SQLite schema 13. The baseline also has a FalkorDB snapshot
+projection, a rate limiter that is the single retry owner, fenced durable scan
+jobs, a `serve` mode with a cadence scheduler, an emulator harness
+(`inventory-harness`), a workload generator (`cmdb-bench`), a bounded export
+read model (`cmdb-view`) and a Makepad viewer (`cmdb-ui`) that renders a
+synthetic fixture. Cloud Control collection is not the way forward: it gets no
+new work and is deleted in ROADMAP M9.5 (decisions V01, V04).
+
+The new architecture has landed its foundations: `aws-wire` (SigV4 signing, the
+pooled HTTP transport, and request and response handling) and the binary record
+module in `inventory-core`. Not built yet: the universal `sweep` command and its
+planner (ROADMAP M3.6), the binary record store with single-writer commits (M3.2
+to M3.4), and in-process SQLite and FalkorDB reads for the UI (M6.2 and M6.3).
 
 All product code is Rust. SQLx's bundled SQLite engine is native SQLite C and
 FalkorDB is an external database. Legacy Python development tooling has been
 replaced by the Rust `inventory-harness` CLI; it provides fixture seeding,
 request recording, installation, the mutation gate, and catalog generation.
 
-**The sections below document the baseline.** For the local emulator stack see
-[setup and commands](docs/LOCAL_SETUP.md); for the baseline build-and-verify
-handoff see [START_HERE.md](START_HERE.md).
+**The sections below document the baseline.** For the local emulator stack run
+`scripts/local-stack.sh help`; for the baseline build-and-verify handoff see
+[START_HERE.md](START_HERE.md).
 
 ## Current scope
 
@@ -164,13 +169,26 @@ loaders already supplied that origin.
 
 ## Build
 
-Install Rust with rustup and a C toolchain for bundled SQLite. Run commands from
-the repository root so `.cargo/config.toml` applies the SQLite allocation bounds.
-The toolchain is pinned in `rust-toolchain.toml`; dependencies are locked.
-The repository enables the pinned nightly's selective `profile-hint-mostly-unused`
-support so large SDK crates can defer code generation for unused APIs. This
-resolved the EC2 build's memory failure in the delivery environment. The setting
-respects upstream crate hints rather than applying the flag to every dependency.
+Install Rust 1.100 stable with rustup (`rustup toolchain install 1.100.0`) and a
+C toolchain for bundled SQLite. Run commands from the repository root so
+`.cargo/config.toml` applies the SQLite allocation bounds. Dependencies are
+locked.
+
+Supported targets are Linux x86_64, Linux aarch64 and macOS aarch64 (Apple
+silicon). `inventory-harness install` selects the emulator asset for the host
+and returns an unsupported-platform error for any other target. The FalkorDB
+module has no macOS build upstream, so `install-graph` reports the same error on
+macOS; SQLite-only work does not need it.
+
+The pinned AWS API models are the `.local/aws-models` git submodule. Fetch it
+before compiling the catalog:
+
+```bash
+git submodule update --init --depth 1 .local/aws-models
+cargo run -p catalog-tool -- models compile --write
+```
+
+`catalog/aws-api.catalog` is generated from those models and is not checked in.
 
 ```bash
 # Fetch the locked workspace dependencies.
@@ -611,9 +629,8 @@ under V32 (ROADMAP M6.5). In-process SQLite and FalkorDB reads for the UI are
 planned in M6.2/M6.3, not implemented by the export read model or synthetic
 viewer. The first version also has no history, tombstones or retention, no
 event ingestion, no PostgreSQL and no multi-machine quota coordination. The
-[release baseline](docs/CMDB_BASELINE_2026-11-13.md) records preliminary local
-storage and mock-scheduler measurements only. It does not establish fleet
-capacity or competitive superiority.
+2026-11-13 release baseline recorded preliminary local storage and mock-scheduler
+measurements only. It does not establish fleet capacity or competitive superiority.
 
 Upstream projects informed the design; this is an independent implementation.
 See [sources and licensing](docs/SOURCES.md). No upstream documentation prose,

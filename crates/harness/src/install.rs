@@ -7,48 +7,14 @@ use crate::HarnessError;
 use crate::provenance::file_sha256;
 
 pub mod graph;
+mod metadata;
+mod platform;
 mod signature;
 
+use metadata::Metadata;
+use platform::Platform;
+
 pub use signature::signed_by;
-
-struct Metadata {
-    repository: String,
-    commit: String,
-    package_url: String,
-    package_sha256: String,
-    signing_key_url: String,
-    signing_fingerprint: String,
-}
-
-impl Metadata {
-    fn read(path: &Path) -> Result<Self, HarnessError> {
-        let (document, _) = crate::snapshot::read_json(path)?;
-        let text = |key: &str| -> Result<String, HarnessError> {
-            document
-                .get(key)
-                .and_then(Value::as_str)
-                .map(str::to_owned)
-                .ok_or_else(|| HarnessError::invalid(format!("upstream.json lacks {key}")))
-        };
-        Ok(Self {
-            repository: text("repository")?,
-            commit: text("commit")?,
-            package_url: text("package_url")?,
-            package_sha256: text("package_sha256")?,
-            signing_key_url: text("package_signing_key_url")?,
-            signing_fingerprint: text("package_signing_key_fingerprint")?,
-        })
-    }
-}
-
-fn require_platform() -> Result<(), HarnessError> {
-    if cfg!(all(target_os = "linux", target_arch = "x86_64")) {
-        return Ok(());
-    }
-    Err(HarnessError::invalid(
-        "This pinned package is Linux amd64; see upstream docs for other platforms.",
-    ))
-}
 
 fn ensure_destination(destination: &Path) -> Result<PathBuf, HarnessError> {
     std::fs::canonicalize(destination)
@@ -60,8 +26,8 @@ fn ensure_destination(destination: &Path) -> Result<PathBuf, HarnessError> {
 }
 
 pub fn install(root: &Path, destination: &Path) -> Result<Value, HarnessError> {
-    require_platform()?;
-    let metadata = Metadata::read(&root.join("crates/harness/assets/upstream.json"))?;
+    let platform = Platform::current()?;
+    let metadata = Metadata::read(&root.join("crates/harness/assets/upstream.json"), platform)?;
     let destination = ensure_destination(destination)?;
     let source = checkout(&metadata, &destination)?;
     let package = download(&metadata, &destination)?;
@@ -116,7 +82,7 @@ fn checkout(metadata: &Metadata, destination: &Path) -> Result<PathBuf, HarnessE
 }
 
 fn download(metadata: &Metadata, destination: &Path) -> Result<PathBuf, HarnessError> {
-    let package = destination.join("aws-emulator_amd64.deb");
+    let package = destination.join(metadata.package_file);
     fetch(&metadata.package_url, &package)?;
     if file_sha256(&package)? != metadata.package_sha256 {
         return Err(HarnessError::invalid(
@@ -125,7 +91,7 @@ fn download(metadata: &Metadata, destination: &Path) -> Result<PathBuf, HarnessE
     }
     fetch(
         &format!("{}.sig", metadata.package_url),
-        &destination.join("aws-emulator_amd64.deb.sig"),
+        &metadata.signature_file(destination),
     )?;
     fetch(
         &metadata.signing_key_url,

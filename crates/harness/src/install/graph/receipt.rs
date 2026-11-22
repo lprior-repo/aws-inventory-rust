@@ -6,8 +6,8 @@ use serde_json::{Value, json};
 use sha2::Digest;
 
 use super::{
-    FALKOR_VERSION, Layout, MAX_DOWNLOAD, MODULE_SHA256, MODULE_URL, REDIS_SHA256, REDIS_URL,
-    REDIS_VERSION, build, complete, executable, open_regular, read_bounded,
+    FALKOR_VERSION, Layout, MAX_DOWNLOAD, ModuleAsset, REDIS_SHA256, REDIS_URL, REDIS_VERSION,
+    build, complete, executable, open_regular, read_bounded,
 };
 use crate::HarnessError;
 
@@ -39,7 +39,7 @@ fn verify(layout: &Layout, value: &Value) -> Result<(), HarnessError> {
             "unsupported graph installation receipt",
         ));
     }
-    verify_pins(value)?;
+    verify_pins(value, layout.asset)?;
     verify_paths(layout, value)?;
     verify_downloads(layout)?;
     verify_binary(layout, value, &layout.server, "redis_server_sha256")?;
@@ -50,14 +50,14 @@ fn verify(layout: &Layout, value: &Value) -> Result<(), HarnessError> {
     build::validate_versions(field(versions, "server")?, field(versions, "client")?)
 }
 
-pub(super) fn verify_pins(value: &Value) -> Result<(), HarnessError> {
+pub(super) fn verify_pins(value: &Value, asset: ModuleAsset) -> Result<(), HarnessError> {
     [
         ("redis_version", REDIS_VERSION),
         ("falkordb_version", FALKOR_VERSION),
         ("redis_url", REDIS_URL),
-        ("module_url", MODULE_URL),
+        ("module_url", asset.url),
         ("redis_archive_sha256", REDIS_SHA256),
-        ("module_sha256", MODULE_SHA256),
+        ("module_sha256", asset.sha256),
     ]
     .into_iter()
     .try_for_each(|(name, expected)| {
@@ -119,7 +119,7 @@ fn verify_binary_digest(value: &Value, file: &File, name: &str) -> Result<(), Ha
 
 fn verify_downloads(layout: &Layout) -> Result<(), HarnessError> {
     if digest(layout, &layout.archive)? != REDIS_SHA256
-        || digest(layout, &layout.module)? != MODULE_SHA256
+        || digest(layout, &layout.module)? != layout.asset.sha256
     {
         return Err(HarnessError::invalid(
             "installation download digest differs from pin",
@@ -222,8 +222,8 @@ fn create(layout: &Layout, source: &super::OwnedDirectory) -> Result<Value, Harn
         "falkordb_version": FALKOR_VERSION,
         "redis_url": REDIS_URL,
         "redis_archive_sha256": REDIS_SHA256,
-        "module_url": MODULE_URL,
-        "module_sha256": MODULE_SHA256,
+        "module_url": layout.asset.url,
+        "module_sha256": layout.asset.sha256,
         "versions": {"server": binaries.server_version, "client": binaries.client_version},
         "redis_server": layout.server,
         "redis_cli": layout.client,
