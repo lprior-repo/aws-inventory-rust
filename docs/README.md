@@ -35,7 +35,6 @@ machine that kept the files.
 | --- | --- |
 | [VISION.md](VISION.md) | The product, owner decisions V01 to V34, the target architecture, design rules, failure handling, proof, and how work lands. |
 | [ROADMAP.md](ROADMAP.md) | The build plan, packages M0 to M10, with needs, exit evidence and status. |
-| [../NEXT_AGENT_PROMPT.txt](../NEXT_AGENT_PROMPT.txt) | The standing brief for the next agent: hard rules, state of the tree, how to run the loop. |
 | [cmdb-spec/](cmdb-spec/README.md) | Superseded detailed draft of the CMDB requirements. Still the reference for behavior VISION does not restate; VISION replaces it where they differ. Frozen. |
 | [CMDB_ARCHITECTURE.md](CMDB_ARCHITECTURE.md) | Superseded draft of a multi-tenant continuous service. Passages that contradict a decision are marked with its ID; the "current anchor" columns still describe the tree. Replaced at M10.3. |
 | [CMDB_PERFORMANCE_CONTRACT.md](CMDB_PERFORMANCE_CONTRACT.md) | Superseded draft of budgets and hypotheses, marked where VISION changes them. Its definitions and comparison protocol are kept (V19, M4.4, M5.6, M10.2). |
@@ -53,8 +52,7 @@ machine that kept the files.
 | [DELIVERY.md](DELIVERY.md) | Export and FalkorDB delivery after a scan, or from an existing snapshot. | Mostly kept. Replaced: delivery tied to the old `scan` and to whole snapshots (M6.1, M9.5). |
 | [EXPORT.md](EXPORT.md) | The JSON and JSONL export format, provenance modes, bounds and atomic publication. | Kept as the one explicit place JSON is produced (V03). Its snapshot and provenance model follows schema 13; no roadmap package redefines it yet. |
 | [EMULATOR_TESTING.md](EMULATOR_TESTING.md) | The pinned AWS Emulator harness: installation, fixtures, what the evidence proves. | Kept as the proof environment. Replaced: Python seeding and recording (M2.9, M2.10) and the Cloud Control scans and assertions (M9.5). Its v0.4 and v0.5 sections are historical evidence. |
-| [HARNESS.md](HARNESS.md) | `inventory-harness`: commands and the port of Python tooling to Rust. | Gains the data-driven seeder (M2.9) and the fault proxy (M4.3). Typed-SDK inventory reproduction and its operation audit were removed in M1.7; independent Cloud Control audit components remain. |
-| [LOCAL_SETUP.md](LOCAL_SETUP.md) | The local emulator and FalkorDB stack and its wrapper script. | Python prerequisites go in M2.10; the obsolete typed-SDK inventory build step was removed in M1.7. |
+| [../scripts/local-stack.sh](../scripts/local-stack.sh) | The local FalkorDB and emulator stack wrapper. `help` lists its commands. | Python prerequisites go in M2.10; the obsolete typed-SDK inventory build step was removed in M1.7. |
 | [PROPERTY_TESTING.md](PROPERTY_TESTING.md) | Property tests of the executor, store, jobs and CLI. | Kept. The emulator oracle section depends on Python scripts (M2.10) and Cloud Control descriptors (M9.5). |
 | [SOURCES.md](SOURCES.md) | Primary sources, attribution and licensing. | Kept. Historical SDK source-audit evidence remains; the pinned AWS API model catalog is the current source of service and operation metadata. |
 
@@ -64,7 +62,6 @@ machine that kept the files.
 | --- | --- | --- |
 | [../README.md](../README.md) | Project overview. Its opening states the direction; its sections document the baseline CLI. | Rewritten as packages land; M6.4 adds the walkthrough to the DAG. |
 | [../START_HERE.md](../START_HERE.md) | Build-and-verify handoff for the baseline, version 0.6.0. | New work starts from the roadmap. |
-| [../CONTRACT.md](../CONTRACT.md) | Implementation contract of the baseline crates. | VISION sections 4 and 10 are the rules for new work. |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Architecture of the version 0.6 collector as built. Passages that contradict a decision are marked. | One document describing what exists, at M10.3. |
 | [COLLECTORS.md](COLLECTORS.md) | The typed SDK adapters and the Cloud Control path: scopes, fields, relationships. | M5 per service; M9.5 for Cloud Control and the old `scan` path. |
 | [NETWORKING.md](NETWORKING.md) | The `network` adapter (VPC routing, gateways, endpoints, ACLs, peering). | M5.1. |
@@ -82,7 +79,6 @@ machine that kept the files.
 | [COLLECTION_FIXTURES.md](COLLECTION_FIXTURES.md) | Synthetic JSONL event fixtures for the `ingest` path. | M9.5 with schema 13; seed files in M2.9. |
 | [ANALYSIS.md](ANALYSIS.md) | `diff`, `neighbors`, `path` and `findings` over scan snapshots. | No snapshots or history in the first version (V22); traversal moves to FalkorDB (M6.2); schema 13 goes in M9.5. |
 | [ARCHITECTURE_QUERIES.md](ARCHITECTURE_QUERIES.md) | Worked example of the `architecture` report and snapshot SQL. | M9.5 with schema 13; the DAG on real data is M6. |
-| [LOCAL_WALKTHROUGH.md](LOCAL_WALKTHROUGH.md) | Walkthrough of a baseline scan on one machine's local emulator. | M6.4. |
 | [MUTATION_TESTING.md](MUTATION_TESTING.md) | The Python mutation gate and its 95% target. | M2.10 replaces it in Rust or drops it with a recorded reason. |
 
 The obsolete HTTP read API (`crates/cmdb-api`) has been removed (M6.5, V32).
@@ -97,17 +93,8 @@ integration remain planned in M6.2/M6.3.
 | --- | --- |
 | [../CHANGELOG.md](../CHANGELOG.md) | Changes by release, newest first. |
 | [VERIFICATION.md](VERIFICATION.md) | Verification record of the baseline, version 0.6.0, as recorded on 2026-11-13. The latest such record; not re-run since. |
-| [VERIFICATION_V05.md](VERIFICATION_V05.md) | Verification record for version 0.5.0. |
-| [VERIFICATION_V04.md](VERIFICATION_V04.md) | Verification record for version 0.4.0 and earlier. |
 | [AWS_OPERATION_RECONCILIATION.md](AWS_OPERATION_RECONCILIATION.md) | Source and run reconciliation of AWS operations for v0.6. |
-| [AWS_OPERATION_RECONCILIATION_V05.md](AWS_OPERATION_RECONCILIATION_V05.md) | The same for v0.5. |
 | [CLOUDCONTROL_EVIDENCE.md](CLOUDCONTROL_EVIDENCE.md) | Generated rollup of the v0.5 Cloud Control emulator evidence. A harness test compares it byte for byte with its generator, so it carries no status line. |
-| [MUTATION_READINESS_V06.md](MUTATION_READINESS_V06.md) | Audit of the mutation harness for v0.6. |
-| [CMDB_BASELINE_2026-11-13.md](CMDB_BASELINE_2026-11-13.md) | Dated measurement of baseline SQLite ingestion and mock scheduling. |
-| [DEPENDENCY_UPDATE.md](DEPENDENCY_UPDATE.md) | The 2026-11-12 dependency update and the local verification run made then. |
-| [LOCAL_RESULTS.md](LOCAL_RESULTS.md) | Result of the initial local deployment, 2026-11-12. |
-| [LOCAL_REVIEW.md](LOCAL_REVIEW.md) | Review of the initial local setup and Rust assurance, 2026-11-12. |
 | [RUST_REVIEW.md](RUST_REVIEW.md) | Rust source and async ownership review of the imported archive, 2026-11-12. |
 | `dependency-evidence/` | Raw receipts and reviews behind DEPENDENCY_UPDATE.md. Frozen. |
-| `local-evidence/` | Checksums of the initial local evidence. Frozen. |
 | `performance-evidence/` | Raw results behind CMDB_BASELINE_2026-11-13.md. Frozen. |

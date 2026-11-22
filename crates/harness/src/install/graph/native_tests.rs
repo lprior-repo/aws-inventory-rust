@@ -6,7 +6,9 @@ use std::path::Path;
 use serde_json::Value;
 
 use super::installer_tests::{CLIENT_VERSION, SERVER_VERSION, TestResult, executable, fixture};
-use super::{DEFAULT_JOBS, Layout, MODULE_SHA256, OwnedDirectory, REDIS_SHA256, install, receipt};
+use super::{
+    DEFAULT_JOBS, LINUX_X86_64_MODULE, Layout, OwnedDirectory, REDIS_SHA256, install, receipt,
+};
 
 fn genuine_fixture() -> Result<(tempfile::TempDir, Layout), Box<dyn std::error::Error>> {
     let artifacts = std::env::var_os("AWS_INVENTORY_GRAPH_ARTIFACTS")
@@ -16,7 +18,10 @@ fn genuine_fixture() -> Result<(tempfile::TempDir, Layout), Box<dyn std::error::
     fs::copy(artifacts.join("redis-8.10.3.tar.gz"), &layout.archive)?;
     fs::copy(artifacts.join("falkordb.so"), &layout.module)?;
     assert_eq!(receipt::digest(&layout, &layout.archive)?, REDIS_SHA256);
-    assert_eq!(receipt::digest(&layout, &layout.module)?, MODULE_SHA256);
+    assert_eq!(
+        receipt::digest(&layout, &layout.module)?,
+        LINUX_X86_64_MODULE.sha256
+    );
     version_program(&layout.server, SERVER_VERSION, &layout.root.join("probes"))?;
     version_program(&layout.client, CLIENT_VERSION, &layout.root.join("probes"))?;
     let source = OwnedDirectory::capture(&layout.source)?;
@@ -304,7 +309,10 @@ fn given_relocated_pinned_root_when_publishing_then_absolute_and_retained_layout
     fs::copy(saved.join("falkordb.so"), &layout.module)?;
     fs::write(&layout.receipt, b"foreign receipt")?;
     assert_eq!(receipt::digest(&layout, &layout.archive)?, REDIS_SHA256);
-    assert_eq!(receipt::digest(&layout, &layout.module)?, MODULE_SHA256);
+    assert_eq!(
+        receipt::digest(&layout, &layout.module)?,
+        LINUX_X86_64_MODULE.sha256
+    );
     let error = receipt::publish(&layout, &source)
         .err()
         .ok_or("replacement layout was published")?;
@@ -317,7 +325,10 @@ fn given_relocated_pinned_root_when_publishing_then_absolute_and_retained_layout
     assert_eq!(fs::read(saved.join("probes"))?, b"probeprobe");
     assert!(!layout.server.exists());
     assert_eq!(receipt::digest(&layout, &layout.archive)?, REDIS_SHA256);
-    assert_eq!(receipt::digest(&layout, &layout.module)?, MODULE_SHA256);
+    assert_eq!(
+        receipt::digest(&layout, &layout.module)?,
+        LINUX_X86_64_MODULE.sha256
+    );
     source.verify()?;
     Ok(())
 }
