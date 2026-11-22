@@ -26,8 +26,8 @@ const PLANS: &str = "catalog/aws-plans.report";
 const CLASSES: &str = "catalog/aws-classes.report";
 const OVERLAY: &str = "catalog/aws-overlay.report";
 const OPERATIONS: &str = "catalog/aws-operations.toml";
-const CAPABILITIES: &str = "catalog/cloudcontrol-capabilities.json";
-const RESOURCES: &str = "catalog/cloudcontrol-resources.json";
+const CAPABILITIES: &str = "catalog/cloudcontrol-capabilities.toml";
+const RESOURCES: &str = "catalog/cloudcontrol-resources.toml";
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -233,7 +233,7 @@ impl Input {
     }
 
     fn json(&self) -> Result<Value, Error> {
-        serde_json::from_str(&self.text).map_err(|source| self.invalid(source.to_string()))
+        toml::from_str(&self.text).map_err(|source| self.invalid(source.to_string()))
     }
 
     fn toml(&self) -> Result<Value, Error> {

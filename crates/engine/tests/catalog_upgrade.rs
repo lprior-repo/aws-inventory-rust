@@ -17,7 +17,7 @@ fn added_views() -> TestResult<Vec<String>> {
             .ok_or("v04 types missing")?,
     )?;
     let catalog: Value =
-        serde_json::from_str(include_str!("../../../catalog/cloudcontrol-resources.json"))?;
+        toml::from_str(include_str!("../../../catalog/cloudcontrol-resources.toml"))?;
     catalog
         .get("resource_types")
         .and_then(Value::as_array)

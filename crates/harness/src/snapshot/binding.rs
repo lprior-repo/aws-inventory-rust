@@ -82,7 +82,7 @@ fn load_catalogs(
     root: &Path,
     binary_sha: &str,
 ) -> Result<(Value, Value), HarnessError> {
-    let (catalog, catalog_sha) = read_json(&root.join("catalog/cloudcontrol-resources.json"))?;
+    let (catalog, catalog_sha) = read_toml(&root.join("catalog/cloudcontrol-resources.toml"))?;
     let (parents, parents_sha) =
         read_toml(&root.join("catalog/cloudcontrol-parent-resources.toml"))?;
     let runtime = expected_runtime_catalog(&catalog, &parents)?;

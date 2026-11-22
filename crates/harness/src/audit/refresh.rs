@@ -7,7 +7,7 @@ use serde_json::Value;
 use crate::HarnessError;
 
 use super::Json;
-use super::files::read_json_document;
+use super::files::read_toml_document;
 use super::rollup::{read_ordered, write_rollup};
 
 pub async fn run_refresh(
@@ -30,9 +30,9 @@ pub async fn run_refresh(
 }
 
 fn load_inputs(root: &Path) -> Result<(Json, Value, String), HarnessError> {
-    let (matrix, _) = read_ordered(&root.join("catalog/cloudcontrol-capabilities.json"))?;
+    let (matrix, _) = read_ordered(&root.join("catalog/cloudcontrol-capabilities.toml"))?;
     let (catalog, catalog_sha) =
-        read_json_document(&root.join("catalog/cloudcontrol-resources.json"))?;
+        read_toml_document(&root.join("catalog/cloudcontrol-resources.toml"))?;
     if matrix
         .get("evidence")
         .and_then(|value| value.get("catalog_sha256"))

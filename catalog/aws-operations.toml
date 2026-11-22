@@ -83,8 +83,8 @@ linked_execution_evidence = "Per-operation emulator_coverage references the froz
 
 [cloud_control_provider_dimension]
 resource_type_count = 200
-catalog = "catalog/cloudcontrol-resources.json"
-catalog_sha256 = "046e791a0a07ba12fc2e81ce56136ef585b122ec796758e86f28955119468f07"
+catalog = "catalog/cloudcontrol-resources.toml"
+catalog_sha256 = "14569b1faab78fa6f91cc7b8d682226e1b089730328673f131bce3d268aa38b0"
 operation_ids = [
     "cloudcontrol.list_resources",
     "cloudcontrol.get_resource",

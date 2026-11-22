@@ -35,10 +35,6 @@ pub fn read_json(path: &Path) -> Result<(Value, String), HarnessError> {
     read_json_with_limit(path, MAX_DOCUMENT_BYTES)
 }
 
-pub fn read_toml(path: &Path) -> Result<(Value, String), HarnessError> {
-    crate::catalog::toml_doc::read(path, MAX_DOCUMENT_BYTES)
-}
-
 fn read_json_with_limit(path: &Path, limit: usize) -> Result<(Value, String), HarnessError> {
     let file = std::fs::File::open(path)?;
     let bytes = read_limited(file, limit).map_err(|error| document_error(path, error))?;

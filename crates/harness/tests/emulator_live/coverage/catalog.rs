@@ -2,8 +2,8 @@ use super::*;
 
 pub(super) fn recorded_gaps() -> Result<BTreeSet<String>, Box<dyn Error>> {
     let root = workspace()?;
-    let document: Value = serde_json::from_str(&std::fs::read_to_string(
-        root.join("catalog/cloudcontrol-capabilities.json"),
+    let document: Value = serde_json::to_value(toml::from_str::<toml::Table>(
+        &std::fs::read_to_string(root.join("catalog/cloudcontrol-capabilities.toml"))?,
     )?)?;
     let rows = document
         .get("resource_types")
@@ -25,15 +25,11 @@ pub(super) fn cloud_control_types() -> Result<String, Box<dyn Error>> {
     let root = workspace()?;
     let mut names = Vec::new();
     for file in [
-        "catalog/cloudcontrol-resources.json",
+        "catalog/cloudcontrol-resources.toml",
         "catalog/cloudcontrol-parent-resources.toml",
     ] {
         let text = std::fs::read_to_string(root.join(file))?;
-        let document: Value = if file.ends_with(".toml") {
-            serde_json::to_value(toml::from_str::<toml::Table>(&text)?)?
-        } else {
-            serde_json::from_str(&text)?
-        };
+        let document: Value = serde_json::to_value(toml::from_str::<toml::Table>(&text)?)?;
         let rows = document
             .get("resource_types")
             .and_then(Value::as_array)

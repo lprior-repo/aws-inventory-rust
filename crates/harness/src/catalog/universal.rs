@@ -28,7 +28,7 @@ struct Totals {
 
 pub fn document(root: &Path) -> Result<Json, HarnessError> {
     let archive = archive::load(root)?;
-    let matrix = read(&root.join(CAPABILITY_MATRIX))?;
+    let matrix = read_toml(&root.join(CAPABILITY_MATRIX))?;
     let parents = parent_types(root)?;
     let rows = matrix_rows(&matrix, &archive)?;
     let mut seen: BTreeSet<String> = BTreeSet::new();
@@ -234,10 +234,6 @@ fn parent_types(root: &Path) -> Result<BTreeMap<String, String>, HarnessError> {
         parents.insert(name.to_string(), parent.to_string());
     }
     Ok(parents)
-}
-
-fn read(path: &Path) -> Result<Json, HarnessError> {
-    Json::parse(&std::fs::read_to_string(path)?)
 }
 
 fn read_toml(path: &Path) -> Result<Json, HarnessError> {

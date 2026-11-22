@@ -69,8 +69,7 @@ fn given_archive_when_generated_then_every_matrix_type_is_classified()
         .ok_or_else(|| HarnessError::invalid("universal rows"))?;
     assert_eq!(u64::try_from(rows.len())?, total);
 
-    let matrix: Value =
-        serde_json::from_str(&std::fs::read_to_string(root.join(CAPABILITY_MATRIX))?)?;
+    let matrix: Value = toml::from_str(&std::fs::read_to_string(root.join(CAPABILITY_MATRIX))?)?;
     let matrix_rows = field(&matrix, "resource_types")?
         .as_array()
         .ok_or_else(|| HarnessError::invalid("matrix rows"))?;
@@ -82,7 +81,10 @@ fn given_archive_when_generated_then_every_matrix_type_is_classified()
             .as_str()
             .ok_or_else(|| HarnessError::invalid("matrix type_name"))?
             .to_string();
-        let exclusion = field(row, "exclusion")?.as_str().map(str::to_string);
+        let exclusion = row
+            .get("exclusion")
+            .and_then(Value::as_str)
+            .map(str::to_string);
         let listing = field(row, "list_supported")?
             .as_bool()
             .ok_or_else(|| HarnessError::invalid("matrix list_supported"))?;

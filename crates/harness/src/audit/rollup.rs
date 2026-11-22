@@ -8,12 +8,9 @@ use super::format::group_thousands;
 use super::jhelpers::{array, field, integer, object, text};
 
 pub(super) fn read_ordered(path: &Path) -> Result<(Json, String), HarnessError> {
-    let bytes = crate::files::read_bytes(path, super::files::MAX_DOCUMENT_BYTES)
+    let (value, digest) = crate::catalog::toml_doc::read(path, super::files::MAX_DOCUMENT_BYTES)
         .map_err(super::files::budget_message)?;
-    let digest = crate::provenance::sha256_hex(&bytes);
-    let content = String::from_utf8(bytes)
-        .map_err(|_| HarnessError::invalid("coverage evidence document is not UTF-8"))?;
-    Ok((Json::parse(&content)?, digest))
+    Ok((Json::from_value(&value), digest))
 }
 
 fn histogram_lines(summary: &Json) -> Result<Vec<String>, HarnessError> {
@@ -180,9 +177,9 @@ fn interpretation_lines() -> Vec<String> {
         String::new(),
         "## Full matrix and interpretation".to_owned(),
         String::new(),
-        "- [All provider capability entries](../catalog/cloudcontrol-capabilities.json)."
+        "- [All provider capability entries](../catalog/cloudcontrol-capabilities.toml)."
             .to_owned(),
-        "- [Executable descriptors and property mappings](../catalog/cloudcontrol-resources.json)."
+        "- [Executable descriptors and property mappings](../catalog/cloudcontrol-resources.toml)."
             .to_owned(),
         "- [Collection and relationship design](CLOUDCONTROL_COVERAGE.md).".to_owned(),
         String::new(),

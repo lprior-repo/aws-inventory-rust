@@ -52,8 +52,8 @@ Selected types without an observed detailed read:
 
 ## Full matrix and interpretation
 
-- [All provider capability entries](../catalog/cloudcontrol-capabilities.json).
-- [Executable descriptors and property mappings](../catalog/cloudcontrol-resources.json).
+- [All provider capability entries](../catalog/cloudcontrol-capabilities.toml).
+- [Executable descriptors and property mappings](../catalog/cloudcontrol-resources.toml).
 - [Collection and relationship design](CLOUDCONTROL_COVERAGE.md).
 
 The pinned emulator uses a generic property store for most types. These observations

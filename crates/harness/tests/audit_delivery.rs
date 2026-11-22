@@ -39,9 +39,9 @@ fn frozen_cloud_control_catalogs_are_bound() -> TestResult {
 #[test]
 fn rollup_matches_the_committed_evidence_document() -> TestResult {
     let root = workspace();
-    let matrix = Json::parse(&std::fs::read_to_string(
-        root.join("catalog/cloudcontrol-capabilities.json"),
-    )?)?;
+    let matrix = Json::from_value(&toml::from_str::<serde_json::Value>(
+        &std::fs::read_to_string(root.join("catalog/cloudcontrol-capabilities.toml"))?,
+    )?);
     let directory = tempfile::tempdir()?;
     let rendered = directory.path().join("rollup.md");
     write_rollup(&matrix, &rendered)?;

@@ -1,6 +1,6 @@
 # Large, non-regenerable catalog inputs live in Git LFS. Run `git lfs pull`
 # (scripts/bootstrap-catalog.sh does this) before building or testing.
 catalog/field-ids.txt filter=lfs diff=lfs merge=lfs -text
-catalog/cloudcontrol-capabilities.json filter=lfs diff=lfs merge=lfs -text
-catalog/cloudcontrol-resources.json filter=lfs diff=lfs merge=lfs -text
+catalog/cloudcontrol-capabilities.toml filter=lfs diff=lfs merge=lfs -text
+catalog/cloudcontrol-resources.toml filter=lfs diff=lfs merge=lfs -text
 catalog/upstream/*.zip filter=lfs diff=lfs merge=lfs -text

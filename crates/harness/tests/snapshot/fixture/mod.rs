@@ -91,7 +91,7 @@ pub async fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
     let runtime = inventory_harness::provenance::expected_runtime_catalog(&catalog, &parents)?;
     let mut execution = json!({
         "binary": {"path": binary, "sha256": binary_sha},
-        "catalog_sha256": write_json(&root.join("catalog/cloudcontrol-resources.json"), &catalog)?,
+        "catalog_sha256": write_toml(&root.join("catalog/cloudcontrol-resources.toml"), &catalog)?,
         "catalog_canonical_sha256": canonical_sha256(&catalog),
         "parent_catalog_sha256": write_toml(
             &root.join("catalog/cloudcontrol-parent-resources.toml"), &parents)?,

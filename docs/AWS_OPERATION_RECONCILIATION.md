@@ -28,7 +28,7 @@ The different uses of **73** must remain distinct: 73 explicit send sites corres
 
 Cloud Control has **421 configured resource types across 76 service families**, split into **397 frozen root descriptors and 24 parent-dependent descriptors**. They still use only `cloudcontrol.list_resources` and `cloudcontrol.get_resource`. The parent workflow supplies `ResourceModel` on each relevant list request and reuses the exact returned identifier for each read. It does not introduce another SDK operation identity.
 
-The merged descriptors define **4,309 provider columns**, **968 property relationship rules across 255 types**, and **24 runtime `CHILD_OF` workflows**. In total, **268 distinct types** have a property rule or a parent workflow. SQLite schema 13 contains the 421 source-specific provider views. These are implemented schema and mapping counts; they do not establish that every relationship rule or every real AWS provider was exercised. [Root catalog](../catalog/cloudcontrol-resources.json) · [Parent catalog](../catalog/cloudcontrol-parent-resources.toml) · [Parent workflow contract](PARENT_COLLECTIONS.md)
+The merged descriptors define **4,309 provider columns**, **968 property relationship rules across 255 types**, and **24 runtime `CHILD_OF` workflows**. In total, **268 distinct types** have a property rule or a parent workflow. SQLite schema 13 contains the 421 source-specific provider views. These are implemented schema and mapping counts; they do not establish that every relationship rule or every real AWS provider was exercised. [Root catalog](../catalog/cloudcontrol-resources.toml) · [Parent catalog](../catalog/cloudcontrol-parent-resources.toml) · [Parent workflow contract](PARENT_COLLECTIONS.md)
 
 ## Historical reviewed additive operations
 
@@ -146,7 +146,7 @@ The report binds an **84-file source closure**, the compiled collector, both des
 | --- | --- |
 | Collector executable | `57660e895513595a9247fc22bd9b80c921417de9c2fb32a59f250830d0728adf` |
 | Source closure | `a79a481e63ac3fafba9fe5501b7b347b4c40ced4df899567e222f7069dc6fd29` |
-| Frozen root catalog | `7d551d1ae5d32e83dc7bf45d5ef94fca35b0cecbc510cd5a3fe75aafa73300e4` |
+| Frozen root catalog | `14569b1faab78fa6f91cc7b8d682226e1b089730328673f131bce3d268aa38b0` |
 | Parent catalog | `26593330f8388812474ca9d8c81f0f5d23ac2a57410a11b99bd24ee5116e354a` |
 | Canonical merged runtime catalog | `06b2dc9e209cd6a95383061f85d69250da68ba2eed4ab16463dff4c5604231f5` |
 | Parent fixture | `500b9f29c6007c88f4f5cfd702cad210b32ed03b89cddf3d261f83dfd8cd94d7` |

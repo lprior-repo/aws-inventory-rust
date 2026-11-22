@@ -36,7 +36,7 @@ route, and an unresolved reference.
 The breadth universe is the exact type list retained in
 [cloudcontrol-v04-types.toml](../catalog/cloudcontrol-v04-types.toml): **200
 descriptors across 65 catalog service families**. Those descriptors remain in
-[cloudcontrol-resources.json](../catalog/cloudcontrol-resources.json), whose
+[cloudcontrol-resources.toml](../catalog/cloudcontrol-resources.toml), whose
 current 397-type selection is larger. There is exactly one fixture resource per
 original descriptor, with its descriptor's `kind` and exact CloudFormation
 `type_name`. The original view-column definitions remain unchanged. The catalog
@@ -126,7 +126,7 @@ complete scope, and no failed scopes. The EC2 row has the placeholder
 
 ### Check every frozen-fixture view, including its selected columns
 
-The following optional Bash check also requires `jq`. It joins the frozen type
+The following optional Bash check requires `python3` (with `tomllib`). It joins the frozen type
 list to the current catalog and runs `SELECT *` against each original view, so it exercises
 the column projections rather than only checking whether a view name exists.
 Use the fresh database imported above.
@@ -135,10 +135,15 @@ Use the fresh database imported above.
 set -euo pipefail
 
 mapfile -t fixture_views < <(
-  jq -r --argjson legacy "$(grep -o '"AWS::[^"]*"' catalog/cloudcontrol-v04-types.toml | jq -s '.')" \
-    '.resource_types[]
-     | select(.type_name as $type | $legacy | index($type) != null)
-     | .view_name' catalog/cloudcontrol-resources.json
+  python3 - <<'PY'
+import re, tomllib
+legacy = set(re.findall(r'"(AWS::[^"]*)"', open("catalog/cloudcontrol-v04-types.toml").read()))
+with open("catalog/cloudcontrol-resources.toml", "rb") as handle:
+    catalog = tomllib.load(handle)
+for row in catalog["resource_types"]:
+    if row["type_name"] in legacy:
+        print(row["view_name"])
+PY
 )
 test "${#fixture_views[@]}" -eq 200
 

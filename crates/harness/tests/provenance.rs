@@ -45,7 +45,7 @@ fn given_workspace_root_when_fingerprinted_then_sources_and_manifests_are_covere
     assert!(names.contains(&"Cargo.lock"));
     assert!(names.contains(&".cargo/config.toml"));
     assert!(names.contains(&"catalog/aws-api.catalog"));
-    assert!(names.contains(&"catalog/cloudcontrol-capabilities.json"));
+    assert!(names.contains(&"catalog/cloudcontrol-capabilities.toml"));
     assert!(names.contains(&"catalog/cloudcontrol-universal.json"));
     assert!(names.iter().any(|name| name.starts_with("src/")));
     assert!(

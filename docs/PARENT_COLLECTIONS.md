@@ -7,7 +7,7 @@
 > and [ROADMAP](ROADMAP.md).
 
 The v0.6 implementation adds 24 reviewed parent-dependent types to the existing
-397 regional root types. The original `catalog/cloudcontrol-resources.json`
+397 regional root types. The original `catalog/cloudcontrol-resources.toml`
 remains unchanged; `catalog/cloudcontrol-parent-resources.toml` holds the new
 descriptors and explicit discovery bindings. `cloud_control::catalog()` exposes
 the combined 421 types, while `root_catalog()` and `parent_catalog()` expose the

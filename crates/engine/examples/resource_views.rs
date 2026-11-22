@@ -19,7 +19,7 @@ fn main() -> Result<()> {
         _ => return Err("usage: resource_views [--check]".into()),
     };
     let manifest: Value =
-        serde_json::from_str(include_str!("../../../catalog/cloudcontrol-resources.json"))?;
+        toml::from_str(include_str!("../../../catalog/cloudcontrol-resources.toml"))?;
     let legacy_document: Value = serde_json::to_value(toml::from_str::<toml::Table>(
         include_str!("../../../catalog/cloudcontrol-v04-types.toml"),
     )?)?;

@@ -13,8 +13,8 @@ const INPUTS: [&str; 7] = [
     "catalog/aws-classes.report",
     "catalog/aws-overlay.report",
     "catalog/aws-operations.toml",
-    "catalog/cloudcontrol-capabilities.json",
-    "catalog/cloudcontrol-resources.json",
+    "catalog/cloudcontrol-capabilities.toml",
+    "catalog/cloudcontrol-resources.toml",
 ];
 
 fn real_root() -> PathBuf {
@@ -109,7 +109,7 @@ fn digest_changes_when_a_catalog_input_changes() -> TestResult {
     let dir = copy_inputs()?;
     let before = coverage::build(dir.path())?;
 
-    let target = dir.path().join("catalog/cloudcontrol-capabilities.json");
+    let target = dir.path().join("catalog/cloudcontrol-capabilities.toml");
     let mut bytes = std::fs::read(&target)?;
     bytes.push(b'\n');
     std::fs::write(&target, bytes)?;

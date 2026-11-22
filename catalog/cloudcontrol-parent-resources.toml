@@ -4,7 +4,7 @@ schema_version = 1
 source_kind = "official_aws_cloudformation_registry_schema_archive"
 archive_file = "upstream/cloudformation-us-east-1-2026-11-12.zip"
 archive_sha256 = "8226b9cd82f432997fe3918b134ef155245636f35ac37f8006de5abe88dd54a8"
-root_catalog_sha256 = "7d551d1ae5d32e83dc7bf45d5ef94fca35b0cecbc510cd5a3fe75aafa73300e4"
+root_catalog_sha256 = "14569b1faab78fa6f91cc7b8d682226e1b089730328673f131bce3d268aa38b0"
 global_sensitive_property_names = [
     "accesstoken",
     "apikeyvalue",

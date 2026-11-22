@@ -11,7 +11,7 @@ The 421 types are configured coverage, not a claim that an AWS account has been 
 
 ## Evidence and selection
 
-[cloudcontrol-resources.json](../catalog/cloudcontrol-resources.json) preserves the 397-type root catalog: the original 200 descriptors and 197 reviewed regional additions. Selection emphasizes compute, networking, storage, databases, messaging, integration, operational metadata, identity references and regional machine-learning services. The additions include SageMaker, Bedrock, DAX, CloudFormation stacks, EMR, SES, Cognito, CodeDeploy and Image Builder. The separate [cloudcontrol-parent-resources.toml](../catalog/cloudcontrol-parent-resources.toml) adds 21 children of six reviewed root families. Runtime combines the two; schema eligibility alone does not enable a type.
+[cloudcontrol-resources.toml](../catalog/cloudcontrol-resources.toml) preserves the 397-type root catalog: the original 200 descriptors and 197 reviewed regional additions. Selection emphasizes compute, networking, storage, databases, messaging, integration, operational metadata, identity references and regional machine-learning services. The additions include SageMaker, Bedrock, DAX, CloudFormation stacks, EMR, SES, Cognito, CodeDeploy and Image Builder. The separate [cloudcontrol-parent-resources.toml](../catalog/cloudcontrol-parent-resources.toml) adds 21 children of six reviewed root families. Runtime combines the two; schema eligibility alone does not enable a type.
 
 | Current catalog measure | Count | Evidence |
 | --- | ---: | --- |
@@ -21,7 +21,7 @@ The 421 types are configured coverage, not a claim that an AWS account has been 
 | Top-level provider columns | 4,309 | Descriptor `columns`; at most 85 per type |
 | Property relationship rules | 968 | Explicit rules across 255 selected types |
 | Parent relationship workflows | 24 | Runtime `CHILD_OF` binding per child type; 268 types have either form |
-| Pinned schema universe | 1,881 | [Capability matrix](../catalog/cloudcontrol-capabilities.json), including exclusions |
+| Pinned schema universe | 1,881 | [Capability matrix](../catalog/cloudcontrol-capabilities.toml), including exclusions |
 
 [CLOUDCONTROL_COVERAGE.md](CLOUDCONTROL_COVERAGE.md) describes eligibility, remaining exclusions and relationship constraints. [PARENT_COLLECTIONS.md](PARENT_COLLECTIONS.md) defines every admitted prerequisite binding. [CLOUDCONTROL_EVIDENCE.md](CLOUDCONTROL_EVIDENCE.md) retains source-bound root-catalog evidence; the 21 parent workflows have a separate emulator case. The frozen 200-type event fixture remains a historical v0.3/v0.4 subset and has not been relabeled as a complete current fixture.
 
@@ -29,7 +29,7 @@ The pinned input is AWS's official [us-east-1 CloudFormation resource schema arc
 
 Root eligibility requires both handlers, an empty object accepted by the complete list `handlerSchema` when supplied, and exclusion of AWS's documented types requiring a `ResourceModel`. The build helper validates `oneOf`/`anyOf`/`allOf` through JSON Schema. For example, Logs LogGroup allows an empty list model, while ELBv2 Listener and ListenerRule require parent context. The separate parent catalog admits Listener with a reviewed load-balancer binding; ListenerRule still needs a second discovery level. RDS DBProxyTargetGroup remains excluded because the [Cloud Control discovery guide](https://docs.aws.amazon.com/cloudcontrolapi/latest/userguide/resource-operations-list.html) requires `DBProxyName` and this catalog has no reviewed discovery plan for it, even though its pinned schema omits a list `handlerSchema`.
 
-AWS distinguishes provisionable registry types from legacy, non-provisionable types that do not support Cloud Control. The schema handlers are the catalog's capability evidence; see [Cloud Control resource-type support](https://docs.aws.amazon.com/cloudcontrolapi/latest/userguide/resource-types.html). The supported-resources HTML table is not claimed as a second retained verification source: direct acquisition returned a 195-byte `SiteUnavailable` page. That response was discarded and the failed acquisition is recorded in `catalog/upstream/cloudcontrol-upstream.json`.
+AWS distinguishes provisionable registry types from legacy, non-provisionable types that do not support Cloud Control. The schema handlers are the catalog's capability evidence; see [Cloud Control resource-type support](https://docs.aws.amazon.com/cloudcontrolapi/latest/userguide/resource-types.html). The supported-resources HTML table is not claimed as a second retained verification source: direct acquisition returned a 195-byte `SiteUnavailable` page. That response was discarded and the failed acquisition is recorded in `catalog/upstream/cloudcontrol-upstream.toml`.
 
 The archive describes us-east-1 at retrieval time. Other region/partition availability, the account's default provider version, permissions and provider behavior are validated only by actual collection. The adapter does not activate providers, change versions, create roles, provision AWS Config, or create Resource Explorer indexes. An unsupported provider, denied request or invalid model creates an incomplete scope; it never becomes a successful empty inventory.
 

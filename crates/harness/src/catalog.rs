@@ -21,13 +21,13 @@ pub const ARCHIVE_SHA256: &str = "8226b9cd82f432997fe3918b134ef155245636f35ac37f
 
 pub const ADDITIONS: &str = "catalog/cloudcontrol-regional-additions.toml";
 
-pub const ROOT_CATALOG: &str = "catalog/cloudcontrol-resources.json";
+pub const ROOT_CATALOG: &str = "catalog/cloudcontrol-resources.toml";
 
-pub const CAPABILITY_MATRIX: &str = "catalog/cloudcontrol-capabilities.json";
+pub const CAPABILITY_MATRIX: &str = "catalog/cloudcontrol-capabilities.toml";
 
 pub const PARENT_CATALOG: &str = "catalog/cloudcontrol-parent-resources.toml";
 
-pub const UPSTREAM_MANIFEST: &str = "catalog/upstream/cloudcontrol-upstream.json";
+pub const UPSTREAM_MANIFEST: &str = "catalog/upstream/cloudcontrol-upstream.toml";
 
 #[derive(Debug, Clone)]
 pub struct Report {
@@ -40,7 +40,7 @@ pub fn reproduce(root: &Path) -> Result<Vec<Report>, HarnessError> {
     let archive = archive::load(root)?;
     let additions = archive::additions(root)?;
     let (resources, _counts) = cloudcontrol::build_resources(&archive, &additions)?;
-    let resources_text = format!("{}\n", resources.pretty());
+    let resources_text = toml_doc::render(&resources.to_serde()?)?;
     let resources_sha256 = sha256_hex(resources_text.as_bytes());
     let matrix = capabilities::build(&archive, &resources, &resources_sha256)?;
     let manifest = upstream_manifest(root)?;
@@ -50,8 +50,8 @@ pub fn reproduce(root: &Path) -> Result<Vec<Report>, HarnessError> {
             file: ROOT_CATALOG.to_string(),
             contents: resources_text,
         },
-        document(CAPABILITY_MATRIX, &matrix),
-        document(UPSTREAM_MANIFEST, &manifest),
+        document(CAPABILITY_MATRIX, &matrix)?,
+        document(UPSTREAM_MANIFEST, &manifest)?,
         Report {
             file: PARENT_CATALOG.to_string(),
             contents: toml_doc::render(&parents.to_serde()?)?,
@@ -59,11 +59,11 @@ pub fn reproduce(root: &Path) -> Result<Vec<Report>, HarnessError> {
     ])
 }
 
-fn document(file: &str, contents: &Json) -> Report {
-    Report {
+fn document(file: &str, contents: &Json) -> Result<Report, HarnessError> {
+    Ok(Report {
         file: file.to_string(),
-        contents: format!("{}\n", contents.pretty()),
-    }
+        contents: toml_doc::render(&contents.to_serde()?)?,
+    })
 }
 
 pub fn check(root: &Path) -> Result<(), HarnessError> {
@@ -99,9 +99,9 @@ fn verify_parent_binding(root: &Path, root_bytes: &[u8]) -> Result<(), HarnessEr
 fn verify_matrix(generated: &str, committed: &[u8]) -> Result<(), HarnessError> {
     let text = std::str::from_utf8(committed)
         .map_err(|_| HarnessError::invalid("capability matrix is not UTF-8"))?;
-    let mut projected = Json::parse(text)?;
+    let mut projected = Json::from_serde(&toml_doc::parse(text)?);
     capabilities::without_executed_evidence(&mut projected);
-    let expected = format!("{}\n", projected.pretty());
+    let expected = toml_doc::render(&projected.to_serde()?)?;
     if expected == generated {
         return Ok(());
     }
@@ -139,7 +139,7 @@ fn first_difference_line(expected: &str, actual: &[u8]) -> usize {
 
 fn upstream_manifest(root: &Path) -> Result<Json, HarnessError> {
     let text = std::fs::read_to_string(root.join(UPSTREAM_MANIFEST))?;
-    let mut manifest = Json::parse(&text)?;
+    let mut manifest = Json::from_serde(&toml_doc::parse(&text)?);
     let name = ARCHIVE.rsplit('/').next().unwrap_or(ARCHIVE);
     manifest.set("sources", Json::array(matching_sources(&manifest, name)));
     manifest.set("discarded_acquisitions", discarded_acquisitions());

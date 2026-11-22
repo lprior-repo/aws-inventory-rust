@@ -76,7 +76,7 @@ because an aggregator can see some metadata for them.
 Cloud Control is a different ListResources API: its MaxResults is reserved, so
 this adapter omits that field. The 200-type catalog is derived from retained
 official CloudFormation schema bytes, with per-schema checksums and acquisition
-metadata in `catalog/upstream/cloudcontrol-upstream.json`. `COLLECTION_PLAN.md`
+metadata in `catalog/upstream/cloudcontrol-upstream.toml`. `COLLECTION_PLAN.md`
 records the exact selection rules, omitted global/parent-scoped types, readable
 fields, redaction and permission boundaries. The schema archive establishes
 handler eligibility at the captured region and time, not successful live
