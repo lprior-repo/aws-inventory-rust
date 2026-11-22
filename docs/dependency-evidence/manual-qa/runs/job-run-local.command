@@ -1,1 +1,0 @@
-timeout 60 bash scripts/local-stack.sh cli job run --queue /home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/jobs.sqlite --limit 1 --lease-seconds 10 --worker manual-qa-worker 

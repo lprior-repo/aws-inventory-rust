@@ -1,0 +1,21 @@
+digraph G {
+  graph [bgcolor="#fcfcfb", fontname="Inter", fontsize=17, fontcolor="#0b0b0b",
+         label=<<table border="0" cellborder="0" cellspacing="0"><tr><td align="left"><b>What happens when something goes wrong</b></td></tr><tr><td height="6"></td></tr></table>>, labelloc=t, labeljust=l, pad=0.35,
+         rankdir=LR, nodesep=0.22, ranksep=0.6, newrank=true ];
+  node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#c3c2b7",
+        penwidth=1.2, fontname="Inter", fontsize=12, fontcolor="#0b0b0b",
+        margin="0.17,0.10"];
+  edge [color="#52514e", arrowsize=0.7, penwidth=1.1, fontname="Inter",
+        fontsize=10, fontcolor="#52514e"];
+
+  node [fontsize=11];
+  f1 [label="AWS throttles", fillcolor="#fbe0e0", color="#d03b3b"]; b1 [label="That budget slows down, the request\nwaits its turn, the learned rate drops", fillcolor="#dceafb", color="#86b6ef"];
+  f2 [label="Server error, timeout,\ncut-off response", fillcolor="#fbe0e0", color="#d03b3b"]; b2 [label="Retried within a budget; then the\nlisting is marked failed for this sweep", fillcolor="#dceafb", color="#86b6ef"];
+  f3 [label="Access denied, or service\nnot in this region", fillcolor="#fbe0e0", color="#d03b3b"]; b3 [label="Recorded and skipped until it expires.\nNothing is deleted", fillcolor="#dceafb", color="#86b6ef"];
+  f4 [label="Credentials expire", fillcolor="#fbe0e0", color="#d03b3b"]; b4 [label="Refreshed once; then the account\nis reported as needing a login", fillcolor="#dceafb", color="#86b6ef"];
+  f5 [label="The collector is killed", fillcolor="#fbe0e0", color="#d03b3b"]; b5 [label="Resumes from the last\ncommitted page", fillcolor="#dceafb", color="#86b6ef"];
+  f6 [label="PostgreSQL goes down", fillcolor="#fbe0e0", color="#d03b3b"]; b6 [label="Reconnects within bounds; interrupted\nlistings are replayed from the start", fillcolor="#dceafb", color="#86b6ef"];
+  f7 [label="The graph database\nis down", fillcolor="#fbe0e0", color="#d03b3b"]; b7 [label="Collection and SQL continue;\nthe app says traversal is unavailable", fillcolor="#dceafb", color="#86b6ef"];
+  f8 [label="The model disagrees\nwith the service", fillcolor="#fbe0e0", color="#d03b3b"]; b8 [label="The decode error is stored;\nthe listing is partial", fillcolor="#dceafb", color="#86b6ef"];
+  f8 -> b8; f7 -> b7; f6 -> b6; f5 -> b5; f4 -> b4; f3 -> b3; f2 -> b2; f1 -> b1;
+}

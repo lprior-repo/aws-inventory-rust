@@ -1,1 +1,0 @@
-/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/target/debug/aws-inventory job submit --queue /home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/jobs.sqlite --job-id bad-service --db /home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/worker-inventory.sqlite --region us-east-1 --service no-such-service 

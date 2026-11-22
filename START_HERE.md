@@ -2,17 +2,14 @@
 
 > Status: Baseline being replaced. This is the build-and-verify handoff for
 > the baseline collector, version 0.6.0 (typed SDK adapters and Cloud Control);
-> new work starts at the first unfinished roadmap package and lands through
-> VISION section 10, not from this file. See [VISION](docs/VISION.md) and
-> [ROADMAP](docs/ROADMAP.md).
+> new work starts at the first unfinished package in the e2e plan
+> ([docs/e2e/](docs/e2e/README.md)), not from this file.
 
 The product is becoming a CMDB of every AWS resource, read through the
 services' own endpoint APIs by our own wire engine driven by the pinned AWS API
 models, stored as binary records in SQLite, projected into FalkorDB and shown
 as a DAG in a native Makepad application, on one laptop with about 10
-profiles. [docs/VISION.md](docs/VISION.md) defines it,
-[docs/ROADMAP.md](docs/ROADMAP.md) orders the work and records what has landed,
-and [docs/README.md](docs/README.md) classifies every document.
+profiles. The plan is in [docs/e2e/](docs/e2e/README.md).
 
 What works today is the baseline: the built binary's `catalog` and `coverage`
 commands report 39 native resource kinds from typed SDK adapters, 421 reviewed
@@ -40,16 +37,13 @@ The universal partition was pinned against the emulator at 1,881 schema types,
 999 listed / 292 provider-unsupported / 0 failed. Current verification is owned
 by the parent change and recorded results remain in the historical verification
 documents.
-Current package verification is in `docs/ROADMAP.md`; upgraded-emulator
-commands and results are in `docs/HARNESS.md`.
 
 The completed v0.6 local run remains recorded for release context: it passed
 **530 Rust tests with zero failures and zero
 ignored tests**, **2,522 emulator assertions**, and exact SQLite/JSONL/FalkorDB
 verification for all five snapshots. Every graph replay made zero attempts and
-cleanup succeeded. The four Python helper suites passed 308 tests. See
-[the verification report](docs/VERIFICATION.md) for the receipts and precise
-scope. Fresh mutation enumeration found 2,959 candidates; that enumeration did
+cleanup succeeded. The four Python helper suites passed 308 tests. Fresh mutation
+enumeration found 2,959 candidates; that enumeration did
 not execute mutations or establish a score.
 
 ## What is implemented
@@ -143,9 +137,7 @@ new immutable attempt directory; completed artifacts remain if a later graph
 step fails. The shared `outputs/projection.sqlite` tracks acknowledged batches.
 After resetting a remote graph, use a fresh checkpoint database.
 
-Read `docs/PARENT_COLLECTIONS.md`, `docs/DELIVERY.md`, `docs/EXPORT.md` and
-`docs/GRAPH_DELIVERY.md` for scope, record schemas, deadlines, retry ownership
-and recovery. JSON/JSONL inventory export, ingest's `CollectionEvent` stream and
+JSON/JSONL inventory export, ingest's `CollectionEvent` stream and
 graph-export's Cypher plan are separate formats. Artifact re-import is not
 implemented.
 
@@ -155,8 +147,7 @@ The complete official AWS Emulator source checkout is pinned to commit
 `7461ab1bbe540afe8063ce03ee5477ebb649df48` (release 1.0.348). Its package hash
 and AWS signature are verified; all six authenticated standalone live scenarios
 and both authenticated embedded scenarios pass on this pin. Existing 1.0.336
-receipts and fixtures remain historical; current commands and dependency
-compatibility details are in `docs/HARNESS.md`.
+receipts and fixtures remain historical.
 The native graph installer pins Redis 8.10.3 and FalkorDB 6.0.4 with SHA-256
 checksums. Both are local synthetic fixtures.
 
@@ -169,14 +160,13 @@ cargo run -p inventory-harness -- install /DISK/aws-inventory-emulator
 cargo run -p inventory-harness -- install-graph /DISK/aws-inventory-graph
 ```
 
-`docs/EMULATOR_TESTING.md` contains the owned-lifetime command that starts the
+The owned-lifetime emulator run starts the
 servers, seeds the fixtures, runs collector baselines twice, executes all ten
 live Rust cases and checks every exported graph property. The parent fixture
 contains 12 roots and 161 children across all 21 new types; 101 EKS add-ons force
 pagination, including an empty filtered page with a continuation token.
 
-`docs/VERIFICATION.md` is the current result index. Historical v0.4/v0.5 results
-remain in their own files. Local assertions exercise request serialization,
+Local assertions exercise request serialization,
 SDK decoding, mapping, storage and delivery. The emulator's generic Cloud
 Control property store does not certify real provider deployment behavior,
 regional support, IAM permission combinations, quotas or eventual consistency.
@@ -189,8 +179,7 @@ The final aggregate requires complete source-bound candidate coverage, two
 clean baselines, ten named live tests, consistent frozen fixture identities and
 no unresolved failures. Unit-only partitions cannot establish a complete pass;
 toolchain failures and test timeouts cannot shrink the denominator or count as
-caught mutations. See `docs/MUTATION_TESTING.md` and
-`docs/MUTATION_READINESS_V06.md` for commands and the acceptance repairs.
+caught mutations.
 
 The complete current mutation campaign has not passed. Historical core results
 and interrupted other-package campaigns are retained as evidence of their own

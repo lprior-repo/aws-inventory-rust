@@ -1,1 +1,0 @@
-aws-inventory: invalid job input: only failed, partial or cancelled jobs can be retried

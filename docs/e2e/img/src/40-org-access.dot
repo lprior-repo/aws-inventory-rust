@@ -1,0 +1,22 @@
+digraph G {
+  graph [bgcolor="#fcfcfb", fontname="Inter", fontsize=17, fontcolor="#0b0b0b",
+         label=<<table border="0" cellborder="0" cellspacing="0"><tr><td align="left"><b>Reaching every account in an organization</b></td></tr><tr><td align="left"><font point-size="10" color="#52514e">Planned (step H2.1, now part of version 1). Nothing here is built.</font></td></tr><tr><td height="6"></td></tr></table>>, labelloc=t, labeljust=l, pad=0.35,
+         rankdir=LR, nodesep=0.35, ranksep=0.6, newrank=true ];
+  node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#c3c2b7",
+        penwidth=1.2, fontname="Inter", fontsize=12, fontcolor="#0b0b0b",
+        margin="0.17,0.10"];
+  edge [color="#52514e", arrowsize=0.7, penwidth=1.1, fontname="Inter",
+        fontsize=10, fontcolor="#52514e"];
+
+  lap [label="aws-inventory\non the laptop", fillcolor="#dceafb", color="#86b6ef"];
+  mgmt [label="Management or\ndelegated account", fillcolor="#f0efec", color="#c3c2b7"];
+  a1 [label="Member account", fillcolor="#f0efec", color="#c3c2b7"];
+  a2 [label="Member account", fillcolor="#f0efec", color="#c3c2b7"];
+  a3 [label="Member account\nno role deployed", fillcolor="#fbe0e0", color="#d03b3b"];
+  pg [label="PostgreSQL", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  lap -> mgmt [label="1  list the accounts"];
+  lap -> a1 [label="2  assume the read-only role"];
+  lap -> a2;
+  lap -> a3 [style=dashed, label="recorded as inaccessible"];
+  lap -> pg [label="3  one sweep, all accounts at once"];
+}

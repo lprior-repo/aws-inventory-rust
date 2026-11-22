@@ -1,0 +1,33 @@
+digraph G {
+  graph [bgcolor="#fcfcfb", fontname="Inter", fontsize=17, fontcolor="#0b0b0b",
+         label=<<table border="0" cellborder="0" cellspacing="0"><tr><td align="left"><b>Drawing a whole account without redoing work every frame</b></td></tr><tr><td align="left"><table border="0" cellborder="0" cellspacing="4"><tr><td bgcolor="#dceafb" width="13" height="13" border="1" color="#86b6ef" fixedsize="true"></td><td align="left"><font point-size="10" color="#52514e">our code&#160;&#160;&#160;</font></td><td bgcolor="#fdf0d5" width="13" height="13" border="1" color="#d9a531" fixedsize="true"></td><td align="left"><font point-size="10" color="#52514e">data we keep&#160;&#160;&#160;</font></td><td bgcolor="#fbe3ec" width="13" height="13" border="1" color="#e87ba4" fixedsize="true"></td><td align="left"><font point-size="10" color="#52514e">desktop app&#160;&#160;&#160;</font></td></tr></table></td></tr><tr><td height="6"></td></tr></table>>, labelloc=t, labeljust=l, pad=0.35,
+         rankdir=TB, nodesep=0.35, ranksep=0.5, newrank=true ];
+  node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#c3c2b7",
+        penwidth=1.2, fontname="Inter", fontsize=12, fontcolor="#0b0b0b",
+        margin="0.17,0.10"];
+  edge [color="#52514e", arrowsize=0.7, penwidth=1.1, fontname="Inter",
+        fontsize=10, fontcolor="#52514e"];
+
+  subgraph cluster_once {
+    label=<<font point-size="11" color="#52514e">once per load or layout change, on the worker</font>>;
+    style="rounded,dashed"; color="#c3c2b7";
+    a [label="Read every node and edge\ninto flat arrays", fillcolor="#dceafb", color="#86b6ef"];
+    b [label="Lay out the hierarchy:\naccount, region, service, kind", fillcolor="#dceafb", color="#86b6ef"];
+    c [label="Build instance buffers:\nnodes, groups, edges, aggregates", fillcolor="#dceafb", color="#86b6ef"];
+    {rank=same; a; b; c}
+    a -> b -> c;
+  }
+  gpu [label="GPU: buffers uploaded once", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  subgraph cluster_frame {
+    label=<<font point-size="11" color="#52514e">every frame, on the UI thread</font>>;
+    style="rounded,dashed"; color="#c3c2b7";
+    d [label="Set one transform\nfor pan and zoom", fillcolor="#fbe3ec", color="#e87ba4"];
+    e [label="Pick the level of detail\nfrom the zoom", fillcolor="#fbe3ec", color="#e87ba4"];
+    f [label="Draw visible labels\nand the selection", fillcolor="#fbe3ec", color="#e87ba4"];
+    {rank=same; d; e; f}
+    d -> e -> f;
+  }
+  b -> gpu [style=invis];
+  c -> gpu; gpu -> d;
+  gpu -> e [style=invis];
+}

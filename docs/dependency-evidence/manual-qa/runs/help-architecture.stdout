@@ -1,9 +1,0 @@
-Summarize finalized topology, routes, load balancers and unresolved references
-
-Usage: aws-inventory architecture [OPTIONS] --scan-id <SCAN_ID>
-
-Options:
-      --db <DB>            [default: inventory.sqlite]
-      --scan-id <SCAN_ID>  
-      --limit <LIMIT>      Maximum rows per panel; truncation is reported explicitly [default: 100]
-  -h, --help               Print help

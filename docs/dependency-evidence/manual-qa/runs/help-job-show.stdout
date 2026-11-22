@@ -1,6 +1,0 @@
-Usage: aws-inventory job show [OPTIONS] --job-id <JOB_ID>
-
-Options:
-      --queue <QUEUE>    [default: jobs.sqlite]
-      --job-id <JOB_ID>  
-  -h, --help             Print help

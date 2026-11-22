@@ -2,7 +2,7 @@
 
 > Status: Baseline being replaced. The opening states where the product is
 > going; every section after it documents the baseline collector as it works
-> today. See [VISION](docs/VISION.md) and [ROADMAP](docs/ROADMAP.md).
+> today. The plan for what replaces it is in [docs/e2e/](docs/e2e/README.md).
 
 This project is becoming a CMDB of every AWS resource in the accounts it is
 pointed at. It will read AWS through the services' own endpoint APIs with our
@@ -12,10 +12,7 @@ records in SQLite, projected into FalkorDB for graph traversal, and shown as a
 DAG in a native Makepad application that reads both databases in process. The
 first version runs on one laptop with about 10 profiles, holds current state
 without history, and derives owner, team and application from tags.
-[docs/VISION.md](docs/VISION.md) defines the product,
-[docs/ROADMAP.md](docs/ROADMAP.md) is the build plan and records what has
-landed, and [docs/README.md](docs/README.md) indexes every document by whether
-it is plan, kept subsystem, baseline or history.
+The plan, build steps and decisions are in [docs/e2e/](docs/e2e/README.md).
 
 **What works today** is the baseline collector that the plan replaces. The
 `catalog` and `coverage` commands of the built binary report 39 native resource
@@ -35,8 +32,7 @@ FalkorDB is an external database. Legacy Python development tooling has been
 replaced by the Rust `inventory-harness` CLI; it provides fixture seeding,
 request recording, installation, the mutation gate, and catalog generation.
 
-**The sections below document the baseline.** For the local emulator stack see
-[setup and commands](docs/LOCAL_SETUP.md); for the baseline build-and-verify
+**The sections below document the baseline.** For the baseline build-and-verify
 handoff see [START_HERE.md](START_HERE.md).
 
 ## Current scope
@@ -62,8 +58,7 @@ handoff see [START_HERE.md](START_HERE.md).
   292 provider-unsupported, 0 failed, with 410 parent-scoped and 180 handler-less
   types reported as explicit skips. The scan JSON carries the full partition and
   names every skip. `--service all,cloud-control --cloud-control --resource-type
-  all` combines the native adapters with universal listing in one scan. See
-  [universal coverage](docs/UNIVERSAL_COVERAGE.md).
+  all` combines the native adapters with universal listing in one scan.
 - **39 direct resource and component kinds:** EC2 instances, VPCs, subnets, security groups,
   network interfaces, EBS volumes, DynamoDB tables, Lambda functions, ECS
   clusters/services/tasks and ACTIVE task-definition revisions, EKS clusters/nodegroups, route tables, internet and
@@ -104,7 +99,7 @@ handoff see [START_HERE.md](START_HERE.md).
 
 SDK availability is distinct from collector coverage. This is not a complete
 port of awsmap, Cartography, or every Steampipe AWS table. The CLI `catalog`
-command and [collector contract](docs/COLLECTORS.md) describe the implemented
+command describes the implemented
 resource fields and relationships. `complete` means all attempted, selected
 scopes completed; it does not mean every AWS service was scanned.
 
@@ -115,19 +110,16 @@ scalar aliases, and neither currently supplies native-equivalent relationships.
 Config's raw nested route arrays are retained but are not expanded by the
 normalized routes panel.
 
-See [verification evidence](docs/VERIFICATION.md) for the actual build, test,
-benchmark, and live-environment boundaries of this delivery.
-
 ## Test the actual AWS calls locally
 
-[AWS Emulator testing](docs/EMULATOR_TESTING.md) describes the pinned full source
+AWS Emulator testing describes the pinned full source
 checkout, verified AWS binary, populated service fixtures and operation-by-operation
-evidence. [The call matrix](docs/AWS_CALL_MATRIX.md) enumerates **89 explicit SDK
+evidence. The call matrix enumerates **89 explicit SDK
 operations in 19 services** (79 in the frozen matrix plus 10 reviewed KMS and
 Step Functions additions; 2 of the 89 are Cloud Control) **plus the SDK's
 AssumeRole boundary**, separately from the 421 Cloud Control resource types and
 437 available SDK crates.
-The [current source/run reconciliation](docs/AWS_OPERATION_RECONCILIATION.md)
+The current source/run reconciliation
 binds operation identities to a specific source tree and executed evidence.
 The parent workflows reuse Cloud Control's two existing operation identities;
 their type, ownership and pagination checks remain separate evidence dimensions.
@@ -141,12 +133,12 @@ HTTP 200 alone does not establish a valid SDK response.
 
 ## Property tests and mutation testing
 
-[Property tests](docs/PROPERTY_TESTING.md) exercise generated retry histories,
+Property tests exercise generated retry histories,
 pagination, resource identities, SQLx transactions, durable job leases and the
 actual CLI. Guarded integration tests compare the compiled collectors and CLI
 with independently checked AWS Emulator snapshots and a real local FalkorDB.
 
-The [mutation gate](docs/MUTATION_TESTING.md) requires a complete, frozen inventory
+The mutation gate requires a complete, frozen inventory
 of production candidates across the core, engine, AWS and CLI packages. It
 requires **at least 95% of viable mutations caught**, and rejects incomplete
 runs, timeouts and infrastructure failures. The historical v0.4 core campaign caught
@@ -158,8 +150,7 @@ substitutes for that result.
 The retry configuration property also found and fixed a real boundary defect:
 a manually constructed shared SDK configuration could lose the one-attempt
 setting when converted to a DynamoDB client. The public AssumeRole helper now
-sets the retry configuration's explicit origin as well as its value. See the
-[regression and scope](docs/AWS_PROPERTY_TESTS.md); normal CLI configuration
+sets the retry configuration's explicit origin as well as its value. Normal CLI configuration
 loaders already supplied that origin.
 
 ## Build
@@ -213,19 +204,12 @@ cargo run --locked -- graph-export --db demo.sqlite \
 The fixture contains seven resources and four relationships. It is a functional
 pipeline demonstration, not a performance result or a real AWS account snapshot.
 
-For a larger network and load-balancer fixture, follow
-[architecture queries](docs/ARCHITECTURE_QUERIES.md). It exercises the new
-snapshot report, route targets, target health, and unresolved references.
-
 ## Collect AWS configuration
 
 Use an existing AWS credential profile or the standard SDK credential provider
 chain. The scanner does not persist credentials from that credential provider
 chain. These examples perform inventory
 reads when you run them with your own credentials.
-
-To scan other accounts through an assumed role, deploy the read-only role
-described in [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ```bash
 # Inspect the 421-type breadth plan and direct architecture collectors offline.
@@ -289,8 +273,8 @@ aws-inventory deliver --db inventory.sqlite --scan-id SCAN_ID \
 The `deliver` command performs no AWS calls. It publishes a new attempt directory
 and resumes graph acknowledgements from `outputs/projection.sqlite`. A failed
 graph delivery retains the already written inventory artifact and its receipt.
-See [delivery](docs/DELIVERY.md), [portable export](docs/EXPORT.md) and
-[graph retry](docs/GRAPH_DELIVERY.md) for formats, bounds and recovery contracts.
+See delivery, portable export and
+graph retry for formats, bounds and recovery contracts.
 
 ```bash
 # Inspect existing organization and supplemental sources without scanning them.
@@ -350,8 +334,7 @@ Organizations listing must complete before automatic account fan-out starts.
 Inactive or missing accounts are not silently accepted by an explicit filter.
 `--max-accounts` defaults to 128 and is capped at 1,024. An optional
 `--external-id-env VARIABLE_NAME` reads its value only at execution; the value is
-never persisted in a queue job. See [discovery](docs/DISCOVERY.md) and
-[global inventory](docs/GLOBAL_INVENTORY.md) for selection and coverage contracts.
+never persisted in a queue job.
 
 `ec2` includes the six network collectors as well as the original EC2 resources.
 Use `--service network` for only routes, gateways, endpoints, ACLs and peering,
@@ -393,12 +376,11 @@ Leased jobs recover after worker expiry by starting a new scan attempt. API
 retries still belong to the request executor; normal partial/failed jobs require
 an explicit `job retry`. Pagination checkpoints are durable evidence, but a
 fresh job attempt does not resume arbitrary provider cursors. Queue and inventory
-files are separate databases. See [durable jobs](docs/DURABLE_JOBS.md).
+files are separate databases.
 
 Diff reports observation changes, including source changes. It does not infer
 deletion from a missing record. Graph paths follow observed configuration
 references; they do not prove network reachability or IAM authorization.
-See [analysis semantics](docs/ANALYSIS.md) for bounds and truncation behavior.
 
 ## Set verified rate ceilings
 
@@ -432,8 +414,7 @@ These are example budgets with headroom, not guarantees about your account.
 The period form expresses rates below one request per second; it spaces starts
 and does not create a burst allowance. Both shapes reject unknown fields.
 All EC2 and network operations share the EC2 read bucket; all five ELBv2 request
-types share `elasticloadbalancing:read`. Other applications consume the same AWS account quotas. See
-[scheduler design](docs/SCHEDULER.md) before increasing ceilings.
+types share `elasticloadbalancing:read`. Other applications consume the same AWS account quotas.
 
 Standard `Retry-After`, AWS `x-amz-retry-after`, and Lambda's typed retry delay
 extend the affected bucket's cooldown. Malformed or excessive server delays
@@ -503,9 +484,7 @@ Unknown endpoints mean they were not observed in the same scan.
 
 Opening an older database upgrades it transactionally to schema version 13,
 including when opened by query/report commands. Observation and checkpoint
-tables are preserved. [Storage design](docs/STORAGE.md) describes the upgrade;
-[networking](docs/NETWORKING.md) and [load balancing](docs/LOAD_BALANCING.md)
-specify exactly which fields and relationships are collected.
+tables are preserved.
 
 ## Retry primitives and workflow engines
 
@@ -521,15 +500,12 @@ service SDK request configured for one attempt. Every retry re-enters admission.
 Enabling a second five-attempt SDK loop inside the outer five-attempt loop can
 produce 25 attempts and invalidate configured accounting. The audited public
 SDK hooks did not provide a proven drop-in asynchronous quota wait before
-signing and before the SDK's attempt timeout. The retained retry decision and
-current behavior are in [retries and workflows](docs/RETRY_AND_WORKFLOWS.md).
+signing and before the SDK's attempt timeout.
 
 The local SQLx queue supplies durable scan submission, worker-crash recovery,
 fenced ownership, cancellation and explicit retry without an additional server.
 Restate and Temporal remain options for ownership and timers across multiple
 machines. Neither removes quota coordination or idempotent persistence work.
-The comparison and current behavior are in
-[retries and workflows](docs/RETRY_AND_WORKFLOWS.md).
 
 HTTP 501 is terminal. A modeled-error-free SDK rejection of an HTTP success
 response is reported as a response-decoding/protocol problem without copying the
@@ -580,16 +556,7 @@ RETURN a.kind, a.id, b.id;
 cargo run --locked -- catalog
 ```
 
-Start with [architecture](docs/ARCHITECTURE.md), [storage](docs/STORAGE.md),
-[collectors](docs/COLLECTORS.md), and [scheduler](docs/SCHEDULER.md);
-[docs/README.md](docs/README.md) describes which baseline documents remain.
-[The roadmap](docs/ROADMAP.md) is the build plan for what replaces the baseline.
-The [collection plan](docs/COLLECTION_PLAN.md) specifies the shared 421-type
-adapter, schema evidence, architecture relationships, and query generation.
-[Parent collection design](docs/PARENT_COLLECTIONS.md) explains prerequisite
-discovery, exact resource models, ownership checks and bounded child traversal.
-The [coverage matrix](docs/CLOUDCONTROL_COVERAGE.md) explains the full registry
-partition, excluded types, relationship inference and observed emulator evidence.
+The plan for what replaces the baseline is in [docs/e2e/](docs/e2e/README.md).
 
 ## CMDB product direction
 
@@ -601,22 +568,15 @@ with an independent oracle (`cmdb-bench`), a bounded read model (`cmdb-view`)
 over one JSON export, and a Makepad viewer (`cmdb-ui`) with a filterable table
 and an account→region→kind→resource DAG over a synthetic fixture.
 
-Decisions taken on the external audit findings, with what is and is not verified, are in [docs/AUDIT_DECISIONS.md](docs/AUDIT_DECISIONS.md).
-
-That slice was built against an earlier draft: the
-[performance contract](docs/CMDB_PERFORMANCE_CONTRACT.md) and the
-[CMDB architecture](docs/CMDB_ARCHITECTURE.md). [The vision](docs/VISION.md)
-supersedes both. The obsolete HTTP read API (`cmdb-api`) has been removed
+That slice was built against an earlier draft that the plan in
+[docs/e2e/](docs/e2e/README.md) supersedes. The obsolete HTTP read API (`cmdb-api`) has been removed
 under V32 (ROADMAP M6.5). In-process SQLite and FalkorDB reads for the UI are
 planned in M6.2/M6.3, not implemented by the export read model or synthetic
 viewer. The first version also has no history, tombstones or retention, no
-event ingestion, no PostgreSQL and no multi-machine quota coordination. The
-[release baseline](docs/CMDB_BASELINE_2026-11-13.md) records preliminary local
-storage and mock-scheduler measurements only. It does not establish fleet
-capacity or competitive superiority.
+event ingestion, no PostgreSQL and no multi-machine quota coordination.
 
 Upstream projects informed the design; this is an independent implementation.
-See [sources and licensing](docs/SOURCES.md). No upstream documentation prose,
+No upstream documentation prose,
 logos, or complete Steampipe schemas are bundled as a claimed port.
 
 ## License
@@ -624,5 +584,4 @@ logos, or complete Steampipe schemas are bundled as a claimed port.
 MIT. See [LICENSE](LICENSE). The project license was deliberately changed from
 Apache-2.0 to MIT for this development tree by the project owner; third-party
 dependencies keep their own licenses: the official
-AWS SDK for Rust crates are Apache-2.0, SQLx and FalkorDB are covered in
-[sources and licensing](docs/SOURCES.md).
+AWS SDK for Rust crates are Apache-2.0.

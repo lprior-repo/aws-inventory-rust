@@ -1,1 +1,0 @@
-jq -e .job.state==\"cancelled\"\ and\ .job.attempt==2\ and\ .job.result.api.in_flight==0\ and\ \(.attempts\|length\)==2\ and\ all\(.attempts\[\]\;\ .state==\"cancelled\"\ and\ .finished_at\>=.started_at\) /home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/job-show-cancel-confirm.stdout 

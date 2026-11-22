@@ -1,0 +1,26 @@
+digraph G {
+  graph [bgcolor="#fcfcfb", fontname="Inter", fontsize=17, fontcolor="#0b0b0b",
+         label=<<table border="0" cellborder="0" cellspacing="0"><tr><td align="left"><b>Version 1: everything on one laptop</b></td></tr><tr><td height="6"></td></tr></table>>, labelloc=t, labeljust=l, pad=0.35,
+         rankdir=LR, nodesep=0.35, ranksep=0.6, newrank=true ];
+  node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#c3c2b7",
+        penwidth=1.2, fontname="Inter", fontsize=12, fontcolor="#0b0b0b",
+        margin="0.17,0.10"];
+  edge [color="#52514e", arrowsize=0.7, penwidth=1.1, fontname="Inter",
+        fontsize=10, fontcolor="#52514e"];
+
+  subgraph cluster_m {
+    label=<<font point-size="11" color="#52514e">your laptop or workstation</font>>;
+    style="rounded,dashed"; color="#c3c2b7";
+    cli [label="aws-inventory\nsweep, sql, schema", fillcolor="#dceafb", color="#86b6ef"];
+    app [label="Desktop app", fillcolor="#fbe3ec", color="#e87ba4"];
+    pg [label="PostgreSQL\nPodman, Docker or native", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+    g [label="Graph engine\nshipped with the product", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+    prof [label="AWS profiles\nread-only credentials", shape=note, fillcolor="#fdf0d5", color="#d9a531"];
+  }
+  aws [label="Every account in the organization\nby a read-only role, every enabled region", fillcolor="#f0efec", color="#c3c2b7"];
+  cli -> pg; app -> pg; cli -> g; app -> g;
+  prof -> cli; prof -> app;
+  cli -> aws [label="read only"]; app -> aws [label="read only"];
+  n [shape=plain, label=<<font point-size="10" color="#52514e">The product opens no listening socket.</font>>];
+  g -> n [style=invis];
+}

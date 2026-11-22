@@ -1,0 +1,21 @@
+digraph G {
+  graph [bgcolor="#fcfcfb", fontname="Inter", fontsize=17, fontcolor="#0b0b0b",
+         label=<<table border="0" cellborder="0" cellspacing="0"><tr><td align="left"><b>Every scope ends each sweep in exactly one state</b></td></tr><tr><td height="6"></td></tr></table>>, labelloc=t, labeljust=l, pad=0.35,
+         rankdir=LR, nodesep=0.35, ranksep=0.6, newrank=true ];
+  node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#c3c2b7",
+        penwidth=1.2, fontname="Inter", fontsize=12, fontcolor="#0b0b0b",
+        margin="0.17,0.10"];
+  edge [color="#52514e", arrowsize=0.7, penwidth=1.1, fontname="Inter",
+        fontsize=10, fontcolor="#52514e"];
+
+  s [label="One scope\naccount + region + operation", fillcolor="#dceafb", color="#86b6ef"];
+  c [label="Complete\ncounts toward deletion", fillcolor="#d9f2e8", color="#1baf7a"];
+  p [label="Partial\nsome pages, or a decode error", fillcolor="#ffffff", color="#c3c2b7"];
+  i [label="Inaccessible\naccess denied", fillcolor="#ffffff", color="#c3c2b7"];
+  u [label="Unsupported\nservice not in this region", fillcolor="#ffffff", color="#c3c2b7"];
+  f [label="Failed\nretries exhausted", fillcolor="#ffffff", color="#c3c2b7"];
+  t [label="Throttled\nrate budget exhausted", fillcolor="#ffffff", color="#c3c2b7"];
+  s -> c; s -> p; s -> i; s -> u; s -> f; s -> t;
+  n [shape=plain, label=<<font point-size="10" color="#52514e">Only "complete" is evidence that a missing resource is gone.<br/>The other five are stored and shown, never hidden.</font>>];
+  t -> n [style=invis];
+}
