@@ -5,6 +5,8 @@ mod bounds;
 use bounds::{limits_are_enforced, malformed_xml_is_rejected};
 #[path = "../src/response/json/fixture_oracle.rs"]
 mod fixture_oracle;
+#[path = "protocol_fixtures/load.rs"]
+mod protocol_fixtures;
 #[path = "response_xml_fixtures/mod.rs"]
 mod response_xml_fixtures;
 
@@ -17,13 +19,14 @@ use inventory_core::catalog::Catalog;
 use serde_json::Value as Json;
 use std::error::Error;
 
+use protocol_fixtures::load;
 use response_xml_fixtures::model;
 
-struct Suite {
+struct Suite<'a> {
     name: &'static str,
     protocol_id: &'static str,
     protocol: Protocol,
-    fixture: &'static str,
+    fixture: &'a str,
     successful_clients: usize,
     servers: usize,
     error_lane: usize,
@@ -35,7 +38,7 @@ fn published_aws_query_success_responses_match_params() -> Result<(), Box<dyn Er
         name: "awsQuery",
         protocol_id: "aws.protocols#awsQuery",
         protocol: Protocol::AwsQuery,
-        fixture: include_str!("fixtures/protocol-tests/awsQuery.json"),
+        fixture: &load("awsQuery.json")?,
         successful_clients: 36,
         servers: 0,
         error_lane: 3,
@@ -48,7 +51,7 @@ fn published_ec2_query_success_responses_match_params() -> Result<(), Box<dyn Er
         name: "ec2Query",
         protocol_id: "aws.protocols#ec2Query",
         protocol: Protocol::Ec2Query,
-        fixture: include_str!("fixtures/protocol-tests/ec2Query.json"),
+        fixture: &load("ec2Query.json")?,
         successful_clients: 27,
         servers: 0,
         error_lane: 2,
@@ -61,7 +64,7 @@ fn published_rest_xml_success_responses_match_params() -> Result<(), Box<dyn Err
         name: "restXml",
         protocol_id: "aws.protocols#restXml",
         protocol: Protocol::RestXml,
-        fixture: include_str!("fixtures/protocol-tests/restXml.json"),
+        fixture: &load("restXml.json")?,
         successful_clients: 81,
         servers: 2,
         error_lane: 3,

@@ -334,13 +334,14 @@ evidence below; not a current recovery verification result).
   644 added, 102 deleted; production 158 added, 51 deleted.
 - **The M2 crate exists and its protocol oracle is in the tree.** `crates/aws-wire`
   is scaffolded (`ac75ec1`). Smithy's published protocol test suites are
-  committed as complete JSON ASTs under
-  `crates/aws-wire/tests/fixtures/protocol-tests/`, converted once, outside the
-  build, by `scripts/protocol-tests/convert.sh` from Smithy 1.75.0 (commit
-  `981f95a2cae567752b70749c1f04502c076a7a63`) with the released Smithy CLI
-  and `jq`; two clean conversions gave identical SHA-256 digests, recorded in
-  the fixtures' README. Seven protocols, 901 HTTP cases (478 request, 366
-  response, 57 error), 3,229,771 bytes. No Rust lines. M2.1a to M2.1c and M2.4a
+  generated, not committed, as complete JSON ASTs under
+  `crates/aws-wire/tests/fixtures/protocol-tests/` by
+  `scripts/bootstrap-protocol-tests.sh`, outside the build, from Smithy 1.75.0
+  (commit `981f95a2cae567752b70749c1f04502c076a7a63`) with the released Smithy
+  CLI and `jq`; two clean conversions gave identical SHA-256 digests, recorded in
+  `scripts/protocol-tests/outputs.sha256` and the fixtures' README. Seven
+  protocols, 901 HTTP cases (478 request, 366 response, 57 error), 3,229,771
+  bytes. No Rust lines. M2.1a to M2.1c and M2.4a
   to M2.4d prove themselves against these files.
 - **M2.2a is done: the signing library half of M2.2.** `aws_wire::sign` is a
   wrapper over `aws-sigv4` 1.6.5 with typed scope values, redacted

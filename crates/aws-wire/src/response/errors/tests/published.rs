@@ -1,53 +1,30 @@
 use super::*;
+use crate::protocol_fixtures::load;
 #[test]
 fn all_published_client_error_responses_decode_through_compiled_models() -> TestResult {
-    let fixtures = [
-        Fixture::new(
-            include_str!("../../../../tests/fixtures/protocol-tests/awsJson1_0.json"),
-            Protocol::AwsJson10,
-            "awsJson1_0",
-            16,
-        ),
-        Fixture::new(
-            include_str!("../../../../tests/fixtures/protocol-tests/awsJson1_1.json"),
-            Protocol::AwsJson11,
-            "awsJson1_1",
-            14,
-        ),
-        Fixture::new(
-            include_str!("../../../../tests/fixtures/protocol-tests/awsQuery.json"),
-            Protocol::AwsQuery,
-            "awsQuery",
-            3,
-        ),
-        Fixture::new(
-            include_str!("../../../../tests/fixtures/protocol-tests/ec2Query.json"),
-            Protocol::Ec2Query,
-            "ec2Query",
-            2,
-        ),
-        Fixture::new(
-            include_str!("../../../../tests/fixtures/protocol-tests/restJson1.json"),
-            Protocol::RestJson1,
-            "restJson1",
-            14,
-        ),
-        Fixture::new(
-            include_str!("../../../../tests/fixtures/protocol-tests/restXml.json"),
-            Protocol::RestXml,
-            "restXml",
-            3,
-        ),
-        Fixture::new(
-            include_str!("../../../../tests/fixtures/protocol-tests/rpcv2Cbor.json"),
-            Protocol::RpcV2Cbor,
-            "rpcv2Cbor",
-            5,
-        ),
+    let specs = [
+        ("awsJson1_0.json", Protocol::AwsJson10, "awsJson1_0", 16),
+        ("awsJson1_1.json", Protocol::AwsJson11, "awsJson1_1", 14),
+        ("awsQuery.json", Protocol::AwsQuery, "awsQuery", 3),
+        ("ec2Query.json", Protocol::Ec2Query, "ec2Query", 2),
+        ("restJson1.json", Protocol::RestJson1, "restJson1", 14),
+        ("restXml.json", Protocol::RestXml, "restXml", 3),
+        ("rpcv2Cbor.json", Protocol::RpcV2Cbor, "rpcv2Cbor", 5),
     ];
+    let sources = specs
+        .iter()
+        .map(|(file, ..)| load(file))
+        .collect::<Result<Vec<_>, _>>()?;
+    let fixtures = specs
+        .iter()
+        .zip(&sources)
+        .map(|(&(_, protocol, name, expected_cases), source)| {
+            Fixture::new(source, protocol, name, expected_cases)
+        })
+        .collect::<Vec<_>>();
     let mut decoded_cases = 0usize;
 
-    for fixture in fixtures {
+    for fixture in &fixtures {
         let root: Value = serde_json::from_str(fixture.source)?;
         let shapes = root
             .get("shapes")

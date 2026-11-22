@@ -1,3 +1,5 @@
+#[path = "protocol_fixtures/load.rs"]
+mod protocol_fixtures;
 #[path = "request_body_cases/support.rs"]
 mod request_body_fixtures_support;
 #[path = "request_body_cases/numeric.rs"]
@@ -11,16 +13,17 @@ use inventory_core::{
     catalog::{Catalog, Operation, Service},
     record::{Key, Record, Value},
 };
+use protocol_fixtures::load;
 use request_body_fixtures_support::{check_request, compile_fixture_service, fixture_endpoint};
 use request_body_values::{BoxError, expect_ok, input_record};
 use serde_json::Value as Json;
 use std::collections::BTreeMap;
 
-struct Suite {
+struct Suite<'a> {
     name: &'static str,
     protocol_id: &'static str,
     protocol: Protocol,
-    source: &'static str,
+    source: &'a str,
     expected_client: usize,
     expected_server: usize,
 }
@@ -31,7 +34,7 @@ fn published_aws_json_10_client_request_fixtures_match() -> Result<(), BoxError>
         name: "awsJson1_0",
         protocol_id: "aws.protocols#awsJson1_0",
         protocol: Protocol::AwsJson10,
-        source: include_str!("fixtures/protocol-tests/awsJson1_0.json"),
+        source: &load("awsJson1_0.json")?,
         expected_client: 29,
         expected_server: 4,
     })
@@ -43,7 +46,7 @@ fn published_aws_json_11_client_request_fixtures_match() -> Result<(), BoxError>
         name: "awsJson1_1",
         protocol_id: "aws.protocols#awsJson1_1",
         protocol: Protocol::AwsJson11,
-        source: include_str!("fixtures/protocol-tests/awsJson1_1.json"),
+        source: &load("awsJson1_1.json")?,
         expected_client: 57,
         expected_server: 3,
     })
@@ -55,7 +58,7 @@ fn published_rpc_v2_cbor_client_request_fixtures_match() -> Result<(), BoxError>
         name: "rpcv2Cbor",
         protocol_id: "smithy.protocols#rpcv2Cbor",
         protocol: Protocol::RpcV2Cbor,
-        source: include_str!("fixtures/protocol-tests/rpcv2Cbor.json"),
+        source: &load("rpcv2Cbor.json")?,
         expected_client: 31,
         expected_server: 14,
     })

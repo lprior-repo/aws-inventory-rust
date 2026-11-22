@@ -7,6 +7,7 @@ mod runner;
 #[path = "xml_infoset.rs"]
 mod xml_infoset;
 
+use crate::protocol_fixtures::load;
 use crate::request::{
     AddressingStyle, CompressionPolicy, Protocol, RequestContext, RequestLimits, S3EndpointConfig,
     s3_endpoint,
@@ -18,11 +19,11 @@ use serde_json::Value as Json;
 pub(super) type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 #[derive(Clone, Copy)]
-pub(super) struct Suite {
+pub(super) struct Suite<'a> {
     pub(super) name: &'static str,
     pub(super) protocol_id: &'static str,
     pub(super) protocol: Protocol,
-    pub(super) fixture: &'static str,
+    pub(super) fixture: &'a str,
     pub(super) clients: usize,
     pub(super) servers: &'static [&'static str],
     pub(super) events: usize,
@@ -30,12 +31,14 @@ pub(super) struct Suite {
 
 #[test]
 fn every_published_rest_request_client_fixture_runs() -> TestResult {
+    let restjson = load("restJson1.json")?;
+    let restxml = load("restXml.json")?;
     let suites = [
         Suite {
             name: "restJson1",
             protocol_id: "aws.protocols#restJson1",
             protocol: Protocol::RestJson1,
-            fixture: include_str!("../../../../tests/fixtures/protocol-tests/restJson1.json"),
+            fixture: &restjson,
             clients: 142,
             servers: &[
                 "RestJsonMustSupportParametersInContentType",
@@ -60,7 +63,7 @@ fn every_published_rest_request_client_fixture_runs() -> TestResult {
             name: "restXml",
             protocol_id: "aws.protocols#restXml",
             protocol: Protocol::RestXml,
-            fixture: include_str!("../../../../tests/fixtures/protocol-tests/restXml.json"),
+            fixture: &restxml,
             clients: 109,
             servers: &[
                 "RestXmlMustSupportParametersInContentType",
