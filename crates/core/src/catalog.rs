@@ -149,7 +149,7 @@ fn bytes_field(map: MapRef<'_>, key: CatalogKey) -> Result<&[u8], CatalogError> 
     }
 }
 fn validate_field_registry(names: &[u8], offsets: &[u8]) -> Result<(), CatalogError> {
-    if offsets.len() % 8 != 0 {
+    if !offsets.len().is_multiple_of(8) {
         return Err(CatalogError::Reference);
     }
     let mut previous = 0usize;
