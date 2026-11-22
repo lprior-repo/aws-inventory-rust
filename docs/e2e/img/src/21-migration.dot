@@ -1,0 +1,22 @@
+digraph G {
+  graph [bgcolor="#fcfcfb", fontname="Inter", fontsize=17, fontcolor="#0b0b0b",
+         label=<<table border="0" cellborder="0" cellspacing="0"><tr><td align="left"><b>Upgrading the schema when the catalog changes</b></td></tr><tr><td height="6"></td></tr></table>>, labelloc=t, labeljust=l, pad=0.35,
+         rankdir=TB, nodesep=0.35, ranksep=0.38, newrank=true ];
+  node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#c3c2b7",
+        penwidth=1.2, fontname="Inter", fontsize=12, fontcolor="#0b0b0b",
+        margin="0.17,0.10"];
+  edge [color="#52514e", arrowsize=0.7, penwidth=1.1, fontname="Inter",
+        fontsize=10, fontcolor="#52514e"];
+
+  p [label="Planned", fillcolor="#ffffff", color="#c3c2b7"];
+  d [label="Add columns and tables: additive only, in batches", fillcolor="#dceafb", color="#86b6ef"];
+  b [label="Backfill: resumable, bounded", fillcolor="#dceafb", color="#86b6ef"];
+  a [label="Activate: one transaction", fillcolor="#dceafb", color="#86b6ef"];
+  done [label="Done: the new catalog is active", fillcolor="#d9f2e8", color="#1baf7a"];
+  ab [label="Abandoned:\nthe old catalog stays active", fillcolor="#ffffff", color="#c3c2b7"];
+  p -> d -> b -> a -> done;
+  d -> ab [style=dashed]; b -> ab [style=dashed];
+  {rank=same; b; ab}
+  n [shape=plain, label=<<font point-size="10" color="#52514e">One upgrade at a time, under a lock. Killed at any point, it resumes from its journal.<br/>Until activation the store still opens with the old catalog.</font>>];
+  done -> n [style=invis];
+}

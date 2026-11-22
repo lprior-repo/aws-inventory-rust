@@ -1,0 +1,25 @@
+digraph G {
+  graph [bgcolor="#fcfcfb", fontname="Inter", fontsize=17, fontcolor="#0b0b0b",
+         label=<<table border="0" cellborder="0" cellspacing="0"><tr><td align="left"><b>The order inside each track</b></td></tr><tr><td align="left"><table border="0" cellborder="0" cellspacing="4"><tr><td bgcolor="#dceafb" width="13" height="13" border="1" color="#86b6ef" fixedsize="true"></td><td align="left"><font point-size="10" color="#52514e">our code&#160;&#160;&#160;</font></td><td bgcolor="#fbe3ec" width="13" height="13" border="1" color="#e87ba4" fixedsize="true"></td><td align="left"><font point-size="10" color="#52514e">desktop app&#160;&#160;&#160;</font></td><td bgcolor="#d9f2e8" width="13" height="13" border="1" color="#1baf7a" fixedsize="true"></td><td align="left"><font point-size="10" color="#52514e">a check&#160;&#160;&#160;</font></td></tr></table></td></tr><tr><td height="6"></td></tr></table>>, labelloc=t, labeljust=l, pad=0.35,
+         rankdir=LR, nodesep=0.28, ranksep=0.45, newrank=true ];
+  node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#c3c2b7",
+        penwidth=1.2, fontname="Inter", fontsize=12, fontcolor="#0b0b0b",
+        margin="0.17,0.10"];
+  edge [color="#52514e", arrowsize=0.7, penwidth=1.1, fontname="Inter",
+        fontsize=10, fontcolor="#52514e"];
+
+  node [fontsize=11];
+  A0 [label="A0 catalog\ngate", fillcolor="#dceafb", color="#86b6ef"]; A1 [label="A1 overlay\ngenerator", fillcolor="#dceafb", color="#86b6ef"]; A2 [label="A2 kinds", fillcolor="#dceafb", color="#86b6ef"]; A3 [label="A3 child\ncalls", fillcolor="#dceafb", color="#86b6ef"];
+  A4 [label="A4 seed\nfiles", fillcolor="#dceafb", color="#86b6ef"]; A5 [label="A5 probe", fillcolor="#dceafb", color="#86b6ef"]; A7 [label="A7 full\nsweep", fillcolor="#dceafb", color="#86b6ef"]; A6 [label="A6 Cloud Control\ncheck", fillcolor="#dceafb", color="#86b6ef"];
+  B5 [label="B5 benchmark", fillcolor="#dceafb", color="#86b6ef"]; B0 [label="B0 baseline", fillcolor="#dceafb", color="#86b6ef"]; B1 [label="B1 buckets", fillcolor="#dceafb", color="#86b6ef"]; B2 [label="B2 adaptive\nrate", fillcolor="#dceafb", color="#86b6ef"]; B3 [label="B3 continuous\nclaim", fillcolor="#dceafb", color="#86b6ef"]; B4 [label="B4 write path\nand crash tests", fillcolor="#dceafb", color="#86b6ef"]; B6 [label="B6 to B8\nfewer calls,\ntransport, CPU", fillcolor="#dceafb", color="#86b6ef"]; B9 [label="B9 head-\nto-head", fillcolor="#dceafb", color="#86b6ef"];
+  C5 [label="C5 store\ninterface", fillcolor="#dceafb", color="#86b6ef"]; C6 [label="C6 PostgreSQL\nstore", fillcolor="#dceafb", color="#86b6ef"]; C1 [label="C1 typed\ncolumns", fillcolor="#dceafb", color="#86b6ef"]; C2 [label="C2 nested\nfields", fillcolor="#dceafb", color="#86b6ef"]; C3 [label="C3 sql\ncommand", fillcolor="#dceafb", color="#86b6ef"]; C4 [label="C4 clients\nand roles", fillcolor="#dceafb", color="#86b6ef"];
+  D1 [label="D1 sweep\nlibrary", fillcolor="#fbe3ec", color="#e87ba4"]; D13 [label="D13 roles\nand states", fillcolor="#fbe3ec", color="#e87ba4"]; D2 [label="D2 sweep\nin the app", fillcolor="#fbe3ec", color="#e87ba4"]; D3 [label="D3 SQL\nconsole", fillcolor="#fbe3ec", color="#e87ba4"]; D4 [label="D4 account\nload", fillcolor="#fbe3ec", color="#e87ba4"]; D5 [label="D5 layout", fillcolor="#fbe3ec", color="#e87ba4"]; D6 [label="D6 renderer", fillcolor="#fbe3ec", color="#e87ba4"]; D7 [label="D7 frame\nharness", fillcolor="#fbe3ec", color="#e87ba4"]; D9 [label="D9 to D12\nrail, table,\ndetail, coverage", fillcolor="#fbe3ec", color="#e87ba4"];
+  E1 [label="E1 edge\nsources", fillcolor="#dceafb", color="#86b6ef"]; E2 [label="E2 rules\nremapped", fillcolor="#dceafb", color="#86b6ef"]; E3 [label="E3 graph\ninterface", fillcolor="#dceafb", color="#86b6ef"]; E4 [label="E4 projection\nat scale", fillcolor="#dceafb", color="#86b6ef"]; E5 [label="E5 graph\nequals SQL", fillcolor="#dceafb", color="#86b6ef"];
+  X [label="Exit test\nX1 to X10", fillcolor="#d9f2e8", color="#1baf7a"];
+  A0 -> A1 -> A2 -> A3 -> A5 -> A7 -> A6 -> X; A4 -> A5;
+  B5 -> B0 -> B1 -> B2 -> B6 -> B9 -> X; B0 -> B3 -> B4 -> B6;
+  C5 -> C6 -> C1 -> C2 -> C3 -> C4 -> X;
+  D1 -> D13 -> D2 -> D9 -> X; D13 -> D3; D4 -> D5 -> D6 -> X; D7 -> D6;
+  E1 -> E2 -> E5 -> X; E3 -> E4 -> E5;
+  C6 -> B0 [style=dashed, constraint=false]; C4 -> D13 [style=dashed, constraint=false]; C6 -> D4 [style=dashed, constraint=false]; A2 -> E1 [style=dashed, constraint=false]; D1 -> B3 [style=dashed, constraint=false];
+}

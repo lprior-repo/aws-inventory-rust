@@ -1,0 +1,28 @@
+digraph G {
+  graph [bgcolor="#fcfcfb", fontname="Inter", fontsize=17, fontcolor="#0b0b0b",
+         label=<<table border="0" cellborder="0" cellspacing="0"><tr><td align="left"><b>What happens to one page of one listing</b></td></tr><tr><td height="6"></td></tr></table>>, labelloc=t, labeljust=l, pad=0.35,
+         rankdir=TB, nodesep=0.35, ranksep=0.42, newrank=true ];
+  node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#c3c2b7",
+        penwidth=1.2, fontname="Inter", fontsize=12, fontcolor="#0b0b0b",
+        margin="0.17,0.10"];
+  edge [color="#52514e", arrowsize=0.7, penwidth=1.1, fontname="Inter",
+        fontsize=10, fontcolor="#52514e"];
+
+  a [label="1. Claim a lease on a scope\n(account, region, operation)", fillcolor="#dceafb", color="#86b6ef"];
+  b [label="2. Wait for the rate bucket to admit the request", fillcolor="#dceafb", color="#86b6ef"];
+  c [label="3. Sign and send one request", fillcolor="#dceafb", color="#86b6ef"];
+  d [label="4. Decode the response once,\nstraight into binary records", fillcolor="#dceafb", color="#86b6ef"];
+  e [label="5. Hash each record and compare\nwith what the store holds", fillcolor="#dceafb", color="#86b6ef"];
+  f [label="6. One transaction: changed rows, edges, evidence,\ngraph keys, and the queue position", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  g [label="More pages?", shape=diamond, style=filled, fillcolor="#ffffff", color="#c3c2b7", margin="0.05,0.05"];
+  h [label="7. Scope complete: resources not seen in two\ncomplete listings are deleted", fillcolor="#dceafb", color="#86b6ef"];
+  i [label="Child work is queued for\nresources that have children", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  x [label="Throttled, denied, failed:\nthe scope gets that outcome and nothing is deleted", fillcolor="#fbe0e0", color="#d03b3b"];
+  a -> b -> c -> d -> e -> f -> g;
+  g -> a [label="yes: next token", constraint=false];
+  g -> h [label="no"];
+  f -> i [style=dashed];
+  c -> x [style=dashed, label="error"];
+  {rank=same; f; i}
+  {rank=same; c; x}
+}

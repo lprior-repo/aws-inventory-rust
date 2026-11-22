@@ -1,0 +1,24 @@
+digraph G {
+  graph [bgcolor="#fcfcfb", fontname="Inter", fontsize=17, fontcolor="#0b0b0b",
+         label=<<table border="0" cellborder="0" cellspacing="0"><tr><td align="left"><b>Two database roles, never mixed</b></td></tr><tr><td height="6"></td></tr></table>>, labelloc=t, labeljust=l, pad=0.35,
+         rankdir=LR, nodesep=0.35, ranksep=0.6, newrank=true ];
+  node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#c3c2b7",
+        penwidth=1.2, fontname="Inter", fontsize=12, fontcolor="#0b0b0b",
+        margin="0.17,0.10"];
+  edge [color="#52514e", arrowsize=0.7, penwidth=1.1, fontname="Inter",
+        fontsize=10, fontcolor="#52514e"];
+
+  sweep [label="Sweep and projection", fillcolor="#dceafb", color="#86b6ef"];
+  reads [label="Table, account view,\nsearch, detail", fillcolor="#fbe3ec", color="#e87ba4"];
+  console [label="SQL typed by a person\nin the app or the CLI", fillcolor="#fbe3ec", color="#e87ba4"];
+  ext [label="psql and other clients", fillcolor="#f0efec", color="#c3c2b7"];
+  col [label="Collector role\nread and write", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  rd [label="Reader role\nSELECT only, read-only\ntransactions, time limit", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  chk [label="Checked at connect:\ncan this session write?\nIf yes or unknown, reads stay off", fillcolor="#d9f2e8", color="#1baf7a"];
+  sweep -> col;
+  reads -> chk; console -> chk; chk -> rd;
+  ext -> rd;
+  no [label="Typed SQL never reaches\nthe collector connection", fillcolor="#fbe0e0", color="#d03b3b"];
+  console -> no [style=dashed, dir=none];
+  {rank=same; col; rd}
+}

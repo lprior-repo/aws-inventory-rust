@@ -1,0 +1,21 @@
+digraph G {
+  graph [bgcolor="#fcfcfb", fontname="Inter", fontsize=17, fontcolor="#0b0b0b",
+         label=<<table border="0" cellborder="0" cellspacing="0"><tr><td align="left"><b>Three ways it is killed on purpose</b></td></tr><tr><td height="6"></td></tr></table>>, labelloc=t, labeljust=l, pad=0.35,
+         rankdir=TB, nodesep=0.5, ranksep=0.45, newrank=true ];
+  node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#c3c2b7",
+        penwidth=1.2, fontname="Inter", fontsize=12, fontcolor="#0b0b0b",
+        margin="0.17,0.10"];
+  edge [color="#52514e", arrowsize=0.7, penwidth=1.1, fontname="Inter",
+        fontsize=10, fontcolor="#52514e"];
+
+  k1 [label="Kill the collector\nat 100 random points", fillcolor="#fbe0e0", color="#d03b3b"];
+  r1 [label="Restart: the work queue resumes\nfrom the last committed page", fillcolor="#dceafb", color="#86b6ef"];
+  k2 [label="Kill PostgreSQL while the\ncollector keeps running", fillcolor="#fbe0e0", color="#d03b3b"];
+  r2 [label="Reconnect; replay interrupted\nlistings from their first page", fillcolor="#dceafb", color="#86b6ef"];
+  k3 [label="PostgreSQL recovers\nbehind the graph", fillcolor="#fbe0e0", color="#d03b3b"];
+  r3 [label="Compare and repair the graph\nbefore projecting anything new", fillcolor="#dceafb", color="#86b6ef"];
+  ok [label="Same final database as an uninterrupted run", fillcolor="#d9f2e8", color="#1baf7a"];
+  k1 -> r1 -> ok; k2 -> r2 -> ok; k3 -> r3 -> ok;
+  n [shape=plain, label=<<font point-size="10" color="#52514e">Durable settings stay the default until the second and third pass.</font>>];
+  ok -> n [style=invis];
+}
