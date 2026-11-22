@@ -32,7 +32,7 @@ fn write_matrix(root: &Path, value: &serde_json::Value) -> TestResult {
     if let Some(parent) = path.parent() {
         fs::create_dir_all(parent)?;
     }
-    fs::write(&path, toml::to_string(&toml::Value::try_from(value)?)?)?;
+    fs::write(&path, inventory_harness::catalog::toml_doc::render(value)?)?;
     Ok(())
 }
 

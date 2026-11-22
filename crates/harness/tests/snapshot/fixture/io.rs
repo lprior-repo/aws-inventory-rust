@@ -32,7 +32,7 @@ pub fn write_json(path: &Path, value: &Value) -> Result<String, Box<dyn std::err
 
 pub fn write_toml(path: &Path, value: &Value) -> Result<String, Box<dyn std::error::Error>> {
     create_parent(path)?;
-    let encoded = toml::to_string_pretty(value)?;
+    let encoded = inventory_harness::catalog::toml_doc::render(value)?;
     std::fs::write(path, encoded.as_bytes())?;
     Ok(file_sha256(path)?)
 }

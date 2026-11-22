@@ -6,7 +6,7 @@ mod parent;
 mod rules;
 mod schema;
 mod tables;
-pub(crate) mod toml_doc;
+pub mod toml_doc;
 pub mod universal;
 
 use std::path::Path;

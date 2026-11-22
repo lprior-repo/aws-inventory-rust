@@ -19,39 +19,68 @@ pub(crate) fn read(path: &Path, limit: usize) -> Result<(Value, String), Harness
     Ok((parse(text)?, sha256_hex(&bytes)))
 }
 
-/// Encodes a value in its committed TOML form.
+/// Encodes a JSON object in its committed TOML form.
 ///
 /// TOML has no null, so an object member that is null is omitted; readers treat an
 /// absent key as null. A null array element has no encoding and is rejected.
-pub(crate) fn render(value: &Value) -> Result<String, HarnessError> {
-    let stripped = strip_nulls(value, "")?;
-    toml::to_string_pretty(&stripped)
+///
+/// Numbers are converted explicitly to TOML integers or floats. Serialising a
+/// `serde_json::Number` directly is not portable: with `arbitrary_precision`, which
+/// feature unification enables across the workspace, it serialises as a private map.
+pub fn render(value: &Value) -> Result<String, HarnessError> {
+    let table = match to_toml(value, "")? {
+        toml::Value::Table(table) => table,
+        _ => {
+            return Err(HarnessError::invalid(
+                "TOML document root must be an object",
+            ));
+        }
+    };
+    toml::to_string_pretty(&table)
         .map_err(|error| HarnessError::invalid(format!("TOML encoding failed: {error}")))
 }
 
-fn strip_nulls(value: &Value, path: &str) -> Result<Value, HarnessError> {
+fn to_toml(value: &Value, path: &str) -> Result<toml::Value, HarnessError> {
     Ok(match value {
         Value::Null => {
             return Err(HarnessError::invalid(format!(
                 "null array element at {path} has no TOML encoding"
             )));
         }
-        Value::Object(map) => {
-            let mut out = serde_json::Map::new();
-            for (key, item) in map {
-                if !item.is_null() {
-                    out.insert(key.clone(), strip_nulls(item, &format!("{path}/{key}"))?);
-                }
-            }
-            Value::Object(out)
-        }
-        Value::Array(items) => Value::Array(
+        Value::Bool(value) => toml::Value::Boolean(*value),
+        Value::Number(number) => number_to_toml(number, path)?,
+        Value::String(text) => toml::Value::String(text.clone()),
+        Value::Array(items) => toml::Value::Array(
             items
                 .iter()
                 .enumerate()
-                .map(|(index, item)| strip_nulls(item, &format!("{path}[{index}]")))
+                .map(|(index, item)| to_toml(item, &format!("{path}[{index}]")))
                 .collect::<Result<_, _>>()?,
         ),
-        other => other.clone(),
+        Value::Object(map) => {
+            let mut out = toml::Table::new();
+            for (key, item) in map {
+                if !item.is_null() {
+                    out.insert(key.clone(), to_toml(item, &format!("{path}/{key}"))?);
+                }
+            }
+            toml::Value::Table(out)
+        }
     })
+}
+
+fn number_to_toml(number: &serde_json::Number, path: &str) -> Result<toml::Value, HarnessError> {
+    if let Some(value) = number.as_i64() {
+        return Ok(toml::Value::Integer(value));
+    }
+    if let Some(value) = number.as_u64() {
+        let value = i64::try_from(value).map_err(|_| {
+            HarnessError::invalid(format!("integer at {path} exceeds TOML's i64 range"))
+        })?;
+        return Ok(toml::Value::Integer(value));
+    }
+    number
+        .as_f64()
+        .map(toml::Value::Float)
+        .ok_or_else(|| HarnessError::invalid(format!("number at {path} has no TOML encoding")))
 }
