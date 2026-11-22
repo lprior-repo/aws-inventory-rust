@@ -4,14 +4,12 @@
 
 use std::sync::LazyLock;
 
-static BYTES: LazyLock<Vec<u8>> = LazyLock::new(|| {
+static BYTES: LazyLock<Result<Vec<u8>, String>> = LazyLock::new(|| {
     let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../catalog/aws-api.catalog");
-    match std::fs::read(path) {
-        Ok(bytes) => bytes,
-        Err(error) => panic!("cannot read {path}: {error}; run scripts/bootstrap-catalog.sh"),
-    }
+    std::fs::read(path)
+        .map_err(|error| format!("cannot read {path}: {error}; run scripts/bootstrap-catalog.sh"))
 });
 
-pub fn base() -> &'static [u8] {
-    &BYTES
+pub fn base() -> Result<&'static [u8], String> {
+    BYTES.as_ref().map(Vec::as_slice).map_err(Clone::clone)
 }

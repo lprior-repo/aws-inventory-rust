@@ -101,7 +101,7 @@ fn tracked_catalog_files(root: &Path) -> Result<Vec<(PathBuf, String)>, Error> {
     let stdout = String::from_utf8_lossy(&output.stdout);
     let mut files = stdout
         .lines()
-        .filter(|line| !line.is_empty())
+        .filter(|line| !line.is_empty() && !is_dotfile(line))
         .map(|line| (root.join(line), line.to_string()))
         .collect::<Vec<(PathBuf, String)>>();
 
@@ -119,6 +119,13 @@ fn tracked_catalog_files(root: &Path) -> Result<Vec<(PathBuf, String)>, Error> {
     files.sort_by(|left, right| left.1.cmp(&right.1));
 
     Ok(files)
+}
+
+/// `catalog/.gitignore` is tooling metadata, not catalog data, so it is not pinned.
+fn is_dotfile(relative: &str) -> bool {
+    Path::new(relative)
+        .file_name()
+        .is_some_and(|name| name.to_string_lossy().starts_with('.'))
 }
 
 fn manifest_content(files: &[(PathBuf, String)]) -> Result<String, Error> {

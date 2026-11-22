@@ -177,7 +177,7 @@ pub fn column(ids: impl IntoIterator<Item = u32>) -> TestResult<Value> {
 }
 
 fn seal(mut root: Value, mut extension: Value) -> TestResult<Vec<u8>> {
-    let base = RuntimeCatalog::from_bytes(crate::base_catalog::base())?;
+    let base = RuntimeCatalog::from_bytes(crate::base_catalog::base()?)?;
     let source = base.source_provenance();
     let compiled = Sha256::digest(encode_container(&root, MAX_CATALOG_BYTES)?);
     let encoded = Record::encode(&extension)?;
