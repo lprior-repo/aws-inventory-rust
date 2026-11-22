@@ -106,8 +106,8 @@ Three limits on what that milestone means:
 
 The work is 136 steps in five tracks (collecting everything, speed, SQL and
 the store, the app, the graph), ordered into seven waves with a working
-end-to-end run kept green at every checkpoint. After the milestone come 37
-more steps: organization-wide access, the daily schedule, tags and
+end-to-end run kept green at every checkpoint. After the milestone come 46
+more steps: organization-wide access, scaling to 10,000 accounts, the daily schedule, tags and
 ownership, the head-to-head, a real account, the release gate, and, after
 version 1, running in AWS. The plan is
 [BUILD_PLAN.md](BUILD_PLAN.md).
@@ -139,9 +139,11 @@ before release (step E3.4).
   V58). The collector, PostgreSQL 19, the graph engine and the app, all
   local. PostgreSQL comes from a container (podman or docker) or a native
   install. The graph engine ships inside the product.
-- **It reaches a whole AWS organization** (V64). The organization gives it
-  one read-only role in every account; it finds the accounts, assumes the
-  role in each, and sweeps them all in one run. That is why speed and a
+- **It reaches a whole AWS organization, up to 10,000 accounts** (V64,
+  V69). The organization gives it one read-only role in every account; it
+  finds the accounts, assumes the role in each, and sweeps them all in one
+  run, as fast as AWS allows. The design is for massive scale from the
+  start (V76); the size is proven in stages: 10, 100, 1,000, 10,000. That is why speed and a
   small footprint on the laptop are the first design priority (V68).
 - **Once a day** (V65). One full sweep a day is fresh enough.
 - **Not in version 1:** running the collector inside AWS, SSO, Windows.
@@ -159,7 +161,7 @@ AWS commercial regions only. No GovCloud and no China.
 | 120 frames a second for a whole account | It is the headline of the app and has never been measured | The frame-measurement harness is built before the renderer; the test machines are named (an M3 MacBook Pro and an RTX 3070 class machine, V56); the fallback (less detail when zoomed out) is designed in |
 | "Fastest" is unmeasured | It is the reason to exist | The benchmark precedes the speed work; no wave closes on an unexplained slowdown |
 | One database for everything | PostgreSQL becomes a hard requirement, including on a laptop | A deliberate choice: one store to build, test and tune. The cost is one more thing to install |
-| A whole organization on one laptop | Nobody has said how many accounts and resources that is; memory, disk and sweep time all scale with it | Peak memory and CPU are budgets with limits (V68); the size question is open |
+| Massive scale is designed for but unmeasured | Listing everything in 10,000 accounts is about 373 million listings a sweep, before child resources. How long that takes from one machine is not known | One rule for every part: no cost may grow with accounts times regions times operations. A ladder of 10, 100, 1,000 and 10,000 accounts records what really happens. More than one collector can share the store when one machine is not enough |
 | The graph engine's licence | The engine in use is under a stricter licence than MIT and ships inside the product | Alternatives are measured behind one interface (E3.4); a lawyer is asked before release |
 | The emulator serves less than hoped | The proof for a service is only as good as what the emulator can answer, and that is not known until the probe runs | A pinned version; a list of substitute services; whatever it cannot serve is listed by name as unverified, not hidden |
 
@@ -167,9 +169,8 @@ The full register is in [BUILD_PLAN.md](BUILD_PLAN.md) section 9.
 
 ## What is not decided
 
-Four defaults the plan uses without the owner's confirmation, and a short
-list of questions (how big an organization, what is drawn at once, which
-graph engine, dates). All of it is in
+Five defaults the plan uses without the owner's confirmation, and a short
+list of questions (which graph engine, what version 1 contains, dates). All of it is in
 [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md).
 
 ## Words used in this set

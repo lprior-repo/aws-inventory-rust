@@ -5,7 +5,7 @@
 > [VISION](../VISION.md) section 2; they are restated here in short form
 > with what happened to each. V35 to V53 are the owner's answers of
 > 2026-11-15 and 2026-11-16, V54 to V57 the answers of 2026-11-21, and
-> V58 to V68 the answers of 2026-11-22. The O rows are defaults the plan uses that the
+> V58 to V76 the answers of 2026-11-22. The O rows are defaults the plan uses that the
 > owner has not confirmed. Where this file and VISION differ, this file
 > wins until step K4.1 merges it into VISION.
 
@@ -24,7 +24,7 @@ later row), **Superseded** (replaced).
 | V06 | Scope is every configurable resource plus runtime parts that matter for architecture. Never content, secrets or paid calls. The deny list fails closed | Kept | Confirmed by V36 |
 | V07 | Commercial AWS partition only | Kept | Confirmed by V49 |
 | V08 | Runs on one laptop; Lambda is the second runtime, so collection must work in resumable slices | Amended | V54: version 1 is the laptop only. Any AWS runtime is after version 1 |
-| V09 | Accounts come from local AWS profiles; first proven on about 10 accounts | Amended | V64: whole organizations. Accounts are discovered from AWS Organizations and reached by assuming a read-only role, beside local profiles |
+| V09 | Accounts come from local AWS profiles; first proven on about 10 accounts | Amended | V64: whole organizations, by assumed role. V69: up to 10,000 accounts |
 | V10 | Freshness from fast full sweeps on an interval; change events later, as hints only | Kept | Confirmed by V44 |
 | V11 | Reconciliation is by record hash: unchanged records cause no writes | Kept | |
 | V12 | Config, Resource Explorer and CloudTrail may give hints and cross-checks; stored facts come from the service's own API, except tags | Kept | |
@@ -89,6 +89,14 @@ later row), **Superseded** (replaced).
 | V66 | PostgreSQL is used at its latest major version. On 2026-11-22 that is PostgreSQL 19, released 2026-11-19 | Sharpens V53. Not verified: that the pinned driver and the container images work with 19 |
 | V67 | Overlays may be extracted from the API models by the generator; an entry does not need a person's review to make an operation callable. Reading taken of "we can exact overlays" | Settles O12. The deny list is still checked first, and the emulator probe and Cloud Control still check the result |
 | V68 | Speed and efficient use of the laptop's CPU, memory and disk are the design priority, because one laptop sweeps a whole organization | Sharpens V52: peak memory and CPU time are budgets with limits, not only numbers that are recorded |
+| V69 | The product must scale to as many as 10,000 accounts in one organization, from one laptop. The size is reached in stages | Amends V09 and sizes V64. The plan was sized for about 10 accounts; package S climbs from 10 to 100, 1,000 and 10,000, measuring each |
+| V70 | The app should ideally show the entire organization, and what it handles grows in stages. Reading taken of "ideally the entire organizations, we will have to scale the resources as we go" | Amends V45: the whole organization is on screen as aggregates, and individual resources are loaded for what is in view (step S1.6) |
+| V71 | A graph database is required, whatever an index of our own would measure | Confirms V46. In step E3.4 our own index is a yardstick and not a candidate |
+| V72 | Work continues from the existing repository and adapts as it goes | Answers whether to start empty. The step files name today's files and are adjusted as the code changes |
+| V73 | A sweep runs as fast as AWS allows. There is no time window it has to fit | Settles O23. Restates V13 and V43 for whole organizations |
+| V74 | Whether 10,000 accounts fit on one laptop is not a concern for now. The work is to be as fast and as frugal as Rust allows; the scale ladder reports what it finds | The ladder (S2.1) reports and does not gate. The question of which laptop is set aside |
+| V75 | The read-only role is not a concern for now. Access to each account is assumed to exist, however the organization grants it | Sets aside how the role is deployed. H2.2 (the role as a template) is not part of version 1 for now; H2.1 (assuming a role in each account) still is |
+| V76 | Plan for massive scale. Scale is a design input from the first step that builds each part, not something added afterwards | Sharpens V69. The rule in [ARCHITECTURE.md](ARCHITECTURE.md) section 9: no cost may grow with accounts times regions times operations. Steps B1.2, B7.2, C6.3 and C6.5 carry a scale note; package S is the proof |
 
 **The graph engine and the licence (V60, V63).** These two decisions pull
 against the current engine. Our own code can be MIT whatever it talks to.
@@ -108,14 +116,15 @@ Work proceeds on these so that nothing is blocked. Each is one line to
 change here; some would change a lot of work. The questions, with what
 each choice costs, are in [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md).
 
-![Four defaults the plan uses that the owner has not confirmed](img/37-open-decisions.png)
+![Five defaults the plan uses that the owner has not confirmed](img/37-open-decisions.png)
 
 | ID | Question | Default used | Why this default |
 | --- | --- | --- | --- |
 | O13 | How nested fields are queried in SQL | Scalars are typed columns. Lists and maps go into one JSONB column written at commit. The record blob stays CBOR | External SQL clients cannot read CBOR. C2 measures the write cost first, as V40 requires |
-| O14 | Size of the graph for the 120 fps target (the hardware is decided, V56 and V59) | 250,000 nodes and 1,000,000 edges | A stated target makes X8 testable. With whole organizations in scope (V64) it also needs saying whether one account or the whole organization is drawn at once |
+| O14 | How many individual resources must draw at 120 fps at once (the hardware is decided, V56 and V59) | 250,000 nodes and 1,000,000 edges, as the budget for what is in view. The organization above that is drawn as aggregates (V70) | A stated target makes X8 testable |
 | O20 | Where connection settings and secrets are kept | Environment or an owner-only settings file now; an operating-system keychain later | Command-line arguments are visible to other users of the machine |
 | O21 | Is anything edited in the UI | No: read, sweep and query only | Editing owner mappings or saving queries is a product decision |
+| O22 | At massive scale, may a scope that has stayed empty be listed weekly instead of daily | No. Everything is listed every sweep, as fast as AWS allows (V73); the slower cadence is built and left off (step S1.7) | It trades completeness for fewer requests. The ladder (S2.1) shows whether it is ever needed |
 
 O17 (which store a local user gets) was settled by V53 and is not listed.
 
@@ -128,6 +137,7 @@ Settled or set aside on 2026-11-21 and 2026-11-22:
 | O18 | Is a 120 Hz display part of the test machine: yes | Settled for the MacBook by V56. The RTX 3070 machine needs a monitor of 120 Hz or more for X8 to be shown on it; otherwise it reports headroom only |
 | O12 | What makes an operation callable: a generated overlay entry | Settled by V67 |
 | O19 | Platforms, in order | Settled by V58: macOS and Linux |
+| O23 | How long the daily sweep may take | Settled by V73: no window; as fast as AWS allows |
 
 ## 4. Open decisions carried from VISION
 

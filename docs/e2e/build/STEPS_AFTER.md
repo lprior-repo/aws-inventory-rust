@@ -219,6 +219,8 @@ Version 1 runs on one person's laptop (V54), so running the collector
 inside AWS (H1, H3 to H6) is after version 1. H2.1 and H2.2 are the
 exception: the laptop sweeps whole organizations (V64), so both are part of
 version 1 and are done after the milestone, before the release gate.
+H2.2 (the role as a template) is set aside for now (V75): access to each
+account is assumed to exist, however the organization grants it.
 
 ### H1.1 A managed PostgreSQL in AWS
 
@@ -487,6 +489,193 @@ version 1 and are done after the milestone, before the release gate.
 - **Prove it:** every path in the manifest is tracked; no document describes
   the UI as a synthetic fixture or names a store other than PostgreSQL.
 - **Done when:** the K4 evidence holds.
+
+## S Scale to 10,000 accounts
+
+The plan was sized for about 10 accounts. The target is now up to 10,000 in
+one organization (V69), reached a rung at a time: 10, 100, 1,000, 10,000.
+The instruction is to plan for massive scale (V76) and not to treat "does
+it fit on a laptop" as a blocker (V74): build it as fast and as frugal as
+Rust allows, and let the ladder report what it finds. The parts that are
+cheap to shape early are shaped in the milestone steps that first build
+them (B1.2, B7.2, C6.3, C6.5 each carry a scale note). These steps come
+after the milestone and after H2.1, and are the proof. They are
+written at the level of intent: each names what has to change and what
+proves it, and the worker who takes one writes the file list after reading
+the code as it then stands (V72). The numbers are arithmetic from the
+plan's own counts and nothing here has been run.
+
+### S1.1 An organization to test against
+
+- **Goal:** A repeatable stand-in for an organization of N accounts, for N
+  up to 10,000, that needs no real AWS.
+- **Depends on:** B5.4 (the fault proxy), D4.1 (the bench generator), H2.1.
+- **Change:** a stub endpoint that answers account discovery, role
+  assumption and list calls for N account IDs, with a stated share of
+  scopes empty, a stated number of resources per account, and the proxy's
+  rate limit per account and region. `cmdb-bench generate` gains an
+  `--accounts` size so the store and the graph can be filled without a
+  sweep.
+- **Prove it:** a sweep of the stub at N = 10 gives the same stored result
+  as the emulator scenario of the same shape.
+- **Done when:** every later step in this package can name its N.
+- **Watch out:** the stub proves our side only: memory, queue, store and
+  connection behaviour. It says nothing about real quotas. Not verified:
+  whether the pinned emulator can present more than one account.
+
+### S1.2 Rate budgets that exist only while they are used
+
+- **Goal:** Memory for rate budgets depends on the accounts in flight, not on
+  the size of the organization.
+- **Depends on:** B1.2, B2.2.
+- **Change:** 10,000 accounts, 17 regions and 436 services are about 74
+  million budget keys, against a registry bound of 65,536 today. A budget is
+  created when its first request is admitted and dropped when its account
+  and region finish; its learned rate stays in `learned_rates`. The sweep
+  keeps a bounded window of accounts in flight and moves through the
+  organization.
+- **Budget:** P7 (peak memory) is flat from N = 100 to N = 10,000 at a fixed
+  window.
+- **Prove it:** the S1.1 stub at N = 10,000 with the window at its default.
+- **Done when:** peak memory at 10,000 accounts is within a stated margin
+  of peak memory at 100.
+- **Watch out:** `learned_rates` itself grows with the organization. Keep
+  only rows that differ from the default.
+
+### S1.3 Plan a window at a time, and store exceptions instead of everything
+
+- **Goal:** Control data written per sweep is proportional to what was
+  found and what went wrong, not to accounts times regions times operations.
+- **Depends on:** S1.2, B4.5.
+- **Change:** at 10,000 accounts there are about 373 million root listings
+  per sweep. One `work_queue` row and one `scope_outcomes` row for each
+  would be several hundred million rows of control data a day, far more
+  than the resource data. Root scopes for an account and region are seeded
+  when it enters the window and removed when it completes. A listing that
+  completed and found nothing is counted per account, region and service
+  and not stored as a row; every other outcome is stored as now.
+- **Tests:** deletion still needs two complete listings (the evidence moves
+  from a stored outcome row to the completion step, and the test proves a
+  failed or skipped listing still deletes nothing); a kill at any point
+  resumes without repeating a completed account and region.
+- **Budget:** P8 (bytes written) per sweep at N = 1,000, before and after.
+- **Prove it:** the kill matrix of B4.3 on the stub at N = 100.
+- **Done when:** the rows written by a warm sweep of an unchanged
+  organization do not grow with the number of empty scopes.
+- **Watch out:** this changes what `scope_outcomes` means, so the coverage
+  screen (D12.1) and X3's report read the counts as well as the rows.
+
+### S1.4 Connections shared across accounts, and limits checked at start
+
+- **Goal:** Open connections depend on regions and services in use, never on
+  the number of accounts.
+- **Depends on:** B7.2.
+- **Change:** the endpoint for a service in a region is the same host for
+  every account, and each request carries its own account's signature. The
+  pool is keyed by endpoint, so 10,000 accounts reuse the same connections.
+  At start the product reads the process's open-file limit, raises it where
+  the system allows, sizes the pool and the account window to fit, and says
+  so if the limit is the constraint.
+- **Budget:** P4 (connections opened and requests reused) at N = 1,000.
+- **Prove it:** connections opened in a sweep of the stub at N = 1,000
+  compared with N = 10.
+- **Done when:** the two counts are within a stated margin.
+- **Watch out:** not verified: the default open-file limit for a
+  double-clicked app on macOS, which is much lower than a server's.
+
+### S1.5 Credentials for 10,000 accounts
+
+- **Goal:** A role is assumed when an account enters the window, reused
+  until it expires, and refreshed while in flight.
+- **Depends on:** H2.1.
+- **Change:** credentials are held only for accounts in the window. The
+  role-assumption calls are paced by their own budget, because they are
+  charged to the calling account, not to the 10,000 targets. An account
+  where the role is missing is recorded once as inaccessible and remembered
+  (B6.4), not retried every day at full cost.
+- **Prove it:** the stub at N = 10,000 with a stated share of accounts
+  refusing the role.
+- **Done when:** the sweep completes with those accounts listed by name.
+- **Watch out:** not verified: the real limit on role assumptions per
+  second for one calling account.
+
+### S1.6 The organization in the app: aggregates for all of it, resources for what is in view
+
+- **Goal:** The app shows the whole organization at once (V70) without
+  holding every resource in memory.
+- **Depends on:** D4.3, D6.3.
+- **Change:** the plan's "load the whole account once" does not hold for an
+  organization. The app always holds counts per account, region, service
+  and kind for everything, and edge totals between them, from a summary the
+  store maintains. Individual resources and edges are loaded for the
+  accounts in view, up to the budget in O14, and released when out of
+  view. The level-of-detail steps (D6.2, D6.3) gain one level above the
+  account: the organization.
+- **Budget:** P12 (load time and memory held by the app) bounded whatever N
+  is; the frame test of
+  D7.2 run on an organization of 10,000 accounts at the top level.
+- **Prove it:** the frame harness on a bench organization.
+- **Done when:** the top level of 10,000 accounts meets X8's wording, and
+  zooming into any one account loads it within a stated time.
+- **Watch out:** "the entire organization at once" is true of the picture
+  and not of the individual resources. If the owner needs every resource
+  of every account interactive at the same moment, this step is not
+  enough, and O14 has to be restated.
+
+### S1.7 A slower cadence for scopes that stay empty, off by default
+
+- **Goal:** A fallback that is designed and tested before it is needed.
+- **Depends on:** S1.3, B6.4.
+- **Change:** listing everything every day at 10,000 accounts is about
+  4,300 requests a second around the clock for root listings alone. If the
+  ladder shows that does not fit a day, a scope that has completed empty on
+  a stated number of consecutive sweeps is listed weekly instead of daily.
+  It returns to daily the moment it is non-empty. The switch is off until
+  the owner turns it on (O22), because it means a resource created in a
+  long-empty service can go unseen for up to a week.
+- **Tests:** an empty scope drops to weekly; a resource appearing there is
+  found at the weekly listing and the scope returns to daily; with the
+  switch off nothing is skipped.
+- **Prove it:** requests per sweep on the stub, switch off and on.
+- **Done when:** both numbers are recorded and the trade is written where
+  the user turns the switch on.
+
+### S1.8 Partition the large tables by account, if it measures better
+
+- **Goal:** The store stays fast as the organization grows.
+- **Depends on:** C6.3, S1.1.
+- **Change:** `resources`, `edges`, `resource_scopes` and the largest kind
+  tables are generated as hash partitions on the account. Compare, on a
+  bench organization at the 1,000-account rung, with and without: writer
+  rows per second (P9), the app's reads (P12), database size (P8), and
+  vacuum time.
+- **Prove it:** `cmdb-bench sweep` and `cmdb-bench measure` on both layouts.
+- **Done when:** the layout is chosen from the rows and recorded.
+- **Watch out:** partitions multiply the number of tables, and there are
+  already about 2,200 kind tables. Not verified: lock usage and planning
+  time with partitioned kind tables on PostgreSQL 19.
+
+### S2.1 The ladder: 10, 100, 1,000, 10,000
+
+- **Goal:** Each rung is reached, measured and recorded before the next is
+  attempted.
+- **Depends on:** S1.1 to S1.6, S1.8, E3.4.
+- **Files:** `docs/performance-evidence/scale.md` (new).
+- **Change:** at each rung, on the stated laptop, record: cold and warm
+  sweep time, requests, retries and throttles, peak memory, CPU time,
+  connections, database size on disk, graph size in memory and on disk,
+  time to open the app, and frame rows at the top level. There is no time
+  window to fit: the sweep runs as fast as AWS allows (V73), and the rung
+  records how fast that was and what the machine spent. A rung passes when
+  the sweep completes correctly and no cost grew faster than the number of
+  accounts.
+- **Prove it:** the evidence file, one table per rung.
+- **Done when:** every rung has its table, and for the highest rung that did
+  not complete, what stopped it. Whether 10,000 accounts fit on one laptop
+  is a result this step reports, not a condition it must meet (V74).
+- **Watch out:** the first three rungs can be measured on the stub. Only a
+  real organization shows real quotas, and the largest one available
+  decides how far up the ladder the live evidence goes (L6.1).
 
 ## L The release gate
 

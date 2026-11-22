@@ -214,7 +214,7 @@ These are targets and defaults, not measurements.
 
 | Quantity | Value | Status |
 | --- | --- | --- |
-| Accounts | A whole organization; the number is not stated (V64). The first proof was sized for about 10 (V09) | Open question U1 |
-| Graph drawn at 120 frames a second | 250,000 nodes, 1,000,000 edges | Unconfirmed default (O14) |
-| Rate buckets admitted | 74,000 without error | Test target in B1 |
+| Accounts | Up to 10,000 in one organization, reached in stages (V69). The first proof was sized for about 10 | Decision |
+| Individual resources drawn at 120 frames a second at once | 250,000 nodes, 1,000,000 edges. The organization above that is drawn as aggregates (V70) | Unconfirmed default (O14) |
+| Rate budgets | 74,000 at 10 accounts (the test in B1). About 74 million at 10,000, so they exist only while in use (S1.2) | Planned |
 | Typed columns in one table | 1,592 | PostgreSQL limit, computed |

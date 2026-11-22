@@ -10,7 +10,8 @@
 ![The product in one picture](img/00-product.png)
 
 Version 1 in one line: `aws-inventory` runs on one laptop (macOS or Linux),
-reaches every account of an AWS organization through a read-only role,
+reaches every account of an AWS organization (up to 10,000) through a
+read-only role,
 sweeps everything once a day into PostgreSQL 19, and draws it. All of it is
 MIT. The core is one page: the first section of
 [ARCHITECTURE](ARCHITECTURE.md).
@@ -37,14 +38,14 @@ MIT. The core is one page: the first section of
 | [DECISIONS.md](DECISIONS.md) | Every decision, V01 to V53, with what happened to each, and the defaults not yet confirmed |
 | [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md) | Everything not decided or not verified, and what each answer would change |
 | [BUILD_PLAN.md](BUILD_PLAN.md) | The order of work: performance budgets, the thin slice, seven waves, every step, the risk register |
-| [build/](build/) | 173 steps, one file per track, each with its goal, files, change, tests, budget and proof |
+| [build/](build/) | 182 steps, one file per track, each with its goal, files, change, tests, budget and proof |
 | [A_COVERAGE.md](A_COVERAGE.md) to [E_GRAPH.md](E_GRAPH.md) | A one-page summary of each track. The step files are the detail and win where they differ |
 | [AFTER.md](AFTER.md) | What comes after the milestone: whole organizations, the daily schedule, tags, proof, removal, the release gate, and running in AWS after version 1 |
 | [RELEASE_GATE.md](RELEASE_GATE.md) | The eleven things that must hold before anyone outside is handed the product |
 | [REVIEW_2026-11-18.md](REVIEW_2026-11-18.md) | An outside review of the plan: each finding and where it was fixed |
 | [RUN_HERE.md](RUN_HERE.md) | How to build and run the flow, and the record of the run of 2026-11-15 |
 | [AGENT_PROMPT.md](AGENT_PROMPT.md) | The kickoff prompt for a worker |
-| [img/](img/) | 41 diagrams and charts used by these files, and the Graphviz source of the diagrams in `img/src/` |
+| [img/](img/) | 42 diagrams and charts used by these files, and the Graphviz source of the diagrams in `img/src/` |
 
 About the pictures: they are diagrams and charts drawn by code from the
 facts in these documents. The wireframe of the app is a sketch of the
