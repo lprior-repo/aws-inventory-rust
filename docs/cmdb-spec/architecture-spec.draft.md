@@ -17,7 +17,7 @@ reviewed coverage universe and reproducible equal-work performance comparisons.
 1. [Confirmed decisions, policy choices and finalization boundary](decisions.md).
 2. [Verified starting point and compatibility boundary](current-state.md).
 3. [135 normative EARS requirements](requirements.md).
-4. [Coverage universe and complete SDK/collector seed registers](coverage.md).
+4. [Coverage universe and collector seed inventory](coverage.md).
 5. [Domain language and aggregate ownership](domain-model.md).
 6. [Preconditions, postconditions and invariants](contract.md).
 7. [Trusted type contracts](type-contracts.md).
@@ -35,10 +35,9 @@ reviewed coverage universe and reproducible equal-work performance comparisons.
 19. [Primary references and skill/evidence boundaries](sources.md).
 20. [Specification consistency review](spec-review.md).
 
-Machine-readable [requirements](requirements.jsonl),
-[traceability](traceability-matrix.jsonl) and [domain proof seeds](proof-seeds.jsonl)
-support subsequent planning. The [catalog guide](catalogs/README.md) explains the
-seed inventories. None of those rows is executed proof or implementation acceptance.
+The machine-readable requirement, traceability, proof-seed and seed-register files
+were removed from the repository. The prose in this document set is not executed
+proof or implementation acceptance.
 
 ## Implementation handoff boundary
 

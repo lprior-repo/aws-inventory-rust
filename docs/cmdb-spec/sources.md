@@ -26,7 +26,6 @@ documented behavior, not independent competitor benchmarks or our implementation
 Read the existing architecture, collectors, storage, scheduler, durable jobs,
 graph delivery, SDK manifest/auditor, CLI catalog, prior strict review, and release
 benchmark artifacts. Exact baseline source is recorded in `current-state.md`.
-Catalog source hashes and refreshed SDK-source audit bind the seed registers.
 Do not treat an old document's self-description as evidence for the current pin.
 
 ## Skills used in specification work

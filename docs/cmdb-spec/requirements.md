@@ -3,7 +3,7 @@
 SHALL is mandatory for the replacement release. This register specifies behavior;
 it does not certify implementation. User decisions and engineering qualification
 profiles are distinguished in `decisions.md`. Each row maps to a scenario family
-in `validation-gates.md`; the machine traceability register preserves that mapping.
+in `validation-gates.md`.
 
 | ID | EARS requirement | Acceptance family |
 | --- | --- | --- |

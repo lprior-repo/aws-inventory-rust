@@ -35,20 +35,12 @@ open in `decisions.md`. There is no claim of production readiness or proof.
 - Existing rejected strict review findings remain explicit; this design does
   not turn historical compilation/tests or rejected GPU work into acceptance.
 
-## Static bundle validation
-
-`spec-validation.json` records structural checks: unique contiguous requirement
-IDs, acceptance references, exact traceability parity, valid proof-seed schema,
-local document links, catalog counts/version/hash agreement and no missing
-required chapters. Passing these checks demonstrates document consistency only.
-It does not execute any of the 29 future acceptance scenario families.
-
 ## Remaining design review focus
 
 Finalize overload/retention policy, complete the operator pre-mortem and recovery
 objectives, then independently challenge capacity feasibility and shared quota
 ownership under pauses/failover. The coverage universe still requires pinned
-competitor snapshots and semantic classification; the raw SDK register is an
+competitor snapshots and semantic classification; the raw SDK inventory is an
 honest starting surface. Benchmark integration decides the concrete UI/renderer.
 These are explicit design/qualification gates, not hidden implemented features.
 

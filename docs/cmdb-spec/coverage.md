@@ -56,18 +56,15 @@ ProductNotImplemented rows within the accepted launch universe. Each exclusion
 must cite a genuine scope/provider restriction and remain visible in reports.
 Completion of early milestones does not satisfy this replacement gate.
 
-## Current seed registers
+## Current seed gaps
 
-`catalogs/current-collector-descriptors.jsonl`: 450 descriptors, comprising 32
-native kinds and 418 Cloud Control types (397 roots, 21 parent-dependent).
-This is not 450 distinct normalized kinds; adapters overlap. Catalog descriptors
-do not establish field completeness, event support, or production qualification.
-
-`catalogs/sdk-service-review-register.jsonl`: 437 pinned service SDKs.
-`catalogs/sdk-operation-review-register.jsonl`: 19,643 SDK operation modules,
-including mutations and data-plane operations. All begin unreviewed in the new
-universe-classification process. These are static source-audit inputs, not a list
-of implemented inventory operations. The upstream pin and hashes accompany them.
+The collector descriptor universe is 450 descriptors: 32 native kinds and 418 Cloud
+Control types (397 roots, 21 parent-dependent). This is not 450 distinct normalized
+kinds; adapters overlap. Descriptors do not establish field completeness, event
+support, or production qualification. The SDK inventory covers 437 pinned service
+SDKs and 19,643 operation modules, including mutations and data-plane operations,
+all initially unreviewed. These are static source-audit inputs, not a list of
+implemented inventory operations.
 
 Existing native gaps include RDS/Aurora and expanded IAM objects; tag coverage
 for DynamoDB/Lambda/ELBv2; and additional network, security, operational, and

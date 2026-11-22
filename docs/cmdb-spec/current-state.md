@@ -30,8 +30,8 @@ pins `release-2026-11-12`, official revision
 
 The older `artifacts/sdk-capabilities-v06.json` pins release-2026-11-11 and
 differs from the current manifest for 22 service versions. It is not the current
-operation-register authority. The new offline source-audit result and manifest
-hash checks in `catalogs/` must be used for this specification's seed inventory.
+operation-register authority. The offline source-audit result and manifest hash
+checks must be used for this specification's seed inventory.
 SDK source inspection remains static evidence, not runtime service coverage.
 
 The prior strict whole-candidate review (its file was removed from the repository)
