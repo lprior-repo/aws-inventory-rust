@@ -78,8 +78,11 @@ sh scripts/bootstrap-protocol-tests.sh
 
 The bootstrap runs `scripts/protocol-tests/convert.sh` and installs the outputs
 only if their SHA-256 digests match `scripts/protocol-tests/outputs.sha256`; it
-is idempotent. The converter supports Linux x86-64 and aarch64 only. It exits
-on other platforms, so macOS is unsupported. To write the fixtures to a separate
+is idempotent. The converter supports Linux x86-64, Linux aarch64 and macOS
+arm64 (Apple silicon) only; it exits on other platforms. The pinned macOS CLI
+and jq digests were checked against the upstream release assets, but the
+converter has not been run on macOS, so byte equality across platforms is
+unverified. To write the fixtures to a separate
 directory instead, from any working directory:
 
 ```sh
