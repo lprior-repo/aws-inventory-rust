@@ -1,8 +1,0 @@
-Summarize a scan and include explicit coverage/failure information
-
-Usage: aws-inventory report [OPTIONS] --scan-id <SCAN_ID>
-
-Options:
-      --db <DB>            [default: inventory.sqlite]
-      --scan-id <SCAN_ID>  
-  -h, --help               Print help

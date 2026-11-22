@@ -1,1 +1,0 @@
-/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/target/debug/aws-inventory diff --db /home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/demo.sqlite --before synthetic-demo-001 --after synthetic-demo-001 --limit 10 --max-items 100 

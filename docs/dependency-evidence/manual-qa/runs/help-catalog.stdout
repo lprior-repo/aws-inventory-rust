@@ -1,6 +1,0 @@
-List implemented resource tables and API operations
-
-Usage: aws-inventory catalog
-
-Options:
-  -h, --help  Print help

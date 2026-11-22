@@ -1,8 +1,0 @@
-[
-  {
-    "instance_id": "i-demo",
-    "instance_type": "m7i.large",
-    "region": "us-east-1",
-    "vpc_id": "vpc-demo"
-  }
-]

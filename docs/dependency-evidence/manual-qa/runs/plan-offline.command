@@ -1,1 +1,0 @@
-/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/target/debug/aws-inventory plan --region us-east-1 --service ec2 --cloud-control --resource-type AWS::EC2::VPC 

@@ -1,1 +1,0 @@
-jq -e .service_count==437\ and\ \(.services\|length\)==437\ and\ .official_release_tag==\"release-2026-11-12\"\ and\ .official_revision==\"c8e11bea896b54530c587c29ce30ebd6619af62a\" /home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/sdk-all.stdout 

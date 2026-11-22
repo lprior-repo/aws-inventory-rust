@@ -1,6 +1,0 @@
-Usage: aws-inventory job list [OPTIONS]
-
-Options:
-      --queue <QUEUE>  [default: jobs.sqlite]
-      --limit <LIMIT>  [default: 100]
-  -h, --help           Print help

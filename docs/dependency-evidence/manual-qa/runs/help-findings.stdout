@@ -1,9 +1,0 @@
-Report evidence-backed architecture observations with explicit uncertainty
-
-Usage: aws-inventory findings [OPTIONS] --scan-id <SCAN_ID>
-
-Options:
-      --db <DB>            [default: inventory.sqlite]
-      --scan-id <SCAN_ID>  
-      --limit <LIMIT>      [default: 100]
-  -h, --help               Print help
