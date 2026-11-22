@@ -239,8 +239,8 @@ const EMBEDDED_FILES: [&str; 7] = [
     "catalog/cloudcontrol-capabilities.json",
     "catalog/cloudcontrol-universal.json",
     "catalog/cloudcontrol-resources.json",
-    "catalog/cloudcontrol-parent-resources.json",
-    "catalog/cloudcontrol-v04-types.json",
+    "catalog/cloudcontrol-parent-resources.toml",
+    "catalog/cloudcontrol-v04-types.toml",
 ];
 
 fn source_files(root: &Path) -> Result<Vec<PathBuf>, HarnessError> {

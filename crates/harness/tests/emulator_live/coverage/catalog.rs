@@ -26,9 +26,14 @@ pub(super) fn cloud_control_types() -> Result<String, Box<dyn Error>> {
     let mut names = Vec::new();
     for file in [
         "catalog/cloudcontrol-resources.json",
-        "catalog/cloudcontrol-parent-resources.json",
+        "catalog/cloudcontrol-parent-resources.toml",
     ] {
-        let document: Value = serde_json::from_str(&std::fs::read_to_string(root.join(file))?)?;
+        let text = std::fs::read_to_string(root.join(file))?;
+        let document: Value = if file.ends_with(".toml") {
+            serde_json::to_value(toml::from_str::<toml::Table>(&text)?)?
+        } else {
+            serde_json::from_str(&text)?
+        };
         let rows = document
             .get("resource_types")
             .and_then(Value::as_array)

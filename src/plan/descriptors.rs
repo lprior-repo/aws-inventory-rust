@@ -2,7 +2,7 @@ use super::*;
 
 pub(super) fn cloud_catalog() -> Result<Value> {
     let mut catalog: Value = serde_json::from_str(CLOUD_CONTROL_CATALOG)?;
-    let parents: Value = serde_json::from_str(PARENT_CATALOG)?;
+    let parents: Value = toml::from_str(PARENT_CATALOG)?;
     ensure_parent_size(&parents)?;
     let root_names = root_names(&catalog)?;
     append_parent_rows(&mut catalog, &parents, &root_names)?;

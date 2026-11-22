@@ -76,7 +76,7 @@ aws-inventory scan --db inventory.sqlite --region us-east-1 \
 `catalog-tool coverage [--check | --write]` writes
 `catalog/coverage-denominator.report`, a deterministic funnel computed only from
 committed artifacts: `aws-models.report`, `aws-plans.report`,
-`aws-classes.report`, `aws-overlay.report`, `aws-operations.json`,
+`aws-classes.report`, `aws-overlay.report`, `aws-operations.toml`,
 `cloudcontrol-capabilities.json`, and `cloudcontrol-resources.json`.
 
 - One `catalog-digest` (SHA-256 over the seven input paths and digests) ties

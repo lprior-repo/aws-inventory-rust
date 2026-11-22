@@ -93,10 +93,26 @@ impl VerificationResult {
 }
 
 pub fn canonical(value: &Value) -> String {
-    let result = serde_json::to_string(value);
-    match result {
+    let sorted = sort_keys(value);
+    match serde_json::to_string(&sorted) {
         Ok(s) => s,
-        Err(_) => value.to_string(),
+        Err(_) => sorted.to_string(),
+    }
+}
+
+fn sort_keys(value: &Value) -> Value {
+    match value {
+        Value::Object(object) => {
+            let mut keys: Vec<&String> = object.keys().collect();
+            keys.sort();
+            Value::Object(
+                keys.into_iter()
+                    .filter_map(|key| object.get(key).map(|item| (key.clone(), sort_keys(item))))
+                    .collect(),
+            )
+        }
+        Value::Array(items) => Value::Array(items.iter().map(sort_keys).collect()),
+        other => other.clone(),
     }
 }
 

@@ -12,7 +12,7 @@ const INPUTS: [&str; 7] = [
     "catalog/aws-plans.report",
     "catalog/aws-classes.report",
     "catalog/aws-overlay.report",
-    "catalog/aws-operations.json",
+    "catalog/aws-operations.toml",
     "catalog/cloudcontrol-capabilities.json",
     "catalog/cloudcontrol-resources.json",
 ];
@@ -150,7 +150,7 @@ fn overlay_totals_that_disagree_with_rows_are_refused() -> TestResult {
 #[test]
 fn missing_catalog_input_is_refused() -> TestResult {
     let dir = copy_inputs()?;
-    std::fs::remove_file(dir.path().join("catalog/aws-operations.json"))?;
+    std::fs::remove_file(dir.path().join("catalog/aws-operations.toml"))?;
     assert!(matches!(coverage::build(dir.path()), Err(Error::Io { .. })));
     Ok(())
 }

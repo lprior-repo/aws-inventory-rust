@@ -3,7 +3,7 @@ use std::path::Path;
 
 use serde_json::Value;
 
-use super::{CASES, field, object, read_json};
+use super::{CASES, field, object, read_json, read_toml};
 use crate::HarnessError;
 use crate::provenance::{
     canonical_sha256, expected_runtime_catalog, file_sha256, source_fingerprint,
@@ -84,7 +84,7 @@ fn load_catalogs(
 ) -> Result<(Value, Value), HarnessError> {
     let (catalog, catalog_sha) = read_json(&root.join("catalog/cloudcontrol-resources.json"))?;
     let (parents, parents_sha) =
-        read_json(&root.join("catalog/cloudcontrol-parent-resources.json"))?;
+        read_toml(&root.join("catalog/cloudcontrol-parent-resources.toml"))?;
     let runtime = expected_runtime_catalog(&catalog, &parents)?;
     let digests = expected_digests(root, &catalog, &runtime, catalog_sha, parents_sha)?;
     check_catalogs(execution, &digests)?;

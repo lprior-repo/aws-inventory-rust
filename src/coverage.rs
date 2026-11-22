@@ -54,7 +54,7 @@ pub fn report(
 }
 
 fn merge_parent_capabilities(catalog: &mut Value) -> Result<()> {
-    let parents: Value = serde_json::from_str(crate::plan::PARENT_CATALOG)?;
+    let parents: Value = toml::from_str(crate::plan::PARENT_CATALOG)?;
     let types = parents
         .get("resource_types")
         .and_then(Value::as_array)

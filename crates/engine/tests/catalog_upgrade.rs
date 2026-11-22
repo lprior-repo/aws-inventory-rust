@@ -7,8 +7,15 @@ use std::{collections::BTreeSet, path::Path};
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 
 fn added_views() -> TestResult<Vec<String>> {
-    let legacy: BTreeSet<String> =
-        serde_json::from_str(include_str!("../../../catalog/cloudcontrol-v04-types.json"))?;
+    let legacy_document: Value = serde_json::to_value(toml::from_str::<toml::Table>(
+        include_str!("../../../catalog/cloudcontrol-v04-types.toml"),
+    )?)?;
+    let legacy: BTreeSet<String> = serde_json::from_value(
+        legacy_document
+            .get("types")
+            .cloned()
+            .ok_or("v04 types missing")?,
+    )?;
     let catalog: Value =
         serde_json::from_str(include_str!("../../../catalog/cloudcontrol-resources.json"))?;
     catalog
@@ -37,9 +44,9 @@ fn added_views() -> TestResult<Vec<String>> {
 }
 
 fn parent_views() -> TestResult<Vec<String>> {
-    let catalog: Value = serde_json::from_str(include_str!(
-        "../../../catalog/cloudcontrol-parent-resources.json"
-    ))?;
+    let catalog: Value = serde_json::to_value(toml::from_str::<toml::Table>(include_str!(
+        "../../../catalog/cloudcontrol-parent-resources.toml"
+    ))?)?;
     catalog
         .get("resource_types")
         .and_then(Value::as_array)

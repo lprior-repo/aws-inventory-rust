@@ -6,6 +6,7 @@ use serde_json::Value;
 use crate::HarnessError;
 use crate::catalog::archive;
 use crate::catalog::json::Json;
+use crate::catalog::toml_doc;
 use crate::catalog::{ARCHIVE, ARCHIVE_SHA256, CAPABILITY_MATRIX, PARENT_CATALOG};
 use crate::provenance::sha256_hex;
 
@@ -221,7 +222,7 @@ fn parent_type(capability: &str, name: &str, parents: &BTreeMap<String, String>)
 }
 
 fn parent_types(root: &Path) -> Result<BTreeMap<String, String>, HarnessError> {
-    let catalog = read(&root.join(PARENT_CATALOG))?;
+    let catalog = read_toml(&root.join(PARENT_CATALOG))?;
     let mut parents = BTreeMap::new();
     for plan in catalog
         .get("parent_plans")
@@ -237,6 +238,12 @@ fn parent_types(root: &Path) -> Result<BTreeMap<String, String>, HarnessError> {
 
 fn read(path: &Path) -> Result<Json, HarnessError> {
     Json::parse(&std::fs::read_to_string(path)?)
+}
+
+fn read_toml(path: &Path) -> Result<Json, HarnessError> {
+    Ok(Json::from_serde(&toml_doc::parse(
+        &std::fs::read_to_string(path)?,
+    )?))
 }
 
 fn text<'a>(value: &'a Json, key: &str) -> Result<&'a str, HarnessError> {

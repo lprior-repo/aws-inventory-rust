@@ -7,6 +7,7 @@ use zip::ZipArchive;
 
 use crate::HarnessError;
 use crate::catalog::json::Json;
+use crate::catalog::toml_doc;
 use crate::catalog::{ADDITIONS, ARCHIVE, ARCHIVE_SHA256};
 use crate::provenance::file_sha256;
 
@@ -115,8 +116,9 @@ pub fn handlers(schema: &Value) -> Option<Vec<String>> {
 }
 
 pub fn additions(root: &Path) -> Result<Vec<(String, String)>, HarnessError> {
-    let text = std::fs::read_to_string(root.join(ADDITIONS))?;
-    let manifest = Json::parse(&text)?;
+    let manifest = Json::from_serde(&toml_doc::parse(&std::fs::read_to_string(
+        root.join(ADDITIONS),
+    )?)?);
     let families = reviewed_families(&manifest)?;
     let mut total = 0_usize;
     let mut output = Vec::new();

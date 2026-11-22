@@ -355,7 +355,7 @@ The new selection includes eight API Gateway REST types, five API Gateway V2
 types, two AppConfig types, three EKS types, ELBv2 Listener, and two CloudWatch
 Logs types. The complete names and owner-field contracts are in
 [PARENT_COLLECTIONS.md](PARENT_COLLECTIONS.md) and the
-[parent catalog](../catalog/cloudcontrol-parent-resources.json).
+[parent catalog](../catalog/cloudcontrol-parent-resources.toml).
 
 Selecting a child adds its required root exactly once. Related child collectors
 share root discovery, retain independent parent models and continuation cursors,

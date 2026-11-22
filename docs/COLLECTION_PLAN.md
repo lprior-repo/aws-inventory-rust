@@ -11,7 +11,7 @@ The 421 types are configured coverage, not a claim that an AWS account has been 
 
 ## Evidence and selection
 
-[cloudcontrol-resources.json](../catalog/cloudcontrol-resources.json) preserves the 397-type root catalog: the original 200 descriptors and 197 reviewed regional additions. Selection emphasizes compute, networking, storage, databases, messaging, integration, operational metadata, identity references and regional machine-learning services. The additions include SageMaker, Bedrock, DAX, CloudFormation stacks, EMR, SES, Cognito, CodeDeploy and Image Builder. The separate [cloudcontrol-parent-resources.json](../catalog/cloudcontrol-parent-resources.json) adds 21 children of six reviewed root families. Runtime combines the two; schema eligibility alone does not enable a type.
+[cloudcontrol-resources.json](../catalog/cloudcontrol-resources.json) preserves the 397-type root catalog: the original 200 descriptors and 197 reviewed regional additions. Selection emphasizes compute, networking, storage, databases, messaging, integration, operational metadata, identity references and regional machine-learning services. The additions include SageMaker, Bedrock, DAX, CloudFormation stacks, EMR, SES, Cognito, CodeDeploy and Image Builder. The separate [cloudcontrol-parent-resources.toml](../catalog/cloudcontrol-parent-resources.toml) adds 21 children of six reviewed root families. Runtime combines the two; schema eligibility alone does not enable a type.
 
 | Current catalog measure | Count | Evidence |
 | --- | ---: | --- |

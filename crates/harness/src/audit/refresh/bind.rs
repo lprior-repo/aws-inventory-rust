@@ -11,7 +11,7 @@ use crate::provenance::{
 };
 
 use super::super::coverage::apply_verification;
-use super::super::files::read_json_document;
+use super::super::files::{read_json_document, read_toml_document};
 use super::super::persisted::persisted_reads;
 
 mod bindings;
@@ -93,7 +93,7 @@ fn load(root: &Path, requested: &Path, catalog: &Value) -> Result<Run, HarnessEr
 
 fn runtime(root: &Path, catalog: &Value) -> Result<(Value, String, String), HarnessError> {
     let (parent_catalog, parent_catalog_sha) =
-        read_json_document(&root.join("catalog/cloudcontrol-parent-resources.json"))?;
+        read_toml_document(&root.join("catalog/cloudcontrol-parent-resources.toml"))?;
     let runtime_catalog = expected_runtime_catalog(catalog, &parent_catalog)?;
     let runtime_catalog_sha = canonical_sha256(&runtime_catalog);
     Ok((runtime_catalog, runtime_catalog_sha, parent_catalog_sha))

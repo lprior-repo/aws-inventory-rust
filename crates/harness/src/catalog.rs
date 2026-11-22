@@ -6,6 +6,7 @@ mod parent;
 mod rules;
 mod schema;
 mod tables;
+pub(crate) mod toml_doc;
 pub mod universal;
 
 use std::path::Path;
@@ -18,13 +19,13 @@ pub const ARCHIVE: &str = "catalog/upstream/cloudformation-us-east-1-2026-11-12.
 
 pub const ARCHIVE_SHA256: &str = "8226b9cd82f432997fe3918b134ef155245636f35ac37f8006de5abe88dd54a8";
 
-pub const ADDITIONS: &str = "catalog/cloudcontrol-regional-additions.json";
+pub const ADDITIONS: &str = "catalog/cloudcontrol-regional-additions.toml";
 
 pub const ROOT_CATALOG: &str = "catalog/cloudcontrol-resources.json";
 
 pub const CAPABILITY_MATRIX: &str = "catalog/cloudcontrol-capabilities.json";
 
-pub const PARENT_CATALOG: &str = "catalog/cloudcontrol-parent-resources.json";
+pub const PARENT_CATALOG: &str = "catalog/cloudcontrol-parent-resources.toml";
 
 pub const UPSTREAM_MANIFEST: &str = "catalog/upstream/cloudcontrol-upstream.json";
 
@@ -51,7 +52,10 @@ pub fn reproduce(root: &Path) -> Result<Vec<Report>, HarnessError> {
         },
         document(CAPABILITY_MATRIX, &matrix),
         document(UPSTREAM_MANIFEST, &manifest),
-        document(PARENT_CATALOG, &parents),
+        Report {
+            file: PARENT_CATALOG.to_string(),
+            contents: toml_doc::render(&parents.to_serde()?)?,
+        },
     ])
 }
 
@@ -79,13 +83,11 @@ pub fn check(root: &Path) -> Result<(), HarnessError> {
 }
 
 fn verify_parent_binding(root: &Path, root_bytes: &[u8]) -> Result<(), HarnessError> {
-    let parent = Json::parse(
-        std::str::from_utf8(&std::fs::read(root.join(PARENT_CATALOG))?)
-            .map_err(|_| HarnessError::invalid("parent catalog is not UTF-8"))?,
-    )?;
+    let text = std::fs::read_to_string(root.join(PARENT_CATALOG))?;
+    let parent = toml_doc::parse(&text)?;
     let recorded = parent
-        .at(&["evidence", "root_catalog_sha256"])
-        .and_then(Json::as_str);
+        .pointer("/evidence/root_catalog_sha256")
+        .and_then(serde_json::Value::as_str);
     if recorded != Some(sha256_hex(root_bytes).as_str()) {
         return Err(HarnessError::invalid(
             "parent catalog does not bind the committed root catalog digest",
