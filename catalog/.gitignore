@@ -8,3 +8,5 @@ aws-plans.report
 aws-overlay.report
 coverage-denominator.report
 cloudcontrol-parent-candidates.json
+cloudcontrol-universal.json
+iam-read-only-policy.json

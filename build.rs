@@ -2,7 +2,12 @@
 
 use std::path::Path;
 
-const REQUIRED: &[&str] = &["catalog/aws-api.catalog", "catalog/aws-models.report"];
+const REQUIRED: &[&str] = &[
+    "catalog/aws-api.catalog",
+    "catalog/aws-models.report",
+    "catalog/cloudcontrol-universal.json",
+    "catalog/iam-read-only-policy.json",
+];
 
 fn main() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"));

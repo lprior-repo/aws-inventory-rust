@@ -21,6 +21,8 @@ const GENERATED_CATALOG_FILES: &[&str] = &[
     "catalog/aws-overlay.report",
     "catalog/coverage-denominator.report",
     "catalog/cloudcontrol-parent-candidates.json",
+    "catalog/cloudcontrol-universal.json",
+    "catalog/iam-read-only-policy.json",
 ];
 
 #[derive(Debug, Error)]
