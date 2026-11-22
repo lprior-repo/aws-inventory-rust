@@ -5,3 +5,5 @@ catalog/cloudcontrol-capabilities.json filter=lfs diff=lfs merge=lfs -text
 catalog/cloudcontrol-resources.json filter=lfs diff=lfs merge=lfs -text
 catalog/cloudcontrol-universal.json filter=lfs diff=lfs merge=lfs -text
 catalog/upstream/*.zip filter=lfs diff=lfs merge=lfs -text
+docs/cmdb-spec/catalogs/sdk-operation-review-register.jsonl filter=lfs diff=lfs merge=lfs -text
+docs/cmdb-spec/catalogs/current-sdk-source-audit.json filter=lfs diff=lfs merge=lfs -text

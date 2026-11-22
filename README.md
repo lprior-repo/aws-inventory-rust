@@ -185,10 +185,14 @@ before compiling the catalog:
 
 ```bash
 git submodule update --init --depth 1 .local/aws-models
-cargo run -p catalog-tool -- models compile --write
+scripts/bootstrap-catalog.sh
 ```
 
-`catalog/aws-api.catalog` is generated from those models and is not checked in.
+`scripts/bootstrap-catalog.sh` regenerates `catalog/aws-api.catalog` and the
+other generated catalog outputs from those models and verifies them against
+`MANIFEST.sha256`. They are not checked in; builds fail with a pointer to the
+script when they are missing. Large pinned inputs are stored with Git LFS
+(`git lfs install` once per clone).
 
 ```bash
 # Fetch the locked workspace dependencies.
