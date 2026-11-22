@@ -8,7 +8,7 @@
 
 ## Current Moon CI contract
 
-The canonical CI entrypoint is `moon ci`, configured for the root Cargo workspace as one Moon project. CI runs formatting, source/function size guards, pinned AWS model provenance, generated parent/model/field/endpoint/operation-class/collection-plan/overlay/binary-catalog/SQL-view checks, all-target/all-feature workspace `cargo check`, source-only Clippy, all-target/all-feature tests, and the workspace build. Cargo tasks share the `cargo-workspace` mutex and form an explicit dependency chain, so generated checks and compilation cannot overlap. The pinned Rust channel remains `nightly-2026-11-11`; Moon toolchain synchronization is disabled.
+The canonical CI entrypoint is `moon ci`, configured for the root Cargo workspace as one Moon project. CI runs formatting, source/function size guards, pinned AWS model provenance, generated parent/model/field/endpoint/operation-class/collection-plan/overlay/binary-catalog/SQL-view checks, all-target/all-feature workspace `cargo check`, source-only Clippy, all-target/all-feature tests, and the workspace build. Cargo tasks share the `cargo-workspace` mutex and form an explicit dependency chain, so generated checks and compilation cannot overlap. The pinned Rust channel remains `1.100.0 stable`; Moon toolchain synchronization is disabled.
 
 GitHub Actions checks out the AWS model submodule recursively and installs the native Linux packages required by Makepad before `moon ci`. A `v*` tag runs the same CI gate and uploads the resulting Linux `aws-inventory` and `cmdb-ui` debug binaries as build artifacts; it does not deploy or publish a release.
 
@@ -551,7 +551,7 @@ and missing results remain unresolved. The threshold is unchanged: at least
 ## Build identity and reproduction
 
 The collector is `aws-inventory 0.6.0`, built with pinned
-`nightly-2026-11-11`, locked dependencies and one Cargo job. The frozen production
+`1.100.0 stable`, locked dependencies and one Cargo job. The frozen production
 executable SHA-256 is
 `57660e895513595a9247fc22bd9b80c921417de9c2fb32a59f250830d0728adf`;
 its source closure SHA-256 is
@@ -582,7 +582,7 @@ workspace/delivery verifier through it is **not a mutation campaign**.
 
 `moon ci` is the canonical current maintainer gate. Earlier results in this
 document remain historical evidence, not a pass for the current source.
-Moon 2.2.4 and nightly-2026-11-11 are pinned in `.moon/`.
+Moon 2.2.4 and 1.100.0 stable are pinned in `.moon/`.
 
 The single Cargo workspace project runs formatting, source and function
 bounds, model provenance, generated parent candidates, model statistics,

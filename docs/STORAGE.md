@@ -389,8 +389,8 @@ first uncommitted resource and verifies that the entire page and checkpoint roll
 back before a fresh page can succeed.
 
 ```sh
-cargo +nightly-2026-11-11 test -p inventory-engine --test store
-cargo +nightly-2026-11-11 test -p inventory-engine --lib store::cancellation_tests
+cargo test -p inventory-engine --test store
+cargo test -p inventory-engine --lib store::cancellation_tests
 ```
 
 ## Measured performance and its limits

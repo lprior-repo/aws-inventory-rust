@@ -473,7 +473,7 @@ coverage conclusions.
 The native adapter test command for the pinned toolchain is:
 
 ```sh
-cargo -Zprofile-hint-mostly-unused test -p inventory-aws --lib --locked -j 1
+cargo test -p inventory-aws --lib --locked -j 1
 ```
 
 The current executed test counts, commands, results, and build limitations are

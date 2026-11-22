@@ -197,7 +197,7 @@ pub(super) fn tags(
 }
 
 fn tag_state(index: usize, phase: Phase) -> BenchResult<(TagCoverage, Vec<Tag>)> {
-    if phase != Phase::Initial && index % 4 == 0 {
+    if phase != Phase::Initial && index.is_multiple_of(4) {
         return Ok((TagCoverage::Complete, Vec::new()));
     }
     if phase != Phase::Initial && index % 4 == 2 {
