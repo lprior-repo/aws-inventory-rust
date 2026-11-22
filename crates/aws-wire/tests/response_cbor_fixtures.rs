@@ -2,6 +2,8 @@
 mod fixture_catalog;
 #[path = "../src/response/json/fixture_oracle.rs"]
 mod fixture_oracle;
+#[path = "protocol_fixtures/load.rs"]
+mod protocol_fixtures;
 use aws_wire::{
     request::Protocol,
     response::{self, DecodeError, DecodeLimits, ResponseContext},
@@ -9,13 +11,14 @@ use aws_wire::{
 use base64::{Engine, engine::general_purpose::STANDARD};
 use http::{HeaderMap, StatusCode};
 use inventory_core::catalog::Catalog;
+use protocol_fixtures::load;
 use serde_json::Value as Json;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 #[test]
 fn published_rpcv2_cbor_success_responses_decode_to_exact_records() -> TestResult {
-    let fixture: Json =
-        serde_json::from_str(include_str!("fixtures/protocol-tests/rpcv2Cbor.json"))?;
+    let source = load("rpcv2Cbor.json")?;
+    let fixture: Json = serde_json::from_str(&source)?;
     let shapes = field(&fixture, "shapes")?
         .as_object()
         .ok_or("fixture shapes")?;

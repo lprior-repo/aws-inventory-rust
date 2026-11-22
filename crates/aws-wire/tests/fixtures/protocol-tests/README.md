@@ -69,11 +69,20 @@ The unrelated eighth protocol, rpcv2Json, is not converted.
 
 ## Reproduce
 
-From this repository root, with network access and the tools above:
+The seven JSON files are gitignored by `.gitignore` in this directory and are
+not tracked. From the repository root, with network access and the tools above:
 
 ```sh
-sh scripts/protocol-tests/convert.sh
-# Or write only fixtures to a separate directory, from any working directory:
+sh scripts/bootstrap-protocol-tests.sh
+```
+
+The bootstrap runs `scripts/protocol-tests/convert.sh` and installs the outputs
+only if their SHA-256 digests match `scripts/protocol-tests/outputs.sha256`; it
+is idempotent. The converter supports Linux x86-64 and aarch64 only. It exits
+on other platforms, so macOS is unsupported. To write the fixtures to a separate
+directory instead, from any working directory:
+
+```sh
 sh /absolute/path/to/scripts/protocol-tests/convert.sh /tmp/my-protocol-fixtures
 ```
 

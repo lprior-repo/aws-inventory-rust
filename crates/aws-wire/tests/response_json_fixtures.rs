@@ -2,6 +2,8 @@
 mod fixture_catalog;
 #[path = "../src/response/json/fixture_oracle.rs"]
 mod fixture_oracle;
+#[path = "protocol_fixtures/load.rs"]
+mod protocol_fixtures;
 use aws_wire::{
     request::Protocol,
     response::{self, DecodeError, DecodeLimits, ResponseContext, json},
@@ -11,15 +13,16 @@ use http::{
     header::{HeaderName, HeaderValue},
 };
 use inventory_core::catalog::{Catalog, HttpBinding, Target};
+use protocol_fixtures::load;
 use serde_json::Value as Json;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
-struct Suite {
+struct Suite<'a> {
     name: &'static str,
     protocol_id: &'static str,
     protocol: Protocol,
-    fixture: &'static str,
+    fixture: &'a str,
     client_cases: usize,
     server_cases: usize,
 }
@@ -30,7 +33,7 @@ fn published_aws_json_10_response_cases_decode() -> TestResult {
         name: "awsJson1_0",
         protocol_id: "aws.protocols#awsJson1_0",
         protocol: Protocol::AwsJson10,
-        fixture: include_str!("fixtures/protocol-tests/awsJson1_0.json"),
+        fixture: &load("awsJson1_0.json")?,
         client_cases: 25,
         server_cases: 2,
     })
@@ -42,7 +45,7 @@ fn published_aws_json_11_response_cases_decode() -> TestResult {
         name: "awsJson1_1",
         protocol_id: "aws.protocols#awsJson1_1",
         protocol: Protocol::AwsJson11,
-        fixture: include_str!("fixtures/protocol-tests/awsJson1_1.json"),
+        fixture: &load("awsJson1_1.json")?,
         client_cases: 48,
         server_cases: 1,
     })
@@ -54,7 +57,7 @@ fn published_rest_json_1_response_cases_decode() -> TestResult {
         name: "restJson1",
         protocol_id: "aws.protocols#restJson1",
         protocol: Protocol::RestJson1,
-        fixture: include_str!("fixtures/protocol-tests/restJson1.json"),
+        fixture: &load("restJson1.json")?,
         client_cases: 94,
         server_cases: 8,
     })
