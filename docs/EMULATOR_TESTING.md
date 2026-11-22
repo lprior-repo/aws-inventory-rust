@@ -29,7 +29,7 @@ The resource types exercise different providers through the same two Cloud Contr
 The current source and binary pin is the latest stable upstream release,
 v1.0.348. Its downloaded package checksum and detached AWS signature were
 verified during the dependency upgrade. The coordinator's standalone live
-gate passes all six scenarios; see [HARNESS.md](HARNESS.md#current-standalone-live-gate-on-emulator-10348)
+gate passes all six scenarios; see `HARNESS.md`
 for its command and scope. The separate authenticated embedded gate also passes
 both scenarios; its command and compatibility constraint are in the same guide.
 
@@ -42,14 +42,14 @@ both scenarios; its command and compatibility constraint are in the same guide.
 | Package SHA-256 | `279a243ac342922d0d0741e31e2912ddb9a78f6efac34ec25c94086df029d4a8` |
 | AWS publishing primary-key fingerprint | `98BCF336A3BE53B734E967C52E5BF49BD940F624` |
 
-[scripts/emulator/upstream.json](../scripts/emulator/upstream.json) records the
+`scripts/emulator/upstream.json` records the
 exact download URL, signing-key URL, commit and hash. The current installer is
 `cargo run -p inventory-harness -- install <destination>`; it verifies the
 source pin, package hash, detached GPG signature and publishing-key fingerprint.
 The Rust runner checks the binary's reported version and commit before startup.
 
-The retained [package verification](../artifacts/emulator-package-verification-v04.json)
-and [checkout verification](../artifacts/emulator-upstream-checkout-v04.json) are
+The retained package verification
+and checkout verification are
 historical 1.0.336 evidence, not proof for the current pin. Legacy Python runner
 and snapshot commands below retain that older pin and must not be used to claim
 1.0.348 coverage. The original
@@ -63,7 +63,7 @@ Its 292 names were extracted from the new SQLite database and exactly match the
 older set; the complete partition also remains unchanged (1,291 attempted,
 999 succeeded, 292 unsupported, 0 failed). The new fixture includes capture
 provenance and binary/report/database SHA-256 values. See
-[HARNESS.md](HARNESS.md#current-universal-capture-on-emulator-10348) for the
+`HARNESS.md` for the
 command and isolation details. This manual capture alone does not establish
 full-suite or embedded-mode acceptance.
 
@@ -77,7 +77,7 @@ Run these commands from the `aws-inventory-rs` project root. The installer needs
 
 The emulator package can be installed without Python:
 `cargo run -p inventory-harness -- install <destination>` (see
-[HARNESS.md](HARNESS.md)).
+`HARNESS.md`).
 
 ```bash
 cargo run -p inventory-harness -- install /tmp/aws-inventory-emulator
@@ -266,11 +266,11 @@ The retained v0.5 run observed these eleven root catalog types rejected with **`
 | `AWS::Bedrock::KnowledgeBase` | Namespace not registered by this emulator |
 | `AWS::Bedrock::Prompt` | Namespace not registered by this emulator |
 
-The first three were also present in the historical v0.4 selection. The eight Bedrock gaps were added to the acknowledged set only after the initial expanded run demonstrated matching seed errors, Rust list errors and persisted failures, and a source inspection confirmed the absent namespaces. That failed initial run remains preserved. [Gap review](../artifacts/cloudcontrol-gap-review-v05.json) · [Initial expanded run](../artifacts/emulator-v05-first/summary.json)
+The first three were also present in the historical v0.4 selection. The eight Bedrock gaps were added to the acknowledged set only after the initial expanded run demonstrated matching seed errors, Rust list errors and persisted failures, and a source inspection confirmed the absent namespaces. That failed initial run remains preserved.
 
 The current runner explicitly selects all 397 roots for its root case and all 24 children for a separate parent case, retaining refused scopes as errors. Child requests depend on successful prerequisite discovery and can have several list chains per type. An attempted list does not imply a successful list, a populated result or a successful read. Consult the exact run's receipts and assertions; retained root evidence is not a parent-workflow result. The emulator's registration decision is in its [pinned Cloud Control state implementation][cloudcontrol-state].
 
-Thirteen supported generic-provider types are seeded with independently authored architecture properties. [assert_cloud_control.py](../scripts/emulator/assert_cloud_control.py) checks 111 assertions on the Rust-to-SQLite result: thirteen exact resource identities, 30 exact relationships, target kinds, ownership evidence, merged property paths, redaction and observation timestamps. It also rejects a security-group name that resembles an ID, distinguishes ECS VPC Lattice target groups from ELB target groups, and preserves DMS certificates and MSK CA secrets without misclassifying them as ACM certificates. Python seed requests remain excluded from collector coverage.
+Thirteen supported generic-provider types are seeded with independently authored architecture properties. `assert_cloud_control.py` checks 111 assertions on the Rust-to-SQLite result: thirteen exact resource identities, 30 exact relationships, target kinds, ownership evidence, merged property paths, redaction and observation timestamps. It also rejects a security-group name that resembles an ID, distinguishes ECS VPC Lattice target groups from ELB target groups, and preserves DMS certificates and MSK CA secrets without misclassifying them as ACM certificates. Python seed requests remain excluded from collector coverage.
 
 ### Parent models and forced pagination
 
@@ -280,7 +280,7 @@ The pinned emulator applies `ResourceModel` to each examined window, whose defau
 
 `seed_parents.py` uses signed Cloud Control create/status requests for generic models and native Logs `CreateLogGroup` for the two log-group parents. It retains the actual create-returned identifiers and source/fixture digests; it does not patch emulator state. Generic models are synthetic read contracts, not deployable CloudFormation templates. Native Logs ARN identity, including its returned suffix, is checked separately. Python seed calls have distinct fixture labels and cannot satisfy Rust collection coverage.
 
-[assert_parents.py](../scripts/emulator/assert_parents.py) requires exact sets of **161 detailed child observations**, **161 `CHILD_OF` edges** and **24 additional architecture edges**. It compares kinds, owner identities, provider fields, redaction, model provenance, independent scope completion and actual seed identifiers, and rejects cross-parent attachments or fabricated pagination. It does not assume the emulator's filtering is sufficient: the collector independently checks the child's returned model before creating an edge.
+`assert_parents.py` requires exact sets of **161 detailed child observations**, **161 `CHILD_OF` edges** and **24 additional architecture edges**. It compares kinds, owner identities, provider fields, redaction, model provenance, independent scope completion and actual seed identifiers, and rejects cross-parent attachments or fabricated pagination. It does not assume the emulator's filtering is sufficient: the collector independently checks the child's returned model before creating an edge.
 
 A selected child's root is automatically included once. Failed lists, failed required parent reads and invalid context leave incomplete prerequisite evidence; independent successful parents retain their children. Empty child discovery is complete only after an exhaustive successful root enumeration. Aggregate bounds are 10,000 child-model scopes and 100,000 distinct child identifiers per root group, with at most four bindings, 1,024 bytes per value and 8,192 encoded model bytes. Additional dependency levels such as ELBv2 listener rules remain excluded. [Parent workflow details](PARENT_COLLECTIONS.md)
 
@@ -335,7 +335,7 @@ Python seed/probe requests cannot satisfy these Rust operation rows. A branch re
 
 The current `coverage:every_operation_attempted` gate requires an observed request for every expected operation and the provider boundary. The root per-type list gate checks the frozen 397-type selection; the parent case adds exact semantic and prerequisite assertions. Neither gate means every operation succeeded, every provider was implemented, or every resource detail mapping was correct. Request evidence must be read alongside scopes and semantic checks. Official fidelity guidance similarly distinguishes covered test cases from complete service behavior. [Fidelity documentation][fidelity]
 
-Additional gates reject unexplained operation failures and require successful reads for every registered catalog type. [known-gaps.json](../scripts/emulator/known-gaps.json) names the exact expected upstream failure classifications and the eleven unregistered selected types for this pin. Recognizing one of those gaps does not convert its operation outcome into success. A run with all harness checks passing can still contain these explicitly acknowledged incompatibilities.
+Additional gates reject unexplained operation failures and require successful reads for every registered catalog type. `known-gaps.json` names the exact expected upstream failure classifications and the eleven unregistered selected types for this pin. Recognizing one of those gaps does not convert its operation outcome into success. A run with all harness checks passing can still contain these explicitly acknowledged incompatibilities.
 
 ## Known limitations and current evidence
 
@@ -354,7 +354,7 @@ The pinned emulator returns numeric epoch timestamps where Resource Explorer req
 
 The official `GetIndex` response syntax declares strings for both fields, and the emulator's own Smithy model marks them `timestampFormat: date-time`. The pinned Rust SDK `aws-sdk-resourceexplorer2 1.126.0` decodes them using `Format::DateTimeWithOffset`, which requires JSON strings. Botocore accepts the numeric representation and produces Python `datetime` values; that permissiveness let the earlier Python fixture test succeed. [Official GetIndex response][get-index-api] · [Pinned Resource Explorer model][explorer-model]
 
-[emulator-resource-explorer-wire-check.json](../artifacts/emulator-resource-explorer-wire-check.json) records the public fixture JSON, response hash, field types and an actual Rust `discover` result. Rust discovery returns a partial report with Resource Explorer unavailable after HTTP 200 fails SDK decoding. The same raw mismatch occurs in `GetView.View.LastUpdatedAt` and `ListResources.Resources[].LastReportedAt`, including resource-property timestamps. Separate Rust probes must record their own typed outcomes; a successful HTTP response alone is insufficient.
+`emulator-resource-explorer-wire-check.json` records the public fixture JSON, response hash, field types and an actual Rust `discover` result. Rust discovery returns a partial report with Resource Explorer unavailable after HTTP 200 fails SDK decoding. The same raw mismatch occurs in `GetView.View.LastUpdatedAt` and `ListResources.Resources[].LastReportedAt`, including resource-property timestamps. Separate Rust probes must record their own typed outcomes; a successful HTTP response alone is insufficient.
 
 The source points to a shared schema-generation omission: the macro's member schemas do not preserve `timestampFormat`, while the JSON serializer defaults to epoch seconds when no timestamp-format trait reaches it. This is upstream compatibility evidence. Neither emulator source nor response bodies are modified to hide it. [Pinned schema generation][schema-codegen] · [Pinned JSON timestamp serializer][json-codec]
 
@@ -371,7 +371,7 @@ These limits also apply to retry and concurrency claims. Local successful calls 
 
 ## Historical v0.5 integration results
 
-The final [v0.5 collection summary](../artifacts/emulator-v05/summary.json) records **1,188 passing checks and zero failed checks**. Its `execution` object binds the ordinary Rust executable to the descriptor catalog, source/manifest fingerprint, independent architecture fixtures and exact command receipts. The tested CLI SHA-256 is `b00a23d5dea91327a365f31ec5c58e41bb4169146f9f53fcd7c41ed126e8cc80`. [Ordinary binary build receipt](../artifacts/plain-binaries-final-v05.json) · [v0.5 operation/source reconciliation](../artifacts/aws-operation-source-reconciliation-v05.json)
+The final v0.5 collection summary records **1,188 passing checks and zero failed checks**. Its `execution` object binds the ordinary Rust executable to the descriptor catalog, source/manifest fingerprint, independent architecture fixtures and exact command receipts. The tested CLI SHA-256 is `b00a23d5dea91327a365f31ec5c58e41bb4169146f9f53fcd7c41ed126e8cc80`.
 
 The request ledger contains **2,067 requests: 1,072 from Rust collection/probes and 995 from Python fixture setup/startup**. All **73 operation boundaries** were observed: the 72 explicit operation identities and the SDK-owned AssumeRole boundary. Outcomes remain distinct:
 
@@ -382,7 +382,7 @@ The request ledger contains **2,067 requests: 1,072 from Rust collection/probes 
 | `emulator_not_implemented` | 2 | Organizations ListAccounts and ListChildren returned HTTP 501 |
 | `sdk_decode_failure` | 3 | Resource Explorer GetIndex, GetView and ListResources returned HTTP 200 but failed the pinned SDK's timestamp decoding |
 
-There were no unattempted operation identities or unverified probe-success classifications. These counts describe distinct SDK operations, not provider types or complete branch coverage. The 1,188 assertions comprise 984 regional assertions, 53 global assertions, **111 Cloud Control architecture assertions**, and 40 orchestration, provenance, persistence and coverage checks. [Request ledger](../artifacts/emulator-v05/requests.jsonl) · [Typed probe receipts](../artifacts/emulator-v05/branch-probes.json)
+There were no unattempted operation identities or unverified probe-success classifications. These counts describe distinct SDK operations, not provider types or complete branch coverage. The 1,188 assertions comprise 984 regional assertions, 53 global assertions, **111 Cloud Control architecture assertions**, and 40 orchestration, provenance, persistence and coverage checks.
 
 The actual persisted snapshots are:
 
@@ -393,13 +393,13 @@ The actual persisted snapshots are:
 | Cloud Control catalog | Partial | 389 observations across 386 successfully read types | 32 | 775 complete; 11 unsupported type-list scopes failed |
 | Assumed-role IAM | Complete | 13 | 22 | 24 complete, none failed |
 
-Cloud Control attempted all **397 type lists**. The 386 successful types produced 389 observations because four separate SQS queues were read. The 32 stored relationships include the 30 independently authored semantic-fixture edges and two native-bridge edges. All thirteen semantic fixture models passed their identity, target-kind, ownership, property-path, redaction and timestamp checks. These observed cases do not establish that all 945 declared relationship rules have been exercised. The eleven namespace failures remain persisted as `TypeNotFoundException` failures and keep the Cloud Control scan partial. [Database evidence](../artifacts/emulator-v05/database-evidence.json) · [Cloud Control scan receipt](../artifacts/emulator-v05/cloud-control.json) · [Bound type evidence](CLOUDCONTROL_EVIDENCE.md)
+Cloud Control attempted all **397 type lists**. The 386 successful types produced 389 observations because four separate SQS queues were read. The 32 stored relationships include the 30 independently authored semantic-fixture edges and two native-bridge edges. All thirteen semantic fixture models passed their identity, target-kind, ownership, property-path, redaction and timestamp checks. These observed cases do not establish that all 945 declared relationship rules have been exercised. The eleven namespace failures remain persisted as `TypeNotFoundException` failures and keep the Cloud Control scan partial. [Bound type evidence](CLOUDCONTROL_EVIDENCE.md)
 
 The four snapshots are separate scan/source observations and overlap; their counts must not be added into a distinct AWS resource count. Source discovery retains two failure records for its one failed Explorer scope, and both records remain in export. The local assumed-role case proves initial acquisition and subsequent IAM collection; it does not test session-expiration refresh or production cross-account authorization.
 
-Two unmutated executions of all four snapshot cases then passed against the same prepared fixture state. The Config recorder was stopped after the independently checked fixture rows were captured, retaining exact capture timestamps rather than suppressing fields that varied during continuous recording. Both repetitions retained exact normalized resources, edges, scope outcomes and failure evidence. [First oracle receipt](../artifacts/emulator-v05/oracle-baseline-1.json) · [Second oracle receipt](../artifacts/emulator-v05/oracle-baseline-2.json) · [Snapshot receipt](../artifacts/emulator-v05/snapshot-receipt.json)
+Two unmutated executions of all four snapshot cases then passed against the same prepared fixture state. The Config recorder was stopped after the independently checked fixture rows were captured, retaining exact capture timestamps rather than suppressing fields that varied during continuous recording. Both repetitions retained exact normalized resources, edges, scope outcomes and failure evidence.
 
-The subsequent full first-party workspace run passed **503 tests, zero failed and zero ignored**, using `--workspace --exclude inventory-sdk-catalog --all-features --locked --offline -j1 -- --include-ignored --test-threads=1`. This includes the previously ignored emulator and native FalkorDB cases. The dependency-only SDK catalog crate is explicitly excluded; this is not a test result for every compiled AWS SDK package. The health-supervised command completed with exit code 0 and a matching retained log hash. This execution ran normal tests and delivery verification; it was not a mutation-testing campaign. [Workspace receipt](../artifacts/emulator-v05/workspace-live.json) · [Workspace log](../artifacts/emulator-v05/workspace-live.log) · [Outer command receipt](../artifacts/emulator-v05/mutation-command.json)
+The subsequent full first-party workspace run passed **503 tests, zero failed and zero ignored**, using `--workspace --exclude inventory-sdk-catalog --all-features --locked --offline -j1 -- --include-ignored --test-threads=1`. This includes the previously ignored emulator and native FalkorDB cases. The dependency-only SDK catalog crate is explicitly excluded; this is not a test result for every compiled AWS SDK package. The health-supervised command completed with exit code 0 and a matching retained log hash. This execution ran normal tests and delivery verification; it was not a mutation-testing campaign.
 
 ### Exact export and FalkorDB delivery
 
@@ -412,13 +412,13 @@ The delivery verifier compared each snapshot's export payload and provenance aga
 | Cloud Control | 389 | 25 | 32 | 6 | 6 |
 | Assumed-role IAM | 13 | 12 | 22 | 5 | 5 |
 
-Each replay made **zero graph attempts and applied zero batches**, using the persisted acknowledgments. An unresolved target is a referenced identity without a resource observation in that snapshot; it is not counted as a collected AWS resource. The verification receipt also records exact export counts for scopes and failures, comparison hashes, cleanup results and the full live test receipt. [Delivery verification](../artifacts/emulator-v05/delivery-verification.json)
+Each replay made **zero graph attempts and applied zero batches**, using the persisted acknowledgments. An unresolved target is a referenced identity without a resource observation in that snapshot; it is not counted as a collected AWS resource. The verification receipt also records exact export counts for scopes and failures, comparison hashes, cleanup results and the full live test receipt.
 
 The recorded collection includes **93 requests carrying a noninitial pagination cursor across 29 operations**. Offline classifier checks cover 41 pagination models. The native scan observed a peak of 19 in-flight attempts in this fixture run, with zero throttles or retries; those observations cannot establish production AWS quotas, retry behavior under throttling or large-account throughput. The direct upstream calls from the repeated tests happen after the recording proxy closes and are validated by the separate snapshot/test receipts, not added to the original 2,067-request ledger.
 
 ## Historical v0.4 integration results
 
-The final run in [artifacts/emulator-v04](../artifacts/emulator-v04/summary.json) used ordinary Cargo-built executables rebuilt after the final source fixes. [plain-binaries-v04-final.json](../artifacts/plain-binaries-v04-final.json) records their SHA-256 hashes, changed-source hashes and build receipts. The earlier expanded run is preserved separately; its binaries and request totals are not substituted for the final evidence.
+The final run in `artifacts/emulator-v04` used ordinary Cargo-built executables rebuilt after the final source fixes. `plain-binaries-v04-final.json` records their SHA-256 hashes, changed-source hashes and build receipts. The earlier expanded run is preserved separately; its binaries and request totals are not substituted for the final evidence.
 
 The final ledger contains **1,276 requests: 686 from Rust collection/probes and 590 from Python fixture setup/startup**. Only the Rust requests contribute to the **73 observed operation identities**, covering all 72 explicit operations plus the SDK-owned AssumeRole boundary. Their outcomes are:
 
@@ -429,9 +429,9 @@ The final ledger contains **1,276 requests: 686 from Rust collection/probes and 
 | `emulator_not_implemented` | 2 | Organizations ListAccounts and ListChildren returned HTTP 501 |
 | `sdk_decode_failure` | 3 | Resource Explorer GetIndex, GetView and ListResources returned HTTP 200 but failed typed SDK decoding |
 
-No operation was left unattempted or classified as an unverified probe response. The three Resource Explorer error receipts retain `sdk_error_kind: success_response_rejected`, HTTP 200 and the JSON string-type error chain. The two successful Explorer probes passed explicit fixture assertions. [Final branch receipts](../artifacts/emulator-v04/branch-probes.json)
+No operation was left unattempted or classified as an unverified probe response. The three Resource Explorer error receipts retain `sdk_error_kind: success_response_rejected`, HTTP 200 and the JSON string-type error chain. The two successful Explorer probes passed explicit fixture assertions.
 
-The **1,069 passing checks** consist of **53 global fixture assertions, 984 regional fixture assertions and 32 orchestration, storage, graph-export and coverage checks**. They include repeated checks of individual resource identities, account/region attribution and relationships; they are not 1,069 distinct AWS API tests. Known incompatibilities remain failed operation outcomes even though the exact expected-gap checks pass. [Global assertions](../artifacts/emulator-v04/global-assertions.json) · [Regional assertions](../artifacts/emulator-v04/regional-assertions.json)
+The **1,069 passing checks** consist of **53 global fixture assertions, 984 regional fixture assertions and 32 orchestration, storage, graph-export and coverage checks**. They include repeated checks of individual resource identities, account/region attribution and relationships; they are not 1,069 distinct AWS API tests. Known incompatibilities remain failed operation outcomes even though the exact expected-gap checks pass.
 
 The actual persisted scan results are:
 
@@ -442,17 +442,17 @@ The actual persisted scan results are:
 | Cloud Control catalog | Partial | 200 observations across 197 successfully read types | 2 | 397 complete, three unsupported type-list scopes failed |
 | Assumed-role IAM inventory | Complete | 13 | 22 | 24 complete, none failed |
 
-These are separate immutable scans, and their row counts overlap; adding them does not give a distinct AWS resource count. SQLite integrity was `ok`, and all four scans were finalized. Discovery retained one organization root and two OUs while preserving incomplete account/membership coverage. Zero returned accounts is not treated as evidence that the organization has no accounts. [Database evidence](../artifacts/emulator-v04/database-evidence.json) · [Discovery report](../artifacts/emulator-v04/discovery.json)
+These are separate immutable scans, and their row counts overlap; adding them does not give a distinct AWS resource count. SQLite integrity was `ok`, and all four scans were finalized. Discovery retained one organization root and two OUs while preserving incomplete account/membership coverage. Zero returned accounts is not treated as evidence that the organization has no accounts.
 
-Cloud Control issued a list request for all **200 types**. Exactly **197 types** received successful list and read responses. The three namespace failures in that selection—S3Express DirectoryBucket, S3Tables TableBucket and Scheduler ScheduleGroup—returned HTTP 400 `TypeNotFoundException` on list and had no subsequent read. The generic-property-store limitations still apply to the 197 successful types. Fixture setup also retained an HTTP 501 for `AcceptVpcPeeringConnection`; the pending peering resource was collected without claiming that acceptance succeeded. [Seed outcomes](../artifacts/emulator-v04/seed-results.json)
+Cloud Control issued a list request for all **200 types**. Exactly **197 types** received successful list and read responses. The three namespace failures in that selection—S3Express DirectoryBucket, S3Tables TableBucket and Scheduler ScheduleGroup—returned HTTP 400 `TypeNotFoundException` on list and had no subsequent read. The generic-property-store limitations still apply to the 197 successful types. Fixture setup also retained an HTTP 501 for `AcceptVpcPeeringConnection`; the pending peering resource was collected without claiming that acceptance succeeded.
 
 The runtime ledger contains **93 noninitial-cursor requests across 29 distinct operations**. The offline classifier checks 41 pagination mappings; the remaining mappings did not all encounter a continuation page in this fixture run. Request counts, local elapsed time and observed in-flight work do not establish live AWS limits, large-account throughput or complete pagination-branch coverage.
 
-The native architecture report and inventory report completed. Graph export wrote the same **150 resources and 340 relationships in six batches** to [native-graph.jsonl](../artifacts/emulator-v04/native-graph.jsonl). This validates projection generation; this harness did not execute those commands against a FalkorDB server. The assumed-role scenario verifies initial credential acquisition and a subsequent IAM scan, not session-expiration refresh or live cross-account authorization. [Graph export receipt](../artifacts/emulator-v04/graph-export.json)
+The native architecture report and inventory report completed. Graph export wrote the same **150 resources and 340 relationships in six batches** to `native-graph.jsonl`. This validates projection generation; this harness did not execute those commands against a FalkorDB server. The assumed-role scenario verifies initial credential acquisition and a subsequent IAM scan, not session-expiration refresh or live cross-account authorization.
 
 ## Query the bundled fixture databases
 
-The retained [v0.5 inventory.sqlite](../artifacts/emulator-v05/inventory.sqlite), exactly 4 MiB, and [v0.4 inventory.sqlite](../artifacts/emulator-v04/inventory.sqlite), approximately 2.9 MB, contain generated emulator fixtures and finalized scan evidence, not live AWS inventory or AWS credentials. Their historical JSONL exports and native JSON export are also retained. They do not contain the new parent-workflow run. Current release artifacts and package contents are listed separately in [VERIFICATION.md](VERIFICATION.md).
+The retained v0.5 inventory.sqlite, exactly 4 MiB, and v0.4 inventory.sqlite, approximately 2.9 MB, contain generated emulator fixtures and finalized scan evidence, not live AWS inventory or AWS credentials. Their historical JSONL exports and native JSON export are also retained. They do not contain the new parent-workflow run. Current release artifacts and package contents are listed separately in [VERIFICATION.md](VERIFICATION.md).
 
 From the project root, copy the historical database before querying it with the current CLI. Store initialization can upgrade an older schema even when the subsequent SQL query is read-only; the copy preserves the original evidence bytes.
 
@@ -477,12 +477,12 @@ This local query lists the four finalized scans and their persisted row counts. 
 
 | Evidence | Verified result |
 | --- | --- |
-| [Standalone discovery seed check](../artifacts/emulator-discovery-seed-check.json) | 47 fixture calls succeeded; 16 assertions passed; Config returned six rows over six pages and Explorer Search returned seven rows over seven pages; both Organizations 501 responses retained. This was a Python fixture validation, not Rust collector coverage. |
+| Standalone discovery seed check | 47 fixture calls succeeded; 16 assertions passed; Config returned six rows over six pages and Explorer Search returned seven rows over seven pages; both Organizations 501 responses retained. This was a Python fixture validation, not Rust collector coverage. |
 | First v0.4 full run; historical receipt not included in this checkout | Failed TLS interoperability before any Rust operation reached the recorder: 601 total requests, zero observed Rust operations, 16 passing and 11 failing run checks. Rust rejected the original proxy certificate with `CaUsedAsEndEntity`. This is failed setup evidence. |
 | Second v0.4 full run; historical receipt not included in this checkout | 1,298 recorded requests; 69 observed Rust operation identities; 26 passing checks and one failing coverage check. Four Resource Explorer operations were not reached because automatic source discovery stopped at the `GetIndex` SDK decode failure. This is incomplete operation coverage. |
 | Expanded v0.4 run before the final rebuild; historical receipt not included in this checkout | 1,290 requests; 73 Rust operation identities; 1,069 passing checks and zero failed checks, with the same five acknowledged operation incompatibilities. The final rebuild was rerun in the distinct `emulator-v04` directory. |
-| [Initial v0.5 expanded run](../artifacts/emulator-v05-first/summary.json) | 397 type-list attempts; 386 successfully read types; 1,161 passing checks and one failing coverage check. Eight added Bedrock namespaces were unsupported. Their gaps were accepted only after source/error review; this receipt was not used to bind the final capability matrix. |
-| [Resource Explorer wire reproduction](../artifacts/emulator-resource-explorer-wire-check.json) | Five diagnostic assertions passed: numeric timestamps observed in GetIndex/GetView/ListResources, Botocore accepted them, and the actual Rust discovery path returned the expected partial/unavailable result. |
+| Initial v0.5 expanded run | 397 type-list attempts; 386 successfully read types; 1,161 passing checks and one failing coverage check. Eight added Bedrock namespaces were unsupported. Their gaps were accepted only after source/error review; this receipt was not used to bind the final capability matrix. |
+| Resource Explorer wire reproduction | Five diagnostic assertions passed: numeric timestamps observed in GetIndex/GetView/ListResources, Botocore accepted them, and the actual Rust discovery path returned the expected partial/unavailable result. |
 
 The second summary's `collector_success` label is based on HTTP status and includes `GetIndex` despite its typed decode failure. The expanded and final harnesses add `sdk_decode_failure` overrides from the explicit Rust probes; the earlier evidence is retained without rewriting its historical classifications. The final run achieves operation-attempt coverage while retaining the demonstrated endpoint incompatibilities.
 
@@ -498,7 +498,7 @@ cargo test -p inventory-harness
 
 These tests are offline; they do not validate TLS handsha…
 
-The retained **v0.5** combined emulator Python suite passed **29 tests**, including those 19 recorder tests, seven independent Cloud Control assertion negative controls and three subprocess-supervision regressions. Its separate suites passed thirteen schema/enrichment tests and twelve coverage-binding negative controls. The latter reject stale catalog/source/fixture/binary evidence, duplicate matrix rows and HTTP-success records without matching typed persisted reads. These historical counts do not include the new parent oracle or graph installer checks. [Combined Python receipt](../artifacts/emulator-python-tests-v05.json) · [Schema receipt](../artifacts/cloudcontrol-schema-tests-v05.json) · [Coverage-binding receipt](../artifacts/cloudcontrol-coverage-tests-v05.json)
+The retained **v0.5** combined emulator Python suite passed **29 tests**, including those 19 recorder tests, seven independent Cloud Control assertion negative controls and three subprocess-supervision regressions. Its separate suites passed thirteen schema/enrichment tests and twelve coverage-binding negative controls. The latter reject stale catalog/source/fixture/binary evidence, duplicate matrix rows and HTTP-success records without matching typed persisted reads. These historical counts do not include the new parent oracle or graph installer checks.
 
 Run the parent fixture/schema checks independently:
 
@@ -519,7 +519,7 @@ The separate [tests/sdk-wire](../tests/sdk-wire/README.md) crate has **six passi
 
 The tests accept the modeled string representations and reject every numeric variant despite HTTP 200. The successful-response fixtures are constructed from the official API shapes; they are not captured successful emulator responses. The replay client makes no network calls, and no emulator body or SDK parser is changed. These protocol tests explain the integration incompatibility without turning the failing emulator operations into passes. [GetIndex response][get-index-api] · [GetView response][get-view-api] · [ListResources response][list-resources-api]
 
-The crate has its own lockfile and target directory so its Smithy test-only features do not rebuild the main collector's EC2 dependency graph. The [test README](../tests/sdk-wire/README.md) gives reproducible commands and bounds. [sdk-wire-tests-v04.log](../artifacts/sdk-wire-tests-v04.log) records all six passing tests; [sdk-wire-clippy-v04.log](../artifacts/sdk-wire-clippy-v04.log) records strict Clippy success with warnings denied.
+The crate has its own lockfile and target directory so its Smithy test-only features do not rebuild the main collector's EC2 dependency graph. The [test README](../tests/sdk-wire/README.md) gives reproducible commands and bounds. `sdk-wire-tests-v04.log` records all six passing tests; `sdk-wire-clippy-v04.log` records strict Clippy success with warnings denied.
 
 The new parent collector additionally has a bounded in-process HTTP fixture in `crates/aws/src/cloud_control/parents/wire_tests.rs`. It invokes the production Cloud Control SDK path, checks independent parent models and cursors over empty/nonempty pages, injects an initial throttle and compares executor attempt/retry counters. Its collector and server share one owned future with a fixed deadline. This is an implemented test contract; the retained Resource Explorer protocol receipt above does not certify this new test. See current verification artifacts for its execution status.
 

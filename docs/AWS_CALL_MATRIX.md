@@ -10,7 +10,7 @@
 This document preserves the historical collector, discovery and credential-provider call matrix. The frozen baseline recorded **79 distinct explicit SDK operations at 80 production `.send()` callsites**. A reviewed additive overlay recorded **10 further operations at 11 callsites**: five KMS operations at five callsites and five Step Functions operations at six callsites. The baseline plus overlay recorded **89 distinct operations at 91 production callsites across 19 services** and **39 native resource kinds**, backed by 74 operations. The overlay data was removed in M1.7; these counts are historical and must not be treated as the current SDK inventory. Typed adapters remain the M2.6 differential proof target.
 
 The SQS and SNS adapter rows bind native-phase evidence from
-[`artifacts/emulator-sns-native/summary.json`](../artifacts/emulator-sns-native/summary.json).
+`artifacts/emulator-sns-native/summary.json`.
 That baseline completed every native collector and regional assertion; its only
 failed checks were the separately owned parent Cloud Control `AWS::EKS::Addon`
 page-cap assertions (100 addons at page size one exceeds the 100-page budget).
@@ -18,8 +18,7 @@ Historical v0.4 counts and outcomes below remain scoped to that run.
 
 The catalog preserves the source and executable hashes of the earlier endpoint
 audit. Later property tests and the explicit retry-origin correction are
-reconciled in
-[`aws-operation-source-reconciliation-v04.json`](../artifacts/aws-operation-source-reconciliation-v04.json).
+reconciled in `artifacts/aws-operation-source-reconciliation-v04.json`.
 Every explicit SDK operation and its recorded callsite position remains the
 same. That artifact records current source hashes and a fresh emulator baseline
 with 1,071 passing checks and the same 68-success/five-failure operation split;
@@ -366,7 +365,7 @@ The extraction counted every production empty-argument `.send()` in `crates/aws/
 
 ## Observed emulator run: final v0.4
 
-The final [summary](../artifacts/emulator-v04/summary.json) and [request ledger](../artifacts/emulator-v04/requests.jsonl) contain **1,276 recorded requests: 686 from Rust collectors or explicit Rust SDK probes, and 590 excluded fixture/startup requests**. The Rust requests match exactly the 72 implemented explicit operations plus the separately identified `AssumeRole` provider boundary. All 73 boundaries were attempted; emulator compatibility is **partial**.
+The final summary and request ledger contain **1,276 recorded requests: 686 from Rust collectors or explicit Rust SDK probes, and 590 excluded fixture/startup requests**. The Rust requests match exactly the 72 implemented explicit operations plus the separately identified `AssumeRole` provider boundary. All 73 boundaries were attempted; emulator compatibility is **partial**.
 
 | Observed outcome | Boundaries | Meaning |
 | --- | ---: | --- |
@@ -377,13 +376,13 @@ The final [summary](../artifacts/emulator-v04/summary.json) and [request ledger]
 | SDK rejected an HTTP 200 response | 3 | Resource Explorer `GetIndex`, `GetView`, and `ListResources` fail typed decoding |
 | **Total attempted** | **73** | **68 successful boundaries and five failures** |
 
-The raw report combines the first two rows as 64 `collector_success` outcomes and explicitly flags the provider entry. The [Rust probe receipt](../artifacts/emulator-v04/branch-probes.json) supplies typed and semantic success assertions for the four successful probe operations; a recorded HTTP 200 alone cannot establish probe success. The same receipt preserves the three Resource Explorer error chains. The emulator emits numeric timestamps where the pinned Rust SDK expects date-time strings; those failures are not converted to passes. See [emulator testing](EMULATOR_TESTING.md) for the independent wire diagnosis and separately labelled offline protocol fixtures.
+The raw report combines the first two rows as 64 `collector_success` outcomes and explicitly flags the provider entry. The Rust probe receipt supplies typed and semantic success assertions for the four successful probe operations; a recorded HTTP 200 alone cannot establish probe success. The same receipt preserves the three Resource Explorer error chains. The emulator emits numeric timestamps where the pinned Rust SDK expects date-time strings; those failures are not converted to passes. See [emulator testing](EMULATOR_TESTING.md) for the independent wire diagnosis and separately labelled offline protocol fixtures.
 
-The [native result](../artifacts/emulator-v04/native.json) is complete: **212 successful accounted API attempts, 150 resources, 340 relationships, and 131 completed scopes**. The [SQLite evidence](../artifacts/emulator-v04/database-evidence.json), [53 global assertions](../artifacts/emulator-v04/global-assertions.json), and [984 regional assertions](../artifacts/emulator-v04/regional-assertions.json) validate actual collected properties, identities, edges, and omission rules. Together with 32 harness checks, the report has **1,069 passing checks and zero failed checks**. Some checks explicitly validate declared failure outcomes; this count does not mean every AWS operation succeeded.
+The native result is complete: **212 successful accounted API attempts, 150 resources, 340 relationships, and 131 completed scopes**. The SQLite evidence, 53 global assertions, and 984 regional assertions validate actual collected properties, identities, edges, and omission rules. Together with 32 harness checks, the report has **1,069 passing checks and zero failed checks**. Some checks explicitly validate declared failure outcomes; this count does not mean every AWS operation succeeded.
 
 All 200 catalog types received a Rust Cloud Control list request; **197 types have successful detail reads**. `AWS::S3Express::DirectoryBucket`, `AWS::S3Tables::TableBucket`, and `AWS::Scheduler::ScheduleGroup` remain unsupported provider types. Cloud Control and source-discovery scans retain their partial status and scoped failures. The request ledger records **93 noninitial-cursor requests across 29 operations**; these observations do not establish live AWS quotas, authorization, regional isolation, or every possible continuation branch.
 
-The JSON `emulator_run` section records SHA-256 hashes for the final command/data artifacts, source helpers, harness, lockfile, and the ordinary Rust binaries used for the final run. The [final ordinary-build provenance](../artifacts/plain-binaries-v04-final.json) independently records the same binary hashes and final source identities. Every `emulator_coverage` entry includes exact phases, attempt and HTTP-status counts, pagination observations, result-receipt paths, and any typed probe receipt. The explicit source snapshot includes refreshed hashes and actual method/send line locations.
+The JSON `emulator_run` section records SHA-256 hashes for the final command/data artifacts, source helpers, harness, lockfile, and the ordinary Rust binaries used for the final run. The final ordinary-build provenance independently records the same binary hashes and final source identities. Every `emulator_coverage` entry includes exact phases, attempt and HTTP-status counts, pagination observations, result-receipt paths, and any typed probe receipt. The explicit source snapshot includes refreshed hashes and actual method/send line locations.
 
 ### Per-operation evidence
 
@@ -470,4 +469,4 @@ Execution labels distinguish production collector requests from direct SDK probe
 | --- | --- | --- | ---: | --- |
 | `sts.assume_role` | SDK credential provider; outside `ApiExecutor` | `collector_success` | 1 | 200 x 1 |
 
-The provider request occurs only in the `rust:assumed-role` phase. The [assumed-role result](../artifacts/emulator-v04/assumed-role.json) is complete with 38 accounted collector attempts; its additional provider request is intentionally absent from those `ApiExecutor` metrics. The recorder stores no returned credentials, Authorization headers, request bodies, or response bodies.
+The provider request occurs only in the `rust:assumed-role` phase. The assumed-role result is complete with 38 accounted collector attempts; its additional provider request is intentionally absent from those `ApiExecutor` metrics. The recorder stores no returned credentials, Authorization headers, request bodies, or response bodies.

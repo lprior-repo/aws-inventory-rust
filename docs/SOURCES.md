@@ -2,8 +2,7 @@
 
 > Status: Kept and extended. Attribution and licensing stay current obligations.
 > The pinned AWS API model catalog is the service and operation metadata source;
-> typed-SDK references below describe the baseline adapters. Links into
-> `artifacts/` point to an ignored local directory and do not resolve in a clone.
+> typed-SDK references below describe the baseline adapters.
 > See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
 
 Research and SDK snapshot date: November 12, 2026. Historical SDK source-audit
@@ -143,7 +142,7 @@ fabricated DNS-target edge. A regression test checks that behavior.
 
 The emulator target is the full upstream source checkout at commit
 `7461ab1bbe540afe8063ce03ee5477ebb649df48`, paired with the official Linux amd64
-binary **1.0.348**. [upstream.json](../scripts/emulator/upstream.json) retains the
+binary **1.0.348**. The upstream pin record retains the
 package URL, checksum, publishing-key fingerprint and source pin. The installer
 verifies the detached package signature and expected signer; the runner checks
 the binary's reported version and commit.
@@ -152,11 +151,11 @@ The new package's SHA-256 and AWS detached signature were verified on
 The receipts, source links and operation outcomes below describe the historical
 1.0.336 baseline and have not been relabelled as current-release evidence.
 
-The retained [package proof](../artifacts/emulator-package-verification-v04.json)
+The retained package proof
 contains the matching checksum and exact machine-readable GPG signer evidence.
-The [checkout proof](../artifacts/emulator-upstream-checkout-v04.json) records a
+The checkout proof records a
 clean, non-shallow source tree with 30,585 history commits. The final ordinary
-Rust builds have separate [binary/source hashes and build receipts](../artifacts/plain-binaries-v04-final.json);
+Rust builds have separate binary/source hashes and build receipts;
 the emulator source and binary are unchanged upstream artifacts.
 
 | Primary source | Contract used |
@@ -185,12 +184,12 @@ and
 [ListChildren](https://github.com/aws/aws-emulator/blob/f515581569b98a9dcbd2e686c12f912fdce51bba/services/service-com-amazonaws-organizations-awsorganizationsv20161128/src/ops/list_children.rs).
 The observed Resource Explorer responses contain numeric timestamps where the
 official API, upstream Smithy model and pinned Rust SDK require strings.
-[The signed-TLS reproduction](../artifacts/emulator-resource-explorer-wire-check.json)
+The signed-TLS reproduction
 retains the actual wire-type and Rust failure evidence. Source analysis and the
 exact serializer/model links are in the test guide. Acknowledged gaps remain
 failed operation outcomes in the harness.
 
-The [final rebuilt-binary run](../artifacts/emulator-v04/summary.json) recorded
+The final rebuilt-binary run recorded
 **1,276 requests**, of which **686** were Rust collector/probe requests and **590**
 were excluded Python setup/startup traffic. All **73 operation identities** were
 attempted: 64 had production HTTP success, four had verified separate Rust probe
@@ -206,7 +205,7 @@ list and read responses, and the three unregistered namespaces remained failed
 scopes. The final ledger contains 93 noninitial-cursor requests across 29
 operations, separate from the 41 offline pagination mappings. These are results
 from the seeded local emulator, not live AWS coverage, quota or performance
-claims. The [earlier expanded run](../artifacts/emulator-v04-expanded/summary.json)
+claims. The earlier expanded run
 is retained separately from the final rebuilt-binary evidence.
 
 Two offline test suites supplement, but do not replace, integration results:
@@ -214,11 +213,10 @@ Two offline test suites supplement, but do not replace, integration results:
 - **19 recorder/receipt tests** independently serialize all 72 operation mappings
   and 41 pagination mappings, enforce evidence/endpoint boundaries, and prevent
   HTTP success or Python fixture traffic from being mistaken for a verified Rust
-  probe. [Passing log](../artifacts/emulator-recorder-receipts.log).
+  probe.
 - **Six Rust SDK protocol tests** accept three modeled ISO 8601 responses and
   independently reject all five numeric timestamp locations across GetIndex,
   GetView and ListResources. They use constructed in-memory fixtures, the
   unchanged pinned SDK and its official replay transport, with no AWS or emulator
   connection. [Test source and procedure](../tests/sdk-wire/README.md),
-  [passing tests](../artifacts/sdk-wire-tests-v04.log),
-  [strict Clippy](../artifacts/sdk-wire-clippy-v04.log).
+  passing tests and strict Clippy.

@@ -35,13 +35,13 @@ fn emulator_header(emulator: &Json) -> Result<Vec<String>, HarnessError> {
     let command_file = text(emulator, "command_file")?;
     let database_file = text(emulator, "database_file")?;
     Ok(vec![
-        format!("- Summary: [{summary_file}](../{summary_file})."),
+        format!("- Summary: `{summary_file}`."),
         format!(
             "- Summary SHA-256: `{}`.",
             text(emulator, "summary_sha256")?
         ),
-        format!("- Cloud Control scan receipt: [{command_file}](../{command_file})."),
-        format!("- Database: [{database_file}](../{database_file})."),
+        format!("- Cloud Control scan receipt: `{command_file}`."),
+        format!("- Database: `{database_file}`."),
         "- Python fixture creation is excluded from operation coverage. A successful HTTP response"
             .to_owned(),
         "  alone does not establish a successful typed, stored read.".to_owned(),

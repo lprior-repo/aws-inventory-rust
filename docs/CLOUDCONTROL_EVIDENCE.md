@@ -24,10 +24,10 @@ relationship rules, and observed emulator reads are separate evidence dimensions
 
 ## Executed evidence
 
-- Summary: [artifacts/emulator-v05/summary.json](../artifacts/emulator-v05/summary.json).
+- Summary: `artifacts/emulator-v05/summary.json`.
 - Summary SHA-256: `c13e384c51e1318e79d46ffa63be189afa8ad3630def523cd45a23718289fba8`.
-- Cloud Control scan receipt: [artifacts/emulator-v05/cloud-control.json](../artifacts/emulator-v05/cloud-control.json).
-- Database: [artifacts/emulator-v05/inventory.sqlite](../artifacts/emulator-v05/inventory.sqlite).
+- Cloud Control scan receipt: `artifacts/emulator-v05/cloud-control.json`.
+- Database: `artifacts/emulator-v05/inventory.sqlite`.
 - Python fixture creation is excluded from operation coverage. A successful HTTP response
   alone does not establish a successful typed, stored read.
 

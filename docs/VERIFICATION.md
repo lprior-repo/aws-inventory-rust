@@ -2,7 +2,7 @@
 
 > Status: Historical baseline evidence for collector version 0.6.0.
 > The counts below precede the dependency refresh. Current package gates are
-> recorded in [ROADMAP](ROADMAP.md), and current runtime gates in [HARNESS](HARNESS.md).
+> recorded in [ROADMAP](ROADMAP.md), and current runtime gates in `HARNESS.md`.
 > Links into `artifacts/` point to an ignored local directory and do not resolve
 > in a clone. See [VISION](VISION.md) and [ROADMAP](ROADMAP.md).
 
@@ -309,35 +309,35 @@ collection are bound by
 **Universal AWS coverage and the whole-project 95% mutation target remain open.**
 A successful test of an expected unsupported endpoint preserves that endpoint's
 failure; it does not make the endpoint supported. Earlier results remain in
-[VERIFICATION_V05.md](VERIFICATION_V05.md) and
-[VERIFICATION_V04.md](VERIFICATION_V04.md).
+`VERIFICATION_V05.md` and
+`VERIFICATION_V04.md`.
 
 ## Executed result index
 
-The machine-readable [verification-v06.json](../artifacts/verification-v06.json)
+The machine-readable `artifacts/verification-v06.json`
 records the final scope, executable/source identities, case results and evidence
 hashes. The complete owned fixture lifetime exited 0 in **330.158 seconds**.
 
 | Check | Observed result | Evidence |
 | --- | --- | --- |
-| Ordinary Rust workspace | 520 passed, 0 failed, 10 ignored; 28 reported suites; 106.979 seconds including command overhead | [Receipt](../artifacts/verification-v06/workspace-v06-retry3.json), [log](../artifacts/verification-v06/workspace-v06-retry3.log) |
-| Complete live Rust workspace | 530 passed, 0 failed, 0 ignored; 28 reported suites; 176.813 seconds | [Receipt](../artifacts/emulator-v06-complete/workspace-live.json), [log](../artifacts/emulator-v06-complete/workspace-live.log) |
-| Exact SQLite → JSONL → FalkorDB verification | All five snapshots passed; all projected properties, identities and cardinalities match; replay made zero attempts; cleanup passed | [Delivery report](../artifacts/emulator-v06-complete/delivery-verification.json), [enclosing command](../artifacts/emulator-v06-complete/mutation-command.json), [closed fixture lifetime](../artifacts/verification-v06/emulator-v06-complete.json) |
-| Portable retained exports | All five JSONL files byte-match the live-verified artifacts; all five JSON documents contain the same ordered record streams | [Export receipts](../artifacts/emulator-v06-complete/portable-export-receipts.json), [command receipt](../artifacts/verification-v06/portable-exports-v06.json) |
-| Production build and Clippy | Exit 0; official Clippy driver in Cargo build mode, libraries/binaries/examples, warnings denied; 120.605 seconds | [Receipt](../artifacts/verification-v06/clippy-build-mode-v06-first.json), [binary identities](../artifacts/verification-v06/frozen-binaries.json) |
-| SDK auditor Clippy | Exit 0; ordinary `cargo clippy` for the SDK catalog audit example, warnings denied | [Receipt](../artifacts/verification-v06/sdk-auditor-clippy-v06.json) |
-| Rust formatting | Exit 0 | [Receipt](../artifacts/verification-v06/fmt-check-final.json) |
-| Generated SQLite views | Exit 0; frozen migrations 003/005 preserved and additive migration 006 checked | [Receipt](../artifacts/verification-v06/sql-views-check-final.json) |
-| Parent catalog regeneration | Exit 0; selected schema hashes and generated descriptors match | [Receipt](../artifacts/verification-v06/parent-catalog-check-final.json) |
-| Schema helper tests | 19 passed | [Receipt](../artifacts/verification-v06/schema-helper-tests-final.json) |
-| Catalog/auditor helper tests | 38 passed | [Receipt](../artifacts/verification-v06/catalog-helper-tests-final.json) |
-| Emulator helper tests, including supervision regressions | 125 passed | [Receipt](../artifacts/verification-v06/emulator-helper-tests-v06-supervision-final.json) |
-| Mutation acceptance/supervisor helper tests | 126 passed; this is not a Rust mutation score | [Receipt](../artifacts/verification-v06/mutation-helper-tests-final.json) |
-| Locked SDK dependency fetch and archive verification | 437 archives verified, totaling 241,799,148 bytes | [Fetch](../artifacts/verification-v06/sdk-fetch-v06.json), [verification](../artifacts/verification-v06/sdk-cache-verification-v06.json) |
-| Fresh Rust SDK source audit | 437 SDKs, 19,617 operation modules, 3,779 paginator modules and 407 waiter modules | [Audit](../artifacts/sdk-capabilities-v06.json), [command receipt](../artifacts/verification-v06/sdk-source-audit-v06.json) |
-| Populated official emulator collection | 2,522 assertions passed, zero assertion failures; expected partial outcomes retained | [Summary](../artifacts/emulator-v06-complete/summary.json) |
-| Repeated snapshot oracle | Two successful runs, each with all five cases passing | [First](../artifacts/emulator-v06-complete/oracle-baseline-1.json), [second](../artifacts/emulator-v06-complete/oracle-baseline-2.json) |
-| Current mutation candidate enumeration | 2,959 candidates; no candidate executed by this command | [Manifest](../artifacts/mutation/enumeration-v06/manifest.json), [receipt](../artifacts/verification-v06/mutation-enumeration-v06.json) |
+| Ordinary Rust workspace | 520 passed, 0 failed, 10 ignored; 28 reported suites; 106.979 seconds including command overhead | Receipt (`artifacts/verification-v06/workspace-v06-retry3.json`), log (`artifacts/verification-v06/workspace-v06-retry3.log`) |
+| Complete live Rust workspace | 530 passed, 0 failed, 0 ignored; 28 reported suites; 176.813 seconds | Receipt (`artifacts/emulator-v06-complete/workspace-live.json`), log (`artifacts/emulator-v06-complete/workspace-live.log`) |
+| Exact SQLite → JSONL → FalkorDB verification | All five snapshots passed; all projected properties, identities and cardinalities match; replay made zero attempts; cleanup passed | Delivery report (`artifacts/emulator-v06-complete/delivery-verification.json`), enclosing command (`artifacts/emulator-v06-complete/mutation-command.json`), closed fixture lifetime (`artifacts/verification-v06/emulator-v06-complete.json`) |
+| Portable retained exports | All five JSONL files byte-match the live-verified artifacts; all five JSON documents contain the same ordered record streams | Export receipts (`artifacts/emulator-v06-complete/portable-export-receipts.json`), command receipt (`artifacts/verification-v06/portable-exports-v06.json`) |
+| Production build and Clippy | Exit 0; official Clippy driver in Cargo build mode, libraries/binaries/examples, warnings denied; 120.605 seconds | Receipt (`artifacts/verification-v06/clippy-build-mode-v06-first.json`), binary identities (`artifacts/verification-v06/frozen-binaries.json`) |
+| SDK auditor Clippy | Exit 0; ordinary `cargo clippy` for the SDK catalog audit example, warnings denied | Receipt (`artifacts/verification-v06/sdk-auditor-clippy-v06.json`) |
+| Rust formatting | Exit 0 | Receipt (`artifacts/verification-v06/fmt-check-final.json`) |
+| Generated SQLite views | Exit 0; frozen migrations 003/005 preserved and additive migration 006 checked | Receipt (`artifacts/verification-v06/sql-views-check-final.json`) |
+| Parent catalog regeneration | Exit 0; selected schema hashes and generated descriptors match | Receipt (`artifacts/verification-v06/parent-catalog-check-final.json`) |
+| Schema helper tests | 19 passed | Receipt (`artifacts/verification-v06/schema-helper-tests-final.json`) |
+| Catalog/auditor helper tests | 38 passed | Receipt (`artifacts/verification-v06/catalog-helper-tests-final.json`) |
+| Emulator helper tests, including supervision regressions | 125 passed | Receipt (`artifacts/verification-v06/emulator-helper-tests-v06-supervision-final.json`) |
+| Mutation acceptance/supervisor helper tests | 126 passed; this is not a Rust mutation score | Receipt (`artifacts/verification-v06/mutation-helper-tests-final.json`) |
+| Locked SDK dependency fetch and archive verification | 437 archives verified, totaling 241,799,148 bytes | Fetch (`artifacts/verification-v06/sdk-fetch-v06.json`), verification (`artifacts/verification-v06/sdk-cache-verification-v06.json`) |
+| Fresh Rust SDK source audit | 437 SDKs, 19,617 operation modules, 3,779 paginator modules and 407 waiter modules | Audit (`artifacts/sdk-capabilities-v06.json`), command receipt (`artifacts/verification-v06/sdk-source-audit-v06.json`) |
+| Populated official emulator collection | 2,522 assertions passed, zero assertion failures; expected partial outcomes retained | Summary (`artifacts/emulator-v06-complete/summary.json`) |
+| Repeated snapshot oracle | Two successful runs, each with all five cases passing | First (`artifacts/emulator-v06-complete/oracle-baseline-1.json`), second (`artifacts/emulator-v06-complete/oracle-baseline-2.json`) |
+| Current mutation candidate enumeration | 2,959 candidates; no candidate executed by this command | Manifest (`artifacts/mutation/enumeration-v06/manifest.json`), receipt (`artifacts/verification-v06/mutation-enumeration-v06.json`) |
 
 Ordinary and live Rust suites overlap; their counts must not be added as distinct
 tests. Property-test examples are not additional named Rust tests. The ten live
@@ -372,9 +372,9 @@ scopes**. All **1,328 parent assertions** passed. The fixtures include 101 EKS
 add-ons: one parent receives 100 matching items and an empty terminal page;
 another receives an empty nonterminal page followed by its child. Independent
 fixture filtering and the compiled Rust collector both exercised these cases.
-[Parent scan](../artifacts/emulator-v06-complete/parents.json) ·
-[Assertions](../artifacts/emulator-v06-complete/parent-assertions.json) ·
-[Python fixture preflight](../artifacts/emulator-parent-seed-v06/summary.json)
+Parent scan (`artifacts/emulator-v06-complete/parents.json`) ·
+Assertions (`artifacts/emulator-v06-complete/parent-assertions.json`) ·
+Python fixture preflight (`artifacts/emulator-parent-seed-v06/summary.json`)
 
 An in-process HTTP fixture separately invokes the production Cloud Control SDK
 path, injects an initial HTTP 429 throttle, and checks models, cursors, attempt
@@ -389,7 +389,7 @@ form of relationship evidence. These are configured rules, not a claim that
 every rule was observed. The additive SQLx migration preserves previous
 observations, fingerprints, scans, provider views and user-owned objects, and
 rolls back conflicts transactionally. New migration and plan tests ran in the
-ordinary Rust suite. [Catalog totals](../artifacts/verification-v06/catalog-summary.json)
+ordinary Rust suite. Catalog totals (`artifacts/verification-v06/catalog-summary.json`)
 
 ## Retained SQLite snapshots
 
@@ -408,8 +408,8 @@ The graph columns above were independently derived from SQLite and exactly
 matched the actual FalkorDB graphs. A separate `InventoryScan` marker belongs
 to each projected graph. Unresolved identities remain references and are not
 counted as collected resources.
-[Database](../artifacts/emulator-v06-complete/inventory.sqlite) ·
-[Database assertions](../artifacts/emulator-v06-complete/database-evidence.json)
+Database (`artifacts/emulator-v06-complete/inventory.sqlite`) ·
+Database assertions (`artifacts/emulator-v06-complete/database-evidence.json`)
 
 The strengthened delivery verifier checks every projected resource property,
 unresolved-node property, edge property and scan-marker property, along with
@@ -425,17 +425,17 @@ passed these checks. Initial pushes applied and acknowledged 6, 4, 6, 5 and 5
 batches in the table's order. Every replay applied zero batches, skipped exactly
 those acknowledged batches and made zero attempts. Each case then removed its
 owned graph and independently confirmed its key no longer existed.
-[Exact delivery report](../artifacts/emulator-v06-complete/delivery-verification.json)
+Exact delivery report (`artifacts/emulator-v06-complete/delivery-verification.json`)
 
 All five snapshots are retained in both JSON and JSONL under
-[artifacts/emulator-v06-complete/exports](../artifacts/emulator-v06-complete/exports/).
+`artifacts/emulator-v06-complete/exports/`.
 The ten files were regenerated offline with the same frozen collector binary.
 Each JSONL's bytes and SHA-256 match the corresponding live-verified artifact;
 each JSON document matches its JSONL header, ordered records and footer
 structurally. Partial snapshots retain their partial status and exit 2.
 The bound database and input hashes remained unchanged. The complete export
 commands, source/report hashes and output receipts are retained in
-[portable-export-receipts.json](../artifacts/emulator-v06-complete/portable-export-receipts.json).
+`artifacts/emulator-v06-complete/portable-export-receipts.json`.
 These are synthetic fixture inventories. JSON/JSONL inventory export is
 distinct from ingest's event format and the graph export's Cypher plan format.
 
@@ -522,7 +522,7 @@ hundreds of thousands of simultaneous requests is established by local tests.
   `emulator-v06-complete` run passed the entire workspace and delivery checks.
 
 The failed attempt receipts are under
-[artifacts/verification-v06](../artifacts/verification-v06/). No test threshold,
+`artifacts/verification-v06/`. No test threshold,
 unsupported endpoint, snapshot expectation or mutation denominator was relaxed
 in response to these failures. The strict three-second health probe timeouts
 remain unchanged. The supervisor now handles SIGINT/SIGTERM, drains owned groups
@@ -530,7 +530,7 @@ including members whose leader exited, and writes terminal receipts. Its
 35-second outer / eight-second nested cleanup budgets allow the inner owner to
 finish before outer escalation. Twelve focused real-process/helper regressions
 passed, and an independent reviewer reproduced them.
-[Source-bound supervision receipt](../artifacts/integration-supervision-tests-v06.json)
+Source-bound supervision receipt (`artifacts/integration-supervision-tests-v06.json`)
 
 ## Mutation status
 
@@ -546,7 +546,7 @@ whole-project pass. Timeouts, OOMs, toolchain/cache failures, fixture failures
 and missing results remain unresolved. The threshold is unchanged: at least
 95% of viable candidates must be caught, with no unresolved outcomes.
 [MUTATION_TESTING.md](MUTATION_TESTING.md) ·
-[MUTATION_READINESS_V06.md](MUTATION_READINESS_V06.md)
+`MUTATION_READINESS_V06.md`
 
 ## Build identity and reproduction
 
@@ -557,7 +557,7 @@ executable SHA-256 is
 its source closure SHA-256 is
 `a79a481e63ac3fafba9fe5501b7b347b4c40ced4df899567e222f7069dc6fd29`.
 The two executable identities and exact build mode are recorded in
-[frozen-binaries.json](../artifacts/verification-v06/frozen-binaries.json).
+`artifacts/verification-v06/frozen-binaries.json`.
 
 The complete official AWS Emulator source checkout is pinned to commit
 `f515581569b98a9dcbd2e686c12f912fdce51bba`; the signature-verified executable is
