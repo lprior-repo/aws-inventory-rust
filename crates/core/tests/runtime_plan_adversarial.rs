@@ -15,7 +15,9 @@ use synthetic_catalog::{catalog, catalog_map, column, item_root, member, structu
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 type Fields = BTreeMap<Key, Value>;
-const BASE: &[u8] = include_bytes!("../../../catalog/aws-api.catalog");
+#[path = "support/base_catalog.rs"]
+mod base_catalog;
+use base_catalog::base;
 const OPERATION: &str = "DescribeVpcs";
 
 fn key(id: u32) -> Result<Key, RecordError> {
@@ -135,7 +137,7 @@ fn path(ids: impl IntoIterator<Item = i64>) -> Value {
 
 fn artifact(change: impl FnOnce(&mut Fields) -> TestResult) -> TestResult<Vec<u8>> {
     let mut root = ValueRef::Map(MapRef::from_container_bytes(
-        BASE,
+        base(),
         inventory_core::catalog::MAX_CATALOG_BYTES,
     )?)
     .to_value()?;
@@ -159,7 +161,7 @@ fn artifact(change: impl FnOnce(&mut Fields) -> TestResult) -> TestResult<Vec<u8
         })
         .ok_or("base catalog has no DescribeVpcs plan")?;
     change(fields(plan)?)?;
-    runtime_provenance::reseal(&mut root, BASE)?;
+    runtime_provenance::reseal(&mut root, base())?;
     Ok(inventory_core::record::encode_container(
         &root,
         inventory_core::catalog::MAX_CATALOG_BYTES,
@@ -408,7 +410,7 @@ fn loader_rejects_capability_when_any_required_plan_field_is_missing() -> TestRe
 #[test]
 fn loader_rejects_capability_when_plan_has_unknown_numeric_fields() -> TestResult {
     // Given: the unmodified control must load with its genuine source receipt.
-    let runtime = RuntimeCatalog::from_bytes(BASE)?;
+    let runtime = RuntimeCatalog::from_bytes(base())?;
     assert_eq!(
         runtime
             .lookup("ec2", OPERATION)
