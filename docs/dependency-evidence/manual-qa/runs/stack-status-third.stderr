@@ -1,1 +1,0 @@
-Not ready. Inspect: journalctl --user -u aws-inventory-local-bac9ec719363 -n 30

@@ -4,7 +4,6 @@
     "exit_status": 1,
     "operation": "Existing offline source auditor build/run",
     "failure": "Unused default Cargo source/cache location; missing file",
-    "log": "current-sdk-audit-first-attempt.stderr",
     "accepted_as_evidence": false
   },
   {
@@ -13,7 +12,6 @@
     "operation": "Existing compiled offline source auditor run",
     "registry_root": "/cache/cargo-shared",
     "output": "current-sdk-source-audit.json",
-    "log": "current-sdk-audit-success.stderr",
     "accepted_as_evidence": true,
     "aws_requests": 0,
     "network_requests": 0

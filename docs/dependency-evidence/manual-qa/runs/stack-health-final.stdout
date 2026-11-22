@@ -1,7 +1,0 @@
-ActiveState=active
-SubState=running
-MainPID=3186412
-READY
-Emulator: https://127.0.0.1:42257
-FalkorDB: redis://127.0.0.1:50459
-Session: /home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/.local/sessions/20261113T053127-3186412

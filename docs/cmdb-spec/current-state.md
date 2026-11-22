@@ -34,8 +34,8 @@ operation-register authority. The new offline source-audit result and manifest
 hash checks in `catalogs/` must be used for this specification's seed inventory.
 SDK source inspection remains static evidence, not runtime service coverage.
 
-The prior strict whole-candidate review in
-`docs/dependency-evidence/BLACK_HAT_REVIEW.md` is rejected. It identifies long
+The prior strict whole-candidate review (its file was removed from the repository)
+is rejected. It identifies long
 functions/signatures, primitive domain identities, behavioral booleans, and
 unfinished async outcome/observability obligations. It is a dated snapshot;
 do not present its old counts as a newly executed source audit, or overwrite its

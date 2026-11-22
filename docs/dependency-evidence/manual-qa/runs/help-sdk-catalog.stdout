@@ -1,7 +1,0 @@
-Inspect pinned official SDK versions; this is separate from collector coverage
-
-Usage: aws-inventory sdk-catalog [OPTIONS]
-
-Options:
-      --service <SERVICE>  
-  -h, --help               Print help

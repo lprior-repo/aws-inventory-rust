@@ -1,9 +1,0 @@
-Ingest CollectionEvent JSONL; exact page replay is safe
-
-Usage: aws-inventory ingest [OPTIONS] --input <INPUT>
-
-Options:
-      --input <INPUT>      
-      --db <DB>            [default: inventory.sqlite]
-      --scan-id <SCAN_ID>  
-  -h, --help               Print help

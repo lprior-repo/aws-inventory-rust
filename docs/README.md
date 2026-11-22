@@ -108,6 +108,3 @@ integration remain planned in M6.2/M6.3.
 | [LOCAL_RESULTS.md](LOCAL_RESULTS.md) | Result of the initial local deployment, 2026-11-12. |
 | [LOCAL_REVIEW.md](LOCAL_REVIEW.md) | Review of the initial local setup and Rust assurance, 2026-11-12. |
 | [RUST_REVIEW.md](RUST_REVIEW.md) | Rust source and async ownership review of the imported archive, 2026-11-12. |
-| `dependency-evidence/` | Raw receipts and reviews behind DEPENDENCY_UPDATE.md. Frozen. |
-| `local-evidence/` | Checksums of the initial local evidence. Frozen. |
-| `performance-evidence/` | Raw results behind CMDB_BASELINE_2026-11-13.md. Frozen. |

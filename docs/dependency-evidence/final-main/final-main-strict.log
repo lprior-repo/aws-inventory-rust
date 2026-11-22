@@ -1,5 +1,0 @@
-    Checking inventory-engine v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/crates/engine)
-    Checking inventory-aws v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/crates/aws)
-    Checking inventory-sdk-catalog v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/crates/sdk-catalog)
-    Checking aws-inventory v0.6.0 (/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs)
-    Finished `dev` profile [unoptimized] target(s) in 4.21s

@@ -1,1 +1,0 @@
-jq -e .job.state==\"cancelled\"\ and\ .job.attempt==0\ and\ \(.attempts\|length\)==0 /home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/job-show-cancelled.stdout 

@@ -1,1 +1,0 @@
-/home/lewis/Documents/Codex/2026-11-12/let/aws-inventory-rs/target/debug/aws-inventory query --db /home/lewis/Documents/Codex/2026-11-12/let/work/manual-qa/engine-20261113/demo.sqlite SELECT\ id\,kind\ FROM\ resources\ ORDER\ BY\ id --limit 10 

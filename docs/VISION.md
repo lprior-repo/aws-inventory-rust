@@ -62,7 +62,7 @@ decisions O9, O3, O5, O10 and O11.
 | V31 | Tags come from the Resource Groups Tagging API in bulk first, for speed, and from the service's own tag call only for kinds the bulk API does not cover. This is the one exception to V12. The bulk call is a classified, overlay-reviewed operation like any other. |
 | V32 | The UI reads its data in process: the Makepad app opens SQLite and talks to FalkorDB itself, through `cmdb-view`. There is no HTTP read API in the first version; `cmdb-api` is deleted. |
 | V33 | Page-level hashing is dropped; only records are hashed. It may return only if the sweep benchmark shows decoding is the bottleneck. |
-| V34 | Records are CBOR (RFC 8949), written and read with the `minicbor` library. Our code only fixes which CBOR forms are written, so that equal values give equal bytes. Chosen by benchmark over our own format, `rkyv`, `postcard` and JSON: fastest to build and hash, and smallest ([evidence](performance-evidence/record-codec-2026-11-13.md)). A library is preferred to our own code wherever it is at least as fast. |
+| V34 | Records are CBOR (RFC 8949), written and read with the `minicbor` library. Our code only fixes which CBOR forms are written, so that equal values give equal bytes. Chosen by benchmark over our own format, `rkyv`, `postcard` and JSON: fastest to build and hash, and smallest. A library is preferred to our own code wherever it is at least as fast. |
 
 The earlier requirements draft in [cmdb-spec/](cmdb-spec/README.md) remains the
 detailed reference for behavior this document does not restate (deletion needs

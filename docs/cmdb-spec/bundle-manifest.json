@@ -39,16 +39,6 @@
       "sha256": "0ae2251a901b52a3bc023bd67c5ccb1890768d934ef8410011560852a2eada1e"
     },
     {
-      "path": "catalogs/current-sdk-audit-first-attempt.stderr",
-      "bytes": 906,
-      "sha256": "7182fb28ea56c6a70623d7d8204d91e7c0228f6a762e7c15eb28633095224a07"
-    },
-    {
-      "path": "catalogs/current-sdk-audit-success.stderr",
-      "bytes": 0,
-      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-    },
-    {
       "path": "catalogs/current-sdk-source-audit.json",
       "bytes": 2305992,
       "sha256": "8c8a16287f7da2f9e975f481ecb7771f9807e15f8c605d52d53732949e891a86"

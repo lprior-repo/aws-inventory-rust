@@ -292,7 +292,7 @@
   `aws-build-sol` (ChatGPT Sol). Builders implement independent packages in
   parallel; the coordinator owns serialized compilation, formatting and tests.
 - Decision V34: records are CBOR through the `minicbor` library. A codec
-  benchmark (`docs/performance-evidence/record-codec-2026-11-13.md`) found it
+  benchmark (not kept in this repository) found it
   faster to build and smaller than our own format, `rkyv`, `postcard` and
   JSON. Our own format was deleted before landing; it and the benchmark are on
   the branch `evidence/o1-record-codec`.
