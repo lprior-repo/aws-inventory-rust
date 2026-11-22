@@ -8,12 +8,12 @@ use crate::HarnessError;
 use crate::provenance;
 
 pub fn fixture_path(root: &Path) -> PathBuf {
-    root.join("crates/aws/tests/fixtures/cloudcontrol-parents.json")
+    root.join("crates/aws/tests/fixtures/cloudcontrol-parents.toml")
 }
 
 pub fn load_fixtures(root: &Path) -> Result<(Value, String), HarnessError> {
     let path = fixture_path(root);
-    let (document, sha) = crate::snapshot::read_json(&path)?;
+    let (document, sha) = crate::snapshot::read_toml(&path)?;
 
     validate_fixtures(&document)?;
 

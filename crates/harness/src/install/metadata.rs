@@ -1,7 +1,5 @@
 use std::path::{Path, PathBuf};
 
-use serde_json::Value;
-
 use super::platform::Platform;
 use crate::HarnessError;
 
@@ -21,13 +19,15 @@ pub(super) struct Metadata {
 
 impl Metadata {
     pub(super) fn read(path: &Path, platform: Platform) -> Result<Self, HarnessError> {
-        let (document, _) = crate::snapshot::read_json(path)?;
+        let raw = std::fs::read_to_string(path)?;
+        let document: toml::Table = toml::from_str(&raw)
+            .map_err(|error| HarnessError::invalid(format!("upstream.toml: {error}")))?;
         let text = |key: &str| -> Result<String, HarnessError> {
             document
                 .get(key)
-                .and_then(Value::as_str)
+                .and_then(toml::Value::as_str)
                 .map(str::to_owned)
-                .ok_or_else(|| HarnessError::invalid(format!("upstream.json lacks {key}")))
+                .ok_or_else(|| HarnessError::invalid(format!("upstream.toml lacks {key}")))
         };
         let (package_url, package_sha256, package_file) = match platform {
             Platform::LinuxX86_64 => (

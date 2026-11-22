@@ -75,7 +75,7 @@ fn check_binary(executed: &Value) -> Result<Option<String>, HarnessError> {
 }
 
 fn check_fixture(root: &Path, executed: &Value) -> Result<(), HarnessError> {
-    let fixture = root.join("crates/aws/tests/fixtures/cloudcontrol-architecture.json");
+    let fixture = root.join("crates/aws/tests/fixtures/cloudcontrol-architecture.toml");
     if Some(file_sha256(&fixture)?.as_str())
         != executed
             .get("architecture_fixture_sha256")

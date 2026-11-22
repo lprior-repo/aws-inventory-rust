@@ -33,7 +33,7 @@ proptest! {
     fn query_literals_round_trip_without_becoming_sql_statements(value in "[a-zA-Z0-9 ;_':/.-]{0,80}") {
         let directory = tempfile::tempdir()?;
         let database = property(path(&directory.path().join("inventory.sqlite")))?;
-        let input = property(fixture("global-events-before.jsonl"))?;
+        let input = property(fixture(directory.path(), "global-events-before.jsonl", event_fixtures::GLOBAL_EVENTS_BEFORE))?;
         property(json_command(&arguments(&["ingest", "--db", &database, "--scan-id", "literal-property", "--input", &input]), 0))?;
         let sql = format!("SELECT '{}' AS value", value.replace('\'', "''"));
         let rows = property(json_command(&arguments(&["query", "--db", &database, "--limit", "1", &sql]), 0))?;
@@ -45,7 +45,7 @@ proptest! {
     fn query_row_limit_bounds_a_persisted_complete_fixture(limit in 1usize..9) {
         let directory = tempfile::tempdir()?;
         let database = property(path(&directory.path().join("inventory.sqlite")))?;
-        let input = property(fixture("global-events-before.jsonl"))?;
+        let input = property(fixture(directory.path(), "global-events-before.jsonl", event_fixtures::GLOBAL_EVENTS_BEFORE))?;
         let ingest = property(json_command(&arguments(&["ingest", "--db", &database, "--scan-id", "property-snapshot", "--input", &input]), 0))?;
         prop_assert_eq!(ingest.get("status"), Some(&json!("complete")));
         if limit < 7 {

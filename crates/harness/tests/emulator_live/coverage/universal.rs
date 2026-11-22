@@ -12,7 +12,7 @@ const EXPECTED_ATTEMPTED: u64 = 1_291;
 const EXPECTED_SUCCEEDED: u64 = 999;
 const EXPECTED_UNSUPPORTED: u64 = 292;
 const EXPECTED_FAILED: u64 = 0;
-const FIXTURE: &str = "crates/harness/fixtures/universal-unsupported-aws-emulator-1.0.348.json";
+const FIXTURE: &str = "crates/harness/fixtures/universal-unsupported-aws-emulator-1.0.348.toml";
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 #[ignore = "requires the pinned emulator binary and a collector build"]
@@ -144,7 +144,9 @@ struct Evidence {
 
 fn committed_unsupported() -> Result<Evidence, Box<dyn Error>> {
     let path = workspace()?.join(FIXTURE);
-    let document: Value = serde_json::from_str(&std::fs::read_to_string(&path)?)?;
+    let document: Value = serde_json::to_value(toml::from_str::<toml::Table>(
+        &std::fs::read_to_string(&path)?,
+    )?)?;
     let version = document
         .get("emulator_version")
         .and_then(Value::as_str)

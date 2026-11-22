@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 use inventory_harness::provenance::{canonical_sha256, file_sha256, source_fingerprint};
 
 use evidence::{create_database, seed_commands};
-use io::{create_parent, insert};
+use io::{create_parent, insert, write_text};
 
 pub use io::{free, save_summary, write_json};
 
@@ -96,12 +96,12 @@ pub async fn fixture() -> Result<Fixture, Box<dyn std::error::Error>> {
         "parent_catalog_sha256": write_json(
             &root.join("catalog/cloudcontrol-parent-resources.json"), &parents)?,
         "runtime_catalog_canonical_sha256": canonical_sha256(&runtime),
-        "architecture_fixture_sha256": write_json(
-            &root.join("crates/aws/tests/fixtures/cloudcontrol-architecture.json"),
-            &json!({"fixture": "root"}))?,
-        "parent_fixture_sha256": write_json(
-            &root.join("crates/aws/tests/fixtures/cloudcontrol-parents.json"),
-            &json!({"fixture": "parent"}))?,
+        "architecture_fixture_sha256": write_text(
+            &root.join("crates/aws/tests/fixtures/cloudcontrol-architecture.toml"),
+            "fixture = \"root\"\n")?,
+        "parent_fixture_sha256": write_text(
+            &root.join("crates/aws/tests/fixtures/cloudcontrol-parents.toml"),
+            "fixture = \"parent\"\n")?,
         "source": source_fingerprint(&root)?,
         "scan_commands": {},
     });

@@ -22,8 +22,8 @@ provider evidence are documented separately in
 | --- | ---: | ---: | ---: | ---: | --- |
 | breadth-events.jsonl (removed from repository) | 1 | 0 | 200 | 0 | `complete` |
 | ecs-events.jsonl (removed from repository) | 1 | 0 | 3 | 2 | `complete` |
-| [architecture-events.jsonl](../tests/cli_properties/fixtures/architecture-events.jsonl) | 14 | 1 | 19 | 40 | `partial` |
-| [global-events-before.jsonl](../tests/cli_properties/fixtures/global-events-before.jsonl) | 1 | 0 | 7 | 7 | `complete` |
+| architecture-events (`ARCHITECTURE_EVENTS` in [event_fixtures.rs](../tests/cli_properties/event_fixtures.rs)) | 14 | 1 | 19 | 40 | `partial` |
+| global-events-before (`GLOBAL_EVENTS_BEFORE` in [event_fixtures.rs](../tests/cli_properties/event_fixtures.rs)) | 1 | 0 | 7 | 7 | `complete` |
 | global-events-after.jsonl (removed from repository) | 1 | 0 | 7 | 7 | `complete` |
 
 `complete` means the fixture's declared scopes ended with terminal pages. It
@@ -225,7 +225,7 @@ expected code:
 ```bash
 ./target/debug/aws-inventory ingest \
   --db architecture.sqlite \
-  --input tests/cli_properties/fixtures/architecture-events.jsonl \
+  --input /path/to/architecture-events.jsonl \
   --scan-id synthetic-architecture-001 || test "$?" -eq 2
 ```
 
@@ -238,8 +238,8 @@ resuming an already finalized CLI import.
 ## Global before/after pair
 
 The after fixture (`global-events-after.jsonl`) was removed with `examples/` in
-commit 27ad5349 and is not in the repository. The before fixture remains at
-tests/cli_properties/fixtures/global-events-before.jsonl.
+commit 27ad5349 and is not in the repository. The before fixture is the
+`GLOBAL_EVENTS_BEFORE` constant in tests/cli_properties/event_fixtures.rs.
 
 The two global fixtures exercise all seven native kinds introduced in v0.4 and
 seven architecture relationships. They are small selected-property examples,

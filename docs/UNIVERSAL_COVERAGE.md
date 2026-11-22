@@ -134,7 +134,7 @@ both hold, and `/api/in_flight` must be zero.
 
 The 292 unsupported type names are compared exactly — set equality, not length —
 against the committed fixture
-`crates/harness/fixtures/universal-unsupported-aws-emulator-1.0.336.json`, which
+`crates/harness/fixtures/universal-unsupported-aws-emulator-1.0.348.toml`, which
 records the emulator version and source commit. A new emulator release is new
 evidence: the test fails until the fixture and these literals are refreshed
 together after verifying the delta for that release.

@@ -27,7 +27,7 @@ fn ensure_destination(destination: &Path) -> Result<PathBuf, HarnessError> {
 
 pub fn install(root: &Path, destination: &Path) -> Result<Value, HarnessError> {
     let platform = Platform::current()?;
-    let metadata = Metadata::read(&root.join("crates/harness/assets/upstream.json"), platform)?;
+    let metadata = Metadata::read(&root.join("crates/harness/assets/upstream.toml"), platform)?;
     let destination = ensure_destination(destination)?;
     let source = checkout(&metadata, &destination)?;
     let package = download(&metadata, &destination)?;

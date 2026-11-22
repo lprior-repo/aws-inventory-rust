@@ -22,7 +22,7 @@ use lookup::{expected_status, parent_of, scan};
 
 const SUMMARY_FILE: &str = "cloud-control.json";
 const CATALOG_COMMAND_FILE: &str = "catalog.json";
-const FIXTURE: &str = "crates/aws/tests/fixtures/cloudcontrol-architecture.json";
+const FIXTURE: &str = "crates/aws/tests/fixtures/cloudcontrol-architecture.toml";
 
 struct Commands {
     cloud_control_path: PathBuf,
