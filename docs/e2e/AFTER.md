@@ -82,6 +82,17 @@ this package is one undated act: making the private repository public.
 | K3 | Delete Python from the tree: 46 `.py` files and both `requirements.txt` (M2.10). | `git ls-files '*.py' '*requirements.txt'` prints nothing; the gate passes |
 | K4 | Regenerate `MANIFEST.sha256` from tracked files only (M0.5), and bring `START_HERE.md`, `CONTRACT.md` and `NEXT_AGENT_PROMPT.txt` in line with the tree. | Every path in the manifest is tracked; no document describes the UI as a synthetic fixture |
 
+## Scale to 10,000 accounts
+
+![What 10,000 accounts multiplies](img/41-scale-ladder.png)
+
+Package S, eight steps in [build/STEPS_AFTER.md](build/STEPS_AFTER.md). The
+target is up to 10,000 accounts from one laptop (V69). The milestone is
+still proven at the size it was planned for; this package then climbs 10,
+100, 1,000 and 10,000 accounts, measuring each rung. It follows H2 and
+comes before the release gate. What changes and why is in
+[ARCHITECTURE.md](ARCHITECTURE.md) section 9.
+
 ## 7. The public-release gate
 
 ![The release gate](img/36-release-gate.png)

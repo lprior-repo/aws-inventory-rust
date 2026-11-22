@@ -102,6 +102,14 @@ With a server up, the whole flow is one command, `inventory-harness e2e run
 | V66 | C6.2 runs PostgreSQL 19. |
 | V67 | O12 is settled: A1 generates overlays without a review of each entry. |
 | V68 | Peak memory and CPU time get limits in section 3, not only rows. |
+| V69 | The target is up to 10,000 accounts. Waves 0 to 6 do not change: the milestone is still proven at the size it was planned for. Package S, after the milestone, climbs the ladder. B1.2's 74,000 budgets is rung one of four. |
+| V70 | The app shows the whole organization as aggregates and loads resources for what is in view (S1.6). |
+| V71 | A graph database is required. In E3.4 our own index is a yardstick only. |
+| V72 | Work continues from the existing repository. The step files stay as written and are adapted as the code changes. |
+| V73 | No sweep window. S2.1 records how fast AWS allowed, and gates on nothing. |
+| V74 | Fitting 10,000 accounts on a laptop is a result, not a requirement. |
+| V75 | H2.2 is set aside. H2.1 assumes whatever role exists. |
+| V76 | Massive scale is designed in from the first step that builds each part: B1.2 (budgets), B7.2 (connections), C6.3 (keys that allow partitioning), C6.5 (a queue that is seeded in windows and shared by several collectors). Package S proves it. |
 
 ### One ordering rule for the current store
 
@@ -742,11 +750,21 @@ Waves in one line each:
 | L5.2 | One diagnostics command (R9) | C4.1, D12.1, L3.2 |
 | L6.1 | The authorized real-account run, as release evidence (R10) | J2.1, L2.1 |
 | L6.2 | Published limits (R11) | A7.2, L6.1 |
+| S1.1 | An organization to test against | B5.4, D4.1, H2.1 |
+| S1.2 | Rate budgets that exist only while they are used | B1.2, B2.2 |
+| S1.3 | Plan a window at a time; store exceptions, not everything | S1.2, B4.5 |
+| S1.4 | Connections shared across accounts; limits checked at start | B7.2 |
+| S1.5 | Credentials for 10,000 accounts | H2.1 |
+| S1.6 | The organization in the app: aggregates for all, resources for what is in view | D4.3, D6.3 |
+| S1.7 | A slower cadence for scopes that stay empty, off by default | S1.3, B6.4 |
+| S1.8 | Partition the large tables by account, if it measures better | C6.3, S1.1 |
+| S2.1 | The ladder: 10, 100, 1,000, 10,000 | S1.1 to S1.6, S1.8, E3.4 |
 
 Step counts: A 32, B 29, C 28, D 34, E 13 (136 in the milestone, counting
-D14.2, which runs after it), and 37 after it (26 in packages F to K, 11 in
-the release gate, package L), 173 in all. Of the 37, I1.1 and I2.1 are no
-longer planned (V61, V63), and H2.1 and H2.2 are part of version 1 (V64). V53 removed B0.1, B4.2, C5.2
+D14.2, which runs after it), and 46 after it (26 in packages F to K, 11 in
+the release gate, package L, and 9 for scale, package S), 182 in all. Of
+the 46, I1.1 and I2.1 are no longer planned (V61, V63), H2.1 is part of
+version 1 (V64), and H2.2 is set aside for now (V75). V53 removed B0.1, B4.2, C5.2
 and C5.4 and added C6.12. The revision of 2026-11-18 added B4.6, C1.7, E4.3,
 D6.0, D7.3 and D9.1 to D14.2.
 
@@ -811,6 +829,7 @@ The steps most likely to fail or grow, why, and the fallback.
 | D13.1 | Typed-in SQL runs with write rights | One URL for everything | Two roles; the reader is checked at connect time and reads fail closed |
 | D7.1 | Frame numbers cannot be taken where the plan is written | The machine the plan was written on has no display. The owner's test machines (V56) do | Worker-level tests keep D2 and D3 moving; frame numbers are taken on the owner's machines and reported as not run until then |
 | E3.4 | The graph engine that ships does not fit an all-MIT product, or a replacement is not ready | FalkorDB is SSPLv1; the Rust-native candidate is pre-1.0 and unproven | Measure every candidate behind the one interface; keep FalkorDB working until another passes E5.1; take the licence question to a lawyer before L5.1 |
+| S2.1 | A full sweep at massive scale takes longer than is useful | About 373 million root listings a sweep at 10,000 accounts; control data, memory and the graph all scale with it | The scale rule in ARCHITECTURE section 9, built in from B1.2, B7.2, C6.3 and C6.5; the ladder a rung at a time; more than one collector on one store; the empty-scope cadence as a designed fallback (S1.7) |
 
 ## 10. Where the tree differs from the track files
 

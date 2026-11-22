@@ -341,8 +341,11 @@ Facts this track relies on, read from the tree:
 - **Watch out:** a vendor's own benchmark is not evidence (V19). Not
   verified: the Rust API of any candidate; that Grafeo or LadybugDB can
   express the path and blast-radius queries; that either is stable enough
-  to ship. V46 requires a graph database, so choosing our own index would
-  need the owner to change V46. An embedded engine removes a server from
+  to ship. A graph database is required (V46, confirmed by V71): our own
+  index is a yardstick in the table and is not a candidate to ship. At
+  10,000 accounts (V69) an engine that keeps the whole graph in memory may
+  not fit on a laptop; record memory per million nodes for each, and
+  whether it can serve a graph larger than memory. An embedded engine removes a server from
   the install (L1.1) and from the connection rules (L3.1); a server does
   not.
 

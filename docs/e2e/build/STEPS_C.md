@@ -303,6 +303,10 @@ B3.2). Its cost is a generic parameter; there is no dynamic dispatch.
   default server; that is why the DDL is batched (computed, not run).
   Identifiers longer than 63 bytes are truncated silently: A2.3 and C1.3 keep
   table and column names within 63.
+- **Scale (V76):** every large table has the account as the leading key
+  column, and the generator can emit a table partitioned by account hash
+  from the same definition. Partitioning stays off until S1.8 measures it,
+  but no key or index may make it impossible later.
 
 ### C6.4 `PgStore`: connect, create, open
 
@@ -376,6 +380,11 @@ B3.2). Its cost is a generic parameter; there is no dynamic dispatch.
 - **Watch out:** scope keys are `bytea`; `ORDER BY scope_key` is bytewise,
   which the kill matrix relies on. `generation` is `bigint`; keep the overflow
   check.
+- **Scale (V76):** nothing here may assume the whole sweep is seeded up
+  front. Seeding takes a set of accounts and regions, so S1.3 can feed it a
+  window at a time. Claims already come from the store under a lease, so
+  more than one collector process can share one database; keep that true,
+  because it is how the sweep grows past one machine.
 
 ### C6.6 Page commit, set-based
 

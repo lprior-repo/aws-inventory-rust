@@ -20,14 +20,14 @@ are in [DATA_MODEL.md](DATA_MODEL.md). The desktop app has its own document,
 | 2. Collector | One engine that signs, sends, pages and decodes any operation, driven by a work queue and per-account, per-region rate budgets | Everything runs at once, each at the rate AWS allows |
 | 3. PostgreSQL | One table per kind of resource, plus edges, evidence and the work queue | It is the truth. A record is hashed and written only if it changed, and a kill loses nothing |
 | 4. Graph engine | A copy of resources and edges, shipped inside the product | Rebuildable from SQL at any time. It answers "what is connected" |
-| 5. Desktop app | A native app that reads both stores directly and can start a sweep | The whole account drawn at 120 frames a second |
+| 5. Desktop app | A native app that reads both stores directly and can start a sweep | The whole organization on screen, at 120 frames a second |
 
 Version 1, as decided:
 
 | | |
 | --- | --- |
 | Runs on | One person's laptop, macOS or Linux (V54, V58) |
-| Reaches | Every account in an AWS organization that its owner gives access to, by a read-only role in each (V64) |
+| Reaches | Every account in an AWS organization that its owner gives access to, by a read-only role in each: up to 10,000 accounts, reached in stages (V64, V69) |
 | Collects | Every resource of every service, children included. Never content, secrets or paid calls (V36, V06) |
 | How often | One full sweep a day (V65) |
 | Priority | Sweep time, and how little of the laptop it uses (V68) |
@@ -328,21 +328,74 @@ owns (V64). It lists the accounts through AWS Organizations, assumes one
 read-only role in each, and sweeps them all in one run, with a separate
 rate budget for every account, region and service. An account where the
 role is missing is recorded as inaccessible and never treated as empty.
-The role is a generated template the organization deploys to its accounts
-(H2.2). Local AWS profiles keep working for a single account.
+How the role gets into each account is not a concern for now (V75): access
+is assumed to exist. Local AWS profiles keep working for a single account.
 
 Today only local profiles work. Organization discovery and role assumption
 are step H2.1, now part of version 1.
 
-**What this does to size.** One laptop holds the whole organization: every
-record in PostgreSQL, and whatever the app loads to draw. How many accounts
-and resources that means is not known, and whether the app draws one
-account or the whole organization at once is an open question. Peak memory
-and CPU are therefore budgets with limits (V68), not only measurements.
+### Built for massive scale
+
+![What 10,000 accounts multiplies](img/41-scale-ladder.png)
+
+The instruction is to plan for massive scale (V76). One rule follows, and
+every part is held to it:
+
+> **No cost may grow with accounts times regions times operations.** Memory
+> follows what is in flight. Rows written follow what was found and what
+> went wrong. Connections follow endpoints. What the app holds follows what
+> is on screen.
+
+| Part | What the rule means there |
+| --- | --- |
+| Rate budgets | Created on first use, dropped when idle, registry sharded; learned rates kept in the store |
+| Work queue | Seeded for a moving window of accounts, never for the whole organization up front |
+| Outcomes | Exceptions are rows. "Completed and empty" is a count |
+| Connections | Pooled per endpoint and shared by every account |
+| Credentials | Held only for accounts in the window |
+| Store | The account leads every key, so large tables can be partitioned by account |
+| Collectors | Work is leased from the store, so more than one collector process, and later more than one machine, can share one database |
+| Graph engine | Chosen with memory per million nodes measured, and behaviour past memory known |
+| App | Counts for everything; individual resources for what is in view |
+
+A sweep runs as fast as AWS allows; there is no window it has to fit (V73).
+Whether 10,000 accounts fit on one laptop is not treated as a blocker
+(V74). It is a result the scale ladder reports.
+
+The target is up to 10,000 accounts in one organization (V69). The plan was
+sized for about 10. A thousand times more accounts does not change the five
+parts, but it changes four assumptions inside them. The numbers are
+arithmetic from the catalog's counts; none is measured.
+
+| Assumption at 10 accounts | Why it fails at 10,000 | What replaces it | Step |
+| --- | --- | --- | --- |
+| Every rate budget stays in memory | About 74 million budgets, against a bound of 65,536 | A bounded window of accounts in flight. A budget exists while its account and region are being swept; its learned rate is kept in the store | S1.2 |
+| Every listing is a row in the work queue, and its outcome a row per sweep | About 373 million root listings a sweep would write more control data than resource data | Listings are planned as an account enters the window. A listing that completed and found nothing is counted, not stored | S1.3 |
+| The app loads the whole account into memory | A whole organization may be tens of millions of resources | Counts for everything, always. Individual resources only for what is in view, up to a stated budget | S1.6 |
+| The graph is small enough for any engine | An engine that keeps the whole graph in memory may not fit on a laptop | Memory per million nodes, and behaviour past memory, are measured when the engine is chosen | E3.4 |
+
+Two things already in the design carry over unchanged, and matter more at
+this size:
+
+- **Connections are per endpoint, not per account.** A service in a region
+  is one host for every account, and each request carries its own account's
+  signature. 10,000 accounts reuse the same connections (S1.4).
+- **AWS limits each account separately.** The sweep is not held back by one
+  account's quota; it is held back by the laptop: its network, its open-file
+  limit, its CPU and its disk.
+
+**What is not known.** Listing everything in 10,000 accounts is about 373
+million root listings a sweep, before children, paging and retries. How
+long that takes from one machine has not been measured. The plan climbs a
+ladder of 10, 100, 1,000 and 10,000 accounts and records each rung (S2.1).
+Two levers are designed for when one machine is not enough: more than one
+collector sharing the store, and a slower cadence for scopes that stay
+empty, which is built and left switched off (S1.7, O22).
 
 ### Once a day
 
-One full sweep a day is enough (V65). A daily sweep is started by the
+One full sweep a day is enough (V65), and each sweep runs as fast as AWS
+allows (V73). A daily sweep is started by the
 operating system's scheduler or from the app; the product does not need to
 run all day. What matters is how long the sweep takes and what it costs the
 laptop while it runs. An unchanged organization still writes nothing about
@@ -366,7 +419,7 @@ resumable slices.
 
 | Area | Design | State |
 | --- | --- | --- |
-| AWS permissions | Read-only. One role in every account of the organization, carrying a policy generated from the catalog that is exactly what the callable operations need | Planned (H2.1, H2.2, R2) |
+| AWS permissions | Read-only. One role in every account of the organization. Generating the exact policy and deploying the role are set aside for now (V75) | Planned (H2.1); the policy is release-gate work (R2) |
 | What is never read | Content, secret values, paid calls; enforced by the deny list at compile time | Built |
 | Database roles | A collector role that writes and a reader role that can only read. The app's SQL console connects as the reader and refuses to run if the role can write | Planned (C4, D13.1) |
 | Connections | On the laptop both stores listen on the local machine only and require a password. Verified TLS is required whenever a store is not on the local machine | Planned (R4) |

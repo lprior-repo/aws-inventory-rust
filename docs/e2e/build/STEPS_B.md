@@ -307,6 +307,11 @@ row.
 - **Size:** about 220 added. One change.
 - **Watch out:** the registry is one `Mutex<HashMap>`; eviction runs under it.
   Bound the work per call (1,024) so admission never stalls on a long scan.
+- **Scale (V76):** build this for 74 million keys, not 74,000. A bucket is
+  created on first use and dropped when idle, so memory follows the accounts
+  in flight. One lock over one map will not carry massive scale; shard the
+  registry by key hash now, while it is being rewritten. S1.2 then only adds
+  the moving window of accounts.
 
 ## B2 Adaptive rate with no low ceiling, persisted
 
@@ -995,6 +1000,9 @@ and queue update commit together or not at all, and the kill matrix proves it.
   connection cost whatever the setting. The real effect (about 7,400 hosts for
   436 services and 17 regions) can only be estimated here from handshakes per
   request through the proxy; say that it is an estimate until J2.
+- **Scale (V76):** key the pool by endpoint and never by account. The host
+  for a service in a region is the same for every account, so the number of
+  connections must not grow with the number of accounts (S1.4).
 
 ## B8 CPU on the hot path
 
