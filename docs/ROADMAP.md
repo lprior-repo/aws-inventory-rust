@@ -259,21 +259,21 @@ evidence below; not a current recovery verification result).
   "unsupported" result, and no in-scope case of the pinned models reaches
   one) and writes
   `catalog/aws-endpoints.report`. Of the 14,115 published endpoint cases,
-  4,109 are in this package's scope (a commercial region, FIPS and
-  dual-stack off, no other parameter) and all 4,109 pass; the other 10,006
+  4,112 are in this package's scope (a commercial region, FIPS and
+  dual-stack off, no other parameter) and all 4,112 pass; the other 10,003
   are counted by exclusive reason (other partition 5,631, FIPS 1,809,
   dual-stack 908, custom endpoint 844, operation inputs 538, other
-  parameters 276) and not executed. Per service the report gives a URL
-  template, signing name and signing region: 28 global, 401 regional, 5
-  needing an overlay (`acm`, `cloudfront-keyvaluestore` and `neptune-graph`
-  need a request parameter; `simpledbv2` and `eventbridgev2` have a template
-  no published case confirms), 2 unsupported (no SigV4: `codecatalyst`,
-  `account-access-runtime`). Every passing case is compared with its
+  parameters 273) and not executed. Per service the report gives a URL
+  template, signing name and signing region: 28 global, 402 regional, 3
+  needing an overlay (`acm` and `neptune-graph` need a request parameter;
+  `simpledbv2` has a template no published case confirms), 3 unsupported
+  (no SigV4: `codecatalyst`, `account-access-runtime`; a required KVS ARN:
+  `cloudfront-keyvaluestore`). Every passing case is compared with its
   service's template; the three that differ are explicit exception rows
   (`health` and `sts` at `aws-global`, `simpledbv2` at `us-east-1`). A Black
   Hat review found the first version published `sdb.{region}` although the
   model's own case says `sdb.amazonaws.com`; that check now exists because
-  of it. `cargo test -p catalog-tool --locked` passes 302 tests; the gate
+  of it. `cargo test -p catalog-tool --locked` passes 820 tests; the gate
   runs `models endpoints --check`. Black Hat: five findings, three closed
   and confirmed against 99 expectations in 12 services, one closed by
   amending the scope (the skipped cases are outside what this package

@@ -229,7 +229,7 @@
 - M1.6a: `catalog-tool models endpoints [--check | --write]` evaluates every
   model's endpoint rule set and writes `catalog/aws-endpoints.report`: URL
   template, signing name and signing region for 436 services (28 global,
-  401 regional, 5 needing an overlay, 2 unsupported), proven on the 4,109
+  402 regional, 3 needing an overlay, 3 unsupported), proven on the 4,112
   published endpoint cases in scope, with three explicit per-region
   exceptions. The gate runs `models endpoints --check`. Rust lines: 4,138
   added, 2 deleted.
