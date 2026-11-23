@@ -4,7 +4,8 @@ service = "route53-recovery-control-config"
 [[step]]
 id = "resource"
 operation = "CreateCluster"
-kind = "AWS::Route53RecoveryControlConfig::Cluster"
+kind = "AWS::Route53RecoveryControl::Cluster"
 identity = "Cluster.ClusterArn"
+scope = "account"
 [step.input]
 "ClusterName" = "inventory-thin-route53-recovery-control-config"
