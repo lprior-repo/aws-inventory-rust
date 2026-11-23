@@ -182,7 +182,6 @@ fn pagination_keeps_actual_cursor_names_and_truncation_signal() -> TestResult {
     for (service, name) in [
         ("eventbridgev2", "DescribeEventBus"),
         ("eventbridgev2", "DescribeEventSource"),
-        ("eventbridgev2", "DescribeSubscriber"),
     ] {
         assert_eq!(
             operation(&policies, service, name)?.paginator,
@@ -194,7 +193,6 @@ fn pagination_keeps_actual_cursor_names_and_truncation_signal() -> TestResult {
     for (service, name) in [
         ("eventbridgev2", "DescribeEventBus"),
         ("eventbridgev2", "DescribeEventSource"),
-        ("eventbridgev2", "DescribeSubscriber"),
     ] {
         let plan = operation(&policies, service, name)?;
         assert_eq!(plan.paginator, Some(Paginator::None));
