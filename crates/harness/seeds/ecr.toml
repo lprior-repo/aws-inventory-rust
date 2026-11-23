@@ -1,0 +1,10 @@
+format = 1
+service = "ecr"
+
+[[step]]
+id = "resource"
+operation = "CreateRepository"
+kind = "AWS::ECR::Repository"
+identity = "repository.repositoryArn"
+[step.input]
+"repositoryName" = "inventory-thin-ecr"
