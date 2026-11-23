@@ -22,6 +22,9 @@
   subtraction. Oracle kinds with no compiled callable resource emission are
   explicitly catalog-deferred with reviewed reasons; callable kinds still
   require exact identities, with up to five differing identities on failure.
+- E2E collection includes resource-producing cross-service seed prerequisites,
+  derived from selected recipes, so Lambda signing profiles are not seeded
+  without collecting Signer. Existing qualified service scopes remain explicit.
 
 - The harness `probe` command reports every catalog enumeration in stable order,
   skips parent-bound children, and calls only the first page through the sweep's

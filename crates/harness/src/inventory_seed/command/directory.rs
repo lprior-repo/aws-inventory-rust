@@ -110,6 +110,13 @@ pub(crate) fn read_bounded(path: &Path, maximum: u64) -> Result<Vec<u8>, SeedErr
     Ok(bytes)
 }
 
+pub(crate) fn read_scenario(path: &Path) -> Result<crate::inventory_seed::SeedScenario, SeedError> {
+    let bytes = read_bounded(path, 1_048_576)?;
+    let text =
+        std::str::from_utf8(&bytes).map_err(|_| SeedError::Invalid("seed recipe is not UTF-8"))?;
+    file::load(text)
+}
+
 pub(super) fn write_rows(path: &Path, mut rows: Vec<String>) -> Result<(), SeedError> {
     rows.sort();
     let mut file = std::io::BufWriter::new(std::fs::File::create(path)?);

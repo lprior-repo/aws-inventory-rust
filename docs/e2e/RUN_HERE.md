@@ -270,6 +270,10 @@ directory, takes a pre-seed `baseline` sweep and retains `baseline.tsv`. For
 callable seeded kinds, `verify-counts` compares full account/region/kind/id
 additions (`after - before`) with the oracle, and requires zero resource writes
 on the repeat sweep. No unseeded kind is claimed verified.
+Selected recipes can create resources in another service: their nonempty-kind
+steps add missing collector services (for example, Lambda's Signer profiles).
+Existing requested service scopes, including qualified operations, are retained;
+the same expanded selection is used for baseline, first sweep and repeat.
 
 Stages print `stage NAME MILLISECONDS ok|failed`. Collection prints only known
 numeric summary fields and names of persisted failed operations, never an

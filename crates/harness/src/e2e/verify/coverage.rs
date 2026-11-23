@@ -1,6 +1,6 @@
 use crate::{
     HarnessError,
-    inventory_seed::{self, SeedError, command::directory},
+    inventory_seed::{SeedError, command::directory},
 };
 use inventory_core::catalog::runtime::{ReviewDisposition, RuntimeCatalog};
 use std::{
@@ -47,10 +47,7 @@ fn recipe_kinds(
     callable: &BTreeSet<String>,
     kinds: BTreeMap<String, String>,
 ) -> Result<BTreeMap<String, String>, SeedError> {
-    let text = directory::read_bounded(path, 1_048_576)?;
-    let text =
-        std::str::from_utf8(&text).map_err(|_| SeedError::Invalid("seed recipe is not UTF-8"))?;
-    Ok(inventory_seed::load(text)?
+    Ok(directory::read_scenario(path)?
         .steps()
         .iter()
         .filter(|step| !step.kind.is_empty() && !callable.contains(&step.kind))

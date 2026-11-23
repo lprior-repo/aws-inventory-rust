@@ -22,6 +22,7 @@ struct Run {
     stack: Stack,
     database: TestDatabase,
     baseline: Option<verify::Baseline>,
+    collector_services: Vec<String>,
 }
 
 pub async fn execute(args: RunArgs, admin: &str) -> Result<(), HarnessError> {
@@ -42,6 +43,7 @@ pub fn prepare_work(work: &std::path::Path) -> Result<(), HarnessError> {
 }
 
 async fn start(args: RunArgs, admin: &str) -> Result<Run, HarnessError> {
+    let collector_services = seed::collector_services(&args)?;
     let work = args.work.clone();
     let stack = tokio::task::spawn_blocking(move || Stack::start(&work))
         .await
@@ -52,6 +54,7 @@ async fn start(args: RunArgs, admin: &str) -> Result<Run, HarnessError> {
         stack,
         database,
         baseline: None,
+        collector_services,
     })
 }
 
@@ -114,7 +117,7 @@ impl Run {
             &self.args.collector,
             &self.args.catalog,
             self.database.url(),
-            &self.args.services,
+            &self.collector_services,
             &self.args.work.join(format!("{}.log", stage.name())),
         )
         .await?;
