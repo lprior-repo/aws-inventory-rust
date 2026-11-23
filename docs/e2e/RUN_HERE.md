@@ -309,11 +309,11 @@ hash exclusions do not remove stored content. This patch does not change that
 safety boundary. CloudWatch alarm collection is **not verified**, even when the
 command's available count/repeat gates pass.
 
-### A7.1 evidence (2026-11-23)
+### Earlier A7.1 evidence (2026-11-23)
 
-Implementation and targeted gates pass, but the live acceptance gate remains
-**UNMET**. These runs used a private native PostgreSQL server on port 55473,
-the pinned emulator 1.0.348 and FalkorDB 6.0.4; no real AWS was contacted.
+At this earlier checkpoint, implementation and targeted gates passed but live
+acceptance was **UNMET**. These runs used a private native PostgreSQL server on
+port 55473, pinned emulator 1.0.348 and FalkorDB 6.0.4; no real AWS was contacted.
 
 | Selection | Start | Seed | Sweep | Verify counts | Stop | Exit |
 | --- | ---: | ---: | ---: | --- | ---: | ---: |
@@ -325,8 +325,8 @@ work and zero graph backlog. EC2/STS reported 96 writes/96 rows, 141 complete,
 19 unsupported and 5 failed scopes; T0 reported 137 writes/129 rows,
 219 complete, 20 unsupported and 8 failed scopes. Failed operation names were
 printed. Neither run reached `resweep`; count mismatches were not waived or
-filtered out. Baseline subtraction and the CloudWatch Alarm gap remain separate
-follow-up work, not verified behavior of this change.
+filtered out. Baseline subtraction and the CloudWatch Alarm gap were then separate
+follow-up work; the later evidence below supersedes this checkpoint.
 
 Evidence work directories are `/tmp/w2-run-accepted.lMwTxB` and
 `/tmp/w2-run-t0.AI2xfs`; console logs are `/tmp/w2-run-accepted-proof.log` and
@@ -342,6 +342,50 @@ tests, all-target Clippy for `inventory-engine` and `inventory-harness`,
 format checks and the harness/collector build. Service-selection tests and
 all-target Clippy for `inventory-core` and `aws-inventory` also passed.
 No workspace suite, E5.1 graph verifier or A6.1 cross-check was run.
+
+### Baseline/classification follow-up evidence (2026-11-23)
+
+The EC2/STS and T0 commands now exit **0**: all available command stages pass,
+including exact callable-kind identity additions and zero repeat resource writes.
+The CloudWatch Alarm deferral remains an explicit **not-verified** open user
+decision above, not a collection success. This is not completion of the full
+A7.2 coverage-status report, E5.1 graph verification or A6.1 cross-check.
+
+| Selection | Start | Baseline | Seed | Sweep | Counts | Resweep | Stop | Exit |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `ec2`, `sts` | 368 ms | 35,909 ms | 4,053 ms | 40,239 ms | 2,391 ms | 40,166 ms, writes 0 | 32 ms | 0 |
+| T0: `ec2 sts iam sns sqs dynamodb kms lambda s3 cloudwatch` | 371 ms | 41,378 ms | 5,864 ms | 52,597 ms | 2,394 ms | 51,718 ms, writes 0 | 36 ms | 0 |
+
+EC2/STS baseline stored 36 identities; the first seeded sweep wrote 60 resources
+and stored 96 rows. Subnet and VPC each matched six added identities exactly.
+T0 baseline stored 40 identities; the seeded sweep wrote 99 resources and stored
+131 rows. All callable oracle kinds matched, including two Signer profiles
+created by the Lambda recipe. The recipe-derived collector selection includes
+that cross-service prerequisite without changing the ten requested selectors.
+Every collector had zero partial scopes, pending work and graph backlog.
+EC2/STS retained 19 unsupported/5 failed scopes; T0 retained 20 unsupported/8
+failed scopes, with operation names printed rather than suppressed.
+
+Evidence: `/tmp/w2-run-delta-ec2.pca6Qo` and
+`/tmp/w2-run-delta-t0-final.L7NqWM`; console logs:
+`/tmp/w2-run-delta-ec2-proof.log` and
+`/tmp/w2-run-delta-t0-final-proof.log`. Baseline/oracle/matrix and all collector
+logs remain in their work directories. No test databases remained afterward
+(`SELECT count(*)` returned 0), and the private PostgreSQL server was stopped.
+
+Two earlier follow-up attempts remain visible: an accidental collector build
+without `--features sweep` failed baseline in 3 ms without seeding
+(`/tmp/w2-run-delta-ec2.yJ61UE/baseline.log`); the first T0 run correctly failed
+Signer expected 2/actual 0 because cross-service collection was missing
+(`/tmp/w2-run-delta-t0.xGmLfM`, `/tmp/w2-run-delta-t0-proof.log`). It did not reach
+resweep. The feature prerequisite was restored and recipe-derived collection
+fixed the real selection gap; no callable mismatch was filtered or waived.
+
+Targeted checks passed: 17 ordinary harness E2E tests, the three owned-PostgreSQL
+cases, all-target harness Clippy with warnings denied, fmt check and the
+sweep-enabled harness/collector build. Three prerequisite-selection behavior
+tests were rerun successfully after removing a newly unused import caught by
+Clippy. No workspace suite or performance-budget claim is included.
 
 ## One command
 
