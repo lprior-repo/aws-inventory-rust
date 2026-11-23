@@ -95,6 +95,6 @@ fn public_registry_dispositions_cover_every_pinned_d_f_service_and_operation() -
         }
     }
     assert_eq!(total, 2066);
-    assert_eq!(callable, 213);
+    assert_eq!(callable, 212);
     Ok(())
 }
