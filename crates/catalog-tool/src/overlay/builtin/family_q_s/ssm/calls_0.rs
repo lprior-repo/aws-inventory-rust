@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/ssm/service/2014-11-06/ssm-2014-11-06.json
-use super::super::construction::{Inventory, ResourceIdentity};
+use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 
 pub(super) const CALLS: &[Inventory] = &[

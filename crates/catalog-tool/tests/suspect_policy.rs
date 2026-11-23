@@ -51,23 +51,30 @@ fn check_decision(
         "structure" => check_structure(policy, member, value)?,
         "correlated" => check_correlated(policy, member, value)?,
         "unset" => assert!(!policy.fixed.contains_key(&MemberPath::new(member)?)),
-        "scope" => assert_eq!(
-            policy.scope,
-            Some(if value == "account" {
-                overlay::Scope::Account
-            } else {
-                overlay::Scope::Region
-            })
-        ),
-        "account" => assert_eq!(
-            policy.bind.get(&MemberPath::new(member)?),
-            Some(&overlay::Binding::Account)
-        ),
+        "scope" => check_scope(policy, value),
+        "account" => check_account(policy, member)?,
         "filter" => check_filter(policy, member, value)?,
         "branches" => check_branches(policy, member, value)?,
         "features" => check_features(policy, member, value)?,
         _ => check_class(policy, expected_class(decision)?),
     }
+    Ok(())
+}
+
+fn check_scope(policy: &overlay::OperationOverlay, value: &str) {
+    let expected = if value == "account" {
+        overlay::Scope::Account
+    } else {
+        overlay::Scope::Region
+    };
+    assert_eq!(policy.scope, Some(expected));
+}
+
+fn check_account(policy: &overlay::OperationOverlay, member: &str) -> TestResult {
+    assert_eq!(
+        policy.bind.get(&MemberPath::new(member)?),
+        Some(&overlay::Binding::Account)
+    );
     Ok(())
 }
 
