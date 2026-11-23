@@ -5,6 +5,6 @@ service = "datazone"
 id = "resource"
 operation = "CreateDomain"
 kind = "AWS::DataZone::Domain"
-identity = "id"
+identity = "arn"
 [step.input]
 "name" = "inventory-thin-datazone"
