@@ -1,7 +1,11 @@
 use super::graph::GraphServer;
 use crate::{HarnessError, emulator::Emulator};
 use aws_wire::sign::Credentials;
-use std::path::{Path, PathBuf};
+use std::{
+    io::Write,
+    os::unix::fs::OpenOptionsExt,
+    path::{Path, PathBuf},
+};
 
 pub struct Stack {
     emulator: Emulator,
@@ -70,19 +74,34 @@ fn issued_profile(
     root: &Path,
     emulator: &Emulator,
 ) -> Result<(Credentials, PathBuf, PathBuf), HarnessError> {
-    let issued = std::fs::read_to_string(emulator.credentials())?;
+    let issued = read_issued(emulator.credentials())?;
     let key = field(&issued, "aws_access_key_id")?;
     let secret = field(&issued, "aws_secret_access_key")?;
     let credentials = Credentials::new(key, secret, None)
         .map_err(|error| HarnessError::invalid(error.to_string()))?;
     let profile = root.join("credentials");
     let config = root.join("config");
-    std::fs::write(
+    write_secret(
         &profile,
-        format!("[default]\naws_access_key_id = {key}\naws_secret_access_key = {secret}\n"),
+        &format!("[default]\naws_access_key_id = {key}\naws_secret_access_key = {secret}\n"),
     )?;
-    std::fs::write(&config, "[default]\nregion = us-east-1\n")?;
+    write_secret(&config, "[default]\nregion = us-east-1\n")?;
     Ok((credentials, profile, config))
+}
+
+fn read_issued(path: &Path) -> Result<String, HarnessError> {
+    String::from_utf8(crate::files::read_bytes(path, 65_536)?)
+        .map_err(|_| HarnessError::invalid("emulator credentials must be UTF-8"))
+}
+
+fn write_secret(path: &Path, content: &str) -> Result<(), HarnessError> {
+    let mut file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .mode(0o600)
+        .open(path)?;
+    file.write_all(content.as_bytes())?;
+    Ok(())
 }
 
 fn field<'a>(issued: &'a str, name: &str) -> Result<&'a str, HarnessError> {
@@ -113,3 +132,6 @@ pub fn binary(variable: &str, default: &str) -> Result<PathBuf, HarnessError> {
     }
     Ok(path)
 }
+
+#[cfg(test)]
+mod tests;
