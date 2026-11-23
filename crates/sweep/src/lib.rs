@@ -22,6 +22,7 @@ mod request;
 mod resource_projection;
 mod row_policy;
 #[cfg(test)]
+#[path = "tests/cbor.rs"]
 mod test_cbor;
 
 pub use control::{ProgressEvent, SweepControl};

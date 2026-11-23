@@ -1,3 +1,6 @@
+mod engines;
+mod literals;
+mod regional;
 use super::encode;
 use crate::{execution::routing, input::root_bindings};
 use catalog_tool::{endpoints, kind_map, names, overlay, runtime_catalog, smithy};
@@ -158,27 +161,6 @@ fn exception_endpoint() -> Result<endpoints::VerifiedEndpoint, Box<dyn std::erro
         .map_err(|error| format!("fixed-exception endpoint failed: {error:?}"))?;
     Ok(verified)
 }
-#[test]
-fn given_regional_exception_when_request_resolved_then_only_its_region_is_overridden() -> TestResult
-{
-    let bytes = compiled_inputs(
-        "aws.protocols#awsQuery",
-        filters("neptune")?,
-        overlay::FixedValue::map([("owner", overlay::FixedValue::String("inventory".into()))])?,
-        exception_endpoint()?,
-    )?;
-    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
-    let plan = catalog
-        .lookup("fixed", "ListClusters")
-        .ok_or("missing plan")?;
-    let exception = routing::resolve(plan, &RegionId::parse("eu-west-1")?)?;
-    assert_eq!(exception.url, "https://fixed-fips.eu-west-1.test");
-    assert_eq!(exception.signing_region, "eu-west-1");
-    let template = routing::resolve(plan, &RegionId::parse("us-west-2")?)?;
-    assert_eq!(template.url, "https://fixed.us-west-2.test");
-    assert_eq!(template.signing_region, "us-west-2");
-    Ok(())
-}
 fn signed(
     protocol: &str,
     engine: &str,
@@ -223,113 +205,6 @@ fn signed_bytes(bytes: &[u8]) -> Result<http::Request<bytes::Bytes>, Box<dyn std
     Ok(request)
 }
 
-#[test]
-fn given_mixed_database_engines_when_query_filters_signed_then_each_request_selects_only_its_own_engine()
--> TestResult {
-    let rows = [("n", "neptune"), ("d", "docdb"), ("r", "aurora-mysql")];
-    ["neptune", "docdb", "aurora-mysql"]
-        .into_iter()
-        .zip(["n", "d", "r"])
-        .try_for_each(|(engine, expected)| {
-            let request = signed("aws.protocols#awsQuery", engine)?;
-            let query = std::str::from_utf8(request.body())?;
-            assert!(query.contains("Filters.Filter.1.Name=engine"));
-            let selected = query
-                .split('&')
-                .find_map(|pair| pair.strip_prefix("Filters.Filter.1.Values.Value.1="))
-                .ok_or("engine value absent")?;
-            let observed = rows
-                .iter()
-                .filter(|(_, row_engine)| *row_engine == selected)
-                .map(|(id, _)| *id)
-                .collect::<Vec<_>>();
-            assert_eq!(observed, vec![expected]);
-            let other = signed(
-                "aws.protocols#awsQuery",
-                if engine == "neptune" {
-                    "docdb"
-                } else {
-                    "neptune"
-                },
-            )?;
-            assert_ne!(
-                request.headers().get("authorization"),
-                other.headers().get("authorization")
-            );
-            Ok(())
-        })
-}
-
-#[test]
-fn given_invalid_nested_literals_when_compiled_then_model_and_resource_bounds_reject() -> TestResult
-{
-    let invalid = [
-        (
-            overlay::FixedValue::list([overlay::FixedValue::structure([(
-                "Name",
-                overlay::FixedValue::String("engine".into()),
-            )])?]),
-            false,
-        ),
-        (
-            with_field("Unknown", overlay::FixedValue::Boolean(true))?,
-            false,
-        ),
-        (
-            overlay::FixedValue::list([overlay::FixedValue::String("not a structure".into())]),
-            false,
-        ),
-        (
-            overlay::FixedValue::list(vec![
-                overlay::FixedValue::structure([
-                    ("Name", overlay::FixedValue::String("engine".into())),
-                    (
-                        "Values",
-                        overlay::FixedValue::Strings(vec!["neptune".into()])
-                    )
-                ])?;
-                65
-            ]),
-            true,
-        ),
-        (
-            overlay::FixedValue::list([overlay::FixedValue::structure([
-                ("Name", overlay::FixedValue::String("x".repeat(16_385))),
-                (
-                    "Values",
-                    overlay::FixedValue::Strings(vec!["neptune".into()]),
-                ),
-            ])?]),
-            true,
-        ),
-        (filters("invalid-engine")?, false),
-        (
-            with_field("Threshold", overlay::FixedValue::Integer(8))?,
-            false,
-        ),
-    ];
-    invalid
-        .into_iter()
-        .try_for_each(|(literal, exceeds_bounds)| {
-            let error = compiled("aws.protocols#awsQuery", literal)
-                .err()
-                .ok_or("invalid literal accepted")?;
-            if exceeds_bounds {
-                assert_eq!(
-                    error
-                        .downcast_ref::<overlay::NameError>()
-                        .ok_or("expected literal-bounds error")?
-                        .value,
-                    "fixed: literal bounds exceeded"
-                );
-            } else {
-                assert_invalid_value(error.as_ref())?;
-            }
-            Ok::<(), Box<dyn std::error::Error>>(())
-        })?;
-    Ok(())
-}
-
 fn with_field(
     name: &str,
     value: overlay::FixedValue,
@@ -357,28 +232,6 @@ fn assert_invalid_value(error: &(dyn std::error::Error + 'static)) -> TestResult
             .any(|violation| violation.rule() == overlay::ViolationRule::InvalidValue)
     );
     Ok(())
-}
-
-#[test]
-fn given_nested_scalar_constraints_when_compiled_then_ranges_lengths_and_unicode_are_checked()
--> TestResult {
-    let float = |value| overlay::FixedValue::Float(inventory_core::record::Float::new(value));
-    let cases = [
-        ("Ratio", float(0.5), true),
-        ("Ratio", float(2.0), false),
-        ("Payload", overlay::FixedValue::Bytes(vec![1, 2]), true),
-        ("Payload", overlay::FixedValue::Bytes(vec![1, 2, 3]), false),
-        ("Unicode", overlay::FixedValue::String("éé".into()), true),
-        ("Unicode", overlay::FixedValue::String("ééé".into()), false),
-    ];
-    cases.into_iter().try_for_each(|(name, value, permitted)| {
-        let result = compiled("aws.protocols#awsJson1_0", with_field(name, value)?);
-        assert_eq!(result.is_ok(), permitted, "{name}: {result:?}");
-        if let Ok(bytes) = result {
-            RuntimeCatalog::from_bytes(&bytes)?;
-        }
-        Ok(())
-    })
 }
 
 fn map_mut(value: &mut Value) -> Result<&mut BTreeMap<Key, Value>, Box<dyn std::error::Error>> {
@@ -411,53 +264,6 @@ fn reseal(root: &mut Value) -> TestResult {
     let provenance = field_mut(field_mut(root, 60_000)?, 7)?;
     *field_mut(provenance, 7)? = Value::Bytes(digest.to_vec());
     Ok(())
-}
-#[test]
-fn given_forged_literal_tree_when_loaded_then_required_members_and_types_are_rechecked()
--> TestResult {
-    let bytes = compiled("aws.protocols#awsQuery", filters("neptune")?)?;
-    let record = Record::from_bytes(bytes)?;
-    let original = Value::Map(
-        record
-            .root()
-            .iter()?
-            .map(|entry| {
-                let (key, value) = entry?;
-                Ok((key.to_key(), value.to_value()?))
-            })
-            .collect::<Result<_, inventory_core::record::RecordError>>()?,
-    );
-    let path_key = Key::Field(FieldId::new(1)?);
-    [
-        Value::List(vec![Value::Map(BTreeMap::new())]),
-        Value::List(vec![Value::Bool(true)]),
-    ]
-    .into_iter()
-    .try_for_each(|forged| {
-        let mut root = original.clone();
-        let plans = field_mut(field_mut(&mut root, 60_000)?, 2)?;
-        let bindings = field_mut(first_mut(plans)?, 7)?;
-        let Value::List(bindings) = bindings else {
-            return Err("bindings absent".into());
-        };
-        let target = bindings
-            .iter_mut()
-            .find(|binding| match binding {
-                Value::Map(fields) => fields
-                    .get(&path_key)
-                    .is_some_and(|path| *path == Value::List(vec![Value::Int(3)])),
-                _ => false,
-            })
-            .ok_or("Filters binding absent")?;
-        *field_mut(target, 3)? = forged;
-        reseal(&mut root)?;
-        let bytes = Record::encode(&root)?.into_bytes();
-        assert!(matches!(
-            RuntimeCatalog::from_bytes(&bytes),
-            Err(RuntimeCatalogError::Capability)
-        ));
-        Ok(())
-    })
 }
 
 #[path = "fixed_input_constraint_tests.rs"]

@@ -1,5 +1,5 @@
 use super::*;
-#[path = "legacy_fixture.rs"]
+#[path = "legacy_tests/fixture.rs"]
 mod legacy_fixture;
 use legacy_fixture::*;
 

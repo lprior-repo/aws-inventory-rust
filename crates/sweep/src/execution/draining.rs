@@ -1,3 +1,6 @@
+#[path = "draining/seeding.rs"]
+mod seeding;
+pub(super) use seeding::*;
 #[path = "draining/admission.rs"]
 pub(super) mod admission;
 #[path = "draining/settlement.rs"]
@@ -21,133 +24,6 @@ pub(super) fn narrow_regions(
             )),
         None => Ok(regions),
     }
-}
-
-pub(super) async fn seed_enumerations(
-    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
-    sweep: &SweepId,
-    regions: &[Region],
-) -> Result<u64, SweepError> {
-    let work = enumeration_work(context, sweep, regions)?;
-    let count = u64::try_from(work.len())
-        .map_err(|_| SweepError::Operation("root scope count exceeds progress range"))?;
-    context.store.seed_works(&work).await?;
-    Ok(count)
-}
-
-fn enumeration_work(
-    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
-    sweep: &SweepId,
-    regions: &[Region],
-) -> Result<Vec<WorkSpec>, SweepError> {
-    let mut work = Vec::new();
-    for plan in context
-        .bootstrap
-        .catalog
-        .plans()
-        .iter()
-        .filter(|plan| matches!(plan.purpose(), PlanPurpose::Enumeration))
-    {
-        append_plan_work(
-            &context.account,
-            context.bootstrap.home,
-            sweep,
-            plan,
-            regions,
-            &mut work,
-        )?;
-    }
-    Ok(work)
-}
-
-pub(super) const MAX_ROOT_SCOPES: usize = 100_000;
-
-pub(super) fn append_plan_work(
-    account: &AccountId,
-    home: &RegionId,
-    sweep: &SweepId,
-    plan: &CallablePlan<'_>,
-    regions: &[Region],
-    work: &mut Vec<WorkSpec>,
-) -> Result<(), SweepError> {
-    for branch in plan
-        .branches()
-        .iter()
-        .map(Some)
-        .chain(std::iter::once(None).filter(|_| plan.branches().is_empty()))
-    {
-        if input::requires_parent_branch(plan, branch) {
-            continue;
-        }
-        let scope_kind = branch.map_or(plan.scope(), |branch| branch.scope);
-        for region in plan_regions(scope_kind, regions, home) {
-            if work.len() >= MAX_ROOT_SCOPES {
-                return Err(SweepError::Operation(
-                    "root enumeration scope count exceeds bound",
-                ));
-            }
-            let mut scope = scope_key(plan, account, region.scope)?;
-            if let Some(branch) = branch {
-                scope = scope.with_branch(branch.discriminator.clone())?;
-            }
-            let request_region =
-                super::routing::request_region(plan, scope.region(), home, scope.branch())?;
-            let request_region = Region::Regional(request_region);
-            let bindings =
-                input::root_bindings_branch(plan, branch, Some(account), Some(&request_region))?
-                    .into_bytes();
-            work.try_reserve(1)?;
-            work.push(WorkSpec::new(sweep.clone(), scope, None, bindings)?);
-        }
-    }
-    Ok(())
-}
-
-pub(super) struct PlannedRegion {
-    pub(super) scope: Region,
-    #[cfg(test)]
-    pub(super) request: Region,
-}
-
-#[cfg(test)]
-fn planned_region(scope: Region, request: Region) -> PlannedRegion {
-    PlannedRegion { scope, request }
-}
-#[cfg(not(test))]
-fn planned_region(scope: Region, _request: Region) -> PlannedRegion {
-    PlannedRegion { scope }
-}
-
-pub(super) fn plan_regions(
-    scope: PlanScope,
-    regions: &[Region],
-    home: &RegionId,
-) -> Vec<PlannedRegion> {
-    match scope {
-        PlanScope::Region => regions
-            .iter()
-            .cloned()
-            .map(|region| planned_region(region.clone(), region))
-            .collect(),
-        PlanScope::Account => vec![planned_region(
-            Region::Global,
-            Region::Regional(home.clone()),
-        )],
-        PlanScope::HomeRegion => vec![planned_region(
-            Region::Regional(home.clone()),
-            Region::Regional(home.clone()),
-        )],
-    }
-}
-
-pub(super) fn scope_key(
-    plan: &CallablePlan<'_>,
-    account: &AccountId,
-    region: Region,
-) -> Result<ScopeKey, SweepError> {
-    let service = ServiceId::parse(plan.service_name()).map_err(SweepError::from)?;
-    let operation = OperationId::parse(plan.operation_name()).map_err(SweepError::from)?;
-    ScopeKey::new(account.clone(), region, service, operation, None).map_err(SweepError::from)
 }
 
 pub(super) async fn drain_work(
@@ -254,15 +130,22 @@ pub(super) async fn apply_persisted_summary(
         unobserved: stored.unobserved_scopes,
     };
     summary.scopes = scope_total(&summary.outcomes)?;
-    if stored.work_pending != 0 {
-        // Only a slice that ran out of time may leave work behind; the next
-        // invocation resumes it. Any other pending work is an engine fault.
+    record_pending(summary, stored.work_pending, slice_exhausted)?;
+    Ok(())
+}
+
+fn record_pending(
+    summary: &mut SweepSummary,
+    pending: u64,
+    slice_exhausted: bool,
+) -> Result<(), SweepError> {
+    if pending != 0 {
         if !slice_exhausted {
             return Err(SweepError::Operation(
                 "sweep ended with active work; incomplete completion is not reportable",
             ));
         }
-        summary.work_remaining = stored.work_pending;
+        summary.work_remaining = pending;
     }
     Ok(())
 }

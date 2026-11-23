@@ -19,68 +19,100 @@ pub(crate) fn tag_observation(
         return TagObservation::new(resource.clone(), TagCoverage::Unobserved, Vec::new())
             .map_err(SweepError::from);
     };
-    let mut valid_tags = Vec::new();
-    let mut skipped: u32 = 0;
-    let mut exceeded = false;
-    match (plan, value) {
-        (TagPlan::List { key, value, .. }, ValueRef::List(list)) => {
-            for item in list.iter()? {
-                if valid_tags.len() >= MAX_RESOURCE_TAGS.saturating_add(1) {
-                    exceeded = true;
-                    break;
-                }
-                let item = item?;
-                match list_pair(item, *key, *value) {
-                    Ok(tag) => valid_tags.push(tag),
-                    Err(error) => {
-                        tracing::warn!(%error, "skipping malformed tag pair in list");
-                        skipped = skipped.saturating_add(1);
-                    }
-                }
+    let mut tags = Tags::default();
+    tags.collect(plan, value)?;
+    tags.observation(resource)
+}
+
+#[derive(Default)]
+struct Tags {
+    valid: Vec<Tag>,
+    skipped: u32,
+    exceeded: bool,
+}
+
+impl Tags {
+    fn collect(&mut self, plan: &TagPlan, value: ValueRef<'_>) -> Result<(), SweepError> {
+        match (plan, value) {
+            (TagPlan::List { key, value, .. }, ValueRef::List(list)) => {
+                self.list(list, *key, *value)
             }
-        }
-        (TagPlan::Map { .. }, ValueRef::Map(map)) => {
-            for item in map.iter()? {
-                if valid_tags.len() >= MAX_RESOURCE_TAGS.saturating_add(1) {
-                    exceeded = true;
-                    break;
-                }
-                let item = item?;
-                match map_pair(item) {
-                    Ok(tag) => valid_tags.push(tag),
-                    Err(error) => {
-                        tracing::warn!(%error, "skipping malformed tag pair in map");
-                        skipped = skipped.saturating_add(1);
-                    }
-                }
-            }
-        }
-        _ => {
-            return Err(SweepError::Operation(
+            (TagPlan::Map { .. }, ValueRef::Map(map)) => self.map(map),
+            _ => Err(SweepError::Operation(
                 "modeled tags do not match the compiled shape",
-            ));
+            )),
         }
     }
-    // A repeated key cannot be stored: keep the first occurrence, report Partial.
-    valid_tags.sort_by(|left, right| left.key().cmp(right.key()));
-    let before = valid_tags.len();
-    valid_tags.dedup_by(|later, earlier| later.key() == earlier.key());
-    if valid_tags.len() < before {
-        tracing::warn!("skipping duplicate tag keys");
-        skipped = skipped.saturating_add(1);
+
+    fn full(&mut self) -> bool {
+        self.exceeded = self.valid.len() >= MAX_RESOURCE_TAGS.saturating_add(1);
+        self.exceeded
     }
-    let truncated = valid_tags.len() > MAX_RESOURCE_TAGS;
-    if truncated {
-        valid_tags.truncate(MAX_RESOURCE_TAGS);
+
+    fn list(
+        &mut self,
+        list: inventory_core::record::ListRef<'_>,
+        key: FieldId,
+        value: FieldId,
+    ) -> Result<(), SweepError> {
+        for item in list.iter()? {
+            if self.full() {
+                break;
+            }
+            self.accept(list_pair(item?, key, value), true);
+        }
+        Ok(())
     }
-    let coverage = if skipped > 0 || truncated || exceeded {
-        TagCoverage::Partial
-    } else {
-        TagCoverage::Complete
-    };
-    // Truncation must be done before TagObservation::new so the constructor
-    // never sees >100 tags.
-    TagObservation::new(resource.clone(), coverage, valid_tags).map_err(SweepError::from)
+
+    fn map(&mut self, map: MapRef<'_>) -> Result<(), SweepError> {
+        for item in map.iter()? {
+            if self.full() {
+                break;
+            }
+            self.accept(map_pair(item?), false);
+        }
+        Ok(())
+    }
+
+    fn accept(&mut self, pair: Result<Tag, SweepError>, list: bool) {
+        match pair {
+            Ok(tag) => self.valid.push(tag),
+            Err(error) => {
+                if list {
+                    tracing::warn!(%error, "skipping malformed tag pair in list");
+                } else {
+                    tracing::warn!(%error, "skipping malformed tag pair in map");
+                }
+                self.skipped = self.skipped.saturating_add(1);
+            }
+        }
+    }
+
+    fn deduplicate(&mut self) {
+        self.valid
+            .sort_by(|left, right| left.key().cmp(right.key()));
+        let before = self.valid.len();
+        self.valid
+            .dedup_by(|later, earlier| later.key() == earlier.key());
+        if self.valid.len() < before {
+            tracing::warn!("skipping duplicate tag keys");
+            self.skipped = self.skipped.saturating_add(1);
+        }
+    }
+
+    fn observation(mut self, resource: &ResourceKey) -> Result<TagObservation, SweepError> {
+        self.deduplicate();
+        let truncated = self.valid.len() > MAX_RESOURCE_TAGS;
+        if truncated {
+            self.valid.truncate(MAX_RESOURCE_TAGS);
+        }
+        let coverage = if self.skipped > 0 || truncated || self.exceeded {
+            TagCoverage::Partial
+        } else {
+            TagCoverage::Complete
+        };
+        TagObservation::new(resource.clone(), coverage, self.valid).map_err(SweepError::from)
+    }
 }
 
 // Missing is unobserved, but a present non-map ancestor is malformed, not empty.

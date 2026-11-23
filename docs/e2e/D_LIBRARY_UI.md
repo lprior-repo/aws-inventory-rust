@@ -105,12 +105,32 @@ This remains an unresolved end-to-end blocker; no deadline was increased.
 
 ## Wave 1 library status (2026-11-23)
 
-D1.2 and D1.3 are implemented. D1.4 is **HELD**, not complete: a coverage
-probe adding `crates/sweep/src` and excluding nested `*_tests/` helpers found
-88 violations across 35 sweep files, plus 730 findings outside the sweep.
-The captured command output is `local://12542.log` in the implementation
-session. The gate script remains unchanged; the coordinator will schedule
-the sweep refactor separately to avoid overlapping the metrics work.
-The existing ignored E2E timeout above remains unverified, and P1/P6
-measurements await the benchmark lane. No completion or performance claim
-is made for D1.4.
+D1.2 and D1.3 are implemented. D1.4's behavior-preserving split and
+structural gate are complete: `bash scripts/check-function-size.sh
+crates/sweep/src` exits 0. The default gate now includes the sweep; explicit
+path arguments select a scoped check without changing other crates' existing
+findings. Test-only fixtures retain their assertions and are excluded from
+the production function gate by the existing test-path convention.
+
+All 317 Rust files under `crates/sweep/src`, including tests, are at most
+300 lines (51,963 lines total; largest file: 298). Production functions pass
+the 25-line gate. Formatting and all-target `clippy -D warnings` pass.
+Regression suites pass: `inventory-sweep` has 461 passing tests; the root
+`aws-inventory --features sweep` run has 99 passing tests and two ignored.
+The root run includes the separate B5.1 stdout-golden migration (`670b16b0`),
+which retains exact two-line output equality.
+
+Rust additions and deletions below use `git show --no-renames --numstat`
+with `*.rs` paths, so extraction and fixture moves count on both sides.
+Interleaved C5.3 and B5.1 work is not included.
+
+| Step | Commits | Rust added | Rust deleted |
+| --- | --- | ---: | ---: |
+| D1.1 | `58d78566`, `973fd0fd` | 478 | 145 |
+| D1.2 | `72c6568f` | 49,301 | 49,304 |
+| D1.3 | `d77a6985` | 1,176 | 252 |
+| D1.4 | `d366339e`, `2b726e83`, `4b882f12`, `85f56594`, `e1c22073`, `5806eaee` | 17,648 | 15,837 |
+
+D1 as a whole is not declared end-to-end complete: the existing ignored E2E
+timeout above remains unresolved and was not rerun. P1/P6 are **unverified**;
+the required benchmark does not exist yet. No performance claim is made.

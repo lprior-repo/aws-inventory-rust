@@ -1,3 +1,4 @@
+mod fields;
 #[path = "typed_operand.rs"]
 mod typed_operand;
 use super::identity_validation::{IdentityTextOperandValidation, IdentityTextValidation};
@@ -28,41 +29,13 @@ pub(super) fn resource_id(
         IdentityPlan::CorrelatedKey(fields) => {
             fields_text(row, fields, trusted, context, request, validation)?
         }
-        IdentityPlan::MapArn {
-            path,
-            key,
-            resource_kind,
-            request_url,
-        } => {
-            let text = map_text(row, path, key)?;
-            let request_url = request_url
-                .as_ref()
-                .map(|path| {
-                    required_text(
-                        request.ok_or(SweepError::Operation(
-                            "queue ARN identity requires actual request URL",
-                        ))?,
-                        path,
-                    )
-                })
-                .transpose()?;
-            validate_resource_arn(
-                &text,
-                resource_kind,
-                trusted.ok_or(SweepError::Operation(
-                    "map ARN identity requires trusted request scope",
-                ))?,
-                request_url.as_deref(),
-            )?;
-            text
-        }
-        _ => {
-            return Err(SweepError::Operation(
-                "unexpected contextual identity recipe",
-            ));
-        }
+        _ => map_identity(row, identity, trusted, request)?,
     };
-    ResourceId::parse(&value)
+    parse_identity(&value)
+}
+
+pub(super) fn parse_identity(text: &str) -> Result<ResourceId, SweepError> {
+    ResourceId::parse(text)
         .map_err(|_| SweepError::Operation("modeled resource identity is invalid"))
 }
 
@@ -86,19 +59,7 @@ fn choose<'a>(
             }
         }
         IdentityChoicePlan::Discriminated(branches) => {
-            let branch = branches
-                .iter()
-                .try_fold(None, |found, branch| {
-                    if found.is_some() {
-                        return Ok(found);
-                    }
-                    Ok::<_, SweepError>(
-                        matches_predicate(row, &branch.predicate, request)?.then_some(branch),
-                    )
-                })?
-                .ok_or(SweepError::Operation(
-                    "no reviewed identity branch matches the selected item",
-                ))?;
+            let branch = matching_branch(row, branches, request)?;
             leaf(row, &branch.identity, trusted, context, request, validation)
         }
     }
@@ -160,161 +121,14 @@ fn fields_text<'a>(
     request: Option<&'a Record>,
     validation: &IdentityTextValidation<'_, '_>,
 ) -> Result<Cow<'a, str>, SweepError> {
-    if fields.is_empty() || fields.len() > 64 {
-        return Err(SweepError::Operation(
-            "invalid correlated identity field count",
-        ));
+    fields::Fields {
+        row,
+        trusted,
+        context,
+        request,
+        validation,
     }
-    if let [field] = fields {
-        return field_text(row, field, trusted, context, request, validation);
-    }
-    fields
-        .iter()
-        .enumerate()
-        .try_fold(String::new(), |mut result, (position, field)| {
-            let component = field_text(row, field, trusted, context, request, validation)?;
-            let digits = if component.is_empty() {
-                1
-            } else {
-                component.len().ilog10().saturating_add(1)
-            };
-            let additional = component
-                .len()
-                .checked_add(
-                    usize::try_from(digits)
-                        .map_err(|_| SweepError::Operation("identity length overflow"))?,
-                )
-                .and_then(|length| {
-                    length.checked_add(1usize.saturating_add(usize::from(position > 0)))
-                })
-                .ok_or(SweepError::Operation("identity length overflow"))?;
-            if result
-                .len()
-                .checked_add(additional)
-                .is_none_or(|length| length > 4096)
-            {
-                return Err(SweepError::Operation(
-                    "modeled resource identity is too long",
-                ));
-            }
-            result.try_reserve(additional)?;
-            if position > 0 {
-                result.push('|');
-            }
-            write!(result, "{}:{component}", component.len())
-                .map_err(|_| SweepError::Operation("identity formatting failed"))?;
-            Ok(result)
-        })
-        .map(Cow::Owned)
-}
-
-fn field_text<'a>(
-    row: &'a Record,
-    field: &IdentityFieldPlan,
-    trusted: Option<&IdentityContext<'_>>,
-    context: Option<&'a DiscoveryContext>,
-    request: Option<&'a Record>,
-    validation: &IdentityTextValidation<'_, '_>,
-) -> Result<Cow<'a, str>, SweepError> {
-    match field {
-        IdentityFieldPlan::Selected(path) => identity_text(row, path),
-        IdentityFieldPlan::Request(path) => identity_text(
-            request.ok_or(SweepError::Operation(
-                "identity requires actual request context",
-            ))?,
-            path,
-        ),
-        IdentityFieldPlan::SelectedArn(path) | IdentityFieldPlan::RequestArn(path) => {
-            let record = if matches!(field, IdentityFieldPlan::SelectedArn(_)) {
-                row
-            } else {
-                request.ok_or(SweepError::Operation(
-                    "identity requires actual request context",
-                ))?
-            };
-            let value = path_value(record.root(), path)?
-                .ok_or(SweepError::Operation("modeled identity path is absent"))?;
-            let ValueRef::Text(text) = value else {
-                return Err(SweepError::Operation(
-                    "modeled ARN identity operand must be text",
-                ));
-            };
-            validate_arn(text, trusted)?;
-            Ok(Cow::Borrowed(text))
-        }
-        IdentityFieldPlan::SelectedInteger {
-            path,
-            minimum,
-            maximum,
-        } => typed_operand::integer(row, path, *minimum, *maximum),
-        IdentityFieldPlan::RequestInteger {
-            path,
-            minimum,
-            maximum,
-        } => typed_operand::integer(
-            request.ok_or(SweepError::Operation(
-                "identity requires actual request context",
-            ))?,
-            path,
-            *minimum,
-            *maximum,
-        ),
-        IdentityFieldPlan::SelectedStringList {
-            path,
-            max_items,
-            max_item_bytes,
-        } => typed_operand::string_list(
-            row,
-            path,
-            *max_items,
-            *max_item_bytes,
-            &validation.selected_operand(path)?,
-        ),
-        IdentityFieldPlan::SelectedDigest(path) => {
-            let value = path_value(row.root(), path)?
-                .ok_or(SweepError::Operation("modeled identity path is absent"))?;
-            let empty = match value {
-                ValueRef::Null => true,
-                ValueRef::Map(map) => map.count()? == 0,
-                ValueRef::List(list) => list.count()? == 0,
-                _ => false,
-            };
-            if empty {
-                return Err(SweepError::Operation(
-                    "modeled identity digest value is null or empty",
-                ));
-            }
-            let hash = inventory_core::record::selected_content_hash(value)?;
-            let text =
-                hash.as_bytes()
-                    .iter()
-                    .try_fold(String::from("blake3:"), |mut text, byte| {
-                        write!(text, "{byte:02x}").map_err(|_| {
-                            SweepError::Operation("identity digest formatting failed")
-                        })?;
-                        Ok::<_, SweepError>(text)
-                    })?;
-            Ok(Cow::Owned(text))
-        }
-        IdentityFieldPlan::MapValue { path, key } => map_text(row, path, key),
-        IdentityFieldPlan::Context {
-            service,
-            operation,
-            source,
-            path,
-        } => {
-            let context = context.ok_or(SweepError::Operation(
-                "identity requires durable discovery context",
-            ))?;
-            context
-                .value(service, operation, *source, path)
-                .map_err(|_| SweepError::Operation("invalid durable discovery context"))?
-                .ok_or(SweepError::Operation(
-                    "required discovery ancestor identity is absent",
-                ))
-                .and_then(value_text)
-        }
-    }
+    .texts(fields)
 }
 
 fn identity_text<'a>(
@@ -344,4 +158,78 @@ fn map_text<'a>(
         ));
     };
     Ok(Cow::Borrowed(text))
+}
+
+fn matching_branch<'a>(
+    row: &Record,
+    branches: &'a [inventory_core::catalog::runtime::IdentityBranchPlan],
+    request: Option<&Record>,
+) -> Result<&'a inventory_core::catalog::runtime::IdentityBranchPlan, SweepError> {
+    branches
+        .iter()
+        .try_fold(None, |found, branch| {
+            if found.is_some() {
+                return Ok(found);
+            }
+            Ok::<_, SweepError>(
+                matches_predicate(row, &branch.predicate, request)?.then_some(branch),
+            )
+        })?
+        .ok_or(SweepError::Operation(
+            "no reviewed identity branch matches the selected item",
+        ))
+}
+
+fn validate_map(
+    text: &str,
+    resource_kind: &inventory_core::catalog::runtime::ArnResourceKind,
+    trusted: Option<&IdentityContext<'_>>,
+    request_url: Option<&str>,
+) -> Result<(), SweepError> {
+    validate_resource_arn(
+        text,
+        resource_kind,
+        trusted.ok_or(SweepError::Operation(
+            "map ARN identity requires trusted request scope",
+        ))?,
+        request_url,
+    )
+}
+
+fn request_url_text<'a>(
+    request: Option<&'a Record>,
+    path: Option<&[inventory_core::record::FieldId]>,
+) -> Result<Option<Cow<'a, str>>, SweepError> {
+    path.map(|path| {
+        required_text(
+            request.ok_or(SweepError::Operation(
+                "queue ARN identity requires actual request URL",
+            ))?,
+            path,
+        )
+    })
+    .transpose()
+}
+
+fn map_identity<'a>(
+    row: &'a Record,
+    identity: &IdentityPlan,
+    trusted: Option<&IdentityContext<'_>>,
+    request: Option<&Record>,
+) -> Result<Cow<'a, str>, SweepError> {
+    let IdentityPlan::MapArn {
+        path,
+        key,
+        resource_kind,
+        request_url,
+    } = identity
+    else {
+        return Err(SweepError::Operation(
+            "unexpected contextual identity recipe",
+        ));
+    };
+    let text = map_text(row, path, key)?;
+    let request_url = request_url_text(request, request_url.as_deref())?;
+    validate_map(&text, resource_kind, trusted, request_url.as_deref())?;
+    Ok(text)
 }

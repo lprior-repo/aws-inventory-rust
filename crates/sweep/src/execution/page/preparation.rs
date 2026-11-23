@@ -6,21 +6,43 @@ use inventory_core::{
 };
 use inventory_engine::inventory::WorkLease;
 
+pub(super) struct Prepared {
+    pub(super) endpoint: ResolvedEndpoint,
+    pub(super) url: String,
+    pub(super) base: Record,
+    pub(super) fields: Vec<input::InputField>,
+    pub(super) region: inventory_core::inventory::RegionId,
+}
+
 pub(super) async fn prepare(
     context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     lease: &WorkLease,
     plan: &CallablePlan<'_>,
     cursor: &cursor::Cursor,
-) -> Result<
-    (
-        ResolvedEndpoint,
-        String,
-        Record,
-        Vec<input::InputField>,
-        inventory_core::inventory::RegionId,
-    ),
-    SweepError,
-> {
+) -> Result<Prepared, SweepError> {
+    let (endpoint, region) = endpoint(context, lease, plan).await?;
+    let url = context
+        .bootstrap
+        .config
+        .endpoint_override()?
+        .unwrap_or(&endpoint.url)
+        .to_owned();
+    let base = bindings(lease.bindings())?;
+    let fields = request_fields(cursor, plan)?;
+    Ok(Prepared {
+        endpoint,
+        url,
+        base,
+        fields,
+        region,
+    })
+}
+
+async fn endpoint(
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
+    lease: &WorkLease,
+    plan: &CallablePlan<'_>,
+) -> Result<(ResolvedEndpoint, inventory_core::inventory::RegionId), SweepError> {
     let region = super::super::routing::request_region(
         plan,
         lease.scope().region(),
@@ -29,19 +51,24 @@ pub(super) async fn prepare(
     )?;
     let endpoint = super::super::routing::resolve(plan, &region)?;
     let endpoint = super::super::discovery::resolve(context, plan, endpoint).await?;
-    let url = context
-        .bootstrap
-        .config
-        .endpoint_override()?
-        .unwrap_or(&endpoint.url)
-        .to_owned();
-    let base = if lease.bindings().is_empty() {
+    Ok((endpoint, region))
+}
+
+fn bindings(bytes: &[u8]) -> Result<Record, SweepError> {
+    if bytes.is_empty() {
         Record::encode(&inventory_core::record::Value::Map(
             std::collections::BTreeMap::new(),
-        ))?
+        ))
+        .map_err(SweepError::from)
     } else {
-        Record::from_bytes(lease.bindings().to_vec())?
-    };
+        Record::from_bytes(bytes.to_vec()).map_err(SweepError::from)
+    }
+}
+
+fn request_fields(
+    cursor: &cursor::Cursor,
+    plan: &CallablePlan<'_>,
+) -> Result<Vec<input::InputField>, SweepError> {
     let mut fields = cursor.request_fields(plan.pagination())?;
     if let Some(size) = plan.pagination().page_size.as_ref() {
         fields.push(input::InputField {
@@ -49,7 +76,29 @@ pub(super) async fn prepare(
             value: size.value(),
         });
     }
-    Ok((endpoint, url, base, fields, region))
+    Ok(fields)
+}
+
+impl Prepared {
+    pub(super) async fn send(
+        &self,
+        context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
+        plan: &CallablePlan<'_>,
+    ) -> Result<crate::call::DecodedResponse, SweepError> {
+        crate::call::Call {
+            client: context.bootstrap.client,
+            executor: context.bootstrap.executor,
+            credentials: context.bootstrap.credentials,
+            plan,
+            endpoint: &self.endpoint,
+            url: &self.url,
+            base: &self.base,
+            fields: &self.fields,
+            metrics: context.bootstrap.metrics,
+        }
+        .run()
+        .await
+    }
 }
 
 pub(super) fn ancestry(

@@ -60,11 +60,7 @@ async fn given_an_owned_prefix_then_hostile_filtered_row_after_chunk_boundary_wh
         )?)
         .await?;
     let lease = store
-        .claim(
-            &sweep,
-            crate::execution::now_ms()?,
-            3_600_000,
-        )
+        .claim(&sweep, crate::execution::now_ms()?, 3_600_000)
         .await?
         .ok_or("lease absent")?;
     let mut wire_rows = (0..ROWS_PER_CHECKPOINT + 1)
@@ -159,11 +155,7 @@ async fn given_an_owned_prefix_then_hostile_filtered_row_after_chunk_boundary_wh
     let reopened = BinaryStore::open(&path).await?;
     assert_eq!(reopened.sweep_summary(&sweep).await?, before);
     let restored = reopened
-        .claim(
-            &sweep,
-            crate::execution::now_ms()? + 3_600_001,
-            3_600_000,
-        )
+        .claim(&sweep, crate::execution::now_ms()? + 3_600_001, 3_600_000)
         .await?;
     assert!(
         restored.is_none(),

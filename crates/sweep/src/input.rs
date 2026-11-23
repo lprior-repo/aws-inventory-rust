@@ -85,26 +85,9 @@ fn binding_value(
 ) -> Result<Option<Value>, SweepError> {
     use inventory_core::catalog::runtime::BindingSource;
     match source {
-        BindingSource::Account => account
-            .map(|value| Value::Text(value.as_str().to_owned()))
-            .map(Some)
-            .ok_or(SweepError::Operation(
-                "account binding unavailable during bootstrap",
-            )),
-        BindingSource::Region => region
-            .map(|value| Value::Text(value.as_str().to_owned()))
-            .map(Some)
-            .ok_or(SweepError::Operation(
-                "region binding unavailable during bootstrap",
-            )),
-        BindingSource::RegionList => match region {
-            Some(inventory_core::inventory::Region::Regional(region)) => Ok(Some(Value::List(
-                vec![Value::Text(region.as_str().to_owned())],
-            ))),
-            _ => Err(SweepError::Operation(
-                "region list binding requires the routed request region",
-            )),
-        },
+        BindingSource::Account => account_value(account),
+        BindingSource::Region => region_value(region),
+        BindingSource::RegionList => region_list(region),
         BindingSource::Fixed(value) => super::request::fixed_input::value(value).map(Some),
         BindingSource::ParentIdentity { .. }
         | BindingSource::Operation { .. }
@@ -116,6 +99,45 @@ fn binding_value(
         BindingSource::Transformed { source, transform } => binding_value(source, account, region)?
             .map(|value| transform_value(value, transform))
             .transpose(),
+    }
+}
+
+fn account_value(
+    account: Option<&inventory_core::inventory::AccountId>,
+) -> Result<Option<Value>, SweepError> {
+    bootstrap_text(
+        account.map(inventory_core::inventory::AccountId::as_str),
+        "account binding unavailable during bootstrap",
+    )
+}
+
+fn region_value(
+    region: Option<&inventory_core::inventory::Region>,
+) -> Result<Option<Value>, SweepError> {
+    bootstrap_text(
+        region.map(inventory_core::inventory::Region::as_str),
+        "region binding unavailable during bootstrap",
+    )
+}
+
+fn bootstrap_text(value: Option<&str>, error: &'static str) -> Result<Option<Value>, SweepError> {
+    value
+        .map(|value| Some(Value::Text(value.to_owned())))
+        .ok_or(SweepError::Operation(error))
+}
+
+fn region_list(
+    region: Option<&inventory_core::inventory::Region>,
+) -> Result<Option<Value>, SweepError> {
+    match region {
+        Some(inventory_core::inventory::Region::Regional(region)) => {
+            Ok(Some(Value::List(vec![Value::Text(
+                region.as_str().to_owned(),
+            )])))
+        }
+        _ => Err(SweepError::Operation(
+            "region list binding requires the routed request region",
+        )),
     }
 }
 
@@ -165,8 +187,22 @@ fn insert_path(
         ));
     }
     let parents = field.path.len().saturating_sub(1);
+    let target = parent_map(root, field.path.iter().take(parents))?;
+    let leaf = field
+        .path
+        .last()
+        .copied()
+        .ok_or(SweepError::Operation("input binding path is empty"))?;
+    let _ = target.insert(Key::Field(leaf), field.value.clone());
+    Ok(())
+}
+
+fn parent_map<'a, 'b>(
+    root: &'a mut std::collections::BTreeMap<Key, Value>,
+    parents: impl Iterator<Item = &'b FieldId>,
+) -> Result<&'a mut std::collections::BTreeMap<Key, Value>, SweepError> {
     let mut target = root;
-    for id in field.path.iter().take(parents) {
+    for id in parents {
         let value = target
             .entry(Key::Field(*id))
             .or_insert_with(|| Value::Map(std::collections::BTreeMap::new()));
@@ -175,14 +211,7 @@ fn insert_path(
             _ => return Err(SweepError::Operation("input binding paths collide")),
         };
     }
-    let leaf = field
-        .path
-        .last()
-        .copied()
-        .ok_or(SweepError::Operation("input binding path is empty"))?;
-    // Idempotent per branch: later binding wins over base (branch overrides). Deduplicate same-path identical or conflicting by last-wins to avoid spurious duplicate error.
-    let _ = target.insert(Key::Field(leaf), field.value.clone());
-    Ok(())
+    Ok(target)
 }
 
 #[cfg(test)]
