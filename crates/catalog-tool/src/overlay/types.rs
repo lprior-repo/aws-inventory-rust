@@ -171,6 +171,7 @@ pub struct OperationOverlay {
     pub endpoint_discovery: bool,
     pub class: Option<OverlayClass>,
     pub defer_reason: Option<String>,
+    pub generation_blocker: Option<super::GenerationBlocker>,
 
     pub scope: Option<Scope>,
 

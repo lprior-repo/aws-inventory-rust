@@ -1,5 +1,11 @@
 use super::{MemberPath, OperationName};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum GenerationBlocker {
+    RequiredBindings,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Binding {

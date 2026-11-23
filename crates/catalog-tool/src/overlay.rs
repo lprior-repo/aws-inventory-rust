@@ -3,7 +3,7 @@ mod directory;
 pub mod generate;
 mod merge;
 mod parse;
-pub use binding_types::{Batch, Binding};
+pub use binding_types::{Batch, Binding, GenerationBlocker};
 pub use directory::{OverlayError, load, load_generated_dir};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
