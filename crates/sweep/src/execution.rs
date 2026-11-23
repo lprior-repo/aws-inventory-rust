@@ -1,4 +1,4 @@
-mod bootstrap;
+pub(crate) mod bootstrap;
 use bootstrap::{bootstrap_account, discover_regions};
 mod collection;
 #[path = "execution/draining.rs"]

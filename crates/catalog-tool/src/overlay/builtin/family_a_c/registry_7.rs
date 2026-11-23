@@ -6,8 +6,8 @@ pub(super) fn overlays() -> Result<Vec<ServiceOverlay>, NameError> {
             "cloudformation",
             [
                 super::cloudformation_0::part_0()?,
-                super::cloudformation_0::part_1()?,
-                super::cloudformation_0::part_2()?,
+                super::cloudformation_1::part_1()?,
+                super::cloudformation_2::part_2()?,
             ]
             .into_iter()
             .flatten()

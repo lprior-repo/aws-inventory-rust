@@ -46,3 +46,15 @@ fn binary_float_timestamp_uses_decimal_nanoseconds_without_precision_artifacts()
     }
     Ok(())
 }
+
+#[test]
+fn given_numeric_timestamp_for_datetime_shape_when_decoded_then_invalid_emulator_value_is_rejected()
+-> TestResult {
+    let wire = "1795446406.337384223";
+    assert!(parse(wire, Some(TimestampFormat::DateTime)).is_err());
+    assert_eq!(
+        parse(wire, Some(TimestampFormat::EpochSeconds))?,
+        Time::new(1_795_446_406, 337_384_223)?
+    );
+    Ok(())
+}

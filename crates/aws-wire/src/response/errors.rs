@@ -46,9 +46,10 @@ pub fn decode(context: super::ResponseContext<'_>) -> Result<ServiceError, super
     if context.body.len() > context.limits.body_bytes() {
         return Err(super::DecodeError::Limit("response body"));
     }
-    let header_code = error_header(context.headers)?;
-    let body_code = body_code(context)?;
-    let code = header_code.or(body_code);
+    let code = match error_header(context.headers)? {
+        Some(code) => Some(code),
+        None => body_code(context)?,
+    };
     let class = match modeled_class(context, code.as_deref())? {
         Some(class) => class,
         None => match class_from_code(code.as_deref()) {
@@ -65,6 +66,17 @@ pub fn decode(context: super::ResponseContext<'_>) -> Result<ServiceError, super
 }
 
 fn body_code(context: super::ResponseContext<'_>) -> Result<Option<String>, super::DecodeError> {
+    let content_type = context
+        .headers
+        .get(http::header::CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .map(|value| value.split(';').next().map_or(value, str::trim));
+    if matches!(
+        content_type,
+        Some("application/json" | "application/x-amz-json-1.0" | "application/x-amz-json-1.1")
+    ) {
+        return json::code(context.body, context.limits);
+    }
     match context.protocol {
         Protocol::AwsJson10 | Protocol::AwsJson11 | Protocol::RestJson1 => {
             json::code(context.body, context.limits)
@@ -193,7 +205,11 @@ fn class_from_code(code: Option<&str>) -> Option<ErrorClass> {
         "NotImplemented"
         | "NotSupported"
         | "UnsupportedOperation"
-        | "UnsupportedOperationException" => Some(ErrorClass::NotSupported),
+        | "UnsupportedOperationException"
+        | "UnknownOperationException"
+        | "UnknownOperationError"
+        | "UnknownService"
+        | "InvalidAction" => Some(ErrorClass::NotSupported),
         "ExpiredToken" | "ExpiredTokenException" | "TokenExpired" => Some(ErrorClass::ExpiredToken),
         "ExpiredSignature" => Some(ErrorClass::ExpiredSignature),
         "Throttling"

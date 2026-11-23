@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/redshift/service/2012-12-01/redshift-2012-12-01.json
-use super::super::construction::{Inventory, ResourceIdentity};
+use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 
 pub(super) const CALLS: &[Inventory] = &[
@@ -99,7 +99,11 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Key(&["ReservedNodeExchangeRequestId"]),
         token: Some(("Marker", "Marker")),
         scope: Scope::Region,
-        input: &[],
+        input: &[Input::Parent(
+            "ReservedNodeId",
+            "DescribeReservedNodes",
+            "ReservedNodeId",
+        )],
         tags: None,
         queryable: &[],
     },

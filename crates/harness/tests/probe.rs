@@ -6,6 +6,8 @@ mod context;
 mod fixture;
 #[path = "probe/proof.rs"]
 mod proof;
+#[path = "probe/scoped.rs"]
+mod scoped;
 #[path = "probe/server.rs"]
 mod server;
 
@@ -53,9 +55,9 @@ async fn given_child_plan_when_calling_once_then_root_contract_rejects_before_tr
     let server = Server::new().await?;
     let context = context::Context::new(&server)?;
     assert!(matches!(
-        context.once(&catalog, "ListChildren").await,
+        context.once(&catalog, "ListChildren", None).await,
         Err(inventory_sweep::SweepError::InvalidConfig(
-            "probe requires a root enumeration from this catalog"
+            "probe requires a root callable from this catalog"
         ))
     ));
     Ok(())
