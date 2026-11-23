@@ -107,7 +107,7 @@ The number in parentheses is the advisory verdict count, retained verbatim for r
 | snowball (1) | C ListJobs | Model explicitly says one US endpoint returns jobs in all US Regions. No current scope represents that geography without regional misattribution: defer honestly. |
 | socialmessaging (1) | R ListTagsForResource | Effective late TagEndpoint is parent-bound and valid. Deferred mutation comments are not callable-policy defects. |
 | ssm (1) | C DescribePatchBaselines; R additional ListOpsItemRelatedItems claim | OWNER=Self is a modeled patch filter. Optional OpsItemId permits the unscoped account list; no model proof of invalid inventory is supplied. |
-| ssm-contacts (3) | C ListRotationShifts, ListPageReceipts, ListPageResolutions | Computed shifts keyed only by two-value Type collide: defer. Receipt key includes PageId, channel, ReceiptType, ReceiptTime; resolution key includes PageId and required ContactArn+Type, not nullable StageIndex. |
+| ssm-contacts (3) | C ListRotationShifts, ListPageReceipts, ListPageResolutions | Computed shifts keyed only by two-value Type collide: defer. Receipt identity needs ReceiptTime to distinguish repeated acknowledgements, but timestamp identity representation is unsupported: explicitly defer rather than omit that dimension. Resolution key includes PageId and required ContactArn+Type, not nullable StageIndex. |
 | ssm-incidents (1) | R ListTagsForResource | Late tag plan already overrides intermediate deferred text with a valid parent-joined expansion. |
 | ssm-sap (2) | R ListDatabases, ListTagsForResource | Optional application/component filters do not establish invalid global listing. Inline-plus-endpoint tags are redundant but correct. |
 | storage-gateway (1) | R ListAutomaticTapeCreationPolicies | GatewayARN is optional in the request; the advisory supplies no default/completeness contract proving input-less enumeration invalid. |
@@ -133,17 +133,21 @@ Observed baseline: **2,197 callable operations across 340 services**; **98 owner
 
 ## Execution boundary and remaining evidence
 
-Ran the Ruby model/risk traversal and model-document extraction only. Did **not** run cargo fmt, clippy, tests, builds, catalog regeneration, emulator probes, or AWS calls in this lane: coordinator performs verification after landing the patch. The policy fixtures are authored assertions, not recorded passing tests.
-
-Coordinator verification commands (not run here):
+Ran the Ruby model/risk traversal and model-document extraction. After coordinator authorization, ran the following commands in `/tmp/w4-suspect`; all exited 0. The final full test run after catalog regeneration reported **908 passed, 10 ignored across 70 suites** (36.67 seconds). Ignored tests were not executed.
 
 ```sh
 cargo fmt
-CARGO_TARGET_DIR=/tmp/tgt-suspect cargo clippy -j3 -p catalog-tool --all-targets -- -D warnings
-CARGO_TARGET_DIR=/tmp/tgt-suspect cargo test -j3 -p catalog-tool --test suspect_policy
+CARGO_TARGET_DIR=/tmp/tgt-suspect cargo clippy -j3 -p catalog-tool --all-targets --locked -- -D warnings
+CARGO_TARGET_DIR=/tmp/tgt-suspect cargo test -j3 -p catalog-tool --locked
+CARGO_TARGET_DIR=/tmp/tgt-suspect cargo run -j3 -p catalog-tool --locked -- models compile --write
+CARGO_TARGET_DIR=/tmp/tgt-suspect cargo run -j3 -p catalog-tool --locked -- models compile --check
+CARGO_TARGET_DIR=/tmp/tgt-suspect cargo run -j3 -p catalog-tool --locked -- overlays generate --check
+CARGO_TARGET_DIR=/tmp/tgt-suspect cargo run -j3 -p catalog-tool --locked -- kinds generate --check
 ```
 
-Then regenerate the catalog/overlay/probe against the full merged patch following RUN_HERE.md. No coverage success is claimed for deferred mixed-owner roots, computed shifts, Snowball geographic scope, or opaque/secret-bearing outputs. Existing expected-absence handling (Organizations, account GovCloud linkage, IAM login profiles, Resource Explorer index) remains runtime-lane work. Optional response identities, disputed cross-region behavior, additional Direct Connect association routes, and sandbox catalogs remain explicitly unproven; this review does not substitute an empty emulator response for item-bearing account evidence.
+Earlier verification found missing Input imports, obsolete engine/count snapshots, and unsupported receipt timestamp identity; the fix-up commits correct those findings. Two initial Clippy attempts were blocked by OS122 disk quota before local compilation (one used `RUSTC_WRAPPER= CARGO_INCREMENTAL=0`); coordinator cleanup resolved that quota. The pre-regeneration suite reached integration tests and failed because the ignored catalog still advertised the now-denied AMP DescribeScraper. Regenerating the ignored catalog fixed that publication mismatch.
+
+Regenerate the full merged probe following RUN_HERE.md. No emulator probes or AWS calls were run in this lane. No coverage success is claimed for deferred mixed-owner roots, receipt timestamp identity, computed shifts, Snowball geographic scope, or opaque/secret-bearing outputs. Existing expected-absence handling (Organizations, account GovCloud linkage, IAM login profiles, Resource Explorer index) remains runtime-lane work. Optional response identities, disputed cross-region behavior, additional Direct Connect association routes, and sandbox catalogs remain explicitly unproven; this review does not substitute an empty emulator response for item-bearing account evidence.
 
 ## Patch manifest
 
@@ -157,6 +161,8 @@ Policy/test commits, in application order (the documentation-manifest commit fol
 7f67c5e2 1a24a10c 5343e91d 49f5772f 6714f0ec 9805459b 1038c9d6 c0e73e5b
 ea3f8df6 74e5843b 944c3c01 e8df3ef2 dacdec1a 377e8d8f 280cf617 b60b54d8
 ```
+
+Verification fix-up commits: `445e08ef` (owner filter Input imports), `9ced4214` (canonical formatting), `4b26df58` (SSM Input import and bounded assertion helpers), `9a632b48` (engine/secret-denial snapshots), `b172b5c4` (receipt timestamp deferral). Documentation verification evidence follows these commits.
 
 Exact changed paths, relative to repository root:
 
@@ -209,6 +215,9 @@ crates/catalog-tool/src/overlay/builtin/family_t_z/wellarchitected_plans_1.rs
 crates/catalog-tool/src/overlay/builtin/family_t_z/workspaces_plans_1.rs
 crates/catalog-tool/src/overlay/builtin/family_t_z/verifiedpermissions_plans_1.rs
 crates/catalog-tool/src/overlay/builtin/family_t_z/endpoint_plans.rs
+crates/catalog-tool/src/overlay/builtin/family_d_f/tests_d_f_misc.rs
+crates/catalog-tool/src/overlay/builtin/family_d_f/tests_d_f_registry.rs
+crates/catalog-tool/src/overlay/builtin/family_l_p/consumer_tests.rs
 ```
 
-Compatibility: owner filters deliberately remove shared/reference observations; Content/Secret denials and mixed-owner/computed/geographic deferrals reduce callable coverage honestly. Correlated identities change keys for mapped-stream associations, SageMaker child records, SSM contact receipts/resolutions, and Security Hub feature administrators. Notifications contact scope changes regional keys to account keys. Existing persisted snapshots may therefore require reconciliation under the new catalog; this patch does not migrate stored data.
+Compatibility: owner filters deliberately remove shared/reference observations; Content/Secret denials and mixed-owner/computed/geographic/timestamp-identity deferrals reduce callable coverage honestly. Correlated identities change keys for mapped-stream associations, SageMaker child records, SSM contact resolutions, and Security Hub feature administrators. Notifications contact scope changes regional keys to account keys. Existing persisted snapshots may therefore require reconciliation under the new catalog; this patch does not migrate stored data.
