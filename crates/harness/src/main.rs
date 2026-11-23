@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use inventory_harness::assertions::global as assertions_global;
@@ -136,44 +136,6 @@ async fn assert_regional(
 
 async fn dispatch(command: Command) -> Result<serde_json::Value, HarnessError> {
     match command {
-        Command::Freeze {
-            evidence,
-            output,
-            binary,
-            root,
-        } => snapshot::freeze(&evidence, &output, &binary, &root).await,
-        Command::Install { destination, root } => install::install(&root, &destination),
-        Command::InstallGraph { destination, jobs } => install::graph::install(&destination, jobs),
-        Command::CatalogUniversal { root, check } => universal(root, check),
-        Command::AssertCloudControl {
-            database,
-            scan_id,
-            seed_results,
-            root,
-        } => assert_cloud_control(root, database, scan_id, seed_results).await,
-        Command::AssertGlobal {
-            database,
-            scan_id,
-            seed_results,
-            root,
-        } => assert_global(root, database, scan_id, seed_results).await,
-        Command::AssertParents {
-            database,
-            scan_id,
-            seed_results,
-            root,
-        } => assert_parents(root, database, scan_id, seed_results).await,
-        Command::AssertRegional {
-            database,
-            scan_id,
-            seed_results,
-            root,
-            region,
-        } => assert_regional(root, database, scan_id, seed_results, region).await,
-        Command::SeedS3 { bucket } => seed::s3_bucket(&bucket).await,
-        Command::SeedCloudControl { prefix, count } => {
-            seed::cloud_control_topics(&prefix, count).await
-        }
         Command::Mutate {
             emulator,
             binary,
@@ -219,47 +181,103 @@ async fn dispatch(command: Command) -> Result<serde_json::Value, HarnessError> {
             emulator_summary,
             check_additions,
             output,
-        } => {
-            if check_additions {
-                let result = audit::check_additions(&root)?;
-                Ok(serde_json::json!({ "status": "ok", "additions": result }))
-            } else {
-                let report = inventory_harness::audit::reconcile(&root)?;
-                if let Some(summary_path) = emulator_summary {
-                    let (emulator, rows) =
-                        inventory_harness::audit::validate_emulator(&report, &root, &summary_path)?;
-                    let mut extended = report.clone();
-                    if let Some(obj) = extended.as_object_mut() {
-                        obj.insert("emulator_evidence".to_string(), emulator);
-                    }
-                    write_reconciliation(&root, &extended, &output)?;
-                    let status = extended
-                        .get("status")
-                        .cloned()
-                        .unwrap_or(serde_json::json!("unknown"));
-                    Ok(serde_json::json!({
-                        "output": output.to_string_lossy(),
-                        "status": status,
-                        "operation_results": rows
-                    }))
-                } else {
-                    write_reconciliation(&root, &report, &output)?;
-                    let status = report
-                        .get("status")
-                        .cloned()
-                        .unwrap_or(serde_json::json!("unknown"));
-                    let summary = report
-                        .get("summary")
-                        .cloned()
-                        .unwrap_or(serde_json::json!(""));
-                    Ok(serde_json::json!({
-                        "output": output.to_string_lossy(),
-                        "status": status,
-                        "summary": summary
-                    }))
-                }
-            }
+        } => catalog_operations(&root, emulator_summary.as_deref(), check_additions, &output),
+        inventory => dispatch_inventory(inventory).await,
+    }
+}
+
+/// Snapshot, install, catalog, assertion and seed commands.
+async fn dispatch_inventory(command: Command) -> Result<serde_json::Value, HarnessError> {
+    match command {
+        Command::Freeze {
+            evidence,
+            output,
+            binary,
+            root,
+        } => snapshot::freeze(&evidence, &output, &binary, &root).await,
+        Command::Install { destination, root } => install::install(&root, &destination),
+        Command::InstallGraph { destination, jobs } => install::graph::install(&destination, jobs),
+        Command::CatalogUniversal { root, check } => universal(root, check),
+        Command::AssertCloudControl {
+            database,
+            scan_id,
+            seed_results,
+            root,
+        } => assert_cloud_control(root, database, scan_id, seed_results).await,
+        Command::AssertGlobal {
+            database,
+            scan_id,
+            seed_results,
+            root,
+        } => assert_global(root, database, scan_id, seed_results).await,
+        Command::AssertParents {
+            database,
+            scan_id,
+            seed_results,
+            root,
+        } => assert_parents(root, database, scan_id, seed_results).await,
+        Command::AssertRegional {
+            database,
+            scan_id,
+            seed_results,
+            root,
+            region,
+        } => assert_regional(root, database, scan_id, seed_results, region).await,
+        Command::SeedS3 { bucket } => seed::s3_bucket(&bucket).await,
+        Command::SeedCloudControl { prefix, count } => {
+            seed::cloud_control_topics(&prefix, count).await
         }
+        // `dispatch` consumes these before delegating here; naming them keeps the match
+        // exhaustive without a wildcard, so a new variant is a compile error in one place.
+        Command::Mutate { .. }
+        | Command::VerifyDelivery { .. }
+        | Command::CatalogOperations { .. } => Err(HarnessError::invalid(USAGE)),
+    }
+}
+
+fn catalog_operations(
+    root: &Path,
+    emulator_summary: Option<&Path>,
+    check_additions: bool,
+    output: &Path,
+) -> Result<serde_json::Value, HarnessError> {
+    if check_additions {
+        let result = audit::check_additions(root)?;
+        return Ok(serde_json::json!({ "status": "ok", "additions": result }));
+    }
+    let report = inventory_harness::audit::reconcile(root)?;
+    if let Some(summary_path) = emulator_summary {
+        let (emulator, rows) =
+            inventory_harness::audit::validate_emulator(&report, root, summary_path)?;
+        let mut extended = report.clone();
+        if let Some(obj) = extended.as_object_mut() {
+            obj.insert("emulator_evidence".to_string(), emulator);
+        }
+        write_reconciliation(root, &extended, output)?;
+        let status = extended
+            .get("status")
+            .cloned()
+            .unwrap_or(serde_json::json!("unknown"));
+        Ok(serde_json::json!({
+            "output": output.to_string_lossy(),
+            "status": status,
+            "operation_results": rows
+        }))
+    } else {
+        write_reconciliation(root, &report, output)?;
+        let status = report
+            .get("status")
+            .cloned()
+            .unwrap_or(serde_json::json!("unknown"));
+        let summary = report
+            .get("summary")
+            .cloned()
+            .unwrap_or(serde_json::json!(""));
+        Ok(serde_json::json!({
+            "output": output.to_string_lossy(),
+            "status": status,
+            "summary": summary
+        }))
     }
 }
 

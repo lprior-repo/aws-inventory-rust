@@ -12,9 +12,11 @@ use serde_json::{Value, json};
 use sha2::Digest;
 use sqlx::Row;
 
+mod expected_model;
 mod expected_rows;
 mod graph_diff;
 use crate::HarnessError;
+pub use expected_model::build_expected;
 
 /// Helper for safe JSON indexing with error reporting.
 fn get_field<'a>(value: &'a Value, path: &str) -> Result<&'a Value, HarnessError> {
@@ -154,6 +156,37 @@ pub async fn verify_inventory(
     let counts = get_field(model, "counts")?;
     let observations = get_field(model, "observations")?;
 
+    let footer = expected_footer(counts, observations)?;
+
+    let receipt_summary = verify_receipt_summary(inventory, model_scan, scan_id)?;
+
+    // Build expected records from SQLite
+    let mut expected_records_vec = expected_sql_records(pool, scan_id, model_scan).await?;
+    expected_records_vec.push(footer);
+
+    // Read and verify inventory file
+    let file_content = read_inventory_text(&path, file_size)?;
+    verify_record_lines(&expected_records_vec, &file_content)?;
+
+    let digest = sha256_hex(file_content.as_bytes());
+    if get_field(receipt_summary, "sha256")?
+        .as_str()
+        .is_some_and(|s| s != digest)
+    {
+        return Err(HarnessError::invalid(
+            "published inventory bytes differ from its receipt",
+        ));
+    }
+
+    Ok(json!({
+        "bytes": file_size,
+        "sha256": digest,
+        "counts": counts,
+        "exact_sql_payload_and_provenance_match": true,
+    }))
+}
+
+fn expected_footer(counts: &Value, observations: &Value) -> Result<Value, HarnessError> {
     let expected_resources = get_field(counts, "resources")?
         .as_i64()
         .ok_or_else(|| HarnessError::invalid("invalid resource count"))?;
@@ -183,6 +216,23 @@ pub async fn verify_inventory(
         .saturating_add(scope_obs)
         .saturating_add(failure_obs);
 
+    Ok(json!({
+        "record": "summary",
+        "data": {
+            "resources": expected_resources,
+            "edges": expected_edges,
+            "nodes": expected_nodes,
+            "unresolved": expected_unresolved,
+            "records": expected_records,
+        }
+    }))
+}
+
+fn verify_receipt_summary<'a>(
+    inventory: &'a Value,
+    model_scan: &Value,
+    scan_id: &str,
+) -> Result<&'a Value, HarnessError> {
     let receipt_summary = get_field(inventory, "summary")?;
     if get_field(receipt_summary, "scan_id")?.as_str() != Some(scan_id) {
         return Err(HarnessError::invalid(
@@ -204,7 +254,14 @@ pub async fn verify_inventory(
             "inventory receipt provenance differs from seeded source",
         ));
     }
+    Ok(receipt_summary)
+}
 
+async fn expected_sql_records(
+    pool: &sqlx::SqlitePool,
+    scan_id: &str,
+    model_scan: &Value,
+) -> Result<Vec<Value>, HarnessError> {
     let mut expected_records_vec = Vec::new();
     let header = json!({
         "record": "header",
@@ -217,7 +274,6 @@ pub async fn verify_inventory(
     });
     expected_records_vec.push(header);
 
-    // Build expected records from SQLite
     let resources =
         sqlx::query("SELECT resource_json FROM scan_resources WHERE scan_id=? ORDER BY id")
             .bind(scan_id)
@@ -239,7 +295,17 @@ pub async fn verify_inventory(
         .await
         .map_err(|e| HarnessError::invalid(format!("query failed: {e}")))?;
 
-    for row in &resources {
+    push_row_records(&mut expected_records_vec, &resources, &edges, &scope_rows)?;
+    Ok(expected_records_vec)
+}
+
+fn push_row_records(
+    expected_records_vec: &mut Vec<Value>,
+    resources: &[sqlx::sqlite::SqliteRow],
+    edges: &[sqlx::sqlite::SqliteRow],
+    scope_rows: &[sqlx::sqlite::SqliteRow],
+) -> Result<(), HarnessError> {
+    for row in resources {
         let resource_json = row.try_get::<String, _>(0)?;
         let resource: Value = serde_json::from_str(&resource_json)
             .map_err(|e| HarnessError::invalid(format!("resource JSON parse failed: {e}")))?;
@@ -255,7 +321,7 @@ pub async fn verify_inventory(
         }));
     }
 
-    for row in &edges {
+    for row in edges {
         let edge_json = row.try_get::<String, _>(0)?;
         let edge: Value = serde_json::from_str(&edge_json)
             .map_err(|e| HarnessError::invalid(format!("edge JSON parse failed: {e}")))?;
@@ -271,7 +337,7 @@ pub async fn verify_inventory(
         }));
     }
 
-    for row in &scope_rows {
+    for row in scope_rows {
         let complete = row.try_get::<bool, _>(0)?;
         let failed = row.try_get::<bool, _>(1)?;
         expected_records_vec.push(json!({
@@ -284,26 +350,23 @@ pub async fn verify_inventory(
             }
         }));
     }
+    Ok(())
+}
 
-    let footer = json!({
-        "record": "summary",
-        "data": {
-            "resources": expected_resources,
-            "edges": expected_edges,
-            "nodes": expected_nodes,
-            "unresolved": expected_unresolved,
-            "records": expected_records,
-        }
-    });
-    expected_records_vec.push(footer);
-
-    // Read and verify inventory file
-    let mut file = File::open(&path)?;
+fn read_inventory_text(path: &Path, file_size: u64) -> Result<String, HarnessError> {
+    let mut file = File::open(path)?;
     let mut content = Vec::with_capacity(usize::try_from(file_size).unwrap_or(usize::MAX));
     file.read_to_end(&mut content)?;
 
     let file_content = String::from_utf8(content)
         .map_err(|e| HarnessError::invalid(format!("inventory not valid UTF-8: {e}")))?;
+    Ok(file_content)
+}
+
+fn verify_record_lines(
+    expected_records_vec: &[Value],
+    file_content: &str,
+) -> Result<(), HarnessError> {
     let actual_lines: Vec<String> = file_content
         .lines()
         .filter(|l| !l.is_empty())
@@ -328,22 +391,7 @@ pub async fn verify_inventory(
         }
     }
 
-    let digest = sha256_hex(file_content.as_bytes());
-    if get_field(receipt_summary, "sha256")?
-        .as_str()
-        .is_some_and(|s| s != digest)
-    {
-        return Err(HarnessError::invalid(
-            "published inventory bytes differ from its receipt",
-        ));
-    }
-
-    Ok(json!({
-        "bytes": file_size,
-        "sha256": digest,
-        "counts": counts,
-        "exact_sql_payload_and_provenance_match": true,
-    }))
+    Ok(())
 }
 
 pub fn validate_receipt(receipt: &Value, scan_id: &str, status: &str) -> Result<(), HarnessError> {
@@ -499,28 +547,8 @@ pub fn compare_graph_snapshot(
     let wanted_scan_id = get_field(model_scan, "scan_id")?;
     let wanted_status = get_field(model_scan, "status")?;
 
-    let markers = marker
-        .as_array()
-        .ok_or_else(|| HarnessError::invalid("graph marker response is not an array"))?;
-    let row = match markers.as_slice() {
-        [] => {
-            return Ok(GraphComparison::Inconclusive(
-                "graph has no InventoryScan marker (not yet written or sweep in progress)".into(),
-            ));
-        }
-        [row] => row,
-        _ => {
-            return Err(HarnessError::invalid(
-                "graph has multiple InventoryScan markers",
-            ));
-        }
-    };
-    let observed_scan = row.get(0);
-    let observed_state = row.get(1);
-    if observed_scan != Some(wanted_scan_id) || observed_state != Some(wanted_status) {
-        return Ok(GraphComparison::Inconclusive(format!(
-            "graph marker is at scan {observed_scan:?} state {observed_state:?}; SQLite expects scan {wanted_scan_id} state {wanted_status}"
-        )));
+    if let Some(verdict) = fence_graph_generation(marker, wanted_scan_id, wanted_status)? {
+        return Ok(verdict);
     }
 
     if let Some(problem) = graph_diff::first_difference(model, node_rows, edge_rows, tag_rows)? {
@@ -551,6 +579,37 @@ pub fn compare_graph_snapshot(
     }
 
     Ok(GraphComparison::Matched)
+}
+
+fn fence_graph_generation(
+    marker: &Value,
+    wanted_scan_id: &Value,
+    wanted_status: &Value,
+) -> Result<Option<GraphComparison>, HarnessError> {
+    let markers = marker
+        .as_array()
+        .ok_or_else(|| HarnessError::invalid("graph marker response is not an array"))?;
+    let row = match markers.as_slice() {
+        [] => {
+            return Ok(Some(GraphComparison::Inconclusive(
+                "graph has no InventoryScan marker (not yet written or sweep in progress)".into(),
+            )));
+        }
+        [row] => row,
+        _ => {
+            return Err(HarnessError::invalid(
+                "graph has multiple InventoryScan markers",
+            ));
+        }
+    };
+    let observed_scan = row.get(0);
+    let observed_state = row.get(1);
+    if observed_scan != Some(wanted_scan_id) || observed_state != Some(wanted_status) {
+        return Ok(Some(GraphComparison::Inconclusive(format!(
+            "graph marker is at scan {observed_scan:?} state {observed_state:?}; SQLite expects scan {wanted_scan_id} state {wanted_status}"
+        ))));
+    }
+    Ok(None)
 }
 
 fn graph_rows(
@@ -595,15 +654,8 @@ fn graph_rows(
         .ok_or_else(|| HarnessError::invalid("graph response array too short"))
 }
 
-async fn verify_case(
-    args: &Args,
-    pool: &sqlx::SqlitePool,
-    scan_id: &str,
-    status: &str,
-    port: i32,
-    output: &Path,
-) -> Result<CaseResult, HarnessError> {
-    let mut case = CaseResult {
+fn empty_case(scan_id: &str, status: &str) -> CaseResult {
+    CaseResult {
         scan_id: scan_id.to_string(),
         status: status.to_string(),
         passed: false,
@@ -616,7 +668,18 @@ async fn verify_case(
         resume_push: None,
         first_receipt: None,
         resume_receipt: None,
-    };
+    }
+}
+
+async fn verify_case(
+    args: &Args,
+    pool: &sqlx::SqlitePool,
+    scan_id: &str,
+    status: &str,
+    port: i32,
+    output: &Path,
+) -> Result<CaseResult, HarnessError> {
+    let mut case = empty_case(scan_id, status);
 
     let graph = format!("inventory_delivery_{}", uuid::Uuid::new_v4());
 
@@ -750,115 +813,6 @@ pub fn verify_push(
     }
 
     Ok(pushed.clone())
-}
-
-pub async fn build_expected(pool: &sqlx::SqlitePool, scan_id: &str) -> Result<Value, HarnessError> {
-    let resources =
-        sqlx::query("SELECT id, resource_json FROM scan_resources WHERE scan_id=? ORDER BY id")
-            .bind(scan_id)
-            .fetch_all(pool)
-            .await
-            .map_err(|e| HarnessError::invalid(format!("query failed: {e}")))?;
-
-    let edges = sqlx::query(
-        "SELECT from_id, to_id, relation, source, edge_json FROM scan_edges WHERE scan_id=? ORDER BY from_id,to_id,relation,source",
-    )
-    .bind(scan_id)
-    .fetch_all(pool)
-    .await
-    .map_err(|e| HarnessError::invalid(format!("query failed: {e}")))?;
-
-    let scan = sqlx::query("SELECT status, started_at, finished_at FROM scans WHERE scan_id=?")
-        .bind(scan_id)
-        .fetch_one(pool)
-        .await
-        .map_err(|e| HarnessError::invalid(format!("scan query failed: {e}")))?;
-
-    let status = scan.try_get::<String, _>(0)?;
-    if !["complete", "partial", "cancelled"].contains(&status.as_str()) {
-        return Err(HarnessError::invalid("expected a finalized snapshot"));
-    }
-
-    let completed: i64 = sqlx::query_scalar(
-        "SELECT count(*) FROM scope_checkpoints WHERE scan_id=? AND complete=1 AND failed=0",
-    )
-    .bind(scan_id)
-    .fetch_one(pool)
-    .await
-    .map_err(|e| HarnessError::invalid(format!("scope query failed: {e}")))?;
-
-    let failed: i64 =
-        sqlx::query_scalar("SELECT count(*) FROM scope_checkpoints WHERE scan_id=? AND failed=1")
-            .bind(scan_id)
-            .fetch_one(pool)
-            .await
-            .map_err(|e| HarnessError::invalid(format!("scope query failed: {e}")))?;
-
-    let resource_ids: Vec<String> = resources
-        .iter()
-        .map(|row| row.try_get::<String, _>(0).map(|s| s.to_string()))
-        .collect::<Result<Vec<_>, _>>()?;
-
-    let mut graph_ids = Vec::new();
-    for id in &resource_ids {
-        graph_ids.push(id.clone());
-    }
-    for row in &edges {
-        graph_ids.push(row.try_get::<String, _>(0)?.to_string());
-        graph_ids.push(row.try_get::<String, _>(1)?.to_string());
-    }
-    graph_ids.sort();
-    graph_ids.dedup();
-
-    let mut resource_json_by_id = std::collections::BTreeMap::new();
-    for row in &resources {
-        let id = row.try_get::<String, _>(0)?;
-        let json = row.try_get::<String, _>(1)?;
-        if resource_json_by_id.insert(id.clone(), json).is_some() {
-            return Err(HarnessError::invalid(format!(
-                "scan {scan_id} has duplicate resource id {id}"
-            )));
-        }
-    }
-
-    let node_rows = graph_ids
-        .iter()
-        .map(|id| match resource_json_by_id.get(id) {
-            Some(json) => expected_rows::observed_node(scan_id, id, json),
-            None => Ok(expected_rows::unresolved_node(scan_id, id)),
-        })
-        .collect::<Result<Vec<_>, HarnessError>>()?;
-
-    let edge_rows = edges
-        .iter()
-        .map(|row| {
-            let relation = row.try_get::<String, _>(2)?;
-            let source = row.try_get::<String, _>(3)?;
-            let edge_json = row.try_get::<String, _>(4)?;
-            expected_rows::edge_row(scan_id, &relation, &source, &edge_json)
-        })
-        .collect::<Result<Vec<_>, HarnessError>>()?;
-
-    Ok(json!({
-        "scan": {
-            "scan_id": scan_id,
-            "status": status,
-            "started_at": scan.try_get::<i64, _>(1).ok(),
-            "finished_at": scan.try_get::<i64, _>(2).ok(),
-        },
-        "counts": {
-            "resources": resource_ids.len(),
-            "edges": edges.len(),
-            "completed": completed,
-            "failed": failed,
-        },
-        "observations": {
-            "failure": failed,
-        },
-        "node_rows": node_rows,
-        "edge_rows": edge_rows,
-        "tag_rows": [],
-    }))
 }
 
 pub async fn run_verify(args: Args) -> Result<VerificationResult, HarnessError> {

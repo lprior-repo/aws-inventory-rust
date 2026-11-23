@@ -6,13 +6,71 @@ use std::collections::HashMap;
 
 use crate::HarnessError;
 use crate::audit::files::{read_json_audit, read_toml_audit};
-use crate::audit::matrix::catalogs;
+use crate::audit::matrix::{Catalogs, catalogs};
 use crate::audit::pins::dependency_evidence;
 use crate::audit::validate::validate_summary;
 use crate::provenance::{sha256_hex, source_fingerprint};
 
 pub fn reconcile(root: &std::path::Path) -> Result<serde_json::Value, HarnessError> {
     let before = source_fingerprint(root)?;
+    let (matrix, matrix_sha, previous_sha) = load_historical_matrix(root)?;
+
+    let (sources, calls, nonempty) = calls::source_inventory(root)?;
+    let matrix_ops = matrix_callsites(&matrix);
+    let observed = observed_callsites(&calls);
+    check_matrix_against_observed(&matrix_ops, &observed)?;
+
+    let closure_files = closure_file_hashes(&before);
+    check_sources_unchanged(&sources, &closure_files)?;
+
+    let (modules, provider_dependency) = dependency_evidence(root, &matrix)?;
+    let catalog = catalogs(root)?;
+
+    let report = serde_json::json!({
+        "schema_version": 1,
+        "status": "source_boundaries_reconciled",
+        "historical_matrix": {
+            "path": "catalog/aws-operations.toml",
+            "sha256": matrix_sha,
+            "left_unchanged": true
+        },
+        "historical_reconciliation": {
+            "path": "artifacts/aws-operation-source-reconciliation-v04.json",
+            "sha256": previous_sha,
+            "left_unchanged": true
+        },
+        "summary": report_summary(&calls, &sources, nonempty),
+        "method": "Mask comments/string/character literals; enumerate every empty send under crates/aws/src; resolve each direct receiver/method chain and SDK client namespace; require the exact historical path/function/operation multiset. Verify pinned operation/provider module hashes against Cargo.lock and the local registry source.",
+        "callsites": callsite_rows(&calls),
+        "credential_provider": {
+            "id": "sts.assume_role",
+            "explicit_sdk_send": false,
+            "source_calls": [],
+            "pinned_dependency": provider_dependency
+        },
+        "pinned_sdk_operation_modules": modules,
+        "aws_source_files": sources.keys().cloned().collect::<Vec<_>>(),
+        "source": before,
+        "cloud_control_provider_dimension": cloud_control_section(&catalog),
+        "emulator_evidence": {
+            "status": "pending",
+            "current_run_bound": false,
+            "meaning": "No endpoint or provider execution result is claimed by this source-only receipt."
+        },
+        "limits": [
+            "Lexical audit, not a Rust AST/type proof or branch coverage measurement.",
+            "Unrecognized call shapes and changed boundaries fail closed; new operations require an updated reviewed matrix.",
+            "No live AWS calls, Cargo compilation, mutation campaign, or throughput measurement was performed.",
+            "Default credential-chain network providers remain outside the explicit collector operation count."
+        ]
+    });
+
+    Ok(report)
+}
+
+fn load_historical_matrix(
+    root: &std::path::Path,
+) -> Result<(serde_json::Value, String, String), HarnessError> {
     let (matrix, matrix_sha) = read_toml_audit(&root.join("catalog/aws-operations.toml"))?;
 
     let previous_path = root.join("artifacts/aws-operation-source-reconciliation-v04.json");
@@ -29,8 +87,10 @@ pub fn reconcile(root: &std::path::Path) -> Result<serde_json::Value, HarnessErr
         ));
     }
 
-    let (sources, calls, nonempty) = calls::source_inventory(root)?;
+    Ok((matrix, matrix_sha, previous_sha))
+}
 
+fn matrix_callsites(matrix: &serde_json::Value) -> HashMap<String, Vec<(String, String)>> {
     // Compare calls against matrix operations
     let mut matrix_ops = HashMap::new();
     if let Some(ops) = matrix
@@ -55,18 +115,27 @@ pub fn reconcile(root: &std::path::Path) -> Result<serde_json::Value, HarnessErr
             }
         }
     }
+    matrix_ops
+}
 
+fn observed_callsites(calls: &[calls::Callsite]) -> HashMap<String, Vec<(String, String)>> {
     // Build multiset of observed calls
     let mut observed = HashMap::new();
-    for call in &calls {
+    for call in calls {
         observed
             .entry(call.id.clone())
             .or_insert_with(Vec::new)
             .push((call.path.clone(), call.function.clone()));
     }
+    observed
+}
 
+fn check_matrix_against_observed(
+    matrix_ops: &HashMap<String, Vec<(String, String)>>,
+    observed: &HashMap<String, Vec<(String, String)>>,
+) -> Result<(), HarnessError> {
     // Compare: every matrix operation must be observed, and vice versa
-    for (id, expected_calls) in &matrix_ops {
+    for (id, expected_calls) in matrix_ops {
         let actual = observed.get(id.as_str());
         match actual {
             None => {
@@ -105,8 +174,11 @@ pub fn reconcile(root: &std::path::Path) -> Result<serde_json::Value, HarnessErr
             )));
         }
     }
+    Ok(())
+}
 
-    let closure_files: HashMap<String, String> = before
+fn closure_file_hashes(before: &serde_json::Value) -> HashMap<String, String> {
+    before
         .get("files")
         .and_then(serde_json::Value::as_array)
         .map(|files| {
@@ -124,9 +196,14 @@ pub fn reconcile(root: &std::path::Path) -> Result<serde_json::Value, HarnessErr
             }
             map
         })
-        .unwrap_or_default();
+        .unwrap_or_default()
+}
 
-    for (path, source) in &sources {
+fn check_sources_unchanged(
+    sources: &HashMap<String, String>,
+    closure_files: &HashMap<String, String>,
+) -> Result<(), HarnessError> {
+    for (path, source) in sources {
         let expected_sha = closure_files.get(path).cloned();
         match expected_sha {
             Some(sha) => {
@@ -144,76 +221,54 @@ pub fn reconcile(root: &std::path::Path) -> Result<serde_json::Value, HarnessErr
             }
         }
     }
+    Ok(())
+}
 
-    let (modules, provider_dependency) = dependency_evidence(root, &matrix)?;
-    let catalog = catalogs(root)?;
+fn report_summary(
+    calls: &[calls::Callsite],
+    sources: &HashMap<String, String>,
+    nonempty: usize,
+) -> serde_json::Value {
+    serde_json::json!({
+        "explicit_unique_operations": calls.iter().map(|c| c.id.as_str()).collect::<std::collections::HashSet<_>>().len(),
+        "explicit_sdk_send_callsites": calls.len(),
+        "sdk_services": calls.iter().map(|c| c.id.as_str()).collect::<std::collections::HashSet<_>>().iter().map(|s| s.split('.').next().unwrap_or("")).collect::<std::collections::HashSet<_>>().len(),
+        "credential_provider_operation_boundaries": 0,
+        "callsite_positions_changed": 0,
+        "nonempty_channel_send_sites_excluded": nonempty,
+        "aws_source_files": sources.len()
+    })
+}
 
-    let report = serde_json::json!({
-        "schema_version": 1,
-        "status": "source_boundaries_reconciled",
-        "historical_matrix": {
-            "path": "catalog/aws-operations.toml",
-            "sha256": matrix_sha,
-            "left_unchanged": true
-        },
-        "historical_reconciliation": {
-            "path": "artifacts/aws-operation-source-reconciliation-v04.json",
-            "sha256": previous_sha,
-            "left_unchanged": true
-        },
-        "summary": {
-            "explicit_unique_operations": calls.iter().map(|c| c.id.as_str()).collect::<std::collections::HashSet<_>>().len(),
-            "explicit_sdk_send_callsites": calls.len(),
-            "sdk_services": calls.iter().map(|c| c.id.as_str()).collect::<std::collections::HashSet<_>>().iter().map(|s| s.split('.').next().unwrap_or("")).collect::<std::collections::HashSet<_>>().len(),
-            "credential_provider_operation_boundaries": 0,
-            "callsite_positions_changed": 0,
-            "nonempty_channel_send_sites_excluded": nonempty,
-            "aws_source_files": sources.len()
-        },
-        "method": "Mask comments/string/character literals; enumerate every empty send under crates/aws/src; resolve each direct receiver/method chain and SDK client namespace; require the exact historical path/function/operation multiset. Verify pinned operation/provider module hashes against Cargo.lock and the local registry source.",
-        "callsites": calls.iter().map(|c| serde_json::json!({
+fn callsite_rows(calls: &[calls::Callsite]) -> Vec<serde_json::Value> {
+    calls
+        .iter()
+        .map(|c| {
+            serde_json::json!({
                 "id": c.id,
                 "path": c.path,
                 "function": c.function,
                 "operation_line": c.operation_line,
                 "send_line": c.send_line
-            })).collect::<Vec<_>>(),
-        "credential_provider": {
-            "id": "sts.assume_role",
-            "explicit_sdk_send": false,
-            "source_calls": [],
-            "pinned_dependency": provider_dependency
-        },
-        "pinned_sdk_operation_modules": modules,
-        "aws_source_files": sources.keys().cloned().collect::<Vec<_>>(),
-        "source": before,
-        "cloud_control_provider_dimension": {
-            "historical_type_count": 0,
-            "current_type_count": 0,
-            "catalog_sha256": catalog.catalog_sha256,
-            "root_type_count": 0,
-            "parent_dependent_type_count": 0,
-            "parent_catalog_sha256": catalog.parent_sha256,
-            "runtime_catalog_canonical_sha256": "",
-            "relationship_rule_count": 0,
-            "parent_relationship_rule_count": 0,
-            "operation_ids": ["cloudcontrol.list_resources", "cloudcontrol.get_resource"],
-            "meaning": "Descriptor/relationship breadth is separate from SDK operation boundaries and executed provider coverage."
-        },
-        "emulator_evidence": {
-            "status": "pending",
-            "current_run_bound": false,
-            "meaning": "No endpoint or provider execution result is claimed by this source-only receipt."
-        },
-        "limits": [
-            "Lexical audit, not a Rust AST/type proof or branch coverage measurement.",
-            "Unrecognized call shapes and changed boundaries fail closed; new operations require an updated reviewed matrix.",
-            "No live AWS calls, Cargo compilation, mutation campaign, or throughput measurement was performed.",
-            "Default credential-chain network providers remain outside the explicit collector operation count."
-        ]
-    });
+            })
+        })
+        .collect::<Vec<_>>()
+}
 
-    Ok(report)
+fn cloud_control_section(catalog: &Catalogs) -> serde_json::Value {
+    serde_json::json!({
+        "historical_type_count": 0,
+        "current_type_count": 0,
+        "catalog_sha256": catalog.catalog_sha256,
+        "root_type_count": 0,
+        "parent_dependent_type_count": 0,
+        "parent_catalog_sha256": catalog.parent_sha256,
+        "runtime_catalog_canonical_sha256": "",
+        "relationship_rule_count": 0,
+        "parent_relationship_rule_count": 0,
+        "operation_ids": ["cloudcontrol.list_resources", "cloudcontrol.get_resource"],
+        "meaning": "Descriptor/relationship breadth is separate from SDK operation boundaries and executed provider coverage."
+    })
 }
 
 pub fn validate_emulator(
@@ -260,6 +315,17 @@ fn validate_additions_document(
         return Err(HarnessError::invalid("additions schema_version must be 1"));
     }
 
+    check_additions_binding(doc, matrix_sha)?;
+    let checked = check_addition_ids(doc, matrix)?;
+
+    Ok(serde_json::json!({
+        "schema_version": 1,
+        "additions_count": checked.len(),
+        "additions": checked
+    }))
+}
+
+fn check_additions_binding(doc: &serde_json::Value, matrix_sha: &str) -> Result<(), HarnessError> {
     let binds_object = serde_json::Map::new();
     let binds_null = serde_json::Value::Object(binds_object);
     let binds = doc.get("binds").unwrap_or(&binds_null);
@@ -272,7 +338,13 @@ fn validate_additions_document(
             "additions bind a different historical operation matrix",
         ));
     }
+    Ok(())
+}
 
+fn check_addition_ids(
+    doc: &serde_json::Value,
+    matrix: &serde_json::Value,
+) -> Result<Vec<serde_json::Value>, HarnessError> {
     let empty_vec = Vec::new();
     let operations = matrix
         .get("operations")
@@ -307,12 +379,7 @@ fn validate_additions_document(
             "status": "checked"
         }));
     }
-
-    Ok(serde_json::json!({
-        "schema_version": 1,
-        "additions_count": checked.len(),
-        "additions": checked
-    }))
+    Ok(checked)
 }
 
 pub fn write_reconciliation(

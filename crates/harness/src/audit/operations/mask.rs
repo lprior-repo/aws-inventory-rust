@@ -31,75 +31,88 @@ pub fn mask_noncode(path: &str, text: &str) -> Result<String, HarnessError> {
                 continue;
             }
         };
-        // Line comment
-        if current == b'/' && next_byte == b'/' {
-            let remaining = &text[position..];
-            let line_end = remaining.find('\n');
-            let end = match line_end {
-                Some(offset) => position.saturating_add(offset),
-                None => bytes.len(),
-            };
-            mask_range(&mut output, position, end);
-            position = end;
-        }
-        // Block comment
-        else if current == b'/' && next_byte == b'*' {
-            let (ok, end) = mask_block_comment(&mut output, text, position);
-            if !ok {
-                let (line, col) = source_location(text, position);
-                return Err(HarnessError::invalid(format!(
-                    "{}:{}:{}: unterminated Rust block comment",
-                    path, line, col
-                )));
-            }
-            position = end;
-        }
-        // String literal
-        else if current == b'"' {
-            let (ok, end) = mask_string_literal(&mut output, text, position);
-            if !ok {
-                let (line, col) = source_location(text, position);
-                return Err(HarnessError::invalid(format!(
-                    "{}:{}:{}: unterminated Rust string",
-                    path, line, col
-                )));
-            }
-            position = end;
-        }
-        // Raw string
-        else if current == b'r' {
-            let (ok, end) = mask_raw_string(&mut output, text, position);
-            if ok {
-                position = end;
-            } else {
-                position = next_pos;
-            }
-        }
-        // Byte string
-        else if current == b'b' {
-            let (ok, end) = mask_byte_string(&mut output, text, position);
-            if ok {
-                position = end;
-            } else {
-                position = next_pos;
-            }
-        }
-        // Character literal
-        else if current == b'\'' {
-            let (ok, end) = mask_char_literal(&mut output, text, position);
-            if !ok {
-                // Not a char literal (e.g. lifetime parameter)
-                position = next_pos;
-            } else {
-                position = end;
-            }
-        } else {
-            position = next_pos;
-        }
+        position = mask_step(path, text, &mut output, position, current, next_byte)?;
     }
 
     String::from_utf8(output)
         .map_err(|e| HarnessError::invalid(format!("invalid UTF-8 in masked source: {}", e)))
+}
+
+fn mask_step(
+    path: &str,
+    text: &str,
+    output: &mut [u8],
+    position: usize,
+    current: u8,
+    next_byte: u8,
+) -> Result<usize, HarnessError> {
+    // Line comment
+    if current == b'/' && next_byte == b'/' {
+        return Ok(mask_line_comment(output, text, position));
+    }
+    // Block comment
+    if current == b'/' && next_byte == b'*' {
+        let (ok, end) = mask_block_comment(output, text, position);
+        if !ok {
+            let (line, col) = source_location(text, position);
+            return Err(HarnessError::invalid(format!(
+                "{}:{}:{}: unterminated Rust block comment",
+                path, line, col
+            )));
+        }
+        return Ok(end);
+    }
+    // String literal
+    if current == b'"' {
+        let (ok, end) = mask_string_literal(output, text, position);
+        if !ok {
+            let (line, col) = source_location(text, position);
+            return Err(HarnessError::invalid(format!(
+                "{}:{}:{}: unterminated Rust string",
+                path, line, col
+            )));
+        }
+        return Ok(end);
+    }
+    Ok(mask_literal_step(output, text, position, current))
+}
+
+fn mask_line_comment(output: &mut [u8], text: &str, position: usize) -> usize {
+    let bytes = text.as_bytes();
+    let remaining = &text[position..];
+    let line_end = remaining.find('\n');
+    let end = match line_end {
+        Some(offset) => position.saturating_add(offset),
+        None => bytes.len(),
+    };
+    mask_range(output, position, end);
+    end
+}
+
+fn mask_literal_step(output: &mut [u8], text: &str, position: usize, current: u8) -> usize {
+    let next_pos = position.saturating_add(1);
+    // Raw string
+    if current == b'r' {
+        let (ok, end) = mask_raw_string(output, text, position);
+        if ok { end } else { next_pos }
+    }
+    // Byte string
+    else if current == b'b' {
+        let (ok, end) = mask_byte_string(output, text, position);
+        if ok { end } else { next_pos }
+    }
+    // Character literal
+    else if current == b'\'' {
+        let (ok, end) = mask_char_literal(output, text, position);
+        if !ok {
+            // Not a char literal (e.g. lifetime parameter)
+            next_pos
+        } else {
+            end
+        }
+    } else {
+        next_pos
+    }
 }
 
 fn mask_range(output: &mut [u8], start: usize, end: usize) {
