@@ -1,7 +1,6 @@
 #![forbid(unsafe_code)]
 #![deny(unused_must_use)]
 
-pub mod iam_trust;
 pub mod model_credentials;
 
 #[cfg(feature = "adapters")]
@@ -114,7 +113,7 @@ pub enum AwsScanError {
     #[error(transparent)]
     Validation(#[from] inventory_core::ValidationError),
     #[error(transparent)]
-    TrustSummary(#[from] iam_trust::TrustSummaryError),
+    TrustSummary(#[from] inventory_core::iam_trust::TrustSummaryError),
     #[error("inventory consumer closed its channel")]
     ChannelClosed,
     #[error("scope child cap would be exceeded before child enrichment")]

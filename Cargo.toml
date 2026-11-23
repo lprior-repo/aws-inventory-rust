@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/core", "crates/engine", "crates/aws", "crates/aws-wire", "crates/harness", "crates/catalog-tool", "crates/cmdb-bench", "crates/cmdb-ui", "crates/cmdb-view"]
+members = ["crates/core", "crates/engine", "crates/aws", "crates/aws-wire", "crates/harness", "crates/catalog-tool", "crates/cmdb-bench", "crates/cmdb-ui", "crates/cmdb-view", "crates/sweep"]
 resolver = "3"
 
 [workspace.package]
@@ -52,13 +52,14 @@ rust-version.workspace = true
 
 [features]
 default = []
-sweep = ["dep:inventory-aws"]
+sweep = ["dep:inventory-aws", "dep:inventory-sweep", "inventory-aws/sweep-credentials"]
 aws = ["sweep", "inventory-aws/adapters"]
 
 [dependencies]
 inventory-core.workspace = true
 inventory-engine.workspace = true
 inventory-aws = { path = "crates/aws", optional = true, default-features = false }
+inventory-sweep = { path = "crates/sweep", optional = true }
 aws-wire = { path = "crates/aws-wire" }
 thiserror.workspace = true
 http = "1.5.0"
