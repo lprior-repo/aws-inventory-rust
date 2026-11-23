@@ -51,7 +51,7 @@ const RESOURCES: &[Resource] = &[
         scope: Scope::Region, tokens: Some(("NextToken", "NextToken")),
         query: &["ARN"],
         tags: None,
-        bindings: &[],
+        bindings: &[("StreamARN", "ListStreams", "StreamARN")],
         fixed: &[],
     },
 ];
