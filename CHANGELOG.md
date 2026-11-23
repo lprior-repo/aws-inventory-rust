@@ -2,6 +2,10 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Projection delivery now uses backend-neutral inventory, snapshot, target-identity
+  and delivery-ownership ports. SQLite retains its persistent sidecar generation
+  and immediate cross-process contention behavior.
+
 - PostgreSQL resolves reviewed typed reference unions in bounded batches, retracts
   stale or ambiguous matches without discarding independent proofs, and retires
   missing resources only after two complete authoritative enumerations.

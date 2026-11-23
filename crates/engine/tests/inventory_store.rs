@@ -6,6 +6,8 @@ mod behavior;
 mod conformance;
 #[path = "inventory_store/postgres.rs"]
 mod postgres;
+#[path = "inventory_store/projection_port.rs"]
+mod projection_port;
 #[path = "inventory_store/reference.rs"]
 mod reference;
 #[path = "inventory_store/scalar.rs"]

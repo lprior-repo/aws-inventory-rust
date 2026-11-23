@@ -1,7 +1,8 @@
 use super::*;
+use futures_util::TryStreamExt;
 
 pub(super) async fn rebuild_edges(
-    snapshot: &mut ProjectionSnapshot,
+    snapshot: &mut impl ProjectionSnapshotRead,
     client: &mut GraphClient,
     limit: u16,
 ) -> Result<bool, GraphError> {
@@ -34,8 +35,8 @@ pub(super) fn validate(graph: &str, endpoint: &str, limit: u16) -> Result<(), Pr
     Ok(())
 }
 
-pub(super) async fn pending_report(
-    store: &BinaryStore,
+pub(super) async fn pending_report<S: InventoryStore>(
+    store: &S,
     acknowledged: u64,
     offline: bool,
     rebuild_incomplete: bool,
@@ -77,8 +78,8 @@ pub(super) fn entry_graph_error(error: GraphError) -> EntryError {
     }
 }
 
-pub(super) async fn failed_delivery(
-    store: &BinaryStore,
+pub(super) async fn failed_delivery<S: InventoryStore>(
+    store: &S,
     error: GraphError,
     acknowledged: u64,
 ) -> Result<ProjectionReport, ProjectionError> {
@@ -103,8 +104,8 @@ pub(super) enum EntryError {
     Store(#[from] StoreError),
 }
 
-pub(super) async fn rebuild_graph(
-    store: &BinaryStore,
+pub(super) async fn rebuild_graph<S: InventoryStore>(
+    store: &S,
     client: &mut GraphClient,
     marker: &PendingProjection,
     batch_limit: u16,
@@ -121,21 +122,11 @@ pub(super) async fn rebuild_graph(
         false
     };
     snapshot.finish().await.map_err(GraphError::Store)?;
-    if resources_done && edges_done {
-        store
-            .ack_projection(
-                ProjectionAck::full_rebuild(marker.revision).map_err(GraphError::Store)?,
-            )
-            .await
-            .map(Some)
-            .map_err(GraphError::Store)
-    } else {
-        Ok(None)
-    }
+    acknowledge_rebuild(store, marker, resources_done && edges_done).await
 }
 
 async fn rebuild_resources(
-    snapshot: &mut ProjectionSnapshot,
+    snapshot: &mut impl ProjectionSnapshotRead,
     client: &mut GraphClient,
     limit: u16,
 ) -> Result<bool, GraphError> {
@@ -147,10 +138,7 @@ async fn rebuild_resources(
             .map_err(GraphError::Store)?;
         let count = page.len();
         after = page.last().map(|resource| resource.key.clone());
-        for resource in page {
-            client.upsert(&resource).await?;
-            project_tags(snapshot, client, &resource.key, limit).await?;
-        }
+        project_resources(snapshot, client, page, limit).await?;
         if count < usize::from(limit) {
             return Ok(true);
         }
@@ -160,4 +148,38 @@ async fn rebuild_resources(
         .await
         .map(|page| page.is_empty())
         .map_err(GraphError::Store)
+}
+
+async fn acknowledge_rebuild<S: InventoryStore>(
+    store: &S,
+    marker: &PendingProjection,
+    complete: bool,
+) -> Result<Option<u64>, GraphError> {
+    if !complete {
+        return Ok(None);
+    }
+    store
+        .ack_projection(ProjectionAck::full_rebuild(marker.revision).map_err(GraphError::Store)?)
+        .await
+        .map(Some)
+        .map_err(GraphError::Store)
+}
+
+async fn project_resources(
+    snapshot: &mut impl ProjectionSnapshotRead,
+    client: &mut GraphClient,
+    page: Vec<crate::inventory::ProjectionResource>,
+    limit: u16,
+) -> Result<(), GraphError> {
+    futures_util::stream::iter(page.into_iter().map(Ok::<_, GraphError>))
+        .try_fold(
+            (snapshot, client),
+            |(snapshot, client), resource| async move {
+                client.upsert(&resource).await?;
+                project_tags(snapshot, client, &resource.key, limit).await?;
+                Ok((snapshot, client))
+            },
+        )
+        .await?;
+    Ok(())
 }
