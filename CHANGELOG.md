@@ -6,6 +6,10 @@
   separate source decoders and unchanged wire tags, limits and rejection order.
   The parent plan decoder is now below the 300-line source limit.
 
+- Graph traversal comments move to the track E read contract. Frontier expansion
+  and edge-budget calculation are separate helpers; traversal direction,
+  timeout, limits and edge admission order are unchanged.
+
 - `cmdb-ui` gains property tests for `DagLayout::compute` (node accounting,
   non-overlap, bounds, determinism, edge direction with strictly increasing
   layers on forward edges), a criterion layout benchmark
