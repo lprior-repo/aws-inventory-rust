@@ -60,7 +60,7 @@ pub(super) fn kms_scenario() -> Result<SeedScenario, SeedError> {
     SeedScenario::new(keys.chain(aliases).collect::<Result<Vec<_>, _>>()?)
 }
 
-fn key_step(id: u8, multi_region: bool) -> Result<SeedStep, SeedError> {
+fn key_step(id: u16, multi_region: bool) -> Result<SeedStep, SeedError> {
     let description = if multi_region {
         "Inventory seed external multi-region primary without material"
     } else {
@@ -95,7 +95,7 @@ fn key_step(id: u8, multi_region: bool) -> Result<SeedStep, SeedError> {
     )?))
 }
 
-fn alias_step(id: u8, key: u8, name: &str) -> Result<SeedStep, SeedError> {
+fn alias_step(id: u16, key: u16, name: &str) -> Result<SeedStep, SeedError> {
     Ok(SeedStep::new(
         StepId::new(id),
         "kms".into(),
@@ -135,7 +135,7 @@ pub(super) fn dynamodb_scenario() -> Result<SeedScenario, SeedError> {
 }
 
 fn table_step(
-    id: u8,
+    id: u16,
     name: &str,
     attribute_type: &str,
     composite: bool,
@@ -208,7 +208,7 @@ pub(super) fn rds_scenario() -> Result<SeedScenario, SeedError> {
     )
 }
 
-fn parameter_group(id: u8, name: &str, root: &str, family: &str) -> Result<SeedStep, SeedError> {
+fn parameter_group(id: u16, name: &str, root: &str, family: &str) -> Result<SeedStep, SeedError> {
     let name_field = format!("{root}Name");
     let arn_field = format!("{root}Arn");
     Ok(SeedStep::new(
@@ -444,7 +444,7 @@ fn assert_resource(
     assert_eq!(resource.evidence, evidence);
 }
 
-fn resource(oracle: &ScenarioSeedOracle, id: u8) -> Result<&SeedResourceIdentity, Box<dyn Error>> {
+fn resource(oracle: &ScenarioSeedOracle, id: u16) -> Result<&SeedResourceIdentity, Box<dyn Error>> {
     oracle
         .resources
         .iter()

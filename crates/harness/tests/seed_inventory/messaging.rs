@@ -50,7 +50,7 @@ fn text(field: &str, value: &str) -> Result<SeedInput, SeedError> {
     ))
 }
 
-fn previous(field: &str, step: u8, path: &[&str]) -> Result<SeedInput, SeedError> {
+fn previous(field: &str, step: u16, path: &[&str]) -> Result<SeedInput, SeedError> {
     Ok(SeedInput::new(
         FieldPath::new(&[field])?,
         SeedInputValue::PreviousOutput {
@@ -71,7 +71,7 @@ fn attributes(entries: &[(&str, &str)]) -> Result<SeedInput, SeedError> {
     ))
 }
 
-fn queue_create(id: u8, name: &str, fifo: bool) -> Result<SeedStep, SeedError> {
+fn queue_create(id: u16, name: &str, fifo: bool) -> Result<SeedStep, SeedError> {
     let inputs = if fifo {
         vec![
             text("QueueName", name)?,
@@ -88,7 +88,7 @@ fn queue_create(id: u8, name: &str, fifo: bool) -> Result<SeedStep, SeedError> {
     ))
 }
 
-fn queue_read(id: u8, create: u8) -> Result<SeedStep, SeedError> {
+fn queue_read(id: u16, create: u16) -> Result<SeedStep, SeedError> {
     // QueueUrl is transport data, not the canonical queue oracle identity.
     Ok(SeedStep::new(
         StepId::new(id),
@@ -106,7 +106,7 @@ fn queue_read(id: u8, create: u8) -> Result<SeedStep, SeedError> {
     ))
 }
 
-fn topic(id: u8, name: &str, fifo: bool) -> Result<SeedStep, SeedError> {
+fn topic(id: u16, name: &str, fifo: bool) -> Result<SeedStep, SeedError> {
     let inputs = if fifo {
         vec![
             text("Name", name)?,
@@ -158,7 +158,7 @@ fn subscription() -> Result<SeedStep, SeedError> {
     )]))
 }
 
-fn activity(id: u8, name: &str) -> Result<SeedStep, SeedError> {
+fn activity(id: u16, name: &str) -> Result<SeedStep, SeedError> {
     Ok(SeedStep::new(
         StepId::new(id),
         "sfn".into(),
@@ -189,7 +189,7 @@ fn execution_role() -> Result<SeedStep, SeedError> {
     )]))
 }
 
-fn state_machine(id: u8, name: &str, machine_type: &str) -> Result<SeedStep, SeedError> {
+fn state_machine(id: u16, name: &str, machine_type: &str) -> Result<SeedStep, SeedError> {
     // Generated fixture ASL contains no customer data or service integrations.
     let definition = r#"{"StartAt":"Complete","States":{"Complete":{"Type":"Succeed"}}}"#;
     Ok(SeedStep::new(
@@ -355,7 +355,7 @@ fn assert_resources(
     oracle: &ScenarioSeedOracle,
     account: &str,
     region: &str,
-    expected: &[(u8, &str, String, &str)],
+    expected: &[(u16, &str, String, &str)],
 ) {
     assert_eq!(oracle.account_id.as_str(), account);
     assert_eq!(oracle.region.as_str(), region);

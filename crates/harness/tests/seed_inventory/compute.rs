@@ -139,7 +139,7 @@ fn eks_vpc() -> Result<SeedStep, SeedError> {
     .with_response_checks(vec![check(&["Vpc", "CidrBlock"], &["CidrBlock"])?]))
 }
 
-fn eks_subnet(id: u8, cidr: &str, zone_index: &str) -> Result<SeedStep, SeedError> {
+fn eks_subnet(id: u16, cidr: &str, zone_index: &str) -> Result<SeedStep, SeedError> {
     Ok(SeedStep::new(
         StepId::new(id),
         "ec2".into(),
@@ -260,7 +260,7 @@ fn text(field: &[&str], value: &str) -> Result<SeedInput, SeedError> {
     input(field, SeedInputValue::Text(value.into()))
 }
 
-fn previous(field: &[&str], step: u8, path: &[&str]) -> Result<SeedInput, SeedError> {
+fn previous(field: &[&str], step: u16, path: &[&str]) -> Result<SeedInput, SeedError> {
     input(
         field,
         SeedInputValue::PreviousOutput {
@@ -277,7 +277,7 @@ fn check(path: &[&str], field: &[&str]) -> Result<SeedOutputCheck, SeedError> {
     ))
 }
 
-fn reference_list(field: &[&str], sources: &[(u8, &[&str])]) -> Result<SeedInput, SeedError> {
+fn reference_list(field: &[&str], sources: &[(u16, &[&str])]) -> Result<SeedInput, SeedError> {
     let bindings = sources
         .iter()
         .enumerate()
@@ -397,7 +397,7 @@ fn assert_resources(
     oracle: &ScenarioSeedOracle,
     account: &str,
     region: &str,
-    expected: &[(u8, &str, &str)],
+    expected: &[(u16, &str, &str)],
 ) -> Result<(), Box<dyn Error>> {
     assert_eq!(oracle.account_id.as_str(), account);
     assert_eq!(oracle.region, Region::parse(region)?);
@@ -430,7 +430,7 @@ fn assert_resources(
 
 fn resource(
     oracle: &ScenarioSeedOracle,
-    step: u8,
+    step: u16,
 ) -> Result<&SeedResourceIdentity, Box<dyn Error>> {
     oracle
         .resources
