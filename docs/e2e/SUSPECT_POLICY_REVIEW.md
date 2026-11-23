@@ -144,3 +144,71 @@ CARGO_TARGET_DIR=/tmp/tgt-suspect cargo test -j3 -p catalog-tool --test suspect_
 ```
 
 Then regenerate the catalog/overlay/probe against the full merged patch following RUN_HERE.md. No coverage success is claimed for deferred mixed-owner roots, computed shifts, Snowball geographic scope, or opaque/secret-bearing outputs. Existing expected-absence handling (Organizations, account GovCloud linkage, IAM login profiles, Resource Explorer index) remains runtime-lane work. Optional response identities, disputed cross-region behavior, additional Direct Connect association routes, and sandbox catalogs remain explicitly unproven; this review does not substitute an empty emulator response for item-bearing account evidence.
+
+## Patch manifest
+
+Policy/test commits, in application order (the documentation-manifest commit follows these):
+
+```text
+05fc6ab0 cf0b0066 cacd801f 2e26e0fe f3e69652 cab8270c 73cb2a7d fe33f0df
+44ae3e7d 88e69e90 08aa0f75 02f2abb1 cb0619b8 352a6619 dfa3579e 2fc73694
+723b214f 701ce9b9 a9bd16d9 02f6f66a 66f519b7 952c7a45 2784182c 34b68814
+7767bd1f dd5ba2ef 3bd911b6 f2c7a37b c0b2fe6a 103c57cd 806a4c5f 6cc535f4
+7f67c5e2 1a24a10c 5343e91d 49f5772f 6714f0ec 9805459b 1038c9d6 c0e73e5b
+ea3f8df6 74e5843b 944c3c01 e8df3ef2 dacdec1a 377e8d8f 280cf617 b60b54d8
+```
+
+Exact changed paths, relative to repository root:
+
+```text
+scripts/audit-callable-risk.rb
+docs/e2e/SUSPECT_POLICY_REVIEW.md
+crates/catalog-tool/tests/suspect_policy.rs
+crates/catalog-tool/tests/suspect_policy.tsv
+crates/catalog-tool/src/overlay/builtin/family_a_c/bedrock_0.rs
+crates/catalog-tool/src/overlay/builtin/family_a_c/bedrock_agentcore_control_0.rs
+crates/catalog-tool/src/overlay/builtin/family_a_c/appsync_0.rs
+crates/catalog-tool/src/overlay/builtin/family_a_c/cloudtrail_0.rs
+crates/catalog-tool/src/overlay/builtin/family_a_c/cloudformation_0.rs
+crates/catalog-tool/src/overlay/builtin/family_a_c/codeartifact_0.rs
+crates/catalog-tool/src/overlay/builtin/family_a_c/amp_0.rs
+crates/catalog-tool/src/overlay/builtin/family_a_c/app_mesh_0.rs
+crates/catalog-tool/src/overlay/builtin/family_a_c/appconfig_0.rs
+crates/catalog-tool/src/overlay/builtin/family_a_c/batch_0.rs
+crates/catalog-tool/src/overlay/builtin/family_a_c/controltower_0.rs
+crates/catalog-tool/src/overlay/builtin/family_d_f/s_eventbridgev2.rs
+crates/catalog-tool/src/overlay/builtin/family_d_f/tests.rs
+crates/catalog-tool/src/overlay/builtin/family_d_f/s_dataexchange.rs
+crates/catalog-tool/src/overlay/builtin/family_d_f/support.rs
+crates/catalog-tool/src/overlay/builtin/family_d_f/s_emr.rs
+crates/catalog-tool/src/overlay/builtin/family_g_k/kinesis_video.rs
+crates/catalog-tool/src/overlay/builtin/family_g_k/s_kinesis_video.rs
+crates/catalog-tool/src/overlay/builtin/family_g_k/iotfleetwise.rs
+crates/catalog-tool/src/overlay/builtin/family_g_k/gamelift.rs
+crates/catalog-tool/src/overlay/builtin/family_l_p/managedblockchain.rs
+crates/catalog-tool/src/overlay/builtin/family_l_p/pinpoint_sms_voice_v2.rs
+crates/catalog-tool/src/overlay/builtin/family_l_p/networkmanager.rs
+crates/catalog-tool/src/overlay/builtin/family_l_p/opensearch.rs
+crates/catalog-tool/src/overlay/builtin/family_l_p/notificationscontacts.rs
+crates/catalog-tool/src/overlay/builtin/family_q_s/construction.rs
+crates/catalog-tool/src/overlay/builtin/family_q_s/schemas/calls_0.rs
+crates/catalog-tool/src/overlay/builtin/family_q_s/ram/calls_0.rs
+crates/catalog-tool/src/overlay/builtin/family_q_s/service_quotas/calls_0.rs
+crates/catalog-tool/src/overlay/builtin/family_q_s/sagemaker/calls_7.rs
+crates/catalog-tool/src/overlay/builtin/family_q_s/securityagent/calls_0.rs
+crates/catalog-tool/src/overlay/builtin/family_q_s/service_catalog/calls_0.rs
+crates/catalog-tool/src/overlay/builtin/family_q_s/ssm_contacts/calls_0.rs
+crates/catalog-tool/src/overlay/builtin/family_q_s/ssm_contacts/decisions_0.rs
+crates/catalog-tool/src/overlay/builtin/family_q_s/ssm/calls_0.rs
+crates/catalog-tool/src/overlay/builtin/family_q_s/servicediscovery/calls_0.rs
+crates/catalog-tool/src/overlay/builtin/family_q_s/resiliencehubv2/calls_0.rs
+crates/catalog-tool/src/overlay/builtin/family_q_s/securityhub.rs
+crates/catalog-tool/src/overlay/builtin/family_q_s/snowball/calls_0.rs
+crates/catalog-tool/src/overlay/builtin/family_q_s/snowball/decisions_0.rs
+crates/catalog-tool/src/overlay/builtin/family_t_z/wellarchitected_plans_1.rs
+crates/catalog-tool/src/overlay/builtin/family_t_z/workspaces_plans_1.rs
+crates/catalog-tool/src/overlay/builtin/family_t_z/verifiedpermissions_plans_1.rs
+crates/catalog-tool/src/overlay/builtin/family_t_z/endpoint_plans.rs
+```
+
+Compatibility: owner filters deliberately remove shared/reference observations; Content/Secret denials and mixed-owner/computed/geographic deferrals reduce callable coverage honestly. Correlated identities change keys for mapped-stream associations, SageMaker child records, SSM contact receipts/resolutions, and Security Hub feature administrators. Notifications contact scope changes regional keys to account keys. Existing persisted snapshots may therefore require reconciliation under the new catalog; this patch does not migrate stored data.
