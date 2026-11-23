@@ -1,0 +1,10 @@
+format = 1
+service = "guardduty"
+
+[[step]]
+id = "resource"
+operation = "CreateDetector"
+kind = "AWS::GuardDuty::Detector"
+identity = "DetectorId"
+[step.input]
+Enable = false
