@@ -7,6 +7,7 @@ service = "iam"
 operation = "CreateRole"
 kind = "AWS::IAM::Role"
 identity = "Role.Arn"
+scope = "account"
 [step.input]
 RoleName = "inventory-thin-bedrock-agent"
 AssumeRolePolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"bedrock.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
@@ -48,7 +49,7 @@ metadataConfiguration = { nonFilterableMetadataKeys = ["AMAZON_BEDROCK_TEXT", "A
 id = "knowledge"
 operation = "CreateKnowledgeBase"
 kind = "AWS::Bedrock::KnowledgeBase"
-identity = "knowledgeBase.knowledgeBaseArn"
+identity = "knowledgeBase.knowledgeBaseId"
 [step.input]
 name = "inventory-thin-bedrock-agent"
 roleArn = { from = "role", path = "Role.Arn" }
