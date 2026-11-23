@@ -65,3 +65,44 @@ and a separate package.
 - The writer fills the columns; they are not generated columns.
 - Nothing is migrated from the current store. Inventories are collected again
   into PostgreSQL (V24).
+
+## C6.1 implementation evidence (2026-11-22)
+
+The workspace enables SQLx's `postgres` feature, retaining `sqlite` until the
+planned store cutover. The existing prerequisite commit `c6ded414` supplied
+the manifest and lockfile; the SQLx pin was not moved. Contrary to the original
+step description, this tree uses registry SQLx 0.9.1 and Rust 1.100.0, not a
+git fork and nightly. The new metadata regression therefore checks equal
+version and upstream source for every resolved SQLx crate, with exactly one
+`sqlx-postgres`, rather than inventing a git revision.
+
+| Measurement | Before `postgres` | After `postgres` |
+| --- | --- | --- |
+| `cargo tree --locked -e normal -p inventory-engine` lines | 305 | 349 |
+| Clean debug engine build wall time | 27.04 s | 29.27 s |
+| Peak RSS | 683,988 KiB | 697,236 KiB |
+| Swaps | 0 | 0 |
+
+Build command: `RUSTC_WRAPPER= /usr/bin/time -v cargo build --locked -p
+inventory-engine -j2`, with a fresh
+`CARGO_TARGET_DIR=$HOME/.cache/cargo-target-d11` each time. The earlier target
+directories were moved aside, not reused for either clean build. These use
+two jobs under the task's machine policy instead of the step's proposed one.
+The registry cache was warm.
+
+The coordinator must run the workspace all-target/all-feature gate after
+integration. This dependency change does not implement or claim a PostgreSQL
+store or PostgreSQL end-to-end sweep.
+
+New lockfile package names: `etcetera`, `hkdf`, `libredox`,
+`objc2-core-foundation`, `objc2-system-configuration`, `sqlx-postgres`,
+`stringprep`, `unicode-normalization`, and `whoami`. This list compares
+lockfiles, not unlike-feature metadata graphs.
+
+Passed: `cargo test --locked -p inventory-engine --test postgres_dependency
+-j2` (1 test), `cargo fmt -p aws-inventory -p inventory-aws -p inventory-engine
+-- --check`, `cargo clippy --locked -p aws-inventory --features aws -j2 --
+-D warnings`, and `cargo clippy --locked -p inventory-engine --test
+postgres_dependency -j2 -- -D warnings`. The initial offline all-feature
+metadata command could not fetch `libredox`; locked online resolution fetched
+the missing platform packages, after which the offline regression passed.
