@@ -1,0 +1,10 @@
+format = 1
+service = "networkmonitor"
+
+[[step]]
+id = "resource"
+operation = "CreateMonitor"
+kind = "AWS::NetworkMonitor::Monitor"
+identity = "monitorArn"
+[step.input]
+"monitorName" = "inventory-thin-networkmonitor"
