@@ -4,7 +4,7 @@ service = "mediapackage-vod"
 [[step]]
 id = "resource"
 operation = "CreatePackagingGroup"
-kind = "AWS::MediaPackageVod::PackagingGroup"
+kind = "AWS::MediaPackage::PackagingGroup"
 identity = "Arn"
 [step.input]
 "Id" = "inventory-thin-mediapackage-vod"
