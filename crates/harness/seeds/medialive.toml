@@ -1,0 +1,10 @@
+format = 1
+service = "medialive"
+
+[[step]]
+id = "resource"
+operation = "CreateCluster"
+kind = "AWS::MediaLive::Cluster"
+identity = "Arn"
+[step.input]
+"Name" = "inventory-thin-medialive"

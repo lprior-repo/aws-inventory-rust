@@ -1,0 +1,10 @@
+format = 1
+service = "sagemaker"
+
+[[step]]
+id = "resource"
+operation = "CreateCluster"
+kind = "AWS::SageMaker::Cluster"
+identity = "ClusterArn"
+[step.input]
+"ClusterName" = "inventory-thin-sagemaker"

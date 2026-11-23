@@ -1,0 +1,10 @@
+format = 1
+service = "mediapackage-vod"
+
+[[step]]
+id = "resource"
+operation = "CreatePackagingGroup"
+kind = "AWS::MediaPackageVod::PackagingGroup"
+identity = "Arn"
+[step.input]
+"Id" = "inventory-thin-mediapackage-vod"

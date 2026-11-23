@@ -1,0 +1,11 @@
+format = 1
+service = "route53resolver"
+
+[[step]]
+id = "resource"
+operation = "CreateFirewallDomainList"
+kind = "AWS::Route53Resolver::FirewallDomainList"
+identity = "FirewallDomainList.Arn"
+[step.input]
+"CreatorRequestId" = "inventory-thin-route53resolver"
+"Name" = "inventory-thin-route53resolver"

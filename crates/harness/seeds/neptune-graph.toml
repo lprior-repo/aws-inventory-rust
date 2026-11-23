@@ -1,0 +1,11 @@
+format = 1
+service = "neptune-graph"
+
+[[step]]
+id = "resource"
+operation = "CreateGraph"
+kind = "AWS::NeptuneGraph::Graph"
+identity = "id"
+[step.input]
+"graphName" = "inventory-thin-neptune-graph"
+"provisionedMemory" = 16

@@ -1,0 +1,11 @@
+format = 1
+service = "notificationscontacts"
+
+[[step]]
+id = "resource"
+operation = "CreateEmailContact"
+kind = "AWS::NotificationsContacts::EmailContact"
+identity = "arn"
+[step.input]
+"name" = "inventory-thin-notificationscontacts"
+"emailAddress" = "inventory@example.com"

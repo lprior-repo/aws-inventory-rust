@@ -3,8 +3,8 @@ service = "redshift-serverless"
 
 [[step]]
 id = "resource"
-operation = "CreateCustomDomainAssociation"
-kind = "AWS::redshift-serverless::CustomDomainAssociation"
-identity = "customDomainCertificateArn"
-repeat = 2
+operation = "CreateNamespace"
+kind = "AWS::RedshiftServerless::Namespace"
+identity = "namespace.namespaceName"
 [step.input]
+"namespaceName" = "inventory-thin-redshift-serverless"

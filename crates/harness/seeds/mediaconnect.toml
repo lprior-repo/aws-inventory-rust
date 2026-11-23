@@ -1,0 +1,12 @@
+format = 1
+service = "mediaconnect"
+
+[[step]]
+id = "resource"
+operation = "CreateGateway"
+kind = "AWS::MediaConnect::Gateway"
+identity = "Gateway.GatewayArn"
+[step.input]
+"EgressCidrBlocks" = ["10.88.0.0/16"]
+"Name" = "inventory-thin-mediaconnect"
+"Networks" = [{ "CidrBlock" = "10.88.0.0/16", "Name" = "inventory-thin-mediaconnect" }]

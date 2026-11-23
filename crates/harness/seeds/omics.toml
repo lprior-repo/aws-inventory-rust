@@ -1,0 +1,11 @@
+format = 1
+service = "omics"
+
+[[step]]
+id = "resource"
+operation = "CreateRunGroup"
+kind = "AWS::Omics::RunGroup"
+identity = "arn"
+[step.input]
+"name" = "inventory-thin-omics"
+"requestId" = "inventory-thin-omics"

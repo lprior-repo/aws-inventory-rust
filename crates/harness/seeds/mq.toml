@@ -1,0 +1,11 @@
+format = 1
+service = "mq"
+
+[[step]]
+id = "resource"
+operation = "CreateConfiguration"
+kind = "AWS::AmazonMQ::Configuration"
+identity = "Arn"
+[step.input]
+"EngineType" = "ACTIVEMQ"
+"Name" = "inventory-thin-mq"

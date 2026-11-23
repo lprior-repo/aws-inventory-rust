@@ -1,0 +1,10 @@
+format = 1
+service = "networkflowmonitor"
+
+[[step]]
+id = "resource"
+operation = "CreateScope"
+kind = "AWS::NetworkFlowMonitor::Scope"
+identity = "scopeArn"
+[step.input]
+"targets" = [{ "targetIdentifier" = { "targetId" = { "accountId" = "000000000000" }, "targetType" = "ACCOUNT" }, "region" = "us-east-1" }]

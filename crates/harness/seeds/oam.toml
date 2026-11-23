@@ -1,0 +1,10 @@
+format = 1
+service = "oam"
+
+[[step]]
+id = "resource"
+operation = "CreateSink"
+kind = "AWS::OAM::Sink"
+identity = "Arn"
+[step.input]
+"Name" = "inventory-thin-oam"

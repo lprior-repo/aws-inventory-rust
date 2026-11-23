@@ -1,0 +1,10 @@
+format = 1
+service = "route-53"
+
+[[step]]
+id = "resource"
+operation = "CreateReusableDelegationSet"
+kind = "AWS::Route53::ReusableDelegationSet"
+identity = "DelegationSet.Id"
+[step.input]
+"CallerReference" = "inventory-thin-route-53"

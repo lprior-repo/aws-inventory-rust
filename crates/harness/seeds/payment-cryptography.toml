@@ -1,0 +1,11 @@
+format = 1
+service = "payment-cryptography"
+
+[[step]]
+id = "resource"
+operation = "CreateKey"
+kind = "AWS::PaymentCryptography::Key"
+identity = "Key.KeyArn"
+[step.input]
+"KeyAttributes" = { "KeyUsage" = "TR31_B0_BASE_DERIVATION_KEY", "KeyClass" = "SYMMETRIC_KEY", "KeyAlgorithm" = "TDES_2KEY", "KeyModesOfUse" = {  } }
+"Exportable" = false

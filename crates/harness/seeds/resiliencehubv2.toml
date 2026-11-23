@@ -1,0 +1,12 @@
+format = 1
+service = "resiliencehubv2"
+
+[[step]]
+id = "resource"
+operation = "CreateService"
+kind = "AWS::Resiliencehub::Service"
+identity = "service.serviceArn"
+[step.input]
+"name" = "inventory-thin-resiliencehubv2"
+"regions" = ["us-east-1"]
+"permissionModel" = { "invokerRoleName" = "inventory-thin-resiliencehubv2" }
