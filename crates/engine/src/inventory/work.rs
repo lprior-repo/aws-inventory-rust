@@ -16,7 +16,7 @@ pub(super) use transitions::{
 const MAX_SWEEP_ID: usize = 128;
 const MAX_SCOPE_BYTES: usize = 16_384;
 
-pub(super) fn persisted_scope(bytes: &[u8]) -> Result<ScopeKey, StoreError> {
+pub fn persisted_scope(bytes: &[u8]) -> Result<ScopeKey, StoreError> {
     decode_scope(bytes)
 }
 

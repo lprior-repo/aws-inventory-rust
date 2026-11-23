@@ -25,6 +25,10 @@ mod typed;
 mod unobserved;
 mod validation;
 mod work;
+/// Decode a persisted scope key using the store's canonical format.
+pub use work::persisted_scope as decode_scope_key;
+#[cfg(test)]
+mod scope_key_tests;
 use inventory_core::catalog::runtime::RuntimeCatalog;
 use inventory_core::inventory::{
     AccountId, Edge, KindSchema, Observation, ScopeOutcome, UnresolvedReference,
