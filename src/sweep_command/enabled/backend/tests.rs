@@ -45,6 +45,29 @@ fn given_database_password_when_debugged_or_clap_rejects_another_value_then_secr
     Ok(())
 }
 
+#[test]
+fn given_child_database_environment_when_parsed_then_database_argument_is_optional() -> Result<()> {
+    const MARKER: &str = "INVENTORY_TEST_DATABASE_ENV";
+    const DATABASE: &str = "postgres://user:private-password@localhost/inventory";
+    if std::env::var_os(MARKER).is_some() {
+        let parsed = Options::try_parse_from(["test"])?;
+        assert_eq!(parsed.sweep.database, DATABASE);
+        assert!(!format!("{:?}", parsed.sweep).contains("private-password"));
+        return Ok(());
+    }
+    let output = std::process::Command::new(std::env::current_exe()?)
+        .arg("given_child_database_environment_when_parsed_then_database_argument_is_optional")
+        .env(MARKER, "1")
+        .env("INVENTORY_SWEEP_DATABASE", DATABASE)
+        .output()?;
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stdout)
+    );
+    Ok(())
+}
+
 #[tokio::test]
 #[ignore = "requires INVENTORY_POSTGRES_URL and the locally generated catalog"]
 async fn given_full_catalog_when_native_cli_store_is_created_and_resumed_then_schema_and_rebuild_round_trip()

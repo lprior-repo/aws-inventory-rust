@@ -3,7 +3,7 @@ use std::path::PathBuf;
 
 #[derive(Args)]
 pub struct SweepArgs {
-    #[arg(long)]
+    #[arg(long, env = "INVENTORY_SWEEP_DATABASE", hide_env_values = true)]
     pub database: String,
     #[arg(long, default_value = "catalog/aws-api.catalog")]
     pub catalog: PathBuf,
