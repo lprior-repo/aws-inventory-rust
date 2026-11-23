@@ -4,7 +4,7 @@ service = "bedrock-data-automation"
 [[step]]
 id = "resource"
 operation = "CreateDataAutomationProject"
-kind = "AWS::BedrockDataAutomation::DataAutomationProject"
+kind = "AWS::Bedrock::DataAutomationProject"
 identity = "projectArn"
 [step.input]
 "projectName" = "inventory-thin-bedrock-data-automation"
