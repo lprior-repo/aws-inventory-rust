@@ -4,8 +4,17 @@ service = "lightsail"
 [[step]]
 id = "domain"
 operation = "CreateDomain"
+kind = ""
+repeat = 2
+[step.input]
+domainName = "inventory-seed-{n}.example.com"
+
+[[step]]
+id = "metadata"
+operation = "GetDomain"
 kind = "AWS::Lightsail::Domain"
-identity = "operation.resourceName"
+identity = "domain.arn"
+scope = "account"
 repeat = 2
 [step.input]
 domainName = "inventory-seed-{n}.example.com"
