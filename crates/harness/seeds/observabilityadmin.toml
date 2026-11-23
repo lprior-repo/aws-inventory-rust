@@ -4,7 +4,7 @@ service = "observabilityadmin"
 [[step]]
 id = "resource"
 operation = "CreateCentralizationRuleForOrganization"
-kind = "AWS::ObservabilityAdmin::CentralizationRuleForOrganization"
+kind = "AWS::ObservabilityAdmin::OrganizationCentralizationRule"
 identity = "RuleArn"
 [step.input]
 "RuleName" = "inventory-thin-observabilityadmin"
