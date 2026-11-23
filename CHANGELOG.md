@@ -10,8 +10,8 @@
 
 - `InventoryStore` now exposes bounded sweep discovery, typed manifest creation,
   and generation-fenced lease release for immediate cancellation/resume.
-  Work leases carry transactional unfinished-work depth without adding statements
-  to the claim or page-commit paths.
+  Queue depth is opt-in through `claim_with_depth`; ordinary claims retain their
+  original UPDATE without a COUNT or RETURNING, and page commits are unchanged.
 
 - Runtime catalog binding decoders live in `decode/plans/bindings.rs`, with
   separate source decoders and unchanged wire tags, limits and rejection order.

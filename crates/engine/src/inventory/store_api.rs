@@ -21,6 +21,12 @@ pub trait InventoryStore: Send + Sync {
         now_ms: i64,
         lease_ms: i64,
     ) -> impl Future<Output = Result<Option<WorkLease>, StoreError>> + Send;
+    fn claim_with_depth(
+        &self,
+        sweep: &SweepId,
+        now_ms: i64,
+        lease_ms: i64,
+    ) -> impl Future<Output = Result<Option<WorkLease>, StoreError>> + Send;
     fn commit_page(
         &self,
         page: PageCommit,
@@ -133,6 +139,14 @@ impl InventoryStore for BinaryStore {
         lease_ms: i64,
     ) -> Result<Option<WorkLease>, StoreError> {
         BinaryStore::claim(self, sweep, now_ms, lease_ms).await
+    }
+    async fn claim_with_depth(
+        &self,
+        sweep: &SweepId,
+        now_ms: i64,
+        lease_ms: i64,
+    ) -> Result<Option<WorkLease>, StoreError> {
+        BinaryStore::claim_with_depth(self, sweep, now_ms, lease_ms).await
     }
     async fn commit_page(&self, page: PageCommit) -> Result<CommitResult, StoreError> {
         BinaryStore::commit_page(self, page).await

@@ -12,7 +12,7 @@ where
     let (_guard, store, _) = make().await?;
     given_stale_owner_when_released_then_replacement_stays_leased(&store).await?;
     let (_guard, store, _) = make().await?;
-    given_claim_and_commit_when_returning_then_queue_depth_is_transactional(&store).await?;
+    given_listener_claim_when_returning_then_depth_is_transactional(&store).await?;
     let (_guard, store, _) = make().await?;
     given_completed_scope_when_released_then_it_stays_complete(&store).await
 }
@@ -127,9 +127,7 @@ async fn release_preserving_state<S: InventoryStore>(
     Ok(())
 }
 
-async fn given_claim_and_commit_when_returning_then_queue_depth_is_transactional<
-    S: InventoryStore,
->(
+async fn given_listener_claim_when_returning_then_depth_is_transactional<S: InventoryStore>(
     store: &S,
 ) -> TestResult {
     let sweep = SweepId::new("depth-control".to_owned())?;
@@ -138,17 +136,36 @@ async fn given_claim_and_commit_when_returning_then_queue_depth_is_transactional
         work(sweep.as_str(), "us-west-2")?,
     ];
     store.seed_works(&works).await?;
-    let first = claim(store, sweep.as_str(), 100).await?;
-    let second = claim(store, sweep.as_str(), 100).await?;
-    assert_eq!(first.pending_work(), 2);
-    assert_eq!(second.pending_work(), 2);
+    verify_plain_claim(store, &sweep).await?;
+    let first = claim_with_depth(store, &sweep, 100).await?;
+    let second = claim_with_depth(store, &sweep, 100).await?;
+    assert_eq!(first.pending_work(), Some(2));
+    assert_eq!(second.pending_work(), Some(2));
     let commit = page(first, Vec::new(), true, None, 101);
     store.commit_page(commit).await?;
     store.release_lease(second).await?;
-    let released = claim(store, sweep.as_str(), 102).await?;
-    assert_eq!(released.pending_work(), 1);
+    let released = claim_with_depth(store, &sweep, 102).await?;
+    assert_eq!(released.pending_work(), Some(1));
     let commit = page(released, Vec::new(), true, None, 103);
     store.commit_page(commit).await?;
     assert_eq!(store.discover_active_sweep().await?, None);
     Ok(())
+}
+
+async fn verify_plain_claim<S: InventoryStore>(store: &S, sweep: &SweepId) -> TestResult {
+    let lease = claim(store, sweep.as_str(), 100).await?;
+    assert_eq!(lease.pending_work(), None);
+    store.release_lease(lease).await?;
+    Ok(())
+}
+
+async fn claim_with_depth<S: InventoryStore>(
+    store: &S,
+    sweep: &SweepId,
+    now: i64,
+) -> TestResult<WorkLease> {
+    Ok(store
+        .claim_with_depth(sweep, now, 1_000)
+        .await?
+        .ok_or("depth claim absent")?)
 }
