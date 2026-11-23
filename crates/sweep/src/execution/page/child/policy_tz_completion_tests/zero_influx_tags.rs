@@ -97,6 +97,9 @@ fn respond(
 
 fn assert_source(wire: &http::Request<bytes::Bytes>, source: &str) -> TestResult {
     let input: Json = serde_json::from_slice(wire.body())?;
-    assert_eq!(input.get("resourceArn").and_then(Json::as_str), Some(source));
+    assert_eq!(
+        input.get("resourceArn").and_then(Json::as_str),
+        Some(source)
+    );
     Ok(())
 }

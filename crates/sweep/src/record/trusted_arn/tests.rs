@@ -103,7 +103,10 @@ fn global_domain_scope_preserves_account_and_regional_resource_boundaries() -> T
         account: &account,
         region: &region,
     };
-    validate_arn("arn:aws:lightsail:global:123456789012:Domain/seed", Some(&trusted))?;
+    validate_arn(
+        "arn:aws:lightsail:global:123456789012:Domain/seed",
+        Some(&trusted),
+    )?;
     for arn in [
         "arn:aws:lightsail:global:999999999999:Domain/seed",
         "arn:aws-cn:lightsail:global:123456789012:Domain/seed",

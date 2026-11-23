@@ -10,9 +10,11 @@ fn given_required_child_sources_when_missing_or_empty_then_only_those_requests_a
 -> TestResult {
     let compiled = compiled()?;
     let catalog = RuntimeCatalog::from_bytes(&compiled.bytes)?;
-    let parent = catalog.lookup("timestream-influxdb", "ListDbParameterGroups")
+    let parent = catalog
+        .lookup("timestream-influxdb", "ListDbParameterGroups")
         .ok_or("parent missing")?;
-    let plan = catalog.lookup("timestream-influxdb", "ListTagsForResource")
+    let plan = catalog
+        .lookup("timestream-influxdb", "ListTagsForResource")
         .ok_or("tag child missing")?;
     let field = compiled.fields.id("arn").ok_or("ARN field missing")?;
     for value in [None, Some(""), Some(" "), Some("invalid-arn")] {
