@@ -1,0 +1,9 @@
+format = 1
+service = "supplychain"
+
+[[step]]
+id = "resource"
+operation = "CreateInstance"
+kind = "AWS::SupplyChain::Instance"
+identity = "instance.instanceId"
+[step.input]
