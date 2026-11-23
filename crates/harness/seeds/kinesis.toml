@@ -1,0 +1,11 @@
+format = 1
+service = "kinesis"
+
+[[step]]
+id = "resource"
+operation = "PutRecord"
+kind = "AWS::kinesis::Record"
+identity = "ShardId"
+repeat = 2
+[step.input]
+Data = "inventory-thin-kinesis-data-{n}"
