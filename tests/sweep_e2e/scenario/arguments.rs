@@ -88,6 +88,10 @@ fn identity_args(
         environment.profile.clone(),
         "--region".to_owned(),
         environment.region.clone(),
+        "--service".to_owned(),
+        "ec2:DescribeVpcs".to_owned(),
+        "--service".to_owned(),
+        "ec2:DescribeSubnets".to_owned(),
     ]);
     Ok(())
 }
@@ -149,6 +153,23 @@ pub(super) fn assert_no_failures(summary: &str) -> Result<()> {
         summary_value(summary, "failed")? == 0,
         "sweep CLI summary contains fatal failed scopes"
     );
+    Ok(())
+}
+
+pub(super) fn assert_baseline_budget(summary: &str) -> Result<()> {
+    for (name, expected) in [
+        ("scopes", 2),
+        ("complete", 2),
+        ("pages", 4),
+        ("api_attempts", 6),
+        ("api_retries", 0),
+        ("unsupported", 0),
+    ] {
+        ensure!(
+            summary_value(summary, name)? == expected,
+            "selected VPC/subnet baseline exceeded {name} budget {expected}: {summary}"
+        );
+    }
     Ok(())
 }
 

@@ -7,6 +7,17 @@
   selector (a bare service selects all its plans). Omitted selectors keep the
   full catalog, and unknown selectors exit with usage status 2.
 
+- The VPC/subnet baseline explicitly selects its two paginated enumerations
+  from the full catalog instead of sweeping unrelated services and descendants.
+  It retains the 60-second CLI deadline, all inventory/graph/resume assertions,
+  and checks the exact two-scope, four-page, six-request budget. Optional
+  `INVENTORY_E2E_TRACE=1` records per-invocation timing and bounded API-attempt
+  diagnostics, including when the child process exceeds its deadline.
+  The deliberate offline-graph invocation requires exit 5. Both stores verify
+  SIGKILL/live-lease refusal without checkpoint corruption and Ctrl-C followed
+  by immediate resume to the uninterrupted digest; the long hard-crash lease
+  recovery limitation is recorded explicitly.
+
 - The harness `probe` command reports every catalog enumeration in stable order,
   skips parent-bound children, and calls only the first page through the sweep's
   existing encoder, signer, status classifier and decoder. Reports retain bounded
