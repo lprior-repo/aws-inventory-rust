@@ -4,6 +4,6 @@ service = "amp"
 [[step]]
 id = "resource"
 operation = "CreateWorkspace"
-kind = "AWS::amp::Workspace"
+kind = "AWS::APS::Workspace"
 identity = "arn"
 [step.input]
