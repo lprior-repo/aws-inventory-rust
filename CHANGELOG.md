@@ -2,6 +2,12 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Sweep accepts PostgreSQL URLs, creates missing inventory schemas and refuses
+  missing-schema resume. Collection and graph delivery share the inventory port;
+  file paths retain the transitional SQLite backend. Database URLs are redacted
+  from CLI argument debug output. Baseline scenarios default to isolated native
+  PostgreSQL databases and retain an explicit `INVENTORY_E2E_STORE=file` mode.
+
 - PostgreSQL now implements the complete inventory and projection ports, including
   transaction-owned delivery fencing, bounded revision-exact outbox delivery,
   repeatable-read snapshots, and paged resources, edges and tags.

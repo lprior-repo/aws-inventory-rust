@@ -1,10 +1,10 @@
 use clap::Args;
 use std::path::PathBuf;
 
-#[derive(Args, Debug)]
+#[derive(Args)]
 pub struct SweepArgs {
     #[arg(long)]
-    pub database: PathBuf,
+    pub database: String,
     #[arg(long, default_value = "catalog/aws-api.catalog")]
     pub catalog: PathBuf,
     #[arg(long)]
@@ -41,4 +41,13 @@ pub struct SweepArgs {
     /// or when the projection generation has drifted from the inventory.
     #[arg(long)]
     pub rebuild: bool,
+}
+
+impl std::fmt::Debug for SweepArgs {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        formatter
+            .debug_struct("SweepArgs")
+            .field("database", &"<redacted>")
+            .finish_non_exhaustive()
+    }
 }

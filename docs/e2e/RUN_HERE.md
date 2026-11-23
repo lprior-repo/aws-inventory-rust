@@ -553,3 +553,29 @@ exited 0 and reported 436 services, 19,636 operations, 8,365 read-named
 operations, 2,735 readonly operations, and 2,209 root list/describe operations.
 Generated catalog/report files remain ignored; only the tracked manifest hashes
 are updated, including the generated kinds, names, and prior overlay artifacts.
+
+## PostgreSQL sweep backend
+
+Build with `--features sweep`, then pass `--database postgres://...` or
+`--database postgresql://...`. The command opens an existing `inventory` schema,
+checks its catalog digest, or creates a missing schema from the supplied
+catalog. `--resume` never creates a missing schema. A file path retains the
+transitional SQLite behavior; new PostgreSQL schemas have no legacy unattributed
+SQLite resources. `--rebuild` atomically replaces native pending projection work
+with a revision-fenced full-rebuild marker.
+
+The ignored `sweep_e2e` suite defaults to `INVENTORY_E2E_STORE=postgres`.
+Set `INVENTORY_POSTGRES_URL` to the native throwaway server's administrator URL;
+the harness creates and removes isolated databases beside its owned emulator
+and graph processes. `INVENTORY_E2E_STORE=file` selects the compatibility mode.
+`scripts/e2e-baseline.sh` runs both modes. `INVENTORY_EMULATOR_BINARY` can name an
+already-installed pinned binary without changing the installation directory.
+
+The narrow native lifecycle scenario is:
+
+```sh
+cargo test --locked -p aws-inventory --features sweep -j3 --bin aws-inventory \
+  given_full_catalog_when_native_cli_store_is_created_and_resumed_then_schema_and_rebuild_round_trip \
+  -- --ignored --nocapture
+```
+

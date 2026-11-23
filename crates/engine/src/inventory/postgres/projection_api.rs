@@ -29,6 +29,9 @@ impl InventoryStore for PgStore {
     async fn mark_projection_rebuild_required(&self) -> Result<(), StoreError> {
         projection_state::mark_rebuild(self).await
     }
+    async fn request_graph_rebuild(&self) -> Result<(), StoreError> {
+        outbox::request_rebuild(self).await
+    }
     async fn validate_catalog(&self, catalog: &[u8]) -> Result<(), StoreError> {
         PgStore::validate_catalog(self, catalog).await
     }

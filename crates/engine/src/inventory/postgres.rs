@@ -31,6 +31,17 @@ pub struct PgStore {
 }
 
 impl PgStore {
+    pub async fn exists(url: &DatabaseUrl, config: PgWriteConfig) -> Result<bool, StoreError> {
+        let pool = connection::connect(url, config).await?;
+        let result = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM pg_namespace WHERE nspname='inventory')",
+        )
+        .fetch_one(&pool)
+        .await;
+        pool.close().await;
+        result.map_err(StoreError::from)
+    }
+
     pub async fn create(
         url: &DatabaseUrl,
         registry: SchemaRegistry,

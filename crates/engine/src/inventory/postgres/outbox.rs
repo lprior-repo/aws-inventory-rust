@@ -93,3 +93,27 @@ pub(super) async fn ack(store: &PgStore, ack: ProjectionAck) -> Result<u64, Stor
     tx.commit().await?;
     Ok(affected)
 }
+
+pub(super) async fn request_rebuild(store: &PgStore) -> Result<(), StoreError> {
+    let mut tx = rebuild_transaction(store).await?;
+    reset_outbox(&mut tx).await?;
+    tx.commit().await?;
+    Ok(())
+}
+
+async fn rebuild_transaction(store: &PgStore) -> Result<Transaction<'_, Postgres>, StoreError> {
+    let mut tx = store.pool.begin().await?;
+    sqlx::query("SELECT pg_advisory_xact_lock(14,1)")
+        .execute(&mut *tx)
+        .await?;
+    Ok(tx)
+}
+
+async fn reset_outbox(tx: &mut Transaction<'_, Postgres>) -> Result<(), StoreError> {
+    sqlx::query("DELETE FROM projection_outbox")
+        .execute(&mut **tx)
+        .await?;
+    sqlx::query("INSERT INTO projection_outbox(resource_key,revision,deleted,full_rebuild) VALUES(decode('00','hex'),nextval('inventory.projection_revision_seq'),false,true)")
+        .execute(&mut **tx).await?;
+    Ok(())
+}

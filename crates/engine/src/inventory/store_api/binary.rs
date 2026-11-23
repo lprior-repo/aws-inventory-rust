@@ -19,6 +19,9 @@ impl InventoryStore for BinaryStore {
     async fn mark_projection_rebuild_required(&self) -> Result<(), StoreError> {
         projection_identity::mark_rebuild(self).await
     }
+    async fn request_graph_rebuild(&self) -> Result<(), StoreError> {
+        BinaryStore::request_graph_rebuild(self).await
+    }
 
     async fn validate_catalog(&self, catalog: &[u8]) -> Result<(), StoreError> {
         BinaryStore::validate_catalog(self, catalog).await

@@ -26,6 +26,7 @@ pub trait InventoryStore: Send + Sync {
     fn mark_projection_rebuild_required(
         &self,
     ) -> impl Future<Output = Result<(), StoreError>> + Send;
+    fn request_graph_rebuild(&self) -> impl Future<Output = Result<(), StoreError>> + Send;
 
     fn validate_catalog(
         &self,
