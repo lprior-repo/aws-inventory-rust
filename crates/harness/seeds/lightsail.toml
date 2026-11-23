@@ -2,10 +2,10 @@ format = 1
 service = "lightsail"
 
 [[step]]
-id = "keypair"
-operation = "CreateKeyPair"
-kind = "AWS::lightsail::KeyPair"
-identity = "keyPair.name"
+id = "domain"
+operation = "CreateDomain"
+kind = "AWS::Lightsail::Domain"
+identity = "operation.resourceName"
 repeat = 2
 [step.input]
-keyPairName = "inventory-thin-ls-key-{n}"
+domainName = "inventory-seed-{n}.example.com"
