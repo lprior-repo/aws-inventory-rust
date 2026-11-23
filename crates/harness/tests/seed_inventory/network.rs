@@ -15,13 +15,13 @@ pub(crate) const TARGET_GROUP_NAME: &str = "inventory-seed-targets";
 pub(crate) const CPU_ALARM_NAME: &str = "inventory-seed-cpu";
 pub(crate) const COMPOSITE_ALARM_NAME: &str = "inventory-seed-composite";
 
-pub(crate) const EC2_KINDS: [(u8, &str); 4] = [
+pub(crate) const EC2_KINDS: [(u16, &str); 4] = [
     (0, "AWS::EC2::VPC"),
     (1, "AWS::EC2::Subnet"),
     (2, "AWS::EC2::SecurityGroup"),
     (3, "AWS::EC2::RouteTable"),
 ];
-pub(crate) const ELBV2_KINDS: [(u8, &str); 6] = [
+pub(crate) const ELBV2_KINDS: [(u16, &str); 6] = [
     (0, "AWS::EC2::VPC"),
     (1, "AWS::EC2::Subnet"),
     (2, "AWS::EC2::Subnet"),
@@ -29,12 +29,12 @@ pub(crate) const ELBV2_KINDS: [(u8, &str); 6] = [
     (4, "AWS::ElasticLoadBalancingV2::LoadBalancer"),
     (5, "AWS::ElasticLoadBalancingV2::TargetGroup"),
 ];
-pub(crate) const CLOUDWATCH_KINDS: [(u8, &str); 2] = [
+pub(crate) const CLOUDWATCH_KINDS: [(u16, &str); 2] = [
     (0, "AWS::CloudWatch::Alarm"),
     (1, "AWS::CloudWatch::CompositeAlarm"),
 ];
-pub(crate) const EC2_EDGES: [(u8, u8, &str); 1] = [(1, 0, "IN_VPC")];
-pub(crate) const ELBV2_EDGES: [(u8, u8, &str); 2] = [(1, 0, "IN_VPC"), (2, 0, "IN_VPC")];
+pub(crate) const EC2_EDGES: [(u16, u16, &str); 1] = [(1, 0, "IN_VPC")];
+pub(crate) const ELBV2_EDGES: [(u16, u16, &str); 2] = [(1, 0, "IN_VPC"), (2, 0, "IN_VPC")];
 
 pub(crate) fn ec2_network() -> Result<SeedScenario, SeedError> {
     SeedScenario::with_relationships(
@@ -89,7 +89,7 @@ fn input(field: &str, value: SeedInputValue) -> Result<SeedInput, SeedError> {
     Ok(SeedInput::new(FieldPath::new(&[field])?, value))
 }
 
-fn previous(field: &str, step: u8, path: &[&str]) -> Result<SeedInput, SeedError> {
+fn previous(field: &str, step: u16, path: &[&str]) -> Result<SeedInput, SeedError> {
     input(
         field,
         SeedInputValue::PreviousOutput {
@@ -118,7 +118,7 @@ fn vpc(cidr: &str) -> Result<SeedStep, SeedError> {
     .with_response_checks(vec![check(&["Vpc", "CidrBlock"], "CidrBlock")?]))
 }
 
-fn subnet(id: u8, cidr: &str, zone: Option<&str>) -> Result<SeedStep, SeedError> {
+fn subnet(id: u16, cidr: &str, zone: Option<&str>) -> Result<SeedStep, SeedError> {
     let zone_input = zone
         .map(|value| text("AvailabilityZone", value))
         .transpose()?;
@@ -150,7 +150,7 @@ fn subnet(id: u8, cidr: &str, zone: Option<&str>) -> Result<SeedStep, SeedError>
     .with_response_checks(checks))
 }
 
-fn security_group(id: u8, name: &str) -> Result<SeedStep, SeedError> {
+fn security_group(id: u16, name: &str) -> Result<SeedStep, SeedError> {
     Ok(SeedStep::new(
         StepId::new(id),
         "ec2".into(),
@@ -180,7 +180,7 @@ fn route_table() -> Result<SeedStep, SeedError> {
     .with_response_checks(vec![check(&["RouteTable", "VpcId"], "VpcId")?]))
 }
 
-fn subnet_edge(source: u8) -> Result<SeedRelationship, SeedError> {
+fn subnet_edge(source: u16) -> Result<SeedRelationship, SeedError> {
     Ok(SeedRelationship::new(
         StepId::new(source),
         StepId::new(0),
@@ -189,7 +189,7 @@ fn subnet_edge(source: u8) -> Result<SeedRelationship, SeedError> {
     ))
 }
 
-fn bound_list(field: &str, sources: &[(u8, &[&str])]) -> Result<SeedInput, SeedError> {
+fn bound_list(field: &str, sources: &[(u16, &[&str])]) -> Result<SeedInput, SeedError> {
     let bindings = sources
         .iter()
         .enumerate()

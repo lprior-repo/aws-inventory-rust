@@ -88,7 +88,7 @@ fn resources(
     oracle: &ScenarioSeedOracle,
     account: &str,
     region: &str,
-    kinds: &[(u8, &str)],
+    kinds: &[(u16, &str)],
     evidence: SeedIdentityEvidence,
 ) -> Check {
     equal(oracle.account_id.as_str(), account, "oracle account")?;
@@ -123,7 +123,7 @@ fn resources(
 
 fn resource(
     oracle: &ScenarioSeedOracle,
-    step: u8,
+    step: u16,
 ) -> Result<&SeedResourceIdentity, Box<dyn Error>> {
     oracle
         .resources
@@ -138,7 +138,7 @@ fn resource(
         })
 }
 
-fn identity_prefix(oracle: &ScenarioSeedOracle, step: u8, prefix: &str) -> Check {
+fn identity_prefix(oracle: &ScenarioSeedOracle, step: u16, prefix: &str) -> Check {
     let actual = resource(oracle, step)?.id.as_str();
     equal(
         actual
@@ -149,7 +149,7 @@ fn identity_prefix(oracle: &ScenarioSeedOracle, step: u8, prefix: &str) -> Check
     )
 }
 
-fn edges(oracle: &ScenarioSeedOracle, expected: &[(u8, u8, &str)]) -> Check {
+fn edges(oracle: &ScenarioSeedOracle, expected: &[(u16, u16, &str)]) -> Check {
     equal(oracle.edges.len(), expected.len(), "relationship count")?;
     expected.iter().try_for_each(|(from, to, relation)| {
         let source = resource(oracle, *from)?;

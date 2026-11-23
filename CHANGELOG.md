@@ -20,6 +20,8 @@
   included. The sweep encoder accepts only a callable catalog plan, endpoint,
   record and input fields; protocol-spanning tests verify catalog-derived
   methods. Service rejection messages are decoded and bounded.
+  Native seed integration fixtures use the widened 16-bit step identifiers in
+  recipe helpers and independent oracle assertions.
 
 - The sweep runtime now lives in `inventory-sweep`; CLI collection and cadence
   scheduling call its public API. Credential resolution uses `CredentialSource`
