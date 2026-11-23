@@ -1,0 +1,10 @@
+format = 1
+service = "connecthealth"
+
+[[step]]
+id = "resource"
+operation = "CreateDomain"
+kind = "AWS::ConnectHealth::Domain"
+identity = "arn"
+[step.input]
+name = "inventory-thin-connecthealth"
