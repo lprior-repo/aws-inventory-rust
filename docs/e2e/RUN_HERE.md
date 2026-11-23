@@ -939,3 +939,40 @@ suite, real AWS run or catalog regeneration was performed. T0's requested
 two-backend ignored-suite gate is **MET**; the hard-crash expiry risk above
 remains open rather than being hidden by a passing cancellation test.
 
+## Wave 4 policy/failure integration (2026-11-23)
+
+Merge `c275aa3b` combines the reviewed policy lane with the failure lane.
+Batch keeps the owning queue and `JOB_NAME=*` filter, rather than the
+RUNNING-only default. CloudFormation keeps `ListTypeVersions.Arn` bound to
+`ListTypes.TypeArn`, with explicit `Visibility=PRIVATE`. Their moved policy
+parts remain separate files instead of restoring duplicate declarations.
+
+Kinesis Video keeps both the `ListStreams.StreamARN` parent binding and the
+correlated identity `(request StreamARN, selected Type, selected ARN)`.
+The pinned model describes each selected item as a resource associated with
+the requested stream; the associated resource ARN alone does not identify
+that association. This retains the policy contract and required-parent tests.
+Existing persisted association keys may require reconciliation; this merge
+does not migrate stored snapshots.
+
+The integration worktree's empty model directory was populated by a local
+shared clone of the pinned revision `46135f8468cd5cb60d983b97290c9f6661e359c6`.
+With `CARGO_TARGET_DIR=/tmp/tgt-int`,
+`TMPDIR=/tmp/w4-int/.local/int/tmp` and three Cargo jobs, these commands passed:
+
+```sh
+cargo fmt
+cargo clippy -j3 -p catalog-tool -p inventory-sweep -p inventory-harness -p aws-wire --all-targets --locked -- -D warnings
+cargo run -j3 -p catalog-tool --locked -- models compile --write
+/tmp/tgt-int/debug/catalog-tool models compile --check
+/tmp/tgt-int/debug/catalog-tool overlays generate --check
+/tmp/tgt-int/debug/catalog-tool kinds generate --check
+```
+
+The checks use the just-built integration binary. The ignored binary catalog
+was regenerated before running the crate suites, avoiding the already
+documented mismatch between old callable plans and newly denied policy.
+No emulator report, manifest or generated catalog is committed by this merge
+verification. Seed integration and the final aggregate native probe are separate
+steps; no new emulator or real-AWS execution is claimed here.
+
