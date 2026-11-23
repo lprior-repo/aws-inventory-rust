@@ -54,9 +54,22 @@ impl<C: CredentialSource> Call<'_, '_, C> {
             region: Region::new(&self.endpoint.signing_region).map_err(permanent)?,
             name: SigningName::new(&self.endpoint.signing_name).map_err(permanent)?,
         };
-        sign_and_send(self, request, &credentials, &scope)
-            .await
-            .and_then(|response| validate_status(self.plan, response))
+        let started = std::time::Instant::now();
+        let response = sign_and_send(self, request, &credentials, &scope).await;
+        let status = response
+            .as_ref()
+            .ok()
+            .map(|response| response.status.as_u16());
+        let result = response.and_then(|response| validate_status(self.plan, response));
+        tracing::debug!(
+            service = self.plan.service_name(),
+            operation = self.plan.operation_name(),
+            elapsed_ms = started.elapsed().as_millis(),
+            status,
+            error = ?result.as_ref().err(),
+            "sweep API attempt completed"
+        );
+        result
     }
 }
 
