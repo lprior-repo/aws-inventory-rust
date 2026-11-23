@@ -1,4 +1,4 @@
-#![cfg(feature = "aws")]
+#![cfg(feature = "sweep")]
 
 use anyhow::{Context, Result, ensure};
 use catalog_tool::{endpoints, kind_map, names, overlay, runtime_catalog, smithy};

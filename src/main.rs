@@ -24,7 +24,7 @@ mod serve_command;
 #[cfg(test)]
 mod serve_tests;
 mod sweep_command;
-#[cfg(feature = "aws")]
+#[cfg(feature = "sweep")]
 mod sweep_runtime;
 mod tag_mapping;
 mod tag_sources;

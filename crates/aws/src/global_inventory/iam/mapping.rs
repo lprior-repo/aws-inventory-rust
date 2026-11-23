@@ -32,7 +32,7 @@ pub(super) fn map_role(
 ) -> Result<PageBody, AwsScanError> {
     let arn = own_arn(ctx, role.arn(), "iam", "role")?;
     let trust = if detail == ObservationDetail::Fetched {
-        trust_summary(role.assume_role_policy_document())?
+        crate::iam_trust::summarize(role.assume_role_policy_document())?
     } else {
         Vec::new()
     };

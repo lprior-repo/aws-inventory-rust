@@ -1,47 +1,76 @@
 #![forbid(unsafe_code)]
 #![deny(unused_must_use)]
 
-pub mod cloud_control;
-mod common;
-pub mod discovery;
-mod dynamo;
-mod ec2;
-mod ecs;
-mod eks;
-mod global_inventory;
-mod kms;
-mod lambda;
-mod load_balancing;
+pub mod iam_trust;
 pub mod model_credentials;
+
+#[cfg(feature = "adapters")]
+pub mod cloud_control;
+#[cfg(feature = "adapters")]
+mod common;
+#[cfg(feature = "adapters")]
+pub mod discovery;
+#[cfg(feature = "adapters")]
+mod dynamo;
+#[cfg(feature = "adapters")]
+mod ec2;
+#[cfg(feature = "adapters")]
+mod ecs;
+#[cfg(feature = "adapters")]
+mod eks;
+#[cfg(feature = "adapters")]
+mod global_inventory;
+#[cfg(feature = "adapters")]
+mod kms;
+#[cfg(feature = "adapters")]
+mod lambda;
+#[cfg(feature = "adapters")]
+mod load_balancing;
+#[cfg(feature = "adapters")]
 mod network;
+#[cfg(feature = "adapters")]
 mod sns;
+#[cfg(feature = "adapters")]
 mod source_discovery;
+#[cfg(feature = "adapters")]
 mod sqs;
+#[cfg(feature = "adapters")]
 mod step_functions;
+#[cfg(feature = "adapters")]
 mod supplemental;
+#[cfg(feature = "adapters")]
 mod task_definitions;
 
+#[cfg(feature = "adapters")]
 use std::collections::BTreeSet;
+#[cfg(feature = "adapters")]
 use std::sync::Arc;
+#[cfg(feature = "adapters")]
 use std::time::Duration;
 
+#[cfg(feature = "adapters")]
 use aws_config::meta::region::RegionProviderChain;
+#[cfg(feature = "adapters")]
 use aws_config::{BehaviorVersion, retry::RetryConfig};
+#[cfg(feature = "adapters")]
 use aws_types::region::Region;
+#[cfg(feature = "adapters")]
 use futures_util::{StreamExt, TryStreamExt, future::BoxFuture, stream};
+#[cfg(feature = "adapters")]
 use inventory_core::{CollectionEvent, Selection, Source};
+#[cfg(feature = "adapters")]
 use inventory_engine::limiter::{ApiError, ApiExecutor};
+#[cfg(feature = "adapters")]
 use thiserror::Error;
+#[cfg(feature = "adapters")]
 use tokio::sync::mpsc::Sender;
 
+#[cfg(feature = "adapters")]
 use common::{Context, MAX_SCAN_PAGES, required, sdk_error};
 
-/// Bounded pure IAM trust metadata; document and condition values are never returned.
-pub fn iam_trust_summary(document: Option<&str>) -> Result<Vec<serde_json::Value>, AwsScanError> {
-    global_inventory::iam::trust::trust_summary(document)
-}
-
+#[cfg(feature = "adapters")]
 const MAX_REGIONS: usize = 64;
+#[cfg(feature = "adapters")]
 const NATIVE_SERVICES: [&str; 12] = [
     "ec2",
     "network",
@@ -57,6 +86,7 @@ const NATIVE_SERVICES: [&str; 12] = [
     "step-functions",
 ];
 
+#[cfg(feature = "adapters")]
 #[derive(Clone, Debug)]
 pub struct AwsScanOptions {
     pub profile: Option<String>,
@@ -72,6 +102,7 @@ pub struct AwsScanOptions {
     pub page_size: i32,
 }
 
+#[cfg(feature = "adapters")]
 #[derive(Debug, Error)]
 pub enum AwsScanError {
     #[error("invalid scan options: {0}")]
@@ -82,12 +113,15 @@ pub enum AwsScanError {
     Api(#[from] ApiError),
     #[error(transparent)]
     Validation(#[from] inventory_core::ValidationError),
+    #[error(transparent)]
+    TrustSummary(#[from] iam_trust::TrustSummaryError),
     #[error("inventory consumer closed its channel")]
     ChannelClosed,
     #[error("scope child cap would be exceeded before child enrichment")]
     ChildLimit,
 }
 
+#[cfg(feature = "adapters")]
 impl AwsScanOptions {
     fn validate(&self) -> Result<BTreeSet<String>, AwsScanError> {
         if let Some(role) = &self.assume_role {
@@ -185,6 +219,7 @@ impl AwsScanOptions {
     }
 }
 
+#[cfg(feature = "adapters")]
 fn validate_region(region: &str) -> Result<(), AwsScanError> {
     if region.is_empty()
         || region.len() > 64
@@ -199,11 +234,15 @@ fn validate_region(region: &str) -> Result<(), AwsScanError> {
     Ok(())
 }
 
+#[cfg(feature = "adapters")]
 #[cfg(test)]
 mod options_property_tests;
 
+#[cfg(feature = "adapters")]
 #[cfg(test)]
 mod tests;
 
+#[cfg(feature = "adapters")]
 mod scan;
+#[cfg(feature = "adapters")]
 pub use scan::scan;

@@ -81,3 +81,23 @@ UI-thread time, and X8 is restated for a 120 Hz display.
   unavailable", as today.
 - V63: this crate is MIT like the rest. It may depend on the collector,
   store and SQL crates. Nothing may depend on it.
+
+## Wave 0 implementation evidence (2026-11-22)
+
+D1.1 now has separate `sweep` and adapter-inclusive `aws` features, with a
+dependency-graph regression for each and an unconditional bounded IAM
+trust-summary parser required by the current sweep. Build time, peak RSS and
+binary sizes are recorded in [RUN_HERE](RUN_HERE.md#wave-0-feature-split-2026-11-22).
+The measurements use `-j2` and warm caches, not the step's proposed `-j1`
+clean comparison.
+
+The ignored end-to-end suite uses the pinned, checksum-verified emulator and
+Redis/FalkorDB. Its first run exposed a stale test-local 16 MiB catalog bound:
+`compiled catalog exceeds its 16 MiB bound`. The E2E helper now reads with
+the production `inventory_core::catalog::MAX_CATALOG_BYTES` bound (64 MiB),
+without changing the generated catalog or production limits. The coordinator
+must still run the workspace-wide all-target/all-feature gate after integration.
+
+The rerun after that fix reached the sweep CLI, but both scenarios failed:
+`sweep CLI exceeded its 60-second deadline` (0 passed, 2 failed, 135.34 s).
+This remains an unresolved end-to-end blocker; no deadline was increased.
