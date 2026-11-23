@@ -71,6 +71,8 @@ mod cloud9_0;
 mod cloudcontrol_0;
 mod clouddirectory_0;
 mod cloudformation_0;
+mod cloudformation_1;
+mod cloudformation_2;
 mod cloudfront_keyvaluestore_0;
 mod cloudhsm_0;
 mod cloudhsm_v2_0;
