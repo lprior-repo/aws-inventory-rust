@@ -36,7 +36,9 @@ pub(super) fn identity(
         Identity::Choice(choice) => {
             choice
                 .validate()
-                .map_err(|_| RuntimeCatalogCompileError::Capability)?;
+                .map_err(|_| RuntimeCatalogCompileError::Path {
+                    path: "identity choice validation".to_owned(),
+                })?;
             match choice {
                 IdentityChoice::PreferArn {
                     path,
@@ -85,7 +87,9 @@ pub(super) fn identity(
             }
             encode::map(fields)
         }
-        _ => Err(RuntimeCatalogCompileError::Capability),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: "identity value".to_owned(),
+        }),
     }
 }
 
@@ -144,7 +148,9 @@ fn fields_value(
     services: &ServiceIndex<'_>,
 ) -> Result<Value, RuntimeCatalogCompileError> {
     if fields.is_empty() || fields.len() > 64 {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "identity fields count".to_owned(),
+        });
     }
     encode::map([
         (1, Value::Int(5)),
@@ -201,7 +207,9 @@ fn field_value(
             maximum,
         } => {
             if minimum > maximum {
-                return Err(RuntimeCatalogCompileError::Capability);
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: path.as_str().to_owned(),
+                });
             }
             let tag = if matches!(field, IdentityField::SelectedInteger { .. }) {
                 5
@@ -221,7 +229,9 @@ fn field_value(
             max_item_bytes,
         } => {
             if !(1..=64).contains(max_items) || !(1..=4096).contains(max_item_bytes) {
-                return Err(RuntimeCatalogCompileError::Capability);
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: path.as_str().to_owned(),
+                });
             }
             encode::map([
                 (1, Value::Int(7)),

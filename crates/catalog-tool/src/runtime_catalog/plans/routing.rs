@@ -15,8 +15,11 @@ pub(super) fn compile(
     let route = match &overlay.routing {
         RequestRouting::Regional => encode::map([(1, Value::Int(0))])?,
         RequestRouting::FixedRegion { region } => {
-            inventory_core::inventory::RegionId::parse(region)
-                .map_err(|_| RuntimeCatalogCompileError::Capability)?;
+            inventory_core::inventory::RegionId::parse(region).map_err(|_| {
+                RuntimeCatalogCompileError::Path {
+                    path: "fixed region".to_owned(),
+                }
+            })?;
             encode::map([(1, Value::Int(1)), (2, Value::Text(region.clone()))])?
         }
         RequestRouting::Discovered {
@@ -29,7 +32,9 @@ pub(super) fn compile(
             if operation != "DescribeEndpoints"
                 || trusted_dns_suffix != ".timestream.{region}.amazonaws.com"
             {
-                return Err(RuntimeCatalogCompileError::Capability);
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: "discovered routing".to_owned(),
+                });
             }
             encode::map([
                 (1, Value::Int(2)),
@@ -44,7 +49,9 @@ pub(super) fn compile(
         RequestRouting::S3ExpressControl => encode::map([(1, Value::Int(4))])?,
     };
     if overlay.branches.len() > 16 {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "branch count".to_owned(),
+        });
     }
     let names = overlay
         .branches
@@ -52,7 +59,9 @@ pub(super) fn compile(
         .map(|branch| &branch.discriminator)
         .collect::<std::collections::BTreeSet<_>>();
     if names.len() != overlay.branches.len() {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "branch duplicate".to_owned(),
+        });
     }
     let branches = overlay
         .branches
@@ -86,7 +95,9 @@ fn compile_branch(
             .keys()
             .any(|path| branch.fixed.contains_key(path))
     {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: name.to_owned(),
+        });
     }
     let bindings = branch
         .fixed
@@ -94,7 +105,7 @@ fn compile_branch(
         .map(|(path, value)| {
             let target =
                 super::super::model_path::resolve(service, operation.input()?, path.as_str())?.1;
-            let value = super::fixed_input::compile(service, target, value)?;
+            let value = super::fixed_input::compile(service, target, value, path.as_str())?;
             super::binding_record(path, 2, (value, Value::Null, Value::Null), services)
         })
         .chain(
@@ -107,8 +118,11 @@ fn compile_branch(
         .request_region
         .as_ref()
         .map(|region| -> Result<_, RuntimeCatalogCompileError> {
-            inventory_core::inventory::RegionId::parse(region)
-                .map_err(|_| RuntimeCatalogCompileError::Capability)?;
+            inventory_core::inventory::RegionId::parse(region).map_err(|_| {
+                RuntimeCatalogCompileError::Path {
+                    path: "branch request_region".to_owned(),
+                }
+            })?;
             Ok((4, Value::Text(region.to_owned())))
         })
         .transpose()?;

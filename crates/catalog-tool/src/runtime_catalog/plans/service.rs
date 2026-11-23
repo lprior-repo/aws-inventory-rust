@@ -24,5 +24,7 @@ pub(in crate::runtime_catalog) fn catalog_operation<'a>(
             }
             Ok(Some(operation))
         })?
-        .ok_or(RuntimeCatalogCompileError::Capability)
+        .ok_or_else(|| RuntimeCatalogCompileError::Path {
+            path: format!("operation {name}"),
+        })
 }

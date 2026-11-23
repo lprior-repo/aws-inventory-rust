@@ -22,7 +22,7 @@ fn given_additional_selection_when_identity_asks_for_current_discovery_row_then_
     // When validating the same-operation source, then no discovery-row correlation is invented.
     assert!(matches!(
         validate(&identity, "GetThings"),
-        Err(RuntimeCatalogCompileError::Capability)
+        Err(RuntimeCatalogCompileError::Path { .. })
     ));
     Ok(())
 }
@@ -62,7 +62,7 @@ fn given_prefer_arn_fallback_when_its_fields_request_the_current_discovery_row_t
     // When validating, then every possible fallback must obey the same namespace rule.
     assert!(matches!(
         validate(&identity, "GetThings"),
-        Err(RuntimeCatalogCompileError::Capability)
+        Err(RuntimeCatalogCompileError::Path { .. })
     ));
     Ok(())
 }
@@ -84,7 +84,7 @@ fn given_discriminated_identity_when_a_later_arm_requests_current_discovery_row_
     // When validating, then branch order cannot hide the unsupported selected namespace.
     assert!(matches!(
         validate(&identity, "GetThings"),
-        Err(RuntimeCatalogCompileError::Capability)
+        Err(RuntimeCatalogCompileError::Path { .. })
     ));
     Ok(())
 }
