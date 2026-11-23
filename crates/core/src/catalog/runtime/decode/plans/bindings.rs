@@ -44,7 +44,9 @@ fn basic(fields: MapRef<'_>, source_type: i64) -> Result<BindingSource, RuntimeC
         }
         2 => {
             metadata::only_fields(fields, &[1, 2, 3])?;
-            Ok(BindingSource::Fixed(binding_value(metadata::field(fields, 3)?)?))
+            Ok(BindingSource::Fixed(binding_value(metadata::field(
+                fields, 3,
+            )?)?))
         }
         3 => {
             metadata::only_fields(fields, &[1, 2, 3])?;
