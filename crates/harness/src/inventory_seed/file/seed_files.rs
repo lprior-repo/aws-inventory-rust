@@ -33,7 +33,7 @@ fn validate_directory(directory: &Path, catalog: &RuntimeCatalog<'_>) -> TestRes
 
 fn validate_file(path: &Path, catalog: &RuntimeCatalog<'_>) -> TestResult {
     let content = std::fs::read_to_string(path)?;
-    let scenario = load(&content)?;
+    let scenario = load(&content).map_err(|error| format!("{}: {error}", path.display()))?;
     SeedModels::load(catalog, &scenario).map_err(|error| format!("{}: {error}", path.display()))?;
     Ok(())
 }

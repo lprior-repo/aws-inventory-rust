@@ -690,6 +690,17 @@ are updated, including the generated kinds, names, and prior overlay artifacts.
 
 ## First-page native emulator probe (A5.2)
 
+Before starting an emulator, validate recipe syntax, operation names, input
+members and identities against the compiled pinned catalog:
+
+```sh
+cargo run --locked -j3 -p inventory-harness -- seed validate \
+  --seeds crates/harness/seeds --catalog catalog/aws-api.catalog
+```
+
+Repeatable `--service` filters are supported. Validation needs neither credentials
+nor an endpoint, reports every selected file, and exits nonzero if any is invalid.
+
 The PostgreSQL-independent harness command uses the sweep's exact request,
 signing, status, decoding and truncation-presence path without storing rows:
 

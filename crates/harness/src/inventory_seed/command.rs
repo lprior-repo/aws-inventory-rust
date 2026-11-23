@@ -1,11 +1,19 @@
 mod args;
 pub(crate) mod directory;
+mod validate;
 
 use super::SeedError;
 pub use args::SeedRunArgs;
 use aws_wire::sign::Credentials;
 use inventory_core::catalog::runtime::RuntimeCatalog;
 use std::process::ExitCode;
+
+pub async fn dispatch(command: &str, arguments: &[String]) -> ExitCode {
+    if command == "validate" {
+        return validate::run(arguments);
+    }
+    run(arguments).await
+}
 
 pub async fn run(arguments: &[String]) -> ExitCode {
     match execute(arguments).await {
