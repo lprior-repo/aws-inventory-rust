@@ -1,5 +1,5 @@
 // Pinned Smithy source: .local/aws-models/models/pinpoint-sms-voice-v2/service/2022-03-31/pinpoint-sms-voice-v2-2022-03-31.json
-use super::policy::{Group, Id, Resource, compile};
+use super::policy::{Group, Id, Input, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
     classes::DenyReason,

@@ -1,5 +1,5 @@
 // Pinned Smithy source: .local/aws-models/models/managedblockchain/service/2018-09-24/managedblockchain-2018-09-24.json
-use super::policy::{Group, Id, Resource, compile};
+use super::policy::{Group, Id, Input, Resource, compile};
 use crate::overlay::Scope;
 use crate::{
     classes::DenyReason,
