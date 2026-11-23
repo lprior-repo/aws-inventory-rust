@@ -1,0 +1,11 @@
+format = 1
+service = "kafkaconnect"
+
+[[step]]
+id = "configuration"
+operation = "CreateWorkerConfiguration"
+kind = "AWS::KafkaConnect::WorkerConfiguration"
+identity = "workerConfigurationArn"
+[step.input]
+name = "inventory-thin-kafkaconnect"
+propertiesFileContent = "a2V5LmNvbnZlcnRlcj1vcmcuYXBhY2hlLmthZmthLmNvbm5lY3Quc3RvcmFnZS5TdHJpbmdDb252ZXJ0ZXIKdmFsdWUuY29udmVydGVyPW9yZy5hcGFjaGUua2Fma2EuY29ubmVjdC5zdG9yYWdlLlN0cmluZ0NvbnZlcnRlcgo="
