@@ -1,0 +1,11 @@
+format = 1
+service = "global-accelerator"
+
+[[step]]
+id = "resource"
+operation = "CreateAccelerator"
+kind = "AWS::GlobalAccelerator::Accelerator"
+identity = "Accelerator.AcceleratorArn"
+[step.input]
+"Name" = "inventory-thin-global-accelerator"
+"IdempotencyToken" = "12345678-1234-4234-8234-123456789abc"
