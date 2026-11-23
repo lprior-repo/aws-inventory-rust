@@ -1,0 +1,10 @@
+format = 1
+service = "efs"
+
+[[step]]
+id = "resource"
+operation = "CreateFileSystem"
+kind = "AWS::EFS::FileSystem"
+identity = "FileSystemArn"
+[step.input]
+"CreationToken" = "12345678-1234-4234-8234-123456789abc"
