@@ -34,7 +34,12 @@ fn given_repeated_service_options_when_parsed_then_every_selector_accumulates_in
     ])?;
     assert_eq!(
         args.services,
-        ["ec2:DescribeVpcs", "lambda", "ec2:DescribeSubnets", "lambda"]
+        [
+            "ec2:DescribeVpcs",
+            "lambda",
+            "ec2:DescribeSubnets",
+            "lambda"
+        ]
     );
     assert_eq!(args.work, PathBuf::from("work"));
     Ok(())
@@ -48,9 +53,15 @@ fn given_unknown_option_when_parsed_then_harness_returns_invalid_usage() {
 
 #[test]
 fn given_empty_option_value_when_parsed_then_harness_rejects_it() {
-    ["--work", "--seeds", "--collector", "--service", "--postgres-url"]
-        .iter()
-        .for_each(|option| assert_invalid(&["run", "--work", "work", option, ""]));
+    [
+        "--work",
+        "--seeds",
+        "--collector",
+        "--service",
+        "--postgres-url",
+    ]
+    .iter()
+    .for_each(|option| assert_invalid(&["run", "--work", "work", option, ""]));
 }
 
 #[test]

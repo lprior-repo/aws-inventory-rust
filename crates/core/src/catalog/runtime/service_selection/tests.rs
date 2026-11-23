@@ -88,8 +88,8 @@ fn given_qualified_root_when_catalog_selected_then_all_bootstrap_plans_survive()
         .collect();
     assert!(required.contains(&("sts", "GetCallerIdentity")));
     assert!(required.contains(&("ec2", "DescribeRegions")));
-    let selected = RuntimeCatalog::from_bytes(bytes)?
-        .select_services(&["ec2:DescribeVpcs".into()])?;
+    let selected =
+        RuntimeCatalog::from_bytes(bytes)?.select_services(&["ec2:DescribeVpcs".into()])?;
     let actual: BTreeSet<_> = selected.plans().iter().map(name).collect();
     assert!(required.is_subset(&actual));
     assert!(actual.contains(&("ec2", "DescribeVpcs")));
@@ -109,13 +109,17 @@ fn given_qualified_root_when_catalog_selected_then_unselected_siblings_are_remov
 }
 
 #[test]
-fn given_no_selectors_when_catalog_selected_then_plan_order_and_catalog_are_unchanged() -> TestResult {
+fn given_no_selectors_when_catalog_selected_then_plan_order_and_catalog_are_unchanged() -> TestResult
+{
     let bytes = base_catalog::base()?;
     let catalog = RuntimeCatalog::from_bytes(bytes)?;
     let expected: Vec<_> = catalog.plans().iter().map(name).collect();
     assert!(!expected.is_empty());
     let selected = RuntimeCatalog::from_bytes(bytes)?.select_services(&[])?;
-    assert_eq!(selected.plans().iter().map(name).collect::<Vec<_>>(), expected);
+    assert_eq!(
+        selected.plans().iter().map(name).collect::<Vec<_>>(),
+        expected
+    );
     assert_eq!(selected.raw_bytes(), bytes);
     assert_eq!(selected.schemas().len(), catalog.schemas().len());
     assert_eq!(selected.decisions(), catalog.decisions());

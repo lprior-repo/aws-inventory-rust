@@ -28,7 +28,11 @@ fn given_qualified_recipe_selectors_when_selecting_collectors_then_user_scope_is
     let requested = ["lambda:ListCodeSigningConfigs", "ec2:DescribeVpcs"];
     assert_eq!(
         collector_services(&args(&requested)?)?,
-        ["lambda:ListCodeSigningConfigs", "ec2:DescribeVpcs", "signer"]
+        [
+            "lambda:ListCodeSigningConfigs",
+            "ec2:DescribeVpcs",
+            "signer"
+        ]
     );
     Ok(())
 }

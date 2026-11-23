@@ -9,8 +9,8 @@ use crate::{
 use std::collections::BTreeSet;
 
 pub(super) async fn run(args: &RunArgs, stack: &Stack) -> Result<(), HarnessError> {
-    let services = selected_recipes(args)
-        .map_err(|error| HarnessError::invalid(format!("seed: {error}")))?;
+    let services =
+        selected_recipes(args).map_err(|error| HarnessError::invalid(format!("seed: {error}")))?;
     let seed = SeedRunArgs {
         seeds: args.seeds.clone(),
         catalog: args.catalog.clone(),

@@ -6,8 +6,8 @@ use std::collections::BTreeMap;
 type TestResult<T> = Result<T, Box<dyn std::error::Error>>;
 
 pub(super) fn duplicate_plan(bytes: &[u8]) -> TestResult<Vec<u8>> {
-    let mut root = ValueRef::Map(MapRef::from_container_bytes(bytes, MAX_CATALOG_BYTES)?)
-        .to_value()?;
+    let mut root =
+        ValueRef::Map(MapRef::from_container_bytes(bytes, MAX_CATALOG_BYTES)?).to_value()?;
     let extension = child(&mut root, 60_000)?;
     let plans = match fields(extension)?.get_mut(&key(2)?) {
         Some(Value::List(plans)) => plans,
@@ -47,5 +47,7 @@ fn fields(value: &mut Value) -> TestResult<&mut BTreeMap<Key, Value>> {
 }
 
 fn child(value: &mut Value, id: u32) -> TestResult<&mut Value> {
-    fields(value)?.get_mut(&key(id)?).ok_or_else(|| "fixture field is missing".into())
+    fields(value)?
+        .get_mut(&key(id)?)
+        .ok_or_else(|| "fixture field is missing".into())
 }

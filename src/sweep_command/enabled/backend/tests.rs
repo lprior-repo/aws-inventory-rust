@@ -44,7 +44,9 @@ async fn assert_unknown_selector(selector: &str) -> Result<()> {
     let options = Options::try_parse_from([
         "test",
         "--database",
-        database.to_str().context("test database path must be UTF-8")?,
+        database
+            .to_str()
+            .context("test database path must be UTF-8")?,
         "--service",
         selector,
     ])?
