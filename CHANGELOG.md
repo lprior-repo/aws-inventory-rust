@@ -2,6 +2,9 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Seed directories admit up to 512 entries while retaining bounded reads, sorted
+  TOML selection and empty-directory rejection. Offline recipe checks report all
+  invalid files together rather than stopping at the first model/path error.
 - Native first-page probes accept repeatable `--service` filters for isolated
   service seed verification; omitted filters retain the full-catalog report.
 - Native first-page probes account for every callable purpose, including bootstrap
