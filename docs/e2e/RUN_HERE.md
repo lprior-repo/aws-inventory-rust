@@ -2,8 +2,52 @@
 
 > Status: Record of an actual run on 2026-11-15, on a 2-CPU Linux x86_64
 > machine with 8 GB of memory and a 6 GiB process limit, from the `main`
-> archive of this repository (no git history). Emulator evidence only. Nothing
-> here touched real AWS.
+> archive of this repository. Emulator evidence only. Nothing here touched real AWS.
+
+## Wave 0 checkout differences (2026-11-22)
+
+The A0.1–A0.3 work started at commit
+`e560dc72f96a52b02d1615534da8bf29621b22bc`, not the archive described below.
+Kinds and relations are reviewed Rust tables under
+`crates/catalog-tool/src/kind_map/`; there is no `catalog/kinds.tsv`.
+
+Emission-aware live/pending relation compilation and its inactive-relation
+report already exist in this checkout. Additional emissions and classified
+kinds count as producers; replacing this with the archive's proposed
+`RelationSplit` would regress those behaviors. Security groups are callable,
+so the archive's expected SecurityGroup compile failure is obsolete.
+
+The generated, ignored catalog is 19,051,875 bytes, with SHA-256
+`9a420c28bfd22fb5b14a9a1c25f8bcd294eede6b8b02c2fc44e0808618c36ec8`.
+It was not regenerated or committed by this change. The runtime reader and
+`src/sweep_command/enabled.rs` already share the 64 MiB catalog bound.
+The historical seven-check and size-guard results below are not evidence
+for this checkout; only commands explicitly reported with the change were run.
+
+With the same pinned models and generated inputs,
+`cargo run --locked -p catalog-tool -j2 -- models compile --check`
+reaches publication and reports `catalog differs; run catalog-tool models compile --write`.
+The identical command at baseline `e560dc72` reports the same drift, so this
+is pre-existing generated-output drift, not a new capability-validation failure.
+The comparison used a private target directory and a temporary detached
+baseline worktree, which was removed afterward.
+
+The contextual diagnostics preserve catalog decoder errors. Invalid reviewed
+paths name the kind and path; callable-plan failures name the service,
+operation and actual offending member path. Fixed-input validation retains
+bounded, iterative traversal and maps its internal rejection to the fixed path.
+
+Scoped verification used `HOME=/home/lewis` and
+`CARGO_TARGET_DIR=/home/lewis/.cache/cargo-target-a0c`:
+
+- `cargo check --locked -p catalog-tool -j2`: passed.
+- `cargo test --locked -p catalog-tool --lib runtime_catalog -j2`:
+  37 passed, 0 failed.
+- `cargo clippy --locked -p catalog-tool --lib -j2 -- -D warnings`: passed.
+- Explicit changed-file formatting used `rustfmt --edition 2024 --config skip_children=true`.
+
+No workspace suite, emulator sweep, PostgreSQL check, real-AWS call or binary
+regeneration was run for this change.
 
 ## One command
 
