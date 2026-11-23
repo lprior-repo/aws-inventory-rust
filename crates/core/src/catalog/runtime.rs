@@ -1,8 +1,8 @@
 mod decode;
+mod service_selection;
 mod tag_endpoint;
 mod tag_sources;
 mod types;
-mod service_selection;
 pub use tag_endpoint::{
     TagEndpointParentPlan, TagEndpointPlan, TagEndpointRequestPlan, TagEndpointSource,
 };
