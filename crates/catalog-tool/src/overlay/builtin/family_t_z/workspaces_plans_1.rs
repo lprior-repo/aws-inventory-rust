@@ -1,5 +1,5 @@
 use super::{inventory, path, paths, token};
-use crate::overlay::{Binding, Identity, NameError, OperationOverlay, Scope};
+use crate::overlay::{Binding, FixedValue, Identity, NameError, OperationOverlay, Scope};
 
 pub(super) fn describe_applications() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
@@ -108,6 +108,7 @@ pub(super) fn describe_workspace_images() -> Result<OperationOverlay, NameError>
         "ErrorMessage",
         "OwnerAccountId",
     ])?;
+    operation.fixed.insert(path("ImageType")?, FixedValue::String("OWNED".to_owned()));
     Ok(operation)
 }
 
