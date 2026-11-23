@@ -108,3 +108,54 @@ fn given_toml_map_when_prepared_then_request_preserves_named_keys() -> TestResul
     assert!(body.contains("display-seed"));
     Ok(())
 }
+
+fn blob_request(encoded: &str) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    let bytes = bytes()?;
+    let runtime = RuntimeCatalog::from_bytes(&bytes)?;
+    let document = format!("format=1\nservice='translate'\n[[step]]\nid='import'\noperation='ImportTerminology'\nkind=''\n[step.input]\nName='not base64?'\nMergeStrategy='OVERWRITE'\nTerminologyData={{File='{encoded}',Format='CSV'}}");
+    let scenario = load(&document)?;
+    let models = SeedModels::load(&runtime, &scenario)?;
+    let step = models.steps.first().ok_or("missing import step")?;
+    let state = state()?;
+    let inputs = step
+        .inputs
+        .iter()
+        .map(|input| materialize_input(&state, input))
+        .collect::<Result<Vec<_>, _>>()?;
+    let record = wire::input_record(inputs)?;
+    json_request(step, &record)
+}
+
+fn json_request(
+    step: &PreparedStep<'_>,
+    record: &Record,
+) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
+    let request = aws_wire::request::body::encode(RequestContext {
+        service: step.operation.service,
+        operation: step.operation.operation,
+        protocol: step.operation.protocol,
+        input: record.root(),
+        endpoint: "https://localhost",
+        limits: RequestLimits::default(),
+        idempotency_token: None,
+        compression: CompressionPolicy::default(),
+        addressing: None,
+    })?;
+    Ok(serde_json::from_slice(request.body())?)
+}
+
+#[test]
+fn given_toml_blob_when_materialized_and_encoded_then_wire_has_single_base64_and_unchanged_text()
+-> TestResult {
+    let request = blob_request("AP8=")?;
+    assert_eq!(
+        request.pointer("/TerminologyData/File"),
+        Some(&serde_json::json!("AP8="))
+    );
+    assert_eq!(
+        request.pointer("/TerminologyData/Format"),
+        Some(&serde_json::json!("CSV"))
+    );
+    assert_eq!(request.get("Name"), Some(&serde_json::json!("not base64?")));
+    Ok(())
+}

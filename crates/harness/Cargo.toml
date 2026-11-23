@@ -45,6 +45,7 @@ thiserror.workspace = true
 tokio.workspace = true
 sha2.workspace = true
 base16ct.workspace = true
+base64 = "0.23.1"
 sqlx.workspace = true
 aws-config = "1.13.2"
 aws-sdk-s3 = { version = "1.159.0", default-features = false, features = ["default-https-client", "rt-tokio"] }

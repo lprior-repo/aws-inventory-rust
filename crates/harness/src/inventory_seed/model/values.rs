@@ -1,5 +1,9 @@
 use super::*;
-use inventory_core::{catalog::Shape, record::Key};
+use base64::{Engine as _, engine::general_purpose::STANDARD};
+use inventory_core::{
+    catalog::Shape,
+    record::{Key, Value},
+};
 
 enum Task<'a> {
     Visit(Target, &'a SeedInputValue),
@@ -82,7 +86,7 @@ impl Compiler<'_, '_> {
         value: &SeedInputValue,
     ) -> Result<PreparedInputValue, SeedError> {
         match value {
-            SeedInputValue::Text(value) => Ok(PreparedInputValue::Text(value.clone())),
+            SeedInputValue::Text(value) => self.text(target, value),
             SeedInputValue::Boolean(value) => Ok(PreparedInputValue::Boolean(*value)),
             SeedInputValue::Integer(value) => Ok(PreparedInputValue::Integer(*value)),
             SeedInputValue::Literal(value) => Ok(PreparedInputValue::Literal(
@@ -96,6 +100,26 @@ impl Compiler<'_, '_> {
             }
             _ => Err(SeedError::Invalid("seed container was not prepared")),
         }
+    }
+
+    fn text(&self, target: Target, value: &str) -> Result<PreparedInputValue, SeedError> {
+        let kind = match target {
+            Target::Prelude(kind) => kind,
+            Target::Shape(_) => shape(self.service, target)?.kind()?,
+            _ => return Err(SeedError::Invalid("seed text target is unsupported")),
+        };
+        if kind != "blob" {
+            return Ok(PreparedInputValue::Text(value.to_owned()));
+        }
+        if value.len() > 1024 {
+            return Err(SeedError::Invalid(
+                "seed blob exceeds encoded length bound 1024",
+            ));
+        }
+        let bytes = STANDARD
+            .decode(value)
+            .map_err(|_| SeedError::Invalid("seed blob must be canonical padded base64"))?;
+        Ok(PreparedInputValue::Literal(Value::Bytes(bytes)))
     }
 
     fn fields<'a>(
