@@ -1,0 +1,11 @@
+format = 1
+service = "gameliftstreams"
+
+[[step]]
+id = "resource"
+operation = "CreateStreamGroup"
+kind = "AWS::GameLiftStreams::StreamGroup"
+identity = "Arn"
+[step.input]
+"Description" = "Inventory emulator seed"
+"StreamClass" = "gen4n_high"
