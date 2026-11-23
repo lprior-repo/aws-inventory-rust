@@ -1,0 +1,12 @@
+format = 1
+service = "translate"
+
+[[step]]
+id = "resource"
+operation = "ImportTerminology"
+kind = "AWS::Translate::Terminology"
+identity = "TerminologyProperties.Arn"
+[step.input]
+"Name" = "inventory-thin-translate"
+"MergeStrategy" = "OVERWRITE"
+"TerminologyData" = { "File" = "ZW4sZnIKaGVsbG8sYm9uam91cgo=", "Format" = "CSV" }
