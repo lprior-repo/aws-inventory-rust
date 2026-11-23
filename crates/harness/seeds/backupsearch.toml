@@ -1,0 +1,11 @@
+format = 1
+service = "backupsearch"
+
+[[step]]
+id = "resource"
+operation = "StartSearchJob"
+kind = "AWS::BackupSearch::SearchJob"
+identity = "SearchJobArn"
+[step.input]
+"Name" = "inventory-thin-backupsearch"
+"SearchScope" = { "BackupResourceTypes" = ["S3"] }
