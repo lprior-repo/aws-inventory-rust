@@ -1,0 +1,10 @@
+format = 1
+service = "redshift-serverless"
+
+[[step]]
+id = "resource"
+operation = "CreateCustomDomainAssociation"
+kind = "AWS::redshift-serverless::CustomDomainAssociation"
+identity = "customDomainCertificateArn"
+repeat = 2
+[step.input]
