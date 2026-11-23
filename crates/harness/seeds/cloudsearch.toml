@@ -1,0 +1,10 @@
+format = 1
+service = "cloudsearch"
+
+[[step]]
+id = "resource"
+operation = "CreateDomain"
+kind = "AWS::CloudSearch::Domain"
+identity = "DomainStatus.ARN"
+[step.input]
+"DomainName" = "inventory-thin-cloudsearch"
