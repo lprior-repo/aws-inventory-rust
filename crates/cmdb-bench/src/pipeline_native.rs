@@ -149,8 +149,14 @@ fn count_reply(reply: Value) -> BenchResult<u64> {
     Ok(u64::try_from(*count)?)
 }
 
-async fn check_topology(workload: &Workload, target: &Target, phase: Phase) -> BenchResult {
-    let connection = connection(target).await?;
+#[derive(Clone, Copy)]
+struct TopologyCounts {
+    resources: u64,
+    tags: usize,
+    links: usize,
+}
+
+fn topology_counts(workload: &Workload, phase: Phase) -> BenchResult<TopologyCounts> {
     let resources = u64::try_from(workload.resources()?)?;
     let tags = pipeline_fixture::expected_tag_vertices(workload.rows_per_scope()?, phase)
         .checked_mul(workload.concurrency)
@@ -158,6 +164,23 @@ async fn check_topology(workload: &Workload, target: &Target, phase: Phase) -> B
     let links = pipeline_fixture::expected_tags(workload.rows_per_scope()?, phase)?
         .checked_mul(workload.concurrency)
         .ok_or("tag link count overflow")?;
+    Ok(TopologyCounts {
+        resources,
+        tags,
+        links,
+    })
+}
+
+async fn run_count_queries(
+    connection: MultiplexedConnection,
+    target: &Target,
+    counts: TopologyCounts,
+) -> BenchResult<MultiplexedConnection> {
+    let TopologyCounts {
+        resources,
+        tags,
+        links,
+    } = counts;
     let expected = [
         ("MATCH (r:Resource) RETURN count(r)", resources),
         ("MATCH (t:Tag) RETURN count(t)", u64::try_from(tags)?),
@@ -182,13 +205,20 @@ async fn check_topology(workload: &Workload, target: &Target, phase: Phase) -> B
             0,
         ),
     ];
-    let connection = stream::iter(expected).map(Ok::<_, Box<dyn std::error::Error + Send + Sync>>)
+    stream::iter(expected).map(Ok::<_, Box<dyn std::error::Error + Send + Sync>>)
         .try_fold(connection, |mut connection, (query, expected)| async move {
             let actual = query_count(&mut connection, target, query).await?;
             if actual != expected { return Err(format!("native topology count mismatch: expected={expected} actual={actual} query={query}").into()); }
             Ok(connection)
-        }).await?;
-    let mut connection = stream::iter((0..workload.resources()?).step_by(1000))
+        }).await
+}
+
+async fn check_resource_identities(
+    connection: MultiplexedConnection,
+    target: &Target,
+    workload: &Workload,
+) -> BenchResult<MultiplexedConnection> {
+    stream::iter((0..workload.resources()?).step_by(1000))
         .map(Ok::<_, Box<dyn std::error::Error + Send + Sync>>)
         .try_fold(connection, |mut connection, start| async move {
             let query = resource_oracle::query(workload, start)?;
@@ -200,7 +230,14 @@ async fn check_topology(workload: &Workload, target: &Target, phase: Phase) -> B
             }
             Ok(connection)
         })
-        .await?;
+        .await
+}
+
+async fn check_tag_assignments(
+    mut connection: MultiplexedConnection,
+    target: &Target,
+    phase: Phase,
+) -> BenchResult<MultiplexedConnection> {
     let invalid_tags = if phase == Phase::Initial {
         "MATCH (r:Resource)-[:HAS_TAG]->(t:Tag) WHERE t.tag_key IS NULL OR t.tag_value IS NULL OR NOT ((t.tag_key='environment' AND t.tag_value='bench') OR (t.tag_key='owner' AND t.tag_value='inventory')) RETURN count(t)"
     } else {
@@ -209,6 +246,14 @@ async fn check_topology(workload: &Workload, target: &Target, phase: Phase) -> B
     if query_count(&mut connection, target, invalid_tags).await? != 0 {
         return Err("native graph tag assignments disagree with exact fixture state".into());
     }
+    Ok(connection)
+}
+
+async fn check_link_cardinality(
+    mut connection: MultiplexedConnection,
+    target: &Target,
+    phase: Phase,
+) -> BenchResult {
     let expected_links = if phase == Phase::Initial {
         "2"
     } else {
@@ -220,6 +265,21 @@ async fn check_topology(workload: &Workload, target: &Target, phase: Phase) -> B
     if query_count(&mut connection, target, &link_query).await? != 0 {
         return Err("native resource tag cardinality or duplicate assignment mismatch".into());
     }
+    Ok(())
+}
+
+async fn check_topology(workload: &Workload, target: &Target, phase: Phase) -> BenchResult {
+    let connection = connection(target).await?;
+    let counts = topology_counts(workload, phase)?;
+    let connection = run_count_queries(connection, target, counts).await?;
+    let connection = check_resource_identities(connection, target, workload).await?;
+    let connection = check_tag_assignments(connection, target, phase).await?;
+    check_link_cardinality(connection, target, phase).await?;
+    let TopologyCounts {
+        resources,
+        tags,
+        links,
+    } = counts;
     println!(
         "pipeline_graph_state={} resources={resources} tag_vertices={tags} has_tag_links={links} dependency_edges=0 orphan_tags=0",
         phase.name()
