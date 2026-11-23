@@ -70,7 +70,7 @@ pub(super) const CALLS: &[Inventory] = &[
     Inventory {
         operation: "ListPageReceipts",
         items: "Receipts",
-        identity: ResourceIdentity::Key(&["ContactChannelArn", "ReceiptType"]),
+        identity: ResourceIdentity::Correlated("PageId", &["ContactChannelArn", "ReceiptType", "ReceiptTime"]),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
         input: &[Input::Parent("PageId", "ListPagesByEngagement", "PageArn")],
@@ -80,7 +80,7 @@ pub(super) const CALLS: &[Inventory] = &[
     Inventory {
         operation: "ListPageResolutions",
         items: "PageResolutions",
-        identity: ResourceIdentity::Arn("ContactArn"),
+        identity: ResourceIdentity::Correlated("PageId", &["ContactArn", "StageIndex"]),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
         input: &[Input::Parent("PageId", "ListPagesByEngagement", "PageArn")],
@@ -91,20 +91,6 @@ pub(super) const CALLS: &[Inventory] = &[
         operation: "ListRotationOverrides",
         items: "RotationOverrides",
         identity: ResourceIdentity::Key(&["RotationOverrideId"]),
-        token: Some(("NextToken", "NextToken")),
-        scope: Scope::Region,
-        input: &[
-            Input::Parent("RotationId", "ListRotations", "RotationArn"),
-            Input::Timestamp("StartTime", 0, 0),
-            Input::Timestamp("EndTime", 4_102_444_800, 0),
-        ],
-        tags: None,
-        queryable: &[],
-    },
-    Inventory {
-        operation: "ListRotationShifts",
-        items: "RotationShifts",
-        identity: ResourceIdentity::Key(&["Type"]),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
         input: &[
