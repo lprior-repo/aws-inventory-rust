@@ -4,7 +4,7 @@ service = "cloud9"
 [[step]]
 id = "environment"
 operation = "CreateEnvironmentEC2"
-kind = "AWS::Cloud9::EnvironmentEC2"
+kind = "AWS::ApiOnly::Cloud9Environment"
 identity = "environmentId"
 [step.input]
 name = "inventory-thin-cloud9"
