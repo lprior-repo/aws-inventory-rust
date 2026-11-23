@@ -92,7 +92,9 @@ fn ordered_tail(events: &[ProgressEvent], summary: SweepSummary) {
             ProgressEvent::Scope {
                 outcome: ScopeOutcome::Complete
             },
-            ProgressEvent::Finished { summary },
+            ProgressEvent::Finished {
+                summary: Box::new(summary),
+            },
         ]
     );
 }

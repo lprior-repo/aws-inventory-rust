@@ -51,8 +51,16 @@ fn control_unread_bounded_listener_counts_every_dropped_event() -> TestResult {
 fn control_delivered_finish_matches_returned_summary() -> Result<(), Box<dyn std::error::Error>> {
     let (sender, mut receiver) = tokio::sync::mpsc::channel(1);
     let progress = Progress::new(Some(sender));
-    let summary = progress.finish(SweepSummary::default());
-    assert_eq!(receiver.try_recv()?, ProgressEvent::Finished { summary });
+    let mut expected = SweepSummary::default();
+    expected.metrics.child_requests_skipped = 21;
+    let summary = progress.finish(expected);
+    assert_eq!(summary, expected);
+    assert_eq!(
+        receiver.try_recv()?,
+        ProgressEvent::Finished {
+            summary: Box::new(summary)
+        }
+    );
     Ok(())
 }
 
@@ -68,4 +76,9 @@ fn control_closed_listener_does_not_count_as_full() {
             .progress_dropped,
         0
     );
+}
+
+#[test]
+fn given_large_final_summary_when_progress_is_queued_then_event_slots_remain_compact() {
+    assert!(std::mem::size_of::<ProgressEvent>() <= 80);
 }

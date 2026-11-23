@@ -31,7 +31,7 @@ pub enum ProgressEvent {
         in_flight: u32,
     },
     Finished {
-        summary: SweepSummary,
+        summary: Box<SweepSummary>,
     },
 }
 
@@ -84,7 +84,9 @@ impl Progress {
 
     pub(crate) fn finish(&self, mut summary: SweepSummary) -> SweepSummary {
         summary.metrics.progress_dropped = self.dropped.load(Ordering::Relaxed);
-        self.emit(|| ProgressEvent::Finished { summary });
+        self.emit(|| ProgressEvent::Finished {
+            summary: Box::new(summary),
+        });
         summary.metrics.progress_dropped = self.dropped.load(Ordering::Relaxed);
         summary
     }

@@ -44,9 +44,7 @@ fn validate_parts(value: &str, arn: &Arn<'_>) -> Result<(), SweepError> {
         || arn.resource.is_empty()
         || ServiceId::parse(arn.service).is_err()
         || (!arn.account.is_empty() && AccountId::parse(arn.account).is_err())
-        || (!arn.region.is_empty()
-            && !global_domain(&arn)
-            && RegionId::parse(arn.region).is_err())
+        || (!arn.region.is_empty() && !global_domain(arn) && RegionId::parse(arn.region).is_err())
     {
         return Err(SweepError::Operation("modeled ARN is malformed"));
     }

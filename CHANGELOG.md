@@ -14,6 +14,8 @@
 - Required child requests with absent or empty source text are skipped per row
   and counted in the invocation's `child_requests_skipped` metric. Nonempty
   values are preserved verbatim; validation and transport failures remain errors.
+- `ProgressEvent::Finished.summary` is now boxed to keep bounded progress-channel
+  event slots compact as summary metrics grow. No listener means no event allocation.
 
 - E2E count verification now rejects an entirely catalog-deferred seed oracle.
   Every explicit E2E service selector must have a seed recipe; bootstrap calls
