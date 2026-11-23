@@ -33,7 +33,10 @@ fn check_decision(
         "boolean" => check_fixed(policy, member, FixedValue::Boolean(value.parse()?))?,
         "page_size" => assert_eq!(policy.page_size, Some(value.parse()?)),
         "tags" => check_tags(policy, member)?,
-        _ => assert_eq!(policy.class, Some(expected_class(decision)?)),
+        "binding" => check_binding(policy, member, value)?,
+        "structure" => check_structure(policy, member, value)?,
+        "correlated" => check_correlated(policy, member, value)?,
+        _ => check_class(policy, expected_class(decision)?),
     }
     Ok(())
 }
@@ -52,10 +55,51 @@ fn check_tags(policy: &overlay::OperationOverlay, member: &str) -> TestResult {
 fn expected_class(decision: &str) -> Result<OverlayClass, std::io::Error> {
     use catalog_tool::classes::DenyReason;
     match decision {
+        "enumerate" => Ok(OverlayClass::Enumerate),
+        "expand" => Ok(OverlayClass::Expand),
         "defer" => Ok(OverlayClass::Defer),
         "secret" => Ok(OverlayClass::Deny(DenyReason::Secret)),
         "content" => Ok(OverlayClass::Deny(DenyReason::Content)),
         "reference" => Ok(OverlayClass::Deny(DenyReason::ReferenceData)),
         _ => Err(std::io::Error::other(format!("unknown contract {decision}"))),
+    }
+}
+
+fn check_binding(policy: &overlay::OperationOverlay, member: &str, value: &str) -> TestResult {
+    let (parent, source) = value.split_once(':').ok_or("invalid binding contract")?;
+    let Some(overlay::Binding::From { operation, path }) = policy.bind.get(&MemberPath::new(member)?) else {
+        return Err("missing parent binding".into());
+    };
+    assert_eq!(operation.as_str(), parent);
+    assert_eq!(path.as_str(), source);
+    assert_eq!(policy.class, Some(OverlayClass::Expand));
+    Ok(())
+}
+
+fn check_structure(policy: &overlay::OperationOverlay, member: &str, value: &str) -> TestResult {
+    let (field, expected) = value.split_once('=').ok_or("invalid structure contract")?;
+    let Some(FixedValue::Structure(fields)) = policy.fixed.get(&MemberPath::new(member)?) else {
+        return Err("missing fixed structure".into());
+    };
+    let Some(FixedValue::String(actual)) = fields.get(field) else {
+        return Err("missing structure string".into());
+    };
+    assert_eq!(actual, expected);
+    Ok(())
+}
+
+fn check_correlated(policy: &overlay::OperationOverlay, request: &str, selected: &str) -> TestResult {
+    assert_eq!(policy.identity, Some(overlay::Identity::CorrelatedKey(vec![
+        overlay::IdentityField::Request(MemberPath::new(request)?),
+        overlay::IdentityField::Selected(MemberPath::selected(selected)?),
+    ])));
+    Ok(())
+}
+
+fn check_class(policy: &overlay::OperationOverlay, expected: OverlayClass) {
+    assert_eq!(policy.class, Some(expected));
+    if matches!(expected, OverlayClass::Deny(_) | OverlayClass::Defer) {
+        assert!(policy.items.is_none());
+        assert!(policy.identity.is_none());
     }
 }
