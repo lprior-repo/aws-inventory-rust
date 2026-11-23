@@ -80,7 +80,7 @@ pub(super) const CALLS: &[Inventory] = &[
     Inventory {
         operation: "ListPageResolutions",
         items: "PageResolutions",
-        identity: ResourceIdentity::Correlated("PageId", &["ContactArn", "StageIndex"]),
+        identity: ResourceIdentity::Correlated("PageId", &["ContactArn", "Type"]),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
         input: &[Input::Parent("PageId", "ListPagesByEngagement", "PageArn")],

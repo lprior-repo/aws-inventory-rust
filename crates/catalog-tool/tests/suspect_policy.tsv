@@ -66,7 +66,7 @@ networkmanager	ListCoreNetworks	defer	-	-
 opensearch	ListDomainNames	unset	EngineType	-
 kinesis-video	DescribeMappedResourceConfiguration	correlated	StreamARN	Type,ARN
 ssm-contacts	ListPageReceipts	correlated	PageId	ContactChannelArn,ReceiptType,ReceiptTime
-ssm-contacts	ListPageResolutions	correlated	PageId	ContactArn,StageIndex
+ssm-contacts	ListPageResolutions	correlated	PageId	ContactArn,Type
 ssm-contacts	ListRotationShifts	defer	-	-
 ssm	DescribePatchBaselines	filter	Filters	Key=OWNER:Self
 servicediscovery	ListServices	filter	Filters	Name=RESOURCE_OWNER:SELF
