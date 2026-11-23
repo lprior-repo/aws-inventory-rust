@@ -1,0 +1,10 @@
+format = 1
+service = "iotsitewise"
+
+[[step]]
+id = "resource"
+operation = "CreateAssetModel"
+kind = "AWS::IoTSiteWise::AssetModel"
+identity = "assetModelArn"
+[step.input]
+assetModelName = "inventory-thin-iotsitewise"
