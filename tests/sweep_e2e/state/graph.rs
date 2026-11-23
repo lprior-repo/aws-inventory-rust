@@ -1,6 +1,6 @@
 use super::*;
 use cmdb_view::{GraphConnection, GraphLimits, GraphNode};
-use inventory_core::inventory::{EdgeSource, ResourceKey};
+use inventory_core::inventory::ResourceKey;
 use inventory_harness::inventory_seed::SeedResourcePair;
 
 pub(crate) async fn assert_graph(
@@ -26,7 +26,7 @@ async fn verify_pair(
     pair: &SeedResourcePair,
     edges: &[ProjectionEdgeHeader],
 ) -> Result<()> {
-    let expected = expected(edges, pair)?;
+    let expected = super::oracle::seeded_edge(edges, pair)?;
     let actual = connection
         .neighbors(
             &node(&pair.edge.from),
@@ -38,25 +38,6 @@ async fn verify_pair(
         )
         .await?;
     verify_edges(&actual.edges, expected, edges)
-}
-
-fn expected<'a>(
-    edges: &'a [ProjectionEdgeHeader],
-    pair: &SeedResourcePair,
-) -> Result<&'a ProjectionEdgeHeader> {
-    let expected = edges
-        .iter()
-        .find(|edge| related(edge, pair))
-        .context("SQL has no seeded VPC-to-subnet relationship")?;
-    ensure!(
-        pair.edge.source == EdgeSource::ReviewedRule,
-        "typed seed must use reviewed relationship provenance"
-    );
-    ensure!(
-        expected.source == pair.edge.source.as_str(),
-        "SQL edge provenance must match the typed seed edge"
-    );
-    Ok(expected)
 }
 
 fn verify_edges(
@@ -75,13 +56,6 @@ fn verify_edges(
         "Falkor relationship and provenance differ from SQL"
     );
     Ok(())
-}
-
-fn related(edge: &ProjectionEdgeHeader, pair: &SeedResourcePair) -> bool {
-    edge.from == pair.edge.from
-        && edge.to == pair.edge.to
-        && edge.relation == pair.edge.relation
-        && edge.source == pair.edge.source.as_str()
 }
 
 fn graph_matches(edge: &cmdb_view::GraphEdge, expected: &ProjectionEdgeHeader) -> bool {
