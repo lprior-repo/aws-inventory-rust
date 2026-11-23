@@ -1,0 +1,9 @@
+format = 1
+service = "transfer"
+
+[[step]]
+id = "resource"
+operation = "CreateServer"
+kind = "AWS::Transfer::Server"
+identity = "ServerId"
+[step.input]
