@@ -4,7 +4,7 @@ service = "eventbridgev2"
 [[step]]
 id = "resource"
 operation = "CreateEventBus"
-kind = "AWS::EventBridgeV2::EventBus"
+kind = "AWS::ApiOnly::EventBridgeV2EventBus"
 identity = "EventBusArn"
 [step.input]
 "Name" = "inventory-thin-eventbridgev2"
