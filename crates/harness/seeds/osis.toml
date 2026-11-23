@@ -1,0 +1,13 @@
+format = 1
+service = "osis"
+
+[[step]]
+id = "resource"
+operation = "CreatePipeline"
+kind = "AWS::OSIS::Pipeline"
+identity = "Pipeline.PipelineArn"
+[step.input]
+"PipelineName" = "inventory-thin-osis"
+"MinUnits" = 1
+"MaxUnits" = 1
+"PipelineConfigurationBody" = "{}"
