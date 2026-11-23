@@ -111,7 +111,7 @@ const RESOURCES: &[Resource] = &[
         query: &["Arn", "Id", "Name", "Status"],
         tags: None,
         bindings: &[("NetworkId", "ListNetworks", "Id")],
-        fixed: &[],
+        fixed: &[Input::Boolean("IsOwned", true)],
     },
 ];
 
