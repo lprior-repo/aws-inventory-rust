@@ -2,6 +2,9 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Sweep preserves account-global Lightsail domain ARNs while retaining strict
+  account and regional-resource identity checks.
+
 - E2E count verification now rejects an entirely catalog-deferred seed oracle.
   Every explicit E2E service selector must have a seed recipe; bootstrap calls
   remain implicit, so the baseline script no longer selects recipe-less STS.

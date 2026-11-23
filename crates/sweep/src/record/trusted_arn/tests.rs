@@ -94,3 +94,24 @@ fn selected_queue_arn_must_match_requested_queue_and_resource_type() -> TestResu
     );
     Ok(())
 }
+
+#[test]
+fn global_domain_scope_preserves_account_and_regional_resource_boundaries() -> TestResult {
+    let account = AccountId::parse("123456789012")?;
+    let region = RegionId::parse("us-east-1")?;
+    let trusted = IdentityContext {
+        account: &account,
+        region: &region,
+    };
+    validate_arn("arn:aws:lightsail:global:123456789012:Domain/seed", Some(&trusted))?;
+    for arn in [
+        "arn:aws:lightsail:global:999999999999:Domain/seed",
+        "arn:aws-cn:lightsail:global:123456789012:Domain/seed",
+        "arn:aws:lightsail:eu-west-1:123456789012:Domain/seed",
+        "arn:aws:lightsail:global:123456789012:Instance/seed",
+        "arn:aws:ec2:global:123456789012:Domain/seed",
+    ] {
+        assert!(validate_arn(arn, Some(&trusted)).is_err(), "{arn}");
+    }
+    Ok(())
+}

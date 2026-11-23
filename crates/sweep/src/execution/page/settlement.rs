@@ -20,9 +20,20 @@ pub(super) async fn finish_error(
             release(store, lease).await?;
             return Err(error);
         }
-        _ => StoredOutcome::Failed,
+        _ => failed(&lease, &error),
     };
     finalize(store, lease, outcome).await
+}
+
+fn failed(lease: &WorkLease, error: &SweepError) -> StoredOutcome {
+    tracing::warn!(
+        service = lease.scope().service().as_str(),
+        operation = lease.scope().operation().as_str(),
+        region = lease.scope().region().as_str(),
+        %error,
+        "inventory scope failed"
+    );
+    StoredOutcome::Failed
 }
 
 async fn release(store: &impl InventoryStore, lease: WorkLease) -> Result<(), SweepError> {
