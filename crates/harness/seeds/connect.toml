@@ -1,0 +1,13 @@
+format = 1
+service = "connect"
+
+[[step]]
+id = "instance"
+operation = "CreateInstance"
+kind = "AWS::Connect::Instance"
+identity = "Arn"
+[step.input]
+IdentityManagementType = "CONNECT_MANAGED"
+InstanceAlias = "inventory-thin-connect"
+InboundCallsEnabled = false
+OutboundCallsEnabled = false
