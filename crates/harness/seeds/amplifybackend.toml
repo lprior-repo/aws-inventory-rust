@@ -1,0 +1,11 @@
+format = 1
+service = "amplifybackend"
+
+[[step]]
+id = "bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket" }
+[step.input]
+Bucket = "inventory-thin-amplifybackend"
