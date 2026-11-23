@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: docker.io/library/postgres:16-bookworm@sha256:ce3efec6bc404f6b15ebf5d9bed6b45a9d4655aea238d7dacc3467ccb05a1175
+    environment:
+      POSTGRES_DB: inventory
+      POSTGRES_USER: inventory
+      POSTGRES_PASSWORD: ${INVENTORY_POSTGRES_PASSWORD:-inventory-local-only}
+    ports:
+      - "127.0.0.1:54329:5432"
+    volumes:
+      - inventory-pgdata:/var/lib/postgresql/data
+    shm_size: 2gb
+    command:
+      - postgres
+      - -c
+      - shared_buffers=1GB
+      - -c
+      - effective_cache_size=3GB
+      - -c
+      - work_mem=16MB
+      - -c
+      - maintenance_work_mem=256MB
+      - -c
+      - max_wal_size=4GB
+      - -c
+      - checkpoint_timeout=15min
+      - -c
+      - max_connections=200
+      - -c
+      - max_locks_per_transaction=256
+      - -c
+      - synchronous_commit=on
+      - -c
+      - fsync=on
+      - -c
+      - full_page_writes=on
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inventory -d inventory"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+volumes:
+  inventory-pgdata:

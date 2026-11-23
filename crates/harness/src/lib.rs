@@ -8,6 +8,7 @@ pub mod inventory_seed;
 pub mod json;
 pub mod mutate;
 pub mod package;
+pub mod postgres;
 pub mod provenance;
 pub mod proxy;
 pub mod seed;
