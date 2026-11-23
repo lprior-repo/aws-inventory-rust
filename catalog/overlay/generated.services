@@ -1,0 +1,8 @@
+cloudwatch
+dynamodb
+iam
+kms
+lambda
+s3
+sns
+sqs

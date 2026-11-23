@@ -183,6 +183,76 @@ The shared-model checker invokes the same model-policy validator as the disk
 overlay gate; temporary-root CLI scenarios separately prove that gate's added
 deny handling. The all-model safety target completed in 24.57 seconds.
 
+### Thin-slice generation (A1.6)
+
+The eight selected services generate 28 callable enumeration policies and 25
+enumeration deferrals. These sum to the 53 candidates in `aws-plans.report`.
+No service needs substitution. `kms/DescribeKey` is omitted; S3 operations below
+bucket discovery remain deferred. Both generator and overlay write/check commands
+passed. Reports remain ignored generated outputs and are not committed.
+
+| Service | Candidates | Generated callable | Generated deferred | Merged callable enumerate, before → after |
+| --- | ---: | ---: | ---: | ---: |
+| cloudwatch | 9 | 3 | 6 | 8 → 8 |
+| dynamodb | 9 | 5 | 4 | 6 → 6 |
+| iam | 17 | 8 | 9 | 9 → 9 |
+| kms | 4 | 1 | 3 | 3 → 3 |
+| lambda | 5 | 5 | 0 | 4 → 4 |
+| s3 | 2 | 1 | 1 | 2 → 2 |
+| sns | 6 | 4 | 2 | 3 → 3 |
+| sqs | 1 | 1 | 0 | 1 → 1 |
+| **Total** | **53** | **28** | **25** | **36 → 36** |
+
+The merged column describes existing reviewed enumeration policies, not just
+the classifier's enumeration candidates; reviewed overrides can promote other
+read operations. The complete merged overlay report is byte-identical before
+and after generation, including global totals of 1,565 enumerate and 632 expand
+callables. This tree already has embedded policy entries for every operation,
+and those entries take precedence over generated policy, including deferrals
+and denials. Generation therefore enables **zero additional merged callables**.
+
+The three enumeration deferral reasons, in frequency order:
+
+1. `identity: no ARN member and no modeled identifiers`: 21.
+2. `items: no single list member`: 3.
+3. `input Scope needs a reviewed fixed value`: 1.
+
+#### Embedded decisions shadowing generated callables
+
+These four generated enumerations do not survive as merged enumerations.
+Their embedded stated reasons are preserved verbatim:
+
+| Operation | Embedded decision | Stated reason |
+| --- | --- | --- |
+| `lambda/ListFunctions` | deny | `secret` |
+| `iam/ListInstanceProfiles` | defer | InstanceProfiles.Roles embeds Role.AssumeRolePolicyDocument. Requires bounded trust-policy sanitization and reviewed profile-to-role edges matching the existing adapter before generic publication. |
+| `sns/ListPhoneNumbersOptedOut` | deny | `content` |
+| `sns/ListPlatformApplications` | defer | PlatformApplications exposes PlatformApplicationArn plus open Attributes map. Stable ARN and NextToken are modeled, but safe attribute-only projection/credential-return guarantees are not. Requires shared allowlisted map projection and reviewed platform-application kind before persisting this response; do not assume PlatformCredential/PlatformPrincipal cannot be returned. |
+
+The other 24 generated callables are also overridden by existing embedded
+enumeration policies. Those entries state no deny/defer reason; their reviewed
+identity, pagination and other field choices win unchanged:
+
+- cloudwatch: `ListAlarmMuteRules`, `ListDashboards`, `ListMetricStreams`.
+- dynamodb: `ListBackups`, `ListBulkOperations`, `ListExports`, `ListImports`,
+  `ListTables`.
+- iam: `ListAccountAliases`, `ListGroups`, `ListOpenIDConnectProviders`,
+  `ListRoles`, `ListSAMLProviders`, `ListServerCertificates`, `ListUsers`.
+- kms: `ListKeys`.
+- lambda: `ListCapacityProviders`, `ListCodeSigningConfigs`,
+  `ListEventSourceMappings`, `ListLayers`.
+- s3: `ListBuckets`.
+- sns: `ListSubscriptions`, `ListTopics`.
+- sqs: `ListQueues`.
+
+In particular, generated Lambda policies include `ListFunctions` with identity
+`FunctionArn`, but embedded `secret` denial still prevents its operation plan.
+No catalog compilation was run after thin-slice generation: A2.2 kind rows and
+an explicit review of these embedded decisions are required before changing
+callability. The generated file alone must not be interpreted as enabling that
+Lambda operation. `moon.yml` remains unchanged by directive; use the documented
+plain command gates rather than adding pipeline wiring.
+
 ## One command
 
 ![How a run is proven on the emulator](img/35-test-loop.png)
