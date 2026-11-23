@@ -1,4 +1,4 @@
-mod orchestration;
+pub(in crate::overlay) mod orchestration;
 mod report;
 mod service;
 pub(in crate::overlay) mod validation;

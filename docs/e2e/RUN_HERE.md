@@ -146,6 +146,28 @@ and output exceeding 1 MiB are refused before publication. Unresolved endpoints
 defer enumeration; expansion and unclassified reads remain explicitly deferred.
 Denied operations are omitted entirely.
 
+### Generator command
+
+`catalog-tool overlays generate [--service NAME]... [--write | --check]` reads
+the sorted `catalog/overlay/generated.services` selection (or `*` for all models).
+An explicit service overrides the file but cannot be combined with `--check`.
+Without either mode flag the command prints its report without writing files.
+Write mode uses exclusive temporary files, compares the initial byte snapshots,
+atomically renames completed files and removes stale generated TOML. Check mode
+requires the exact file set, file bytes and report bytes.
+
+The optional `catalog/must-deny.txt` can add denials to the embedded deny list;
+both generation and the overlay gate consume it. Absence keeps every embedded
+denial. It never authorizes an operation forbidden by those embedded rules.
+Generated files and initial publication snapshots are bounded to 64 MiB total;
+reports are bounded to 4 MiB. Counts cover enumeration candidates only, and every
+service and total must satisfy `callable + deferred = enumerate_candidates`.
+
+A1.4 verification: 13 real-filesystem CLI/API scenarios passed; library and
+binary Clippy passed with warnings denied. With an empty selection, generator
+write/check and the unchanged `overlay --check` passed. Moon wiring is omitted
+by the no-CI directive; the exact direct gate commands appear above.
+
 ## One command
 
 ![How a run is proven on the emulator](img/35-test-loop.png)
