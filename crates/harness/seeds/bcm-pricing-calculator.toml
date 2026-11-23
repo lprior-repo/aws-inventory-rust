@@ -1,0 +1,10 @@
+format = 1
+service = "bcm-pricing-calculator"
+
+[[step]]
+id = "resource"
+operation = "CreateWorkloadEstimate"
+kind = "AWS::BCMPricingCalculator::WorkloadEstimate"
+identity = "id"
+[step.input]
+"name" = "inventory-thin-bcm-pricing-calculator"
