@@ -1,0 +1,10 @@
+format = 1
+service = "workspaces-instances"
+
+[[step]]
+id = "resource"
+operation = "CreateWorkspaceInstance"
+kind = "AWS::WorkspacesInstances::WorkspaceInstance"
+identity = "WorkspaceInstanceId"
+[step.input]
+"ManagedInstance" = { "ImageId" = "ami-0123456789abcdef0", "InstanceType" = "t3.small" }
