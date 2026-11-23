@@ -254,3 +254,7 @@ CARGO_TARGET_DIR=/tmp/tgt-suspect cargo test -j3 -p inventory-sweep --locked
 ```
 
 The first gate invocation passed formatting and all-target Clippy. Its full sweep test run exceeded the 600-second command deadline; before the deadline, the log reported stale fixture failures for WAF branch provenance, App Mesh parent pairs, and mixed search engines. This timed-out invocation is not a passing full-suite result.
+
+Merged `w4/int` before rerunning the sweep suite without a command deadline. This imports the existing App Mesh, mixed-search-engine, and WAF fixture repairs (`90bf8b47`, `725c5a02`, `0e1dab2f`) rather than duplicating their fixes; the new runtime regression remains commit `25620c57`.
+
+The post-merge `CARGO_TARGET_DIR=/tmp/tgt-suspect cargo test -j3 -p inventory-sweep --locked` completed successfully with no command deadline: 470 tests passed across two suites (287.73 seconds test time, 311.02 seconds command wall time). The new WAFv2 runtime regression and imported fixture repairs are consistent. No additional fixture or production changes were needed.
