@@ -4,7 +4,7 @@ service = "codeconnections"
 [[step]]
 id = "connection"
 operation = "CreateConnection"
-kind = "AWS::CodeConnections::Connection"
+kind = "AWS::CodeStarConnections::Connection"
 identity = "ConnectionArn"
 [step.input]
 ConnectionName = "inventory-thin-codeconnections"
