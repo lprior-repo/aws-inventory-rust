@@ -1,13 +1,17 @@
 mod config;
+pub mod command;
 mod file;
 mod literal;
 mod model;
 mod runner;
+mod report;
 mod scenario;
 mod wire;
 
 pub use file::load;
 pub use runner::{run_data_scenario, run_scenario, run_seed};
+pub use report::{SeedRunReport, StepOutcome};
+pub use runner::run_report;
 
 pub use config::{SeedConfig, SeedError};
 pub use scenario::{

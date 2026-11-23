@@ -108,8 +108,8 @@ impl SeedState {
         step: super::super::scenario::StepId,
     ) -> Result<&SeedOutput, SeedError> {
         self.outputs
-            .get(usize::from(step.0))
-            .filter(|output| output.step == step)
+            .iter()
+            .find(|output| output.step == step)
             .ok_or(SeedError::Invalid(
                 "relationship resource output is unavailable",
             ))

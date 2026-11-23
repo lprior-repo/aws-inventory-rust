@@ -2,6 +2,10 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- The harness runs ordered TOML seed directories against loopback HTTPS, retaining
+  rejected operations and skipped dependencies in a sorted matrix alongside a
+  sorted resource/relationship oracle. Mutation authorization remains harness-only.
+
 - Runtime catalog binding decoders live in `decode/plans/bindings.rs`, with
   separate source decoders and unchanged wire tags, limits and rejection order.
   The parent plan decoder is now below the 300-line source limit.
