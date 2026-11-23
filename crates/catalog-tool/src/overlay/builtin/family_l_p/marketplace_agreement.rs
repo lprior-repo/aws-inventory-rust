@@ -1,6 +1,7 @@
 // Pinned Smithy source: .local/aws-models/models/marketplace-agreement/service/2020-03-01/marketplace-agreement-2020-03-01.json
+use super::super::{name, path};
 use super::policy::{Group, Id, Resource, compile};
-use crate::overlay::Scope;
+use crate::overlay::{FixedValue, Scope};
 use crate::{
     classes::DenyReason,
     overlay::{NameError, OverlayClass, ServiceOverlay},
@@ -106,5 +107,23 @@ const RESOURCES: &[Resource] = &[
 ];
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
-    compile("marketplace-agreement", GROUPS, RESOURCES)
+    let mut overlay = compile("marketplace-agreement", GROUPS, RESOURCES)?;
+    let operation = overlay
+        .operations
+        .get_mut(&name("SearchAgreements")?)
+        .ok_or_else(|| NameError {
+            value: "SearchAgreements".to_owned(),
+        })?;
+    // The pinned filters documentation requires AgreementType for either caller role.
+    operation.fixed.insert(
+        path("filters")?,
+        FixedValue::list([FixedValue::structure([
+            ("name", FixedValue::String("AgreementType".to_owned())),
+            (
+                "values",
+                FixedValue::Strings(vec!["PurchaseAgreement".to_owned()]),
+            ),
+        ])?]),
+    );
+    Ok(overlay)
 }

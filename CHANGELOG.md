@@ -2,6 +2,9 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Marketplace Agreement discovery now sends the pinned model's documented-required
+  `AgreementType=PurchaseAgreement` filter on initial and subsequent search pages.
+  Existing catalog/database pairs must be regenerated together for the new plan.
 - EMR Containers seeds use distinct EKS role, cluster and idempotency-token
   identities, so replaying all service recipes in one account does not reject
   their prerequisites as duplicates of the standalone EKS recipe.
