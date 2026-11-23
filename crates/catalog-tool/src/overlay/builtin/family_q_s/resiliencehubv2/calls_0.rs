@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/resiliencehubv2/service/2026-02-17/resiliencehubv2-2026-02-17.json
-use super::super::construction::{Inventory, ResourceIdentity};
+use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 
 pub(super) const CALLS: &[Inventory] = &[
@@ -19,7 +19,7 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Arn("serviceArn"),
         token: Some(("nextToken", "nextToken")),
         scope: Scope::Region,
-        input: &[],
+        input: &[Input::Account("accountId")],
         tags: None,
         queryable: &[],
     },
@@ -29,7 +29,7 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Arn("policyArn"),
         token: Some(("nextToken", "nextToken")),
         scope: Scope::Region,
-        input: &[],
+        input: &[Input::Account("accountId")],
         tags: None,
         queryable: &[],
     },
