@@ -124,6 +124,15 @@ pub(super) fn inherited(
     Ok(entry)
 }
 
+pub(super) fn fixed_value(
+    mut entry: Entry,
+    input: &str,
+    value: FixedValue,
+) -> Result<Entry, NameError> {
+    entry.1.fixed.insert(MemberPath::new(input)?, value);
+    Ok(entry)
+}
+
 pub(super) fn fixed_integer(mut entry: Entry, input: &str, value: i64) -> Result<Entry, NameError> {
     entry
         .1

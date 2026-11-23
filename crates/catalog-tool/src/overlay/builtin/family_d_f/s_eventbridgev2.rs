@@ -87,24 +87,8 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     "LastModifiedTime",
                 ],
             )?,
-            // DescribeSubscriber returns the full configuration of a subscriber.
-            queried(
-                bound(
-                    describe("DescribeSubscriber", "$", arn("SubscriberArn")?)?,
-                    &[("SubscriberArn", "ListSubscribers", "SubscriberArn")],
-                )?,
-                &[
-                    "SubscriberArn",
-                    "EventBusArn",
-                    "Name",
-                    "Description",
-                    "State",
-                    "CreationTime",
-                    "LastModifiedTime",
-                ],
-            )?,
         ],
         &[super::s_eventbridgev2_decisions_0::ENTRIES],
-        &[],
+        &[("DescribeSubscriber", crate::classes::DenyReason::Secret)],
     )
 }

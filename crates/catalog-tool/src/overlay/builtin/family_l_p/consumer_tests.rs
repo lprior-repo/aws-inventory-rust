@@ -170,7 +170,7 @@ fn given_license_summary_when_detail_compiles_then_arn_identity_and_tag_snapshot
 }
 
 #[test]
-fn given_mixed_search_engines_when_pinned_opensearch_list_compiles_then_request_filters_exact_engine()
+fn given_mixed_search_engines_when_pinned_opensearch_list_compiles_then_request_retains_all_engines()
 -> TestResult {
     // Given: ListDomainNames otherwise returns both OpenSearch and Elasticsearch domains.
     let bytes = compile_pinned(
@@ -179,19 +179,17 @@ fn given_mixed_search_engines_when_pinned_opensearch_list_compiles_then_request_
         &["ListDomainNames"],
         "AWS::OpenSearchService::Domain",
     )?;
-    // When: the fixed enum is checked against the pinned model and read from the artifact.
+    // When: the unfiltered operation is checked and read from the artifact.
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = runtime
         .lookup("opensearch", "ListDomainNames")
         .ok_or("list missing")?;
-    let engine = field(&runtime, "opensearch", "EngineType")?;
-    // Then: every request is scoped to the modeled engine, with no ARN heuristic.
-    assert_eq!(plan.bindings().len(), 1);
-    let binding = plan.bindings().first().ok_or("engine filter missing")?;
-    assert_eq!(binding.path.as_ref(), [engine]);
+    // Then: no engine binding removes Elasticsearch-engine domains.
+    assert_eq!(plan.bindings(), []);
+    let name = vec![field(&runtime, "opensearch", "DomainName")?].into_boxed_slice();
     assert_eq!(
-        binding.source,
-        BindingSource::Fixed(BindingValue::String("OpenSearch".to_owned()))
+        plan.identity(),
+        &IdentityPlan::Key(vec![name].into_boxed_slice())
     );
     Ok(())
 }

@@ -273,6 +273,25 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         (
             "ListServiceJobs",
             OperationOverlay {
+                class: Some(OverlayClass::Expand),
+                bind: [(
+                    path("jobQueue")?,
+                    Binding::From {
+                        operation: name("DescribeJobQueues")?,
+                        path: path("jobQueueArn")?,
+                    },
+                )]
+                .into_iter()
+                .collect(),
+                fixed: [(
+                    path("filters")?,
+                    FixedValue::list([FixedValue::structure([
+                        ("name", FixedValue::String("JOB_NAME".to_owned())),
+                        ("values", FixedValue::Strings(vec!["*".to_owned()])),
+                    ])?]),
+                )]
+                .into_iter()
+                .collect(),
                 queryable: vec![path("jobArn")?],
                 ..read(
                     "jobSummaryList",

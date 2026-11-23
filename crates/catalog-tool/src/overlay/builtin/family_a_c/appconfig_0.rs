@@ -196,25 +196,9 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         // Model: Returns information about an AppConfig extension.
         (
             "GetExtension",
-            OperationOverlay {
-                class: Some(OverlayClass::Expand),
-                bind: [(
-                    path("ExtensionIdentifier")?,
-                    Binding::From {
-                        operation: name("ListExtensions")?,
-                        path: path("Id")?,
-                    },
-                )]
-                .into_iter()
-                .collect(),
-                queryable: vec![path("Arn")?],
-                ..read(
-                    "$",
-                    Identity::Arn(path("Arn")?),
-                    Scope::Region,
-                    Paginator::None,
-                )?
-            },
+            deferred(
+                "ListExtensions includes AWS-authored reference extensions without an account-owner request filter; its child describe cannot run safely until an owned-only selector exists.",
+            ),
         ),
         // Model: Returns information about an AppConfig extension association. For more information about extensions and associations, see Extending workflows in the AppConfig User Guide .
         (
@@ -369,15 +353,9 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         // Model: Lists all custom and Amazon Web Services authored AppConfig extensions in the account. For more information about extensions, see Extending workflows in the AppConfig User Guide .
         (
             "ListExtensions",
-            OperationOverlay {
-                queryable: vec![path("Arn")?],
-                ..read(
-                    "Items",
-                    Identity::Arn(path("Arn")?),
-                    Scope::Region,
-                    token("NextToken", "NextToken")?,
-                )?
-            },
+            deferred(
+                "The modeled collection mixes custom and AWS-authored extensions and offers no account-owner request filter.",
+            ),
         ),
         (
             "ListHostedConfigurationVersions",

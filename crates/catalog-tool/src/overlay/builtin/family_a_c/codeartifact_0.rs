@@ -81,13 +81,22 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
             "DescribeDomain",
             OperationOverlay {
                 class: Some(OverlayClass::Expand),
-                bind: [(
-                    path("domain")?,
-                    Binding::From {
-                        operation: name("ListDomains")?,
-                        path: path("name")?,
-                    },
-                )]
+                bind: [
+                    (
+                        path("domain")?,
+                        Binding::From {
+                            operation: name("ListDomains")?,
+                            path: path("name")?,
+                        },
+                    ),
+                    (
+                        path("domainOwner")?,
+                        Binding::From {
+                            operation: name("ListDomains")?,
+                            path: path("owner")?,
+                        },
+                    ),
+                ]
                 .into_iter()
                 .collect(),
                 queryable: vec![path("arn")?],
@@ -135,6 +144,13 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                         Binding::From {
                             operation: name("ListRepositories")?,
                             path: path("name")?,
+                        },
+                    ),
+                    (
+                        path("domainOwner")?,
+                        Binding::From {
+                            operation: name("ListRepositories")?,
+                            path: path("domainOwner")?,
                         },
                     ),
                 ]

@@ -680,6 +680,9 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
             "ListBrowsers",
             OperationOverlay {
                 queryable: vec![path("browserArn")?],
+                fixed: [(path("type")?, FixedValue::String("CUSTOM".to_owned()))]
+                    .into_iter()
+                    .collect(),
                 ..read(
                     "browserSummaries",
                     Identity::Arn(path("browserArn")?),
@@ -706,6 +709,9 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
             "ListCodeInterpreters",
             OperationOverlay {
                 queryable: vec![path("codeInterpreterArn")?],
+                fixed: [(path("type")?, FixedValue::String("CUSTOM".to_owned()))]
+                    .into_iter()
+                    .collect(),
                 ..read(
                     "codeInterpreterSummaries",
                     Identity::Arn(path("codeInterpreterArn")?),
@@ -774,15 +780,9 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         // Model: Lists all available evaluators, including both builtin evaluators provided by the service and custom evaluators created by the user.
         (
             "ListEvaluators",
-            OperationOverlay {
-                queryable: vec![path("evaluatorArn")?],
-                ..read(
-                    "evaluators",
-                    Identity::Arn(path("evaluatorArn")?),
-                    Scope::Region,
-                    token("nextToken", "nextToken")?,
-                )?
-            },
+            deferred(
+                "The modeled collection mixes builtin, third-party and custom evaluators without an ownership request filter; no owned-only selector is available.",
+            ),
         ),
         (
             "ListGatewayRateLimits",

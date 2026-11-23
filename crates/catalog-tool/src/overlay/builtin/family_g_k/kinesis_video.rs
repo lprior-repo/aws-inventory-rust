@@ -1,7 +1,7 @@
 //! Pinned model: api-models-aws 46135f8468cd5cb60d983b97290c9f6661e359c6, models/kinesis-video/service.
 //! Review is source-only; no live service or emulator support claim.
 use super::policy;
-use crate::overlay::{NameError, ServiceOverlay};
+use crate::overlay::{Identity, IdentityField, MemberPath, NameError, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     let approved = vec![
@@ -29,13 +29,18 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
         ),
         (
             "DescribeMappedResourceConfiguration",
-            policy::query(
-                policy::enumerate(
-                    "MappedResourceConfigurationList",
-                    policy::arn("ARN")?,
-                    Some(("NextToken", "NextToken")),
+            policy::bind(
+                policy::query(
+                    policy::enumerate(
+                        "MappedResourceConfigurationList",
+                        mapped_identity()?,
+                        Some(("NextToken", "NextToken")),
+                    )?,
+                    &["ARN", "Type"],
                 )?,
-                &["ARN", "Type"],
+                "StreamARN",
+                "ListStreams",
+                "StreamARN",
             )?,
         ),
     ];
@@ -46,6 +51,14 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
         "Stream and signaling-channel metadata are approved with NextToken. Media/edge configuration, endpoint/capability discovery and tags need separate scoped review; video contents are not collected.",
         &[(policy::DenyReason::Mutating, MUTATING)],
     )
+}
+
+fn mapped_identity() -> Result<Identity, NameError> {
+    Ok(Identity::CorrelatedKey(vec![
+        IdentityField::Request(MemberPath::new("StreamARN")?),
+        IdentityField::Selected(MemberPath::new("Type")?),
+        IdentityField::Selected(MemberPath::new("ARN")?),
+    ]))
 }
 
 // Explicit pinned operation dispositions. No runtime operation-name classifier approves calls.

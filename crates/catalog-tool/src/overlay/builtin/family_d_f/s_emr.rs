@@ -1,7 +1,7 @@
 // Pinned model: .local/aws-models/models/emr/service/2009-03-31/emr-2009-03-31.json
-use super::support::{arn, inventory, key, queried, reviewed, token};
+use super::support::{arn, bound, fixed_value, inventory, key, queried, reviewed, token};
 use crate::classes::DenyReason;
-use crate::overlay::{NameError, ServiceOverlay};
+use crate::overlay::{FixedValue, NameError, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
@@ -38,29 +38,40 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 &["StudioId", "Name", "VpcId"],
             )?,
             // Summary metadata does not contain notebook source, parameters, or execution output.
-            queried(
-                inventory(
-                    "ListNotebookExecutions",
-                    "NotebookExecutions",
-                    key(&["NotebookExecutionId"])?,
-                    token("Marker", "Marker")?,
+            fixed_value(
+                queried(
+                    inventory(
+                        "ListNotebookExecutions",
+                        "NotebookExecutions",
+                        key(&["NotebookExecutionId"])?,
+                        token("Marker", "Marker")?,
+                    )?,
+                    &[
+                        "NotebookExecutionId",
+                        "EditorId",
+                        "NotebookExecutionName",
+                        "Status",
+                    ],
                 )?,
-                &[
-                    "NotebookExecutionId",
-                    "EditorId",
-                    "NotebookExecutionName",
-                    "Status",
-                ],
+                "From",
+                FixedValue::Timestamp(inventory_core::record::Time::new(0, 0).map_err(|_| {
+                    NameError {
+                        value: "epoch timestamp".to_owned(),
+                    }
+                })?),
             )?,
             // IdentityId is unique within its studio and principal type; keep both contextual key members.
-            queried(
-                inventory(
-                    "ListStudioSessionMappings",
-                    "SessionMappings",
-                    key(&["StudioId", "IdentityType", "IdentityId"])?,
-                    token("Marker", "Marker")?,
+            bound(
+                queried(
+                    inventory(
+                        "ListStudioSessionMappings",
+                        "SessionMappings",
+                        key(&["StudioId", "IdentityType", "IdentityId"])?,
+                        token("Marker", "Marker")?,
+                    )?,
+                    &["StudioId", "IdentityType", "IdentityId", "SessionPolicyArn"],
                 )?,
-                &["StudioId", "IdentityType", "IdentityId", "SessionPolicyArn"],
+                &[("StudioId", "ListStudios", "StudioId")],
             )?,
         ],
         &[

@@ -40,18 +40,19 @@ fn public_checker_accepts_the_real_ecr_parent_and_composite_image_plan() -> Test
 }
 
 #[test]
-fn search_domain_roots_partition_engine_types_without_changing_canonical_identities() -> TestResult
-{
+fn given_both_search_engines_when_listing_domains_then_opensearch_retains_both() -> TestResult {
     let policies = overlay::embedded()?;
     let engine = MemberPath::new("EngineType")?;
     for (service, value) in [
-        ("elasticsearch-service", "Elasticsearch"),
-        ("opensearch", "OpenSearch"),
+        ("elasticsearch-service", Some("Elasticsearch")),
+        ("opensearch", None),
     ] {
         let plan = operation(&policies, service, "ListDomainNames")?;
         assert_eq!(
             plan.fixed.get(&engine),
-            Some(&FixedValue::String(value.to_owned()))
+            value
+                .map(|value| FixedValue::String(value.to_owned()))
+                .as_ref()
         );
         assert_eq!(
             plan.identity,

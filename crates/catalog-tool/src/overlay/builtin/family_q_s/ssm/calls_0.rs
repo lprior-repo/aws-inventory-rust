@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/ssm/service/2014-11-06/ssm-2014-11-06.json
-use super::super::construction::{Inventory, ResourceIdentity};
+use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 
 pub(super) const CALLS: &[Inventory] = &[
@@ -39,7 +39,7 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Key(&["BaselineId"]),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
-        input: &[],
+        input: &[Input::Filter("Filters", "Key", "OWNER", &["Self"])],
         tags: None,
         queryable: &[],
     },
