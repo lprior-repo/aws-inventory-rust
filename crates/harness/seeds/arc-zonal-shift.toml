@@ -1,0 +1,19 @@
+format = 1
+service = "arc-zonal-shift"
+
+[[step]]
+id = "managed"
+operation = "ListManagedResources"
+kind = ""
+[step.input]
+
+[[step]]
+id = "shift"
+operation = "StartZonalShift"
+kind = "AWS::ARCZonalShift::ZonalShift"
+identity = "zonalShiftId"
+[step.input]
+resourceIdentifier = { "from" = "managed", "path" = "items.0.arn" }
+awayFrom = { "from" = "managed", "path" = "items.0.availabilityZones.0" }
+expiresIn = "1h"
+comment = "Inventory seed zonal shift"
