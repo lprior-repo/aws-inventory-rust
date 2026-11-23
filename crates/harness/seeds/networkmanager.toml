@@ -6,4 +6,5 @@ id = "resource"
 operation = "CreateGlobalNetwork"
 kind = "AWS::NetworkManager::GlobalNetwork"
 identity = "GlobalNetwork.GlobalNetworkArn"
+scope = "account"
 [step.input]
