@@ -8,6 +8,10 @@
   The reviewed catalog is persisted with its digest so reopening retains
   current catalog authority metadata rather than restoring an incomplete registry.
 
+- `PgStore` creates and reopens schema14 through a bounded eight-connection
+  pool, checks stored catalog integrity and hides the entire URL in diagnostics.
+  Connection failures never propagate raw connection details.
+
 - Runtime catalog binding decoders live in `decode/plans/bindings.rs`, with
   separate source decoders and unchanged wire tags, limits and rejection order.
   The parent plan decoder is now below the 300-line source limit.

@@ -5,6 +5,7 @@ mod connection;
 mod facets;
 mod legacy;
 pub mod postgres;
+pub use postgres::{DatabaseUrl, PgStore, PgWriteConfig};
 mod projection;
 mod projection_outbox;
 mod projection_read;
@@ -60,9 +61,7 @@ pub enum StoreError {
     Catalog(#[from] inventory_core::catalog::CatalogError),
     #[error("runtime catalog capability metadata is invalid: {0}")]
     RuntimeCatalog(#[from] inventory_core::catalog::runtime::RuntimeCatalogError),
-    #[error(
-        "database uses schema version {found}; expected schema17 (schema14/15/16 upgrade on open)"
-    )]
+    #[error("database uses an unsupported schema version: {found}")]
     SchemaVersion { found: i64 },
     #[error("catalog digest differs from the immutable database catalog")]
     CatalogMismatch,
