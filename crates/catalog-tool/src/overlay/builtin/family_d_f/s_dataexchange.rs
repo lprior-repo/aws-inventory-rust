@@ -1,7 +1,7 @@
 // Pinned model: .local/aws-models/models/dataexchange/service/2017-07-25/dataexchange-2017-07-25.json
-use super::support::{arn, bound, inventory, queried, reviewed, token};
+use super::support::{arn, bound, fixed_value, inventory, queried, reviewed, token};
 use crate::classes::DenyReason;
-use crate::overlay::{NameError, ServiceOverlay};
+use crate::overlay::{FixedValue, NameError, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     reviewed(
@@ -25,7 +25,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 ],
             )?,
             // This operation lists your data sets.
-            queried(
+            fixed_value(queried(
                 inventory(
                     "ListDataSets",
                     "DataSets",
@@ -33,7 +33,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                     token("NextToken", "NextToken")?,
                 )?,
                 &["Arn", "AssetType", "Id", "Name", "SourceId"],
-            )?,
+            )?, "Origin", FixedValue::String("OWNED".to_owned()))?,
             // This operation returns information about all received data grants.
             queried(
                 inventory(
