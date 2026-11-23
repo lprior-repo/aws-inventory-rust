@@ -483,3 +483,55 @@ Clippy with warnings denied. Both generator check commands passed. Kind
 generation emits zero rows and zero conflicts because existing typed mappings
 already cover the checked callables. The intermediate model compile comparison
 reported drift; the generated binary is rewritten and checked after A2.3/A2.2.
+
+### PostgreSQL identifier shortening
+
+Catalog table names and projected field-path columns fit PostgreSQL's 63-byte
+limit. Longer names retain their first 54 ASCII bytes followed by `_` and the
+first eight hexadecimal BLAKE3 digits of the complete derived name. Core exports
+`shorten_sql_name` for physical-column and index-name construction after adding
+suffixes; each consumer must check collisions in its own identifier namespace.
+The pre-shortening derivation remains bounded to 128 bytes.
+
+`kinds generate --write` also writes `catalog/aws-names.report`; `--check`
+compares it without overwriting drift. The report lists each long table-name
+replacement and exact total/long/distinct counts. Naming retains the SQLite
+reserved prefix and keywords and also rejects PostgreSQL reserved words.
+Shortening changes published identifiers and the catalog hash: regenerate the
+catalog and create fresh databases rather than reopening pre-change stores.
+
+A2.3 measurements after regeneration: 19,062,877 catalog bytes; 1,925 unique
+tables, **zero over 63 bytes**, maximum 63; 236 projected columns, **zero over
+63 bytes**, maximum 7. The report records 14 shortened names and 1,925 distinct
+names. Core identifier/column scenarios and the naming suite passed. Debug
+catalog load measured 2,378 ms versus 2,377 ms before; compile/write took 39
+wall-clock seconds including Cargo startup. No comparable pre-change compile
+timing was captured. Compile `--write` followed by `--check` and kind generation
+`--check` both exited zero. Database create/open timing belongs to the
+PostgreSQL integration lane and is not claimed here.
+
+### Wider catalog regression checks (A2.2)
+
+Bootstrap now generates kinds and the shortening report after overlay checking
+and before compiling the catalog. In this worktree run the generator stages
+individually: its plain model copy must not be bootstrapped as a submodule, and
+the submodule/LFS setup stages are intentionally not run.
+
+The compiled-catalog scenarios live under
+`crates/catalog-tool/tests/cli_models_compile/kinds.rs`:
+
+```sh
+cargo test -j3 --locked -p catalog-tool --test cli_models_compile kinds:: -- --ignored --nocapture
+```
+
+The byte-comparison scenario needs the ignored pre-change
+`.local/a2-before.catalog` captured before regeneration. It compares the exact
+encoded four original plans without decoding obsolete long table identifiers.
+The other scenarios prove every callable kind has a schema, table names are
+distinct, and the eight selected services have kinds available for review.
+The checked-in typed kind mappings remain authoritative; there is no
+`catalog/kinds.tsv` in this tree.
+
+The complete A2.2 gate remains held on the previously reported 60-second
+request-pacing timeout in ignored `sweep_e2e` scenarios. They are not rerun or
+relaxed here, and unsupported/failed scope totals are not claimed.

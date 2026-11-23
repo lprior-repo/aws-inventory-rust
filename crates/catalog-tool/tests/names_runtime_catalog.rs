@@ -19,6 +19,8 @@ fn names_runtime_catalog_reports_identifier_counts() -> TestResult {
     print_counts("columns", &column_names);
     assert_eq!(table_names.len(), table_names.iter().collect::<BTreeSet<_>>().len());
     assert!(!table_names.is_empty());
+    assert!(table_names.iter().all(|name| name.len() <= 63));
+    assert!(column_names.iter().all(|name| name.len() <= 63));
     Ok(())
 }
 

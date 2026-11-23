@@ -86,7 +86,7 @@ fn defer_kind_conflicts(
     entries: &mut [(&str, OperationOverlay)],
     stats: &mut Counts,
 ) -> Result<(), OverlayError> {
-    entries.sort_unstable_by(|(left, _), (right, _)| left.cmp(right));
+    entries.sort_unstable_by_key(|(operation, _)| *operation);
     let mut producers = BTreeMap::new();
     for (operation, entry) in entries {
         if entry.class != Some(OverlayClass::Enumerate) {

@@ -98,3 +98,19 @@ fn kind_map_given_conflicting_item_shapes_when_overlays_generated_then_second_is
     assert!(generated.report().contains("totals enumerate_candidates=2 callable=1 deferred=1"));
     Ok(())
 }
+
+#[test]
+fn names_given_changed_name_report_when_checked_then_drift_is_not_overwritten() -> Result {
+    let root = given_root()?;
+    then_success(when_generate(root.path(), "--write")?)?;
+    let path = root.path().join("catalog/aws-names.report");
+    let report = fs::read_to_string(&path)?;
+    assert!(report.lines().any(|line| line.starts_with("long ")));
+    assert!(report.lines().any(|line| line.starts_with("names total=")));
+    fs::write(&path, "changed\n")?;
+    let output = when_generate(root.path(), "--check")?;
+    assert!(!output.status.success());
+    assert!(String::from_utf8(output.stderr)?.contains("line 1 differs:"));
+    assert_eq!(fs::read(path)?, b"changed\n");
+    Ok(())
+}

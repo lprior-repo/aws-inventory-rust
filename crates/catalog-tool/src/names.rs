@@ -2,8 +2,10 @@ use thiserror::Error;
 
 mod exceptions;
 mod identifier;
+mod keywords;
 mod output;
 mod render;
+pub(crate) mod report;
 mod words;
 pub use exceptions::Exceptions;
 pub use identifier::{SqlName, SqlNameReason};
@@ -11,7 +13,7 @@ use output::Output;
 pub use render::render_names;
 use words::append_plain;
 
-pub const MAX_SQL_NAME_BYTES: usize = 128;
+pub use inventory_core::inventory::{MAX_DERIVED_SQL_NAME_BYTES, MAX_SQL_NAME_BYTES};
 
 pub const MAX_TYPE_NAME_BYTES: usize = 256;
 
@@ -45,6 +47,8 @@ pub enum NameError {
     },
     #[error("unused exception {spelling} at line {line}")]
     UnusedException { line: usize, spelling: String },
+    #[error(transparent)]
+    Formatting(#[from] std::fmt::Error),
 }
 
 fn is_valid_part(part: &str) -> bool {
@@ -118,12 +122,20 @@ fn derive_name(
     exceptions: &Exceptions,
     used: &mut [bool],
 ) -> Result<SqlName, NameError> {
+    SqlName::new(derive_full_name(type_name, exceptions, used)?, type_name)
+}
+
+fn derive_full_name(
+    type_name: &str,
+    exceptions: &Exceptions,
+    used: &mut [bool],
+) -> Result<String, NameError> {
     validate_type_name(type_name)?;
     let mut output = Output::new(type_name);
     type_name
         .split("::")
         .try_for_each(|part| append_part(part, exceptions, used, &mut output))?;
-    output.finish()
+    Ok(output.finish())
 }
 
 pub fn sql_name(type_name: &str, exceptions: &Exceptions) -> Result<SqlName, NameError> {

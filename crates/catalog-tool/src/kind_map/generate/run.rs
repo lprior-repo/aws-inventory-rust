@@ -13,8 +13,9 @@ pub fn run(root: &Path, source: &Path, mode: ReportMode) -> Result<(), Failure> 
     let deny_text = overlay::deny_text(root)?;
     let checked = overlay::check_model_policies(&values, &policies, &DenyList::parse(&deny_text)?)?;
     let generated = super::generate(&values, &checked, &hand, cfn.as_bytes())?;
-    kind_map::load_with_cfn(cfn.as_bytes(), generated.text.as_bytes())?;
-    publish_output(root, original.as_deref(), &generated, mode)
+    let kinds = kind_map::load_with_cfn(cfn.as_bytes(), generated.text.as_bytes())?;
+    publish_output(root, original.as_deref(), &generated, mode)?;
+    crate::names::report::run(root, &kinds, mode)
 }
 
 fn publish_output(

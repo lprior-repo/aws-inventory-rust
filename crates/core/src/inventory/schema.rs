@@ -41,7 +41,7 @@ impl Column {
             Ok::<_, std::fmt::Error>(name)
         })?;
         Ok(Self {
-            name,
+            name: super::shorten_sql_name(name)?,
             path: path.into_boxed_slice(),
             scalar,
         })
@@ -98,13 +98,11 @@ impl KindSchema {
 
 fn canonical_columns(mut columns: Vec<Column>) -> Result<Box<[Column]>, InventoryError> {
     columns.sort_unstable_by(|left, right| left.path.cmp(&right.path));
-    if columns
-        .windows(2)
-        .any(|pair| matches!(pair, [a, b] if a.path == b.path))
-    {
+    validate_column_budget(&columns)?;
+    let mut names = std::collections::BTreeSet::new();
+    if columns.iter().any(|column| !names.insert(column.name())) {
         return Err(InventoryError::DuplicateColumn);
     }
-    validate_column_budget(&columns)?;
     Ok(columns.into_boxed_slice())
 }
 

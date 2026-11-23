@@ -141,7 +141,7 @@ fn relation(value: &str) -> bool {
 
 fn sql_name(value: &str) -> bool {
     !value.is_empty()
-        && value.len() <= 128
+        && value.len() <= super::MAX_SQL_NAME_BYTES
         && value
             .as_bytes()
             .first()
