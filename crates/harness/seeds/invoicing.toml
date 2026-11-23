@@ -1,0 +1,17 @@
+format = 1
+service = "invoicing"
+
+[[step]]
+id = "preference"
+operation = "CreateProcurementPortalPreference"
+kind = "AWS::Invoicing::ProcurementPortalPreference"
+identity = "ProcurementPortalPreferenceArn"
+[step.input]
+ProcurementPortalName = "SAP_BUSINESS_NETWORK"
+BuyerDomain = "NetworkID"
+BuyerIdentifier = "AN01000000000"
+SupplierDomain = "NetworkID"
+SupplierIdentifier = "AN01000000001"
+EinvoiceDeliveryEnabled = false
+PurchaseOrderRetrievalEnabled = false
+Contacts = [{ Name = "Inventory", Email = "inventory@example.com" }]
