@@ -4,7 +4,7 @@ service = "applicationcostprofiler"
 [[step]]
 id = "resource"
 operation = "PutReportDefinition"
-kind = "AWS::ApplicationCostProfiler::ReportDefinition"
+kind = "AWS::ApiOnly::ApplicationCostProfilerReportDefinition"
 identity = "reportId"
 [step.input]
 "reportId" = "inventory-thin-applicationcostprofiler"
