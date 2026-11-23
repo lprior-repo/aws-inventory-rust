@@ -1,5 +1,7 @@
 use super::*;
-use inventory_engine::inventory::{DatabaseUrl, InventoryStore, PgStore, PgWriteConfig};
+use inventory_engine::inventory::{
+    DatabaseUrl, InventoryStore, PgStore, PgWriteConfig, ProjectionResource,
+};
 use sqlx::{PgPool, postgres::PgPoolOptions};
 
 pub(super) async fn snapshot(url: &str) -> Result<InventorySnapshot> {
@@ -10,7 +12,7 @@ pub(super) async fn snapshot(url: &str) -> Result<InventorySnapshot> {
 }
 
 async fn complete_snapshot(url: &str, store: &PgStore) -> Result<InventorySnapshot> {
-    let rows = store.projection_resources(None, 1000).await?;
+    let rows = resource_rows(store).await?;
     let miss_counters = snapshot_data(url, rows.len()).await?;
     let page = store.projection_edges(None, 1000).await?;
     ensure!(
@@ -25,6 +27,23 @@ async fn complete_snapshot(url: &str, store: &PgStore) -> Result<InventorySnapsh
         edges: page.edges,
         miss_counters,
     })
+}
+
+async fn resource_rows(store: &PgStore) -> Result<Vec<ProjectionResource>> {
+    let rows = store.projection_resources(None, 1000).await?;
+    let next = match rows.last() {
+        Some(last) => store
+            .projection_resources(Some(last.key.clone()), 1)
+            .await?
+            .into_iter()
+            .next(),
+        None => None,
+    };
+    ensure!(
+        next.is_none(),
+        "E2E resources exceed the bounded one-page snapshot"
+    );
+    Ok(rows)
 }
 
 async fn snapshot_data(url: &str, rows: usize) -> Result<MissCounters> {
