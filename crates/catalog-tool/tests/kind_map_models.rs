@@ -88,3 +88,20 @@ fn kind_map_given_scalar_list_when_generated_then_resource_comes_from_member_nam
     );
     Ok(())
 }
+
+#[test]
+fn given_gateway_summary_and_detail_when_mapped_then_both_share_the_reviewed_resource_kind()
+-> Result {
+    let map = catalog_tool::kind_map::embedded(include_bytes!(
+        "../../../catalog/cloudcontrol-universal.json"
+    ))?;
+    for operation in ["ListGatewayInstances", "DescribeGatewayInstance"] {
+        let row = map
+            .operations()
+            .iter()
+            .find(|row| row.service == "mediaconnect" && row.operation == operation)
+            .ok_or("missing gateway instance operation")?;
+        assert_eq!(row.kind, "AWS::ApiOnly::MediaConnectGatewayInstance");
+    }
+    Ok(())
+}
