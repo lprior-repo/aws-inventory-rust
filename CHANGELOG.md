@@ -61,6 +61,12 @@
   Queue depth is opt-in through `claim_with_depth`; ordinary claims retain their
   original UPDATE without a COUNT or RETURNING, and page commits are unchanged.
 
+- Added the unused `inventory-graph` crate for E3.1: a backend-neutral,
+  RPIT-plus-Send graph port, a bounded FalkorDB adapter and centralized
+  openCypher builders. Existing projection and UI callers remain unchanged.
+  `docs/GRAPH_SUBSET.md` records identity, incident-edge replacement,
+  cursor ordering, limits and live conformance commands.
+
 - Runtime catalog binding decoders live in `decode/plans/bindings.rs`, with
   separate source decoders and unchanged wire tags, limits and rejection order.
   The parent plan decoder is now below the 300-line source limit.

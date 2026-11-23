@@ -2627,6 +2627,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "inventory-graph"
+version = "0.6.0"
+dependencies = [
+ "inventory-core",
+ "redis",
+ "thiserror",
+ "tokio",
+]
+
+[[package]]
 name = "inventory-harness"
 version = "0.6.0"
 dependencies = [

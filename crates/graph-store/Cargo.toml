@@ -1,0 +1,16 @@
+[package]
+name = "inventory-graph"
+description = "Backend-neutral inventory graph port; collector dependencies never depend on the app"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+inventory-core.workspace = true
+redis = { version = "1.8.1", features = ["tokio-rustls-comp"] }
+thiserror.workspace = true
+tokio.workspace = true
+
+[lints]
+workspace = true
