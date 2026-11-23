@@ -1,0 +1,10 @@
+format = 1
+service = "connectcases"
+
+[[step]]
+id = "resource"
+operation = "CreateDomain"
+kind = "AWS::ConnectCases::Domain"
+identity = "domainArn"
+[step.input]
+name = "inventory-thin-connectcases"

@@ -1,0 +1,19 @@
+format = 1
+service = "codeguru-security"
+
+[[step]]
+id = "upload"
+operation = "CreateUploadUrl"
+kind = ""
+[step.input]
+scanName = "inventory-thin-codeguru-security"
+
+[[step]]
+id = "scan"
+operation = "CreateScan"
+kind = "AWS::CodeGuruSecurity::Scan"
+identity = "scanNameArn"
+[step.input]
+scanName = "inventory-thin-codeguru-security"
+resourceId = { "codeArtifactId" = { "from" = "upload", "path" = "codeArtifactId" } }
+clientToken = "12345678-1234-4234-8234-123456789abc"

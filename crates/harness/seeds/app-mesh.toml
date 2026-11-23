@@ -1,0 +1,10 @@
+format = 1
+service = "app-mesh"
+
+[[step]]
+id = "resource"
+operation = "CreateMesh"
+kind = "AWS::AppMesh::Mesh"
+identity = "mesh.metadata.arn"
+[step.input]
+"meshName" = "inventory-thin-app-mesh"

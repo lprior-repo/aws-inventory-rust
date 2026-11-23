@@ -1,0 +1,10 @@
+format = 1
+service = "eventbridge"
+
+[[step]]
+id = "resource"
+operation = "CreateEventBus"
+kind = "AWS::Events::EventBus"
+identity = "EventBusArn"
+[step.input]
+"Name" = "inventory-thin-eventbridge"

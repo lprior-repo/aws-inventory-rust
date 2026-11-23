@@ -1,0 +1,10 @@
+format = 1
+service = "ivs"
+
+[[step]]
+id = "resource"
+operation = "CreateChannel"
+kind = "AWS::IVS::Channel"
+identity = "channel.arn"
+[step.input]
+name = "inventory-thin-ivs"

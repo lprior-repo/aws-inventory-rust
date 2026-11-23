@@ -1,0 +1,11 @@
+format = 1
+service = "apigatewayv2"
+
+[[step]]
+id = "api"
+operation = "CreateApi"
+kind = "AWS::ApiGatewayV2::Api"
+identity = "ApiId"
+[step.input]
+Name = "inventory-thin-apigatewayv2"
+ProtocolType = "HTTP"

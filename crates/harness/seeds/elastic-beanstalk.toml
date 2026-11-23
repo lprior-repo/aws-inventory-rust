@@ -1,0 +1,10 @@
+format = 1
+service = "elastic-beanstalk"
+
+[[step]]
+id = "resource"
+operation = "CreateApplication"
+kind = "AWS::ElasticBeanstalk::Application"
+identity = "Application.ApplicationArn"
+[step.input]
+"ApplicationName" = "inventory-thin-elastic-beanstalk"

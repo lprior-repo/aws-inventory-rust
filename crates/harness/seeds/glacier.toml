@@ -1,0 +1,11 @@
+format = 1
+service = "glacier"
+
+[[step]]
+id = "vault"
+operation = "CreateVault"
+kind = "AWS::Glacier::Vault"
+identity = { input = "vaultName" }
+[step.input]
+accountId = "-"
+vaultName = "inventory-thin-glacier"

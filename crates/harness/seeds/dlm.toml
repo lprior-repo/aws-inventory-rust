@@ -1,0 +1,23 @@
+format = 1
+service = "dlm"
+
+[[step]]
+id = "role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+[step.input]
+RoleName = "inventory-thin-dlm"
+AssumeRolePolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"dlm.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+
+[[step]]
+id = "policy"
+operation = "CreateLifecyclePolicy"
+kind = "AWS::DLM::LifecyclePolicy"
+identity = "PolicyId"
+[step.input]
+ExecutionRoleArn = { from = "role", path = "Role.Arn" }
+Description = "Inventory seed lifecycle policy"
+State = "DISABLED"
+PolicyDetails = { PolicyType = "EBS_SNAPSHOT_MANAGEMENT", ResourceTypes = ["VOLUME"], TargetTags = [{ Key = "inventory", Value = "seed" }], Schedules = [{ Name = "Daily", CopyTags = true, CreateRule = { Interval = 24, IntervalUnit = "HOURS", Times = ["00:00"] }, RetainRule = { Count = 1 } }] }

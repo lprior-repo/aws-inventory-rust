@@ -1,0 +1,11 @@
+format = 1
+service = "customer-profiles"
+
+[[step]]
+id = "resource"
+operation = "CreateDomain"
+kind = "AWS::CustomerProfiles::Domain"
+identity = "DomainName"
+[step.input]
+"DomainName" = "inventory-thin-customer-profiles"
+"DefaultExpirationDays" = 1

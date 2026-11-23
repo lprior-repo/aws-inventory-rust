@@ -1,0 +1,10 @@
+format = 1
+service = "cloudformation"
+
+[[step]]
+id = "resource"
+operation = "CreateGeneratedTemplate"
+kind = "AWS::CloudFormation::GeneratedTemplate"
+identity = "GeneratedTemplateId"
+[step.input]
+"GeneratedTemplateName" = "inventory-thin-cloudformation"

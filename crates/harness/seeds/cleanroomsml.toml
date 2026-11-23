@@ -1,0 +1,41 @@
+format = 1
+service = "cleanroomsml"
+
+[[step]]
+id = "role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+[step.input]
+RoleName = "inventory-thin-cleanroomsml"
+AssumeRolePolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"cleanrooms-ml.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+
+[[step]]
+id = "database"
+service = "glue"
+operation = "CreateDatabase"
+kind = "AWS::Glue::Database"
+identity = { "input" = "DatabaseInput.Name" }
+[step.input]
+DatabaseInput = { "Name" = "inventory_thin_cleanroomsml" }
+
+[[step]]
+id = "table"
+service = "glue"
+operation = "CreateTable"
+kind = "AWS::Glue::Table"
+identity = { "input" = "TableInput.Name" }
+[step.input]
+DatabaseName = "inventory_thin_cleanroomsml"
+TableInput = { "Name" = "interactions", "StorageDescriptor" = { "Columns" = [{ "Name" = "user_id", "Type" = "string" }, { "Name" = "item_id", "Type" = "string" }, { "Name" = "timestamp", "Type" = "bigint" }] } }
+
+[[step]]
+id = "training"
+operation = "CreateTrainingDataset"
+kind = "AWS::CleanRoomsML::TrainingDataset"
+identity = "trainingDatasetArn"
+[step.input]
+name = "inventory-thin-cleanroomsml"
+roleArn = { "from" = "role", "path" = "Role.Arn" }
+trainingData = [{ "type" = "INTERACTIONS", "inputConfig" = { "schema" = [{ "columnName" = "user_id", "columnTypes" = ["USER_ID"] }, { "columnName" = "item_id", "columnTypes" = ["ITEM_ID"] }, { "columnName" = "timestamp", "columnTypes" = ["TIMESTAMP"] }], "dataSource" = { "glueDataSource" = { "databaseName" = "inventory_thin_cleanroomsml", "tableName" = "interactions" } } } }]

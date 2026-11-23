@@ -1,0 +1,11 @@
+format = 1
+service = "accessanalyzer"
+
+[[step]]
+id = "resource"
+operation = "CreateAnalyzer"
+kind = "AWS::AccessAnalyzer::Analyzer"
+identity = "arn"
+[step.input]
+"analyzerName" = "inventory-thin-accessanalyzer"
+"type" = "ACCOUNT"

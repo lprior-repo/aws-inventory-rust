@@ -1,0 +1,13 @@
+format = 1
+service = "backup-gateway"
+
+[[step]]
+id = "hypervisor"
+operation = "ImportHypervisorConfiguration"
+kind = "AWS::BackupGateway::Hypervisor"
+identity = "HypervisorArn"
+[step.input]
+Name = "inventory-thin-backup-gateway"
+Host = "hypervisor.example.com"
+Username = "inventory"
+Password = "InventorySecret123!"

@@ -1,0 +1,33 @@
+format = 1
+service = "elastic-load-balancing"
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = "AWS::EC2::VPC"
+identity = "Vpc.VpcId"
+[step.input]
+CidrBlock = "10.42.0.0/16"
+
+[[step]]
+id = "subnet"
+service = "ec2"
+operation = "CreateSubnet"
+kind = "AWS::EC2::Subnet"
+identity = "Subnet.SubnetId"
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.42.1.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "loadbalancer"
+operation = "CreateLoadBalancer"
+kind = "AWS::ElasticLoadBalancing::LoadBalancer"
+identity = { input = "LoadBalancerName" }
+[step.input]
+LoadBalancerName = "inventory-seed-classic"
+Subnets = [{ from = "subnet", path = "Subnet.SubnetId" }]
+Scheme = "internal"
+Listeners = [{ Protocol = "HTTP", LoadBalancerPort = 80, InstanceProtocol = "HTTP", InstancePort = 80 }]

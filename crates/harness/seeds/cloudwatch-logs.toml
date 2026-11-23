@@ -1,0 +1,10 @@
+format = 1
+service = "cloudwatch-logs"
+
+[[step]]
+id = "resource"
+operation = "CreateLogGroup"
+kind = "AWS::Logs::LogGroup"
+identity = { input = "logGroupName" }
+[step.input]
+"logGroupName" = "inventory-thin-cloudwatch-logs"

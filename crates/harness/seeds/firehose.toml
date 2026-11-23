@@ -1,0 +1,41 @@
+format = 1
+service = "firehose"
+
+[[step]]
+id = "bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket" }
+[step.input]
+Bucket = "inventory-thin-firehose"
+
+[[step]]
+id = "role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+[step.input]
+RoleName = "inventory-thin-firehose"
+AssumeRolePolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"firehose.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+
+[[step]]
+id = "permissions"
+service = "iam"
+operation = "PutRolePolicy"
+kind = ""
+[step.input]
+RoleName = "inventory-thin-firehose"
+PolicyName = "inventory-seed-s3"
+PolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"s3:GetBucketLocation\",\"s3:ListBucket\"],\"Resource\":\"arn:aws:s3:::inventory-thin-firehose\"},{\"Effect\":\"Allow\",\"Action\":[\"s3:PutObject\",\"s3:AbortMultipartUpload\"],\"Resource\":\"arn:aws:s3:::inventory-thin-firehose/*\"}]}"
+
+[[step]]
+id = "stream"
+operation = "CreateDeliveryStream"
+kind = "AWS::KinesisFirehose::DeliveryStream"
+identity = "DeliveryStreamARN"
+[step.input]
+DeliveryStreamName = "inventory-thin-firehose"
+DeliveryStreamType = "DirectPut"
+S3DestinationConfiguration = { RoleARN = { from = "role", path = "Role.Arn" }, BucketARN = "arn:aws:s3:::inventory-thin-firehose", Prefix = "inventory/" }

@@ -1,0 +1,10 @@
+format = 1
+service = "acm"
+
+[[step]]
+id = "resource"
+operation = "RequestCertificate"
+kind = "AWS::CertificateManager::Certificate"
+identity = "CertificateArn"
+[step.input]
+"DomainName" = "inventory-thin-acm"

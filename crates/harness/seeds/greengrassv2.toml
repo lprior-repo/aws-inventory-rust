@@ -1,0 +1,11 @@
+format = 1
+service = "greengrassv2"
+
+[[step]]
+id = "component"
+operation = "CreateComponentVersion"
+kind = "AWS::GreengrassV2::ComponentVersion"
+identity = "arn"
+[step.input]
+inlineRecipe = "eyJSZWNpcGVGb3JtYXRWZXJzaW9uIjoiMjAyMC0wMS0yNSIsIkNvbXBvbmVudE5hbWUiOiJjb20uaW52ZW50b3J5LnNlZWQiLCJDb21wb25lbnRWZXJzaW9uIjoiMS4wLjAiLCJDb21wb25lbnREZXNjcmlwdGlvbiI6IkludmVudG9yeSBzZWVkIiwiQ29tcG9uZW50UHVibGlzaGVyIjoiSW52ZW50b3J5IiwiTWFuaWZlc3RzIjpbeyJQbGF0Zm9ybSI6eyJvcyI6ImxpbnV4In0sIkxpZmVjeWNsZSI6eyJSdW4iOiJlY2hvIGludmVudG9yeSJ9fV19"
+clientToken = "12345678-1234-4234-8234-123456789abc"

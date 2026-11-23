@@ -1,0 +1,10 @@
+format = 1
+service = "batch"
+
+[[step]]
+id = "resource"
+operation = "CreateConsumableResource"
+kind = "AWS::Batch::ConsumableResource"
+identity = "consumableResourceArn"
+[step.input]
+"consumableResourceName" = "inventory-thin-batch"

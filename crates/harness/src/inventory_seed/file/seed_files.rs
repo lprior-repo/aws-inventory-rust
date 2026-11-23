@@ -20,19 +20,20 @@ fn given_committed_seed_files_when_loaded_then_every_operation_and_path_resolves
 }
 
 fn validate_directory(directory: &Path, catalog: &RuntimeCatalog<'_>) -> TestResult {
-    let entries = std::fs::read_dir(directory)?
-        .take(65)
-        .collect::<Result<Vec<_>, _>>()?;
-    assert!(entries.len() <= 64);
-    entries
+    let errors: Vec<_> = crate::inventory_seed::command::directory::files(directory)?
         .iter()
-        .filter(|entry| entry.path().extension().is_some_and(|ext| ext == "toml"))
-        .try_for_each(|entry| validate_file(&entry.path(), catalog))
+        .filter_map(|path| validate_file(path, catalog).err())
+        .map(|error| error.to_string())
+        .collect();
+    if !errors.is_empty() {
+        return Err(errors.join("\n").into());
+    }
+    Ok(())
 }
 
 fn validate_file(path: &Path, catalog: &RuntimeCatalog<'_>) -> TestResult {
     let content = std::fs::read_to_string(path)?;
-    let scenario = load(&content)?;
+    let scenario = load(&content).map_err(|error| format!("{}: {error}", path.display()))?;
     SeedModels::load(catalog, &scenario).map_err(|error| format!("{}: {error}", path.display()))?;
     Ok(())
 }

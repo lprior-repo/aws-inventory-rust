@@ -1,0 +1,11 @@
+format = 1
+service = "appsync"
+
+[[step]]
+id = "resource"
+operation = "CreateApi"
+kind = "AWS::AppSync::Api"
+identity = "api.apiArn"
+[step.input]
+"name" = "inventory-thin-appsync"
+"eventConfig" = { "authProviders" = [{ "authType" = "API_KEY" }], "connectionAuthModes" = [{ "authType" = "API_KEY" }], "defaultPublishAuthModes" = [{ "authType" = "API_KEY" }], "defaultSubscribeAuthModes" = [{ "authType" = "API_KEY" }] }

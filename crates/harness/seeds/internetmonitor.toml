@@ -1,0 +1,10 @@
+format = 1
+service = "internetmonitor"
+
+[[step]]
+id = "resource"
+operation = "CreateMonitor"
+kind = "AWS::InternetMonitor::Monitor"
+identity = "Arn"
+[step.input]
+MonitorName = "inventory-thin-internetmonitor"

@@ -1,0 +1,25 @@
+format = 1
+service = "auto-scaling-plans"
+
+[[step]]
+id = "table"
+service = "dynamodb"
+operation = "CreateTable"
+kind = "AWS::DynamoDB::Table"
+identity = "TableDescription.TableArn"
+[step.input]
+TableName = "inventory-thin-auto-scaling-plans"
+AttributeDefinitions = [{ "AttributeName" = "id", "AttributeType" = "S" }]
+KeySchema = [{ "AttributeName" = "id", "KeyType" = "HASH" }]
+ProvisionedThroughput = { "ReadCapacityUnits" = 5, "WriteCapacityUnits" = 5 }
+Tags = [{ "Key" = "inventory", "Value" = "seed" }]
+
+[[step]]
+id = "plan"
+operation = "CreateScalingPlan"
+kind = "AWS::AutoScalingPlans::ScalingPlan"
+identity = { "input" = "ScalingPlanName" }
+[step.input]
+ScalingPlanName = "inventory-thin-auto-scaling-plans"
+ApplicationSource = { "TagFilters" = [{ "Key" = "inventory", "Values" = ["seed"] }] }
+ScalingInstructions = [{ "ServiceNamespace" = "dynamodb", "ResourceId" = "table/inventory-thin-auto-scaling-plans", "ScalableDimension" = "dynamodb:table:ReadCapacityUnits", "MinCapacity" = 1, "MaxCapacity" = 5, "TargetTrackingConfigurations" = [{ "PredefinedScalingMetricSpecification" = { "PredefinedScalingMetricType" = "DynamoDBReadCapacityUtilization" }, "TargetValue" = 50.5 }] }]

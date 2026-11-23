@@ -1,0 +1,12 @@
+format = 1
+service = "inspector2"
+
+[[step]]
+id = "resource"
+operation = "CreateFilter"
+kind = "AWS::Inspector2::Filter"
+identity = "arn"
+[step.input]
+action = "NONE"
+filterCriteria = {}
+name = "inventory-thin-inspector2"

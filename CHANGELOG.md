@@ -16,6 +16,9 @@
   self-validate seeded relationships and resource pagination bounds; crash and
   cancellation subscenarios use independent graph namespaces.
 
+- Seed directories admit up to 512 entries while retaining bounded reads, sorted
+  TOML selection and empty-directory rejection. Offline recipe checks report all
+  invalid files together rather than stopping at the first model/path error.
 - Seed TOML strings targeting modeled blobs decode strict canonical padded base64
   during preflight, within a 1,024-byte encoded blob bound; ordinary strings
   remain text and malformed blob literals fail before network calls.

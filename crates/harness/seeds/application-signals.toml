@@ -1,0 +1,11 @@
+format = 1
+service = "application-signals"
+
+[[step]]
+id = "slo"
+operation = "CreateServiceLevelObjective"
+kind = "AWS::ApplicationSignals::ServiceLevelObjective"
+identity = "Slo.Arn"
+[step.input]
+Name = "inventory-thin-application-signals"
+SliConfig = { "SliMetricConfig" = { "MetricDataQueries" = [{ "Id" = "latency", "MetricStat" = { "Metric" = { "Namespace" = "InventorySeed", "MetricName" = "Latency" }, "Period" = 60, "Stat" = "Average" }, "ReturnData" = true }] }, "MetricThreshold" = 1000, "ComparisonOperator" = "LessThan" }

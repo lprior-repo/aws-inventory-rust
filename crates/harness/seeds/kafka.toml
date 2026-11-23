@@ -1,0 +1,12 @@
+format = 1
+service = "kafka"
+
+[[step]]
+id = "configuration"
+operation = "CreateConfiguration"
+kind = "AWS::MSK::Configuration"
+identity = "Arn"
+[step.input]
+Name = "inventory-thin-kafka"
+KafkaVersions = ["3.6.0"]
+ServerProperties = "YXV0by5jcmVhdGUudG9waWNzLmVuYWJsZT10cnVlCg=="

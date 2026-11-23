@@ -1,0 +1,25 @@
+format = 1
+service = "fis"
+
+[[step]]
+id = "role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+[step.input]
+RoleName = "inventory-thin-fis"
+AssumeRolePolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"fis.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+
+[[step]]
+id = "template"
+operation = "CreateExperimentTemplate"
+kind = "AWS::FIS::ExperimentTemplate"
+identity = "experimentTemplate.id"
+[step.input]
+clientToken = "12345678-1234-4234-8234-123456789abc"
+description = "Inventory seed experiment template"
+stopConditions = [{ source = "none" }]
+targets = { instances = { resourceType = "aws:ec2:instance", resourceTags = { inventory = "seed" }, selectionMode = "ALL" } }
+actions = { stop = { actionId = "aws:ec2:stop-instances", parameters = { startInstancesAfterDuration = "PT1M" }, targets = { Instances = "instances" } } }
+roleArn = { from = "role", path = "Role.Arn" }

@@ -79,7 +79,9 @@ fn scalar(value: &SeedInputValue, position: usize) -> Result<(), SeedError> {
                 .try_for_each(|binding| source(position, binding.step, &binding.path))
         }
         SeedInputValue::Literal(value) => super::super::literal::validate(value),
-        SeedInputValue::Text(value) if value.is_empty() || value.len() > 1024 => {
+        SeedInputValue::Text(value)
+            if value.is_empty() || value.len() > super::super::MAX_VALUE_BYTES =>
+        {
             Err(SeedError::Invalid("seed literal exceeds its length bound"))
         }
         _ => Ok(()),

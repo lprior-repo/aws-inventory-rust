@@ -1,0 +1,10 @@
+format = 1
+service = "iotthingsgraph"
+
+[[step]]
+id = "flow"
+operation = "CreateFlowTemplate"
+kind = "AWS::IoTThingsGraph::FlowTemplate"
+identity = "summary.arn"
+[step.input]
+definition = { language = "GRAPHQL", text = "query InventorySeed($name: string!) @workflowType(id: \"urn:tdm:us-east-1/000000000000/default:Workflow:InventorySeed\") { steps { step(name: \"ClassifyInventory\") { ChoiceActivity { rule(expr: \"${name == \\\"inventory\\\"}\") { setEvent(name: \"Inventory\") } rule(expr: \"${name != \\\"inventory\\\"}\") { setEvent(name: \"Other\") } default } } } }" }

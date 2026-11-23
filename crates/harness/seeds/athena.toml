@@ -1,0 +1,10 @@
+format = 1
+service = "athena"
+
+[[step]]
+id = "resource"
+operation = "CreateWorkGroup"
+kind = "AWS::Athena::WorkGroup"
+identity = { input = "Name" }
+[step.input]
+"Name" = "inventory-thin-athena"

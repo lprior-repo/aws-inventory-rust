@@ -1,0 +1,10 @@
+format = 1
+service = "appstream"
+
+[[step]]
+id = "resource"
+operation = "CreateStack"
+kind = "AWS::AppStream::Stack"
+identity = "Stack.Arn"
+[step.input]
+"Name" = "inventory-thin-appstream"

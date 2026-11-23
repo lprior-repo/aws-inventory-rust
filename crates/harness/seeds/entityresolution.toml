@@ -1,0 +1,11 @@
+format = 1
+service = "entityresolution"
+
+[[step]]
+id = "schema"
+operation = "CreateSchemaMapping"
+kind = "AWS::EntityResolution::SchemaMapping"
+identity = "schemaArn"
+[step.input]
+schemaName = "inventory-thin-entityresolution"
+mappedInputFields = [{ fieldName = "id", type = "UNIQUE_ID" }, { fieldName = "name", type = "NAME" }]

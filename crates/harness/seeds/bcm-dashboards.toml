@@ -1,0 +1,11 @@
+format = 1
+service = "bcm-dashboards"
+
+[[step]]
+id = "dashboard"
+operation = "CreateDashboard"
+kind = "AWS::BCMDashboards::Dashboard"
+identity = "arn"
+[step.input]
+name = "inventory-thin-dashboard"
+widgets = []

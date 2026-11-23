@@ -1,0 +1,10 @@
+format = 1
+service = "glue"
+
+[[step]]
+id = "database"
+operation = "CreateDatabase"
+kind = "AWS::Glue::Database"
+identity = { input = "DatabaseInput.Name" }
+[step.input]
+DatabaseInput = { Name = "inventory-thin-glue" }

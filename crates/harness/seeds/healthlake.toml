@@ -1,0 +1,10 @@
+format = 1
+service = "healthlake"
+
+[[step]]
+id = "resource"
+operation = "CreateFHIRDatastore"
+kind = "AWS::HealthLake::FHIRDatastore"
+identity = "DatastoreArn"
+[step.input]
+DatastoreTypeVersion = "R4"

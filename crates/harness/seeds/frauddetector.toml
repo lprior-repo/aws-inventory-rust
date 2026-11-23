@@ -1,0 +1,41 @@
+format = 1
+service = "frauddetector"
+
+[[step]]
+id = "variable"
+operation = "CreateVariable"
+kind = "AWS::FraudDetector::Variable"
+identity = { input = "name" }
+[step.input]
+name = "inventory_seed_email"
+dataType = "STRING"
+dataSource = "EVENT"
+defaultValue = "unknown@example.com"
+variableType = "EMAIL_ADDRESS"
+
+[[step]]
+id = "entity"
+operation = "PutEntityType"
+kind = "AWS::FraudDetector::EntityType"
+identity = { input = "name" }
+[step.input]
+name = "inventory_seed_entity"
+
+[[step]]
+id = "event"
+operation = "PutEventType"
+kind = "AWS::FraudDetector::EventType"
+identity = { input = "name" }
+[step.input]
+name = "inventory_seed_event"
+eventVariables = ["inventory_seed_email"]
+entityTypes = ["inventory_seed_entity"]
+
+[[step]]
+id = "detector"
+operation = "PutDetector"
+kind = "AWS::FraudDetector::Detector"
+identity = { input = "detectorId" }
+[step.input]
+detectorId = "inventory_seed_detector"
+eventTypeName = "inventory_seed_event"

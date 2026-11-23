@@ -1,0 +1,32 @@
+format = 1
+service = "dax"
+
+[[step]]
+id = "role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+[step.input]
+RoleName = "inventory-thin-dax"
+AssumeRolePolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"dax.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+
+[[step]]
+id = "permissions"
+service = "iam"
+operation = "AttachRolePolicy"
+kind = ""
+[step.input]
+RoleName = "inventory-thin-dax"
+PolicyArn = "arn:aws:iam::aws:policy/AmazonDynamoDBReadOnlyAccess"
+
+[[step]]
+id = "cluster"
+operation = "CreateCluster"
+kind = "AWS::DAX::Cluster"
+identity = "Cluster.ClusterArn"
+[step.input]
+ClusterName = "inventory-thin-dax"
+NodeType = "dax.t3.small"
+ReplicationFactor = 1
+IamRoleArn = { from = "role", path = "Role.Arn" }

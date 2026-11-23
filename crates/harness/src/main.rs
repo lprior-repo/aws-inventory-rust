@@ -62,9 +62,9 @@ async fn routed_command(arguments: &[String]) -> Option<ExitCode> {
     }
     if let [seed, run, rest @ ..] = arguments
         && seed == "seed"
-        && run == "run"
+        && matches!(run.as_str(), "run" | "validate")
     {
-        return Some(inventory_harness::inventory_seed::command::run(rest).await);
+        return Some(inventory_harness::inventory_seed::command::dispatch(run, rest).await);
     }
     None
 }

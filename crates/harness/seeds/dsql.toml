@@ -1,0 +1,9 @@
+format = 1
+service = "dsql"
+
+[[step]]
+id = "resource"
+operation = "CreateCluster"
+kind = "AWS::DSQL::Cluster"
+identity = "arn"
+[step.input]

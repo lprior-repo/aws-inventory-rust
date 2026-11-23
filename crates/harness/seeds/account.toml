@@ -1,0 +1,10 @@
+format = 1
+service = "account"
+
+[[step]]
+id = "resource"
+operation = "PutAccountName"
+kind = "AWS::Account::AccountName"
+identity = { input = "AccountName" }
+[step.input]
+AccountName = "000000000000"

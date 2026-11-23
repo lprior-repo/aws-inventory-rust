@@ -1,0 +1,20 @@
+format = 1
+service = "application-insights"
+
+[[step]]
+id = "group"
+service = "resource-groups"
+operation = "CreateGroup"
+kind = "AWS::ResourceGroups::Group"
+identity = "Group.GroupArn"
+[step.input]
+Name = "inventory-thin-application-insights"
+ResourceQuery = { "Type" = "TAG_FILTERS_1_0", "Query" = "{\"ResourceTypeFilters\":[\"AWS::AllSupported\"],\"TagFilters\":[{\"Key\":\"inventory\",\"Values\":[\"seed\"]}]}" }
+
+[[step]]
+id = "application"
+operation = "CreateApplication"
+kind = "AWS::ApplicationInsights::Application"
+identity = "ApplicationInfo.ResourceGroupName"
+[step.input]
+ResourceGroupName = "inventory-thin-application-insights"

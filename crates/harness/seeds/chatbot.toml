@@ -1,0 +1,11 @@
+format = 1
+service = "chatbot"
+
+[[step]]
+id = "resource"
+operation = "CreateCustomAction"
+kind = "AWS::Chatbot::CustomAction"
+identity = "CustomActionArn"
+[step.input]
+"Definition" = { "CommandText" = "inventory-thin-chatbot" }
+"ActionName" = "inventory-thin-chatbot"

@@ -56,18 +56,15 @@ fn append((mut oracle, mut matrix): Rows, (resources, outcomes): Rows) -> Result
 
 pub(crate) fn files(directory: &Path) -> Result<Vec<PathBuf>, SeedError> {
     let entries = std::fs::read_dir(directory)?
-        .take(65)
+        .take(513)
         .collect::<Result<Vec<_>, _>>()?;
-    if entries.len() > 64 {
-        return Err(SeedError::Invalid("seed directory exceeds 64 entries"));
+    if entries.len() > 512 {
+        return Err(SeedError::Invalid("seed directory exceeds 512 entries"));
     }
     let mut paths: Vec<_> = entries
         .into_iter()
         .map(|entry| entry.path())
-        .filter(|path| {
-            path.extension()
-                .is_some_and(|extension| extension == "toml")
-        })
+        .filter(|path| path.extension().is_some_and(|extension| extension == "toml"))
         .collect();
     paths.sort();
     if paths.is_empty() {
@@ -124,3 +121,6 @@ pub(super) fn write_rows(path: &Path, mut rows: Vec<String>) -> Result<(), SeedE
     file.flush()?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;

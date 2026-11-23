@@ -1,0 +1,10 @@
+format = 1
+service = "continuum"
+
+[[step]]
+id = "resource"
+operation = "CreateEnvironment"
+kind = "AWS::Continuum::Environment"
+identity = "environmentArn"
+[step.input]
+name = "inventory-thin-continuum"

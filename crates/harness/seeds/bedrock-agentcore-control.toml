@@ -1,0 +1,10 @@
+format = 1
+service = "bedrock-agentcore-control"
+
+[[step]]
+id = "resource"
+operation = "CreateWorkloadIdentity"
+kind = "AWS::BedrockAgentCoreControl::WorkloadIdentity"
+identity = "workloadIdentityArn"
+[step.input]
+"name" = "inventory-thin-bedrock-agentcore-control"
