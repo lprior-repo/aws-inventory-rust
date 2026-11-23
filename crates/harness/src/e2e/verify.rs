@@ -103,7 +103,7 @@ fn verified_keys(expected: Keys, coverage: &Coverage) -> Result<Keys, HarnessErr
                 } else {
                     verified.insert(kind, identities);
                 }
-                Ok(verified)
+                Ok::<_, HarnessError>(verified)
             })?;
     if verified.is_empty() {
         return Err(HarnessError::invalid("no callable seeded kinds to verify"));
