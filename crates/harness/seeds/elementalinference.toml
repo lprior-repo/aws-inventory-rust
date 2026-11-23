@@ -4,7 +4,7 @@ service = "elementalinference"
 [[step]]
 id = "resource"
 operation = "CreateFeed"
-kind = "AWS::ElementalInference::Feed"
+kind = "AWS::ApiOnly::ElementalInferenceFeed"
 identity = "arn"
 [step.input]
 "name" = "inventory-thin-elementalinference"
