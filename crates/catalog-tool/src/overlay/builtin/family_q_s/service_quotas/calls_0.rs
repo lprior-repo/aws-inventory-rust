@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/service-quotas/service/2019-06-24/service-quotas-2019-06-24.json
-use super::super::construction::{Inventory, ResourceIdentity};
+use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 
 pub(super) const CALLS: &[Inventory] = &[Inventory {
@@ -8,7 +8,7 @@ pub(super) const CALLS: &[Inventory] = &[Inventory {
     identity: ResourceIdentity::Key(&["Id"]),
     token: Some(("NextToken", "NextToken")),
     scope: Scope::Region,
-    input: &[],
+    input: &[Input::String("QuotaRequestedAtLevel", "ALL")],
     tags: None,
     queryable: &[],
 }];
