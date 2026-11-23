@@ -6,6 +6,10 @@ pub(super) async fn finish_error(
     error: SweepError,
 ) -> Result<SweepSummary, SweepError> {
     let outcome = match &error {
+        SweepError::Absent(reason) => {
+            tracing::debug!(reason, "inventory scope is empty");
+            StoredOutcome::Complete
+        }
         SweepError::Api(inventory_engine::limiter::ApiError::Denied(_)) => {
             StoredOutcome::Inaccessible
         }
@@ -51,3 +55,6 @@ pub(super) fn summary(outcome: StoredOutcome, rows: u64, writes: u64) -> SweepSu
         ..SweepSummary::default()
     }
 }
+
+#[cfg(test)]
+mod tests;

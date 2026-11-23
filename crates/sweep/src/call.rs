@@ -15,6 +15,9 @@ use inventory_engine::limiter::{ApiError, ApiExecutor, RetryKind};
 use super::execution::page::cursor;
 use super::{SweepError, input::InputField, request};
 
+mod absence;
+use absence::ValidatedResponse;
+
 pub(super) struct Call<'a, 'catalog, C: CredentialSource> {
     pub client: &'a Client,
     pub executor: &'a ApiExecutor,
@@ -41,12 +44,12 @@ impl<C: CredentialSource> Call<'_, '_, C> {
             .execute(bucket, || async { self.send_attempt().await })
             .await?;
         let started = std::time::Instant::now();
-        let response = decode_response(self.plan, response);
+        let response = response.decode(self.plan);
         self.metrics.decoded(started);
         response
     }
 
-    async fn send_attempt(&self) -> Result<Response, ApiError> {
+    async fn send_attempt(&self) -> Result<ValidatedResponse, ApiError> {
         let request =
             request::encode(self.plan, self.url, self.base, self.fields).map_err(permanent)?;
         let credentials = self.credentials.resolve().await.map_err(credential_error)?;
@@ -174,9 +177,12 @@ fn confirm_truncation_presence(
     cursor::truncation_flag(pagination, &evidence).map(|_| ())
 }
 
-fn validate_status(plan: &CallablePlan<'_>, response: Response) -> Result<Response, ApiError> {
+fn validate_status(
+    plan: &CallablePlan<'_>,
+    response: Response,
+) -> Result<ValidatedResponse, ApiError> {
     if response.status.is_success() {
-        return Ok(response);
+        return Ok(ValidatedResponse::Page(response));
     }
     let context = aws_wire::response::ResponseContext {
         service: plan.service(),
@@ -188,7 +194,7 @@ fn validate_status(plan: &CallablePlan<'_>, response: Response) -> Result<Respon
         limits: aws_wire::response::DecodeLimits::default(),
     };
     match aws_wire::response::errors::decode(context) {
-        Ok(error) => Err(classify_service(error)),
+        Ok(error) => absence::classify(plan, error),
         Err(_) => Err(status_fallback(response.status)),
     }
 }

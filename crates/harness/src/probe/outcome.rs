@@ -7,6 +7,7 @@ use std::fmt::{self, Write};
 pub(super) fn failed(plan: &CallablePlan<'_>, error: &SweepError) -> Outcome {
     match detail(plan, error) {
         Ok(detail) => match error {
+            SweepError::Absent(_) => Outcome::EmptyReason(detail),
             SweepError::Api(ApiError::UnsupportedType(_)) => Outcome::Unsupported(detail),
             _ => Outcome::Failed {
                 class: class(error),
