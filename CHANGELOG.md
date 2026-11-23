@@ -2,6 +2,10 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Runtime catalog binding decoders live in `decode/plans/bindings.rs`, with
+  separate source decoders and unchanged wire tags, limits and rejection order.
+  The parent plan decoder is now below the 300-line source limit.
+
 - `cmdb-ui` gains property tests for `DagLayout::compute` (node accounting,
   non-overlap, bounds, determinism, edge direction with strictly increasing
   layers on forward edges), a criterion layout benchmark

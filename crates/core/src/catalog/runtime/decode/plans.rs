@@ -8,6 +8,7 @@ mod metadata_fields;
 mod pagination_tests;
 use metadata_fields::*;
 mod binding_alternatives;
+mod bindings;
 mod bounds;
 mod capabilities;
 mod context;
@@ -43,6 +44,7 @@ use crate::{
     inventory::Kind,
     record::{Exclusions, ValueRef},
 };
+use bindings::{binding, bindings};
 use bounds::{optional_u32, positive_u32};
 pub(super) fn read<'a>(
     services: &Services<'a>,
@@ -274,90 +276,6 @@ fn identity_part(value: ValueRef<'_>) -> Result<IdentityPart, RuntimeCatalogErro
         }
         _ => Err(RuntimeCatalogError::Capability),
     }
-}
-
-fn bindings(list: crate::record::ListRef<'_>) -> Result<Vec<BindingPlan>, RuntimeCatalogError> {
-    metadata::bounded(list, binding, 4096)
-}
-
-fn binding(value: ValueRef<'_>) -> Result<BindingPlan, RuntimeCatalogError> {
-    let fields = map(value)?;
-    let path = metadata::id_path(metadata::list(fields, 1)?)?;
-    let source_type = metadata::integer(fields, 2)?;
-    let source = match source_type {
-        0 => {
-            metadata::only_fields(fields, &[1, 2])?;
-            BindingSource::Account
-        }
-        1 => {
-            metadata::only_fields(fields, &[1, 2])?;
-            BindingSource::Region
-        }
-        2 => {
-            metadata::only_fields(fields, &[1, 2, 3])?;
-            BindingSource::Fixed(binding_value(metadata::field(fields, 3)?)?)
-        }
-        3 => {
-            metadata::only_fields(fields, &[1, 2, 3])?;
-            BindingSource::ParentIdentity {
-                path: metadata::selected_path(metadata::list(fields, 3)?)?,
-            }
-        }
-        4 => {
-            metadata::only_fields(fields, &[1, 2, 3, 4, 5])?;
-            BindingSource::Operation {
-                service: metadata::text(fields, 3)?.into_boxed_str(),
-                operation: metadata::text(fields, 4)?.into_boxed_str(),
-                path: metadata::selected_path(metadata::list(fields, 5)?)?,
-            }
-        }
-        5..=7 => selection::binding(fields)?,
-        8 => {
-            metadata::only_fields(fields, &[1, 2, 3, 4, 5, 6, 7])?;
-            let arn_service = metadata::text(fields, 6)?;
-            let resource_kind = match (arn_service.as_str(), metadata::integer(fields, 7)?) {
-                ("sns", 0) => super::super::ArnResourceKind::SnsSubscription,
-                ("sqs", 1) => super::super::ArnResourceKind::SqsQueue,
-                ("sns", 2) => super::super::ArnResourceKind::SnsTopic,
-                _ => return Err(RuntimeCatalogError::Capability),
-            };
-            BindingSource::OperationArn {
-                service: metadata::text(fields, 3)?.into_boxed_str(),
-                operation: metadata::text(fields, 4)?.into_boxed_str(),
-                path: metadata::selected_path(metadata::list(fields, 5)?)?,
-                arn_service: arn_service.into_boxed_str(),
-                resource_kind,
-            }
-        }
-        9 => selection::transformed(fields)?,
-        10 => selection::url_binding(fields)?,
-        11 => {
-            metadata::only_fields(fields, &[1, 2])?;
-            BindingSource::RegionList
-        }
-        12 => binding_alternatives::decode(fields)?,
-        13 => {
-            metadata::only_fields(fields, &[1, 2, 3, 4, 5, 6, 7])?;
-            let branch = metadata::text(fields, 6)?;
-            if !routing::valid_branch_name(&branch) {
-                return Err(RuntimeCatalogError::Capability);
-            }
-            BindingSource::ContextFromBranch {
-                service: metadata::text(fields, 3)?.into_boxed_str(),
-                operation: metadata::text(fields, 4)?.into_boxed_str(),
-                branch: branch.into_boxed_str(),
-                source: match metadata::integer(fields, 7)? {
-                    5 => crate::catalog::runtime::ContextSource::SelectedItem,
-                    6 => crate::catalog::runtime::ContextSource::Response,
-                    7 => crate::catalog::runtime::ContextSource::Request,
-                    _ => return Err(RuntimeCatalogError::Capability),
-                },
-                path: metadata::selected_path(metadata::list(fields, 5)?)?,
-            }
-        }
-        _ => return Err(RuntimeCatalogError::Capability),
-    };
-    Ok(BindingPlan { path, source })
 }
 
 fn binding_value(value: ValueRef<'_>) -> Result<BindingValue, RuntimeCatalogError> {
