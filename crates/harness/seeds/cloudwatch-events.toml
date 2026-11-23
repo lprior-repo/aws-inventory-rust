@@ -1,0 +1,10 @@
+format = 1
+service = "cloudwatch-events"
+
+[[step]]
+id = "resource"
+operation = "CreateEventBus"
+kind = "AWS::Events::EventBus"
+identity = "EventBusArn"
+[step.input]
+"Name" = "inventory-thin-cloudwatch-events"
