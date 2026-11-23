@@ -3,9 +3,6 @@ use std::time::Duration;
 
 const FIELDS: &str = "startNode(r).account,startNode(r).region,startNode(r).kind,startNode(r).id,endNode(r).account,endNode(r).region,endNode(r).kind,endNode(r).id,r.relation,r.provenance";
 
-// Each read expands only the admitted frontier, with an early row LIMIT and no
-// path enumeration, aggregation or sort. Native graph writes between reads may
-// be observed; unlike SQLite's retained transaction this is not a graph snapshot.
 pub(super) async fn neighborhood(
     client: &redis::Client,
     graph: &str,
@@ -20,9 +17,6 @@ pub(super) async fn neighborhood(
     .map_err(|_| ViewError::GraphTimeout)?
 }
 
-/// Directed blast-radius: follows only incoming edges to find upstream
-/// dependents (what is affected if the root fails). Edge orientation is
-/// source->target, so dependents of C are nodes with edges pointing to C.
 pub(super) async fn blast_radius(
     client: &redis::Client,
     graph: &str,
@@ -37,9 +31,6 @@ pub(super) async fn blast_radius(
     .map_err(|_| ViewError::GraphTimeout)?
 }
 
-/// Generic graph traversal: expands admitted layers using the provided
-/// query builder. For neighborhood queries this is the undirected traversal
-/// query; for blast-radius it is the directed incoming-edge query.
 async fn traverse_with_query<F>(
     client: &redis::Client,
     graph: &str,
@@ -55,23 +46,37 @@ where
         .get_multiplexed_async_connection()
         .await
         .map_err(ViewError::Graph)?;
+    expand_layers(&mut traversal, &mut connection, graph, limits, make_query).await?;
+    Ok(GraphNeighborhood {
+        edges: traversal.edges,
+        truncated: traversal.truncated,
+    })
+}
+
+async fn expand_layers<F>(
+    traversal: &mut Traversal,
+    connection: &mut redis::aio::MultiplexedConnection,
+    graph: &str,
+    limits: GraphLimits,
+    make_query: F,
+) -> Result<(), ViewError>
+where
+    F: Fn(&[String], &[String], usize) -> String,
+{
     for depth in 0u8..=limits.depth {
         if traversal.frontier.is_empty() || traversal.truncated {
             break;
         }
-        let fetch = compute_fetch(&traversal, limits, depth)?;
+        let fetch = compute_fetch(traversal, limits, depth)?;
         let query = make_query(&traversal.frontier, &traversal.expanded, fetch);
-        let rows = read_layer(&mut connection, graph, &query, fetch).await?;
+        let rows = read_layer(connection, graph, &query, fetch).await?;
         if depth == limits.depth {
             traversal.truncated = !rows.is_empty();
             break;
         }
         traversal.add_layer(rows)?;
     }
-    Ok(GraphNeighborhood {
-        edges: traversal.edges,
-        truncated: traversal.truncated,
-    })
+    Ok(())
 }
 
 fn compute_fetch(
@@ -115,13 +120,6 @@ fn traversal_query(frontier: &[String], expanded: &[String], limit: usize) -> St
     )
 }
 
-/// Directed blast-radius query: follows incoming edges (n)-[r]->(s) to find
-/// upstream dependents (what is affected if this resource fails). The edge
-/// orientation is source->target (A->B means A refers to B), so dependents
-/// of C are nodes with edges pointing to C.
-///
-/// Excludes edges to already-expanded nodes but includes edges to frontier
-/// nodes, so cycles are captured (e.g., A->C and C->A both appear).
 fn blast_radius_query(frontier: &[String], expanded: &[String], limit: usize) -> String {
     let frontier = key_list(frontier);
     let expanded = key_list(expanded);
@@ -131,7 +129,6 @@ fn blast_radius_query(frontier: &[String], expanded: &[String], limit: usize) ->
 }
 
 fn key_list(keys: &[String]) -> String {
-    // Keys originate exclusively from the validated hexadecimal resource digest.
     keys.iter().fold(
         String::with_capacity(keys.len().saturating_mul(67)),
         |mut list, key| {
@@ -213,15 +210,7 @@ impl Traversal {
         if self.edges.contains(&edge) {
             return Ok(());
         }
-        let unseen = usize::from(!self.visited.contains(&from))
-            .checked_add(usize::from(from != to && !self.visited.contains(&to)))
-            .ok_or(ViewError::GraphLimits)?;
-        let nodes = self
-            .visited
-            .len()
-            .checked_add(unseen)
-            .ok_or(ViewError::GraphLimits)?;
-        if self.edges.len() == self.limits.edges || nodes > self.limits.nodes {
+        if self.exceeds_budget(&from, &to)? {
             self.truncated = true;
             return Ok(());
         }
@@ -229,6 +218,20 @@ impl Traversal {
         self.admit_node(to);
         self.edges.push(edge);
         Ok(())
+    }
+
+    fn exceeds_budget(&self, from: &str, to: &str) -> Result<bool, ViewError> {
+        let unseen = usize::from(!self.visited.iter().any(|key| key == from))
+            .checked_add(usize::from(
+                from != to && !self.visited.iter().any(|key| key == to),
+            ))
+            .ok_or(ViewError::GraphLimits)?;
+        let nodes = self
+            .visited
+            .len()
+            .checked_add(unseen)
+            .ok_or(ViewError::GraphLimits)?;
+        Ok(self.edges.len() == self.limits.edges || nodes > self.limits.nodes)
     }
 
     fn admit_node(&mut self, key: String) {
