@@ -82,3 +82,4 @@ wafv2	GetRegexPatternSet	branches	Name	ListRegexPatternSets:Name
 wafv2	GetRuleGroup	branches	Id	ListRuleGroups:Id
 wafv2	GetManagedRuleSet	branches	Name	ListManagedRuleSets:Name
 wafv2	GetLoggingConfiguration	branches	ResourceArn	ListLoggingConfigurations:ResourceArn
+securityhub	ListOrganizationAdminAccounts	correlated	Feature	AccountId
