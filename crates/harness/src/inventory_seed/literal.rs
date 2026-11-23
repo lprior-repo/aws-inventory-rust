@@ -45,7 +45,7 @@ fn validate_node<'a>(
         .checked_add(1)
         .ok_or(SeedError::Invalid("seed literal depth overflow"))?;
     match value {
-        Value::Text(value) if value.len() <= 1024 => Ok(()),
+        Value::Text(value) if value.len() <= super::MAX_VALUE_BYTES => Ok(()),
         Value::Bool(_) | Value::Int(_) => Ok(()),
         Value::Float(value) if value.to_f64().is_finite() => Ok(()),
         Value::List(items) if items.len() <= 256 => {

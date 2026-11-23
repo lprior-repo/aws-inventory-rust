@@ -15,7 +15,7 @@ use super::{
 };
 use descriptor::{Document, RawRelationship, RawStep, field, keys};
 
-const MAX_FILE_BYTES: usize = 1_048_576;
+const MAX_FILE_BYTES: usize = super::MAX_VALUE_BYTES;
 
 pub fn load(content: &str) -> Result<SeedScenario, SeedError> {
     Ok(load_labeled(content)?.0)

@@ -74,3 +74,39 @@ fn given_unknown_member_outside_document_when_validated_then_it_remains_invalid(
     assert!(String::from_utf8(output.stdout)?.contains("modeled field path is missing"));
     Ok(())
 }
+
+#[test]
+fn given_rsa_certificate_over_one_kib_when_validated_then_modeled_text_is_accepted() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let path = directory.path().join("cloudhsm.toml");
+    let recipe = format!(
+        "format=1\nservice='cloudhsm'\n[[step]]\nid='client'\noperation='CreateLunaClient'\nkind='AWS::CloudHSM::LunaClient'\nidentity='ClientArn'\n[step.input]\nCertificate='''{CERTIFICATE}'''\n"
+    );
+    std::fs::write(&path, recipe)?;
+    let output = command(directory.path()).output()?;
+    assert!(CERTIFICATE.len() > 1024);
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    assert_eq!(String::from_utf8(output.stdout)?, format!("{}\tvalid\n", path.display()));
+    Ok(())
+}
+
+const CERTIFICATE: &str = "-----BEGIN CERTIFICATE-----
+MIIDJTCCAg2gAwIBAgIUXwo9BPT8GIibXrumGK9dSLjAhu8wDQYJKoZIhvcNAQEL
+BQAwIjEgMB4GA1UEAwwXaW52ZW50b3J5LXNlZWQtY2xvdWRoc20wHhcNMjYxMTIz
+MTY1MjMyWhcNMjYxMTI0MTY1MjMyWjAiMSAwHgYDVQQDDBdpbnZlbnRvcnktc2Vl
+ZC1jbG91ZGhzbTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAKxCl4uw
+80yh2vCn6loR240R7bFH5vKR9BHy8zGm2Ne0nsg0KQ8uevco9UmbDz2IBVSJWzXe
+JIG6fL02roXREx/tztRvoVLN4fjoeBlt0gS+cu/TUE2PVlQ8LDzWN+qlrzv5njMM
+HOtKbAO2R7qAA6g7qYXTqqzflCPr1QdN4RoOBPB9rix+7dPRTtnL4GGiEZoEcwVf
+myn0NxG20L/MpMXoik/n0h0BzHqhWoMR9S5uaOpEVMkzOsFf7GfIJQym3TMsC6U6
+0ihCeM9utm1U56iDidTH7KYn/LZDd6cd4xSMeYCZ3FpE9ycH0oCACCehndwk/xA7
+iB2lYyFmlP7pRLUCAwEAAaNTMFEwHQYDVR0OBBYEFKO79SrzuJI18M2Piw341hkc
+A20RMB8GA1UdIwQYMBaAFKO79SrzuJI18M2Piw341hkcA20RMA8GA1UdEwEB/wQF
+MAMBAf8wDQYJKoZIhvcNAQELBQADggEBAFSRajJNRLdrPu0yoMcVIXdkG7dHUATL
+KWTnwS2PE1YuQNM6FcxBmaseFgjrjxSp/6Ob9k+k+loFPqK4TOu5xhuMGegnyoiQ
+3GxMzPNhPxxH4pnNgPqveJprnIwC71FcDFOFiqyM2JIYlcB0aENnORczmdp4bP3L
+KSJOepgzUSANFWk0mfcmkm7Uha6zfnkkOne4vFPx6eSFmBet0VblQII21uzZ+kx/
+3EEmxGbgmPnOUybKc7bQqk8DAzc9VzHzMvraR0fWfzaSSUZ+fV611WRJzcFyqBeM
++DwViFKjKZQUlzoaq6xKLP1xt3wQYBcb2VtkeQGZiyaNDZDGGBWrRvE=
+-----END CERTIFICATE-----
+";

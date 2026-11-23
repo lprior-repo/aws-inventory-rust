@@ -8,6 +8,8 @@ mod runner;
 mod scenario;
 mod wire;
 
+const MAX_VALUE_BYTES: usize = 1_048_576;
+
 pub use file::load;
 pub use report::{SeedRunReport, StepOutcome};
 pub use runner::{

@@ -114,7 +114,7 @@ fn text_value(text: &str, index: u16) -> Result<SeedInputValue, SeedError> {
         .checked_add(1)
         .ok_or(SeedError::Invalid("seed repeat index overflow"))?;
     let expanded = text.replace("{n}", &n.to_string());
-    if expanded.is_empty() || expanded.len() > 1024 {
+    if expanded.is_empty() || expanded.len() > super::super::MAX_VALUE_BYTES {
         return Err(SeedError::Invalid("seed text exceeds its value bound"));
     }
     Ok(SeedInputValue::Text(expanded))
@@ -180,4 +180,46 @@ fn advance<'a>(
         }
     };
     result.err().map(Err)
+}
+
+#[cfg(test)]
+mod text_bounds {
+    use super::*;
+    use crate::inventory_seed::MAX_VALUE_BYTES;
+
+    #[test]
+    fn given_text_at_file_bound_when_converted_then_exact_bytes_are_preserved()
+    -> Result<(), SeedError> {
+        let text = "x".repeat(MAX_VALUE_BYTES);
+        let value = text_value(&text, 0)?;
+        assert_eq!(value, SeedInputValue::Text(text));
+        Ok(())
+    }
+
+    #[test]
+    fn given_text_over_file_bound_when_converted_then_it_is_rejected() {
+        let text = "x".repeat(MAX_VALUE_BYTES.saturating_add(1));
+        assert!(matches!(
+            text_value(&text, 0),
+            Err(SeedError::Invalid("seed text exceeds its value bound"))
+        ));
+    }
+
+    #[test]
+    fn given_empty_text_when_converted_then_it_remains_rejected() {
+        assert!(matches!(
+            text_value("", 0),
+            Err(SeedError::Invalid("seed text exceeds its value bound"))
+        ));
+    }
+
+    #[test]
+    fn given_large_document_text_when_validated_then_literal_bound_matches_seed_text()
+    -> Result<(), SeedError> {
+        let text = "x".repeat(MAX_VALUE_BYTES);
+        crate::inventory_seed::literal::validate(&Value::Text(text))?;
+        let text = "x".repeat(MAX_VALUE_BYTES.saturating_add(1));
+        assert!(crate::inventory_seed::literal::validate(&Value::Text(text)).is_err());
+        Ok(())
+    }
 }
