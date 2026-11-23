@@ -4,7 +4,7 @@ service = "resiliencehubv2"
 [[step]]
 id = "resource"
 operation = "CreateService"
-kind = "AWS::Resiliencehub::Service"
+kind = "AWS::ApiOnly::ResilienceHubService"
 identity = "service.serviceArn"
 [step.input]
 "name" = "inventory-thin-resiliencehubv2"
