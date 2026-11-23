@@ -5,7 +5,7 @@ pub(super) const USAGE: &str = "usage:\n  inventory-harness snapshot freeze --ev
 inventory-harness install-graph <destination> [--jobs N]\n  \
 inventory-harness catalog universal --root <dir> [--check]\n  \
 inventory-harness seed run --seeds <dir> --catalog <file> --endpoint <https-loopback> \
---ca-bundle <file> --region <name> [--service <name>]... --oracle <file> --matrix <file>\n  \
+--ca-bundle <file> --region <name> [--service <name>]... [--concurrency <1..64>] --oracle <file> --matrix <file>\n  \
 inventory-harness seed s3 --bucket <name>\n  \
 inventory-harness seed cloud-control --prefix <inventory-page-...> --count <n>\n  \
 inventory-harness assert cloud-control --db <file> --scan-id <id> [--seed-results <file>] \

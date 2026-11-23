@@ -10,6 +10,15 @@
   emulator 1.0.348. Seed files support explicit request-derived identities and
   per-step services for observed cross-service references. SNS subscription
   and Lambda execution-role relationship metadata remains gated on A1.x.
+  Bulk seed execution accepts `--concurrency 1..=64` (default one), retaining
+  dependency barriers and deterministic oracle ordering without detached tasks.
+  Five benchmark recipes honor observed service quotas and create 10,000
+  resources at concurrency 64: two fresh native emulator runs completed in
+  43.59 and 43.73 seconds with matching kind counts and acceptance matrices.
+  IAM uses roles, policies and instance profiles to stay below per-kind limits.
+  Catalog-plan classification and product dependency tests are included;
+  sweep dependency/method proofs remain gated on D1.2. Service rejection
+  messages are decoded and bounded.
 
 - Runtime catalog binding decoders live in `decode/plans/bindings.rs`, with
   separate source decoders and unchanged wire tags, limits and rejection order.

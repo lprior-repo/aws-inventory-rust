@@ -2643,6 +2643,7 @@ dependencies = [
  "inventory-engine",
  "libc",
  "minicbor",
+ "quick-xml",
  "rcgen",
  "redis",
  "rustix",

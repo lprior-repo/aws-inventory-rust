@@ -1,10 +1,10 @@
 mod bounds;
 mod descriptor;
 mod expand;
-mod step;
-mod value;
 #[cfg(test)]
 mod seed_files;
+mod step;
+mod value;
 
 use super::{
     config::SeedError,

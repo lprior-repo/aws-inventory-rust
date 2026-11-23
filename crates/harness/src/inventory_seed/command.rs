@@ -2,10 +2,10 @@ mod args;
 mod directory;
 
 use super::SeedError;
+pub use args::SeedRunArgs;
 use aws_wire::sign::Credentials;
 use inventory_core::catalog::runtime::RuntimeCatalog;
 use std::process::ExitCode;
-pub use args::SeedRunArgs;
 
 pub async fn run(arguments: &[String]) -> ExitCode {
     match execute(arguments).await {

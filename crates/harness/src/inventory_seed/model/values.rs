@@ -7,22 +7,19 @@ enum Task<'a> {
 }
 
 struct Compiler<'a, 's> {
-    catalog: Catalog<'a>,
-    scenario: &'s SeedScenario,
+    operations: &'s [SeedOperation<'a>],
     service: Service<'a>,
 }
 
 pub(super) fn prepare<'a>(
-    catalog: Catalog<'a>,
-    scenario: &SeedScenario,
+    operations: &[SeedOperation<'a>],
     operation: SeedOperation<'a>,
     field: &FieldPath,
     value: &SeedInputValue,
 ) -> Result<PreparedInputValue, SeedError> {
     let target = members::path_target(operation.service, operation.operation.input()?, field)?;
     let compiler = Compiler {
-        catalog,
-        scenario,
+        operations,
         service: operation.service,
     };
     compiler.compile(target, value)
@@ -94,10 +91,10 @@ impl Compiler<'_, '_> {
                 super::super::literal::resolve(self.service, target, value)?,
             )),
             SeedInputValue::Template(value) => {
-                template::prepare(self.catalog, self.scenario, self.service, target, value)
+                template::prepare(self.operations, self.service, target, value)
             }
             SeedInputValue::PreviousOutput { step, path } => {
-                previous_output(self.catalog, self.scenario, *step, path)
+                previous_output(self.operations, *step, path)
             }
             _ => Err(SeedError::Invalid("seed container was not prepared")),
         }

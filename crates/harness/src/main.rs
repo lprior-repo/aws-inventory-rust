@@ -38,7 +38,8 @@ async fn main() -> ExitCode {
         return inventory_harness::postgres::command::run(rest).await;
     }
     if let [seed, run, rest @ ..] = arguments.as_slice()
-        && seed == "seed" && run == "run"
+        && seed == "seed"
+        && run == "run"
     {
         return inventory_harness::inventory_seed::command::run(rest).await;
     }

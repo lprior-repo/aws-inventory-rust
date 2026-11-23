@@ -9,19 +9,21 @@ pub(super) fn convert(
     index: u16,
 ) -> Result<SeedStep, SeedError> {
     let inputs = inputs(raw, bindings, position, index)?;
-    let checks = checks(raw)?;
+    let service = raw.service.map_or(service, |value| value).to_owned();
     let step = match raw.identity {
         Some(identity) => SeedStep::new(
             id,
-            raw.service.map_or(service, |value| value).into(),
+            service,
             raw.operation.into(),
             raw.kind.into(),
             seed_identity(identity)?,
             inputs,
         ),
-        None => SeedStep::auxiliary(id, raw.service.map_or(service, |value| value).into(), raw.operation.into(), inputs),
+        None => SeedStep::auxiliary(id, service, raw.operation.into(), inputs),
     };
-    Ok(step.with_response_checks(checks).with_scope(raw.scope))
+    Ok(step
+        .with_response_checks(checks(raw)?)
+        .with_scope(raw.scope))
 }
 
 fn inputs(
@@ -60,6 +62,12 @@ fn seed_identity(value: &toml::Value) -> Result<super::super::SeedIdentity, Seed
     }
     let value = descriptor::table(value)?;
     keys(value, &["input", "template"])?;
-    let template = value.get("template").map(|_| field(value, "template").map(str::to_owned)).transpose()?;
-    Ok(SeedIdentity::Request { input_field: path(field(value, "input")?)?, template })
+    let template = value
+        .get("template")
+        .map(|_| field(value, "template").map(str::to_owned))
+        .transpose()?;
+    Ok(SeedIdentity::Request {
+        input_field: path(field(value, "input")?)?,
+        template,
+    })
 }

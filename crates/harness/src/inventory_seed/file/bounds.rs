@@ -71,7 +71,11 @@ fn metadata(step: &RawStep<'_>, service: &str) -> Result<usize, SeedError> {
     ]
     .iter()
     .try_fold(0, |total, value| add(total, value.len(), 1))?;
-    let identity_bytes = step.identity.map(value::measure).transpose()?.map_or(0, |(_, size)| size);
+    let identity_bytes = step
+        .identity
+        .map(value::measure)
+        .transpose()?
+        .map_or(0, |(_, size)| size);
     let size = add(size, identity_bytes, 1)?;
     step.checks.iter().try_fold(size, |total, (name, value)| {
         let text = value

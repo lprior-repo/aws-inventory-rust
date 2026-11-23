@@ -1,7 +1,8 @@
-mod identity;
+mod batches;
 mod dependencies;
+mod identity;
 mod reporting;
-pub use reporting::run_report;
+pub use reporting::{run_report, run_report_with_concurrency};
 mod materialize;
 #[path = "runner/oracle.rs"]
 mod oracle;
@@ -161,14 +162,23 @@ async fn prepare_output(
     step: &PreparedStep<'_>,
     context: &SeedContext<'_, '_>,
 ) -> Result<SeedOutput, SeedError> {
-    let inputs = step.inputs.iter().map(|input| materialize_input(state, input))
+    let inputs = step
+        .inputs
+        .iter()
+        .map(|input| materialize_input(state, input))
         .collect::<Result<Vec<_>, _>>()?;
     let response = call_step(step, context, &inputs).await?;
     validate_response(&response, step, &inputs)?;
-    let resource = step.resource.as_ref()
+    let resource = step
+        .resource
+        .as_ref()
         .map(|resource| identity::resource(state, step.id, resource, &response, &inputs))
         .transpose()?;
-    Ok(SeedOutput { step: step.id, resource, record: response })
+    Ok(SeedOutput {
+        step: step.id,
+        resource,
+        record: response,
+    })
 }
 
 async fn call_step(
