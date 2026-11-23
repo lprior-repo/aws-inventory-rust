@@ -106,6 +106,7 @@ mod config_service_0;
 mod connect_0;
 mod connect_1;
 mod connect_2;
+mod connect_3;
 mod connect_contact_lens_0;
 mod connectcampaigns_0;
 mod connectcampaignsv2_0;
