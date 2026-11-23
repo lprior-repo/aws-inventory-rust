@@ -494,6 +494,16 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
         (
             "ListTypeVersions",
             OperationOverlay {
+                class: Some(OverlayClass::Expand),
+                bind: [(
+                    path("Arn")?,
+                    Binding::From {
+                        operation: name("ListTypes")?,
+                        path: path("TypeArn")?,
+                    },
+                )]
+                .into_iter()
+                .collect(),
                 queryable: vec![path("Arn")?],
                 ..read(
                     "TypeVersionSummaries",
