@@ -1,14 +1,13 @@
-//! Command line of the viewer, read once before any window exists.
-
 use crate::worker::{WorkerConfig, parse_lod_config};
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
 pub const USAGE: &str = "\
-usage: cmdb-ui --database PATH [--graph-url URL --graph-name NAME] [--linux-backend=BACKEND]
+usage: cmdb-ui --database PATH [--frame-harness SECONDS] [--graph-url URL --graph-name NAME] [--linux-backend=BACKEND]
 
 Options:
   --database PATH          SQLite inventory database to view (required)
+  --frame-harness SECONDS  Scripted frame capture (1..600 seconds); reports and exits
   --graph-url URL          FalkorDB endpoint; use with --graph-name
   --graph-name NAME        FalkorDB graph name; use with --graph-url
   --linux-backend=BACKEND  Force the Linux display backend (value must follow '=')
@@ -27,7 +26,7 @@ static STARTUP: OnceLock<WorkerConfig> = OnceLock::new();
 
 /// Parses the process arguments and `CMDB_UI_LOD`. Nothing here touches the GUI.
 pub fn from_process_args() -> Result<Command, String> {
-    let arguments: Vec<String> = std::env::args().skip(1).collect();
+    let arguments: Vec<String> = std::env::args().skip(1).take(65).collect();
     let lod = std::env::var("CMDB_UI_LOD").ok();
     with_lod(parse(&arguments)?, lod.as_deref())
 }
@@ -50,7 +49,10 @@ pub fn set_startup_config(config: WorkerConfig) {
 
 /// The configuration recorded at startup; defaults when none was recorded (tests).
 pub fn startup_config() -> WorkerConfig {
-    STARTUP.get().cloned().unwrap_or_default()
+    match STARTUP.get() {
+        Some(config) => config.clone(),
+        None => WorkerConfig::default(),
+    }
 }
 
 pub fn parse(arguments: &[String]) -> Result<Command, String> {
@@ -62,20 +64,31 @@ pub fn parse(arguments: &[String]) -> Result<Command, String> {
     }
     let mut config = WorkerConfig::default();
     parse_arguments(arguments, &mut config)?;
+    if config.frame_harness.is_some() && config.database.is_none() {
+        return Err("--frame-harness requires --database PATH".to_owned());
+    }
     Ok(Command::Run(config))
 }
 
 fn parse_arguments(arguments: &[String], config: &mut WorkerConfig) -> Result<(), String> {
-    match arguments {
-        [] => Ok(()),
-        [flag, remaining @ ..] if is_switch(flag) => parse_arguments(remaining, config),
-        [flag, value, remaining @ ..] if is_value_flag(flag) => {
-            set_argument(config, flag, value)?;
-            parse_arguments(remaining, config)
-        }
-        [flag, ..] if is_value_flag(flag) => Err(format!("missing value for {flag}")),
-        [flag, ..] => Err(format!("unknown argument {flag}")),
+    if arguments.len() > 64 {
+        return Err("at most 64 command-line arguments are accepted".to_owned());
     }
+    let mut arguments = arguments.iter();
+    for _ in 0..64 {
+        let Some(flag) = arguments.next() else { break };
+        if is_switch(flag) {
+            continue;
+        }
+        if !is_value_flag(flag) {
+            return Err(format!("unknown argument {flag}"));
+        }
+        let value = arguments
+            .next()
+            .ok_or_else(|| format!("missing value for {flag}"))?;
+        set_argument(config, flag, value)?;
+    }
+    Ok(())
 }
 
 fn is_switch(flag: &str) -> bool {
@@ -83,7 +96,10 @@ fn is_switch(flag: &str) -> bool {
 }
 
 fn is_value_flag(flag: &str) -> bool {
-    matches!(flag, "--database" | "--graph-url" | "--graph-name")
+    matches!(
+        flag,
+        "--database" | "--graph-url" | "--graph-name" | "--frame-harness"
+    )
 }
 
 fn set_argument(config: &mut WorkerConfig, flag: &str, value: &str) -> Result<(), String> {
@@ -91,6 +107,9 @@ fn set_argument(config: &mut WorkerConfig, flag: &str, value: &str) -> Result<()
         "--database" => config.database = Some(PathBuf::from(value)),
         "--graph-url" => config.graph_url = Some(value.to_owned()),
         "--graph-name" => config.graph_name = Some(value.to_owned()),
+        "--frame-harness" => {
+            config.frame_harness = Some(crate::frame_harness::FrameConfig::parse(value)?)
+        }
         _ => return Err(format!("unknown argument {flag}")),
     }
     Ok(())
@@ -231,3 +250,6 @@ mod lod_tests {
         assert_eq!(with_lod(Command::Help, Some("bad")), Ok(Command::Help));
     }
 }
+
+#[cfg(test)]
+mod frame_harness_tests;

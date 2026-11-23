@@ -38,6 +38,7 @@ fn config(fixture: &Fixture, native: &NativeGraph) -> WorkerConfig {
         graph_url: Some(native.endpoint.clone()),
         graph_name: Some(native.name.clone()),
         graph_limits: DEFAULT_GRAPH_LIMITS,
+        ..WorkerConfig::default()
     }
 }
 

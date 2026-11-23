@@ -268,6 +268,7 @@ impl Fixture {
                 graph_url: graph.map(|value| value.endpoint.clone()),
                 graph_name: graph.map(|value| value.name.clone()),
                 graph_limits: DEFAULT_GRAPH_LIMITS,
+                ..WorkerConfig::default()
             },
             SignalToUI::default(),
         )

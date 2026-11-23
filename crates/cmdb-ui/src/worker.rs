@@ -1,3 +1,4 @@
+mod frame_harness;
 mod graph_tasks;
 mod lifecycle;
 mod projection;
@@ -60,6 +61,7 @@ pub struct WorkerConfig {
     pub graph_url: Option<String>,
     pub graph_name: Option<String>,
     pub graph_limits: GraphLimits,
+    pub frame_harness: Option<crate::frame_harness::FrameConfig>,
 }
 
 impl Default for WorkerConfig {
@@ -69,6 +71,7 @@ impl Default for WorkerConfig {
             graph_url: None,
             graph_name: None,
             graph_limits: DEFAULT_GRAPH_LIMITS,
+            frame_harness: None,
         }
     }
 }
@@ -88,6 +91,11 @@ pub enum WorkerEvent {
     Graph {
         graph: Graph,
         error: Option<String>,
+    },
+    HarnessGraph {
+        graph: crate::dag::graph::DagGraph,
+        resources: u64,
+        edges: u64,
     },
 }
 
@@ -196,8 +204,16 @@ async fn setup(path: PathBuf, config: WorkerConfig) -> Result<(WorkerState, Work
     let database = Database::open(&path)
         .await
         .map_err(|error| error.to_string())?;
-    // Get the initial page using a short-lived snapshot.
-    let initial = refresh_page(&database, Filter::default()).await;
+    let initial = if config.frame_harness.is_some() {
+        let (graph, resources, edges) = frame_harness::load(&database).await?;
+        WorkerEvent::HarnessGraph {
+            graph,
+            resources,
+            edges,
+        }
+    } else {
+        refresh_page(&database, Filter::default()).await
+    };
     let graph = GraphAccess::new(config.graph_url, config.graph_name, config.graph_limits);
     let state = WorkerState { graph, database };
     Ok((state, initial))

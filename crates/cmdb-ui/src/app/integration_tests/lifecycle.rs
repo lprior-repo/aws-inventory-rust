@@ -34,6 +34,7 @@ fn given_successful_empty_database_when_startup_page_commits_then_graph_access_d
                     graph_url: url.map(str::to_owned),
                     graph_name: name.map(str::to_owned),
                     graph_limits: DEFAULT_GRAPH_LIMITS,
+                    ..WorkerConfig::default()
                 },
             );
             let expected = format!("Graph offline · {diagnostic}");
@@ -143,6 +144,7 @@ fn given_failed_resource_query_when_filter_removes_selection_then_new_empty_page
                 graph_url: Some(native.endpoint.clone()),
                 graph_name: Some(native.name.clone()),
                 graph_limits: DEFAULT_GRAPH_LIMITS,
+                ..WorkerConfig::default()
             },
         );
         wait_for(&mut app, &mut cx, |app, cx| graph(app, cx).nodes.len() == 2)?;
