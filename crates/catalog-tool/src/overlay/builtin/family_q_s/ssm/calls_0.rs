@@ -39,7 +39,7 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Key(&["BaselineId"]),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
-        input: &[],
+        input: &[Input::Filter("Filters", "Key", "OWNER", &["Self"])],
         tags: None,
         queryable: &[],
     },
