@@ -1,0 +1,12 @@
+format = 1
+service = "serverlessapplicationrepository"
+
+[[step]]
+id = "resource"
+operation = "CreateApplication"
+kind = "AWS::ServerlessApplicationRepository::Application"
+identity = "ApplicationId"
+[step.input]
+"Author" = "inventory-thin-serverlessapplicationrepository"
+"Description" = "Inventory emulator seed"
+"Name" = "inventory-thin-serverlessapplicationrepository"
