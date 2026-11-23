@@ -1,0 +1,10 @@
+format = 1
+service = "iot"
+
+[[step]]
+id = "resource"
+operation = "CreateCommand"
+kind = "AWS::IoT::Command"
+identity = "commandArn"
+[step.input]
+commandId = "inventory-thin-iot"
