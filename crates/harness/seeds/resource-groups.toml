@@ -1,0 +1,10 @@
+format = 1
+service = "resource-groups"
+
+[[step]]
+id = "resource"
+operation = "CreateGroup"
+kind = "AWS::resource-groups::Group"
+identity = "Group.GroupArn"
+repeat = 2
+[step.input]
