@@ -2,6 +2,20 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- E2E count verification now rejects an entirely catalog-deferred seed oracle.
+  Every explicit E2E service selector must have a seed recipe; bootstrap calls
+  remain implicit, so the baseline script no longer selects recipe-less STS.
+- Sweep accepts `INVENTORY_SWEEP_DATABASE` as an alternative to `--database`;
+  the harness uses it to keep database passwords off collector argv. Generated
+  profile/config files are exclusively created with mode 0600, issued credential
+  reads are capped at 64 KiB, and signal-listener failures still finalize owned
+  children and the database.
+- Selection/parser regression scenarios cover bootstrap retention, sibling
+  removal, empty-selection identity, duplicate plan names, invalid arguments,
+  and unknown selectors rejected before database creation. E2E SQL snapshots
+  self-validate seeded relationships and resource pagination bounds; crash and
+  cancellation subscenarios use independent graph namespaces.
+
 - Sweep accepts repeatable `--service service[:Operation]` selectors. Bootstrap
   calls and required ancestors remain enabled; descendants require an explicit
   selector (a bare service selects all its plans). Omitted selectors keep the
