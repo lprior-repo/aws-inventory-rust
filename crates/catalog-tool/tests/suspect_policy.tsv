@@ -1,0 +1,2 @@
+# Given the embedded policy, when reviewed operations are selected, then each contract holds.
+# service	operation	decision	member	value
