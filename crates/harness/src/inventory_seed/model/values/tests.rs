@@ -11,7 +11,11 @@ fn catalog_bytes() -> Result<Vec<u8>, std::io::Error> {
 }
 
 fn operation(bytes: &[u8]) -> TestResult<SeedOperation<'_>> {
-    Ok(locate(Catalog::borrow(bytes)?, "bedrock-runtime", "StartAsyncInvoke")?)
+    Ok(locate(
+        Catalog::borrow(bytes)?,
+        "bedrock-runtime",
+        "StartAsyncInvoke",
+    )?)
 }
 
 fn document() -> Value {
@@ -35,7 +39,12 @@ fn given_nested_document_when_seed_compiled_then_names_and_arrays_are_preserved(
             SeedInputValue::Boolean(true),
         )])]),
     )]);
-    let prepared = prepare(&[operation], operation, &FieldPath::new(&["modelInput"])?, &value)?;
+    let prepared = prepare(
+        &[operation],
+        operation,
+        &FieldPath::new(&["modelInput"])?,
+        &value,
+    )?;
     let PreparedInputValue::Structure(fields) = prepared else {
         return Err("document structure was not preserved".into());
     };
@@ -43,9 +52,11 @@ fn given_nested_document_when_seed_compiled_then_names_and_arrays_are_preserved(
         return Err("document name or list was not preserved".into());
     };
     assert_eq!(name, "arbitrary");
-    assert!(matches!(items.first(), Some(PreparedInputValue::Structure(fields))
+    assert!(
+        matches!(items.first(), Some(PreparedInputValue::Structure(fields))
         if matches!(fields.first(), Some((Key::Name(name), PreparedInputValue::Boolean(true)))
-            if name == "nested")));
+            if name == "nested"))
+    );
     Ok(())
 }
 
@@ -86,11 +97,14 @@ fn given_modeled_structure_when_unknown_member_compiled_then_it_is_still_rejecte
         String::from("arbitrary"),
         SeedInputValue::Boolean(true),
     )]);
-    assert!(prepare(
-        &[operation],
-        operation,
-        &FieldPath::new(&["outputDataConfig"])?,
-        &value,
-    ).is_err());
+    assert!(
+        prepare(
+            &[operation],
+            operation,
+            &FieldPath::new(&["outputDataConfig"])?,
+            &value,
+        )
+        .is_err()
+    );
     Ok(())
 }

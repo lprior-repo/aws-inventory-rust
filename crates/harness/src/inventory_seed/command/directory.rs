@@ -64,7 +64,10 @@ pub(crate) fn files(directory: &Path) -> Result<Vec<PathBuf>, SeedError> {
     let mut paths: Vec<_> = entries
         .into_iter()
         .map(|entry| entry.path())
-        .filter(|path| path.extension().is_some_and(|extension| extension == "toml"))
+        .filter(|path| {
+            path.extension()
+                .is_some_and(|extension| extension == "toml")
+        })
         .collect();
     paths.sort();
     if paths.is_empty() {

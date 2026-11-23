@@ -74,7 +74,12 @@ fn visit<'a>(
         Value::List(items) => {
             let element = members::element(service, target)?;
             tasks.push(Action::Finish(None, items.len()));
-            tasks.extend(items.iter().rev().map(|item| Action::Visit((element, item), next)));
+            tasks.extend(
+                items
+                    .iter()
+                    .rev()
+                    .map(|item| Action::Visit((element, item), next)),
+            );
         }
         Value::Map(items) => map(service, target, items, (tasks, next))?,
         value => values.push(value.clone()),
@@ -108,11 +113,7 @@ fn map<'a>(
     Ok(())
 }
 
-fn map_field(
-    service: Service<'_>,
-    target: Target,
-    key: &Key,
-) -> Result<(Key, Target), SeedError> {
+fn map_field(service: Service<'_>, target: Target, key: &Key) -> Result<(Key, Target), SeedError> {
     let Key::Name(name) = key else {
         return Err(SeedError::Invalid("seed literal requires named map keys"));
     };
@@ -125,9 +126,12 @@ fn map_field(
             let member = members::member(service, target, name)?;
             Ok((Key::Field(member.id), member.target))
         }
-        "map" => Ok((key.clone(), shape.map_value()?.ok_or(SeedError::Invalid(
-            "seed map value shape is missing",
-        ))?)),
+        "map" => Ok((
+            key.clone(),
+            shape
+                .map_value()?
+                .ok_or(SeedError::Invalid("seed map value shape is missing"))?,
+        )),
         _ => Err(SeedError::Invalid("seed map targets a non-map shape")),
     }
 }

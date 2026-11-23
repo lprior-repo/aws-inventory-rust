@@ -5,28 +5,46 @@ const VALID: &str = "format=1\nservice='ec2'\n[[step]]\nid='vpc'\noperation='Cre
 
 fn command(directory: &std::path::Path) -> Command {
     let mut command = Command::new(env!("CARGO_BIN_EXE_inventory-harness"));
-    command.args(["seed", "validate", "--seeds"]).arg(directory)
-        .arg("--catalog").arg(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../catalog/aws-api.catalog"))
-        .env_remove("AWS_ACCESS_KEY_ID").env_remove("AWS_SECRET_ACCESS_KEY")
+    command
+        .args(["seed", "validate", "--seeds"])
+        .arg(directory)
+        .arg("--catalog")
+        .arg(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../catalog/aws-api.catalog"))
+        .env_remove("AWS_ACCESS_KEY_ID")
+        .env_remove("AWS_SECRET_ACCESS_KEY")
         .env_remove("AWS_SESSION_TOKEN");
     command
 }
 
 #[test]
-fn given_valid_recipe_without_credentials_when_validated_then_no_emulator_is_needed() -> TestResult {
+fn given_valid_recipe_without_credentials_when_validated_then_no_emulator_is_needed() -> TestResult
+{
     let directory = tempfile::tempdir()?;
     std::fs::write(directory.path().join("ec2.toml"), VALID)?;
     let output = command(directory.path()).output()?;
-    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
-    assert_eq!(String::from_utf8(output.stdout)?, format!("{}\tvalid\n", directory.path().join("ec2.toml").display()));
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        String::from_utf8(output.stdout)?,
+        format!("{}\tvalid\n", directory.path().join("ec2.toml").display())
+    );
     Ok(())
 }
 
 #[test]
 fn given_multiple_invalid_recipes_when_validated_then_every_file_is_reported() -> TestResult {
     let directory = tempfile::tempdir()?;
-    std::fs::write(directory.path().join("a.toml"), VALID.replace("Vpc.VpcId", "vpc.VpcId"))?;
-    std::fs::write(directory.path().join("b.toml"), VALID.replace("CreateVpc", "InventVpc"))?;
+    std::fs::write(
+        directory.path().join("a.toml"),
+        VALID.replace("Vpc.VpcId", "vpc.VpcId"),
+    )?;
+    std::fs::write(
+        directory.path().join("b.toml"),
+        VALID.replace("CreateVpc", "InventVpc"),
+    )?;
     let output = command(directory.path()).output()?;
     assert!(!output.status.success());
     let text = String::from_utf8(output.stdout)?;
@@ -39,11 +57,14 @@ fn given_multiple_invalid_recipes_when_validated_then_every_file_is_reported() -
 }
 
 #[test]
-fn given_service_selection_when_validated_then_unselected_invalid_file_is_not_loaded() -> TestResult {
+fn given_service_selection_when_validated_then_unselected_invalid_file_is_not_loaded() -> TestResult
+{
     let directory = tempfile::tempdir()?;
     std::fs::write(directory.path().join("ec2.toml"), VALID)?;
     std::fs::write(directory.path().join("other.toml"), "not a recipe")?;
-    let output = command(directory.path()).args(["--service", "ec2"]).output()?;
+    let output = command(directory.path())
+        .args(["--service", "ec2"])
+        .output()?;
     assert!(output.status.success());
     assert_eq!(String::from_utf8(output.stdout)?.lines().count(), 1);
     Ok(())
@@ -52,13 +73,21 @@ fn given_service_selection_when_validated_then_unselected_invalid_file_is_not_lo
 const DOCUMENT: &str = "format=1\nservice='bedrock-runtime'\n[[step]]\nid='invoke'\noperation='StartAsyncInvoke'\nkind='AWS::Bedrock::AsyncInvoke'\nidentity='invocationArn'\n[step.input]\nmodelId='amazon.nova-reel-v1:0'\nmodelInput={taskType='TEXT_VIDEO',frames=[{enabled=true,ids=[1,2]}]}\noutputDataConfig={s3OutputDataConfig={s3Uri='s3://inventory-seed/output'}}\n";
 
 #[test]
-fn given_nested_document_when_validated_offline_then_arbitrary_members_are_supported() -> TestResult {
+fn given_nested_document_when_validated_offline_then_arbitrary_members_are_supported() -> TestResult
+{
     let directory = tempfile::tempdir()?;
     let path = directory.path().join("bedrock-runtime.toml");
     std::fs::write(&path, DOCUMENT)?;
     let output = command(directory.path()).output()?;
-    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
-    assert_eq!(String::from_utf8(output.stdout)?, format!("{}\tvalid\n", path.display()));
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        String::from_utf8(output.stdout)?,
+        format!("{}\tvalid\n", path.display())
+    );
     Ok(())
 }
 
@@ -85,8 +114,15 @@ fn given_rsa_certificate_over_one_kib_when_validated_then_modeled_text_is_accept
     std::fs::write(&path, recipe)?;
     let output = command(directory.path()).output()?;
     assert!(CERTIFICATE.len() > 1024);
-    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
-    assert_eq!(String::from_utf8(output.stdout)?, format!("{}\tvalid\n", path.display()));
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        String::from_utf8(output.stdout)?,
+        format!("{}\tvalid\n", path.display())
+    );
     Ok(())
 }
 

@@ -21,7 +21,10 @@ fn given_513_directory_entries_when_listed_then_bound_is_enforced() -> TestResul
     (0..513).try_for_each(|index| {
         std::fs::write(directory.path().join(format!("entry-{index}.txt")), "")
     })?;
-    assert!(matches!(files(directory.path()), Err(SeedError::Invalid("seed directory exceeds 512 entries"))));
+    assert!(matches!(
+        files(directory.path()),
+        Err(SeedError::Invalid("seed directory exceeds 512 entries"))
+    ));
     Ok(())
 }
 
@@ -29,6 +32,9 @@ fn given_513_directory_entries_when_listed_then_bound_is_enforced() -> TestResul
 fn given_no_toml_entries_when_listed_then_empty_directory_is_rejected() -> TestResult {
     let directory = tempfile::tempdir()?;
     std::fs::write(directory.path().join("notes.txt"), "")?;
-    assert!(matches!(files(directory.path()), Err(SeedError::Invalid("seed directory has no TOML files"))));
+    assert!(matches!(
+        files(directory.path()),
+        Err(SeedError::Invalid("seed directory has no TOML files"))
+    ));
     Ok(())
 }

@@ -39,7 +39,9 @@ fn validate(path: &Path, catalog: &RuntimeCatalog<'_>) -> Result<(), SeedError> 
 
 fn options(arguments: &[String]) -> Result<Options, SeedError> {
     if arguments.is_empty() || arguments.len() > 128 || !arguments.len().is_multiple_of(2) {
-        return Err(SeedError::Invalid("seed validate requires at most 64 flag/value pairs"));
+        return Err(SeedError::Invalid(
+            "seed validate requires at most 64 flag/value pairs",
+        ));
     }
     arguments.as_chunks::<2>().0.iter().try_fold(
         (BTreeMap::new(), Vec::new()),
@@ -52,7 +54,9 @@ fn options(arguments: &[String]) -> Result<Options, SeedError> {
             } else if !matches!(flag.as_str(), "--seeds" | "--catalog")
                 || options.insert(flag.clone(), value.clone()).is_some()
             {
-                return Err(SeedError::Invalid("seed validate option is unknown or duplicated"));
+                return Err(SeedError::Invalid(
+                    "seed validate option is unknown or duplicated",
+                ));
             }
             Ok((options, services))
         },
@@ -60,6 +64,8 @@ fn options(arguments: &[String]) -> Result<Options, SeedError> {
 }
 
 fn required<'a>(options: &'a BTreeMap<String, String>, name: &str) -> Result<&'a str, SeedError> {
-    options.get(name).map(String::as_str)
+    options
+        .get(name)
+        .map(String::as_str)
         .ok_or_else(|| SeedError::Message(format!("seed validate requires {name}")))
 }

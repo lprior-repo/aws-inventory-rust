@@ -62,7 +62,7 @@ fn given_invalid_typed_literals_when_validated_then_bounds_fail_closed() -> Test
     let deep = (0..10).fold(Value::Int(1), |value, _| Value::List(vec![value]));
     [
         Value::Null,
-        Value::Text("x".repeat(1025)),
+        Value::Text("x".repeat(1_048_577)),
         Value::List(vec![Value::Int(1); 257]),
         deep,
         Value::Float(Float::new(f64::INFINITY)),
@@ -72,6 +72,18 @@ fn given_invalid_typed_literals_when_validated_then_bounds_fail_closed() -> Test
         assert!(SeedScenario::new(vec![single(SeedInputValue::Literal(value))?]).is_err());
         Ok::<_, Box<dyn std::error::Error>>(())
     })
+}
+
+#[test]
+fn given_text_at_byte_limit_when_validated_then_literal_and_text_inputs_are_accepted() -> TestResult
+{
+    for value in [
+        SeedInputValue::Literal(Value::Text("x".repeat(1_048_576))),
+        SeedInputValue::Text("x".repeat(1_048_576)),
+    ] {
+        assert!(SeedScenario::new(vec![single(value)?]).is_ok());
+    }
+    Ok(())
 }
 
 #[test]

@@ -116,9 +116,9 @@ fn inventory_seed_enforces_file_depth_text_and_node_limits() {
     assert!(
         load(&document(&format!(
             "[step.input]\nValue = '{}'",
-            "x".repeat(1025)
+            "x".repeat(1_000_000)
         )))
-        .is_err()
+        .is_ok()
     );
     let too_many = std::iter::repeat_n("1", 257).collect::<Vec<_>>().join(",");
     assert!(load(&document(&format!("[step.input]\nValue = [{too_many}]"))).is_err());

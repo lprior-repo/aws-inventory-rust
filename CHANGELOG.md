@@ -22,6 +22,7 @@
 - Seed TOML strings targeting modeled blobs decode strict canonical padded base64
   during preflight, within a 1,024-byte encoded blob bound; ordinary strings
   remain text and malformed blob literals fail before network calls.
+  The inherited Kinesis seed payload is migrated to this encoding as well.
 - Native first-page probes accept repeatable `--service` filters for isolated
   service seed verification; omitted filters retain the full-catalog report.
 - Native first-page probes account for every callable purpose, including bootstrap
