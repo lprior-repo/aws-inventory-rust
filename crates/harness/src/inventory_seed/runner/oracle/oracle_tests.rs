@@ -19,14 +19,14 @@ fn output(
     };
     let record = wire::input_record([(vec![FieldId::new(1)?], Value::Text(observed.to_owned()))])?;
     let resource = SeedResourceIdentity {
-        step: StepId::new(step as u16),
+        step: StepId::new(u16::from(step)),
         kind,
         id: identity,
         key,
         evidence: SeedIdentityEvidence::Response,
     };
     Ok(SeedOutput {
-        step: StepId::new(step as u16),
+        step: StepId::new(u16::from(step)),
         resource: Some(resource),
         record,
     })

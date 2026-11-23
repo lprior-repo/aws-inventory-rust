@@ -15,18 +15,21 @@ pub(super) fn validate_step((position, step): (usize, &SeedStep)) -> Result<(), 
     {
         return Err(SeedError::Invalid("seed operation descriptor is invalid"));
     }
-    if step.inputs.iter().enumerate().any(|(index, input)| {
-        step.inputs
-            .iter()
-            .take(index)
-            .any(|previous| input_paths_conflict(&previous.field, &input.field))
-    }) {
+    if conflicting_inputs(step) {
         return Err(SeedError::Invalid(
             "seed operation contains conflicting input fields",
         ));
     }
-    validate_identity(step)?;
-    step.inputs.iter().try_for_each(validate_input)
+    validate_identity(step)
+}
+
+fn conflicting_inputs(step: &SeedStep) -> bool {
+    step.inputs.iter().enumerate().any(|(index, input)| {
+        step.inputs
+            .iter()
+            .take(index)
+            .any(|previous| input_paths_conflict(&previous.field, &input.field))
+    })
 }
 
 fn invalid_checks(step: &SeedStep) -> bool {
@@ -51,15 +54,7 @@ fn validate_identity(step: &SeedStep) -> Result<(), SeedError> {
             input_field,
             template,
         }) => {
-            if !step
-                .inputs
-                .iter()
-                .any(|input| input_field.parts().starts_with(input.field.parts()))
-            {
-                return Err(SeedError::Invalid(
-                    "request identity must select a configured input field",
-                ));
-            }
+            validate_request_field(step, input_field)?;
             if let Some(template) = template {
                 super::identity::validate_template(template)?;
             }
@@ -67,6 +62,19 @@ fn validate_identity(step: &SeedStep) -> Result<(), SeedError> {
         }
         _ => Ok(()),
     }
+}
+
+fn validate_request_field(step: &SeedStep, field: &FieldPath) -> Result<(), SeedError> {
+    if !step
+        .inputs
+        .iter()
+        .any(|input| field.parts().starts_with(input.field.parts()))
+    {
+        return Err(SeedError::Invalid(
+            "request identity must select a configured input field",
+        ));
+    }
+    Ok(())
 }
 pub(super) fn input_paths_conflict(left: &FieldPath, right: &FieldPath) -> bool {
     let shorter = left.parts().len().min(right.parts().len());
@@ -76,62 +84,16 @@ pub(super) fn input_paths_conflict(left: &FieldPath, right: &FieldPath) -> bool 
         .eq(right.parts().iter().take(shorter))
 }
 
-pub(super) fn validate_input(input: &SeedInput) -> Result<(), SeedError> {
-    if input.field.parts().is_empty() {
-        return Err(SeedError::Invalid("seed input field path is empty"));
-    }
-    if let SeedInputValue::Literal(value) = &input.value {
-        super::super::literal::validate(value)?;
-    }
-    if let SeedInputValue::Template(value) = &input.value {
-        value.validate()?;
-    }
-    if let SeedInputValue::Text(value) = &input.value
-        && (value.is_empty() || value.len() > 1024)
-    {
-        return Err(SeedError::Invalid("seed literal exceeds its length bound"));
-    }
-    Ok(())
-}
-
-pub(super) fn validate_bindings(steps: &[SeedStep]) -> Result<(), SeedError> {
-    steps.iter().enumerate().try_for_each(|(position, step)| {
-        step.inputs.iter().try_for_each(|input| match &input.value {
-            SeedInputValue::PreviousOutput { step, path } => validate_source(position, *step, path),
-            SeedInputValue::Template(template) => template
-                .bindings
-                .iter()
-                .try_for_each(|binding| validate_source(position, binding.step, &binding.path)),
-            _ => Ok(()),
-        })
-    })
-}
-
-fn validate_source(position: usize, source: StepId, path: &FieldPath) -> Result<(), SeedError> {
-    if usize::from(source.0) >= position || path.parts().is_empty() {
-        return Err(SeedError::Invalid(
-            "seed binding must refer to an earlier operation output",
-        ));
-    }
-    Ok(())
-}
-
 pub(super) fn validate_relationships(
     steps: &[SeedStep],
     relationships: &[SeedRelationship],
 ) -> Result<(), SeedError> {
     relationships.iter().try_for_each(|relationship| {
-        if usize::from(relationship.source.0) >= steps.len()
-            || usize::from(relationship.target.0) >= steps.len()
+        if !resource(steps, relationship.source)
+            || !resource(steps, relationship.target)
             || relationship.source == relationship.target
             || !valid_relation(&relationship.relation)
             || relationship.observed_path.parts().is_empty()
-            || steps
-                .get(usize::from(relationship.source.0))
-                .is_none_or(|step| step.identity.is_none())
-            || steps
-                .get(usize::from(relationship.target.0))
-                .is_none_or(|step| step.identity.is_none())
         {
             return Err(SeedError::Invalid(
                 "seed relationship descriptor is invalid",
@@ -139,6 +101,12 @@ pub(super) fn validate_relationships(
         }
         Ok(())
     })
+}
+
+fn resource(steps: &[SeedStep], id: StepId) -> bool {
+    steps
+        .get(usize::from(id.0))
+        .is_some_and(|step| step.identity.is_some())
 }
 
 pub(super) fn valid_name(value: &str) -> bool {

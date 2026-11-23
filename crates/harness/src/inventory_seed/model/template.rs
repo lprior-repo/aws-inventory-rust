@@ -18,17 +18,15 @@ pub(in crate::inventory_seed) struct PreparedTemplate {
 pub(super) fn prepare(
     catalog: Catalog<'_>,
     scenario: &SeedScenario,
-    operation: SeedOperation<'_>,
-    field: &FieldPath,
+    service: Service<'_>,
+    target: Target,
     template: &SeedTemplate,
 ) -> Result<PreparedInputValue, SeedError> {
-    let target = members::path_target(operation.service, operation.operation.input()?, field)?;
-    let value =
-        super::super::literal::resolve_template(operation.service, target, &template.value)?;
+    let value = super::super::literal::resolve_template(service, target, &template.value)?;
     let bindings = template
         .bindings
         .iter()
-        .map(|binding| binding_plan(catalog, scenario, operation.service, target, binding))
+        .map(|binding| binding_plan(catalog, scenario, service, target, binding))
         .collect::<Result<Vec<_>, _>>()?;
     Ok(PreparedInputValue::Template(PreparedTemplate {
         value,

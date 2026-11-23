@@ -5,6 +5,8 @@ pub(super) use operation::locate;
 mod identity;
 mod output;
 mod template;
+mod values;
+use values::prepare as prepare_value;
 #[cfg(test)]
 mod tests;
 use aws_wire::request::Protocol;
@@ -53,7 +55,7 @@ pub(super) enum PreparedInputValue {
     Literal(inventory_core::record::Value),
     Template(PreparedTemplate),
     List(Vec<PreparedInputValue>),
-    Structure(Vec<(String, PreparedInputValue)>),
+    Structure(Vec<(inventory_core::record::Key, PreparedInputValue)>),
 }
 pub(super) struct PreparedStep<'a> {
     pub id: StepId,
@@ -82,16 +84,8 @@ impl<'a> SeedModels<'a> {
     pub fn load(runtime: &RuntimeCatalog<'a>, scenario: &SeedScenario) -> Result<Self, SeedError> {
         let catalog = runtime.catalog();
         let caller = locate(catalog, "sts", "GetCallerIdentity")?;
-        let caller_account = output_path(
-            caller.service,
-            caller.operation.output()?,
-            &FieldPath::new(&["Account"])?,
-        )?;
-        let caller_arn = output_path(
-            caller.service,
-            caller.operation.output()?,
-            &FieldPath::new(&["Arn"])?,
-        )?;
+        let caller_account = caller_path(caller, "Account")?;
+        let caller_arn = caller_path(caller, "Arn")?;
         let steps = scenario
             .steps()
             .iter()
@@ -110,6 +104,14 @@ impl<'a> SeedModels<'a> {
             relationships,
         })
     }
+}
+
+fn caller_path(caller: SeedOperation<'_>, field: &str) -> Result<Vec<Selector>, SeedError> {
+    output_path(
+        caller.service,
+        caller.operation.output()?,
+        &FieldPath::new(&[field])?,
+    )
 }
 
 fn prepare_step<'a>(
@@ -160,54 +162,6 @@ fn prepare_input<'a>(
     let path = modeled_path(operation.service, operation.operation.input()?, field)?;
     let value = prepare_value(catalog, scenario, operation, field, value)?;
     Ok(PreparedInput { path, value })
-}
-
-fn prepare_value<'a>(
-    catalog: Catalog<'a>,
-    scenario: &SeedScenario,
-    operation: SeedOperation<'a>,
-    field: &FieldPath,
-    value: &SeedInputValue,
-) -> Result<PreparedInputValue, SeedError> {
-    match value {
-        SeedInputValue::Text(text) => Ok(PreparedInputValue::Text(text.clone())),
-        SeedInputValue::Boolean(value) => Ok(PreparedInputValue::Boolean(*value)),
-        SeedInputValue::Integer(value) => Ok(PreparedInputValue::Integer(*value)),
-        SeedInputValue::Literal(value) => {
-            let target =
-                members::path_target(operation.service, operation.operation.input()?, field)?;
-            Ok(PreparedInputValue::Literal(
-                super::literal::resolve(operation.service, target, value)?,
-            ))
-        }
-        SeedInputValue::Template(value) => {
-            let prepared = template::prepare(catalog, scenario, operation, field, value)?;
-            Ok(prepared)
-        }
-        SeedInputValue::PreviousOutput { step, path } => {
-            previous_output(catalog, scenario, *step, path)
-        }
-        SeedInputValue::List(items) => {
-            let converted = items
-                .iter()
-                .map(|item| {
-                    prepare_value(catalog, scenario, operation, field, item)
-                })
-                .collect::<Result<Vec<_>, _>>()?;
-            Ok(PreparedInputValue::List(converted))
-        }
-        SeedInputValue::Structure(fields) => {
-            let converted = fields
-                .iter()
-                .map(|(name, item)| {
-                    let prepared =
-                        prepare_value(catalog, scenario, operation, field, item)?;
-                    Ok::<_, SeedError>((name.clone(), prepared))
-                })
-                .collect::<Result<Vec<_>, _>>()?;
-            Ok(PreparedInputValue::Structure(converted))
-        }
-    }
 }
 
 fn previous_output(
