@@ -139,6 +139,7 @@ pub(super) fn lookup<'a>(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::kind_map::{ApiOnlyMapping, CfnMapping, MappingSource, OperationMapping};
 
     type TestResult = Result<(), Box<dyn std::error::Error>>;
     const PRIMARY: &str = "AWS::Route53::DNSSEC";
@@ -305,47 +306,27 @@ mod tests {
         Ok(())
     }
 
-    #[test]
-    fn full_mapping_pipeline_binds_each_emitter_field_and_canonicalizes_declarations() -> TestResult
-    {
-        use crate::kind_map::{ApiOnlyMapping, CfnMapping, MappingSource, OperationMapping};
+    fn assert_baseline_no_additional_emissions(source: &MappingSource) -> TestResult {
         use crate::names::Exceptions;
-        // Given two primary operations and separately reviewed additional resource kinds.
-        let primary_operations = [
-            OperationMapping {
-                service: ROW.service,
-                operation: ROW.operation,
-                kind: PRIMARY,
-            },
-            OperationMapping {
-                service: ROW.service,
-                operation: "GetOther",
-                kind: PRIMARY,
-            },
-            OperationMapping {
-                service: "route-53-alt",
-                operation: ROW.operation,
-                kind: PRIMARY,
-            },
-        ];
-        let source = MappingSource {
-            cfn: &[CfnMapping::canonical(PRIMARY), CfnMapping::canonical(KEY)],
-            api_only: &[ApiOnlyMapping {
-                kind: OTHER,
-                reason: "Distinct additional emission fixture resource",
-            }],
-            operations: &primary_operations,
-            ..MappingSource::default()
-        };
         let baseline = source.compile(&Exceptions::none())?;
         assert_eq!(baseline.additional_emissions(), &[]);
         assert_eq!(
             baseline.additional_emission_kind(ROW.service, ROW.operation, ROW.emitter_key),
             None
         );
+        Ok(())
+    }
+
+    fn assert_adding_emitter_changes_provenance(
+        source: &MappingSource,
+        primary_operations: &[OperationMapping],
+    ) -> TestResult {
+        use crate::names::Exceptions;
+        let baseline = source.compile(&Exceptions::none())?;
         let mapped = MappingSource {
             additional_emissions: &[ROW],
-            ..source
+            operations: primary_operations,
+            ..*source
         }
         .compile(&Exceptions::none())?;
         // When adding an emitter, its review changes provenance and exact lookup is available.
@@ -376,12 +357,20 @@ mod tests {
         ] {
             let changed = MappingSource {
                 additional_emissions: &[row],
-                ..source
+                operations: primary_operations,
+                ..*source
             }
             .compile(&Exceptions::none())?;
             assert_ne!(mapped.source_sha256(), changed.source_sha256());
         }
-        // Then declaration order cannot alter either the map or its reviewed fingerprint.
+        Ok(())
+    }
+
+    fn assert_declaration_order_does_not_affect_fingerprint(
+        source: &MappingSource,
+        primary_operations: &[OperationMapping],
+    ) -> TestResult {
+        use crate::names::Exceptions;
         let other = AdditionalEmissionMapping {
             emitter_key: "a_other",
             kind: OTHER,
@@ -389,15 +378,54 @@ mod tests {
         };
         let forward = MappingSource {
             additional_emissions: &[ROW, other],
-            ..source
+            operations: primary_operations,
+            ..*source
         }
         .compile(&Exceptions::none())?;
         let reverse = MappingSource {
             additional_emissions: &[other, ROW],
-            ..source
+            operations: primary_operations,
+            ..*source
         }
         .compile(&Exceptions::none())?;
         assert_eq!(forward, reverse);
+        Ok(())
+    }
+
+    #[test]
+    fn full_mapping_pipeline_binds_each_emitter_field_and_canonicalizes_declarations() -> TestResult
+    {
+        // Given two primary operations and separately reviewed additional resource kinds.
+        let primary_operations = [
+            OperationMapping {
+                service: ROW.service,
+                operation: ROW.operation,
+                kind: PRIMARY,
+            },
+            OperationMapping {
+                service: ROW.service,
+                operation: "GetOther",
+                kind: PRIMARY,
+            },
+            OperationMapping {
+                service: "route-53-alt",
+                operation: ROW.operation,
+                kind: PRIMARY,
+            },
+        ];
+        let source = MappingSource {
+            cfn: &[CfnMapping::canonical(PRIMARY), CfnMapping::canonical(KEY)],
+            api_only: &[ApiOnlyMapping {
+                kind: OTHER,
+                reason: "Distinct additional emission fixture resource",
+            }],
+            operations: &primary_operations,
+            ..MappingSource::default()
+        };
+        assert_baseline_no_additional_emissions(&source)?;
+        assert_adding_emitter_changes_provenance(&source, &primary_operations)?;
+        // Then declaration order cannot alter either the map or its reviewed fingerprint.
+        assert_declaration_order_does_not_affect_fingerprint(&source, &primary_operations)?;
         Ok(())
     }
 }

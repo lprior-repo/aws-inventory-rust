@@ -380,8 +380,7 @@ mod tests {
         }
     }
 
-    #[test]
-    fn branch_only_dependencies_reject_self_references_and_mixed_cycles() -> TestResult {
+    fn assert_branch_only_self_reference_rejected() -> TestResult {
         // Given every producer namespace can occur only in a branch.
         let bindings = [
             alternatives(&["B", "A"])?,
@@ -419,6 +418,10 @@ mod tests {
                 Err(invalid("operation", "self reference"))
             );
         }
+        Ok(())
+    }
+
+    fn assert_mixed_branch_common_cycle_detected() -> TestResult {
         // Given the nonprimary branch alternative closes A -> B -> A.
         let a = OperationOverlay {
             branches: vec![branch(
@@ -440,6 +443,13 @@ mod tests {
             .map(|overlay| overlay.operations().len()),
             Err(invalid("bind", "cycle"))
         );
+        Ok(())
+    }
+
+    #[test]
+    fn branch_only_dependencies_reject_self_references_and_mixed_cycles() -> TestResult {
+        assert_branch_only_self_reference_rejected()?;
+        assert_mixed_branch_common_cycle_detected()?;
         Ok(())
     }
 
