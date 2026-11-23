@@ -1,0 +1,53 @@
+format = 1
+service = "comprehendmedical"
+
+[[step]]
+id = "role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+[step.input]
+RoleName = "inventory-thin-comprehendmedical"
+AssumeRolePolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"comprehendmedical.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+
+[[step]]
+id = "input"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket" }
+[step.input]
+Bucket = "inventory-thin-comprehendmedical-input"
+
+[[step]]
+id = "output"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket" }
+[step.input]
+Bucket = "inventory-thin-comprehendmedical-output"
+
+[[step]]
+id = "policy"
+service = "iam"
+operation = "PutRolePolicy"
+kind = ""
+[step.input]
+RoleName = "inventory-thin-comprehendmedical"
+PolicyName = "inventory-seed-access"
+PolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":[\"s3:GetObject\",\"s3:ListBucket\"],\"Resource\":[\"arn:aws:s3:::inventory-thin-comprehendmedical-input\",\"arn:aws:s3:::inventory-thin-comprehendmedical-input/*\"]},{\"Effect\":\"Allow\",\"Action\":[\"s3:PutObject\"],\"Resource\":[\"arn:aws:s3:::inventory-thin-comprehendmedical-output/*\"]}]}"
+
+[[step]]
+id = "job"
+operation = "StartEntitiesDetectionV2Job"
+kind = "AWS::ComprehendMedical::EntitiesDetectionV2Job"
+identity = "JobId"
+[step.input]
+InputDataConfig = { S3Bucket = "inventory-thin-comprehendmedical-input" }
+OutputDataConfig = { S3Bucket = "inventory-thin-comprehendmedical-output" }
+DataAccessRoleArn = { from = "role", path = "Role.Arn" }
+LanguageCode = "en"
+JobName = "inventory-thin-comprehendmedical"
+ClientRequestToken = "12345678-1234-4234-8234-123456789abc"
