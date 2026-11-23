@@ -5,6 +5,6 @@ service = "qbusiness"
 id = "resource"
 operation = "CreateApplication"
 kind = "AWS::QBusiness::Application"
-identity = "applicationArn"
+identity = "applicationId"
 [step.input]
 "displayName" = "inventory-thin-qbusiness"
