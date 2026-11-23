@@ -1,0 +1,113 @@
+source_line	service	operation	region	classification	root_cause	capture_id	request_body_hex
+2	shield	ListAttacks	global	emulator gap	CBOR-routing	920	bf6a4d6178526573756c7473192710ff
+3	shield	ListProtections	global	emulator gap	CBOR-routing	934	bf6a4d6178526573756c7473192710ff
+4	shield	ListProtectionGroups	global	emulator gap	CBOR-routing	926	bf6a4d6178526573756c7473192710ff
+5	account	GetGovCloudAccountInformation	global	missing seed prerequisite	GovCloud-link	847	7b7d
+6	direct-connect	DescribeDirectConnectGateways	global	emulator gap	CBOR-routing	829	bfff
+7	route-53-domains	ListDomains	global	emulator gap	CBOR-routing	876	bf684d61784974656d731864ff
+8	marketplace-agreement	SearchAgreements	global	our defect	Marketplace-required-filter	831	bf6a6d6178526573756c74731832ff
+9	bcm-pricing-calculator	ListBillScenarios	global	needs policy change	payer-or-regular-account	840	7b226d6178526573756c7473223a32357d
+10	ec2	DescribeTrunkInterfaceAssociations	us-east-1	needs policy change	trunk-permission	1069	416374696f6e3d44657363726962655472756e6b496e746572666163654173736f63696174696f6e732656657273696f6e3d323031362d31312d3135264d6178526573756c74733d323535
+11	acm-pca	ListCertificateAuthorities	us-east-1	emulator gap	CBOR-routing	1118	bf6a4d6178526573756c74731903e8ff
+12	datasync	ListTasks	us-east-1	emulator gap	CBOR-routing	1119	bf6a4d6178526573756c74731864ff
+13	datasync	ListAgents	us-east-1	emulator gap	CBOR-routing	1122	bf6a4d6178526573756c74731864ff
+14	datasync	ListLocations	us-east-1	emulator gap	CBOR-routing	1125	bf6a4d6178526573756c74731864ff
+15	memorydb	DescribeACLs	us-east-1	emulator gap	CBOR-routing	1120	bfff
+16	memorydb	DescribeUsers	us-east-1	emulator gap	CBOR-routing	1123	bfff
+17	memorydb	DescribeClusters	us-east-1	emulator gap	CBOR-routing	1126	bfff
+18	memorydb	DescribeSnapshots	us-east-1	emulator gap	CBOR-routing	1128	bfff
+19	memorydb	DescribeSubnetGroups	us-east-1	emulator gap	CBOR-routing	1134	bfff
+20	memorydb	DescribeParameterGroups	us-east-1	emulator gap	CBOR-routing	1137	bfff
+21	memorydb	DescribeMultiRegionClusters	us-east-1	emulator gap	CBOR-routing	1139	bfff
+22	redshift	DescribeClusterSecurityGroups	us-east-1	needs policy change	retired-security-groups	1160	416374696f6e3d4465736372696265436c7573746572536563757269747947726f7570732656657273696f6e3d323031322d31322d3031
+23	textract	ListAdapters	us-east-1	emulator gap	CBOR-routing	1150	bf6a4d6178526573756c74731864ff
+24	textract	ListAdapterVersions	us-east-1	emulator gap	CBOR-routing	1153	bf6a4d6178526573756c74731864ff
+25	codebuild	ListBuilds	us-east-1	emulator gap	CBOR-routing	1151	bfff
+26	codebuild	ListFleets	us-east-1	emulator gap	CBOR-routing	1154	bf6a6d6178526573756c74731864ff
+27	codebuild	ListReports	us-east-1	emulator gap	CBOR-routing	1156	bf6a6d6178526573756c74731864ff
+28	codebuild	ListProjects	us-east-1	emulator gap	CBOR-routing	1158	bfff
+29	codebuild	ListSandboxes	us-east-1	emulator gap	CBOR-routing	1166	bf6a6d6178526573756c74731864ff
+30	codebuild	ListBuildBatches	us-east-1	emulator gap	CBOR-routing	1170	bf6a6d6178526573756c74731864ff
+31	codebuild	ListReportGroups	us-east-1	emulator gap	CBOR-routing	1173	bf6a6d6178526573756c74731864ff
+32	codebuild	ListSourceCredentials	us-east-1	emulator gap	CBOR-routing	1176	bfff
+33	sso-admin	ListPermissionSets	us-east-1	needs policy change	organization-instance-only	1188	7b22496e7374616e636541726e223a2261726e3a6177733a73736f3a3a3a696e7374616e63652f73736f696e732d37323233623164316163356531663065222c224d6178526573756c7473223a3130307d
+34	codedeploy	ListDeployments	us-east-1	emulator gap	CBOR-routing	1168	bfff
+35	comprehend	ListDatasets	us-east-1	emulator gap	CBOR-routing	1169	bf6a4d6178526573756c74731901f4ff
+36	codedeploy	ListApplications	us-east-1	emulator gap	CBOR-routing	1171	bfff
+37	comprehend	ListEndpoints	us-east-1	emulator gap	CBOR-routing	1172	bf6a4d6178526573756c74731901f4ff
+38	codedeploy	ListDeploymentConfigs	us-east-1	emulator gap	CBOR-routing	1174	bfff
+39	comprehend	ListFlywheels	us-east-1	emulator gap	CBOR-routing	1175	bf6a4d6178526573756c74731901f4ff
+40	codedeploy	ListOnPremisesInstances	us-east-1	emulator gap	CBOR-routing	1177	bfff
+41	comprehend	ListEntityRecognizers	us-east-1	emulator gap	CBOR-routing	1178	bf6a4d6178526573756c74731901f4ff
+42	comprehend	ListDocumentClassifiers	us-east-1	emulator gap	CBOR-routing	1179	bf6a4d6178526573756c74731901f4ff
+43	comprehend	ListEventsDetectionJobs	us-east-1	emulator gap	CBOR-routing	1180	bf6a4d6178526573756c74731901f4ff
+44	comprehend	ListTopicsDetectionJobs	us-east-1	emulator gap	CBOR-routing	1181	bf6a4d6178526573756c74731901f4ff
+45	comprehend	ListEntitiesDetectionJobs	us-east-1	emulator gap	CBOR-routing	1184	bf6a4d6178526573756c74731901f4ff
+46	comprehend	ListSentimentDetectionJobs	us-east-1	emulator gap	CBOR-routing	1187	bf6a4d6178526573756c74731901f4ff
+47	comprehend	ListKeyPhrasesDetectionJobs	us-east-1	emulator gap	CBOR-routing	1190	bf6a4d6178526573756c74731901f4ff
+48	comprehend	ListPiiEntitiesDetectionJobs	us-east-1	emulator gap	CBOR-routing	1193	bf6a4d6178526573756c74731901f4ff
+49	comprehend	ListDocumentClassificationJobs	us-east-1	emulator gap	CBOR-routing	1195	bf6a4d6178526573756c74731901f4ff
+50	comprehend	ListDominantLanguageDetectionJobs	us-east-1	emulator gap	CBOR-routing	1196	bf6a4d6178526573756c74731901f4ff
+51	comprehend	ListTargetedSentimentDetectionJobs	us-east-1	emulator gap	CBOR-routing	1197	bf6a4d6178526573756c74731901f4ff
+52	s3-control	ListAccessGrants	us-east-1	missing seed prerequisite	Access-Grants-instance	1186	(empty)
+53	s3-control	GetAccessGrantsInstance	us-east-1	missing seed prerequisite	Access-Grants-instance	1194	(empty)
+54	s3-control	ListAccessGrantsLocations	us-east-1	missing seed prerequisite	Access-Grants-instance	1202	(empty)
+55	workspaces	DescribeIpGroups	us-east-1	emulator gap	CBOR-routing	1199	bfff
+56	workspaces	ListAccountLinks	us-east-1	emulator gap	CBOR-routing	1203	bf6a4d6178526573756c74731819ff
+57	workspaces	DescribeWorkspaces	us-east-1	emulator gap	CBOR-routing	1205	bf654c696d69741819ff
+58	cloudhsm-v2	DescribeBackups	us-east-1	emulator gap	CBOR-routing	1200	bf6a4d6178526573756c74731832ff
+59	workspaces	DescribeApplications	us-east-1	emulator gap	CBOR-routing	1207	bf6a4d6178526573756c74731819654f776e65726c303030303030303030303030ff
+60	workspaces	DescribeWorkspaceImages	us-east-1	emulator gap	CBOR-routing	1209	bf69496d61676554797065654f574e4544ff
+61	workspaces	DescribeWorkspacesPools	us-east-1	emulator gap	CBOR-routing	1210	bfff
+62	workspaces	DescribeWorkspaceBundles	us-east-1	emulator gap	CBOR-routing	1211	bfff
+63	workspaces	DescribeConnectionAliases	us-east-1	emulator gap	CBOR-routing	1212	bfff
+64	workspaces	DescribeWorkspaceDirectories	us-east-1	emulator gap	CBOR-routing	1213	bfff
+65	elasticache	DescribeCacheSecurityGroups	us-east-1	needs policy change	retired-security-groups	1227	416374696f6e3d44657363726962654361636865536563757269747947726f7570732656657273696f6e3d323031352d30322d3032
+66	codepipeline	ListWebhooks	us-east-1	emulator gap	CBOR-routing	1215	bf6a4d6178526573756c74731864ff
+67	codepipeline	ListPipelines	us-east-1	emulator gap	CBOR-routing	1219	bf6a6d6178526573756c74731903e8ff
+68	connectcases	GetDomain	us-east-1	emulator gap	date-time-response	1230	(empty)
+69	imagebuilder	ListImages	us-east-1	emulator gap	ImageBuilder-page-limit	1217	7b226d6178526573756c7473223a3130302c226f776e6572223a2253656c66227d
+70	imagebuilder	ListWorkflows	us-east-1	emulator gap	ImageBuilder-page-limit	1220	7b226d6178526573756c7473223a3130302c226f776e6572223a2253656c66227d
+71	imagebuilder	ListComponents	us-east-1	emulator gap	ImageBuilder-page-limit	1222	7b226d6178526573756c7473223a3130302c226f776e6572223a2253656c66227d
+72	imagebuilder	ListImageRecipes	us-east-1	emulator gap	ImageBuilder-page-limit	1231	7b226d6178526573756c7473223a3130302c226f776e6572223a2253656c66227d
+73	imagebuilder	ListImagePipelines	us-east-1	emulator gap	ImageBuilder-page-limit	1236	7b226d6178526573756c7473223a3130307d
+74	imagebuilder	ListContainerRecipes	us-east-1	emulator gap	ImageBuilder-page-limit	1240	7b226d6178526573756c7473223a3130302c226f776e6572223a2253656c66227d
+75	imagebuilder	ListLifecyclePolicies	us-east-1	emulator gap	ImageBuilder-page-limit	1241	7b226d6178526573756c7473223a3130307d
+76	imagebuilder	ListWorkflowBuildVersions	us-east-1	emulator gap	ImageBuilder-page-limit	1242	7b226d6178526573756c7473223a3130307d
+77	imagebuilder	ListComponentBuildVersions	us-east-1	emulator gap	ImageBuilder-page-limit	1243	7b226d6178526573756c7473223a3130307d
+78	imagebuilder	ListDistributionConfigurations	us-east-1	emulator gap	ImageBuilder-page-limit	1244	7b226d6178526573756c7473223a3130307d
+79	imagebuilder	ListInfrastructureConfigurations	us-east-1	emulator gap	ImageBuilder-page-limit	1245	7b226d6178526573756c7473223a3130307d
+80	mediapackage	ListOriginEndpoints	us-east-1	emulator gap	MediaPackage-page-limit	1232	(empty)
+81	securitylake	ListSubscribers	us-east-1	missing seed prerequisite	Security-Lake-enabled	1237	(empty)
+82	ssm-contacts	ListRotations	us-east-1	missing seed prerequisite	Incident-Manager-account	1238	7b224d6178526573756c7473223a313032347d
+83	direct-connect	DescribeLags	us-east-1	emulator gap	CBOR-routing	1247	bfff
+84	direct-connect	DescribeConnections	us-east-1	emulator gap	CBOR-routing	1251	bfff
+85	direct-connect	ListResiliencyGroups	us-east-1	emulator gap	CBOR-routing	1254	bfff
+86	direct-connect	DescribeInterconnects	us-east-1	emulator gap	CBOR-routing	1257	bfff
+87	chime-sdk-voice	ListPhoneNumbers	us-east-1	emulator gap	Chime-page-limit	1252	(empty)
+88	internetmonitor	GetMonitor	us-east-1	emulator gap	date-time-response	1262	(empty)
+89	service-catalog	ListPortfolios	us-east-1	emulator gap	CBOR-routing	1264	bf685061676553697a651864ff
+90	service-catalog	ListTagOptions	us-east-1	emulator gap	CBOR-routing	1268	bf685061676553697a6514ff
+91	service-catalog	ListServiceActions	us-east-1	emulator gap	CBOR-routing	1270	bf685061676553697a6514ff
+92	service-catalog	ListProvisionedProductPlans	us-east-1	emulator gap	CBOR-routing	1272	bf714163636573734c6576656c46696c746572bf634b6579674163636f756e746556616c75656473656c66ff685061676553697a6514ff
+93	route53resolver	ListTagsForResource	us-east-1	emulator gap	managed-firewall-tags	1283,1288,1296,1299	see-managed-firewall-tags
+94	route53resolver	ListTagsForResource	us-east-1	emulator gap	managed-firewall-tags	1283,1288,1296,1299	see-managed-firewall-tags
+95	route53resolver	ListTagsForResource	us-east-1	emulator gap	managed-firewall-tags	1283,1288,1296,1299	see-managed-firewall-tags
+96	route53resolver	ListTagsForResource	us-east-1	emulator gap	managed-firewall-tags	1283,1288,1296,1299	see-managed-firewall-tags
+97	network-firewall	ListFirewalls	us-east-1	emulator gap	CBOR-routing	1265	bf6a4d6178526573756c74731864ff
+98	network-firewall	ListRuleGroups	us-east-1	emulator gap	CBOR-routing	1278	bf6a4d6178526573756c74731864ff
+99	network-firewall	ListFirewallPolicies	us-east-1	emulator gap	CBOR-routing	1284	bf6a4d6178526573756c74731864ff
+100	servicediscovery	ListServices	us-east-1	emulator gap	CBOR-routing	1279	bf6746696c746572739fbf644e616d656e5245534f555243455f4f574e45526656616c7565739f6453454c46ffffff6a4d6178526573756c74731864ff
+101	network-firewall	ListContainerAssociations	us-east-1	emulator gap	CBOR-routing	1289	bf6a4d6178526573756c74731864ff
+102	servicediscovery	ListOperations	us-east-1	emulator gap	CBOR-routing	1285	bf6a4d6178526573756c74731864ff
+103	network-firewall	ListVpcEndpointAssociations	us-east-1	emulator gap	CBOR-routing	1293	bf6a4d6178526573756c74731864ff
+104	network-firewall	ListTLSInspectionConfigurations	us-east-1	emulator gap	CBOR-routing	1297	bf6a4d6178526573756c74731864ff
+105	timestream-query	ListScheduledQueries	us-east-1	emulator gap	Timestream-endpoint-routing	1280-1306/shared-bootstrap	7b7d
+106	timestream-write	ListDatabases	us-east-1	emulator gap	Timestream-endpoint-routing	1280-1306/shared-bootstrap	7b7d
+107	timestream-write	ListBatchLoadTasks	us-east-1	emulator gap	Timestream-endpoint-routing	1280-1306/shared-bootstrap	7b7d
+108	directory-service	DescribeTrusts	us-east-1	emulator gap	CBOR-routing	1282	bfff
+109	directory-service	DescribeSnapshots	us-east-1	emulator gap	CBOR-routing	1307	bfff
+110	directory-service	ListADAssessments	us-east-1	emulator gap	CBOR-routing	1310	bf654c696d69741864ff
+111	directory-service	DescribeEventTopics	us-east-1	emulator gap	CBOR-routing	1313	bfff
+112	directory-service	ListLogSubscriptions	us-east-1	emulator gap	CBOR-routing	1315	bfff
+113	resource-explorer-2	GetIndex	us-east-1	emulator gap	date-time-response	1308	(empty)
