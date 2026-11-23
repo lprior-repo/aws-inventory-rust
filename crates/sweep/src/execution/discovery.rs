@@ -1,5 +1,5 @@
-use super::RuntimeContext;
-use crate::{SweepError, call, input, record};
+use super::{InventoryStore, RuntimeContext};
+use crate::{CredentialSource, SweepError, call, input, record};
 use inventory_core::{
     catalog::runtime::{CallablePlan, RequestRouting, ResolvedEndpoint},
     record::{Record, ValueRef},
@@ -57,7 +57,7 @@ impl EndpointCache {
 }
 
 pub(super) async fn resolve(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     plan: &CallablePlan<'_>,
     mut endpoint: ResolvedEndpoint,
 ) -> Result<ResolvedEndpoint, SweepError> {

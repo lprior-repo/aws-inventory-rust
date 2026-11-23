@@ -1,11 +1,11 @@
 use anyhow::{Context, Result};
 use inventory_core::catalog::runtime::RuntimeCatalog;
-use inventory_engine::inventory::BinaryStore;
+use inventory_engine::inventory::InventoryStore;
 use inventory_sweep::{CredentialSource, SweepConfig, SweepControl, SweepSummary};
 
-pub(crate) async fn run(
+pub(crate) async fn run<S: InventoryStore>(
     catalog: &RuntimeCatalog<'_>,
-    store: &BinaryStore,
+    store: &S,
     config: SweepConfig,
     credentials: &impl CredentialSource,
 ) -> Result<SweepSummary> {

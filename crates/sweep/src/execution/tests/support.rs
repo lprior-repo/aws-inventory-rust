@@ -1,6 +1,6 @@
 use super::*;
 use inventory_core::inventory::ScopeOutcome;
-use inventory_engine::inventory::{PageCommit, SchemaRegistry, WorkLease};
+use inventory_engine::inventory::{BinaryStore, PageCommit, SchemaRegistry, WorkLease};
 
 pub(super) type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 

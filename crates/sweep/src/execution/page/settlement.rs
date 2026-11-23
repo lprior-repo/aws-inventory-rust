@@ -1,7 +1,7 @@
 use super::*;
 
 pub(super) async fn finish_error(
-    store: &BinaryStore,
+    store: &impl InventoryStore,
     lease: WorkLease,
     error: SweepError,
 ) -> Result<SweepSummary, SweepError> {
@@ -21,7 +21,7 @@ pub(super) async fn finish_error(
     finalize(store, lease, outcome).await
 }
 
-async fn release(store: &BinaryStore, lease: WorkLease) -> Result<(), SweepError> {
+async fn release(store: &impl InventoryStore, lease: WorkLease) -> Result<(), SweepError> {
     match store.release_lease(lease).await {
         Ok(()) | Err(StoreError::StaleLease) => Ok(()),
         Err(error) => Err(SweepError::Store(error)),
@@ -29,7 +29,7 @@ async fn release(store: &BinaryStore, lease: WorkLease) -> Result<(), SweepError
 }
 
 pub(super) async fn finalize(
-    store: &BinaryStore,
+    store: &impl InventoryStore,
     lease: WorkLease,
     outcome: StoredOutcome,
 ) -> Result<SweepSummary, SweepError> {

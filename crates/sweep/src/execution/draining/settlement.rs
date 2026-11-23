@@ -2,7 +2,7 @@ use super::*;
 use inventory_engine::inventory::{StoreError, WorkLease};
 
 pub(in crate::execution) async fn settle_batch(
-    store: &BinaryStore,
+    store: &impl InventoryStore,
     executor: &ApiExecutor,
     owned: Vec<WorkLease>,
     work: impl Future<Output = Result<SweepSummary, SweepError>>,
@@ -36,7 +36,7 @@ async fn drain(
 }
 
 pub(in crate::execution) async fn settle_owned(
-    store: &BinaryStore,
+    store: &impl InventoryStore,
     owned: impl ExactSizeIterator<Item = WorkLease>,
 ) -> Result<(), SweepError> {
     let admitted = owned.len();

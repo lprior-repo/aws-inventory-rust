@@ -14,6 +14,10 @@
   scope outcomes or continuation tokens, so resume completes the same inventory.
   CLI signal handling stays outside the library and spawns no signal task.
 
+- Collection now accepts any `InventoryStore` through monomorphized APIs,
+  including discovery, resume, lease settlement and page persistence. Concrete
+  SQLite construction remains in CLI wiring and test fixtures.
+
 - `InventoryStore` now exposes bounded sweep discovery, typed manifest creation,
   and generation-fenced lease release for immediate cancellation/resume.
   Queue depth is opt-in through `claim_with_depth`; ordinary claims retain their

@@ -13,14 +13,14 @@ use inventory_core::{
     inventory::ScopeOutcome as StoredOutcome,
     record::Record,
 };
-use inventory_engine::inventory::{BinaryStore, PageCommit, StoreError, WorkLease};
+use inventory_engine::inventory::{InventoryStore, PageCommit, StoreError, WorkLease};
 use settlement::{finalize, finish_error, summary};
 
 use super::{RuntimeContext, now_ms};
-use crate::{ScopeOutcomes, SweepError, SweepSummary, call, input};
+use crate::{CredentialSource, ScopeOutcomes, SweepError, SweepSummary, call, input};
 
 pub(super) async fn process(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     lease: WorkLease,
 ) -> Result<SweepSummary, SweepError> {
     let result = process_owned(context, lease).await;
@@ -31,7 +31,7 @@ pub(super) async fn process(
 }
 
 async fn process_owned(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     lease: WorkLease,
 ) -> Result<SweepSummary, SweepError> {
     if context.bootstrap.executor.is_cancelled() {
@@ -54,7 +54,7 @@ async fn process_owned(
 }
 
 async fn process_lease(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     lease: WorkLease,
 ) -> Result<SweepSummary, SweepError> {
     let plan = match lookup_plan(context, &lease) {
@@ -107,8 +107,8 @@ async fn process_lease(
     commit_response(context, lease, plan, cursor, response, request, &ancestry).await
 }
 
-fn lookup_plan<'a, 'catalog>(
-    context: &'a RuntimeContext<'_, 'catalog, impl crate::CredentialSource>,
+fn lookup_plan<'a, 'catalog, S: InventoryStore>(
+    context: &'a RuntimeContext<'_, 'catalog, impl CredentialSource, S>,
     lease: &WorkLease,
 ) -> Result<&'a CallablePlan<'catalog>, SweepError> {
     let scope = lease.scope();
@@ -147,7 +147,7 @@ struct PageRequest {
 }
 
 async fn commit_response(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     lease: WorkLease,
     plan: &CallablePlan<'_>,
     cursor: cursor::Cursor,
@@ -175,7 +175,7 @@ async fn commit_response(
 }
 
 async fn commit_parts(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     lease: WorkLease,
     parts: PageParts,
 ) -> Result<SweepSummary, SweepError> {
@@ -203,7 +203,7 @@ async fn commit_parts(
 }
 
 async fn commit_page(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     commit: PageCommit,
     done: bool,
     rows: u64,

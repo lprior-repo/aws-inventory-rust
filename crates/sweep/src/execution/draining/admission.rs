@@ -2,7 +2,7 @@ use super::*;
 use inventory_engine::inventory::WorkLease;
 
 pub(in crate::execution) async fn claim_batch<F>(
-    store: &BinaryStore,
+    store: &impl InventoryStore,
     executor: &ApiExecutor,
     concurrency: usize,
     leases: &mut Vec<WorkLease>,
@@ -22,7 +22,7 @@ where
 }
 
 async fn admit(
-    store: &BinaryStore,
+    store: &impl InventoryStore,
     leases: &mut Vec<WorkLease>,
     progress: &crate::control::Progress,
     result: Result<Option<WorkLease>, SweepError>,
@@ -43,7 +43,7 @@ async fn admit(
 }
 
 pub(super) async fn claim_next(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     sweep: &SweepId,
 ) -> Result<Option<inventory_engine::inventory::WorkLease>, SweepError> {
     let now = now_ms()?;

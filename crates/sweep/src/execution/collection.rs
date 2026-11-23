@@ -48,7 +48,7 @@ impl Resources {
 
 pub(super) async fn collect(
     catalog: &RuntimeCatalog<'_>,
-    store: &BinaryStore,
+    store: &impl InventoryStore,
     config: &SweepConfig,
     credentials: &impl CredentialSource,
     resources: &Resources,
@@ -63,23 +63,21 @@ pub(super) async fn collect(
 
 async fn initialize(
     bootstrap: &BootstrapContext<'_, '_, impl CredentialSource>,
-    store: &BinaryStore,
+    store: &impl InventoryStore,
 ) -> Result<(SweepId, AccountId), SweepError> {
     let account = bootstrap_account(bootstrap).await?;
     let sweep = sweep_id(store, bootstrap.config, &account).await?;
-    store
-        .create_sweep_manifest(&sweep, account.as_str())
-        .await?;
+    store.create_sweep_manifest(&sweep, &account).await?;
     Ok((sweep, account))
 }
 
-fn context<'a, 'catalog, C: CredentialSource>(
+fn context<'a, 'catalog, C: CredentialSource, S: InventoryStore>(
     bootstrap: BootstrapContext<'a, 'catalog, C>,
-    store: &'a BinaryStore,
+    store: &'a S,
     account: AccountId,
     lease_ms: i64,
     progress: &'a Progress,
-) -> Result<RuntimeContext<'a, 'catalog, C>, SweepError> {
+) -> Result<RuntimeContext<'a, 'catalog, C, S>, SweepError> {
     let consumers =
         page::consumer_index::ConsumerIndex::build(bootstrap.catalog).map_err(|error| {
             tracing::error!(%error, "reviewed consumer index construction failed");
@@ -97,7 +95,7 @@ fn context<'a, 'catalog, C: CredentialSource>(
 }
 
 async fn drain(
-    context: &RuntimeContext<'_, '_, impl CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     sweep: &SweepId,
 ) -> Result<SweepSummary, SweepError> {
     let regions = discover_regions(context).await?;

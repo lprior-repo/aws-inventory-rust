@@ -24,7 +24,7 @@ pub(super) fn narrow_regions(
 }
 
 pub(super) async fn seed_enumerations(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     sweep: &SweepId,
     regions: &[Region],
 ) -> Result<u64, SweepError> {
@@ -36,7 +36,7 @@ pub(super) async fn seed_enumerations(
 }
 
 fn enumeration_work(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     sweep: &SweepId,
     regions: &[Region],
 ) -> Result<Vec<WorkSpec>, SweepError> {
@@ -151,7 +151,7 @@ pub(super) fn scope_key(
 }
 
 pub(super) async fn drain_work(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     sweep: &SweepId,
     budget: SliceBudget,
 ) -> Result<SweepSummary, SweepError> {
@@ -173,7 +173,7 @@ pub(super) async fn drain_work(
 }
 
 async fn drain_batch(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     sweep: &SweepId,
     leases: &mut Vec<inventory_engine::inventory::WorkLease>,
     summary: &mut SweepSummary,
@@ -196,7 +196,7 @@ async fn drain_batch(
 }
 
 async fn claim_batch(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     sweep: &SweepId,
     leases: &mut Vec<inventory_engine::inventory::WorkLease>,
 ) -> Result<(), SweepError> {
@@ -238,7 +238,7 @@ pub(super) fn add_writes(
 }
 
 pub(super) async fn apply_persisted_summary(
-    store: &BinaryStore,
+    store: &impl InventoryStore,
     sweep: &SweepId,
     summary: &mut SweepSummary,
     slice_exhausted: bool,

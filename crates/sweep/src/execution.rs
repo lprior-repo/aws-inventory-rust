@@ -20,7 +20,7 @@ use inventory_core::{
     inventory::{AccountId, OperationId, Region, RegionId, ScopeKey, ServiceId},
 };
 use inventory_engine::{
-    inventory::{BinaryStore, SweepId, WorkSpec},
+    inventory::{InventoryStore, SweepId, WorkSpec},
     limiter::{ApiExecutor, ExecutorConfig},
 };
 
@@ -37,9 +37,9 @@ pub(super) struct BootstrapContext<'a, 'catalog, C: CredentialSource> {
     pub config: &'a SweepConfig,
 }
 
-pub(super) struct RuntimeContext<'a, 'catalog, C: CredentialSource> {
+pub(super) struct RuntimeContext<'a, 'catalog, C: CredentialSource, S: InventoryStore> {
     pub bootstrap: BootstrapContext<'a, 'catalog, C>,
-    pub store: &'a BinaryStore,
+    pub store: &'a S,
     pub account: AccountId,
     pub lease_ms: i64,
     pub endpoints: discovery::EndpointCache,
@@ -47,9 +47,9 @@ pub(super) struct RuntimeContext<'a, 'catalog, C: CredentialSource> {
     pub progress: &'a crate::control::Progress,
 }
 
-pub async fn run(
+pub async fn run<S: InventoryStore>(
     catalog: &RuntimeCatalog<'_>,
-    store: &BinaryStore,
+    store: &S,
     config: SweepConfig,
     credentials: &impl CredentialSource,
     control: crate::SweepControl,
@@ -130,7 +130,7 @@ async fn supervise(
 }
 
 async fn sweep_id(
-    store: &BinaryStore,
+    store: &impl InventoryStore,
     config: &SweepConfig,
     account: &AccountId,
 ) -> Result<SweepId, SweepError> {
@@ -205,7 +205,7 @@ fn unique_purpose<'borrow, 'catalog>(
 }
 
 async fn discover_regions(
-    context: &RuntimeContext<'_, '_, impl CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
 ) -> Result<Vec<Region>, SweepError> {
     let requested = context
         .bootstrap
