@@ -4,7 +4,7 @@ service = "elasticsearch-service"
 [[step]]
 id = "resource"
 operation = "CreateElasticsearchDomain"
-kind = "AWS::Elasticsearch::ElasticsearchDomain"
-identity = "DomainStatus.ARN"
+kind = "AWS::Elasticsearch::Domain"
+identity = { input = "DomainName" }
 [step.input]
 "DomainName" = "inventory-thin-elasticsearch"
