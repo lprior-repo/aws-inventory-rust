@@ -140,6 +140,12 @@ Deferral reasons are bounded to 1,024 UTF-8 bytes. The internal derived result i
 the standard `Result<OperationOverlay, String>` rather than an equivalent custom
 two-variant enum, avoiding a large-enum lint or a needless boxed allocation.
 
+Generated TOML uses a fixed rules date (`2026-11-15`), sorted operations and
+explicit basic-string escaping. Control characters, more than 4,096 operations
+and output exceeding 1 MiB are refused before publication. Unresolved endpoints
+defer enumeration; expansion and unclassified reads remain explicitly deferred.
+Denied operations are omitted entirely.
+
 ## One command
 
 ![How a run is proven on the emulator](img/35-test-loop.png)

@@ -4,7 +4,7 @@ use crate::{classes::DenyList, overlay::{Identity, Paginator, Scope}, plans::{Mo
 use serde_json::{Value, json};
 type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 
-fn given_model() -> Value {
+pub(super) fn given_model() -> Value {
     json!({"smithy":"2.0","shapes":{
         "n#Service":{"type":"service","operations":[{"target":"n#ListThings"}]},
         "n#ListThings":{"type":"operation","input":{"target":"n#Input"},"output":{"target":"n#Output"}},
