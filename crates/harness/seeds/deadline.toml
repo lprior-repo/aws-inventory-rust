@@ -1,0 +1,11 @@
+format = 1
+service = "deadline"
+
+[[step]]
+id = "farm"
+operation = "CreateFarm"
+kind = "AWS::Deadline::Farm"
+identity = "farmId"
+[step.input]
+displayName = "inventory-thin-deadline"
+clientToken = "12345678-1234-4234-8234-123456789abc"
