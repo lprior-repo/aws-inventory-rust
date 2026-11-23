@@ -1,41 +1,6 @@
 use super::*;
 
 #[tokio::test]
-pub(super) async fn given_a_final_page_when_committed_then_complete_outcome_is_atomic_and_idempotent()
--> TestResult {
-    let (_directory, store, _) = fixture().await?;
-    store.seed_work(work("finalize", "us-east-1")?).await?;
-    let sweep = SweepId::new("finalize".to_owned())?;
-    let lease = store.claim(&sweep, 100, 30).await?.ok_or("missing lease")?;
-    let result = store
-        .commit_page(page(
-            lease,
-            vec![observation("thing-1", "alpha")?],
-            true,
-            None,
-            101,
-        ))
-        .await?;
-
-    assert_eq!(result.stats.resources_inserted, 1);
-    // No active sweep, so resume returns Ok(()) with no mutation.
-    let dummy = SweepId::new("dummy".to_owned())?;
-    let account = inventory_core::inventory::AccountId::parse("111111111111")?;
-    store
-        .create_sweep_manifest(&dummy, account.as_str())
-        .await?;
-    store.resume_sweep(&dummy, &account).await?;
-    assert_eq!(
-        store
-            .projection_resource(&resource("thing-1")?)
-            .await?
-            .map(|item| item.name),
-        Some(None)
-    );
-    Ok(())
-}
-
-#[tokio::test]
 pub(super) async fn given_a_partial_scope_and_two_complete_misses_then_only_the_second_complete_miss_deletes()
 -> TestResult {
     let (directory, store, _) = fixture().await?;
@@ -98,30 +63,24 @@ pub(super) async fn given_a_partial_scope_and_two_complete_misses_then_only_the_
     Ok(())
 }
 
+async fn pending_store() -> TestResult<(tempfile::TempDir, BinaryStore)> {
+    let (directory, store, _) = fixture().await?;
+    let queued = work("rebuild-request", "us-east-1")?;
+    store.seed_works(&[queued]).await?;
+    let sweep = SweepId::new("rebuild-request".to_owned())?;
+    let lease = store.claim(&sweep, 100, 20).await?.ok_or("missing lease")?;
+    let observations = vec![observation("thing-1", "alpha")?];
+    let commit = page(lease, observations, true, None, 101);
+    store.commit_page(commit).await?;
+    Ok((directory, store))
+}
+
 #[tokio::test]
-pub(super) async fn given_pending_projection_work_when_graph_rebuild_is_requested_then_one_full_rebuild_replaces_it()
+async fn given_pending_projection_work_when_graph_rebuild_is_requested_then_one_full_rebuild_replaces_it()
 -> TestResult {
-    let (_directory, store, _) = fixture().await?;
-    store
-        .seed_work(work("rebuild-request", "us-east-1")?)
-        .await?;
-    let lease = store
-        .claim(&SweepId::new("rebuild-request".to_owned())?, 100, 20)
-        .await?
-        .ok_or("missing rebuild lease")?;
-    store
-        .commit_page(page(
-            lease,
-            vec![observation("thing-1", "alpha")?],
-            true,
-            None,
-            101,
-        ))
-        .await?;
+    let (_directory, store) = pending_store().await?;
     assert!(!store.projection_state().await?.rebuild_required);
-
     store.request_graph_rebuild().await?;
-
     let state = store.projection_state().await?;
     assert_eq!(state.pending, 1);
     assert!(state.rebuild_required);
@@ -129,11 +88,8 @@ pub(super) async fn given_pending_projection_work_when_graph_rebuild_is_requeste
     assert_eq!(entries.len(), 1);
     let marker = entries.first().ok_or("missing rebuild marker")?;
     assert!(marker.full_rebuild);
-    store
-        .ack_projection(inventory_engine::inventory::ProjectionAck::full_rebuild(
-            marker.revision,
-        )?)
-        .await?;
+    let ack = inventory_engine::inventory::ProjectionAck::full_rebuild(marker.revision)?;
+    store.ack_projection(ack).await?;
     let after = store.projection_state().await?;
     assert_eq!(after.pending, 0);
     assert!(!after.rebuild_required);

@@ -114,54 +114,6 @@ pub(super) async fn given_projection_outbox_overflow_when_rebuilt_then_marker_is
     Ok(())
 }
 #[tokio::test]
-pub(super) async fn given_an_unchanged_record_when_reobserved_then_no_projection_write_is_pending()
--> TestResult {
-    let (_directory, store, _) = fixture().await?;
-    store.seed_work(work("first", "us-east-1")?).await?;
-    let first = store
-        .claim(&SweepId::new("first".to_owned())?, 100, 20)
-        .await?
-        .ok_or("missing first lease")?;
-    store
-        .commit_page(page(
-            first,
-            vec![observation("thing-1", "alpha")?],
-            true,
-            None,
-            101,
-        ))
-        .await?;
-    let pending = store.drain_projection(10).await?;
-    let item = pending.first().ok_or("missing initial projection row")?;
-    store
-        .ack_projection(inventory_engine::inventory::ProjectionAck::new(
-            item.key.clone().ok_or("missing resource key")?,
-            item.revision,
-        )?)
-        .await?;
-
-    store.seed_work(work("second", "us-east-1")?).await?;
-    let second = store
-        .claim(&SweepId::new("second".to_owned())?, 200, 20)
-        .await?
-        .ok_or("missing second lease")?;
-    let result = store
-        .commit_page(page(
-            second,
-            vec![observation("thing-1", "alpha")?],
-            true,
-            None,
-            201,
-        ))
-        .await?;
-
-    assert_eq!(result.stats.resources_inserted, 0);
-    assert_eq!(result.stats.resources_changed, 0);
-    assert!(store.drain_projection(10).await?.is_empty());
-    Ok(())
-}
-
-#[tokio::test]
 pub(super) async fn given_a_catalogued_database_when_reopened_then_only_matching_catalog_bytes_resume()
 -> TestResult {
     let (directory, store, catalog) = fixture().await?;
@@ -182,70 +134,6 @@ pub(super) async fn given_a_catalogued_database_when_reopened_then_only_matching
         reopened.validate_catalog(b"different catalog").await,
         Err(StoreError::CatalogMismatch)
     ));
-    Ok(())
-}
-
-#[tokio::test]
-pub(super) async fn given_a_newer_projection_revision_when_old_revision_is_acked_then_new_revision_remains()
--> TestResult {
-    let (_directory, store, _) = fixture().await?;
-    store.seed_work(work("revision-one", "us-east-1")?).await?;
-    let first = store
-        .claim(&SweepId::new("revision-one".to_owned())?, 100, 20)
-        .await?
-        .ok_or("missing first lease")?;
-    store
-        .commit_page(page(
-            first,
-            vec![observation("thing-1", "alpha")?],
-            true,
-            None,
-            101,
-        ))
-        .await?;
-    let old = store
-        .drain_projection(10)
-        .await?
-        .into_iter()
-        .next()
-        .ok_or("missing first outbox revision")?;
-    let old_key = old.key.clone().ok_or("missing resource key")?;
-    store
-        .ack_projection(inventory_engine::inventory::ProjectionAck::new(
-            old_key.clone(),
-            old.revision,
-        )?)
-        .await?;
-
-    store.seed_work(work("revision-two", "us-east-1")?).await?;
-    let second = store
-        .claim(&SweepId::new("revision-two".to_owned())?, 200, 20)
-        .await?
-        .ok_or("missing second lease")?;
-    store
-        .commit_page(page(
-            second,
-            vec![observation("thing-1", "beta")?],
-            true,
-            None,
-            201,
-        ))
-        .await?;
-    store
-        .ack_projection(inventory_engine::inventory::ProjectionAck::new(
-            old_key,
-            old.revision,
-        )?)
-        .await?;
-    let current = store
-        .drain_projection(10)
-        .await?
-        .into_iter()
-        .next()
-        .ok_or("new outbox revision was removed")?;
-
-    assert!(current.revision > old.revision);
-    assert!(!current.deleted);
     Ok(())
 }
 

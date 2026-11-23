@@ -11,6 +11,7 @@ mod reference_candidates;
 mod references;
 mod relation_permissions;
 mod schema;
+mod store_api;
 mod sweep_history;
 mod tag_mapping;
 mod typed;
@@ -35,6 +36,7 @@ pub use projection_read::{
     ProjectionEdgeCursor, ProjectionEdgeHeader, ProjectionEdgePage, ProjectionResource,
     ProjectionSnapshot, ProjectionState, ProjectionTag, ProjectionTagCursor, ProjectionTagPage,
 };
+pub use store_api::{InventoryStore, ProjectionSnapshotRead};
 pub use sweep_history::{LastSweep, last_completed_sweep};
 pub use unobserved::UnobservedScope;
 pub use work::{

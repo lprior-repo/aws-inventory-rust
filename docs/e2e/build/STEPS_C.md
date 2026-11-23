@@ -90,6 +90,14 @@ B3.2). Its cost is a generic parameter; there is no dynamic dispatch.
   Send`. Do not add the `async-trait` crate. `inventory.rs` is at 280 lines;
   the trait goes in its own file.
 
+The SQLite implementation exposes this seam through
+`inventory::InventoryStore` and `inventory::ProjectionSnapshotRead`.
+`inventory_store/conformance.rs` runs backend-neutral scenarios from a fresh
+factory per scenario; the SQLite factory prepares sweep manifests before
+returning the store. SQLite schema assertions, injected SQL failures, reopen
+checks, manifest discovery, explicit rebuild requests and unobserved-scope
+reports remain backend-local. They do not expand the portable store contract.
+
 ### C5.3 The sweep and the projection use the trait
 
 - **Goal:** No code outside `crates/engine/src/inventory/` names

@@ -2,6 +2,8 @@
 mod batch_seed;
 #[path = "inventory_store/behavior.rs"]
 mod behavior;
+#[path = "inventory_store/conformance.rs"]
+mod conformance;
 #[path = "inventory_store/reference.rs"]
 mod reference;
 #[path = "inventory_store/scalar.rs"]
@@ -12,3 +14,8 @@ mod scalar;
     reason = "shared via #[path]; each test target uses a subset of the helpers"
 )]
 mod support;
+
+#[tokio::test]
+async fn store_conformance_binary_store() -> support::TestResult {
+    conformance::run(support::conformance_fixture).await
+}
