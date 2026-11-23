@@ -113,6 +113,7 @@ fn given_unresolved_endpoint_when_generated_then_all_enumeration_is_deferred() -
         None,
         &crate::plans::Vocabulary::default(),
         &crate::classes::DenyList::builtin(),
+        None,
     )?;
     assert_eq!(generated.enumerate, 1);
     assert_eq!(generated.callable, 0);

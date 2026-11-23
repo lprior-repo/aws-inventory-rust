@@ -7,6 +7,8 @@ pub(super) struct Report {
     enumerate: usize,
     callable: usize,
     deferred: usize,
+    expand: usize,
+    expanded: usize,
 }
 
 impl Report {
@@ -29,10 +31,37 @@ impl Report {
             "service {name} callable={} deferred={deferred}",
             service.callable
         )?;
-        for (reason, count) in &service.reasons {
-            writeln!(self.text, "reason {reason} {count}")?;
-        }
+        self.expansions(name, service)?;
+        self.reasons(service)?;
         Ok(())
+    }
+
+    fn reasons(&mut self, service: &GeneratedService) -> Result<(), Failure> {
+        service.reasons.iter().try_for_each(|(reason, count)| {
+            writeln!(self.text, "reason {reason} {count}").map_err(Into::into)
+        })
+    }
+
+    fn expansions(&mut self, name: &str, service: &GeneratedService) -> Result<(), Failure> {
+        add(&mut self.expand, service.expand)?;
+        add(&mut self.expanded, service.expanded)?;
+        let deferred = service
+            .expand
+            .checked_sub(service.expanded)
+            .ok_or("expand count mismatch")?;
+        writeln!(
+            self.text,
+            "expansions {name} candidates={} callable={} deferred={deferred}",
+            service.expand, service.expanded
+        )?;
+        service
+            .policy
+            .operations()
+            .iter()
+            .filter(|(_, entry)| entry.class == Some(crate::overlay::OverlayClass::Expand))
+            .try_for_each(|(name, entry)| {
+                writeln!(self.text, "expand {name} bindings={:?}", entry.bind).map_err(Into::into)
+            })
     }
 
     pub(super) fn finish(mut self) -> Result<String, Failure> {
@@ -43,6 +72,15 @@ impl Report {
             self.text,
             "totals enumerate_candidates={} callable={} deferred={}",
             self.enumerate, self.callable, self.deferred
+        )?;
+        writeln!(
+            self.text,
+            "totals expand_candidates={} callable_expand={} deferred_expand={}",
+            self.expand,
+            self.expanded,
+            self.expand
+                .checked_sub(self.expanded)
+                .ok_or("expand count mismatch")?
         )?;
         Ok(self.text.0)
     }

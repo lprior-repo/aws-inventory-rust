@@ -15,12 +15,7 @@ pub(super) fn derive(
     items: Option<&ItemSelector>,
     pagination: &Pagination<'_>,
 ) -> Result<Identity, String> {
-    let path = selected_path(items, pagination).ok_or(MISSING)?;
-    let selected = model
-        .resolve_path(operation, "output", path)
-        .map_err(str::to_owned)?
-        .ok_or(MISSING)?;
-    let selected = model.unwrap_aggregates(selected).map_err(str::to_owned)?;
+    let selected = selected(model, operation, items, pagination)?;
     if shape_type(selected.value) == Some("string") {
         return Ok(Identity::Key(vec![
             MemberPath::selected("$").map_err(|e| e.to_string())?,
@@ -32,6 +27,29 @@ pub(super) fn derive(
         ));
     }
     modeled_identifiers(model, operation, selected).ok_or_else(|| MISSING.to_owned())
+}
+
+fn selected<'a>(
+    model: &Model<'a>,
+    operation: &str,
+    items: Option<&ItemSelector>,
+    pagination: &Pagination<'_>,
+) -> Result<ShapeRef<'a>, String> {
+    let shape = match items {
+        Some(ItemSelector::Root) => model.side_root(operation, "output").ok_or(MISSING)?,
+        _ => {
+            let path = selected_path(items, pagination).ok_or(MISSING)?;
+            model
+                .resolve_path(operation, "output", path)
+                .map_err(str::to_owned)?
+                .ok_or(MISSING)?
+        }
+    };
+    let item = model.unwrap_aggregates(shape).map_err(str::to_owned)?;
+    if shape_type(shape.value) == Some("map") && shape_type(item.value) == Some("string") {
+        return Err(MISSING.to_owned());
+    }
+    Ok(item)
 }
 
 fn selected_path<'a>(
@@ -49,19 +67,32 @@ fn selected_path<'a>(
 
 fn arn<'a>(model: &Model<'a>, item: ShapeRef<'a>, operation: &str) -> Option<&'a str> {
     let members = item.value.get("members")?.as_object()?;
-    let string = |member: &Value| is_string(model, member);
-    if members.get("Arn").is_some_and(string) {
-        return Some("Arn");
-    }
-    let noun = operation
-        .strip_prefix("List")
-        .or_else(|| operation.strip_prefix("Describe"))?;
-    let noun = noun.strip_suffix('s').map_or(noun, |noun| noun);
+    let noun = noun(operation)?;
+    let generic = members.keys().any(|name| name.eq_ignore_ascii_case("Arn"));
     let mut candidates = members
         .iter()
-        .filter(|(name, member)| name.starts_with(noun) && name.ends_with("Arn") && string(member));
+        .filter(|(name, member)| arn_name(name, noun, generic) && is_string(model, member));
     let (name, _) = candidates.next()?;
     candidates.next().is_none().then_some(name.as_str())
+}
+
+fn noun(operation: &str) -> Option<&str> {
+    let noun = operation
+        .strip_prefix("List")
+        .or_else(|| operation.strip_prefix("Describe"))
+        .or_else(|| operation.strip_prefix("Get"))?;
+    Some(noun.strip_suffix('s').map_or(noun, |noun| noun))
+}
+
+fn arn_name(name: &str, noun: &str, generic: bool) -> bool {
+    if generic {
+        return name.eq_ignore_ascii_case("Arn");
+    }
+    name.get(..noun.len())
+        .is_some_and(|prefix| prefix.eq_ignore_ascii_case(noun))
+        && name
+            .get(name.len().saturating_sub(3)..)
+            .is_some_and(|suffix| suffix.eq_ignore_ascii_case("Arn"))
 }
 
 fn is_string(model: &Model<'_>, member: &Value) -> bool {
@@ -71,19 +102,12 @@ fn is_string(model: &Model<'_>, member: &Value) -> bool {
 }
 
 fn modeled_identifiers(model: &Model<'_>, operation: &str, item: ShapeRef<'_>) -> Option<Identity> {
-    let id = model.operation_id(operation)?;
-    let members = item.value.get("members")?.as_object()?;
-    let mut resources = model
-        .of_type("resource")
-        .filter(|(_, resource)| resource.get("list").and_then(target) == Some(id));
-    let (_, resource) = resources.next()?;
-    if resources.next().is_some() {
-        return None;
-    }
+    let resource = resource(model, operation)?;
     let identifiers = resource.get("identifiers")?.as_object()?;
     if identifiers.is_empty() || identifiers.len() > 32 {
         return None;
     }
+    let members = item.value.get("members")?.as_object()?;
     let paths = identifiers
         .keys()
         .map(|key| {
@@ -94,4 +118,15 @@ fn modeled_identifiers(model: &Model<'_>, operation: &str, item: ShapeRef<'_>) -
         })
         .collect::<Option<Vec<_>>>()?;
     Some(Identity::Key(paths))
+}
+
+fn resource<'a>(model: &Model<'a>, operation: &str) -> Option<&'a Value> {
+    let id = model.operation_id(operation)?;
+    let mut resources = model.of_type("resource").filter(|(_, resource)| {
+        ["list", "read"]
+            .iter()
+            .any(|key| resource.get(*key).and_then(target) == Some(id))
+    });
+    let (_, resource) = resources.next()?;
+    resources.next().is_none().then_some(resource)
 }
