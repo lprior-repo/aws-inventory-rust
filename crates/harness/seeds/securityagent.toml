@@ -4,6 +4,6 @@ service = "securityagent"
 [[step]]
 id = "resource"
 operation = "CreateApplication"
-kind = "AWS::SecurityAgent::Application"
+kind = "AWS::ApiOnly::SecurityAgentApplication"
 identity = "applicationId"
 [step.input]
