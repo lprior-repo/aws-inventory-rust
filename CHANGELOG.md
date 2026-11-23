@@ -2,6 +2,8 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Native first-page probes accept repeatable `--service` filters for isolated
+  service seed verification; omitted filters retain the full-catalog report.
 - Native first-page probes account for every callable purpose, including bootstrap
   and tag plans, with exactly one row per service/operation. STS identity is reused
   for account-bound root inputs. Known absent features and singleton configurations

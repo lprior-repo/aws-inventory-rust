@@ -43,6 +43,7 @@ impl Context {
             &self.executor,
             &self.region,
             &self.endpoint,
+            &[],
         )
         .await?)
     }

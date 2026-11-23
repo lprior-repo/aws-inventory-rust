@@ -67,7 +67,7 @@ async fn given_child_plan_when_calling_once_then_root_contract_rejects_before_tr
 async fn given_no_python_when_probe_cli_runs_then_report_contains_every_enumeration() -> TestResult
 {
     let bytes = fixture::compiled(4, |_| {})?;
-    let report = cli::report(&bytes).await?;
+    let report = cli::report(&bytes, &[]).await?;
     assert_eq!(
         report
             .lines()
