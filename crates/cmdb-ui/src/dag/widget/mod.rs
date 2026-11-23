@@ -1,3 +1,4 @@
+mod frame_harness;
 mod input;
 mod paint;
 mod paint_style;

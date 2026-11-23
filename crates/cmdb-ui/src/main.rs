@@ -7,6 +7,7 @@ mod chrome;
 mod cli;
 mod dag;
 mod data;
+mod frame_harness;
 mod frame_time;
 mod graph_view;
 mod table;
@@ -19,9 +20,6 @@ use crate::cli::Command;
 
 app_main!(App, configure: configure_startup);
 
-/// Reads the command line at startup, before any window is shown. `--help` prints usage and
-/// exits 0. A bad command line prints the error with usage and exits 2. Both exit the process
-/// here: a panic would be contained by the framework, which would keep the window open.
 fn configure_startup(_cx: &mut Cx) {
     match cli::from_process_args() {
         Ok(Command::Run(config)) => cli::set_startup_config(config),

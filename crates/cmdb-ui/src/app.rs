@@ -2,6 +2,8 @@
 mod actions;
 #[path = "app/requests.rs"]
 mod requests;
+#[path = "app/frame_harness.rs"]
+mod frame_harness;
 use actions::*;
 use makepad_widgets::makepad_platform::thread::SignalToUI;
 use makepad_widgets::*;
@@ -40,6 +42,8 @@ pub struct App {
     shutting_down: bool,
     #[rust]
     frame_time_recorder: Option<FrameTimeRecorder>,
+    #[rust]
+    frame_harness: Option<crate::frame_harness::FrameHarness>,
 }
 
 impl App {
@@ -175,17 +179,16 @@ impl App {
                 rows,
                 total,
                 error,
-            } => self.apply_snapshot(cx, counts, rows, total, error),
-            WorkerEvent::GraphStatus { error } => {
-                self.graph_access_error = error.clone();
-                self.apply_graph_event(cx, crate::data::Graph::default(), error);
-            }
+            } => self.apply_worker_snapshot(cx, counts, rows, total, error),
+            WorkerEvent::GraphStatus { error } => self.apply_worker_graph_status(cx, error),
             WorkerEvent::Graph { graph, error } => {
                 let successful = error.is_none();
                 if self.apply_graph_event(cx, graph, error) && successful {
                     self.graph_access_error = None;
                 }
             }
+            WorkerEvent::HarnessGraph { graph, resources, edges } =>
+                return self.apply_harness_graph(cx, graph, resources, edges),
         }
         self.refresh(cx);
     }

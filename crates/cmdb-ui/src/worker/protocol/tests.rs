@@ -56,3 +56,20 @@ fn given_new_page_and_newer_selection_when_draining_then_access_status_uses_page
     ));
     Ok(())
 }
+
+#[test]
+fn given_harness_graph_when_draining_then_current_graph_payload_is_preserved() {
+    let revisions = Revisions::default();
+    let output = Output {
+        revision: Some(0),
+        event: WorkerEvent::HarnessGraph {
+            graph: crate::dag::graph::DagGraph::default(),
+            resources: 500,
+            edges: 0,
+        },
+    };
+    let events = current_events([output].into_iter(), &revisions);
+    assert!(matches!(events.last(), Some(WorkerEvent::HarnessGraph {
+        resources: 500, edges: 0, ..
+    })));
+}
