@@ -20,6 +20,32 @@ A zero partial count does not mean success when failed scopes remain. All 112
 failed-scope warning records, including repeated requests for distinct child
 scopes, are retained in [seed-oracle-failed-scopes.tsv](seed-oracle-failed-scopes.tsv).
 
+### Grouped failed-scope causes
+
+Counts include repeated child scopes, not just distinct operations. Error names
+alone do not establish whether the request, emulator, or collection policy is
+wrong; unresolved rows below are not claimed as emulator defects.
+
+| Recorded cause | Scopes | Real inventory defect versus emulator gap |
+|---|---:|---|
+| `SerializationException` | 77 | Unattributed service rejection; request/response evidence is needed to distinguish an inventory encoding defect from emulator decoding. |
+| `InvalidParameterValueException` | 11 | Unattributed; all are Image Builder list operations. |
+| `ResourceNotFoundException` | 6 | Unattributed missing-resource responses: Account 1, Security Lake 1, Route 53 Resolver tag children 4. |
+| `ValidationException` | 4 | Unattributed validation responses: Marketplace Agreement, BCM Pricing Calculator, SSO Admin and SSM Contacts. |
+| Invalid timestamp | 3 | [INFERENCE] Emulator timestamp-format gap, consistent with the observed Resource Explorer numeric value for a DateTime shape; Connect Cases and Internet Monitor have the same decoder symptom but no separate raw-wire attribution. |
+| `AccessGrantsInstanceNotExistsError` | 3 | Missing S3 Access Grants prerequisite; this response alone establishes neither an inventory defect nor an emulator bug. |
+| `AmbiguousService` | 3 | Confirmed emulator endpoint-discovery gap: mandatory Timestream `DescribeEndpoints` cannot disambiguate query/write services sharing the signing name. |
+| `InvalidParameterValue` | 2 | Unattributed legacy Redshift/ElastiCache security-group requests. |
+| `UnprocessableEntityException` | 1 | Unattributed MediaPackage origin-endpoint request. |
+| `OperationNotPermitted` | 1 | Unattributed EC2 trunk-interface-association request. |
+| `BadRequestException` | 1 | Unattributed Chime SDK Voice phone-number request. |
+| **Total** | **112** | **3 confirmed emulator-gap scopes, 3 inferred timestamp-gap scopes, 106 otherwise unattributed. No additional inventory defect is proven by these error classes alone.** |
+
+The existing aws-wire numeric-DateTime regression deliberately rejects the
+observed numeric timestamp while accepting the same value as EpochSeconds.
+This merge does not relax modeled timestamp formats or bypass endpoint
+discovery to hide those failures.
+
 ## Every original mismatch
 
 [seed-oracle-classification.tsv](seed-oracle-classification.tsv) contains all
@@ -196,3 +222,42 @@ docs/e2e/build/seed-oracle-failed-scopes.tsv
 docs/e2e/build/probe-positive-collection-diff.tsv
 docs/e2e/build/seed-oracle-commits.tsv
 ```
+
+## Post-merge integration verification
+
+The preceding verification section describes the oracle implementation phase.
+The subsequent integration used `/tmp/w4-int` on `w4/int`: EMR fix `a59d9420`
+was already the integration tip and was retained once, without another
+cherry-pick. The preexisting isolation-test diff was only valid rustfmt line
+wrapping, not a competing behavioral change; it was committed separately as
+`cab82505`. Oracle merge `0d97fed7` retained both additive changelog sections.
+
+With `CARGO_TARGET_DIR=/tmp/tgt-int`, `CARGO_INCREMENTAL=0`, `RUSTC_WRAPPER=`
+and three Cargo jobs, every command below completed with exit zero:
+
+```sh
+cargo fmt --all
+cargo clippy -j3 -p catalog-tool -p inventory-sweep -p inventory-harness -p aws-wire --all-targets --locked -- -D warnings
+cargo test -j3 -p catalog-tool -p inventory-sweep -p inventory-harness -p aws-wire --all-targets --locked
+cargo run -j3 -p catalog-tool --locked -- models compile --write
+/tmp/tgt-int/debug/catalog-tool models compile --check
+/tmp/tgt-int/debug/catalog-tool overlays generate --check
+/tmp/tgt-int/debug/catalog-tool kinds generate --check
+```
+
+The crate suites recorded **2,123 passed, zero failed and 27 ignored**,
+including the EMR seed-isolation regression. Initial Clippy findings were
+repaired rather than suppressed: `98684770` boxes the large finished-progress
+summary and removes an unnecessary ARN borrow; `4ad17787` contains the remaining
+requested source formatting. The finished-event regression preserves all
+summary counters, including skipped child requests, and bounds event-slot size.
+Box allocation occurs only for the final event when a listener is configured,
+not for ordinary progress updates or runs without a listener. External constructors
+of `ProgressEvent::Finished` must now provide `Box<SweepSummary>`.
+
+Logs and exit statuses are in `/tmp/w4-int-oracle-integration/`. The preexisting
+untracked `.local/int` evidence was preserved there as `preexisting-int`;
+regeneration used the separate `tmp` directory. The compiled catalog remains
+ignored and is not committed. No additional emulator sweep, PostgreSQL E2E,
+ignored live test, workspace-wide suite or formal proof was run for this merge.
+Nothing was pushed; publishing is the coordinator's responsibility.
