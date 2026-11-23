@@ -31,6 +31,30 @@ fn given_repeated_service_selectors_when_parsed_then_order_and_qualification_are
     Ok(())
 }
 
+#[tokio::test]
+async fn given_unknown_service_selector_when_sweep_runs_then_exit_two_precedes_database_creation()
+-> Result<()> {
+    assert_unknown_selector("unknown-service").await?;
+    assert_unknown_selector("ec2:NoSuchOperation").await
+}
+
+async fn assert_unknown_selector(selector: &str) -> Result<()> {
+    let root = tempfile::tempdir()?;
+    let database = root.path().join("inventory.bin");
+    let options = Options::try_parse_from([
+        "test",
+        "--database",
+        database.to_str().context("test database path must be UTF-8")?,
+        "--service",
+        selector,
+    ])?
+    .sweep;
+    assert_eq!(run(&options).await?, std::process::ExitCode::from(2));
+    assert!(!database.exists());
+    assert_eq!(std::fs::read_dir(root.path())?.count(), 0);
+    Ok(())
+}
+
 #[test]
 fn given_database_password_when_debugged_or_clap_rejects_another_value_then_secret_is_hidden()
 -> Result<()> {
