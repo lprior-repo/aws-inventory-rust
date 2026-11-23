@@ -154,7 +154,7 @@ row.
   did.
 - **Size:** about 520 added, 200 moved. Two changes: (1) split `main.rs`,
   (2) the commands.
-- **Watch out:** `crates/cmdb-bench/src` is under the 25-line function gate.
+- **Watch out:** `crates/cmdb-bench/src` is under the under-60-line function gate.
   Published numbers come from Linux: Docker on macOS runs in a virtual machine
   and is slower on disk, more so with a bind mount, so a macOS row is marked
   as such and never compared with a Linux row. Container defaults are small

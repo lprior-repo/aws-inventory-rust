@@ -114,7 +114,7 @@ the production function gate by the existing test-path convention.
 
 All 317 Rust files under `crates/sweep/src`, including tests, are at most
 300 lines (51,963 lines total; largest file: 298). Production functions pass
-the 25-line gate. Formatting and all-target `clippy -D warnings` pass.
+the function-length gate (under 60 lines). Formatting and all-target `clippy -D warnings` pass.
 Regression suites pass: `inventory-sweep` has 461 passing tests; the root
 `aws-inventory --features sweep` run has 99 passing tests and two ignored.
 The root run includes the separate B5.1 stdout-golden migration (`670b16b0`),

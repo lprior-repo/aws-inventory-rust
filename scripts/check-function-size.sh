@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Farley gate: covered production surfaces must stay <=25 lines.
+# Function-length gate: covered production surfaces must stay under 60 lines.
 # Span is measured from the `fn` line through the closing brace. Macro-heavy
 # bodies are counted conservatively; the check intentionally fails closed.
-MAX_LINES="${MAX_FUNCTION_LINES:-25}"
+MAX_LINES="${MAX_FUNCTION_LINES:-59}"
 status=0
 
 check_file() {

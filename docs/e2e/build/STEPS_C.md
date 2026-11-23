@@ -669,7 +669,7 @@ reports remain backend-local. They do not expand the portable store contract.
   external client would); the test fixtures may, as a dev-dependency.
   `count(*)` on PostgreSQL scans; if the counts query is slow at 250,000 rows,
   read counts per kind from a small summary the store maintains, as its own
-  step. `crates/cmdb-view/src` is under the 25-line function gate.
+  step. `crates/cmdb-view/src` is under the under-60-line function gate.
 
 ### C6.12 Delete the old store code
 

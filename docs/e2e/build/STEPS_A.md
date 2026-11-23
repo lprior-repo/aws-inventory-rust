@@ -20,7 +20,7 @@ Conventions used in every step:
   (`[workspace.lints]` in `Cargo.toml`, which also denies
   `arithmetic_side_effects`).
 - `scripts/check-function-size.sh` checks `crates/catalog-tool/src` and
-  `crates/harness/src`, so the 25-line limit is enforced on almost all of this
+  `crates/harness/src`, so the under-60-line limit is enforced on almost all of this
   track.
 
 ## A0 Catalog gate
@@ -74,7 +74,7 @@ Conventions used in every step:
 - **Size:** about 120 added, 60 moved, 10 deleted. One change.
 - **Watch out:** `RuntimeCatalogCompileError` is `#[non_exhaustive]`; adding a
   variant is not a breaking change inside the workspace. Every moved function
-  must stay at or under 25 lines.
+  must stay under 60 lines.
 - **Review fix (2026-11-18):** this plan was written from an archive with no
   git history. Before changing anything, record the commit this step runs on
   (`git rev-parse HEAD`) in `docs/e2e/RUN_HERE.md`, and re-run the seven
@@ -417,7 +417,7 @@ Conventions used in every step:
   generate --check` exits 0 and `overlay --check` still passes.
 - **Done when:** the gate task exists and passes with nothing generated.
 - **Size:** about 330 added, 40 moved. One change.
-- **Watch out:** `main.rs` functions are near the 25-line limit already.
+- **Watch out:** `main.rs` functions must stay under the 60-line limit.
   `publish_bytes` compares with the bytes read at the start; pass the original.
 
 ### A1.5 Prove generation cannot open a denied operation
