@@ -221,3 +221,40 @@ crates/catalog-tool/src/overlay/builtin/family_l_p/consumer_tests.rs
 ```
 
 Compatibility: owner filters deliberately remove shared/reference observations; Content/Secret denials and mixed-owner/computed/geographic/timestamp-identity deferrals reduce callable coverage honestly. Correlated identities change keys for mapped-stream associations, SageMaker child records, SSM contact resolutions, and Security Hub feature administrators. Notifications contact scope changes regional keys to account keys. Existing persisted snapshots may therefore require reconciliation under the new catalog; this patch does not migrate stored data.
+
+## WAFv2 sweep-path branch regression
+
+`policy_tz_completion_tests/wafv2.rs` compiles the real pinned WAFv2 policies and drains durable SQLite work through the existing sweep request/page/child harness. Its native-request fake transport serves both REGIONAL and CLOUDFRONT branches for WebACLs, IP sets, regex pattern sets, rule groups, managed rule sets, and logging configurations. It checks exactly one list and one detail request for each resource family in each branch (24 requests total), with no cross-branch sibling requests.
+
+Home Region is deliberately eu-west-1. Every named detail request must retain the parent Scope, Name and Id; CloudFront requests must use wafv2.us-east-1.amazonaws.com while regional requests use wafv2.eu-west-1.amazonaws.com. Logging details have no modeled Scope input: their ResourceArn must instead retain the correct parent branch. The test also checks the two durable WebACL ResourceKeys, one regional and one account-global.
+
+Positive and mutation command:
+
+```sh
+CARGO_TARGET_DIR=/tmp/tgt-suspect cargo test -j3 -p inventory-sweep --locked given_wafv2_scope_branches_when_sweeping_then_only_matching_child_requests_persist
+```
+
+The positive run passed (1 test, 462 filtered out). Mutated `endpoint_plans::detail_branches` once from `Binding::FromBranch` to the prior unqualified `Binding::From`; the same test failed (exit 101), observing wafv2.eu-west-1.amazonaws.com where the CloudFront parent required wafv2.us-east-1.amazonaws.com. Restored `FromBranch` immediately afterward. The mutation is not committed. This is a fake-transport sweep regression, not emulator or live-AWS evidence.
+
+Additional changed paths for this regression:
+
+```text
+crates/sweep/src/execution/page/child/policy_tz_completion_tests.rs
+crates/sweep/src/execution/page/child/policy_tz_completion_tests/catalog.rs
+crates/sweep/src/execution/page/child/policy_tz_completion_tests/wafv2.rs
+crates/sweep/src/execution/page/child/policy_tz_completion_tests/wafv2/transport.rs
+```
+
+Runtime regression commit: `25620c57`. Crate gate commands (the package name is `inventory-sweep`):
+
+```sh
+cargo fmt
+CARGO_TARGET_DIR=/tmp/tgt-suspect cargo clippy -j3 -p inventory-sweep --all-targets --locked -- -D warnings
+CARGO_TARGET_DIR=/tmp/tgt-suspect cargo test -j3 -p inventory-sweep --locked
+```
+
+The first gate invocation passed formatting and all-target Clippy. Its full sweep test run exceeded the 600-second command deadline; before the deadline, the log reported stale fixture failures for WAF branch provenance, App Mesh parent pairs, and mixed search engines. This timed-out invocation is not a passing full-suite result.
+
+Merged `w4/int` before rerunning the sweep suite without a command deadline. This imports the existing App Mesh, mixed-search-engine, and WAF fixture repairs (`90bf8b47`, `725c5a02`, `0e1dab2f`) rather than duplicating their fixes; the new runtime regression remains commit `25620c57`.
+
+The post-merge `CARGO_TARGET_DIR=/tmp/tgt-suspect cargo test -j3 -p inventory-sweep --locked` completed successfully with no command deadline: 470 tests passed across two suites (287.73 seconds test time, 311.02 seconds command wall time). The new WAFv2 runtime regression and imported fixture repairs are consistent. No additional fixture or production changes were needed.

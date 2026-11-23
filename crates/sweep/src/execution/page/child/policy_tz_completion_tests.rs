@@ -6,6 +6,7 @@ mod metadata;
 mod queries;
 mod scenario;
 mod waf;
+mod wafv2;
 mod wire;
 mod workspaces;
 
