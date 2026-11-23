@@ -4,7 +4,7 @@ service = "inspector2"
 [[step]]
 id = "resource"
 operation = "CreateFilter"
-kind = "AWS::Inspector2::Filter"
+kind = "AWS::InspectorV2::Filter"
 identity = "arn"
 [step.input]
 action = "NONE"
