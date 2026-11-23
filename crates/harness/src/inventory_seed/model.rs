@@ -52,6 +52,8 @@ pub(super) enum PreparedInputValue {
     PreviousOutput { step: StepId, path: Vec<Selector> },
     Literal(inventory_core::record::Value),
     Template(PreparedTemplate),
+    List(Vec<PreparedInputValue>),
+    Structure(Vec<(String, PreparedInputValue)>),
 }
 pub(super) struct PreparedStep<'a> {
     pub id: StepId,
@@ -156,23 +158,56 @@ fn prepare_input<'a>(
     value: &SeedInputValue,
 ) -> Result<PreparedInput, SeedError> {
     let path = modeled_path(operation.service, operation.operation.input()?, field)?;
-    let value = match value {
-        SeedInputValue::Text(text) => PreparedInputValue::Text(text.clone()),
-        SeedInputValue::Boolean(value) => PreparedInputValue::Boolean(*value),
-        SeedInputValue::Integer(value) => PreparedInputValue::Integer(*value),
+    let value = prepare_value(catalog, scenario, operation, field, value)?;
+    Ok(PreparedInput { path, value })
+}
+
+fn prepare_value<'a>(
+    catalog: Catalog<'a>,
+    scenario: &SeedScenario,
+    operation: SeedOperation<'a>,
+    field: &FieldPath,
+    value: &SeedInputValue,
+) -> Result<PreparedInputValue, SeedError> {
+    match value {
+        SeedInputValue::Text(text) => Ok(PreparedInputValue::Text(text.clone())),
+        SeedInputValue::Boolean(value) => Ok(PreparedInputValue::Boolean(*value)),
+        SeedInputValue::Integer(value) => Ok(PreparedInputValue::Integer(*value)),
         SeedInputValue::Literal(value) => {
             let target =
                 members::path_target(operation.service, operation.operation.input()?, field)?;
-            PreparedInputValue::Literal(super::literal::resolve(operation.service, target, value)?)
+            Ok(PreparedInputValue::Literal(
+                super::literal::resolve(operation.service, target, value)?,
+            ))
         }
         SeedInputValue::Template(value) => {
-            template::prepare(catalog, scenario, operation, field, value)?
+            let prepared = template::prepare(catalog, scenario, operation, field, value)?;
+            Ok(prepared)
         }
         SeedInputValue::PreviousOutput { step, path } => {
-            previous_output(catalog, scenario, *step, path)?
+            previous_output(catalog, scenario, *step, path)
         }
-    };
-    Ok(PreparedInput { path, value })
+        SeedInputValue::List(items) => {
+            let converted = items
+                .iter()
+                .map(|item| {
+                    prepare_value(catalog, scenario, operation, field, item)
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            Ok(PreparedInputValue::List(converted))
+        }
+        SeedInputValue::Structure(fields) => {
+            let converted = fields
+                .iter()
+                .map(|(name, item)| {
+                    let prepared =
+                        prepare_value(catalog, scenario, operation, field, item)?;
+                    Ok::<_, SeedError>((name.clone(), prepared))
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            Ok(PreparedInputValue::Structure(converted))
+        }
+    }
 }
 
 fn previous_output(

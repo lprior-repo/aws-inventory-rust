@@ -101,7 +101,7 @@ fn scenario_enforces_step_binding_and_path_limits() -> Result<(), Box<dyn std::e
     assert!(FieldPath::new(&["Vpc-Id"]).is_err());
     assert!(FieldPath::new(&["a", "b", "c", "d", "e", "f", "g", "h", "i"]).is_err());
     let oversized = (0_u8..13)
-        .map(|id| step(id, "CreateResource", Vec::new()))
+        .map(|id| step(id as u16, "CreateResource", Vec::new()))
         .collect::<Result<Vec<_>, _>>()?;
     assert!(SeedScenario::new(oversized).is_err());
     let inputs = (0_u8..9)
@@ -140,7 +140,7 @@ fn scenario_enforces_step_binding_and_path_limits() -> Result<(), Box<dyn std::e
 }
 
 fn step(
-    id: u8,
+    id: u16,
     operation: &str,
     inputs: Vec<SeedInput>,
 ) -> Result<SeedStep, Box<dyn std::error::Error>> {

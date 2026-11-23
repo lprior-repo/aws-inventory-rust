@@ -9,18 +9,30 @@ pub use template::{SeedNestedBinding, SeedTemplate, SeedValuePart};
 use validation::*;
 
 const MAX_STEPS: usize = 12;
-const MAX_INPUTS_PER_STEP: usize = 8;
-const MAX_TOTAL_INPUTS: usize = 24;
+const MAX_INPUTS_PER_STEP: usize = 64;
+const MAX_TOTAL_INPUTS: usize = 65536;
 const MAX_BINDING_DEPTH: usize = 8;
 const MAX_FIELD_NAME: usize = 128;
+const MAX_STEP_ID: u16 = 4095;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
-pub struct StepId(pub u8);
+pub struct StepId(pub u16);
 
 impl StepId {
-    pub fn new(value: u8) -> Self {
+    pub fn new(value: u16) -> Self {
         Self(value)
+    }
+}
+
+impl TryFrom<usize> for StepId {
+    type Error = SeedError;
+
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        let id = u16::try_from(value).map_err(|_| {
+            SeedError::Invalid("seed step id value exceeds its limit")
+        })?;
+        Ok(Self::new(id))
     }
 }
 
@@ -55,6 +67,8 @@ pub enum SeedInputValue {
     PreviousOutput { step: StepId, path: FieldPath },
     Literal(inventory_core::record::Value),
     Template(SeedTemplate),
+    List(Vec<SeedInputValue>),
+    Structure(Vec<(String, SeedInputValue)>),
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -95,6 +109,7 @@ pub struct SeedStep {
     pub response_checks: Vec<SeedOutputCheck>,
     pub expected_identity: Option<String>,
     pub scope: SeedScope,
+    pub repeat: u32,
 }
 
 impl SeedStep {
@@ -116,6 +131,7 @@ impl SeedStep {
             response_checks: Vec::new(),
             expected_identity: None,
             scope: SeedScope::Regional,
+            repeat: 1,
         }
     }
 
@@ -131,6 +147,11 @@ impl SeedStep {
 
     pub fn with_scope(mut self, scope: SeedScope) -> Self {
         self.scope = scope;
+        self
+    }
+
+    pub fn with_repeat(mut self, repeat: u32) -> Self {
+        self.repeat = repeat;
         self
     }
 
@@ -150,6 +171,7 @@ impl SeedStep {
             response_checks: Vec::new(),
             expected_identity: None,
             scope: SeedScope::Regional,
+            repeat: 1,
         }
     }
 }
@@ -215,9 +237,26 @@ fn validate_limits(
     steps: &[SeedStep],
     relationships: &[SeedRelationship],
 ) -> Result<(), SeedError> {
-    if !(1..=MAX_STEPS).contains(&steps.len()) || relationships.len() > 6 {
+    if steps.is_empty() || steps.len() > MAX_STEPS {
         return Err(SeedError::Invalid(
-            "seed scenario exceeds its step or relationship limit",
+            "seed scenario exceeds its step limit",
+        ));
+    }
+    let expanded = steps
+        .iter()
+        .try_fold(0_usize, |count, step| {
+            let step_count = usize::try_from(step.repeat).map_err(|_| {
+                SeedError::Invalid("seed step repeat count is invalid")
+            })?;
+            count
+                .checked_add(step_count)
+                .ok_or(SeedError::Invalid(
+                    "seed scenario expanded step count overflow",
+                ))
+        })?;
+    if expanded > MAX_STEPS {
+        return Err(SeedError::Invalid(
+            "seed scenario exceeds its expanded step limit",
         ));
     }
     let input_count = steps.iter().try_fold(0_usize, |count, step| {
@@ -228,6 +267,11 @@ fn validate_limits(
     if input_count > MAX_TOTAL_INPUTS {
         return Err(SeedError::Invalid(
             "seed scenario exceeds its input binding limit",
+        ));
+    }
+    if relationships.len() > MAX_STEPS {
+        return Err(SeedError::Invalid(
+            "seed scenario exceeds its relationship limit",
         ));
     }
     Ok(())

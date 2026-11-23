@@ -4,6 +4,8 @@ mod materialize;
 mod oracle;
 #[cfg(test)]
 mod tests;
+use std::collections::BTreeMap;
+
 use super::{
     ScenarioSeedOracle, SeedResourceIdentity, SeedResourcePair, TypedSeedOracle,
     config::{MutationPermit, SeedConfig, SeedError},
@@ -219,17 +221,42 @@ fn materialize_input(
     state: &SeedState,
     input: &PreparedInput,
 ) -> Result<(Vec<FieldId>, Value), SeedError> {
-    let value = match &input.value {
-        PreparedInputValue::Text(text) => Value::Text(text.clone()),
-        PreparedInputValue::Boolean(value) => Value::Bool(*value),
-        PreparedInputValue::Integer(value) => Value::Int(*value),
-        PreparedInputValue::Literal(value) => value.clone(),
-        PreparedInputValue::Template(template) => materialize::template(state, template)?,
-        PreparedInputValue::PreviousOutput { step, path } => {
-            materialize::output_value(state, *step, path)?
-        }
-    };
+    let value = materialize_value(state, &input.value)?;
     Ok((input.path.clone(), value))
+}
+
+fn materialize_value(
+    state: &SeedState,
+    value: &PreparedInputValue,
+) -> Result<Value, SeedError> {
+    match value {
+        PreparedInputValue::Text(text) => Ok(Value::Text(text.clone())),
+        PreparedInputValue::Boolean(value) => Ok(Value::Bool(*value)),
+        PreparedInputValue::Integer(value) => Ok(Value::Int(*value)),
+        PreparedInputValue::Literal(value) => Ok(value.clone()),
+        PreparedInputValue::Template(template) => {
+            materialize::template(state, template)
+        }
+        PreparedInputValue::PreviousOutput { step, path } => {
+            materialize::output_value(state, *step, path)
+        }
+        PreparedInputValue::List(items) => {
+            let converted = items
+                .iter()
+                .map(|item| materialize_value(state, item))
+                .collect::<Result<Vec<_>, _>>()?;
+            Ok(Value::List(converted))
+        }
+        PreparedInputValue::Structure(fields) => {
+            let mut map = BTreeMap::new();
+            for (name, item) in fields {
+                let key = inventory_core::record::Key::Name(name.clone());
+                let value = materialize_value(state, item)?;
+                map.insert(key, value);
+            }
+            Ok(Value::Map(map))
+        }
+    }
 }
 
 fn validate_response(
