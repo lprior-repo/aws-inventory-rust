@@ -1,5 +1,5 @@
 use super::super::{MAX_EXCEPTIONS_BYTES, MAX_EXCEPTIONS_ROWS, MAX_TYPE_NAME_BYTES};
-use super::{Exceptions, MAX_SQL_NAME_BYTES, NameError, TestResult, sql_name, sql_name_used};
+use super::{Exceptions, MAX_DERIVED_SQL_NAME_BYTES, NameError, TestResult, sql_name, sql_name_used};
 
 #[test]
 fn type_name_byte_bound_accepts_256_and_rejects_257_before_copying() -> TestResult {
@@ -27,7 +27,7 @@ fn exception_byte_bound_accepts_65536_and_rejects_65537() -> TestResult {
         sql_name("A::X", &exceptions),
         Err(NameError::TooLong {
             type_name: "A::X".to_owned(),
-            limit: MAX_SQL_NAME_BYTES,
+            limit: MAX_DERIVED_SQL_NAME_BYTES,
         })
     );
     let oversized = "a".repeat(65_536);
@@ -95,7 +95,7 @@ fn expansion_stops_before_later_exception_matches_are_visited() -> TestResult {
         sql_name_used("A::XY", &exceptions, &mut used),
         Err(NameError::TooLong {
             type_name: "A::XY".to_owned(),
-            limit: MAX_SQL_NAME_BYTES,
+            limit: MAX_DERIVED_SQL_NAME_BYTES,
         })
     );
     assert_eq!(used, [true, false]);
@@ -111,7 +111,7 @@ fn plain_output_stops_before_later_exception_matches_are_visited() -> TestResult
         sql_name_used(&kind, &exceptions, &mut used),
         Err(NameError::TooLong {
             type_name: kind,
-            limit: MAX_SQL_NAME_BYTES,
+            limit: MAX_DERIVED_SQL_NAME_BYTES,
         })
     );
     assert_eq!(used, [false]);
@@ -126,7 +126,7 @@ fn repeated_large_replacements_return_a_bounded_failure() -> TestResult {
         sql_name(&kind, &exceptions),
         Err(NameError::TooLong {
             type_name: kind,
-            limit: MAX_SQL_NAME_BYTES,
+            limit: MAX_DERIVED_SQL_NAME_BYTES,
         })
     );
     Ok(())
@@ -139,7 +139,7 @@ fn plain_word_boundaries_cannot_grow_output_past_the_limit() -> TestResult {
         sql_name(&kind, &Exceptions::none()),
         Err(NameError::TooLong {
             type_name: kind,
-            limit: MAX_SQL_NAME_BYTES,
+            limit: MAX_DERIVED_SQL_NAME_BYTES,
         })
     );
     Ok(())

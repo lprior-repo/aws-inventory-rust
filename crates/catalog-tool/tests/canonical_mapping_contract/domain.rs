@@ -97,7 +97,9 @@ fn given_present_incompatible_display_path_in_one_view_when_compiled_then_it_is_
         let root = fixture(&source, &review)?;
         assert!(matches!(
             compile(&root, Some("FunctionName"))?,
-            Err(runtime_catalog::RuntimeCatalogCompileError::Capability)
+            Err(runtime_catalog::RuntimeCatalogCompileError::KindContext { kind, path, reason })
+                if kind == KIND && path == "FunctionName"
+                    && reason == "path does not end in a string"
         ));
         root.close()?;
     }

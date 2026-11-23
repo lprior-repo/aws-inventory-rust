@@ -17,6 +17,12 @@ pub struct Vocabulary {
     pub(super) pairs: BTreeSet<(String, String)>,
 }
 impl Vocabulary {
+    pub(crate) fn pairs(&self) -> impl Iterator<Item = (&str, &str)> {
+        self.pairs
+            .iter()
+            .map(|(input, output)| (input.as_str(), output.as_str()))
+    }
+
     pub fn record(&mut self, model: &Model<'_>) -> Result<(), Error> {
         model.of_type("operation").try_for_each(|(id, _)| {
             if let Some(Pagination::Modeled {

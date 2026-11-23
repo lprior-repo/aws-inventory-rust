@@ -1,6 +1,6 @@
 mod state;
 use state::State;
-pub(in crate::overlay::check) use state::StateArgs;
+pub(in crate::overlay) use state::StateArgs;
 mod inputs;
 mod selection;
 mod special_inputs;
@@ -13,7 +13,7 @@ use crate::{
 };
 use std::collections::BTreeMap;
 
-pub(in crate::overlay::check) fn operation(args: StateArgs<'_, '_, '_>) -> OperationResult {
+pub(in crate::overlay) fn operation(args: StateArgs<'_, '_, '_>) -> OperationResult {
     let Some(operation_id) = args.model.operation_id(args.name) else {
         return unknown_operation(args.service, args.name);
     };
@@ -227,6 +227,7 @@ fn callable_handle(state: &State<'_, '_, '_>) -> crate::overlay::check::Callable
         operation: state.name.to_owned(),
         class,
         plan,
+        origin: crate::overlay::Origin::Hand,
     }
 }
 fn modeled_items(state: &State<'_, '_, '_>) -> Option<ItemSelector> {

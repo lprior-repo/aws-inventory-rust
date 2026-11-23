@@ -2,6 +2,9 @@ mod builtin;
 mod construct;
 mod fingerprint;
 mod merge;
+pub mod generate;
+mod generated;
+pub use generated::{load, load_with_cfn};
 mod relation_targets;
 mod source;
 pub use source::{ApiOnlyMapping, BootstrapMapping, CfnMapping, MappingSource, OperationMapping};
@@ -41,6 +44,8 @@ pub enum KindMapError {
     TooLarge,
     #[error("kind map exceeds the {MAX_ROWS}-row bound")]
     TooManyRows,
+    #[error(transparent)]
+    GeneratedFile(#[from] crate::smithy::Error),
     #[error("invalid typed kind mapping entry {line}: {reason}")]
     InvalidRow { line: usize, reason: &'static str },
     #[error("duplicate kind map entry: {0}")]
@@ -102,6 +107,7 @@ pub struct ApiOnlyKind {
     pub kind: String,
     pub table_name: SqlName,
     pub reason: String,
+    pub display_name_path: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]

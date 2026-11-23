@@ -6,7 +6,11 @@ aws-endpoints.report
 aws-classes.report
 aws-plans.report
 aws-overlay.report
+aws-overlay-generated.report
 coverage-denominator.report
 cloudcontrol-parent-candidates.json
 cloudcontrol-universal.json
 iam-read-only-policy.json
+aws-kinds-generated.report
+aws-names.report
+kinds.generated.tsv

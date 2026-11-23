@@ -1,5 +1,5 @@
 mod compile;
-mod fields;
+pub(crate) mod fields;
 mod model;
 mod registry;
 mod report;

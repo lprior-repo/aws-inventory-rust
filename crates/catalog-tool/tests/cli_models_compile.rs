@@ -4,6 +4,8 @@ mod drift;
 mod git;
 #[path = "cli_models_compile/provenance.rs"]
 mod provenance;
+#[path = "cli_models_compile/kinds.rs"]
+mod kinds;
 use inventory_core::catalog::Catalog;
 use std::{
     fs,

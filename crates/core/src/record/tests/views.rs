@@ -121,3 +121,20 @@ fn allocation_free_skip_keeps_supported_container_headers_and_sibling_positions(
 
     assert_target(&record)
 }
+
+#[test]
+fn map_view_round_trips_original_encoded_bytes() -> TestResult {
+    let record = Record::from_bytes(vec![0xa1, 1, 2])?;
+    assert_eq!(record.root().as_bytes()?, record.as_bytes());
+    Ok(())
+}
+
+#[test]
+fn nested_map_view_excludes_following_sibling_bytes() -> TestResult {
+    let record = Record::from_bytes(vec![0xa2, 1, 0xa1, 1, 2, 2, 3])?;
+    let Some(ValueRef::Map(map)) = record.root().get_field(FieldId::new(1)?)? else {
+        return Err("nested map absent".into());
+    };
+    assert_eq!(map.as_bytes()?, &[0xa1, 1, 2]);
+    Ok(())
+}

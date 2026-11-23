@@ -29,15 +29,15 @@ pub(super) struct State<'a, 'm, 'd> {
     pub(super) identity_valid: bool,
 }
 
-pub(in crate::overlay::check) struct StateArgs<'a, 'm, 'd> {
-    pub(in crate::overlay::check) service: &'a str,
-    pub(in crate::overlay::check) name: &'a str,
-    pub(in crate::overlay::check) item: Option<OperationOverlay>,
-    pub(in crate::overlay::check) class: Class,
-    pub(in crate::overlay::check) model: &'a Model<'m>,
-    pub(in crate::overlay::check) deny: &'a DenyList<'d>,
-    pub(in crate::overlay::check) vocabulary: &'a Vocabulary,
-    pub(in crate::overlay::check) overlays: &'a BTreeMap<String, OperationOverlay>,
+pub(in crate::overlay) struct StateArgs<'a, 'm, 'd> {
+    pub(in crate::overlay) service: &'a str,
+    pub(in crate::overlay) name: &'a str,
+    pub(in crate::overlay) item: Option<OperationOverlay>,
+    pub(in crate::overlay) class: Class,
+    pub(in crate::overlay) model: &'a Model<'m>,
+    pub(in crate::overlay) deny: &'a DenyList<'d>,
+    pub(in crate::overlay) vocabulary: &'a Vocabulary,
+    pub(in crate::overlay) overlays: &'a BTreeMap<String, OperationOverlay>,
 }
 
 impl<'a, 'm, 'd> State<'a, 'm, 'd> {

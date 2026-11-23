@@ -65,28 +65,8 @@ pub(super) fn service(
     service: &str,
     operations: Vec<(&str, OperationOverlay)>,
 ) -> Result<ServiceOverlay, NameError> {
-    if !service.starts_with(|c: char| c.is_ascii_lowercase() || c.is_ascii_digit())
-        || !service
-            .bytes()
-            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-')
-        || operations.len() > super::MAX_OPERATIONS
-    {
-        return Err(NameError {
-            value: service.to_owned(),
-        });
-    }
-    let operations =
-        operations
-            .into_iter()
-            .try_fold(BTreeMap::new(), |mut result, (key, value)| {
-                let key = name(key)?;
-                if result.insert(key.clone(), value).is_some() {
-                    return Err(NameError {
-                        value: format!("{service}/{key}: duplicate operation"),
-                    });
-                }
-                Ok(result)
-            })?;
+    validate_service(service, operations.len())?;
+    let operations = operation_map(service, operations)?;
     super::policy::validate(&operations)?;
     Ok(ServiceOverlay {
         service: service.to_owned(),
@@ -100,7 +80,39 @@ pub(super) fn service(
             emulator_tested: false,
         },
         operations,
+        origin: BTreeMap::new(),
     })
+}
+
+fn validate_service(service: &str, count: usize) -> Result<(), NameError> {
+    if !service.starts_with(|c: char| c.is_ascii_lowercase() || c.is_ascii_digit())
+        || !service
+            .bytes()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-')
+        || count > super::MAX_OPERATIONS
+    {
+        return Err(NameError {
+            value: service.to_owned(),
+        });
+    }
+    Ok(())
+}
+
+fn operation_map(
+    service: &str,
+    operations: Vec<(&str, OperationOverlay)>,
+) -> Result<BTreeMap<OperationName, OperationOverlay>, NameError> {
+    operations
+        .into_iter()
+        .try_fold(BTreeMap::new(), |mut result, (key, value)| {
+            let key = name(key)?;
+            if result.insert(key.clone(), value).is_some() {
+                return Err(NameError {
+                    value: format!("{service}/{key}: duplicate operation"),
+                });
+            }
+            Ok(result)
+        })
 }
 
 pub(super) fn path(value: &str) -> Result<MemberPath, NameError> {

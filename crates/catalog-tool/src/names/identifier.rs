@@ -1,4 +1,4 @@
-use super::{MAX_SQL_NAME_BYTES, NameError};
+use super::{MAX_DERIVED_SQL_NAME_BYTES, NameError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, thiserror::Error)]
 pub enum SqlNameReason {
@@ -11,7 +11,7 @@ pub enum SqlNameReason {
     #[error("the sqlite_ prefix is reserved")]
     ReservedPrefix,
 
-    #[error("reserved SQLite keyword")]
+    #[error("reserved PostgreSQL or SQLite keyword")]
     ReservedKeyword,
 }
 
@@ -20,16 +20,21 @@ pub struct SqlName(String);
 
 impl SqlName {
     pub(super) fn new(name: String, type_name: &str) -> Result<Self, NameError> {
-        if name.len() > MAX_SQL_NAME_BYTES {
+        if name.len() > MAX_DERIVED_SQL_NAME_BYTES {
             return Err(NameError::TooLong {
                 type_name: type_name.to_owned(),
-                limit: MAX_SQL_NAME_BYTES,
+                limit: MAX_DERIVED_SQL_NAME_BYTES,
             });
         }
         if let Some(reason) = invalid_reason(&name) {
             return Err(NameError::InvalidSqlName { name, reason });
         }
-        Ok(Self(name))
+        inventory_core::inventory::shorten_sql_name(name)
+            .map(Self)
+            .map_err(|_| NameError::InvalidSqlName {
+                name: type_name.to_owned(),
+                reason: SqlNameReason::InvalidSyntax,
+            })
     }
 
     pub fn as_str(&self) -> &str {
@@ -54,15 +59,15 @@ fn invalid_reason(name: &str) -> Option<SqlNameReason> {
     if !valid_initial || !valid_words {
         return Some(SqlNameReason::InvalidSyntax);
     }
+    if super::keywords::is_reserved(name) {
+        return Some(SqlNameReason::ReservedKeyword);
+    }
 
     if name.split('_').count() < 2 {
         return Some(SqlNameReason::TooFewWords);
     }
     if name.starts_with("sqlite_") {
         return Some(SqlNameReason::ReservedPrefix);
-    }
-    if matches!(name, "current_date" | "current_time" | "current_timestamp") {
-        return Some(SqlNameReason::ReservedKeyword);
     }
     None
 }

@@ -1,4 +1,4 @@
-use super::{MAX_SQL_NAME_BYTES, NameError, SqlName};
+use super::{MAX_DERIVED_SQL_NAME_BYTES, NameError};
 
 pub(super) struct Output<'a> {
     type_name: &'a str,
@@ -9,7 +9,7 @@ impl<'a> Output<'a> {
     pub(super) fn new(type_name: &'a str) -> Self {
         Self {
             type_name,
-            text: String::with_capacity(MAX_SQL_NAME_BYTES),
+            text: String::with_capacity(MAX_DERIVED_SQL_NAME_BYTES),
         }
     }
 
@@ -32,8 +32,8 @@ impl<'a> Output<'a> {
         Ok(())
     }
 
-    pub(super) fn finish(self) -> Result<SqlName, NameError> {
-        SqlName::new(self.text, self.type_name)
+    pub(super) fn finish(self) -> String {
+        self.text
     }
 
     fn check_growth(&self, additional: usize) -> Result<(), NameError> {
@@ -41,11 +41,11 @@ impl<'a> Output<'a> {
             .text
             .len()
             .checked_add(additional)
-            .is_some_and(|length| length <= MAX_SQL_NAME_BYTES);
+            .is_some_and(|length| length <= MAX_DERIVED_SQL_NAME_BYTES);
         if !within_limit {
             return Err(NameError::TooLong {
                 type_name: self.type_name.to_owned(),
-                limit: MAX_SQL_NAME_BYTES,
+                limit: MAX_DERIVED_SQL_NAME_BYTES,
             });
         }
         Ok(())

@@ -1,7 +1,7 @@
 use std::collections::BTreeSet;
 
 use super::{
-    EXACT_CASES, Exceptions, MAX_SQL_NAME_BYTES, NameError, TestResult, render_names, sql_name,
+    EXACT_CASES, Exceptions, MAX_DERIVED_SQL_NAME_BYTES, MAX_SQL_NAME_BYTES, NameError, TestResult, render_names, sql_name,
 };
 
 const ORACLE: &str = include_str!("../../../tests/fixtures/names-plain.tsv");
@@ -33,12 +33,7 @@ fn plain_names_match_all_independent_oracle_rows_reporting_every_difference() ->
     assert_eq!(rows.len(), 1_881);
     let differences: Vec<_> = rows
         .iter()
-        .filter_map(
-            |(kind, expected)| match sql_name(kind, &Exceptions::none()) {
-                Ok(name) if name.as_str() == *expected => None,
-                actual => Some(format!("{kind}: oracle={expected}, contract={actual:?}")),
-            },
-        )
+        .filter_map(|(kind, expected)| oracle_difference(kind, expected))
         .collect();
     assert_eq!(
         differences,
@@ -47,6 +42,22 @@ fn plain_names_match_all_independent_oracle_rows_reporting_every_difference() ->
         differences.join("\n")
     );
     Ok(())
+}
+
+fn oracle_difference(kind: &str, expected: &str) -> Option<String> {
+    let shortened = if expected.len() > MAX_SQL_NAME_BYTES {
+        match inventory_core::inventory::shorten_sql_name(expected.to_owned()) {
+            Ok(name) => Some(name),
+            Err(error) => return Some(format!("{kind}: invalid oracle: {error}")),
+        }
+    } else {
+        None
+    };
+    let expected = shortened.as_deref().map_or(expected, |name| name);
+    match sql_name(kind, &Exceptions::none()) {
+        Ok(name) if name.as_str() == expected => None,
+        actual => Some(format!("{kind}: oracle={expected}, contract={actual:?}")),
+    }
 }
 
 #[test]
@@ -212,7 +223,7 @@ fn rendering_propagates_overlong_names_before_unused_exception_errors() -> TestR
         render_names(&[&format!("A::{}", "B".repeat(127))], &exceptions),
         Err(NameError::TooLong {
             type_name: format!("A::{}", "B".repeat(127)),
-            limit: MAX_SQL_NAME_BYTES
+            limit: MAX_DERIVED_SQL_NAME_BYTES
         })
     );
     Ok(())

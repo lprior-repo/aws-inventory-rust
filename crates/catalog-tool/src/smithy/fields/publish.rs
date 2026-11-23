@@ -26,7 +26,7 @@ pub(super) fn publish(
     )
 }
 
-pub(in crate::smithy) fn publish_bytes(
+pub(crate) fn publish_bytes(
     path: &Path,
     original: Option<&[u8]>,
     bytes: &[u8],
@@ -97,7 +97,7 @@ fn write_and_rename(
     Ok(Publication::Renamed)
 }
 
-pub(in crate::smithy) fn read_bytes(path: &Path, limit: u64) -> Result<Option<Vec<u8>>, Error> {
+pub(crate) fn read_bytes(path: &Path, limit: u64) -> Result<Option<Vec<u8>>, Error> {
     let file = match File::open(path) {
         Ok(file) => file,
         Err(error) if error.kind() == io::ErrorKind::NotFound => return Ok(None),
