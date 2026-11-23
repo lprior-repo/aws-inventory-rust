@@ -21,7 +21,12 @@ pub(super) fn derive(
             MemberPath::selected("$").map_err(|e| e.to_string())?,
         ]));
     }
-    if let Some(arn) = arn(model, selected, operation) {
+    let arn = arn(model, selected, operation).or_else(|| {
+        matches!(items, Some(ItemSelector::Root))
+            .then(|| request_arn(model, selected, operation))
+            .flatten()
+    });
+    if let Some(arn) = arn {
         return Ok(Identity::Arn(
             MemberPath::new(arn).map_err(|e| e.to_string())?,
         ));
@@ -72,6 +77,32 @@ fn arn<'a>(model: &Model<'a>, item: ShapeRef<'a>, operation: &str) -> Option<&'a
     let mut candidates = members
         .iter()
         .filter(|(name, member)| arn_name(name, noun, generic) && is_string(model, member));
+    let (name, _) = candidates.next()?;
+    candidates.next().is_none().then_some(name.as_str())
+}
+
+fn request_arn<'a>(model: &Model<'a>, item: ShapeRef<'a>, operation: &str) -> Option<&'a str> {
+    if !operation.starts_with("Get") && !operation.starts_with("Describe") {
+        return None;
+    }
+    let required = model
+        .required_paths(operation, &std::collections::BTreeSet::new())
+        .ok()?;
+    let input = model.side_root(operation, "input")?;
+    let input = input.value.get("members")?.as_object()?;
+    let mut candidates = item
+        .value
+        .get("members")?
+        .as_object()?
+        .iter()
+        .filter(|(name, member)| {
+            name.ends_with("Arn")
+                && required.iter().any(|path| path == *name)
+                && is_string(model, member)
+                && input
+                    .get(*name)
+                    .is_some_and(|request| target(request) == target(member))
+        });
     let (name, _) = candidates.next()?;
     candidates.next().is_none().then_some(name.as_str())
 }

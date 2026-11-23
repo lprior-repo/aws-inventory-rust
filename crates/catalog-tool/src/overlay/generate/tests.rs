@@ -2,6 +2,7 @@ mod children;
 mod edge;
 mod identities;
 mod policies;
+mod root_identity;
 use super::{Derived, derive};
 use crate::{
     classes::DenyList,

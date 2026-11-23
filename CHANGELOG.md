@@ -37,6 +37,10 @@
   be replaced by validated generated children. Per-class/protocol counts,
   advisory audit differences and mutation evidence are documented in
   `docs/e2e/build/GENERATOR_EVIDENCE.md`.
+- Generator integration preserves reviewed safety decisions and shared
+  MediaConnect gateway-instance kinds. Singleton detail identity uses a required,
+  matching modeled ARN rather than treating related agent/security-group lists
+  as the inventoried resource.
 
 - Sweep accepts repeatable `--service service[:Operation]` selectors. Bootstrap
   calls and required ancestors remain enabled; descendants require an explicit
