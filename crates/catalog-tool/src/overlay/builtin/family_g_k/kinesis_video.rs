@@ -29,13 +29,18 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
         ),
         (
             "DescribeMappedResourceConfiguration",
-            policy::query(
-                policy::enumerate(
-                    "MappedResourceConfigurationList",
-                    policy::arn("ARN")?,
-                    Some(("NextToken", "NextToken")),
+            policy::bind(
+                policy::query(
+                    policy::enumerate(
+                        "MappedResourceConfigurationList",
+                        policy::arn("ARN")?,
+                        Some(("NextToken", "NextToken")),
+                    )?,
+                    &["ARN", "Type"],
                 )?,
-                &["ARN", "Type"],
+                "StreamARN",
+                "ListStreams",
+                "StreamARN",
             )?,
         ),
     ];
