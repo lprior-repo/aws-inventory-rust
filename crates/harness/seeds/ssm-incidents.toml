@@ -12,7 +12,7 @@ incidentTemplate = { impact = 1, title = "Inventory seed" }
 [[step]]
 id = "resource"
 operation = "StartIncident"
-kind = "AWS::SSMIncidents::Incident"
+kind = "AWS::ApiOnly::SSMIncidentRecord"
 identity = "incidentRecordArn"
 [step.input]
 "responsePlanArn" = { "from" = "plan", "path" = "arn" }
