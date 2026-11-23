@@ -29,19 +29,23 @@ defer_reason = "items: no single list member"
 
 [operation.GetFunctionCodeSigningConfig]
 class = "defer"
-defer_reason = "Requires FunctionName from a safe complete function discovery source; ListFunctions is secret-bearing. Output FunctionName is a possible region/account-scoped key, but CodeSigningConfigArn identifies a different shared resource. Do not replace discovery with the code-signed or capacity-provider subset."
+defer_reason = "Sanitized ListFunctions now supplies complete FunctionName discovery. This output identifies the function by FunctionName while the canonical function identity is FunctionArn; CodeSigningConfigArn belongs to a different shared resource. Requires parent-identity enrichment rather than publishing a duplicate function or misidentifying the signing configuration."
 
 [operation.GetFunctionConcurrency]
 class = "defer"
-defer_reason = "Requires safe complete FunctionName discovery and response identity inherited from that input: output contains only ReservedConcurrentExecutions. Current identity paths address response members, not request/parent identity. No pagination."
+defer_reason = "Sanitized ListFunctions supplies FunctionName, but output contains only ReservedConcurrentExecutions. Requires canonical function identity inherited from the bound input and parent enrichment; current identity paths address response members. No pagination."
+
+[operation.GetFunctionConfiguration]
+class = "defer"
+defer_reason = "output: secret-bearing member Environment"
 
 [operation.GetFunctionEventInvokeConfig]
 class = "defer"
-defer_reason = "Output root FunctionArn is usable, but FunctionName requires safe complete function discovery; version/alias Qualifier needs correlated discovery to cover qualified configurations. ListFunctionEventInvokeConfigs is the complete per-function paginated alternative once discovery is safe."
+defer_reason = "Sanitized ListFunctions supplies FunctionName and root FunctionArn is usable, but complete version/alias Qualifier coverage requires correlated discovery and a reviewed qualified-configuration kind. ListFunctionEventInvokeConfigs is the paginated per-function alternative; do not collapse qualified configurations onto the unqualified function identity."
 
 [operation.GetFunctionRecursionConfig]
 class = "defer"
-defer_reason = "Requires safe complete unqualified FunctionName discovery and input-inherited identity: RecursiveLoop is the only output member and cannot identify a function. Current response-only identity cannot encode this configuration attachment."
+defer_reason = "Sanitized ListFunctions supplies unqualified FunctionName, but RecursiveLoop is the only output member and cannot identify a function. Requires canonical parent-input identity and configuration enrichment rather than a second function resource."
 
 [operation.GetFunctionScalingConfig]
 class = "defer"
@@ -49,7 +53,7 @@ defer_reason = "Requires correlated unqualified FunctionName plus required publi
 
 [operation.GetFunctionUrlConfig]
 class = "defer"
-defer_reason = "Returns endpoint configuration, not function invocation content, and root FunctionArn is usable; requires safe complete FunctionName and alias Qualifier discovery. Do not send requests to returned FunctionUrl. ListFunctionUrlConfigs is the paginated per-function alternative once discovery is safe."
+defer_reason = "Sanitized ListFunctions and ListAliases discover function and alias metadata, but complete Qualifier correlation and a reviewed URL-configuration kind are required to preserve qualified configurations without overwriting function records. FunctionUrl is configuration only; inventory must never invoke it."
 
 [operation.GetLayerVersionPolicy]
 class = "defer"
@@ -73,7 +77,7 @@ defer_reason = "Output root FunctionArn identifies the configuration owner; safe
 
 [operation.ListAliases]
 class = "defer"
-defer_reason = "Aliases[].AliasArn is a valid identity and pagination is Marker/NextMarker/MaxItems, but required FunctionName lacks a safe complete discovery source. ListFunctions is secret-bearing; code-signing/capacity-provider/event-mapping subsets would silently omit functions."
+defer_reason = "identity: no ARN member and no modeled identifiers"
 
 [operation.ListCapacityProviders]
 class = "enumerate"
@@ -89,7 +93,7 @@ arn = "CodeSigningConfigArn"
 
 [operation.ListDurableExecutionsByFunction]
 class = "defer"
-defer_reason = "DurableExecutions[] contains execution metadata only (DurableExecutionArn, FunctionArn, status, timestamps, KMSKeyArn), with Marker/NextMarker/MaxItems pagination. Required FunctionName lacks safe complete discovery; do not invoke functions to generate executions or enable the separate payload/history/state APIs."
+defer_reason = "Sanitized ListFunctions supplies FunctionName. DurableExecutions contains execution metadata, not function resources; enabling it additionally requires a reviewed execution kind and lifecycle/scope semantics. Never invoke functions to generate executions or enable the separate payload/history/state APIs."
 
 [operation.ListEventSourceMappings]
 class = "enumerate"
@@ -99,15 +103,19 @@ arn = "EventSourceMappingArn"
 
 [operation.ListFunctionEventInvokeConfigs]
 class = "defer"
-defer_reason = "FunctionEventInvokeConfigs[].FunctionArn is usable with Marker/NextMarker/MaxItems and page size 50; required FunctionName lacks safe complete discovery. Do not substitute a subset of code-signed, mapped, or capacity-provider functions."
+defer_reason = "Sanitized ListFunctions supplies FunctionName, and FunctionEventInvokeConfigs has FunctionArn plus Marker/NextMarker/MaxItems. Qualified configuration rows need a reviewed configuration kind and owner relation; treating them as canonical function resources would conflate configuration and function identity."
 
 [operation.ListFunctionUrlConfigs]
 class = "defer"
-defer_reason = "FunctionUrlConfigs[].FunctionArn is usable with Marker/NextMarker/MaxItems and page size 50; required FunctionName lacks safe complete discovery. FunctionUrl is configuration and must never be invoked by inventory."
+defer_reason = "Sanitized ListFunctions supplies FunctionName, and FunctionUrlConfigs has FunctionArn plus Marker/NextMarker/MaxItems. Qualified URL configurations need a reviewed configuration kind and owner relation rather than overwriting function records. Never invoke returned FunctionUrl values."
 
 [operation.ListFunctionVersionsByCapacityProvider]
 class = "defer"
 defer_reason = "identity: no ARN member and no modeled identifiers"
+
+[operation.ListFunctions]
+class = "defer"
+defer_reason = "output: secret-bearing member Environment"
 
 [operation.ListFunctionsByCodeSigningConfig]
 class = "expand"
@@ -129,7 +137,7 @@ arn = "LayerArn"
 
 [operation.ListProvisionedConcurrencyConfigs]
 class = "defer"
-defer_reason = "ProvisionedConcurrencyConfigs[].FunctionArn identifies the qualified configuration owner; Marker/NextMarker/MaxItems pagination and page size 50 are supported. Required FunctionName lacks safe complete discovery; do not use concurrency counts/status as resource identity."
+defer_reason = "Sanitized ListFunctions supplies FunctionName. ProvisionedConcurrencyConfigs identifies qualified configuration owners with FunctionArn, not unqualified function resources; requires a reviewed configuration kind and qualified-owner relation. Marker/NextMarker/MaxItems is supported; concurrency counts/status cannot be resource identity."
 
 [operation.ListTags]
 class = "defer"

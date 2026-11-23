@@ -42,7 +42,7 @@ defer_reason = "GroupName and PolicyName identify the inline configuration, but 
 
 [operation.GetInstanceProfile]
 class = "defer"
-defer_reason = "InstanceProfile.Roles embeds Role.AssumeRolePolicyDocument. Requires bounded URL-encoded trust-policy sanitization matching the existing adapter and reviewed instance-profile-to-role edges before generic publication."
+defer_reason = "unclassified read: not reviewed"
 
 [operation.GetLoginProfile]
 class = "defer"
@@ -157,12 +157,14 @@ class = "defer"
 defer_reason = "Tags contains only Key and Value. Requires owner identity from ListInstanceProfiles.InstanceProfileName and paginated tag merge into the instance-profile record, not globally keyed tag resources."
 
 [operation.ListInstanceProfiles]
-class = "defer"
-defer_reason = "InstanceProfiles.Roles embeds Role.AssumeRolePolicyDocument. Requires bounded trust-policy sanitization and reviewed profile-to-role edges matching the existing adapter before generic publication."
+class = "enumerate"
+scope = "account"
+[operation.ListInstanceProfiles.identity]
+arn = "Arn"
 
 [operation.ListInstanceProfilesForRole]
 class = "defer"
-defer_reason = "InstanceProfiles.Roles embeds trust policy configuration; requires sanitizer plus role-qualified profile membership edges and input RoleName retention."
+defer_reason = "expand: no unique compatible identity source"
 
 [operation.ListMFADeviceTags]
 class = "defer"
