@@ -14,6 +14,8 @@ pub enum Origin {
 
 mod builtin;
 mod check;
+pub(crate) use check::orchestration::{check_model_policies, read_model_values};
+pub(crate) use generate::selection::deny_text;
 mod emission;
 mod error;
 mod policy;

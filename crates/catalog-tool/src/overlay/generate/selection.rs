@@ -55,7 +55,7 @@ fn valid_name(name: &str) -> bool {
         .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-')
 }
 
-pub(in crate::overlay) fn deny_text(root: &Path) -> Result<String, OverlayError> {
+pub(crate) fn deny_text(root: &Path) -> Result<String, OverlayError> {
     let file = root.join("catalog/must-deny.txt");
     match directory::read_text(&file) {
         Ok(text) => Ok(text),

@@ -34,6 +34,7 @@ pub(super) fn generate(
             append(&mut entries, operation, entry)?;
         }
     }
+    defer_kind_conflicts(model, &mut entries, &mut stats)?;
     complete(service, entries, stats)
 }
 
@@ -78,6 +79,26 @@ struct Counts {
     enumerate: usize,
     callable: usize,
     reasons: BTreeMap<String, usize>,
+}
+
+fn defer_kind_conflicts(
+    model: &Model<'_>,
+    entries: &mut [(&str, OperationOverlay)],
+    stats: &mut Counts,
+) -> Result<(), OverlayError> {
+    entries.sort_unstable_by(|(left, _), (right, _)| left.cmp(right));
+    let mut producers = BTreeMap::new();
+    for (operation, entry) in entries {
+        if entry.class != Some(OverlayClass::Enumerate) {
+            continue;
+        }
+        if let Err(reason) = crate::kind_map::generate::record_item(model, operation, entry, &mut producers) {
+            stats.callable = stats.callable.checked_sub(1).ok_or_else(|| invalid("callable count underflow"))?;
+            increment(stats.reasons.entry(reason.clone()).or_default())?;
+            *entry = deferred(reason);
+        }
+    }
+    Ok(())
 }
 
 fn entry(

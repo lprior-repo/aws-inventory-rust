@@ -10,6 +10,15 @@ pub(super) fn compile<'a>(
     sources: impl Iterator<Item = MappingSource<'a>> + Clone,
     cfn_source: &[u8],
 ) -> Result<KindMap, KindMapError> {
+    let mut map = reviewed(sources)?;
+    super::complete_cfn(&mut map, cfn_source)?;
+    map.source_sha256 = super::fingerprint::digest(&map);
+    Ok(map)
+}
+
+pub(super) fn reviewed<'a>(
+    sources: impl Iterator<Item = MappingSource<'a>> + Clone,
+) -> Result<KindMap, KindMapError> {
     let cfn = unique(
         sources
             .clone()
@@ -83,7 +92,7 @@ pub(super) fn compile<'a>(
         reviewed: "2026-11-15",
         ..super::builtin::SOURCE
     };
-    source.compile_with_cfn(cfn_source, &Exceptions::builtin())
+    source.compile(&Exceptions::builtin())
 }
 
 fn cfn_key<'a>(row: &CfnMapping<'a>) -> &'a str {

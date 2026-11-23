@@ -38,7 +38,7 @@ pub(super) fn check_policies(
     check_model_policies(&values, overlays, deny)
 }
 
-pub(in crate::overlay) fn check_model_policies(
+pub(crate) fn check_model_policies(
     values: &BTreeMap<String, Value>,
     overlays: &[crate::overlay::ServiceOverlay],
     deny: &DenyList<'_>,
@@ -79,7 +79,7 @@ fn validate_policy_services(overlays: &[crate::overlay::ServiceOverlay]) -> Resu
     Ok(())
 }
 
-pub(in crate::overlay) fn read_model_values(
+pub(crate) fn read_model_values(
     source: &Path,
 ) -> Result<BTreeMap<String, Value>, CheckError> {
     let models = source.join("models");

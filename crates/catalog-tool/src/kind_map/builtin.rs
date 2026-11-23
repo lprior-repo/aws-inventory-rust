@@ -94,14 +94,21 @@ pub(super) const SOURCE: MappingSource<'static> = MappingSource {
 /// # Errors
 /// Returns an error for conflicting mappings or mismatched CFN source types.
 pub fn embedded(cfn_source: &[u8]) -> Result<KindMap, KindMapError> {
-    let sources = std::iter::once(SOURCE)
+    super::merge::compile(sources(), cfn_source)
+}
+
+pub(super) fn reviewed() -> Result<KindMap, KindMapError> {
+    super::merge::reviewed(sources())
+}
+
+fn sources() -> impl Iterator<Item = super::MappingSource<'static>> + Clone {
+    std::iter::once(SOURCE)
         .chain(family_a_c::SOURCES.iter().copied())
         .chain(family_d_f::SOURCES.iter().copied())
         .chain(family_g_k::SOURCES.iter().copied())
         .chain(family_l_p::SOURCES.iter().copied())
         .chain(family_q_s::SOURCES.iter().copied())
-        .chain(family_t_z::SOURCES.iter().copied());
-    super::merge::compile(sources, cfn_source)
+        .chain(family_t_z::SOURCES.iter().copied())
 }
 
 #[cfg(test)]

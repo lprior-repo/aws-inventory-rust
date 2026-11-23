@@ -11,3 +11,6 @@ coverage-denominator.report
 cloudcontrol-parent-candidates.json
 cloudcontrol-universal.json
 iam-read-only-policy.json
+aws-kinds-generated.report
+aws-names.report
+kinds.generated.tsv

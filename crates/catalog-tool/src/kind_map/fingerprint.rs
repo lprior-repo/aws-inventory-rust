@@ -30,7 +30,10 @@ pub(super) fn digest(map: &KindMap) -> [u8; 32] {
         fields(
             &mut hash,
             ["api", &entry.kind, entry.table_name.as_str(), &entry.reason],
-        )
+        );
+        if let Some(path) = &entry.display_name_path {
+            fields(&mut hash, ["api-display", &entry.kind, path]);
+        }
     });
     map.operations.iter().for_each(|entry| {
         fields(

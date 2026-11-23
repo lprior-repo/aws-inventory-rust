@@ -41,7 +41,7 @@ pub(super) fn augment(
     source_pin: &super::provenance::SourcePin,
 ) -> Result<(Vec<u8>, runtime_catalog::encode::RelationsResult), RuntimeInputsError> {
     let cfn = report::read_text(&root.join("catalog/cloudcontrol-universal.json"))?;
-    let kinds = kind_map::embedded(cfn.as_bytes())?;
+    let kinds = kind_map::load(root, cfn.as_bytes())?;
     let checked = overlay::check(root, source)?;
     let endpoints = endpoints::verified_endpoints(source)?;
     let sources = runtime_catalog::CatalogSources::repository(

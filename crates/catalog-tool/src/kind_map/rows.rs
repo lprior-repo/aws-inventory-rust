@@ -58,6 +58,7 @@ pub(super) fn api(
         kind: entry.kind.to_owned(),
         reason: entry.reason.to_owned(),
         table_name: table(entry.kind, exceptions)?,
+        display_name_path: None,
     })
 }
 

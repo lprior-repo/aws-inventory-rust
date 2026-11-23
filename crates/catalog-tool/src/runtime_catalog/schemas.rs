@@ -19,7 +19,13 @@ pub(super) fn compile(
             kinds
                 .api_only()
                 .iter()
-                .map(|entry| (entry.kind.as_str(), entry.table_name.as_str(), None)),
+                .map(|entry| {
+                    (
+                        entry.kind.as_str(),
+                        entry.table_name.as_str(),
+                        entry.display_name_path.as_deref(),
+                    )
+                }),
         )
         .map(|(kind, table, name_path)| schema(kind, table, name_path, &context))
         .collect()
