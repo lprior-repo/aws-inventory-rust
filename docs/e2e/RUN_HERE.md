@@ -1163,3 +1163,66 @@ The initial combined failure is retained in `crate-tests.log`; two intermediate
 clippy attempts caught and corrected borrowing/type errors in the new WAF
 fixture before its focused and combined runs passed.
 
+
+## Seed-oracle identity repair (2026-11-23)
+
+The oracle must use the owning operation's canonical kind, identity and scope,
+not the create API namespace or an unrelated resource with the same identifier.
+The 137 original mismatch rows are classified individually in
+[`build/seed-oracle-classification.tsv`](build/seed-oracle-classification.tsv).
+S3 bucket/report-name and DynamoDB/Auto Scaling Plans identifier collisions
+are not evidence that either service owns the other's resource.
+
+Two genuine collector defects were repaired rather than hidden in recipes:
+
+- Lightsail domain ARNs have the literal region `global`. The ARN validator
+  permits that spelling only for Lightsail `Domain/` resources; wrong accounts,
+  partitions, regional domain ARNs and non-domain global ARNs remain rejected.
+- Timestream InfluxDB's list page mixes customer groups with service defaults
+  whose ARN is empty. Both list and detail now use the required modeled `id`,
+  so a default no longer rejects the entire page or creates duplicate ARN/ID
+  representations of customer groups. See the canonical-ID change in CHANGELOG.
+
+Fake-transport sweep regressions cover durable Lightsail account-global rows
+and mixed Influx default/customer list-to-detail expansion. Failed scopes were
+already reported as `failed=N` with exit status 2, independently of `partial=N`;
+new summary/exit tests retain that distinction. Failure settlement additionally
+logs service, operation, region and the underlying error instead of losing the
+reason behind a failed scope.
+
+Resource Explorer setup emits the created **view**, not a nonexistent inventory
+setup kind. Its recipe lists views after setup to avoid the pinned emulator's
+invalid timestamp representation in create/setup responses. `Views.1` depends
+on controlled fresh-emulator state: built-in `all-resources` precedes the single
+custom seeded view. Do not reuse this positional recipe against arbitrary state.
+EMR Containers uses distinct IAM/EKS prerequisite names and a distinct EKS
+request token to avoid collisions with the EKS recipe during concurrent seeding.
+
+### Local reproduction
+
+Use a fresh pinned 1.0.348 emulator and separate SQLite database. The repair run
+uses `.local/oracle/emulator-verified`, port 39030 and graph name `verified_oracle`.
+Its issued credentials and CA live under
+`.local/oracle/emulator-verified/.aws/emulator/39030`; follow A5.2 for transport
+configuration. Harness seeding consumes issued access keys directly, whereas
+the collector consumes the issued default profile after those key variables
+are unset. No production credentials or endpoint bypass are required.
+
+Regenerate ignored prerequisites before collecting. A copied models-only cache
+is insufficient for generation: `--source` must name the actual pinned model
+Git clone. The repair used `/tmp/w4-e2e/.local/aws-models` at the pinned revision.
+In particular, missing `catalog/kinds.generated.tsv` otherwise makes compilation
+fail on generated App Mesh operation ownership.
+
+```sh
+export CARGO_TARGET_DIR="$HOME/.cache/tgt-oracle" CARGO_INCREMENTAL=0 RUSTC_WRAPPER=
+cargo build --locked -j3 -p catalog-tool -p inventory-harness -p aws-inventory --features aws-inventory/sweep
+"$CARGO_TARGET_DIR/debug/catalog-tool" overlays generate --source /tmp/w4-e2e/.local/aws-models --write
+"$CARGO_TARGET_DIR/debug/catalog-tool" kinds generate --source /tmp/w4-e2e/.local/aws-models --write
+"$CARGO_TARGET_DIR/debug/catalog-tool" models compile --source /tmp/w4-e2e/.local/aws-models --write
+```
+
+Use `set -o pipefail` and record each command's exit status even when scopes fail.
+Local run evidence is under `.local/oracle/`; generated catalogs and emulator
+probe reports are not tracked.
+
