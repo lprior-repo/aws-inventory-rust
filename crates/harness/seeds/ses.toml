@@ -1,0 +1,10 @@
+format = 1
+service = "ses"
+
+[[step]]
+id = "resource"
+operation = "CreateReceiptRuleSet"
+kind = "AWS::SES::ReceiptRuleSet"
+identity = { input = "RuleSetName" }
+[step.input]
+"RuleSetName" = "inventory-thin-ses"
