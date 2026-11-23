@@ -36,7 +36,7 @@ pub(super) const CALLS: &[Inventory] = &[
     Inventory {
         operation: "ListAliases",
         items: "SageMakerImageVersionAliases",
-        identity: ResourceIdentity::Correlated("ImageName", "$"),
+        identity: ResourceIdentity::Correlated("ImageName", &["$"]),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
         input: &[Input::Parent("ImageName", "ListImages", "ImageName")],
@@ -46,7 +46,7 @@ pub(super) const CALLS: &[Inventory] = &[
     Inventory {
         operation: "ListCandidatesForAutoMLJob",
         items: "Candidates",
-        identity: ResourceIdentity::Correlated("AutoMLJobName", "CandidateName"),
+        identity: ResourceIdentity::Correlated("AutoMLJobName", &["CandidateName"]),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
         input: &[Input::Parent(
@@ -80,7 +80,7 @@ pub(super) const CALLS: &[Inventory] = &[
     Inventory {
         operation: "DescribeTrainingPlanExtensionHistory",
         items: "TrainingPlanExtensions",
-        identity: ResourceIdentity::Correlated("TrainingPlanArn", "TrainingPlanExtensionOfferingId"),
+        identity: ResourceIdentity::Correlated("TrainingPlanArn", &["TrainingPlanExtensionOfferingId"]),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
         input: &[Input::Parent(

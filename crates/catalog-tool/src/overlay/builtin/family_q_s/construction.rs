@@ -9,7 +9,7 @@ use inventory_core::record::Time;
 pub(super) enum ResourceIdentity {
     Arn(&'static str),
     Key(&'static [&'static str]),
-    Correlated(&'static str, &'static str),
+    Correlated(&'static str, &'static [&'static str]),
     /// ARN template plus the item members it reads; aligns services that list one resource
     /// store under different member names.
     Template(&'static str, &'static [&'static str]),
@@ -23,6 +23,7 @@ pub(super) enum Input {
     Boolean(&'static str, bool),
     Strings(&'static str, &'static [&'static str]),
     Structure(&'static str, &'static [(&'static str, &'static str)]),
+    Filter(&'static str, &'static str, &'static str, &'static [&'static str]),
 }
 
 pub(super) struct Inventory {
@@ -73,63 +74,55 @@ pub(super) fn reviewed(
 }
 
 fn operation(spec: &Inventory) -> Result<(&'static str, OperationOverlay), NameError> {
-    let identity = match &spec.identity {
-        ResourceIdentity::Arn(member) => Identity::Arn(path(member)?),
-        ResourceIdentity::Key(members) => Identity::Key(
-            members
-                .iter()
-                .map(|member| path(member))
-                .collect::<Result<_, _>>()?,
-        ),
-        ResourceIdentity::Correlated(request, selected) => Identity::CorrelatedKey(vec![
-            IdentityField::Request(path(request)?),
-            IdentityField::Selected(path(selected)?),
-        ]),
-        ResourceIdentity::Template(template, _) => Identity::Template((*template).to_owned()),
-    };
-    let mut queryable = match &spec.identity {
-        ResourceIdentity::Arn(member) => vec![path(member)?],
-        ResourceIdentity::Correlated(_, selected) => vec![path(selected)?],
-        ResourceIdentity::Key(members) | ResourceIdentity::Template(_, members) => members
-            .iter()
-            .map(|member| path(member))
-            .collect::<Result<_, _>>()?,
-    };
-    for member in spec.queryable {
-        queryable.push(path(member)?);
-    }
-    let paginator = match spec.token {
-        Some((input, output)) => Paginator::Token(TokenPair {
-            input: path(input)?,
-            output: path(output)?,
-            optional: false,
-        }),
-        None => Paginator::None,
-    };
     let overlay = OperationOverlay {
-        class: Some(
-            if spec
-                .input
-                .iter()
-                .any(|input| matches!(input, Input::Parent(..)))
-            {
-                OverlayClass::Expand
-            } else {
-                OverlayClass::Enumerate
-            },
-        ),
+        class: Some(if spec.input.iter().any(|input| matches!(input, Input::Parent(..))) {
+            OverlayClass::Expand
+        } else {
+            OverlayClass::Enumerate
+        }),
         scope: Some(spec.scope),
         items: Some(ItemSelector::parse(spec.items)?),
-        identity: Some(identity),
-        paginator: Some(paginator),
-        queryable,
+        identity: Some(identity(&spec.identity)?),
+        paginator: Some(paginator(spec.token)?),
+        queryable: queryable(spec)?,
         tags: spec.tags.map(path).transpose()?,
         ..empty()
     };
-    Ok((
-        spec.operation,
-        spec.input.iter().try_fold(overlay, bind_input)?,
-    ))
+    Ok((spec.operation, spec.input.iter().try_fold(overlay, bind_input)?))
+}
+
+fn identity(spec: &ResourceIdentity) -> Result<Identity, NameError> {
+    Ok(match spec {
+        ResourceIdentity::Arn(member) => Identity::Arn(path(member)?),
+        ResourceIdentity::Key(members) => Identity::Key(
+            members.iter().map(|member| path(member)).collect::<Result<_, _>>()?,
+        ),
+        ResourceIdentity::Correlated(request, selected) => Identity::CorrelatedKey(
+            std::iter::once(path(request).map(IdentityField::Request))
+                .chain(selected.iter().map(|member| path(member).map(IdentityField::Selected)))
+                .collect::<Result<_, _>>()?,
+        ),
+        ResourceIdentity::Template(template, _) => Identity::Template((*template).to_owned()),
+    })
+}
+
+fn queryable(spec: &Inventory) -> Result<Vec<crate::overlay::MemberPath>, NameError> {
+    let members = match &spec.identity {
+        ResourceIdentity::Arn(member) => std::slice::from_ref(member),
+        ResourceIdentity::Correlated(_, members)
+        | ResourceIdentity::Key(members)
+        | ResourceIdentity::Template(_, members) => *members,
+    };
+    members.iter().chain(spec.queryable).map(|member| path(member)).collect()
+}
+
+fn paginator(token: Option<(&str, &str)>) -> Result<Paginator, NameError> {
+    Ok(match token {
+        Some((input, output)) => Paginator::Token(TokenPair {
+            input: path(input)?, output: path(output)?, optional: false,
+        }),
+        None => Paginator::None,
+    })
 }
 
 fn bind_input(mut overlay: OperationOverlay, input: &Input) -> Result<OperationOverlay, NameError> {
@@ -166,7 +159,15 @@ fn fixed_input(input: &Input) -> Result<Option<(&str, FixedValue)>, NameError> {
         Input::Structure(member, values) => (*member, FixedValue::structure(
             values.iter().map(|(name, value)| (*name, FixedValue::String((*value).to_owned()))),
         )?),
+        Input::Filter(member, key, value, values) => (*member, filter(key, value, values)?),
         Input::Account(_) | Input::Parent(..) => return Ok(None),
     };
     Ok(Some(value))
+}
+
+fn filter(key: &str, value: &str, values: &[&str]) -> Result<FixedValue, NameError> {
+    Ok(FixedValue::list([FixedValue::structure([
+        (key, FixedValue::String(value.to_owned())),
+        ("Values", FixedValue::Strings(values.iter().map(|value| (*value).to_owned()).collect())),
+    ])?]))
 }
