@@ -4,7 +4,7 @@ service = "resource-groups"
 [[step]]
 id = "resource"
 operation = "CreateGroup"
-kind = "AWS::resource-groups::Group"
+kind = "AWS::ResourceGroups::Group"
 identity = "Group.GroupArn"
-repeat = 2
 [step.input]
+"Name" = "inventory-thin-resource-groups"
