@@ -1,0 +1,14 @@
+format = 1
+service = "elasticache"
+
+[[step]]
+id = "group"
+operation = "CreateReplicationGroup"
+kind = "AWS::ElastiCache::ReplicationGroup"
+identity = "ReplicationGroup.ARN"
+[step.input]
+ReplicationGroupId = "inventory-seed-redis"
+ReplicationGroupDescription = "Inventory seed Redis cache"
+CacheNodeType = "cache.t3.micro"
+Engine = "redis"
+NumCacheClusters = 1
