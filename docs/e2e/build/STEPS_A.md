@@ -814,6 +814,24 @@ It has no row for `sqs`.
 
 ### A4.1 Seed scenarios as data
 
+- **Status:** A4.1 harness implementation complete. `cargo fmt -p
+  inventory-harness -- --check`, `cargo clippy -p inventory-harness
+  --all-targets --locked -j2 -- -D warnings` and `cargo test -p
+  inventory-harness --locked -j2 inventory_seed` pass. The unchanged
+  `aws-inventory` `sweep_e2e` proof remains the integration coordinator's lane;
+  it is not a test target in the package-limited harness run.
+- **Format details:** expansion is repeat-index-major, retaining the old
+  VPC/subnet interleaving. Symbolic IDs stay separate from numeric `u16` IDs;
+  duplicates and forward/missing bindings are errors. A singleton reference
+  broadcasts; otherwise its matching repeat instance must exist. Nested
+  structures resolve modeled field IDs; maps retain bounded named keys.
+- **Additional bounds:** 256 nodes per input, 1,024 bytes per expanded text,
+  128 bytes per field name, 4,096 relationships and a conservative 64 MiB
+  expanded-string budget. Counts, depth and byte estimates are checked before
+  repeat materialization. TOML
+  field order is preserved so the embedded default equals the legacy
+  descriptors, including input and response-check order.
+
 - **Goal:** Read a seed scenario from a TOML file into the existing
   `SeedScenario`, with the input types real create calls need.
 - **Depends on:** nothing.

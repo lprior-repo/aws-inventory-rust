@@ -4,6 +4,10 @@ mod materialize;
 mod oracle;
 #[cfg(test)]
 mod tests;
+mod values;
+#[cfg(test)]
+mod values_tests;
+
 use super::{
     ScenarioSeedOracle, SeedResourceIdentity, SeedResourcePair, TypedSeedOracle,
     config::{MutationPermit, SeedConfig, SeedError},
@@ -219,16 +223,7 @@ fn materialize_input(
     state: &SeedState,
     input: &PreparedInput,
 ) -> Result<(Vec<FieldId>, Value), SeedError> {
-    let value = match &input.value {
-        PreparedInputValue::Text(text) => Value::Text(text.clone()),
-        PreparedInputValue::Boolean(value) => Value::Bool(*value),
-        PreparedInputValue::Integer(value) => Value::Int(*value),
-        PreparedInputValue::Literal(value) => value.clone(),
-        PreparedInputValue::Template(template) => materialize::template(state, template)?,
-        PreparedInputValue::PreviousOutput { step, path } => {
-            materialize::output_value(state, *step, path)?
-        }
-    };
+    let value = values::materialize(state, &input.value)?;
     Ok((input.path.clone(), value))
 }
 

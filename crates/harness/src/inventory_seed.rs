@@ -1,10 +1,12 @@
 mod config;
+mod file;
 mod literal;
 mod model;
 mod runner;
 mod scenario;
 mod wire;
 
+pub use file::load;
 pub use runner::{run_data_scenario, run_scenario, run_seed};
 
 pub use config::{SeedConfig, SeedError};

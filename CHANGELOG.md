@@ -13,6 +13,12 @@
 - Graph traversal comments move to the track E read contract. Frontier expansion
   and edge-budget calculation are separate helpers; traversal direction,
   timeout, limits and edge admission order are unchanged.
+- Harness seed scenarios now load strict, bounded per-service TOML. Symbolic
+  step references bind the same repeat index; nested lists, modeled structures
+  and named maps reach request records without losing output bindings.
+  The embedded EC2 file preserves all 12 legacy steps and six relationships,
+  including input/check ordering. Expansion is limited to 4,096 steps, 65,536
+  input nodes, depth eight and a conservative 64 MiB string budget.
 
 - `cmdb-ui` gains property tests for `DagLayout::compute` (node accounting,
   non-overlap, bounds, determinism, edge direction with strictly increasing

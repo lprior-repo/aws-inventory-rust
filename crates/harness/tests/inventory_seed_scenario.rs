@@ -100,11 +100,11 @@ fn scenario_rejects_forward_dependency_cycles_and_invalid_relationships()
 fn scenario_enforces_step_binding_and_path_limits() -> Result<(), Box<dyn std::error::Error>> {
     assert!(FieldPath::new(&["Vpc-Id"]).is_err());
     assert!(FieldPath::new(&["a", "b", "c", "d", "e", "f", "g", "h", "i"]).is_err());
-    let oversized = (0_u8..13)
+    let oversized = (0_u16..4097)
         .map(|id| step(id, "CreateResource", Vec::new()))
         .collect::<Result<Vec<_>, _>>()?;
     assert!(SeedScenario::new(oversized).is_err());
-    let inputs = (0_u8..9)
+    let inputs = (0_u8..65)
         .map(|_| {
             Ok(SeedInput::new(
                 FieldPath::new(&["Field"])?,
@@ -140,7 +140,7 @@ fn scenario_enforces_step_binding_and_path_limits() -> Result<(), Box<dyn std::e
 }
 
 fn step(
-    id: u8,
+    id: u16,
     operation: &str,
     inputs: Vec<SeedInput>,
 ) -> Result<SeedStep, Box<dyn std::error::Error>> {
