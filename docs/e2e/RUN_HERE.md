@@ -46,6 +46,28 @@ Scoped verification used `HOME=/home/lewis` and
 - `cargo clippy --locked -p catalog-tool --lib -j2 -- -D warnings`: passed.
 - Explicit changed-file formatting used `rustfmt --edition 2024 --config skip_children=true`.
 
+Integration contracts assert all fields of the intended contextual errors:
+scalar-view disagreement uses `KindContext` with path `column` and reason
+`operations of this kind disagree on the item type`; a present non-string
+display path uses its kind, actual path and `path does not end in a string`.
+A missing relation source uses `CapabilityContext` with the supplying service,
+operation and requested path. These follow A0.1 and A0.3 rather than retaining
+the old bare-`Capability` assertions. The affected large integration suites
+are split into bounded modules without dropping scenarios.
+
+After integration into `wave0`, the complete requested package gates passed:
+
+- `cargo fmt -p catalog-tool -p inventory-core -p cmdb-view -- --check`.
+- `cargo test --locked -p catalog-tool -p inventory-core -p cmdb-view -j2`:
+  1,297 passed across 87 suites, 0 failed, 1 existing native-FalkorDB test ignored.
+- `cargo clippy --locked -p catalog-tool -p inventory-core -p cmdb-view --all-targets -j2 -- -D warnings`.
+
+The first full test attempt exposed a missing `json!` import in IAM document
+tests; the repaired document module supplies the import. The workspace-wide
+error-consumer search found no other crate directly matching the compile
+error; the Smithy compiler wraps it transparently. No production behavior
+changed in this integration-contract repair.
+
 No workspace suite, emulator sweep, PostgreSQL check, real-AWS call or binary
 regeneration was run for this change.
 
