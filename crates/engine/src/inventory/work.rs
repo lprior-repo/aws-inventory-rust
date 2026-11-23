@@ -1,5 +1,9 @@
+mod claiming;
+pub(super) use claiming::claim;
+mod owned_lease;
 #[path = "work/transitions.rs"]
 pub(in crate::inventory) mod transitions;
+pub(super) use super::validation::{validate_active_sweep, validate_page, validate_work};
 use super::{BinaryStore, MAX_BINDING_BYTES, MAX_TOKEN_BYTES, PageCommit, StoreError};
 use inventory_core::inventory::{ResourceKey, ScopeKey, ScopeOutcome};
 use sqlx::{Row, Sqlite, Transaction};
@@ -9,8 +13,6 @@ pub(super) use transitions::{
     create_sweep_manifest, decode_resource, discover_active_sweep, encode_resource,
     ownership_scope_bytes, resource_bytes, resume_sweep, sweep_manifest_account,
 };
-
-pub(super) use super::validation::{validate_active_sweep, validate_page, validate_work};
 const MAX_SWEEP_ID: usize = 128;
 const MAX_SCOPE_BYTES: usize = 16_384;
 
@@ -127,6 +129,7 @@ pub struct WorkLease {
     pub(crate) bindings: Vec<u8>,
     pub(crate) context: Vec<u8>,
     pub(crate) lease_until_ms: i64,
+    pub(crate) pending_work: Option<u64>,
 }
 
 impl WorkLease {
@@ -147,6 +150,9 @@ impl WorkLease {
     }
     pub fn context(&self) -> &[u8] {
         &self.context
+    }
+    pub fn pending_work(&self) -> Option<u64> {
+        self.pending_work
     }
 }
 
@@ -231,83 +237,6 @@ pub(super) async fn seed_works(store: &BinaryStore, works: &[WorkSpec]) -> Resul
         .bind(first.sweep.as_str()).execute(&mut *tx).await?;
     tx.commit().await?;
     Ok(())
-}
-
-// last_complete is now a stored column; query it directly.
-// -1 sentinel means never completed (stalest). 0 and above are actual completion timestamps.
-const READY_STALEST_FIRST: &str = "SELECT w.scope_key,w.token,w.bindings,w.generation,w.authority_complete,w.context,w.last_complete FROM work_queue w WHERE w.sweep_id=?1 AND w.state=0 ORDER BY w.last_complete ASC,w.scope_key LIMIT 1";
-
-const EXPIRED_STALEST_FIRST: &str = "SELECT w.scope_key,w.token,w.bindings,w.generation,w.authority_complete,w.context,w.last_complete FROM work_queue w WHERE w.sweep_id=?1 AND w.state=1 AND w.lease_until<=?2 ORDER BY w.last_complete ASC,w.scope_key LIMIT 1";
-
-fn staleness_key(row: &sqlx::sqlite::SqliteRow) -> Result<(i64, Vec<u8>), StoreError> {
-    Ok((row.try_get("last_complete")?, row.try_get("scope_key")?))
-}
-
-pub(super) async fn claim(
-    store: &BinaryStore,
-    sweep: &SweepId,
-    now_ms: i64,
-    lease_ms: i64,
-) -> Result<Option<WorkLease>, StoreError> {
-    if now_ms < 0 || lease_ms < 1 || now_ms.checked_add(lease_ms).is_none() {
-        return Err(StoreError::Invalid("invalid lease interval"));
-    }
-    let mut tx = store.writer.begin().await?;
-    validate_active_sweep(&mut tx, Some(sweep)).await?;
-
-    // Stalest scope first: never-completed scopes (0), then the oldest last
-    // completion, then scope_key as the deterministic tie-break. The ready and
-    // expired-lease branches are queried separately so each stays index-bounded.
-    let ready = sqlx::query(READY_STALEST_FIRST)
-        .bind(sweep.as_str())
-        .fetch_optional(&mut *tx)
-        .await?;
-    let expired = sqlx::query(EXPIRED_STALEST_FIRST)
-        .bind(sweep.as_str())
-        .bind(now_ms)
-        .fetch_optional(&mut *tx)
-        .await?;
-
-    let row = match (ready, expired) {
-        (Some(r), Some(e)) => {
-            if staleness_key(&r)? < staleness_key(&e)? {
-                Some(r)
-            } else {
-                Some(e)
-            }
-        }
-        (Some(r), None) => Some(r),
-        (None, Some(e)) => Some(e),
-        (None, None) => None,
-    };
-
-    let Some(row) = row else {
-        tx.commit().await?;
-        return Ok(None);
-    };
-    let key: Vec<u8> = row.try_get("scope_key")?;
-    let generation: i64 = row.try_get("generation")?;
-    let next_generation = generation
-        .checked_add(1)
-        .ok_or(StoreError::Invalid("lease generation overflow"))?;
-    let complete = row.try_get::<Option<&[u8]>, _>("token")?.is_none()
-        || row.try_get::<bool, _>("authority_complete")?;
-    let lease_until = now_ms
-        .checked_add(lease_ms)
-        .ok_or(StoreError::Invalid("lease interval overflow"))?;
-    sqlx::query("UPDATE work_queue SET state=1,generation=?3,authority_generation=?3,lease_until=?4,authority_complete=?5 WHERE sweep_id=?1 AND scope_key=?2")
-        .bind(sweep.as_str()).bind(&key).bind(next_generation).bind(lease_until).bind(complete).execute(&mut *tx).await?;
-    let lease = WorkLease {
-        sweep: sweep.clone(),
-        scope: decode_scope(&key)?,
-        generation: next_generation,
-        token: row.try_get("token")?,
-        bindings: row.try_get("bindings")?,
-        context: row.try_get("context")?,
-        lease_until_ms: lease_until,
-    };
-    tx.commit().await?;
-    Ok(Some(lease))
 }
 
 pub(super) async fn commit_page(

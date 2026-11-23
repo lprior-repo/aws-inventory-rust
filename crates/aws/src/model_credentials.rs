@@ -113,6 +113,27 @@ impl ProfileCredentials {
     }
 }
 
+#[cfg(feature = "sweep-credentials")]
+impl inventory_sweep::CredentialSource for ProfileCredentials {
+    fn region(&self) -> &str {
+        self.region()
+    }
+
+    async fn resolve(
+        &self,
+    ) -> Result<aws_wire::sign::Credentials, inventory_sweep::CredentialFailure> {
+        self.resolve().await.map_err(credential_failure)
+    }
+}
+
+#[cfg(feature = "sweep-credentials")]
+fn credential_failure(error: CredentialError) -> inventory_sweep::CredentialFailure {
+    inventory_sweep::CredentialFailure {
+        retryable: matches!(error, CredentialError::Provider(_)),
+        message: error.to_string(),
+    }
+}
+
 async fn load_config(profile: Option<&str>, region: Option<&str>) -> aws_types::SdkConfig {
     let mut loader = aws_config::defaults(aws_config::BehaviorVersion::latest());
     if let Some(name) = profile {
@@ -210,3 +231,6 @@ mod tests {
         assert!(!rendered.contains("sensitive-but-invalid"));
     }
 }
+
+#[cfg(all(test, feature = "sweep-credentials"))]
+mod sweep_tests;

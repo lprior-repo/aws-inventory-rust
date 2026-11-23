@@ -1,16 +1,12 @@
-use crate::{
-    cli::SweepArgs,
-    sweep_runtime::{self, SweepConfig, SweepSummary},
-};
+mod summary;
+
+use crate::cli::SweepArgs;
 use anyhow::{Context, Result};
 use inventory_aws::model_credentials::ProfileCredentials;
 use inventory_core::catalog::runtime::RuntimeCatalog;
 use inventory_engine::inventory::{BinaryStore, SchemaRegistry, run_projection};
-use std::{
-    fs::File,
-    io::{Read, Write},
-    path::Path,
-};
+use inventory_sweep::{SweepConfig, SweepSummary};
+use std::{fs::File, io::Read, path::Path};
 
 pub(super) async fn run(options: SweepArgs) -> Result<std::process::ExitCode> {
     let (store, mut summary) = collect(&options).await?;
@@ -32,7 +28,7 @@ pub(super) async fn run(options: SweepArgs) -> Result<std::process::ExitCode> {
         projection_attempted,
         &state,
     );
-    print_summary(summary, unattributed_resources)?;
+    summary::print_summary(summary, unattributed_resources)?;
     Ok(code)
 }
 
@@ -42,14 +38,14 @@ async fn collect(options: &SweepArgs) -> Result<(BinaryStore, SweepSummary)> {
     let store = open_store(options, &catalog).await?;
     let credentials =
         ProfileCredentials::load(options.profile.as_deref(), options.region.as_deref()).await?;
-    let summary = sweep_runtime::run(&catalog, &store, config(options), &credentials).await?;
+    let summary = super::control::run(&catalog, &store, config(options), &credentials).await?;
     Ok((store, summary))
 }
 
 /// Exit 4: a time-bounded slice ended with work queued; rerun with `--resume`.
 /// It outranks every other code because the sweep is not finished at all.
 fn exit_code(
-    outcomes: &sweep_runtime::ScopeOutcomes,
+    outcomes: &inventory_sweep::ScopeOutcomes,
     work_remaining: u64,
     unattributed_resources: u64,
     drain: bool,
@@ -131,31 +127,11 @@ async fn project(store: &BinaryStore, endpoint: &str, graph: &str) -> Result<()>
     }
 }
 
-fn print_summary(summary: SweepSummary, unattributed_resources: u64) -> Result<()> {
-    let outcomes = summary.outcomes;
-    writeln!(
-        std::io::stdout().lock(),
-        "resource_writes_scope=invocation resource_writes={} rows={} scopes={} complete={} partial={} inaccessible={} unsupported={} failed={} unobserved={} graph_pending={} work_remaining={} unattributed_resources={}",
-        summary.resource_writes,
-        summary.rows,
-        summary.scopes,
-        outcomes.complete,
-        outcomes.partial,
-        outcomes.inaccessible,
-        outcomes.unsupported,
-        outcomes.failed,
-        outcomes.unobserved,
-        summary.graph_pending,
-        summary.work_remaining,
-        unattributed_resources
-    )?;
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
-    use super::{exit_code, sweep_runtime::ScopeOutcomes};
+    use super::exit_code;
     use inventory_engine::inventory::ProjectionState;
+    use inventory_sweep::ScopeOutcomes;
     use std::process::ExitCode;
 
     #[test]

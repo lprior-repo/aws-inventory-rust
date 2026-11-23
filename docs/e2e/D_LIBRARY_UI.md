@@ -32,8 +32,9 @@ What the tree has today (`crates/cmdb-ui`):
   and cannot hold 120 fps on a whole account.
 - There is no account, region, service hierarchy and no level of detail.
 
-The sweep itself lives in the binary crate (`src/sweep_runtime/`,
-`src/sweep_command/`), so nothing but the CLI can run it.
+The collector now lives in `crates/sweep`, with generic `InventoryStore`
+collection, caller-owned cancellation and bounded progress. CLI credential,
+projection and signal wiring remains in `src/sweep_command/`.
 
 ## Packages
 
@@ -101,3 +102,15 @@ must still run the workspace-wide all-target/all-feature gate after integration.
 The rerun after that fix reached the sweep CLI, but both scenarios failed:
 `sweep CLI exceeded its 60-second deadline` (0 passed, 2 failed, 135.34 s).
 This remains an unresolved end-to-end blocker; no deadline was increased.
+
+## Wave 1 library status (2026-11-23)
+
+D1.2 and D1.3 are implemented. D1.4 is **HELD**, not complete: a coverage
+probe adding `crates/sweep/src` and excluding nested `*_tests/` helpers found
+88 violations across 35 sweep files, plus 730 findings outside the sweep.
+The captured command output is `local://12542.log` in the implementation
+session. The gate script remains unchanged; the coordinator will schedule
+the sweep refactor separately to avoid overlapping the metrics work.
+The existing ignored E2E timeout above remains unverified, and P1/P6
+measurements await the benchmark lane. No completion or performance claim
+is made for D1.4.

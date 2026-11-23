@@ -6,6 +6,9 @@ use std::process::ExitCode;
 mod enabled;
 
 #[cfg(feature = "sweep")]
+pub(crate) mod control;
+
+#[cfg(feature = "sweep")]
 pub async fn run(options: SweepArgs) -> Result<ExitCode> {
     enabled::run(options).await
 }

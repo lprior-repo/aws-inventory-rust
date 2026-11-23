@@ -1,5 +1,7 @@
 #[path = "conformance/children.rs"]
 mod children;
+#[path = "conformance/control.rs"]
+mod control;
 #[path = "conformance/data.rs"]
 mod data;
 #[path = "conformance/leases.rs"]
@@ -27,6 +29,7 @@ where
 {
     leases::run(&make).await?;
     resume::run(&make).await?;
+    control::run(&make).await?;
     children::run(&make).await?;
     data::run(&make).await?;
     references::run(&make).await?;
