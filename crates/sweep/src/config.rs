@@ -55,9 +55,15 @@ fn validate_override(value: &str, ca_bundle: &std::path::Path) -> Result<(), Swe
             "endpoint override must be HTTPS on a loopback host",
         ));
     }
-    if uri
-        .path_and_query()
-        .is_some_and(|path| path.as_str().contains('?'))
+    validate_override_bundle(&uri, ca_bundle)?;
+    Ok(())
+}
+
+fn validate_override_bundle(
+    uri: &http::Uri,
+    ca_bundle: &std::path::Path,
+) -> Result<(), SweepError> {
+    if uri.path_and_query().is_some_and(|path| path.as_str().contains('?'))
         || !ca_bundle.is_file()
     {
         return Err(SweepError::InvalidConfig(

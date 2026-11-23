@@ -10,7 +10,7 @@ use inventory_core::catalog::runtime::{
     CallablePlan, PlanPurpose, ResolvedEndpoint, RuntimeProtocol,
 };
 use inventory_core::record::Record;
-use inventory_engine::limiter::{ApiError, ApiExecutor};
+use inventory_engine::limiter::{ApiError, ApiExecutor, RetryKind};
 
 use super::execution::page::cursor;
 use super::{SweepError, input::InputField, request};
@@ -66,31 +66,42 @@ async fn sign_and_send(
     scope: &Scope<'_>,
 ) -> Result<Response, ApiError> {
     let (mut parts, body) = request.into_parts();
-    let uri = parts.uri.to_string();
-    let path_mode = path_mode(call.endpoint.path_mode);
-    let payload_header = match call.endpoint.path_mode {
-        inventory_core::catalog::runtime::EndpointPathMode::S3 => PayloadHeader::Include,
-        inventory_core::catalog::runtime::EndpointPathMode::Standard => PayloadHeader::Omit,
-    };
-    let signature = aws_wire::sign::sign(
+    let signature = signature(call, &parts, &body, credentials, scope)?;
+    parts.headers.extend(signature);
+    call.client
+        .send(http::Request::from_parts(parts, body))
+        .await
+        .map_err(transport)
+}
+
+fn signature(
+    call: &Call<'_, '_, impl CredentialSource>,
+    parts: &http::request::Parts,
+    body: &[u8],
+    credentials: &aws_wire::sign::Credentials,
+    scope: &Scope<'_>,
+) -> Result<http::HeaderMap, ApiError> {
+    aws_wire::sign::sign(
         credentials,
         scope,
         SystemTime::now(),
         Request {
             method: &parts.method,
-            uri: &uri,
+            uri: &parts.uri.to_string(),
             headers: &parts.headers,
-            body: Body::Bytes(&body),
-            payload_header,
+            body: Body::Bytes(body),
+            payload_header: payload_header(call.endpoint.path_mode),
         },
-        path_mode,
+        path_mode(call.endpoint.path_mode),
     )
-    .map_err(permanent)?;
-    parts.headers.extend(signature);
-    call.client
-        .send(http::Request::from_parts(parts, body.clone()))
-        .await
-        .map_err(transport)
+    .map_err(permanent)
+}
+
+fn payload_header(mode: inventory_core::catalog::runtime::EndpointPathMode) -> PayloadHeader {
+    match mode {
+        inventory_core::catalog::runtime::EndpointPathMode::S3 => PayloadHeader::Include,
+        inventory_core::catalog::runtime::EndpointPathMode::Standard => PayloadHeader::Omit,
+    }
 }
 
 fn decode_response(
@@ -172,26 +183,30 @@ fn classify_service(error: aws_wire::response::errors::ServiceError) -> ApiError
     let class = error.class;
     match class {
         aws_wire::response::errors::ErrorClass::Throttle => match error.retry_after {
-            Some(duration) => ApiError::RetryAfter {
-                kind: inventory_engine::limiter::RetryKind::Throttled,
-                message,
-                retry_after: inventory_engine::limiter::RetryAfter::Delay(duration),
-            },
+            Some(duration) => retry_after(message, duration, RetryKind::Throttled),
             None => ApiError::Throttled(message),
         },
         aws_wire::response::errors::ErrorClass::Retryable
         | aws_wire::response::errors::ErrorClass::ExpiredToken
         | aws_wire::response::errors::ErrorClass::ExpiredSignature => match error.retry_after {
-            Some(duration) => ApiError::RetryAfter {
-                kind: inventory_engine::limiter::RetryKind::Transient,
-                message,
-                retry_after: inventory_engine::limiter::RetryAfter::Delay(duration),
-            },
+            Some(duration) => retry_after(message, duration, RetryKind::Transient),
             None => ApiError::Transient(message),
         },
         aws_wire::response::errors::ErrorClass::AccessDenied => ApiError::Denied(message),
         aws_wire::response::errors::ErrorClass::NotSupported => ApiError::UnsupportedType(message),
         aws_wire::response::errors::ErrorClass::Fatal => ApiError::Permanent(message),
+    }
+}
+
+fn retry_after(
+    message: String,
+    duration: std::time::Duration,
+    kind: RetryKind,
+) -> ApiError {
+    ApiError::RetryAfter {
+        kind,
+        message,
+        retry_after: inventory_engine::limiter::RetryAfter::Delay(duration),
     }
 }
 
