@@ -1,14 +1,15 @@
 use super::super::{empty, name, path, service};
 use crate::classes::DenyReason;
 use crate::overlay::{
-    Binding, FixedValue, Identity, ItemSelector, NameError, OperationOverlay, OverlayClass,
-    Paginator, Scope, ServiceOverlay, TokenPair,
+    Binding, FixedValue, Identity, IdentityField, ItemSelector, NameError, OperationOverlay,
+    OverlayClass, Paginator, Scope, ServiceOverlay, TokenPair,
 };
 use inventory_core::record::Time;
 
 pub(super) enum ResourceIdentity {
     Arn(&'static str),
     Key(&'static [&'static str]),
+    Correlated(&'static str, &'static str),
     /// ARN template plus the item members it reads; aligns services that list one resource
     /// store under different member names.
     Template(&'static str, &'static [&'static str]),
@@ -79,10 +80,15 @@ fn operation(spec: &Inventory) -> Result<(&'static str, OperationOverlay), NameE
                 .map(|member| path(member))
                 .collect::<Result<_, _>>()?,
         ),
+        ResourceIdentity::Correlated(request, selected) => Identity::CorrelatedKey(vec![
+            IdentityField::Request(path(request)?),
+            IdentityField::Selected(path(selected)?),
+        ]),
         ResourceIdentity::Template(template, _) => Identity::Template((*template).to_owned()),
     };
     let mut queryable = match &spec.identity {
         ResourceIdentity::Arn(member) => vec![path(member)?],
+        ResourceIdentity::Correlated(_, selected) => vec![path(selected)?],
         ResourceIdentity::Key(members) | ResourceIdentity::Template(_, members) => members
             .iter()
             .map(|member| path(member))
