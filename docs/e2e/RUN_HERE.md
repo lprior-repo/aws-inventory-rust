@@ -350,6 +350,25 @@ The scoped negative-audit evidence is retained in
 The coverage-denominator corruption scenario now increments the actual header
 count rather than assuming the obsolete 1,565-enumeration baseline.
 
+The following final quality gates all passed (the full test run includes the
+four new singleton-identity scenarios and shared gateway-kind regression):
+
+```sh
+cargo fmt -p catalog-tool -p inventory-sweep -p inventory-harness -p aws-wire
+cargo clippy --locked -p catalog-tool -p inventory-sweep -p inventory-harness -p aws-wire --all-targets -j3 -- -D warnings
+cargo test --locked -p catalog-tool -p inventory-sweep -p inventory-harness -p aws-wire -j3
+cargo test --locked -p catalog-tool --test overlay_generation_safety -j3 -- --ignored
+```
+
+The explicit all-model safety run passed all six scenarios: deny rejection,
+reviewed-denial/defer preservation, new-denial removal, tamper rejection,
+byte-stable regeneration and unchanged reviewed callable plans. Logs are
+`.local/int/gen-integration-repair.log`,
+`.local/int/gen-integration-check.log` and
+`.local/int/gen-integration-final-tests.log`. The initial full test attempt
+failed on the obsolete hardcoded denominator count; the final run passed after
+making that corruption fixture independent of catalog totals.
+
 ## Wave 2 owned run command (A7.1)
 
 `inventory-harness e2e run --work "$(mktemp -d)" --service ec2`
