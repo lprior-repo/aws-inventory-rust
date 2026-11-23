@@ -136,12 +136,15 @@ async fn given_equal_router_and_gateway_names_in_two_meshes_when_routes_resume_t
             pages.push(
                 Page::new(
                     parent_op,
-                    json!({"meshName":mesh}),
+                    json!({"meshName":mesh,"meshOwner":"123456789012"}),
                     json!({parent_items:[mesh_ref(mesh, Some(field), &parent_suffix)]}),
                     vec![parent.clone()],
                 )
                 .under(&arn("appmesh", &format!("mesh/{mesh}")))
-                .rest(format!("/v20190125/meshes/{mesh}/{segment}s"), None),
+                .rest(
+                    format!("/v20190125/meshes/{mesh}/{segment}s?meshOwner=123456789012"),
+                    None,
+                ),
             );
             let id = arn("appmesh", &format!("{parent_suffix}/{child_segment}/same"));
             let mut item = mesh_ref(
