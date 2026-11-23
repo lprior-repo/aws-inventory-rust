@@ -39,7 +39,7 @@ operation = "CreateRole"
 kind = "AWS::IAM::Role"
 identity = "Role.Arn"
 [step.input]
-RoleName = "inventory-thin-eks"
+RoleName = "inventory-thin-emr-eks"
 AssumeRolePolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"eks.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
 
 [[step]]
@@ -48,7 +48,7 @@ service = "iam"
 operation = "AttachRolePolicy"
 kind = ""
 [step.input]
-RoleName = "inventory-thin-eks"
+RoleName = "inventory-thin-emr-eks"
 PolicyArn = "arn:aws:iam::aws:policy/AmazonEKSClusterPolicy"
 
 [[step]]
@@ -58,10 +58,10 @@ operation = "CreateCluster"
 kind = "AWS::EKS::Cluster"
 identity = "cluster.arn"
 [step.input]
-name = "inventory-thin-eks"
+name = "inventory-thin-emr-eks"
 roleArn = { from = "role", path = "Role.Arn" }
 resourcesVpcConfig = { subnetIds = [{ from = "subnet", path = "Subnet.SubnetId" }, { from = "subnet2", path = "Subnet.SubnetId" }] }
-clientRequestToken = "12345678-1234-4234-8234-123456789abc"
+clientRequestToken = "12345678-1234-4234-8234-123456789abd"
 
 [[step]]
 id = "virtual"

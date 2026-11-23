@@ -2,6 +2,9 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- EMR Containers seeds use distinct EKS role, cluster and idempotency-token
+  identities, so replaying all service recipes in one account does not reject
+  their prerequisites as duplicates of the standalone EKS recipe.
 - E2E count verification now rejects an entirely catalog-deferred seed oracle.
   Every explicit E2E service selector must have a seed recipe; bootstrap calls
   remain implicit, so the baseline script no longer selects recipe-less STS.
