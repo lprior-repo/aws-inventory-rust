@@ -1,0 +1,10 @@
+format = 1
+service = "appconfig"
+
+[[step]]
+id = "resource"
+operation = "CreateApplication"
+kind = "AWS::AppConfig::Application"
+identity = "Id"
+[step.input]
+"Name" = "inventory-thin-appconfig"
