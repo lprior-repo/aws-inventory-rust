@@ -8,6 +8,11 @@
   `inventory-aws/sweep-credentials`. Bounded IAM trust summarization is shared
   from `inventory-core` under its existing `legacy` feature.
 
+- `InventoryStore` now exposes bounded sweep discovery, typed manifest creation,
+  and generation-fenced lease release for immediate cancellation/resume.
+  Work leases carry transactional unfinished-work depth without adding statements
+  to the claim or page-commit paths.
+
 - Runtime catalog binding decoders live in `decode/plans/bindings.rs`, with
   separate source decoders and unchanged wire tags, limits and rejection order.
   The parent plan decoder is now below the 300-line source limit.

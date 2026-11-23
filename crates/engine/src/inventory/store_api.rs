@@ -31,6 +31,18 @@ pub trait InventoryStore: Send + Sync {
         outcome: ScopeOutcome,
         observed_at_ms: i64,
     ) -> impl Future<Output = Result<ChangeStats, StoreError>> + Send;
+    fn release_lease(
+        &self,
+        lease: WorkLease,
+    ) -> impl Future<Output = Result<(), StoreError>> + Send;
+    fn discover_active_sweep(
+        &self,
+    ) -> impl Future<Output = Result<Option<SweepId>, StoreError>> + Send;
+    fn create_sweep_manifest(
+        &self,
+        sweep: &SweepId,
+        account: &AccountId,
+    ) -> impl Future<Output = Result<(), StoreError>> + Send;
     fn resume_sweep(
         &self,
         sweep: &SweepId,
@@ -132,6 +144,19 @@ impl InventoryStore for BinaryStore {
         observed_at_ms: i64,
     ) -> Result<ChangeStats, StoreError> {
         BinaryStore::finish_scope(self, lease, outcome, observed_at_ms).await
+    }
+    async fn release_lease(&self, lease: WorkLease) -> Result<(), StoreError> {
+        BinaryStore::release_lease(self, lease).await
+    }
+    async fn discover_active_sweep(&self) -> Result<Option<SweepId>, StoreError> {
+        BinaryStore::discover_active_sweep(self).await
+    }
+    async fn create_sweep_manifest(
+        &self,
+        sweep: &SweepId,
+        account: &AccountId,
+    ) -> Result<(), StoreError> {
+        BinaryStore::create_sweep_manifest(self, sweep, account.as_str()).await
     }
     async fn resume_sweep(&self, sweep: &SweepId, account: &AccountId) -> Result<(), StoreError> {
         BinaryStore::resume_sweep(self, sweep, account).await

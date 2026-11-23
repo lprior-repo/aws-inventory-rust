@@ -1,3 +1,4 @@
+mod owned_lease;
 #[path = "work/transitions.rs"]
 mod transitions;
 use super::{BinaryStore, MAX_BINDING_BYTES, MAX_TOKEN_BYTES, PageCommit, StoreError};
@@ -127,6 +128,7 @@ pub struct WorkLease {
     pub(crate) bindings: Vec<u8>,
     pub(crate) context: Vec<u8>,
     pub(crate) lease_until_ms: i64,
+    pub(crate) pending_work: u64,
 }
 
 impl WorkLease {
@@ -147,6 +149,9 @@ impl WorkLease {
     }
     pub fn context(&self) -> &[u8] {
         &self.context
+    }
+    pub fn pending_work(&self) -> u64 {
+        self.pending_work
     }
 }
 
@@ -295,8 +300,10 @@ pub(super) async fn claim(
     let lease_until = now_ms
         .checked_add(lease_ms)
         .ok_or(StoreError::Invalid("lease interval overflow"))?;
-    sqlx::query("UPDATE work_queue SET state=1,generation=?3,authority_generation=?3,lease_until=?4,authority_complete=?5 WHERE sweep_id=?1 AND scope_key=?2")
-        .bind(sweep.as_str()).bind(&key).bind(next_generation).bind(lease_until).bind(complete).execute(&mut *tx).await?;
+    let depth = sqlx::query("UPDATE work_queue SET state=1,generation=?3,authority_generation=?3,lease_until=?4,authority_complete=?5 WHERE sweep_id=?1 AND scope_key=?2 RETURNING (SELECT COUNT(*) FROM work_queue WHERE sweep_id=?1 AND state IN(0,1)) AS pending_work")
+        .bind(sweep.as_str()).bind(&key).bind(next_generation).bind(lease_until).bind(complete).fetch_one(&mut *tx).await?;
+    let pending_work = u64::try_from(depth.try_get::<i64, _>("pending_work")?)
+        .map_err(|_| StoreError::Invalid("negative unfinished-work count"))?;
     let lease = WorkLease {
         sweep: sweep.clone(),
         scope: decode_scope(&key)?,
@@ -305,6 +312,7 @@ pub(super) async fn claim(
         bindings: row.try_get("bindings")?,
         context: row.try_get("context")?,
         lease_until_ms: lease_until,
+        pending_work,
     };
     tx.commit().await?;
     Ok(Some(lease))
