@@ -16,8 +16,11 @@ async fn exists(admin: &str, name: &str) -> Result<bool, HarnessError> {
 fn postgres_names_are_bounded_identifiers() -> Result<(), HarnessError> {
     let name = names::generate()?;
     assert!(name.as_str().len() <= 40);
-    assert!(name.as_str().bytes().all(|byte| byte.is_ascii_lowercase()
-        || byte.is_ascii_digit() || byte == b'_'));
+    assert!(
+        name.as_str()
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_')
+    );
     assert!(names::created_at(name.as_str()).is_some());
     assert!(names::created_at("inv_t_00000000_1_deadbeef;DROP").is_none());
     assert!(names::created_at("inventory").is_none());
@@ -32,7 +35,10 @@ fn postgres_url_preserves_socket_and_credentials() -> Result<(), HarnessError> {
     )?;
     let options: sqlx::postgres::PgConnectOptions = url.parse()?;
     assert_eq!(options.get_database(), Some("inv_t_00000000_1_deadbeef"));
-    assert_eq!(options.get_socket().map(std::path::PathBuf::as_path), Some(std::path::Path::new("/tmp/socket")));
+    assert_eq!(
+        options.get_socket().map(std::path::PathBuf::as_path),
+        Some(std::path::Path::new("/tmp/socket"))
+    );
     assert_eq!(options.get_username(), "inv");
     Ok(())
 }
@@ -44,7 +50,9 @@ async fn postgres_create_connect_finish_removes_database() -> Result<(), Harness
     let database = TestDatabase::create(&admin).await?;
     let name = database.name().to_owned();
     let mut connection = database::connect(database.url()).await?;
-    let value: i32 = sqlx::query_scalar("SELECT 42").fetch_one(&mut connection).await?;
+    let value: i32 = sqlx::query_scalar("SELECT 42")
+        .fetch_one(&mut connection)
+        .await?;
     assert_eq!(value, 42);
     database.finish().await?;
     assert!(!exists(&admin, &name).await?);
@@ -56,7 +64,8 @@ async fn postgres_create_connect_finish_removes_database() -> Result<(), Harness
 #[ignore = "requires INVENTORY_POSTGRES_URL"]
 async fn postgres_simultaneous_databases_are_isolated() -> Result<(), HarnessError> {
     let admin = admin_url()?;
-    let (first, second) = tokio::try_join!(TestDatabase::create(&admin), TestDatabase::create(&admin))?;
+    let (first, second) =
+        tokio::try_join!(TestDatabase::create(&admin), TestDatabase::create(&admin))?;
     assert_ne!(first.name(), second.name());
     assert_ne!(first.url(), second.url());
     first.finish().await?;

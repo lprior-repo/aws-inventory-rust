@@ -29,7 +29,11 @@ async fn postgres_runtime_falls_back_to_docker() -> Result<(), HarnessError> {
     stub(directory.path(), "docker", 0)?;
     let selected = detect_in(directory.path().as_os_str(), None).await?;
     assert_eq!(selected, directory.path().join("docker"));
-    assert!(detect_in(directory.path().as_os_str(), Some(Runtime::Podman)).await.is_err());
+    assert!(
+        detect_in(directory.path().as_os_str(), Some(Runtime::Podman))
+            .await
+            .is_err()
+    );
     Ok(())
 }
 
@@ -56,14 +60,26 @@ async fn postgres_runtime_compose_arguments_and_failures() -> Result<(), Harness
     let directory = tempfile::tempdir()?;
     let executable = directory.path().join("docker");
     let trace = directory.path().join("arguments");
-    fs::write(&executable, format!("#!/bin/sh\nprintf '%s\\n' \"$@\" > '{}'\n", trace.display()))?;
+    fs::write(
+        &executable,
+        format!("#!/bin/sh\nprintf '%s\\n' \"$@\" > '{}'\n", trace.display()),
+    )?;
     fs::set_permissions(&executable, fs::Permissions::from_mode(0o700))?;
     let file = directory.path().join("compose.yaml");
     compose_at(&executable, &file, Action::Up).await?;
-    let prefix = format!("compose\n--project-name\ninventory-local\n-f\n{}\n", file.display());
-    assert_eq!(fs::read_to_string(&trace)?, format!("{prefix}up\n-d\n--wait\n"));
+    let prefix = format!(
+        "compose\n--project-name\ninventory-local\n-f\n{}\n",
+        file.display()
+    );
+    assert_eq!(
+        fs::read_to_string(&trace)?,
+        format!("{prefix}up\n-d\n--wait\n")
+    );
     compose_at(&executable, &file, Action::DownWithVolumes).await?;
-    assert_eq!(fs::read_to_string(&trace)?, format!("{prefix}down\n--volumes\n"));
+    assert_eq!(
+        fs::read_to_string(&trace)?,
+        format!("{prefix}down\n--volumes\n")
+    );
     stub(directory.path(), "docker", 1)?;
     assert!(compose_at(&executable, &file, Action::Down).await.is_err());
     Ok(())

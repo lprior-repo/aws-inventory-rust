@@ -22,8 +22,11 @@ pub fn admin_url() -> Result<String, HarnessError> {
     Ok(url)
 }
 
-async fn bounded<T>(future: impl Future<Output = Result<T, HarnessError>>) -> Result<T, HarnessError> {
-    tokio::time::timeout(DATABASE_TIMEOUT, future).await
+async fn bounded<T>(
+    future: impl Future<Output = Result<T, HarnessError>>,
+) -> Result<T, HarnessError> {
+    tokio::time::timeout(DATABASE_TIMEOUT, future)
+        .await
         .map_err(|_| HarnessError::invalid("PostgreSQL harness operation exceeded 15 seconds"))?
 }
 

@@ -18,18 +18,26 @@ async fn prune_inner(admin_url: &str, older_than_seconds: u64) -> Result<usize, 
     ).fetch_all(&mut connection).await?;
     connection.close().await?;
     if candidates.len() > PRUNE_LIMIT {
-        return Err(HarnessError::invalid("more than 256 test databases; prune manually before retrying"));
+        return Err(HarnessError::invalid(
+            "more than 256 test databases; prune manually before retrying",
+        ));
     }
-    stream::iter(candidates.into_iter().filter(|name| is_old(name, now, older_than_seconds)))
-        .map(Ok::<_, HarnessError>)
-        .try_fold(0usize, |count, name| async move {
-            database::drop_database(admin_url, &name).await?;
-            Ok(count.saturating_add(1))
-        }).await
+    stream::iter(
+        candidates
+            .into_iter()
+            .filter(|name| is_old(name, now, older_than_seconds)),
+    )
+    .map(Ok::<_, HarnessError>)
+    .try_fold(0usize, |count, name| async move {
+        database::drop_database(admin_url, &name).await?;
+        Ok(count.saturating_add(1))
+    })
+    .await
 }
 
 fn is_old(name: &str, now: u64, age: u64) -> bool {
     names::created_at(name).is_some_and(|created| {
-        now.checked_sub(u64::from(created)).is_some_and(|elapsed| elapsed > age)
+        now.checked_sub(u64::from(created))
+            .is_some_and(|elapsed| elapsed > age)
     })
 }

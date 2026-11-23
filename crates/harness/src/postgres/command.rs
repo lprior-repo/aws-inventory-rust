@@ -28,7 +28,9 @@ async fn execute(arguments: &[String]) -> Result<(), HarnessError> {
             runtime::compose(runtime, action).await?;
         }
         [action] if action == "url" => println!("{}", local_url()?),
-        [action] if action == "prune" => println!("pruned {} databases", prune(&admin_url()?, 3_600).await?),
+        [action] if action == "prune" => {
+            println!("pruned {} databases", prune(&admin_url()?, 3_600).await?)
+        }
         _ => return Err(HarnessError::invalid(USAGE)),
     }
     Ok(())
@@ -41,9 +43,7 @@ fn parse_runtime(
     let (arguments, action) = volume_option(arguments, action)?;
     match arguments {
         [] => Ok((None, action)),
-        [flag, name] if flag == "--runtime" => {
-            Ok((Some(runtime::Runtime::parse(name)?), action))
-        }
+        [flag, name] if flag == "--runtime" => Ok((Some(runtime::Runtime::parse(name)?), action)),
         _ => Err(HarnessError::invalid(USAGE)),
     }
 }
@@ -70,13 +70,20 @@ fn local_url() -> Result<String, HarnessError> {
     match std::env::var("INVENTORY_POSTGRES_PASSWORD") {
         Ok(password) => {
             if password.len() > 1_024 {
-                return Err(HarnessError::invalid("local PostgreSQL password exceeds 1024 bytes"));
+                return Err(HarnessError::invalid(
+                    "local PostgreSQL password exceeds 1024 bytes",
+                ));
             }
             use sqlx::ConnectOptions;
-            Ok(database::options(DEFAULT_URL)?.password(&password).to_url_lossy().into())
+            Ok(database::options(DEFAULT_URL)?
+                .password(&password)
+                .to_url_lossy()
+                .into())
         }
         Err(std::env::VarError::NotPresent) => Ok(DEFAULT_URL.to_owned()),
-        Err(_) => Err(HarnessError::invalid("local PostgreSQL password must be Unicode")),
+        Err(_) => Err(HarnessError::invalid(
+            "local PostgreSQL password must be Unicode",
+        )),
     }
 }
 
