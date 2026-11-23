@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/service-catalog/service/2015-12-10/service-catalog-2015-12-10.json
-use super::super::construction::{Inventory, ResourceIdentity};
+use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 
 pub(super) const CALLS: &[Inventory] = &[
@@ -39,7 +39,7 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Key(&["PlanId"]),
         token: Some(("PageToken", "NextPageToken")),
         scope: Scope::Region,
-        input: &[],
+        input: &[Input::Structure("AccessLevelFilter", &[("Key", "Account"), ("Value", "self")])],
         tags: None,
         queryable: &[],
     },
