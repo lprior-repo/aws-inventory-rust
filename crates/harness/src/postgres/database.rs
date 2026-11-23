@@ -72,6 +72,11 @@ impl TestDatabase {
         self.name.as_str()
     }
 
+    /// Disable automatic deletion for an explicitly retained development run.
+    pub fn keep(mut self) {
+        self.cleanup = false;
+    }
+
     pub async fn finish(mut self) -> Result<(), HarnessError> {
         drop_database(&self.admin_url, self.name()).await?;
         self.cleanup = false;

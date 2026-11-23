@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
-# Runs the baseline end-to-end flow against the pinned emulator: install the
-# runtime if it is missing, build, then run the ignored sweep_e2e suite, which
-# starts its own emulator and FalkorDB, seeds, sweeps, projects and verifies.
-# Needs: rustup, a C toolchain, git, curl, gpg, dpkg-deb, bsdtar, make.
-# The sweep feature loads AWS profiles without the legacy typed service adapters.
-# PostgreSQL mode requires INVENTORY_POSTGRES_URL for a throwaway native server.
+# Install missing pinned runtimes, build, then run the owned PostgreSQL e2e flow.
+# Requires INVENTORY_POSTGRES_URL (or --postgres-url passed to this script).
+# Whole-service selectors report all unsupported and failed operations in this
+# catalog; they do not silently reduce EC2 to the archive's four-callable baseline.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -19,19 +17,16 @@ for tool in cargo git curl gpg dpkg-deb bsdtar make; do
     fi
 done
 
-cargo build --locked -p inventory-harness -j1
+cargo build --locked -p inventory-harness -p aws-inventory --features sweep -j1
 
 if [[ ! -x "$emulator" ]]; then
     cargo run --locked -p inventory-harness -- install "$runtime"
 fi
-if [[ ! -d "$graph" ]]; then
+if [[ ! -f "${INVENTORY_FALKOR_MODULE:-$graph/falkordb.so}" ]]; then
     cargo run --locked -p inventory-harness -- install-graph "$graph"
 fi
 
-result=0
-for store in postgres file; do
-    if ! INVENTORY_E2E_STORE="$store" cargo test --locked -p aws-inventory --features sweep --test sweep_e2e -j1 -- --ignored --test-threads 1; then
-        result=1
-    fi
-done
-exit "$result"
+work=$(mktemp -d)
+printf 'e2e work: %s\n' "$work"
+exec cargo run --locked -p inventory-harness -- e2e run --work "$work" \
+    --service ec2 --service sts "$@"

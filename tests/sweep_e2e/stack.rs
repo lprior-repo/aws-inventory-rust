@@ -1,9 +1,7 @@
-#[path = "stack/graph.rs"]
-mod graph;
 use super::guard::{Environment, static_keys};
 use anyhow::{Context, Result, ensure};
 use aws_wire::sign::Credentials;
-use graph::GraphServer;
+use inventory_harness::e2e::graph::GraphServer;
 use inventory_harness::emulator::Emulator;
 use inventory_harness::postgres::{TestDatabase, admin_url};
 use std::path::{Path, PathBuf};

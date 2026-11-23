@@ -51,6 +51,11 @@ async fn main() -> ExitCode {
 
 async fn routed_command(arguments: &[String]) -> Option<ExitCode> {
     if let [command, rest @ ..] = arguments
+        && command == "e2e"
+    {
+        return Some(inventory_harness::e2e::command::run(rest).await);
+    }
+    if let [command, rest @ ..] = arguments
         && command == "probe"
     {
         return Some(inventory_harness::probe::command(rest).await);

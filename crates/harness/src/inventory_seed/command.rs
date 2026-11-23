@@ -19,11 +19,14 @@ pub async fn run(arguments: &[String]) -> ExitCode {
 
 async fn execute(arguments: &[String]) -> Result<(), SeedError> {
     let args = SeedRunArgs::parse(arguments)?;
+    execute_with(&args, &credentials()?).await
+}
+
+pub async fn execute_with(args: &SeedRunArgs, credentials: &Credentials) -> Result<(), SeedError> {
     let config = super::SeedConfig::new(&args.endpoint, &args.ca_bundle, &args.region)?;
-    let credentials = credentials()?;
     let bytes = directory::read_bounded(&args.catalog, 67_108_864)?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
-    let (oracle, matrix) = directory::run(&args, &catalog, &config, &credentials).await?;
+    let (oracle, matrix) = directory::run(args, &catalog, &config, credentials).await?;
     directory::write_rows(&args.oracle, oracle)?;
     directory::write_rows(&args.matrix, matrix)?;
     Ok(())

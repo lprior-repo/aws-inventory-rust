@@ -1,6 +1,7 @@
 pub mod assertions;
 pub mod audit;
 pub mod catalog;
+pub mod e2e;
 pub mod emulator;
 mod files;
 pub mod install;

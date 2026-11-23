@@ -6,6 +6,12 @@
   calls and required ancestors remain enabled; descendants require an explicit
   selector (a bare service selects all its plans). Omitted selectors keep the
   full catalog, and unknown selectors exit with usage status 2.
+- `inventory-harness e2e run` owns an isolated emulator, FalkorDB and fresh
+  PostgreSQL database, seeds recipes, runs the shipped collector twice and
+  checks seeded identities/counts and zero repeat writes. Timed stages and
+  safe numeric collector outcomes remain visible on failure; `--keep` retains
+  the database until explicitly pruned and waits for Ctrl-C before stopping
+  children. The baseline script now uses this command.
 
 - The harness `probe` command reports every catalog enumeration in stable order,
   skips parent-bound children, and calls only the first page through the sweep's
