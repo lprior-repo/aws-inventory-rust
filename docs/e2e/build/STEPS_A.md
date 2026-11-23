@@ -833,9 +833,10 @@ It has no row for `sqs`.
   descriptors, including input and response-check order.
 - **Blob literals:** a TOML string targeting a modeled blob (including nested
   structure, list or map members) is canonical standard-alphabet padded base64.
-  Preflight decodes it once into bytes; the existing 1,024-byte encoded-text
-  bound limits decoded content to 768 bytes. Invalid alphabet, padding or
-  trailing bits fail before network calls. Ordinary modeled strings stay text.
+  Preflight decodes it once into bytes; a blob-specific 1,024-byte encoded-text
+  bound limits decoded content to 768 bytes independently of ordinary text limits.
+  Invalid alphabet, padding or trailing bits fail before network calls. Ordinary
+  modeled strings stay text.
 
 - **Goal:** Read a seed scenario from a TOML file into the existing
   `SeedScenario`, with the input types real create calls need.

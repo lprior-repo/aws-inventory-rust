@@ -112,7 +112,7 @@ fn given_toml_map_when_prepared_then_request_preserves_named_keys() -> TestResul
 fn blob_request(encoded: &str) -> Result<serde_json::Value, Box<dyn std::error::Error>> {
     let bytes = bytes()?;
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
-    let document = format!("format=1\nservice='translate'\n[[step]]\nid='import'\noperation='ImportTerminology'\nkind=''\n[step.input]\nName='not base64?'\nMergeStrategy='OVERWRITE'\nTerminologyData={{File='{encoded}',Format='CSV'}}");
+    let document = format!("format=1\nservice='translate'\n[[step]]\nid='import'\noperation='ImportTerminology'\nkind=''\n[step.input]\nName='inventory-blob'\nMergeStrategy='OVERWRITE'\nTerminologyData={{File='{encoded}',Format='CSV'}}");
     let scenario = load(&document)?;
     let models = SeedModels::load(&runtime, &scenario)?;
     let step = models.steps.first().ok_or("missing import step")?;
@@ -156,6 +156,6 @@ fn given_toml_blob_when_materialized_and_encoded_then_wire_has_single_base64_and
         request.pointer("/TerminologyData/Format"),
         Some(&serde_json::json!("CSV"))
     );
-    assert_eq!(request.get("Name"), Some(&serde_json::json!("not base64?")));
+    assert_eq!(request.get("Name"), Some(&serde_json::json!("inventory-blob")));
     Ok(())
 }
