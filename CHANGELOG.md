@@ -2,6 +2,15 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Overlay generation now covers all 436 pinned services, including validated
+  child reads derived from modeled identifiers or a unique compatible
+  same-service identity source. Reachable credential outputs, owner-sensitive
+  inputs and ambiguous collections fail closed. Specific reviewed defers and
+  denials remain authoritative; only source-typed request-binding blockers may
+  be replaced by validated generated children. Per-class/protocol counts,
+  advisory audit differences and mutation evidence are documented in
+  `docs/e2e/build/GENERATOR_EVIDENCE.md`.
+
 - Sweep accepts repeatable `--service service[:Operation]` selectors. Bootstrap
   calls and required ancestors remain enabled; descendants require an explicit
   selector (a bare service selects all its plans). Omitted selectors keep the
