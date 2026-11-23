@@ -4,7 +4,7 @@ service = "lambda-microvms"
 [[step]]
 id = "resource"
 operation = "CreateMicrovmImage"
-kind = "AWS::LambdaMicrovms::MicrovmImage"
+kind = "AWS::Lambda::MicrovmImage"
 identity = "imageArn"
 [step.input]
 "baseImageArn" = "arn:aws:iam::000000000000:role/inventory-thin"
