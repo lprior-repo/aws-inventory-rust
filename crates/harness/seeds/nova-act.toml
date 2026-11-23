@@ -5,6 +5,6 @@ service = "nova-act"
 id = "resource"
 operation = "CreateWorkflowDefinition"
 kind = "AWS::NovaAct::WorkflowDefinition"
-identity = { input = "name" }
+identity = { input = "name", template = "arn:{partition}:nova-act:{region}:{account}:workflow-definition/{value}" }
 [step.input]
 "name" = "inventory-thin-nova-act"
