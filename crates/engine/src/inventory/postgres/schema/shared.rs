@@ -4,6 +4,7 @@ use sqlx::{Postgres, Transaction};
 
 const TABLES: &[&str] = &[
     "CREATE SEQUENCE inventory.projection_revision_seq AS bigint MINVALUE 1 NO CYCLE",
+    "CREATE SEQUENCE inventory.projection_delivery_generation_seq AS bigint MINVALUE 1 NO CYCLE",
     "CREATE TABLE inventory.metadata(key text PRIMARY KEY,value bytea NOT NULL)",
     "CREATE TABLE inventory.kinds(kind text PRIMARY KEY,table_name text NOT NULL UNIQUE)",
     "CREATE TABLE inventory.kind_schemas(kind text PRIMARY KEY,table_name text NOT NULL,definition bytea NOT NULL)",

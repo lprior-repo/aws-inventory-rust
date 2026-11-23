@@ -4,13 +4,20 @@ mod config;
 mod connection;
 mod lease;
 mod outbox;
+mod projection_api;
+mod projection_delivery;
+mod projection_read;
+mod projection_state;
 mod references;
+mod summary;
 mod url;
 mod work;
 
 pub mod schema;
 
 pub use config::PgWriteConfig;
+pub use projection_delivery::PgDelivery;
+pub use projection_read::PgProjectionSnapshot;
 pub use url::DatabaseUrl;
 
 use crate::inventory::{MAX_CATALOG_BYTES, SchemaRegistry, StoreError};

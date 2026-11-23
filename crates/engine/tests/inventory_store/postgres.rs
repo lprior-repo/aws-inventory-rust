@@ -1,5 +1,13 @@
 #[path = "postgres/completion.rs"]
 mod completion;
+#[path = "postgres/conformance.rs"]
+mod conformance;
+#[path = "postgres/live.rs"]
+mod live;
+#[path = "postgres/overflow.rs"]
+mod overflow;
+#[path = "postgres/projection.rs"]
+mod projection;
 #[path = "postgres/references.rs"]
 mod references;
 
@@ -31,7 +39,7 @@ pub(super) async fn run(
     result
 }
 
-fn registry() -> TestResult<SchemaRegistry> {
+pub(super) fn registry() -> TestResult<SchemaRegistry> {
     let kind = KindSchema::new(
         Kind::parse("AWS::Example::Thing")?,
         SqlName::parse("thing_table")?,

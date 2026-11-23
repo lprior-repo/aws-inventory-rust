@@ -12,19 +12,57 @@ impl PgStore {
         now_ms: i64,
         lease_ms: i64,
     ) -> Result<Option<WorkLease>, StoreError> {
-        let until = deadline(now_ms, lease_ms)?;
-        let mut tx = self.pool.begin().await?;
-        active(&mut tx, Some(sweep)).await?;
-        let row = sqlx::query(CLAIM)
-            .bind(sweep.as_str())
-            .bind(now_ms)
-            .bind(until)
-            .fetch_optional(&mut *tx)
-            .await?;
-        let lease = row.map(|row| decode(row, sweep)).transpose()?;
-        tx.commit().await?;
-        Ok(lease)
+        claim_inner(self, sweep, now_ms, lease_ms, false).await
     }
+
+    pub async fn claim_with_depth(
+        &self,
+        sweep: &SweepId,
+        now_ms: i64,
+        lease_ms: i64,
+    ) -> Result<Option<WorkLease>, StoreError> {
+        claim_inner(self, sweep, now_ms, lease_ms, true).await
+    }
+}
+
+async fn claim_inner(
+    store: &PgStore,
+    sweep: &SweepId,
+    now: i64,
+    duration: i64,
+    depth: bool,
+) -> Result<Option<WorkLease>, StoreError> {
+    let until = deadline(now, duration)?;
+    let mut tx = store.pool.begin().await?;
+    active(&mut tx, Some(sweep)).await?;
+    let row = sqlx::query(CLAIM)
+        .bind(sweep.as_str())
+        .bind(now)
+        .bind(until)
+        .fetch_optional(&mut *tx)
+        .await?;
+    let mut lease = row.map(|row| decode(row, sweep)).transpose()?;
+    populate_depth(&mut tx, lease.as_mut(), depth).await?;
+    tx.commit().await?;
+    Ok(lease)
+}
+
+async fn populate_depth(
+    tx: &mut Transaction<'_, Postgres>,
+    lease: Option<&mut WorkLease>,
+    depth: bool,
+) -> Result<(), StoreError> {
+    let Some(lease) = lease.filter(|_| depth) else {
+        return Ok(());
+    };
+    let count: i64 =
+        sqlx::query_scalar("SELECT count(*) FROM work_queue WHERE sweep_id=$1 AND state IN(0,1)")
+            .bind(lease.sweep.as_str())
+            .fetch_one(&mut **tx)
+            .await?;
+    lease.pending_work =
+        Some(u64::try_from(count).map_err(|_| StoreError::Invalid("negative queue depth"))?);
+    Ok(())
 }
 
 fn deadline(now: i64, duration: i64) -> Result<i64, StoreError> {

@@ -1,5 +1,9 @@
 mod tags;
-pub use tags::{ProjectionTag, ProjectionTagCursor, ProjectionTagPage};
+mod types;
+pub use types::{
+    ProjectionEdgeCursor, ProjectionEdgeHeader, ProjectionEdgePage, ProjectionResource,
+    ProjectionState, ProjectionTag, ProjectionTagCursor, ProjectionTagPage,
+};
 
 use super::{BinaryStore, StoreError};
 use inventory_core::inventory::{AccountId, Kind, Region, Relation, ResourceId, ResourceKey};
@@ -57,46 +61,6 @@ pub(super) async fn begin_snapshot(store: &BinaryStore) -> Result<ProjectionSnap
     Ok(ProjectionSnapshot {
         tx: store.reader.begin().await?,
     })
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct ProjectionState {
-    pub pending: u64,
-    pub rebuild_required: bool,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ProjectionResource {
-    pub key: ResourceKey,
-    pub name: Option<String>,
-    pub content_hash: [u8; 32],
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ProjectionEdgeHeader {
-    pub from: ResourceKey,
-    pub to: ResourceKey,
-    pub relation: Relation,
-    pub source: String,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ProjectionEdgeCursor {
-    from_account: String,
-    from_region: String,
-    from_kind: String,
-    from_id: String,
-    to_account: String,
-    to_region: String,
-    to_kind: String,
-    to_id: String,
-    relation: String,
-    source: String,
-}
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ProjectionEdgePage {
-    pub edges: Vec<ProjectionEdgeHeader>,
-    pub next: Option<ProjectionEdgeCursor>,
 }
 
 pub(super) async fn state(store: &BinaryStore) -> Result<ProjectionState, StoreError> {

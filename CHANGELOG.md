@@ -2,6 +2,10 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- PostgreSQL now implements the complete inventory and projection ports, including
+  transaction-owned delivery fencing, bounded revision-exact outbox delivery,
+  repeatable-read snapshots, and paged resources, edges and tags.
+
 - Projection delivery now uses backend-neutral inventory, snapshot, target-identity
   and delivery-ownership ports. SQLite retains its persistent sidecar generation
   and immediate cross-process contention behavior.

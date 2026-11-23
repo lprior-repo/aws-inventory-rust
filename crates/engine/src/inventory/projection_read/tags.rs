@@ -1,20 +1,8 @@
-use super::{ResourceKey, Row, Sqlite, StoreError, Transaction, validate_limit};
+use super::{
+    ProjectionTag, ProjectionTagCursor, ProjectionTagPage, ResourceKey, Row, Sqlite, StoreError,
+    Transaction, validate_limit,
+};
 use inventory_core::inventory::{MAX_TAG_KEY_CHARS, MAX_TAG_VALUE_CHARS};
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ProjectionTag {
-    pub key: String,
-    pub value: String,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ProjectionTagCursor(String);
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub struct ProjectionTagPage {
-    pub tags: Vec<ProjectionTag>,
-    pub next: Option<ProjectionTagCursor>,
-}
 
 pub(super) async fn read(
     tx: &mut Transaction<'_, Sqlite>,
