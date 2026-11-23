@@ -72,9 +72,14 @@ impl Session for Run {
         if self.args.keep && !interrupted {
             println!("database {}", self.database.url());
             println!("emulator {}", self.stack.emulator().endpoint());
-            tokio::signal::ctrl_c().await?;
-            self.database.keep();
-            return stop_stack(self.stack).await;
+            let signal = tokio::signal::ctrl_c().await.map_err(HarnessError::from);
+            let children = stop_stack(self.stack).await;
+            if signal.is_ok() {
+                self.database.keep();
+                return children;
+            }
+            let database = self.database.finish().await;
+            return signal.and(children).and(database);
         }
         let children = stop_stack(self.stack).await;
         let database = self.database.finish().await;
