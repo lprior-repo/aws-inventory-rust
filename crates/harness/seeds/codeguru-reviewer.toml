@@ -6,7 +6,7 @@ id = "repository"
 service = "codecommit"
 operation = "CreateRepository"
 kind = "AWS::CodeCommit::Repository"
-identity = "repositoryMetadata.Arn"
+identity = "repositoryMetadata.repositoryId"
 [step.input]
 repositoryName = "inventory-thin-codeguru-reviewer"
 
