@@ -680,6 +680,7 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
             "ListBrowsers",
             OperationOverlay {
                 queryable: vec![path("browserArn")?],
+                fixed: [(path("type")?, FixedValue::String("CUSTOM".to_owned()))].into_iter().collect(),
                 ..read(
                     "browserSummaries",
                     Identity::Arn(path("browserArn")?),
@@ -706,6 +707,7 @@ pub(super) fn part_3() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
             "ListCodeInterpreters",
             OperationOverlay {
                 queryable: vec![path("codeInterpreterArn")?],
+                fixed: [(path("type")?, FixedValue::String("CUSTOM".to_owned()))].into_iter().collect(),
                 ..read(
                     "codeInterpreterSummaries",
                     Identity::Arn(path("codeInterpreterArn")?),
