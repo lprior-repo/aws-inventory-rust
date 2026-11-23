@@ -105,6 +105,7 @@ impl<'a, 'catalog> Page<'a, 'catalog> {
             let next = self.parts(&child_context, &chunk, &mut collected.budget)?;
             append(&mut collected.parts, next, &mut collected.tag_pairs)?;
         }
+        collected.parts.skipped_child_requests = collected.budget.skipped_requests();
         Ok((collected.parts, collected.tag_pairs))
     }
 

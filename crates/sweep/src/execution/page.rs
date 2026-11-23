@@ -147,6 +147,7 @@ struct PageParts {
     children: Vec<inventory_engine::inventory::WorkSpec>,
     next: Option<cursor::Advance>,
     rows: u64,
+    skipped_child_requests: u64,
 }
 
 struct PageRequest {
@@ -197,6 +198,10 @@ async fn commit_parts(
     lease: WorkLease,
     parts: PageParts,
 ) -> Result<SweepSummary, SweepError> {
+    context
+        .bootstrap
+        .metrics
+        .skipped_children(parts.skipped_child_requests);
     if let Err(error) = assembly::checkpoint(context.bootstrap.executor).await {
         return finish_error(context.store, lease, error).await;
     }

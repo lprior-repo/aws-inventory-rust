@@ -107,6 +107,9 @@ fn append_rows(parts: &mut PageParts, next: PageParts) -> Result<(), SweepError>
     parts.references.extend(next.references);
     parts.tags.extend(next.tags);
     parts.children.extend(next.children);
+    parts.skipped_child_requests = parts
+        .skipped_child_requests
+        .saturating_add(next.skipped_child_requests);
     Ok(())
 }
 

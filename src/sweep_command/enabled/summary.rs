@@ -61,13 +61,14 @@ fn write_network(output: &mut impl Write, metrics: &SweepMetrics) -> Result<()> 
 fn write_store(output: &mut impl Write, metrics: &SweepMetrics) -> Result<()> {
     write!(
         output,
-        " pages={} decode_ns={} store_commit_ns={} store_commits={} claims={} progress_dropped={}",
+        " pages={} decode_ns={} store_commit_ns={} store_commits={} claims={} progress_dropped={} child_requests_skipped={}",
         metrics.pages,
         metrics.decode_ns,
         metrics.store_commit_ns,
         metrics.store_commits,
         metrics.claims,
-        metrics.progress_dropped
+        metrics.progress_dropped,
+        metrics.child_requests_skipped
     )?;
     Ok(())
 }

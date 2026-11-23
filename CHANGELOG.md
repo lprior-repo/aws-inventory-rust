@@ -8,6 +8,9 @@
   `id` as the canonical resource ID, replacing ARN IDs. This includes service
   defaults whose ARN is empty without discarding customer groups on the same page.
   Existing ARN-keyed parameter-group rows are replaced after complete observation.
+- Required child requests with absent or empty source text are skipped per row
+  and counted in the invocation's `child_requests_skipped` metric. Nonempty
+  values are preserved verbatim; validation and transport failures remain errors.
 
 - E2E count verification now rejects an entirely catalog-deferred seed oracle.
   Every explicit E2E service selector must have a seed recipe; bootstrap calls
