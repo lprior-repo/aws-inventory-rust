@@ -4,7 +4,7 @@ service = "opensearch"
 [[step]]
 id = "resource"
 operation = "CreateApplication"
-kind = "AWS::OpenSearch::Application"
+kind = "AWS::OpenSearchService::Application"
 identity = "arn"
 [step.input]
 "name" = "inventory-thin-opensearch"
