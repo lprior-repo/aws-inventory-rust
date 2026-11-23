@@ -154,7 +154,7 @@ What comes after the exit test is in [AFTER.md](AFTER.md).
 ## Rules that still hold
 
 - Workspace lints: no `unsafe`, `unwrap`, `expect`, `panic`, `todo`, unchecked
-  indexing or lossy casts. Files at or under 300 lines, functions under 60
+  indexing or lossy casts. Files at or under 1000 lines, functions under 60
   lines. No Rust comments.
 - Everything is bounded. One retry owner. State that matters is in the store.
 - Collection is read-only. The deny list fails closed and always wins.

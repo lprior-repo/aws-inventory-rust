@@ -57,7 +57,7 @@ Owner's rules:
 
 Engineering rules:
 - Workspace lints apply: no unsafe, unwrap, expect, panic, todo, unchecked
-  indexing or lossy casts. Files at or under 300 lines, functions under 60
+  indexing or lossy casts. Files at or under 1000 lines, functions under 60
   lines. No Rust comments.
 - Every queue, batch, retry, response and traversal is bounded. No detached
   tasks. ApiExecutor is the only retry owner.
