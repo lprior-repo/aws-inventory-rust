@@ -1,0 +1,11 @@
+format = 1
+service = "kendra"
+
+[[step]]
+id = "resource"
+operation = "CreateIndex"
+kind = "AWS::Kendra::Index"
+identity = "Id"
+[step.input]
+"Name" = "inventory-thin-kendra"
+"RoleArn" = "arn:aws:iam::000000000000:role/inventory-thin"
