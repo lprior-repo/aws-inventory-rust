@@ -4,7 +4,7 @@ service = "connectcases"
 [[step]]
 id = "resource"
 operation = "CreateDomain"
-kind = "AWS::ConnectCases::Domain"
+kind = "AWS::Cases::Domain"
 identity = "domainArn"
 [step.input]
 name = "inventory-thin-connectcases"
