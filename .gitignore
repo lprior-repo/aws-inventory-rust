@@ -29,7 +29,7 @@ __pycache__/
 /evidence/record-codec-bench/target/
 /.moon/cache/
 
-# Beads / Dolt files (added by bd init)
-.dolt/
-.beads-credential-key
-.beads/proxieddb/
+# Local agent tooling state
+/.beads/
+/.claude/
+/.codex/
