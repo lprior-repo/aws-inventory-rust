@@ -64,3 +64,73 @@ fn given_cyclic_bindings_when_selected_then_each_plan_is_visited_once() -> TestR
     );
     Ok(())
 }
+
+#[path = "../../../../tests/support/base_catalog.rs"]
+mod base_catalog;
+mod fixture;
+
+#[test]
+fn given_qualified_root_when_catalog_selected_then_all_bootstrap_plans_survive() -> TestResult {
+    let bytes = base_catalog::base()?;
+    let catalog = RuntimeCatalog::from_bytes(bytes)?;
+    let required: BTreeSet<_> = catalog
+        .plans()
+        .iter()
+        .filter(|plan| {
+            matches!(
+                plan.purpose(),
+                PlanPurpose::AccountIdentity { .. }
+                    | PlanPurpose::RegionDiscovery { .. }
+                    | PlanPurpose::EndpointDiscovery
+            )
+        })
+        .map(name)
+        .collect();
+    assert!(required.contains(&("sts", "GetCallerIdentity")));
+    assert!(required.contains(&("ec2", "DescribeRegions")));
+    let selected = RuntimeCatalog::from_bytes(bytes)?
+        .select_services(&["ec2:DescribeVpcs".into()])?;
+    let actual: BTreeSet<_> = selected.plans().iter().map(name).collect();
+    assert!(required.is_subset(&actual));
+    assert!(actual.contains(&("ec2", "DescribeVpcs")));
+    Ok(())
+}
+
+#[test]
+fn given_qualified_root_when_catalog_selected_then_unselected_siblings_are_removed() -> TestResult {
+    let catalog = RuntimeCatalog::from_bytes(base_catalog::base()?)?;
+    assert!(catalog.lookup("ec2", "DescribeSubnets").is_some());
+    assert!(catalog.lookup("s3", "ListBuckets").is_some());
+    let selected = catalog.select_services(&["ec2:DescribeVpcs".into()])?;
+    assert!(selected.lookup("ec2", "DescribeVpcs").is_some());
+    assert!(selected.lookup("ec2", "DescribeSubnets").is_none());
+    assert!(selected.lookup("s3", "ListBuckets").is_none());
+    Ok(())
+}
+
+#[test]
+fn given_no_selectors_when_catalog_selected_then_plan_order_and_catalog_are_unchanged() -> TestResult {
+    let bytes = base_catalog::base()?;
+    let catalog = RuntimeCatalog::from_bytes(bytes)?;
+    let expected: Vec<_> = catalog.plans().iter().map(name).collect();
+    assert!(!expected.is_empty());
+    let selected = RuntimeCatalog::from_bytes(bytes)?.select_services(&[])?;
+    assert_eq!(selected.plans().iter().map(name).collect::<Vec<_>>(), expected);
+    assert_eq!(selected.raw_bytes(), bytes);
+    assert_eq!(selected.schemas().len(), catalog.schemas().len());
+    assert_eq!(selected.decisions(), catalog.decisions());
+    Ok(())
+}
+
+#[test]
+fn given_duplicate_service_operation_when_catalog_decoded_then_ambiguous_names_are_rejected()
+-> TestResult {
+    let bytes = base_catalog::base()?;
+    RuntimeCatalog::from_bytes(bytes)?;
+    let duplicated = fixture::duplicate_plan(bytes)?;
+    assert!(matches!(
+        RuntimeCatalog::from_bytes(&duplicated),
+        Err(RuntimeCatalogError::Capability)
+    ));
+    Ok(())
+}
