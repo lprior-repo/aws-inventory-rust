@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 impl RuntimeCatalog<'_> {
     /// Select services or `service:Operation` roots, retaining bootstrap plans and
-    /// the connected parent/child binding closure. Schema and source identity stay unchanged.
+    /// their required ancestors. Descendants run only when selected explicitly.
     pub fn select_services(mut self, selectors: &[String]) -> Result<Self, RuntimeCatalogError> {
         if selectors.is_empty() {
             return Ok(self);
@@ -49,7 +49,7 @@ fn links(plans: &[CallablePlan<'_>]) -> Result<Vec<Vec<usize>>, RuntimeCatalogEr
             .chain(tag_parents(plan))
             .try_for_each(|parent| {
                 let parent = *names.get(&parent).ok_or(RuntimeCatalogError::Capability)?;
-                connect(&mut links, child, parent, plans.get(parent).is_some_and(bootstrap))
+                connect(&mut links, child, parent)
             })
     })?;
     Ok(links)
@@ -63,11 +63,8 @@ fn tag_parents<'a>(plan: &'a CallablePlan<'_>) -> impl Iterator<Item = Name<'a>>
     parents.iter().map(|parent| (plan.service_name(), parent.operation.as_ref()))
 }
 
-fn connect(links: &mut [Vec<usize>], child: usize, parent: usize, bootstrap: bool) -> Result<(), RuntimeCatalogError> {
+fn connect(links: &mut [Vec<usize>], child: usize, parent: usize) -> Result<(), RuntimeCatalogError> {
     links.get_mut(child).ok_or(RuntimeCatalogError::Capability)?.push(parent);
-    if !bootstrap {
-        links.get_mut(parent).ok_or(RuntimeCatalogError::Capability)?.push(child);
-    }
     Ok(())
 }
 

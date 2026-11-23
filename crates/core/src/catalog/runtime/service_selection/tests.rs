@@ -18,15 +18,16 @@ fn given_unknown_or_empty_selector_when_selected_then_no_broad_fallback_occurs()
 }
 
 #[test]
-fn given_transitive_children_and_shared_parent_when_selected_then_closure_preserves_dependencies() -> TestResult {
+fn given_transitive_ancestors_when_selected_then_unselected_descendants_and_siblings_stay_disabled() -> TestResult {
     let mut graph = vec![Vec::new(); 6];
-    connect(&mut graph, 1, 0, false)?;
-    connect(&mut graph, 2, 1, false)?;
-    connect(&mut graph, 3, 0, false)?;
-    connect(&mut graph, 0, 4, true)?;
-    connect(&mut graph, 5, 4, true)?;
-    assert_eq!(closure(&graph, BTreeSet::from([1]))?, BTreeSet::from([0, 1, 2, 3, 4]));
+    connect(&mut graph, 1, 0)?;
+    connect(&mut graph, 2, 1)?;
+    connect(&mut graph, 3, 0)?;
+    connect(&mut graph, 0, 4)?;
+    connect(&mut graph, 5, 4)?;
+    assert_eq!(closure(&graph, BTreeSet::from([1]))?, BTreeSet::from([0, 1, 4]));
     assert_eq!(closure(&graph, BTreeSet::from([4]))?, BTreeSet::from([4]));
+    assert_eq!(closure(&graph, BTreeSet::from([2, 3]))?, BTreeSet::from([0, 1, 2, 3, 4]));
     Ok(())
 }
 
