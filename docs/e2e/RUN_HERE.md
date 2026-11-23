@@ -27,6 +27,17 @@ Run here as written, with the runtime already installed: exit 0, 2 passed,
 Tools it needs on `PATH`: `cargo` (rustup reads `rust-toolchain.toml`), a C
 toolchain, `git`, `curl`, `gpg`, `dpkg-deb`, `bsdtar`, `make`.
 
+The baseline script now selects `--features sweep`. This enables profile
+credentials and the wire collector without the legacy typed service adapters.
+`--features aws` still includes the sweep and all adapters for `scan` and
+Cloud Control. `inventory-aws` keeps adapters enabled by default for existing
+direct callers; profile-only callers must set `default-features = false`.
+
+The dependency regression uses `cargo metadata` to identify resolved packages
+and `cargo tree -p aws-inventory -e normal` to select the active normal
+dependency graph. Metadata alone unifies workspace members' default features,
+including the adapters, so it cannot establish the sweep-only graph.
+
 ## The steps, as run
 
 | Step | Command | Result here |
@@ -127,10 +138,9 @@ killed at 4.3 GB; with `-j1` it was killed at 6.0 GB against the 6 GiB limit.
 The build passed with `-j1` after adding swap. Use `-j1` and allow more than
 6 GB for that one crate.
 
-The sweep itself does not use the EC2 SDK. It is linked because the `aws`
-feature brings in all of `inventory-aws`, including the 19 typed SDK crates of
-the old `scan` path. Putting the profile loader that the sweep needs behind
-its own feature would remove them from this build; that fits package D1.
+That historical build used the `aws` feature, which links the typed adapters.
+The `sweep` feature added in D1.1 removes those adapters from the sweep build;
+the profile loader still brings STS, SSO and SSO OIDC through `aws-config`.
 
 ## Not run
 
@@ -146,3 +156,41 @@ its own feature would remove them from this build; that fits package D1.
 
 `.local/runtime` 3.8 GB (the emulator's full source clone is most of it),
 `.local/aws-models` 188 MB, Cargo target directory 3.8 GB.
+
+## Wave 0 feature split (2026-11-22)
+
+D1.1 was measured with the checked-in Rust 1.100.0 toolchain, two Cargo jobs,
+and `CARGO_TARGET_DIR=$HOME/.cache/cargo-target-d11`. These are warm-cache,
+incremental debug builds, not a controlled clean-build comparison:
+
+| Root feature | Command after `cargo test --locked -p aws-inventory` | Wall time | Peak RSS | Debug binary |
+| --- | --- | --- | --- | --- |
+| `aws` | `--features aws --test sweep_e2e --no-run -j2` | 151.15 s | 3,191,756 KiB | 219,932,024 bytes |
+| `sweep` | `--features sweep --test sweep_e2e --no-run -j2` | 3.07 s | 954,124 KiB | 119,747,136 bytes |
+
+Both successful builds reported zero swaps. The normal sweep dependency graph
+contains only `aws-sdk-sts` 1.126.0, `aws-sdk-sso` 1.121.0 and
+`aws-sdk-ssooidc` 1.123.0; no EC2 adapter is compiled by that graph.
+
+The current sweep also consumes the pure IAM trust-document summary parser,
+which was not represented in the step's original profile-only description.
+It now lives in the unconditional `inventory_aws::iam_trust` module with a
+dedicated error type. Consequently `inventory-core`, `serde_json` and
+`percent-encoding` remain unconditional; the SDK-backed adapters do not.
+All callers use the new module directly; the previous helper is removed.
+
+The ignored sweep test executable was run with `--ignored --test-threads 1`,
+`INVENTORY_EMULATOR_BINARY` pointing to the extracted 1.0.348 package and
+`INVENTORY_REDIS_SERVER`/`INVENTORY_FALKOR_MODULE` pointing to the pinned graph
+runtime. The downloaded package matched the SHA-256 pin recorded above.
+Both scenarios failed in 0.73 s with
+`compiled catalog exceeds its 16 MiB bound` (exit 101). This generated-catalog
+blocker remains unresolved; the suite did not pass.
+
+Focused checks passed: `cargo fmt -p aws-inventory -p inventory-aws -p
+inventory-engine -- --check`; `inventory-aws --no-default-features --lib`
+(15 tests), default adapter `inventory-aws --lib` (356 tests), and the root
+`sweep_dependencies` (2), `sweep_pagination_contract` (5) and
+`sweep_tag_endpoint_contract` (4) suites with `--features sweep`. All test
+commands used `--locked -j2`. Clippy with `--locked -j2 -- -D warnings` passed
+for `aws-inventory --features sweep` and `inventory-aws --no-default-features`.

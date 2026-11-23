@@ -1,4 +1,4 @@
-#![cfg(feature = "aws")]
+#![cfg(feature = "sweep")]
 
 static E2E_LOCK: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 #[path = "sweep_e2e/barrier_proxy.rs"]

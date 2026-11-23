@@ -3,8 +3,7 @@
 # runtime if it is missing, build, then run the ignored sweep_e2e suite, which
 # starts its own emulator and FalkorDB, seeds, sweeps, projects and verifies.
 # Needs: rustup, a C toolchain, git, curl, gpg, dpkg-deb, bsdtar, make.
-# Crates are built one at a time: compiling aws-sdk-ec2 was killed at a 6 GiB
-# memory limit on 2026-11-15, so allow more than that or add swap.
+# The sweep feature loads AWS profiles without the legacy typed service adapters.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -28,4 +27,4 @@ if [[ ! -d "$graph" ]]; then
     cargo run --locked -p inventory-harness -- install-graph "$graph"
 fi
 
-cargo test --locked --features aws --test sweep_e2e -j1 -- --ignored --test-threads 1
+cargo test --locked --features sweep --test sweep_e2e -j1 -- --ignored --test-threads 1

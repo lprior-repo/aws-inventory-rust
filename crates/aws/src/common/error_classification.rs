@@ -102,6 +102,7 @@ pub(crate) fn error_category(error: &AwsScanError) -> &'static str {
         AwsScanError::Api(ApiError::UnsupportedType(_)) => "unsupported_type",
         AwsScanError::Api(_) => "api_error",
         AwsScanError::InvalidData(_) | AwsScanError::Validation(_) => "invalid_response",
+        AwsScanError::TrustSummary(_) => "invalid_response",
         AwsScanError::InvalidOptions(_) => "invalid_options",
         AwsScanError::ChannelClosed => "consumer_closed",
         AwsScanError::ChildLimit => "child_limit",

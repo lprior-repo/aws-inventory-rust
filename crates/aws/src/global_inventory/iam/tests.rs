@@ -63,23 +63,6 @@ fn list_only_roles_do_not_claim_detail_fields_or_trust_edges()
 }
 
 #[test]
-fn trust_parser_decodes_rfc3986_and_does_not_treat_plus_as_space() -> Result<(), AwsScanError> {
-    let value = trust_summary(Some(
-        "%7B%22Statement%22%3A%7B%22Effect%22%3A%22Allow%22%2C%22Principal%22%3A%7B%22Service%22%3A%22a+b.example%22%7D%2C%22Action%22%3A%22sts%3AAssumeRole%22%7D%7D",
-    ))?;
-    assert_eq!(
-        value
-            .first()
-            .and_then(|v| v.pointer("/principals/Service/0"))
-            .and_then(Value::as_str),
-        Some("a+b.example")
-    );
-    assert!(trust_summary(Some(&"a".repeat(MAX_TRUST_BYTES.saturating_add(1)))).is_err());
-    assert!(trust_summary(Some("%FF")).is_err());
-    Ok(())
-}
-
-#[test]
 fn deny_and_not_principal_never_become_allow_edges() -> Result<(), Box<dyn std::error::Error>> {
     let (ctx, _rx) = context()?;
     let mut value = role()?;

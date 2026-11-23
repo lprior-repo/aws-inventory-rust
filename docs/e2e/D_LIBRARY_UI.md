@@ -81,3 +81,19 @@ UI-thread time, and X8 is restated for a 120 Hz display.
   unavailable", as today.
 - V63: this crate is MIT like the rest. It may depend on the collector,
   store and SQL crates. Nothing may depend on it.
+
+## Wave 0 implementation evidence (2026-11-22)
+
+D1.1 now has separate `sweep` and adapter-inclusive `aws` features, with a
+dependency-graph regression for each and an unconditional bounded IAM
+trust-summary parser required by the current sweep. Build time, peak RSS and
+binary sizes are recorded in [RUN_HERE](RUN_HERE.md#wave-0-feature-split-2026-11-22).
+The measurements use `-j2` and warm caches, not the step's proposed `-j1`
+clean comparison.
+
+The ignored end-to-end suite was executed with the pinned, checksum-verified
+emulator and Redis/FalkorDB. Both scenarios failed before collecting resources:
+`compiled catalog exceeds its 16 MiB bound`. This is an unresolved catalog
+blocker, not successful D1.1 end-to-end evidence. No catalog limit or generated
+catalog was changed here. The coordinator must also run the workspace-wide
+all-target/all-feature gate after integration.

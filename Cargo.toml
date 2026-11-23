@@ -52,12 +52,13 @@ rust-version.workspace = true
 
 [features]
 default = []
-aws = ["dep:inventory-aws"]
+sweep = ["dep:inventory-aws"]
+aws = ["sweep", "inventory-aws/adapters"]
 
 [dependencies]
 inventory-core.workspace = true
 inventory-engine.workspace = true
-inventory-aws = { path = "crates/aws", optional = true }
+inventory-aws = { path = "crates/aws", optional = true, default-features = false }
 aws-wire = { path = "crates/aws-wire" }
 thiserror.workspace = true
 http = "1.5.0"

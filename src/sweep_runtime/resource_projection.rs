@@ -84,7 +84,7 @@ fn project_leaf(
                 ValueRef::Null => None,
                 _ => return Err(SweepError::Operation("trust document is not text")),
             };
-            let statements = inventory_aws::iam_trust_summary(document)
+            let statements = inventory_aws::iam_trust::summarize(document)
                 .map_err(|_| SweepError::Operation("invalid bounded IAM trust document"))?;
             Ok(Value::Map(
                 [

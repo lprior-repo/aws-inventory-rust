@@ -1,4 +1,4 @@
-#![cfg(feature = "aws")]
+#![cfg(feature = "sweep")]
 use anyhow::{Context, Result};
 use inventory_core::inventory::{AccountId, Kind, Region, ResourceId, ResourceKey};
 use inventory_engine::inventory::BinaryStore;
