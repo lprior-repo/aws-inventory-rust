@@ -1,0 +1,11 @@
+format = 1
+service = "license-manager"
+
+[[step]]
+id = "resource"
+operation = "CreateLicenseConfiguration"
+kind = "AWS::LicenseManager::LicenseConfiguration"
+identity = "LicenseConfigurationArn"
+[step.input]
+"Name" = "inventory-thin-license-manager"
+"LicenseCountingType" = "vCPU"
