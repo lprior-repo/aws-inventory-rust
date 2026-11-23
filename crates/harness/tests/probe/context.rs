@@ -3,7 +3,10 @@ use aws_wire::{
     sign::Credentials,
     transport::{Client, Config},
 };
-use inventory_core::{catalog::runtime::RuntimeCatalog, inventory::RegionId};
+use inventory_core::{
+    catalog::runtime::RuntimeCatalog,
+    inventory::{AccountId, RegionId},
+};
 use inventory_engine::limiter::{ApiExecutor, ExecutorConfig};
 use inventory_sweep::{CredentialFailure, CredentialSource, ProbeAnswer, SweepError};
 
@@ -48,6 +51,7 @@ impl Context {
         &self,
         catalog: &RuntimeCatalog<'_>,
         operation: &str,
+        account: Option<&AccountId>,
     ) -> Result<ProbeAnswer, SweepError> {
         let plan = catalog
             .lookup("bindings", operation)
@@ -58,8 +62,11 @@ impl Context {
             &self.client,
             &self.executor,
             plan,
-            &self.region,
-            Some(&self.endpoint),
+            inventory_sweep::ProbeScope {
+                region: &self.region,
+                account,
+                endpoint_override: Some(&self.endpoint),
+            },
         )
         .await
     }

@@ -10,10 +10,10 @@ use aws_wire::transport::Client;
 use futures_util::{StreamExt, stream};
 use inventory_core::{
     catalog::runtime::{BindingSource, CallablePlan, PlanPurpose, RuntimeCatalog},
-    inventory::RegionId,
+    inventory::{AccountId, RegionId},
 };
 use inventory_engine::limiter::ApiExecutor;
-use inventory_sweep::{CredentialSource, call_once};
+use inventory_sweep::{CredentialSource, ProbeAnswer, ProbeScope, SweepError, call_once};
 use report::{Outcome, Row};
 
 pub async fn run(
@@ -47,54 +47,89 @@ struct Probe<'a, 'catalog, C> {
 
 impl<C: CredentialSource> Probe<'_, '_, C> {
     async fn run(&self) -> Result<String, ProbeError> {
+        let (identity, account) = self.bootstrap().await;
         let mut rows = Vec::new();
         rows.try_reserve_exact(self.catalog.plans().len())?;
+        rows.extend(identity);
         let tasks = self
             .catalog
             .plans()
             .iter()
-            .filter(|plan| matches!(plan.purpose(), PlanPurpose::Enumeration))
-            .map(|plan| self.row(plan));
-        let mut replies = stream::iter(tasks).buffer_unordered(8);
-        while let Some(row) = replies.next().await {
-            rows.push(row);
-        }
+            .filter(|plan| !matches!(plan.purpose(), PlanPurpose::AccountIdentity { .. }))
+            .map(|plan| self.row(plan, account.as_ref()));
+        let rows = stream::iter(tasks)
+            .buffer_unordered(8)
+            .fold(rows, |mut rows, row| async move {
+                rows.push(row);
+                rows
+            })
+            .await;
         report::render(rows)
     }
 
-    async fn row<'a>(&self, plan: &'a CallablePlan<'_>) -> Row<'a> {
-        let outcome = if plan
-            .effective_bindings(plan.branches().first())
-            .any(|binding| requires_parent(&binding.source))
+    async fn bootstrap(&self) -> (Option<Row<'_>>, Option<AccountId>) {
+        let plan = self
+            .catalog
+            .plans()
+            .iter()
+            .find(|plan| matches!(plan.purpose(), PlanPurpose::AccountIdentity { .. }));
+        let Some(plan) = plan else {
+            return (None, None);
+        };
+        let answer = self.call(plan, None).await;
+        let row = row(plan, outcome(plan, answer.as_ref()));
+        let account = answer.ok().and_then(|answer| answer.account);
+        (Some(row), account)
+    }
+
+    async fn row<'a>(&self, plan: &'a CallablePlan<'_>, account: Option<&AccountId>) -> Row<'a> {
+        let outcome = if matches!(plan.purpose(), PlanPurpose::TagEndpoint(_))
+            || plan
+                .effective_bindings(plan.branches().first())
+                .any(|binding| requires_parent(&binding.source))
         {
             Outcome::SkippedChild
         } else {
-            self.outcome(plan).await
+            outcome(plan, self.call(plan, account).await.as_ref())
         };
-        Row {
-            service: plan.service_name(),
-            operation: plan.operation_name(),
-            protocol: plan.protocol(),
-            outcome,
-        }
+        row(plan, outcome)
     }
 
-    async fn outcome(&self, plan: &CallablePlan<'_>) -> Outcome {
-        match call_once(
+    async fn call(
+        &self,
+        plan: &CallablePlan<'_>,
+        account: Option<&AccountId>,
+    ) -> Result<ProbeAnswer, SweepError> {
+        call_once(
             self.catalog,
             self.credentials,
             self.client,
             self.executor,
             plan,
-            self.region,
-            Some(self.endpoint),
+            ProbeScope {
+                region: self.region,
+                account,
+                endpoint_override: Some(self.endpoint),
+            },
         )
         .await
-        {
-            Ok(answer) if answer.items == 0 => Outcome::Empty,
-            Ok(answer) => Outcome::Items(answer.items),
-            Err(error) => outcome::failed(plan, &error),
-        }
+    }
+}
+
+fn row<'a>(plan: &'a CallablePlan<'_>, outcome: Outcome) -> Row<'a> {
+    Row {
+        service: plan.service_name(),
+        operation: plan.operation_name(),
+        protocol: plan.protocol(),
+        outcome,
+    }
+}
+
+fn outcome(plan: &CallablePlan<'_>, answer: Result<&ProbeAnswer, &SweepError>) -> Outcome {
+    match answer {
+        Ok(answer) if answer.items == 0 => Outcome::Empty,
+        Ok(answer) => Outcome::Items(answer.items),
+        Err(error) => outcome::failed(plan, error),
     }
 }
 

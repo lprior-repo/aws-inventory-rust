@@ -25,8 +25,9 @@ pub async fn once(
 ) -> TestResult<(inventory_sweep::ProbeAnswer, Vec<String>)> {
     let server = Server::new().await?;
     let context = Context::new(&server)?;
-    let probe =
-        async { Ok::<_, Box<dyn std::error::Error>>(context.once(catalog, "ListParents0").await?) };
+    let probe = async {
+        Ok::<_, Box<dyn std::error::Error>>(context.once(catalog, "ListParents0", None).await?)
+    };
     tokio::time::timeout(Duration::from_secs(10), async {
         tokio::try_join!(probe, server.serve(1))
     })
