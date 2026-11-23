@@ -20,27 +20,26 @@ async fn given_mixed_search_engines_when_real_requests_are_encoded_then_domains_
     // Given both production API policies and the actual pinned Smithy wire models.
     let catalog = catalog()?;
     let mut keys = std::collections::BTreeSet::new();
-    for (service, engine, name, kind) in [
+    for (service, engine, name, kind, expected_query) in [
         (
             "elasticsearch-service",
             "Elasticsearch",
             "legacy-a",
             "AWS::Elasticsearch::Domain",
+            Some("engineType=Elasticsearch"),
         ),
         (
             "opensearch",
             "OpenSearch",
             "modern-a",
             "AWS::OpenSearchService::Domain",
+            None,
         ),
     ] {
         let plan = plan(&catalog, service, "ListDomainNames")?;
         // When the request goes through the production numeric binding/REST encoder.
         let request = request(plan, &[])?;
-        assert_eq!(
-            request.uri().query(),
-            Some(format!("engineType={engine}").as_str())
-        );
+        assert_eq!(request.uri().query(), expected_query);
         // Then each engine response persists exactly its own physical domain and CFN kind.
         let body =
             serde_json::to_vec(&json!({"DomainNames":[{"DomainName":name,"EngineType":engine}]}))?;
