@@ -63,7 +63,9 @@ fn validate_override_bundle(
     uri: &http::Uri,
     ca_bundle: &std::path::Path,
 ) -> Result<(), SweepError> {
-    if uri.path_and_query().is_some_and(|path| path.as_str().contains('?'))
+    if uri
+        .path_and_query()
+        .is_some_and(|path| path.as_str().contains('?'))
         || !ca_bundle.is_file()
     {
         return Err(SweepError::InvalidConfig(

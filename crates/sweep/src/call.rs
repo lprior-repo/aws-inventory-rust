@@ -198,11 +198,7 @@ fn classify_service(error: aws_wire::response::errors::ServiceError) -> ApiError
     }
 }
 
-fn retry_after(
-    message: String,
-    duration: std::time::Duration,
-    kind: RetryKind,
-) -> ApiError {
+fn retry_after(message: String, duration: std::time::Duration, kind: RetryKind) -> ApiError {
     ApiError::RetryAfter {
         kind,
         message,

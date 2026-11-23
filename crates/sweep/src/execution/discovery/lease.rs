@@ -18,7 +18,9 @@ pub(crate) fn lease(
             trusted_host(address, suffix)?;
         }
     }
-    selected.ok_or(SweepError::Operation("endpoint discovery returned no endpoints"))
+    selected.ok_or(SweepError::Operation(
+        "endpoint discovery returned no endpoints",
+    ))
 }
 
 fn endpoint_rows(response: &Record, endpoints: &[FieldId]) -> Result<Vec<Record>, SweepError> {
@@ -40,7 +42,9 @@ fn endpoint_row<'a>(
     minutes: &[FieldId],
 ) -> Result<(&'a str, Duration), SweepError> {
     let Some(ValueRef::Text(address)) = record::path_value(row.root(), address)? else {
-        return Err(SweepError::Operation("discovered endpoint address is missing"));
+        return Err(SweepError::Operation(
+            "discovered endpoint address is missing",
+        ));
     };
     let Some(ValueRef::Int(minutes)) = record::path_value(row.root(), minutes)? else {
         return Err(SweepError::Operation("discovered endpoint TTL is missing"));
@@ -50,7 +54,9 @@ fn endpoint_row<'a>(
 
 fn lease_duration(minutes: i64) -> Result<Duration, SweepError> {
     if !(1..=MAX_TTL_MINUTES).contains(&minutes) {
-        return Err(SweepError::Operation("discovered endpoint TTL exceeds bounds"));
+        return Err(SweepError::Operation(
+            "discovered endpoint TTL exceeds bounds",
+        ));
     }
     let seconds = u64::try_from(minutes)
         .map_err(|_| SweepError::Operation("discovered endpoint TTL is negative"))?
@@ -81,9 +87,15 @@ fn trusted_host(address: &str, suffix: &str) -> Result<(), SweepError> {
 fn trusted_label(label: &str) -> bool {
     !label.is_empty()
         && label.len() <= 63
-        && label.as_bytes().first().is_some_and(u8::is_ascii_alphanumeric)
-        && label.as_bytes().last().is_some_and(u8::is_ascii_alphanumeric)
-        && label.bytes().all(|byte| {
-            byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-'
-        })
+        && label
+            .as_bytes()
+            .first()
+            .is_some_and(u8::is_ascii_alphanumeric)
+        && label
+            .as_bytes()
+            .last()
+            .is_some_and(u8::is_ascii_alphanumeric)
+        && label
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'-')
 }

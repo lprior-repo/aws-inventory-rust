@@ -1,10 +1,14 @@
+mod candidates;
+mod dependency;
 #[cfg(test)]
 mod tests;
+use candidates::Candidates;
+use dependency::dependency;
 
 use inventory_core::catalog::runtime::{
     BindingPlan, BindingSource, CallablePlan, ExecutionBranch, PlanPurpose, RuntimeCatalog,
 };
-use std::{collections::TryReserveError, slice};
+use std::collections::TryReserveError;
 
 // Runtime catalog schema limits: 65,536 plans, 4,096 bindings per base/branch,
 // 16 branches, and 64 tag parents. Wildcards avoid the producer × consumer product.
@@ -205,56 +209,6 @@ fn bindings<'a>(
         .chain(branches.iter().flat_map(|branch| branch.bindings.iter()))
 }
 
-fn dependency(source: &BindingSource) -> Result<Dependency<'_>, ConsumerIndexError> {
-    let leaf = std::iter::successors(Some(source), |source| match source {
-        BindingSource::Transformed { source, .. } => Some(source.as_ref()),
-        _ => None,
-    })
-    .take(MAX_SOURCE_DEPTH)
-    .find(|source| !matches!(source, BindingSource::Transformed { .. }))
-    .ok_or(ConsumerIndexError::SourceDepth)?;
-    match leaf {
-        BindingSource::Operation {
-            service, operation, ..
-        }
-        | BindingSource::OperationArn {
-            service, operation, ..
-        }
-        | BindingSource::OperationUrl {
-            service, operation, ..
-        }
-        | BindingSource::Context {
-            service, operation, ..
-        } => Ok(Dependency::Producer(Producer {
-            service,
-            operation,
-            branch: None,
-        })),
-        BindingSource::ContextFromBranch {
-            service,
-            operation,
-            branch,
-            ..
-        } => Ok(Dependency::Producer(Producer {
-            service,
-            operation,
-            branch: Some(branch),
-        })),
-        BindingSource::ParentIdentity { .. } => Ok(Dependency::AnyProducer),
-        BindingSource::Alternatives(alternatives) => {
-            if alternatives.is_empty() || alternatives.len() > 8 {
-                return Err(ConsumerIndexError::Bounds);
-            }
-            Ok(Dependency::Alternatives(alternatives))
-        }
-        BindingSource::Account
-        | BindingSource::Region
-        | BindingSource::RegionList
-        | BindingSource::Fixed(_) => Ok(Dependency::Independent),
-        BindingSource::Transformed { .. } => Err(ConsumerIndexError::SourceDepth),
-    }
-}
-
 fn bounded_push<T>(
     values: &mut Vec<T>,
     value: T,
@@ -266,50 +220,4 @@ fn bounded_push<T>(
     values.try_reserve(1)?;
     values.push(value);
     Ok(())
-}
-
-struct Candidates<'index, 'a, 'catalog> {
-    exact: slice::Iter<'index, Entry<'a, 'catalog>>,
-    staged: slice::Iter<'index, Entry<'a, 'catalog>>,
-    wildcards: slice::Iter<'index, Consumer<'a, 'catalog>>,
-}
-
-impl<'a, 'catalog> Iterator for Candidates<'_, 'a, 'catalog> {
-    type Item = &'a CallablePlan<'catalog>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let consumer = [
-            self.exact.as_slice().first().map(|entry| entry.consumer),
-            self.staged.as_slice().first().map(|entry| entry.consumer),
-            self.wildcards.as_slice().first().copied(),
-        ]
-        .into_iter()
-        .flatten()
-        .min_by_key(|consumer| consumer.ordinal)?;
-        if self
-            .exact
-            .as_slice()
-            .first()
-            .is_some_and(|entry| entry.consumer.ordinal == consumer.ordinal)
-        {
-            self.exact.next();
-        }
-        if self
-            .staged
-            .as_slice()
-            .first()
-            .is_some_and(|entry| entry.consumer.ordinal == consumer.ordinal)
-        {
-            self.staged.next();
-        }
-        if self
-            .wildcards
-            .as_slice()
-            .first()
-            .is_some_and(|entry| entry.ordinal == consumer.ordinal)
-        {
-            self.wildcards.next();
-        }
-        Some(consumer.plan)
-    }
 }

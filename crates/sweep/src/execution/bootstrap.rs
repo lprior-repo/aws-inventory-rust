@@ -8,7 +8,9 @@ pub(super) async fn bootstrap_account(
         matches!(purpose, PlanPurpose::AccountIdentity { .. })
     })?;
     let PlanPurpose::AccountIdentity { account_path } = plan.purpose() else {
-        return Err(SweepError::Operation("account identity plan purpose changed"));
+        return Err(SweepError::Operation(
+            "account identity plan purpose changed",
+        ));
     };
     let response = execute(context, plan, None).await?;
     account_id(&response.record, account_path)
@@ -18,9 +20,9 @@ fn account_id(
     response: &inventory_core::record::Record,
     path: &[FieldId],
 ) -> Result<AccountId, SweepError> {
-    let value = record::path_value(response.root(), path)?.ok_or(
-        SweepError::Operation("account identity response omitted account"),
-    )?;
+    let value = record::path_value(response.root(), path)?.ok_or(SweepError::Operation(
+        "account identity response omitted account",
+    ))?;
     let account = match value {
         inventory_core::record::ValueRef::Text(value) => value,
         _ => return Err(SweepError::Operation("account identity value is not text")),
@@ -51,12 +53,18 @@ fn requested_region(config: &SweepConfig) -> Result<Option<RegionId>, SweepError
         .transpose()
 }
 
-fn region_paths<'a>(plan: &'a CallablePlan<'_>) -> Result<(&'a [FieldId], &'a [FieldId]), SweepError> {
+fn region_paths<'a>(
+    plan: &'a CallablePlan<'_>,
+) -> Result<(&'a [FieldId], &'a [FieldId]), SweepError> {
     match plan.purpose() {
-        PlanPurpose::RegionDiscovery { regions_path, region_name_path, .. } => {
-            Ok((regions_path, region_name_path))
-        }
-        _ => Err(SweepError::Operation("region discovery plan purpose changed")),
+        PlanPurpose::RegionDiscovery {
+            regions_path,
+            region_name_path,
+            ..
+        } => Ok((regions_path, region_name_path)),
+        _ => Err(SweepError::Operation(
+            "region discovery plan purpose changed",
+        )),
     }
 }
 

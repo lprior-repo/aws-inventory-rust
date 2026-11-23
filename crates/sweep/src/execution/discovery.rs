@@ -1,11 +1,11 @@
 mod lease;
-pub(crate) use lease::lease;
 use super::{InventoryStore, RuntimeContext};
 use crate::{CredentialSource, SweepError, call, input, record};
 use inventory_core::{
     catalog::runtime::{CallablePlan, RequestRouting, ResolvedEndpoint},
     record::{Record, ValueRef},
 };
+pub(crate) use lease::lease;
 use std::{
     collections::BTreeMap,
     time::{Duration, Instant},
@@ -97,9 +97,13 @@ async fn discover(
     operation: &str,
     endpoint: &ResolvedEndpoint,
 ) -> Result<call::DecodedResponse, SweepError> {
-    let discovery = context.bootstrap.catalog.lookup(plan.service_name(), operation).ok_or(
-        SweepError::Operation("reviewed endpoint discovery operation is missing"),
-    )?;
+    let discovery = context
+        .bootstrap
+        .catalog
+        .lookup(plan.service_name(), operation)
+        .ok_or(SweepError::Operation(
+            "reviewed endpoint discovery operation is missing",
+        ))?;
     let region = inventory_core::inventory::RegionId::parse(&endpoint.signing_region)?;
     let endpoint = discovery.endpoint(
         &region,

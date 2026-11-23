@@ -73,7 +73,9 @@ fn append_branch(
     let scope = branch.map_or(plan.scope(), |branch| branch.scope);
     for region in plan_regions(scope, regions, home) {
         if work.len() >= MAX_ROOT_SCOPES {
-            return Err(SweepError::Operation("root enumeration scope count exceeds bound"));
+            return Err(SweepError::Operation(
+                "root enumeration scope count exceeds bound",
+            ));
         }
         let (scope, bindings) = root_input(account, home, plan, branch, region.scope)?;
         work.try_reserve(1)?;
@@ -96,8 +98,8 @@ fn root_input(
     let request_region =
         super::super::routing::request_region(plan, scope.region(), home, scope.branch())?;
     let request_region = Region::Regional(request_region);
-    let bindings =
-        input::root_bindings_branch(plan, branch, Some(account), Some(&request_region))?.into_bytes();
+    let bindings = input::root_bindings_branch(plan, branch, Some(account), Some(&request_region))?
+        .into_bytes();
     Ok((scope, bindings))
 }
 

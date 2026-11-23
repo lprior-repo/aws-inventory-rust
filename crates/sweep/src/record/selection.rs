@@ -24,17 +24,30 @@ pub(super) fn items<'a>(
     SweepError,
 > {
     let source = source(record, plan)?;
-    let count = match &source {
-        Source::Empty => 0,
-        Source::Root(_) | Source::Single(_) => 1,
-        Source::List(list) => list.count()?,
-        Source::Map(map, _) => map.count()?,
-    };
-    if count > MAX_PAGE_ITEMS {
-        return Err(SweepError::Operation(
-            "page exceeds the atomic observation bound",
-        ));
+    let count = source.count()?;
+    Ok((count, records(source)?))
+}
+
+impl Source<'_> {
+    fn count(&self) -> Result<usize, SweepError> {
+        let count = match self {
+            Source::Empty => 0,
+            Source::Root(_) | Source::Single(_) => 1,
+            Source::List(list) => list.count()?,
+            Source::Map(map, _) => map.count()?,
+        };
+        if count > MAX_PAGE_ITEMS {
+            return Err(SweepError::Operation(
+                "page exceeds the atomic observation bound",
+            ));
+        }
+        Ok(count)
     }
+}
+
+fn records<'a>(
+    source: Source<'a>,
+) -> Result<impl Iterator<Item = Result<Record, SweepError>> + 'a + use<'a>, SweepError> {
     let (root, single, list, map) = match source {
         Source::Empty => (None, None, None, None),
         Source::Root(record) => (Some(record), None, None, None),
@@ -50,7 +63,14 @@ pub(super) fn items<'a>(
         .into_iter()
         .flatten()
         .map(|value| item_record(value?));
-    let maps = map
+    let maps = map_records(map)?;
+    Ok(roots.chain(singles).chain(lists).chain(maps))
+}
+
+fn map_records<'a>(
+    map: Option<(MapRef<'a>, SelectionKind)>,
+) -> Result<impl Iterator<Item = Result<Record, SweepError>> + 'a + use<'a>, SweepError> {
+    Ok(map
         .map(|(map, kind)| {
             map.iter().map(|entries| {
                 entries.map(move |entry| {
@@ -61,8 +81,7 @@ pub(super) fn items<'a>(
         })
         .transpose()?
         .into_iter()
-        .flatten();
-    Ok((count, roots.chain(singles).chain(lists).chain(maps)))
+        .flatten())
 }
 
 fn source<'a>(record: &'a Record, plan: &ItemPlan) -> Result<Source<'a>, SweepError> {
@@ -82,6 +101,13 @@ fn source<'a>(record: &'a Record, plan: &ItemPlan) -> Result<Source<'a>, SweepEr
     if matches!(value, ValueRef::Null) {
         return Ok(Source::Empty);
     }
+    selected_source(kind, value)
+}
+
+fn selected_source(
+    kind: Option<SelectionKind>,
+    value: ValueRef<'_>,
+) -> Result<Source<'_>, SweepError> {
     match (kind, value) {
         (None | Some(SelectionKind::Structure), value @ ValueRef::Map(_)) => {
             Ok(Source::Single(value))
@@ -92,17 +118,21 @@ fn source<'a>(record: &'a Record, plan: &ItemPlan) -> Result<Source<'a>, SweepEr
         {
             Ok(Source::Single(value))
         }
-        (
-            Some(
-                kind @ (SelectionKind::MapKeys
-                | SelectionKind::MapValues
-                | SelectionKind::MapEntries),
-            ),
-            ValueRef::Map(map),
-        ) => Ok(Source::Map(map, kind)),
+        (Some(kind), ValueRef::Map(map)) => map_source(map, kind),
         (None, _) => Err(SweepError::Operation(
             "compiled enumeration item path is neither a list nor a structure",
         )),
+        _ => Err(SweepError::Operation(
+            "response value does not match its compiled item selector",
+        )),
+    }
+}
+
+fn map_source(map: MapRef<'_>, kind: SelectionKind) -> Result<Source<'_>, SweepError> {
+    match kind {
+        SelectionKind::MapKeys | SelectionKind::MapValues | SelectionKind::MapEntries => {
+            Ok(Source::Map(map, kind))
+        }
         _ => Err(SweepError::Operation(
             "response value does not match its compiled item selector",
         )),

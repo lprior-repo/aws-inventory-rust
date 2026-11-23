@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Farley gate: functions on the new CMDB surfaces must stay <=25 lines.
+# Farley gate: covered production surfaces must stay <=25 lines.
 # Span is measured from the `fn` line through the closing brace. Macro-heavy
 # bodies are counted conservatively; the check intentionally fails closed.
 MAX_LINES="${MAX_FUNCTION_LINES:-25}"
@@ -10,7 +10,7 @@ status=0
 check_file() {
     local file="$1"
     case "$file" in
-        */tests.rs|*/tests/*|*_tests.rs) return 0 ;;
+        */tests.rs|*/tests/*|*_tests.rs|*_tests/*) return 0 ;;
     esac
     local violations
     violations="$(
@@ -18,7 +18,7 @@ check_file() {
             /^[[:space:]]*(pub(\([^)]*\))?[[:space:]]+)?(const[[:space:]]+)?(async[[:space:]]+)?fn[[:space:]]/ {
                 if (active) {
                     if (NR - start >= max) {
-                        printf "%s:%d: %d lines: %s\n", file, start, NR - start, name
+                        printf "%s:%d: %d lines: %s\n", file, start, NR - start + 1, name
                     }
                 }
                 active = 1
@@ -37,7 +37,7 @@ check_file() {
                 if (opens > 0) seen_open = 1
                 if (seen_open && braces <= 0) {
                     if (NR - start >= max) {
-                        printf "%s:%d: %d lines: %s\n", file, start, NR - start, name
+                        printf "%s:%d: %d lines: %s\n", file, start, NR - start + 1, name
                     }
                     active = 0
                 }
@@ -59,8 +59,13 @@ paths=(
     crates/cmdb-bench/src
     crates/cmdb-ui/src
     crates/cmdb-view/src
+    crates/sweep/src
     crates/catalog-tool/src
 )
+# Explicit paths override the default list for scoped lane checks.
+if (( $# > 0 )); then
+    paths=("$@")
+fi
 for path in "${paths[@]}"; do
     [[ -e "$path" ]] || continue
     if [[ -f "$path" ]]; then

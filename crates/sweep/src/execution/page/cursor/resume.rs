@@ -14,19 +14,21 @@ pub(super) fn decode(bytes: &[u8]) -> Result<Cursor, SweepError> {
             "persisted pagination cursor has invalid page count",
         ))?;
     let current = Some(Record::from_bytes(bytes_field(&wrapped, CURRENT)?)?);
-    let partial = match field(&wrapped, PARTIAL)? {
-        Some(ValueRef::Bool(value)) => value,
-        _ => {
-            return Err(SweepError::Operation(
-                "persisted pagination cursor has invalid partial marker",
-            ));
-        }
-    };
+    let partial = partial_marker(&wrapped)?;
     Ok(Cursor {
         pages,
         current,
         partial,
     })
+}
+
+fn partial_marker(wrapped: &Record) -> Result<bool, SweepError> {
+    match field(wrapped, PARTIAL)? {
+        Some(ValueRef::Bool(value)) => Ok(value),
+        _ => Err(SweepError::Operation(
+            "persisted pagination cursor has invalid partial marker",
+        )),
+    }
 }
 
 pub(super) fn request_fields(

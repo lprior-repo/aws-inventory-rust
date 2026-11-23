@@ -80,10 +80,12 @@ impl Driver {
             consumers: ConsumerIndex::build(catalog)?,
             progress: &progress,
         };
-        Ok(
-            page::commit_response(&context, lease, plan, cursor, response, request, &ancestry)
-                .await?,
-        )
+        let setup = page::PageSetup {
+            plan,
+            ancestry,
+            cursor,
+        };
+        Ok(page::commit_response(&context, lease, setup, response, request).await?)
     }
 }
 
