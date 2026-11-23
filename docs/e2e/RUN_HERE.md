@@ -97,10 +97,10 @@ in both cases; the byte comparison found zero differences. No tracked catalog,
 manifest or model-lock change resulted. This checkout therefore does not
 reproduce the older binary drift documented above.
 
-A0.2's ignored `sweep_e2e` sub-gate remains **UNMET**: the previously observed
-60-second pacing timeout was neither rerun nor changed. A1 proceeds under the
-coordinator's explicit decision that restored compile consistency satisfies its
-substantive prerequisite; this is not a claim that all A0.2 gates passed.
+A0.2's ignored `sweep_e2e` sub-gate is now **MET** on PostgreSQL and file;
+see the T0 diagnosis and acceptance evidence below. At overlay-bootstrap time
+it was still unmet, and A1 proceeded under the coordinator's explicit decision
+that restored compile consistency satisfied its substantive prerequisite.
 
 ### Generated overlay source
 
@@ -785,4 +785,136 @@ cargo test --locked -p aws-inventory --features sweep -j3 --bin aws-inventory \
   given_full_catalog_when_native_cli_store_is_created_and_resumed_then_schema_and_rebuild_round_trip \
   -- --ignored --nocapture
 ```
+
+## T0 sweep deadline diagnosis (2026-11-23)
+
+The generated catalog contains **2,197 callable plans** (1,565 enumeration,
+632 expansion), not merely the older 28-operation generated subset. The
+VPC/subnet regression passed the whole catalog without selecting its two
+enumerations. It therefore tested thousands of unrelated operations instead
+of the original account/region bootstrap plus paginated VPC/subnet contract.
+
+On pinned emulator 1.0.348, the file-backed denial scenario's prerequisite
+full sweep exceeded the unchanged 60-second CLI deadline. A `strace` run
+failed after 66.32 seconds (230.114 seconds including its cold compilation).
+A subsequent complete attempt trace failed after 64.57 seconds (65.616
+seconds including compilation), with the CLI killed after 60.045 seconds.
+It completed **340 HTTP requests**: 257 HTTP 200, 62 HTTP 501, 15 HTTP 400,
+four HTTP 403 and two HTTP 404. EC2 alone received 176 calls. First-to-last
+completed request took 54.690 seconds; their combined transport durations
+were only 305 ms, maximum 17 ms. Same-service calls were approximately
+201 ms apart, matching the configured five requests/second.
+
+For example, IAM `ListMFADevices` returned HTTP 501 `NotImplemented` once,
+classified `UnsupportedType`; `GetLoginProfile` returned HTTP 404
+`NoSuchEntity`, classified `Permanent`. No transient attempt failures were
+observed. The repeated EC2 VPC-encryption calls were successful parent-bound
+requests, not unsupported-operation retries. The first diagnostic capture
+was limited to 64 KiB; the complete count above uses the subsequent 1 MiB
+capture, not that truncated output or TLS connection counts.
+
+The diagnosis commands were the file-mode
+`cargo test --locked --features sweep --test sweep_e2e -j1 controlled_tls_403
+-- --ignored --test-threads 1 --nocapture`, first under
+`strace -f -tt -T -e trace=write,connect,execve -s2048` and then with
+`INVENTORY_E2E_TRACE=1`. All exited 101. Private target directory:
+`/home/lewis/.cache/cargo-target-w2-pacing`; fixture binaries came from the
+read-only primary checkout via the documented emulator/graph overrides.
+
+Increasing the deadline cannot repair this contract mismatch: production
+deliberately returns exit 2 for any unsupported or failed completed scope
+(or exit 4 while work remains). No exit semantics or production AWS pacing
+should be relaxed. The approved fix is explicit operation selection retaining
+required ancestors, but not unrelated descendants. T0 remains **UNMET** at
+this diagnosis commit; both backend acceptance runs follow the fix.
+
+### Newly reachable baseline contracts
+
+Explicitly selecting `ec2:DescribeVpcs` and `ec2:DescribeSubnets` restores the
+original pagination scope without changing the catalog, production rate limit,
+retry classification, or 60-second process deadline. Full baseline assertions
+now additionally require exactly two complete scopes, four pages, six API
+attempts (two bootstrap calls plus four pages), zero retries and zero unsupported
+scopes. Existing seeded-resource, tag, relationship, SQL, graph, repeated-partial,
+idempotence and final-resume digest assertions remain.
+
+Removing the unrelated calls exposed two previously unreachable test-contract
+mismatches. The deliberately offline graph invocation must return the existing
+product exit 5, not exit 0; its durable pending-work and successful reconnection
+assertions remain mandatory. The first selected file run therefore reported
+1 passed / 1 failed in 48.04 seconds, rather than timing out.
+
+Likewise, SIGKILL followed by immediate resume is correctly rejected while
+the dead collector's lease remains live. The next runs reached this refusal
+on both PostgreSQL (90.28 seconds) and file (109.84 seconds), each 1 passed /
+1 failed. The repaired scenarios retain real SIGKILL coverage: exit 1 must
+specifically report live leases, and the committed checkpoint, resource hashes,
+edges and missing counters must remain unchanged. A separate real Ctrl-C
+scenario must exit with `API execution cancelled`, release its lease, resume
+immediately, finish the same checkpoint and equal the uninterrupted final digest.
+Neither scenario changes lease timestamps or fakes expiry.
+
+The next file run reached graceful resume, then correctly rejected projection
+with `projection delivery ownership was superseded` (1 passed / 1 failed,
+119.84 seconds). The interruption fixture created a new database but reused
+the original database's graph name. Its resumed graph now has a distinct name,
+and the resumed graph must also satisfy the complete seeded graph oracle.
+Production projection ownership fencing is unchanged.
+
+**Open product risk:** with concurrency one, the retry-derived collector lease
+can block hard-crash resume for up to **3,880,000 ms (64 minutes 40 seconds)**.
+There is no existing CLI/configuration TTL override or takeover flag.
+Expired-crash takeover is **untested on PostgreSQL and file** in this run;
+immediate rejection and graceful-cancellation resume are the covered contracts.
+No new production knob or weaker ownership fence was added.
+
+### T0 acceptance after contract repairs
+
+With `HOME=/home/lewis`, the private `cargo-target-w2-pacing` directory and
+the same pinned emulator/graph overrides, both exact commands exited 0:
+
+| Backend | Command | Result | Test time | Including Cargo |
+| --- | --- | --- | --- | --- |
+| File | `INVENTORY_E2E_STORE=file cargo test --locked --features sweep --test sweep_e2e -j1 -- --ignored --test-threads 1` | **2 passed, 0 failed** | 124.55 s | 125.717 s |
+| PostgreSQL | `INVENTORY_E2E_STORE=postgres cargo test --locked --features sweep --test sweep_e2e -j1 -- --ignored --test-threads 1` | **2 passed, 0 failed** | 109.15 s | 109.331 s |
+
+`INVENTORY_E2E_TRACE=1 RUST_TEST_NOCAPTURE=1` retained per-call and per-CLI
+evidence without changing those command arguments. PostgreSQL used an owned
+native instance at `postgres://inv@127.0.0.1:55483/postgres`; each scenario
+created and removed its own database. Its server was stopped after the runs.
+
+| Completed CLI step | Requests | File elapsed | PostgreSQL elapsed |
+| --- | --- | --- | --- |
+| Denial prerequisite full baseline | 6 | 6.204 s | 6.904 s |
+| First controlled 403 invocation | 4 | 7.905 s | 5.403 s |
+| Second controlled 403 invocation | 4 | 7.904 s | 5.403 s |
+| Full collection with intentionally offline graph | 6 | 6.203 s | 6.804 s |
+| Unchanged rerun | 6 | 8.305 s | 5.903 s |
+| First one-page partial run | 4 | 7.905 s | 5.403 s |
+| Second one-page partial run | 4 | 8.005 s | 5.403 s |
+| Immediate resume after SIGKILL, correctly rejected | 1 | 7.504 s | 5.003 s |
+| Immediate resume after Ctrl-C, fully projected | 5 | 8.105 s | 5.603 s |
+
+Full collection remains four pages and two complete scopes, with zero API
+retries, unsupported scopes or failed scopes. Its collection drain was
+823–843 ms in the final offline baseline runs, consistent with the unchanged
+five-request/second EC2 pacing. The historical 60-second kill now has ample
+headroom because unrelated operations are not scheduled, not because the
+deadline or AWS quota was increased.
+
+Additional scoped gates passed:
+
+- `cargo fmt -p aws-inventory -p inventory-core -p inventory-sweep -- --check`.
+- `cargo test --locked -p inventory-core --lib service_selection -j2`:
+  4 passed.
+- `cargo test --locked -p inventory-sweep --lib call::tests -j2`: 9 passed.
+- `cargo test --locked -p aws-inventory --features sweep --bin aws-inventory given_repeated_service_selectors -j2`:
+  1 passed.
+- `cargo clippy --locked -p aws-inventory -p inventory-core -p inventory-sweep --features aws-inventory/sweep --all-targets -j3 -- -D warnings`.
+
+The final formatting and all-targets Clippy gates also passed after adding
+the crash/cancellation scenarios and isolated resumed graph. No whole-workspace
+suite, real AWS run or catalog regeneration was performed. T0's requested
+two-backend ignored-suite gate is **MET**; the hard-crash expiry risk above
+remains open rather than being hidden by a passing cancellation test.
 

@@ -67,12 +67,16 @@ pub(super) async fn database_snapshot(
     database: &Database,
     oracle: &TypedSeedOracle,
 ) -> Result<InventorySnapshot> {
-    let snapshot = match database {
-        Database::File(path) => file::snapshot(path).await?,
-        Database::Postgres(database) => postgres::snapshot(database.url()).await?,
-    };
+    let snapshot = checkpoint_snapshot(database).await?;
     oracle::assert_seeded_rows(oracle, &snapshot)?;
     Ok(snapshot)
+}
+
+pub(super) async fn checkpoint_snapshot(database: &Database) -> Result<InventorySnapshot> {
+    match database {
+        Database::File(path) => file::snapshot(path).await,
+        Database::Postgres(database) => postgres::snapshot(database.url()).await,
+    }
 }
 
 pub(super) async fn active_checkpoint(database: &Database) -> Result<ActiveCheckpoint> {

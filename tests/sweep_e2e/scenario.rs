@@ -1,11 +1,12 @@
 #[path = "scenario/arguments.rs"]
 mod arguments;
+#[path = "scenario/interruption.rs"]
+mod interruption;
 #[path = "scenario/projection.rs"]
 mod projection;
-use super::barrier_proxy::BarrierProxy;
 use super::denial_peer::AccessDeniedPeer;
 use super::guard::Environment;
-use super::process::{run_cli, run_cli_degraded, spawn_cli, terminate_cli};
+use super::process::{cancel_cli, run_cli, run_cli_degraded, run_cli_graph_pending, spawn_cli};
 use super::stack::Stack;
 use super::state::{Database, InventorySnapshot, assert_graph, database_snapshot};
 use anyhow::{Context, Result, ensure};
@@ -75,7 +76,7 @@ async fn run_pipeline(environment: &Environment, oracle: &TypedSeedOracle) -> Re
     .await?;
     unchanged_rerun(&graph_environment, &database, oracle, &initial).await?;
     partial_preserves_seed(&graph_environment, &database, oracle, &initial).await?;
-    interrupted_resume_matches_full(&graph_environment, oracle, &initial).await
+    interruption::run(&graph_environment, oracle, &initial).await
 }
 
 async fn offline_baseline(
@@ -85,7 +86,8 @@ async fn offline_baseline(
 ) -> Result<(InventorySnapshot, u64)> {
     let mut offline = environment.clone();
     offline.graph_url = closed_loopback_url()?;
-    let full = run_cli(&offline, &sweep_args(&offline, database, 100, false)?).await?;
+    let full =
+        run_cli_graph_pending(&offline, &sweep_args(&offline, database, 100, false)?).await?;
     let initial = database_snapshot(database, oracle).await?;
     let pending = verify_initial(&full, &initial)?;
     Ok((initial, pending))
@@ -97,6 +99,7 @@ fn verify_initial(summary: &str, initial: &InventorySnapshot) -> Result<u64> {
         "initial sweep must persist seeded resources"
     );
     assert_no_failures(summary)?;
+    assert_baseline_budget(summary)?;
     ensure!(
         summary_value(summary, "rows")? == u64::try_from(initial.resources.len())?,
         "CLI row summary must match SQL-backed rows"
@@ -133,6 +136,7 @@ async fn unchanged_rerun(
         "unchanged rerun must write zero resource rows"
     );
     assert_no_failures(&unchanged)?;
+    assert_baseline_budget(&unchanged)?;
     ensure!(
         summary_value(&unchanged, "graph_pending")? == 0,
         "unchanged CLI projection must leave no graph work"
@@ -166,86 +170,6 @@ async fn partial_preserves_seed(
     Ok(())
 }
 
-async fn interrupted_resume_matches_full(
-    environment: &Environment,
-    oracle: &TypedSeedOracle,
-    expected: &InventorySnapshot,
-) -> Result<()> {
-    let directory = tempfile::tempdir()?;
-    let database =
-        Database::create(environment, directory.path().join("interrupted.sqlite")).await?;
-    let mut proxy = BarrierProxy::start(&environment.endpoint, &environment.ca_bundle).await?;
-    let checkpoint = interrupt(&mut proxy, environment, &database).await?;
-    let resumed = run_cli(environment, &sweep_args(environment, &database, 100, true)?).await?;
-    verify_resumed(&resumed, expected)?;
-    ensure!(
-        &database_snapshot(&database, oracle).await? == expected,
-        "resumed checkpoint differs from uninterrupted canonical inventory"
-    );
-    super::state::assert_sweep_finished(&database, &checkpoint.sweep_id).await
-}
-
-async fn interrupt(
-    proxy: &mut BarrierProxy,
-    environment: &Environment,
-    database: &Database,
-) -> Result<super::state::ActiveCheckpoint> {
-    let stopped = stop_at_checkpoint(proxy, environment, database).await;
-    let shutdown = proxy.shutdown().await;
-    let checkpoint = stopped?;
-    shutdown?;
-    Ok(checkpoint)
-}
-
-fn verify_resumed(summary: &str, expected: &InventorySnapshot) -> Result<()> {
-    ensure!(
-        summary_value(summary, "graph_pending")? == 0,
-        "resumed CLI did not project through configured Falkor endpoint"
-    );
-    assert_no_failures(summary)?;
-    ensure!(
-        summary_value(summary, "rows")? == u64::try_from(expected.resources.len())?,
-        "resumed summary rows differ from uninterrupted SQL counts"
-    );
-    Ok(())
-}
-
-async fn stop_at_checkpoint(
-    proxy: &mut BarrierProxy,
-    environment: &Environment,
-    database: &Database,
-) -> Result<super::state::ActiveCheckpoint> {
-    let endpoint_url = proxy.endpoint();
-    let endpoint = EndpointOverride {
-        url: &endpoint_url,
-        ca_bundle: proxy.ca_bundle(),
-    };
-    let mut arguments = sweep_args_for(environment, database, 100, false, Some(endpoint))?;
-    set_concurrency(&mut arguments, 1)?;
-    let process = spawn_cli(environment, &arguments).await?;
-    let active = observe_checkpoint(proxy, database).await;
-    terminate_cli(process).await?;
-    active
-}
-
-async fn observe_checkpoint(
-    proxy: &mut BarrierProxy,
-    database: &Database,
-) -> Result<super::state::ActiveCheckpoint> {
-    let observed = proxy.wait_for_continuation().await?;
-    ensure!(
-        (observed.action == "DescribeVpcs" || observed.action == "DescribeSubnets")
-            && !observed.token.is_empty(),
-        "barrier must observe a native AWS EC2 continuation token"
-    );
-    let active = super::state::active_checkpoint(database).await?;
-    ensure!(
-        active.resources_observed > 0 && active.work_pending > 0,
-        "first native page was not committed before interruption"
-    );
-    Ok(active)
-}
-
 async fn run_denied_pipeline(environment: &Environment, oracle: &TypedSeedOracle) -> Result<()> {
     let directory = tempfile::tempdir()?;
     let database = Database::create(environment, directory.path().join("denied.sqlite")).await?;
@@ -272,6 +196,7 @@ async fn denied_baseline(
         "denial regression requires a full emulator baseline projected by the CLI"
     );
     assert_no_failures(&full)?;
+    assert_baseline_budget(&full)?;
     let before = database_snapshot(database, oracle).await?;
     assert_graph(
         database,
