@@ -4,7 +4,7 @@ service = "s3tables"
 [[step]]
 id = "resource"
 operation = "CreateTableBucket"
-kind = "AWS::s3tables::TableBucket"
+kind = "AWS::S3Tables::TableBucket"
 identity = "arn"
 repeat = 2
 [step.input]
