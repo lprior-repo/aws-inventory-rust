@@ -168,6 +168,21 @@ binary Clippy passed with warnings denied. With an empty selection, generator
 write/check and the unchanged `overlay --check` passed. Moon wiring is omitted
 by the no-CI directive; the exact direct gate commands appear above.
 
+### Pinned-model safety evidence
+
+The ignored safety target shares one immutable model load and generated result
+across five scenarios. All five passed over all 436 pinned services: no
+classifier-denied operation is emitted; a tampered `CreateVpc` promotion fails
+with `OverlayPromotesDenied`; an added deny removes a previous callable entry
+and still passes checking; every existing embedded callable remains identical
+after merging; and regenerating every file produces identical bytes.
+The three embedded STS secret denials also remain denied. This checkout has far
+more embedded policies than the archive's four-callable baseline, so the
+compatibility scenario checks every existing callable, not just those four.
+The shared-model checker invokes the same model-policy validator as the disk
+overlay gate; temporary-root CLI scenarios separately prove that gate's added
+deny handling. The all-model safety target completed in 24.57 seconds.
+
 ## One command
 
 ![How a run is proven on the emulator](img/35-test-loop.png)
