@@ -861,9 +861,13 @@ the original database's graph name. Its resumed graph now has a distinct name,
 and the resumed graph must also satisfy the complete seeded graph oracle.
 Production projection ownership fencing is unchanged.
 
-**Open product risk:** with concurrency one, the retry-derived collector lease
-can block hard-crash resume for up to **3,880,000 ms (64 minutes 40 seconds)**.
-There is no existing CLI/configuration TTL override or takeover flag.
+**Open product risk:** the retry-derived collector lease scales with
+`2 * global_concurrency` (`crates/sweep/src/execution.rs::lease_budget`). At the
+concurrency one used by the SIGKILL scenario it can block hard-crash resume for
+up to **3,880,000 ms (64 minutes 40 seconds)**; at the CLI default of 16 the
+same retry policy implies about **57,120,000 ms (15 hours 52 minutes)**
+[derived from the formula, not observed]. There is no existing CLI/configuration
+TTL override or takeover flag.
 Expired-crash takeover is **untested on PostgreSQL and file** in this run;
 immediate rejection and graceful-cancellation resume are the covered contracts.
 No new production knob or weaker ownership fence was added.
