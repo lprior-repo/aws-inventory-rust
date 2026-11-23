@@ -7,14 +7,7 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     let approved = vec![
         (
             "ListFleets",
-            policy::query(
-                policy::enumerate(
-                    "fleetSummaries",
-                    policy::arn("arn")?,
-                    Some(("nextToken", "nextToken")),
-                )?,
-                &["arn", "signalCatalogArn"],
-            )?,
+            metadata("fleetSummaries")?,
         ),
         (
             "ListSignalCatalogs",
@@ -29,58 +22,23 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
         ),
         (
             "ListModelManifests",
-            policy::query(
-                policy::enumerate(
-                    "summaries",
-                    policy::arn("arn")?,
-                    Some(("nextToken", "nextToken")),
-                )?,
-                &["arn", "signalCatalogArn"],
-            )?,
+            metadata("summaries")?,
         ),
         (
             "ListDecoderManifests",
-            policy::query(
-                policy::enumerate(
-                    "summaries",
-                    policy::arn("arn")?,
-                    Some(("nextToken", "nextToken")),
-                )?,
-                &["arn", "modelManifestArn"],
-            )?,
+            metadata("summaries")?,
         ),
         (
             "ListVehicles",
-            policy::query(
-                policy::enumerate(
-                    "vehicleSummaries",
-                    policy::arn("arn")?,
-                    Some(("nextToken", "nextToken")),
-                )?,
-                &["arn", "modelManifestArn", "decoderManifestArn"],
-            )?,
+            metadata("vehicleSummaries")?,
         ),
         (
             "ListCampaigns",
-            policy::query(
-                policy::enumerate(
-                    "campaignSummaries",
-                    policy::arn("arn")?,
-                    Some(("nextToken", "nextToken")),
-                )?,
-                &["arn", "signalCatalogArn"],
-            )?,
+            metadata("campaignSummaries")?,
         ),
         (
             "ListStateTemplates",
-            policy::query(
-                policy::enumerate(
-                    "summaries",
-                    policy::arn("arn")?,
-                    Some(("nextToken", "nextToken")),
-                )?,
-                &["arn", "signalCatalogArn"],
-            )?,
+            metadata("summaries")?,
         ),
     ];
     policy::finish(
@@ -89,6 +47,14 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
         DEFERRED,
         "Approved lists expose fleet, manifest, vehicle, campaign, signal-catalog and state-template metadata. Feature/region gates can still reject calls; signal values and detailed decoder/model content are not approved.",
         &[(policy::DenyReason::Mutating, MUTATING)],
+    )
+}
+
+fn metadata(items: &str) -> Result<crate::overlay::OperationOverlay, NameError> {
+    policy::fixed(
+        policy::enumerate(items, policy::arn("arn")?, Some(("nextToken", "nextToken")))?,
+        "listResponseScope",
+        "METADATA_ONLY",
     )
 }
 
