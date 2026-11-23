@@ -32,7 +32,10 @@ fn expected_filter(runtime: &RuntimeCatalog<'_>) -> TestResult<BindingSource> {
     Ok(BindingSource::Fixed(BindingValue::List(
         vec![BindingValue::Object(
             BTreeMap::from([
-                (Key::Field(name), BindingValue::String("AgreementType".to_owned())),
+                (
+                    Key::Field(name),
+                    BindingValue::String("AgreementType".to_owned()),
+                ),
                 (
                     Key::Field(values),
                     BindingValue::Strings(vec!["PurchaseAgreement".to_owned()].into_boxed_slice()),

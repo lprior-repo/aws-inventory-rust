@@ -24,7 +24,7 @@ fn policy(paths: &[&str]) -> TestResult<overlay::ServiceOverlay> {
     plan.paginator = Some(overlay::Paginator::None);
     plan.exclude_response_members = paths
         .iter()
-        .map(|path| overlay::MemberPath::new(*path))
+        .map(|path| overlay::MemberPath::new(path))
         .collect::<Result<_, _>>()?;
     Ok(overlay::ServiceOverlay::new(
         "things",

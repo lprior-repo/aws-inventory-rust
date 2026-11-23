@@ -74,9 +74,13 @@ fn compiled() -> TestResult<Vec<u8>> {
     .bytes)
 }
 
-async fn seeded<'a, 'catalog>(catalog: &'a RuntimeCatalog<'catalog>) -> TestResult<Scenario<'a, 'catalog>> {
+async fn seeded<'a, 'catalog>(
+    catalog: &'a RuntimeCatalog<'catalog>,
+) -> TestResult<Scenario<'a, 'catalog>> {
     let scenario = Scenario::new(catalog, "marketplace-required-filter").await?;
-    scenario.seed(catalog, "marketplace-agreement", &["SearchAgreements"]).await?;
+    scenario
+        .seed(catalog, "marketplace-agreement", &["SearchAgreements"])
+        .await?;
     Ok(scenario)
 }
 
