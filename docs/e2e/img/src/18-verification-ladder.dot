@@ -1,0 +1,18 @@
+digraph G {
+  graph [bgcolor="#fcfcfb", fontname="Inter", fontsize=17, fontcolor="#0b0b0b",
+         label=<<table border="0" cellborder="0" cellspacing="0"><tr><td align="left"><b>Three separate facts about every operation</b></td></tr><tr><td height="6"></td></tr></table>>, labelloc=t, labeljust=l, pad=0.35,
+         rankdir=TB, nodesep=0.35, ranksep=0.5, newrank=true ];
+  node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#c3c2b7",
+        penwidth=1.2, fontname="Inter", fontsize=12, fontcolor="#0b0b0b",
+        margin="0.17,0.10"];
+  edge [color="#52514e", arrowsize=0.7, penwidth=1.1, fontname="Inter",
+        fontsize=10, fontcolor="#52514e"];
+
+  i [label="Implemented\nthe catalog can call it", fillcolor="#ffffff", color="#c3c2b7"];
+  e [label="Emulator-verified\nit returned at least one seeded resource", fillcolor="#d9f2e8", color="#1baf7a"];
+  l [label="Live-verified\nit ran against a real account", fillcolor="#d9f2e8", color="#1baf7a"];
+  i -> e [label="  probe, full sweep, Cloud Control cross-check"];
+  e -> l [label="  a read-only run in an account the owner names"];
+  n [shape=plain, label=<<font point-size="10" color="#52514e">An empty answer proves nothing about decoding.<br/>Each level is reported by name, never rounded up.</font>>];
+  l -> n [style=invis];
+}

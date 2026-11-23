@@ -1,0 +1,19 @@
+digraph G {
+  graph [bgcolor="#fcfcfb", fontname="Inter", fontsize=17, fontcolor="#0b0b0b",
+         label=<<table border="0" cellborder="0" cellspacing="0"><tr><td align="left"><b>The product in one picture</b></td></tr><tr><td align="left"><font point-size="10" color="#52514e">One sweep a day keeps it current. It runs on one laptop, and all of it is open source under MIT.</font></td></tr><tr><td height="6"></td></tr></table>>, labelloc=t, labeljust=l, pad=0.35,
+         rankdir=LR, nodesep=0.35, ranksep=0.45, newrank=true ];
+  node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#c3c2b7",
+        penwidth=1.2, fontname="Inter", fontsize=12, fontcolor="#0b0b0b",
+        margin="0.17,0.10"];
+  edge [color="#52514e", arrowsize=0.7, penwidth=1.1, fontname="Inter",
+        fontsize=10, fontcolor="#52514e"];
+
+  aws [label="Every account in an\nAWS organization", fillcolor="#f0efec", color="#c3c2b7"];
+  col [label="A collector that reads\nevery resource, fast", fillcolor="#dceafb", color="#86b6ef"];
+  sql [label="SQL you can query:\none table per kind", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  gr [label="A graph of how\neverything connects", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  app [label="A desktop app that\ndraws the whole account", fillcolor="#fbe3ec", color="#e87ba4"];
+  aws -> col [label="read only"];
+  col -> sql -> gr -> app;
+  sql -> app [constraint=false];
+}

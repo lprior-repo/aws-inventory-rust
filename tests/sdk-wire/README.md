@@ -55,7 +55,6 @@ The production SDK uses `Format::DateTimeWithOffset` for all five checked fields
 - [AWS GetView response syntax](https://docs.aws.amazon.com/resource-explorer/latest/apireference/API_GetView.html)
 - [AWS ListResources response syntax](https://docs.aws.amazon.com/resource-explorer/latest/apireference/API_ListResources.html)
 - [Official Smithy StaticReplayClient](https://docs.rs/aws-smithy-http-client/1.5.2/aws_smithy_http_client/test_util/struct.StaticReplayClient.html)
-- [Emulator compatibility analysis](../../docs/EMULATOR_TESTING.md)
 
 The final link refers to repository evidence separately from these constructed
 fixtures. A successful fixture test must never replace an emulator failure in the

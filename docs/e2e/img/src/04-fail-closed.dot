@@ -1,0 +1,24 @@
+digraph G {
+  graph [bgcolor="#fcfcfb", fontname="Inter", fontsize=17, fontcolor="#0b0b0b",
+         label=<<table border="0" cellborder="0" cellspacing="0"><tr><td align="left"><b>Fail closed: the only path to a request</b></td></tr><tr><td height="6"></td></tr></table>>, labelloc=t, labeljust=l, pad=0.35,
+         rankdir=TB, nodesep=0.35, ranksep=0.4, newrank=true ];
+  node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#c3c2b7",
+        penwidth=1.2, fontname="Inter", fontsize=12, fontcolor="#0b0b0b",
+        margin="0.17,0.10"];
+  edge [color="#52514e", arrowsize=0.7, penwidth=1.1, fontname="Inter",
+        fontsize=10, fontcolor="#52514e"];
+
+  q1 [label="On the deny list?", shape=diamond, style=filled, fillcolor="#ffffff", color="#c3c2b7", margin="0.04,0.04"];
+  q2 [label="Classed enumerate\nor expand?", shape=diamond, style=filled, fillcolor="#ffffff", color="#c3c2b7", margin="0.04,0.04"];
+  q3 [label="Overlay entry complete:\nscope, items, paging, identity?", shape=diamond, style=filled, fillcolor="#ffffff", color="#c3c2b7", margin="0.04,0.04"];
+  no1 [label="Never called", fillcolor="#fbe0e0", color="#d03b3b"];
+  no2 [label="Never called\n(unclassified or denied)", fillcolor="#fbe0e0", color="#d03b3b"];
+  no3 [label="Deferred\nwith its reason", fillcolor="#ffffff", color="#c3c2b7"];
+  yes [label="The catalog hands the wire engine a handle.\nThere is no other way to send a request.", fillcolor="#dceafb", color="#86b6ef"];
+  q1 -> no1 [label="yes"]; q1 -> q2 [label="no"];
+  q2 -> no2 [label="no"]; q2 -> q3 [label="yes"];
+  q3 -> no3 [label="no"]; q3 -> yes [label="yes"];
+  {rank=same; q1; no1} {rank=same; q2; no2} {rank=same; q3; no3}
+  note [shape=plain, label=<<font point-size="10" color="#52514e">A rule may deny on a name alone.<br/>It may never allow on one.</font>>];
+  yes -> note [style=invis];
+}

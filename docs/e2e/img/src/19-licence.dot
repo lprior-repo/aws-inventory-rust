@@ -1,0 +1,21 @@
+digraph G {
+  graph [bgcolor="#fcfcfb", fontname="Inter", fontsize=17, fontcolor="#0b0b0b",
+         label=<<table border="0" cellborder="0" cellspacing="0"><tr><td align="left"><b>One repository, one licence: MIT</b></td></tr><tr><td align="left"><font point-size="10" color="#52514e">Nothing is closed. The arrows show which part depends on which.</font></td></tr><tr><td height="6"></td></tr></table>>, labelloc=t, labeljust=l, pad=0.35,
+         rankdir=TB, nodesep=0.35, ranksep=0.4, newrank=true ];
+  node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#c3c2b7",
+        penwidth=1.2, fontname="Inter", fontsize=12, fontcolor="#0b0b0b",
+        margin="0.17,0.10"];
+  edge [color="#52514e", arrowsize=0.7, penwidth=1.1, fontname="Inter",
+        fontsize=10, fontcolor="#52514e"];
+
+  app [label="Desktop app\ntables, SQL, sweep control, whole-account graph", fillcolor="#fbe3ec", color="#e87ba4"];
+  view [label="Query layer\nreads SQL and the graph for the app", fillcolor="#dceafb", color="#86b6ef"];
+  cli [label="CLI\nsweep, sql, schema", fillcolor="#dceafb", color="#86b6ef"];
+  graphc [label="Graph crate\nprojection and traversal", fillcolor="#dceafb", color="#86b6ef"];
+  eng [label="Executor, store, reconciler", fillcolor="#dceafb", color="#86b6ef"];
+  wire [label="Wire engine", fillcolor="#dceafb", color="#86b6ef"];
+  core [label="Catalog and records", fillcolor="#dceafb", color="#86b6ef"];
+  har [label="Test harness", fillcolor="#d9f2e8", color="#1baf7a"];
+  app -> view; app -> eng; cli -> eng; view -> graphc; eng -> graphc; eng -> wire; wire -> core; eng -> core;
+  har -> eng [style=dashed];
+}

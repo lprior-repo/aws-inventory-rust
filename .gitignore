@@ -28,3 +28,8 @@ __pycache__/
 /harness/embedded/target/
 /evidence/record-codec-bench/target/
 /.moon/cache/
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+.beads-credential-key
+.beads/proxieddb/

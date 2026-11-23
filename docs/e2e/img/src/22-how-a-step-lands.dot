@@ -1,0 +1,21 @@
+digraph G {
+  graph [bgcolor="#fcfcfb", fontname="Inter", fontsize=17, fontcolor="#0b0b0b",
+         label=<<table border="0" cellborder="0" cellspacing="0"><tr><td align="left"><b>How one step lands</b></td></tr><tr><td height="6"></td></tr></table>>, labelloc=t, labeljust=l, pad=0.35,
+         rankdir=LR, nodesep=0.35, ranksep=0.6, newrank=true ];
+  node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#c3c2b7",
+        penwidth=1.2, fontname="Inter", fontsize=12, fontcolor="#0b0b0b",
+        margin="0.17,0.10"];
+  edge [color="#52514e", arrowsize=0.7, penwidth=1.1, fontname="Inter",
+        fontsize=10, fontcolor="#52514e"];
+
+  w [label="A worker implements\none step in its own worktree", fillcolor="#dceafb", color="#86b6ef"];
+  c [label="The coordinator integrates\nand runs the checks", fillcolor="#dceafb", color="#86b6ef"];
+  r1 [label="Code review\nadversarial, read-only", fillcolor="#d9f2e8", color="#1baf7a"];
+  r2 [label="Test review\nread-only", fillcolor="#d9f2e8", color="#1baf7a"];
+  fix [label="One repair packet\nback to the same worker", fillcolor="#ffffff", color="#c3c2b7"];
+  land [label="Lands on main\nwith its evidence and numbers", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  w -> c -> r1; c -> r2;
+  r1 -> fix [label="findings"]; r2 -> fix [label="findings"];
+  fix -> w [constraint=false];
+  r1 -> land [label="none"]; r2 -> land [label="none"];
+}

@@ -1,0 +1,35 @@
+digraph G {
+  graph [bgcolor="#fcfcfb", fontname="Inter", fontsize=17, fontcolor="#0b0b0b",
+         label=<<table border="0" cellborder="0" cellspacing="0"><tr><td align="left"><b>The tables, and how they hang together</b></td></tr><tr><td height="6"></td></tr></table>>, labelloc=t, labeljust=l, pad=0.35,
+         rankdir=LR, nodesep=0.3, ranksep=0.7, newrank=true ];
+  node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#c3c2b7",
+        penwidth=1.2, fontname="Inter", fontsize=12, fontcolor="#0b0b0b",
+        margin="0.17,0.10"];
+  edge [color="#52514e", arrowsize=0.7, penwidth=1.1, fontname="Inter",
+        fontsize=10, fontcolor="#52514e"];
+
+  node [fontsize=11];
+  res [label="resources\none row per resource of any kind", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  kind [label="one table per kind\naws_ec2_vpc, aws_iam_role, ...\ntyped columns + record", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  scopes [label="resource_scopes\nwhich listing saw it", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  seen [label="scope_seen\nper-page evidence", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  members [label="scope_members\nlisted, then described", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  parents [label="resource_parents\nparent to child", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  edges [label="edges\nrelation and its source", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  unres [label="unresolved_refs\ntarget not collected yet", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  ident [label="identities\nARN and ID lookup", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  tags [label="tags", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  wq [label="work_queue, work_tokens\nleases and paging position", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  outc [label="scope_outcomes\nsix states, with the reason", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  mem [label="scope_memory\ndenied and unsupported,\nwith an expiry", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  rates [label="learned_rates\nper account, region, service", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  outbox [label="projection_outbox\nkeys for the graph", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  reg [label="kinds, kind_schemas,\ncatalog_operations, metadata\nwhat this database was built for", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  mig [label="catalog_migrations\nupgrade journal", shape=cylinder, fillcolor="#fdf0d5", color="#d9a531", margin="0.14,0.12"];
+  res -> kind [label="same key"]; res -> scopes; res -> parents; res -> edges; res -> tags;
+  scopes -> seen [style=dashed]; scopes -> members [style=dashed];
+  edges -> unres [style=dashed]; edges -> ident [style=dashed];
+  res -> outbox; edges -> outbox;
+  wq -> outc; outc -> mem [style=dashed]; wq -> rates [style=invis];
+  reg -> kind [style=dashed]; reg -> mig [style=dashed];
+}

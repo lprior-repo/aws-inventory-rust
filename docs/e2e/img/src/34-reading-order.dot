@@ -1,0 +1,21 @@
+digraph G {
+  graph [bgcolor="#fcfcfb", fontname="Inter", fontsize=17, fontcolor="#0b0b0b",
+         label=<<table border="0" cellborder="0" cellspacing="0"><tr><td align="left"><b>Where to start reading</b></td></tr><tr><td height="6"></td></tr></table>>, labelloc=t, labeljust=l, pad=0.35,
+         rankdir=LR, nodesep=0.25, ranksep=0.55, newrank=true ];
+  node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#c3c2b7",
+        penwidth=1.2, fontname="Inter", fontsize=12, fontcolor="#0b0b0b",
+        margin="0.17,0.10"];
+  edge [color="#52514e", arrowsize=0.7, penwidth=1.1, fontname="Inter",
+        fontsize=10, fontcolor="#52514e"];
+
+  node [fontsize=11];
+  c [label="A cofounder", fillcolor="#fbe3ec", color="#e87ba4"];
+  e [label="An engineer\njoining the work", fillcolor="#dceafb", color="#86b6ef"];
+  w [label="A worker with\none step to build", fillcolor="#dceafb", color="#86b6ef"];
+  ov [label="OVERVIEW", shape=note, fillcolor="#fdf0d5", color="#d9a531"]; ar [label="ARCHITECTURE", shape=note, fillcolor="#fdf0d5", color="#d9a531"]; dm [label="DATA_MODEL", shape=note, fillcolor="#fdf0d5", color="#d9a531"]; de [label="DECISIONS", shape=note, fillcolor="#fdf0d5", color="#d9a531"];
+  oq [label="OPEN_QUESTIONS", shape=note, fillcolor="#fdf0d5", color="#d9a531"]; mk [label="MAKEPAD_UI", shape=note, fillcolor="#fdf0d5", color="#d9a531"]; bp [label="BUILD_PLAN", shape=note, fillcolor="#fdf0d5", color="#d9a531"]; st [label="build/STEPS_*", shape=note, fillcolor="#fdf0d5", color="#d9a531"];
+  ap [label="AGENT_PROMPT", shape=note, fillcolor="#fdf0d5", color="#d9a531"]; rg [label="RELEASE_GATE", shape=note, fillcolor="#fdf0d5", color="#d9a531"];
+  c -> ov -> ar -> de -> oq;
+  e -> ar; ar -> dm -> mk -> bp -> rg;
+  w -> ap -> bp; bp -> st;
+}

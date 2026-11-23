@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "server",
+  "dolt_database": "aws_inventory",
+  "project_id": "5a773799-b2be-4454-be85-174048d11d69"
+}

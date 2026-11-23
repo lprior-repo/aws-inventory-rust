@@ -1,0 +1,20 @@
+digraph G {
+  graph [bgcolor="#fcfcfb", fontname="Inter", fontsize=17, fontcolor="#0b0b0b",
+         label=<<table border="0" cellborder="0" cellspacing="0"><tr><td align="left"><b>How a run is proven on the emulator</b></td></tr><tr><td height="6"></td></tr></table>>, labelloc=t, labeljust=l, pad=0.35,
+         rankdir=TB, nodesep=0.35, ranksep=0.4, newrank=true ];
+  node [shape=box, style="rounded,filled", fillcolor="#ffffff", color="#c3c2b7",
+        penwidth=1.2, fontname="Inter", fontsize=12, fontcolor="#0b0b0b",
+        margin="0.17,0.10"];
+  edge [color="#52514e", arrowsize=0.7, penwidth=1.1, fontname="Inter",
+        fontsize=10, fontcolor="#52514e"];
+
+  h [label="The harness starts an emulator, a PostgreSQL database\nand a graph database, and owns them for the whole test", fillcolor="#d9f2e8", color="#1baf7a"];
+  s [label="It seeds known resources into the emulator\n(the only code allowed to write)", fillcolor="#d9f2e8", color="#1baf7a"];
+  sw [label="The shipped collector sweeps the emulator\nwith real signed requests", fillcolor="#dceafb", color="#86b6ef"];
+  cmp [label="Stored rows and graph are compared\nwith what was seeded", fillcolor="#d9f2e8", color="#1baf7a"];
+  cc [label="Cloud Control lists the same types;\nidentities must match", fillcolor="#d9f2e8", color="#1baf7a"];
+  again [label="A second sweep must change nothing", fillcolor="#d9f2e8", color="#1baf7a"];
+  h -> s -> sw -> cmp -> cc -> again;
+  n [shape=plain, label=<<font point-size="10" color="#52514e">This proves requests, paging, decoding, storage and the graph.<br/>It does not prove real permissions, real quotas or real endpoints.</font>>];
+  again -> n [style=invis];
+}
