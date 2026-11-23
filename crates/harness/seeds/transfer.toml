@@ -4,6 +4,13 @@ service = "transfer"
 [[step]]
 id = "resource"
 operation = "CreateServer"
-kind = "AWS::Transfer::Server"
-identity = "ServerId"
+kind = ""
 [step.input]
+
+[[step]]
+id = "server"
+operation = "DescribeServer"
+kind = "AWS::Transfer::Server"
+identity = "Server.Arn"
+[step.input]
+ServerId = { from = "resource", path = "ServerId" }
