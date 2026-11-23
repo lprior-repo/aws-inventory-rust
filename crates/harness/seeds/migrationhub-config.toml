@@ -1,0 +1,11 @@
+format = 1
+service = "migrationhub-config"
+
+[[step]]
+id = "resource"
+operation = "CreateHomeRegionControl"
+kind = "AWS::MigrationHubConfig::HomeRegionControl"
+identity = "HomeRegionControl.ControlId"
+[step.input]
+"HomeRegion" = "us-east-1"
+"Target" = { "Type" = "ACCOUNT" }
