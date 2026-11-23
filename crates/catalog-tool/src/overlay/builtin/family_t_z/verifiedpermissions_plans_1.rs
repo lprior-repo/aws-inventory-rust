@@ -1,5 +1,5 @@
 use super::{bind, inventory, path, paths, token};
-use crate::overlay::{Identity, NameError, OperationOverlay, Paginator, Scope};
+use crate::overlay::{FixedValue, Identity, NameError, OperationOverlay, Paginator, Scope};
 
 pub(super) fn get_identity_source() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
@@ -39,6 +39,7 @@ pub(super) fn get_policy_store() -> Result<OperationOverlay, NameError> {
         "cedarVersion",
     ])?;
     operation.tags = Some(path("tags")?);
+    operation.fixed.insert(path("tags")?, FixedValue::Boolean(true));
     bind(
         &mut operation,
         "policyStoreId",
@@ -73,7 +74,7 @@ pub(super) fn list_identity_sources() -> Result<OperationOverlay, NameError> {
         Scope::Region,
     )?;
     operation.queryable = paths(&["identitySourceId", "policyStoreId", "principalEntityType"])?;
-    operation.page_size = Some(100);
+    operation.page_size = Some(50);
     bind(
         &mut operation,
         "policyStoreId",
@@ -91,7 +92,7 @@ pub(super) fn list_policies() -> Result<OperationOverlay, NameError> {
         Scope::Region,
     )?;
     operation.queryable = paths(&["policyStoreId", "policyId", "policyType", "effect", "name"])?;
-    operation.page_size = Some(100);
+    operation.page_size = Some(50);
     bind(
         &mut operation,
         "policyStoreId",
@@ -109,7 +110,7 @@ pub(super) fn list_policy_store_aliases() -> Result<OperationOverlay, NameError>
         Scope::Region,
     )?;
     operation.queryable = paths(&["aliasName", "policyStoreId", "aliasArn", "state"])?;
-    operation.page_size = Some(100);
+    operation.page_size = Some(50);
     Ok(operation)
 }
 
@@ -121,7 +122,7 @@ pub(super) fn list_policy_stores() -> Result<OperationOverlay, NameError> {
         Scope::Region,
     )?;
     operation.queryable = paths(&["policyStoreId", "arn", "description"])?;
-    operation.page_size = Some(100);
+    operation.page_size = Some(50);
     Ok(operation)
 }
 
@@ -133,7 +134,7 @@ pub(super) fn list_policy_templates() -> Result<OperationOverlay, NameError> {
         Scope::Region,
     )?;
     operation.queryable = paths(&["policyStoreId", "policyTemplateId", "description", "name"])?;
-    operation.page_size = Some(100);
+    operation.page_size = Some(50);
     bind(
         &mut operation,
         "policyStoreId",
