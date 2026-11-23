@@ -1,0 +1,10 @@
+format = 1
+service = "backup"
+
+[[step]]
+id = "resource"
+operation = "CreateBackupVault"
+kind = "AWS::Backup::BackupVault"
+identity = "BackupVaultArn"
+[step.input]
+"BackupVaultName" = "inventory-thin-backup"
