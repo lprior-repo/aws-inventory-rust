@@ -17,6 +17,12 @@
 - `ProgressEvent::Finished.summary` is now boxed to keep bounded progress-channel
   event slots compact as summary metrics grow. No listener means no event allocation.
 
+- Reviewed per-operation response-member omissions now drop sensitive modeled
+  values during decoding, before records, projections or persistence. This
+  enables IAM instance-profile discovery/detail/role expansion, Lambda function
+  discovery/configuration/aliases, and SNS platform-application metadata without
+  retaining trust documents, function environment/commands or platform credentials.
+  See `docs/e2e/SANITIZED_RESPONSE_MEMBERS.md` for bounds and compatibility.
 - E2E count verification now rejects an entirely catalog-deferred seed oracle.
   Every explicit E2E service selector must have a seed recipe; bootstrap calls
   remain implicit, so the baseline script no longer selects recipe-less STS.

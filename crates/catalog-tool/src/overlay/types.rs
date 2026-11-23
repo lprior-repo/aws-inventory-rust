@@ -181,6 +181,8 @@ pub struct OperationOverlay {
 
     pub exclude_from_hash: Vec<MemberPath>,
     pub exclude_map_keys: Vec<super::MapKeyExclusion>,
+    /// Output-root paths validating member names dropped throughout this response.
+    pub exclude_response_members: Vec<MemberPath>,
 
     pub skip: Vec<OperationName>,
 

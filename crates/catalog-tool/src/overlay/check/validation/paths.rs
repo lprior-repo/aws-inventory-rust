@@ -1,3 +1,4 @@
+mod member_exclusions;
 mod page_size;
 use super::Violation;
 use crate::overlay::ViolationRule;
@@ -114,6 +115,7 @@ pub(super) fn validate_output_paths(
     selected: Option<crate::plans::model::ShapeRef<'_>>,
     violations: &mut Vec<Violation>,
 ) {
+    member_exclusions::validate(service, operation, item, model, violations);
     let mut validate = |key, paths| {
         check_paths(
             service,

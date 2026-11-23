@@ -5,6 +5,7 @@ mod error;
 mod exclusions;
 mod hash;
 mod iter;
+mod member_exclusions;
 mod readers;
 mod selected;
 mod skip;
@@ -18,6 +19,7 @@ pub use containers::{ListRef, MapRef};
 pub use error::RecordError;
 pub use exclusions::{Exclusions, MapKeyExclusion};
 pub use hash::{ContentHash, selected_content_hash};
+pub use member_exclusions::MemberExclusions;
 pub use selected::{SCALAR_ITEM_NAME, scalar_item, scalar_record};
 pub use value::{FieldId, Float, Key, KeyRef, Time, Value, ValueKind, ValueRef};
 

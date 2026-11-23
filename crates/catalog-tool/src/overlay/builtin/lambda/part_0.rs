@@ -104,11 +104,23 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         ..empty()
     }),
 ("GetFunctionConfiguration", OperationOverlay {
-        class: Some(OverlayClass::Deny(DenyReason::Secret)),
+        class: Some(OverlayClass::Expand),
+        scope: Some(Scope::Region),
+        items: Some(ItemSelector::parse("$")?),
+        identity: Some(Identity::Arn(path("FunctionArn")?)),
+        exclude_response_members: vec![path("Environment")?, path("ImageConfigResponse")?],
+        bind: [(path("FunctionName")?, Binding::From { operation: name("ListFunctions")?, path: path("FunctionName")? })].into_iter().collect(),
+        paginator: Some(Paginator::None),
         ..empty()
     }),
 ("ListFunctions", OperationOverlay {
-        class: Some(OverlayClass::Deny(DenyReason::Secret)),
+        class: Some(OverlayClass::Enumerate),
+        scope: Some(Scope::Region),
+        items: Some(ItemSelector::parse("Functions")?),
+        identity: Some(Identity::Arn(path("FunctionArn")?)),
+        exclude_response_members: vec![path("Functions.Environment")?, path("Functions.ImageConfigResponse")?],
+        page_size: Some(50),
+        paginator: Some(Paginator::Token(TokenPair { input: path("Marker")?, output: path("NextMarker")?, optional: false })),
         ..empty()
     }),
 ("ListVersionsByFunction", OperationOverlay {

@@ -29,6 +29,9 @@ fn add_payload(
     payload: Member<'_>,
     context: ResponseContext<'_>,
 ) -> Result<(), DecodeError> {
+    if context.limits.excluded_members.contains(payload.id) {
+        return Ok(());
+    }
     if context.body.is_empty() {
         return defaults::apply_member(builder, payload, context.service, context.limits);
     }

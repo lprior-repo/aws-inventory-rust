@@ -7,6 +7,7 @@ pub(super) mod emissions;
 mod fixed_input;
 pub(super) mod identity;
 mod map_exclusions;
+mod member_exclusions;
 mod page;
 mod routing;
 mod row_policy;

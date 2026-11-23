@@ -36,6 +36,7 @@ fn extensions(
         .chain(capabilities)
         .chain(discovery)
         .chain(map_exclusions)
+        .chain(member_exclusions::compile(overlay, context.services)?)
         .chain(row_policy)
         .chain(emissions))
 }

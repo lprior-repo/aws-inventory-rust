@@ -142,7 +142,8 @@ fn decode_record(
     response: &Response,
     preserve_presence: bool,
 ) -> Result<Record, SweepError> {
-    let limits = aws_wire::response::DecodeLimits::default();
+    let limits =
+        aws_wire::response::DecodeLimits::default().excluding_members(plan.excluded_members());
     let limits = if preserve_presence {
         limits.preserve_field_presence()
     } else {

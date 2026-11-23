@@ -18,6 +18,7 @@ mod emissions;
 mod fixed_input;
 mod identity_text;
 mod map_exclusions;
+mod member_exclusions;
 mod model_links;
 mod page_codec;
 mod protocol_check;
@@ -70,7 +71,7 @@ fn plan<'a>(
     metadata::only_fields(
         fields,
         &[
-            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
         ],
     )?;
     let service_name = metadata::text(fields, 1)?;
@@ -175,6 +176,7 @@ fn decode_plan<'a>(
         identity_text,
         row_policy: row_policy::read(fields)?,
         context_projection: selection::projection(fields)?,
+        excluded_members: member_exclusions::read(fields, service, operation)?,
     };
     validation::validate(&parts)?;
     Ok(CallablePlan::new(parts))

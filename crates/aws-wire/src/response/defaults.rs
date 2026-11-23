@@ -45,7 +45,7 @@ pub(super) fn apply_member(
     service: Service<'_>,
     limits: super::DecodeLimits,
 ) -> Result<(), DecodeError> {
-    if limits.preserve_fields {
+    if limits.preserve_fields || limits.excluded_members.contains(member.id) {
         return Ok(());
     }
     let wire = member.wire()?;

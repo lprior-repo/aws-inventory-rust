@@ -88,6 +88,16 @@ impl WalkState<'_, '_, '_> {
             .ok_or(DecodeError::Invalid("CBOR stack"))?;
         let (target, key, modeled) = child(decoder, frame, self.context.service)?;
         self.count_child()?;
+        if matches!(key, Some(KeyRef::Field(id)) if self.context.limits.excluded_members.contains(id))
+        {
+            return unknown::parse_unknown(
+                decoder,
+                self.frames,
+                self.nodes,
+                self.context.limits.nodes(),
+                self.context.limits.depth(),
+            );
+        }
         if self.consume_null(decoder, modeled, key)? {
             return Ok(());
         }

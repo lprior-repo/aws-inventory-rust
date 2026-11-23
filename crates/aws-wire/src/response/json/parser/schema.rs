@@ -19,7 +19,11 @@ pub(super) fn member_target(
                 .service
                 .shape(index)?
                 .ok_or(DecodeError::Invalid("missing shape"))?;
-            named_member(shape, name)
+            let (target, key) = named_member(shape, name)?;
+            if matches!(key, Key::Field(id, _, _) if context.limits.excluded_members.contains(id)) {
+                return Ok((None, Key::Ignore));
+            }
+            Ok((target, key))
         }
         _ => Ok((None, Key::Ignore)),
     }

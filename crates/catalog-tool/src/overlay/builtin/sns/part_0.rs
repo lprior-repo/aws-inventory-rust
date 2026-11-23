@@ -75,13 +75,17 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         ..empty()
     }),
 ("ListPlatformApplications", OperationOverlay {
-        class: Some(OverlayClass::Defer),
-        defer_reason: Some("PlatformApplications exposes PlatformApplicationArn plus open Attributes map. Stable ARN and NextToken are modeled, but safe attribute-only projection/credential-return guarantees are not. Requires shared allowlisted map projection and reviewed platform-application kind before persisting this response; do not assume PlatformCredential/PlatformPrincipal cannot be returned.".to_owned()),
+        class: Some(OverlayClass::Enumerate),
+        scope: Some(Scope::Region),
+        items: Some(ItemSelector::parse("PlatformApplications")?),
+        identity: Some(Identity::Arn(path("PlatformApplicationArn")?)),
+        exclude_response_members: vec![path("PlatformApplications.Attributes")?],
+        paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
         ..empty()
     }),
 ("GetPlatformApplicationAttributes", OperationOverlay {
         class: Some(OverlayClass::Defer),
-        defer_reason: Some("Required PlatformApplicationArn has no enabled parent and output contains only open Attributes map. Requires safe credential-excluding map projection, an established returned-attribute contract and request-bound identity/parent enrichment. Documentation of AuthenticationMethod uses token/key terminology; do not treat all arbitrary attribute values as proven safe metadata.".to_owned()),
+        defer_reason: Some("ListPlatformApplications now safely discovers parent ARNs by omitting Attributes. This detail output contains only the open Attributes map: whole-member omission would leave no metadata, while selective map-key allowlisting and request-bound identity/parent enrichment remain unsupported. Arbitrary attribute values are not proven safe.".to_owned()),
         ..empty()
     }),
 ("GetEndpointAttributes", OperationOverlay {

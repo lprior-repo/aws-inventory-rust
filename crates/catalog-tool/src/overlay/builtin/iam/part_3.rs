@@ -73,8 +73,14 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         ..empty()
     }),
 ("GetInstanceProfile", OperationOverlay {
-        class: Some(OverlayClass::Defer),
-        defer_reason: Some("InstanceProfile.Roles embeds Role.AssumeRolePolicyDocument. Requires bounded URL-encoded trust-policy sanitization matching the existing adapter and reviewed instance-profile-to-role edges before generic publication.".to_owned()),
+        class: Some(OverlayClass::Expand),
+        scope: Some(Scope::Account),
+        items: Some(ItemSelector::parse("InstanceProfile")?),
+        identity: Some(Identity::Arn(path("Arn")?)),
+        exclude_response_members: vec![path("InstanceProfile.Roles.AssumeRolePolicyDocument")?],
+        tags: Some(path("Tags")?),
+        bind: [(path("InstanceProfileName")?, Binding::From { operation: name("ListInstanceProfiles")?, path: path("InstanceProfileName")? })].into_iter().collect(),
+        paginator: Some(Paginator::None),
         ..empty()
     }),
 ("GetLoginProfile", OperationOverlay {

@@ -29,6 +29,8 @@ mod final_ivs_roots;
 mod final_roots;
 #[path = "family_g_k/final_sitewise.rs"]
 mod final_sitewise;
+#[path = "family_g_k/iam_profiles.rs"]
+mod iam_profiles;
 #[path = "family_g_k/operations_0.rs"]
 mod operations_0;
 #[path = "family_g_k/operations_1.rs"]
@@ -47,6 +49,12 @@ mod operations_6;
 mod relations_0;
 
 pub(super) const SOURCES: &[MappingSource<'static>] = &[
+    MappingSource {
+        cfn: iam_profiles::CFN,
+        operations: iam_profiles::OPERATIONS,
+        relations: iam_profiles::RELATIONS,
+        ..super::EMPTY
+    },
     MappingSource {
         cfn: cfn_0::ENTRIES,
         ..super::EMPTY

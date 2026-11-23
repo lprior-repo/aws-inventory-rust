@@ -37,13 +37,24 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         ..empty()
     }),
 ("ListInstanceProfiles", OperationOverlay {
-        class: Some(OverlayClass::Defer),
-        defer_reason: Some("InstanceProfiles.Roles embeds Role.AssumeRolePolicyDocument. Requires bounded trust-policy sanitization and reviewed profile-to-role edges matching the existing adapter before generic publication.".to_owned()),
+        class: Some(OverlayClass::Enumerate),
+        scope: Some(Scope::Account),
+        items: Some(ItemSelector::parse("InstanceProfiles")?),
+        identity: Some(Identity::Arn(path("Arn")?)),
+        exclude_response_members: vec![path("InstanceProfiles.Roles.AssumeRolePolicyDocument")?],
+        page_size: Some(1000),
+        paginator: Some(Paginator::Tokens { pairs: vec![TokenPair { input: path("Marker")?, output: path("Marker")?, optional: false }], truncated: Some(path("IsTruncated")?) }),
         ..empty()
     }),
 ("ListInstanceProfilesForRole", OperationOverlay {
-        class: Some(OverlayClass::Defer),
-        defer_reason: Some("InstanceProfiles.Roles embeds trust policy configuration; requires sanitizer plus role-qualified profile membership edges and input RoleName retention.".to_owned()),
+        class: Some(OverlayClass::Expand),
+        scope: Some(Scope::Account),
+        items: Some(ItemSelector::parse("InstanceProfiles")?),
+        identity: Some(Identity::Arn(path("Arn")?)),
+        exclude_response_members: vec![path("InstanceProfiles.Roles.AssumeRolePolicyDocument")?],
+        bind: [(path("RoleName")?, Binding::From { operation: name("ListRoles")?, path: path("RoleName")? })].into_iter().collect(),
+        page_size: Some(1000),
+        paginator: Some(Paginator::Tokens { pairs: vec![TokenPair { input: path("Marker")?, output: path("Marker")?, optional: false }], truncated: Some(path("IsTruncated")?) }),
         ..empty()
     }),
 ("ListMFADeviceTags", OperationOverlay {
