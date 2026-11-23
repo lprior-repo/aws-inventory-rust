@@ -10,99 +10,12 @@ use inventory_harness::{
 };
 
 mod cli;
+#[path = "cli/command.rs"]
+mod cli_command;
+
+use cli_command::{Command, USAGE};
 
 use cli::parse;
-
-const USAGE: &str = "usage:\n  inventory-harness snapshot freeze --evidence <dir> --output <file> \
---binary <file> [--root <dir>]\n  inventory-harness install <destination> [--root <dir>]\n  \
-inventory-harness install-graph <destination> [--jobs N]\n  \
-inventory-harness catalog universal --root <dir> [--check]\n  \
-inventory-harness seed s3 --bucket <name>\n  \
-inventory-harness seed cloud-control --prefix <inventory-page-...> --count <n>\n  \
-inventory-harness assert cloud-control --db <file> --scan-id <id> [--seed-results <file>] \
-[--root <dir>]\n  \
-inventory-harness assert-global --db <file> --scan-id <id> [--seed-results <file>] \
-[--root <dir>]\n  \
-inventory-harness assert-parents --db <file> --scan-id <id> [--seed-results <file>] \
-[--root <dir>]\n  \
-inventory-harness assert-regional --db <file> --scan-id <id> [--seed-results <file>] \
-[--root <dir>] [--region <region>]";
-
-enum Command {
-    Freeze {
-        evidence: PathBuf,
-        output: PathBuf,
-        binary: PathBuf,
-        root: PathBuf,
-    },
-    Install {
-        destination: PathBuf,
-        root: PathBuf,
-    },
-    InstallGraph {
-        destination: PathBuf,
-        jobs: usize,
-    },
-    CatalogUniversal {
-        root: PathBuf,
-        check: bool,
-    },
-    AssertCloudControl {
-        database: PathBuf,
-        scan_id: String,
-        seed_results: Option<PathBuf>,
-        root: PathBuf,
-    },
-    AssertGlobal {
-        database: PathBuf,
-        scan_id: String,
-        seed_results: Option<PathBuf>,
-        root: PathBuf,
-    },
-    AssertParents {
-        database: PathBuf,
-        scan_id: String,
-        seed_results: Option<PathBuf>,
-        root: PathBuf,
-    },
-    AssertRegional {
-        database: PathBuf,
-        scan_id: String,
-        seed_results: Option<PathBuf>,
-        root: PathBuf,
-        region: Option<String>,
-    },
-    SeedS3 {
-        bucket: String,
-    },
-    SeedCloudControl {
-        prefix: String,
-        count: usize,
-    },
-    Mutate {
-        emulator: PathBuf,
-        binary: PathBuf,
-        branch_probe: PathBuf,
-        output: PathBuf,
-        workspace: PathBuf,
-        redis_server: Option<PathBuf>,
-        falkor_module: Option<PathBuf>,
-        command_deadline: i64,
-        command: Vec<String>,
-    },
-    VerifyDelivery {
-        binary: PathBuf,
-        redis_cli: PathBuf,
-        database: PathBuf,
-        output: PathBuf,
-    },
-    CatalogOperations {
-        root: PathBuf,
-        emulator_summary: Option<PathBuf>,
-        check_additions: bool,
-        output: PathBuf,
-    },
-}
 
 fn workspace_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..")
@@ -119,21 +32,30 @@ fn has_failed_check(receipt: &serde_json::Value) -> bool {
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> ExitCode {
     let arguments: Vec<String> = std::env::args().skip(1).collect();
+    if let [command, rest @ ..] = arguments.as_slice()
+        && command == "postgres"
+    {
+        return inventory_harness::postgres::command::run(rest).await;
+    }
     match execute(&arguments).await {
-        Ok(receipt) => match serde_json::to_string_pretty(&receipt) {
-            Ok(text) if has_failed_check(&receipt) => {
-                println!("{text}");
+        Ok(receipt) => print_receipt(&receipt),
+        Err(error) => {
+            eprintln!("{error}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn print_receipt(receipt: &serde_json::Value) -> ExitCode {
+    match serde_json::to_string_pretty(receipt) {
+        Ok(text) => {
+            println!("{text}");
+            if has_failed_check(receipt) {
                 ExitCode::FAILURE
-            }
-            Ok(text) => {
-                println!("{text}");
+            } else {
                 ExitCode::SUCCESS
             }
-            Err(error) => {
-                eprintln!("{error}");
-                ExitCode::FAILURE
-            }
-        },
+        }
         Err(error) => {
             eprintln!("{error}");
             ExitCode::FAILURE
