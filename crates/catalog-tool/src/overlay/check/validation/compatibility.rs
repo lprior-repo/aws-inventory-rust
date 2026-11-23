@@ -5,7 +5,7 @@ use crate::plans::{
 use serde_json::{Map, Value};
 use std::collections::BTreeSet;
 
-pub(in crate::overlay::check::validation) fn compatible<'m>(
+pub(in crate::overlay) fn compatible<'m>(
     model: &Model<'m>,
     left: &ShapeRef<'m>,
     right: &ShapeRef<'m>,

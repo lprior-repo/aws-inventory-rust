@@ -24,6 +24,8 @@ struct Entry {
     items: Option<String>,
     identity: Option<IdentityEntry>,
     paginator: Option<PaginatorEntry>,
+    #[serde(default)]
+    bind: BTreeMap<String, BindingEntry>,
 }
 
 #[derive(Deserialize)]
@@ -39,6 +41,29 @@ struct PaginatorEntry {
     kind: String,
     input: Option<String>,
     output: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct BindingEntry {
+    from: Option<String>,
+    path: Option<String>,
+    account: Option<bool>,
+    region: Option<bool>,
+}
+
+impl BindingEntry {
+    fn binding(&self) -> Result<super::Binding, OverlayError> {
+        match (&self.from, &self.path, self.account, self.region) {
+            (Some(operation), Some(path), None, None) => Ok(super::Binding::From {
+                operation: super::OperationName::new(operation)?,
+                path: MemberPath::selected(path)?,
+            }),
+            (None, None, Some(true), None) => Ok(super::Binding::Account),
+            (None, None, None, Some(true)) => Ok(super::Binding::Region),
+            _ => Err(invalid("unsupported generated binding")),
+        }
+    }
 }
 
 impl ServiceOverlay {
@@ -87,14 +112,14 @@ fn validate_header(document: &Document, origin: Origin) -> Result<(), OverlayErr
 
 impl Entry {
     fn overlay(&self) -> Result<OperationOverlay, OverlayError> {
-        let class = match self.class.as_str() {
-            "enumerate" => OverlayClass::Enumerate,
-            "defer" => OverlayClass::Defer,
-            _ => return Err(invalid("unsupported generated class")),
-        };
         Ok(OperationOverlay {
-            class: Some(class),
+            class: Some(class(&self.class)?),
             defer_reason: self.defer_reason.clone(),
+            bind: self
+                .bind
+                .iter()
+                .map(|(path, binding)| Ok((MemberPath::new(path)?, binding.binding()?)))
+                .collect::<Result<_, OverlayError>>()?,
             scope: self.scope.as_deref().map(scope).transpose()?,
             items: self.items.as_deref().map(ItemSelector::parse).transpose()?,
             identity: self
@@ -109,6 +134,15 @@ impl Entry {
                 .transpose()?,
             ..OperationOverlay::default()
         })
+    }
+}
+
+fn class(value: &str) -> Result<OverlayClass, OverlayError> {
+    match value {
+        "enumerate" => Ok(OverlayClass::Enumerate),
+        "expand" => Ok(OverlayClass::Expand),
+        "defer" => Ok(OverlayClass::Defer),
+        _ => Err(invalid("unsupported generated class")),
     }
 }
 
