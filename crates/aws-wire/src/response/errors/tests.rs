@@ -124,3 +124,5 @@ fn code_normalization_rejects_oversized_or_control_values() {
 }
 
 mod malformed;
+
+mod alternate_envelope;
