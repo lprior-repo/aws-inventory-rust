@@ -1,0 +1,10 @@
+format = 1
+service = "cloudfront"
+
+[[step]]
+id = "resource"
+operation = "CreateCloudFrontOriginAccessIdentity"
+kind = "AWS::CloudFront::CloudFrontOriginAccessIdentity"
+identity = "CloudFrontOriginAccessIdentity.Id"
+[step.input]
+"CloudFrontOriginAccessIdentityConfig" = { "CallerReference" = "inventory-thin-cloudfront", "Comment" = "inventory-thin-cloudfront" }
