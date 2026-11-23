@@ -1,0 +1,10 @@
+format = 1
+service = "scheduler"
+
+[[step]]
+id = "resource"
+operation = "CreateScheduleGroup"
+kind = "AWS::Scheduler::ScheduleGroup"
+identity = "ScheduleGroupArn"
+[step.input]
+"Name" = "inventory-thin-scheduler"

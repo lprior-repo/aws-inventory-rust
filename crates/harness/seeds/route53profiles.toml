@@ -1,0 +1,11 @@
+format = 1
+service = "route53profiles"
+
+[[step]]
+id = "resource"
+operation = "CreateProfile"
+kind = "AWS::Route53Profiles::Profile"
+identity = "Profile.Arn"
+[step.input]
+"Name" = "inventory-thin-route53profiles"
+"ClientToken" = "12345678-1234-4234-8234-123456789abc"

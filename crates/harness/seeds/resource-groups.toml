@@ -1,0 +1,10 @@
+format = 1
+service = "resource-groups"
+
+[[step]]
+id = "resource"
+operation = "CreateGroup"
+kind = "AWS::ResourceGroups::Group"
+identity = "Group.GroupArn"
+[step.input]
+"Name" = "inventory-thin-resource-groups"

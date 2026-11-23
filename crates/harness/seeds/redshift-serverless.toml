@@ -1,0 +1,10 @@
+format = 1
+service = "redshift-serverless"
+
+[[step]]
+id = "resource"
+operation = "CreateNamespace"
+kind = "AWS::RedshiftServerless::Namespace"
+identity = "namespace.namespaceName"
+[step.input]
+"namespaceName" = "inventory-thin-redshift-serverless"

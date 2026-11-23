@@ -7,19 +7,23 @@ pub(super) struct Args {
     pub ca_bundle: PathBuf,
     pub region: String,
     pub report: PathBuf,
+    pub services: Vec<String>,
 }
 
 impl Args {
     pub(super) fn parse(arguments: &[String]) -> Result<Self, ProbeError> {
-        if arguments.len() != 10 {
+        if arguments.len() < 10 || arguments.len() > 522 || arguments.len() % 2 != 0 {
             return Err(ProbeError::Invalid(
-                "probe requires exactly five option-value pairs",
+                "probe requires five option-value pairs and optional service pairs",
             ));
         }
-        let mut options = Options::default();
-        for [name, value] in arguments.as_chunks::<2>().0 {
-            options.set(name, value)?;
-        }
+        let options = arguments.as_chunks::<2>().0.iter().try_fold(
+            Options::default(),
+            |mut options, [name, value]| {
+                options.set(name, value)?;
+                Ok::<_, ProbeError>(options)
+            },
+        )?;
         options.finish()
     }
 }
@@ -31,6 +35,7 @@ struct Options<'a> {
     ca_bundle: Option<&'a str>,
     region: Option<&'a str>,
     report: Option<&'a str>,
+    services: Vec<&'a str>,
 }
 
 impl<'a> Options<'a> {
@@ -39,6 +44,11 @@ impl<'a> Options<'a> {
             return Err(ProbeError::Invalid(
                 "probe option value is empty or too long",
             ));
+        }
+        if name == "--service" {
+            self.services.try_reserve(1)?;
+            self.services.push(value);
+            return Ok(());
         }
         let slot = match name {
             "--catalog" => &mut self.catalog,
@@ -61,6 +71,7 @@ impl<'a> Options<'a> {
             ca_bundle: required(self.ca_bundle)?.into(),
             region: required(self.region)?.into(),
             report: required(self.report)?.into(),
+            services: self.services.into_iter().map(str::to_owned).collect(),
         };
         endpoint(&args.endpoint)?;
         Ok(args)

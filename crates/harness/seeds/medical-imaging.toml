@@ -1,0 +1,10 @@
+format = 1
+service = "medical-imaging"
+
+[[step]]
+id = "resource"
+operation = "CreateDatastore"
+kind = "AWS::MedicalImaging::Datastore"
+identity = "datastoreId"
+[step.input]
+"clientToken" = "12345678-1234-4234-8234-123456789abc"

@@ -1,0 +1,11 @@
+format = 1
+service = "voice-id"
+
+[[step]]
+id = "resource"
+operation = "CreateDomain"
+kind = "AWS::VoiceID::Domain"
+identity = "Domain.Arn"
+[step.input]
+"Name" = "inventory-thin-voice-id"
+"ServerSideEncryptionConfiguration" = { "KmsKeyId" = "inventory-thin-voice-id" }

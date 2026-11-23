@@ -1,0 +1,11 @@
+format = 1
+service = "signer"
+
+[[step]]
+id = "resource"
+operation = "PutSigningProfile"
+kind = "AWS::Signer::SigningProfile"
+identity = "arn"
+[step.input]
+"profileName" = "InventoryThinSigner"
+"platformId" = "AWSLambda-SHA384-ECDSA"

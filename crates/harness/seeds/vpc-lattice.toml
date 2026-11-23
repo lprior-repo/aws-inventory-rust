@@ -1,0 +1,10 @@
+format = 1
+service = "vpc-lattice"
+
+[[step]]
+id = "resource"
+operation = "CreateService"
+kind = "AWS::VpcLattice::Service"
+identity = "arn"
+[step.input]
+"name" = "inventory-thin-vpc-lattice"

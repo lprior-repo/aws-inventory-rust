@@ -1,0 +1,10 @@
+format = 1
+service = "opensearch"
+
+[[step]]
+id = "resource"
+operation = "CreateApplication"
+kind = "AWS::OpenSearch::Application"
+identity = "arn"
+[step.input]
+"name" = "inventory-thin-opensearch"

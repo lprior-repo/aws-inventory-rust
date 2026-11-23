@@ -1,0 +1,11 @@
+format = 1
+service = "lightsail"
+
+[[step]]
+id = "keypair"
+operation = "CreateKeyPair"
+kind = "AWS::lightsail::KeyPair"
+identity = "keyPair.name"
+repeat = 2
+[step.input]
+keyPairName = "inventory-thin-ls-key-{n}"

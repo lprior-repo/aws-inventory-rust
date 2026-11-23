@@ -1,0 +1,10 @@
+format = 1
+service = "ram"
+
+[[step]]
+id = "resource"
+operation = "CreateResourceShare"
+kind = "AWS::RAM::ResourceShare"
+identity = "resourceShare.resourceShareArn"
+[step.input]
+"name" = "inventory-thin-ram"

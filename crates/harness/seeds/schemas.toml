@@ -1,0 +1,10 @@
+format = 1
+service = "schemas"
+
+[[step]]
+id = "resource"
+operation = "CreateRegistry"
+kind = "AWS::EventSchemas::Registry"
+identity = "RegistryArn"
+[step.input]
+"RegistryName" = "inventory-thin-schemas"

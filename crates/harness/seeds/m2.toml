@@ -1,0 +1,12 @@
+format = 1
+service = "m2"
+
+[[step]]
+id = "resource"
+operation = "CreateApplication"
+kind = "AWS::M2::Application"
+identity = "applicationArn"
+[step.input]
+"name" = "inventory-thin-m2"
+"engineType" = "microfocus"
+"definition" = { "content" = "{}" }

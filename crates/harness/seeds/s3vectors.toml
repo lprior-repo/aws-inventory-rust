@@ -1,0 +1,10 @@
+format = 1
+service = "s3vectors"
+
+[[step]]
+id = "resource"
+operation = "CreateVectorBucket"
+kind = "AWS::S3Vectors::VectorBucket"
+identity = "vectorBucketArn"
+[step.input]
+"vectorBucketName" = "inventory-thin-s3vectors"

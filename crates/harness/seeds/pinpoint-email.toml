@@ -1,0 +1,11 @@
+format = 1
+service = "pinpoint-email"
+
+[[step]]
+id = "identity"
+operation = "CreateEmailIdentity"
+kind = "AWS::pinpointemail::EmailIdentity"
+identity = { input = "EmailIdentity", template = "arn:{partition}:ses:{region}:{account}:identity/{value}" }
+repeat = 2
+[step.input]
+EmailIdentity = "inventory-thin-pes-identity-{n}@example.com"

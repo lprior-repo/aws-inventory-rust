@@ -1,0 +1,11 @@
+format = 1
+service = "s3tables"
+
+[[step]]
+id = "resource"
+operation = "CreateTableBucket"
+kind = "AWS::s3tables::TableBucket"
+identity = "arn"
+repeat = 2
+[step.input]
+name = "inventory-thin-s3tables-name-{n}"

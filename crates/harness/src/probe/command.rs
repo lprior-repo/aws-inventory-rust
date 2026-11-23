@@ -34,6 +34,7 @@ async fn execute(arguments: &[String]) -> Result<(), ProbeError> {
         &executor,
         &region,
         &args.endpoint,
+        &args.services,
     )
     .await?;
     tokio::fs::write(args.report, text).await?;

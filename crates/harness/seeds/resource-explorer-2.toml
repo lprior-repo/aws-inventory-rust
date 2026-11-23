@@ -1,0 +1,11 @@
+format = 1
+service = "resource-explorer-2"
+
+[[step]]
+id = "resource"
+operation = "CreateResourceExplorerSetup"
+kind = "AWS::ResourceExplorer2::ResourceExplorerSetup"
+identity = { input = "ViewName" }
+[step.input]
+"RegionList" = ["us-east-1"]
+"ViewName" = "inventory-thin-resource-explorer-2"

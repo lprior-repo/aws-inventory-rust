@@ -1,0 +1,16 @@
+format = 1
+service = "wellarchitected"
+
+[[step]]
+id = "resource"
+operation = "CreateWorkload"
+kind = "AWS::WellArchitected::Workload"
+identity = "WorkloadArn"
+[step.input]
+"WorkloadName" = "inventory-thin-wellarchitected"
+"Description" = "Inventory emulator seed"
+"Environment" = "PRODUCTION"
+"Lenses" = ["wellarchitected"]
+"ClientRequestToken" = "12345678-1234-4234-8234-123456789abc"
+"ReviewOwner" = "Inventory"
+"AwsRegions" = ["us-east-1"]

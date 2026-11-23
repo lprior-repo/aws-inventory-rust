@@ -1,0 +1,9 @@
+format = 1
+service = "securityagent"
+
+[[step]]
+id = "resource"
+operation = "CreateApplication"
+kind = "AWS::SecurityAgent::Application"
+identity = "applicationId"
+[step.input]

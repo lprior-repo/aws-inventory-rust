@@ -1,0 +1,17 @@
+format = 1
+service = "waf-regional"
+
+[[step]]
+id = "token"
+operation = "GetChangeToken"
+kind = ""
+[step.input]
+
+[[step]]
+id = "resource"
+operation = "CreateIPSet"
+kind = "AWS::WAFRegional::IPSet"
+identity = "IPSet.IPSetId"
+[step.input]
+"Name" = "inventory-thin-waf-regional"
+"ChangeToken" = { "from" = "token", "path" = "ChangeToken" }

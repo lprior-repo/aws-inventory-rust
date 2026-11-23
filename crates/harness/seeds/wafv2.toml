@@ -1,0 +1,12 @@
+format = 1
+service = "wafv2"
+
+[[step]]
+id = "resource"
+operation = "CreateRegexPatternSet"
+kind = "AWS::WAFv2::RegexPatternSet"
+identity = "Summary.ARN"
+[step.input]
+"Name" = "inventory-thin-wafv2"
+"Scope" = "REGIONAL"
+"RegularExpressionList" = [{  }]

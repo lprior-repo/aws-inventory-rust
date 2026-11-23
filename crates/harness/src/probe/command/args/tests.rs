@@ -29,6 +29,7 @@ fn given_all_probe_options_when_parsed_then_paths_and_region_are_preserved() -> 
     assert_eq!(args.report, std::path::Path::new("probe.report"));
     assert_eq!(args.endpoint, "https://127.0.0.1:443");
     assert_eq!(args.region, "us-east-1");
+    assert!(args.services.is_empty());
     Ok(())
 }
 
@@ -39,7 +40,7 @@ fn given_wrong_option_count_when_parsed_then_exact_arity_is_required() {
         assert!(matches!(
             Args::parse(&args),
             Err(ProbeError::Invalid(
-                "probe requires exactly five option-value pairs"
+                "probe requires five option-value pairs and optional service pairs"
             ))
         ));
     }
@@ -48,7 +49,7 @@ fn given_wrong_option_count_when_parsed_then_exact_arity_is_required() {
     assert!(matches!(
         Args::parse(&args),
         Err(ProbeError::Invalid(
-            "probe requires exactly five option-value pairs"
+            "probe requires five option-value pairs and optional service pairs"
         ))
     ));
 }
@@ -127,4 +128,19 @@ fn given_missing_option_when_required_then_missing_option_error_returns() {
         required(None),
         Err(ProbeError::Invalid("missing required probe option"))
     ));
+}
+
+#[test]
+fn given_repeated_services_when_parsed_then_each_selector_is_preserved() -> TestResult {
+    let mut args = arguments();
+    args.extend(["--service", "s3", "--service", "ec2"].map(str::to_owned));
+    assert_eq!(Args::parse(&args)?.services, ["s3", "ec2"]);
+    Ok(())
+}
+
+#[test]
+fn given_too_many_services_when_parsed_then_argument_bound_is_enforced() {
+    let mut args = arguments();
+    args.extend(std::iter::repeat_n("--service".to_owned(), 514));
+    assert!(Args::parse(&args).is_err());
 }

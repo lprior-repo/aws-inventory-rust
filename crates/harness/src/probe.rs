@@ -23,7 +23,9 @@ pub async fn run(
     executor: &ApiExecutor,
     region: &RegionId,
     endpoint: &str,
+    services: &[String],
 ) -> Result<String, ProbeError> {
+    validate_services(catalog, services)?;
     Probe {
         catalog,
         credentials,
@@ -31,6 +33,7 @@ pub async fn run(
         executor,
         region,
         endpoint,
+        services,
     }
     .run()
     .await
@@ -43,19 +46,21 @@ struct Probe<'a, 'catalog, C> {
     executor: &'a ApiExecutor,
     region: &'a RegionId,
     endpoint: &'a str,
+    services: &'a [String],
 }
 
 impl<C: CredentialSource> Probe<'_, '_, C> {
     async fn run(&self) -> Result<String, ProbeError> {
         let (identity, account) = self.bootstrap().await;
         let mut rows = Vec::new();
-        rows.try_reserve_exact(self.catalog.plans().len())?;
-        rows.extend(identity);
+        rows.try_reserve_exact(self.selected_count())?;
+        rows.extend(identity.filter(|row| self.selected(row.service)));
         let tasks = self
             .catalog
             .plans()
             .iter()
             .filter(|plan| !matches!(plan.purpose(), PlanPurpose::AccountIdentity { .. }))
+            .filter(|plan| self.selected(plan.service_name()))
             .map(|plan| self.row(plan, account.as_ref()));
         let rows = stream::iter(tasks)
             .buffer_unordered(8)
@@ -65,6 +70,18 @@ impl<C: CredentialSource> Probe<'_, '_, C> {
             })
             .await;
         report::render(rows)
+    }
+
+    fn selected(&self, service: &str) -> bool {
+        self.services.is_empty() || self.services.iter().any(|selected| selected == service)
+    }
+
+    fn selected_count(&self) -> usize {
+        self.catalog
+            .plans()
+            .iter()
+            .filter(|plan| self.selected(plan.service_name()))
+            .count()
     }
 
     async fn bootstrap(&self) -> (Option<Row<'_>>, Option<AccountId>) {
@@ -114,6 +131,16 @@ impl<C: CredentialSource> Probe<'_, '_, C> {
         )
         .await
     }
+}
+
+fn validate_services(catalog: &RuntimeCatalog<'_>, services: &[String]) -> Result<(), ProbeError> {
+    if services
+        .iter()
+        .any(|service| !catalog.plans().iter().any(|plan| plan.service_name() == service))
+    {
+        return Err(ProbeError::Invalid("unknown probe service"));
+    }
+    Ok(())
 }
 
 fn row<'a>(plan: &'a CallablePlan<'_>, outcome: Outcome) -> Row<'a> {

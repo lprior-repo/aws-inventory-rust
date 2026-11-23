@@ -828,6 +828,11 @@ Set `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and, when required,
 an HTTPS loopback IP origin with an explicit nonzero port. All five options are
 required. The CLI does not shell out to Python.
 
+Add repeatable `--service <name>` options to probe only those services. With no
+selectors the complete catalog remains selected. Unknown service names fail
+before any request. STS bootstrap still supplies account-bound inputs, but its
+report row appears only when STS is selected (or no filter is supplied).
+
 Every callable gets exactly one service/operation/protocol row, including identity,
 region, endpoint-discovery and tag plans. STS identity executes once before fan-out;
 its returned account ID supplies account-bound root inputs. Parent-bound plans are

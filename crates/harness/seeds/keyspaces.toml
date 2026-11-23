@@ -1,0 +1,10 @@
+format = 1
+service = "keyspaces"
+
+[[step]]
+id = "resource"
+operation = "CreateKeyspace"
+kind = "AWS::Cassandra::Keyspace"
+identity = "resourceArn"
+[step.input]
+"keyspaceName" = "inventory_thin_keyspaces"

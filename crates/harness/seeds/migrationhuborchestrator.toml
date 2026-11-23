@@ -1,0 +1,12 @@
+format = 1
+service = "migrationhuborchestrator"
+
+[[step]]
+id = "resource"
+operation = "CreateWorkflow"
+kind = "AWS::MigrationHubOrchestrator::Workflow"
+identity = "id"
+[step.input]
+"name" = "inventory-thin-migrationhuborchestrator"
+"templateId" = "inventory-thin-migrationhuborchestrator"
+"inputParameters" = { "inventory" = { "integerValue" = 1 } }

@@ -1,0 +1,18 @@
+format = 1
+service = "ssm-incidents"
+
+[[step]]
+id = "plan"
+operation = "CreateResponsePlan"
+kind = ""
+[step.input]
+name = "inventory-thin-incident-plan"
+incidentTemplate = { impact = 1, title = "Inventory seed" }
+
+[[step]]
+id = "resource"
+operation = "StartIncident"
+kind = "AWS::SSMIncidents::Incident"
+identity = "incidentRecordArn"
+[step.input]
+"responsePlanArn" = { "from" = "plan", "path" = "arn" }

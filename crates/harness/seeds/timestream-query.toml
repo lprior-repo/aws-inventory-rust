@@ -1,0 +1,15 @@
+format = 1
+service = "timestream-query"
+
+[[step]]
+id = "resource"
+operation = "CreateScheduledQuery"
+kind = "AWS::TimestreamQuery::ScheduledQuery"
+identity = "Arn"
+[step.input]
+"Name" = "inventory-thin-timestream-query"
+"QueryString" = "SELECT 1"
+"ScheduleConfiguration" = { "ScheduleExpression" = "rate(1 hour)" }
+"NotificationConfiguration" = { "SnsConfiguration" = { "TopicArn" = "arn:aws:sns:us-east-1:000000000000:inventory-thin" } }
+"ScheduledQueryExecutionRoleArn" = "arn:aws:iam::000000000000:role/inventory-thin"
+"ErrorReportConfiguration" = { "S3Configuration" = { "BucketName" = "inventory-thin-timestream-query" } }
