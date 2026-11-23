@@ -266,8 +266,10 @@ Default recipes are `crates/harness/seeds`; override with `--seeds`. Services
 without recipes, such as STS, remain collector selectors but add no seed file.
 `--collector` overrides the sibling `aws-inventory` executable. The command
 refuses non-empty work directories, retains stage logs/oracle/matrix in the work
-directory, checks seeded kinds' exact identities and counts, and requires zero
-resource writes on the repeat sweep. No unseeded kind is claimed verified.
+directory, takes a pre-seed `baseline` sweep and retains `baseline.tsv`. For
+callable seeded kinds, `verify-counts` compares full account/region/kind/id
+additions (`after - before`) with the oracle, and requires zero resource writes
+on the repeat sweep. No unseeded kind is claimed verified.
 
 Stages print `stage NAME MILLISECONDS ok|failed`. Collection prints only known
 numeric summary fields and names of persisted failed operations, never an
@@ -288,6 +290,20 @@ This larger catalog can report unsupported/failed EC2 operations; those are
 reported honestly rather than silently narrowing the selection. E5.1 graph
 verification and A6.1 cross-check are not implemented in this base and are not
 reported as passed stages; the collector still projects to the owned graph.
+
+Oracle kinds without any callable resource emission in the compiled catalog are
+printed as `not-verified: catalog-deferred (<reviewed reason>)`, not as count
+mismatches. The classification includes additional emissions and classified
+kind variants, and joins seed kind/service metadata to the compiled service-level
+overlay deferrals without inventing a kind-to-operation mapping.
+
+**Open user decision — CloudWatch alarms:** both `PutMetricAlarm` seeds are
+accepted, but `DescribeAlarms` remains intentionally deferred. Its reviewed
+reason requires complete handling of MetricAlarms/CompositeAlarms/LogAlarms and
+a safe projection or evaluated-value decision for StateReason/StateReasonData;
+hash exclusions do not remove stored content. This patch does not change that
+safety boundary. CloudWatch alarm collection is **not verified**, even when the
+command's available count/repeat gates pass.
 
 ### A7.1 evidence (2026-11-23)
 

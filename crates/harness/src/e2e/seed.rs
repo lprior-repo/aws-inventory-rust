@@ -28,7 +28,7 @@ pub(super) async fn run(args: &RunArgs, stack: &Stack) -> Result<(), HarnessErro
         .map_err(|error| HarnessError::invalid(format!("seed: {error}")))
 }
 
-fn selected_recipes(args: &RunArgs) -> Vec<String> {
+pub(super) fn selected_recipes(args: &RunArgs) -> Vec<String> {
     args.services
         .iter()
         .map(|selector| {

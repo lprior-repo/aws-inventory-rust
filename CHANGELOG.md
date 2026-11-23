@@ -17,6 +17,11 @@
 - The shared collector runner accepts a caller-supplied deadline for long-running
   benchmarks while ordinary E2E collection retains its 300-second deadline.
   Both paths use the same outcome classifier and kill/reap timed-out children.
+- E2E count verification captures a pre-seed inventory and compares full
+  account/region/kind/id additions, not default-resource exceptions or count
+  subtraction. Oracle kinds with no compiled callable resource emission are
+  explicitly catalog-deferred with reviewed reasons; callable kinds still
+  require exact identities, with up to five differing identities on failure.
 
 - The harness `probe` command reports every catalog enumeration in stable order,
   skips parent-bound children, and calls only the first page through the sweep's

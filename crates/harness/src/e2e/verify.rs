@@ -1,7 +1,10 @@
+mod coverage;
 mod failures;
+mod snapshot;
 use crate::HarnessError;
+pub use coverage::Coverage;
 pub use failures::failed_operations;
-use sqlx::{Connection, Row, postgres::PgConnection};
+pub use snapshot::capture_baseline;
 use std::{
     collections::{BTreeMap, BTreeSet},
     io::Read,
@@ -9,6 +12,8 @@ use std::{
 };
 
 type Keys = BTreeMap<String, BTreeSet<(String, String, String)>>;
+
+pub struct Baseline(Keys);
 
 pub fn read_text(path: &Path) -> Result<String, HarnessError> {
     let mut text = String::new();
@@ -73,34 +78,32 @@ pub fn outcome(summary: &str) -> String {
     .join(" ")
 }
 
-pub async fn counts(database: &str, oracle: &Path) -> Result<(), HarnessError> {
-    let expected = oracle_keys(&read_text(oracle)?)?;
-    let mut connection = PgConnection::connect(database).await?;
-    let result = compare_database(&mut connection, &expected).await;
-    let closed = connection.close().await.map_err(HarnessError::from);
-    result.and(closed)
-}
-async fn compare_database(
-    connection: &mut PgConnection,
-    expected: &Keys,
+pub async fn counts(
+    database: &str,
+    oracle: &Path,
+    baseline: &Baseline,
+    coverage: &Coverage,
 ) -> Result<(), HarnessError> {
+    let expected = verified_keys(oracle_keys(&read_text(oracle)?)?, coverage)?;
     let kinds: Vec<_> = expected.keys().map(String::as_str).collect();
-    let rows = sqlx::query("SELECT kind,account,region,id FROM inventory.resources WHERE kind=ANY($1) ORDER BY kind,account,region,id LIMIT 100001")
-        .bind(kinds).fetch_all(connection).await?;
-    if rows.len() > 100_000 {
-        return Err(HarnessError::invalid(
-            "count verification exceeds 100000 resources",
-        ));
-    }
-    let actual = rows.into_iter().try_fold(Keys::new(), |mut keys, row| {
-        keys.entry(row.try_get("kind")?).or_default().insert((
-            row.try_get("account")?,
-            row.try_get("region")?,
-            row.try_get("id")?,
-        ));
-        Ok::<_, HarnessError>(keys)
-    })?;
-    compare(expected, &actual)
+    let actual = snapshot::read(database, Some(&kinds)).await?;
+    compare(&expected, &snapshot::added(actual, baseline))
+}
+
+fn verified_keys(expected: Keys, coverage: &Coverage) -> Result<Keys, HarnessError> {
+    expected
+        .into_iter()
+        .try_fold(Keys::new(), |mut verified, (kind, identities)| {
+            if let Some(reason) = coverage.reason(&kind)? {
+                println!(
+                    "count {kind} seeded={} not-verified: catalog-deferred ({reason})",
+                    identities.len()
+                );
+            } else {
+                verified.insert(kind, identities);
+            }
+            Ok(verified)
+        })
 }
 
 fn oracle_keys(text: &str) -> Result<Keys, HarnessError> {
@@ -135,15 +138,31 @@ fn oracle_row(mut keys: Keys, line: &str) -> Result<Keys, HarnessError> {
     Ok(keys)
 }
 
+fn identity_mismatch(
+    kind: &str,
+    expected: &BTreeSet<(String, String, String)>,
+    actual: Option<&BTreeSet<(String, String, String)>>,
+) -> HarnessError {
+    let empty = BTreeSet::new();
+    let actual = actual.map_or(&empty, |identities| identities);
+    let differences = expected
+        .symmetric_difference(actual)
+        .take(5)
+        .map(|(account, region, id)| format!("{account}/{region}/{id}"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    HarnessError::invalid(format!(
+        "seeded identities/counts differ for {kind}: {differences}"
+    ))
+}
+
 fn compare(expected: &Keys, actual: &Keys) -> Result<(), HarnessError> {
     expected.iter().try_for_each(|(kind, keys)| {
         let found = actual.get(kind);
         let count = found.map_or(0, BTreeSet::len);
         println!("count {kind} expected={} actual={count}", keys.len());
         if found != Some(keys) {
-            return Err(HarnessError::invalid(format!(
-                "seeded identities/counts differ for {kind}"
-            )));
+            return Err(identity_mismatch(kind, keys, found));
         }
         Ok(())
     })

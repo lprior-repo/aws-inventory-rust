@@ -4,6 +4,7 @@ use std::time::Instant;
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub(super) enum Stage {
+    Baseline,
     Seed,
     Sweep,
     Counts,
@@ -13,6 +14,7 @@ pub(super) enum Stage {
 impl Stage {
     pub(super) fn name(self) -> &'static str {
         match self {
+            Self::Baseline => "baseline",
             Self::Seed => "seed",
             Self::Sweep => "sweep",
             Self::Counts => "verify-counts",
@@ -44,17 +46,23 @@ pub(super) async fn drive(mut session: impl Session) -> Result<(), HarnessError>
 }
 
 async fn stages(session: &mut impl Session) -> Result<(), HarnessError> {
-    futures_util::stream::iter([Stage::Seed, Stage::Sweep, Stage::Counts, Stage::Resweep])
-        .map(Ok::<_, HarnessError>)
-        .try_fold(session, |session, stage| async move {
-            let started = Instant::now();
-            let result = session.stage(stage).await;
-            report(stage.name(), started, &result);
-            result?;
-            Ok(session)
-        })
-        .await
-        .map(|_| ())
+    futures_util::stream::iter([
+        Stage::Baseline,
+        Stage::Seed,
+        Stage::Sweep,
+        Stage::Counts,
+        Stage::Resweep,
+    ])
+    .map(Ok::<_, HarnessError>)
+    .try_fold(session, |session, stage| async move {
+        let started = Instant::now();
+        let result = session.stage(stage).await;
+        report(stage.name(), started, &result);
+        result?;
+        Ok(session)
+    })
+    .await
+    .map(|_| ())
 }
 
 pub(super) fn report<T>(name: &str, started: Instant, result: &Result<T, HarnessError>) {

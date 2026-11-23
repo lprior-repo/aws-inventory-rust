@@ -41,25 +41,17 @@ struct StubSession {
     database: TestDatabase,
     children: [StubChild; 2],
     fail: bool,
+    baseline: Option<verify::Baseline>,
 }
 
 impl Session for StubSession {
     async fn stage(&mut self, stage: Stage) -> Result<(), HarnessError> {
         event(&self.root, stage.name())?;
         match stage {
+            Stage::Baseline => self.baseline().await,
             Stage::Seed => seed_database(self.database.url(), &self.root).await,
-            Stage::Counts => {
-                verify::counts(self.database.url(), &self.root.join("oracle.tsv")).await
-            }
-            Stage::Sweep | Stage::Resweep => {
-                let mut command = tokio::process::Command::new("sh");
-                let code = if self.fail { "9" } else { "0" };
-                command.args(["-c", "printf 'resource_writes_scope=invocation resource_writes=0 rows=1 complete=1 partial=0 unsupported=0 failed=0 work_remaining=0 graph_pending=0\\n'; exit \"$1\"", "stub", code]);
-                let summary =
-                    collector::execute(command, &self.root.join(format!("{}.log", stage.name())))
-                        .await?;
-                verify::zero(&summary, "resource_writes")
-            }
+            Stage::Counts => self.counts().await,
+            Stage::Sweep | Stage::Resweep => stub_sweep(&self.root, stage, self.fail).await,
         }
     }
     async fn finish(mut self, _interrupted: bool) -> Result<(), HarnessError> {
@@ -67,6 +59,46 @@ impl Session for StubSession {
         self.children.iter_mut().try_for_each(StubChild::stop)?;
         self.database.finish().await
     }
+}
+
+impl StubSession {
+    async fn baseline(&mut self) -> Result<(), HarnessError> {
+        let mut connection = PgConnection::connect(self.database.url()).await?;
+        sqlx::raw_sql("CREATE SCHEMA inventory; CREATE TABLE inventory.resources(kind text,account text,region text,id text); INSERT INTO inventory.resources VALUES('AWS::EC2::VPC','a','r','implicit')")
+            .execute(&mut connection).await?;
+        connection.close().await?;
+        self.baseline = Some(
+            verify::capture_baseline(self.database.url(), &self.root.join("baseline.tsv")).await?,
+        );
+        Ok(())
+    }
+
+    async fn counts(&self) -> Result<(), HarnessError> {
+        let coverage = verify::Coverage::load(
+            &workspace_root().join("catalog/aws-api.catalog"),
+            &workspace_root().join("crates/harness/seeds"),
+            &["ec2".into()],
+        )?;
+        let baseline = self
+            .baseline
+            .as_ref()
+            .ok_or_else(|| HarnessError::invalid("test baseline missing"))?;
+        verify::counts(
+            self.database.url(),
+            &self.root.join("oracle.tsv"),
+            baseline,
+            &coverage,
+        )
+        .await
+    }
+}
+
+async fn stub_sweep(root: &Path, stage: Stage, fail: bool) -> Result<(), HarnessError> {
+    let mut command = tokio::process::Command::new("sh");
+    let code = if fail { "9" } else { "0" };
+    command.args(["-c", "printf 'resource_writes_scope=invocation resource_writes=0 rows=1 complete=1 partial=0 unsupported=0 failed=0 work_remaining=0 graph_pending=0\\n'; exit \"$1\"", "stub", code]);
+    let summary = collector::execute(command, &root.join(format!("{}.log", stage.name()))).await?;
+    verify::zero(&summary, "resource_writes")
 }
 
 fn event(root: &Path, value: &str) -> Result<(), HarnessError> {
@@ -82,9 +114,14 @@ fn event(root: &Path, value: &str) -> Result<(), HarnessError> {
 
 async fn seed_database(database: &str, root: &Path) -> Result<(), HarnessError> {
     let mut connection = PgConnection::connect(database).await?;
-    sqlx::raw_sql("CREATE SCHEMA inventory; CREATE TABLE inventory.resources(kind text,account text,region text,id text); INSERT INTO inventory.resources VALUES('kind','a','r','seeded')").execute(&mut connection).await?;
+    sqlx::query("INSERT INTO inventory.resources VALUES('AWS::EC2::VPC','a','r','seeded')")
+        .execute(&mut connection)
+        .await?;
     connection.close().await?;
-    std::fs::write(root.join("oracle.tsv"), "resource\tkind\ta\tr\tseeded\n")?;
+    std::fs::write(
+        root.join("oracle.tsv"),
+        "resource\tAWS::EC2::VPC\ta\tr\tseeded\n",
+    )?;
     Ok(())
 }
 
@@ -100,6 +137,7 @@ async fn workflow_case(fail: bool) -> TestResult {
         database,
         children,
         fail,
+        baseline: None,
     })
     .await;
     assert_eq!(result.is_err(), fail);
@@ -111,9 +149,9 @@ async fn workflow_case(fail: bool) -> TestResult {
 
 fn assert_events(root: &Path, fail: bool) -> TestResult {
     let expected = if fail {
-        "seed\nsweep\nstop\n"
+        "baseline\nseed\nsweep\nstop\n"
     } else {
-        "seed\nsweep\nverify-counts\nresweep\nstop\n"
+        "baseline\nseed\nsweep\nverify-counts\nresweep\nstop\n"
     };
     assert_eq!(std::fs::read_to_string(root.join("events"))?, expected);
     Ok(())

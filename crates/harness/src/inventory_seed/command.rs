@@ -1,5 +1,5 @@
 mod args;
-mod directory;
+pub(crate) mod directory;
 
 use super::SeedError;
 pub use args::SeedRunArgs;

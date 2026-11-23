@@ -21,6 +21,7 @@ struct Run {
     args: RunArgs,
     stack: Stack,
     database: TestDatabase,
+    baseline: Option<verify::Baseline>,
 }
 
 pub async fn execute(args: RunArgs, admin: &str) -> Result<(), HarnessError> {
@@ -50,16 +51,16 @@ async fn start(args: RunArgs, admin: &str) -> Result<Run, HarnessError> {
         args,
         stack,
         database,
+        baseline: None,
     })
 }
 
 impl Session for Run {
     async fn stage(&mut self, stage: Stage) -> Result<(), HarnessError> {
         match stage {
+            Stage::Baseline => self.baseline().await,
             Stage::Seed => seed::run(&self.args, &self.stack).await,
-            Stage::Counts => {
-                verify::counts(self.database.url(), &self.args.work.join("oracle.tsv")).await
-            }
+            Stage::Counts => self.verify_counts().await,
             Stage::Sweep | Stage::Resweep => self.sweep(stage).await,
         }
     }
@@ -79,6 +80,34 @@ impl Session for Run {
 }
 
 impl Run {
+    async fn baseline(&mut self) -> Result<(), HarnessError> {
+        self.sweep(Stage::Baseline).await?;
+        self.baseline = Some(
+            verify::capture_baseline(self.database.url(), &self.args.work.join("baseline.tsv"))
+                .await?,
+        );
+        Ok(())
+    }
+
+    async fn verify_counts(&self) -> Result<(), HarnessError> {
+        let baseline = self
+            .baseline
+            .as_ref()
+            .ok_or_else(|| HarnessError::invalid("pre-seed baseline missing"))?;
+        let coverage = verify::Coverage::load(
+            &self.args.catalog,
+            &self.args.seeds,
+            &seed::selected_recipes(&self.args),
+        )?;
+        verify::counts(
+            self.database.url(),
+            &self.args.work.join("oracle.tsv"),
+            baseline,
+            &coverage,
+        )
+        .await
+    }
+
     async fn sweep(&self, stage: Stage) -> Result<(), HarnessError> {
         let summary = collector::sweep(
             &self.stack,

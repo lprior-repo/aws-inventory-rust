@@ -54,7 +54,7 @@ fn append((mut oracle, mut matrix): Rows, (resources, outcomes): Rows) -> Result
     Ok((oracle, matrix))
 }
 
-fn files(directory: &Path) -> Result<Vec<PathBuf>, SeedError> {
+pub(crate) fn files(directory: &Path) -> Result<Vec<PathBuf>, SeedError> {
     let entries = std::fs::read_dir(directory)?
         .take(65)
         .collect::<Result<Vec<_>, _>>()?;
@@ -76,7 +76,7 @@ fn files(directory: &Path) -> Result<Vec<PathBuf>, SeedError> {
     Ok(paths)
 }
 
-fn select(files: Vec<PathBuf>, services: &[String]) -> Result<Vec<PathBuf>, SeedError> {
+pub(crate) fn select(files: Vec<PathBuf>, services: &[String]) -> Result<Vec<PathBuf>, SeedError> {
     let selected: Vec<_> = files
         .into_iter()
         .filter(|path| services.is_empty() || services.iter().any(|service| matches(path, service)))
@@ -94,7 +94,7 @@ fn matches(path: &Path, service: &str) -> bool {
     path.file_stem().is_some_and(|stem| stem == service)
 }
 
-pub(super) fn read_bounded(path: &Path, maximum: u64) -> Result<Vec<u8>, SeedError> {
+pub(crate) fn read_bounded(path: &Path, maximum: u64) -> Result<Vec<u8>, SeedError> {
     let limit = maximum
         .checked_add(1)
         .ok_or(SeedError::Invalid("seed read limit overflow"))?;
