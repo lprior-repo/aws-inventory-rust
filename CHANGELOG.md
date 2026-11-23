@@ -2,6 +2,12 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- The sweep runtime now lives in `inventory-sweep`; CLI collection and cadence
+  scheduling call its public API. Credential resolution uses `CredentialSource`
+  without an AWS SDK dependency, with the profile adapter enabled by
+  `inventory-aws/sweep-credentials`. Bounded IAM trust summarization is shared
+  from `inventory-core` under its existing `legacy` feature.
+
 - Runtime catalog binding decoders live in `decode/plans/bindings.rs`, with
   separate source decoders and unchanged wire tags, limits and rejection order.
   The parent plan decoder is now below the 300-line source limit.

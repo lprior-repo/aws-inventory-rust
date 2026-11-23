@@ -1,11 +1,9 @@
-use crate::{
-    cli::SweepArgs,
-    sweep_runtime::{self, SweepConfig, SweepSummary},
-};
+use crate::cli::SweepArgs;
 use anyhow::{Context, Result};
 use inventory_aws::model_credentials::ProfileCredentials;
 use inventory_core::catalog::runtime::RuntimeCatalog;
 use inventory_engine::inventory::{BinaryStore, SchemaRegistry, run_projection};
+use inventory_sweep::{SweepConfig, SweepSummary};
 use std::{
     fs::File,
     io::{Read, Write},
@@ -42,14 +40,14 @@ async fn collect(options: &SweepArgs) -> Result<(BinaryStore, SweepSummary)> {
     let store = open_store(options, &catalog).await?;
     let credentials =
         ProfileCredentials::load(options.profile.as_deref(), options.region.as_deref()).await?;
-    let summary = sweep_runtime::run(&catalog, &store, config(options), &credentials).await?;
+    let summary = inventory_sweep::run(&catalog, &store, config(options), &credentials).await?;
     Ok((store, summary))
 }
 
 /// Exit 4: a time-bounded slice ended with work queued; rerun with `--resume`.
 /// It outranks every other code because the sweep is not finished at all.
 fn exit_code(
-    outcomes: &sweep_runtime::ScopeOutcomes,
+    outcomes: &inventory_sweep::ScopeOutcomes,
     work_remaining: u64,
     unattributed_resources: u64,
     drain: bool,
@@ -154,8 +152,9 @@ fn print_summary(summary: SweepSummary, unattributed_resources: u64) -> Result<(
 
 #[cfg(test)]
 mod tests {
-    use super::{exit_code, sweep_runtime::ScopeOutcomes};
+    use super::exit_code;
     use inventory_engine::inventory::ProjectionState;
+    use inventory_sweep::ScopeOutcomes;
     use std::process::ExitCode;
 
     #[test]

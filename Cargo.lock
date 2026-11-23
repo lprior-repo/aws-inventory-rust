@@ -261,6 +261,7 @@ dependencies = [
  "inventory-core",
  "inventory-engine",
  "inventory-harness",
+ "inventory-sweep",
  "minicbor",
  "proptest",
  "rcgen",
@@ -2576,6 +2577,7 @@ dependencies = [
  "futures-util",
  "inventory-core",
  "inventory-engine",
+ "inventory-sweep",
  "percent-encoding",
  "proptest",
  "serde",
@@ -2593,6 +2595,7 @@ version = "0.6.0"
 dependencies = [
  "blake3",
  "minicbor",
+ "percent-encoding",
  "proptest",
  "regex",
  "serde",
@@ -2659,6 +2662,29 @@ dependencies = [
  "toml",
  "uuid",
  "zip",
+]
+
+[[package]]
+name = "inventory-sweep"
+version = "0.6.0"
+dependencies = [
+ "aws-wire",
+ "bytes",
+ "catalog-tool",
+ "futures-util",
+ "http",
+ "inventory-core",
+ "inventory-engine",
+ "minicbor",
+ "proptest",
+ "serde_json",
+ "sha2",
+ "sqlx",
+ "tempfile",
+ "thiserror",
+ "tokio",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]

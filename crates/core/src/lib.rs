@@ -2,6 +2,8 @@
 #![deny(unused_must_use)]
 
 pub mod catalog;
+#[cfg(feature = "legacy")]
+pub mod iam_trust;
 pub mod inventory;
 pub mod record;
 
