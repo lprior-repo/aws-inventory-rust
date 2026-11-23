@@ -16,6 +16,25 @@ pub(in crate::inventory_seed) fn locate<'a>(
     })
 }
 
+pub(super) fn prepare<'a>(
+    catalog: Catalog<'a>,
+    scenario: &SeedScenario,
+) -> Result<Vec<SeedOperation<'a>>, SeedError> {
+    use std::collections::{BTreeMap, btree_map::Entry};
+    let mut cache = BTreeMap::new();
+    scenario
+        .steps()
+        .iter()
+        .map(|step| {
+            let key = (step.service.as_str(), step.operation.as_str());
+            match cache.entry(key) {
+                Entry::Occupied(entry) => Ok(*entry.get()),
+                Entry::Vacant(entry) => Ok(*entry.insert(locate(catalog, key.0, key.1)?)),
+            }
+        })
+        .collect()
+}
+
 fn find_operation<'a>(service: Service<'a>, name: &str) -> Result<Operation<'a>, SeedError> {
     service
         .operations()?

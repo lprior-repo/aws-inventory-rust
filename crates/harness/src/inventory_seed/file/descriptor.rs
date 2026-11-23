@@ -7,6 +7,7 @@ type Table = Map<String, toml::Value>;
 const STEP_KEYS: &[&str] = &[
     "id",
     "operation",
+    "service",
     "kind",
     "identity",
     "repeat",
@@ -24,8 +25,9 @@ pub(super) struct Document<'a> {
 pub(super) struct RawStep<'a> {
     pub id: &'a str,
     pub operation: &'a str,
+    pub service: Option<&'a str>,
     pub kind: &'a str,
-    pub identity: Option<&'a str>,
+    pub identity: Option<&'a toml::Value>,
     pub scope: SeedScope,
     pub repeat: u16,
     pub inputs: &'a Table,
@@ -68,7 +70,7 @@ impl<'a> RawStep<'a> {
         let step = table(value)?;
         keys(step, STEP_KEYS)?;
         let kind = field(step, "kind")?;
-        let identity = optional_field(step, "identity")?;
+        let identity = step.get("identity");
         if kind.is_empty() != identity.is_none() {
             return Err(SeedError::Invalid(
                 "seed resource requires identity; auxiliary step cannot declare it",
@@ -77,6 +79,7 @@ impl<'a> RawStep<'a> {
         Ok(Self {
             id: field(step, "id")?,
             operation: field(step, "operation")?,
+            service: optional_field(step, "service")?,
             kind,
             identity,
             repeat: repeat(step)?,

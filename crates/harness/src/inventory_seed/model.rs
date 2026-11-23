@@ -86,10 +86,11 @@ impl<'a> SeedModels<'a> {
         let caller = locate(catalog, "sts", "GetCallerIdentity")?;
         let caller_account = caller_path(caller, "Account")?;
         let caller_arn = caller_path(caller, "Arn")?;
+        let operations = operation::prepare(catalog, scenario)?;
         let steps = scenario
             .steps()
             .iter()
-            .map(|step| prepare_step(catalog, scenario, step))
+            .map(|step| prepare_step(&operations, step))
             .collect::<Result<Vec<_>, _>>()?;
         let relationships = scenario
             .relationships()
@@ -115,13 +116,14 @@ fn caller_path(caller: SeedOperation<'_>, field: &str) -> Result<Vec<Selector>, 
 }
 
 fn prepare_step<'a>(
-    catalog: Catalog<'a>,
-    scenario: &SeedScenario,
+    operations: &[SeedOperation<'a>],
     step: &SeedStep,
 ) -> Result<PreparedStep<'a>, SeedError> {
-    let operation = locate(catalog, &step.service, &step.operation)?;
+    let operation = *operations
+        .get(usize::from(step.id.0))
+        .ok_or(SeedError::Invalid("seed prepared operation is missing"))?;
     let resource = identity::resource(operation, step)?;
-    let (inputs, checks) = step_parts(catalog, scenario, operation, step)?;
+    let (inputs, checks) = step_parts(operations, operation, step)?;
     Ok(PreparedStep {
         id: step.id,
         operation,
@@ -134,15 +136,14 @@ fn prepare_step<'a>(
 type StepParts = (Vec<PreparedInput>, Vec<PreparedCheck>);
 
 fn step_parts<'a>(
-    catalog: Catalog<'a>,
-    scenario: &SeedScenario,
+    operations: &[SeedOperation<'a>],
     operation: SeedOperation<'a>,
     step: &SeedStep,
 ) -> Result<StepParts, SeedError> {
     let inputs = step
         .inputs
         .iter()
-        .map(|input| prepare_input(catalog, scenario, operation, &input.field, &input.value))
+        .map(|input| prepare_input(operations, operation, &input.field, &input.value))
         .collect::<Result<Vec<_>, _>>()?;
     let checks = step
         .response_checks
@@ -153,28 +154,24 @@ fn step_parts<'a>(
 }
 
 fn prepare_input<'a>(
-    catalog: Catalog<'a>,
-    scenario: &SeedScenario,
+    operations: &[SeedOperation<'a>],
     operation: SeedOperation<'a>,
     field: &FieldPath,
     value: &SeedInputValue,
 ) -> Result<PreparedInput, SeedError> {
     let path = modeled_path(operation.service, operation.operation.input()?, field)?;
-    let value = prepare_value(catalog, scenario, operation, field, value)?;
+    let value = prepare_value(operations, operation, field, value)?;
     Ok(PreparedInput { path, value })
 }
 
 fn previous_output(
-    catalog: Catalog<'_>,
-    scenario: &SeedScenario,
+    operations: &[SeedOperation<'_>],
     step: StepId,
     path: &FieldPath,
 ) -> Result<PreparedInputValue, SeedError> {
-    let source = scenario
-        .steps()
+    let operation = operations
         .get(usize::from(step.0))
         .ok_or(SeedError::Invalid("seed binding source is missing"))?;
-    let operation = locate(catalog, &source.service, &source.operation)?;
     let path = output_path(operation.service, operation.operation.output()?, path)?;
     Ok(PreparedInputValue::PreviousOutput { step, path })
 }

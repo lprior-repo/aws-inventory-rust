@@ -11,6 +11,8 @@ pub enum SeedError {
     Invalid(&'static str),
     #[error("emulator seed error: {0}")]
     Message(String),
+    #[error("emulator rejected seed: {code}: {message}")]
+    Rejected { code: String, message: String },
     #[error("emulator seed file could not be read")]
     Io(#[from] std::io::Error),
     #[error(transparent)]

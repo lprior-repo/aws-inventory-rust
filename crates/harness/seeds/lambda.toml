@@ -1,0 +1,22 @@
+format = 1
+service = "lambda"
+
+[[step]]
+id = "profile"
+service = "signer"
+operation = "PutSigningProfile"
+kind = "AWS::Signer::SigningProfile"
+identity = "arn"
+repeat = 2
+[step.input]
+profileName = "inventory_thin_profile_{n}"
+platformId = "AWSLambda-SHA384-ECDSA"
+
+[[step]]
+id = "config"
+operation = "CreateCodeSigningConfig"
+kind = "AWS::Lambda::CodeSigningConfig"
+identity = "CodeSigningConfig.CodeSigningConfigArn"
+repeat = 2
+[step.input]
+"AllowedPublishers.SigningProfileVersionArns" = [{ from = "profile", path = "profileVersionArn" }]

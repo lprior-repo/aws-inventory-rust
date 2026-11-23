@@ -14,6 +14,26 @@ pub(super) fn convert(document: &Document<'_>) -> Result<SeedScenario, SeedError
     SeedScenario::with_relationships(steps, relationships(document, &bindings)?)
 }
 
+pub(super) fn labels(document: &Document<'_>) -> Result<Vec<String>, SeedError> {
+    instances(document)
+        .iter()
+        .map(|(position, index)| {
+            let raw = document
+                .steps
+                .get(*position)
+                .ok_or(SeedError::Invalid("seed label step is missing"))?;
+            let index = index
+                .checked_add(1)
+                .ok_or(SeedError::Invalid("seed label overflow"))?;
+            Ok(if raw.repeat == 1 {
+                raw.id.to_owned()
+            } else {
+                format!("{}[{index}]", raw.id)
+            })
+        })
+        .collect()
+}
+
 fn steps(
     document: &Document<'_>,
     instances: &[(usize, u16)],

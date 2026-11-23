@@ -16,8 +16,7 @@ pub(in crate::inventory_seed) struct PreparedTemplate {
 }
 
 pub(super) fn prepare(
-    catalog: Catalog<'_>,
-    scenario: &SeedScenario,
+    operations: &[SeedOperation<'_>],
     service: Service<'_>,
     target: Target,
     template: &SeedTemplate,
@@ -26,7 +25,7 @@ pub(super) fn prepare(
     let bindings = template
         .bindings
         .iter()
-        .map(|binding| binding_plan(catalog, scenario, service, target, binding))
+        .map(|binding| binding_plan(operations, service, target, binding))
         .collect::<Result<Vec<_>, _>>()?;
     Ok(PreparedInputValue::Template(PreparedTemplate {
         value,
@@ -35,15 +34,14 @@ pub(super) fn prepare(
 }
 
 fn binding_plan(
-    catalog: Catalog<'_>,
-    scenario: &SeedScenario,
+    operations: &[SeedOperation<'_>],
     service: Service<'_>,
     target: Target,
     binding: &SeedNestedBinding,
 ) -> Result<PreparedNestedBinding, SeedError> {
     let destination = destination(service, target, &binding.destination)?;
     let PreparedInputValue::PreviousOutput { step, path } =
-        previous_output(catalog, scenario, binding.step, &binding.path)?
+        previous_output(operations, binding.step, &binding.path)?
     else {
         return Err(SeedError::Invalid(
             "nested seed binding is not an output reference",
