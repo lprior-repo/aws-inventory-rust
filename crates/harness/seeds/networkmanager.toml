@@ -1,0 +1,9 @@
+format = 1
+service = "networkmanager"
+
+[[step]]
+id = "resource"
+operation = "CreateGlobalNetwork"
+kind = "AWS::NetworkManager::GlobalNetwork"
+identity = "GlobalNetwork.GlobalNetworkArn"
+[step.input]
