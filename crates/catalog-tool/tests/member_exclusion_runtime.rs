@@ -61,6 +61,40 @@ fn given_more_than_eight_exclusions_when_checking_then_policy_is_bounded() -> Te
     Ok(())
 }
 
+#[test]
+fn given_reused_output_shape_when_excluding_its_member_then_all_sites_are_detected() -> TestResult {
+    let mut model = support::model()?;
+    let members = model
+        .pointer_mut("/shapes/n#Output/members")
+        .and_then(serde_json::Value::as_object_mut)
+        .ok_or("missing output")?;
+    members.insert("Other".into(), serde_json::json!({"target":"n#Thing"}));
+    let error = support::checked_model(&["Items.Secret"], &model)
+        .err()
+        .ok_or("ambiguous exclusion accepted")?;
+    assert!(
+        error.to_string().contains("multiple output sites"),
+        "{error}"
+    );
+    Ok(())
+}
+
+#[test]
+fn given_union_variant_when_excluding_it_then_policy_rejects_decode_failure() -> TestResult {
+    let mut model = support::model()?;
+    let shape = model
+        .pointer_mut("/shapes/n#Attributes")
+        .ok_or("missing shape")?;
+    *shape = serde_json::json!({
+        "type":"union","members":{"Hidden":{"target":"smithy.api#String"}}
+    });
+    let error = support::checked_model(&["Items.Attributes.Hidden"], &model)
+        .err()
+        .ok_or("union exclusion accepted")?;
+    assert!(error.to_string().contains("union parent"), "{error}");
+    Ok(())
+}
+
 fn field(id: u32) -> TestResult<Key> {
     Ok(Key::Field(FieldId::new(id)?))
 }

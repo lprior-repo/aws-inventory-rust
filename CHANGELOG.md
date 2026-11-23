@@ -20,8 +20,11 @@
 - Reviewed per-operation response-member omissions now drop sensitive modeled
   values during decoding, before records, projections or persistence. This
   enables IAM instance-profile discovery/detail/role expansion, Lambda function
-  discovery/configuration/aliases, and SNS platform-application metadata without
-  retaining trust documents, function environment/commands or platform credentials.
+  discovery/configuration/aliases, and SNS platform-application metadata. These
+  plans omit embedded profile-role trust documents, function environment/commands
+  and platform credentials. Pre-existing IAM `ListRoles`/`GetRole` trust-summary
+  projections are unchanged and are not covered by that omission guarantee.
+  Validation rejects ambiguous terminal names and union variants.
   See `docs/e2e/SANITIZED_RESPONSE_MEMBERS.md` for bounds and compatibility.
 - E2E count verification now rejects an entirely catalog-deferred seed oracle.
   Every explicit E2E service selector must have a seed recipe; bootstrap calls

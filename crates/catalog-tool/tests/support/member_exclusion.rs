@@ -32,16 +32,32 @@ fn policy(paths: &[&str]) -> TestResult<overlay::ServiceOverlay> {
     )?)
 }
 
-fn source() -> TestResult<tempfile::TempDir> {
+fn source(model: &str) -> TestResult<tempfile::TempDir> {
     let root = tempfile::tempdir()?;
     let directory = root.path().join("models/things/service/2020-01-01");
     fs::create_dir_all(&directory)?;
-    fs::write(directory.join("model.json"), MODEL)?;
+    fs::write(directory.join("model.json"), model)?;
     Ok(root)
 }
 
 pub fn checked(paths: &[&str]) -> TestResult<overlay::CheckedOverlays> {
-    let source = source()?;
+    let source = source(MODEL)?;
+    Ok(overlay::check_policies(
+        source.path(),
+        &[policy(paths)?],
+        &DenyList::builtin(),
+    )?)
+}
+
+pub fn model() -> TestResult<serde_json::Value> {
+    Ok(serde_json::from_str(MODEL)?)
+}
+
+pub fn checked_model(
+    paths: &[&str],
+    model: &serde_json::Value,
+) -> TestResult<overlay::CheckedOverlays> {
+    let source = source(&serde_json::to_string(model)?)?;
     Ok(overlay::check_policies(
         source.path(),
         &[policy(paths)?],
@@ -50,7 +66,7 @@ pub fn checked(paths: &[&str]) -> TestResult<overlay::CheckedOverlays> {
 }
 
 pub fn compiled(paths: &[&str]) -> TestResult<Vec<u8>> {
-    let source = source()?;
+    let source = source(MODEL)?;
     let checked = overlay::check_policies(source.path(), &[policy(paths)?], &DenyList::builtin())?;
     let base = smithy::build_catalog(
         source.path(),

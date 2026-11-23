@@ -10,11 +10,12 @@ pinned output model. Arbitrary document/map keys are not modeled member paths.
 Exclude their containing member instead.
 
 The decoder omits the **terminal member name everywhere in that operation's
-response**. This conservative name-global rule is intentional: output-root paths
-prove that a reviewed member exists, but do not restrict omission to one nesting
-site. Review all uses of that name before enabling a policy. Never exclude an
-identity, pagination cursor, discriminator, binding source, or relationship target
-needed by the remaining metadata contract. This is omission, not masking: the
+response**. Output-root paths prove that a reviewed member exists; validation
+rejects terminal names occurring at multiple output-tree sites, including a
+shared shape reached through different paths. Union-parent exclusions are also
+rejected because omitting the active variant would invalidate decoding. Never
+exclude an identity, pagination cursor, discriminator, binding source or
+relationship target needed by the remaining metadata contract. This is omission, not masking: the
 member is absent, not null, hashed, replaced, or copied into another field.
 
 Compilation writes validated numeric paths into callable-plan field 24. The
@@ -37,8 +38,11 @@ logging is added.
 
 `exclude_from_hash`, hash map-key exclusions, queryability and resource projections
 are not substitutes: their input record has already been decoded, and hash
-exclusion does not remove stored data. Existing IAM trust-summary projections
-remain unchanged; the new profile plans omit embedded trust policies outright.
+exclusion does not remove stored data. Pre-existing IAM `ListRoles`/`GetRole`
+trust-summary projections remain unchanged: they decode trust documents before
+projection and are **not** covered by this change's no-retained-trust-document
+claim. The newly enabled profile plans omit embedded role trust policies before
+record construction; the guarantee applies to those omissions, not every IAM API.
 
 ## Enabled operations
 
@@ -84,6 +88,10 @@ records.
 - Given absent policy metadata, prior decoding behavior remains unchanged.
 - Given an unmodeled/non-root path, arbitrary map-key traversal, or more than eight
   configured paths, the overlay checker rejects publication.
+- Given a terminal name reached through multiple output paths, publication is
+  rejected even when those paths share the same Smithy shape.
+- Given an exclusion directly naming a union variant, publication is rejected
+  rather than making an otherwise valid response undecodable.
 - Given honestly resealed malformed plan metadata, the runtime consumer still
   rejects invalid exclusion paths.
 - Given the six built-in sanitizing plans, their required omissions and callable
