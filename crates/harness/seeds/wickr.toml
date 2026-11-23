@@ -1,0 +1,11 @@
+format = 1
+service = "wickr"
+
+[[step]]
+id = "resource"
+operation = "CreateNetwork"
+kind = "AWS::Wickr::Network"
+identity = "networkId"
+[step.input]
+"networkName" = "inventory-thin-wickr"
+"accessLevel" = "STANDARD"
