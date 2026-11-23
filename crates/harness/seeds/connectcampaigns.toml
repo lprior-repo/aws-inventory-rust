@@ -1,0 +1,45 @@
+format = 1
+service = "connectcampaigns"
+
+[[step]]
+id = "instance"
+service = "connect"
+operation = "CreateInstance"
+kind = "AWS::Connect::Instance"
+identity = "Id"
+[step.input]
+IdentityManagementType = "CONNECT_MANAGED"
+InstanceAlias = "inventory-thin-connectcampaigns"
+InboundCallsEnabled = true
+OutboundCallsEnabled = true
+
+[[step]]
+id = "onboard"
+operation = "StartInstanceOnboardingJob"
+kind = ""
+[step.input]
+connectInstanceId = { from = "instance", path = "Id" }
+encryptionConfig = { enabled = false }
+
+[[step]]
+id = "flow"
+service = "connect"
+operation = "CreateContactFlow"
+kind = "AWS::Connect::ContactFlow"
+identity = "ContactFlowId"
+[step.input]
+InstanceId = { from = "instance", path = "Id" }
+Name = "inventory-seed-disconnect"
+Type = "CONTACT_FLOW"
+Content = "{\"Version\":\"2019-10-30\",\"StartAction\":\"disconnect\",\"Metadata\":{},\"Actions\":[{\"Identifier\":\"disconnect\",\"Type\":\"DisconnectParticipant\",\"Parameters\":{},\"Transitions\":{}}]}"
+
+[[step]]
+id = "campaign"
+operation = "CreateCampaign"
+kind = "AWS::ConnectCampaigns::Campaign"
+identity = "arn"
+[step.input]
+name = "inventory-thin-connectcampaigns"
+connectInstanceId = { from = "instance", path = "Id" }
+dialerConfig = { progressiveDialerConfig = { bandwidthAllocation = 1 } }
+outboundCallConfig = { connectContactFlowId = { from = "flow", path = "ContactFlowId" } }
