@@ -1,0 +1,10 @@
+format = 1
+service = "outposts"
+
+[[step]]
+id = "resource"
+operation = "CreateSite"
+kind = "AWS::Outposts::Site"
+identity = "Site.SiteArn"
+[step.input]
+"Name" = "inventory-thin-outposts"
