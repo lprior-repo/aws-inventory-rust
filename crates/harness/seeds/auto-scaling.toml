@@ -14,8 +14,7 @@ LaunchTemplateData = { "ImageId" = "ami-12345678", "InstanceType" = "t3.nano" }
 [[step]]
 id = "group"
 operation = "CreateAutoScalingGroup"
-kind = "AWS::AutoScaling::AutoScalingGroup"
-identity = { "input" = "AutoScalingGroupName" }
+kind = ""
 [step.input]
 AutoScalingGroupName = "inventory-thin-auto-scaling"
 LaunchTemplate = { "LaunchTemplateId" = { "from" = "launch", "path" = "LaunchTemplate.LaunchTemplateId" }, "Version" = "$Latest" }
@@ -23,3 +22,11 @@ MinSize = 0
 MaxSize = 1
 DesiredCapacity = 0
 AvailabilityZones = ["us-east-1a"]
+
+[[step]]
+id = "group_identity"
+operation = "DescribeAutoScalingGroups"
+kind = "AWS::AutoScaling::AutoScalingGroup"
+identity = "AutoScalingGroups.0.AutoScalingGroupARN"
+[step.input]
+AutoScalingGroupNames = ["inventory-thin-auto-scaling"]
