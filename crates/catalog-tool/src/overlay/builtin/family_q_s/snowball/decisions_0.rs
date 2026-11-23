@@ -3,6 +3,7 @@ use super::super::construction::Decision;
 use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
+    ("ListJobs", Decision::Deferred("The modeled US endpoints return jobs from all US Regions; regional persistence would misattribute and duplicate them. A geography-aware identity/scope contract is required.")),
     // Changes service state rather than reading inventory. Pinned purpose: Cancels a cluster job. You can only cancel a cluster job while it's in the AwaitingQuorum status. You'll have at least an hour after creating a cluster job to cancel it.
     ("CancelCluster", Decision::Denied(DenyReason::Mutating)),
     // Changes service state rather than reading inventory. Pinned purpose: Cancels the specified job. You can only cancel a job before its JobState value changes to PreparingAppliance . Requesting the ListJobs or DescribeJob action returns a job's JobState as part of the response element data returned.

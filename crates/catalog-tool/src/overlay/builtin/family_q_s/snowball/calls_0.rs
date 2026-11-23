@@ -14,16 +14,6 @@ pub(super) const CALLS: &[Inventory] = &[
         queryable: &[],
     },
     Inventory {
-        operation: "ListJobs",
-        items: "JobListEntries",
-        identity: ResourceIdentity::Key(&["JobId"]),
-        token: Some(("NextToken", "NextToken")),
-        scope: Scope::Region,
-        input: &[],
-        tags: None,
-        queryable: &[],
-    },
-    Inventory {
         operation: "ListLongTermPricing",
         items: "LongTermPricingEntries",
         identity: ResourceIdentity::Key(&["LongTermPricingId"]),
