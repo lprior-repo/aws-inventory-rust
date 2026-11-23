@@ -1,0 +1,13 @@
+format = 1
+service = "emr-serverless"
+
+[[step]]
+id = "application"
+operation = "CreateApplication"
+kind = "AWS::EMRServerless::Application"
+identity = "arn"
+[step.input]
+name = "inventory-thin-emr-serverless"
+releaseLabel = "emr-7.0.0"
+type = "SPARK"
+clientToken = "12345678-1234-4234-8234-123456789abc"
