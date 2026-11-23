@@ -17,6 +17,12 @@
   exhausted generations. Resume checks manifests and locks the queue before
   fencing expired leases.
 
+- PostgreSQL page commits batch resource, scalar, facet, tag and child-work
+  writes in one lease-fenced transaction. Unchanged content is not rewritten.
+  Native provenance and candidate indexes retain checked reference authority.
+  Timestamp arrays use binary intervals to avoid floating-point rounding,
+  and projection work collapses to a bounded full-rebuild marker on overflow.
+
 - Runtime catalog binding decoders live in `decode/plans/bindings.rs`, with
   separate source decoders and unchanged wire tags, limits and rejection order.
   The parent plan decoder is now below the 300-line source limit.

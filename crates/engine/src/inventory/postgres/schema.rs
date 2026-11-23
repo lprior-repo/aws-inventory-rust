@@ -1,4 +1,6 @@
+mod candidates;
 mod kinds;
+mod provenance;
 mod shared;
 
 use crate::inventory::{SchemaRegistry, StoreError, schema::decode_schema};
@@ -25,6 +27,8 @@ async fn initialize_shared(pool: &PgPool, registry: &SchemaRegistry) -> Result<(
         .execute(&mut *tx)
         .await?;
     shared::create(&mut tx).await?;
+    provenance::create(&mut tx).await?;
+    candidates::create(&mut tx).await?;
     persist_registry(&mut tx, registry).await?;
     tx.commit().await?;
     Ok(())

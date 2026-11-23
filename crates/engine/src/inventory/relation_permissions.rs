@@ -1,7 +1,7 @@
 mod bindings;
 mod dependencies;
 mod persistence;
-mod provenance;
+pub(in crate::inventory) mod provenance;
 mod source_authority;
 mod stages;
 mod trust;
