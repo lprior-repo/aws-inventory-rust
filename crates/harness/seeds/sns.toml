@@ -1,0 +1,49 @@
+format = 1
+service = "sns"
+
+[[step]]
+id = "topic"
+operation = "CreateTopic"
+kind = "AWS::SNS::Topic"
+identity = "TopicArn"
+repeat = 2
+[step.input]
+Name = "inventory-thin-topic-{n}"
+
+[[step]]
+id = "endpoint_queue"
+service = "sqs"
+operation = "CreateQueue"
+kind = ""
+[step.input]
+QueueName = "inventory-thin-subscription-endpoint"
+
+[[step]]
+id = "endpoint_identity"
+service = "sqs"
+operation = "GetQueueAttributes"
+kind = "AWS::SQS::Queue"
+identity = "Attributes.QueueArn"
+[step.input]
+QueueUrl = { from = "endpoint_queue", path = "QueueUrl" }
+AttributeNames = ["QueueArn"]
+
+[[step]]
+id = "subscribe"
+operation = "Subscribe"
+kind = ""
+repeat = 2
+[step.input]
+TopicArn = { from = "topic", path = "TopicArn" }
+Protocol = "sqs"
+Endpoint = { from = "endpoint_identity", path = "Attributes.QueueArn" }
+ReturnSubscriptionArn = true
+
+[[step]]
+id = "subscription"
+operation = "GetSubscriptionAttributes"
+kind = "AWS::SNS::Subscription"
+identity = "Attributes.SubscriptionArn"
+repeat = 2
+[step.input]
+SubscriptionArn = { from = "subscribe", path = "SubscriptionArn" }

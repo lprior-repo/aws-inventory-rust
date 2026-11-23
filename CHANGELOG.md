@@ -5,6 +5,11 @@
 - The harness runs ordered TOML seed directories against loopback HTTPS, retaining
   rejected operations and skipped dependencies in a sorted matrix alongside a
   sorted resource/relationship oracle. Mutation authorization remains harness-only.
+  Thin-slice fixtures now cover IAM, SNS/SQS, DynamoDB, KMS, Lambda signing
+  configuration, S3 and CloudWatch; all 44 matrix rows are accepted by pinned
+  emulator 1.0.348. Seed files support explicit request-derived identities and
+  per-step services for observed cross-service references. SNS subscription
+  and Lambda execution-role relationship metadata remains gated on A1.x.
 
 - Runtime catalog binding decoders live in `decode/plans/bindings.rs`, with
   separate source decoders and unchanged wire tags, limits and rejection order.

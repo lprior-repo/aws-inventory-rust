@@ -1,0 +1,19 @@
+format = 1
+service = "cloudwatch"
+
+[[step]]
+id = "alarm"
+operation = "PutMetricAlarm"
+kind = "AWS::CloudWatch::Alarm"
+identity = { input = "AlarmName", template = "arn:{partition}:cloudwatch:{region}:{account}:alarm:{value}" }
+repeat = 2
+[step.input]
+AlarmName = "inventory-thin-alarm-{n}"
+ActionsEnabled = false
+Namespace = "AWS/EC2"
+MetricName = "CPUUtilization"
+Statistic = "Average"
+Period = 60
+EvaluationPeriods = 1
+Threshold = 80.0
+ComparisonOperator = "GreaterThanThreshold"

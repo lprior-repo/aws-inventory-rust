@@ -1,0 +1,20 @@
+format = 1
+service = "sqs"
+
+[[step]]
+id = "queue"
+operation = "CreateQueue"
+kind = ""
+repeat = 2
+[step.input]
+QueueName = "inventory-thin-queue-{n}"
+
+[[step]]
+id = "queue_identity"
+operation = "GetQueueAttributes"
+kind = "AWS::SQS::Queue"
+identity = "Attributes.QueueArn"
+repeat = 2
+[step.input]
+QueueUrl = { from = "queue", path = "QueueUrl" }
+AttributeNames = ["QueueArn"]

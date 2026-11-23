@@ -3,6 +3,8 @@ mod descriptor;
 mod expand;
 mod step;
 mod value;
+#[cfg(test)]
+mod seed_files;
 
 use super::{
     config::SeedError,
