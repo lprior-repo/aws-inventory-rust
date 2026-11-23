@@ -98,70 +98,103 @@ fn selector(
     root: Target,
     selector: &TagEndpointSelector,
 ) -> Result<Value, RuntimeCatalogCompileError> {
-    let path = match selector {
-        TagEndpointSelector::Map { path } | TagEndpointSelector::List { path, .. } => path,
-    };
+    let path = selector_path(selector);
     let (ids, target) = model_path::resolve(service, root, path.as_str())?;
-    let shape = match target {
-        Target::Shape(index) => {
-            service
-                .shape(index)?
-                .ok_or_else(|| RuntimeCatalogCompileError::Path {
-                    path: path.as_str().to_owned(),
-                })
-        }
-        _ => Err(RuntimeCatalogCompileError::Path {
-            path: path.as_str().to_owned(),
-        }),
-    }?;
+    let shape = resolve_shape(service, target, path.as_str())?;
     match selector {
         TagEndpointSelector::Map { .. } if shape.kind()? == "map" => {
-            model_path::string_target(
-                service,
-                shape
-                    .map_key()?
-                    .ok_or_else(|| RuntimeCatalogCompileError::Path {
-                        path: path.as_str().to_owned(),
-                    })?,
-            )?;
-            model_path::string_target(
-                service,
-                shape
-                    .map_value()?
-                    .ok_or_else(|| RuntimeCatalogCompileError::Path {
-                        path: path.as_str().to_owned(),
-                    })?,
-            )?;
-            encode::map([(1, Value::Int(1)), (2, path_value(ids))])
+            map_selector(service, &shape, ids, path.as_str())
         }
-        TagEndpointSelector::List { key, value, .. } if shape.kind()? == "list" => {
-            let item = shape
-                .element()?
-                .ok_or_else(|| RuntimeCatalogCompileError::Path {
-                    path: path.as_str().to_owned(),
-                })?;
-            let (key, key_target) = model_path::resolve(service, item, key.as_str())?;
-            let (value, value_target) = model_path::resolve(service, item, value.as_str())?;
-            model_path::string_target(service, key_target)?;
-            model_path::string_target(service, value_target)?;
-            match (key.as_slice(), value.as_slice()) {
-                ([key], [value]) if key != value => encode::map([
-                    (1, Value::Int(0)),
-                    (2, path_value(ids)),
-                    (3, Value::Int(i64::from(key.value()))),
-                    (4, Value::Int(i64::from(value.value()))),
-                ]),
-                _ => Err(RuntimeCatalogCompileError::Path {
-                    path: path.as_str().to_owned(),
-                }),
-            }
-        }
+        TagEndpointSelector::List { key, value, .. } if shape.kind()? == "list" => list_selector(
+            service,
+            &shape,
+            (key.as_str(), value.as_str()),
+            ids,
+            path.as_str(),
+        ),
         _ => Err(RuntimeCatalogCompileError::Path {
             path: path.as_str().to_owned(),
         }),
     }
 }
 
+fn selector_path(selector: &TagEndpointSelector) -> &crate::overlay::MemberPath {
+    match selector {
+        TagEndpointSelector::Map { path } | TagEndpointSelector::List { path, .. } => path,
+    }
+}
+
+fn resolve_shape<'a>(
+    service: Service<'a>,
+    target: Target,
+    path: &str,
+) -> Result<inventory_core::catalog::Shape<'a>, RuntimeCatalogCompileError> {
+    match target {
+        Target::Shape(index) => {
+            service
+                .shape(index)?
+                .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                    path: path.to_owned(),
+                })
+        }
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: path.to_owned(),
+        }),
+    }
+}
+fn map_selector(
+    service: Service<'_>,
+    shape: &inventory_core::catalog::Shape<'_>,
+    ids: Vec<FieldId>,
+    path: &str,
+) -> Result<Value, RuntimeCatalogCompileError> {
+    model_path::string_target(
+        service,
+        shape
+            .map_key()?
+            .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                path: path.to_owned(),
+            })?,
+    )?;
+    model_path::string_target(
+        service,
+        shape
+            .map_value()?
+            .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                path: path.to_owned(),
+            })?,
+    )?;
+    encode::map([(1, Value::Int(1)), (2, path_value(ids))])
+}
+
+fn list_selector(
+    service: Service<'_>,
+    shape: &inventory_core::catalog::Shape<'_>,
+    (key, value): (&str, &str),
+    ids: Vec<FieldId>,
+    path: &str,
+) -> Result<Value, RuntimeCatalogCompileError> {
+    let item = shape
+        .element()?
+        .ok_or_else(|| RuntimeCatalogCompileError::Path {
+            path: path.to_owned(),
+        })?;
+    let (key, key_target) = model_path::resolve(service, item, key)?;
+    let (value, value_target) = model_path::resolve(service, item, value)?;
+    model_path::string_target(service, key_target)?;
+    model_path::string_target(service, value_target)?;
+    match (key.as_slice(), value.as_slice()) {
+        ([key], [value]) if key != value => encode::map([
+            (1, Value::Int(0)),
+            (2, path_value(ids)),
+            (3, Value::Int(i64::from(key.value()))),
+            (4, Value::Int(i64::from(value.value()))),
+        ]),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: path.to_owned(),
+        }),
+    }
+}
 fn path_value(ids: Vec<FieldId>) -> Value {
     Value::List(
         ids.into_iter()

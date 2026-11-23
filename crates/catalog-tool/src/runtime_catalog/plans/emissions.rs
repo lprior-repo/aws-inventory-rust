@@ -35,67 +35,155 @@ pub(super) fn compile(
         service,
         operation,
     } = callable;
+    validate_emission_count(overlay)?;
+    let primary_kinds = compute_primary_kinds(primary_kind, overlay);
+    let ctx = EmissionCompileCtx {
+        service_name,
+        operation_name,
+        kinds,
+        service,
+        operation,
+        services,
+    };
+    let values = compile_emission_list(&ctx, overlay, primary_kinds)?;
+    validate_reviewed_count(kinds, service_name, operation_name, overlay)?;
+    Ok(Value::List(values))
+}
+
+fn validate_emission_count(overlay: &OperationOverlay) -> Result<(), RuntimeCatalogCompileError> {
     if overlay.additional_resources.len() >= MAX_RESOURCE_EMISSIONS {
         return Err(RuntimeCatalogCompileError::Path {
             path: "additional resources count".to_owned(),
         });
     }
-    let primary_kinds = std::iter::once(primary_kind)
+    Ok(())
+}
+
+fn compute_primary_kinds<'a>(
+    primary_kind: &'a str,
+    overlay: &'a OperationOverlay,
+) -> BTreeSet<&'a str> {
+    std::iter::once(primary_kind)
         .chain(
             overlay
                 .classification
                 .as_ref()
                 .into_iter()
-                .flat_map(|classification| classification.variants.values().map(String::as_str)),
+                .flat_map(|c| c.variants.values().map(String::as_str)),
         )
-        .collect::<BTreeSet<_>>();
-    let (_, _, values) =
-        overlay.additional_resources.iter().try_fold(
-            (primary_kinds, BTreeSet::new(), Vec::new()),
-            |(mut seen_kinds, mut keys, mut values), emission| {
-                if emission.key == "primary"
-                    || emission.key.is_empty()
-                    || emission.key.len() > 64
-                    || !emission.key.bytes().all(|byte| {
-                        byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_'
-                    })
-                    || !keys.insert(emission.key.as_str())
-                {
-                    return Err(RuntimeCatalogCompileError::Path {
-                        path: format!("emission key {}", emission.key),
-                    });
-                }
-                let kind = kinds
-                    .additional_emission_kind(service_name, operation_name, &emission.key)
-                    .ok_or_else(|| RuntimeCatalogCompileError::Path {
-                        path: format!("emission kind {}", emission.key),
-                    })?;
-                let emitted = std::iter::once(kind)
-                    .chain(emission.classification.as_ref().into_iter().flat_map(
-                        |classification| classification.variants.values().map(String::as_str),
-                    ))
-                    .collect::<BTreeSet<_>>();
-                emitted.into_iter().try_for_each(|kind| {
-                    if seen_kinds.insert(kind) {
-                        Ok(())
-                    } else {
-                        Err(RuntimeCatalogCompileError::Path {
-                            path: format!("duplicate emission kind {kind}"),
-                        })
-                    }
-                })?;
-                values.push(descriptor(
-                    service_name,
-                    operation_name,
-                    kind,
-                    service,
-                    operation,
-                    emission,
-                    services,
-                )?);
-                Ok((seen_kinds, keys, values))
-            },
-        )?;
+        .collect()
+}
+
+struct EmissionCompileCtx<'a> {
+    service_name: &'a str,
+    operation_name: &'a str,
+    kinds: &'a KindMap,
+    service: Service<'a>,
+    operation: Operation<'a>,
+    services: &'a ServiceIndex<'a>,
+}
+
+fn compile_emission_list<'a>(
+    ctx: &'a EmissionCompileCtx<'a>,
+    overlay: &'a OperationOverlay,
+    primary_kinds: BTreeSet<&'a str>,
+) -> Result<Vec<Value>, RuntimeCatalogCompileError> {
+    let mut seen_kinds = primary_kinds;
+    let mut keys = BTreeSet::new();
+    let mut values = Vec::new();
+    for emission in &overlay.additional_resources {
+        compile_single_emission(ctx, emission, &mut seen_kinds, &mut keys, &mut values)?;
+    }
+    Ok(values)
+}
+
+fn compile_single_emission<'a>(
+    ctx: &'a EmissionCompileCtx<'a>,
+    emission: &'a ResourceEmission,
+    seen_kinds: &mut BTreeSet<&'a str>,
+    keys: &mut BTreeSet<&'a str>,
+    values: &mut Vec<Value>,
+) -> Result<(), RuntimeCatalogCompileError> {
+    validate_emission_key(emission, keys)?;
+    let kind = get_emission_kind(ctx, emission)?;
+    let emitted = compute_emitted_kinds(emission, kind);
+    check_duplicate_kinds(&emitted, seen_kinds)?;
+    seen_kinds.extend(emitted);
+    values.push(descriptor(
+        ctx.service_name,
+        ctx.operation_name,
+        kind,
+        ctx.service,
+        ctx.operation,
+        emission,
+        ctx.services,
+    )?);
+    Ok(())
+}
+
+fn validate_emission_key<'a>(
+    emission: &'a ResourceEmission,
+    keys: &mut BTreeSet<&'a str>,
+) -> Result<(), RuntimeCatalogCompileError> {
+    if emission.key == "primary"
+        || emission.key.is_empty()
+        || emission.key.len() > 64
+        || !emission
+            .key
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_')
+        || !keys.insert(emission.key.as_str())
+    {
+        return Err(RuntimeCatalogCompileError::Path {
+            path: format!("emission key {}", emission.key),
+        });
+    }
+    Ok(())
+}
+
+fn get_emission_kind<'a>(
+    ctx: &'a EmissionCompileCtx<'a>,
+    emission: &ResourceEmission,
+) -> Result<&'a str, RuntimeCatalogCompileError> {
+    ctx.kinds
+        .additional_emission_kind(ctx.service_name, ctx.operation_name, &emission.key)
+        .ok_or_else(|| RuntimeCatalogCompileError::Path {
+            path: format!("emission kind {}", emission.key),
+        })
+}
+
+fn compute_emitted_kinds<'a>(emission: &'a ResourceEmission, kind: &'a str) -> BTreeSet<&'a str> {
+    std::iter::once(kind)
+        .chain(
+            emission
+                .classification
+                .as_ref()
+                .into_iter()
+                .flat_map(|c| c.variants.values().map(String::as_str)),
+        )
+        .collect()
+}
+
+fn check_duplicate_kinds(
+    emitted: &BTreeSet<&str>,
+    seen_kinds: &BTreeSet<&str>,
+) -> Result<(), RuntimeCatalogCompileError> {
+    for kind in emitted {
+        if seen_kinds.contains(kind) {
+            return Err(RuntimeCatalogCompileError::Path {
+                path: format!("duplicate emission kind {kind}"),
+            });
+        }
+    }
+    Ok(())
+}
+
+fn validate_reviewed_count(
+    kinds: &KindMap,
+    service_name: &str,
+    operation_name: &str,
+    overlay: &OperationOverlay,
+) -> Result<(), RuntimeCatalogCompileError> {
     let reviewed = kinds
         .additional_emissions()
         .iter()
@@ -106,7 +194,7 @@ pub(super) fn compile(
             path: "reviewed additional resources count".to_owned(),
         });
     }
-    Ok(Value::List(values))
+    Ok(())
 }
 
 fn descriptor(

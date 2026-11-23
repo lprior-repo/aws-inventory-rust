@@ -48,9 +48,24 @@ pub(super) fn compile(
     // An operation's constants select only matching modeled endpoint evidence.
     // Omitting a constant is equivalent only when its original default matches.
     // A case without the required host label describes no request at all.
-    let matched = cases
+    let matched = filter_matching_cases(&rules, cases, context, label);
+    set_fixed_parameters(&mut rules, file, context, label)?;
+    let cases = matched
+        .into_iter()
+        .map(|case| scoped(&rules, case, name, operation))
+        .collect::<Vec<_>>();
+    run_verification(&rules, &cases, signing_name, label)
+}
+
+fn filter_matching_cases<'a>(
+    rules: &RuleSet,
+    cases: &'a [Case],
+    context: &Context,
+    label: Option<&HostLabel>,
+) -> Vec<&'a Case> {
+    cases
         .iter()
-        .filter(|case| matches_context(&rules, case, context))
+        .filter(|case| matches_context(rules, case, context))
         .filter(|case| {
             label.is_none_or(|label| {
                 case.params
@@ -58,7 +73,15 @@ pub(super) fn compile(
                     .is_some_and(Value::is_string)
             })
         })
-        .collect::<Vec<_>>();
+        .collect()
+}
+
+fn set_fixed_parameters(
+    rules: &mut RuleSet,
+    file: &Path,
+    context: &Context,
+    label: Option<&HostLabel>,
+) -> Result<(), Error> {
     let fixed = context
         .iter()
         .map(|(name, input)| (name, input.value.clone()))
@@ -75,12 +98,17 @@ pub(super) fn compile(
         parameter.required = true;
         parameter.default = Some(value);
     }
-    let cases = matched
-        .into_iter()
-        .map(|case| scoped(&rules, case, name, operation))
-        .collect::<Vec<_>>();
+    Ok(())
+}
+
+fn run_verification(
+    rules: &RuleSet,
+    cases: &[Case],
+    signing_name: Option<&str>,
+    label: Option<&HostLabel>,
+) -> Result<VerifiedEndpoint, Error> {
     let verified = rules
-        .run_cases(&cases)?
+        .run_cases(cases)?
         .verified_endpoint(signing_name)
         .map_err(|failure| {
             rules.error(Fault::Malformed(format!(

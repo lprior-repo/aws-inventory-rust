@@ -11,6 +11,13 @@ pub(super) fn update(
     parents: &[ReviewedParentRelation],
     compounds: &[ReviewedCompoundRelation],
 ) {
+    update_relations(hash, relations);
+    legacy_expanded_groups(hash, relations);
+    update_parents(hash, parents);
+    update_compounds(hash, compounds);
+}
+
+fn update_relations(hash: &mut Sha256, relations: &[ReviewedRelation]) {
     for row in relations {
         if let Some((domain, source, target)) = legacy_fields(row) {
             fields(
@@ -45,7 +52,9 @@ pub(super) fn update(
             fields(hash, [guard.equals.as_str()]);
         }
     }
-    legacy_expanded_groups(hash, relations);
+}
+
+fn update_parents(hash: &mut Sha256, parents: &[ReviewedParentRelation]) {
     for row in parents {
         fields(
             hash,
@@ -58,6 +67,9 @@ pub(super) fn update(
         );
         targets(hash, &row.target_kinds);
     }
+}
+
+fn update_compounds(hash: &mut Sha256, compounds: &[ReviewedCompoundRelation]) {
     for row in compounds {
         fields(
             hash,

@@ -25,60 +25,13 @@ pub(super) fn reviewed<'a>(
             .flat_map(|source| source.cfn.iter().copied()),
         cfn_key,
     )?;
-    let api_only = unique(
-        sources
-            .clone()
-            .flat_map(|source| source.api_only.iter().copied()),
-        |row: &ApiOnlyMapping<'_>| row.kind,
-    )?;
-    let operations = unique(
-        sources
-            .clone()
-            .flat_map(|source| source.operations.iter().copied()),
-        |row: &OperationMapping<'_>| (row.service, row.operation),
-    )?;
-    let relation_targets = unique(
-        sources
-            .clone()
-            .flat_map(|source| source.relation_targets.iter().copied()),
-        |row: &RelationTargetsMapping<'_>| (row.source_kind, row.source, row.relation),
-    )?;
-    let relations = unique(
-        sources
-            .clone()
-            .flat_map(|source| source.relations.iter().copied()),
-        |row: &RelationMapping<'_>| {
-            (
-                row.source_kind,
-                row.source,
-                row.target_kind,
-                row.target,
-                row.relation,
-                row.scope,
-                row.guard.map(|guard| (guard.source, guard.equals)),
-            )
-        },
-    )?;
-    let parent_relations = unique(
-        sources
-            .clone()
-            .flat_map(|source| source.parent_relations.iter().copied()),
-        |row: &ParentRelationMapping<'_>| {
-            (row.source_kind, row.target_kinds, row.relation, row.scope)
-        },
-    )?;
-    let compound_relations = unique(
-        sources
-            .clone()
-            .flat_map(|source| source.compound_relations.iter().copied()),
-        |row: &CompoundRelationMapping<'_>| {
-            (row.source_kind, row.target_kind, row.relation, row.scope)
-        },
-    )?;
-    let additional_emissions = unique(
-        sources.flat_map(|source| source.additional_emissions.iter().copied()),
-        |row: &AdditionalEmissionMapping<'_>| (row.service, row.operation, row.emitter_key),
-    )?;
+    let api_only = collect_api_only(sources.clone())?;
+    let operations = collect_operations(sources.clone())?;
+    let relation_targets = collect_relation_targets(sources.clone())?;
+    let relations = collect_relations(sources.clone())?;
+    let parent_relations = collect_parent_relations(sources.clone())?;
+    let compound_relations = collect_compound_relations(sources.clone())?;
+    let additional_emissions = collect_additional_emissions(sources)?;
     let source = MappingSource {
         cfn: &cfn,
         api_only: &api_only,
@@ -93,6 +46,83 @@ pub(super) fn reviewed<'a>(
         ..super::builtin::SOURCE
     };
     source.compile(&Exceptions::builtin())
+}
+
+fn collect_api_only<'a>(
+    sources: impl Iterator<Item = MappingSource<'a>>,
+) -> Result<Vec<ApiOnlyMapping<'a>>, KindMapError> {
+    unique(
+        sources.flat_map(|source| source.api_only.iter().copied()),
+        |row: &ApiOnlyMapping<'_>| row.kind,
+    )
+}
+
+fn collect_operations<'a>(
+    sources: impl Iterator<Item = MappingSource<'a>>,
+) -> Result<Vec<OperationMapping<'a>>, KindMapError> {
+    unique(
+        sources.flat_map(|source| source.operations.iter().copied()),
+        |row: &OperationMapping<'_>| (row.service, row.operation),
+    )
+}
+
+fn collect_relation_targets<'a>(
+    sources: impl Iterator<Item = MappingSource<'a>>,
+) -> Result<Vec<RelationTargetsMapping<'a>>, KindMapError> {
+    unique(
+        sources.flat_map(|source| source.relation_targets.iter().copied()),
+        |row: &RelationTargetsMapping<'_>| (row.source_kind, row.source, row.relation),
+    )
+}
+
+fn collect_relations<'a>(
+    sources: impl Iterator<Item = MappingSource<'a>>,
+) -> Result<Vec<RelationMapping<'a>>, KindMapError> {
+    unique(
+        sources.flat_map(|source| source.relations.iter().copied()),
+        |row: &RelationMapping<'_>| {
+            (
+                row.source_kind,
+                row.source,
+                row.target_kind,
+                row.target,
+                row.relation,
+                row.scope,
+                row.guard.map(|guard| (guard.source, guard.equals)),
+            )
+        },
+    )
+}
+
+fn collect_parent_relations<'a>(
+    sources: impl Iterator<Item = MappingSource<'a>>,
+) -> Result<Vec<ParentRelationMapping<'a>>, KindMapError> {
+    unique(
+        sources.flat_map(|source| source.parent_relations.iter().copied()),
+        |row: &ParentRelationMapping<'_>| {
+            (row.source_kind, row.target_kinds, row.relation, row.scope)
+        },
+    )
+}
+
+fn collect_compound_relations<'a>(
+    sources: impl Iterator<Item = MappingSource<'a>>,
+) -> Result<Vec<CompoundRelationMapping<'a>>, KindMapError> {
+    unique(
+        sources.flat_map(|source| source.compound_relations.iter().copied()),
+        |row: &CompoundRelationMapping<'_>| {
+            (row.source_kind, row.target_kind, row.relation, row.scope)
+        },
+    )
+}
+
+fn collect_additional_emissions<'a>(
+    sources: impl Iterator<Item = MappingSource<'a>>,
+) -> Result<Vec<AdditionalEmissionMapping<'a>>, KindMapError> {
+    unique(
+        sources.flat_map(|source| source.additional_emissions.iter().copied()),
+        |row: &AdditionalEmissionMapping<'_>| (row.service, row.operation, row.emitter_key),
+    )
 }
 
 fn cfn_key<'a>(row: &CfnMapping<'a>) -> &'a str {

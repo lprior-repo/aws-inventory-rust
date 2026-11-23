@@ -23,6 +23,19 @@ pub(super) fn compile(
     };
     let mut rows = Vec::new();
     let mut inactive = BTreeMap::new();
+    compile_relations(kinds, services, &active, &mut rows, &mut inactive)?;
+    compile_parent_relations(kinds, &active, &mut rows, &mut inactive)?;
+    compile_compound_relations(kinds, services, &active, &mut rows, &mut inactive)?;
+    Ok(RelationsResult { rows, inactive })
+}
+
+fn compile_relations(
+    kinds: &KindMap,
+    services: &ServiceIndex<'_>,
+    active: &dyn Fn(&str, &crate::kind_map::ReviewedTargetKinds) -> bool,
+    rows: &mut Vec<Value>,
+    inactive: &mut BTreeMap<String, String>,
+) -> Result<(), RuntimeCatalogCompileError> {
     for row in kinds.relations().iter() {
         if !active(&row.source_kind, &row.target_kinds) {
             inactive.insert(
@@ -37,6 +50,15 @@ pub(super) fn compile(
         }
         rows.push(encode(row, services)?);
     }
+    Ok(())
+}
+
+fn compile_parent_relations(
+    kinds: &KindMap,
+    active: &dyn Fn(&str, &crate::kind_map::ReviewedTargetKinds) -> bool,
+    rows: &mut Vec<Value>,
+    inactive: &mut BTreeMap<String, String>,
+) -> Result<(), RuntimeCatalogCompileError> {
     for row in kinds.parent_relations().iter() {
         if !active(&row.source_kind, &row.target_kinds) {
             inactive.insert(
@@ -70,6 +92,16 @@ pub(super) fn compile(
             (12, Value::Int(4)),
         ])?);
     }
+    Ok(())
+}
+
+fn compile_compound_relations(
+    kinds: &KindMap,
+    services: &ServiceIndex<'_>,
+    active: &dyn Fn(&str, &crate::kind_map::ReviewedTargetKinds) -> bool,
+    rows: &mut Vec<Value>,
+    inactive: &mut BTreeMap<String, String>,
+) -> Result<(), RuntimeCatalogCompileError> {
     for row in kinds.compound_relations().iter() {
         if !active(&row.source_kind, &row.target_kinds) {
             inactive.insert(
@@ -82,50 +114,58 @@ pub(super) fn compile(
             );
             continue;
         }
-        let (first, rest) = row.components.split_first().ok_or_else(|| {
-            RuntimeCatalogCompileError::KindContext {
+        rows.push(encode_compound(row, services)?);
+    }
+    Ok(())
+}
+
+fn encode_compound(
+    row: &crate::kind_map::ReviewedCompoundRelation,
+    services: &ServiceIndex<'_>,
+) -> Result<Value, RuntimeCatalogCompileError> {
+    let (first, rest) =
+        row.components
+            .split_first()
+            .ok_or_else(|| RuntimeCatalogCompileError::KindContext {
                 kind: row.source_kind.clone(),
                 path: "components".to_owned(),
                 reason: "compound relation has no components",
-            }
-        })?;
-        let base = ReviewedRelation {
-            source_kind: row.source_kind.clone(),
-            source: first.source.clone(),
-            target_kinds: row.target_kinds.clone(),
-            target: first.target.clone(),
-            relation: row.relation.clone(),
-            scope: row.scope.clone(),
-            guard: None,
-        };
-        let Value::Map(mut fields) = encode(&base, services)? else {
-            return Err(RuntimeCatalogCompileError::KindContext {
-                kind: row.source_kind.clone(),
-                path: "encode".to_owned(),
-                reason: "relation encode did not produce a map",
-            });
-        };
-        let components = rest
-            .iter()
-            .map(|component| {
-                let (origin, source_path) = source(&component.source);
-                let (mode, target_path) = target(&component.target);
-                map([
-                    (1, Value::Int(origin)),
-                    (2, value_path(services, source_path)?),
-                    (3, Value::Int(path_mode(source_path))),
-                    (4, optional_path(services, target_path)?),
-                    (5, Value::Int(mode)),
-                ])
-            })
-            .collect::<Result<Vec<_>, RuntimeCatalogCompileError>>()?;
-        fields.insert(
-            inventory_core::record::Key::Field(inventory_core::record::FieldId::new(14)?),
-            Value::List(components),
-        );
-        rows.push(Value::Map(fields));
-    }
-    Ok(RelationsResult { rows, inactive })
+            })?;
+    let base = ReviewedRelation {
+        source_kind: row.source_kind.clone(),
+        source: first.source.clone(),
+        target_kinds: row.target_kinds.clone(),
+        target: first.target.clone(),
+        relation: row.relation.clone(),
+        scope: row.scope.clone(),
+        guard: None,
+    };
+    let Value::Map(mut fields) = encode(&base, services)? else {
+        return Err(RuntimeCatalogCompileError::KindContext {
+            kind: row.source_kind.clone(),
+            path: "encode".to_owned(),
+            reason: "relation encode did not produce a map",
+        });
+    };
+    let components = rest
+        .iter()
+        .map(|component| {
+            let (origin, source_path) = source(&component.source);
+            let (mode, target_path) = target(&component.target);
+            map([
+                (1, Value::Int(origin)),
+                (2, value_path(services, source_path)?),
+                (3, Value::Int(path_mode(source_path))),
+                (4, optional_path(services, target_path)?),
+                (5, Value::Int(mode)),
+            ])
+        })
+        .collect::<Result<Vec<_>, RuntimeCatalogCompileError>>()?;
+    fields.insert(
+        inventory_core::record::Key::Field(inventory_core::record::FieldId::new(14)?),
+        Value::List(components),
+    );
+    Ok(Value::Map(fields))
 }
 
 fn encode(
@@ -155,42 +195,58 @@ fn encode(
         (12, Value::Int(target_mode)),
     ];
     if let Some(guard) = &row.guard {
-        let (origin, guard_path) = source(&guard.source);
-        fields.push((
-            13,
-            map([
-                (1, Value::Int(origin)),
-                (2, Value::Int(path_mode(guard_path))),
-                (3, value_path(services, guard_path)?),
-                (4, Value::Text(guard.equals.clone())),
-            ])?,
-        ));
+        fields.push(encode_guard(guard, services)?);
     }
-    if row.scope == "arn_account_region" {
-        if row.source_kind != "AWS::Oam::Link"
-            || row.target_kinds.primary() != "AWS::Oam::Sink"
-            || row.relation != "TARGETS_SINK"
-            || !matches!(&row.source, ReviewedRelationSource::SelectedOutput(ReviewedValuePath::Fields(path)) if path == "SinkArn")
-            || !matches!(&row.target, ReviewedRelationTarget::SelectedOutput(ReviewedValuePath::Fields(path)) if path == "Arn")
-        {
-            return Err(RuntimeCatalogCompileError::KindContext {
-                kind: row.source_kind.clone(),
-                path: "arn_account_region".to_owned(),
-                reason: "invalid arn_account_region scope usage",
-            });
-        }
-        fields.push((
-            8,
-            map([
-                (1, Value::Int(1)),
-                (2, Value::Text("aws".into())),
-                (3, Value::Text("oam".into())),
-                (4, Value::Text("sink/".into())),
-                (5, Value::Int(0)),
-            ])?,
-        ));
+    if let Some(arn_field) = encode_arn_scope(row)? {
+        fields.push(arn_field);
     }
     map(fields)
+}
+
+fn encode_guard(
+    guard: &crate::kind_map::ReviewedRelationGuard,
+    services: &ServiceIndex<'_>,
+) -> Result<(u32, Value), RuntimeCatalogCompileError> {
+    let (origin, guard_path) = source(&guard.source);
+    Ok((
+        13,
+        map([
+            (1, Value::Int(origin)),
+            (2, Value::Int(path_mode(guard_path))),
+            (3, value_path(services, guard_path)?),
+            (4, Value::Text(guard.equals.clone())),
+        ])?,
+    ))
+}
+
+fn encode_arn_scope(
+    row: &ReviewedRelation,
+) -> Result<Option<(u32, Value)>, RuntimeCatalogCompileError> {
+    if row.scope != "arn_account_region" {
+        return Ok(None);
+    }
+    if row.source_kind != "AWS::Oam::Link"
+        || row.target_kinds.primary() != "AWS::Oam::Sink"
+        || row.relation != "TARGETS_SINK"
+        || !matches!(&row.source, ReviewedRelationSource::SelectedOutput(ReviewedValuePath::Fields(path)) if path == "SinkArn")
+        || !matches!(&row.target, ReviewedRelationTarget::SelectedOutput(ReviewedValuePath::Fields(path)) if path == "Arn")
+    {
+        return Err(RuntimeCatalogCompileError::KindContext {
+            kind: row.source_kind.clone(),
+            path: "arn_account_region".to_owned(),
+            reason: "invalid arn_account_region scope usage",
+        });
+    }
+    Ok(Some((
+        8,
+        map([
+            (1, Value::Int(1)),
+            (2, Value::Text("aws".into())),
+            (3, Value::Text("oam".into())),
+            (4, Value::Text("sink/".into())),
+            (5, Value::Int(0)),
+        ])?,
+    )))
 }
 
 pub(super) fn source(source: &ReviewedRelationSource) -> (i64, &ReviewedValuePath) {

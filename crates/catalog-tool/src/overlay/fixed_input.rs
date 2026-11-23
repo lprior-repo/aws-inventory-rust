@@ -62,200 +62,276 @@ fn object<K: Into<String>>(
         })
 }
 
+type MatchEntry<'a> = (&'a serde_json::Value, ShapeRef<'a>, &'a FixedValue, usize);
+
+struct MatchWalk<'a> {
+    pending: Vec<MatchEntry<'a>>,
+    nodes: usize,
+    bytes: usize,
+}
+
 pub(crate) fn matches(
     model: &Model<'_>,
     member: &serde_json::Value,
     shape: ShapeRef<'_>,
     value: &FixedValue,
 ) -> bool {
-    let mut pending = vec![(member, shape, value, 0usize)];
-    let mut nodes = 0usize;
-    let mut bytes = 0usize;
+    let mut walk = MatchWalk {
+        pending: vec![(member, shape, value, 0usize)],
+        nodes: 0,
+        bytes: 0,
+    };
     let outcome = (0..MAX_NODES).try_for_each(|_| {
-        let Some((member, shape, value, depth)) = pending.pop() else {
+        let Some(entry) = walk.pending.pop() else {
             return ControlFlow::Break(true);
         };
-        let result = (|| {
-            nodes = nodes.checked_add(1).ok_or(())?;
-            if depth > MAX_DEPTH {
-                return Err(());
-            }
-            let kind = shape_type(shape.value).ok_or(())?;
-            match value {
-                FixedValue::String(text) if matches!(kind, "string" | "enum") => {
-                    text_bound(text.len(), &mut bytes)?;
-                    if !string_matches(member, shape.value, text) {
-                        return Err(());
-                    }
-                }
-                FixedValue::Integer(number) if integer_matches(kind, *number) => {
-                    if !range(member, *number)
-                        || !range(shape.value, *number)
-                        || (kind == "intEnum" && !integer_enum_matches(shape.value, *number))
-                    {
-                        return Err(());
-                    }
-                }
-                FixedValue::Boolean(_) if kind == "boolean" => (),
-                FixedValue::Float(number)
-                    if matches!(kind, "float" | "double")
-                        && number.to_f64().is_finite()
-                        && (kind == "double" || number.to_f64().abs() <= f64::from(f32::MAX)) =>
-                {
-                    if !float_range(member, number.to_f64())
-                        || !float_range(shape.value, number.to_f64())
-                    {
-                        return Err(());
-                    }
-                }
-                FixedValue::Bytes(value) if kind == "blob" => {
-                    text_bound(value.len(), &mut bytes)?;
-                    if !length_matches(member, value.len())
-                        || !length_matches(shape.value, value.len())
-                    {
-                        return Err(());
-                    }
-                }
-                FixedValue::Timestamp(_) if kind == "timestamp" => (),
-                FixedValue::Strings(values) if kind == "list" => {
-                    collection(member, shape.value, values.len())?;
-                    let (edge, child) = child(model, shape.value, "member")?;
-                    nodes = nodes.checked_add(values.len()).ok_or(())?;
-                    if nodes > MAX_NODES || (depth >= MAX_DEPTH && !values.is_empty()) {
-                        return Err(());
-                    }
-                    values.iter().try_for_each(|text| {
-                        text_bound(text.len(), &mut bytes)?;
-                        if !matches!(shape_type(child.value), Some("string" | "enum"))
-                            || !string_matches(edge, child.value, text)
-                        {
-                            return Err(());
-                        }
-                        Ok(())
-                    })?;
-                }
-                FixedValue::List(values) if kind == "list" => {
-                    collection(member, shape.value, values.len())?;
-                    let (edge, child) = child(model, shape.value, "member")?;
-                    values.iter().rev().for_each(|value| {
-                        pending.push((edge, child, value, depth.saturating_add(1)))
-                    });
-                }
-                FixedValue::Structure(values) if kind == "structure" => {
-                    collection(member, shape.value, values.len())?;
-                    let members = shape
-                        .value
-                        .get("members")
-                        .and_then(serde_json::Value::as_object)
-                        .ok_or(())?;
-                    if members.iter().any(|(name, member)| {
-                        member
-                            .get("traits")
-                            .and_then(|traits| traits.get("smithy.api#required"))
-                            .is_some()
-                            && !values.contains_key(name)
-                    }) {
-                        return Err(());
-                    }
-                    values.iter().try_for_each(|(name, value)| {
-                        text_bound(name.len(), &mut bytes)?;
-                        let edge = members.get(name).ok_or(())?;
-                        let child = target(edge).and_then(|id| model.shape(id)).ok_or(())?;
-                        pending.push((edge, child, value, depth.saturating_add(1)));
-                        Ok(())
-                    })?;
-                }
-                FixedValue::Map(values) if kind == "map" => {
-                    collection(member, shape.value, values.len())?;
-                    let (key_edge, key) = child(model, shape.value, "key")?;
-                    let (edge, child) = child(model, shape.value, "value")?;
-                    values.iter().try_for_each(|(name, value)| {
-                        text_bound(name.len(), &mut bytes)?;
-                        if !matches!(shape_type(key.value), Some("string" | "enum"))
-                            || !string_matches(key_edge, key.value, name)
-                        {
-                            return Err(());
-                        }
-                        pending.push((edge, child, value, depth.saturating_add(1)));
-                        Ok(())
-                    })?;
-                }
-                _ => return Err(()),
-            }
-            if pending.len().saturating_add(nodes) > MAX_NODES {
-                return Err(());
-            }
-            Ok(())
-        })();
-        match result {
+        match walk.visit(model, entry) {
             Ok(()) => ControlFlow::Continue(()),
             Err(()) => ControlFlow::Break(false),
         }
     });
-    !matches!(outcome, ControlFlow::Break(false)) && pending.is_empty()
+    !matches!(outcome, ControlFlow::Break(false)) && walk.pending.is_empty()
+}
+
+impl<'a> MatchWalk<'a> {
+    fn visit(
+        &mut self,
+        model: &Model<'a>,
+        (member, shape, value, depth): MatchEntry<'a>,
+    ) -> Result<(), ()> {
+        self.nodes = self.nodes.checked_add(1).ok_or(())?;
+        if depth > MAX_DEPTH {
+            return Err(());
+        }
+        let kind = shape_type(shape.value).ok_or(())?;
+        match value {
+            FixedValue::Strings(values) if kind == "list" => {
+                self.strings(model, member, shape.value, values, depth)?;
+            }
+            FixedValue::List(values) if kind == "list" => {
+                collection(member, shape.value, values.len())?;
+                let (edge, child) = child(model, shape.value, "member")?;
+                values.iter().rev().for_each(|value| {
+                    self.pending
+                        .push((edge, child, value, depth.saturating_add(1)))
+                });
+            }
+            FixedValue::Structure(values) if kind == "structure" => {
+                self.structure(model, member, shape.value, values, depth)?;
+            }
+            FixedValue::Map(values) if kind == "map" => {
+                self.map(model, member, shape.value, values, depth)?;
+            }
+            FixedValue::Strings(_)
+            | FixedValue::List(_)
+            | FixedValue::Structure(_)
+            | FixedValue::Map(_) => return Err(()),
+            scalar => self.scalar(member, shape.value, kind, scalar)?,
+        }
+        if self.pending.len().saturating_add(self.nodes) > MAX_NODES {
+            return Err(());
+        }
+        Ok(())
+    }
+
+    fn scalar(
+        &mut self,
+        member: &serde_json::Value,
+        shape: &serde_json::Value,
+        kind: &str,
+        value: &FixedValue,
+    ) -> Result<(), ()> {
+        match value {
+            FixedValue::String(text) if matches!(kind, "string" | "enum") => {
+                text_bound(text.len(), &mut self.bytes)?;
+                if !string_matches(member, shape, text) {
+                    return Err(());
+                }
+            }
+            FixedValue::Integer(number) if integer_matches(kind, *number) => {
+                if !range(member, *number)
+                    || !range(shape, *number)
+                    || (kind == "intEnum" && !integer_enum_matches(shape, *number))
+                {
+                    return Err(());
+                }
+            }
+            FixedValue::Boolean(_) if kind == "boolean" => (),
+            FixedValue::Float(number)
+                if matches!(kind, "float" | "double")
+                    && number.to_f64().is_finite()
+                    && (kind == "double" || number.to_f64().abs() <= f64::from(f32::MAX)) =>
+            {
+                if !float_range(member, number.to_f64()) || !float_range(shape, number.to_f64()) {
+                    return Err(());
+                }
+            }
+            FixedValue::Bytes(value) if kind == "blob" => {
+                text_bound(value.len(), &mut self.bytes)?;
+                if !length_matches(member, value.len()) || !length_matches(shape, value.len()) {
+                    return Err(());
+                }
+            }
+            FixedValue::Timestamp(_) if kind == "timestamp" => (),
+            _ => return Err(()),
+        }
+        Ok(())
+    }
+
+    fn strings(
+        &mut self,
+        model: &Model<'a>,
+        member: &'a serde_json::Value,
+        shape: &'a serde_json::Value,
+        values: &[String],
+        depth: usize,
+    ) -> Result<(), ()> {
+        collection(member, shape, values.len())?;
+        let (edge, child) = child(model, shape, "member")?;
+        self.nodes = self.nodes.checked_add(values.len()).ok_or(())?;
+        if self.nodes > MAX_NODES || (depth >= MAX_DEPTH && !values.is_empty()) {
+            return Err(());
+        }
+        values.iter().try_for_each(|text| {
+            text_bound(text.len(), &mut self.bytes)?;
+            if !matches!(shape_type(child.value), Some("string" | "enum"))
+                || !string_matches(edge, child.value, text)
+            {
+                return Err(());
+            }
+            Ok(())
+        })
+    }
+
+    fn structure(
+        &mut self,
+        model: &Model<'a>,
+        member: &'a serde_json::Value,
+        shape: &'a serde_json::Value,
+        values: &'a BTreeMap<String, FixedValue>,
+        depth: usize,
+    ) -> Result<(), ()> {
+        collection(member, shape, values.len())?;
+        let members = shape
+            .get("members")
+            .and_then(serde_json::Value::as_object)
+            .ok_or(())?;
+        if members.iter().any(|(name, member)| {
+            member
+                .get("traits")
+                .and_then(|traits| traits.get("smithy.api#required"))
+                .is_some()
+                && !values.contains_key(name)
+        }) {
+            return Err(());
+        }
+        values.iter().try_for_each(|(name, value)| {
+            text_bound(name.len(), &mut self.bytes)?;
+            let edge = members.get(name).ok_or(())?;
+            let child = target(edge).and_then(|id| model.shape(id)).ok_or(())?;
+            self.pending
+                .push((edge, child, value, depth.saturating_add(1)));
+            Ok(())
+        })
+    }
+
+    fn map(
+        &mut self,
+        model: &Model<'a>,
+        member: &'a serde_json::Value,
+        shape: &'a serde_json::Value,
+        values: &'a BTreeMap<String, FixedValue>,
+        depth: usize,
+    ) -> Result<(), ()> {
+        collection(member, shape, values.len())?;
+        let (key_edge, key) = child(model, shape, "key")?;
+        let (edge, child) = child(model, shape, "value")?;
+        values.iter().try_for_each(|(name, value)| {
+            text_bound(name.len(), &mut self.bytes)?;
+            if !matches!(shape_type(key.value), Some("string" | "enum"))
+                || !string_matches(key_edge, key.value, name)
+            {
+                return Err(());
+            }
+            self.pending
+                .push((edge, child, value, depth.saturating_add(1)));
+            Ok(())
+        })
+    }
+}
+
+struct BoundWalk<'a> {
+    pending: Vec<(&'a FixedValue, usize)>,
+    nodes: usize,
+    bytes: usize,
 }
 
 pub(crate) fn bounded(value: &FixedValue) -> bool {
-    let mut pending = vec![(value, 0usize)];
-    let mut nodes = 0usize;
-    let mut bytes = 0usize;
+    let mut walk = BoundWalk {
+        pending: vec![(value, 0usize)],
+        nodes: 0,
+        bytes: 0,
+    };
     let outcome = (0..MAX_NODES).try_for_each(|_| {
-        let Some((value, depth)) = pending.pop() else {
+        let Some((value, depth)) = walk.pending.pop() else {
             return ControlFlow::Break(true);
         };
-        let result = (|| {
-            nodes = nodes.checked_add(1).ok_or(())?;
-            if depth > MAX_DEPTH || nodes > MAX_NODES {
-                return Err(());
-            }
-            match value {
-                FixedValue::String(text) => text_bound(text.len(), &mut bytes)?,
-                FixedValue::Bytes(value) => text_bound(value.len(), &mut bytes)?,
-                FixedValue::Float(value) if !value.to_f64().is_finite() => return Err(()),
-                FixedValue::Integer(_)
-                | FixedValue::Boolean(_)
-                | FixedValue::Float(_)
-                | FixedValue::Timestamp(_) => (),
-                FixedValue::Strings(values) => {
-                    if values.len() > MAX_COLLECTION || (depth >= MAX_DEPTH && !values.is_empty()) {
-                        return Err(());
-                    }
-                    nodes = nodes.checked_add(values.len()).ok_or(())?;
-                    values
-                        .iter()
-                        .try_for_each(|text| text_bound(text.len(), &mut bytes))?;
-                }
-                FixedValue::List(values) => {
-                    if values.len() > MAX_COLLECTION {
-                        return Err(());
-                    }
-                    values
-                        .iter()
-                        .rev()
-                        .for_each(|value| pending.push((value, depth.saturating_add(1))));
-                }
-                FixedValue::Structure(values) | FixedValue::Map(values) => {
-                    if values.len() > MAX_COLLECTION {
-                        return Err(());
-                    }
-                    values.iter().try_for_each(|(key, value)| {
-                        text_bound(key.len(), &mut bytes)?;
-                        pending.push((value, depth.saturating_add(1)));
-                        Ok(())
-                    })?;
-                }
-            }
-            if nodes.saturating_add(pending.len()) > MAX_NODES {
-                return Err(());
-            }
-            Ok(())
-        })();
-        match result {
+        match walk.visit(value, depth) {
             Ok(()) => ControlFlow::Continue(()),
             Err(()) => ControlFlow::Break(false),
         }
     });
-    !matches!(outcome, ControlFlow::Break(false)) && pending.is_empty()
+    !matches!(outcome, ControlFlow::Break(false)) && walk.pending.is_empty()
+}
+
+impl<'a> BoundWalk<'a> {
+    fn visit(&mut self, value: &'a FixedValue, depth: usize) -> Result<(), ()> {
+        self.nodes = self.nodes.checked_add(1).ok_or(())?;
+        if depth > MAX_DEPTH || self.nodes > MAX_NODES {
+            return Err(());
+        }
+        match value {
+            FixedValue::String(text) => text_bound(text.len(), &mut self.bytes)?,
+            FixedValue::Bytes(value) => text_bound(value.len(), &mut self.bytes)?,
+            FixedValue::Float(value) if !value.to_f64().is_finite() => return Err(()),
+            FixedValue::Integer(_)
+            | FixedValue::Boolean(_)
+            | FixedValue::Float(_)
+            | FixedValue::Timestamp(_) => (),
+            FixedValue::Strings(values) => {
+                if values.len() > MAX_COLLECTION || (depth >= MAX_DEPTH && !values.is_empty()) {
+                    return Err(());
+                }
+                self.nodes = self.nodes.checked_add(values.len()).ok_or(())?;
+                values
+                    .iter()
+                    .try_for_each(|text| text_bound(text.len(), &mut self.bytes))?;
+            }
+            FixedValue::List(values) => {
+                if values.len() > MAX_COLLECTION {
+                    return Err(());
+                }
+                values
+                    .iter()
+                    .rev()
+                    .for_each(|value| self.pending.push((value, depth.saturating_add(1))));
+            }
+            FixedValue::Structure(values) | FixedValue::Map(values) => {
+                if values.len() > MAX_COLLECTION {
+                    return Err(());
+                }
+                values.iter().try_for_each(|(key, value)| {
+                    text_bound(key.len(), &mut self.bytes)?;
+                    self.pending.push((value, depth.saturating_add(1)));
+                    Ok(())
+                })?;
+            }
+        }
+        if self.nodes.saturating_add(self.pending.len()) > MAX_NODES {
+            return Err(());
+        }
+        Ok(())
+    }
 }
 
 fn child<'a>(

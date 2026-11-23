@@ -1,4 +1,7 @@
-use super::{BootstrapPurpose, KindMap, KindTarget};
+use super::{
+    ApiOnlyKind, BootstrapPurpose, KindEntry, KindMap, KindTarget, RuntimeOperation,
+    bootstrap::BootstrapEntry, emissions::ReviewedEmission,
+};
 use sha2::{Digest, Sha256};
 
 pub(super) fn fields<'a>(hash: &mut Sha256, values: impl IntoIterator<Item = &'a str>) {
@@ -11,39 +14,67 @@ pub(super) fn fields<'a>(hash: &mut Sha256, values: impl IntoIterator<Item = &'a
 
 pub(super) fn digest(map: &KindMap) -> [u8; 32] {
     let mut hash = Sha256::new();
+    hash_header(&mut hash, map);
+    hash_entries(&mut hash, &map.entries);
+    hash_api_only(&mut hash, &map.api_only);
+    hash_operations(&mut hash, &map.operations);
+    hash_emissions(&mut hash, &map.additional_emissions);
+    super::relation_fingerprint::update(
+        &mut hash,
+        &map.relations,
+        &map.parent_relations,
+        &map.compound_relations,
+    );
+    hash_bootstraps(&mut hash, &map.bootstraps);
+    hash.finalize().into()
+}
+
+fn hash_header(hash: &mut Sha256, map: &KindMap) {
     hash.update(map.source_version.to_le_bytes());
-    fields(&mut hash, [map.reviewer.as_str(), map.reviewed.as_str()]);
-    fields(&mut hash, map.default_unmapped_reason.as_deref());
-    map.entries.iter().for_each(|entry| {
+    fields(hash, [map.reviewer.as_str(), map.reviewed.as_str()]);
+    fields(hash, map.default_unmapped_reason.as_deref());
+}
+
+fn hash_entries(hash: &mut Sha256, entries: &[KindEntry]) {
+    entries.iter().for_each(|entry| {
         match &entry.target {
             KindTarget::Mapped { kind, table_name } => fields(
-                &mut hash,
+                hash,
                 ["cfn", &entry.cfn_type, "mapped", kind, table_name.as_str()],
             ),
             KindTarget::Unmapped { reason } => {
-                fields(&mut hash, ["cfn", &entry.cfn_type, "unmapped", reason])
+                fields(hash, ["cfn", &entry.cfn_type, "unmapped", reason])
             }
         }
-        fields(&mut hash, entry.display_name_path.as_deref());
+        fields(hash, entry.display_name_path.as_deref());
     });
-    map.api_only.iter().for_each(|entry| {
+}
+
+fn hash_api_only(hash: &mut Sha256, entries: &[ApiOnlyKind]) {
+    entries.iter().for_each(|entry| {
         fields(
-            &mut hash,
+            hash,
             ["api", &entry.kind, entry.table_name.as_str(), &entry.reason],
         );
         if let Some(path) = &entry.display_name_path {
-            fields(&mut hash, ["api-display", &entry.kind, path]);
+            fields(hash, ["api-display", &entry.kind, path]);
         }
     });
-    map.operations.iter().for_each(|entry| {
+}
+
+fn hash_operations(hash: &mut Sha256, operations: &[RuntimeOperation]) {
+    operations.iter().for_each(|entry| {
         fields(
-            &mut hash,
+            hash,
             ["operation", &entry.service, &entry.operation, &entry.kind],
         )
     });
-    map.additional_emissions.iter().for_each(|entry| {
+}
+
+fn hash_emissions(hash: &mut Sha256, emissions: &[ReviewedEmission]) {
+    emissions.iter().for_each(|entry| {
         fields(
-            &mut hash,
+            hash,
             [
                 "additional_emission",
                 &entry.service,
@@ -53,28 +84,27 @@ pub(super) fn digest(map: &KindMap) -> [u8; 32] {
             ],
         );
     });
-    super::relation_fingerprint::update(
-        &mut hash,
-        &map.relations,
-        &map.parent_relations,
-        &map.compound_relations,
-    );
-    map.bootstraps.iter().for_each(|entry| {
-        fields(&mut hash, ["bootstrap", &entry.service, &entry.operation]);
+}
+
+fn hash_bootstraps(hash: &mut Sha256, bootstraps: &[BootstrapEntry]) {
+    bootstraps.iter().for_each(|entry| {
+        fields(hash, ["bootstrap", &entry.service, &entry.operation]);
         match &entry.purpose {
             BootstrapPurpose::AccountIdentity { account_path } => {
-                fields(&mut hash, ["account", account_path])
+                fields(hash, ["account", account_path.as_str()])
             }
             BootstrapPurpose::RegionDiscovery {
                 regions_path,
                 region_name_path,
                 opt_in_status_path,
             } => {
-                fields(&mut hash, ["regions", regions_path, region_name_path]);
-                fields(&mut hash, opt_in_status_path.as_deref());
+                fields(
+                    hash,
+                    ["regions", regions_path.as_str(), region_name_path.as_str()],
+                );
+                fields(hash, opt_in_status_path.as_deref());
             }
-            BootstrapPurpose::Enumeration => fields(&mut hash, ["enumeration"]),
+            BootstrapPurpose::Enumeration => fields(hash, ["enumeration"]),
         }
     });
-    hash.finalize().into()
 }

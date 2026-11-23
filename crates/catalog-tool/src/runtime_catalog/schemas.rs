@@ -86,16 +86,38 @@ fn schema(
     )
 }
 
-fn text_columns(
-    context: &Context<'_, '_>,
-    kind: &str,
-    name_path: Option<&str>,
+fn text_columns<'a>(
+    context: &'a Context<'a, 'a>,
+    kind: &'a str,
+    name_path: Option<&'a str>,
 ) -> Result<Vec<Value>, RuntimeCatalogCompileError> {
-    let targets = context
+    let paths = relation_target_paths(context, kind);
+    let compound_paths = compound_relation_paths(context, kind);
+    let text_paths = name_path
+        .into_iter()
+        .chain(paths)
+        .chain(compound_paths)
+        .collect::<BTreeSet<_>>();
+    text_paths
+        .into_iter()
+        .map(|path| {
+            encode::map([
+                (1, encode::path(context.services, path)?),
+                (2, Value::Int(3)),
+            ])
+        })
+        .collect()
+}
+
+fn relation_target_paths<'a>(
+    context: &'a Context<'a, 'a>,
+    kind: &'a str,
+) -> impl Iterator<Item = &'a str> {
+    context
         .kinds
         .relations()
         .iter()
-        .filter(|relation| relation.target_kinds.iter().any(|target| target == kind))
+        .filter(move |relation| relation.target_kinds.iter().any(|target| target == kind))
         .filter(|relation| {
             context.checked.is_none_or(|checked| {
                 super::model_path::active_kind(
@@ -107,18 +129,24 @@ fn text_columns(
                     &relation.source_kind,
                 )
             })
-        });
-    let paths = targets.filter_map(|relation| match &relation.target {
-        crate::kind_map::ReviewedRelationTarget::SelectedOutput(
-            crate::kind_map::ReviewedValuePath::Fields(path),
-        ) => Some(path.as_str()),
-        _ => None,
-    });
-    let compound_paths = context
+        })
+        .filter_map(|relation| match &relation.target {
+            crate::kind_map::ReviewedRelationTarget::SelectedOutput(
+                crate::kind_map::ReviewedValuePath::Fields(path),
+            ) => Some(path.as_str()),
+            _ => None,
+        })
+}
+
+fn compound_relation_paths<'a>(
+    context: &'a Context<'a, 'a>,
+    kind: &'a str,
+) -> impl Iterator<Item = &'a str> {
+    context
         .kinds
         .compound_relations()
         .iter()
-        .filter(|relation| relation.target_kinds.iter().any(|target| target == kind))
+        .filter(move |relation| relation.target_kinds.iter().any(|target| target == kind))
         .filter(|relation| {
             context.checked.is_none_or(|checked| {
                 super::model_path::active_kind(
@@ -137,19 +165,5 @@ fn text_columns(
                 crate::kind_map::ReviewedValuePath::Fields(path),
             ) => Some(path.as_str()),
             _ => None,
-        });
-    let text_paths = name_path
-        .into_iter()
-        .chain(paths)
-        .chain(compound_paths)
-        .collect::<BTreeSet<_>>();
-    text_paths
-        .into_iter()
-        .map(|path| {
-            encode::map([
-                (1, encode::path(context.services, path)?),
-                (2, Value::Int(3)),
-            ])
         })
-        .collect()
 }
