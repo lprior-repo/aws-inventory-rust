@@ -127,6 +127,19 @@ byte-for-byte. After refreshing the ignored binary, `models compile --check`
 passed. Its only changes were the 32 source-receipt bytes at one-based offsets
 19,051,809–19,051,840; no runtime policy or catalog layout changed.
 
+### Model-derived enumeration policies
+
+Derivation rechecks classification before constructing any entry. It rejects
+owner-sensitive inputs, ambiguous item collections, unresolved token pairs and
+identities absent from the model. Modeled pagination is inferred by the existing
+checker; generated page sizes are never written. Every proposed callable entry
+passes the same operation checker used by the overlay gate.
+
+`catalog/overlay/defer-inputs.txt` contains the sorted input-name deny list.
+Deferral reasons are bounded to 1,024 UTF-8 bytes. The internal derived result is
+the standard `Result<OperationOverlay, String>` rather than an equivalent custom
+two-variant enum, avoiding a large-enum lint or a needless boxed allocation.
+
 ## One command
 
 ![How a run is proven on the emulator](img/35-test-loop.png)

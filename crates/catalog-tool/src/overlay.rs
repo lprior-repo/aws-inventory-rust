@@ -1,3 +1,4 @@
+pub mod generate;
 mod binding_types;
 mod directory;
 mod merge;

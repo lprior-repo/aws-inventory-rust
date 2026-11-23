@@ -1,7 +1,7 @@
 mod orchestration;
 mod report;
 mod service;
-mod validation;
+pub(in crate::overlay) mod validation;
 use super::ReviewEvidence;
 use crate::{
     ReportMode,
