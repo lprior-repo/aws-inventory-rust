@@ -3,6 +3,8 @@ pub(super) mod fixed_input;
 mod fixed_input_tests;
 #[cfg(test)]
 mod page_size_tests;
+#[cfg(test)]
+mod read_only_tests;
 use bytes::Bytes;
 use inventory_core::{
     catalog::runtime::{CallablePlan, RuntimeProtocol},

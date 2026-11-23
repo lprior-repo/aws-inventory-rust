@@ -11,11 +11,13 @@ fn given_product_metadata_when_inspected_then_mutation_harness_is_never_a_normal
         .get("packages")
         .and_then(Value::as_array)
         .ok_or("metadata packages missing")?;
-    let product = packages
-        .iter()
-        .find(|package| package.get("name").and_then(Value::as_str) == Some("aws-inventory"))
-        .ok_or("product package missing")?;
-    excludes_harness(product)?;
+    for name in ["aws-inventory", "inventory-sweep"] {
+        let product = packages
+            .iter()
+            .find(|package| package.get("name").and_then(Value::as_str) == Some(name))
+            .ok_or_else(|| format!("missing product package {name}"))?;
+        excludes_harness(product)?;
+    }
     Ok(())
 }
 
