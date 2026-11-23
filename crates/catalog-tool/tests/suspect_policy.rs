@@ -103,7 +103,7 @@ fn check_correlated(policy: &overlay::OperationOverlay, request: &str, selected:
 }
 
 fn check_class(policy: &overlay::OperationOverlay, expected: OverlayClass) {
-    assert_eq!(policy.class, Some(expected));
+    assert_eq!(policy.class.as_ref(), Some(&expected));
     if matches!(expected, OverlayClass::Deny(_) | OverlayClass::Defer) {
         assert!(policy.items.is_none());
         assert!(policy.identity.is_none());
@@ -124,6 +124,9 @@ fn check_branches(policy: &overlay::OperationOverlay, input: &str, value: &str) 
     assert_eq!(policy.branches.len(), 2);
     assert!(policy.bind.is_empty());
     for branch in &policy.branches {
+        if input != "ResourceArn" {
+            assert_eq!(branch.fixed.get(&MemberPath::new("Scope")?), Some(&FixedValue::String(branch.discriminator.clone())));
+        }
         assert_eq!(branch.bind.get(&MemberPath::new(input)?), Some(&overlay::Binding::FromBranch {
             operation: overlay::OperationName::new(parent)?,
             branch: branch.discriminator.clone(),
