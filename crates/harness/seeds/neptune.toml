@@ -1,0 +1,10 @@
+format = 1
+service = "neptune"
+
+[[step]]
+id = "resource"
+operation = "CreateGlobalCluster"
+kind = "AWS::Neptune::GlobalCluster"
+identity = "GlobalCluster.GlobalClusterArn"
+[step.input]
+"GlobalClusterIdentifier" = "inventory-thin-neptune"
