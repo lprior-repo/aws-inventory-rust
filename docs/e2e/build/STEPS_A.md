@@ -244,8 +244,12 @@ Conventions used in every step:
 - **Prove it:** `catalog-tool overlay --source .local/aws-models --root .
   --check` passes with no `generated/` directory present; `models compile
   --check` passes.
-- **Done when:** both checks pass and the compiled catalog is byte-identical to
-  A0.2's.
+- **Done when:** both checks pass without a generated overlay directory, and
+  the overlay and relation reports match A0.2 byte for byte. The compiled
+  catalog must match A0.2 byte for byte except for the embedded-source
+  SHA-256 (`embedded_sources_sha256`), which must match a fresh digest of
+  the actual embedded sources. A1.1 edits the source tree covered by that
+  receipt; do not reuse A0.2's digest or change what it covers.
 - **Size:** about 260 added, 30 deleted. One change.
 - **Watch out:** the deny decision is not touched here. `is_promoted` in
   `overlay/check/validation/evaluation.rs` still turns any
