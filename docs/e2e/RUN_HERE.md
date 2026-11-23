@@ -535,3 +535,21 @@ The checked-in typed kind mappings remain authoritative; there is no
 The complete A2.2 gate remains held on the previously reported 60-second
 request-pacing timeout in ignored `sweep_e2e` scenarios. They are not rerun or
 relaxed here, and unsupported/failed scope totals are not claimed.
+
+All four compiled-catalog scenarios passed: 2,197 callable plans have schemas,
+the 1,925 table names are distinct, the four original encoded plans are
+byte-identical, and all eight selected services have reviewable kinds. Manual
+review found no mapping requiring an override; generation remains empty because
+the existing typed mappings already cover those operations. The raw-map
+accessor has root round-trip and nested-sibling boundary coverage. Both new
+required-manifest-artifact scenarios and core/catalog-tool library/binary
+Clippy gates passed with warnings denied.
+
+The individual regeneration stages and every subsequent `--check` exited 0,
+including `models compile --write` followed by `models compile --check`.
+Compilation took 132 wall-clock seconds in this run, including Cargo startup;
+there is no comparable pre-change P16 measurement. The model-only CLI also
+exited 0 and reported 436 services, 19,636 operations, 8,365 read-named
+operations, 2,735 readonly operations, and 2,209 root list/describe operations.
+Generated catalog/report files remain ignored; only the tracked manifest hashes
+are updated, including the generated kinds, names, and prior overlay artifacts.

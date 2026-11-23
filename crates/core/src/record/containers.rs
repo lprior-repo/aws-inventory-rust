@@ -12,6 +12,14 @@ pub struct MapRef<'a> {
     pub(super) bytes: &'a [u8],
 }
 impl<'a> MapRef<'a> {
+    pub fn as_bytes(self) -> Result<&'a [u8], RecordError> {
+        let mut decoder = Decoder::new(self.bytes);
+        skip::value(&mut decoder)?;
+        self.bytes
+            .get(..decoder.position())
+            .ok_or(RecordError::Missing { offset: decoder.position() })
+    }
+
     pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, RecordError> {
         super::validate(bytes)?;
         Ok(Self { bytes })

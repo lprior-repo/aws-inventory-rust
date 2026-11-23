@@ -5,7 +5,7 @@
 # catalog inputs, including the Git LFS objects. Outputs: the files listed in
 # catalog/.gitignore, which are never committed. Generation follows the moon
 # task graph (universal -> parent-candidates -> report -> fields -> endpoints ->
-# classes -> plans -> overlay -> compile), then the tracked registries are
+# classes -> plans -> overlay -> kinds -> compile), then the tracked registries are
 # checked, protocol fixtures are fetched when their script exists, and
 # MANIFEST.sha256 is written last so it records the freshly produced files.
 #
@@ -47,6 +47,7 @@ catalog models endpoints --write
 catalog classes --write
 catalog plans --write
 catalog overlay --source .local/aws-models --root . --write
+catalog kinds generate --write
 catalog coverage --write
 catalog models compile --write
 catalog iam-policy --write

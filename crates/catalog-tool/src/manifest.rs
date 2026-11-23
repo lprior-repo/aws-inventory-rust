@@ -19,6 +19,9 @@ const GENERATED_CATALOG_FILES: &[&str] = &[
     "catalog/aws-classes.report",
     "catalog/aws-plans.report",
     "catalog/aws-overlay.report",
+    "catalog/aws-kinds-generated.report",
+    "catalog/aws-names.report",
+    "catalog/kinds.generated.tsv",
     "catalog/coverage-denominator.report",
     "catalog/cloudcontrol-parent-candidates.json",
     "catalog/cloudcontrol-universal.json",
@@ -155,3 +158,6 @@ fn manifest_content(files: &[(PathBuf, String)]) -> Result<String, Error> {
 
     Ok(content)
 }
+
+#[cfg(test)]
+mod tests;
