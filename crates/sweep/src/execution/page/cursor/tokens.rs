@@ -12,14 +12,7 @@ pub(super) fn request_record(
     let fields = plan
         .tokens
         .iter()
-        .map(|token| {
-            response_value(token, response, headers).map(|value| {
-                value.map(|value| input::InputField {
-                    path: token.request_path.clone(),
-                    value,
-                })
-            })
-        })
+        .map(|token| response_field(token, response, headers))
         .filter_map(Result::transpose)
         .collect::<Result<Vec<_>, _>>()?;
     if fields.is_empty() && truncated != Some(true) {
@@ -27,6 +20,19 @@ pub(super) fn request_record(
     }
     validate_tuple(plan, &fields)?;
     input::merge_input(&empty_record()?, &fields).map(Some)
+}
+
+fn response_field(
+    token: &TokenBinding,
+    response: &Record,
+    headers: &http::HeaderMap,
+) -> Result<Option<input::InputField>, SweepError> {
+    response_value(token, response, headers).map(|value| {
+        value.map(|value| input::InputField {
+            path: token.request_path.clone(),
+            value,
+        })
+    })
 }
 
 pub(super) fn validate_tuple(
@@ -147,8 +153,11 @@ pub(super) fn header_token(
     if value.is_empty() {
         return Ok(None);
     }
-    let token =
-        match token_type {
+    parse_header(value, token_type).map(Some)
+}
+
+fn parse_header(value: &str, token_type: TokenType) -> Result<Value, SweepError> {
+    Ok(match token_type {
             TokenType::String => Value::Text(value.to_owned()),
             TokenType::Integer => Value::Int(value.parse().map_err(|_| {
                 SweepError::Operation("pagination response header is not an integer")
@@ -156,6 +165,5 @@ pub(super) fn header_token(
             TokenType::Boolean => Value::Bool(value.parse().map_err(|_| {
                 SweepError::Operation("pagination response header is not a boolean")
             })?),
-        };
-    Ok(Some(token))
+    })
 }
