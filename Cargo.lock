@@ -2646,6 +2646,7 @@ dependencies = [
  "aws-sdk-s3",
  "aws-wire",
  "base16ct",
+ "base64 0.23.1",
  "bytes",
  "catalog-tool",
  "cmdb-view",
