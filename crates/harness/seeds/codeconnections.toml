@@ -1,0 +1,11 @@
+format = 1
+service = "codeconnections"
+
+[[step]]
+id = "connection"
+operation = "CreateConnection"
+kind = "AWS::CodeConnections::Connection"
+identity = "ConnectionArn"
+[step.input]
+ConnectionName = "inventory-thin-codeconnections"
+ProviderType = "GitHub"
