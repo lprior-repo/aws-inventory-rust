@@ -6,6 +6,7 @@ id = "preference"
 operation = "CreateProcurementPortalPreference"
 kind = "AWS::Invoicing::ProcurementPortalPreference"
 identity = "ProcurementPortalPreferenceArn"
+scope = "account"
 [step.input]
 ProcurementPortalName = "SAP_BUSINESS_NETWORK"
 BuyerDomain = "NetworkID"
