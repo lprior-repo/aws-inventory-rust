@@ -1,3 +1,5 @@
+mod composite;
+use composite::key_text;
 mod identity_choice;
 #[cfg(test)]
 mod identity_tests;
@@ -67,7 +69,14 @@ pub(super) fn path_value<'a>(
     let Some(leaf) = path.last().copied() else {
         return scalar_item(root).map_err(SweepError::from);
     };
-    let parent = path.iter().take(path.len().saturating_sub(1)).try_fold(
+    let parent = path_parent(root, path)?;
+    parent.map_or(Ok(None), |map| {
+        map.get_field(leaf).map_err(SweepError::from)
+    })
+}
+
+fn path_parent<'a>(root: MapRef<'a>, path: &[FieldId]) -> Result<Option<MapRef<'a>>, SweepError> {
+    path.iter().take(path.len().saturating_sub(1)).try_fold(
         Some(root),
         |current, id| -> Result<Option<MapRef<'a>>, SweepError> {
             current.map_or(Ok(None), |map| match map.get_field(*id)? {
@@ -75,10 +84,7 @@ pub(super) fn path_value<'a>(
                 _ => Ok(None),
             })
         },
-    )?;
-    parent.map_or(Ok(None), |map| {
-        map.get_field(leaf).map_err(SweepError::from)
-    })
+    )
 }
 
 pub(super) fn item_records(record: &Record, plan: &ItemPlan) -> Result<Vec<Record>, SweepError> {
@@ -180,26 +186,27 @@ fn identity(
     validation: &IdentityTextValidation<'_, '_>,
 ) -> Result<ResourceId, SweepError> {
     let text = match plan {
-        IdentityPlan::Arn(path) => {
-            let text = required_text(record, path)?;
-            trusted_arn::validate_arn(&text, context)?;
-            text
-        }
+        IdentityPlan::Arn(path) => validated_arn(record, path, context)?,
         IdentityPlan::Template(parts) => Cow::Owned(template_text(record, parts, context)?),
         IdentityPlan::Key(paths) => key_text(record, paths)?,
         IdentityPlan::Choice(_) | IdentityPlan::CorrelatedKey(_) | IdentityPlan::MapArn { .. } => {
             return identity_choice::resource_id(
-                record,
-                plan,
-                context,
-                discovery,
-                current_request,
-                validation,
+                record, plan, context, discovery, current_request, validation,
             );
         }
     };
     ResourceId::parse(&text)
         .map_err(|_| SweepError::Operation("modeled resource identity is invalid"))
+}
+
+fn validated_arn<'a>(
+    record: &'a Record,
+    path: &[FieldId],
+    context: Option<&IdentityContext<'_>>,
+) -> Result<Cow<'a, str>, SweepError> {
+    let text = required_text(record, path)?;
+    trusted_arn::validate_arn(&text, context)?;
+    Ok(text)
 }
 fn required_text<'a>(record: &'a Record, path: &[FieldId]) -> Result<Cow<'a, str>, SweepError> {
     path_value(record.root(), path)?
@@ -273,53 +280,6 @@ fn commercial_region(region: &str) -> bool {
     )
 }
 
-fn key_text<'a>(record: &'a Record, paths: &[Box<[FieldId]>]) -> Result<Cow<'a, str>, SweepError> {
-    match paths {
-        [] => {
-            return Err(SweepError::Operation(
-                "modeled composite identity has no fields",
-            ));
-        }
-        [single] => return required_text(record, single),
-        _ => {}
-    }
-    paths
-        .iter()
-        .enumerate()
-        .try_fold(String::new(), |mut text, (position, path)| {
-            let component = required_text(record, path)?;
-            let digits = if component.is_empty() {
-                1
-            } else {
-                component.len().ilog10().saturating_add(1)
-            };
-            let digits = usize::try_from(digits)
-                .map_err(|_| SweepError::Operation("identity length overflow"))?;
-            let additional = component
-                .len()
-                .checked_add(digits)
-                .and_then(|length| length.checked_add(1))
-                .and_then(|length| length.checked_add(usize::from(position > 0)))
-                .ok_or(SweepError::Operation("identity length overflow"))?;
-            if text
-                .len()
-                .checked_add(additional)
-                .is_none_or(|length| length > 4096)
-            {
-                return Err(SweepError::Operation(
-                    "modeled resource identity is too long",
-                ));
-            }
-            text.try_reserve(additional)?;
-            if position > 0 {
-                text.push('|');
-            }
-            write!(text, "{}:{component}", component.len())
-                .map_err(|_| SweepError::Operation("identity formatting failed"))?;
-            Ok(text)
-        })
-        .map(Cow::Owned)
-}
 
 fn value_text(value: ValueRef<'_>) -> Result<Cow<'_, str>, SweepError> {
     match value {

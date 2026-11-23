@@ -32,6 +32,10 @@ pub(super) fn encode(
         compression: aws_wire::request::CompressionPolicy::default(),
         addressing: None,
     };
+    encode_protocol(context)
+}
+
+fn encode_protocol(context: aws_wire::request::RequestContext<'_>) -> Result<http::Request<Bytes>, SweepError> {
     match context.protocol {
         aws_wire::request::Protocol::AwsJson10
         | aws_wire::request::Protocol::AwsJson11

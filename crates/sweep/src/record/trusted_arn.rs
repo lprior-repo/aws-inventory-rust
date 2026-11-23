@@ -26,23 +26,22 @@ fn parse(value: &str) -> Result<Arn<'_>, SweepError> {
     ) else {
         return Err(invalid());
     };
+    let arn = Arn { partition, service, region, account, resource };
+    validate_parts(value, &arn)?;
+    Ok(arn)
+}
+
+fn validate_parts(value: &str, arn: &Arn<'_>) -> Result<(), SweepError> {
     if value.len() > 4096
         || value.chars().any(char::is_control)
-        || partition.is_empty()
-        || resource.is_empty()
-        || ServiceId::parse(service).is_err()
-        || (!account.is_empty() && AccountId::parse(account).is_err())
-        || (!region.is_empty() && RegionId::parse(region).is_err())
-    {
-        return Err(invalid());
+        || arn.partition.is_empty()
+        || arn.resource.is_empty()
+        || ServiceId::parse(arn.service).is_err()
+        || (!arn.account.is_empty() && AccountId::parse(arn.account).is_err())
+        || (!arn.region.is_empty() && RegionId::parse(arn.region).is_err()) {
+        return Err(SweepError::Operation("modeled ARN is malformed"));
     }
-    Ok(Arn {
-        partition,
-        service,
-        region,
-        account,
-        resource,
-    })
+    Ok(())
 }
 
 pub(crate) fn validate_arn(
@@ -112,36 +111,34 @@ pub(crate) fn validate_resource_arn(
         return Err(invalid());
     }
     match kind {
-        ArnResourceKind::SnsSubscription => {
-            let (topic, id) = arn.resource.split_once(':').ok_or_else(invalid)?;
-            if !valid_name(topic, 256)
-                || id.is_empty()
-                || id.len() > 128
-                || !id
-                    .bytes()
-                    .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
-            {
-                return Err(invalid());
-            }
-        }
-        ArnResourceKind::SnsTopic => {
-            if !valid_name(arn.resource, 256) {
-                return Err(invalid());
-            }
-        }
-        ArnResourceKind::SqsQueue => {
-            if !valid_name(arn.resource, 80) {
-                return Err(invalid());
-            }
-            let url = request_url.ok_or(SweepError::Operation(
-                "reviewed queue ARN omitted its request URL",
-            ))?;
-            if queue_url(url, trusted)? != arn.resource {
-                return Err(SweepError::Operation(
-                    "reviewed queue ARN does not match its request URL",
-                ));
-            }
-        }
+        ArnResourceKind::SnsSubscription => validate_subscription(arn.resource),
+        ArnResourceKind::SnsTopic => validate_name(arn.resource, 256),
+        ArnResourceKind::SqsQueue => validate_queue(arn.resource, trusted, request_url),
+    }
+}
+
+fn validate_name(value: &str, max: usize) -> Result<(), SweepError> {
+    if !valid_name(value, max) {
+        return Err(SweepError::Operation("reviewed resource ARN is malformed"));
+    }
+    Ok(())
+}
+
+fn validate_subscription(resource: &str) -> Result<(), SweepError> {
+    let invalid = || SweepError::Operation("reviewed resource ARN is malformed");
+    let (topic, id) = resource.split_once(':').ok_or_else(invalid)?;
+    if !valid_name(topic, 256) || id.is_empty() || id.len() > 128
+        || !id.bytes().all(|byte| byte.is_ascii_alphanumeric() || byte == b'-') {
+        return Err(invalid());
+    }
+    Ok(())
+}
+
+fn validate_queue(resource: &str, trusted: &IdentityContext<'_>, request_url: Option<&str>) -> Result<(), SweepError> {
+    validate_name(resource, 80)?;
+    let url = request_url.ok_or(SweepError::Operation("reviewed queue ARN omitted its request URL"))?;
+    if queue_url(url, trusted)? != resource {
+        return Err(SweepError::Operation("reviewed queue ARN does not match its request URL"));
     }
     Ok(())
 }
@@ -181,6 +178,12 @@ pub(crate) fn queue_url<'a>(
 }
 
 fn queue_host(host: &str, region: &str) -> bool {
+    regional_queue_host(host, region)
+        || (region == "us-east-1" && host == "queue.amazonaws.com")
+        || (legacy_queue_region(region) && host.strip_prefix(region) == Some(".queue.amazonaws.com"))
+}
+
+fn regional_queue_host(host: &str, region: &str) -> bool {
     let (_, dns, dual) = partition(region);
     for service in ["sqs", "sqs-fips"] {
         if let Some(suffix) = host
@@ -193,10 +196,11 @@ fn queue_host(host: &str, region: &str) -> bool {
             return true;
         }
     }
-    if region == "us-east-1" && host == "queue.amazonaws.com" {
-        return true;
-    }
-    let legacy = matches!(
+    false
+}
+
+fn legacy_queue_region(region: &str) -> bool {
+    matches!(
         region,
         "us-east-2"
             | "us-west-1"
@@ -217,8 +221,7 @@ fn queue_host(host: &str, region: &str) -> bool {
             | "eu-west-3"
             | "eu-north-1"
             | "sa-east-1"
-    );
-    legacy && host.strip_prefix(region) == Some(".queue.amazonaws.com")
+    )
 }
 
 // AWS SDK partition outputs: github.com/aws/aws-sdk-go-v2/blob/main/internal/endpoints/awsrulesfn/partitions.json
@@ -243,102 +246,4 @@ fn partition(region: &str) -> (&'static str, &'static str, &'static str) {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    type TestResult = Result<(), Box<dyn std::error::Error>>;
-    #[test]
-    fn official_queue_endpoint_families_retain_case_sensitive_names() -> TestResult {
-        let account = AccountId::parse("123456789012")?;
-        for (region, host) in [
-            ("us-east-1", "sqs.us-east-1.amazonaws.com"),
-            ("us-east-1", "sqs-fips.us-east-1.api.aws"),
-            ("us-east-1", "queue.amazonaws.com"),
-            ("eu-west-1", "eu-west-1.queue.amazonaws.com"),
-            ("cn-north-1", "sqs.cn-north-1.amazonaws.com.cn"),
-            ("cn-north-1", "sqs.cn-north-1.api.amazonwebservices.com.cn"),
-            ("us-iso-east-1", "sqs.us-iso-east-1.c2s.ic.gov"),
-        ] {
-            let region = RegionId::parse(region)?;
-            let trusted = IdentityContext {
-                account: &account,
-                region: &region,
-            };
-            assert_eq!(
-                queue_url(
-                    &format!("https://{host}/123456789012/MyQueue.fifo"),
-                    &trusted
-                )?,
-                "MyQueue.fifo"
-            );
-        }
-        Ok(())
-    }
-    #[test]
-    fn queue_url_rejects_spoofing_cross_scope_and_ambiguous_separators() -> TestResult {
-        let account = AccountId::parse("123456789012")?;
-        let region = RegionId::parse("us-east-1")?;
-        let trusted = IdentityContext {
-            account: &account,
-            region: &region,
-        };
-        for url in [
-            "http://sqs.us-east-1.amazonaws.com/123456789012/Queue",
-            "https://sqs.us-east-1.amazonaws.com.evil.test/123456789012/Queue",
-            "https://user@sqs.us-east-1.amazonaws.com/123456789012/Queue",
-            "https://sqs.us-east-1.amazonaws.com:443/123456789012/Queue",
-            "https://sqs.us-east-2.amazonaws.com/123456789012/Queue",
-            "https://sqs.us-east-1.amazonaws.com/999999999999/Queue",
-            "https://sqs.us-east-1.amazonaws.com/123456789012/Queue%2fOther",
-            "https://sqs.us-east-1.amazonaws.com/123456789012/Queue/Other",
-            "https://sqs.us-east-1.amazonaws.com/123456789012/Queue?x=1",
-            "https://sqs.us-east-1.amazonaws.com/123456789012/Queue#fragment",
-            "https://sqs.us-east-1.amazonaws.com/123456789012/",
-        ] {
-            assert!(queue_url(url, &trusted).is_err(), "{url}");
-        }
-        Ok(())
-    }
-    #[test]
-    fn selected_queue_arn_must_match_requested_queue_and_resource_type() -> TestResult {
-        let account = AccountId::parse("123456789012")?;
-        let region = RegionId::parse("us-east-1")?;
-        let trusted = IdentityContext {
-            account: &account,
-            region: &region,
-        };
-        let url = "https://sqs.us-east-1.amazonaws.com/123456789012/Queue";
-        assert!(
-            validate_resource_arn(
-                "arn:aws:sqs:us-east-1:123456789012:Queue",
-                &ArnResourceKind::SqsQueue,
-                &trusted,
-                Some(url)
-            )
-            .is_ok()
-        );
-        for arn in [
-            "arn:aws:sqs:us-east-1:123456789012:Other",
-            "arn:aws:sns:us-east-1:123456789012:Queue",
-            "arn:aws:sqs:us-west-2:123456789012:Queue",
-            "arn:aws-cn:sqs:us-east-1:123456789012:Queue",
-            "arn:aws:sqs:us-east-1:999999999999:Queue",
-            "arn:aws:sqs:us-east-1:123456789012:Queue:extra",
-        ] {
-            assert!(
-                validate_resource_arn(arn, &ArnResourceKind::SqsQueue, &trusted, Some(url))
-                    .is_err(),
-                "{arn}"
-            );
-        }
-        assert!(
-            validate_resource_arn(
-                "arn:aws:sqs:us-east-1:123456789012:Queue",
-                &ArnResourceKind::SqsQueue,
-                &trusted,
-                None
-            )
-            .is_err()
-        );
-        Ok(())
-    }
-}
+mod tests;

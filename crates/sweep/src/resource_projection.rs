@@ -57,15 +57,7 @@ fn project_map(
             } else if tail.is_empty() {
                 project_leaf(value, projection)?
             } else {
-                match value {
-                    ValueRef::Map(child) => project_map(child, tail, projection)?,
-                    ValueRef::Null => Value::Null,
-                    _ => {
-                        return Err(SweepError::Operation(
-                            "projection parent is not a structure",
-                        ));
-                    }
-                }
+                project_child(value, tail, projection)?
             };
             Ok((key.to_key(), replacement))
         })
@@ -73,12 +65,26 @@ fn project_map(
         .map(Value::Map)
 }
 
+fn project_child(value: ValueRef<'_>, path: &[FieldId], projection: &ResourceProjectionPlan) -> Result<Value, SweepError> {
+    match value {
+        ValueRef::Map(child) => project_map(child, path, projection),
+        ValueRef::Null => Ok(Value::Null),
+        _ => Err(SweepError::Operation("projection parent is not a structure")),
+    }
+}
+
 fn project_leaf(
     value: ValueRef<'_>,
     projection: &ResourceProjectionPlan,
 ) -> Result<Value, SweepError> {
     match projection {
-        ResourceProjectionPlan::IamTrustSummary { .. } => {
+        ResourceProjectionPlan::IamTrustSummary { .. } => trust_summary(value),
+        ResourceProjectionPlan::SensitiveDigest { .. } => digest_value(value),
+        ResourceProjectionPlan::SensitiveMapDigest { key, .. } => sensitive_map(value, key),
+    }
+}
+
+fn trust_summary(value: ValueRef<'_>) -> Result<Value, SweepError> {
             let document = match value {
                 ValueRef::Text(document) => Some(document),
                 ValueRef::Null => None,
@@ -100,9 +106,10 @@ fn project_leaf(
                 .into_iter()
                 .collect(),
             ))
-        }
-        ResourceProjectionPlan::SensitiveDigest { .. } => digest_value(value),
-        ResourceProjectionPlan::SensitiveMapDigest { key, .. } => match value {
+}
+
+fn sensitive_map(value: ValueRef<'_>, key: &str) -> Result<Value, SweepError> {
+    match value {
             ValueRef::Null => Ok(Value::Null),
             ValueRef::Map(map) => map
                 .iter()?
@@ -120,7 +127,6 @@ fn project_leaf(
             _ => Err(SweepError::Operation(
                 "sensitive projection target is not a map",
             )),
-        },
     }
 }
 
@@ -157,7 +163,13 @@ fn summary_value(value: &serde_json::Value, depth: usize) -> Result<Value, Sweep
             .map(|value| summary_value(value, depth.saturating_add(1)))
             .collect::<Result<_, _>>()
             .map(Value::List),
-        serde_json::Value::Object(values) => values
+        serde_json::Value::Object(values) => summary_object(values, depth),
+        _ => Err(SweepError::Operation("trust summary contains unsupported scalar")),
+    }
+}
+
+fn summary_object(values: &serde_json::Map<String, serde_json::Value>, depth: usize) -> Result<Value, SweepError> {
+    values
             .iter()
             .map(|(key, value)| {
                 Ok((
@@ -166,11 +178,7 @@ fn summary_value(value: &serde_json::Value, depth: usize) -> Result<Value, Sweep
                 ))
             })
             .collect::<Result<_, SweepError>>()
-            .map(Value::Map),
-        _ => Err(SweepError::Operation(
-            "trust summary contains unsupported scalar",
-        )),
-    }
+            .map(Value::Map)
 }
 
 pub(super) fn reference_owner(

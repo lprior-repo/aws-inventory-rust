@@ -84,22 +84,26 @@ pub(crate) fn child(
                 if source == ContextSource::SelectedItem {
                     return lookup(row, path);
                 }
-                let value = match scope.branch() {
-                    Some(branch) => ancestry.value_from_branch(
-                        parent.service_name(),
-                        parent.operation_name(),
-                        branch,
-                        source,
-                        path,
-                    ),
-                    None => {
-                        ancestry.value(parent.service_name(), parent.operation_name(), source, path)
-                    }
-                };
-                value.map_err(|_| SweepError::Operation("child eligibility context is invalid"))
+                ancestry_value(parent, ancestry, scope, source, path)
             })?;
             Ok(eligible & matches)
         })
+}
+
+fn ancestry_value<'a>(
+    parent: &CallablePlan<'_>,
+    ancestry: &'a DiscoveryContext,
+    scope: &ScopeKey,
+    source: ContextSource,
+    path: &[FieldId],
+) -> Result<Option<ValueRef<'a>>, SweepError> {
+    let value = match scope.branch() {
+        Some(branch) => ancestry.value_from_branch(
+            parent.service_name(), parent.operation_name(), branch, source, path,
+        ),
+        None => ancestry.value(parent.service_name(), parent.operation_name(), source, path),
+    };
+    value.map_err(|_| SweepError::Operation("child eligibility context is invalid"))
 }
 
 fn evaluate<'a>(
@@ -114,34 +118,46 @@ fn evaluate<'a>(
                 Ok(false)
             }
         },
-        RowPredicatePlan::BooleanEquals { operand, value } => {
-            let actual = read(operand.source, &operand.path)?
-                .ok_or(SweepError::Operation("row policy boolean is absent"))?;
-            typed(actual, RowValueType::Boolean)?;
-            match actual {
-                ValueRef::Bool(actual) => Ok(actual == *value),
-                _ => Err(SweepError::Operation("row policy boolean has invalid type")),
-            }
-        }
+        RowPredicatePlan::BooleanEquals { operand, value } => boolean(operand, *value, read),
         RowPredicatePlan::SelectedRequestEquals {
             selected,
             request,
             value_type,
             missing,
-        } => {
-            let request = read(ContextSource::Request, request)?
-                .ok_or(SweepError::Operation("row policy request parent is absent"))?;
-            typed(request, *value_type)?;
-            match read(ContextSource::SelectedItem, selected)? {
-                None if *missing == MissingSelected::AllowAbsent => Ok(true),
-                None => Err(SweepError::Operation(
-                    "row policy returned parent is absent",
-                )),
-                Some(selected) => {
-                    typed(selected, *value_type)?;
-                    equal(selected, request)
-                }
-            }
+        } => selected_equals(selected, request, *value_type, *missing, read),
+    }
+}
+
+fn boolean<'a>(
+    operand: &inventory_core::catalog::runtime::RowOperandPlan,
+    expected: bool,
+    read: &impl Fn(ContextSource, &[FieldId]) -> Result<Option<ValueRef<'a>>, SweepError>,
+) -> Result<bool, SweepError> {
+    let actual = read(operand.source, &operand.path)?
+        .ok_or(SweepError::Operation("row policy boolean is absent"))?;
+    typed(actual, RowValueType::Boolean)?;
+    match actual {
+        ValueRef::Bool(actual) => Ok(actual == expected),
+        _ => Err(SweepError::Operation("row policy boolean has invalid type")),
+    }
+}
+
+fn selected_equals<'a>(
+    selected: &[FieldId],
+    request: &[FieldId],
+    value_type: RowValueType,
+    missing: MissingSelected,
+    read: &impl Fn(ContextSource, &[FieldId]) -> Result<Option<ValueRef<'a>>, SweepError>,
+) -> Result<bool, SweepError> {
+    let request = read(ContextSource::Request, request)?
+        .ok_or(SweepError::Operation("row policy request parent is absent"))?;
+    typed(request, value_type)?;
+    match read(ContextSource::SelectedItem, selected)? {
+        None if missing == MissingSelected::AllowAbsent => Ok(true),
+        None => Err(SweepError::Operation("row policy returned parent is absent")),
+        Some(selected) => {
+            typed(selected, value_type)?;
+            equal(selected, request)
         }
     }
 }

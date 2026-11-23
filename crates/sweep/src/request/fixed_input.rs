@@ -19,21 +19,7 @@ pub(crate) fn value(literal: &BindingValue) -> Result<Value, SweepError> {
         let Some(next) = work.pop() else {
             return ControlFlow::Break(Ok(()));
         };
-        let result = (|| {
-            match next {
-                Work::Read(value) => read(value, &mut work, &mut output),
-                Work::List(length) => {
-                    let children = split(&mut output, length)?;
-                    output.push(Value::List(children));
-                }
-                Work::Object(keys) => {
-                    let children = split(&mut output, keys.len())?;
-                    output.push(Value::Map(keys.into_iter().zip(children).collect()));
-                }
-            }
-            Ok::<_, SweepError>(())
-        })();
-        match result {
+        match step(next, &mut work, &mut output) {
             Ok(()) => ControlFlow::Continue(()),
             Err(error) => ControlFlow::Break(Err(error)),
         }
@@ -47,6 +33,21 @@ pub(crate) fn value(literal: &BindingValue) -> Result<Value, SweepError> {
     output
         .pop()
         .ok_or(SweepError::Operation("fixed input is absent"))
+}
+
+fn step<'a>(next: Work<'a>, work: &mut Vec<Work<'a>>, output: &mut Vec<Value>) -> Result<(), SweepError> {
+    match next {
+        Work::Read(value) => read(value, work, output),
+        Work::List(length) => {
+            let children = split(output, length)?;
+            output.push(Value::List(children));
+        }
+        Work::Object(keys) => {
+            let children = split(output, keys.len())?;
+            output.push(Value::Map(keys.into_iter().zip(children).collect()));
+        }
+    }
+    Ok(())
 }
 fn read<'a>(value: &'a BindingValue, work: &mut Vec<Work<'a>>, output: &mut Vec<Value>) {
     let scalar = match value {
@@ -65,16 +66,18 @@ fn read<'a>(value: &'a BindingValue, work: &mut Vec<Work<'a>>, output: &mut Vec<
             None
         }
         BindingValue::Object(values) => {
-            work.push(Work::Object(
-                values.iter().map(|(key, _)| key.clone()).collect(),
-            ));
-            work.extend(values.iter().rev().map(|(_, value)| Work::Read(value)));
+            read_object(values, work);
             None
         }
     };
     if let Some(value) = scalar {
         output.push(value);
     }
+}
+
+fn read_object<'a>(values: &'a [(Key, BindingValue)], work: &mut Vec<Work<'a>>) {
+    work.push(Work::Object(values.iter().map(|(key, _)| key.clone()).collect()));
+    work.extend(values.iter().rev().map(|(_, value)| Work::Read(value)));
 }
 fn split(values: &mut Vec<Value>, length: usize) -> Result<Vec<Value>, SweepError> {
     let start = values

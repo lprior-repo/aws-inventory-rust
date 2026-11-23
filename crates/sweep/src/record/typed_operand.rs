@@ -37,6 +37,21 @@ pub(super) fn string_list<'a>(
     if !(1..=64).contains(&max_items) || !(1..=4096).contains(&max_item_bytes) {
         return Err(SweepError::Operation("invalid identity string list bounds"));
     }
+    let (list, count) = checked_list(record, path, max_items)?;
+    let mut text = String::new();
+    write!(text, "list:{count}")
+        .map_err(|_| SweepError::Operation("identity formatting failed"))?;
+    list.iter()?.take(65).try_for_each(|value| {
+        append_member(&mut text, value?, max_item_bytes, element)
+    })?;
+    Ok(Cow::Owned(text))
+}
+
+fn checked_list<'a>(
+    record: &'a Record,
+    path: &[FieldId],
+    max_items: u32,
+) -> Result<(inventory_core::record::ListRef<'a>, usize), SweepError> {
     let value = path_value(record.root(), path)?
         .ok_or(SweepError::Operation("modeled identity path is absent"))?;
     let ValueRef::List(list) = value else {
@@ -50,11 +65,16 @@ pub(super) fn string_list<'a>(
             "modeled identity string list count is out of range",
         ));
     }
-    let mut text = String::new();
-    write!(text, "list:{count}")
-        .map_err(|_| SweepError::Operation("identity formatting failed"))?;
-    list.iter()?.take(65).try_for_each(|value| {
-        let ValueRef::Text(component) = value? else {
+    Ok((list, count))
+}
+
+fn append_member(
+    text: &mut String,
+    value: ValueRef<'_>,
+    max_item_bytes: u32,
+    element: &IdentityTextOperandValidation<'_, '_>,
+) -> Result<(), SweepError> {
+        let ValueRef::Text(component) = value else {
             return Err(SweepError::Operation(
                 "modeled identity list member must be text",
             ));
@@ -68,9 +88,7 @@ pub(super) fn string_list<'a>(
             ));
         }
         element.accepts(component)?;
-        append(&mut text, component)
-    })?;
-    Ok(Cow::Owned(text))
+        append(text, component)
 }
 
 fn append(text: &mut String, component: &str) -> Result<(), SweepError> {
