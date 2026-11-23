@@ -3,7 +3,7 @@
 ## Unreleased — Direction: endpoint wire engine
 
 - Seed TOML strings targeting modeled blobs decode strict canonical padded base64
-  during preflight, within the existing 1,024-byte text bound; ordinary strings
+  during preflight, within a 1,024-byte encoded blob bound; ordinary strings
   remain text and malformed blob literals fail before network calls.
 - Native first-page probes accept repeatable `--service` filters for isolated
   service seed verification; omitted filters retain the full-catalog report.

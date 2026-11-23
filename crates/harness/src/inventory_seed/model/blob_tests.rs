@@ -2,7 +2,7 @@ use super::*;
 use inventory_core::record::Value;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-const HEADER: &str = "format=1\nservice='translate'\n[[step]]\nid='import'\noperation='ImportTerminology'\nkind=''\n[step.input]\nName='not base64?'\nMergeStrategy='OVERWRITE'\n";
+const HEADER: &str = "format=1\nservice='translate'\n[[step]]\nid='import'\noperation='ImportTerminology'\nkind=''\n[step.input]\nName='inventory-blob'\nMergeStrategy='OVERWRITE'\n";
 
 fn bytes() -> Result<Vec<u8>, std::io::Error> {
     std::fs::read(
@@ -86,7 +86,7 @@ fn given_ordinary_text_beside_blob_when_toml_prepared_then_text_is_not_base64_de
         PreparedInputValue::Text(text) => Some(text.as_str()),
         _ => None,
     }).collect::<Vec<_>>();
-    assert_eq!(text, ["not base64?", "OVERWRITE"]);
+    assert_eq!(text, ["inventory-blob", "OVERWRITE"]);
     assert_eq!(blob(&inputs)?, b"foo");
     Ok(())
 }
@@ -107,15 +107,12 @@ fn given_oversized_blob_at_modeled_boundary_when_prepared_then_decode_is_rejecte
 }
 
 #[test]
-fn given_empty_or_oversized_toml_blob_when_loaded_then_existing_text_bound_rejects_it()
--> TestResult {
+fn given_empty_toml_blob_when_loaded_then_existing_nonempty_text_bound_rejects_it() -> TestResult {
     let bytes = bytes()?;
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
-    [String::new(), "AAAA".repeat(257)].iter().for_each(|encoded| {
-        assert!(matches!(
-            prepare(&runtime, encoded),
-            Err(SeedError::Invalid("seed text exceeds its value bound"))
-        ));
-    });
+    assert!(matches!(
+        prepare(&runtime, ""),
+        Err(SeedError::Invalid("seed text exceeds its value bound"))
+    ));
     Ok(())
 }
