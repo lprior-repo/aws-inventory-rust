@@ -11,7 +11,7 @@ pub(super) fn overlays() -> Result<Vec<ServiceOverlay>, NameError> {
         )?,
         service(
             "batch",
-            [super::batch_0::part_0()?, super::batch_0::part_1()?]
+            [super::batch_0::part_0()?, super::batch_1::part_1()?]
                 .into_iter()
                 .flatten()
                 .collect(),

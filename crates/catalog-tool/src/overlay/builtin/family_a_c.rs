@@ -40,6 +40,7 @@ mod backup_0;
 mod backup_gateway_0;
 mod backupsearch_0;
 mod batch_0;
+mod batch_1;
 mod bcm_dashboards_0;
 mod bcm_data_exports_0;
 mod bcm_pricing_calculator_0;
