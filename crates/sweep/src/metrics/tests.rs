@@ -82,3 +82,15 @@ fn given_counter_at_capacity_when_incremented_then_it_does_not_wrap() {
     add(&counter, 1);
     assert_eq!(counter.load(Ordering::Relaxed), u64::MAX);
 }
+
+#[test]
+fn given_skipped_child_requests_when_metrics_complete_then_count_is_reported_and_reset() {
+    let counters = Accumulators::default();
+    counters.skipped_children(20);
+    counters.skipped_children(1);
+    let mut metrics = SweepMetrics::default();
+    counters.snapshot(&mut metrics);
+    assert_eq!(metrics.child_requests_skipped, 21);
+    Accumulators::default().snapshot(&mut metrics);
+    assert_eq!(metrics.child_requests_skipped, 0);
+}

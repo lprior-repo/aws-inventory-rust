@@ -5,7 +5,7 @@ service = "frauddetector"
 id = "detector"
 operation = "PutDetector"
 kind = "AWS::FraudDetector::Detector"
-identity = { input = "detectorId" }
+identity = { input = "detectorId", template = "arn:{partition}:frauddetector:{region}:{account}:detector/{value}" }
 [step.input]
 detectorId = "inventory_seed_detector"
 eventTypeName = "inventory_seed_event"

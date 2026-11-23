@@ -4,7 +4,14 @@ service = "medical-imaging"
 [[step]]
 id = "resource"
 operation = "CreateDatastore"
-kind = "AWS::MedicalImaging::Datastore"
-identity = "datastoreId"
+kind = ""
 [step.input]
 "clientToken" = "12345678-1234-4234-8234-123456789abc"
+
+[[step]]
+id = "datastore"
+operation = "GetDatastore"
+kind = "AWS::HealthImaging::Datastore"
+identity = "datastoreProperties.datastoreArn"
+[step.input]
+datastoreId = { from = "resource", path = "datastoreId" }

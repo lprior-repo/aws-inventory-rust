@@ -5,7 +5,7 @@ service = "neptune-graph"
 id = "resource"
 operation = "CreateGraph"
 kind = "AWS::NeptuneGraph::Graph"
-identity = "id"
+identity = "arn"
 [step.input]
 "graphName" = "inventory-thin-neptune-graph"
 "provisionedMemory" = 16

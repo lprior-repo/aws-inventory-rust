@@ -26,6 +26,7 @@ pub(in crate::execution::page) fn child_work(
         .map(|request| request_field(context, row, observation, request))
         .transpose()?;
     if matches!(fields, Some(None)) {
+        budget.skip_request();
         return Ok(None);
     }
     let fields = fields.flatten().into_iter().collect::<Vec<_>>();
@@ -91,6 +92,7 @@ fn request_value<'a>(
         TagEndpointSource::OwnerIdentity => return Ok(Some(observation.key().id.as_str())),
     };
     match value {
+        Some(ValueRef::Text("")) => Ok(None),
         Some(ValueRef::Text(value)) => Ok(Some(value)),
         None => Ok(None),
         _ => Err(SweepError::Operation("tag endpoint source is not a string")),

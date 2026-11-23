@@ -12,6 +12,7 @@ id = "resource"
 operation = "CreateIPSet"
 kind = "AWS::WAF::IPSet"
 identity = "IPSet.IPSetId"
+scope = "account"
 [step.input]
 "Name" = "inventory-thin-waf"
 "ChangeToken" = { "from" = "token", "path" = "ChangeToken" }

@@ -7,6 +7,7 @@ service = "iam"
 operation = "CreateRole"
 kind = "AWS::IAM::Role"
 identity = "Role.Arn"
+scope = "account"
 [step.input]
 RoleName = "inventory-thin-cleanroomsml"
 AssumeRolePolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"cleanrooms-ml.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
@@ -33,7 +34,7 @@ TableInput = { "Name" = "interactions", "StorageDescriptor" = { "Columns" = [{ "
 [[step]]
 id = "training"
 operation = "CreateTrainingDataset"
-kind = "AWS::CleanRoomsML::TrainingDataset"
+kind = "AWS::ApiOnly::CleanRoomsMLTrainingDataset"
 identity = "trainingDatasetArn"
 [step.input]
 name = "inventory-thin-cleanroomsml"

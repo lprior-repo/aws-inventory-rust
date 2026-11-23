@@ -7,6 +7,7 @@ service = "iam"
 operation = "CreateRole"
 kind = "AWS::IAM::Role"
 identity = "Role.Arn"
+scope = "account"
 [step.input]
 RoleName = "inventory-thin-fis"
 AssumeRolePolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"fis.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
@@ -15,7 +16,7 @@ AssumeRolePolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect
 id = "template"
 operation = "CreateExperimentTemplate"
 kind = "AWS::FIS::ExperimentTemplate"
-identity = "experimentTemplate.id"
+identity = "experimentTemplate.arn"
 [step.input]
 clientToken = "12345678-1234-4234-8234-123456789abc"
 description = "Inventory seed experiment template"

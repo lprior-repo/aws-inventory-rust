@@ -6,6 +6,7 @@ id = "resource"
 operation = "CreateEmailContact"
 kind = "AWS::NotificationsContacts::EmailContact"
 identity = "arn"
+scope = "account"
 [step.input]
 "name" = "inventory-thin-notificationscontacts"
 "emailAddress" = "inventory@example.com"

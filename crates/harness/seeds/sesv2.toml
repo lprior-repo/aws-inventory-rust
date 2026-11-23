@@ -4,8 +4,8 @@ service = "sesv2"
 [[step]]
 id = "config"
 operation = "CreateConfigurationSet"
-kind = "AWS::sesv2::ConfigurationSet"
-identity = { input = "ConfigurationSetName", template = "arn:{partition}:sesv2:{region}:{account}:configuration-set/{value}" }
+kind = "AWS::SES::ConfigurationSet"
+identity = { input = "ConfigurationSetName", template = "arn:{partition}:ses:{region}:{account}:configuration-set/{value}" }
 repeat = 2
 [step.input]
 ConfigurationSetName = "inventory-thin-sesv2-config-{n}"

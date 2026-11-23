@@ -10,7 +10,7 @@ kind = ""
 [[step]]
 id = "shift"
 operation = "StartZonalShift"
-kind = "AWS::ARCZonalShift::ZonalShift"
+kind = "AWS::ApiOnly::ARCZonalShiftZonalShift"
 identity = "zonalShiftId"
 [step.input]
 resourceIdentifier = { "from" = "managed", "path" = "items.0.arn" }

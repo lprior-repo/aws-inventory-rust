@@ -9,6 +9,9 @@ mod waf;
 mod wafv2;
 mod wire;
 mod workspaces;
+mod zero_collection;
+mod zero_influx;
+mod zero_influx_tags;
 
 use super::super::{PageRequest, assembly, consumer_index::ConsumerIndex, cursor, preparation};
 use super::*;

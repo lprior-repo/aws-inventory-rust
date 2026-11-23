@@ -4,7 +4,7 @@ service = "mailmanager"
 [[step]]
 id = "resource"
 operation = "CreateArchive"
-kind = "AWS::SES::Archive"
+kind = "AWS::SES::MailManagerArchive"
 identity = "ArchiveId"
 [step.input]
 "ArchiveName" = "inventory-thin-mailmanager"

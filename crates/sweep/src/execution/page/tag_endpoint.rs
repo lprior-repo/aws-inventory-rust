@@ -63,6 +63,7 @@ fn finish(pending: Accumulation, next: Option<cursor::Advance>) -> Result<PagePa
         children: Vec::new(),
         next,
         rows: 0,
+        skipped_child_requests: 0,
     })
 }
 

@@ -7,6 +7,7 @@ service = "iam"
 operation = "CreateRole"
 kind = "AWS::IAM::Role"
 identity = "Role.Arn"
+scope = "account"
 [step.input]
 RoleName = "inventory-thin-comprehendmedical"
 AssumeRolePolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"comprehendmedical.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
@@ -16,7 +17,8 @@ id = "input"
 service = "s3"
 operation = "CreateBucket"
 kind = "AWS::S3::Bucket"
-identity = { input = "Bucket" }
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
 [step.input]
 Bucket = "inventory-thin-comprehendmedical-input"
 
@@ -25,7 +27,8 @@ id = "output"
 service = "s3"
 operation = "CreateBucket"
 kind = "AWS::S3::Bucket"
-identity = { input = "Bucket" }
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
 [step.input]
 Bucket = "inventory-thin-comprehendmedical-output"
 
@@ -42,7 +45,7 @@ PolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow
 [[step]]
 id = "job"
 operation = "StartEntitiesDetectionV2Job"
-kind = "AWS::ComprehendMedical::EntitiesDetectionV2Job"
+kind = "AWS::ApiOnly::ComprehendMedicalEntitiesDetectionJob"
 identity = "JobId"
 [step.input]
 InputDataConfig = { S3Bucket = "inventory-thin-comprehendmedical-input" }

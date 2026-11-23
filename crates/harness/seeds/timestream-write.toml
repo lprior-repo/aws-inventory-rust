@@ -4,7 +4,7 @@ service = "timestream-write"
 [[step]]
 id = "resource"
 operation = "CreateDatabase"
-kind = "AWS::TimestreamWrite::Database"
+kind = "AWS::Timestream::Database"
 identity = "Database.Arn"
 [step.input]
 "DatabaseName" = "inventory-thin-timestream-write"

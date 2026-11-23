@@ -4,7 +4,7 @@ service = "codeartifact"
 [[step]]
 id = "resource"
 operation = "CreateDomain"
-kind = "AWS::Codeartifact::Domain"
+kind = "AWS::CodeArtifact::Domain"
 identity = "domain.arn"
 [step.input]
 "domain" = "inventory-thin-codeartifact"

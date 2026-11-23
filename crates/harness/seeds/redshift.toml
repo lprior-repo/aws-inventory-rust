@@ -4,7 +4,7 @@ service = "redshift"
 [[step]]
 id = "resource"
 operation = "CreateHsmClientCertificate"
-kind = "AWS::Redshift::HsmClientCertificate"
+kind = "AWS::ApiOnly::RedshiftHsmClientCertificate"
 identity = "HsmClientCertificate.HsmClientCertificateIdentifier"
 [step.input]
 "HsmClientCertificateIdentifier" = "inventory-thin-redshift"

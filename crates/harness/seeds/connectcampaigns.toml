@@ -6,7 +6,7 @@ id = "instance"
 service = "connect"
 operation = "CreateInstance"
 kind = "AWS::Connect::Instance"
-identity = "Id"
+identity = "Arn"
 [step.input]
 IdentityManagementType = "CONNECT_MANAGED"
 InstanceAlias = "inventory-thin-connectcampaigns"
@@ -26,7 +26,7 @@ id = "flow"
 service = "connect"
 operation = "CreateContactFlow"
 kind = "AWS::Connect::ContactFlow"
-identity = "ContactFlowId"
+identity = "ContactFlowArn"
 [step.input]
 InstanceId = { from = "instance", path = "Id" }
 Name = "inventory-seed-disconnect"

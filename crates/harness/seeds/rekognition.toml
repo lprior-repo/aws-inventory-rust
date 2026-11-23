@@ -5,6 +5,6 @@ service = "rekognition"
 id = "resource"
 operation = "CreateCollection"
 kind = "AWS::Rekognition::Collection"
-identity = "CollectionArn"
+identity = { input = "CollectionId" }
 [step.input]
 "CollectionId" = "inventory-thin-rekognition"

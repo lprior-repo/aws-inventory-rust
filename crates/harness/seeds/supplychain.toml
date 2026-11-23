@@ -4,6 +4,6 @@ service = "supplychain"
 [[step]]
 id = "resource"
 operation = "CreateInstance"
-kind = "AWS::SupplyChain::Instance"
+kind = "AWS::ApiOnly::SupplyChainInstance"
 identity = "instance.instanceId"
 [step.input]

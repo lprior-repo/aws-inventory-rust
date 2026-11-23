@@ -4,7 +4,7 @@ service = "dataexchange"
 [[step]]
 id = "resource"
 operation = "CreateDataSet"
-kind = "AWS::DataExchange::DataSet"
+kind = "AWS::ApiOnly::DataExchangeDataSet"
 identity = "Arn"
 [step.input]
 "AssetType" = "S3_SNAPSHOT"

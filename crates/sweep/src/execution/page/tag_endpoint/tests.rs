@@ -1,4 +1,5 @@
 mod branches;
+mod empty_source;
 use crate::consumer_fixture as fixture;
 mod presence;
 mod sources;

@@ -5,6 +5,6 @@ service = "cloudwatch-logs"
 id = "resource"
 operation = "CreateLogGroup"
 kind = "AWS::Logs::LogGroup"
-identity = { input = "logGroupName" }
+identity = { input = "logGroupName", template = "arn:{partition}:logs:{region}:{account}:log-group:{value}" }
 [step.input]
 "logGroupName" = "inventory-thin-cloudwatch-logs"

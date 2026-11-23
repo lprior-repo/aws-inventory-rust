@@ -17,7 +17,7 @@ fn given_summary_when_metrics_printed_then_original_first_line_is_byte_identical
     assert_eq!(
         lines.next(),
         Some(
-            "metrics bootstrap_ms=0 seed_ms=0 drain_ms=0 api_attempts=0 api_retries=0 api_throttles=0 connections_opened=0 requests_sent=0 requests_reused=0 http2_requests=0 bytes_read=0 pages=0 decode_ns=0 store_commit_ns=0 store_commits=0 claims=0 progress_dropped=0 cpu_user_ms=0 cpu_system_ms=0 peak_rss_kb=0 process_metrics=unavailable"
+            "metrics bootstrap_ms=0 seed_ms=0 drain_ms=0 api_attempts=0 api_retries=0 api_throttles=0 connections_opened=0 requests_sent=0 requests_reused=0 http2_requests=0 bytes_read=0 pages=0 decode_ns=0 store_commit_ns=0 store_commits=0 claims=0 progress_dropped=0 child_requests_skipped=0 cpu_user_ms=0 cpu_system_ms=0 peak_rss_kb=0 process_metrics=unavailable"
         )
     );
     assert_eq!(lines.next(), None);
@@ -38,5 +38,29 @@ fn given_available_process_metrics_when_printed_then_values_and_availability_are
         std::str::from_utf8(&output)?
             .contains("cpu_user_ms=10 cpu_system_ms=20 peak_rss_kb=30 process_metrics=available\n")
     );
+    Ok(())
+}
+
+#[test]
+fn given_failed_without_partial_when_summary_printed_then_failure_remains_visible() -> TestResult {
+    let mut summary = SweepSummary::default();
+    summary.scopes = 1;
+    summary.outcomes.failed = 1;
+    let mut output = Vec::new();
+    write_summary(&mut output, summary, 0)?;
+    let text = std::str::from_utf8(&output)?;
+    let first = text.lines().next().ok_or("summary line missing")?;
+    assert!(first.contains("scopes=1 complete=0 partial=0"));
+    assert!(first.contains("failed=1"));
+    Ok(())
+}
+
+#[test]
+fn given_missing_child_sources_when_summary_printed_then_skipped_count_is_visible() -> TestResult {
+    let mut summary = SweepSummary::default();
+    summary.metrics.child_requests_skipped = 21;
+    let mut output = Vec::new();
+    write_summary(&mut output, summary, 0)?;
+    assert!(std::str::from_utf8(&output)?.contains("child_requests_skipped=21"));
     Ok(())
 }

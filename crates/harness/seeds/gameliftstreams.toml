@@ -4,7 +4,7 @@ service = "gameliftstreams"
 [[step]]
 id = "resource"
 operation = "CreateStreamGroup"
-kind = "AWS::GameLiftStreams::StreamGroup"
+kind = "AWS::ApiOnly::GameLiftStreamsStreamGroup"
 identity = "Arn"
 [step.input]
 "Description" = "Inventory emulator seed"

@@ -5,6 +5,16 @@
 - EMR Containers seeds use distinct EKS role, cluster and idempotency-token
   identities, so replaying all service recipes in one account does not reject
   their prerequisites as duplicates of the standalone EKS recipe.
+- Sweep preserves account-global Lightsail domain ARNs while retaining strict
+  account and regional-resource identity checks.
+- Timestream InfluxDB parameter groups now use their required, service-generated
+  `id` as the canonical resource ID, replacing ARN IDs. This includes service
+  defaults whose ARN is empty without discarding customer groups on the same page.
+  Existing ARN-keyed parameter-group rows are replaced after complete observation.
+- Required child requests with absent or empty source text are skipped per row
+  and counted in the invocation's `child_requests_skipped` metric. Nonempty
+  values are preserved verbatim; validation and transport failures remain errors.
+
 - E2E count verification now rejects an entirely catalog-deferred seed oracle.
   Every explicit E2E service selector must have a seed recipe; bootstrap calls
   remain implicit, so the baseline script no longer selects recipe-less STS.

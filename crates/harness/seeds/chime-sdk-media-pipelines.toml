@@ -6,7 +6,8 @@ id = "bucket"
 service = "s3"
 operation = "CreateBucket"
 kind = "AWS::S3::Bucket"
-identity = { "input" = "Bucket" }
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
 [step.input]
 Bucket = "inventory-thin-chime-sdk-media-pipelines"
 
@@ -24,7 +25,7 @@ ExternalMeetingId = "inventory-thin-meeting"
 [[step]]
 id = "pipeline"
 operation = "CreateMediaCapturePipeline"
-kind = "AWS::ChimeSDKMediaPipelines::MediaCapturePipeline"
+kind = "AWS::ApiOnly::ChimeSDKMediaPipelinesMediaPipeline"
 identity = "MediaCapturePipeline.MediaPipelineArn"
 [step.input]
 SourceType = "ChimeSdkMeeting"

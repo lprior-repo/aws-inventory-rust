@@ -44,7 +44,9 @@ fn validate_parts(value: &str, arn: &Arn<'_>) -> Result<(), SweepError> {
         || arn.resource.is_empty()
         || ServiceId::parse(arn.service).is_err()
         || (!arn.account.is_empty() && AccountId::parse(arn.account).is_err())
-        || (!arn.region.is_empty() && RegionId::parse(arn.region).is_err())
+        || (!arn.region.is_empty()
+            && !global_domain(&arn)
+            && RegionId::parse(arn.region).is_err())
     {
         return Err(SweepError::Operation("modeled ARN is malformed"));
     }
@@ -75,6 +77,11 @@ pub(crate) fn validate_kind_arn(kind: &Kind, value: &str) -> Result<(), SweepErr
     }
 }
 
+// Lightsail domains are account-global, unlike other Lightsail resources.
+fn global_domain(arn: &Arn<'_>) -> bool {
+    arn.service == "lightsail" && arn.region == "global" && arn.resource.starts_with("Domain/")
+}
+
 fn validate_scope(
     arn: &Arn<'_>,
     trusted: &IdentityContext<'_>,
@@ -83,7 +90,8 @@ fn validate_scope(
     let (partition, _, _) = partition(trusted.region.as_str());
     if arn.partition != partition
         || ((exact || !arn.account.is_empty()) && arn.account != trusted.account.as_str())
-        || ((exact || !arn.region.is_empty()) && arn.region != trusted.region.as_str())
+        || ((exact || (!arn.region.is_empty() && !global_domain(arn)))
+            && arn.region != trusted.region.as_str())
     {
         return Err(SweepError::Operation(
             "modeled ARN does not match trusted request scope",

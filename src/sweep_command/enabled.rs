@@ -109,6 +109,22 @@ mod tests {
     use std::process::ExitCode;
 
     #[test]
+    fn given_failed_scope_without_partial_when_drained_then_exit_is_incomplete() {
+        let outcomes = ScopeOutcomes {
+            failed: 1,
+            ..ScopeOutcomes::default()
+        };
+        let state = ProjectionState {
+            pending: 0,
+            rebuild_required: false,
+        };
+        assert_eq!(
+            exit_code(&outcomes, 0, 0, true, false, &state),
+            ExitCode::from(2)
+        );
+    }
+
+    #[test]
     fn given_complete_fresh_scopes_when_legacy_authority_is_unresolved_then_exit_is_incomplete() {
         let outcomes = ScopeOutcomes {
             complete: 7,

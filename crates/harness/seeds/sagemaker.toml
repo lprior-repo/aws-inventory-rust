@@ -4,7 +4,7 @@ service = "sagemaker"
 [[step]]
 id = "resource"
 operation = "CreateCluster"
-kind = "AWS::SageMaker::Cluster"
+kind = "AWS::ApiOnly::SageMakerCluster"
 identity = "ClusterArn"
 [step.input]
 "ClusterName" = "inventory-thin-sagemaker"

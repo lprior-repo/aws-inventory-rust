@@ -4,7 +4,7 @@ service = "serverlessapplicationrepository"
 [[step]]
 id = "resource"
 operation = "CreateApplication"
-kind = "AWS::ServerlessApplicationRepository::Application"
+kind = "AWS::ApiOnly::ServerlessApplication"
 identity = "ApplicationId"
 [step.input]
 "Author" = "inventory-thin-serverlessapplicationrepository"

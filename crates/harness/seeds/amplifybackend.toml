@@ -6,6 +6,7 @@ id = "bucket"
 service = "s3"
 operation = "CreateBucket"
 kind = "AWS::S3::Bucket"
-identity = { input = "Bucket" }
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
 [step.input]
 Bucket = "inventory-thin-amplifybackend"

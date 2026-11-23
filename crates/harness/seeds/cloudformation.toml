@@ -4,7 +4,7 @@ service = "cloudformation"
 [[step]]
 id = "resource"
 operation = "CreateGeneratedTemplate"
-kind = "AWS::CloudFormation::GeneratedTemplate"
+kind = "AWS::ApiOnly::CloudFormationGeneratedTemplate"
 identity = "GeneratedTemplateId"
 [step.input]
 "GeneratedTemplateName" = "inventory-thin-cloudformation"

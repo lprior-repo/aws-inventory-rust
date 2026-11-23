@@ -28,6 +28,8 @@ pub struct SweepMetrics {
     pub peak_rss_kb: u64,
     pub process_metrics_available: bool,
     pub progress_dropped: u64,
+    /// Required child requests skipped because their source text was absent or empty.
+    pub child_requests_skipped: u64,
 }
 
 #[derive(Default)]
@@ -36,6 +38,7 @@ pub(crate) struct Accumulators {
     store_commit_ns: AtomicU64,
     store_commits: AtomicU64,
     claims: AtomicU64,
+    child_requests_skipped: AtomicU64,
 }
 
 impl Accumulators {
@@ -56,12 +59,17 @@ impl Accumulators {
         }
     }
 
+    pub(crate) fn skipped_children(&self, count: u64) {
+        add(&self.child_requests_skipped, count);
+    }
+
     fn snapshot(&self, metrics: &mut SweepMetrics) {
         metrics.decode_ns = self.decode_ns.load(Ordering::Relaxed);
         metrics.store_commit_ns = self.store_commit_ns.load(Ordering::Relaxed);
         metrics.store_commits = self.store_commits.load(Ordering::Relaxed);
         metrics.pages = metrics.store_commits;
         metrics.claims = self.claims.load(Ordering::Relaxed);
+        metrics.child_requests_skipped = self.child_requests_skipped.load(Ordering::Relaxed);
     }
 }
 

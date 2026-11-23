@@ -5,6 +5,6 @@ service = "location"
 id = "resource"
 operation = "CreateGeofenceCollection"
 kind = "AWS::Location::GeofenceCollection"
-identity = "CollectionArn"
+identity = "CollectionName"
 [step.input]
 "CollectionName" = "inventory-thin-location"

@@ -5,6 +5,6 @@ service = "mediapackagev2"
 id = "resource"
 operation = "CreateChannelGroup"
 kind = "AWS::MediaPackageV2::ChannelGroup"
-identity = { input = "ChannelGroupName" }
+identity = "Arn"
 [step.input]
 "ChannelGroupName" = "inventory-thin-mediapackagev2"

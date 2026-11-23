@@ -4,7 +4,7 @@ service = "ssm"
 [[step]]
 id = "resource"
 operation = "CreateActivation"
-kind = "AWS::SSM::Activation"
+kind = "AWS::ApiOnly::SSMActivation"
 identity = "ActivationId"
 [step.input]
 "IamRole" = "inventory-thin-ssm"

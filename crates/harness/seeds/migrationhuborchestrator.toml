@@ -4,7 +4,7 @@ service = "migrationhuborchestrator"
 [[step]]
 id = "resource"
 operation = "CreateWorkflow"
-kind = "AWS::MigrationHubOrchestrator::Workflow"
+kind = "AWS::ApiOnly::MigrationOrchestratorWorkflow"
 identity = "id"
 [step.input]
 "name" = "inventory-thin-migrationhuborchestrator"

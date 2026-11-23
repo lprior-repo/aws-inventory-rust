@@ -6,6 +6,7 @@ id = "resource"
 operation = "CreateAccelerator"
 kind = "AWS::GlobalAccelerator::Accelerator"
 identity = "Accelerator.AcceleratorArn"
+scope = "account"
 [step.input]
 "Name" = "inventory-thin-global-accelerator"
 "IdempotencyToken" = "12345678-1234-4234-8234-123456789abc"

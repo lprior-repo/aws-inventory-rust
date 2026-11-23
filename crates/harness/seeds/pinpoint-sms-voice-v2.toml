@@ -4,7 +4,7 @@ service = "pinpoint-sms-voice-v2"
 [[step]]
 id = "resource"
 operation = "RequestPhoneNumber"
-kind = "AWS::PinpointSMSVoiceV2::PhoneNumber"
+kind = "AWS::SMSVOICE::PhoneNumber"
 identity = "PhoneNumberArn"
 [step.input]
 "IsoCountryCode" = "US"

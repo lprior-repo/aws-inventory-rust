@@ -5,7 +5,7 @@ service = "b2bi"
 id = "profile"
 operation = "CreateProfile"
 kind = "AWS::B2BI::Profile"
-identity = "profileArn"
+identity = "profileId"
 [step.input]
 name = "inventory-thin-b2bi"
 phone = "+12025550123"

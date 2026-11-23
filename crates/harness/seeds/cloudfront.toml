@@ -6,5 +6,6 @@ id = "resource"
 operation = "CreateCloudFrontOriginAccessIdentity"
 kind = "AWS::CloudFront::CloudFrontOriginAccessIdentity"
 identity = "CloudFrontOriginAccessIdentity.Id"
+scope = "account"
 [step.input]
 "CloudFrontOriginAccessIdentityConfig" = { "CallerReference" = "inventory-thin-cloudfront", "Comment" = "inventory-thin-cloudfront" }

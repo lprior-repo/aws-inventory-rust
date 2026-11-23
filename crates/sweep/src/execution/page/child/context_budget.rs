@@ -12,6 +12,7 @@ pub(crate) struct Rows<'a> {
 
 pub(crate) struct PageContextBudget {
     used: usize,
+    skipped_requests: u64,
 }
 
 impl PageContextBudget {
@@ -25,7 +26,10 @@ impl PageContextBudget {
             .ok_or(SweepError::Operation(
                 "page discovery contexts exceed the aggregate byte bound",
             ))?;
-        Ok(Self { used: 0 })
+        Ok(Self {
+            used: 0,
+            skipped_requests: 0,
+        })
     }
 
     pub(crate) fn charge(&mut self, bytes: usize) -> Result<(), SweepError> {
@@ -38,6 +42,14 @@ impl PageContextBudget {
             ))?;
         self.used = next;
         Ok(())
+    }
+
+    pub(crate) fn skip_request(&mut self) {
+        self.skipped_requests = self.skipped_requests.saturating_add(1);
+    }
+
+    pub(crate) fn skipped_requests(&self) -> u64 {
+        self.skipped_requests
     }
 }
 

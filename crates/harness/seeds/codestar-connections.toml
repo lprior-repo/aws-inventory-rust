@@ -4,7 +4,7 @@ service = "codestar-connections"
 [[step]]
 id = "host"
 operation = "CreateHost"
-kind = "AWS::CodeStarConnections::Host"
+kind = "AWS::ApiOnly::CodeStarConnectionsHost"
 identity = "HostArn"
 [step.input]
 Name = "inventory-thin-codestar-connections"

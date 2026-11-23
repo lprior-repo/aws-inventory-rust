@@ -4,7 +4,7 @@ service = "migrationhub-config"
 [[step]]
 id = "resource"
 operation = "CreateHomeRegionControl"
-kind = "AWS::MigrationHubConfig::HomeRegionControl"
+kind = "AWS::ApiOnly::MigrationHomeRegionControl"
 identity = "HomeRegionControl.ControlId"
 [step.input]
 "HomeRegion" = "us-east-1"
