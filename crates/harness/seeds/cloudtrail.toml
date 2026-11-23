@@ -1,0 +1,10 @@
+format = 1
+service = "cloudtrail"
+
+[[step]]
+id = "resource"
+operation = "CreateDashboard"
+kind = "AWS::CloudTrail::Dashboard"
+identity = "DashboardArn"
+[step.input]
+"Name" = "inventory-thin-cloudtrail"
