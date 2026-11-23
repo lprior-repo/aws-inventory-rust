@@ -1,0 +1,11 @@
+format = 1
+service = "data-pipeline"
+
+[[step]]
+id = "resource"
+operation = "CreatePipeline"
+kind = "AWS::DataPipeline::Pipeline"
+identity = "pipelineId"
+[step.input]
+"name" = "inventory-thin-data-pipeline"
+"uniqueId" = "inventory-thin-data-pipeline"
