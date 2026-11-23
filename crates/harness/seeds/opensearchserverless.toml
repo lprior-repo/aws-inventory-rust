@@ -5,7 +5,7 @@ service = "opensearchserverless"
 id = "resource"
 operation = "CreateCollectionGroup"
 kind = "AWS::OpenSearchServerless::CollectionGroup"
-identity = "createCollectionGroupDetail.id"
+identity = "createCollectionGroupDetail.arn"
 [step.input]
 "name" = "inventory-thin-opensearchserverl"
 "standbyReplicas" = "ENABLED"
