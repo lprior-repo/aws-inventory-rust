@@ -305,25 +305,19 @@ async fn decode_resources(
     Ok((resources, has_more))
 }
 
-async fn decode_rows(
-    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
-    filter: &ResourceFilter,
-    request: &PageRequest,
-) -> Result<(Vec<ResourceRow>, bool, bool), ViewError> {
-    let mut rows = fetch_page(tx, filter, request).await?;
-    let has_more = rows.len() > request.limit;
-    rows.truncate(request.limit);
+struct RowKeyGroups {
+    row_keys: Vec<(String, String, String, String)>,
+    kind_rows: std::collections::HashMap<String, Vec<(String, String, String)>>,
+    kind_set: std::collections::HashSet<String>,
+}
 
-    if rows.is_empty() {
-        return Ok((Vec::new(), has_more, false));
-    }
-
+fn extract_row_keys(rows: &[sqlx::sqlite::SqliteRow]) -> Result<RowKeyGroups, ViewError> {
     // Extract row metadata as full 4-tuples.
     let mut row_keys: Vec<(String, String, String, String)> = Vec::with_capacity(rows.len());
     let mut kind_rows: std::collections::HashMap<String, Vec<(String, String, String)>> =
         std::collections::HashMap::new();
     let mut kind_set: std::collections::HashSet<String> = std::collections::HashSet::new();
-    for row in &rows {
+    for row in rows {
         let account: String = row.try_get("account")?;
         let region: String = row.try_get("region")?;
         let kind: String = row.try_get("kind")?;
@@ -335,24 +329,36 @@ async fn decode_rows(
             .push((account, region, id));
         kind_set.insert(kind);
     }
+    Ok(RowKeyGroups {
+        row_keys,
+        kind_rows,
+        kind_set,
+    })
+}
 
-    // Batch 1: kind -> table name mapping (one query).
-    let kinds_vec: Vec<&str> = kind_set.iter().map(|k| k.as_str()).collect();
-    let table_map = tables_for_kinds(tx, &kinds_vec).await?;
-
+async fn fetch_row_lengths(
+    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+    table_map: &std::collections::HashMap<String, SqlName>,
+    kind_rows: &std::collections::HashMap<String, Vec<(String, String, String)>>,
+) -> Result<std::collections::HashMap<(String, String, String), usize>, ViewError> {
     // Batch 2: record byte lengths, grouped by kind (one query per kind).
     let mut lengths: std::collections::HashMap<(String, String, String), usize> =
         std::collections::HashMap::new();
     for (kind, table_rows) in kind_rows {
-        if let Some(table) = table_map.get(&kind) {
-            let kind_lengths = record_byte_lengths(tx, table, &table_rows).await?;
+        if let Some(table) = table_map.get(kind) {
+            let kind_lengths = record_byte_lengths(tx, table, table_rows).await?;
             lengths.extend(kind_lengths);
         }
     }
+    Ok(lengths)
+}
 
-    // Batch 3: tags for all rows (one query).
-    let page_tags = tags::read_many(tx, &row_keys).await?;
-
+fn build_page_rows(
+    rows: Vec<sqlx::sqlite::SqliteRow>,
+    row_keys: Vec<(String, String, String, String)>,
+    lengths: &std::collections::HashMap<(String, String, String), usize>,
+    page_tags: &tags::PageTags,
+) -> Result<(Vec<ResourceRow>, bool), ViewError> {
     // Build result rows with byte budget check.
     let page_budget_bytes = 10_485_760usize; // 10 MiB
     let mut result = Vec::with_capacity(rows.len());
@@ -400,6 +406,35 @@ async fn decode_rows(
             tag_observation: observation,
         });
     }
+
+    Ok((result, truncated))
+}
+
+async fn decode_rows(
+    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+    filter: &ResourceFilter,
+    request: &PageRequest,
+) -> Result<(Vec<ResourceRow>, bool, bool), ViewError> {
+    let mut rows = fetch_page(tx, filter, request).await?;
+    let has_more = rows.len() > request.limit;
+    rows.truncate(request.limit);
+
+    if rows.is_empty() {
+        return Ok((Vec::new(), has_more, false));
+    }
+
+    let groups = extract_row_keys(&rows)?;
+
+    // Batch 1: kind -> table name mapping (one query).
+    let kinds_vec: Vec<&str> = groups.kind_set.iter().map(|k| k.as_str()).collect();
+    let table_map = tables_for_kinds(tx, &kinds_vec).await?;
+
+    let lengths = fetch_row_lengths(tx, &table_map, &groups.kind_rows).await?;
+
+    // Batch 3: tags for all rows (one query).
+    let page_tags = tags::read_many(tx, &groups.row_keys).await?;
+
+    let (result, truncated) = build_page_rows(rows, groups.row_keys, &lengths, &page_tags)?;
 
     Ok((result, has_more, truncated || page_tags.tags_truncated))
 }
