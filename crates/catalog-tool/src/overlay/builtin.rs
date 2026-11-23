@@ -11,6 +11,7 @@ mod family_g_k;
 mod family_l_p;
 mod family_q_s;
 mod family_t_z;
+mod generation_blockers;
 mod iam;
 mod kms;
 mod lambda;
@@ -24,7 +25,20 @@ mod sqs;
 mod sts;
 
 pub(super) fn overlays() -> Result<Vec<ServiceOverlay>, NameError> {
-    let mut overlays = vec![
+    let mut overlays = primary()?;
+    overlays.extend(family_a_c::overlays()?);
+    overlays.extend(family_d_f::overlays()?);
+    overlays.extend(family_g_k::overlays()?);
+    overlays.extend(family_l_p::overlays()?);
+    overlays.extend(family_q_s::overlays()?);
+    overlays.extend(family_t_z::overlays()?);
+    overlays.sort_unstable_by(|left, right| left.service().cmp(right.service()));
+    generation_blockers::apply(&mut overlays);
+    Ok(overlays)
+}
+
+fn primary() -> Result<Vec<ServiceOverlay>, NameError> {
+    Ok(vec![
         cloudfront::overlay()?,
         cloudwatch::overlay()?,
         dynamodb::overlay()?,
@@ -43,15 +57,7 @@ pub(super) fn overlays() -> Result<Vec<ServiceOverlay>, NameError> {
         sns::overlay()?,
         sqs::overlay()?,
         sts::overlay()?,
-    ];
-    overlays.extend(family_a_c::overlays()?);
-    overlays.extend(family_d_f::overlays()?);
-    overlays.extend(family_g_k::overlays()?);
-    overlays.extend(family_l_p::overlays()?);
-    overlays.extend(family_q_s::overlays()?);
-    overlays.extend(family_t_z::overlays()?);
-    overlays.sort_unstable_by(|left, right| left.service().cmp(right.service()));
-    Ok(overlays)
+    ])
 }
 
 use super::{MemberPath, NameError, OperationName, OperationOverlay, ServiceOverlay};

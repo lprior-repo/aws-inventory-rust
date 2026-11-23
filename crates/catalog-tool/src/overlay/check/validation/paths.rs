@@ -45,7 +45,7 @@ pub(super) fn resolve_selected<'a>(
     model.resolve_path_from(selected, path).ok()
 }
 
-pub(super) fn selected_for_parent<'m>(
+pub(in crate::overlay) fn selected_for_parent<'m>(
     model: &Model<'m>,
     operation: &str,
     overlay: Option<&OperationOverlay>,

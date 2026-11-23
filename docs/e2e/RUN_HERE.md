@@ -107,11 +107,12 @@ that restored compile consistency satisfied its substantive prerequisite.
 This checkout keeps reviewed policies in embedded Rust tables, not the archive's
 handwritten TOML files. Generated-only TOML is loaded from
 `catalog/overlay/generated/<service>.toml` with bounded files and directory
-entries. Embedded policies win per operation and keep their review metadata;
-generated-only entries retain generated provenance even in a mixed service.
-Missing generated directories preserve the embedded policy set. Generated files
-must use `reviewer = "generated"`; parsing with hand origin rejects that label.
-This boundary does not change deny classification or permit unreviewed calls.
+entries. Reviewed callables, specific defers and denies win per operation.
+Only a source-typed `GenerationBlocker::RequiredBindings` on an explicitly
+migrated generic defer permits a validated generated child to replace it.
+Generated entries retain generated provenance; service review metadata stays
+hand-owned. Missing generated directories preserve embedded policies. Generated
+files require `reviewer = "generated"`; hand origin rejects that label.
 
 The archive's `catalog/aws-relations.report` does not exist in this tree:
 inactive-relation diagnostics are an explicitly requested `--pending-report`
@@ -127,13 +128,13 @@ byte-for-byte. After refreshing the ignored binary, `models compile --check`
 passed. Its only changes were the 32 source-receipt bytes at one-based offsets
 19,051,809–19,051,840; no runtime policy or catalog layout changed.
 
-### Model-derived enumeration policies
+### Model-derived enumeration and child policies
 
 Derivation rechecks classification before constructing any entry. It rejects
-owner-sensitive inputs, ambiguous item collections, unresolved token pairs and
-identities absent from the model. Modeled pagination is inferred by the existing
-checker; generated page sizes are never written. Every proposed callable entry
-passes the same operation checker used by the overlay gate.
+owner-sensitive inputs, ambiguous item collections, unresolved token pairs,
+secret-bearing reachable output shapes and identities absent from the model.
+Modeled pagination is inferred by the existing checker; generated page sizes are
+never written. Every proposed callable passes that same operation checker.
 
 `catalog/overlay/defer-inputs.txt` contains the sorted input-name deny list.
 Deferral reasons are bounded to 1,024 UTF-8 bytes. The internal derived result is
@@ -143,8 +144,16 @@ two-variant enum, avoiding a large-enum lint or a needless boxed allocation.
 Generated TOML uses a fixed rules date (`2026-11-15`), sorted operations and
 explicit basic-string escaping. Control characters, more than 4,096 operations
 and output exceeding 1 MiB are refused before publication. Unresolved endpoints
-defer enumeration; expansion and unclassified reads remain explicitly deferred.
-Denied operations are omitted entirely.
+defer both enumerations and children. Denied operations, including explicit
+reviewed denials, are omitted entirely.
+
+Child derivation first uses an unambiguous modeled resource/list relationship.
+Otherwise every non-context required input must exactly match a compatible
+identity field of one same-service enumeration; multiple complete sources defer.
+String `AccountId` and `Region` inputs may use collector context, but context alone
+cannot invent a parent. Parent availability and selectors use effective merged
+policies, not proposals shadowed by reviewed defers. Singleton outputs select
+their resource root/wrapper; scalar map values are not resource identities.
 
 ### Generator command
 
@@ -160,8 +169,11 @@ The optional `catalog/must-deny.txt` can add denials to the embedded deny list;
 both generation and the overlay gate consume it. Absence keeps every embedded
 denial. It never authorizes an operation forbidden by those embedded rules.
 Generated files and initial publication snapshots are bounded to 64 MiB total;
-reports are bounded to 4 MiB. Counts cover enumeration candidates only, and every
-service and total must satisfy `callable + deferred = enumerate_candidates`.
+reports are bounded to 4 MiB. Enumeration and expansion candidate/callable/deferred
+counts are reported separately. Each class satisfies its own count identity.
+The default selection is now `*`, covering all 436 pinned services. Detailed
+counts, advisory-audit differences and scoped mutation evidence are recorded in
+[`build/GENERATOR_EVIDENCE.md`](build/GENERATOR_EVIDENCE.md).
 
 A1.4 verification: 13 real-filesystem CLI/API scenarios passed; library and
 binary Clippy passed with warnings denied. With an empty selection, generator

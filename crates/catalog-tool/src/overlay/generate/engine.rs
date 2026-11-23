@@ -15,6 +15,7 @@ pub struct Generator {
     values: BTreeMap<String, Value>,
     vocabulary: Vocabulary,
     scopes: BTreeMap<String, Scope>,
+    reviewed: BTreeMap<String, ServiceOverlay>,
 }
 
 #[derive(Default)]
@@ -55,6 +56,10 @@ impl Generator {
             values,
             vocabulary,
             scopes,
+            reviewed: crate::overlay::embedded()?
+                .into_iter()
+                .map(|policy| (policy.service().to_owned(), policy))
+                .collect(),
         })
     }
 
@@ -99,6 +104,7 @@ impl Generator {
             self.scopes.get(name).copied(),
             &self.vocabulary,
             deny,
+            self.reviewed.get(name),
         )?)
     }
 

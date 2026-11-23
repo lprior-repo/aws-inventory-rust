@@ -24,7 +24,7 @@ pub(super) fn merge(
 
 fn add_generated(hand: &mut ServiceOverlay, generated: ServiceOverlay) -> Result<(), OverlayError> {
     for (name, operation) in generated.operations {
-        if !hand.operations.contains_key(&name) {
+        if generated_wins(hand.operations.get(&name), &operation) {
             hand.origin.insert(name.clone(), Origin::Generated);
             hand.operations.insert(name, operation);
         }
@@ -34,3 +34,17 @@ fn add_generated(hand: &mut ServiceOverlay, generated: ServiceOverlay) -> Result
     }
     Ok(())
 }
+
+pub(super) fn generated_wins(
+    hand: Option<&super::OperationOverlay>,
+    generated: &super::OperationOverlay,
+) -> bool {
+    hand.is_none_or(|entry| {
+        entry.class == Some(super::OverlayClass::Defer)
+            && entry.generation_blocker == Some(super::GenerationBlocker::RequiredBindings)
+            && generated.class == Some(super::OverlayClass::Expand)
+    })
+}
+
+#[cfg(test)]
+mod tests;

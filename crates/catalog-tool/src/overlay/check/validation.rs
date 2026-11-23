@@ -1,4 +1,4 @@
-mod compatibility;
+pub(in crate::overlay) mod compatibility;
 mod derived;
 mod evaluation;
 mod identity;
@@ -9,6 +9,7 @@ mod paths;
 mod row_policy;
 
 pub(in crate::overlay) use evaluation::{StateArgs, operation};
+pub(in crate::overlay) use paths::selected_for_parent;
 
 use super::{CallableOperation, Violation, ViolationRule};
 

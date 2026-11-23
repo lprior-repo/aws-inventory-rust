@@ -31,6 +31,7 @@ fn candidate(
         return Err("not an enumerate candidate".to_owned());
     }
     owner_filter(model, id)?;
+    super::safety::output(model, operation)?;
     let pagination = plans::pagination(model, id, vocabulary).map_err(|error| error.to_string())?;
     let entry = build_entry(model, operation, scope, &pagination, vocabulary)?;
     dry_run(model, operation, &facts, vocabulary, deny, entry)
@@ -55,18 +56,17 @@ fn build_entry(
     })
 }
 
-fn owner_filter(model: &Model<'_>, id: &str) -> Result<(), String> {
+pub(super) fn owner_filter(model: &Model<'_>, id: &str) -> Result<(), String> {
     let members = model
         .members(id, "input")
         .map_err(|error| error.to_string())?;
-    if let Some(members) = members {
-        for name in include_str!("../../../../../catalog/overlay/defer-inputs.txt").lines() {
-            if members.contains_key(name) {
-                return Err(format!("input {name} needs a reviewed fixed value"));
-            }
-        }
+    let blocked = include_str!("../../../../../catalog/overlay/defer-inputs.txt")
+        .lines()
+        .find(|name| members.is_some_and(|members| members.contains_key(*name)));
+    match blocked {
+        Some(name) => Err(format!("input {name} needs a reviewed fixed value")),
+        None => Ok(()),
     }
-    Ok(())
 }
 
 fn dry_run(
@@ -92,7 +92,7 @@ fn dry_run(
     Ok(entry)
 }
 
-fn accept(result: validation::OperationResult) -> Result<(), String> {
+pub(super) fn accept(result: validation::OperationResult) -> Result<(), String> {
     if let Some(violation) = result.violations.first() {
         return Err(format!("{}: {}", violation.key(), violation.value()));
     }
