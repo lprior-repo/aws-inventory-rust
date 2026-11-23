@@ -91,7 +91,7 @@ pub async fn counts(
 }
 
 fn verified_keys(expected: Keys, coverage: &Coverage) -> Result<Keys, HarnessError> {
-    expected
+    let verified = expected
         .into_iter()
         .try_fold(Keys::new(), |mut verified, (kind, identities)| {
             if let Some(reason) = coverage.reason(&kind)? {
@@ -103,7 +103,11 @@ fn verified_keys(expected: Keys, coverage: &Coverage) -> Result<Keys, HarnessErr
                 verified.insert(kind, identities);
             }
             Ok(verified)
-        })
+        })?;
+    if verified.is_empty() {
+        return Err(HarnessError::invalid("no callable seeded kinds to verify"));
+    }
+    Ok(verified)
 }
 
 fn oracle_keys(text: &str) -> Result<Keys, HarnessError> {

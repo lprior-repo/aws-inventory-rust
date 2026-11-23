@@ -46,3 +46,25 @@ fn given_deferred_and_callable_oracle_kinds_when_verified_then_only_deferred_kin
     )?;
     Ok(())
 }
+
+#[tokio::test]
+async fn given_only_deferred_seeded_kinds_when_counted_then_no_database_is_queried() -> TestResult {
+    let coverage = Coverage {
+        callable: BTreeSet::new(),
+        deferred: BTreeMap::from([("deferred".into(), "reviewed deferral".into())]),
+    };
+    let root = tempfile::tempdir()?;
+    let oracle = root.path().join("oracle.tsv");
+    std::fs::write(&oracle, "resource\tdeferred\ta\tr\tid\n")?;
+    let error = crate::e2e::verify::counts(
+        "not-a-database-url",
+        &oracle,
+        &Baseline(Keys::new()),
+        &coverage,
+    )
+    .await
+    .err()
+    .ok_or("all-deferred oracle passed verification")?;
+    assert_eq!(error.to_string(), "no callable seeded kinds to verify");
+    Ok(())
+}
