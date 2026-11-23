@@ -1,7 +1,10 @@
 use super::Failure;
 use crate::overlay::{OverlayError, directory};
 use serde_json::Value;
-use std::{collections::{BTreeMap, BTreeSet}, path::Path};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    path::Path,
+};
 
 pub(super) fn services(
     root: &Path,
@@ -35,7 +38,7 @@ fn parse(text: &str, values: &BTreeMap<String, Value>) -> Result<BTreeSet<String
     let mut selected = BTreeSet::new();
     let mut previous = "";
     for name in text.lines() {
-        if name <= previous || !name.bytes().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-') {
+        if name <= previous || !valid_name(name) {
             return Err("generated.services must contain sorted unique service names".into());
         }
         if selected.len() >= directory::MAX_FILES {
@@ -45,6 +48,11 @@ fn parse(text: &str, values: &BTreeMap<String, Value>) -> Result<BTreeSet<String
         previous = name;
     }
     Ok(selected)
+}
+
+fn valid_name(name: &str) -> bool {
+    name.bytes()
+        .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'-')
 }
 
 pub(in crate::overlay) fn deny_text(root: &Path) -> Result<String, OverlayError> {

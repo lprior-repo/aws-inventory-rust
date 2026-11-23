@@ -1,7 +1,9 @@
 use catalog_tool::{
     classes::{self, Class, DenyList, OperationFacts},
-    overlay::{self, CheckError, Origin, OverlayClass, ReviewDisposition, ServiceOverlay,
-        ViolationRule, generate::{Generated, Generator}},
+    overlay::{
+        self, CheckError, Origin, OverlayClass, ReviewDisposition, ServiceOverlay, ViolationRule,
+        generate::{Generated, Generator},
+    },
 };
 use serde_json::Value;
 use std::{collections::BTreeSet, fs, path::PathBuf, sync::LazyLock};
@@ -33,7 +35,7 @@ fn generated() -> Result<&'static Generated> {
 fn generate_all() -> Result<Generated> {
     let generator = generator()?;
     let services = generator.values().keys().cloned().collect();
-    Ok(generator.generate(&services, &DenyList::builtin())?)
+    generator.generate(&services, &DenyList::builtin())
 }
 
 #[test]
@@ -50,27 +52,51 @@ fn given_all_pinned_models_when_generated_then_no_denied_operation_is_callable()
     Ok(())
 }
 
-fn assert_denied_absent(service: &str, value: &Value, generated: &Generated, deny: &DenyList<'_>) -> Result {
-    let shapes = value.get("shapes").and_then(Value::as_object).ok_or("missing shapes")?;
-    let policy = generated.policies().iter().find(|policy| policy.service() == service)
+fn assert_denied_absent(
+    service: &str,
+    value: &Value,
+    generated: &Generated,
+    deny: &DenyList<'_>,
+) -> Result {
+    let shapes = value
+        .get("shapes")
+        .and_then(Value::as_object)
+        .ok_or("missing shapes")?;
+    let policy = generated
+        .policies()
+        .iter()
+        .find(|policy| policy.service() == service)
         .ok_or("missing generated service")?;
     for (id, shape) in shapes {
         if shape.get("type").and_then(Value::as_str) != Some("operation") {
             continue;
         }
-        let name = id.rsplit_once('#').map_or(id.as_str(), |(_, name)| name);
-        let facts = OperationFacts { service, name, has_required_input: false, readonly: false };
-        if matches!(classes::classify(&facts, deny), Class::Denied(_)) {
-            assert!(!policy.operations().contains_key(name), "{service}/{name}");
-        }
+        assert_denied_operation(service, id, policy, deny);
     }
     Ok(())
+}
+
+fn assert_denied_operation(service: &str, id: &str, policy: &ServiceOverlay, deny: &DenyList<'_>) {
+    let name = id.rsplit_once('#').map_or(id, |(_, name)| name);
+    let facts = OperationFacts {
+        service,
+        name,
+        has_required_input: false,
+        readonly: false,
+    };
+    if matches!(classes::classify(&facts, deny), Class::Denied(_)) {
+        assert!(!policy.operations().contains_key(name), "{service}/{name}");
+    }
 }
 
 #[test]
 #[ignore = "reads all 436 pinned models; run the documented overlay-safety gate"]
 fn given_generated_file_when_denied_operation_is_promoted_then_checker_rejects_it() -> Result {
-    let mut text = generated()?.files().get("ec2").ok_or("missing ec2 file")?.clone();
+    let mut text = generated()?
+        .files()
+        .get("ec2")
+        .ok_or("missing ec2 file")?
+        .clone();
     text.push_str("\n[operation.CreateVpc]\nclass = \"enumerate\"\n");
     let policy = ServiceOverlay::parse("ec2", &text, Origin::Generated)?;
     let error = match generator()?.check(&[policy], &DenyList::builtin()) {
@@ -79,7 +105,8 @@ fn given_generated_file_when_denied_operation_is_promoted_then_checker_rejects_i
     };
     match error.downcast_ref::<CheckError>() {
         Some(CheckError::Violations(violations)) => assert!(violations.iter().any(|violation| {
-            violation.operation() == "CreateVpc" && violation.rule() == ViolationRule::OverlayPromotesDenied
+            violation.operation() == "CreateVpc"
+                && violation.rule() == ViolationRule::OverlayPromotesDenied
         })),
         other => return Err(format!("unexpected checker failure: {other:?}").into()),
     }
@@ -94,11 +121,27 @@ fn given_new_deny_when_regenerated_then_previous_callable_disappears_and_check_p
     let deny = DenyList::parse(&text)?;
     let selection = BTreeSet::from([service.to_owned()]);
     let next = generator()?.generate(&selection, &deny)?;
-    let policy = next.policies().first().ok_or("missing regenerated service")?;
+    let policy = next
+        .policies()
+        .first()
+        .ok_or("missing regenerated service")?;
     assert!(!policy.operations().contains_key(name));
     let checked = generator()?.check(next.policies(), &deny)?;
-    let reviewed = checked.services().first().ok_or("missing checked service")?;
-    assert!(!reviewed.callable().iter().any(|operation| operation.operation() == name));
+    assert_not_callable(&checked, name)?;
+    Ok(())
+}
+
+fn assert_not_callable(checked: &overlay::CheckedOverlays, name: &str) -> Result {
+    let reviewed = checked
+        .services()
+        .first()
+        .ok_or("missing checked service")?;
+    assert!(
+        !reviewed
+            .callable()
+            .iter()
+            .any(|operation| operation.operation() == name)
+    );
     Ok(())
 }
 
@@ -129,12 +172,21 @@ fn given_all_generated_services_when_merged_then_embedded_callable_plans_are_unc
     assert_thin_slice(&checked)
 }
 
-fn assert_embedded_unchanged(before: &overlay::CheckedOverlays, after: &overlay::CheckedOverlays) -> Result {
+fn assert_embedded_unchanged(
+    before: &overlay::CheckedOverlays,
+    after: &overlay::CheckedOverlays,
+) -> Result {
     for service in before.services() {
-        let merged = after.services().iter().find(|entry| entry.service() == service.service())
+        let merged = after
+            .services()
+            .iter()
+            .find(|entry| entry.service() == service.service())
             .ok_or("missing merged service")?;
         for operation in service.callable() {
-            let next = merged.callable().iter().find(|next| next.operation() == operation.operation())
+            let next = merged
+                .callable()
+                .iter()
+                .find(|next| next.operation() == operation.operation())
                 .ok_or("missing original callable")?;
             assert_eq!(next, operation);
         }
@@ -143,18 +195,55 @@ fn assert_embedded_unchanged(before: &overlay::CheckedOverlays, after: &overlay:
 }
 
 fn assert_thin_slice(checked: &overlay::CheckedOverlays) -> Result {
-    for (service, name) in [("ec2", "DescribeVpcs"), ("ec2", "DescribeSubnets"),
-        ("ec2", "DescribeRegions"), ("sts", "GetCallerIdentity")] {
-        let review = checked.services().iter().find(|entry| entry.service() == service)
+    for (service, name) in [
+        ("ec2", "DescribeVpcs"),
+        ("ec2", "DescribeSubnets"),
+        ("ec2", "DescribeRegions"),
+        ("sts", "GetCallerIdentity"),
+    ] {
+        let review = checked
+            .services()
+            .iter()
+            .find(|entry| entry.service() == service)
             .ok_or("missing thin slice service")?;
-        assert!(review.callable().iter().any(|entry| entry.operation() == name));
+        assert!(
+            review
+                .callable()
+                .iter()
+                .any(|entry| entry.operation() == name)
+        );
     }
-    let sts = checked.services().iter().find(|entry| entry.service() == "sts").ok_or("missing sts")?;
-    for name in ["GetDelegatedAccessToken", "GetFederationToken", "GetWebIdentityToken"] {
-        let decision = sts.decisions().iter().find(|entry| entry.operation() == name).ok_or("missing STS decision")?;
-        assert_eq!(decision.disposition(), &ReviewDisposition::Denied { reason: "secret".to_owned() });
+    assert_sts_denied(checked)
+}
+
+fn assert_sts_denied(checked: &overlay::CheckedOverlays) -> Result {
+    let sts = checked
+        .services()
+        .iter()
+        .find(|entry| entry.service() == "sts")
+        .ok_or("missing sts")?;
+    for name in [
+        "GetDelegatedAccessToken",
+        "GetFederationToken",
+        "GetWebIdentityToken",
+    ] {
+        let decision = sts
+            .decisions()
+            .iter()
+            .find(|entry| entry.operation() == name)
+            .ok_or("missing STS decision")?;
+        assert_secret(decision.disposition());
     }
     Ok(())
+}
+
+fn assert_secret(disposition: &ReviewDisposition) {
+    assert_eq!(
+        disposition,
+        &ReviewDisposition::Denied {
+            reason: "secret".to_owned()
+        }
+    );
 }
 
 #[test]

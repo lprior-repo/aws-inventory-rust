@@ -23,8 +23,12 @@ pub(super) fn generate(
     let mut entries = Vec::new();
     let mut stats = Counts::default();
     for operation in model.operation_names() {
-        let id = model.operation_id(operation).ok_or_else(|| invalid("missing operation"))?;
-        let facts = model.facts(id).map_err(|error| invalid(&error.to_string()))?;
+        let id = model
+            .operation_id(operation)
+            .ok_or_else(|| invalid("missing operation"))?;
+        let facts = model
+            .facts(id)
+            .map_err(|error| invalid(&error.to_string()))?;
         let class = classes::classify(&facts, deny);
         if let Some(entry) = entry(model, operation, class, scope, vocabulary, deny, &mut stats)? {
             append(&mut entries, operation, entry)?;
@@ -41,7 +45,9 @@ fn append<'a>(
     if entries.len() >= crate::overlay::MAX_OPERATIONS {
         return Err(invalid("operation limit"));
     }
-    entries.try_reserve(1).map_err(|_| invalid("operation allocation limit"))?;
+    entries
+        .try_reserve(1)
+        .map_err(|_| invalid("operation allocation limit"))?;
     entries.push((name, entry));
     Ok(())
 }
@@ -53,7 +59,12 @@ fn complete(
 ) -> Result<GeneratedService, OverlayError> {
     let mut policy = ServiceOverlay::new(service, entries)?;
     policy.reviewer = "generated".to_owned();
-    policy.origin = policy.operations.keys().cloned().map(|name| (name, Origin::Generated)).collect();
+    policy.origin = policy
+        .operations
+        .keys()
+        .cloned()
+        .map(|name| (name, Origin::Generated))
+        .collect();
     Ok(GeneratedService {
         policy,
         enumerate: stats.enumerate,
@@ -80,12 +91,16 @@ fn entry(
 ) -> Result<Option<OperationOverlay>, OverlayError> {
     match class {
         Class::Denied(_) => Ok(None),
-        Class::Expand => Ok(Some(deferred("expand: bindings not generated yet".to_owned()))),
+        Class::Expand => Ok(Some(deferred(
+            "expand: bindings not generated yet".to_owned(),
+        ))),
         Class::Unclassified => Ok(Some(deferred("unclassified read: not reviewed".to_owned()))),
         Class::Enumerate => {
             increment(&mut stats.enumerate)?;
-            let result = scope.map_or_else(|| Err("endpoint: not resolved".to_owned()),
-                |scope| derive::enumerate(model, operation, scope, vocabulary, deny));
+            let result = scope.map_or_else(
+                || Err("endpoint: not resolved".to_owned()),
+                |scope| derive::enumerate(model, operation, scope, vocabulary, deny),
+            );
             enumerate(result, stats).map(Some)
         }
     }
@@ -113,7 +128,9 @@ fn deferred(reason: String) -> OperationOverlay {
 }
 
 fn increment(value: &mut usize) -> Result<(), OverlayError> {
-    *value = value.checked_add(1).ok_or_else(|| invalid("candidate count overflow"))?;
+    *value = value
+        .checked_add(1)
+        .ok_or_else(|| invalid("candidate count overflow"))?;
     Ok(())
 }
 

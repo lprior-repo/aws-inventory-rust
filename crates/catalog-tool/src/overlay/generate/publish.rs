@@ -1,6 +1,10 @@
 use super::{Failure, Generated};
 use crate::{ReportMode, overlay::directory, smithy::fields::publish};
-use std::{collections::BTreeMap, fs, path::{Path, PathBuf}};
+use std::{
+    collections::BTreeMap,
+    fs,
+    path::{Path, PathBuf},
+};
 
 const REPORT: &str = "catalog/aws-overlay-generated.report";
 const FILE_LIMIT: u64 = 1_048_576;
@@ -16,8 +20,11 @@ impl Snapshot {
         let mut files = BTreeMap::new();
         let mut total = 0_usize;
         for file in directory::generated_files(&root.join("catalog/overlay/generated"))? {
-            let bytes = publish::read_bytes(&file, FILE_LIMIT)?.ok_or("generated file disappeared")?;
-            total = total.checked_add(bytes.len()).ok_or("snapshot byte count overflow")?;
+            let bytes =
+                publish::read_bytes(&file, FILE_LIMIT)?.ok_or("generated file disappeared")?;
+            total = total
+                .checked_add(bytes.len())
+                .ok_or("snapshot byte count overflow")?;
             if total > 67_108_864 {
                 return Err("generated snapshot exceeds 64 MiB".into());
             }
@@ -63,13 +70,21 @@ impl Snapshot {
             publish::publish_bytes(&path, original, text.as_bytes(), FILE_LIMIT)?;
         }
         self.remove_stale(generated)?;
-        publish::publish_bytes(&root.join(REPORT), self.report.as_deref(), generated.report.as_bytes(), REPORT_LIMIT)?;
+        publish::publish_bytes(
+            &root.join(REPORT),
+            self.report.as_deref(),
+            generated.report.as_bytes(),
+            REPORT_LIMIT,
+        )?;
         Ok(())
     }
 
     fn remove_stale(&self, generated: &Generated) -> Result<(), Failure> {
         for (path, original) in &self.files {
-            let service = path.file_stem().and_then(|name| name.to_str()).ok_or("invalid service filename")?;
+            let service = path
+                .file_stem()
+                .and_then(|name| name.to_str())
+                .ok_or("invalid service filename")?;
             if generated.files.contains_key(service) {
                 continue;
             }
@@ -83,5 +98,6 @@ impl Snapshot {
 }
 
 fn file(root: &Path, service: &str) -> PathBuf {
-    root.join("catalog/overlay/generated").join(format!("{service}.toml"))
+    root.join("catalog/overlay/generated")
+        .join(format!("{service}.toml"))
 }

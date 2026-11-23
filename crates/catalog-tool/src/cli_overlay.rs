@@ -47,12 +47,20 @@ impl Flags {
         overlay::generate::run(&root, &source, &self.services, mode)
     }
 
-    fn apply(&mut self, flag: &str, arguments: &mut std::slice::Iter<'_, String>) -> Result<(), Failure> {
+    fn apply(
+        &mut self,
+        flag: &str,
+        arguments: &mut std::slice::Iter<'_, String>,
+    ) -> Result<(), Failure> {
         match flag {
             "--root" | "--source" => self.path(flag, value(arguments, flag)?),
             "--service" => self.service(value(arguments, flag)?),
             "--write" | "--check" if self.mode.is_none() => {
-                self.mode = Some(if flag == "--write" { ReportMode::Write } else { ReportMode::Check });
+                self.mode = Some(if flag == "--write" {
+                    ReportMode::Write
+                } else {
+                    ReportMode::Check
+                });
                 Ok(())
             }
             _ => Err(format!("unexpected or repeated flag {flag}").into()),
@@ -60,7 +68,11 @@ impl Flags {
     }
 
     fn path(&mut self, flag: &str, value: &str) -> Result<(), Failure> {
-        let slot = if flag == "--root" { &mut self.root } else { &mut self.source };
+        let slot = if flag == "--root" {
+            &mut self.root
+        } else {
+            &mut self.source
+        };
         if slot.is_some() {
             return Err(format!("repeated flag {flag}").into());
         }

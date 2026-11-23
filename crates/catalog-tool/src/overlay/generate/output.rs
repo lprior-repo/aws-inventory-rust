@@ -10,7 +10,11 @@ pub(super) struct Report {
 }
 
 impl Report {
-    pub(super) fn service(&mut self, name: &str, service: &GeneratedService) -> Result<(), Failure> {
+    pub(super) fn service(
+        &mut self,
+        name: &str,
+        service: &GeneratedService,
+    ) -> Result<(), Failure> {
         let deferred = service.reasons.values().try_fold(0_usize, |total, count| {
             total.checked_add(*count).ok_or("reason count overflow")
         })?;
@@ -20,7 +24,11 @@ impl Report {
         add(&mut self.enumerate, service.enumerate)?;
         add(&mut self.callable, service.callable)?;
         add(&mut self.deferred, deferred)?;
-        writeln!(self.text, "service {name} callable={} deferred={deferred}", service.callable)?;
+        writeln!(
+            self.text,
+            "service {name} callable={} deferred={deferred}",
+            service.callable
+        )?;
         for (reason, count) in &service.reasons {
             writeln!(self.text, "reason {reason} {count}")?;
         }
@@ -31,8 +39,11 @@ impl Report {
         if self.callable.checked_add(self.deferred) != Some(self.enumerate) {
             return Err("generated total count mismatch".into());
         }
-        writeln!(self.text, "totals enumerate_candidates={} callable={} deferred={}",
-            self.enumerate, self.callable, self.deferred)?;
+        writeln!(
+            self.text,
+            "totals enumerate_candidates={} callable={} deferred={}",
+            self.enumerate, self.callable, self.deferred
+        )?;
         Ok(self.text.0)
     }
 }

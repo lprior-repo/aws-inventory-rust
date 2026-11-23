@@ -63,7 +63,11 @@ pub(super) fn render(policy: &ServiceOverlay) -> Result<String, OverlayError> {
     Ok(output.0)
 }
 
-fn operation(output: &mut Output, name: &str, entry: &OperationOverlay) -> Result<(), OverlayError> {
+fn operation(
+    output: &mut Output,
+    name: &str,
+    entry: &OperationOverlay,
+) -> Result<(), OverlayError> {
     let class = match entry.class {
         Some(OverlayClass::Enumerate) => "enumerate",
         Some(OverlayClass::Defer) => "defer",
@@ -97,7 +101,11 @@ fn fields(output: &mut Output, entry: &OperationOverlay) -> Result<(), OverlayEr
     Ok(())
 }
 
-fn identity(output: &mut Output, name: &str, identity: Option<&Identity>) -> Result<(), OverlayError> {
+fn identity(
+    output: &mut Output,
+    name: &str,
+    identity: Option<&Identity>,
+) -> Result<(), OverlayError> {
     let Some(identity) = identity else {
         return Ok(());
     };
