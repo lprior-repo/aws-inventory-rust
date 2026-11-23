@@ -4,7 +4,7 @@ service = "lex-models-v2"
 [[step]]
 id = "resource"
 operation = "CreateBot"
-kind = "AWS::LexModelsV2::Bot"
+kind = "AWS::Lex::Bot"
 identity = "botId"
 [step.input]
 "botName" = "inventory-thin-lex-models-v2"
