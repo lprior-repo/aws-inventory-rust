@@ -12,9 +12,14 @@ impl RuntimeCatalog<'_> {
         let roots = roots(&names, selectors)?;
         let links = links(&self.plans)?;
         let selected = closure(&links, roots)?;
-        self.plans = self.plans.into_vec().into_iter().enumerate()
+        self.plans = self
+            .plans
+            .into_vec()
+            .into_iter()
+            .enumerate()
             .filter(|(index, plan)| selected.contains(index) || bootstrap(plan))
-            .map(|(_, plan)| plan).collect();
+            .map(|(_, plan)| plan)
+            .collect();
         Ok(self)
     }
 }
@@ -25,34 +30,71 @@ fn name<'a>(plan: &'a CallablePlan<'_>) -> Name<'a> {
 }
 
 fn bootstrap(plan: &CallablePlan<'_>) -> bool {
-    matches!(plan.purpose(), PlanPurpose::AccountIdentity { .. } | PlanPurpose::RegionDiscovery { .. } | PlanPurpose::EndpointDiscovery)
+    matches!(
+        plan.purpose(),
+        PlanPurpose::AccountIdentity { .. }
+            | PlanPurpose::RegionDiscovery { .. }
+            | PlanPurpose::EndpointDiscovery
+    )
 }
 
 fn roots(names: &[Name<'_>], selectors: &[String]) -> Result<BTreeSet<usize>, RuntimeCatalogError> {
-    selectors.iter().try_fold(BTreeSet::new(), |mut selected, selector| {
-        let (service, operation) = selector.split_once(':').map_or((selector.as_str(), None), |(service, operation)| (service, Some(operation)));
-        let matches: Vec<_> = names.iter().enumerate().filter(|(_, name)| name.0 == service && operation.is_none_or(|operation| name.1 == operation)).map(|(index, _)| index).collect();
-        if matches.is_empty() {
-            return Err(RuntimeCatalogError::Selection(selector.clone()));
+    let mut selected = BTreeSet::new();
+    for selector in selectors {
+        select_root(names, selector, &mut selected)?;
+    }
+    Ok(selected)
+}
+
+fn select_root(
+    names: &[Name<'_>],
+    selector: &str,
+    selected: &mut BTreeSet<usize>,
+) -> Result<(), RuntimeCatalogError> {
+    let (service, operation) = selector
+        .split_once(':')
+        .map_or((selector, None), |(service, operation)| {
+            (service, Some(operation))
+        });
+    let mut found = false;
+    for (index, name) in names.iter().enumerate() {
+        if name.0 == service && operation.is_none_or(|operation| name.1 == operation) {
+            selected.insert(index);
+            found = true;
         }
-        selected.extend(matches);
-        Ok(selected)
-    })
+    }
+    if !found {
+        return Err(RuntimeCatalogError::Selection(selector.to_owned()));
+    }
+    Ok(())
 }
 
 fn links(plans: &[CallablePlan<'_>]) -> Result<Vec<Vec<usize>>, RuntimeCatalogError> {
-    let names: BTreeMap<_, _> = plans.iter().enumerate().map(|(index, plan)| (name(plan), index)).collect();
+    let names: BTreeMap<_, _> = plans
+        .iter()
+        .enumerate()
+        .map(|(index, plan)| (name(plan), index))
+        .collect();
     let mut links = vec![Vec::new(); plans.len()];
-    plans.iter().enumerate().try_for_each(|(child, plan)| {
-        plan.bindings().iter().chain(plan.branches().iter().flat_map(|branch| branch.bindings.iter()))
-            .flat_map(|binding| super::decode::producers(&binding.source))
-            .chain(tag_parents(plan))
-            .try_for_each(|parent| {
-                let parent = *names.get(&parent).ok_or(RuntimeCatalogError::Capability)?;
-                connect(&mut links, child, parent)
-            })
-    })?;
+    for (child, plan) in plans.iter().enumerate() {
+        for parent in parents(plan) {
+            let parent = *names.get(&parent).ok_or(RuntimeCatalogError::Capability)?;
+            connect(&mut links, child, parent)?;
+        }
+    }
     Ok(links)
+}
+
+fn parents<'a>(plan: &'a CallablePlan<'_>) -> impl Iterator<Item = Name<'a>> {
+    plan.bindings()
+        .iter()
+        .chain(
+            plan.branches()
+                .iter()
+                .flat_map(|branch| branch.bindings.iter()),
+        )
+        .flat_map(|binding| super::decode::producers(&binding.source))
+        .chain(tag_parents(plan))
 }
 
 fn tag_parents<'a>(plan: &'a CallablePlan<'_>) -> impl Iterator<Item = Name<'a>> {
@@ -60,24 +102,36 @@ fn tag_parents<'a>(plan: &'a CallablePlan<'_>) -> impl Iterator<Item = Name<'a>>
         PlanPurpose::TagEndpoint(endpoint) => endpoint.parents.as_ref(),
         _ => &[],
     };
-    parents.iter().map(|parent| (plan.service_name(), parent.operation.as_ref()))
+    parents
+        .iter()
+        .map(|parent| (plan.service_name(), parent.operation.as_ref()))
 }
 
-fn connect(links: &mut [Vec<usize>], child: usize, parent: usize) -> Result<(), RuntimeCatalogError> {
-    links.get_mut(child).ok_or(RuntimeCatalogError::Capability)?.push(parent);
+fn connect(
+    links: &mut [Vec<usize>],
+    child: usize,
+    parent: usize,
+) -> Result<(), RuntimeCatalogError> {
+    links
+        .get_mut(child)
+        .ok_or(RuntimeCatalogError::Capability)?
+        .push(parent);
     Ok(())
 }
 
-fn closure(links: &[Vec<usize>], roots: BTreeSet<usize>) -> Result<BTreeSet<usize>, RuntimeCatalogError> {
-    let queue: VecDeque<_> = roots.iter().copied().collect();
-    let (selected, _) = (0..links.len()).try_fold((roots, queue), |(mut selected, mut queue), _| {
-        if let Some(index) = queue.pop_front() {
-            links.get(index).ok_or(RuntimeCatalogError::Capability)?.iter().for_each(|next| {
-                if selected.insert(*next) { queue.push_back(*next); }
-            });
+fn closure(
+    links: &[Vec<usize>],
+    roots: BTreeSet<usize>,
+) -> Result<BTreeSet<usize>, RuntimeCatalogError> {
+    let mut queue: VecDeque<_> = roots.iter().copied().collect();
+    let mut selected = roots;
+    while let Some(index) = queue.pop_front() {
+        for next in links.get(index).ok_or(RuntimeCatalogError::Capability)? {
+            if selected.insert(*next) {
+                queue.push_back(*next);
+            }
         }
-        Ok::<_, RuntimeCatalogError>((selected, queue))
-    })?;
+    }
     Ok(selected)
 }
 
