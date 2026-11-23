@@ -1,0 +1,10 @@
+format = 1
+service = "ssm"
+
+[[step]]
+id = "resource"
+operation = "CreateActivation"
+kind = "AWS::SSM::Activation"
+identity = "ActivationId"
+[step.input]
+"IamRole" = "inventory-thin-ssm"
