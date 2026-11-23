@@ -1,0 +1,24 @@
+format = 1
+service = "arc-region-switch"
+
+[[step]]
+id = "role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+[step.input]
+RoleName = "inventory-thin-arc-region-switch"
+AssumeRolePolicyDocument = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"arc-region-switch.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+
+[[step]]
+id = "plan"
+operation = "CreatePlan"
+kind = "AWS::ARCRegionSwitch::Plan"
+identity = "plan.arn"
+[step.input]
+name = "inventory-thin-arc-region-switch"
+executionRole = { "from" = "role", "path" = "Role.Arn" }
+regions = ["us-east-1", "us-west-2"]
+recoveryApproach = "activeActive"
+workflows = [{ "workflowTargetAction" = "activate", "workflowTargetRegion" = "us-east-1" }, { "workflowTargetAction" = "activate", "workflowTargetRegion" = "us-west-2" }]
