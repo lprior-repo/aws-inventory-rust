@@ -68,19 +68,6 @@ pub(super) const CALLS: &[Inventory] = &[
         queryable: &[],
     },
     Inventory {
-        operation: "ListPageReceipts",
-        items: "Receipts",
-        identity: ResourceIdentity::Correlated(
-            "PageId",
-            &["ContactChannelArn", "ReceiptType", "ReceiptTime"],
-        ),
-        token: Some(("NextToken", "NextToken")),
-        scope: Scope::Region,
-        input: &[Input::Parent("PageId", "ListPagesByEngagement", "PageArn")],
-        tags: None,
-        queryable: &[],
-    },
-    Inventory {
         operation: "ListPageResolutions",
         items: "PageResolutions",
         identity: ResourceIdentity::Correlated("PageId", &["ContactArn", "Type"]),

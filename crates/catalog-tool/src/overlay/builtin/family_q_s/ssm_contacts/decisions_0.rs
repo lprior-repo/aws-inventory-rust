@@ -4,6 +4,12 @@ use crate::classes::DenyReason;
 
 pub(super) const DECISIONS: &[(&str, Decision)] = &[
     (
+        "ListPageReceipts",
+        Decision::Deferred(
+            "receipt identity requires ReceiptTime; timestamp identity representation is unsupported",
+        ),
+    ),
+    (
         "ListRotationShifts",
         Decision::Deferred(
             "Computed shifts over a supplied time range are not stored inventory; the shift type alone does not identify a shift.",
