@@ -289,6 +289,40 @@ reported honestly rather than silently narrowing the selection. E5.1 graph
 verification and A6.1 cross-check are not implemented in this base and are not
 reported as passed stages; the collector still projects to the owned graph.
 
+### A7.1 evidence (2026-11-23)
+
+Implementation and targeted gates pass, but the live acceptance gate remains
+**UNMET**. These runs used a private native PostgreSQL server on port 55473,
+the pinned emulator 1.0.348 and FalkorDB 6.0.4; no real AWS was contacted.
+
+| Selection | Start | Seed | Sweep | Verify counts | Stop | Exit |
+| --- | ---: | ---: | ---: | --- | ---: | ---: |
+| `ec2`, `sts` | 373 ms | 4,106 ms | 41,335 ms, passed | 2 ms, failed: `AWS::EC2::Subnet` expected 6, actual 9 | 32 ms | 1 |
+| T0: `ec2 sts iam sns sqs dynamodb kms lambda s3 cloudwatch` | 370 ms | 5,898 ms | 54,851 ms, passed | 2 ms, failed: `AWS::CloudWatch::Alarm` expected 2, actual 0 | 32 ms | 1 |
+
+Both collectors completed with product exit 2, zero partial scopes, zero pending
+work and zero graph backlog. EC2/STS reported 96 writes/96 rows, 141 complete,
+19 unsupported and 5 failed scopes; T0 reported 137 writes/129 rows,
+219 complete, 20 unsupported and 8 failed scopes. Failed operation names were
+printed. Neither run reached `resweep`; count mismatches were not waived or
+filtered out. Baseline subtraction and the CloudWatch Alarm gap remain separate
+follow-up work, not verified behavior of this change.
+
+Evidence work directories are `/tmp/w2-run-accepted.lMwTxB` and
+`/tmp/w2-run-t0.AI2xfs`; console logs are `/tmp/w2-run-accepted-proof.log` and
+`/tmp/w2-run-t0-proof.log`. An earlier strict-exit attempt stopped at `sweep`
+because it rejected completed-with-outcomes exit 2; the two runs above are the
+authorized reruns after that contract was corrected.
+The owned server had zero remaining non-template test databases afterward and
+was stopped successfully.
+
+Targeted checks passed: two canonical scope-decoder tests, ten harness E2E
+tests (including the three owned-PostgreSQL cases), two command integration
+tests, all-target Clippy for `inventory-engine` and `inventory-harness`,
+format checks and the harness/collector build. Service-selection tests and
+all-target Clippy for `inventory-core` and `aws-inventory` also passed.
+No workspace suite, E5.1 graph verifier or A6.1 cross-check was run.
+
 ## One command
 
 ![How a run is proven on the emulator](img/35-test-loop.png)
