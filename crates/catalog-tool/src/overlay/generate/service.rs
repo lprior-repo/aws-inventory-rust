@@ -92,8 +92,13 @@ fn defer_kind_conflicts(
         if entry.class != Some(OverlayClass::Enumerate) {
             continue;
         }
-        if let Err(reason) = crate::kind_map::generate::record_item(model, operation, entry, &mut producers) {
-            stats.callable = stats.callable.checked_sub(1).ok_or_else(|| invalid("callable count underflow"))?;
+        if let Err(reason) =
+            crate::kind_map::generate::record_item(model, operation, entry, &mut producers)
+        {
+            stats.callable = stats
+                .callable
+                .checked_sub(1)
+                .ok_or_else(|| invalid("callable count underflow"))?;
             increment(stats.reasons.entry(reason.clone()).or_default())?;
             *entry = deferred(reason);
         }

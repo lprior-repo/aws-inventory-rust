@@ -13,16 +13,30 @@ fn given_no_collection_when_derived_then_missing_items_are_deferred() -> Result 
 #[test]
 fn given_map_collection_when_derived_then_values_supply_identity() -> Result {
     let mut value = given_model();
-    set(&mut value, "/shapes", "n#Items", json!({"type":"map",
-        "key":{"target":"smithy.api#String"},"value":{"target":"n#Thing"}}))?;
-    then_callable(derived(&value, &Vocabulary::default(), &DenyList::builtin())?)?;
+    set(
+        &mut value,
+        "/shapes",
+        "n#Items",
+        json!({"type":"map",
+        "key":{"target":"smithy.api#String"},"value":{"target":"n#Thing"}}),
+    )?;
+    then_callable(derived(
+        &value,
+        &Vocabulary::default(),
+        &DenyList::builtin(),
+    )?)?;
     Ok(())
 }
 
 #[test]
 fn given_nonstring_scalar_when_derived_then_identity_is_deferred() -> Result {
     let mut value = given_model();
-    set(&mut value, "/shapes/n#Items", "member", json!({"target":"smithy.api#Boolean"}))?;
+    set(
+        &mut value,
+        "/shapes/n#Items",
+        "member",
+        json!({"target":"smithy.api#Boolean"}),
+    )?;
     then_deferred(
         derived(&value, &Vocabulary::default(), &DenyList::builtin())?,
         "identity: no ARN member and no modeled identifiers",
@@ -33,10 +47,16 @@ fn given_nonstring_scalar_when_derived_then_identity_is_deferred() -> Result {
 fn given_unpaired_tokens_when_derived_then_each_suspicion_is_deferred() -> Result {
     for (side, reason) in [("Input", "TokenInputOnly"), ("Output", "TokenOutputOnly")] {
         let mut value = given_model();
-        set(&mut value, &format!("/shapes/n#{side}/members"), "NextToken",
-            json!({"target":"smithy.api#String"}))?;
-        then_deferred(derived(&value, &vocabulary()?, &DenyList::builtin())?,
-            &format!("paginator: {reason}"))?;
+        set(
+            &mut value,
+            &format!("/shapes/n#{side}/members"),
+            "NextToken",
+            json!({"target":"smithy.api#String"}),
+        )?;
+        then_deferred(
+            derived(&value, &vocabulary()?, &DenyList::builtin())?,
+            &format!("paginator: {reason}"),
+        )?;
     }
     Ok(())
 }
@@ -45,21 +65,42 @@ fn given_unpaired_tokens_when_derived_then_each_suspicion_is_deferred() -> Resul
 fn given_missing_modeled_identifiers_when_derived_then_no_key_is_invented() -> Result {
     let mut value = given_model();
     set(&mut value, "/shapes/n#Thing", "members", json!({}))?;
-    set(&mut value, "/shapes", "n#Resource", json!({"type":"resource",
-        "list":{"target":"n#ListThings"},"identifiers":{"Id":{"target":"smithy.api#String"}}}))?;
-    then_deferred(derived(&value, &Vocabulary::default(), &DenyList::builtin())?,
-        "identity: no ARN member and no modeled identifiers")
+    set(
+        &mut value,
+        "/shapes",
+        "n#Resource",
+        json!({"type":"resource",
+        "list":{"target":"n#ListThings"},"identifiers":{"Id":{"target":"smithy.api#String"}}}),
+    )?;
+    then_deferred(
+        derived(&value, &Vocabulary::default(), &DenyList::builtin())?,
+        "identity: no ARN member and no modeled identifiers",
+    )
 }
 
 #[test]
 fn given_nonscalar_modeled_identifier_when_checked_then_dry_run_defers() -> Result {
     let mut value = given_model();
-    set(&mut value, "/shapes/n#Thing", "members", json!({"Id":{"target":"n#Items"}}))?;
-    set(&mut value, "/shapes", "n#Resource", json!({"type":"resource",
-        "list":{"target":"n#ListThings"},"identifiers":{"Id":{"target":"smithy.api#String"}}}))?;
+    set(
+        &mut value,
+        "/shapes/n#Thing",
+        "members",
+        json!({"Id":{"target":"n#Items"}}),
+    )?;
+    set(
+        &mut value,
+        "/shapes",
+        "n#Resource",
+        json!({"type":"resource",
+        "list":{"target":"n#ListThings"},"identifiers":{"Id":{"target":"smithy.api#String"}}}),
+    )?;
     let result = derived(&value, &Vocabulary::default(), &DenyList::builtin())?;
     assert!(result.is_err());
-    assert!(result.err().is_some_and(|reason| reason.contains("identity")));
+    assert!(
+        result
+            .err()
+            .is_some_and(|reason| reason.contains("identity"))
+    );
     Ok(())
 }
 
@@ -74,14 +115,22 @@ fn given_ambiguous_pairs_when_derived_then_no_pair_is_invented() -> Result {
     let mut value = given_model();
     add_tokens(&mut value)?;
     let model = Model::parse(&value, "sample")?;
-    let pagination = crate::plans::Pagination::NeedsOverlay(
-        crate::plans::PaginationReason::TokenBothSides,
-    );
-    let result = super::super::pagination::derive(
-        &model, "ListThings", &pagination, &Vocabulary::default(),
-    );
+    let pagination =
+        crate::plans::Pagination::NeedsOverlay(crate::plans::PaginationReason::TokenBothSides);
+    let result =
+        super::super::pagination::derive(&model, "ListThings", &pagination, &Vocabulary::default());
     assert_eq!(result, Err("paginator: ambiguous token pair".to_owned()));
     Ok(())
+}
+
+fn set_marker_pagination(value: &mut Value) -> Result {
+    set(
+        value,
+        "/shapes/n#ListThings",
+        "traits",
+        json!({"smithy.api#paginated":{
+        "inputToken":"Marker","outputToken":"Marker","items":"Items"}}),
+    )
 }
 
 #[test]
@@ -90,13 +139,76 @@ fn given_two_known_pairs_when_derived_then_ambiguity_is_deferred() -> Result {
     add_tokens(&mut value)?;
     let mut known = vocabulary()?;
     for side in ["Input", "Output"] {
-        set(&mut value, &format!("/shapes/n#{side}/members"), "Marker",
-            json!({"target":"smithy.api#String"}))?;
+        set(
+            &mut value,
+            &format!("/shapes/n#{side}/members"),
+            "Marker",
+            json!({"target":"smithy.api#String"}),
+        )?;
     }
-    set(&mut value, "/shapes/n#ListThings", "traits", json!({"smithy.api#paginated":{
-        "inputToken":"Marker","outputToken":"Marker","items":"Items"}}))?;
+    set_marker_pagination(&mut value)?;
     known.record(&Model::parse(&value, "sample")?)?;
     set(&mut value, "/shapes/n#ListThings", "traits", json!({}))?;
-    then_deferred(derived(&value, &known, &DenyList::builtin())?,
-        "paginator: ambiguous token pair")
+    then_deferred(
+        derived(&value, &known, &DenyList::builtin())?,
+        "paginator: ambiguous token pair",
+    )
+}
+
+fn set_string(value: &mut Value, path: &str, name: &str) -> Result {
+    set(value, path, name, json!({"target":"smithy.api#String"}))
+}
+
+fn set_modeled_resource(value: &mut Value) -> Result {
+    set(
+        value,
+        "/shapes",
+        "n#Resource",
+        json!({"type":"resource",
+        "list":{"target":"n#ListThings"},"identifiers":{"Id":{"target":"smithy.api#String"}}}),
+    )
+}
+
+#[test]
+fn given_noun_arn_when_derived_then_only_unambiguous_string_member_is_selected() -> Result {
+    let mut value = given_model();
+    set(
+        &mut value,
+        "/shapes/n#Thing",
+        "members",
+        json!({"ThingArn":{"target":"smithy.api#String"}}),
+    )?;
+    let entry = then_callable(derived(
+        &value,
+        &Vocabulary::default(),
+        &DenyList::builtin(),
+    )?)?;
+    assert!(matches!(entry.identity, Some(Identity::Arn(path)) if path.as_str() == "ThingArn"));
+    set_string(&mut value, "/shapes/n#Thing/members", "ThingOtherArn")?;
+    then_deferred(
+        derived(&value, &Vocabulary::default(), &DenyList::builtin())?,
+        "identity: no ARN member and no modeled identifiers",
+    )
+}
+
+#[test]
+fn given_modeled_resource_when_derived_then_identifiers_form_the_key() -> Result {
+    let mut value = given_model();
+    set(
+        &mut value,
+        "/shapes/n#Thing",
+        "members",
+        json!({"Id":{"target":"smithy.api#String"}}),
+    )?;
+    set_modeled_resource(&mut value)?;
+    let entry = then_callable(derived(
+        &value,
+        &Vocabulary::default(),
+        &DenyList::builtin(),
+    )?)?;
+    assert!(
+        matches!(entry.identity, Some(Identity::Key(paths)) if paths.len() == 1
+        && paths.first().is_some_and(|path| path.as_str() == "Id"))
+    );
+    Ok(())
 }

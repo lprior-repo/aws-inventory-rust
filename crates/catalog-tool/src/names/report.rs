@@ -1,4 +1,8 @@
-use crate::{ReportMode, kind_map::{KindMap, KindTarget}, report};
+use crate::{
+    ReportMode,
+    kind_map::{KindMap, KindTarget},
+    report,
+};
 use std::path::Path;
 
 pub(crate) fn run(
@@ -6,7 +10,9 @@ pub(crate) fn run(
     kinds: &KindMap,
     mode: ReportMode,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    let mut types: Vec<_> = kinds.entries().iter()
+    let mut types: Vec<_> = kinds
+        .entries()
+        .iter()
         .filter(|entry| matches!(entry.target, KindTarget::Mapped { .. }))
         .map(|entry| entry.cfn_type.as_str())
         .chain(kinds.api_only().iter().map(|entry| entry.kind.as_str()))

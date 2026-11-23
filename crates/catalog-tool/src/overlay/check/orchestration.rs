@@ -79,9 +79,7 @@ fn validate_policy_services(overlays: &[crate::overlay::ServiceOverlay]) -> Resu
     Ok(())
 }
 
-pub(crate) fn read_model_values(
-    source: &Path,
-) -> Result<BTreeMap<String, Value>, CheckError> {
+pub(crate) fn read_model_values(source: &Path) -> Result<BTreeMap<String, Value>, CheckError> {
     let models = source.join("models");
     let files = model_source::discover_models(&models)?;
     if files.is_empty() {

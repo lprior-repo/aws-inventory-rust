@@ -17,7 +17,12 @@ pub(super) fn render_report(
     let mut report = String::new();
     let rows = render(type_names, exceptions, Some(&mut report))?;
     let long = report.lines().count();
-    writeln!(report, "names total={} long={long} distinct={}", rows.len(), rows.len())?;
+    writeln!(
+        report,
+        "names total={} long={long} distinct={}",
+        rows.len(),
+        rows.len()
+    )?;
     Ok(report)
 }
 
@@ -26,7 +31,11 @@ fn render<'a>(
     exceptions: &Exceptions,
     mut report: Option<&mut String>,
 ) -> Result<Vec<(&'a str, SqlName)>, NameError> {
-    let mut used = if report.is_none() { vec![false; exceptions.entries.len()] } else { Vec::new() };
+    let mut used = if report.is_none() {
+        vec![false; exceptions.entries.len()]
+    } else {
+        Vec::new()
+    };
     let names = type_names
         .iter()
         .try_fold(BTreeMap::new(), |mut names, &type_name| {
@@ -49,7 +58,9 @@ fn derive_row(
     report: Option<&mut String>,
 ) -> Result<SqlName, NameError> {
     let full = derive_full_name(type_name, exceptions, used)?;
-    if full.len() > MAX_SQL_NAME_BYTES && let Some(report) = report {
+    if full.len() > MAX_SQL_NAME_BYTES
+        && let Some(report) = report
+    {
         write!(report, "long {full} ")?;
         let name = SqlName::new(full, type_name)?;
         writeln!(report, "{name}")?;

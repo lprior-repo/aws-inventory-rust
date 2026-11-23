@@ -12,7 +12,10 @@ fn policy() -> Result<ServiceOverlay> {
         paginator: Some(Paginator::None),
         ..OperationOverlay::default()
     };
-    Ok(ServiceOverlay::new("sample", vec![("ListThings", callable)])?)
+    Ok(ServiceOverlay::new(
+        "sample",
+        vec![("ListThings", callable)],
+    )?)
 }
 
 fn deferred(reason: &str) -> OperationOverlay {
@@ -48,11 +51,15 @@ fn given_quotes_and_backslashes_when_rendered_then_reason_roundtrips() -> Result
 #[test]
 fn given_token_and_key_when_rendered_then_optional_inferred_fields_remain_absent() -> Result {
     let mut policy = policy()?;
-    let entry = policy.operations.get_mut("ListThings").ok_or("missing entry")?;
+    let entry = policy
+        .operations
+        .get_mut("ListThings")
+        .ok_or("missing entry")?;
     entry.items = None;
     entry.identity = Some(Identity::Key(vec![MemberPath::selected("$")?]));
     entry.paginator = Some(Paginator::Token(TokenPair::new(
-        MemberPath::new("Start")?, MemberPath::new("Next")?,
+        MemberPath::new("Start")?,
+        MemberPath::new("Next")?,
     )));
     let parsed = ServiceOverlay::parse("sample", &render(&policy)?, Origin::Generated)?;
     assert_eq!(parsed.operations(), policy.operations());
@@ -62,7 +69,10 @@ fn given_token_and_key_when_rendered_then_optional_inferred_fields_remain_absent
 #[test]
 fn given_control_character_when_rendered_then_invalid_toml_is_refused() -> Result {
     let mut policy = policy()?;
-    let entry = policy.operations.get_mut("ListThings").ok_or("missing entry")?;
+    let entry = policy
+        .operations
+        .get_mut("ListThings")
+        .ok_or("missing entry")?;
     entry.defer_reason = Some("line\nbreak".to_owned());
     assert!(render(&policy).is_err());
     Ok(())
@@ -98,7 +108,10 @@ fn given_unresolved_endpoint_when_generated_then_all_enumeration_is_deferred() -
     let value = super::super::tests::given_model();
     let model = crate::plans::Model::parse(&value, "sample")?;
     let generated = super::super::service::generate(
-        "sample", &model, None, &crate::plans::Vocabulary::default(),
+        "sample",
+        &model,
+        None,
+        &crate::plans::Vocabulary::default(),
         &crate::classes::DenyList::builtin(),
     )?;
     assert_eq!(generated.enumerate, 1);

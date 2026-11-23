@@ -26,13 +26,19 @@ fn publish_output(
 ) -> Result<(), Failure> {
     let path = root.join("catalog/kinds.generated.tsv");
     match mode {
-        ReportMode::Write => publish::publish_bytes(&path, original, generated.text.as_bytes(), 2_097_152)?,
+        ReportMode::Write => {
+            publish::publish_bytes(&path, original, generated.text.as_bytes(), 2_097_152)?
+        }
         ReportMode::Check if original != Some(generated.text.as_bytes()) => {
             return Err("generated kinds differ; run catalog-tool kinds generate --write".into());
         }
         ReportMode::Print => report::write_stdout(&generated.text)?,
         _ => {}
     }
-    report::publish(&root.join("catalog/aws-kinds-generated.report"), &generated.report()?, mode)?;
+    report::publish(
+        &root.join("catalog/aws-kinds-generated.report"),
+        &generated.report()?,
+        mode,
+    )?;
     Ok(())
 }

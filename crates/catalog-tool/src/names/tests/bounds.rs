@@ -1,5 +1,7 @@
 use super::super::{MAX_EXCEPTIONS_BYTES, MAX_EXCEPTIONS_ROWS, MAX_TYPE_NAME_BYTES};
-use super::{Exceptions, MAX_DERIVED_SQL_NAME_BYTES, NameError, TestResult, sql_name, sql_name_used};
+use super::{
+    Exceptions, MAX_DERIVED_SQL_NAME_BYTES, NameError, TestResult, sql_name, sql_name_used,
+};
 
 #[test]
 fn type_name_byte_bound_accepts_256_and_rejects_257_before_copying() -> TestResult {

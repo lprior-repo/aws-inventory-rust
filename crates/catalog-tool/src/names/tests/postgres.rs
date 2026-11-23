@@ -1,5 +1,5 @@
-use super::{Exceptions, MAX_SQL_NAME_BYTES, NameError, TestResult, render_names, sql_name};
 use super::super::{SqlName, SqlNameReason, render::render_report};
+use super::{Exceptions, MAX_SQL_NAME_BYTES, NameError, TestResult, render_names, sql_name};
 
 #[test]
 fn given_63_byte_name_when_derived_then_it_is_unchanged() -> TestResult {
@@ -33,7 +33,13 @@ fn given_same_long_prefix_when_rendered_then_names_and_report_are_distinct() -> 
     assert_eq!(first.get(..54), second.get(..54));
     assert_ne!(first, second);
     let report = render_report(&types, &Exceptions::none())?;
-    assert_eq!(report.lines().filter(|line| line.starts_with("long ")).count(), 2);
+    assert_eq!(
+        report
+            .lines()
+            .filter(|line| line.starts_with("long "))
+            .count(),
+        2
+    );
     assert!(report.ends_with("names total=2 long=2 distinct=2\n"));
     assert_eq!(report, render_report(&types, &Exceptions::none())?);
     Ok(())
@@ -41,10 +47,23 @@ fn given_same_long_prefix_when_rendered_then_names_and_report_are_distinct() -> 
 
 #[test]
 fn given_postgres_reserved_names_when_constructed_then_keywords_are_rejected() {
-    for name in ["select", "authorization", "current_catalog", "current_role", "current_schema", "current_user", "session_user", "system_user"] {
-        assert_eq!(SqlName::new(name.to_owned(), "Test::Name"), Err(NameError::InvalidSqlName {
-            name: name.to_owned(), reason: SqlNameReason::ReservedKeyword,
-        }));
+    for name in [
+        "select",
+        "authorization",
+        "current_catalog",
+        "current_role",
+        "current_schema",
+        "current_user",
+        "session_user",
+        "system_user",
+    ] {
+        assert_eq!(
+            SqlName::new(name.to_owned(), "Test::Name"),
+            Err(NameError::InvalidSqlName {
+                name: name.to_owned(),
+                reason: SqlNameReason::ReservedKeyword,
+            })
+        );
     }
 }
 
@@ -60,6 +79,9 @@ fn given_prefix_ending_separator_when_shortened_then_core_accepts_hash_separator
 #[test]
 fn given_colliding_names_when_reporting_then_collision_is_not_hidden() -> TestResult {
     let exceptions = Exceptions::from_entries(&[("X", "same"), ("Y", "same")])?;
-    assert!(matches!(render_report(&["AWS::X", "AWS::Y"], &exceptions), Err(NameError::DuplicateSqlName { .. })));
+    assert!(matches!(
+        render_report(&["AWS::X", "AWS::Y"], &exceptions),
+        Err(NameError::DuplicateSqlName { .. })
+    ));
     Ok(())
 }

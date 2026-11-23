@@ -17,7 +17,9 @@ impl<'a> MapRef<'a> {
         skip::value(&mut decoder)?;
         self.bytes
             .get(..decoder.position())
-            .ok_or(RecordError::Missing { offset: decoder.position() })
+            .ok_or(RecordError::Missing {
+                offset: decoder.position(),
+            })
     }
 
     pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, RecordError> {

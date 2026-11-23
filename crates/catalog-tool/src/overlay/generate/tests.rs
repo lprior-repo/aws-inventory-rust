@@ -1,6 +1,10 @@
 mod edge;
 use super::{Derived, derive};
-use crate::{classes::DenyList, overlay::{Identity, Paginator, Scope}, plans::{Model, Vocabulary}};
+use crate::{
+    classes::DenyList,
+    overlay::{Identity, Paginator, Scope},
+    plans::{Model, Vocabulary},
+};
 use serde_json::{Value, json};
 type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -16,14 +20,23 @@ pub(super) fn given_model() -> Value {
 }
 
 fn set(value: &mut Value, path: &str, name: &str, entry: Value) -> Result {
-    value.pointer_mut(path).and_then(Value::as_object_mut).ok_or("missing object")?
+    value
+        .pointer_mut(path)
+        .and_then(Value::as_object_mut)
+        .ok_or("missing object")?
         .insert(name.to_owned(), entry);
     Ok(())
 }
 
 fn derived(value: &Value, vocabulary: &Vocabulary, deny: &DenyList<'_>) -> Result<Derived> {
     let model = Model::parse(value, "sample")?;
-    Ok(derive::enumerate(&model, "ListThings", Scope::Region, vocabulary, deny))
+    Ok(derive::enumerate(
+        &model,
+        "ListThings",
+        Scope::Region,
+        vocabulary,
+        deny,
+    ))
 }
 
 fn then_callable(result: Derived) -> Result<crate::overlay::OperationOverlay> {
@@ -45,7 +58,11 @@ fn then_deferred(result: Derived, expected: &str) -> Result {
 
 #[test]
 fn given_single_list_when_derived_then_arn_and_explicit_unpaginated_are_written() -> Result {
-    let entry = then_callable(derived(&given_model(), &Vocabulary::default(), &DenyList::builtin())?)?;
+    let entry = then_callable(derived(
+        &given_model(),
+        &Vocabulary::default(),
+        &DenyList::builtin(),
+    )?)?;
     assert!(matches!(entry.identity, Some(Identity::Arn(path)) if path.as_str() == "Arn"));
     assert_eq!(entry.paginator, Some(Paginator::None));
     assert!(entry.page_size.is_none());
@@ -57,7 +74,11 @@ fn given_modeled_pagination_when_derived_then_inferred_fields_stay_unset() -> Re
     let mut value = given_model();
     add_tokens(&mut value)?;
     modeled(&mut value)?;
-    let entry = then_callable(derived(&value, &Vocabulary::default(), &DenyList::builtin())?)?;
+    let entry = then_callable(derived(
+        &value,
+        &Vocabulary::default(),
+        &DenyList::builtin(),
+    )?)?;
     assert!(entry.items.is_none());
     assert!(entry.paginator.is_none());
     assert!(entry.identity.is_some());
@@ -66,15 +87,25 @@ fn given_modeled_pagination_when_derived_then_inferred_fields_stay_unset() -> Re
 
 fn add_tokens(value: &mut Value) -> Result {
     for path in ["/shapes/n#Input/members", "/shapes/n#Output/members"] {
-        set(value, path, "NextToken", json!({"target":"smithy.api#String"}))?;
+        set(
+            value,
+            path,
+            "NextToken",
+            json!({"target":"smithy.api#String"}),
+        )?;
     }
     Ok(())
 }
 
 fn modeled(value: &mut Value) -> Result {
-    set(value, "/shapes/n#ListThings", "traits", json!({"smithy.api#paginated":{
-        "inputToken":"NextToken","outputToken":"NextToken","items":"Items"
-    }}))
+    set(
+        value,
+        "/shapes/n#ListThings",
+        "traits",
+        json!({"smithy.api#paginated":{
+            "inputToken":"NextToken","outputToken":"NextToken","items":"Items"
+        }}),
+    )
 }
 
 fn vocabulary() -> Result<Vocabulary> {
@@ -89,8 +120,16 @@ fn vocabulary() -> Result<Vocabulary> {
 #[test]
 fn given_two_lists_when_derived_then_ambiguous_selection_is_deferred() -> Result {
     let mut value = given_model();
-    set(&mut value, "/shapes/n#Output/members", "Other", json!({"target":"n#Items"}))?;
-    then_deferred(derived(&value, &Vocabulary::default(), &DenyList::builtin())?, "items: no single list member")
+    set(
+        &mut value,
+        "/shapes/n#Output/members",
+        "Other",
+        json!({"target":"n#Items"}),
+    )?;
+    then_deferred(
+        derived(&value, &Vocabulary::default(), &DenyList::builtin())?,
+        "items: no single list member",
+    )
 }
 
 #[test]
@@ -106,15 +145,32 @@ fn given_known_token_pair_when_derived_then_tokens_are_explicit() -> Result {
 #[test]
 fn given_truncation_flag_when_derived_then_missing_token_policy_is_deferred() -> Result {
     let mut value = given_model();
-    set(&mut value, "/shapes/n#Output/members", "IsTruncated", json!({"target":"smithy.api#Boolean"}))?;
-    then_deferred(derived(&value, &Vocabulary::default(), &DenyList::builtin())?, "paginator: TruncationFlag")
+    set(
+        &mut value,
+        "/shapes/n#Output/members",
+        "IsTruncated",
+        json!({"target":"smithy.api#Boolean"}),
+    )?;
+    then_deferred(
+        derived(&value, &Vocabulary::default(), &DenyList::builtin())?,
+        "paginator: TruncationFlag",
+    )
 }
 
 #[test]
 fn given_scalar_string_items_when_derived_then_root_key_is_used() -> Result {
     let mut value = given_model();
-    set(&mut value, "/shapes/n#Items", "member", json!({"target":"smithy.api#String"}))?;
-    let entry = then_callable(derived(&value, &Vocabulary::default(), &DenyList::builtin())?)?;
+    set(
+        &mut value,
+        "/shapes/n#Items",
+        "member",
+        json!({"target":"smithy.api#String"}),
+    )?;
+    let entry = then_callable(derived(
+        &value,
+        &Vocabulary::default(),
+        &DenyList::builtin(),
+    )?)?;
     assert!(matches!(entry.identity, Some(Identity::Key(paths))
         if paths.first().is_some_and(|path| path.as_str() == "$") && paths.len() == 1));
     Ok(())
@@ -124,9 +180,16 @@ fn given_scalar_string_items_when_derived_then_root_key_is_used() -> Result {
 fn given_owner_filter_when_derived_then_reviewed_fixed_input_is_required() -> Result {
     for name in include_str!("../../../../../catalog/overlay/defer-inputs.txt").lines() {
         let mut value = given_model();
-        set(&mut value, "/shapes/n#Input/members", name, json!({"target":"smithy.api#String"}))?;
-        then_deferred(derived(&value, &Vocabulary::default(), &DenyList::builtin())?,
-            &format!("input {name} needs a reviewed fixed value"))?;
+        set(
+            &mut value,
+            "/shapes/n#Input/members",
+            name,
+            json!({"target":"smithy.api#String"}),
+        )?;
+        then_deferred(
+            derived(&value, &Vocabulary::default(), &DenyList::builtin())?,
+            &format!("input {name} needs a reviewed fixed value"),
+        )?;
     }
     Ok(())
 }
@@ -134,36 +197,24 @@ fn given_owner_filter_when_derived_then_reviewed_fixed_input_is_required() -> Re
 #[test]
 fn given_new_deny_rule_when_derived_then_candidate_cannot_be_opened() -> Result {
     let deny = DenyList::parse("sample/ListThings\tsecret\n")?;
-    then_deferred(derived(&given_model(), &Vocabulary::default(), &deny)?, "not an enumerate candidate")
+    then_deferred(
+        derived(&given_model(), &Vocabulary::default(), &deny)?,
+        "not an enumerate candidate",
+    )
 }
 
 #[test]
 fn given_required_input_when_derived_then_expand_is_not_enumerated() -> Result {
     let mut value = given_model();
-    set(&mut value, "/shapes/n#Input/members", "Id", json!({"target":"smithy.api#String",
-        "traits":{"smithy.api#required":{}}}))?;
-    then_deferred(derived(&value, &Vocabulary::default(), &DenyList::builtin())?, "not an enumerate candidate")
-}
-
-#[test]
-fn given_noun_arn_when_derived_then_only_unambiguous_string_member_is_selected() -> Result {
-    let mut value = given_model();
-    set(&mut value, "/shapes/n#Thing", "members", json!({"ThingArn":{"target":"smithy.api#String"}}))?;
-    let entry = then_callable(derived(&value, &Vocabulary::default(), &DenyList::builtin())?)?;
-    assert!(matches!(entry.identity, Some(Identity::Arn(path)) if path.as_str() == "ThingArn"));
-    set(&mut value, "/shapes/n#Thing/members", "ThingOtherArn", json!({"target":"smithy.api#String"}))?;
-    then_deferred(derived(&value, &Vocabulary::default(), &DenyList::builtin())?,
-        "identity: no ARN member and no modeled identifiers")
-}
-
-#[test]
-fn given_modeled_resource_when_derived_then_identifiers_form_the_key() -> Result {
-    let mut value = given_model();
-    set(&mut value, "/shapes/n#Thing", "members", json!({"Id":{"target":"smithy.api#String"}}))?;
-    set(&mut value, "/shapes", "n#Resource", json!({"type":"resource",
-        "list":{"target":"n#ListThings"},"identifiers":{"Id":{"target":"smithy.api#String"}}}))?;
-    let entry = then_callable(derived(&value, &Vocabulary::default(), &DenyList::builtin())?)?;
-    assert!(matches!(entry.identity, Some(Identity::Key(paths)) if paths.len() == 1
-        && paths.first().is_some_and(|path| path.as_str() == "Id")));
-    Ok(())
+    set(
+        &mut value,
+        "/shapes/n#Input/members",
+        "Id",
+        json!({"target":"smithy.api#String",
+        "traits":{"smithy.api#required":{}}}),
+    )?;
+    then_deferred(
+        derived(&value, &Vocabulary::default(), &DenyList::builtin())?,
+        "not an enumerate candidate",
+    )
 }

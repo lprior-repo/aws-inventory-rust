@@ -45,11 +45,17 @@ impl KindMap {
 
 fn hand_keys(map: &KindMap) -> Keys {
     Keys {
-        hand: map.entries.iter().map(|row| Key::Cfn(row.cfn_type.clone()))
+        hand: map
+            .entries
+            .iter()
+            .map(|row| Key::Cfn(row.cfn_type.clone()))
             .chain(map.api_only.iter().map(|row| Key::Api(row.kind.clone())))
-            .chain(map.operations.iter().map(|row| {
-                Key::Operation(row.service.clone(), row.operation.clone())
-            })).collect(),
+            .chain(
+                map.operations
+                    .iter()
+                    .map(|row| Key::Operation(row.service.clone(), row.operation.clone())),
+            )
+            .collect(),
         generated: BTreeSet::new(),
     }
 }
@@ -84,27 +90,75 @@ impl Row {
 
 fn parse(line: &str, exceptions: &Exceptions, index: usize) -> Result<Row, KindMapError> {
     let mut cells = line.split('\t');
-    let cells = (
-        cells.next(), cells.next(), cells.next(),
-        cells.next(), cells.next(), cells.next(),
-    );
-    match cells {
-        (Some("cfn"), Some(cfn_type), Some("map"), Some(kind), Some(display), None) => {
-            rows::cfn(CfnMapping::Mapped {
-                cfn_type, kind, display_name_path: display_path(display, index)?,
-            }, exceptions, index).map(Row::Cfn)
+    let head = (cells.next(), cells.next(), cells.next());
+    let tail = (cells.next(), cells.next(), cells.next());
+    match (head, tail) {
+        ((Some("cfn"), Some(cfn), Some("map")), (Some(kind), Some(display), None)) => {
+            parse_cfn(cfn, kind, display, exceptions, index)
         }
-        (Some("api"), Some(kind), Some("kind"), Some(reason), display, None) => {
-            let mut row = rows::api(ApiOnlyMapping { kind, reason }, exceptions, index)?;
-            row.display_name_path = display.map(|path| display_path(path, index))
-                .transpose()?.flatten().map(str::to_owned);
-            Ok(Row::Api(row))
+        ((Some("api"), Some(kind), Some("kind")), (Some(reason), display, None)) => {
+            parse_api(kind, reason, display, exceptions, index)
         }
-        (Some("operation"), Some(service), Some(operation), Some(kind), None, None) => {
-            rows::operation(OperationMapping { service, operation, kind }, index).map(Row::Operation)
+        ((Some("operation"), Some(service), Some(operation)), (Some(kind), None, None)) => {
+            parse_operation(service, operation, kind, index)
         }
-        _ => Err(row_error(index, "generated rows must be cfn, api, or operation")),
+        _ => Err(row_error(
+            index,
+            "generated rows must be cfn, api, or operation",
+        )),
     }
+}
+
+fn parse_cfn(
+    cfn_type: &str,
+    kind: &str,
+    display: &str,
+    exceptions: &Exceptions,
+    index: usize,
+) -> Result<Row, KindMapError> {
+    rows::cfn(
+        CfnMapping::Mapped {
+            cfn_type,
+            kind,
+            display_name_path: display_path(display, index)?,
+        },
+        exceptions,
+        index,
+    )
+    .map(Row::Cfn)
+}
+
+fn parse_api(
+    kind: &str,
+    reason: &str,
+    display: Option<&str>,
+    exceptions: &Exceptions,
+    index: usize,
+) -> Result<Row, KindMapError> {
+    let mut row = rows::api(ApiOnlyMapping { kind, reason }, exceptions, index)?;
+    row.display_name_path = display
+        .map(|path| display_path(path, index))
+        .transpose()?
+        .flatten()
+        .map(str::to_owned);
+    Ok(Row::Api(row))
+}
+
+fn parse_operation(
+    service: &str,
+    operation: &str,
+    kind: &str,
+    index: usize,
+) -> Result<Row, KindMapError> {
+    rows::operation(
+        OperationMapping {
+            service,
+            operation,
+            kind,
+        },
+        index,
+    )
+    .map(Row::Operation)
 }
 
 fn display_path(path: &str, index: usize) -> Result<Option<&str>, KindMapError> {
@@ -136,10 +190,17 @@ fn apply(map: &mut KindMap, row: Row, keys: &mut Keys) -> Result<(), KindMapErro
 fn finish(map: &mut KindMap) -> Result<(), KindMapError> {
     rows::validate_collisions(&map.entries, &map.api_only)?;
     let known = operations::known_kinds(&map.entries, &map.api_only);
-    operations::validate(&known, &map.api_only, &map.operations, &map.relations, &map.bootstraps)?;
+    operations::validate(
+        &known,
+        &map.api_only,
+        &map.operations,
+        &map.relations,
+        &map.bootstraps,
+    )?;
     map.entries.sort_by(|a, b| a.cfn_type.cmp(&b.cfn_type));
     map.api_only.sort_by(|a, b| a.kind.cmp(&b.kind));
-    map.operations.sort_by(|a, b| (&a.service, &a.operation).cmp(&(&b.service, &b.operation)));
+    map.operations
+        .sort_by(|a, b| (&a.service, &a.operation).cmp(&(&b.service, &b.operation)));
     map.source_sha256 = fingerprint::digest(map);
     Ok(())
 }

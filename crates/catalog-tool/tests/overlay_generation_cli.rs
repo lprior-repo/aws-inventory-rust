@@ -1,5 +1,9 @@
 use serde_json::json;
-use std::{fs, path::Path, process::{Command, Output}};
+use std::{
+    fs,
+    path::Path,
+    process::{Command, Output},
+};
 
 type Result<T = ()> = std::result::Result<T, Box<dyn std::error::Error>>;
 const SELECTION: &str = "catalog/overlay/generated.services";
@@ -8,7 +12,9 @@ const REPORT: &str = "catalog/aws-overlay-generated.report";
 fn given_models() -> Result<tempfile::TempDir> {
     let root = tempfile::tempdir()?;
     for service in ["alpha", "beta"] {
-        let directory = root.path().join(format!("models/{service}/service/2026-01-01"));
+        let directory = root
+            .path()
+            .join(format!("models/{service}/service/2026-01-01"));
         fs::create_dir_all(&directory)?;
         fs::write(directory.join("model.json"), serde_json::to_vec(&model())?)?;
     }
@@ -35,12 +41,20 @@ fn model() -> serde_json::Value {
 
 fn when_generate(root: &Path, flags: &[&str]) -> Result<Output> {
     Ok(Command::new(env!("CARGO_BIN_EXE_catalog-tool"))
-        .args(["overlays", "generate", "--root"]).arg(root)
-        .arg("--source").arg(root).args(flags).output()?)
+        .args(["overlays", "generate", "--root"])
+        .arg(root)
+        .arg("--source")
+        .arg(root)
+        .args(flags)
+        .output()?)
 }
 
 fn then_success(output: Output) {
-    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
 }
 
 fn generated(root: &Path, service: &str) -> std::path::PathBuf {
@@ -55,7 +69,9 @@ fn given_two_models_when_written_then_check_passes_and_totals_are_exact() -> Res
     let report = fs::read_to_string(root.path().join(REPORT))?;
     assert!(report.contains("service alpha callable=1 deferred=0"));
     assert!(report.contains("totals enumerate_candidates=2 callable=2 deferred=0"));
-    assert!(fs::read_to_string(generated(root.path(), "alpha"))?.contains("reviewer = \"generated\""));
+    assert!(
+        fs::read_to_string(generated(root.path(), "alpha"))?.contains("reviewer = \"generated\"")
+    );
     Ok(())
 }
 
@@ -99,7 +115,9 @@ fn given_service_override_when_check_requested_then_arguments_are_refused() -> R
     let root = given_models()?;
     let output = when_generate(root.path(), &["--service", "alpha", "--check"])?;
     assert!(!output.status.success());
-    assert!(String::from_utf8(output.stderr)?.contains("--service cannot be combined with --check"));
+    assert!(
+        String::from_utf8(output.stderr)?.contains("--service cannot be combined with --check")
+    );
     assert!(!generated(root.path(), "alpha").exists());
     Ok(())
 }
@@ -128,7 +146,10 @@ fn given_empty_selection_when_checked_then_no_generated_directory_is_needed() ->
 #[test]
 fn given_service_override_when_written_then_selection_file_is_ignored() -> Result {
     let root = given_models()?;
-    then_success(when_generate(root.path(), &["--service", "beta", "--write"])?);
+    then_success(when_generate(
+        root.path(),
+        &["--service", "beta", "--write"],
+    )?);
     assert!(!generated(root.path(), "alpha").exists());
     assert!(generated(root.path(), "beta").exists());
     let report = fs::read_to_string(root.path().join(REPORT))?;
@@ -150,7 +171,13 @@ fn given_all_selection_when_generated_then_each_model_is_selected() -> Result {
 #[test]
 fn given_invalid_selection_when_generated_then_no_policy_is_published() -> Result {
     let root = given_models()?;
-    for selection in ["beta\nalpha\n", "alpha\nalpha\n", "\n", "alpha", "unknown\n"] {
+    for selection in [
+        "beta\nalpha\n",
+        "alpha\nalpha\n",
+        "\n",
+        "alpha",
+        "unknown\n",
+    ] {
         fs::write(root.path().join(SELECTION), selection)?;
         let output = when_generate(root.path(), &["--write"])?;
         assert!(!output.status.success(), "{selection:?}");
@@ -163,7 +190,10 @@ fn given_invalid_selection_when_generated_then_no_policy_is_published() -> Resul
 fn given_new_root_deny_when_regenerated_then_previously_callable_entry_is_absent() -> Result {
     let root = given_models()?;
     then_success(when_generate(root.path(), &["--write"])?);
-    fs::write(root.path().join("catalog/must-deny.txt"), "alpha/ListThings\tsecret\n")?;
+    fs::write(
+        root.path().join("catalog/must-deny.txt"),
+        "alpha/ListThings\tsecret\n",
+    )?;
     then_success(when_generate(root.path(), &["--write"])?);
     then_success(when_generate(root.path(), &["--check"])?);
     let policy = fs::read_to_string(generated(root.path(), "alpha"))?;
@@ -187,7 +217,10 @@ fn given_changed_report_when_checked_then_report_drift_fails() -> Result {
 #[test]
 fn given_root_deny_when_generated_policy_is_tampered_then_overlay_gate_rejects_it() -> Result {
     let root = given_models()?;
-    fs::write(root.path().join("catalog/must-deny.txt"), "alpha/ListThings\tsecret\n")?;
+    fs::write(
+        root.path().join("catalog/must-deny.txt"),
+        "alpha/ListThings\tsecret\n",
+    )?;
     then_success(when_generate(root.path(), &["--write"])?);
     let path = generated(root.path(), "alpha");
     let mut text = fs::read_to_string(&path)?;

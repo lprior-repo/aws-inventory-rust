@@ -1,7 +1,8 @@
 use std::collections::BTreeSet;
 
 use super::{
-    EXACT_CASES, Exceptions, MAX_DERIVED_SQL_NAME_BYTES, MAX_SQL_NAME_BYTES, NameError, TestResult, render_names, sql_name,
+    EXACT_CASES, Exceptions, MAX_DERIVED_SQL_NAME_BYTES, MAX_SQL_NAME_BYTES, NameError, TestResult,
+    render_names, sql_name,
 };
 
 const ORACLE: &str = include_str!("../../../tests/fixtures/names-plain.tsv");

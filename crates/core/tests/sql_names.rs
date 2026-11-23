@@ -1,6 +1,6 @@
 use inventory_core::inventory::{
-    Column, InventoryError, MAX_DERIVED_SQL_NAME_BYTES, MAX_SQL_NAME_BYTES, ScalarType,
-    SqlName, shorten_sql_name,
+    Column, InventoryError, MAX_DERIVED_SQL_NAME_BYTES, MAX_SQL_NAME_BYTES, ScalarType, SqlName,
+    shorten_sql_name,
 };
 use inventory_core::record::FieldId;
 
@@ -19,9 +19,16 @@ fn given_bounded_name_when_shortened_then_owned_buffer_is_preserved() -> TestRes
 
 #[test]
 fn given_64_and_128_byte_names_when_shortened_then_full_name_hash_is_used() -> TestResult {
-    for full in [format!("a_{}", "b".repeat(62)), format!("a_{}", "b".repeat(126))] {
+    for full in [
+        format!("a_{}", "b".repeat(62)),
+        format!("a_{}", "b".repeat(126)),
+    ] {
         let hash = blake3::hash(full.as_bytes()).to_hex();
-        let expected = format!("{}_{}", full.get(..54).ok_or("prefix absent")?, hash.get(..8).ok_or("hash absent")?);
+        let expected = format!(
+            "{}_{}",
+            full.get(..54).ok_or("prefix absent")?,
+            hash.get(..8).ok_or("hash absent")?
+        );
         let pointer = full.as_ptr();
         let shortened = shorten_sql_name(full)?;
         assert_eq!(shortened, expected);
@@ -47,9 +54,18 @@ fn given_shared_prefix_when_long_names_differ_then_short_names_are_distinct() ->
 
 #[test]
 fn given_unbounded_or_non_ascii_name_when_shortened_then_it_is_rejected() {
-    assert!(matches!(shorten_sql_name("a".repeat(129)), Err(InventoryError::SqlName)));
-    assert!(matches!(shorten_sql_name("a_é".to_owned()), Err(InventoryError::SqlName)));
-    assert!(matches!(SqlName::parse(&"a".repeat(64)), Err(InventoryError::SqlName)));
+    assert!(matches!(
+        shorten_sql_name("a".repeat(129)),
+        Err(InventoryError::SqlName)
+    ));
+    assert!(matches!(
+        shorten_sql_name("a_é".to_owned()),
+        Err(InventoryError::SqlName)
+    ));
+    assert!(matches!(
+        SqlName::parse(&"a".repeat(64)),
+        Err(InventoryError::SqlName)
+    ));
     assert_eq!(MAX_DERIVED_SQL_NAME_BYTES, 128);
 }
 

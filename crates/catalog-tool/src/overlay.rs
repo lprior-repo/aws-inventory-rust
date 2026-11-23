@@ -1,6 +1,6 @@
-pub mod generate;
 mod binding_types;
 mod directory;
+pub mod generate;
 mod merge;
 mod parse;
 pub use binding_types::{Batch, Binding};

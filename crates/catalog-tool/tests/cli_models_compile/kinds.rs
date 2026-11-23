@@ -2,16 +2,34 @@ use inventory_core::{
     catalog::{MAX_CATALOG_BYTES, runtime::RuntimeCatalog},
     record::{FieldId, ListRef, MapRef, ValueRef},
 };
-use std::{collections::{BTreeMap, BTreeSet}, fs, path::Path};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fs,
+    path::Path,
+};
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
 const ORIGINAL: &[(&str, &str)] = &[
-    ("ec2", "DescribeVpcs"), ("ec2", "DescribeSubnets"),
-    ("ec2", "DescribeRegions"), ("sts", "GetCallerIdentity"),
+    ("ec2", "DescribeVpcs"),
+    ("ec2", "DescribeSubnets"),
+    ("ec2", "DescribeRegions"),
+    ("sts", "GetCallerIdentity"),
+];
+const SERVICES: [&str; 8] = [
+    "cloudwatch",
+    "dynamodb",
+    "iam",
+    "kms",
+    "lambda",
+    "s3",
+    "sns",
+    "sqs",
 ];
 
 fn read_catalog(path: &str) -> TestResult<Vec<u8>> {
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..").join(path);
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../..")
+        .join(path);
     if fs::metadata(&path)?.len() > u64::try_from(MAX_CATALOG_BYTES)? {
         return Err("catalog fixture exceeds size bound".into());
     }
@@ -23,12 +41,25 @@ fn read_catalog(path: &str) -> TestResult<Vec<u8>> {
 fn given_compiled_catalog_when_plans_are_read_then_every_kind_has_a_schema() -> TestResult {
     let bytes = read_catalog("catalog/aws-api.catalog")?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
-    let kinds: BTreeSet<_> = catalog.schemas().iter().map(|schema| schema.kind()).collect();
+    let kinds: BTreeSet<_> = catalog
+        .schemas()
+        .iter()
+        .map(|schema| schema.kind())
+        .collect();
     assert!(!catalog.plans().is_empty());
     for plan in catalog.plans() {
-        assert!(kinds.contains(plan.kind()), "{} {}", plan.service_name(), plan.operation_name());
+        assert!(
+            kinds.contains(plan.kind()),
+            "{} {}",
+            plan.service_name(),
+            plan.operation_name()
+        );
     }
-    println!("plans_with_schemas={} schemas={}", catalog.plans().len(), kinds.len());
+    println!(
+        "plans_with_schemas={} schemas={}",
+        catalog.plans().len(),
+        kinds.len()
+    );
     Ok(())
 }
 
@@ -37,7 +68,11 @@ fn given_compiled_catalog_when_plans_are_read_then_every_kind_has_a_schema() -> 
 fn given_compiled_catalog_when_tables_are_read_then_every_name_is_distinct() -> TestResult {
     let bytes = read_catalog("catalog/aws-api.catalog")?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
-    let tables: BTreeSet<_> = catalog.schemas().iter().map(|schema| schema.table()).collect();
+    let tables: BTreeSet<_> = catalog
+        .schemas()
+        .iter()
+        .map(|schema| schema.table())
+        .collect();
     assert!(!tables.is_empty());
     assert_eq!(tables.len(), catalog.schemas().len());
     assert!(tables.iter().all(|name| name.as_str().len() <= 63));
@@ -57,12 +92,12 @@ fn given_original_four_plans_when_catalog_expands_then_encoded_bytes_do_not_chan
 fn original_plans(bytes: &[u8]) -> TestResult<BTreeMap<(&str, &str), &[u8]>> {
     let mut selected = BTreeMap::new();
     for value in raw_plans(bytes)?.iter()? {
-        let ValueRef::Map(plan) = value? else { return Err("plan is not a map".into()); };
+        let ValueRef::Map(plan) = value? else {
+            return Err("plan is not a map".into());
+        };
         let key = (text(plan, 1)?, text(plan, 2)?);
-        if ORIGINAL.contains(&key) {
-            if selected.insert(key, plan.as_bytes()?).is_some() {
-                return Err("duplicate original plan".into());
-            }
+        if ORIGINAL.contains(&key) && selected.insert(key, plan.as_bytes()?).is_some() {
+            return Err("duplicate original plan".into());
         }
     }
     assert_eq!(selected.len(), ORIGINAL.len());
@@ -89,15 +124,24 @@ fn text(map: MapRef<'_>, field: u32) -> TestResult<&str> {
 
 #[test]
 #[ignore = "prints pinned-model thin-slice kinds for the required manual review"]
-fn given_thin_slice_when_catalog_is_compiled_then_all_eight_services_have_reviewable_kinds() -> TestResult {
+fn given_thin_slice_when_catalog_is_compiled_then_all_eight_services_have_reviewable_kinds()
+-> TestResult {
     let bytes = read_catalog("catalog/aws-api.catalog")?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
-    let services = ["cloudwatch", "dynamodb", "iam", "kms", "lambda", "s3", "sns", "sqs"];
     let mut seen = BTreeSet::new();
-    for plan in catalog.plans().iter().filter(|plan| services.contains(&plan.service_name())) {
+    for plan in catalog
+        .plans()
+        .iter()
+        .filter(|plan| SERVICES.contains(&plan.service_name()))
+    {
         seen.insert(plan.service_name());
-        println!("{} {} {}", plan.service_name(), plan.operation_name(), plan.kind().as_str());
+        println!(
+            "{} {} {}",
+            plan.service_name(),
+            plan.operation_name(),
+            plan.kind().as_str()
+        );
     }
-    assert_eq!(seen.len(), services.len());
+    assert_eq!(seen.len(), SERVICES.len());
     Ok(())
 }

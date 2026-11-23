@@ -1,4 +1,7 @@
-use super::{Exceptions, MAX_DERIVED_SQL_NAME_BYTES, MAX_SQL_NAME_BYTES, NameError, render_names, sql_name, sql_name_used};
+use super::{
+    Exceptions, MAX_DERIVED_SQL_NAME_BYTES, MAX_SQL_NAME_BYTES, NameError, render_names, sql_name,
+    sql_name_used,
+};
 
 mod bounds;
 mod catalog;
@@ -141,7 +144,10 @@ fn invalid_types_are_rejected_before_exception_matching() -> TestResult {
 #[test]
 fn names_accept_exactly_128_bytes_and_reject_129_bytes() -> TestResult {
     let accepted = sql_name(&format!("A::{}", "B".repeat(126)), &Exceptions::none())?;
-    assert_eq!(accepted.as_str(), inventory_core::inventory::shorten_sql_name(format!("a_{}", "b".repeat(126)))?);
+    assert_eq!(
+        accepted.as_str(),
+        inventory_core::inventory::shorten_sql_name(format!("a_{}", "b".repeat(126)))?
+    );
     assert_eq!(accepted.as_str().len(), MAX_SQL_NAME_BYTES);
     assert_eq!(
         sql_name(&format!("A::{}", "B".repeat(127)), &Exceptions::none()),
@@ -220,7 +226,10 @@ fn exception_expansion_accepts_exactly_128_output_bytes() -> TestResult {
     let replacement = "a".repeat(126);
     let exceptions = Exceptions::from_entries(&[("X", &replacement)])?;
     let name = sql_name("A::X", &exceptions)?;
-    assert_eq!(name.as_str(), inventory_core::inventory::shorten_sql_name(format!("a_{replacement}"))?);
+    assert_eq!(
+        name.as_str(),
+        inventory_core::inventory::shorten_sql_name(format!("a_{replacement}"))?
+    );
     assert_eq!(name.as_str().len(), MAX_SQL_NAME_BYTES);
     Ok(())
 }

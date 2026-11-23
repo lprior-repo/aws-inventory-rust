@@ -1,9 +1,9 @@
 mod builtin;
 mod construct;
 mod fingerprint;
-mod merge;
 pub mod generate;
 mod generated;
+mod merge;
 pub use generated::{load, load_with_cfn};
 mod relation_targets;
 mod source;
