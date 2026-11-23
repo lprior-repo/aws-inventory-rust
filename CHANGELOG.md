@@ -35,6 +35,51 @@
   Native seed integration fixtures use the widened 16-bit step identifiers in
   recipe helpers and independent oracle assertions.
 
+- Sweep accepts PostgreSQL URLs, creates missing inventory schemas and refuses
+  missing-schema resume. Collection and graph delivery share the inventory port;
+  file paths retain the transitional SQLite backend. Database URLs are redacted
+  from CLI argument debug output. Baseline scenarios default to isolated native
+  PostgreSQL databases and retain an explicit `INVENTORY_E2E_STORE=file` mode.
+
+- PostgreSQL now implements the complete inventory and projection ports, including
+  transaction-owned delivery fencing, bounded revision-exact outbox delivery,
+  repeatable-read snapshots, and paged resources, edges and tags.
+
+- Projection delivery now uses backend-neutral inventory, snapshot, target-identity
+  and delivery-ownership ports. SQLite retains its persistent sidecar generation
+  and immediate cross-process contention behavior.
+
+- PostgreSQL resolves reviewed typed reference unions in bounded batches, retracts
+  stale or ambiguous matches without discarding independent proofs, and retires
+  missing resources only after two complete authoritative enumerations.
+  Parent retirement preserves independently owned descendants and reaggregates
+  their remaining facets. Final pages, explicit outcomes and repeated tokens all
+  drain completion atomically under the current lease fence.
+  Concurrency debt: reviewed-catalog writes acquire advisory lock `(14, 2)`
+  before sweep and kind locks, serializing reviewed-relationship writers.
+  Revisit a dependency-closure protocol at B6/C6.7 after benchmarking.
+
+- PostgreSQL schema initialization creates the inventory namespace, account-led
+  resource keys and native scalar kind columns in batches of 200 tables.
+  SQL timestamps retain microseconds; CBOR retains the original precision.
+  The reviewed catalog is persisted with its digest so reopening retains
+  current catalog authority metadata rather than restoring an incomplete registry.
+
+- `PgStore` creates and reopens schema14 through a bounded eight-connection
+  pool, checks stored catalog integrity and hides the entire URL in diagnostics.
+  Connection failures never propagate raw connection details.
+
+- PostgreSQL work seeding uses 5,000-scope array batches and a transaction
+  advisory lock. Claims skip locked rows, preserve staleness ordering and reject
+  exhausted generations. Resume checks manifests and locks the queue before
+  fencing expired leases.
+
+- PostgreSQL page commits batch resource, scalar, facet, tag and child-work
+  writes in one lease-fenced transaction. Unchanged content is not rewritten.
+  Native provenance and candidate indexes retain checked reference authority.
+  Timestamp arrays use binary intervals to avoid floating-point rounding,
+  and projection work collapses to a bounded full-rebuild marker on overflow.
+
 - The sweep runtime now lives in `inventory-sweep`; CLI collection and cadence
   scheduling call its public API. Credential resolution uses `CredentialSource`
   without an AWS SDK dependency, with the profile adapter enabled by

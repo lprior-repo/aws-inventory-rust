@@ -1,45 +1,56 @@
+mod backend;
 mod summary;
 
 use crate::cli::SweepArgs;
-use anyhow::{Context, Result};
-use inventory_aws::model_credentials::ProfileCredentials;
-use inventory_core::catalog::runtime::RuntimeCatalog;
-use inventory_engine::inventory::{BinaryStore, SchemaRegistry, run_projection};
-use inventory_sweep::{SweepConfig, SweepSummary};
-use std::{fs::File, io::Read, path::Path};
+use anyhow::Result;
+use inventory_engine::inventory::{InventoryStore, run_projection};
+use inventory_sweep::SweepSummary;
 
 pub(super) async fn run(options: SweepArgs) -> Result<std::process::ExitCode> {
-    let (store, mut summary) = collect(&options).await?;
-    let unattributed_resources = store.unattributed_authority_count().await?;
+    backend::run(&options).await
+}
+
+async fn finish<S: InventoryStore>(
+    store: &S,
+    options: &SweepArgs,
+    mut summary: SweepSummary,
+    unattributed_resources: u64,
+) -> Result<std::process::ExitCode> {
     if options.rebuild {
         store.request_graph_rebuild().await?;
     }
     let projection_attempted = options.graph_url.is_some();
     if let Some(endpoint) = &options.graph_url {
-        project(&store, endpoint, &options.graph_name).await?;
+        project(store, endpoint, &options.graph_name).await?;
     }
     let state = store.projection_state().await?;
     summary.graph_pending = state.pending;
+    report(
+        options,
+        summary,
+        unattributed_resources,
+        projection_attempted,
+        &state,
+    )
+}
+
+fn report(
+    options: &SweepArgs,
+    summary: SweepSummary,
+    unattributed: u64,
+    attempted: bool,
+    state: &inventory_engine::inventory::ProjectionState,
+) -> Result<std::process::ExitCode> {
     let code = exit_code(
         &summary.outcomes,
         summary.work_remaining,
-        unattributed_resources,
+        unattributed,
         options.drain,
-        projection_attempted,
-        &state,
+        attempted,
+        state,
     );
-    summary::print_summary(summary, unattributed_resources)?;
+    summary::print_summary(summary, unattributed)?;
     Ok(code)
-}
-
-async fn collect(options: &SweepArgs) -> Result<(BinaryStore, SweepSummary)> {
-    let bytes = read_catalog(&options.catalog)?;
-    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
-    let store = open_store(options, &catalog).await?;
-    let credentials =
-        ProfileCredentials::load(options.profile.as_deref(), options.region.as_deref()).await?;
-    let summary = super::control::run(&catalog, &store, config(options), &credentials).await?;
-    Ok((store, summary))
 }
 
 /// Exit 4: a time-bounded slice ended with work queued; rerun with `--resume`.
@@ -76,46 +87,8 @@ fn exit_code(
     std::process::ExitCode::SUCCESS
 }
 
-fn read_catalog(path: &Path) -> Result<Vec<u8>> {
-    let limit = inventory_core::catalog::MAX_CATALOG_BYTES;
-    let file = File::open(path).with_context(|| format!("opening catalog {}", path.display()))?;
-    let mut bytes = Vec::new();
-    file.take(u64::try_from(limit)?.saturating_add(1))
-        .read_to_end(&mut bytes)?;
-    anyhow::ensure!(
-        bytes.len() <= limit,
-        "runtime catalog exceeds {limit} bytes"
-    );
-    Ok(bytes)
-}
-
-async fn open_store(options: &SweepArgs, catalog: &RuntimeCatalog<'_>) -> Result<BinaryStore> {
-    if std::fs::metadata(&options.database).is_ok_and(|metadata| metadata.len() > 0) {
-        return Ok(BinaryStore::open_with_catalog(&options.database, catalog.raw_bytes()).await?);
-    }
-    anyhow::ensure!(!options.resume, "cannot resume a missing database");
-    let registry = SchemaRegistry::new(catalog.raw_bytes(), catalog.schemas().to_vec())?;
-    Ok(BinaryStore::create(&options.database, registry).await?)
-}
-
-fn config(options: &SweepArgs) -> SweepConfig {
-    SweepConfig {
-        region: options.region.clone(),
-        max_pages: options.max_pages,
-        concurrency: options.concurrency,
-        resume: options.resume,
-        endpoint: options.endpoint.clone(),
-        ca_bundle: options.ca_bundle.clone(),
-        slice_timeout_secs: if options.slice_timeout > 0 {
-            Some(options.slice_timeout)
-        } else {
-            None
-        },
-    }
-}
-
-async fn project(store: &BinaryStore, endpoint: &str, graph: &str) -> Result<()> {
-    loop {
+async fn project<S: InventoryStore>(store: &S, endpoint: &str, graph: &str) -> Result<()> {
+    for _ in 0..100_000 {
         let report = run_projection(store, endpoint, graph, 1000).await?;
         if report.offline
             || report.rebuild_incomplete
@@ -125,6 +98,7 @@ async fn project(store: &BinaryStore, endpoint: &str, graph: &str) -> Result<()>
             return Ok(());
         }
     }
+    anyhow::bail!("projection exceeds its 100000-batch budget")
 }
 
 #[cfg(test)]

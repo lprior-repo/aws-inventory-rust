@@ -2,7 +2,7 @@ mod claiming;
 pub(super) use claiming::claim;
 mod owned_lease;
 #[path = "work/transitions.rs"]
-mod transitions;
+pub(in crate::inventory) mod transitions;
 pub(super) use super::validation::{validate_active_sweep, validate_page, validate_work};
 use super::{BinaryStore, MAX_BINDING_BYTES, MAX_TOKEN_BYTES, PageCommit, StoreError};
 use inventory_core::inventory::{ResourceKey, ScopeKey, ScopeOutcome};
@@ -43,9 +43,9 @@ impl SweepId {
 pub struct WorkSpec {
     sweep: SweepId,
     scope: ScopeKey,
-    token: Option<Vec<u8>>,
-    bindings: Vec<u8>,
-    context: Vec<u8>,
+    pub(in crate::inventory) token: Option<Vec<u8>>,
+    pub(in crate::inventory) bindings: Vec<u8>,
+    pub(in crate::inventory) context: Vec<u8>,
 }
 
 impl WorkSpec {

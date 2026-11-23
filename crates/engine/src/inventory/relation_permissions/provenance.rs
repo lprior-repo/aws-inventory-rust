@@ -111,7 +111,10 @@ pub(in crate::inventory) async fn targets(
         .collect()
 }
 
-pub(super) fn proof(registry: &SchemaRegistry, reference: &UnresolvedReference) -> [u8; 32] {
+pub(in crate::inventory) fn proof(
+    registry: &SchemaRegistry,
+    reference: &UnresolvedReference,
+) -> [u8; 32] {
     let mut hash = Sha256::new();
     hash.update(b"aws-inventory-reviewed-reference-v3");
     hash.update(registry.digest());

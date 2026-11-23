@@ -2612,6 +2612,7 @@ dependencies = [
  "base16ct",
  "futures-util",
  "inventory-core",
+ "inventory-harness",
  "proptest",
  "redis",
  "serde",

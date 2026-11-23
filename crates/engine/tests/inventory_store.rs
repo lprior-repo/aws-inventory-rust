@@ -4,6 +4,12 @@ mod batch_seed;
 mod behavior;
 #[path = "inventory_store/conformance.rs"]
 mod conformance;
+#[path = "inventory_store/postgres.rs"]
+mod postgres;
+#[path = "inventory_store/projection_fixture.rs"]
+mod projection_fixture;
+#[path = "inventory_store/projection_port.rs"]
+mod projection_port;
 #[path = "inventory_store/reference.rs"]
 mod reference;
 #[path = "inventory_store/scalar.rs"]

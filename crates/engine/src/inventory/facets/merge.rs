@@ -2,11 +2,11 @@ use super::super::StoreError;
 use inventory_core::record::{FieldId, Key, Record, Value, ValueRef};
 use std::collections::{BTreeMap, BTreeSet};
 
-pub(super) type Path = Vec<Key>;
-pub(super) type Fields = BTreeMap<Path, Value>;
+pub(in crate::inventory) type Path = Vec<Key>;
+pub(in crate::inventory) type Fields = BTreeMap<Path, Value>;
 const MAX_FIELDS: usize = 65_536;
 
-pub(super) fn fields(record: &Record) -> Result<Fields, StoreError> {
+pub(in crate::inventory) fn fields(record: &Record) -> Result<Fields, StoreError> {
     let pending = vec![(Vec::new(), ValueRef::Map(record.root()))];
     // Each step consumes one node; the terminal step exits without scanning the cap.
     let result = (0..MAX_FIELDS).try_fold(
@@ -56,7 +56,10 @@ fn visit<'a>(
     })
 }
 
-pub(super) fn owned(previous: Option<&Record>, current: &Fields) -> Result<Record, StoreError> {
+pub(in crate::inventory) fn owned(
+    previous: Option<&Record>,
+    current: &Fields,
+) -> Result<Record, StoreError> {
     let mut paths = match previous {
         Some(record) => paths(record)?,
         None => BTreeSet::new(),
@@ -73,7 +76,7 @@ pub(super) fn owned(previous: Option<&Record>, current: &Fields) -> Result<Recor
     }))
 }
 
-pub(super) fn encode_paths<'a>(
+pub(in crate::inventory) fn encode_paths<'a>(
     paths: impl IntoIterator<Item = &'a [Key]>,
 ) -> Result<Record, StoreError> {
     let mut set = BTreeSet::new();
@@ -105,11 +108,13 @@ pub(super) fn encode_paths<'a>(
     )])))?)
 }
 
-pub(super) fn paths(record: &Record) -> Result<BTreeSet<Path>, StoreError> {
+pub(in crate::inventory) fn paths(record: &Record) -> Result<BTreeSet<Path>, StoreError> {
     decode_paths(record, false)
 }
 
-pub(super) fn dependency_paths(record: &Record) -> Result<BTreeSet<Path>, StoreError> {
+pub(in crate::inventory) fn dependency_paths(
+    record: &Record,
+) -> Result<BTreeSet<Path>, StoreError> {
     decode_paths(record, true)
 }
 
@@ -142,7 +147,7 @@ fn decode_paths(record: &Record, allow_root: bool) -> Result<BTreeSet<Path>, Sto
         .collect()
 }
 
-pub(super) fn overlay(
+pub(in crate::inventory) fn overlay(
     merged: &mut Fields,
     owners: &mut BTreeMap<Path, usize>,
     owned: &Record,
@@ -167,7 +172,7 @@ pub(super) fn overlay(
     Ok(())
 }
 
-pub(super) fn record(fields: Fields) -> Result<Record, StoreError> {
+pub(in crate::inventory) fn record(fields: Fields) -> Result<Record, StoreError> {
     let mut entries = fields.into_iter().collect::<Vec<_>>();
     entries.sort_unstable_by(|(left, _), (right, _)| {
         right.len().cmp(&left.len()).then(left.cmp(right))

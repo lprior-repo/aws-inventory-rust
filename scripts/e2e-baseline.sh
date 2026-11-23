@@ -4,11 +4,12 @@
 # starts its own emulator and FalkorDB, seeds, sweeps, projects and verifies.
 # Needs: rustup, a C toolchain, git, curl, gpg, dpkg-deb, bsdtar, make.
 # The sweep feature loads AWS profiles without the legacy typed service adapters.
+# PostgreSQL mode requires INVENTORY_POSTGRES_URL for a throwaway native server.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 runtime=.local/runtime
-emulator="$runtime/unpacked/opt/aws-emulator/bin/aws-emulator"
+emulator="${INVENTORY_EMULATOR_BINARY:-$runtime/unpacked/opt/aws-emulator/bin/aws-emulator}"
 graph="$runtime/graph"
 
 for tool in cargo git curl gpg dpkg-deb bsdtar make; do
@@ -27,4 +28,10 @@ if [[ ! -d "$graph" ]]; then
     cargo run --locked -p inventory-harness -- install-graph "$graph"
 fi
 
-cargo test --locked --features sweep --test sweep_e2e -j1 -- --ignored --test-threads 1
+result=0
+for store in postgres file; do
+    if ! INVENTORY_E2E_STORE="$store" cargo test --locked -p aws-inventory --features sweep --test sweep_e2e -j1 -- --ignored --test-threads 1; then
+        result=1
+    fi
+done
+exit "$result"

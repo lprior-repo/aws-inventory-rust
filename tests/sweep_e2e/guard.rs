@@ -3,7 +3,7 @@ use std::path::PathBuf;
 #[path = "guard/profile.rs"]
 mod profile;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(super) struct Environment {
     pub(super) endpoint: String,
     pub(super) ca_bundle: PathBuf,
@@ -12,6 +12,7 @@ pub(super) struct Environment {
     pub(super) region: String,
     pub(super) profile: String,
     pub(super) catalog: PathBuf,
+    pub(super) database_url: Option<String>,
     pub(super) aws_config: PathBuf,
     pub(super) aws_credentials: PathBuf,
 }

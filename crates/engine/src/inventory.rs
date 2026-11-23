@@ -4,11 +4,18 @@ mod completion;
 mod connection;
 mod facets;
 mod legacy;
+pub mod postgres;
+pub use postgres::{DatabaseUrl, PgStore, PgWriteConfig};
 mod projection;
+mod projection_delivery;
+mod projection_identity;
 mod projection_outbox;
 mod projection_read;
+pub use projection_delivery::BinaryDelivery;
+pub use projection_identity::ProjectionIdentity;
 mod reference_candidates;
 mod references;
+mod registry;
 mod relation_permissions;
 mod schema;
 mod store_api;
@@ -20,7 +27,7 @@ mod validation;
 mod work;
 use inventory_core::catalog::runtime::RuntimeCatalog;
 use inventory_core::inventory::{
-    AccountId, Edge, KindSchema, Observation, ScopeKey, ScopeOutcome, UnresolvedReference,
+    AccountId, Edge, KindSchema, Observation, ScopeOutcome, UnresolvedReference,
 };
 pub use inventory_core::inventory::{Tag, TagCoverage, TagObservation};
 pub use projection::{ProjectionError, ProjectionReport, run_projection};
@@ -36,7 +43,7 @@ pub use projection_read::{
     ProjectionEdgeCursor, ProjectionEdgeHeader, ProjectionEdgePage, ProjectionResource,
     ProjectionSnapshot, ProjectionState, ProjectionTag, ProjectionTagCursor, ProjectionTagPage,
 };
-pub use store_api::{InventoryStore, ProjectionSnapshotRead};
+pub use store_api::{InventoryStore, ProjectionDelivery, ProjectionSnapshotRead};
 pub use sweep_history::{LastSweep, last_completed_sweep};
 pub use unobserved::UnobservedScope;
 pub use work::{
@@ -53,15 +60,17 @@ const MAX_PROJECTION_ROWS: i64 = 100_000;
 pub enum StoreError {
     #[error("SQLite storage operation failed: {0}")]
     Sqlite(#[from] sqlx::Error),
+    #[error("another projector owns this inventory database")]
+    DeliveryBusy,
+    #[error("projection ownership file operation failed: {0}")]
+    OwnershipIo(#[from] std::io::Error),
     #[error("schema or stored data is invalid: {0}")]
     Invalid(&'static str),
     #[error("compiled catalog is invalid: {0}")]
     Catalog(#[from] inventory_core::catalog::CatalogError),
     #[error("runtime catalog capability metadata is invalid: {0}")]
     RuntimeCatalog(#[from] inventory_core::catalog::runtime::RuntimeCatalogError),
-    #[error(
-        "database uses schema version {found}; expected schema17 (schema14/15/16 upgrade on open)"
-    )]
+    #[error("database uses an unsupported schema version: {found}")]
     SchemaVersion { found: i64 },
     #[error("catalog digest differs from the immutable database catalog")]
     CatalogMismatch,
@@ -94,101 +103,6 @@ pub struct SchemaRegistry {
     permissions: relation_permissions::Permissions,
 }
 
-impl SchemaRegistry {
-    pub fn new(catalog: &[u8], schemas: Vec<Arc<KindSchema>>) -> Result<Self, StoreError> {
-        if catalog.is_empty() || catalog.len() > MAX_CATALOG_BYTES || schemas.is_empty() {
-            return Err(StoreError::Invalid("catalog size or kind schema count"));
-        }
-        let runtime = RuntimeCatalog::from_bytes(catalog)?;
-        let operations = runtime
-            .plans()
-            .iter()
-            .map(|plan| {
-                (
-                    plan.service_name().to_owned(),
-                    plan.operation_name().to_owned(),
-                )
-            })
-            .collect();
-        let permissions = relation_permissions::Permissions::new(catalog, &runtime)?;
-        let registry = Self::stored(
-            Sha256::digest(catalog).into(),
-            schemas,
-            operations,
-            permissions,
-        )?;
-        if !schema_sets_match(&registry.schemas, runtime.schemas()) {
-            return Err(StoreError::Invalid(
-                "kind schemas differ from checked runtime catalog",
-            ));
-        }
-        Ok(registry)
-    }
-
-    fn stored(
-        digest: [u8; 32],
-        schemas: Vec<Arc<KindSchema>>,
-        operations: BTreeSet<(String, String)>,
-        permissions: relation_permissions::Permissions,
-    ) -> Result<Self, StoreError> {
-        let mut ordered = schemas;
-        ordered.sort_unstable_by(|left, right| left.kind().cmp(right.kind()));
-        if ordered.is_empty()
-            || ordered
-                .windows(2)
-                .any(|pair| matches!(pair, [left, right] if left.kind() == right.kind()))
-        {
-            return Err(StoreError::Invalid("missing or duplicate kind schema"));
-        }
-        Ok(Self {
-            schemas: ordered.into(),
-            digest,
-            operations: Arc::new(operations),
-            permissions,
-        })
-    }
-
-    pub fn schemas(&self) -> &[Arc<KindSchema>] {
-        &self.schemas
-    }
-    fn reference_target(
-        &self,
-        account: inventory_core::inventory::AccountId,
-        region: inventory_core::inventory::Region,
-        kind: inventory_core::inventory::Kind,
-        path: Vec<inventory_core::record::FieldId>,
-        value: inventory_core::inventory::ResourceId,
-    ) -> Result<inventory_core::inventory::ReferenceTarget, StoreError> {
-        if path.is_empty() {
-            let schema = self
-                .schemas
-                .iter()
-                .find(|schema| schema.kind() == &kind)
-                .ok_or(StoreError::Invalid(
-                    "reference target kind is absent from schema registry",
-                ))?;
-            Ok(inventory_core::inventory::ReferenceTarget::root_text(
-                account, region, schema, value,
-            )?)
-        } else {
-            Ok(inventory_core::inventory::ReferenceTarget::new(
-                account, region, kind, path, value,
-            )?)
-        }
-    }
-    pub fn digest(&self) -> &[u8; 32] {
-        &self.digest
-    }
-    pub(crate) fn operations(&self) -> &BTreeSet<(String, String)> {
-        &self.operations
-    }
-    pub(crate) fn allows(&self, scope: &ScopeKey) -> bool {
-        self.operations.contains(&(
-            scope.service().as_str().to_owned(),
-            scope.operation().as_str().to_owned(),
-        ))
-    }
-}
 pub struct BinaryStore {
     pub(crate) writer: SqlitePool,
     pub(crate) reader: SqlitePool,

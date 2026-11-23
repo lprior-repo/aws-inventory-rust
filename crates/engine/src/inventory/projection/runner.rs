@@ -1,16 +1,17 @@
-#[path = "runner/identity.rs"]
-mod identity;
-#[path = "runner/ownership.rs"]
-mod ownership;
 #[path = "runner/rebuild.rs"]
 mod rebuild;
+#[path = "runner/tag_pages.rs"]
+mod tag_pages;
 #[path = "runner/tags.rs"]
 mod tags;
+#[cfg(test)]
+#[path = "runner/tests.rs"]
+mod tests;
 use super::client::{GraphClient, GraphError};
 use super::cypher::QueryError;
 use crate::inventory::{
-    BinaryStore, PendingProjection, ProjectionAck, ProjectionEdgeCursor, ProjectionSnapshot,
-    StoreError,
+    InventoryStore, PendingProjection, ProjectionAck, ProjectionDelivery, ProjectionEdgeCursor,
+    ProjectionIdentity, ProjectionSnapshotRead, StoreError,
 };
 use inventory_core::inventory::ResourceKey;
 use rebuild::*;
@@ -50,42 +51,25 @@ impl From<QueryError> for ProjectionError {
     }
 }
 
-/// Delivers one bounded batch to the graph owned by this inventory database.
-///
-/// One database must own one target graph; the outbox is not a multi-target fanout.
-/// All projectors (including rebuilds) must use this entrypoint. A persistent
-/// `.projection-lock.sqlite` sidecar serializes handles and processes for the
-/// entire snapshot/effects/ack interval, conservatively across all graph names.
-/// Preserve/restore the sidecar with its inventory; never reset its generation
-/// while the target graph exists, even with no open handles. Contention fails
-/// immediately with `DeliveryBusy`; ordinary inventory writers do not acquire it.
-///
-/// Redis CLIENT ID/SET/WATCH/GET/MULTI/EXEC, Lua EVAL and synchronous FalkorDB
-/// GRAPH.QUERY inside EXEC are required. Durable generations reject delayed older
-/// claims; WATCH fences effects from cancelled/crashed predecessors. Ownership
-/// keys must not be externally mutated/evicted. Quiesce old projector versions
-/// before upgrading. No expiring lease or unfenced fallback exists. Client deadline is 10s per
-/// request; dropped callers leave unfinished delivery pending for successor repair.
-/// EXEC runs each native query on Redis's main thread, temporarily serializing
-/// other graphs/Redis commands too. A timed-out query may still finish remotely,
-/// but its transaction cannot escape the successor's native ownership fence.
-/// This is delivery serialization, not an atomic multi-query graph snapshot.
-pub async fn run_projection(
-    store: &BinaryStore,
+pub async fn run_projection<S: InventoryStore>(
+    store: &S,
     endpoint: &str,
     graph: &str,
     batch_limit: u16,
 ) -> Result<ProjectionReport, ProjectionError> {
     validate(graph, endpoint, batch_limit)?;
-    let ownership = ownership::acquire(store).await?;
+    let ownership = store
+        .acquire_projection_delivery()
+        .await
+        .map_err(delivery_error)?;
     let result =
         run_owned_projection(store, endpoint, graph, batch_limit, ownership.generation()).await;
-    ownership.release().await?;
+    ownership.release().await.map_err(delivery_error)?;
     result
 }
 
-async fn run_owned_projection(
-    store: &BinaryStore,
+async fn run_owned_projection<S: InventoryStore>(
+    store: &S,
     endpoint: &str,
     graph: &str,
     batch_limit: u16,
@@ -104,40 +88,29 @@ async fn run_owned_projection(
     }
     let report = deliver_batch(store, &mut client, batch_limit).await?;
     if report.acknowledged > 0 {
-        identity::write_identity(
-            store,
-            &identity::ProjectionIdentity {
-                endpoint: endpoint.to_owned(),
-                graph: graph.to_owned(),
-            },
-        )
-        .await?;
+        persist_identity(store, endpoint, graph).await?;
     }
     Ok(report)
 }
 
-/// When the outbox is empty, verify the target graph identity is still correct.
-/// If the graph endpoint or name changed since the last delivery, the graph is
-/// stale and a rebuild is required. This prevents silently claiming synchronization
-/// when the target was lost or recreated.
-async fn target_identity_check(
-    store: &BinaryStore,
+async fn target_identity_check<S: InventoryStore>(
+    store: &S,
     endpoint: &str,
     graph: &str,
     pending: u64,
 ) -> Result<ProjectionReport, ProjectionError> {
-    let stored = identity::read_identity(store).await?;
+    let stored = store.read_projection_identity().await?;
     match stored {
         Some(identity) if identity.differs(endpoint, graph) => {
-            identity::mark_rebuild_required(store).await?;
+            store.mark_projection_rebuild_required().await?;
             Ok(report(pending, 0, false, true))
         }
         _ => Ok(report(pending, 0, false, false)),
     }
 }
 
-async fn deliver_batch(
-    store: &BinaryStore,
+async fn deliver_batch<S: InventoryStore>(
+    store: &S,
     client: &mut GraphClient,
     batch_limit: u16,
 ) -> Result<ProjectionReport, ProjectionError> {
@@ -158,8 +131,8 @@ async fn deliver_batch(
     deliver_entries(store, client, pending, batch_limit, acknowledged).await
 }
 
-async fn deliver_entries(
-    store: &BinaryStore,
+async fn deliver_entries<S: InventoryStore>(
+    store: &S,
     client: &mut GraphClient,
     pending: Vec<PendingProjection>,
     batch_limit: u16,
@@ -183,8 +156,8 @@ async fn deliver_entries(
     pending_report(store, acknowledged, offline, false).await
 }
 
-async fn deliver_entry(
-    store: &BinaryStore,
+async fn deliver_entry<S: InventoryStore>(
+    store: &S,
     client: &mut GraphClient,
     entry: &PendingProjection,
     batch_limit: u16,
@@ -203,8 +176,8 @@ async fn deliver_entry(
         .map_err(EntryError::Store)
 }
 
-async fn deliver_resource(
-    store: &BinaryStore,
+async fn deliver_resource<S: InventoryStore>(
+    store: &S,
     client: &mut GraphClient,
     key: &ResourceKey,
     batch_limit: u16,
@@ -225,7 +198,7 @@ async fn deliver_resource(
 }
 
 async fn deliver_incident_edges(
-    snapshot: &mut ProjectionSnapshot,
+    snapshot: &mut impl ProjectionSnapshotRead,
     client: &mut GraphClient,
     key: &ResourceKey,
     batch_limit: u16,
@@ -246,84 +219,23 @@ async fn deliver_incident_edges(
     ))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::{ProjectionError, report, validate};
+async fn persist_identity<S: InventoryStore>(
+    store: &S,
+    endpoint: &str,
+    graph: &str,
+) -> Result<(), StoreError> {
+    store
+        .write_projection_identity(&ProjectionIdentity {
+            endpoint: endpoint.to_owned(),
+            graph: graph.to_owned(),
+        })
+        .await
+}
 
-    #[test]
-    fn graph_names_and_batches_are_strictly_bounded() {
-        assert!(validate("inventory-graph_1", "redis://localhost", 1).is_ok());
-        assert!(matches!(
-            validate("inventory graph", "redis://localhost", 1),
-            Err(ProjectionError::InvalidConfiguration)
-        ));
-        assert!(matches!(
-            validate("inventory", "redis://localhost", 0),
-            Err(ProjectionError::InvalidConfiguration)
-        ));
-        assert!(matches!(
-            validate("inventory", "redis://localhost", 1001),
-            Err(ProjectionError::InvalidConfiguration)
-        ));
-    }
-
-    #[test]
-    fn report_retains_pending_when_delivery_is_offline_or_rebuild_is_partial() {
-        let offline = report(3, 0, true, false);
-        let partial = report(2, 1, false, true);
-        assert_eq!(offline.pending, 3);
-        assert!(offline.offline);
-        assert_eq!(partial.pending, 2);
-        assert!(partial.rebuild_incomplete);
-    }
-
-    #[test]
-    fn identity_differs_on_endpoint_change() {
-        use super::identity::ProjectionIdentity;
-        let stored = ProjectionIdentity {
-            endpoint: "redis://localhost:6379".to_owned(),
-            graph: "inventory".to_owned(),
-        };
-        assert!(!stored.differs("redis://localhost:6379", "inventory"));
-        assert!(stored.differs("redis://localhost:7000", "inventory"));
-    }
-
-    #[test]
-    fn identity_differs_on_graph_name_change() {
-        use super::identity::ProjectionIdentity;
-        let stored = ProjectionIdentity {
-            endpoint: "redis://localhost:6379".to_owned(),
-            graph: "inventory".to_owned(),
-        };
-        assert!(stored.differs("redis://localhost:6379", "other_graph"));
-    }
-
-    #[test]
-    fn stale_graph_identity_requires_rebuild() {
-        let stale = report(0, 0, false, true);
-        assert!(stale.rebuild_incomplete);
-        assert_eq!(stale.pending, 0);
-        assert_eq!(stale.acknowledged, 0);
-    }
-    #[test]
-    fn response_errors_are_fatal_but_transport_errors_are_offline() {
-        use super::super::client::GraphError;
-        use super::{EntryError, ProjectionError, entry_graph_error};
-        let response = redis::RedisError::from((
-            redis::ErrorKind::Server(redis::ServerErrorKind::ResponseError),
-            "bad query",
-        ));
-        assert!(matches!(
-            entry_graph_error(GraphError::Redis(response)),
-            EntryError::Projection(ProjectionError::Query)
-        ));
-        let transport = redis::RedisError::from(std::io::Error::new(
-            std::io::ErrorKind::ConnectionRefused,
-            "offline",
-        ));
-        assert!(matches!(
-            entry_graph_error(GraphError::Redis(transport)),
-            EntryError::Offline
-        ));
+fn delivery_error(error: StoreError) -> ProjectionError {
+    match error {
+        StoreError::DeliveryBusy => ProjectionError::DeliveryBusy,
+        StoreError::OwnershipIo(error) => ProjectionError::OwnershipIo(error),
+        error => ProjectionError::Store(error),
     }
 }

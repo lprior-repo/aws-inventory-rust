@@ -2,7 +2,7 @@ use super::super::{PageCommit, SchemaRegistry, StoreError};
 use inventory_core::inventory::{ResourceId, UnresolvedReference};
 use std::collections::BTreeMap;
 
-pub(super) fn references(
+pub(in crate::inventory) fn references(
     registry: &SchemaRegistry,
     page: &PageCommit,
 ) -> Result<Vec<(UnresolvedReference, ResourceId)>, StoreError> {

@@ -1,6 +1,6 @@
 use super::reference_candidates;
 #[path = "commit/edges.rs"]
-mod edges;
+pub(super) mod edges;
 #[path = "commit/references_tail.rs"]
 mod references_tail;
 use super::work::{ChangeStats, WorkLease};
