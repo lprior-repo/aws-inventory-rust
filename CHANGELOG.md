@@ -16,6 +16,19 @@
   self-validate seeded relationships and resource pagination bounds; crash and
   cancellation subscenarios use independent graph namespaces.
 
+- Native first-page probes account for every callable purpose, including bootstrap
+  and tag plans, with exactly one row per service/operation. STS identity is reused
+  for account-bound root inputs. Known absent features and singleton configurations
+  produce empty-with-reason evidence and complete empty runtime scopes; permission
+  and generic missing-resource errors remain visible failures.
+- AWS error decoding honors explicit JSON error envelopes and error headers even
+  for RPC/CBOR requests, preserving emulator protocol gaps instead of generic HTTP
+  errors. Explicit unknown-operation responses are unsupported, not decoder failures.
+- Batch service jobs, CloudFormation type versions, Kinesis Video mapped resources
+  and Redshift reserved-node exchange status now use their actual parent identifiers.
+  CloudFormation registry discovery explicitly selects account-private extensions.
+  IAM login-profile `NoSuchEntity` is narrowly treated as absent; permission and
+  service failures remain visible. Native failure triage reconciles all 2,197 keys.
 - Sweep accepts repeatable `--service service[:Operation]` selectors. Bootstrap
   calls and required ancestors remain enabled; descendants require an explicit
   selector (a bare service selects all its plans). Omitted selectors keep the
@@ -52,7 +65,7 @@
   by immediate resume to the uninterrupted digest; the long hard-crash lease
   recovery limitation is recorded explicitly.
 
-- The harness `probe` command reports every catalog enumeration in stable order,
+- The harness `probe` command reports every catalog callable in stable order,
   skips parent-bound children, and calls only the first page through the sweep's
   existing encoder, signer, status classifier and decoder. Reports retain bounded
   failure details, decoder output shapes, and outcome/protocol totals. The public

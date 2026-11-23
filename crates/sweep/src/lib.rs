@@ -30,7 +30,7 @@ pub use control::{ProgressEvent, SweepControl};
 pub use credentials::{CredentialFailure, CredentialSource};
 pub use execution::run;
 pub use metrics::SweepMetrics;
-pub use probe::{ProbeAnswer, call_once};
+pub use probe::{ProbeAnswer, ProbeScope, call_once};
 
 #[derive(Clone, Debug)]
 pub struct SweepConfig {
@@ -114,6 +114,8 @@ pub enum SweepError {
     Transport(#[from] aws_wire::transport::TransportError),
     #[error("AWS signing error: {0}")]
     Signing(#[from] aws_wire::sign::Error),
+    #[error("inventory feature or singleton absent: {0}")]
+    Absent(String),
     #[error("sweep operation failed: {0}")]
     Operation(&'static str),
 }

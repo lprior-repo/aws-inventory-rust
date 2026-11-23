@@ -23,3 +23,22 @@ fn given_multibyte_boundary_when_formatted_then_detail_stays_bounded_and_valid()
     assert_eq!(detail.0.len(), 1024);
     Ok(())
 }
+
+#[test]
+fn given_absent_feature_when_probed_then_empty_row_keeps_the_reason()
+-> Result<(), Box<dyn std::error::Error>> {
+    let bytes = include_bytes!("../../../../../catalog/aws-api.catalog");
+    let catalog = inventory_core::catalog::runtime::RuntimeCatalog::from_bytes(bytes)?;
+    let plan = catalog
+        .lookup("organizations", "ListAccounts")
+        .ok_or("plan absent")?;
+    let error = inventory_sweep::SweepError::Absent("AWSOrganizationsNotInUseException".into());
+    let outcome = super::failed(plan, &error);
+    match outcome {
+        super::Outcome::EmptyReason(reason) => {
+            assert!(reason.contains("AWSOrganizationsNotInUseException"))
+        }
+        _ => return Err("absent feature must produce empty-with-reason".into()),
+    }
+    Ok(())
+}

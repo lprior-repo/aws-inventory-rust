@@ -712,11 +712,15 @@ Set `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and, when required,
 an HTTPS loopback IP origin with an explicit nonzero port. All five options are
 required. The CLI does not shell out to Python.
 
-Every enumeration gets a service/operation/protocol row. Parent-bound plans are
+Every callable gets exactly one service/operation/protocol row, including identity,
+region, endpoint-discovery and tag plans. STS identity executes once before fan-out;
+its returned account ID supplies account-bound root inputs. Parent-bound plans are
 listed as `skipped child` without a network request. Root calls run at concurrency
 eight, with one attempt per operation, and never follow pagination tokens.
 `items N` counts the first page; `empty`, `unsupported`, and `failed CLASS DETAIL`
-remain visible. Rows are sorted and followed by separate outcome totals and
+remain visible. Known absent features/singletons report `empty REASON`; this is not
+a blanket conversion of missing resources or denied access to empty success.
+Rows are sorted and followed by separate outcome totals and
 per-protocol totals. Error details are single-line, capped at 1,024 bytes; decoder
 failure rows include `shape=...`, recording the failing operation and output shape
 as decoder-defect evidence rather than changing overlays to hide it. Catalog and
@@ -732,8 +736,8 @@ cargo test --locked -j3 -p inventory-harness --test probe
 
 The opt-in native proof starts a fresh emulator, runs the thin-slice TOML seeds,
 probes the complete catalog, and writes the persistent report above. It requires
-a row for every thin-slice enumeration and item-bearing results in at least five
-protocol families:
+an exact service/operation set match against every callable plan, no duplicate rows,
+and item-bearing results in at least five protocol families:
 
 ```sh
 INVENTORY_EMULATOR_BINARY=/absolute/path/to/aws-emulator \
@@ -744,15 +748,23 @@ INVENTORY_EMULATOR_BINARY=/absolute/path/to/aws-emulator \
 The native report is evidence from one seeded emulator run, not an assertion that
 all catalog operations are implemented by the emulator.
 
-The pinned 1.0.348 native run passed: 2,134 enumeration rows, including 72
-item-bearing operations, 814 empty, 485 unsupported, 184 failed and 579 skipped
-children. All seven protocol families returned items, so no protocol substitute
-was needed. The committed `catalog/emulator-probe.report` is the complete evidence.
+The original pinned 1.0.348 run was reproduced: 2,134 rows, with 72 item-bearing,
+814 empty, 485 unsupported, 184 failed and 579 skipped children. The missing 63
+keys were excluded by the old purpose filter: 59 tag endpoints plus STS identity,
+EC2 region discovery and the two Timestream endpoint discoveries.
 
-Decoder defect recorded by this run: `bedrock-agentcore-control ListBrowsers`,
-protocol `restJson1`, output shape `ListBrowsersResponse`, failed with
-`invalid response: invalid timestamp`. The operation remains visible as
-`failed decode`; no overlay was changed to remove it.
+The corrected fail-lane checkpoint covers every one of 2,197 callables exactly:
+74 item-bearing, 832 empty, 524 unsupported, 125 failed, and 642 skipped children.
+All seven protocol families return items. The report is regenerated in the
+worktree, not committed as part of the implementation patch. See
+[FAIL_TRIAGE](FAIL_TRIAGE.md) for every remaining failed operation, causes,
+before/after transitions and exact command evidence. This is first-page probe
+evidence, not full child-expansion inventory coverage.
+
+Malformed emulator response recorded by this run: `bedrock-agentcore-control
+ListBrowsers`, protocol `restJson1`, output shape `ListBrowsersResponse`, returns a
+numeric timestamp for the pinned model's explicit `date-time` shape. It remains
+`failed decode`; no timestamp coercion or overlay deletion conceals it.
 
 ### Generator provenance and reproducibility
 

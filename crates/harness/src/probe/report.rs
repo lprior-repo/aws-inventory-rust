@@ -8,6 +8,7 @@ use std::{
 pub(super) enum Outcome {
     Items(u64),
     Empty,
+    EmptyReason(String),
     Unsupported(String),
     Failed { class: &'static str, detail: String },
     SkippedChild,
@@ -60,6 +61,7 @@ impl Row<'_> {
         match &self.outcome {
             Outcome::Items(count) => writeln!(report, "items {count}"),
             Outcome::Empty => writeln!(report, "empty"),
+            Outcome::EmptyReason(reason) => writeln!(report, "empty {reason}"),
             Outcome::Unsupported(detail) => writeln!(report, "unsupported {detail}"),
             Outcome::Failed { class, detail } => writeln!(report, "failed {class} {detail}"),
             Outcome::SkippedChild => writeln!(report, "skipped child"),
@@ -80,7 +82,7 @@ impl Totals {
     fn add(&mut self, outcome: &Outcome) -> Result<(), ProbeError> {
         let total = match outcome {
             Outcome::Items(_) => &mut self.items,
-            Outcome::Empty => &mut self.empty,
+            Outcome::Empty | Outcome::EmptyReason(_) => &mut self.empty,
             Outcome::Unsupported(_) => &mut self.unsupported,
             Outcome::Failed { .. } => &mut self.failed,
             Outcome::SkippedChild => &mut self.skipped,
