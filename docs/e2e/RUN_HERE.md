@@ -614,3 +614,15 @@ Decoder defect recorded by this run: `bedrock-agentcore-control ListBrowsers`,
 protocol `restJson1`, output shape `ListBrowsersResponse`, failed with
 `invalid response: invalid timestamp`. The operation remains visible as
 `failed decode`; no overlay was changed to remove it.
+
+### Generator provenance and reproducibility
+
+Formatting embedded overlay/kind/naming/class sources changes the catalog's
+source fingerprint even when runtime capabilities are unchanged. Regenerate the
+catalog and manifest after merging all generator changes. Two current-tree
+compiles 40 seconds apart and a third with copied catalog inputs and a separate
+model checkout at another path produced byte-identical catalogs:
+`b1e5b7c6a0a7f053dadf567e1f75e1f2af1d16b64d9e3eac7a3409ec2c34757c`.
+The prior `7a8a4452...` catalog differs only in the 32-byte embedded-source
+fingerprint; both files are 19,062,877 bytes. No time or absolute input path
+dependence was observed.
