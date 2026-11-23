@@ -1,6 +1,7 @@
 pub mod collector;
 pub mod command;
 pub mod graph;
+mod outcome;
 mod seed;
 pub mod stack;
 pub mod verify;
@@ -88,6 +89,7 @@ impl Run {
             &self.args.work.join(format!("{}.log", stage.name())),
         )
         .await?;
+        verify::failed_operations(self.database.url(), &summary).await?;
         if stage == Stage::Resweep {
             verify::zero(&summary, "resource_writes")?;
         }

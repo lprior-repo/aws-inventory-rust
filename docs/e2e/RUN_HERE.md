@@ -253,6 +253,42 @@ callability. The generated file alone must not be interpreted as enabling that
 Lambda operation. `moon.yml` remains unchanged by directive; use the documented
 plain command gates rather than adding pipeline wiring.
 
+## Wave 2 owned run command (A7.1)
+
+`inventory-harness e2e run --work "$(mktemp -d)" --service ec2 --service sts`
+starts isolated emulator/FalkorDB children and creates a fresh database on
+`INVENTORY_POSTGRES_URL` (or `--postgres-url`). Obtain an administrative server
+URL with `inventory-harness postgres up` / `postgres url`, or the native server
+instructions in `deploy/local/README.md`. The PostgreSQL server itself is not
+owned or stopped by this command.
+
+Default recipes are `crates/harness/seeds`; override with `--seeds`. Services
+without recipes, such as STS, remain collector selectors but add no seed file.
+`--collector` overrides the sibling `aws-inventory` executable. The command
+refuses non-empty work directories, retains stage logs/oracle/matrix in the work
+directory, checks seeded kinds' exact identities and counts, and requires zero
+resource writes on the repeat sweep. No unseeded kind is claimed verified.
+
+Stages print `stage NAME MILLISECONDS ok|failed`. Collection prints only known
+numeric summary fields and names of persisted failed operations, never an
+unredacted child log or database URL. Product exit 0 and completed-with-outcomes
+exit 2 are accepted only with `partial=0`, `work_remaining=0` and
+`graph_pending=0`; unsupported/failed emulator operations are reported data, not
+stage failures. Fatal, unfinished, signalled and unknown exits still fail.
+The seeded-count and repeat-write checks remain mandatory. Children and the
+database are cleaned up even after a failed stage. `--keep` prints the database
+URL and endpoint, waits for Ctrl-C, stops the children and leaves the database
+for inspection. A Ctrl-C during active stages instead cancels and cleans up.
+
+Sweep selectors are repeatable `--service service[:Operation]`. A bare service
+means **all** its callable operations, not the historical four-callable fixture.
+Qualified operations retain required ancestors and bootstrap calls, but do not
+enable unselected descendants. Unknown selectors are usage errors (exit 2).
+This larger catalog can report unsupported/failed EC2 operations; those are
+reported honestly rather than silently narrowing the selection. E5.1 graph
+verification and A6.1 cross-check are not implemented in this base and are not
+reported as passed stages; the collector still projects to the owned graph.
+
 ## One command
 
 ![How a run is proven on the emulator](img/35-test-loop.png)
@@ -263,14 +299,14 @@ plain command gates rather than adding pipeline wiring.
 scripts/e2e-baseline.sh
 ```
 
-It installs the pinned runtime if it is missing, builds, and runs the ignored
-`sweep_e2e` suite. The suite starts its own emulator and its own Redis with
-the FalkorDB module, seeds VPCs and subnets through `aws-wire`, runs the
-shipped `aws-inventory sweep`, projects into FalkorDB and compares the stored
-rows and the graph with the seed.
+It installs missing pinned runtimes, builds the harness and shipped collector,
+then calls `e2e run` with whole-service EC2 and STS selectors. Supply
+`INVENTORY_POSTGRES_URL` or pass `--postgres-url` through the script. The work
+directory is printed and retained for logs. See A7.1 above for current gate
+status; the historical suite result below is not evidence for this larger catalog.
 
-Run here as written, with the runtime already installed: exit 0, 2 passed,
-247.29 s.
+Historical pre-A7.1 script (ignored `sweep_e2e` suite), with runtime installed:
+exit 0, 2 passed, 247.29 s.
 
 Tools it needs on `PATH`: `cargo` (rustup reads `rust-toolchain.toml`), a C
 toolchain, `git`, `curl`, `gpg`, `dpkg-deb`, `bsdtar`, `make`.

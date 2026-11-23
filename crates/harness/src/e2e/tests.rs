@@ -54,7 +54,7 @@ impl Session for StubSession {
             Stage::Sweep | Stage::Resweep => {
                 let mut command = tokio::process::Command::new("sh");
                 let code = if self.fail { "9" } else { "0" };
-                command.args(["-c", "printf 'resource_writes_scope=invocation resource_writes=0 failed=0\\n'; exit \"$1\"", "stub", code]);
+                command.args(["-c", "printf 'resource_writes_scope=invocation resource_writes=0 rows=1 complete=1 partial=0 unsupported=0 failed=0 work_remaining=0 graph_pending=0\\n'; exit \"$1\"", "stub", code]);
                 let summary =
                     collector::execute(command, &self.root.join(format!("{}.log", stage.name())))
                         .await?;
@@ -155,4 +155,26 @@ fn given_nonempty_work_when_prepared_then_existing_contents_are_untouched() -> T
         "untouched"
     );
     Ok(())
+}
+
+#[tokio::test]
+#[ignore = "requires an owned PostgreSQL server via INVENTORY_POSTGRES_URL"]
+async fn given_explicit_keep_when_database_owner_is_consumed_then_database_remains_available()
+-> TestResult {
+    let admin = crate::postgres::admin_url()?;
+    let database = TestDatabase::create(&admin).await?;
+    let name = database.name().to_owned();
+    let url = database.url().to_owned();
+    database.keep();
+    let connection = PgConnection::connect(&url).await?;
+    connection.close().await?;
+    let mut admin_connection = PgConnection::connect(&admin).await?;
+    sqlx::QueryBuilder::<sqlx::Postgres>::new("DROP DATABASE \"")
+        .push(&name)
+        .push("\" WITH (FORCE)")
+        .build()
+        .execute(&mut admin_connection)
+        .await?;
+    admin_connection.close().await?;
+    assert_database_dropped(&admin, &name).await
 }

@@ -9,9 +9,11 @@
 - `inventory-harness e2e run` owns an isolated emulator, FalkorDB and fresh
   PostgreSQL database, seeds recipes, runs the shipped collector twice and
   checks seeded identities/counts and zero repeat writes. Timed stages and
-  safe numeric collector outcomes remain visible on failure; `--keep` retains
-  the database until explicitly pruned and waits for Ctrl-C before stopping
-  children. The baseline script now uses this command.
+  safe numeric collector outcomes and failed operation names remain visible.
+  Completed product exits 0/2 require no partial scopes, pending work or graph
+  backlog; unsupported/failed emulator outcomes do not bypass count/repeat gates.
+  `--keep` retains the database until explicitly pruned and waits for Ctrl-C
+  before stopping children. The baseline script now uses this command.
 
 - The harness `probe` command reports every catalog enumeration in stable order,
   skips parent-bound children, and calls only the first page through the sweep's

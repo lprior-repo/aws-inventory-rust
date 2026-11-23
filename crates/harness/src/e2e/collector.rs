@@ -69,10 +69,7 @@ pub async fn execute(mut command: Command, log: &Path) -> Result<String, Harness
     if !outcome.is_empty() {
         println!("collector {outcome}");
     }
-    if !status.success() {
-        return Err(HarnessError::invalid("collector failed; see stage log"));
-    }
-    super::verify::zero(&summary, "failed")?;
+    super::outcome::accept(status.code(), &summary)?;
     Ok(summary)
 }
 

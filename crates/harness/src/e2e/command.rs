@@ -32,7 +32,7 @@ impl RunArgs {
             .ok_or_else(|| HarnessError::invalid("cannot locate collector directory"))?;
         Ok(Self {
             work: PathBuf::new(),
-            seeds: root.join("seeds"),
+            seeds: root.join("crates/harness/seeds"),
             catalog: root.join("catalog/aws-api.catalog"),
             services: Vec::new(),
             collector: parent.join("aws-inventory"),

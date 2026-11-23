@@ -1,4 +1,6 @@
+mod failures;
 use crate::HarnessError;
+pub use failures::failed_operations;
 use sqlx::{Connection, Row, postgres::PgConnection};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -29,7 +31,7 @@ pub fn zero(summary: &str, metric: &str) -> Result<(), HarnessError> {
     Ok(())
 }
 
-fn metric_value(summary: &str, metric: &str) -> Result<u64, HarnessError> {
+pub(super) fn metric_value(summary: &str, metric: &str) -> Result<u64, HarnessError> {
     let line = summary
         .lines()
         .rev()
@@ -56,6 +58,10 @@ pub fn outcome(summary: &str) -> String {
         "unsupported",
         "failed",
         "work_remaining",
+        "graph_pending",
+        "inaccessible",
+        "unobserved",
+        "unattributed_resources",
     ]
     .iter()
     .filter_map(|metric| {
