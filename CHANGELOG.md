@@ -2,6 +2,42 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- E2E count verification now rejects an entirely catalog-deferred seed oracle.
+  Every explicit E2E service selector must have a seed recipe; bootstrap calls
+  remain implicit, so the baseline script no longer selects recipe-less STS.
+- Sweep accepts `INVENTORY_SWEEP_DATABASE` as an alternative to `--database`;
+  the harness uses it to keep database passwords off collector argv. Generated
+  profile/config files are exclusively created with mode 0600, issued credential
+  reads are capped at 64 KiB, and signal-listener failures still finalize owned
+  children and the database.
+- Selection/parser regression scenarios cover bootstrap retention, sibling
+  removal, empty-selection identity, duplicate plan names, invalid arguments,
+  and unknown selectors rejected before database creation. E2E SQL snapshots
+  self-validate seeded relationships and resource pagination bounds; crash and
+  cancellation subscenarios use independent graph namespaces.
+
+- Native first-page probes account for every callable purpose, including bootstrap
+  and tag plans, with exactly one row per service/operation. STS identity is reused
+  for account-bound root inputs. Known absent features and singleton configurations
+  produce empty-with-reason evidence and complete empty runtime scopes; permission
+  and generic missing-resource errors remain visible failures.
+- AWS error decoding honors explicit JSON error envelopes and error headers even
+  for RPC/CBOR requests, preserving emulator protocol gaps instead of generic HTTP
+  errors. Explicit unknown-operation responses are unsupported, not decoder failures.
+- Batch service jobs, CloudFormation type versions, Kinesis Video mapped resources
+  and Redshift reserved-node exchange status now use their actual parent identifiers.
+  CloudFormation registry discovery explicitly selects account-private extensions.
+  IAM login-profile `NoSuchEntity` is narrowly treated as absent; permission and
+  service failures remain visible. Native failure triage reconciles all 2,197 keys.
+- Overlay generation now covers all 436 pinned services, including validated
+  child reads derived from modeled identifiers or a unique compatible
+  same-service identity source. Reachable credential outputs, owner-sensitive
+  inputs and ambiguous collections fail closed. Specific reviewed defers and
+  denials remain authoritative; only source-typed request-binding blockers may
+  be replaced by validated generated children. Per-class/protocol counts,
+  advisory audit differences and mutation evidence are documented in
+  `docs/e2e/build/GENERATOR_EVIDENCE.md`.
+
 - Sweep accepts repeatable `--service service[:Operation]` selectors. Bootstrap
   calls and required ancestors remain enabled; descendants require an explicit
   selector (a bare service selects all its plans). Omitted selectors keep the
@@ -38,7 +74,7 @@
   by immediate resume to the uninterrupted digest; the long hard-crash lease
   recovery limitation is recorded explicitly.
 
-- The harness `probe` command reports every catalog enumeration in stable order,
+- The harness `probe` command reports every catalog callable in stable order,
   skips parent-bound children, and calls only the first page through the sweep's
   existing encoder, signer, status classifier and decoder. Reports retain bounded
   failure details, decoder output shapes, and outcome/protocol totals. The public

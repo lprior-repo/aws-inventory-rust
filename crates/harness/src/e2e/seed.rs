@@ -9,12 +9,8 @@ use crate::{
 use std::collections::BTreeSet;
 
 pub(super) async fn run(args: &RunArgs, stack: &Stack) -> Result<(), HarnessError> {
-    let services = selected_recipes(args);
-    if !args.services.is_empty() && services.is_empty() {
-        return Err(HarnessError::invalid(
-            "selected services have no seed recipes",
-        ));
-    }
+    let services =
+        selected_recipes(args).map_err(|error| HarnessError::invalid(format!("seed: {error}")))?;
     let seed = SeedRunArgs {
         seeds: args.seeds.clone(),
         catalog: args.catalog.clone(),
@@ -31,15 +27,21 @@ pub(super) async fn run(args: &RunArgs, stack: &Stack) -> Result<(), HarnessErro
         .map_err(|error| HarnessError::invalid(format!("seed: {error}")))
 }
 
-pub(super) fn selected_recipes(args: &RunArgs) -> Vec<String> {
-    args.services
+pub(super) fn selected_recipes(args: &RunArgs) -> Result<Vec<String>, SeedError> {
+    Ok(args
+        .services
         .iter()
         .map(|selector| service_name(selector))
-        .filter(|service| args.seeds.join(format!("{service}.toml")).is_file())
-        .collect::<BTreeSet<_>>()
+        .map(|service| {
+            if !args.seeds.join(format!("{service}.toml")).is_file() {
+                return Err(SeedError::Invalid("requested seed service has no file"));
+            }
+            Ok(service)
+        })
+        .collect::<Result<BTreeSet<_>, _>>()?
         .into_iter()
         .map(str::to_owned)
-        .collect()
+        .collect())
 }
 
 pub(super) fn collector_services(args: &RunArgs) -> Result<Vec<String>, HarnessError> {
@@ -72,7 +74,7 @@ fn service_name(selector: &str) -> &str {
 }
 
 fn recipe_services(args: &RunArgs) -> Result<BTreeSet<String>, SeedError> {
-    let selected = selected_recipes(args);
+    let selected = selected_recipes(args)?;
     if selected.is_empty() {
         return Err(SeedError::Invalid("selected services have no seed recipes"));
     }

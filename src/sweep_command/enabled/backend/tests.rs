@@ -31,6 +31,32 @@ fn given_repeated_service_selectors_when_parsed_then_order_and_qualification_are
     Ok(())
 }
 
+#[tokio::test]
+async fn given_unknown_service_selector_when_sweep_runs_then_exit_two_precedes_database_creation()
+-> Result<()> {
+    assert_unknown_selector("unknown-service").await?;
+    assert_unknown_selector("ec2:NoSuchOperation").await
+}
+
+async fn assert_unknown_selector(selector: &str) -> Result<()> {
+    let root = tempfile::tempdir()?;
+    let database = root.path().join("inventory.bin");
+    let options = Options::try_parse_from([
+        "test",
+        "--database",
+        database
+            .to_str()
+            .context("test database path must be UTF-8")?,
+        "--service",
+        selector,
+    ])?
+    .sweep;
+    assert_eq!(run(&options).await?, std::process::ExitCode::from(2));
+    assert!(!database.exists());
+    assert_eq!(std::fs::read_dir(root.path())?.count(), 0);
+    Ok(())
+}
+
 #[test]
 fn given_database_password_when_debugged_or_clap_rejects_another_value_then_secret_is_hidden()
 -> Result<()> {
@@ -42,6 +68,29 @@ fn given_database_password_when_debugged_or_clap_rejects_another_value_then_secr
             .err()
             .context("invalid concurrency was accepted")?;
     assert!(!error.to_string().contains("super-secret"));
+    Ok(())
+}
+
+#[test]
+fn given_child_database_environment_when_parsed_then_database_argument_is_optional() -> Result<()> {
+    const MARKER: &str = "INVENTORY_TEST_DATABASE_ENV";
+    const DATABASE: &str = "postgres://user:private-password@localhost/inventory";
+    if std::env::var_os(MARKER).is_some() {
+        let parsed = Options::try_parse_from(["test"])?;
+        assert_eq!(parsed.sweep.database, DATABASE);
+        assert!(!format!("{:?}", parsed.sweep).contains("private-password"));
+        return Ok(());
+    }
+    let output = std::process::Command::new(std::env::current_exe()?)
+        .arg("given_child_database_environment_when_parsed_then_database_argument_is_optional")
+        .env(MARKER, "1")
+        .env("INVENTORY_SWEEP_DATABASE", DATABASE)
+        .output()?;
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stdout)
+    );
     Ok(())
 }
 

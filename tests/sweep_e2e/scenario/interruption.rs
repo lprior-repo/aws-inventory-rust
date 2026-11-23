@@ -13,10 +13,17 @@ pub(super) async fn run(
     oracle: &TypedSeedOracle,
     expected: &InventorySnapshot,
 ) -> Result<()> {
+    let crashed = isolated_graph(environment, "crash");
+    crash_preserves_checkpoint(&crashed).await?;
+    let cancelled = isolated_graph(environment, "cancel");
+    cancelled_resume_matches_full(&cancelled, oracle, expected).await
+}
+
+fn isolated_graph(environment: &Environment, scenario: &str) -> Environment {
     let mut isolated = environment.clone();
-    isolated.graph_name = format!("{}-resume-{}", environment.graph_name, uuid::Uuid::new_v4());
-    crash_preserves_checkpoint(&isolated).await?;
-    cancelled_resume_matches_full(&isolated, oracle, expected).await
+    let suffix = uuid::Uuid::new_v4();
+    isolated.graph_name = format!("{}-{scenario}-{suffix}", environment.graph_name);
+    isolated
 }
 
 async fn cancelled_resume_matches_full(

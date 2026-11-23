@@ -16,7 +16,7 @@ pub(super) async fn bootstrap_account(
     account_id(&response.record, account_path)
 }
 
-fn account_id(
+pub(crate) fn account_id(
     response: &inventory_core::record::Record,
     path: &[FieldId],
 ) -> Result<AccountId, SweepError> {

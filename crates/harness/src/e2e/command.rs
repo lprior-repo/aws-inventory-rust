@@ -106,3 +106,6 @@ pub async fn run(arguments: &[String]) -> ExitCode {
         }
     }
 }
+
+#[cfg(test)]
+mod tests;

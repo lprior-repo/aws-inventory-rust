@@ -32,3 +32,19 @@ async fn given_longer_deadline_when_collector_finishes_with_outcomes_then_canoni
     assert!(summary.contains("unsupported=1 failed=1"));
     Ok(())
 }
+
+#[test]
+fn given_database_secret_when_collector_is_configured_then_only_child_environment_contains_it() {
+    let database = "postgres://user:private-password@localhost/inventory";
+    let command = sweep_command(Path::new("collector"), Path::new("catalog"), database);
+    let command = command.as_std();
+    let arguments: Vec<_> = command.get_args().collect();
+    assert_eq!(arguments, ["sweep", "--catalog", "catalog"]);
+    assert_eq!(
+        command
+            .get_envs()
+            .find(|(key, _)| *key == "INVENTORY_SWEEP_DATABASE")
+            .and_then(|(_, value)| value),
+        Some(std::ffi::OsStr::new(database))
+    );
+}

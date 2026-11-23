@@ -6,27 +6,23 @@ reviewer = "generated"
 
 [operation.DescribeCustomKeyStores]
 class = "defer"
-defer_reason = "identity: no ARN member and no modeled identifiers"
+defer_reason = "output: secret-bearing member INVALID_CREDENTIALS"
 
 [operation.GetKeyLastUsage]
 class = "defer"
-defer_reason = "unclassified read: not reviewed"
+defer_reason = "ListKeys.KeyArn can bind KeyId, and the nonpaginated response has usage metadata, but response KeyId is not documented as a canonical ARN. Shared parent-derived identity and enrichment attachment must preserve the discovered key identity rather than create a second key. Preserve TrackingStartDate and KeyCreationDate; empty usage is not proof of lifetime nonuse."
 
 [operation.GetKeyPolicy]
 class = "defer"
-defer_reason = "unclassified read: not reviewed"
+defer_reason = "KeyId can bind ListKeys.KeyArn and PolicyName can be fixed to default, but the nonpaginated response contains only Policy and PolicyName, not a key identifier. Shared parent/request-derived identity and enrichment attachment are required to associate policy configuration with its key. Do not invent an output KeyId path."
 
 [operation.GetKeyRotationStatus]
 class = "defer"
-defer_reason = "unclassified read: not reviewed"
-
-[operation.GetParametersForImport]
-class = "defer"
-defer_reason = "unclassified read: not reviewed"
+defer_reason = "KeyId can bind ListKeys.KeyArn; nonpaginated output contains KeyId and rotation metadata. Automatic rotation is restricted by key type and origin, which ListKeys does not return. Shared metadata-based eligibility selectors and parent-derived canonical identity are required; denied DescribeKey cannot supply the missing eligibility metadata."
 
 [operation.GetPublicKey]
 class = "defer"
-defer_reason = "unclassified read: not reviewed"
+defer_reason = "This downloads public, not secret, asymmetric key material plus algorithm metadata. KeyId can bind ListKeys.KeyArn, but ListKeys does not identify asymmetric keys. Shared eligibility selectors and a permitted key-type metadata source are required before calling it; denied DescribeKey must not be used to discover eligibility."
 
 [operation.ListAliases]
 class = "defer"
@@ -34,15 +30,15 @@ defer_reason = "identity: no ARN member and no modeled identifiers"
 
 [operation.ListGrants]
 class = "defer"
-defer_reason = "expand: bindings not generated yet"
+defer_reason = "identity: no ARN member and no modeled identifiers"
 
 [operation.ListKeyPolicies]
 class = "defer"
-defer_reason = "expand: bindings not generated yet"
+defer_reason = "expand: no unique compatible identity source"
 
 [operation.ListKeyRotations]
 class = "defer"
-defer_reason = "expand: bindings not generated yet"
+defer_reason = "KeyId can bind ListKeys.KeyArn; Rotations, Marker/NextMarker, Truncated and Limit are modeled. Entries expose KeyId and KeyMaterialId, with rotation metadata, not plaintext material. The operation requires rotation-capable keys; shared eligibility selectors and a permitted key-type/origin metadata source are required. IncludeKeyMaterial defaults to ROTATIONS_ONLY and must not silently become ALL_KEY_MATERIAL."
 
 [operation.ListKeys]
 class = "enumerate"
@@ -52,8 +48,8 @@ arn = "KeyArn"
 
 [operation.ListResourceTags]
 class = "defer"
-defer_reason = "expand: bindings not generated yet"
+defer_reason = "KeyId can bind ListKeys.KeyArn; Tags, Marker/NextMarker, Truncated and Limit are modeled. Each item contains only TagKey and TagValue, so TagKey alone collides across keys. Shared parent-key identity projection and paginated tag enrichment attachment are required; no returned KeyId exists to use as an item identity."
 
 [operation.ListRetirableGrants]
 class = "defer"
-defer_reason = "identity: no ARN member and no modeled identifiers"
+defer_reason = "Grants, Marker/NextMarker, Truncated and Limit are modeled, but documentation requires exactly one of RetiringPrincipal or RetiringServicePrincipal despite neither being Smithy-required. Shared account-local principal ARN enumeration/binding and exactly-one input validation are required; account ID alone is not a principal ARN, and the service-principal filter is restricted to service callers. Results can include foreign-account keys and must not be assumed local."

@@ -91,19 +91,24 @@ pub async fn counts(
 }
 
 fn verified_keys(expected: Keys, coverage: &Coverage) -> Result<Keys, HarnessError> {
-    expected
-        .into_iter()
-        .try_fold(Keys::new(), |mut verified, (kind, identities)| {
-            if let Some(reason) = coverage.reason(&kind)? {
-                println!(
-                    "count {kind} seeded={} not-verified: catalog-deferred ({reason})",
-                    identities.len()
-                );
-            } else {
-                verified.insert(kind, identities);
-            }
-            Ok(verified)
-        })
+    let verified =
+        expected
+            .into_iter()
+            .try_fold(Keys::new(), |mut verified, (kind, identities)| {
+                if let Some(reason) = coverage.reason(&kind)? {
+                    println!(
+                        "count {kind} seeded={} not-verified: catalog-deferred ({reason})",
+                        identities.len()
+                    );
+                } else {
+                    verified.insert(kind, identities);
+                }
+                Ok::<_, HarnessError>(verified)
+            })?;
+    if verified.is_empty() {
+        return Err(HarnessError::invalid("no callable seeded kinds to verify"));
+    }
+    Ok(verified)
 }
 
 fn oracle_keys(text: &str) -> Result<Keys, HarnessError> {

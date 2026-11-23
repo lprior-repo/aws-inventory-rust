@@ -70,6 +70,7 @@ fn operation(
 ) -> Result<(), OverlayError> {
     let class = match entry.class {
         Some(OverlayClass::Enumerate) => "enumerate",
+        Some(OverlayClass::Expand) => "expand",
         Some(OverlayClass::Defer) => "defer",
         _ => return Err(invalid("unsupported generated class")),
     };
@@ -79,7 +80,8 @@ fn operation(
     }
     fields(output, entry)?;
     identity(output, name, entry.identity.as_ref())?;
-    paginator(output, name, entry.paginator.as_ref())
+    paginator(output, name, entry.paginator.as_ref())?;
+    bindings(output, name, entry)
 }
 
 fn fields(output: &mut Output, entry: &OperationOverlay) -> Result<(), OverlayError> {
@@ -144,6 +146,29 @@ fn paginator(
         }
         _ => Err(invalid("unsupported generated paginator")),
     }
+}
+
+fn bindings(output: &mut Output, name: &str, entry: &OperationOverlay) -> Result<(), OverlayError> {
+    if entry.bind.is_empty() {
+        return Ok(());
+    }
+    output.table(name, ".bind")?;
+    entry.bind.iter().try_for_each(|(input, binding)| {
+        output.quoted(input.as_str())?;
+        output.append(" = { ")?;
+        match binding {
+            crate::overlay::Binding::From { operation, path } => {
+                output.append("from = ")?;
+                output.quoted(operation.as_str())?;
+                output.append(", path = ")?;
+                output.quoted(path.as_str())?;
+            }
+            crate::overlay::Binding::Account => output.append("account = true")?,
+            crate::overlay::Binding::Region => output.append("region = true")?,
+            _ => return Err(invalid("unsupported generated binding")),
+        }
+        output.append(" }\n")
+    })
 }
 
 fn invalid(reason: &str) -> OverlayError {

@@ -29,4 +29,4 @@ fi
 work=$(mktemp -d)
 printf 'e2e work: %s\n' "$work"
 exec cargo run --locked -p inventory-harness -- e2e run --work "$work" \
-    --service ec2 --service sts "$@"
+    --service ec2 "$@"

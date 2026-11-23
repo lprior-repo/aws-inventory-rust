@@ -6,10 +6,14 @@ use crate::{
 };
 use std::collections::BTreeMap;
 
+type Entries<'a> = Vec<(&'a str, OperationOverlay)>;
+
 pub(super) struct GeneratedService {
     pub(super) policy: ServiceOverlay,
     pub(super) enumerate: usize,
     pub(super) callable: usize,
+    pub(super) expand: usize,
+    pub(super) expanded: usize,
     pub(super) reasons: BTreeMap<String, usize>,
 }
 
@@ -19,23 +23,93 @@ pub(super) fn generate(
     scope: Option<Scope>,
     vocabulary: &Vocabulary,
     deny: &DenyList<'_>,
+    reviewed: Option<&ServiceOverlay>,
 ) -> Result<GeneratedService, OverlayError> {
+    let (mut entries, mut stats) = initialize(model, scope, vocabulary, deny, reviewed)?;
+    defer_kind_conflicts(model, &mut entries, &mut stats)?;
+    let (expand, _) =
+        super::children::generate(model, scope, vocabulary, deny, &mut entries, reviewed)
+            .map_err(|reason| invalid(&reason))?;
+    for (operation, entry) in &mut entries {
+        retain_reviewed(operation, entry, reviewed);
+    }
+    let expanded = entries
+        .iter()
+        .filter(|(_, entry)| entry.class == Some(OverlayClass::Expand))
+        .count();
+    let mut generated = complete(service, entries, stats)?;
+    generated.expand = expand;
+    generated.expanded = expanded;
+    Ok(generated)
+}
+
+fn initialize<'a>(
+    model: &Model<'a>,
+    scope: Option<Scope>,
+    vocabulary: &Vocabulary,
+    deny: &DenyList<'_>,
+    reviewed: Option<&ServiceOverlay>,
+) -> Result<(Entries<'a>, Counts), OverlayError> {
     let mut entries = Vec::new();
     let mut stats = Counts::default();
     for operation in model.operation_names() {
-        let id = model
-            .operation_id(operation)
-            .ok_or_else(|| invalid("missing operation"))?;
-        let facts = model
-            .facts(id)
-            .map_err(|error| invalid(&error.to_string()))?;
-        let class = classes::classify(&facts, deny);
-        if let Some(entry) = entry(model, operation, class, scope, vocabulary, deny, &mut stats)? {
+        let class = reviewed_class(model, operation, deny, reviewed)?;
+        if let Some(mut entry) = entry(model, operation, class, scope, vocabulary, deny)? {
+            retain_reviewed(operation, &mut entry, reviewed);
+            record(class, &entry, &mut stats)?;
             append(&mut entries, operation, entry)?;
         }
     }
-    defer_kind_conflicts(model, &mut entries, &mut stats)?;
-    complete(service, entries, stats)
+    Ok((entries, stats))
+}
+
+fn reviewed_class(
+    model: &Model<'_>,
+    operation: &str,
+    deny: &DenyList<'_>,
+    reviewed: Option<&ServiceOverlay>,
+) -> Result<Class, OverlayError> {
+    let id = model
+        .operation_id(operation)
+        .ok_or_else(|| invalid("missing operation"))?;
+    let facts = model
+        .facts(id)
+        .map_err(|error| invalid(&error.to_string()))?;
+    let class = classes::classify(&facts, deny);
+    let entry = reviewed.and_then(|policy| policy.operations().get(operation));
+    Ok(match entry.and_then(|entry| entry.class) {
+        Some(OverlayClass::Deny(reason)) => Class::Denied(reason),
+        _ => class,
+    })
+}
+
+fn retain_reviewed(
+    operation: &str,
+    entry: &mut OperationOverlay,
+    reviewed: Option<&ServiceOverlay>,
+) {
+    if let Some(hand) = reviewed.and_then(|policy| policy.operations().get(operation))
+        && hand.class == Some(OverlayClass::Defer)
+        && hand.generation_blocker.is_none()
+    {
+        entry.clone_from(hand);
+    }
+}
+
+fn record(class: Class, entry: &OperationOverlay, stats: &mut Counts) -> Result<(), OverlayError> {
+    if class != Class::Enumerate {
+        return Ok(());
+    }
+    increment(&mut stats.enumerate)?;
+    if entry.class == Some(OverlayClass::Enumerate) {
+        increment(&mut stats.callable)
+    } else {
+        let reason = entry
+            .defer_reason
+            .as_ref()
+            .ok_or_else(|| invalid("missing defer reason"))?;
+        increment(stats.reasons.entry(reason.clone()).or_default())
+    }
 }
 
 fn append<'a>(
@@ -70,6 +144,8 @@ fn complete(
         policy,
         enumerate: stats.enumerate,
         callable: stats.callable,
+        expand: 0,
+        expanded: 0,
         reasons: stats.reasons,
     })
 }
@@ -113,7 +189,6 @@ fn entry(
     scope: Option<Scope>,
     vocabulary: &Vocabulary,
     deny: &DenyList<'_>,
-    stats: &mut Counts,
 ) -> Result<Option<OperationOverlay>, OverlayError> {
     match class {
         Class::Denied(_) => Ok(None),
@@ -122,30 +197,23 @@ fn entry(
         ))),
         Class::Unclassified => Ok(Some(deferred("unclassified read: not reviewed".to_owned()))),
         Class::Enumerate => {
-            increment(&mut stats.enumerate)?;
             let result = scope.map_or_else(
                 || Err("endpoint: not resolved".to_owned()),
                 |scope| derive::enumerate(model, operation, scope, vocabulary, deny),
             );
-            enumerate(result, stats).map(Some)
+            Ok(Some(enumerate(result)))
         }
     }
 }
 
-fn enumerate(result: Derived, stats: &mut Counts) -> Result<OperationOverlay, OverlayError> {
+fn enumerate(result: Derived) -> OperationOverlay {
     match result {
-        Ok(entry) => {
-            increment(&mut stats.callable)?;
-            Ok(entry)
-        }
-        Err(reason) => {
-            increment(stats.reasons.entry(reason.clone()).or_default())?;
-            Ok(deferred(reason))
-        }
+        Ok(entry) => entry,
+        Err(reason) => deferred(reason),
     }
 }
 
-fn deferred(reason: String) -> OperationOverlay {
+pub(super) fn deferred(reason: String) -> OperationOverlay {
     OperationOverlay {
         class: Some(OverlayClass::Defer),
         defer_reason: Some(reason),

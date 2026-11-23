@@ -4,21 +4,13 @@ format = 1
 reviewed = "2026-11-15"
 reviewer = "generated"
 
-[operation.DescribeAlarmContributors]
-class = "defer"
-defer_reason = "expand: bindings not generated yet"
-
-[operation.DescribeAlarmHistory]
-class = "defer"
-defer_reason = "identity: no ARN member and no modeled identifiers"
-
 [operation.DescribeAlarms]
 class = "defer"
-defer_reason = "items: no single list member"
+defer_reason = "The response contains MetricAlarms, CompositeAlarms and LogAlarms; one items selector cannot emit all three, and complete requests must explicitly include all three AlarmTypes. StateReason and StateReasonData also need an evaluated-value safety decision or safe projection; exclude_from_hash does not remove content."
 
 [operation.DescribeAlarmsForMetric]
 class = "defer"
-defer_reason = "expand: bindings not generated yet"
+defer_reason = "Requires MetricName and Namespace with the complete Dimensions identity from ListMetrics, whose collection-valued identity is not expressible. Returns only standard single-metric alarms, not metric-math or composite alarms, and MetricAlarms.StateReason/StateReasonData require the same evaluated-value safety decision as DescribeAlarms."
 
 [operation.DescribeAnomalyDetectors]
 class = "defer"
@@ -30,7 +22,7 @@ defer_reason = "identity: no ARN member and no modeled identifiers"
 
 [operation.GetAlarmMuteRule]
 class = "defer"
-defer_reason = "unclassified read: not reviewed"
+defer_reason = "Requires AlarmMuteRuleName, but ListAlarmMuteRules.AlarmMuteRuleSummaries supplies AlarmMuteRuleArn and no name. Binding the complete ARN as a name is not documented; a reviewed ARN-resource extraction binding is missing."
 
 [operation.GetDashboard]
 class = "defer"
@@ -38,25 +30,9 @@ defer_reason = "unclassified read: not reviewed"
 
 [operation.GetDataset]
 class = "defer"
-defer_reason = "unclassified read: not reviewed"
-
-[operation.GetInsightRuleReport]
-class = "defer"
-defer_reason = "unclassified read: not reviewed"
-
-[operation.GetMetricDataQueryDefinition]
-class = "defer"
-defer_reason = "unclassified read: not reviewed"
-
-[operation.GetMetricStatistics]
-class = "defer"
-defer_reason = "unclassified read: not reviewed"
+defer_reason = "expand: no unique compatible identity source"
 
 [operation.GetMetricStream]
-class = "defer"
-defer_reason = "unclassified read: not reviewed"
-
-[operation.GetMetricWidgetImage]
 class = "defer"
 defer_reason = "unclassified read: not reviewed"
 
@@ -66,7 +42,7 @@ defer_reason = "unclassified read: not reviewed"
 
 [operation.GetResourceMetricsConfiguration]
 class = "defer"
-defer_reason = "unclassified read: not reviewed"
+defer_reason = "Requires the external resource ResourceArn, but CloudWatch exposes no resource-metrics-configuration list operation. Needs reviewed cross-service resource discovery and bindings, including ResourceNotFoundException absence semantics; current bindings name same-service operation items only."
 
 [operation.ListAlarmMuteRules]
 class = "enumerate"
@@ -79,10 +55,6 @@ class = "enumerate"
 scope = "region"
 [operation.ListDashboards.identity]
 arn = "DashboardArn"
-
-[operation.ListManagedInsightRules]
-class = "defer"
-defer_reason = "expand: bindings not generated yet"
 
 [operation.ListMetricDataQueryDefinitions]
 class = "defer"
@@ -97,8 +69,8 @@ arn = "Arn"
 
 [operation.ListMetrics]
 class = "defer"
-defer_reason = "items: no single list member"
+defer_reason = "Returns metric descriptors, not values, but unique identity requires Namespace, MetricName and the entire unordered Dimensions list. Scalar identity paths cannot encode that identity without collisions. Linked-account results also require joining Metrics with the parallel OwningAccounts array; the default same-account listing still needs canonical dimension identity and omits metrics inactive for two weeks."
 
 [operation.ListTagsForResource]
 class = "defer"
-defer_reason = "expand: bindings not generated yet"
+defer_reason = "Tags have no resource ARN in the response. Correct ownership requires request/parent identity inheritance and fanout across alarm, dashboard, metric-stream and Contributor Insights rule parents; the current single-source binding and output-only identity cannot express that complete plan."

@@ -8,21 +8,17 @@ reviewer = "generated"
 class = "defer"
 defer_reason = "unclassified read: not reviewed"
 
-[operation.GetEndpointAttributes]
-class = "defer"
-defer_reason = "unclassified read: not reviewed"
-
 [operation.GetPlatformApplicationAttributes]
 class = "defer"
-defer_reason = "unclassified read: not reviewed"
+defer_reason = "Required PlatformApplicationArn has no enabled parent and output contains only open Attributes map. Requires safe credential-excluding map projection, an established returned-attribute contract and request-bound identity/parent enrichment. Documentation of AuthenticationMethod uses token/key terminology; do not treat all arbitrary attribute values as proven safe metadata."
 
 [operation.GetSMSAttributes]
 class = "defer"
-defer_reason = "unclassified read: not reviewed"
+defer_reason = "Safe SMS settings return an attributes map with no stable identity. Needs account-region singleton identity and regional settings kind; runtime compiler rejects Identity::Template. Future request can explicitly select MonthlySpendLimit, DeliveryStatusIAMRole, DeliveryStatusSuccessSamplingRate, DefaultSenderID, DefaultSMSType and UsageReportS3Bucket; bucket names do not authorize reading usage-report content."
 
 [operation.GetSMSSandboxAccountStatus]
 class = "defer"
-defer_reason = "unclassified read: not reviewed"
+defer_reason = "Read-only regional account status returns only IsInSandbox. Needs account-region singleton identity and settings kind; IsInSandbox is mutable status, not identity, and runtime compiler rejects Identity::Template."
 
 [operation.GetSubscriptionAttributes]
 class = "defer"
@@ -32,29 +28,13 @@ defer_reason = "unclassified read: not reviewed"
 class = "defer"
 defer_reason = "unclassified read: not reviewed"
 
-[operation.ListEndpointsByPlatformApplication]
-class = "defer"
-defer_reason = "expand: bindings not generated yet"
-
 [operation.ListOriginationNumbers]
 class = "defer"
-defer_reason = "identity: no ARN member and no modeled identifiers"
-
-[operation.ListPhoneNumbersOptedOut]
-class = "enumerate"
-scope = "region"
-[operation.ListPhoneNumbersOptedOut.identity]
-key = ["$"]
+defer_reason = "output: secret-bearing member shape"
 
 [operation.ListPlatformApplications]
-class = "enumerate"
-scope = "region"
-[operation.ListPlatformApplications.identity]
-arn = "PlatformApplicationArn"
-
-[operation.ListSMSSandboxPhoneNumbers]
 class = "defer"
-defer_reason = "identity: no ARN member and no modeled identifiers"
+defer_reason = "PlatformApplications exposes PlatformApplicationArn plus open Attributes map. Stable ARN and NextToken are modeled, but safe attribute-only projection/credential-return guarantees are not. Requires shared allowlisted map projection and reviewed platform-application kind before persisting this response; do not assume PlatformCredential/PlatformPrincipal cannot be returned."
 
 [operation.ListSubscriptions]
 class = "enumerate"
@@ -64,11 +44,11 @@ arn = "SubscriptionArn"
 
 [operation.ListSubscriptionsByTopic]
 class = "defer"
-defer_reason = "expand: bindings not generated yet"
+defer_reason = "identity: no ARN member and no modeled identifiers"
 
 [operation.ListTagsForResource]
 class = "defer"
-defer_reason = "expand: bindings not generated yet"
+defer_reason = "identity: no ARN member and no modeled identifiers"
 
 [operation.ListTopics]
 class = "enumerate"

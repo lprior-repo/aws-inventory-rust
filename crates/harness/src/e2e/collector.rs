@@ -54,18 +54,23 @@ pub async fn sweep_at_with_timeout(
     log: &Path,
     target: SweepTarget<'_>,
 ) -> Result<String, HarnessError> {
-    let mut command = Command::new(collector);
-    command
-        .arg("sweep")
-        .args(["--database", database])
-        .arg("--catalog")
-        .arg(catalog);
+    let mut command = sweep_command(collector, catalog, database);
     configure_request(stack, &mut command, target.endpoint);
     services.iter().for_each(|service| {
         command.args(["--service", service]);
     });
     stack.configure(&mut command);
     execute_with_timeout(command, log, target.timeout).await
+}
+
+fn sweep_command(collector: &Path, catalog: &Path, database: &str) -> Command {
+    let mut command = Command::new(collector);
+    command
+        .arg("sweep")
+        .env("INVENTORY_SWEEP_DATABASE", database)
+        .arg("--catalog")
+        .arg(catalog);
+    command
 }
 
 fn configure_request(stack: &Stack, command: &mut Command, endpoint: &str) {

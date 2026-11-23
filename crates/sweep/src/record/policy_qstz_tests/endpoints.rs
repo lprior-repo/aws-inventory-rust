@@ -1,6 +1,8 @@
 use super::super::super::{execution::routing, input};
 use super::*;
-use inventory_core::inventory::Region;
+use inventory_core::inventory::{
+    DiscoveryContext, DiscoveryFrame, OperationId, Region, ScopeKey, ServiceId,
+};
 
 #[test]
 fn given_regional_and_cloudfront_waf_branches_when_requested_then_scope_region_cursors_and_detail_pairs_stay_distinct()
@@ -102,11 +104,26 @@ fn given_regional_and_cloudfront_waf_branches_when_requested_then_scope_region_c
             .find(|branch| branch.discriminator == branch_name)
             .ok_or("WAF detail branch absent")?;
         assert_eq!(detail_branch.discriminator, branch.discriminator);
+        let parent_scope = ScopeKey::new(
+            account.clone(),
+            scope.clone(),
+            ServiceId::parse(list.service_name())?,
+            OperationId::parse(list.operation_name())?,
+            None,
+        )?
+        .with_branch(branch_name.to_owned())?;
         let encoded = super::super::super::request::encode(
             detail,
             &endpoint.url,
             &base,
-            &child_fields(&catalog, list, detail, &row)?,
+            &branched_child_fields(
+                &catalog,
+                list,
+                detail,
+                &row,
+                &parent_scope,
+                (&base, &response),
+            )?,
         )?;
         let body: serde_json::Value = serde_json::from_slice(encoded.body())?;
         assert_eq!(
@@ -176,4 +193,61 @@ async fn given_real_timestream_discovery_wire_when_lease_is_applied_then_query_a
         assert_eq!(persisted.first().ok_or("Timestream resource absent")?.0, plan.kind().as_str());
     }
     Ok(())
+}
+
+fn branched_child_fields<'catalog>(
+    catalog: &RuntimeCatalog<'catalog>,
+    parent: &CallablePlan<'catalog>,
+    child: &CallablePlan<'catalog>,
+    row: &Record,
+    scope: &ScopeKey,
+    page: (&Record, &Record),
+) -> TestResult<Vec<input::InputField>> {
+    use super::super::super::execution::page::{
+        child::{Context, RowContext, resolve_binding},
+        consumer_index::ConsumerIndex,
+    };
+    let home = RegionId::parse("us-east-1")?;
+    let region = routing::request_region(parent, scope.region(), &home, scope.branch())?;
+    let sweep = inventory_engine::inventory::SweepId::new("waf-bindings".to_owned())?;
+    let consumers = ConsumerIndex::build(catalog)?;
+    let context = Context::new(parent, &sweep, scope.account(), &home, &consumers);
+    let ancestry = branch_context(parent, row, scope, page)?;
+    let row = RowContext {
+        row,
+        parent: None,
+        scope,
+        ancestry: &ancestry,
+    };
+    let branch = routing::execution_branch(child, scope.branch())?;
+    let bindings = branch.map_or_else(|| child.bindings(), |branch| &branch.bindings);
+    bindings
+        .iter()
+        .map(|binding| {
+            let (_, value) = resolve_binding(&context, &region, &row, &binding.source)?;
+            Ok(input::InputField {
+                path: binding.path.clone(),
+                value: value.ok_or("required WAF branch binding absent")?,
+            })
+        })
+        .collect()
+}
+
+fn branch_context(
+    parent: &CallablePlan<'_>,
+    row: &Record,
+    scope: &ScopeKey,
+    (request, response): (&Record, &Record),
+) -> TestResult<DiscoveryContext> {
+    let frame = DiscoveryFrame::project(
+        scope.service().clone(),
+        scope.operation().clone(),
+        0,
+        parent.context_projection(),
+        row,
+        response,
+        request,
+    )?
+    .with_branch(scope.branch())?;
+    Ok(DiscoveryContext::empty().push(frame)?)
 }

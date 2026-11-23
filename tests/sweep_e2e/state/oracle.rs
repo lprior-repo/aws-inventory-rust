@@ -1,4 +1,6 @@
 use super::*;
+use inventory_core::inventory::EdgeSource;
+use inventory_harness::inventory_seed::SeedResourcePair;
 
 pub(super) fn assert_seeded_rows(oracle: &TypedSeedOracle, rows: &InventorySnapshot) -> Result<()> {
     ensure!(
@@ -18,6 +20,10 @@ pub(super) fn assert_seeded_rows(oracle: &TypedSeedOracle, rows: &InventorySnaps
     );
     distinct(oracle)?;
     stored(oracle, rows)?;
+    oracle
+        .pairs
+        .iter()
+        .try_for_each(|pair| seeded_edge(&rows.edges, pair).map(|_| ()))?;
     kinds(oracle)?;
     scopes(oracle)
 }
@@ -89,4 +95,23 @@ fn scopes(oracle: &TypedSeedOracle) -> Result<()> {
         "seed keys must preserve returned region identity"
     );
     Ok(())
+}
+
+pub(super) fn seeded_edge<'a>(
+    edges: &'a [ProjectionEdgeHeader],
+    pair: &SeedResourcePair,
+) -> Result<&'a ProjectionEdgeHeader> {
+    ensure!(
+        pair.edge.source == EdgeSource::ReviewedRule,
+        "typed seed must use reviewed relationship provenance"
+    );
+    edges
+        .iter()
+        .find(|edge| {
+            edge.from == pair.edge.from
+                && edge.to == pair.edge.to
+                && edge.relation == pair.edge.relation
+                && edge.source == pair.edge.source.as_str()
+        })
+        .context("SQL has no seeded VPC-to-subnet relationship with matching provenance")
 }

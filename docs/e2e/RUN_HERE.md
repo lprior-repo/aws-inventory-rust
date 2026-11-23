@@ -107,11 +107,12 @@ that restored compile consistency satisfied its substantive prerequisite.
 This checkout keeps reviewed policies in embedded Rust tables, not the archive's
 handwritten TOML files. Generated-only TOML is loaded from
 `catalog/overlay/generated/<service>.toml` with bounded files and directory
-entries. Embedded policies win per operation and keep their review metadata;
-generated-only entries retain generated provenance even in a mixed service.
-Missing generated directories preserve the embedded policy set. Generated files
-must use `reviewer = "generated"`; parsing with hand origin rejects that label.
-This boundary does not change deny classification or permit unreviewed calls.
+entries. Reviewed callables, specific defers and denies win per operation.
+Only a source-typed `GenerationBlocker::RequiredBindings` on an explicitly
+migrated generic defer permits a validated generated child to replace it.
+Generated entries retain generated provenance; service review metadata stays
+hand-owned. Missing generated directories preserve embedded policies. Generated
+files require `reviewer = "generated"`; hand origin rejects that label.
 
 The archive's `catalog/aws-relations.report` does not exist in this tree:
 inactive-relation diagnostics are an explicitly requested `--pending-report`
@@ -127,13 +128,13 @@ byte-for-byte. After refreshing the ignored binary, `models compile --check`
 passed. Its only changes were the 32 source-receipt bytes at one-based offsets
 19,051,809–19,051,840; no runtime policy or catalog layout changed.
 
-### Model-derived enumeration policies
+### Model-derived enumeration and child policies
 
 Derivation rechecks classification before constructing any entry. It rejects
-owner-sensitive inputs, ambiguous item collections, unresolved token pairs and
-identities absent from the model. Modeled pagination is inferred by the existing
-checker; generated page sizes are never written. Every proposed callable entry
-passes the same operation checker used by the overlay gate.
+owner-sensitive inputs, ambiguous item collections, unresolved token pairs,
+secret-bearing reachable output shapes and identities absent from the model.
+Modeled pagination is inferred by the existing checker; generated page sizes are
+never written. Every proposed callable passes that same operation checker.
 
 `catalog/overlay/defer-inputs.txt` contains the sorted input-name deny list.
 Deferral reasons are bounded to 1,024 UTF-8 bytes. The internal derived result is
@@ -143,8 +144,16 @@ two-variant enum, avoiding a large-enum lint or a needless boxed allocation.
 Generated TOML uses a fixed rules date (`2026-11-15`), sorted operations and
 explicit basic-string escaping. Control characters, more than 4,096 operations
 and output exceeding 1 MiB are refused before publication. Unresolved endpoints
-defer enumeration; expansion and unclassified reads remain explicitly deferred.
-Denied operations are omitted entirely.
+defer both enumerations and children. Denied operations, including explicit
+reviewed denials, are omitted entirely.
+
+Child derivation first uses an unambiguous modeled resource/list relationship.
+Otherwise every non-context required input must exactly match a compatible
+identity field of one same-service enumeration; multiple complete sources defer.
+String `AccountId` and `Region` inputs may use collector context, but context alone
+cannot invent a parent. Parent availability and selectors use effective merged
+policies, not proposals shadowed by reviewed defers. Singleton outputs select
+their resource root/wrapper; scalar map values are not resource identities.
 
 ### Generator command
 
@@ -160,8 +169,11 @@ The optional `catalog/must-deny.txt` can add denials to the embedded deny list;
 both generation and the overlay gate consume it. Absence keeps every embedded
 denial. It never authorizes an operation forbidden by those embedded rules.
 Generated files and initial publication snapshots are bounded to 64 MiB total;
-reports are bounded to 4 MiB. Counts cover enumeration candidates only, and every
-service and total must satisfy `callable + deferred = enumerate_candidates`.
+reports are bounded to 4 MiB. Enumeration and expansion candidate/callable/deferred
+counts are reported separately. Each class satisfies its own count identity.
+The default selection is now `*`, covering all 436 pinned services. Detailed
+counts, advisory-audit differences and scoped mutation evidence are recorded in
+[`build/GENERATOR_EVIDENCE.md`](build/GENERATOR_EVIDENCE.md).
 
 A1.4 verification: 13 real-filesystem CLI/API scenarios passed; library and
 binary Clippy passed with warnings denied. With an empty selection, generator
@@ -255,21 +267,26 @@ plain command gates rather than adding pipeline wiring.
 
 ## Wave 2 owned run command (A7.1)
 
-`inventory-harness e2e run --work "$(mktemp -d)" --service ec2 --service sts`
+`inventory-harness e2e run --work "$(mktemp -d)" --service ec2`
 starts isolated emulator/FalkorDB children and creates a fresh database on
 `INVENTORY_POSTGRES_URL` (or `--postgres-url`). Obtain an administrative server
 URL with `inventory-harness postgres up` / `postgres url`, or the native server
 instructions in `deploy/local/README.md`. The PostgreSQL server itself is not
 owned or stopped by this command.
 
-Default recipes are `crates/harness/seeds`; override with `--seeds`. Services
-without recipes, such as STS, remain collector selectors but add no seed file.
-`--collector` overrides the sibling `aws-inventory` executable. The command
-refuses non-empty work directories, retains stage logs/oracle/matrix in the work
+Default recipes are `crates/harness/seeds`; override with `--seeds`. Every
+explicit selector must have a matching service recipe; missing recipes fail
+before stack/database startup. Bootstrap calls, including STS account identity,
+remain enabled without explicit selectors.
+`--collector` overrides the sibling `aws-inventory` executable. Its database
+URL is supplied through `INVENTORY_SWEEP_DATABASE`, not process arguments.
+The command refuses non-empty work directories, retains stage logs/oracle/matrix in the work
 directory, takes a pre-seed `baseline` sweep and retains `baseline.tsv`. For
 callable seeded kinds, `verify-counts` compares full account/region/kind/id
 additions (`after - before`) with the oracle, and requires zero resource writes
 on the repeat sweep. No unseeded kind is claimed verified.
+At least one seeded kind must remain callable after catalog-deferred filtering;
+an entirely deferred oracle fails verification rather than passing with no checks.
 Selected recipes can create resources in another service: their nonempty-kind
 steps add missing collector services (for example, Lambda's Signer profiles).
 Existing requested service scopes, including qualified operations, are retained;
@@ -398,8 +415,8 @@ scripts/e2e-baseline.sh
 ```
 
 It installs missing pinned runtimes, builds the harness and shipped collector,
-then calls `e2e run` with whole-service EC2 and STS selectors. Supply
-`INVENTORY_POSTGRES_URL` or pass `--postgres-url` through the script. The work
+then calls `e2e run` with a whole-service EC2 selector (bootstrap STS is retained).
+Supply `INVENTORY_POSTGRES_URL` or pass `--postgres-url` through the script. The work
 directory is printed and retained for logs. See A7.1 above for current gate
 status; the historical suite result below is not evidence for this larger catalog.
 
@@ -707,11 +724,15 @@ Set `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and, when required,
 an HTTPS loopback IP origin with an explicit nonzero port. All five options are
 required. The CLI does not shell out to Python.
 
-Every enumeration gets a service/operation/protocol row. Parent-bound plans are
+Every callable gets exactly one service/operation/protocol row, including identity,
+region, endpoint-discovery and tag plans. STS identity executes once before fan-out;
+its returned account ID supplies account-bound root inputs. Parent-bound plans are
 listed as `skipped child` without a network request. Root calls run at concurrency
 eight, with one attempt per operation, and never follow pagination tokens.
 `items N` counts the first page; `empty`, `unsupported`, and `failed CLASS DETAIL`
-remain visible. Rows are sorted and followed by separate outcome totals and
+remain visible. Known absent features/singletons report `empty REASON`; this is not
+a blanket conversion of missing resources or denied access to empty success.
+Rows are sorted and followed by separate outcome totals and
 per-protocol totals. Error details are single-line, capped at 1,024 bytes; decoder
 failure rows include `shape=...`, recording the failing operation and output shape
 as decoder-defect evidence rather than changing overlays to hide it. Catalog and
@@ -727,8 +748,8 @@ cargo test --locked -j3 -p inventory-harness --test probe
 
 The opt-in native proof starts a fresh emulator, runs the thin-slice TOML seeds,
 probes the complete catalog, and writes the persistent report above. It requires
-a row for every thin-slice enumeration and item-bearing results in at least five
-protocol families:
+an exact service/operation set match against every callable plan, no duplicate rows,
+and item-bearing results in at least five protocol families:
 
 ```sh
 INVENTORY_EMULATOR_BINARY=/absolute/path/to/aws-emulator \
@@ -739,15 +760,23 @@ INVENTORY_EMULATOR_BINARY=/absolute/path/to/aws-emulator \
 The native report is evidence from one seeded emulator run, not an assertion that
 all catalog operations are implemented by the emulator.
 
-The pinned 1.0.348 native run passed: 2,134 enumeration rows, including 72
-item-bearing operations, 814 empty, 485 unsupported, 184 failed and 579 skipped
-children. All seven protocol families returned items, so no protocol substitute
-was needed. The committed `catalog/emulator-probe.report` is the complete evidence.
+The original pinned 1.0.348 run was reproduced: 2,134 rows, with 72 item-bearing,
+814 empty, 485 unsupported, 184 failed and 579 skipped children. The missing 63
+keys were excluded by the old purpose filter: 59 tag endpoints plus STS identity,
+EC2 region discovery and the two Timestream endpoint discoveries.
 
-Decoder defect recorded by this run: `bedrock-agentcore-control ListBrowsers`,
-protocol `restJson1`, output shape `ListBrowsersResponse`, failed with
-`invalid response: invalid timestamp`. The operation remains visible as
-`failed decode`; no overlay was changed to remove it.
+The corrected fail-lane checkpoint covers every one of 2,197 callables exactly:
+74 item-bearing, 832 empty, 524 unsupported, 125 failed, and 642 skipped children.
+All seven protocol families return items. The report is regenerated in the
+worktree, not committed as part of the implementation patch. See
+[FAIL_TRIAGE](FAIL_TRIAGE.md) for every remaining failed operation, causes,
+before/after transitions and exact command evidence. This is first-page probe
+evidence, not full child-expansion inventory coverage.
+
+Malformed emulator response recorded by this run: `bedrock-agentcore-control
+ListBrowsers`, protocol `restJson1`, output shape `ListBrowsersResponse`, returns a
+numeric timestamp for the pinned model's explicit `date-time` shape. It remains
+`failed decode`; no timestamp coercion or overlay deletion conceals it.
 
 ### Generator provenance and reproducibility
 
@@ -921,4 +950,88 @@ the crash/cancellation scenarios and isolated resumed graph. No whole-workspace
 suite, real AWS run or catalog regeneration was performed. T0's requested
 two-backend ignored-suite gate is **MET**; the hard-crash expiry risk above
 remains open rather than being hidden by a passing cancellation test.
+
+## Wave 4 policy/failure integration (2026-11-23)
+
+Merge `c275aa3b` combines the reviewed policy lane with the failure lane.
+Batch keeps the owning queue and `JOB_NAME=*` filter, rather than the
+RUNNING-only default. CloudFormation keeps `ListTypeVersions.Arn` bound to
+`ListTypes.TypeArn`, with explicit `Visibility=PRIVATE`. Their moved policy
+parts remain separate files instead of restoring duplicate declarations.
+
+Kinesis Video keeps both the `ListStreams.StreamARN` parent binding and the
+correlated identity `(request StreamARN, selected Type, selected ARN)`.
+The pinned model describes each selected item as a resource associated with
+the requested stream; the associated resource ARN alone does not identify
+that association. This retains the policy contract and required-parent tests.
+Existing persisted association keys may require reconciliation; this merge
+does not migrate stored snapshots.
+
+The integration worktree's empty model directory was populated by a local
+shared clone of the pinned revision `46135f8468cd5cb60d983b97290c9f6661e359c6`.
+With `CARGO_TARGET_DIR=/tmp/tgt-int`,
+`TMPDIR=/tmp/w4-int/.local/int/tmp` and three Cargo jobs, these commands passed:
+
+```sh
+cargo fmt
+cargo clippy -j3 -p catalog-tool -p inventory-sweep -p inventory-harness -p aws-wire --all-targets --locked -- -D warnings
+cargo run -j3 -p catalog-tool --locked -- models compile --write
+/tmp/tgt-int/debug/catalog-tool models compile --check
+/tmp/tgt-int/debug/catalog-tool overlays generate --check
+/tmp/tgt-int/debug/catalog-tool kinds generate --check
+```
+
+The checks use the just-built integration binary. The ignored binary catalog
+was regenerated before running the crate suites, avoiding the already
+documented mismatch between old callable plans and newly denied policy.
+No emulator report, manifest or generated catalog is committed by this merge
+verification. Seed integration and the final aggregate native probe are separate
+steps; no new emulator or real-AWS execution is claimed here.
+
+### Integrated fixture contracts
+
+The first combined crate run found three outdated sweep fixtures:
+
+- App Mesh router/gateway list requests must retain the owning `meshOwner`,
+  including its REST query parameter, before route pagination begins.
+- The legacy Elasticsearch endpoint still pins `engineType=Elasticsearch`.
+  The OpenSearch endpoint deliberately has no engine filter, so legacy domains
+  remain reachable there as required by the reviewed policy.
+- WAF detail bindings now come from the matching execution branch and its
+  projected discovery frame, not the unbranched binding list. The fixture
+  projects the real request, response and item into branch-qualified provenance
+  before resolving `Name` and `Id`; regional and CloudFront assertions remain.
+
+These repairs update the fixture contract without restoring an engine filter,
+discarding an owner or weakening branch provenance in production policy.
+
+After the repairs, `cargo fmt -p inventory-sweep` and the four-crate clippy
+command above passed. Each focused command below passed its single selected
+scenario with zero failures:
+
+```sh
+cargo test -j3 -p inventory-sweep --locked given_equal_router_and_gateway_names_in_two_meshes_when_routes_resume_then_parent_pairs_never_cross
+cargo test -j3 -p inventory-sweep --locked given_mixed_search_engines_when_real_requests_are_encoded_then_domains_have_disjoint_canonical_nodes
+cargo test -j3 -p inventory-sweep --locked given_regional_and_cloudfront_waf_branches_when_requested_then_scope_region_cursors_and_detail_pairs_stay_distinct
+```
+
+The final combined run passed:
+
+```sh
+cargo test -j3 -p catalog-tool -p inventory-sweep -p inventory-harness -p aws-wire --locked
+```
+
+| Crate | Passed tests | Passed doctests | Ignored tests | Failed |
+| --- | ---: | ---: | ---: | ---: |
+| aws-wire | 205 | 0 | 0 | 0 |
+| catalog-tool | 911 | 2 | 10 | 0 |
+| inventory-harness | 463 | 0 | 16 | 0 |
+| inventory-sweep | 469 | 0 | 0 | 0 |
+
+Total: 2,050 passed, 26 ignored, zero failures. Ignored tests were not executed.
+Local evidence is retained under `.local/int/`: `fmt-clippy.log`,
+`catalog-checks.log`, `fallout-checks-final.log` and `crate-tests-final.log`.
+The initial combined failure is retained in `crate-tests.log`; two intermediate
+clippy attempts caught and corrected borrowing/type errors in the new WAF
+fixture before its focused and combined runs passed.
 
