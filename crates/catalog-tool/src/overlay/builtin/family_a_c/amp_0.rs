@@ -136,29 +136,10 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                 "Model requires workspaceId, name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns complete information about one rule groups namespace. To retrieve a list of rule groups namespaces, use ListRuleGroupsNamespaces .",
             ),
         ),
-        // Model: The DescribeScraper operation displays information about an existing scraper.
+        // ScrapeConfiguration.configurationBlob is a customer-authored configuration file.
         (
             "DescribeScraper",
-            OperationOverlay {
-                class: Some(OverlayClass::Expand),
-                bind: [(
-                    path("scraperId")?,
-                    Binding::From {
-                        operation: name("ListScrapers")?,
-                        path: path("scraperId")?,
-                    },
-                )]
-                .into_iter()
-                .collect(),
-                tags: Some(path("tags")?),
-                queryable: vec![path("arn")?],
-                ..read(
-                    "scraper",
-                    Identity::Arn(path("arn")?),
-                    Scope::Region,
-                    Paginator::None,
-                )?
-            },
+            denied(DenyReason::Content),
         ),
         (
             "DescribeScraperLoggingConfiguration",
