@@ -652,3 +652,45 @@ cargo test --locked -p aws-inventory --features sweep -j3 --bin aws-inventory \
   -- --ignored --nocapture
 ```
 
+## T0 sweep deadline diagnosis (2026-11-23)
+
+The generated catalog contains **2,197 callable plans** (1,565 enumeration,
+632 expansion), not merely the older 28-operation generated subset. The
+VPC/subnet regression passed the whole catalog without selecting its two
+enumerations. It therefore tested thousands of unrelated operations instead
+of the original account/region bootstrap plus paginated VPC/subnet contract.
+
+On pinned emulator 1.0.348, the file-backed denial scenario's prerequisite
+full sweep exceeded the unchanged 60-second CLI deadline. A `strace` run
+failed after 66.32 seconds (230.114 seconds including its cold compilation).
+A subsequent complete attempt trace failed after 64.57 seconds (65.616
+seconds including compilation), with the CLI killed after 60.045 seconds.
+It completed **340 HTTP requests**: 257 HTTP 200, 62 HTTP 501, 15 HTTP 400,
+four HTTP 403 and two HTTP 404. EC2 alone received 176 calls. First-to-last
+completed request took 54.690 seconds; their combined transport durations
+were only 305 ms, maximum 17 ms. Same-service calls were approximately
+201 ms apart, matching the configured five requests/second.
+
+For example, IAM `ListMFADevices` returned HTTP 501 `NotImplemented` once,
+classified `UnsupportedType`; `GetLoginProfile` returned HTTP 404
+`NoSuchEntity`, classified `Permanent`. No transient attempt failures were
+observed. The repeated EC2 VPC-encryption calls were successful parent-bound
+requests, not unsupported-operation retries. The first diagnostic capture
+was limited to 64 KiB; the complete count above uses the subsequent 1 MiB
+capture, not that truncated output or TLS connection counts.
+
+The diagnosis commands were the file-mode
+`cargo test --locked --features sweep --test sweep_e2e -j1 controlled_tls_403
+-- --ignored --test-threads 1 --nocapture`, first under
+`strace -f -tt -T -e trace=write,connect,execve -s2048` and then with
+`INVENTORY_E2E_TRACE=1`. All exited 101. Private target directory:
+`/home/lewis/.cache/cargo-target-w2-pacing`; fixture binaries came from the
+read-only primary checkout via the documented emulator/graph overrides.
+
+Increasing the deadline cannot repair this contract mismatch: production
+deliberately returns exit 2 for any unsupported or failed completed scope
+(or exit 4 while work remains). No exit semantics or production AWS pacing
+should be relaxed. The approved fix is explicit operation selection retaining
+required ancestors, but not unrelated descendants. T0 remains **UNMET** at
+this diagnosis commit; both backend acceptance runs follow the fix.
+
