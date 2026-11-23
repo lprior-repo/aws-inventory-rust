@@ -183,9 +183,12 @@ The ignored sweep test executable was run with `--ignored --test-threads 1`,
 `INVENTORY_EMULATOR_BINARY` pointing to the extracted 1.0.348 package and
 `INVENTORY_REDIS_SERVER`/`INVENTORY_FALKOR_MODULE` pointing to the pinned graph
 runtime. The downloaded package matched the SHA-256 pin recorded above.
-Both scenarios failed in 0.73 s with
-`compiled catalog exceeds its 16 MiB bound` (exit 101). This generated-catalog
-blocker remains unresolved; the suite did not pass.
+The initial run failed both scenarios in 0.73 s with
+`compiled catalog exceeds its 16 MiB bound` (exit 101). The E2E helper had a
+stale 16 MiB limit while production accepts
+`inventory_core::catalog::MAX_CATALOG_BYTES` (64 MiB). The helper now uses the
+same constant and bounded one-byte-overread convention as production; the
+generated catalog and production limit are unchanged.
 
 Focused checks passed: `cargo fmt -p aws-inventory -p inventory-aws -p
 inventory-engine -- --check`; `inventory-aws --no-default-features --lib`
@@ -194,3 +197,11 @@ inventory-engine -- --check`; `inventory-aws --no-default-features --lib`
 `sweep_tag_endpoint_contract` (4) suites with `--features sweep`. All test
 commands used `--locked -j2`. Clippy with `--locked -j2 -- -D warnings` passed
 for `aws-inventory --features sweep` and `inventory-aws --no-default-features`.
+
+After aligning the test-local catalog limit, the exact rerun was
+`cargo test --locked -p aws-inventory --features sweep --test sweep_e2e -j2
+-- --ignored --test-threads 1`, with the same emulator and graph overrides.
+Formatting passed. Both scenarios then failed with
+`sweep CLI exceeded its 60-second deadline`: 0 passed, 2 failed, 135.34 s,
+exit 101. The stale catalog bound is fixed; end-to-end passage remains
+unproven because of this CLI timeout. No timeout or assertion was relaxed.
