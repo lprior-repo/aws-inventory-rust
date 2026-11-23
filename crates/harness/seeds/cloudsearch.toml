@@ -4,7 +4,7 @@ service = "cloudsearch"
 [[step]]
 id = "resource"
 operation = "CreateDomain"
-kind = "AWS::CloudSearch::Domain"
+kind = "AWS::ApiOnly::CloudSearchDomain"
 identity = "DomainStatus.ARN"
 [step.input]
 "DomainName" = "inventory-thin-cloudsearch"
