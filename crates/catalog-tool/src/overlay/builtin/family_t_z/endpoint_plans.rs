@@ -1,6 +1,6 @@
 use super::{bind, inventory, name, path, token};
 use crate::overlay::{
-    ExecutionBranch, FixedValue, Identity, NameError, OperationOverlay, OverlayClass, Paginator,
+    Binding, ExecutionBranch, FixedValue, Identity, NameError, OperationOverlay, OverlayClass, Paginator,
     RequestRouting, Scope, ServiceOverlay,
 };
 use std::collections::BTreeMap;
@@ -176,9 +176,8 @@ fn waf(service: &mut ServiceOverlay) -> Result<(), NameError> {
             Paginator::None,
             Scope::Region,
         )?;
-        bind(&mut detail, "Name", list, "Name")?;
-        bind(&mut detail, "Id", list, "Id")?;
-        detail.branches = branches(true)?;
+        detail.class = Some(OverlayClass::Expand);
+        detail.branches = detail_branches(list, &[("Name", "Name"), ("Id", "Id")], true)?;
         service.operations.insert(name(get)?, detail);
     }
     let mut logging = inventory(
@@ -197,15 +196,28 @@ fn waf(service: &mut ServiceOverlay) -> Result<(), NameError> {
         Paginator::None,
         Scope::Region,
     )?;
-    bind(
-        &mut detail,
-        "ResourceArn",
-        "ListLoggingConfigurations",
-        "ResourceArn",
+    detail.class = Some(OverlayClass::Expand);
+    detail.branches = detail_branches(
+        "ListLoggingConfigurations", &[("ResourceArn", "ResourceArn")], false,
     )?;
-    detail.branches = branches(false)?;
     service
         .operations
         .insert(name("GetLoggingConfiguration")?, detail);
     Ok(())
+}
+
+fn detail_branches(
+    parent: &str, fields: &[(&str, &str)], bind_scope: bool,
+) -> Result<Vec<ExecutionBranch>, NameError> {
+    let mut variants = branches(bind_scope)?;
+    for branch in &mut variants {
+        for (input, selected) in fields {
+            branch.bind.insert(path(input)?, Binding::FromBranch {
+                operation: name(parent)?,
+                branch: branch.discriminator.clone(),
+                path: path(selected)?,
+            });
+        }
+    }
+    Ok(variants)
 }
