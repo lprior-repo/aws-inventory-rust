@@ -48,3 +48,29 @@ fn given_service_selection_when_validated_then_unselected_invalid_file_is_not_lo
     assert_eq!(String::from_utf8(output.stdout)?.lines().count(), 1);
     Ok(())
 }
+
+const DOCUMENT: &str = "format=1\nservice='bedrock-runtime'\n[[step]]\nid='invoke'\noperation='StartAsyncInvoke'\nkind='AWS::Bedrock::AsyncInvoke'\nidentity='invocationArn'\n[step.input]\nmodelId='amazon.nova-reel-v1:0'\nmodelInput={taskType='TEXT_VIDEO',frames=[{enabled=true,ids=[1,2]}]}\noutputDataConfig={s3OutputDataConfig={s3Uri='s3://inventory-seed/output'}}\n";
+
+#[test]
+fn given_nested_document_when_validated_offline_then_arbitrary_members_are_supported() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    let path = directory.path().join("bedrock-runtime.toml");
+    std::fs::write(&path, DOCUMENT)?;
+    let output = command(directory.path()).output()?;
+    assert!(output.status.success(), "{}", String::from_utf8_lossy(&output.stderr));
+    assert_eq!(String::from_utf8(output.stdout)?, format!("{}\tvalid\n", path.display()));
+    Ok(())
+}
+
+#[test]
+fn given_unknown_member_outside_document_when_validated_then_it_remains_invalid() -> TestResult {
+    let directory = tempfile::tempdir()?;
+    std::fs::write(
+        directory.path().join("bedrock-runtime.toml"),
+        DOCUMENT.replace("modelId=", "unknownMember="),
+    )?;
+    let output = command(directory.path()).output()?;
+    assert!(!output.status.success());
+    assert!(String::from_utf8(output.stdout)?.contains("modeled field path is missing"));
+    Ok(())
+}

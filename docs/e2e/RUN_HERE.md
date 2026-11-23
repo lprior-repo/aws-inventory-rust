@@ -701,6 +701,10 @@ cargo run --locked -j3 -p inventory-harness -- seed validate \
 Repeatable `--service` filters are supported. Validation needs neither credentials
 nor an endpoint, reports every selected file, and exits nonzero if any is invalid.
 
+Modeled `document` inputs retain arbitrary named keys and nested arrays/objects,
+including bindings to earlier step outputs. Ordinary modeled structures still
+reject unknown members; document values retain the seed depth/node bounds.
+
 The PostgreSQL-independent harness command uses the sweep's exact request,
 signing, status, decoding and truncation-presence path without storing rows:
 

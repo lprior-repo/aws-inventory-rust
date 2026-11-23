@@ -72,16 +72,9 @@ fn visit<'a>(
         .ok_or(SeedError::Invalid("seed literal depth overflow"))?;
     match value {
         Value::List(items) => {
-            let element = shape(service, target)?
-                .element()?
-                .ok_or(SeedError::Invalid("seed list targets a non-list shape"))?;
+            let element = members::element(service, target)?;
             tasks.push(Action::Finish(None, items.len()));
-            tasks.extend(
-                items
-                    .iter()
-                    .rev()
-                    .map(|item| Action::Visit((element, item), next)),
-            );
+            tasks.extend(items.iter().rev().map(|item| Action::Visit((element, item), next)));
         }
         Value::Map(items) => map(service, target, items, (tasks, next))?,
         value => values.push(value.clone()),
@@ -93,30 +86,13 @@ fn map<'a>(
     service: Service<'_>,
     target: Target,
     items: &'a std::collections::BTreeMap<Key, Value>,
-    state: (&mut Vec<Task<'a>>, usize),
+    (tasks, depth): (&mut Vec<Task<'a>>, usize),
 ) -> Result<(), SeedError> {
-    let shape = shape(service, target)?;
-    let (tasks, depth) = state;
     let fields = items
         .iter()
         .map(|(key, value)| {
-            let Key::Name(name) = key else {
-                return Err(SeedError::Invalid("seed literal requires named map keys"));
-            };
-            match shape.kind()? {
-                "structure" | "union" => {
-                    let member = members::member(service, target, name)?;
-                    Ok((Key::Field(member.id), member.target, value))
-                }
-                "map" => Ok((
-                    key.clone(),
-                    shape
-                        .map_value()?
-                        .ok_or(SeedError::Invalid("seed map value shape is missing"))?,
-                    value,
-                )),
-                _ => Err(SeedError::Invalid("seed map targets a non-map shape")),
-            }
+            let (key, target) = map_field(service, target, key)?;
+            Ok((key, target, value))
         })
         .collect::<Result<Vec<_>, SeedError>>()?;
     tasks.push(Action::Finish(
@@ -130,4 +106,28 @@ fn map<'a>(
             .map(|(_, target, value)| Action::Visit((target, value), depth)),
     );
     Ok(())
+}
+
+fn map_field(
+    service: Service<'_>,
+    target: Target,
+    key: &Key,
+) -> Result<(Key, Target), SeedError> {
+    let Key::Name(name) = key else {
+        return Err(SeedError::Invalid("seed literal requires named map keys"));
+    };
+    if members::is_document(service, target)? {
+        return Ok((key.clone(), target));
+    }
+    let shape = shape(service, target)?;
+    match shape.kind()? {
+        "structure" | "union" => {
+            let member = members::member(service, target, name)?;
+            Ok((Key::Field(member.id), member.target))
+        }
+        "map" => Ok((key.clone(), shape.map_value()?.ok_or(SeedError::Invalid(
+            "seed map value shape is missing",
+        ))?)),
+        _ => Err(SeedError::Invalid("seed map targets a non-map shape")),
+    }
 }

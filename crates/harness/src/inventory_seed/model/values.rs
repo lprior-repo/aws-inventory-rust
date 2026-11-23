@@ -66,9 +66,7 @@ impl Compiler<'_, '_> {
     ) -> Result<(), SeedError> {
         match value {
             SeedInputValue::List(items) => {
-                let element = shape(self.service, target)?
-                    .element()?
-                    .ok_or(SeedError::Invalid("seed list targets a non-list shape"))?;
+                let element = members::element(self.service, target)?;
                 tasks.push(Task::Finish(None, items.len()));
                 tasks.extend(items.iter().rev().map(|value| Task::Visit(element, value)));
             }
@@ -121,6 +119,9 @@ impl Compiler<'_, '_> {
     }
 
     fn field(&self, target: Target, name: &str) -> Result<(Key, Target), SeedError> {
+        if members::is_document(self.service, target)? {
+            return Ok((Key::Name(name.to_owned()), target));
+        }
         let shape = shape(self.service, target)?;
         match shape.kind()? {
             "structure" | "union" => {
@@ -165,3 +166,6 @@ fn finish(
     });
     Ok(())
 }
+
+#[cfg(test)]
+mod tests;
