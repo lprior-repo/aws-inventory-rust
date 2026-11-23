@@ -335,7 +335,50 @@ successful 600-callback run; it is excluded from all measurements above.
   files changed. The docs' statement that this machine has no display was
   contradicted by the observed active display and GPUs. The prompt-linked
   `docs/VISION.md` was absent; available tree instructions were used.
-- Tests, linters, formatters and broad builds: **not run**, per delegated
-  verification ownership. D6.0 explicitly specifies no tests, only evidence.
-  The coordinator owns repository quality gates; the release example runs
-  above were explicitly requested for this assignment.
+- During the initial evidence run, tests, linters, formatters and broad builds
+  were **not run**, per delegated verification ownership. D6.0 specifies no
+  tests, only evidence. The later, explicitly authorized repair checks below
+  supersede that statement for formatting and the narrow example lint/build.
+
+## Follow-up lint and formatting repair
+
+The coordinator reported four example clippy errors. Argument parsing now
+matches the optional argument directly (no unwrap-family calls), grid
+coordinates use `checked_rem` and `checked_div` with propagated errors, and
+pointer subtraction uses the pinned vector's scalar f64 components before
+conversion. Non-finite converted deltas are explicitly diagnosed and ignored.
+The pinned `libs/math/src/math_f64.rs` conversion and subtraction definitions
+were read before this change.
+
+With coordinator approval, the single example now has a private module at
+`crates/cmdb-ui/examples/retained_spike/support.rs` for block construction,
+admission probing and layout validation. Its reflected offsets use the
+layout API's `u32` type. The main example is 247 Rust lines, support is 160
+Rust lines, and an awk brace-span count found every Rust function at most
+25 lines. The support module is not a second Cargo example.
+
+The first repair fmt check failed on the original compact formatting.
+Clippy then passed the four arithmetic/argument repairs. After splitting,
+one intermediate check caught an offset-constant `usize`/`u32` mismatch and
+two formatting differences; all were corrected without lint suppression.
+The following final commands all passed, with the same HOME, private target,
+TMPDIR and wrapper overrides documented above:
+
+```bash
+cargo fmt -p cmdb-ui --check
+cargo clippy -p cmdb-ui --examples --locked -j2 -- -D warnings
+cargo build --release -p cmdb-ui --example retained_spike --locked -j2
+env -u DISPLAY -u WAYLAND_DISPLAY MAKEPAD_HAL_BACKEND=offscreen \
+  MAKEPAD_TRACE=present timeout 45 \
+  "$CARGO_TARGET_DIR/release/examples/retained_spike" 250000 \
+  >/tmp/d60-repair-smoke.log 2>&1
+```
+
+Final clippy finished in 0.19s; release build finished in 50.15s. The single
+smoke run reported Vulkan/RTX 5090, 250,000 instances, 16,000,000 payload
+bytes, LOD states true/false/true at frames 120/240/360, and
+`complete frames=600 draws=7`, exit 0. Gate output is
+`/tmp/d60-repair-checks.log`. This smoke is not a new performance matrix:
+the earlier timing tables remain the initial measured release observations.
+No unit tests, broad builds or additional performance sweeps were run for
+this repair.
