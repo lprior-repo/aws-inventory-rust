@@ -4,8 +4,15 @@ service = "wickr"
 [[step]]
 id = "resource"
 operation = "CreateNetwork"
-kind = "AWS::Wickr::Network"
-identity = "networkId"
+kind = ""
 [step.input]
 "networkName" = "inventory-thin-wickr"
 "accessLevel" = "STANDARD"
+
+[[step]]
+id = "network"
+operation = "GetNetwork"
+kind = "AWS::Wickr::Network"
+identity = "networkArn"
+[step.input]
+networkId = { from = "resource", path = "networkId" }
