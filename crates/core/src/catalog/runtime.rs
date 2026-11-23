@@ -2,6 +2,7 @@ mod decode;
 mod tag_endpoint;
 mod tag_sources;
 mod types;
+mod service_selection;
 pub use tag_endpoint::{
     TagEndpointParentPlan, TagEndpointPlan, TagEndpointRequestPlan, TagEndpointSource,
 };
@@ -61,6 +62,8 @@ pub enum RuntimeCatalogError {
     Bounds,
     #[error("verified endpoint metadata cannot be resolved for this region")]
     Endpoint,
+    #[error("unknown callable service or operation selector: {0}")]
+    Selection(String),
 }
 
 pub struct RuntimeCatalog<'a> {

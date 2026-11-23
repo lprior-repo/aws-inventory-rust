@@ -7,6 +7,9 @@ pub struct SweepArgs {
     pub database: String,
     #[arg(long, default_value = "catalog/aws-api.catalog")]
     pub catalog: PathBuf,
+    /// Select a whole callable service or service:Operation, retaining dependencies.
+    #[arg(long = "service")]
+    pub services: Vec<String>,
     #[arg(long)]
     pub profile: Option<String>,
     #[arg(long)]

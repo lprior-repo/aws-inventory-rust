@@ -1,6 +1,7 @@
 mod metadata;
 mod owners;
 mod plans;
+pub(super) use plans::producers;
 mod provenance;
 mod schemas;
 mod services;

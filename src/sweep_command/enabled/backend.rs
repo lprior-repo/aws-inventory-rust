@@ -13,7 +13,13 @@ use std::{fs::File, io::Read, path::Path};
 
 pub(super) async fn run(options: &SweepArgs) -> Result<std::process::ExitCode> {
     let bytes = read_catalog(&options.catalog)?;
-    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+    let catalog = match RuntimeCatalog::from_bytes(&bytes)?.select_services(&options.services) {
+        Ok(catalog) => catalog,
+        Err(error) => {
+            eprintln!("invalid --service: {error}");
+            return Ok(std::process::ExitCode::from(2));
+        }
+    };
     if options.database.starts_with("postgres://") || options.database.starts_with("postgresql://")
     {
         postgres(options, &catalog).await

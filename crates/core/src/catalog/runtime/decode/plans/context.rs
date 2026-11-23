@@ -171,7 +171,7 @@ pub(super) fn validate(plans: &[CallablePlan<'_>]) -> Result<(), RuntimeCatalogE
     Ok(())
 }
 
-pub(super) fn producers(source: &BindingSource) -> impl Iterator<Item = (&str, &str)> {
+pub(crate) fn producers(source: &BindingSource) -> impl Iterator<Item = (&str, &str)> {
     let source = base(source);
     let single = match source {
         BindingSource::Operation {

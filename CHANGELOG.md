@@ -2,6 +2,10 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Sweep accepts repeatable `--service service[:Operation]` selectors. Bootstrap
+  calls and the transitive parent/child binding closure remain enabled; omitted
+  selectors keep the full catalog, and unknown selectors exit with usage status 2.
+
 - The harness `probe` command reports every catalog enumeration in stable order,
   skips parent-bound children, and calls only the first page through the sweep's
   existing encoder, signer, status classifier and decoder. Reports retain bounded
