@@ -9,7 +9,12 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Arn("Arn"),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
-        input: &[Input::Filter("Filters", "Name", "RESOURCE_OWNER", &["SELF"])],
+        input: &[Input::Filter(
+            "Filters",
+            "Name",
+            "RESOURCE_OWNER",
+            &["SELF"],
+        )],
         tags: None,
         queryable: &[],
     },

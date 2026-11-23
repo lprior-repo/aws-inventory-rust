@@ -404,7 +404,12 @@ pub(super) fn part_2() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
             OperationOverlay {
                 tags: Some(path("tags")?),
                 queryable: vec![path("arn")?],
-                fixed: [(path("owner")?, FixedValue::String("CURRENT_ACCOUNT".to_owned()))].into_iter().collect(),
+                fixed: [(
+                    path("owner")?,
+                    FixedValue::String("CURRENT_ACCOUNT".to_owned()),
+                )]
+                .into_iter()
+                .collect(),
                 ..read(
                     "graphqlApis",
                     Identity::Arn(path("arn")?),

@@ -80,7 +80,10 @@ pub(super) const CALLS: &[Inventory] = &[
     Inventory {
         operation: "DescribeTrainingPlanExtensionHistory",
         items: "TrainingPlanExtensions",
-        identity: ResourceIdentity::Correlated("TrainingPlanArn", &["TrainingPlanExtensionOfferingId"]),
+        identity: ResourceIdentity::Correlated(
+            "TrainingPlanArn",
+            &["TrainingPlanExtensionOfferingId"],
+        ),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
         input: &[Input::Parent(

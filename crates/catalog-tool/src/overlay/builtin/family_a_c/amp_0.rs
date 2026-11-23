@@ -137,10 +137,7 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
             ),
         ),
         // ScrapeConfiguration.configurationBlob is a customer-authored configuration file.
-        (
-            "DescribeScraper",
-            denied(DenyReason::Content),
-        ),
+        ("DescribeScraper", denied(DenyReason::Content)),
         (
             "DescribeScraperLoggingConfiguration",
             deferred(

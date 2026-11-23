@@ -25,15 +25,19 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 ],
             )?,
             // This operation lists your data sets.
-            fixed_value(queried(
-                inventory(
-                    "ListDataSets",
-                    "DataSets",
-                    arn("Arn")?,
-                    token("NextToken", "NextToken")?,
+            fixed_value(
+                queried(
+                    inventory(
+                        "ListDataSets",
+                        "DataSets",
+                        arn("Arn")?,
+                        token("NextToken", "NextToken")?,
+                    )?,
+                    &["Arn", "AssetType", "Id", "Name", "SourceId"],
                 )?,
-                &["Arn", "AssetType", "Id", "Name", "SourceId"],
-            )?, "Origin", FixedValue::String("OWNED".to_owned()))?,
+                "Origin",
+                FixedValue::String("OWNED".to_owned()),
+            )?,
             // This operation returns information about all received data grants.
             queried(
                 inventory(

@@ -176,7 +176,9 @@ const GROUPS: &[Group] = &[
     Group {
         operations: &["ListCoreNetworks"],
         class: OverlayClass::Defer,
-        reason: Some("The modeled collection includes owned and shared core networks without an account-owner request filter; no owned-only selector is available."),
+        reason: Some(
+            "The modeled collection includes owned and shared core networks without an account-owner request filter; no owned-only selector is available.",
+        ),
     },
 ];
 

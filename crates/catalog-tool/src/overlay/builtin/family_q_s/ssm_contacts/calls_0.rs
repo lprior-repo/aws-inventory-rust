@@ -70,7 +70,10 @@ pub(super) const CALLS: &[Inventory] = &[
     Inventory {
         operation: "ListPageReceipts",
         items: "Receipts",
-        identity: ResourceIdentity::Correlated("PageId", &["ContactChannelArn", "ReceiptType", "ReceiptTime"]),
+        identity: ResourceIdentity::Correlated(
+            "PageId",
+            &["ContactChannelArn", "ReceiptType", "ReceiptTime"],
+        ),
         token: Some(("NextToken", "NextToken")),
         scope: Scope::Region,
         input: &[Input::Parent("PageId", "ListPagesByEngagement", "PageArn")],

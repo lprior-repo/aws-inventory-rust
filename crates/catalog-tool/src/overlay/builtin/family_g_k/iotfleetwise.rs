@@ -5,10 +5,7 @@ use crate::overlay::{NameError, ServiceOverlay};
 
 pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
     let approved = vec![
-        (
-            "ListFleets",
-            metadata("fleetSummaries")?,
-        ),
+        ("ListFleets", metadata("fleetSummaries")?),
         (
             "ListSignalCatalogs",
             policy::query(
@@ -20,26 +17,11 @@ pub(super) fn overlay() -> Result<ServiceOverlay, NameError> {
                 &["arn"],
             )?,
         ),
-        (
-            "ListModelManifests",
-            metadata("summaries")?,
-        ),
-        (
-            "ListDecoderManifests",
-            metadata("summaries")?,
-        ),
-        (
-            "ListVehicles",
-            metadata("vehicleSummaries")?,
-        ),
-        (
-            "ListCampaigns",
-            metadata("campaignSummaries")?,
-        ),
-        (
-            "ListStateTemplates",
-            metadata("summaries")?,
-        ),
+        ("ListModelManifests", metadata("summaries")?),
+        ("ListDecoderManifests", metadata("summaries")?),
+        ("ListVehicles", metadata("vehicleSummaries")?),
+        ("ListCampaigns", metadata("campaignSummaries")?),
+        ("ListStateTemplates", metadata("summaries")?),
     ];
     policy::finish(
         "iotfleetwise",

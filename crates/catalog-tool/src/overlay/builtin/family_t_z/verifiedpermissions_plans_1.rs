@@ -39,7 +39,9 @@ pub(super) fn get_policy_store() -> Result<OperationOverlay, NameError> {
         "cedarVersion",
     ])?;
     operation.tags = Some(path("tags")?);
-    operation.fixed.insert(path("tags")?, FixedValue::Boolean(true));
+    operation
+        .fixed
+        .insert(path("tags")?, FixedValue::Boolean(true));
     bind(
         &mut operation,
         "policyStoreId",

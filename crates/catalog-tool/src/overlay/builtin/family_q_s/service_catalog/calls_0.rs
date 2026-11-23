@@ -39,7 +39,10 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Key(&["PlanId"]),
         token: Some(("PageToken", "NextPageToken")),
         scope: Scope::Region,
-        input: &[Input::Structure("AccessLevelFilter", &[("Key", "Account"), ("Value", "self")])],
+        input: &[Input::Structure(
+            "AccessLevelFilter",
+            &[("Key", "Account"), ("Value", "self")],
+        )],
         tags: None,
         queryable: &[],
     },

@@ -108,7 +108,9 @@ pub(super) fn describe_workspace_images() -> Result<OperationOverlay, NameError>
         "ErrorMessage",
         "OwnerAccountId",
     ])?;
-    operation.fixed.insert(path("ImageType")?, FixedValue::String("OWNED".to_owned()));
+    operation
+        .fixed
+        .insert(path("ImageType")?, FixedValue::String("OWNED".to_owned()));
     Ok(operation)
 }
 

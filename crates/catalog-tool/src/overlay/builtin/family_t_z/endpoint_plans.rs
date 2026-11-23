@@ -1,7 +1,7 @@
 use super::{bind, inventory, name, path, token};
 use crate::overlay::{
-    Binding, ExecutionBranch, FixedValue, Identity, NameError, OperationOverlay, OverlayClass, Paginator,
-    RequestRouting, Scope, ServiceOverlay,
+    Binding, ExecutionBranch, FixedValue, Identity, NameError, OperationOverlay, OverlayClass,
+    Paginator, RequestRouting, Scope, ServiceOverlay,
 };
 use std::collections::BTreeMap;
 
@@ -198,7 +198,9 @@ fn waf(service: &mut ServiceOverlay) -> Result<(), NameError> {
     )?;
     detail.class = Some(OverlayClass::Expand);
     detail.branches = detail_branches(
-        "ListLoggingConfigurations", &[("ResourceArn", "ResourceArn")], false,
+        "ListLoggingConfigurations",
+        &[("ResourceArn", "ResourceArn")],
+        false,
     )?;
     service
         .operations
@@ -207,16 +209,21 @@ fn waf(service: &mut ServiceOverlay) -> Result<(), NameError> {
 }
 
 fn detail_branches(
-    parent: &str, fields: &[(&str, &str)], bind_scope: bool,
+    parent: &str,
+    fields: &[(&str, &str)],
+    bind_scope: bool,
 ) -> Result<Vec<ExecutionBranch>, NameError> {
     let mut variants = branches(bind_scope)?;
     for branch in &mut variants {
         for (input, selected) in fields {
-            branch.bind.insert(path(input)?, Binding::FromBranch {
-                operation: name(parent)?,
-                branch: branch.discriminator.clone(),
-                path: path(selected)?,
-            });
+            branch.bind.insert(
+                path(input)?,
+                Binding::FromBranch {
+                    operation: name(parent)?,
+                    branch: branch.discriminator.clone(),
+                    path: path(selected)?,
+                },
+            );
         }
     }
     Ok(variants)

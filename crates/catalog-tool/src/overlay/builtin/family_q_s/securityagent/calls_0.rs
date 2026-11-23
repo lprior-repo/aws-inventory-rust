@@ -49,7 +49,10 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Key(&["packId"]),
         token: Some(("nextToken", "nextToken")),
         scope: Scope::Region,
-        input: &[Input::Structure("filter", &[("managementType", "CUSTOMER_MANAGED")])],
+        input: &[Input::Structure(
+            "filter",
+            &[("managementType", "CUSTOMER_MANAGED")],
+        )],
         tags: None,
         queryable: &[],
     },

@@ -16,7 +16,10 @@ pub(super) fn list_profiles() -> Result<OperationOverlay, NameError> {
         "Owner",
     ])?;
     operation.page_size = Some(50);
-    operation.fixed.insert(path("ProfileOwnerType")?, FixedValue::String("SELF".to_owned()));
+    operation.fixed.insert(
+        path("ProfileOwnerType")?,
+        FixedValue::String("SELF".to_owned()),
+    );
     Ok(operation)
 }
 
