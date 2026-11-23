@@ -29,8 +29,24 @@ pub(super) fn check_operation(
         class,
         plan: plans.get(name),
     };
-    let result = operation_result(&context, plans);
+    let result = with_origin(overlay, name, operation_result(&context, plans));
     package_operation(context, result)
+}
+
+fn with_origin(
+    overlay: &ServiceOverlay,
+    name: &str,
+    mut result: validation::OperationResult,
+) -> validation::OperationResult {
+    if let Some(callable) = result.callable.as_mut() {
+        callable.origin = overlay
+            .operations()
+            .get_key_value(name)
+            .map_or(crate::overlay::Origin::Hand, |(operation, _)| {
+                overlay.origin_of(operation)
+            });
+    }
+    result
 }
 
 fn operation_result(

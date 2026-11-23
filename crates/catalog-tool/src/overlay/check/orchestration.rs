@@ -18,9 +18,9 @@ struct Accumulation {
     unreviewed: [usize; 3],
 }
 
-pub(super) fn check(_root: &Path, source: &Path) -> Result<CheckedOverlays, CheckError> {
+pub(super) fn check(root: &Path, source: &Path) -> Result<CheckedOverlays, CheckError> {
     let values = read_model_values(source)?;
-    let mut overlays = super::super::embedded()?;
+    let mut overlays = super::super::load(root)?;
     validate_policy_services(&overlays)?;
     overlays.retain(|overlay| values.contains_key(overlay.service()));
     check_model_policies(&values, &overlays, &DenyList::default())

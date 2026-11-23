@@ -227,6 +227,7 @@ fn callable_handle(state: &State<'_, '_, '_>) -> crate::overlay::check::Callable
         operation: state.name.to_owned(),
         class,
         plan,
+        origin: crate::overlay::Origin::Hand,
     }
 }
 fn modeled_items(state: &State<'_, '_, '_>) -> Option<ItemSelector> {

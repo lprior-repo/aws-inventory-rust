@@ -86,9 +86,9 @@ The supplied plain model copy initially made binary compilation fail with
 `model source /tmp/w1-overlay/.local/aws-models is not its repository root /tmp/w1-overlay`.
 With coordinator approval it was replaced by a standalone local clone, not a
 submodule. Its HEAD is `46135f8468cd5cb60d983b97290c9f6661e359c6`, matching
-`models.lock`, and `git status --porcelain` was empty. `scripts/check-models.sh`
-was not run because its submodule assumption does not apply; these are the
-equivalent revision and cleanliness checks.
+`models.lock`, and `git status --porcelain` was empty. The subsequently requested
+authoritative `scripts/check-models.sh` also exited 0:
+`AWS API models: 436 files at 46135f8468cd5cb60d983b97290c9f6661e359c6`.
 
 After regeneration, `models compile --check` exited 0. The catalog was
 19,051,875 bytes both before and after, with SHA-256
@@ -101,6 +101,31 @@ A0.2's ignored `sweep_e2e` sub-gate remains **UNMET**: the previously observed
 60-second pacing timeout was neither rerun nor changed. A1 proceeds under the
 coordinator's explicit decision that restored compile consistency satisfies its
 substantive prerequisite; this is not a claim that all A0.2 gates passed.
+
+### Generated overlay source
+
+This checkout keeps reviewed policies in embedded Rust tables, not the archive's
+handwritten TOML files. Generated-only TOML is loaded from
+`catalog/overlay/generated/<service>.toml` with bounded files and directory
+entries. Embedded policies win per operation and keep their review metadata;
+generated-only entries retain generated provenance even in a mixed service.
+Missing generated directories preserve the embedded policy set. Generated files
+must use `reviewer = "generated"`; parsing with hand origin rejects that label.
+This boundary does not change deny classification or permit unreviewed calls.
+
+The archive's `catalog/aws-relations.report` does not exist in this tree:
+inactive-relation diagnostics are an explicitly requested `--pending-report`
+output rather than a default bootstrap artifact.
+
+Generator gate commands are run directly with `cargo run --locked -p
+catalog-tool -j3 -- overlays generate --check` and `cargo test --locked -p
+catalog-tool -j3 --test overlay_generation_safety -- --ignored`. No `moon.yml`
+wiring is added because this wave explicitly excludes CI/pipeline changes.
+A1.1 verification: six generated-source scenarios passed, library Clippy passed
+with warnings denied, and `overlay --check` preserved the baseline report
+byte-for-byte. After refreshing the ignored binary, `models compile --check`
+passed. Its only changes were the 32 source-receipt bytes at one-based offsets
+19,051,809–19,051,840; no runtime policy or catalog layout changed.
 
 ## One command
 

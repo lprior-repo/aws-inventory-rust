@@ -25,6 +25,8 @@ pub enum CheckError {
     #[error(transparent)]
     Policy(#[from] super::NameError),
     #[error(transparent)]
+    Directory(#[from] super::OverlayError),
+    #[error(transparent)]
     Decode(#[from] serde_json::Error),
     #[error(transparent)]
     ModelSource(#[from] crate::model_source::Error),
@@ -114,9 +116,14 @@ pub struct CallableOperation {
     operation: String,
     class: EffectiveClass,
     plan: super::OperationOverlay,
+    origin: super::Origin,
 }
 
 impl CallableOperation {
+    pub fn origin(&self) -> super::Origin {
+        self.origin
+    }
+
     pub fn service(&self) -> &str {
         &self.service
     }
