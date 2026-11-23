@@ -9,6 +9,7 @@ pub mod json;
 pub mod mutate;
 pub mod package;
 pub mod postgres;
+pub mod probe;
 pub mod provenance;
 pub mod proxy;
 pub mod seed;

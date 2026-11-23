@@ -553,3 +553,64 @@ exited 0 and reported 436 services, 19,636 operations, 8,365 read-named
 operations, 2,735 readonly operations, and 2,209 root list/describe operations.
 Generated catalog/report files remain ignored; only the tracked manifest hashes
 are updated, including the generated kinds, names, and prior overlay artifacts.
+
+## First-page native emulator probe (A5.2)
+
+The PostgreSQL-independent harness command uses the sweep's exact request,
+signing, status, decoding and truncation-presence path without storing rows:
+
+```sh
+cargo run --locked -j3 -p inventory-harness -- probe \
+  --catalog catalog/aws-api.catalog \
+  --endpoint "$EMULATOR_ENDPOINT" \
+  --ca-bundle "$EMULATOR_CA_BUNDLE" \
+  --region us-east-1 \
+  --report catalog/emulator-probe.report
+```
+
+Set `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and, when required,
+`AWS_SESSION_TOKEN` to the native emulator's credentials. The endpoint must be
+an HTTPS loopback IP origin with an explicit nonzero port. All five options are
+required. The CLI does not shell out to Python.
+
+Every enumeration gets a service/operation/protocol row. Parent-bound plans are
+listed as `skipped child` without a network request. Root calls run at concurrency
+eight, with one attempt per operation, and never follow pagination tokens.
+`items N` counts the first page; `empty`, `unsupported`, and `failed CLASS DETAIL`
+remain visible. Rows are sorted and followed by separate outcome totals and
+per-protocol totals. Error details are single-line, capped at 1,024 bytes; decoder
+failure rows include `shape=...`, recording the failing operation and output shape
+as decoder-defect evidence rather than changing overlays to hide it. Catalog and
+report sizes are bounded to 64 MiB. This is not a complete inventory or a
+callability-policy change.
+
+Local behavior scenarios cover four outcomes, skipped children, stable reports,
+first-page-only execution, response HTTP versions, and the real CLI without Python:
+
+```sh
+cargo test --locked -j3 -p inventory-harness --test probe
+```
+
+The opt-in native proof starts a fresh emulator, runs the thin-slice TOML seeds,
+probes the complete catalog, and writes the persistent report above. It requires
+a row for every thin-slice enumeration and item-bearing results in at least five
+protocol families:
+
+```sh
+INVENTORY_EMULATOR_BINARY=/absolute/path/to/aws-emulator \
+  cargo test --locked -j3 -p inventory-harness \
+  --features native-emulator-tests --test probe_native -- --nocapture
+```
+
+The native report is evidence from one seeded emulator run, not an assertion that
+all catalog operations are implemented by the emulator.
+
+The pinned 1.0.348 native run passed: 2,134 enumeration rows, including 72
+item-bearing operations, 814 empty, 485 unsupported, 184 failed and 579 skipped
+children. All seven protocol families returned items, so no protocol substitute
+was needed. The committed `catalog/emulator-probe.report` is the complete evidence.
+
+Decoder defect recorded by this run: `bedrock-agentcore-control ListBrowsers`,
+protocol `restJson1`, output shape `ListBrowsersResponse`, failed with
+`invalid response: invalid timestamp`. The operation remains visible as
+`failed decode`; no overlay was changed to remove it.

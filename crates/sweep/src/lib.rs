@@ -17,6 +17,7 @@ mod input;
 mod metrics;
 #[cfg(test)]
 mod pinned_model;
+mod probe;
 mod record;
 mod request;
 mod resource_projection;
@@ -29,6 +30,7 @@ pub use control::{ProgressEvent, SweepControl};
 pub use credentials::{CredentialFailure, CredentialSource};
 pub use execution::run;
 pub use metrics::SweepMetrics;
+pub use probe::{ProbeAnswer, call_once};
 
 #[derive(Clone, Debug)]
 pub struct SweepConfig {

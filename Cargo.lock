@@ -2644,6 +2644,7 @@ dependencies = [
  "httparse",
  "inventory-core",
  "inventory-engine",
+ "inventory-sweep",
  "libc",
  "minicbor",
  "quick-xml",

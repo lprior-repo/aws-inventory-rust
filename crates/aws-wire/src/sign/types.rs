@@ -2,6 +2,7 @@ use super::Error;
 use aws_smithy_runtime_api::client::identity::Identity;
 use std::fmt;
 
+#[derive(Clone)]
 pub struct Credentials(pub(super) Identity);
 
 impl Credentials {

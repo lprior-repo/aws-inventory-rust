@@ -37,11 +37,8 @@ async fn main() -> ExitCode {
     {
         return inventory_harness::postgres::command::run(rest).await;
     }
-    if let [seed, run, rest @ ..] = arguments.as_slice()
-        && seed == "seed"
-        && run == "run"
-    {
-        return inventory_harness::inventory_seed::command::run(rest).await;
+    if let Some(status) = routed_command(&arguments).await {
+        return status;
     }
     match execute(&arguments).await {
         Ok(receipt) => print_receipt(&receipt),
@@ -50,6 +47,21 @@ async fn main() -> ExitCode {
             ExitCode::FAILURE
         }
     }
+}
+
+async fn routed_command(arguments: &[String]) -> Option<ExitCode> {
+    if let [command, rest @ ..] = arguments
+        && command == "probe"
+    {
+        return Some(inventory_harness::probe::command(rest).await);
+    }
+    if let [seed, run, rest @ ..] = arguments
+        && seed == "seed"
+        && run == "run"
+    {
+        return Some(inventory_harness::inventory_seed::command::run(rest).await);
+    }
+    None
 }
 
 fn print_receipt(receipt: &serde_json::Value) -> ExitCode {
