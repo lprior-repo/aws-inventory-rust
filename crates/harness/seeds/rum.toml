@@ -1,0 +1,11 @@
+format = 1
+service = "rum"
+
+[[step]]
+id = "resource"
+operation = "CreateAppMonitor"
+kind = "AWS::RUM::AppMonitor"
+identity = "Id"
+[step.input]
+"Name" = "inventory-thin-rum"
+"Domain" = "example.com"
