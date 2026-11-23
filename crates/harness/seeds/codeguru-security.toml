@@ -11,7 +11,7 @@ scanName = "inventory-thin-codeguru-security"
 [[step]]
 id = "scan"
 operation = "CreateScan"
-kind = "AWS::CodeGuruSecurity::Scan"
+kind = "AWS::ApiOnly::CodeGuruSecurityScan"
 identity = "scanNameArn"
 [step.input]
 scanName = "inventory-thin-codeguru-security"
