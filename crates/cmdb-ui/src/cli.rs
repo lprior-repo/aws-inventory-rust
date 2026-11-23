@@ -83,7 +83,9 @@ fn parse_arguments(arguments: &[String], config: &mut WorkerConfig) -> Result<()
         if !is_value_flag(flag) {
             return Err(format!("unknown argument {flag}"));
         }
-        let value = arguments.next().ok_or_else(|| format!("missing value for {flag}"))?;
+        let value = arguments
+            .next()
+            .ok_or_else(|| format!("missing value for {flag}"))?;
         set_argument(config, flag, value)?;
     }
     Ok(())
@@ -94,7 +96,10 @@ fn is_switch(flag: &str) -> bool {
 }
 
 fn is_value_flag(flag: &str) -> bool {
-    matches!(flag, "--database" | "--graph-url" | "--graph-name" | "--frame-harness")
+    matches!(
+        flag,
+        "--database" | "--graph-url" | "--graph-name" | "--frame-harness"
+    )
 }
 
 fn set_argument(config: &mut WorkerConfig, flag: &str, value: &str) -> Result<(), String> {
@@ -102,7 +107,9 @@ fn set_argument(config: &mut WorkerConfig, flag: &str, value: &str) -> Result<()
         "--database" => config.database = Some(PathBuf::from(value)),
         "--graph-url" => config.graph_url = Some(value.to_owned()),
         "--graph-name" => config.graph_name = Some(value.to_owned()),
-        "--frame-harness" => config.frame_harness = Some(crate::frame_harness::FrameConfig::parse(value)?),
+        "--frame-harness" => {
+            config.frame_harness = Some(crate::frame_harness::FrameConfig::parse(value)?)
+        }
         _ => return Err(format!("unknown argument {flag}")),
     }
     Ok(())
@@ -243,3 +250,6 @@ mod lod_tests {
         assert_eq!(with_lod(Command::Help, Some("bad")), Ok(Command::Help));
     }
 }
+
+#[cfg(test)]
+mod frame_harness_tests;

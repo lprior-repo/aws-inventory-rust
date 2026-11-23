@@ -1,9 +1,9 @@
 #[path = "app/actions.rs"]
 mod actions;
-#[path = "app/requests.rs"]
-mod requests;
 #[path = "app/frame_harness.rs"]
 mod frame_harness;
+#[path = "app/requests.rs"]
+mod requests;
 use actions::*;
 use makepad_widgets::makepad_platform::thread::SignalToUI;
 use makepad_widgets::*;
@@ -187,8 +187,11 @@ impl App {
                     self.graph_access_error = None;
                 }
             }
-            WorkerEvent::HarnessGraph { graph, resources, edges } =>
-                return self.apply_harness_graph(cx, graph, resources, edges),
+            WorkerEvent::HarnessGraph {
+                graph,
+                resources,
+                edges,
+            } => return self.apply_harness_graph(cx, graph, resources, edges),
         }
         self.refresh(cx);
     }

@@ -367,6 +367,7 @@ async fn given_unconfigured_graph_when_user_refreshes_then_sqlite_counts_stay_us
     events.send(page(request, 12))?;
     let mut data = crate::data::Data::default();
     let mut pending_graph = None;
+    let mut harness_graphs = 0_u8;
     worker.drain().into_iter().for_each(|event| match event {
         WorkerEvent::Snapshot {
             counts,
@@ -379,7 +380,9 @@ async fn given_unconfigured_graph_when_user_refreshes_then_sqlite_counts_stay_us
         }
         WorkerEvent::Graph { graph, error } => pending_graph = Some((graph, error)),
         WorkerEvent::GraphStatus { error } => pending_graph = Some((Graph::default(), error)),
+        WorkerEvent::HarnessGraph { .. } => harness_graphs = harness_graphs.saturating_add(1),
     });
+    assert_eq!(harness_graphs, 0);
     if let Some((graph, error)) = pending_graph {
         data.set_graph(graph, error);
     }

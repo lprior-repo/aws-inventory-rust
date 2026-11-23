@@ -3,10 +3,11 @@
 ## Status
 
 The harness implementation is supplied; release/GPU baselines are **not run**.
-`docs/e2e/AGENT_PROMPT.md` delegates Cargo execution, integration checks and
-measurements to the coordinator. No frame-time, throughput or headroom result
-is claimed here. D7.1's measured-baseline completion gate remains unsatisfied
-until the coordinator records the runs below.
+Release builds and GPU measurements remain coordinator-owned. Following a
+library/binary module-wiring failure, the coordinator delegated the narrow debug
+checks recorded below to this worker. No frame-time, throughput or headroom
+result is claimed. D7.1's measured-baseline gate remains unsatisfied until the
+coordinator records the release runs below.
 
 The painter is unchanged. The harness reads the current SQLite reader database
 through `cmdb-view`; PostgreSQL URL support belongs to the later reader cutover.
@@ -95,8 +96,9 @@ xrandr --current
 
 ## Coordinator measurement commands
 
-Run from the D7.1 worktree. Use the already-built `cmdb-bench` generator executable;
-all Cargo commands remain coordinator-owned. Record actual metadata at run time.
+Run from the D7.1 worktree. Use the already-built `cmdb-bench` generator executable.
+Release builds and measurements remain coordinator-owned. Record actual metadata
+at run time.
 
 ```sh
 export HOME=/home/lewis
@@ -136,17 +138,29 @@ fields. Do not compare a 60 Hz draw cadence with a 120 Hz throughput claim.
 This ledger is explicitly **not measured baseline evidence**. The cap is known
 from `dag/graph.rs`, not from a performance run.
 
-## Checks to execute after integration
+## Verified narrow integration checks
 
-Not run by this worker: build, formatting, lints, tests, GPU/display runs.
-The new scenarios cover CLI-to-worker harness configuration, invalid duration and
+The coordinator delegated the following repair checks on 2026-11-22. With
+`HOME=/home/lewis` and `CARGO_TARGET_DIR=/home/lewis/.cache/cargo-target-d71`,
+all four commands completed successfully:
+
+```sh
+cargo check -p cmdb-ui --all-targets --locked -j2
+cargo clippy -p cmdb-ui --all-targets --locked -j2 -- -D warnings
+cargo fmt -p cmdb-ui --check
+cargo test -p cmdb-ui --locked -j2
+```
+
+The test runner reported **192 passed across 3 suites**. The check and strict
+Clippy run emitted no warnings; the formatting check emitted no differences.
+The library now owns the shared frame-harness module and the binary imports it.
+CLI scenarios live beside the binary-only parser; library scenarios do not depend
+on that parser. All worker-event consumers handle the harness graph variant.
+
+The scenarios cover CLI-to-worker harness configuration, invalid duration and
 sample bounds, nearest-rank percentiles, missed-interval arithmetic, deterministic
 elapsed-time path and retained clicks, current-event delivery, and a real
 schema-backed SQLite inventory-to-DAG startup with actual resource labels/edges.
-
-```sh
-cargo test -j2 -p cmdb-ui frame_harness -- --test-threads=1
-```
 
 The release capture commands above remain the end-to-end draw/shutdown evidence;
 unit scenarios do not stand in for a real GPU run.

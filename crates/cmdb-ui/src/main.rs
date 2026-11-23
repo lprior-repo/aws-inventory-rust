@@ -7,7 +7,7 @@ mod chrome;
 mod cli;
 mod dag;
 mod data;
-mod frame_harness;
+use cmdb_ui::frame_harness;
 mod frame_time;
 mod graph_view;
 mod table;

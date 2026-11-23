@@ -69,7 +69,12 @@ fn given_harness_graph_when_draining_then_current_graph_payload_is_preserved() {
         },
     };
     let events = current_events([output].into_iter(), &revisions);
-    assert!(matches!(events.last(), Some(WorkerEvent::HarnessGraph {
-        resources: 500, edges: 0, ..
-    })));
+    assert!(matches!(
+        events.last(),
+        Some(WorkerEvent::HarnessGraph {
+            resources: 500,
+            edges: 0,
+            ..
+        })
+    ));
 }

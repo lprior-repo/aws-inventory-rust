@@ -39,11 +39,28 @@ mod tests {
     #[test]
     fn given_whole_view_when_path_advances_then_zoom_returns_and_pan_crosses() {
         let duration = Duration::from_secs(20);
-        assert_eq!(at(Duration::ZERO, duration), PathState { zoom: 0.0, pan: 0.0, clicks: 0 });
+        assert_eq!(
+            at(Duration::ZERO, duration),
+            PathState {
+                zoom: 0.0,
+                pan: 0.0,
+                clicks: 0
+            }
+        );
         assert_eq!(at(Duration::from_secs(5), duration).zoom, 1.0);
         assert_eq!(at(Duration::from_secs(10), duration).zoom, 0.0);
-        assert_eq!(at(duration, duration), PathState { zoom: 0.0, pan: 1.0, clicks: 3 });
-        assert_eq!(at(Duration::from_secs(40), duration), at(duration, duration));
+        assert_eq!(
+            at(duration, duration),
+            PathState {
+                zoom: 0.0,
+                pan: 1.0,
+                clicks: 3
+            }
+        );
+        assert_eq!(
+            at(Duration::from_secs(40), duration),
+            at(duration, duration)
+        );
     }
 
     #[test]

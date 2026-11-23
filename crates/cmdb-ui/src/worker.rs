@@ -206,7 +206,11 @@ async fn setup(path: PathBuf, config: WorkerConfig) -> Result<(WorkerState, Work
         .map_err(|error| error.to_string())?;
     let initial = if config.frame_harness.is_some() {
         let (graph, resources, edges) = frame_harness::load(&database).await?;
-        WorkerEvent::HarnessGraph { graph, resources, edges }
+        WorkerEvent::HarnessGraph {
+            graph,
+            resources,
+            edges,
+        }
     } else {
         refresh_page(&database, Filter::default()).await
     };

@@ -8,8 +8,16 @@ async fn fixture() -> TestResult<Fixture> {
     let mut to = root();
     to.id = "child".to_owned();
     let link = edge(&from, &to, "references", "reference");
-    fixture.commit("frame-harness", ACCOUNT, REGION,
-        &[("shared", "Root"), ("child", "Child")], &[link], 1).await?;
+    fixture
+        .commit(
+            "frame-harness",
+            ACCOUNT,
+            REGION,
+            &[("shared", "Root"), ("child", "Child")],
+            &[link],
+            1,
+        )
+        .await?;
     Ok(fixture)
 }
 
@@ -28,7 +36,12 @@ fn given_inventory_database_when_harness_starts_then_real_rows_and_edges_reach_d
 }
 
 fn assert_graph(event: WorkerEvent) -> TestResult {
-    let WorkerEvent::HarnessGraph { graph, resources, edges } = event else {
+    let WorkerEvent::HarnessGraph {
+        graph,
+        resources,
+        edges,
+    } = event
+    else {
         return Err("startup did not deliver a harness graph".into());
     };
     assert_eq!(resources, 2);
