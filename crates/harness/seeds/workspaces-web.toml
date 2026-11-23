@@ -1,0 +1,9 @@
+format = 1
+service = "workspaces-web"
+
+[[step]]
+id = "resource"
+operation = "CreatePortal"
+kind = "AWS::WorkSpacesWeb::Portal"
+identity = "portalArn"
+[step.input]
