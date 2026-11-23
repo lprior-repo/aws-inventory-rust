@@ -4,8 +4,8 @@ service = "glacier"
 [[step]]
 id = "vault"
 operation = "CreateVault"
-kind = "AWS::Glacier::Vault"
-identity = { input = "vaultName" }
+kind = "AWS::ApiOnly::GlacierVault"
+identity = { input = "vaultName", template = "arn:{partition}:glacier:{region}:{account}:vaults/{value}" }
 [step.input]
 accountId = "-"
 vaultName = "inventory-thin-glacier"
