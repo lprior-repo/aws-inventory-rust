@@ -40,7 +40,7 @@ async fn collect(options: &SweepArgs) -> Result<(BinaryStore, SweepSummary)> {
     let store = open_store(options, &catalog).await?;
     let credentials =
         ProfileCredentials::load(options.profile.as_deref(), options.region.as_deref()).await?;
-    let summary = inventory_sweep::run(&catalog, &store, config(options), &credentials).await?;
+    let summary = super::control::run(&catalog, &store, config(options), &credentials).await?;
     Ok((store, summary))
 }
 

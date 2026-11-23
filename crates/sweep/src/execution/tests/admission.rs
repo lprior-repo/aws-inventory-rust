@@ -50,9 +50,15 @@ async fn failed_admission(cancel: bool) -> TestResult {
     let executor = ApiExecutor::new(executor_config(4)?)?;
     let calls = AtomicUsize::new(0);
     let mut leases = Vec::new();
+    let progress = crate::control::Progress::new(None);
     // When the second real SQL claim fails, including cancellation during that admission.
-    let error =
-        draining::admission::claim_batch(&fixture.store, &executor, 4, &mut leases, || async {
+    let error = draining::admission::claim_batch(
+        &fixture.store,
+        &executor,
+        4,
+        &mut leases,
+        &progress,
+        || async {
             let ordinal = calls.fetch_add(1, Ordering::SeqCst);
             if ordinal == 1 && cancel {
                 executor.cancel();
@@ -62,19 +68,19 @@ async fn failed_admission(cancel: bool) -> TestResult {
                 .claim(&fixture.sweep, fixture.now, fixture.lease_ms)
                 .await
                 .map_err(SweepError::from)
-        })
-        .await
-        .err()
-        .ok_or("second claim unexpectedly succeeded")?;
-    // Then the first lease is terminal before return, with the SQL cause preserved.
+        },
+    )
+    .await
+    .err()
+    .ok_or("second claim unexpectedly succeeded")?;
     assert!(matches!(&error, SweepError::Store(_)));
     assert!(format!("{error:?}").contains("second-claim fault"));
     assert_eq!(calls.load(Ordering::SeqCst), 2);
     assert_eq!(executor.is_cancelled(), cancel);
     assert!(leases.is_empty());
     let before = fixture.store.sweep_summary(&fixture.sweep).await?;
-    assert_eq!(before.partial_scopes, 1);
-    assert_eq!(before.work_pending, 1);
+    assert_eq!(before.partial_scopes, 0);
+    assert_eq!(before.work_pending, 2);
     let active: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM work_queue WHERE state=1")
         .fetch_one(&pool)
         .await?;
@@ -84,16 +90,12 @@ async fn failed_admission(cancel: bool) -> TestResult {
     );
     tokio::task::yield_now().await;
     assert_eq!(fixture.store.sweep_summary(&fixture.sweep).await?, before);
-    let remaining = fixture
-        .store
-        .claim(&fixture.sweep, now_ms()?, fixture.lease_ms)
-        .await?
-        .ok_or("unclaimed sibling is not immediately recoverable")?;
-    assert_eq!(remaining.generation(), 1);
-    fixture
-        .store
-        .finish_scope(remaining, ScopeOutcome::Complete, now_ms()?)
-        .await?;
+    let generations = [
+        recover_complete(&fixture).await?,
+        recover_complete(&fixture).await?,
+    ];
+    assert!(generations.contains(&1));
+    assert!(generations.contains(&3));
     assert_eq!(
         fixture
             .store
@@ -106,14 +108,28 @@ async fn failed_admission(cancel: bool) -> TestResult {
     Ok(())
 }
 
+async fn recover_complete(fixture: &Fixture) -> TestResult<i64> {
+    let lease = fixture
+        .store
+        .claim(&fixture.sweep, now_ms()?, fixture.lease_ms)
+        .await?
+        .ok_or("released work is not immediately recoverable")?;
+    let generation = lease.generation();
+    fixture
+        .store
+        .finish_scope(lease, ScopeOutcome::Complete, now_ms()?)
+        .await?;
+    Ok(generation)
+}
+
 #[tokio::test]
-async fn given_first_claim_committed_when_second_claim_fails_then_prior_lease_is_finalized_before_error_returns()
+async fn given_first_claim_committed_when_second_claim_fails_then_prior_lease_is_released_before_error_returns()
 -> TestResult {
     failed_admission(false).await
 }
 
 #[tokio::test]
-async fn given_first_claim_committed_when_second_claim_fails_during_cancellation_then_prior_lease_is_finalized_before_error_returns()
+async fn given_first_claim_committed_when_second_claim_fails_during_cancellation_then_prior_lease_is_released_before_error_returns()
 -> TestResult {
     failed_admission(true).await
 }
@@ -126,11 +142,13 @@ async fn given_impossible_batch_capacity_when_admission_starts_then_reservation_
     let executor = ApiExecutor::new(executor_config(4)?)?;
     let calls = AtomicUsize::new(0);
     let mut leases = Vec::new();
+    let progress = crate::control::Progress::new(None);
     let result = draining::admission::claim_batch(
         &fixture.store,
         &executor,
         usize::MAX,
         &mut leases,
+        &progress,
         || async {
             let _ = calls.fetch_add(1, Ordering::SeqCst);
             fixture

@@ -113,6 +113,7 @@ async fn given_an_owned_prefix_then_hostile_filtered_row_after_chunk_boundary_wh
         ca_bundle: None,
         slice_timeout_secs: None,
     };
+    let progress = crate::control::Progress::new(None);
     let context = crate::execution::RuntimeContext {
         bootstrap: crate::execution::BootstrapContext {
             catalog: &catalog,
@@ -127,6 +128,7 @@ async fn given_an_owned_prefix_then_hostile_filtered_row_after_chunk_boundary_wh
         lease_ms: 3_600_000,
         endpoints: Default::default(),
         consumers,
+        progress: &progress,
     };
     // When the real persistence caller sees a hostile row after a complete valid chunk.
     let summary = super::super::commit_response(

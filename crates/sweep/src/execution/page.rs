@@ -7,17 +7,30 @@ mod resource_emissions;
 pub(crate) mod rows;
 mod tag_endpoint;
 
+mod settlement;
 use inventory_core::{
     catalog::runtime::{CallablePlan, PlanPurpose},
     inventory::ScopeOutcome as StoredOutcome,
     record::Record,
 };
 use inventory_engine::inventory::{BinaryStore, PageCommit, StoreError, WorkLease};
+use settlement::{finalize, finish_error, summary};
 
 use super::{RuntimeContext, now_ms};
 use crate::{ScopeOutcomes, SweepError, SweepSummary, call, input};
 
 pub(super) async fn process(
+    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    lease: WorkLease,
+) -> Result<SweepSummary, SweepError> {
+    let result = process_owned(context, lease).await;
+    if let Ok(summary) = &result {
+        context.progress.scope(summary);
+    }
+    result
+}
+
+async fn process_owned(
     context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
     lease: WorkLease,
 ) -> Result<SweepSummary, SweepError> {
@@ -197,7 +210,14 @@ async fn commit_page(
 ) -> Result<SweepSummary, SweepError> {
     let fallback_lease = commit.lease.clone();
     match context.store.commit_page(commit).await {
-        Ok(result) => report_commit(result, done, rows),
+        Ok(result) => {
+            let summary = report_commit(result, done, rows)?;
+            context.progress.emit(|| crate::ProgressEvent::Page {
+                rows: summary.rows,
+                resource_writes: summary.resource_writes,
+            });
+            Ok(summary)
+        }
         Err(StoreError::StaleLease) => Ok(SweepSummary::default()),
         Err(error) => finish_error(context.store, fallback_lease, SweepError::Store(error)).await,
     }
@@ -225,51 +245,5 @@ fn report_commit(
             rows,
             ..SweepSummary::default()
         })
-    }
-}
-
-async fn finish_error(
-    store: &BinaryStore,
-    lease: WorkLease,
-    error: SweepError,
-) -> Result<SweepSummary, SweepError> {
-    let outcome = match &error {
-        SweepError::Api(inventory_engine::limiter::ApiError::Denied(_)) => {
-            StoredOutcome::Inaccessible
-        }
-        SweepError::Api(inventory_engine::limiter::ApiError::UnsupportedType(_)) => {
-            StoredOutcome::Unsupported
-        }
-        SweepError::Api(inventory_engine::limiter::ApiError::Cancelled) => {
-            finalize(store, lease, StoredOutcome::Partial).await?;
-            return Err(error);
-        }
-        _ => StoredOutcome::Failed,
-    };
-    finalize(store, lease, outcome).await
-}
-
-async fn finalize(
-    store: &BinaryStore,
-    lease: WorkLease,
-    outcome: StoredOutcome,
-) -> Result<SweepSummary, SweepError> {
-    match store.finish_scope(lease, outcome, now_ms()?).await {
-        Ok(stats) => Ok(summary(outcome, 0, stats.resources_deleted)),
-        Err(StoreError::StaleLease) => Ok(SweepSummary::default()),
-        Err(error) => Err(SweepError::Store(error)),
-    }
-}
-
-fn summary(outcome: StoredOutcome, rows: u64, writes: u64) -> SweepSummary {
-    let mut outcomes = ScopeOutcomes::default();
-    outcomes.record(outcome);
-    SweepSummary {
-        resource_writes: writes,
-        rows,
-        scopes: 1,
-        outcomes,
-        graph_pending: 0,
-        work_remaining: 0,
     }
 }

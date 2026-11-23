@@ -8,6 +8,12 @@
   `inventory-aws/sweep-credentials`. Bounded IAM trust summarization is shared
   from `inventory-core` under its existing `legacy` feature.
 
+- Sweep callers now own cancellation and optional bounded progress delivery.
+  Slow listeners never block collection; full-channel drops are counted in the
+  returned summary. Cancellation durably releases owned leases without changing
+  scope outcomes or continuation tokens, so resume completes the same inventory.
+  CLI signal handling stays outside the library and spawns no signal task.
+
 - `InventoryStore` now exposes bounded sweep discovery, typed manifest creation,
   and generation-fenced lease release for immediate cancellation/resume.
   Queue depth is opt-in through `claim_with_depth`; ordinary claims retain their
