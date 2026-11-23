@@ -61,14 +61,18 @@ async fn given_repeated_service_filters_when_cli_runs_then_only_selected_service
     let report = report(&bytes, &["bindings", "bindings"]).await?;
     assert!(report.contains("bindings ListParents0 awsJson1_1 items 2"));
     assert_eq!(
-        report.lines().filter(|line| line.starts_with("bindings ")).count(),
+        report
+            .lines()
+            .filter(|line| line.starts_with("bindings "))
+            .count(),
         5
     );
     Ok(())
 }
 
 #[tokio::test]
-async fn given_unknown_service_when_cli_runs_then_it_fails_without_writing_a_report() -> TestResult {
+async fn given_unknown_service_when_cli_runs_then_it_fails_without_writing_a_report() -> TestResult
+{
     let bytes = super::fixture::compiled(1, |_| {})?;
     let server = Server::new().await?;
     let work = tempfile::tempdir()?;

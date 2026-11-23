@@ -12,7 +12,7 @@ pub(super) struct Args {
 
 impl Args {
     pub(super) fn parse(arguments: &[String]) -> Result<Self, ProbeError> {
-        if arguments.len() < 10 || arguments.len() > 522 || arguments.len() % 2 != 0 {
+        if arguments.len() < 10 || arguments.len() > 522 || !arguments.len().is_multiple_of(2) {
             return Err(ProbeError::Invalid(
                 "probe requires five option-value pairs and optional service pairs",
             ));

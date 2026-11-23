@@ -8,9 +8,9 @@ mod template;
 mod values;
 use values::prepare as prepare_value;
 #[cfg(test)]
-mod tests;
-#[cfg(test)]
 mod blob_tests;
+#[cfg(test)]
+mod tests;
 use aws_wire::request::Protocol;
 pub(super) use identity::{PreparedIdentity, PreparedResource};
 use inventory_core::{

@@ -25,12 +25,12 @@ fn blob(inputs: &[PreparedInput]) -> Result<&[u8], Box<dyn std::error::Error>> {
     inputs
         .iter()
         .find_map(|input| match &input.value {
-            PreparedInputValue::Structure(fields) => fields.iter().find_map(|(_, value)| {
-                match value {
+            PreparedInputValue::Structure(fields) => {
+                fields.iter().find_map(|(_, value)| match value {
                     PreparedInputValue::Literal(Value::Bytes(bytes)) => Some(bytes.as_slice()),
                     _ => None,
-                }
-            }),
+                })
+            }
             _ => None,
         })
         .ok_or_else(|| "prepared blob is missing".into())
@@ -41,13 +41,18 @@ fn given_canonical_blob_strings_when_toml_prepared_then_padding_and_binary_bytes
 -> TestResult {
     let bytes = bytes()?;
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
-    [("Zg==", b"f".as_slice()), ("Zm8=", b"fo"), ("Zm9v", b"foo"), ("AP8=", &[0, 255])]
-        .into_iter()
-        .try_for_each(|(encoded, expected)| -> TestResult {
-            let inputs = prepare(&runtime, encoded)?;
-            assert_eq!(blob(&inputs)?, expected);
-            Ok(())
-        })
+    [
+        ("Zg==", b"f".as_slice()),
+        ("Zm8=", b"fo"),
+        ("Zm9v", b"foo"),
+        ("AP8=", &[0, 255]),
+    ]
+    .into_iter()
+    .try_for_each(|(encoded, expected)| -> TestResult {
+        let inputs = prepare(&runtime, encoded)?;
+        assert_eq!(blob(&inputs)?, expected);
+        Ok(())
+    })
 }
 
 #[test]
@@ -65,27 +70,37 @@ fn given_maximum_encoded_blob_when_toml_prepared_then_decoded_bytes_remain_bound
 fn given_noncanonical_blob_strings_when_toml_prepared_then_preflight_rejects_them() -> TestResult {
     let bytes = bytes()?;
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
-    ["%bad", "Zg", "Zg=", "Zg===", "Zh==", "Zm9=", "Zg== ", "Z g==", "-w==", "__8=", "é==="]
-        .iter()
-        .for_each(|encoded| {
-            assert!(matches!(
+    [
+        "%bad", "Zg", "Zg=", "Zg===", "Zh==", "Zm9=", "Zg== ", "Z g==", "-w==", "__8=", "é===",
+    ]
+    .iter()
+    .for_each(|encoded| {
+        assert!(
+            matches!(
                 prepare(&runtime, encoded),
-                Err(SeedError::Invalid("seed blob must be canonical padded base64"))
-            ), "accepted noncanonical blob {encoded:?}");
-        });
+                Err(SeedError::Invalid(
+                    "seed blob must be canonical padded base64"
+                ))
+            ),
+            "accepted noncanonical blob {encoded:?}"
+        );
+    });
     Ok(())
 }
 
 #[test]
-fn given_ordinary_text_beside_blob_when_toml_prepared_then_text_is_not_base64_decoded()
--> TestResult {
+fn given_ordinary_text_beside_blob_when_toml_prepared_then_text_is_not_base64_decoded() -> TestResult
+{
     let bytes = bytes()?;
     let runtime = RuntimeCatalog::from_bytes(&bytes)?;
     let inputs = prepare(&runtime, "Zm9v")?;
-    let text = inputs.iter().filter_map(|input| match &input.value {
-        PreparedInputValue::Text(text) => Some(text.as_str()),
-        _ => None,
-    }).collect::<Vec<_>>();
+    let text = inputs
+        .iter()
+        .filter_map(|input| match &input.value {
+            PreparedInputValue::Text(text) => Some(text.as_str()),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
     assert_eq!(text, ["inventory-blob", "OVERWRITE"]);
     assert_eq!(blob(&inputs)?, b"foo");
     Ok(())
@@ -98,11 +113,17 @@ fn given_oversized_blob_at_modeled_boundary_when_prepared_then_decode_is_rejecte
     let operation = locate(catalog, "translate", "ImportTerminology")?;
     let value = SeedInputValue::Text("AAAA".repeat(257));
     let result = prepare_value(
-        &[operation], operation, &FieldPath::new(&["TerminologyData", "File"])?, &value,
+        &[operation],
+        operation,
+        &FieldPath::new(&["TerminologyData", "File"])?,
+        &value,
     );
-    assert!(matches!(result, Err(SeedError::Invalid(
-        "seed blob exceeds encoded length bound 1024"
-    ))));
+    assert!(matches!(
+        result,
+        Err(SeedError::Invalid(
+            "seed blob exceeds encoded length bound 1024"
+        ))
+    ));
     Ok(())
 }
 

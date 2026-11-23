@@ -134,10 +134,12 @@ impl<C: CredentialSource> Probe<'_, '_, C> {
 }
 
 fn validate_services(catalog: &RuntimeCatalog<'_>, services: &[String]) -> Result<(), ProbeError> {
-    if services
-        .iter()
-        .any(|service| !catalog.plans().iter().any(|plan| plan.service_name() == service))
-    {
+    if services.iter().any(|service| {
+        !catalog
+            .plans()
+            .iter()
+            .any(|plan| plan.service_name() == service)
+    }) {
         return Err(ProbeError::Invalid("unknown probe service"));
     }
     Ok(())
