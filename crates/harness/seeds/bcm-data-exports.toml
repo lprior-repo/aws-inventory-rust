@@ -6,7 +6,8 @@ id = "bucket"
 service = "s3"
 operation = "CreateBucket"
 kind = "AWS::S3::Bucket"
-identity = { input = "Bucket" }
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
 [step.input]
 Bucket = "inventory-thin-bcm-data-exports"
 
@@ -24,5 +25,6 @@ id = "export"
 operation = "CreateExport"
 kind = "AWS::BCMDataExports::Export"
 identity = "ExportArn"
+scope = "account"
 [step.input]
 Export = { Name = "inventory-thin-bcm-data-exports", DataQuery = { QueryStatement = "SELECT identity_line_item_id FROM COST_AND_USAGE_REPORT" }, DestinationConfigurations = { S3Destination = { S3Bucket = "inventory-thin-bcm-data-exports", S3Prefix = "reports", S3Region = "us-east-1", S3OutputConfigurations = { OutputType = "CUSTOM", Format = "TEXT_OR_CSV", Compression = "GZIP", Overwrite = "CREATE_NEW_REPORT" } } }, RefreshCadence = { Frequency = "SYNCHRONOUS" } }
