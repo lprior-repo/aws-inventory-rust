@@ -1,6 +1,8 @@
 mod config;
 mod connection;
+mod lease;
 mod url;
+mod work;
 
 pub mod schema;
 

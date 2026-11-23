@@ -1,5 +1,5 @@
 #[path = "work/transitions.rs"]
-mod transitions;
+pub(in crate::inventory) mod transitions;
 use super::{BinaryStore, MAX_BINDING_BYTES, MAX_TOKEN_BYTES, PageCommit, StoreError};
 use inventory_core::inventory::{ResourceKey, ScopeKey, ScopeOutcome};
 use sqlx::{Row, Sqlite, Transaction};
@@ -41,9 +41,9 @@ impl SweepId {
 pub struct WorkSpec {
     sweep: SweepId,
     scope: ScopeKey,
-    token: Option<Vec<u8>>,
-    bindings: Vec<u8>,
-    context: Vec<u8>,
+    pub(in crate::inventory) token: Option<Vec<u8>>,
+    pub(in crate::inventory) bindings: Vec<u8>,
+    pub(in crate::inventory) context: Vec<u8>,
 }
 
 impl WorkSpec {

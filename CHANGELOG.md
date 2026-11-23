@@ -12,6 +12,11 @@
   pool, checks stored catalog integrity and hides the entire URL in diagnostics.
   Connection failures never propagate raw connection details.
 
+- PostgreSQL work seeding uses 5,000-scope array batches and a transaction
+  advisory lock. Claims skip locked rows, preserve staleness ordering and reject
+  exhausted generations. Resume checks manifests and locks the queue before
+  fencing expired leases.
+
 - Runtime catalog binding decoders live in `decode/plans/bindings.rs`, with
   separate source decoders and unchanged wire tags, limits and rejection order.
   The parent plan decoder is now below the 300-line source limit.

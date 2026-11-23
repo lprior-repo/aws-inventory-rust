@@ -184,7 +184,7 @@ pub(in super::super) async fn resume_sweep(
     Ok(())
 }
 
-pub(super) fn encode_scope(scope: &ScopeKey) -> Result<Vec<u8>, StoreError> {
+pub(in crate::inventory) fn encode_scope(scope: &ScopeKey) -> Result<Vec<u8>, StoreError> {
     encode_scope_context(scope, scope.context())
 }
 
@@ -239,7 +239,7 @@ fn encode_scope_context(
     Ok(bytes)
 }
 
-pub(super) fn decode_scope(bytes: &[u8]) -> Result<ScopeKey, StoreError> {
+pub(in crate::inventory) fn decode_scope(bytes: &[u8]) -> Result<ScopeKey, StoreError> {
     let mut cursor = Cursor::new(bytes);
     let account = inventory_core::inventory::AccountId::parse(cursor.text()?)?;
     let region = inventory_core::inventory::Region::parse(cursor.text()?)?;
@@ -315,7 +315,7 @@ pub(super) fn decode_resource_from(cursor: &mut Cursor<'_>) -> Result<ResourceKe
         id: inventory_core::inventory::ResourceId::parse(cursor.text()?)?,
     })
 }
-pub(super) fn put_text(out: &mut Vec<u8>, text: &str) -> Result<(), StoreError> {
+pub(in crate::inventory) fn put_text(out: &mut Vec<u8>, text: &str) -> Result<(), StoreError> {
     let size =
         u32::try_from(text.len()).map_err(|_| StoreError::Invalid("binary key field too large"))?;
     out.extend_from_slice(&size.to_be_bytes());
@@ -323,15 +323,15 @@ pub(super) fn put_text(out: &mut Vec<u8>, text: &str) -> Result<(), StoreError> 
     Ok(())
 }
 
-pub(super) struct Cursor<'a> {
-    pub(super) bytes: &'a [u8],
-    pub(super) offset: usize,
+pub(in crate::inventory) struct Cursor<'a> {
+    pub(in crate::inventory) bytes: &'a [u8],
+    pub(in crate::inventory) offset: usize,
 }
 impl<'a> Cursor<'a> {
-    pub(super) fn new(bytes: &'a [u8]) -> Self {
+    pub(in crate::inventory) fn new(bytes: &'a [u8]) -> Self {
         Self { bytes, offset: 0 }
     }
-    pub(super) fn byte(&mut self) -> Result<u8, StoreError> {
+    pub(in crate::inventory) fn byte(&mut self) -> Result<u8, StoreError> {
         let byte = self
             .bytes
             .get(self.offset)
@@ -343,7 +343,7 @@ impl<'a> Cursor<'a> {
             .ok_or(StoreError::Invalid("binary offset overflow"))?;
         Ok(byte)
     }
-    pub(super) fn text(&mut self) -> Result<&'a str, StoreError> {
+    pub(in crate::inventory) fn text(&mut self) -> Result<&'a str, StoreError> {
         let length = u32::from_be_bytes([self.byte()?, self.byte()?, self.byte()?, self.byte()?]);
         let size =
             usize::try_from(length).map_err(|_| StoreError::Invalid("binary length overflow"))?;
@@ -360,7 +360,7 @@ impl<'a> Cursor<'a> {
         self.offset = end;
         Ok(value)
     }
-    pub(super) fn finished(&self) -> bool {
+    pub(in crate::inventory) fn finished(&self) -> bool {
         self.offset == self.bytes.len()
     }
 }
