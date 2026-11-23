@@ -1,0 +1,13 @@
+format = 1
+service = "lex-models-v2"
+
+[[step]]
+id = "resource"
+operation = "CreateBot"
+kind = "AWS::LexModelsV2::Bot"
+identity = "botId"
+[step.input]
+"botName" = "inventory-thin-lex-models-v2"
+"roleArn" = "arn:aws:iam::000000000000:role/inventory-thin"
+"dataPrivacy" = { "childDirected" = false }
+"idleSessionTTLInSeconds" = 60
