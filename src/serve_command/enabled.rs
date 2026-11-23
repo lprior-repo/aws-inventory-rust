@@ -196,7 +196,7 @@ impl Environment for ServeEnv {
         };
         info!(profile = profile.name, "starting sweep");
         let catalog = self.catalog();
-        let result = inventory_sweep::run(
+        let result = crate::sweep_command::control::run(
             &catalog,
             &self.store,
             self.sweep_config.clone(),

@@ -44,10 +44,8 @@ async fn given_admitted_sql_page_when_cancellation_arrives_then_supervisor_waits
     };
     let collection = draining::settle_batch(&fixture.store, &executor, owned, work);
     let signal = async {
-        admitted_rx.await.map_err(std::io::Error::other)?;
-        release_tx
-            .send(())
-            .map_err(|_| std::io::Error::other("commit waiter lost"))
+        assert!(admitted_rx.await.is_ok());
+        assert!(release_tx.send(()).is_ok());
     };
     let result = supervise(&executor, collection, signal).await;
     assert!(matches!(result, Err(SweepError::Api(ApiError::Cancelled))));
@@ -63,7 +61,7 @@ async fn given_admitted_sql_page_when_cancellation_arrives_then_supervisor_waits
 }
 
 #[tokio::test]
-async fn given_stalled_admitted_page_when_cancel_drain_deadline_expires_then_owned_lease_is_finalized_before_return()
+async fn given_stalled_admitted_page_when_cancel_drain_deadline_expires_then_owned_lease_is_released_before_return()
 -> TestResult {
     let fixture = Fixture::new("cancel-drain-deadline").await?;
     let lease = fixture.seed().await?;
@@ -81,7 +79,9 @@ async fn given_stalled_admitted_page_when_cancel_drain_deadline_expires_then_own
         std::future::pending::<Result<SweepSummary, SweepError>>().await
     };
     let collection = draining::settle_batch(&fixture.store, &executor, owned, work);
-    let signal = async { admitted_rx.await.map_err(std::io::Error::other) };
+    let signal = async {
+        assert!(admitted_rx.await.is_ok());
+    };
     tokio::time::pause();
     let drive = async {
         executor.cancelled().await;
@@ -104,9 +104,21 @@ async fn given_stalled_admitted_page_when_cancel_drain_deadline_expires_then_own
         dropped.load(Ordering::SeqCst),
         "admitted page survived supervisor return"
     );
-    fixture.outcome(ScopeOutcome::Partial).await?;
+    let released = fixture.store.sweep_summary(&fixture.sweep).await?;
+    assert_eq!(released.partial_scopes, 0);
+    assert_eq!(released.work_pending, 1);
     let before = fixture.store.sweep_summary(&fixture.sweep).await?;
     tokio::task::yield_now().await;
     assert_eq!(fixture.store.sweep_summary(&fixture.sweep).await?, before);
+    let resumed = fixture
+        .store
+        .claim(&fixture.sweep, now_ms()?, fixture.lease_ms)
+        .await?
+        .ok_or("cancelled lease was not immediately resumable")?;
+    fixture
+        .store
+        .commit_page(page(resumed, now_ms()?, None))
+        .await?;
+    fixture.outcome(ScopeOutcome::Complete).await?;
     Ok(())
 }

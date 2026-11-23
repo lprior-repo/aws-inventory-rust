@@ -62,6 +62,7 @@ impl Driver {
         };
         let ancestry = page::preparation::ancestry(lease.context(), lease.scope().context())?;
         let cursor = cursor::Cursor::decode(lease.token())?;
+        let progress = crate::control::Progress::new(None);
         let context = RuntimeContext {
             bootstrap: BootstrapContext {
                 catalog,
@@ -70,12 +71,14 @@ impl Driver {
                 credentials: &self.credentials,
                 home: &scenario.home,
                 config: &self.config,
+                metrics: &Default::default(),
             },
             store: &scenario.store,
             account: scenario.account.clone(),
             lease_ms: 60_000,
             endpoints: execution::discovery::EndpointCache::default(),
             consumers: ConsumerIndex::build(catalog)?,
+            progress: &progress,
         };
         Ok(
             page::commit_response(&context, lease, plan, cursor, response, request, &ancestry)

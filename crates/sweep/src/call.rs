@@ -24,6 +24,7 @@ pub(super) struct Call<'a, 'catalog, C: CredentialSource> {
     pub url: &'a str,
     pub base: &'a Record,
     pub fields: &'a [InputField],
+    pub metrics: &'a crate::metrics::Accumulators,
 }
 
 pub(super) struct DecodedResponse {
@@ -38,7 +39,10 @@ impl<C: CredentialSource> Call<'_, '_, C> {
             .executor
             .execute(bucket, || async { self.send_attempt().await })
             .await?;
-        decode_response(self.plan, response)
+        let started = std::time::Instant::now();
+        let response = decode_response(self.plan, response);
+        self.metrics.decoded(started);
+        response
     }
 
     async fn send_attempt(&self) -> Result<Response, ApiError> {

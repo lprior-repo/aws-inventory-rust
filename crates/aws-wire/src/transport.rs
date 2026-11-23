@@ -100,6 +100,9 @@ impl Client {
             .await
             .map_err(|e| error::classify(Box::new(e)))?;
         let (parts, body) = response.into_parts();
+        if parts.version == Version::HTTP_2 {
+            self.counters.http2();
+        }
         let body = self
             .bounded_body(body)?
             .collect()

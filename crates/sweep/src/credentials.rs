@@ -29,7 +29,7 @@ impl CredentialSource for TestCredentials {
 
     fn resolve(&self) -> impl Future<Output = Result<Credentials, CredentialFailure>> + Send {
         std::future::ready(
-            Credentials::new("fixture-key", "fixture-secret", None).map_err(|error| {
+            Credentials::new("FIXTUREKEY", "fixture-secret", None).map_err(|error| {
                 CredentialFailure {
                     retryable: false,
                     message: error.to_string(),

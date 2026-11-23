@@ -7,18 +7,31 @@ mod resource_emissions;
 pub(crate) mod rows;
 mod tag_endpoint;
 
+mod settlement;
 use inventory_core::{
     catalog::runtime::{CallablePlan, PlanPurpose},
     inventory::ScopeOutcome as StoredOutcome,
     record::Record,
 };
-use inventory_engine::inventory::{BinaryStore, PageCommit, StoreError, WorkLease};
+use inventory_engine::inventory::{InventoryStore, PageCommit, StoreError, WorkLease};
+use settlement::{finalize, finish_error, summary};
 
 use super::{RuntimeContext, now_ms};
-use crate::{ScopeOutcomes, SweepError, SweepSummary, call, input};
+use crate::{CredentialSource, ScopeOutcomes, SweepError, SweepSummary, call, input};
 
 pub(super) async fn process(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
+    lease: WorkLease,
+) -> Result<SweepSummary, SweepError> {
+    let result = process_owned(context, lease).await;
+    if let Ok(summary) = &result {
+        context.progress.scope(summary);
+    }
+    result
+}
+
+async fn process_owned(
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     lease: WorkLease,
 ) -> Result<SweepSummary, SweepError> {
     if context.bootstrap.executor.is_cancelled() {
@@ -41,7 +54,7 @@ pub(super) async fn process(
 }
 
 async fn process_lease(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     lease: WorkLease,
 ) -> Result<SweepSummary, SweepError> {
     let plan = match lookup_plan(context, &lease) {
@@ -82,6 +95,7 @@ async fn process_lease(
         url: &url,
         base: &base,
         fields: &fields,
+        metrics: context.bootstrap.metrics,
     };
     let response = match call.run().await {
         Ok(response) => response,
@@ -94,8 +108,8 @@ async fn process_lease(
     commit_response(context, lease, plan, cursor, response, request, &ancestry).await
 }
 
-fn lookup_plan<'a, 'catalog>(
-    context: &'a RuntimeContext<'_, 'catalog, impl crate::CredentialSource>,
+fn lookup_plan<'a, 'catalog, S: InventoryStore>(
+    context: &'a RuntimeContext<'_, 'catalog, impl CredentialSource, S>,
     lease: &WorkLease,
 ) -> Result<&'a CallablePlan<'catalog>, SweepError> {
     let scope = lease.scope();
@@ -134,7 +148,7 @@ struct PageRequest {
 }
 
 async fn commit_response(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     lease: WorkLease,
     plan: &CallablePlan<'_>,
     cursor: cursor::Cursor,
@@ -162,7 +176,7 @@ async fn commit_response(
 }
 
 async fn commit_parts(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     lease: WorkLease,
     parts: PageParts,
 ) -> Result<SweepSummary, SweepError> {
@@ -190,14 +204,24 @@ async fn commit_parts(
 }
 
 async fn commit_page(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     commit: PageCommit,
     done: bool,
     rows: u64,
 ) -> Result<SweepSummary, SweepError> {
     let fallback_lease = commit.lease.clone();
-    match context.store.commit_page(commit).await {
-        Ok(result) => report_commit(result, done, rows),
+    let started = std::time::Instant::now();
+    let result = context.store.commit_page(commit).await;
+    context.bootstrap.metrics.committed(started, result.is_ok());
+    match result {
+        Ok(result) => {
+            let summary = report_commit(result, done, rows)?;
+            context.progress.emit(|| crate::ProgressEvent::Page {
+                rows: summary.rows,
+                resource_writes: summary.resource_writes,
+            });
+            Ok(summary)
+        }
         Err(StoreError::StaleLease) => Ok(SweepSummary::default()),
         Err(error) => finish_error(context.store, fallback_lease, SweepError::Store(error)).await,
     }
@@ -225,51 +249,5 @@ fn report_commit(
             rows,
             ..SweepSummary::default()
         })
-    }
-}
-
-async fn finish_error(
-    store: &BinaryStore,
-    lease: WorkLease,
-    error: SweepError,
-) -> Result<SweepSummary, SweepError> {
-    let outcome = match &error {
-        SweepError::Api(inventory_engine::limiter::ApiError::Denied(_)) => {
-            StoredOutcome::Inaccessible
-        }
-        SweepError::Api(inventory_engine::limiter::ApiError::UnsupportedType(_)) => {
-            StoredOutcome::Unsupported
-        }
-        SweepError::Api(inventory_engine::limiter::ApiError::Cancelled) => {
-            finalize(store, lease, StoredOutcome::Partial).await?;
-            return Err(error);
-        }
-        _ => StoredOutcome::Failed,
-    };
-    finalize(store, lease, outcome).await
-}
-
-async fn finalize(
-    store: &BinaryStore,
-    lease: WorkLease,
-    outcome: StoredOutcome,
-) -> Result<SweepSummary, SweepError> {
-    match store.finish_scope(lease, outcome, now_ms()?).await {
-        Ok(stats) => Ok(summary(outcome, 0, stats.resources_deleted)),
-        Err(StoreError::StaleLease) => Ok(SweepSummary::default()),
-        Err(error) => Err(SweepError::Store(error)),
-    }
-}
-
-fn summary(outcome: StoredOutcome, rows: u64, writes: u64) -> SweepSummary {
-    let mut outcomes = ScopeOutcomes::default();
-    outcomes.record(outcome);
-    SweepSummary {
-        resource_writes: writes,
-        rows,
-        scopes: 1,
-        outcomes,
-        graph_pending: 0,
-        work_remaining: 0,
     }
 }

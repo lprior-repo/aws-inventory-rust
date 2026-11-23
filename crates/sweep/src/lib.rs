@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use inventory_core::inventory::ScopeOutcome;
+pub use inventory_core::inventory::ScopeOutcome;
 use thiserror::Error;
 
 #[cfg(test)]
@@ -10,9 +10,11 @@ mod config;
 #[cfg(test)]
 #[path = "../../catalog-tool/src/overlay/builtin/family_a_c/consumer_fixture.rs"]
 pub(crate) mod consumer_fixture;
+mod control;
 mod credentials;
 mod execution;
 mod input;
+mod metrics;
 #[cfg(test)]
 mod pinned_model;
 mod record;
@@ -22,8 +24,10 @@ mod row_policy;
 #[cfg(test)]
 mod test_cbor;
 
+pub use control::{ProgressEvent, SweepControl};
 pub use credentials::{CredentialFailure, CredentialSource};
 pub use execution::run;
+pub use metrics::SweepMetrics;
 
 #[derive(Clone, Debug)]
 pub struct SweepConfig {
@@ -59,6 +63,7 @@ pub struct SweepSummary {
     pub graph_pending: u64,
     /// Scopes still queued when a time-bounded slice ended; zero for a drained sweep.
     pub work_remaining: u64,
+    pub metrics: SweepMetrics,
 }
 
 impl ScopeOutcomes {

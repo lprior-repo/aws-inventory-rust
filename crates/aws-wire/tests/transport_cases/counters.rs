@@ -129,5 +129,6 @@ fn snapshot(
         requests_reused: sent.saturating_sub(opened),
         timeouts,
         bytes_read,
+        http2_requests: 0,
     }
 }

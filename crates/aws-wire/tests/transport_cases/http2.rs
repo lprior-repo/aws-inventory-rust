@@ -40,6 +40,8 @@ async fn isolation(timeout: bool) -> TestResult {
     cancel_or_timeout(victim, &clock, timeout).await?;
     finish_survivor(&mut peer, &client, survivor, body).await?;
     assert_eq!(client.statistics().timeouts, usize::from(timeout));
+    let statistics = client.statistics();
+    assert_eq!(statistics.http2_requests, statistics.requests_sent);
     peer.stop().await
 }
 
@@ -141,6 +143,7 @@ async fn h2_connection_failure_recovers_on_a_new_accept() -> TestResult {
     assert_eq!(count(&peer.accepts), 2);
     assert_eq!(client.statistics().connections_opened, 2);
     assert_eq!(client.statistics().connections_open, 1);
+    assert_eq!(client.statistics().http2_requests, 2);
     peer.stop().await
 }
 

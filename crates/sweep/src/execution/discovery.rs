@@ -1,5 +1,5 @@
-use super::RuntimeContext;
-use crate::{SweepError, call, input, record};
+use super::{InventoryStore, RuntimeContext};
+use crate::{CredentialSource, SweepError, call, input, record};
 use inventory_core::{
     catalog::runtime::{CallablePlan, RequestRouting, ResolvedEndpoint},
     record::{Record, ValueRef},
@@ -57,7 +57,7 @@ impl EndpointCache {
 }
 
 pub(super) async fn resolve(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     plan: &CallablePlan<'_>,
     mut endpoint: ResolvedEndpoint,
 ) -> Result<ResolvedEndpoint, SweepError> {
@@ -108,6 +108,7 @@ pub(super) async fn resolve(
         url: &url,
         base: &base,
         fields: &[],
+        metrics: context.bootstrap.metrics,
     }
     .run()
     .await?;
@@ -258,7 +259,6 @@ mod tests {
         assert!(cache.get(&region, now).await.is_none());
         Ok(())
     }
-
     #[test]
     fn endpoint_leases_require_bounded_count_ttl_and_every_trusted_address()
     -> Result<(), Box<dyn std::error::Error>> {

@@ -1,5 +1,5 @@
-use super::{RuntimeContext, cursor};
-use crate::{SweepError, input};
+use super::{InventoryStore, RuntimeContext, cursor};
+use crate::{CredentialSource, SweepError, input};
 use inventory_core::{
     catalog::runtime::{CallablePlan, ResolvedEndpoint},
     record::Record,
@@ -7,7 +7,7 @@ use inventory_core::{
 use inventory_engine::inventory::WorkLease;
 
 pub(super) async fn prepare(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     lease: &WorkLease,
     plan: &CallablePlan<'_>,
     cursor: &cursor::Cursor,

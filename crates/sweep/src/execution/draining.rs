@@ -1,5 +1,9 @@
 #[path = "draining/admission.rs"]
 pub(super) mod admission;
+#[path = "draining/settlement.rs"]
+mod settlement;
+pub(super) use settlement::settle_batch;
+use settlement::settle_owned;
 
 use super::*;
 
@@ -20,10 +24,22 @@ pub(super) fn narrow_regions(
 }
 
 pub(super) async fn seed_enumerations(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     sweep: &SweepId,
     regions: &[Region],
-) -> Result<(), SweepError> {
+) -> Result<u64, SweepError> {
+    let work = enumeration_work(context, sweep, regions)?;
+    let count = u64::try_from(work.len())
+        .map_err(|_| SweepError::Operation("root scope count exceeds progress range"))?;
+    context.store.seed_works(&work).await?;
+    Ok(count)
+}
+
+fn enumeration_work(
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
+    sweep: &SweepId,
+    regions: &[Region],
+) -> Result<Vec<WorkSpec>, SweepError> {
     let mut work = Vec::new();
     for plan in context
         .bootstrap
@@ -41,8 +57,7 @@ pub(super) async fn seed_enumerations(
             &mut work,
         )?;
     }
-    context.store.seed_works(&work).await?;
-    Ok(())
+    Ok(work)
 }
 
 pub(super) const MAX_ROOT_SCOPES: usize = 100_000;
@@ -136,46 +151,18 @@ pub(super) fn scope_key(
 }
 
 pub(super) async fn drain_work(
-    context: &RuntimeContext<'_, '_, impl crate::CredentialSource>,
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     sweep: &SweepId,
     budget: SliceBudget,
 ) -> Result<SweepSummary, SweepError> {
     let mut summary = SweepSummary::default();
     let mut leases = Vec::new();
-    let mut slice_exhausted = false;
+    let mut slice_exhausted;
     loop {
-        if budget.exhausted(now_ms()?) {
-            slice_exhausted = true;
-            tracing::info!("slice time budget reached; leaving remaining work for the next slice");
+        slice_exhausted = budget.exhausted(now_ms()?);
+        if slice_exhausted || !drain_batch(context, sweep, &mut leases, &mut summary).await? {
             break;
         }
-        admission::claim_batch(
-            context.store,
-            context.bootstrap.executor,
-            context.bootstrap.config.concurrency,
-            &mut leases,
-            || async {
-                context
-                    .store
-                    .claim(sweep, now_ms()?, context.lease_ms)
-                    .await
-                    .map_err(SweepError::from)
-            },
-        )
-        .await?;
-        if leases.is_empty() {
-            break;
-        }
-        let owned = leases.clone();
-        let work = stream::iter(leases.drain(..).map(|lease| page::process(context, lease)))
-            .buffer_unordered(context.bootstrap.config.concurrency);
-        summary = settle_batch(
-            context.store,
-            context.bootstrap.executor,
-            owned,
-            summarize_batch(work, summary),
-        )
-        .await?;
     }
     if context.bootstrap.executor.is_cancelled() {
         return Err(inventory_engine::limiter::ApiError::Cancelled.into());
@@ -183,6 +170,45 @@ pub(super) async fn drain_work(
     apply_persisted_summary(context.store, sweep, &mut summary, slice_exhausted).await?;
     summary.graph_pending = context.store.projection_state().await?.pending;
     Ok(summary)
+}
+
+async fn drain_batch(
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
+    sweep: &SweepId,
+    leases: &mut Vec<inventory_engine::inventory::WorkLease>,
+    summary: &mut SweepSummary,
+) -> Result<bool, SweepError> {
+    claim_batch(context, sweep, leases).await?;
+    if leases.is_empty() {
+        return Ok(false);
+    }
+    let owned = leases.clone();
+    let work = stream::iter(leases.drain(..).map(|lease| page::process(context, lease)))
+        .buffer_unordered(context.bootstrap.config.concurrency);
+    *summary = settle_batch(
+        context.store,
+        context.bootstrap.executor,
+        owned,
+        summarize_batch(work, *summary),
+    )
+    .await?;
+    Ok(true)
+}
+
+async fn claim_batch(
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
+    sweep: &SweepId,
+    leases: &mut Vec<inventory_engine::inventory::WorkLease>,
+) -> Result<(), SweepError> {
+    admission::claim_batch(
+        context.store,
+        context.bootstrap.executor,
+        context.bootstrap.config.concurrency,
+        leases,
+        context.progress,
+        || admission::claim_next(context, sweep),
+    )
+    .await
 }
 
 async fn summarize_batch(
@@ -200,70 +226,6 @@ async fn summarize_batch(
         .await
 }
 
-pub(super) async fn settle_batch(
-    store: &BinaryStore,
-    executor: &ApiExecutor,
-    owned: Vec<inventory_engine::inventory::WorkLease>,
-    work: impl Future<Output = Result<SweepSummary, SweepError>>,
-) -> Result<SweepSummary, SweepError> {
-    let result = {
-        let work = work;
-        tokio::pin!(work);
-        tokio::select! {
-            result = &mut work => result,
-            () = executor.cancelled() => {
-                match tokio::time::timeout(std::time::Duration::from_millis(LEASE_MARGIN_MS),&mut work).await {
-                    Ok(result) => result,
-                    Err(_) => Err(inventory_engine::limiter::ApiError::Exhausted(
-                        "cancelled page drain deadline exceeded; owned leases finalized".to_owned()).into()),
-                }
-            }
-        }
-    };
-    if !executor.is_cancelled() {
-        return result;
-    }
-    // The dropped batch can have dispatched COMMIT/ROLLBACK to SQLite. Each
-    // finish acquires the sole writer after those commands and is therefore a
-    // durable barrier, not merely an in-memory cancellation acknowledgement.
-    settle_owned(store, owned.into_iter()).await?;
-    match result {
-        Ok(_) | Err(SweepError::Api(inventory_engine::limiter::ApiError::Cancelled)) => {
-            Err(inventory_engine::limiter::ApiError::Cancelled.into())
-        }
-        Err(error) => Err(error),
-    }
-}
-
-async fn settle_owned(
-    store: &BinaryStore,
-    owned: impl ExactSizeIterator<Item = inventory_engine::inventory::WorkLease>,
-) -> Result<(), SweepError> {
-    let admitted = owned.len();
-    let result = stream::iter(owned)
-        .then(|lease| async move {
-            match store
-                .finish_scope(
-                    lease,
-                    inventory_core::inventory::ScopeOutcome::Partial,
-                    now_ms()?,
-                )
-                .await
-            {
-                Ok(_) | Err(inventory_engine::inventory::StoreError::StaleLease) => Ok(()),
-                Err(error) => Err(SweepError::Store(error)),
-            }
-        })
-        .fold(Ok(()), |prior, next| async move { prior.and(next) })
-        .await;
-    tracing::info!(
-        admitted,
-        settled = result.is_ok(),
-        "cancelled batch durable finalization completed"
-    );
-    result
-}
-
 pub(super) fn add_writes(
     summary: &mut SweepSummary,
     other: SweepSummary,
@@ -276,7 +238,7 @@ pub(super) fn add_writes(
 }
 
 pub(super) async fn apply_persisted_summary(
-    store: &BinaryStore,
+    store: &impl InventoryStore,
     sweep: &SweepId,
     summary: &mut SweepSummary,
     slice_exhausted: bool,

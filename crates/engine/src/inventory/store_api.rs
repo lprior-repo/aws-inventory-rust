@@ -21,6 +21,12 @@ pub trait InventoryStore: Send + Sync {
         now_ms: i64,
         lease_ms: i64,
     ) -> impl Future<Output = Result<Option<WorkLease>, StoreError>> + Send;
+    fn claim_with_depth(
+        &self,
+        sweep: &SweepId,
+        now_ms: i64,
+        lease_ms: i64,
+    ) -> impl Future<Output = Result<Option<WorkLease>, StoreError>> + Send;
     fn commit_page(
         &self,
         page: PageCommit,
@@ -31,6 +37,18 @@ pub trait InventoryStore: Send + Sync {
         outcome: ScopeOutcome,
         observed_at_ms: i64,
     ) -> impl Future<Output = Result<ChangeStats, StoreError>> + Send;
+    fn release_lease(
+        &self,
+        lease: WorkLease,
+    ) -> impl Future<Output = Result<(), StoreError>> + Send;
+    fn discover_active_sweep(
+        &self,
+    ) -> impl Future<Output = Result<Option<SweepId>, StoreError>> + Send;
+    fn create_sweep_manifest(
+        &self,
+        sweep: &SweepId,
+        account: &AccountId,
+    ) -> impl Future<Output = Result<(), StoreError>> + Send;
     fn resume_sweep(
         &self,
         sweep: &SweepId,
@@ -122,6 +140,14 @@ impl InventoryStore for BinaryStore {
     ) -> Result<Option<WorkLease>, StoreError> {
         BinaryStore::claim(self, sweep, now_ms, lease_ms).await
     }
+    async fn claim_with_depth(
+        &self,
+        sweep: &SweepId,
+        now_ms: i64,
+        lease_ms: i64,
+    ) -> Result<Option<WorkLease>, StoreError> {
+        BinaryStore::claim_with_depth(self, sweep, now_ms, lease_ms).await
+    }
     async fn commit_page(&self, page: PageCommit) -> Result<CommitResult, StoreError> {
         BinaryStore::commit_page(self, page).await
     }
@@ -132,6 +158,19 @@ impl InventoryStore for BinaryStore {
         observed_at_ms: i64,
     ) -> Result<ChangeStats, StoreError> {
         BinaryStore::finish_scope(self, lease, outcome, observed_at_ms).await
+    }
+    async fn release_lease(&self, lease: WorkLease) -> Result<(), StoreError> {
+        BinaryStore::release_lease(self, lease).await
+    }
+    async fn discover_active_sweep(&self) -> Result<Option<SweepId>, StoreError> {
+        BinaryStore::discover_active_sweep(self).await
+    }
+    async fn create_sweep_manifest(
+        &self,
+        sweep: &SweepId,
+        account: &AccountId,
+    ) -> Result<(), StoreError> {
+        BinaryStore::create_sweep_manifest(self, sweep, account.as_str()).await
     }
     async fn resume_sweep(&self, sweep: &SweepId, account: &AccountId) -> Result<(), StoreError> {
         BinaryStore::resume_sweep(self, sweep, account).await
