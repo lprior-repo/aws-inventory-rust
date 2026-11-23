@@ -22,6 +22,7 @@ pub(super) enum Input {
     Timestamp(&'static str, i64, u32),
     Boolean(&'static str, bool),
     Strings(&'static str, &'static [&'static str]),
+    Structure(&'static str, &'static [(&'static str, &'static str)]),
 }
 
 pub(super) struct Inventory {
@@ -137,38 +138,35 @@ fn bind_input(mut overlay: OperationOverlay, input: &Input) -> Result<OperationO
             overlay.bind.insert(path(member)?, Binding::Account);
         }
         Input::Parent(member, operation, source) => {
-            overlay.bind.insert(
-                path(member)?,
-                Binding::From {
-                    operation: name(operation)?,
-                    path: path(source)?,
-                },
-            );
+            overlay.bind.insert(path(member)?, Binding::From {
+                operation: name(operation)?, path: path(source)?,
+            });
         }
-        Input::String(member, value) => {
-            overlay
-                .fixed
-                .insert(path(member)?, FixedValue::String((*value).to_owned()));
-        }
-        Input::Timestamp(member, seconds, nanos) => {
-            let time = Time::new(*seconds, *nanos).map_err(|_| NameError {
-                value: "timestamp nanoseconds out of range".to_owned(),
-            })?;
-            overlay
-                .fixed
-                .insert(path(member)?, FixedValue::Timestamp(time));
-        }
-        Input::Boolean(member, value) => {
-            overlay
-                .fixed
-                .insert(path(member)?, FixedValue::Boolean(*value));
-        }
-        Input::Strings(member, values) => {
-            overlay.fixed.insert(
-                path(member)?,
-                FixedValue::Strings(values.iter().map(|value| (*value).to_owned()).collect()),
-            );
+        _ => {
+            if let Some((member, value)) = fixed_input(input)? {
+                overlay.fixed.insert(path(member)?, value);
+            }
         }
     }
     Ok(overlay)
+}
+
+fn fixed_input(input: &Input) -> Result<Option<(&str, FixedValue)>, NameError> {
+    let value = match input {
+        Input::String(member, value) => (*member, FixedValue::String((*value).to_owned())),
+        Input::Boolean(member, value) => (*member, FixedValue::Boolean(*value)),
+        Input::Strings(member, values) => (*member, FixedValue::Strings(
+            values.iter().map(|value| (*value).to_owned()).collect(),
+        )),
+        Input::Timestamp(member, seconds, nanos) => (*member, FixedValue::Timestamp(
+            Time::new(*seconds, *nanos).map_err(|_| NameError {
+                value: "timestamp nanoseconds out of range".to_owned(),
+            })?,
+        )),
+        Input::Structure(member, values) => (*member, FixedValue::structure(
+            values.iter().map(|(name, value)| (*name, FixedValue::String((*value).to_owned()))),
+        )?),
+        Input::Account(_) | Input::Parent(..) => return Ok(None),
+    };
+    Ok(Some(value))
 }

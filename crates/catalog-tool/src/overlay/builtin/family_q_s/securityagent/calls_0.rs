@@ -1,5 +1,5 @@
 // Pinned model: .local/aws-models/models/securityagent/service/2025-09-06/securityagent-2025-09-06.json
-use super::super::construction::{Inventory, ResourceIdentity};
+use super::super::construction::{Input, Inventory, ResourceIdentity};
 use crate::overlay::Scope;
 
 pub(super) const CALLS: &[Inventory] = &[
@@ -49,7 +49,7 @@ pub(super) const CALLS: &[Inventory] = &[
         identity: ResourceIdentity::Key(&["packId"]),
         token: Some(("nextToken", "nextToken")),
         scope: Scope::Region,
-        input: &[],
+        input: &[Input::Structure("filter", &[("managementType", "CUSTOMER_MANAGED")])],
         tags: None,
         queryable: &[],
     },
