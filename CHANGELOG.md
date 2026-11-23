@@ -14,6 +14,9 @@
   backlog; unsupported/failed emulator outcomes do not bypass count/repeat gates.
   `--keep` retains the database until explicitly pruned and waits for Ctrl-C
   before stopping children. The baseline script now uses this command.
+- The shared collector runner accepts a caller-supplied deadline for long-running
+  benchmarks while ordinary E2E collection retains its 300-second deadline.
+  Both paths use the same outcome classifier and kill/reap timed-out children.
 
 - The harness `probe` command reports every catalog enumeration in stable order,
   skips parent-bound children, and calls only the first page through the sweep's
