@@ -1,5 +1,5 @@
 use super::{inventory, path, paths, token};
-use crate::overlay::{Identity, NameError, OperationOverlay, Scope};
+use crate::overlay::{FixedValue, Identity, NameError, OperationOverlay, Scope};
 
 pub(super) fn list_profiles() -> Result<OperationOverlay, NameError> {
     let mut operation = inventory(
@@ -16,6 +16,7 @@ pub(super) fn list_profiles() -> Result<OperationOverlay, NameError> {
         "Owner",
     ])?;
     operation.page_size = Some(50);
+    operation.fixed.insert(path("ProfileOwnerType")?, FixedValue::String("SELF".to_owned()));
     Ok(operation)
 }
 
