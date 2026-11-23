@@ -6,5 +6,6 @@ id = "resource"
 operation = "CreateGlobalCluster"
 kind = "AWS::RDS::GlobalCluster"
 identity = "GlobalCluster.GlobalClusterArn"
+scope = "account"
 [step.input]
 "GlobalClusterIdentifier" = "inventory-thin-rds"
