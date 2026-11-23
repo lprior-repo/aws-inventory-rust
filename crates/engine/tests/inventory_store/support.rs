@@ -30,6 +30,15 @@ pub(super) async fn fixture() -> TestResult<(tempfile::TempDir, BinaryStore, Vec
     Ok((directory, store, catalog))
 }
 
+pub(super) async fn conformance_fixture() -> TestResult<(tempfile::TempDir, BinaryStore, Vec<u8>)> {
+    let (directory, store, catalog) = fixture().await?;
+    for id in ["work-1", "live-lease", "takeover", "dummy"] {
+        let sweep = SweepId::new(id.to_owned())?;
+        store.create_sweep_manifest(&sweep, "111111111111").await?;
+    }
+    Ok((directory, store, catalog))
+}
+
 pub(super) async fn dual_fixture() -> TestResult<(tempfile::TempDir, BinaryStore)> {
     let directory = tempfile::tempdir()?;
     let catalog = modeled_catalog(None, true)?;
