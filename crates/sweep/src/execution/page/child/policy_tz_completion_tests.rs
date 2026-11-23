@@ -2,6 +2,7 @@ mod catalog;
 mod lattice;
 mod mail;
 mod mail_collision;
+mod marketplace;
 mod metadata;
 mod queries;
 mod scenario;

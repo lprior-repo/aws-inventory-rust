@@ -1,3 +1,5 @@
+mod marketplace;
+
 use super::overlays;
 use crate::{classes::DenyList, endpoints, kind_map, overlay, runtime_catalog, smithy};
 use inventory_core::{
