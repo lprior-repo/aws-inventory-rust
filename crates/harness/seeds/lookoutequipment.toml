@@ -4,7 +4,7 @@ service = "lookoutequipment"
 [[step]]
 id = "resource"
 operation = "CreateDataset"
-kind = "AWS::LookoutEquipment::Dataset"
+kind = "AWS::ApiOnly::LookoutEquipmentDataset"
 identity = "DatasetArn"
 [step.input]
 "DatasetName" = "inventory-thin-lookoutequipment"
