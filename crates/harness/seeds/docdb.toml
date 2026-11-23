@@ -1,0 +1,10 @@
+format = 1
+service = "docdb"
+
+[[step]]
+id = "resource"
+operation = "CreateGlobalCluster"
+kind = "AWS::DocDB::GlobalCluster"
+identity = "GlobalCluster.GlobalClusterArn"
+[step.input]
+"GlobalClusterIdentifier" = "inventory-thin-docdb"
