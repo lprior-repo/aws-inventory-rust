@@ -71,6 +71,37 @@ changed in this integration-contract repair.
 No workspace suite, emulator sweep, PostgreSQL check, real-AWS call or binary
 regeneration was run for this change.
 
+## Wave 1 overlay bootstrap (2026-11-23)
+
+The `w1/overlay` lane first merged `wave0` at `d56fa7e7`. It ran the generator
+stages of `scripts/bootstrap-catalog.sh` individually, without submodule/LFS
+initialization: universal, parent candidates, model report, field check,
+endpoints, classes, plans, overlay, coverage, binary catalog, IAM policy and
+manifest. All completed successfully with `HOME=/home/lewis`, a private
+`cargo-target-w1-overlay` directory, `--locked`, narrow packages and three jobs.
+The universal denominator has 1,881 schemas; parent candidates have 410 parents,
+20 reviewed children and 24 implemented workflows.
+
+The supplied plain model copy initially made binary compilation fail with
+`model source /tmp/w1-overlay/.local/aws-models is not its repository root /tmp/w1-overlay`.
+With coordinator approval it was replaced by a standalone local clone, not a
+submodule. Its HEAD is `46135f8468cd5cb60d983b97290c9f6661e359c6`, matching
+`models.lock`, and `git status --porcelain` was empty. `scripts/check-models.sh`
+was not run because its submodule assumption does not apply; these are the
+equivalent revision and cleanliness checks.
+
+After regeneration, `models compile --check` exited 0. The catalog was
+19,051,875 bytes both before and after, with SHA-256
+`15700c763c9159bb18be17cec7e4e0c86af3259d8b9be4be2d8b4677e203d84e`
+in both cases; the byte comparison found zero differences. No tracked catalog,
+manifest or model-lock change resulted. This checkout therefore does not
+reproduce the older binary drift documented above.
+
+A0.2's ignored `sweep_e2e` sub-gate remains **UNMET**: the previously observed
+60-second pacing timeout was neither rerun nor changed. A1 proceeds under the
+coordinator's explicit decision that restored compile consistency satisfies its
+substantive prerequisite; this is not a claim that all A0.2 gates passed.
+
 ## One command
 
 ![How a run is proven on the emulator](img/35-test-loop.png)
