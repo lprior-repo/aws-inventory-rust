@@ -4,8 +4,16 @@ service = "resource-explorer-2"
 [[step]]
 id = "resource"
 operation = "CreateResourceExplorerSetup"
-kind = "AWS::ResourceExplorer2::ResourceExplorerSetup"
-identity = { input = "ViewName" }
+kind = ""
 [step.input]
 "RegionList" = ["us-east-1"]
-"ViewName" = "inventory-thin-resource-explorer-2"
+ViewName = "all-resources"
+
+[[step]]
+id = "view"
+operation = "ListViews"
+kind = "AWS::ResourceExplorer2::View"
+# A fresh setup creates exactly one default all-resources view.
+identity = "Views.0"
+[step.input]
+MaxResults = 50
