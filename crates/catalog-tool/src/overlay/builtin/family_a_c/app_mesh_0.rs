@@ -107,6 +107,13 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                     },
                 )]
                 .into_iter()
+                .chain([(
+                    path("meshOwner")?,
+                    Binding::From {
+                        operation: name("ListMeshes")?,
+                        path: path("meshOwner")?,
+                    },
+                )])
                 .collect(),
                 queryable: vec![path("metadata.arn")?],
                 ..read(
@@ -257,6 +264,13 @@ pub(super) fn part_0() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                     },
                 )]
                 .into_iter()
+                .chain([(
+                    path("meshOwner")?,
+                    Binding::From {
+                        operation: name("ListMeshes")?,
+                        path: path("meshOwner")?,
+                    },
+                )])
                 .collect(),
                 queryable: vec![path("arn")?],
                 ..read(
@@ -285,6 +299,13 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                     },
                 )]
                 .into_iter()
+                .chain([(
+                    path("meshOwner")?,
+                    Binding::From {
+                        operation: name("ListMeshes")?,
+                        path: path("meshOwner")?,
+                    },
+                )])
                 .collect(),
                 queryable: vec![path("arn")?],
                 ..read(
@@ -308,6 +329,13 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                     },
                 )]
                 .into_iter()
+                .chain([(
+                    path("meshOwner")?,
+                    Binding::From {
+                        operation: name("ListMeshes")?,
+                        path: path("meshOwner")?,
+                    },
+                )])
                 .collect(),
                 queryable: vec![path("arn")?],
                 ..read(
@@ -331,6 +359,13 @@ pub(super) fn part_1() -> Result<Vec<(&'static str, OperationOverlay)>, NameErro
                     },
                 )]
                 .into_iter()
+                .chain([(
+                    path("meshOwner")?,
+                    Binding::From {
+                        operation: name("ListMeshes")?,
+                        path: path("meshOwner")?,
+                    },
+                )])
                 .collect(),
                 queryable: vec![path("arn")?],
                 ..read(
