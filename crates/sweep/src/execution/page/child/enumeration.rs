@@ -19,8 +19,14 @@ pub(super) fn child_for_row(
         context.home,
         branch.map(|branch| branch.discriminator.as_str()),
     )?;
-    let Some(fields) = fields(context, child, row, branch, &request_region)? else {
-        return Ok(None);
+    let resolution = fields(context, child, row, branch, &request_region)?;
+    let fields = match resolution {
+        FieldResolution::Absent => return Ok(None),
+        FieldResolution::Empty => {
+            budget.skip_request();
+            return Ok(None);
+        }
+        FieldResolution::Ready(fields) => fields,
     };
     budget.charge(discovery.len())?;
     make_child(context, child, row, branch, fields, discovery).map(Some)
@@ -47,26 +53,35 @@ fn eligible(
     )
 }
 
+enum FieldResolution {
+    Ready(Vec<input::InputField>),
+    Absent,
+    Empty,
+}
+
 fn fields(
     context: &Context<'_, '_>,
     child: &CallablePlan<'_>,
     row: &RowContext<'_>,
     branch: Option<&ExecutionBranch>,
     request_region: &RegionId,
-) -> Result<Option<Vec<input::InputField>>, SweepError> {
+) -> Result<FieldResolution, SweepError> {
     let mut fields = Vec::new();
     for binding in child.effective_bindings(branch) {
         let (_, value) = resolve_binding(context, request_region, row, &binding.source)?;
-        let Some(value) = value else {
-            return Ok(None);
-        };
-        fields.try_reserve(1)?;
-        fields.push(input::InputField {
-            path: binding.path.clone(),
-            value,
-        });
+        match value {
+            None => return Ok(FieldResolution::Absent),
+            Some(Value::Text(text)) if text.is_empty() => return Ok(FieldResolution::Empty),
+            Some(value) => {
+                fields.try_reserve(1)?;
+                fields.push(input::InputField {
+                    path: binding.path.clone(),
+                    value,
+                });
+            }
+        }
     }
-    Ok(Some(fields))
+    Ok(FieldResolution::Ready(fields))
 }
 
 pub(super) fn child_region(scope: PlanScope, parent: &Region, home: &RegionId) -> Region {

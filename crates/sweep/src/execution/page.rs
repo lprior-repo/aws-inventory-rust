@@ -198,17 +198,14 @@ async fn commit_parts(
     lease: WorkLease,
     parts: PageParts,
 ) -> Result<SweepSummary, SweepError> {
-    context
-        .bootstrap
-        .metrics
-        .skipped_children(parts.skipped_child_requests);
     if let Err(error) = assembly::checkpoint(context.bootstrap.executor).await {
         return finish_error(context.store, lease, error).await;
     }
     let done = parts.next.is_none();
     let rows = parts.rows;
+    let skipped = parts.skipped_child_requests;
     let commit = page_commit(lease, parts, done)?;
-    commit_page(context, commit, done, rows).await
+    commit_page(context, commit, done, rows, skipped).await
 }
 
 fn page_commit(lease: WorkLease, parts: PageParts, done: bool) -> Result<PageCommit, SweepError> {
@@ -235,6 +232,7 @@ async fn commit_page(
     commit: PageCommit,
     done: bool,
     rows: u64,
+    skipped: u64,
 ) -> Result<SweepSummary, SweepError> {
     let fallback_lease = commit.lease.clone();
     let started = std::time::Instant::now();
@@ -242,6 +240,7 @@ async fn commit_page(
     context.bootstrap.metrics.committed(started, result.is_ok());
     match result {
         Ok(result) => {
+            context.bootstrap.metrics.skipped_children(skipped);
             let summary = report_commit(result, done, rows)?;
             context.progress.emit(|| crate::ProgressEvent::Page {
                 rows: summary.rows,
