@@ -96,6 +96,7 @@ async fn given_missing_required_tag_scalars_or_completion_flag_when_decoded_then
             aws_wire::response::DecodeLimits::default().preserve_field_presence(),
         )?;
         let response = call::DecodedResponse {
+            http_version: http::Version::HTTP_11,
             record,
             headers: http::HeaderMap::new(),
         };
@@ -125,6 +126,7 @@ async fn given_missing_required_tag_scalars_or_completion_flag_when_decoded_then
         aws_wire::response::DecodeLimits::default().preserve_field_presence(),
     )?;
     let response = call::DecodedResponse {
+        http_version: http::Version::HTTP_11,
         record,
         headers: http::HeaderMap::new(),
     };

@@ -145,6 +145,7 @@ async fn apply_page(
     body: Json,
 ) -> TestResult {
     let response = call::DecodedResponse {
+        http_version: http::Version::HTTP_11,
         record: crate::record::policy_dfgk_tests::fixture::decode(
             plan,
             &serde_json::to_vec(&body)?,

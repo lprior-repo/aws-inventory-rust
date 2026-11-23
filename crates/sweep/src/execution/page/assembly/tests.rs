@@ -74,6 +74,7 @@ impl Scenario {
         })).collect::<Vec<_>>();
         let bytes = serde_json::to_vec(&serde_json::json!({"workspaceSummaries":rows}))?;
         Ok(call::DecodedResponse {
+            http_version: http::Version::HTTP_11,
             record: fixture::decode(plan, &bytes)?,
             headers: http::HeaderMap::new(),
         })

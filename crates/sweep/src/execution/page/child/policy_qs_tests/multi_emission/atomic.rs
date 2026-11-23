@@ -45,6 +45,7 @@ impl Driver {
         assert_eq!(wire.method(), http::Method::GET);
         assert!(wire.uri().path().ends_with("/dnssec"));
         let response = call::DecodedResponse {
+            http_version: http::Version::HTTP_11,
             record: fixture::decode(
                 plan,
                 format!("<GetDNSSECResponse>{status}{keys}</GetDNSSECResponse>").as_bytes(),

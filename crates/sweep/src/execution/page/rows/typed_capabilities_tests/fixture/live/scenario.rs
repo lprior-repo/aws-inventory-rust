@@ -131,6 +131,7 @@ impl Scenario {
         };
         let ancestry = preparation::ancestry(lease.context(), lease.scope().context())?;
         let response = call::DecodedResponse {
+            http_version: http::Version::HTTP_11,
             record: response,
             headers: http::HeaderMap::new(),
         };

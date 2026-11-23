@@ -85,6 +85,7 @@ async fn given_an_owned_prefix_then_hostile_filtered_row_after_chunk_boundary_wh
         _ => return Err("unexpected actual Cognito protocol".into()),
     };
     let response = call::DecodedResponse {
+        http_version: http::Version::HTTP_11,
         record: aws_wire::response::decode(aws_wire::response::ResponseContext {
             service: plan.service(),
             operation: plan.operation(),

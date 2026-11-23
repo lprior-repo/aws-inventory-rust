@@ -147,6 +147,7 @@ impl<'a, 'c> Scenario<'a, 'c> {
         )?;
         let (request, wire) = self.request(plan, &lease)?;
         let response = crate::call::DecodedResponse {
+            http_version: http::Version::HTTP_11,
             record: fixture::decode(plan, &respond(plan, &lease, &wire)?)?,
             headers: http::HeaderMap::new(),
         };

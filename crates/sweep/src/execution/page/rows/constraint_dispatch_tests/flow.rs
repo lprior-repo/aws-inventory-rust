@@ -29,6 +29,7 @@ pub(super) fn decode(
         _ => serde_json::to_vec(&body)?,
     };
     Ok(call::DecodedResponse {
+        http_version: http::Version::HTTP_11,
         record: aws_wire::response::decode(aws_wire::response::ResponseContext {
             service: plan.service(),
             operation: plan.operation(),

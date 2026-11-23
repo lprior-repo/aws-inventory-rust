@@ -30,6 +30,7 @@ pub(super) struct Call<'a, 'catalog, C: CredentialSource> {
 pub(super) struct DecodedResponse {
     pub record: Record,
     pub headers: http::HeaderMap,
+    pub http_version: http::Version,
 }
 
 impl<C: CredentialSource> Call<'_, '_, C> {
@@ -116,6 +117,7 @@ fn decode_response(
     Ok(DecodedResponse {
         record,
         headers: response.headers,
+        http_version: response.version,
     })
 }
 

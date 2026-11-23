@@ -105,6 +105,7 @@ pub(super) async fn apply(
     body: Json,
 ) -> TestResult {
     let response = crate::call::DecodedResponse {
+        http_version: http::Version::HTTP_11,
         record: decode(plan, &serde_json::to_vec(&body)?)?,
         headers: http::HeaderMap::new(),
     };

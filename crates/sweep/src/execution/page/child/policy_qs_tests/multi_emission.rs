@@ -41,6 +41,7 @@ async fn prepare(
     let request = Record::from_bytes(lease.bindings().to_vec())?;
     let body = format!("<GetDNSSECResponse>{status}{keys}</GetDNSSECResponse>");
     let response = call::DecodedResponse {
+        http_version: http::Version::HTTP_11,
         record: fixture::decode(plan, body.as_bytes())
             .map_err(|_| SweepError::Operation("native DNSSEC fixture decode failed"))?,
         headers: http::HeaderMap::new(),

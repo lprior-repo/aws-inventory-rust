@@ -36,6 +36,7 @@ fn decode(plan: &CallablePlan<'_>, body: &Json) -> TestResult<call::DecodedRespo
         limits: aws_wire::response::DecodeLimits::default().preserve_field_presence(),
     })?;
     Ok(call::DecodedResponse {
+        http_version: http::Version::HTTP_11,
         record,
         headers: http::HeaderMap::new(),
     })

@@ -127,6 +127,7 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
             plan,
             cursor::Cursor::decode(lease.token())?,
             crate::call::DecodedResponse {
+                http_version: http::Version::HTTP_11,
                 record: decode(plan, body)?,
                 headers: http::HeaderMap::new(),
             },
