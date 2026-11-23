@@ -1,0 +1,11 @@
+format = 1
+service = "migration-hub-refactor-spaces"
+
+[[step]]
+id = "resource"
+operation = "CreateEnvironment"
+kind = "AWS::RefactorSpaces::Environment"
+identity = "Arn"
+[step.input]
+"Name" = "inventory-thin-migration-hub-refactor-spaces"
+"NetworkFabricType" = "TRANSIT_GATEWAY"
