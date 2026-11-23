@@ -10,19 +10,19 @@ defer_reason = "unclassified read: not reviewed"
 
 [operation.GetQueueUrl]
 class = "defer"
-defer_reason = "unclassified read: not reviewed"
+defer_reason = "Lookup returns root QueueUrl and has no pagination, but required QueueName has no callable modeled producer. ListQueues exposes only QueueUrls list<string>; binding requires an explicit reviewed URL last-component extraction absent from the schema. A fixed queue name would silently narrow account inventory. QueueOwnerAWSAccountId is optional and must not introduce cross-account discovery."
 
 [operation.ListDeadLetterSourceQueues]
 class = "defer"
-defer_reason = "expand: bindings not generated yet"
+defer_reason = "Required QueueUrl is the dead-letter queue URL and can bind from the selected ListQueues scalar using $. Output queueUrls list<string> also supports scalar-self selection, but a source-to-dead-letter relation must retain the bound parent QueueUrl alongside each child. Canonical QueueArn identity and request-correlated parent provenance remain unavailable. Regional token pagination is NextToken to NextToken with MaxResults explicitly set in 1..1000; omitting MaxResults suppresses continuation. No modeled ARN member exists in each selected item."
 
 [operation.ListMessageMoveTasks]
 class = "defer"
-defer_reason = "expand: bindings not generated yet"
+defer_reason = "Read-only task metadata requires SourceArn from the unavailable GetQueueAttributes Attributes[QueueArn] map-key binding. Results is a list of task structures; TaskHandle exists only while RUNNING, so it cannot identify completed, cancelled or failed tasks. SourceArn alone conflates repeated tasks; SourceArn plus StartedTimestamp needs a reviewed uniqueness guarantee not present in the model. MaxResults must be 10 for the complete modeled recent-task window (default 1); there is no continuation token and this is not complete historical enumeration. No message content is retrieved."
 
 [operation.ListQueueTags]
 class = "defer"
-defer_reason = "expand: bindings not generated yet"
+defer_reason = "identity: no ARN member and no modeled identifiers"
 
 [operation.ListQueues]
 class = "enumerate"
