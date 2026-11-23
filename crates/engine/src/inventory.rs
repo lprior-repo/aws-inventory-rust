@@ -4,6 +4,7 @@ mod completion;
 mod connection;
 mod facets;
 mod legacy;
+pub mod postgres;
 mod projection;
 mod projection_outbox;
 mod projection_read;

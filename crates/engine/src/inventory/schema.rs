@@ -390,7 +390,7 @@ async fn load_schemas(pool: &SqlitePool) -> Result<Vec<Arc<KindSchema>>, StoreEr
         .collect()
 }
 
-fn encode_schema(schema: &KindSchema) -> Result<Vec<u8>, StoreError> {
+pub(super) fn encode_schema(schema: &KindSchema) -> Result<Vec<u8>, StoreError> {
     let count = u16::try_from(schema.columns().len())
         .map_err(|_| StoreError::Invalid("too many schema columns"))?;
     let mut bytes = count.to_be_bytes().to_vec();
@@ -407,7 +407,11 @@ fn encode_schema(schema: &KindSchema) -> Result<Vec<u8>, StoreError> {
     Ok(bytes)
 }
 
-fn decode_schema(kind: &str, table: &str, bytes: &[u8]) -> Result<KindSchema, StoreError> {
+pub(super) fn decode_schema(
+    kind: &str,
+    table: &str,
+    bytes: &[u8],
+) -> Result<KindSchema, StoreError> {
     let mut cursor = SchemaCursor { bytes, offset: 0 };
     let count = usize::from(cursor.u16()?);
     let columns = (0..count)

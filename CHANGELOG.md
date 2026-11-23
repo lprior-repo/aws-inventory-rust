@@ -2,6 +2,12 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- PostgreSQL schema initialization creates the inventory namespace, account-led
+  resource keys and native scalar kind columns in batches of 200 tables.
+  SQL timestamps retain microseconds; CBOR retains the original precision.
+  The reviewed catalog is persisted with its digest so reopening retains
+  current catalog authority metadata rather than restoring an incomplete registry.
+
 - Runtime catalog binding decoders live in `decode/plans/bindings.rs`, with
   separate source decoders and unchanged wire tags, limits and rejection order.
   The parent plan decoder is now below the 300-line source limit.
