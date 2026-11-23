@@ -1,17 +1,17 @@
 mod arrays;
 mod facet_write;
-mod facets;
+pub(super) mod facets;
 mod grants;
-mod keys;
-mod kind_rows;
+pub(super) mod keys;
+pub(super) mod kind_rows;
 mod queue;
-mod references;
-mod resource_write;
-mod resources;
+pub(super) mod references;
+pub(super) mod resource_write;
+pub(super) mod resources;
 mod tags;
 mod validation;
 
-use super::{PgStore, outbox};
+use super::{PgStore, completion, outbox, references as reconciliation};
 use crate::inventory::relation_permissions::{SourceAuthority, page_authority};
 use crate::inventory::{ChangeStats, CommitResult, PageCommit, StoreError};
 use facets::Context;
@@ -24,18 +24,25 @@ use std::collections::{BTreeMap, BTreeSet};
 impl PgStore {
     pub async fn commit_page(&self, page: PageCommit) -> Result<CommitResult, StoreError> {
         validation::page(&self.registry, &page)?;
-        if page.done {
-            return Err(StoreError::Invalid("completion not implemented"));
-        }
         let mut tx = self.pool.begin().await?;
-        validation::lease(&mut tx, &page).await?;
-        let stats = persist(self, &mut tx, &page).await?;
+        validation::lease(
+            &mut tx,
+            &page,
+            self.registry.permissions.catalog().is_some(),
+        )
+        .await?;
+        let mut stats = persist(self, &mut tx, &page).await?;
         queue::children(&mut tx, &page).await?;
         let repeated_token = queue::advance(&mut tx, &page).await?;
+        if page.done || repeated_token {
+            let completed =
+                completion::drain(self, &mut tx, page.lease.sweep(), page.observed_at_ms).await?;
+            completion::add(&mut stats, completed)?;
+        }
         tx.commit().await?;
         Ok(CommitResult {
             stats,
-            next_generation: (!repeated_token).then_some(page.lease.generation()),
+            next_generation: (!page.done && !repeated_token).then_some(page.lease.generation()),
             repeated_token,
         })
     }
@@ -57,7 +64,14 @@ async fn persist(
     write(tx, &context, &states, &grants).await?;
     let tags = tags::persist(tx, page).await?;
     outbox::enqueue(tx, &projection(&states, tags)).await?;
-    stats(&states)
+    let changed: Vec<_> = states
+        .values()
+        .filter(|state| state.facet_changed)
+        .map(|state| state.key)
+        .collect();
+    let mut stats = stats(&states)?;
+    stats.edges_changed = reconciliation::reconcile(store, tx, &changed).await?;
+    Ok(stats)
 }
 
 fn apply<'a>(

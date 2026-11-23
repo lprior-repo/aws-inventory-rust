@@ -1,7 +1,7 @@
-use inventory_core::inventory::ResourceKey;
-use sqlx::{Postgres, QueryBuilder};
+use inventory_core::inventory::{AccountId, Kind, Region, ResourceId, ResourceKey};
+use sqlx::{Postgres, QueryBuilder, Row, postgres::PgRow};
 
-pub(super) struct Keys<'a> {
+pub(in crate::inventory::postgres) struct Keys<'a> {
     pub accounts: Vec<&'a str>,
     pub regions: Vec<&'a str>,
     pub kinds: Vec<&'a str>,
@@ -9,7 +9,7 @@ pub(super) struct Keys<'a> {
 }
 
 impl<'a> Keys<'a> {
-    pub(super) fn new(keys: impl Iterator<Item = &'a ResourceKey>) -> Self {
+    pub(in crate::inventory::postgres) fn new(keys: impl Iterator<Item = &'a ResourceKey>) -> Self {
         let (lower, upper) = keys.size_hint();
         let capacity = match upper {
             Some(upper) => upper,
@@ -30,13 +30,13 @@ impl<'a> Keys<'a> {
         arrays
     }
 
-    pub(super) fn bind(&self, query: &mut QueryBuilder<Postgres>) {
+    pub(in crate::inventory::postgres) fn bind(&self, query: &mut QueryBuilder<Postgres>) {
         query.push("UNNEST(");
         self.bind_arrays(query);
         query.push(")");
     }
 
-    pub(super) fn bind_arrays(&self, query: &mut QueryBuilder<Postgres>) {
+    pub(in crate::inventory::postgres) fn bind_arrays(&self, query: &mut QueryBuilder<Postgres>) {
         query
             .push_bind(&self.accounts)
             .push("::text[],")
@@ -47,4 +47,15 @@ impl<'a> Keys<'a> {
             .push_bind(&self.ids)
             .push("::text[]");
     }
+}
+
+pub(in crate::inventory::postgres) fn decode(
+    row: &PgRow,
+) -> Result<ResourceKey, crate::inventory::StoreError> {
+    Ok(ResourceKey {
+        account: AccountId::parse(row.try_get("account")?)?,
+        region: Region::parse(row.try_get("region")?)?,
+        kind: Kind::parse(row.try_get("kind")?)?,
+        id: ResourceId::parse(row.try_get("id")?)?,
+    })
 }

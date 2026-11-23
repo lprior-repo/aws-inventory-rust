@@ -2,7 +2,7 @@ mod manifest;
 mod resume;
 mod seed;
 
-use super::{PgStore, lease};
+use super::{PgStore, completion, lease};
 use crate::inventory::work::transitions::encode_scope;
 use crate::inventory::{ChangeStats, StoreError, SweepId, WorkLease, WorkSpec};
 use inventory_core::inventory::ScopeOutcome;
@@ -37,10 +37,14 @@ impl PgStore {
             self.registry.permissions.validate_completion(&lease)?;
         }
         let mut tx = self.pool.begin().await?;
+        lease::references(&mut tx, self.registry.permissions.catalog().is_some()).await?;
+        lease::lock(&mut tx).await?;
         lease::validate(&mut tx, &lease, observed_at_ms).await?;
+        completion::lock(&mut tx).await?;
         finish(&mut tx, &lease, outcome, observed_at_ms).await?;
+        let stats = completion::drain(self, &mut tx, lease.sweep(), observed_at_ms).await?;
         tx.commit().await?;
-        Ok(ChangeStats::default())
+        Ok(stats)
     }
 }
 

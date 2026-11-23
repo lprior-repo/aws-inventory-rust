@@ -5,7 +5,7 @@ use inventory_core::inventory::{Kind, KindSchema, ResourceKey, ScalarType};
 use sqlx::{Postgres, QueryBuilder, Transaction};
 use std::collections::BTreeMap;
 
-pub(super) async fn persist(
+pub(in crate::inventory::postgres) async fn persist(
     tx: &mut Transaction<'_, Postgres>,
     registry: &SchemaRegistry,
     states: &BTreeMap<&ResourceKey, State<'_>>,

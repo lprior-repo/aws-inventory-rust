@@ -1,3 +1,7 @@
+mod retained;
+
+pub(in crate::inventory::postgres) use retained::load as retained;
+
 use super::facets::{self, Context, Facet};
 use super::keys::Keys;
 use crate::inventory::facets::Aggregate;
@@ -9,7 +13,7 @@ use std::collections::BTreeMap;
 
 const LOAD: &str = "WITH input AS (SELECT * FROM UNNEST($1::text[],$2::text[],$3::text[],$4::text[]) WITH ORDINALITY u(account,region,kind,id,ordinal)), seen AS (INSERT INTO resource_scopes(account,region,kind,id,scope_key,last_seen,missing_complete,observed_sweep) SELECT account,region,kind,id,$5,$6,0,$7 FROM input JOIN resources USING(account,region,kind,id) ON CONFLICT(account,region,kind,id,scope_key) DO UPDATE SET last_seen=EXCLUDED.last_seen,missing_complete=0,observed_sweep=EXCLUDED.observed_sweep), parents AS (INSERT INTO resource_parents(parent_account,parent_region,parent_kind,parent_id,child_account,child_region,child_kind,child_id,scope_key) SELECT $8,$9,$10,$11,account,region,kind,id,$5 FROM input JOIN resources USING(account,region,kind,id) WHERE $8::text IS NOT NULL ON CONFLICT DO NOTHING) SELECT input.ordinal,r.content_hash,r.first_seen,r.last_changed,r.name AS resource_name,f.* FROM input JOIN resources r USING(account,region,kind,id) LEFT JOIN resource_facets f USING(account,region,kind,id) ORDER BY input.ordinal";
 
-pub(super) struct State<'a> {
+pub(in crate::inventory::postgres) struct State<'a> {
     pub key: &'a ResourceKey,
     pub old_hash: Option<[u8; 32]>,
     pub old_name: Option<String>,
@@ -20,7 +24,7 @@ pub(super) struct State<'a> {
     pub prepared: Option<Prepared>,
 }
 
-pub(super) struct Prepared {
+pub(in crate::inventory::postgres) struct Prepared {
     pub aggregate: Aggregate,
     pub hash: [u8; 32],
     pub content_changed: bool,
@@ -39,7 +43,7 @@ pub(super) fn states(page: &PageCommit) -> BTreeMap<&ResourceKey, State<'_>> {
         .collect()
 }
 
-fn initial(key: &ResourceKey, at: i64) -> State<'_> {
+pub(in crate::inventory::postgres) fn initial(key: &ResourceKey, at: i64) -> State<'_> {
     State {
         key,
         old_hash: None,
@@ -68,7 +72,7 @@ pub(super) async fn load(
         let state = states
             .get_mut(key)
             .ok_or(StoreError::Invalid("resource key is absent"))?;
-        append(state, &row, context)?;
+        append(state, &row, Some(context))?;
     }
     Ok(())
 }
@@ -80,7 +84,11 @@ pub(super) fn ordinal(row: &PgRow) -> Result<usize, StoreError> {
         .ok_or(StoreError::Invalid("resource index exceeds bounds"))
 }
 
-fn append(state: &mut State<'_>, row: &PgRow, context: &Context<'_>) -> Result<(), StoreError> {
+fn append(
+    state: &mut State<'_>,
+    row: &PgRow,
+    context: Option<&Context<'_>>,
+) -> Result<(), StoreError> {
     if state.old_hash.is_none() {
         state.old_hash = Some(
             row.try_get::<&[u8], _>("content_hash")?
@@ -100,7 +108,7 @@ fn append(state: &mut State<'_>, row: &PgRow, context: &Context<'_>) -> Result<(
     Ok(())
 }
 
-pub(super) fn prepare(
+pub(in crate::inventory::postgres) fn prepare(
     registry: &SchemaRegistry,
     state: &mut State<'_>,
     at: i64,

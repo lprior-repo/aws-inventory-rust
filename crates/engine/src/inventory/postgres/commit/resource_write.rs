@@ -78,3 +78,23 @@ fn parents(query: &mut QueryBuilder<Postgres>, page: &PageCommit, scope: &[u8]) 
         query.push(" FROM input JOIN saved USING(account,region,kind,id) WHERE is_new ON CONFLICT DO NOTHING)");
     }
 }
+
+pub(in crate::inventory::postgres) async fn retire(
+    tx: &mut Transaction<'_, Postgres>,
+    states: &BTreeMap<&ResourceKey, State<'_>>,
+) -> Result<(), StoreError> {
+    let rows: Vec<_> = states
+        .values()
+        .filter_map(|state| state.prepared.as_ref())
+        .filter(|row| row.content_changed)
+        .collect();
+    if rows.is_empty() {
+        return Ok(());
+    }
+    let mut query = QueryBuilder::new("WITH input AS (SELECT * FROM UNNEST(");
+    keys(&mut query, &rows);
+    metadata(&mut query, &rows);
+    query.push(") u(account,region,kind,id,name,content_hash,first_seen,last_changed,is_new)) UPDATE resources r SET name=u.name,content_hash=u.content_hash,last_changed=u.last_changed FROM input u WHERE (r.account,r.region,r.kind,r.id)=(u.account,u.region,u.kind,u.id) AND (r.content_hash IS DISTINCT FROM u.content_hash OR r.name IS DISTINCT FROM u.name)");
+    query.build().execute(&mut **tx).await?;
+    Ok(())
+}

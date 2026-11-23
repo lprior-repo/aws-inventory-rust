@@ -10,10 +10,10 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
-pub(super) use aggregate::build;
+pub(in crate::inventory::postgres) use aggregate::build;
 
 #[derive(Eq, PartialEq, Ord, PartialOrd)]
-pub(super) struct Identity {
+pub(in crate::inventory::postgres) struct Identity {
     pub service: Arc<str>,
     pub operation: Arc<str>,
     pub source: Arc<[u8]>,
@@ -30,7 +30,7 @@ pub(super) struct Context<'a> {
     pub bindings: Arc<[u8]>,
 }
 
-pub(super) struct Facet<'a> {
+pub(in crate::inventory::postgres) struct Facet<'a> {
     pub identity: Arc<Identity>,
     pub source_authority: Option<[u8; 32]>,
     pub bound_request: Option<Arc<[u8]>>,
@@ -72,15 +72,18 @@ impl<'a> Context<'a> {
     }
 }
 
-pub(super) fn decode<'a>(row: &PgRow, context: &Context<'_>) -> Result<Facet<'a>, StoreError> {
+pub(super) fn decode<'a>(
+    row: &PgRow,
+    context: Option<&Context<'_>>,
+) -> Result<Facet<'a>, StoreError> {
     Ok(Facet {
-        identity: decode_identity(row, &context.identity)?,
+        identity: decode_identity(row, context.map(|context| &context.identity))?,
         source_authority: row
             .try_get::<Option<&[u8]>, _>("source_authority")?
             .map(<[u8; 32]>::try_from)
             .transpose()
             .map_err(|_| StoreError::Invalid("facet source authority is not 32 bytes"))?,
-        bound_request: decode_request(row, &context.bindings)?,
+        bound_request: decode_request(row, context.map(|context| &context.bindings))?,
         precedence: row.try_get("precedence")?,
         record: Cow::Owned(Record::from_bytes(row.try_get("record")?)?),
         owned: Record::from_bytes(row.try_get("owned")?)?,
@@ -182,11 +185,15 @@ fn reference_index<'a>(
     index
 }
 
-fn decode_identity(row: &PgRow, current: &Arc<Identity>) -> Result<Arc<Identity>, StoreError> {
+fn decode_identity(
+    row: &PgRow,
+    current: Option<&Arc<Identity>>,
+) -> Result<Arc<Identity>, StoreError> {
     let service: &str = row.try_get("service")?;
     let operation: &str = row.try_get("operation")?;
     let source: &[u8] = row.try_get("source_key")?;
-    if service == current.service.as_ref()
+    if let Some(current) = current
+        && service == current.service.as_ref()
         && operation == current.operation.as_ref()
         && source == current.source.as_ref()
     {
@@ -199,10 +206,15 @@ fn decode_identity(row: &PgRow, current: &Arc<Identity>) -> Result<Arc<Identity>
     }))
 }
 
-fn decode_request(row: &PgRow, current: &Arc<[u8]>) -> Result<Option<Arc<[u8]>>, StoreError> {
+fn decode_request(
+    row: &PgRow,
+    current: Option<&Arc<[u8]>>,
+) -> Result<Option<Arc<[u8]>>, StoreError> {
     let request: Option<&[u8]> = row.try_get("bound_request")?;
     Ok(request.map(|value| {
-        if value == current.as_ref() {
+        if let Some(current) = current
+            && value == current.as_ref()
+        {
             Arc::clone(current)
         } else {
             Arc::from(value)

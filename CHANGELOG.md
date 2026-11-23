@@ -2,6 +2,16 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- PostgreSQL resolves reviewed typed reference unions in bounded batches, retracts
+  stale or ambiguous matches without discarding independent proofs, and retires
+  missing resources only after two complete authoritative enumerations.
+  Parent retirement preserves independently owned descendants and reaggregates
+  their remaining facets. Final pages, explicit outcomes and repeated tokens all
+  drain completion atomically under the current lease fence.
+  Concurrency debt: reviewed-catalog writes acquire advisory lock `(14, 2)`
+  before sweep and kind locks, serializing reviewed-relationship writers.
+  Revisit a dependency-closure protocol at B6/C6.7 after benchmarking.
+
 - PostgreSQL schema initialization creates the inventory namespace, account-led
   resource keys and native scalar kind columns in batches of 200 tables.
   SQL timestamps retain microseconds; CBOR retains the original precision.

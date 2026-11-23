@@ -47,6 +47,7 @@ fn decode(row: PgRow, sweep: &SweepId) -> Result<WorkLease, StoreError> {
         bindings: row.try_get("bindings")?,
         context: row.try_get("context")?,
         lease_until_ms: row.try_get("lease_until")?,
+        pending_work: None,
     })
 }
 
@@ -94,6 +95,18 @@ pub(super) async fn validate(
         .await?;
     if valid != Some(true) {
         return Err(StoreError::StaleLease);
+    }
+    Ok(())
+}
+
+pub(super) async fn references(
+    tx: &mut Transaction<'_, Postgres>,
+    reviewed: bool,
+) -> Result<(), StoreError> {
+    if reviewed {
+        sqlx::query("SELECT pg_advisory_xact_lock(14,2)")
+            .execute(&mut **tx)
+            .await?;
     }
     Ok(())
 }

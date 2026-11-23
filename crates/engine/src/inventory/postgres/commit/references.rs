@@ -22,7 +22,7 @@ pub(super) struct Row<'a> {
     proof: [u8; 32],
 }
 
-pub(super) async fn persist(
+pub(in crate::inventory::postgres) async fn persist(
     tx: &mut Transaction<'_, Postgres>,
     registry: &SchemaRegistry,
     states: &BTreeMap<&ResourceKey, State<'_>>,
@@ -88,7 +88,6 @@ impl<'a> Row<'a> {
 
 async fn clear(tx: &mut Transaction<'_, Postgres>, keys: &Keys<'_>) -> Result<(), StoreError> {
     for prefix in [
-        "DELETE FROM edges e USING ",
         "DELETE FROM unresolved_refs e USING ",
         "DELETE FROM reviewed_reference_evidence e USING ",
     ] {

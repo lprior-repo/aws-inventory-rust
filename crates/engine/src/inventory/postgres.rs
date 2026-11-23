@@ -1,8 +1,10 @@
 mod commit;
+mod completion;
 mod config;
 mod connection;
 mod lease;
 mod outbox;
+mod references;
 mod url;
 mod work;
 

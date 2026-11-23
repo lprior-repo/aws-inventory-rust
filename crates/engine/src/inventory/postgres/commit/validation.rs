@@ -1,9 +1,16 @@
 use crate::inventory::work::transitions::encode_scope;
 use crate::inventory::{MAX_TOKEN_BYTES, PageCommit, SchemaRegistry, StoreError};
-use sqlx::{Postgres, Transaction};
+use sqlx::{Postgres, Row, Transaction};
 use std::collections::BTreeSet;
 
-const LEASE: &str = "WITH keys AS (SELECT DISTINCT hashtextextended(ROW(a,r,k)::text,14) AS key FROM UNNEST($6::text[],$7::text[],$8::text[]) u(a,r,k)), locks AS MATERIALIZED (SELECT pg_advisory_xact_lock(key) FROM keys ORDER BY key) SELECT state IN(1,2) AND generation=$3 AND authority_generation=generation AND lease_until>$4 AND lease_until=$5 FROM work_queue CROSS JOIN (SELECT count(*) FROM locks) held WHERE sweep_id=$1 AND scope_key=$2 FOR UPDATE OF work_queue";
+const LEASE: &str = concat!(
+    "WITH reference_control AS MATERIALIZED (SELECT pg_advisory_xact_lock(14,2) WHERE $12), ",
+    "gate AS MATERIALIZED (SELECT $9 OR EXISTS(SELECT 1 FROM work_tokens WHERE sweep_id=$1 AND scope_key=$2 AND digest=$11) AS terminal), ",
+    "control AS MATERIALIZED (SELECT pg_advisory_xact_lock(14) FROM gate CROSS JOIN (SELECT count(*) FROM reference_control) fenced WHERE terminal OR $10), ",
+    "keys AS (SELECT hashtextextended(ROW(a,r,k)::text,14) AS key FROM (SELECT * FROM UNNEST($6::text[],$7::text[],$8::text[]) UNION SELECT account,region,kind FROM resources WHERE (SELECT terminal FROM gate)) u(a,r,k)), ",
+    "locks AS MATERIALIZED (SELECT pg_advisory_xact_lock(key) FROM keys CROSS JOIN (SELECT count(*) FROM reference_control) fenced CROSS JOIN (SELECT count(*) FROM control) held ORDER BY key) ",
+    "SELECT state IN(1,2) AND generation=$3 AND authority_generation=generation AND lease_until>$4 AND lease_until=$5 AS valid FROM work_queue CROSS JOIN (SELECT count(*) FROM reference_control) fenced CROSS JOIN (SELECT count(*) FROM control) controlled CROSS JOIN (SELECT count(*) FROM locks) held WHERE sweep_id=$1 AND scope_key=$2 FOR UPDATE OF work_queue"
+);
 
 pub(super) fn page(registry: &SchemaRegistry, page: &PageCommit) -> Result<(), StoreError> {
     bounds(page)?;
@@ -91,9 +98,29 @@ fn identity(page: &PageCommit) -> Result<(), StoreError> {
 pub(super) async fn lease(
     tx: &mut Transaction<'_, Postgres>,
     page: &PageCommit,
+    reviewed: bool,
 ) -> Result<(), StoreError> {
+    let valid = statement(page, reviewed)?
+        .fetch_optional(&mut **tx)
+        .await?
+        .map(|row| row.try_get::<bool, _>("valid"))
+        .transpose()?;
+    if valid != Some(true) {
+        return Err(StoreError::StaleLease);
+    }
+    Ok(())
+}
+
+fn statement(
+    page: &PageCommit,
+    reviewed: bool,
+) -> Result<sqlx::query::Query<'static, Postgres, sqlx::postgres::PgArguments>, StoreError> {
     let (accounts, regions, kinds) = groups(page);
-    let valid: Option<bool> = sqlx::query_scalar(LEASE)
+    let digest = page
+        .continuation_digest
+        .as_ref()
+        .map(|digest| digest.as_slice());
+    Ok(sqlx::query(LEASE)
         .bind(page.lease.sweep().as_str())
         .bind(encode_scope(page.lease.scope())?)
         .bind(page.lease.generation())
@@ -102,12 +129,10 @@ pub(super) async fn lease(
         .bind(accounts)
         .bind(regions)
         .bind(kinds)
-        .fetch_optional(&mut **tx)
-        .await?;
-    if valid != Some(true) {
-        return Err(StoreError::StaleLease);
-    }
-    Ok(())
+        .bind(page.done)
+        .bind(!page.children.is_empty())
+        .bind(digest)
+        .bind(reviewed))
 }
 
 type Groups<'a> = (Vec<&'a str>, Vec<&'a str>, Vec<&'a str>);

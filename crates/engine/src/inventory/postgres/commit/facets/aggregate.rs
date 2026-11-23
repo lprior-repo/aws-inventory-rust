@@ -18,7 +18,7 @@ struct Overlay {
     name: Option<Arc<str>>,
 }
 
-pub(in super::super) fn build(
+pub(in crate::inventory::postgres) fn build(
     registry: &SchemaRegistry,
     key: &ResourceKey,
     facets: &mut [Facet<'_>],
