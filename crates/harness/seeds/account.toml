@@ -4,7 +4,8 @@ service = "account"
 [[step]]
 id = "resource"
 operation = "PutAccountName"
-kind = "AWS::Account::AccountName"
+kind = "AWS::ApiOnly::AccountAccountInformation"
 identity = { input = "AccountName" }
+scope = "account"
 [step.input]
 AccountName = "000000000000"
