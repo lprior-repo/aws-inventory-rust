@@ -95,6 +95,86 @@ fn given_union_variant_when_excluding_it_then_policy_rejects_decode_failure() ->
     Ok(())
 }
 
+#[test]
+fn given_path_through_map_when_checking_then_policy_rejects_map_traversal() -> TestResult {
+    let mut model = support::model()?;
+    let shapes = model
+        .pointer_mut("/shapes")
+        .and_then(serde_json::Value::as_object_mut)
+        .ok_or("missing shapes")?;
+    shapes.insert(
+        "n#Inner".to_owned(),
+        serde_json::json!({"type":"structure","members":{"Leaf":{"target":"smithy.api#String"}}}),
+    );
+    shapes.insert(
+        "n#ThingMap".to_owned(),
+        serde_json::json!({"type":"map","key":{"target":"smithy.api#String"},"value":{"target":"n#Inner"}}),
+    );
+    let thing = model
+        .pointer_mut("/shapes/n#Thing/members")
+        .and_then(serde_json::Value::as_object_mut)
+        .ok_or("missing thing members")?;
+    thing.insert(
+        "Config".to_owned(),
+        serde_json::json!({"target":"n#ThingMap"}),
+    );
+    let error = support::checked_model(&["Items.Config.Leaf"], &model)
+        .err()
+        .ok_or("map traversal accepted")?;
+    assert!(
+        error.to_string().contains("path traverses a map"),
+        "{error}"
+    );
+    Ok(())
+}
+
+#[test]
+fn given_path_through_nine_nested_lists_when_checking_then_policy_rejects_depth() -> TestResult {
+    let mut model = support::model()?;
+    let shapes = model
+        .pointer_mut("/shapes")
+        .and_then(serde_json::Value::as_object_mut)
+        .ok_or("missing shapes")?;
+    shapes.insert(
+        "n#Deepest".to_owned(),
+        serde_json::json!({"type":"structure","members":{"Secret":{"target":"smithy.api#String"}}}),
+    );
+    let chain = [
+        "n#L1",
+        "n#L2",
+        "n#L3",
+        "n#L4",
+        "n#L5",
+        "n#L6",
+        "n#L7",
+        "n#L8",
+        "n#L9",
+        "n#Deepest",
+    ];
+    for pair in chain.windows(2) {
+        let [name, element] = pair else {
+            return Err("list chain pair is malformed".into());
+        };
+        shapes.insert(
+            (*name).to_owned(),
+            serde_json::json!({"type":"list","member":{"target":element}}),
+        );
+    }
+    let thing = model
+        .pointer_mut("/shapes/n#Thing/members")
+        .and_then(serde_json::Value::as_object_mut)
+        .ok_or("missing thing members")?;
+    thing.insert("Deep".to_owned(), serde_json::json!({"target":"n#L1"}));
+    let error = support::checked_model(&["Items.Deep.Secret"], &model)
+        .err()
+        .ok_or("9-list path accepted")?;
+    assert!(
+        error.to_string().contains("path nests more than 8 lists"),
+        "{error}"
+    );
+    Ok(())
+}
+
 fn field(id: u32) -> TestResult<Key> {
     Ok(Key::Field(FieldId::new(id)?))
 }

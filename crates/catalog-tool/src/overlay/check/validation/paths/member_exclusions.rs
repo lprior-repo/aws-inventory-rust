@@ -51,16 +51,69 @@ fn check_safety(
         return;
     };
     for path in &item.exclude_response_members {
-        if let Err(reason) = unique_struct_member(model, root, path.as_str()) {
+        let path_str = path.as_str();
+        if let Err(reason) = path_walk(model, root, path_str) {
             violations.push(violation(
                 service,
                 operation,
                 "exclude_response_members",
-                &format!("{}: {reason}", path.as_str()),
+                &format!("{path_str}: {reason}"),
+                ViolationRule::InvalidPath,
+            ));
+        } else if let Err(reason) = unique_struct_member(model, root, path_str) {
+            violations.push(violation(
+                service,
+                operation,
+                "exclude_response_members",
+                &format!("{path_str}: {reason}"),
                 ViolationRule::InvalidPath,
             ));
         }
     }
+}
+
+fn path_walk<'a>(model: &Model<'a>, root: ShapeRef<'a>, path: &str) -> Result<(), &'static str> {
+    let mut current = root;
+    for segment in path.split('.') {
+        current = step_lists(model, current)?;
+        if shape_type(current.value) == Some("map") {
+            return Err("path traverses a map");
+        }
+        if !matches!(shape_type(current.value), Some("structure" | "union")) {
+            return Err("path traverses neither a structure nor a union");
+        }
+        let members = current
+            .value
+            .get("members")
+            .and_then(Value::as_object)
+            .ok_or("structure has no members")?;
+        let member = members
+            .get(segment)
+            .ok_or("member is not a structure member")?;
+        let target_id = target(member).ok_or("structure member target is absent")?;
+        current = model
+            .shape(target_id)
+            .ok_or("structure member target does not exist")?;
+    }
+    Ok(())
+}
+
+fn step_lists<'a>(model: &Model<'a>, shape: ShapeRef<'a>) -> Result<ShapeRef<'a>, &'static str> {
+    let mut current = shape;
+    for _ in 0..8 {
+        if shape_type(current.value) != Some("list") {
+            return Ok(current);
+        }
+        let member = current.value.get("member").ok_or("list has no member")?;
+        let target_id = target(member).ok_or("list member target is absent")?;
+        current = model
+            .shape(target_id)
+            .ok_or("list member target does not exist")?;
+    }
+    if shape_type(current.value) == Some("list") {
+        return Err("path nests more than 8 lists");
+    }
+    Ok(current)
 }
 
 fn unique_struct_member<'a>(
