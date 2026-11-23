@@ -55,7 +55,7 @@ pub(super) fn compile(
             (3, Value::Text(row.target_kinds.primary().to_owned())),
             (4, Value::List(Vec::new())),
             (5, Value::Text(row.relation.clone())),
-            (6, Value::Int(scope(&row.scope)?)),
+            (6, Value::Int(scope(&row.source_kind, &row.scope)?)),
             (
                 9,
                 Value::List(
@@ -82,10 +82,13 @@ pub(super) fn compile(
             );
             continue;
         }
-        let (first, rest) = row
-            .components
-            .split_first()
-            .ok_or(RuntimeCatalogCompileError::Capability)?;
+        let (first, rest) = row.components.split_first().ok_or_else(|| {
+            RuntimeCatalogCompileError::KindContext {
+                kind: row.source_kind.clone(),
+                path: "components".to_owned(),
+                reason: "compound relation has no components",
+            }
+        })?;
         let base = ReviewedRelation {
             source_kind: row.source_kind.clone(),
             source: first.source.clone(),
@@ -96,7 +99,11 @@ pub(super) fn compile(
             guard: None,
         };
         let Value::Map(mut fields) = encode(&base, services)? else {
-            return Err(RuntimeCatalogCompileError::Capability);
+            return Err(RuntimeCatalogCompileError::KindContext {
+                kind: row.source_kind.clone(),
+                path: "encode".to_owned(),
+                reason: "relation encode did not produce a map",
+            });
         };
         let components = rest
             .iter()
@@ -133,7 +140,7 @@ fn encode(
         (3, Value::Text(row.target_kinds.primary().to_owned())),
         (4, optional_path(services, target_path)?),
         (5, Value::Text(row.relation.clone())),
-        (6, Value::Int(scope(&row.scope)?)),
+        (6, Value::Int(scope(&row.source_kind, &row.scope)?)),
         (
             9,
             Value::List(
@@ -166,7 +173,11 @@ fn encode(
             || !matches!(&row.source, ReviewedRelationSource::SelectedOutput(ReviewedValuePath::Fields(path)) if path == "SinkArn")
             || !matches!(&row.target, ReviewedRelationTarget::SelectedOutput(ReviewedValuePath::Fields(path)) if path == "Arn")
         {
-            return Err(RuntimeCatalogCompileError::Capability);
+            return Err(RuntimeCatalogCompileError::KindContext {
+                kind: row.source_kind.clone(),
+                path: "arn_account_region".to_owned(),
+                reason: "invalid arn_account_region scope usage",
+            });
         }
         fields.push((
             8,
@@ -230,13 +241,17 @@ pub(super) fn value_path(
     }
 }
 
-pub(super) fn scope(scope: &str) -> Result<i64, RuntimeCatalogCompileError> {
+pub(super) fn scope(kind: &str, scope: &str) -> Result<i64, RuntimeCatalogCompileError> {
     match scope {
         "account_region" | "arn_account_region" => Ok(0),
         "account" => Ok(1),
         "home_region" => Ok(2),
         "arn_region" => Ok(3),
-        _ => Err(RuntimeCatalogCompileError::Capability),
+        _ => Err(RuntimeCatalogCompileError::KindContext {
+            kind: kind.to_owned(),
+            path: scope.to_owned(),
+            reason: "unsupported scope",
+        }),
     }
 }
 
@@ -245,16 +260,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn compile_returns_relations_result_type() {
-        // Test that compile returns RelationsResult type
-        fn _check_type(result: Result<RelationsResult, RuntimeCatalogCompileError>) -> bool {
-            result.is_ok()
-        }
-        // Can't actually call compile without setup, but we can verify the type signature
-        let _: fn(
-            &KindMap,
-            &ServiceIndex<'_>,
-            &crate::overlay::CheckedOverlays,
-        ) -> Result<RelationsResult, RuntimeCatalogCompileError> = compile;
+    fn unknown_scope_returns_kind_context_with_scope_as_path() {
+        let result = scope("AWS::EC2::VPC", "same_vpc");
+        assert!(matches!(result,
+            Err(RuntimeCatalogCompileError::KindContext { kind, path, reason })
+                if kind == "AWS::EC2::VPC" && path == "same_vpc" && reason == "unsupported scope"));
+    }
+
+    #[test]
+    fn supported_scopes_encode_successfully() -> Result<(), RuntimeCatalogCompileError> {
+        assert_eq!(scope("AWS::EC2::VPC", "account_region")?, 0);
+        assert_eq!(scope("AWS::EC2::VPC", "account")?, 1);
+        assert_eq!(scope("AWS::EC2::VPC", "home_region")?, 2);
+        assert_eq!(scope("AWS::EC2::VPC", "arn_region")?, 3);
+        Ok(())
     }
 }

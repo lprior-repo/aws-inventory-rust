@@ -12,20 +12,28 @@ pub(super) fn target(
     let (path, kind) = match selector {
         Some(ItemSelector::Root) => return Ok(output),
         Some(ItemSelector::Member(path)) => {
-            let selected = model_path::resolve(service, output, path.as_str())?.1;
+            let path_str = path.as_str();
+            let selected = model_path::resolve(service, output, path_str)?.1;
             return match model_path::kind(service, selected)? {
                 "structure" => Ok(selected),
                 "list" => model_path::list_element(service, selected),
-                _ => Err(RuntimeCatalogCompileError::Capability),
+                _ => Err(RuntimeCatalogCompileError::Path {
+                    path: path_str.to_owned(),
+                }),
             };
         }
         Some(ItemSelector::Explicit { path, kind }) => (path, kind),
-        None => return Err(RuntimeCatalogCompileError::Capability),
+        None => {
+            return Err(RuntimeCatalogCompileError::Path {
+                path: "item selector".to_owned(),
+            });
+        }
     };
-    let selected = if path.as_str() == "$" {
+    let path_str = path.as_str();
+    let selected = if path_str == "$" {
         output
     } else {
-        model_path::resolve(service, output, path.as_str())?.1
+        model_path::resolve(service, output, path_str)?.1
     };
     match (kind, model_path::kind(service, selected)?) {
         (SelectionKind::Structure, "structure") => Ok(selected),
@@ -34,13 +42,21 @@ pub(super) fn target(
             "string" | "enum" | "byte" | "short" | "integer" | "long" | "boolean",
         ) => Ok(selected),
         (SelectionKind::List, "list") => model_path::list_element(service, selected),
-        (SelectionKind::MapKeys, "map") => shape(service, selected)?
-            .map_key()?
-            .ok_or(RuntimeCatalogCompileError::Capability),
+        (SelectionKind::MapKeys, "map") => {
+            shape(service, selected)?
+                .map_key()?
+                .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                    path: path_str.to_owned(),
+                })
+        }
         (SelectionKind::MapEntries | SelectionKind::MapValues, "map") => shape(service, selected)?
             .map_value()?
-            .ok_or(RuntimeCatalogCompileError::Capability),
-        _ => Err(RuntimeCatalogCompileError::Capability),
+            .ok_or_else(|| RuntimeCatalogCompileError::Path {
+                path: path_str.to_owned(),
+            }),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: path_str.to_owned(),
+        }),
     }
 }
 
@@ -51,7 +67,11 @@ fn shape<'a>(
     match target {
         Target::Shape(index) => service
             .shape(index)?
-            .ok_or(RuntimeCatalogCompileError::Capability),
-        _ => Err(RuntimeCatalogCompileError::Capability),
+            .ok_or(RuntimeCatalogCompileError::Path {
+                path: "shape".to_owned(),
+            }),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: "shape".to_owned(),
+        }),
     }
 }

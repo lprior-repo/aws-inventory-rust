@@ -27,10 +27,14 @@ pub(super) fn extension(
     ])?;
     let encoded = inventory_core::record::Record::encode(&extension)?;
     let reviewed = inventory_core::catalog::runtime::compiled_inputs_sha256(encoded.root())
-        .map_err(|_| RuntimeCatalogCompileError::Capability)?;
+        .map_err(|_| RuntimeCatalogCompileError::Path {
+            path: "extension sha256".to_owned(),
+        })?;
     let receipt = super::provenance::encode(sources, kinds, reviewed)?;
     let Value::Map(fields) = &mut extension else {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "extension map".to_owned(),
+        });
     };
     fields.insert(Key::Field(FieldId::new(7)?), receipt);
     Ok(extension)
@@ -83,12 +87,19 @@ pub(super) fn path(
     path: &str,
 ) -> Result<Value, RuntimeCatalogCompileError> {
     let segments = path.split('.').collect::<Vec<_>>();
+    if segments.is_empty() {
+        return Err(RuntimeCatalogCompileError::Path {
+            path: path.to_owned(),
+        });
+    }
     let ids = segments
         .iter()
         .map(|segment| services.field_id(segment))
         .collect::<Result<Vec<_>, _>>()?;
-    if ids.is_empty() || ids.len() > 8 {
-        return Err(RuntimeCatalogCompileError::Capability);
+    if ids.len() > 8 {
+        return Err(RuntimeCatalogCompileError::Path {
+            path: path.to_owned(),
+        });
     }
     Ok(Value::List(
         ids.into_iter()

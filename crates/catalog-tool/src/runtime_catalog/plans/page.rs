@@ -53,7 +53,9 @@ fn maximum_value(
         .and_then(|value| value.max_page_size)
         .map(|value| u32::try_from(value).map(|value| Value::Int(i64::from(value))))
         .transpose()
-        .map_err(|_| RuntimeCatalogCompileError::Capability)
+        .map_err(|_| RuntimeCatalogCompileError::Path {
+            path: "page max_page_size".to_owned(),
+        })
 }
 
 fn validate_items(
@@ -66,7 +68,9 @@ fn validate_items(
         {
             Ok(())
         }
-        Some(_) => Err(RuntimeCatalogCompileError::Capability),
+        Some(_) => Err(RuntimeCatalogCompileError::Path {
+            path: "page items".to_owned(),
+        }),
         None => Ok(()),
     }
 }
@@ -115,7 +119,9 @@ fn placement(
         (5 | 6, HttpBinding::Payload) if path.len() == 1 => Some((3, path_value(path))),
         _ => None,
     };
-    let (kind, value) = selected.ok_or(RuntimeCatalogCompileError::Capability)?;
+    let (kind, value) = selected.ok_or(RuntimeCatalogCompileError::Path {
+        path: "page placement".to_owned(),
+    })?;
     encode::map([(1, Value::Int(kind)), (2, value)])
 }
 
@@ -167,7 +173,9 @@ fn response_placement(
         (5 | 6, HttpBinding::Header(name)) if path.len() == 1 => {
             encode::map([(1, Value::Int(2)), (2, Value::Text(name.to_owned()))])
         }
-        _ => Err(RuntimeCatalogCompileError::Capability),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: "page response placement".to_owned(),
+        }),
     }
 }
 
@@ -178,10 +186,14 @@ fn page_size_value(
     let Some(value) = inputs.overlay.page_size else {
         return Ok(None);
     };
-    let descriptor = descriptor.ok_or(RuntimeCatalogCompileError::Capability)?;
+    let descriptor = descriptor.ok_or(RuntimeCatalogCompileError::Path {
+        path: "page_size descriptor".to_owned(),
+    })?;
     let path = descriptor
         .page_size
-        .ok_or(RuntimeCatalogCompileError::Capability)?;
+        .ok_or(RuntimeCatalogCompileError::Path {
+            path: "page_size path".to_owned(),
+        })?;
     let member = model_path::terminal_member(inputs.service, inputs.operation.input()?, path)?;
     let kind = model_path::kind(inputs.service, member.1.target)?;
     let max = validated_max(value, kind, descriptor)?;
@@ -190,7 +202,7 @@ fn page_size_value(
     } else {
         crate::overlay::FixedValue::Integer(value)
     };
-    super::fixed_input::compile(inputs.service, member.1.target, &literal)?;
+    super::fixed_input::compile(inputs.service, member.1.target, &literal, path)?;
     let placement = placement(member.1, member.0, inputs.protocol)?;
     let fields = [
         (1, encode::path(inputs.services, path)?),
@@ -217,9 +229,13 @@ fn validated_max(
         kind,
         "integer" | "long" | "short" | "byte" | "string" | "enum"
     );
-    let max = u32::try_from(value).map_err(|_| RuntimeCatalogCompileError::Capability)?;
+    let max = u32::try_from(value).map_err(|_| RuntimeCatalogCompileError::Path {
+        path: "page validated_max".to_owned(),
+    })?;
     if !supported || max == 0 || exceeds_modeled(max, descriptor)? {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::Path {
+            path: "page validated_max".to_owned(),
+        });
     }
     Ok(max)
 }
@@ -229,7 +245,9 @@ fn exceeds_modeled(
     descriptor: &Descriptor<'_>,
 ) -> Result<bool, RuntimeCatalogCompileError> {
     let modeled = descriptor.max_page_size.map(u32::try_from).transpose();
-    let modeled = modeled.map_err(|_| RuntimeCatalogCompileError::Capability)?;
+    let modeled = modeled.map_err(|_| RuntimeCatalogCompileError::Path {
+        path: "page exceeds_modeled".to_owned(),
+    })?;
     Ok(modeled.is_some_and(|limit| max > limit))
 }
 
@@ -250,7 +268,9 @@ fn truncated_value(
         if model_path::kind(service, member.target)? != "boolean"
             || !matches!(member.wire()?.binding()?, HttpBinding::Document)
         {
-            return Err(RuntimeCatalogCompileError::Capability);
+            return Err(RuntimeCatalogCompileError::Path {
+                path: path.to_string(),
+            });
         }
         encode::path(services, &path.to_string())
     })

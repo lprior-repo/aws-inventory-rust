@@ -82,7 +82,9 @@ pub(in crate::runtime_catalog::plans) fn compile(
     }
     let encode_paths = |paths: BTreeSet<String>| -> Result<Value, RuntimeCatalogCompileError> {
         if paths.len() > 64 {
-            return Err(RuntimeCatalogCompileError::Capability);
+            return Err(RuntimeCatalogCompileError::Path {
+                path: "selection projection path count".to_owned(),
+            });
         }
         Ok(Value::List(
             paths
@@ -108,7 +110,9 @@ fn binding_paths(
     let binding = match binding {
         Binding::Transformed { binding, .. } => {
             if matches!(binding.as_ref(), Binding::Transformed { .. }) {
-                return Err(RuntimeCatalogCompileError::Capability);
+                return Err(RuntimeCatalogCompileError::Path {
+                    path: "binding transform nesting".to_owned(),
+                });
             }
             binding.as_ref()
         }

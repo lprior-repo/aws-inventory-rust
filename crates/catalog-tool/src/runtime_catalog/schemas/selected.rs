@@ -14,7 +14,11 @@ pub(super) fn column(
     };
     let types = item_types(context, checked, kind)?;
     if types.len() > 1 {
-        return Err(RuntimeCatalogCompileError::Capability);
+        return Err(RuntimeCatalogCompileError::KindContext {
+            kind: kind.to_owned(),
+            path: "column".to_owned(),
+            reason: "operations of this kind disagree on the item type",
+        });
     }
     types
         .first()
@@ -34,7 +38,7 @@ fn item_types(
         .iter()
         .filter(|row| row.kind == kind)
         .filter_map(|row| callable(checked, row).map(|call| (row.service.as_str(), call)))
-        .map(|(service, call)| item_type(context, service, call))
+        .map(|(service, call)| item_type(context, kind, service, call))
         .filter_map(Result::transpose)
         .collect()
 }
@@ -59,6 +63,7 @@ fn callable<'a>(
 
 fn item_type(
     context: &Context<'_, '_>,
+    kind: &str,
     service_name: &str,
     call: &CallableOperation,
 ) -> Result<Option<i64>, RuntimeCatalogCompileError> {
@@ -69,7 +74,12 @@ fn item_type(
         operation.output()?,
         call.plan().items.as_ref(),
     )?;
-    scalar_code(model_path::kind(service, target)?)
+    let model_kind = model_path::kind(service, target)?;
+    scalar_code(model_kind).map_err(|_| RuntimeCatalogCompileError::KindContext {
+        kind: kind.to_owned(),
+        path: model_kind.to_owned(),
+        reason: "unsupported item type",
+    })
 }
 
 fn scalar_code(kind: &str) -> Result<Option<i64>, RuntimeCatalogCompileError> {
@@ -81,6 +91,8 @@ fn scalar_code(kind: &str) -> Result<Option<i64>, RuntimeCatalogCompileError> {
         "blob" => Ok(Some(4)),
         "timestamp" => Ok(Some(5)),
         "structure" => Ok(None),
-        _ => Err(RuntimeCatalogCompileError::Capability),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: format!("selected schema kind {kind}"),
+        }),
     }
 }

@@ -1,6 +1,8 @@
 use super::{RuntimeCatalogCompileError, model_path};
-use crate::overlay::{Binding, Identity, ItemSelector, OperationOverlay, Paginator};
+use crate::overlay::{Identity, ItemSelector, OperationOverlay};
 use inventory_core::catalog::{Operation, Service, Target};
+mod bindings;
+mod pagination;
 mod resource;
 pub(in crate::runtime_catalog) use resource::validate_resource;
 
@@ -43,20 +45,46 @@ fn validate_identity(
     identity: Option<&Identity>,
 ) -> Result<(), RuntimeCatalogCompileError> {
     match identity {
-        Some(Identity::Arn(path)) => {
-            let target = selected_target(service, item, path.as_str())?;
-            text_target(service, target)
-        }
-        Some(Identity::Key(paths)) => paths
-            .iter()
-            .try_for_each(|path| scalar_target(service, item, path.as_str())),
-        Some(Identity::Template(template)) => super::plans::identity::fields(template)
-            .try_for_each(|path| scalar_target(service, item, path)),
+        Some(Identity::Arn(path)) => validate_identity_arn(service, item, path),
+        Some(Identity::Key(paths)) => validate_identity_keys(service, item, paths),
+        Some(Identity::Template(template)) => validate_identity_template(service, item, template),
         Some(
             value @ (Identity::Choice(_) | Identity::CorrelatedKey(_) | Identity::MapArn { .. }),
         ) => super::selection::validate_identity(service, operation, item, value),
-        _ => Err(RuntimeCatalogCompileError::Capability),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: "identity".to_owned(),
+        }),
     }
+}
+
+fn validate_identity_arn(
+    service: Service<'_>,
+    item: Target,
+    path: &crate::overlay::MemberPath,
+) -> Result<(), RuntimeCatalogCompileError> {
+    let path_str = path.as_str();
+    let target = map_path_error(path_str, selected_target(service, item, path_str))?;
+    map_path_error(path_str, text_target(service, target, path_str))
+}
+
+fn validate_identity_keys(
+    service: Service<'_>,
+    item: Target,
+    paths: &[crate::overlay::MemberPath],
+) -> Result<(), RuntimeCatalogCompileError> {
+    paths.iter().try_for_each(|path| {
+        let path_str = path.as_str();
+        map_path_error(path_str, scalar_target(service, item, path_str))
+    })
+}
+
+fn validate_identity_template(
+    service: Service<'_>,
+    item: Target,
+    template: &str,
+) -> Result<(), RuntimeCatalogCompileError> {
+    super::plans::identity::fields(template)
+        .try_for_each(|path| map_path_error(path, scalar_target(service, item, path)))
 }
 
 fn selected_target(
@@ -69,14 +97,22 @@ fn selected_target(
     }
     match model_path::kind(service, item)? {
         "string" | "enum" | "byte" | "short" | "integer" | "long" | "boolean" => Ok(item),
-        _ => Err(RuntimeCatalogCompileError::Capability),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: path.to_owned(),
+        }),
     }
 }
 
-fn text_target(service: Service<'_>, target: Target) -> Result<(), RuntimeCatalogCompileError> {
+fn text_target(
+    service: Service<'_>,
+    target: Target,
+    path: &str,
+) -> Result<(), RuntimeCatalogCompileError> {
     match model_path::kind(service, target)? {
         "string" | "enum" => Ok(()),
-        _ => Err(RuntimeCatalogCompileError::Capability),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: path.to_owned(),
+        }),
     }
 }
 
@@ -88,7 +124,9 @@ fn scalar_target(
     let target = selected_target(service, item, path)?;
     match model_path::kind(service, target)? {
         "string" | "enum" | "byte" | "short" | "integer" | "long" | "boolean" => Ok(()),
-        _ => Err(RuntimeCatalogCompileError::Capability),
+        _ => Err(RuntimeCatalogCompileError::Path {
+            path: path.to_owned(),
+        }),
     }
 }
 
@@ -97,64 +135,7 @@ fn validate_bindings(
     input: Target,
     overlay: &OperationOverlay,
 ) -> Result<(), RuntimeCatalogCompileError> {
-    overlay
-        .bind
-        .iter()
-        .chain(
-            overlay
-                .branches
-                .iter()
-                .flat_map(|branch| branch.bind.iter()),
-        )
-        .try_for_each(|(path, binding)| {
-            let target = model_path::resolve(service, input, &path.to_string())?.1;
-            match binding {
-                Binding::Region | Binding::Account => model_path::string_target(service, target),
-                Binding::RegionList => {
-                    model_path::string_target(service, model_path::list_element(service, target)?)
-                }
-                Binding::FromAny(alternatives) => {
-                    if alternatives.is_empty()
-                        || alternatives.len() > 8
-                        || alternatives.iter().enumerate().any(|(index, alternative)| {
-                            alternatives
-                                .iter()
-                                .take(index)
-                                .any(|prior| prior.operation == alternative.operation)
-                        })
-                    {
-                        return Err(RuntimeCatalogCompileError::Capability);
-                    }
-                    Ok(())
-                }
-                Binding::From { .. }
-                | Binding::Context { .. }
-                | Binding::FromArn { .. }
-                | Binding::FromUrl { .. }
-                | Binding::FromService { .. }
-                | Binding::FromBranch { .. }
-                | Binding::ContextFromBranch { .. } => Ok(()),
-                Binding::Transformed {
-                    binding,
-                    transform: crate::overlay::BindingTransform::StripPrefix(prefix),
-                } => {
-                    if prefix.is_empty()
-                        || prefix.len() > 256
-                        || prefix.chars().any(char::is_control)
-                        || !matches!(
-                            binding.as_ref(),
-                            Binding::From { .. }
-                                | Binding::Context { .. }
-                                | Binding::FromArn { .. }
-                                | Binding::FromService { .. }
-                        )
-                    {
-                        return Err(RuntimeCatalogCompileError::Capability);
-                    }
-                    model_path::string_target(service, target)
-                }
-            }
-        })
+    bindings::validate(service, input, overlay)
 }
 
 fn validate_page(
@@ -162,48 +143,7 @@ fn validate_page(
     operation: Operation<'_>,
     overlay: &OperationOverlay,
 ) -> Result<(), RuntimeCatalogCompileError> {
-    let input = operation.input()?;
-    let output = operation.output()?;
-    let token = |pair: &crate::overlay::TokenPair| {
-        let (request, response) = (pair.input.to_string(), pair.output.to_string());
-        validate_token(service, input, output, &request, &response)
-    };
-    match overlay.paginator.as_ref() {
-        Some(Paginator::Token(pair)) => token(pair),
-        Some(Paginator::LastListItem {
-            input: request,
-            output: response,
-            truncated,
-        }) => {
-            let request = model_path::resolve(service, input, request.as_str())?.1;
-            let response = model_path::resolve(service, output, response.as_str())?.1;
-            model_path::string_target(service, request)?;
-            model_path::string_target(service, model_path::list_element(service, response)?)?;
-            let flag = model_path::resolve(service, output, truncated.as_str())?.1;
-            if model_path::kind(service, flag)? != "boolean" {
-                return Err(RuntimeCatalogCompileError::Capability);
-            }
-            Ok(())
-        }
-        Some(Paginator::Tokens { pairs, truncated }) => {
-            pairs.iter().try_for_each(token)?;
-            truncated.as_ref().map_or(Ok(()), |path| {
-                model_path::resolve(service, output, &path.to_string()).map(|_| ())
-            })
-        }
-        Some(Paginator::None) | None => Ok(()),
-    }
-}
-
-fn validate_token(
-    service: Service<'_>,
-    input: Target,
-    output: Target,
-    request: &str,
-    response: &str,
-) -> Result<(), RuntimeCatalogCompileError> {
-    model_path::resolve(service, input, request)?;
-    model_path::resolve(service, output, response).map(|_| ())
+    pagination::validate(service, operation, overlay)
 }
 
 fn validate_purpose_paths(
@@ -213,8 +153,24 @@ fn validate_purpose_paths(
 ) -> Result<(), RuntimeCatalogCompileError> {
     if operation.paginator()?.is_some() && overlay.page_size.is_some() {
         let page_size = operation.paginator()?.and_then(|page| page.page_size);
-        let path = page_size.ok_or(RuntimeCatalogCompileError::Capability)?;
+        let path = page_size.ok_or_else(|| RuntimeCatalogCompileError::Path {
+            path: "page_size".to_owned(),
+        })?;
         model_path::resolve(service, operation.input()?, path)?;
     }
     Ok(())
+}
+
+fn map_path_error<T>(
+    path: &str,
+    result: Result<T, RuntimeCatalogCompileError>,
+) -> Result<T, RuntimeCatalogCompileError> {
+    result.map_err(|error| match error {
+        RuntimeCatalogCompileError::Capability | RuntimeCatalogCompileError::Path { .. } => {
+            RuntimeCatalogCompileError::Path {
+                path: path.to_owned(),
+            }
+        }
+        error => error,
+    })
 }
