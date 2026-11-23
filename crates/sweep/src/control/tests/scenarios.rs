@@ -225,3 +225,27 @@ fn assert_cancelled(result: TestResult<SweepSummary>) -> TestResult {
     ));
     Ok(())
 }
+
+#[tokio::test]
+async fn metrics_report_real_decode_claim_commit_executor_and_transport_activity() -> TestResult {
+    let environment = Environment::new().await?;
+    let store = environment.store("metrics.sqlite").await?;
+    let summary = environment
+        .run(&store, false, SweepControl::default())
+        .await?;
+    let metrics = summary.metrics;
+    assert_eq!((metrics.api_attempts, metrics.requests_sent), (4, 4));
+    assert_eq!(
+        (metrics.pages, metrics.store_commits, metrics.claims),
+        (2, 2, 2)
+    );
+    assert_eq!((metrics.api_retries, metrics.api_throttles), (0, 0));
+    assert_eq!((metrics.http2_requests, metrics.requests_reused), (0, 0));
+    assert_eq!(metrics.connections_opened, 4);
+    assert!(metrics.bytes_read > 0);
+    assert!(metrics.decode_ns > 0 && metrics.store_commit_ns > 0);
+    if metrics.process_metrics_available {
+        assert!(metrics.peak_rss_kb > 0);
+    }
+    environment.peer.stop().await
+}

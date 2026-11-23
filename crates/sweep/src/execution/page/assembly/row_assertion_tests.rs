@@ -122,6 +122,7 @@ async fn given_an_owned_prefix_then_hostile_filtered_row_after_chunk_boundary_wh
             credentials: &credentials,
             home: &home,
             config: &config,
+            metrics: &Default::default(),
         },
         store: &store,
         account,

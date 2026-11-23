@@ -108,6 +108,7 @@ pub(super) async fn resolve(
         url: &url,
         base: &base,
         fields: &[],
+        metrics: context.bootstrap.metrics,
     }
     .run()
     .await?;
@@ -258,7 +259,6 @@ mod tests {
         assert!(cache.get(&region, now).await.is_none());
         Ok(())
     }
-
     #[test]
     fn endpoint_leases_require_bounded_count_ttl_and_every_trusted_address()
     -> Result<(), Box<dyn std::error::Error>> {

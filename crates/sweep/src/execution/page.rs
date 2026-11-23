@@ -95,6 +95,7 @@ async fn process_lease(
         url: &url,
         base: &base,
         fields: &fields,
+        metrics: context.bootstrap.metrics,
     };
     let response = match call.run().await {
         Ok(response) => response,
@@ -209,7 +210,10 @@ async fn commit_page(
     rows: u64,
 ) -> Result<SweepSummary, SweepError> {
     let fallback_lease = commit.lease.clone();
-    match context.store.commit_page(commit).await {
+    let started = std::time::Instant::now();
+    let result = context.store.commit_page(commit).await;
+    context.bootstrap.metrics.committed(started, result.is_ok());
+    match result {
         Ok(result) => {
             let summary = report_commit(result, done, rows)?;
             context.progress.emit(|| crate::ProgressEvent::Page {

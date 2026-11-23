@@ -11,11 +11,6 @@ pub struct SweepControl {
     pub progress: Option<Sender<ProgressEvent>>,
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub struct SweepMetrics {
-    pub progress_dropped: u64,
-}
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ProgressEvent {
     Started {

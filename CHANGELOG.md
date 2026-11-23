@@ -14,6 +14,11 @@
   scope outcomes or continuation tokens, so resume completes the same inventory.
   CLI signal handling stays outside the library and spawns no signal task.
 
+- Sweep summaries retain their original first output line and add a `metrics`
+  line with stage times, executor and transport counters, per-run decode and
+  commit timing, successful claims/pages, HTTP/2 requests, and bounded `/proc`
+  CPU/peak-memory readings. Missing process metrics are explicitly unavailable.
+
 - Collection now accepts any `InventoryStore` through monomorphized APIs,
   including discovery, resume, lease settlement and page persistence. Concrete
   SQLite construction remains in CLI wiring and test fixtures.

@@ -14,6 +14,7 @@ mod control;
 mod credentials;
 mod execution;
 mod input;
+mod metrics;
 #[cfg(test)]
 mod pinned_model;
 mod record;
@@ -23,9 +24,10 @@ mod row_policy;
 #[cfg(test)]
 mod test_cbor;
 
-pub use control::{ProgressEvent, SweepControl, SweepMetrics};
+pub use control::{ProgressEvent, SweepControl};
 pub use credentials::{CredentialFailure, CredentialSource};
 pub use execution::run;
+pub use metrics::SweepMetrics;
 
 #[derive(Clone, Debug)]
 pub struct SweepConfig {

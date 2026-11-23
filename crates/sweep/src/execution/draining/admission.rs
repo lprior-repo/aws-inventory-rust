@@ -55,5 +55,6 @@ pub(super) async fn claim_next(
     } else {
         context.store.claim(sweep, now, context.lease_ms).await?
     };
+    context.bootstrap.metrics.claimed(lease.is_some());
     Ok(lease)
 }

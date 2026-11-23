@@ -35,6 +35,7 @@ pub(super) struct BootstrapContext<'a, 'catalog, C: CredentialSource> {
     pub credentials: &'a C,
     pub home: &'a RegionId,
     pub config: &'a SweepConfig,
+    pub metrics: &'a crate::metrics::Accumulators,
 }
 
 pub(super) struct RuntimeContext<'a, 'catalog, C: CredentialSource, S: InventoryStore> {
@@ -171,6 +172,7 @@ async fn bootstrap_account(
         url: &url,
         base: &base,
         fields: &[],
+        metrics: context.metrics,
     };
     let response = request.run().await?;
     let value = record::path_value(response.record.root(), account_path.as_ref())?.ok_or(
@@ -245,6 +247,7 @@ async fn discover_regions(
         url: &url,
         base: &base,
         fields: &[],
+        metrics: context.bootstrap.metrics,
     };
     let response = request.run().await?;
     let rows = record::item_records(

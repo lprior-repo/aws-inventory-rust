@@ -13,6 +13,7 @@ pub struct Statistics {
     pub timeouts: usize,
 
     pub bytes_read: usize,
+    pub http2_requests: usize,
 }
 
 #[derive(Default)]
@@ -22,6 +23,7 @@ pub(super) struct Counters {
     requests: AtomicUsize,
     read: AtomicUsize,
     timeouts: AtomicUsize,
+    http2: AtomicUsize,
 }
 
 impl Counters {
@@ -42,6 +44,13 @@ impl Counters {
         self.timeouts.fetch_add(1, Ordering::Relaxed);
     }
 
+    pub(super) fn http2(&self) {
+        self.http2
+            .update(Ordering::Relaxed, Ordering::Relaxed, |value| {
+                value.saturating_add(1)
+            });
+    }
+
     pub(super) fn read(&self, bytes: usize) {
         self.read.fetch_add(bytes, Ordering::Relaxed);
     }
@@ -56,6 +65,7 @@ impl Counters {
             requests_reused: requests_sent.saturating_sub(connections_opened),
             timeouts: self.timeouts.load(Ordering::Relaxed),
             bytes_read: self.read.load(Ordering::Relaxed),
+            http2_requests: self.http2.load(Ordering::Relaxed),
         }
     }
 }

@@ -1,12 +1,15 @@
 use super::*;
 use crate::ProgressEvent;
 use crate::control::Progress;
+use crate::metrics::{Accumulators, complete, elapsed_ms};
+use std::time::Instant;
 
 pub(super) struct Resources {
     client: Client,
     pub executor: ApiExecutor,
     home: RegionId,
     lease_ms: i64,
+    metrics: Accumulators,
 }
 
 impl Resources {
@@ -26,7 +29,17 @@ impl Resources {
             executor,
             home,
             lease_ms,
+            metrics: Accumulators::default(),
         })
+    }
+
+    fn complete(&self, metrics: &mut crate::SweepMetrics) {
+        complete(
+            metrics,
+            &self.metrics,
+            self.executor.stats(),
+            self.client.statistics(),
+        );
     }
 
     fn bootstrap<'a, 'catalog, C: CredentialSource>(
@@ -42,6 +55,7 @@ impl Resources {
             credentials,
             home: &self.home,
             config,
+            metrics: &self.metrics,
         }
     }
 }
@@ -56,9 +70,17 @@ pub(super) async fn collect(
 ) -> Result<SweepSummary, SweepError> {
     let bootstrap = resources.bootstrap(catalog, config, credentials);
     store.validate_catalog(catalog.raw_bytes()).await?;
+    let started = Instant::now();
     let (sweep, account) = initialize(&bootstrap, store).await?;
+    let mut metrics = crate::SweepMetrics {
+        bootstrap_ms: elapsed_ms(started),
+        ..Default::default()
+    };
     let context = context(bootstrap, store, account, resources.lease_ms, progress)?;
-    drain(&context, &sweep).await
+    let mut summary = drain(&context, &sweep, &mut metrics).await?;
+    resources.complete(&mut metrics);
+    summary.metrics = metrics;
+    Ok(summary)
 }
 
 async fn initialize(
@@ -97,7 +119,9 @@ fn context<'a, 'catalog, C: CredentialSource, S: InventoryStore>(
 async fn drain(
     context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     sweep: &SweepId,
+    metrics: &mut crate::SweepMetrics,
 ) -> Result<SweepSummary, SweepError> {
+    let started = Instant::now();
     let regions = discover_regions(context).await?;
     let root_scopes = seed_enumerations(context, sweep, &regions).await?;
     let region_count = u32::try_from(regions.len())
@@ -108,9 +132,22 @@ async fn drain(
         regions: region_count,
         root_scopes,
     });
+    metrics.seed_ms = elapsed_ms(started);
     let budget = match context.bootstrap.config.slice_timeout_secs {
         Some(seconds) => SliceBudget::starting_at(now_ms()?, seconds),
         None => SliceBudget::unbounded(),
     };
-    drain_work(context, sweep, budget).await
+    timed_drain(context, sweep, budget, metrics).await
+}
+
+async fn timed_drain(
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
+    sweep: &SweepId,
+    budget: SliceBudget,
+    metrics: &mut crate::SweepMetrics,
+) -> Result<SweepSummary, SweepError> {
+    let started = Instant::now();
+    let summary = drain_work(context, sweep, budget).await;
+    metrics.drain_ms = elapsed_ms(started);
+    summary
 }
