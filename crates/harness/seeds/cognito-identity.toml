@@ -1,0 +1,11 @@
+format = 1
+service = "cognito-identity"
+
+[[step]]
+id = "resource"
+operation = "CreateIdentityPool"
+kind = "AWS::Cognito::IdentityPool"
+identity = "IdentityPoolId"
+[step.input]
+IdentityPoolName = "inventory-thin-cognito-identity"
+AllowUnauthenticatedIdentities = false
