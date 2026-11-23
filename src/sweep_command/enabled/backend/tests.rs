@@ -15,6 +15,16 @@ fn options(database: &str) -> Result<SweepArgs> {
 }
 
 #[test]
+fn given_repeated_service_selectors_when_parsed_then_order_and_qualification_are_preserved() -> Result<()> {
+    let parsed = Options::try_parse_from([
+        "test", "--database", "unused", "--service", "ec2:DescribeVpcs", "--service", "sts",
+    ])?;
+    assert_eq!(parsed.sweep.services, ["ec2:DescribeVpcs", "sts"]);
+    assert!(options("unused")?.services.is_empty());
+    Ok(())
+}
+
+#[test]
 fn given_database_password_when_debugged_or_clap_rejects_another_value_then_secret_is_hidden()
 -> Result<()> {
     let database = "postgres://user:super-secret@localhost/inventory";

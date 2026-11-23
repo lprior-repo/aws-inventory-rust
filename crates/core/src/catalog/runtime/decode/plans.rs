@@ -12,6 +12,7 @@ mod bindings;
 mod bounds;
 mod capabilities;
 mod context;
+pub(crate) use context::producers;
 mod dependencies;
 mod emissions;
 mod fixed_input;
