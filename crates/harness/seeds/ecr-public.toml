@@ -1,0 +1,10 @@
+format = 1
+service = "ecr-public"
+
+[[step]]
+id = "repository"
+operation = "CreateRepository"
+kind = "AWS::ECR::PublicRepository"
+identity = "repository.repositoryArn"
+[step.input]
+repositoryName = "inventory-thin-ecr-public"
