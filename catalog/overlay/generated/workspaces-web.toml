@@ -30,8 +30,13 @@ class = "defer"
 defer_reason = "output: secret-bearing member shape"
 
 [operation.GetPortalServiceProviderMetadata]
-class = "defer"
-defer_reason = "identity: no ARN member and no modeled identifiers"
+class = "expand"
+scope = "region"
+items = "$"
+[operation.GetPortalServiceProviderMetadata.identity]
+arn = "portalArn"
+[operation.GetPortalServiceProviderMetadata.paginator]
+kind = "none"
 
 [operation.GetSession]
 class = "defer"
@@ -52,7 +57,7 @@ kind = "none"
 
 [operation.GetTrustStoreCertificate]
 class = "defer"
-defer_reason = "identity: no ARN member and no modeled identifiers"
+defer_reason = "expand: no unique compatible identity source"
 
 [operation.GetUserAccessLoggingSettings]
 class = "expand"

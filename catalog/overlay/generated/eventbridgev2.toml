@@ -19,10 +19,6 @@ kind = "none"
 class = "defer"
 defer_reason = "output: secret-bearing member shape"
 
-[operation.DescribeSubscriber]
-class = "defer"
-defer_reason = "output: secret-bearing member shape"
-
 [operation.GetResourcePolicy]
 class = "defer"
 defer_reason = "Requires ResourceArn; no reviewed complete parent binding and selected-item resource identity is authorized for this operation. Pinned operation: Returns the named resource policy attached to an event bus."

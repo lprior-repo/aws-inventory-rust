@@ -252,3 +252,39 @@ fn given_all_pinned_models_when_generated_again_then_every_file_is_byte_identica
     assert_eq!(generated()?.files(), generate_all()?.files());
     Ok(())
 }
+
+#[test]
+#[ignore = "reads all 436 pinned models; run the documented overlay-safety gate"]
+fn given_reviewed_denials_and_defers_when_generated_then_safety_decisions_remain_authoritative()
+-> Result {
+    let proposals = generated()?;
+    for reviewed in overlay::embedded()? {
+        let policy = proposals
+            .policies()
+            .iter()
+            .find(|policy| policy.service() == reviewed.service())
+            .ok_or("missing generated service")?;
+        assert_reviewed_safety(&reviewed, policy);
+    }
+    Ok(())
+}
+
+fn assert_reviewed_safety(reviewed: &ServiceOverlay, generated: &ServiceOverlay) {
+    for (name, entry) in reviewed.operations() {
+        let proposal = generated.operations().get(name);
+        match entry.class {
+            Some(OverlayClass::Deny(_)) => {
+                assert!(proposal.is_none(), "{}/{}", reviewed.service(), name);
+            }
+            Some(OverlayClass::Defer) if entry.generation_blocker.is_none() => {
+                assert!(
+                    proposal.is_none_or(|entry| entry.class == Some(OverlayClass::Defer)),
+                    "{}/{}",
+                    reviewed.service(),
+                    name
+                );
+            }
+            _ => {}
+        }
+    }
+}

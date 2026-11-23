@@ -38,7 +38,7 @@ defer_reason = "identity: no ARN member and no modeled identifiers"
 
 [operation.ListJobs]
 class = "defer"
-defer_reason = "identity: no ARN member and no modeled identifiers"
+defer_reason = "The modeled US endpoints return jobs from all US Regions; regional persistence would misattribute and duplicate them. A geography-aware identity/scope contract is required."
 
 [operation.ListLongTermPricing]
 class = "defer"

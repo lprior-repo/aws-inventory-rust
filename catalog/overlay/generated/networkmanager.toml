@@ -147,10 +147,8 @@ class = "defer"
 defer_reason = "Expansion requires request context (CoreNetworkId, SegmentName, EdgeLocation); this operation has no complete metadata-only dependency/output contract in the embedded planner."
 
 [operation.ListCoreNetworks]
-class = "enumerate"
-scope = "account"
-[operation.ListCoreNetworks.identity]
-arn = "CoreNetworkArn"
+class = "defer"
+defer_reason = "The modeled collection includes owned and shared core networks without an account-owner request filter; no owned-only selector is available."
 
 [operation.ListOrganizationServiceAccessStatus]
 class = "defer"

@@ -208,7 +208,7 @@ arn = "datasetArn"
 
 [operation.ListEvaluators]
 class = "defer"
-defer_reason = "output: secret-bearing member shape"
+defer_reason = "The modeled collection mixes builtin, third-party and custom evaluators without an ownership request filter; no owned-only selector is available."
 
 [operation.ListGatewayRateLimits]
 class = "defer"

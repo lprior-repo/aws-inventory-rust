@@ -5,7 +5,8 @@ type TestResult = Result<(), Box<dyn std::error::Error>>;
 #[test]
 fn given_reviewed_suspect_claims_when_loading_policy_then_safety_decisions_are_explicit()
 -> TestResult {
-    let services = overlay::embedded()?;
+    let root = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let services = overlay::load(&root)?;
     include_str!("suspect_policy.tsv")
         .lines()
         .filter(|line| !line.starts_with('#') && !line.is_empty())

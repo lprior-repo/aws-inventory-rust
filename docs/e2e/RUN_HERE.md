@@ -265,6 +265,91 @@ callability. The generated file alone must not be interpreted as enabling that
 Lambda operation. `moon.yml` remains unchanged by directive; use the documented
 plain command gates rather than adding pipeline wiring.
 
+### Suspect/failure/generator integration (2026-11-23)
+
+`w4/int` merged `w4/gen` at `2645e63f`, after the suspect-policy and native
+failure lanes. The only textual merge conflict was additive changelog text;
+both entries were retained. Reviewed safety decisions remain authoritative
+both in effective overlays and in generated proposals.
+
+The prior on-disk overlay report still described wave1's 2,197 callables.
+A fresh embedded-only check in `.local/int/embedded-only` establishes the actual
+post-suspect/failure baseline: **1,554 enumerate + 632 expand = 2,186**.
+Adding the generator yields **1,554 enumerate + 664 expand = 2,218**.
+All 19,636 operation keys are accounted for: 2,218 callable, 7,984 denied and
+9,434 deferred. Denial totals here count operation rows, including classifier
+denials, not only the narrower `denied_by_overlay` header field.
+
+| Endpoint class | Embedded enumerate | Embedded expand | Merged enumerate | Merged expand |
+| --- | ---: | ---: | ---: | ---: |
+| global | 89 | 50 | 89 | 50 |
+| regional | 1461 | 577 | 1461 | 609 |
+| needs-overlay | 4 | 5 | 4 | 5 |
+| unsupported | 0 | 0 | 0 | 0 |
+
+Generation still covers all 436 services; the integrated proposals contain
+**765 enumerate + 86 expand = 851 callables**, two fewer than the standalone
+generator lane. The root-identity correction additionally derives the already
+reviewed WorkSpaces Web `GetPortalServiceProviderMetadata` expansion. Its pinned
+readonly GET model requires and returns the same `portalArn` shape; the other
+field is public service-provider SAML metadata, not a credential. This changes
+no effective callable. All 32 effective promotions are the same
+`EXPAND-OK` children recorded in
+[`build/generator-promotions.tsv`](build/generator-promotions.tsv), and no
+existing reviewed callable changes class.
+
+The scoped negative-audit check rechecked the six previously investigated
+negative proposals against the current model operation keys and policies.
+AppConfig `ListExtensions` is now generated/effectively deferred. The five
+remaining advisory disagreements are unchanged baseline callables; their
+pinned-model refutations are recorded in
+[`SUSPECT_POLICY_REVIEW.md`](SUSPECT_POLICY_REVIEW.md). None is a new promotion.
+All eleven explicit suspect deny/defer contracts remain non-callable in
+generated output and preserve their effective decisions.
+
+The suspect contract test now loads merged overlays rather than embedded-only
+policies. An additional all-model generation scenario checks every reviewed
+denial and every defer without an explicit request-binding migration marker.
+This also checks defers outside the eleven named suspect contracts.
+
+Compilation exposed the newly callable MediaConnect `DescribeGatewayInstance`
+missing its reviewed kind mapping. It now shares the existing
+`AWS::ApiOnly::MediaConnectGatewayInstance` kind with `ListGatewayInstances`.
+The pinned model uses the same `GatewayInstanceArn` identity for both shapes.
+
+DataSync singleton detail responses also exposed a generator defect: agent or
+security-group ARN metadata collections were selected instead of the location.
+Root identity now recognizes a unique required request ARN returned with the
+same modeled shape by `Get`/`Describe`. Optional inputs, different shapes, list
+operations and already-selected collections cannot use that fallback. The
+existing parent-binding checks still apply; no rows are removed to hide errors.
+
+The integration refreshes generated overlays, classes, plans, effective overlay,
+kinds, coverage, binary catalog and IAM policy. It deliberately does not update
+`MANIFEST.sha256`; the coordinator owns that final publication step. No emulator,
+database or graph acceptance run is claimed by this integration.
+
+Integration artifact checks passed with `CARGO_TARGET_DIR=/tmp/tgt-int` and `-j3`:
+
+```sh
+cargo run --locked -p catalog-tool -j3 -- overlays generate --check
+cargo run --locked -p catalog-tool -j3 -- classes --check
+cargo run --locked -p catalog-tool -j3 -- plans --check
+cargo run --locked -p catalog-tool -j3 -- overlay --source .local/aws-models --root . --check
+cargo run --locked -p catalog-tool -j3 -- kinds generate --check
+cargo run --locked -p catalog-tool -j3 -- coverage --check
+cargo run --locked -p catalog-tool -j3 -- models compile --check
+cargo run --locked -p catalog-tool -j3 -- iam-policy --check
+```
+
+The scoped negative-audit evidence is retained in
+`.local/int/gen-integration-safety.log`,
+`.local/int/generator-integration-negative.tsv` and
+`.local/int/generator-integration-counts.tsv`. All touched Rust files are below
+300 lines, and explicit function-span measurement passed the 25-line bound.
+The coverage-denominator corruption scenario now increments the actual header
+count rather than assuming the obsolete 1,565-enumeration baseline.
+
 ## Wave 2 owned run command (A7.1)
 
 `inventory-harness e2e run --work "$(mktemp -d)" --service ec2`

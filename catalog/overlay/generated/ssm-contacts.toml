@@ -42,7 +42,7 @@ arn = "EngagementArn"
 
 [operation.ListPageReceipts]
 class = "defer"
-defer_reason = "identity: no ARN member and no modeled identifiers"
+defer_reason = "receipt identity requires ReceiptTime; timestamp identity representation is unsupported"
 
 [operation.ListPageResolutions]
 class = "defer"
@@ -66,7 +66,7 @@ defer_reason = "identity: no ARN member and no modeled identifiers"
 
 [operation.ListRotationShifts]
 class = "defer"
-defer_reason = "identity: no ARN member and no modeled identifiers"
+defer_reason = "Computed shifts over a supplied time range are not stored inventory; the shift type alone does not identify a shift."
 
 [operation.ListRotations]
 class = "enumerate"

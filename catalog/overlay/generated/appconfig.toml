@@ -42,7 +42,7 @@ defer_reason = "Model requires ApplicationIdentifier, ExperimentDefinitionIdenti
 
 [operation.GetExtension]
 class = "defer"
-defer_reason = "unclassified read: not reviewed"
+defer_reason = "ListExtensions includes AWS-authored reference extensions without an account-owner request filter; its child describe cannot run safely until an owned-only selector exists."
 
 [operation.GetExtensionAssociation]
 class = "defer"
@@ -89,10 +89,8 @@ class = "defer"
 defer_reason = "identity: no ARN member and no modeled identifiers"
 
 [operation.ListExtensions]
-class = "enumerate"
-scope = "region"
-[operation.ListExtensions.identity]
-arn = "Arn"
+class = "defer"
+defer_reason = "The modeled collection mixes custom and AWS-authored extensions and offers no account-owner request filter."
 
 [operation.ListHostedConfigurationVersions]
 class = "defer"

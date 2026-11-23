@@ -41,7 +41,8 @@ of 3,773 expansion candidates, 3,687 remain deferred.
 The effective merged catalog changes from **1,565 enumerate + 632 expand =
 2,197** to **1,565 enumerate + 664 expand = 2,229**, adding 32 children without
 changing any previous callable. All 19,636 operations remain accounted for:
-2,229 callable, 7,350 denied and 9,427 deferred. Generated proposals are not
+2,229 callable, 7,980 denied and 9,427 deferred. Of those denials, 7,350 are
+explicit overlay denials and 630 come from classification. Generated proposals are not
 additional calls when a reviewed policy already owns the operation.
 
 ### By endpoint service class
@@ -188,8 +189,8 @@ resolved those infrastructure failures.
 
 The TOML parser now accepts strict `expand` entries with `bind` values containing
 `from`/`path`, `account = true`, or `region = true`. Unknown fields remain errors.
-`OperationOverlay` gains a public optional source metadata field; downstream
-exhaustive struct literals must supply it or use `..Default::default()`.
+`OperationOverlay` gains a public optional source metadata field. The struct was
+already `#[non_exhaustive]`, so external exhaustive construction remains forbidden.
 The catalog binary schema and runtime collector API are unchanged.
 
 Reviewed ownership/content/scope blockers are deliberately not erased. An

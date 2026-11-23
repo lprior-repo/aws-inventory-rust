@@ -11,9 +11,9 @@ defer_reason = "Requires AgentArn; no reviewed complete parent binding and selec
 [operation.DescribeLocationAzureBlob]
 class = "expand"
 scope = "region"
-items = "AgentArns"
+items = "$"
 [operation.DescribeLocationAzureBlob.identity]
-key = ["$"]
+arn = "LocationArn"
 [operation.DescribeLocationAzureBlob.paginator]
 kind = "none"
 [operation.DescribeLocationAzureBlob.bind]
@@ -26,9 +26,9 @@ defer_reason = "Requires LocationArn; no reviewed complete parent binding and se
 [operation.DescribeLocationFsxLustre]
 class = "expand"
 scope = "region"
-items = "SecurityGroupArns"
+items = "$"
 [operation.DescribeLocationFsxLustre.identity]
-key = ["$"]
+arn = "LocationArn"
 [operation.DescribeLocationFsxLustre.paginator]
 kind = "none"
 [operation.DescribeLocationFsxLustre.bind]
@@ -37,9 +37,9 @@ kind = "none"
 [operation.DescribeLocationFsxWindows]
 class = "expand"
 scope = "region"
-items = "SecurityGroupArns"
+items = "$"
 [operation.DescribeLocationFsxWindows.identity]
-key = ["$"]
+arn = "LocationArn"
 [operation.DescribeLocationFsxWindows.paginator]
 kind = "none"
 [operation.DescribeLocationFsxWindows.bind]
@@ -60,9 +60,9 @@ defer_reason = "Requires LocationArn; no reviewed complete parent binding and se
 [operation.DescribeLocationS3]
 class = "expand"
 scope = "region"
-items = "AgentArns"
+items = "$"
 [operation.DescribeLocationS3.identity]
-key = ["$"]
+arn = "LocationArn"
 [operation.DescribeLocationS3.paginator]
 kind = "none"
 [operation.DescribeLocationS3.bind]

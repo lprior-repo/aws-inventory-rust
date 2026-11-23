@@ -28,15 +28,6 @@ defer_reason = "Model requires workspaceId. No complete safe request/identity bi
 class = "defer"
 defer_reason = "Model requires workspaceId, name. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Returns complete information about one rule groups namespace. To retrieve a list of rule groups namespaces, use ListRuleGroupsNamespaces ."
 
-[operation.DescribeScraper]
-class = "expand"
-scope = "region"
-items = "scraper"
-[operation.DescribeScraper.identity]
-arn = "arn"
-[operation.DescribeScraper.paginator]
-kind = "none"
-
 [operation.DescribeScraperLoggingConfiguration]
 class = "defer"
 defer_reason = "Model requires scraperId. No complete safe request/identity binding is approved for this operation; arbitrary identifiers, credentials, payloads, or a single fixed namespace are not supplied. Model: Describes the logging configuration for a Amazon Managed Service for Prometheus scraper."
