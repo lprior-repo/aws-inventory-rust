@@ -255,21 +255,26 @@ plain command gates rather than adding pipeline wiring.
 
 ## Wave 2 owned run command (A7.1)
 
-`inventory-harness e2e run --work "$(mktemp -d)" --service ec2 --service sts`
+`inventory-harness e2e run --work "$(mktemp -d)" --service ec2`
 starts isolated emulator/FalkorDB children and creates a fresh database on
 `INVENTORY_POSTGRES_URL` (or `--postgres-url`). Obtain an administrative server
 URL with `inventory-harness postgres up` / `postgres url`, or the native server
 instructions in `deploy/local/README.md`. The PostgreSQL server itself is not
 owned or stopped by this command.
 
-Default recipes are `crates/harness/seeds`; override with `--seeds`. Services
-without recipes, such as STS, remain collector selectors but add no seed file.
-`--collector` overrides the sibling `aws-inventory` executable. The command
-refuses non-empty work directories, retains stage logs/oracle/matrix in the work
+Default recipes are `crates/harness/seeds`; override with `--seeds`. Every
+explicit selector must have a matching service recipe; missing recipes fail
+before stack/database startup. Bootstrap calls, including STS account identity,
+remain enabled without explicit selectors.
+`--collector` overrides the sibling `aws-inventory` executable. Its database
+URL is supplied through `INVENTORY_SWEEP_DATABASE`, not process arguments.
+The command refuses non-empty work directories, retains stage logs/oracle/matrix in the work
 directory, takes a pre-seed `baseline` sweep and retains `baseline.tsv`. For
 callable seeded kinds, `verify-counts` compares full account/region/kind/id
 additions (`after - before`) with the oracle, and requires zero resource writes
 on the repeat sweep. No unseeded kind is claimed verified.
+At least one seeded kind must remain callable after catalog-deferred filtering;
+an entirely deferred oracle fails verification rather than passing with no checks.
 Selected recipes can create resources in another service: their nonempty-kind
 steps add missing collector services (for example, Lambda's Signer profiles).
 Existing requested service scopes, including qualified operations, are retained;
@@ -398,8 +403,8 @@ scripts/e2e-baseline.sh
 ```
 
 It installs missing pinned runtimes, builds the harness and shipped collector,
-then calls `e2e run` with whole-service EC2 and STS selectors. Supply
-`INVENTORY_POSTGRES_URL` or pass `--postgres-url` through the script. The work
+then calls `e2e run` with a whole-service EC2 selector (bootstrap STS is retained).
+Supply `INVENTORY_POSTGRES_URL` or pass `--postgres-url` through the script. The work
 directory is printed and retained for logs. See A7.1 above for current gate
 status; the historical suite result below is not evidence for this larger catalog.
 

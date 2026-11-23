@@ -105,7 +105,8 @@ impl Run {
         let coverage = verify::Coverage::load(
             &self.args.catalog,
             &self.args.seeds,
-            &seed::selected_recipes(&self.args),
+            &seed::selected_recipes(&self.args)
+                .map_err(|error| HarnessError::invalid(format!("seed recipes: {error}")))?,
         )?;
         verify::counts(
             self.database.url(),
