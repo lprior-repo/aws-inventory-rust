@@ -19,7 +19,8 @@ fn input<'a>(
 }
 
 #[test]
-fn given_eks_and_emr_recipes_when_combined_then_prerequisite_identities_do_not_collide() -> TestResult {
+fn given_eks_and_emr_recipes_when_combined_then_prerequisite_identities_do_not_collide()
+-> TestResult {
     // Given independently runnable recipes sharing one seeded account.
     let eks: toml::Value = toml::from_str(include_str!("../seeds/eks.toml"))?;
     let emr: toml::Value = toml::from_str(include_str!("../seeds/emr-containers.toml"))?;
@@ -32,7 +33,10 @@ fn given_eks_and_emr_recipes_when_combined_then_prerequisite_identities_do_not_c
     .into_iter()
     .try_for_each(|(operation, field)| -> TestResult {
         // Then replaying either recipe cannot replace or reject the other's prerequisite.
-        assert_ne!(input(&eks, operation, field)?, input(&emr, operation, field)?);
+        assert_ne!(
+            input(&eks, operation, field)?,
+            input(&emr, operation, field)?
+        );
         Ok(())
     })?;
     assert_eq!(
