@@ -976,3 +976,50 @@ No emulator report, manifest or generated catalog is committed by this merge
 verification. Seed integration and the final aggregate native probe are separate
 steps; no new emulator or real-AWS execution is claimed here.
 
+### Integrated fixture contracts
+
+The first combined crate run found three outdated sweep fixtures:
+
+- App Mesh router/gateway list requests must retain the owning `meshOwner`,
+  including its REST query parameter, before route pagination begins.
+- The legacy Elasticsearch endpoint still pins `engineType=Elasticsearch`.
+  The OpenSearch endpoint deliberately has no engine filter, so legacy domains
+  remain reachable there as required by the reviewed policy.
+- WAF detail bindings now come from the matching execution branch and its
+  projected discovery frame, not the unbranched binding list. The fixture
+  projects the real request, response and item into branch-qualified provenance
+  before resolving `Name` and `Id`; regional and CloudFront assertions remain.
+
+These repairs update the fixture contract without restoring an engine filter,
+discarding an owner or weakening branch provenance in production policy.
+
+After the repairs, `cargo fmt -p inventory-sweep` and the four-crate clippy
+command above passed. Each focused command below passed its single selected
+scenario with zero failures:
+
+```sh
+cargo test -j3 -p inventory-sweep --locked given_equal_router_and_gateway_names_in_two_meshes_when_routes_resume_then_parent_pairs_never_cross
+cargo test -j3 -p inventory-sweep --locked given_mixed_search_engines_when_real_requests_are_encoded_then_domains_have_disjoint_canonical_nodes
+cargo test -j3 -p inventory-sweep --locked given_regional_and_cloudfront_waf_branches_when_requested_then_scope_region_cursors_and_detail_pairs_stay_distinct
+```
+
+The final combined run passed:
+
+```sh
+cargo test -j3 -p catalog-tool -p inventory-sweep -p inventory-harness -p aws-wire --locked
+```
+
+| Crate | Passed tests | Passed doctests | Ignored tests | Failed |
+| --- | ---: | ---: | ---: | ---: |
+| aws-wire | 205 | 0 | 0 | 0 |
+| catalog-tool | 911 | 2 | 10 | 0 |
+| inventory-harness | 463 | 0 | 16 | 0 |
+| inventory-sweep | 469 | 0 | 0 | 0 |
+
+Total: 2,050 passed, 26 ignored, zero failures. Ignored tests were not executed.
+Local evidence is retained under `.local/int/`: `fmt-clippy.log`,
+`catalog-checks.log`, `fallout-checks-final.log` and `crate-tests-final.log`.
+The initial combined failure is retained in `crate-tests.log`; two intermediate
+clippy attempts caught and corrected borrowing/type errors in the new WAF
+fixture before its focused and combined runs passed.
+
