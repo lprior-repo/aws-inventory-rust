@@ -4,7 +4,7 @@ service = "chime-sdk-voice"
 [[step]]
 id = "resource"
 operation = "CreateVoiceConnector"
-kind = "AWS::ChimeSDKVoice::VoiceConnector"
+kind = "AWS::Chime::VoiceConnector"
 identity = "VoiceConnector.VoiceConnectorArn"
 [step.input]
 "Name" = "inventory-thin-chime-sdk-voice"
