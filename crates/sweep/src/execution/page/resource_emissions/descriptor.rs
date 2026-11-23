@@ -18,13 +18,22 @@ impl<'a, 'catalog> Descriptor<'a, 'catalog> {
         request: &'a PageRequest,
         ancestry: &'a DiscoveryContext,
     ) -> Self {
-        Self { context, lease, plan, emission, request, ancestry }
+        Self {
+            context,
+            lease,
+            plan,
+            emission,
+            request,
+            ancestry,
+        }
     }
 
     pub(super) async fn collect(&self, response: &Record) -> Result<PageParts, SweepError> {
         let (count, selected) = record::item_selection(response, self.emission.items())?;
         if count > assembly::MAX_PAGE_ROWS {
-            return Err(SweepError::Operation("page exceeds the atomic observation bound"));
+            return Err(SweepError::Operation(
+                "page exceeds the atomic observation bound",
+            ));
         }
         self.collect_chunks(selected, count).await
     }
@@ -36,14 +45,19 @@ impl<'a, 'catalog> Descriptor<'a, 'catalog> {
     ) -> Result<PageParts, SweepError> {
         stream::iter(0..count.div_ceil(assembly::ROWS_PER_CHECKPOINT))
             .map(Ok::<_, SweepError>)
-            .try_fold((PageParts::default(), 0, selected), |(mut parts, mut tags, mut selected), _| async move {
-                assembly::checkpoint(self.context.executor).await?;
-                let raw = selected.by_ref().take(assembly::ROWS_PER_CHECKPOINT)
-                    .collect::<Result<Vec<_>, _>>()?;
-                let next = self.chunk(raw)?;
-                assembly::append(&mut parts, next, &mut tags)?;
-                Ok((parts, tags, selected))
-            })
+            .try_fold(
+                (PageParts::default(), 0, selected),
+                |(mut parts, mut tags, mut selected), _| async move {
+                    assembly::checkpoint(self.context.executor).await?;
+                    let raw = selected
+                        .by_ref()
+                        .take(assembly::ROWS_PER_CHECKPOINT)
+                        .collect::<Result<Vec<_>, _>>()?;
+                    let next = self.chunk(raw)?;
+                    assembly::append(&mut parts, next, &mut tags)?;
+                    Ok((parts, tags, selected))
+                },
+            )
             .await
             .map(|(parts, _, _)| parts)
     }
@@ -52,11 +66,21 @@ impl<'a, 'catalog> Descriptor<'a, 'catalog> {
         let items = selected(self.emission, raw)?;
         let observations = self.observations(&items)?;
         let references = rows::references(
-            self.context.catalog, self.plan, &self.request.region, &items, &observations,
-            &self.request.record, self.lease.scope().parent(),
+            self.context.catalog,
+            self.plan,
+            &self.request.region,
+            &items,
+            &observations,
+            &self.request.record,
+            self.lease.scope().parent(),
         )?;
         let tags = rows::emission_tags(self.emission, &items, &observations)?;
-        Ok(PageParts { observations, references, tags, ..PageParts::default() })
+        Ok(PageParts {
+            observations,
+            references,
+            tags,
+            ..PageParts::default()
+        })
     }
 
     fn scope(&self) -> rows::EmissionScope<'_> {
@@ -78,7 +102,9 @@ impl<'a, 'catalog> Descriptor<'a, 'catalog> {
         &self,
         items: &[Record],
     ) -> Result<Vec<inventory_core::inventory::Observation>, SweepError> {
-        items.iter().map(|row| rows::emission_observation(self.scope(), row)).collect()
+        items
+            .iter()
+            .map(|row| rows::emission_observation(self.scope(), row))
+            .collect()
     }
 }
-

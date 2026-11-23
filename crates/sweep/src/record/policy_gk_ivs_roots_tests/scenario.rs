@@ -238,5 +238,4 @@ impl Scenario {
         reader.close().await;
         Ok(())
     }
-
 }

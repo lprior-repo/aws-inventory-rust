@@ -4,9 +4,10 @@ mod fixture;
 use fixture::{catalog_bytes, facet_row, frozen, old_image, page, partial, pool};
 use inventory_core::inventory::ScopeOutcome;
 
+#[path = "v3_migration/authority.rs"]
+mod authority;
 #[path = "v3_replay.rs"]
 mod replay;
-mod authority;
 
 #[tokio::test]
 async fn given_honest_v2_discovery_facet_when_same_catalog_targets_and_partial_sources_arrive_then_only_two_fresh_misses_and_metadata_complete_release_it()
@@ -226,4 +227,3 @@ async fn given_honest_v2_discovery_facet_when_same_catalog_targets_and_partial_s
     }
     Ok(())
 }
-

@@ -234,4 +234,3 @@ async fn given_empty_iot_first_pages_when_real_cursors_resume_then_every_safe_ro
     }
     Ok(())
 }
-

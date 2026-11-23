@@ -232,4 +232,3 @@ async fn given_large_page_when_heartbeat_requests_cancellation_then_projection_s
     scenario.assert_atomic().await?;
     Ok(())
 }
-

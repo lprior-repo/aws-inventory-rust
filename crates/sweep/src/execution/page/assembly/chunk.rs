@@ -16,9 +16,33 @@ impl page::Page<'_, '_> {
         } else {
             rows::tags(self.plan, &chunk.items, &observations)?
         };
-        let children = child::work(child_context, &chunk.items, &observations,
-            &self.request.record, &contexts, self.lease.scope(), budget)?;
-        Ok(PageParts { observations, references, tags, children, ..PageParts::default() })
+        let children = self.work(child_context, chunk, &observations, &contexts, budget)?;
+        Ok(PageParts {
+            observations,
+            references,
+            tags,
+            children,
+            ..PageParts::default()
+        })
+    }
+
+    fn work(
+        &self,
+        child_context: &child::Context<'_, '_>,
+        chunk: &selection::Chunk,
+        observations: &[Observation],
+        contexts: &[DiscoveryContext],
+        budget: &mut child::PageContextBudget,
+    ) -> Result<Vec<inventory_engine::inventory::WorkSpec>, SweepError> {
+        child::work(
+            child_context,
+            &chunk.items,
+            observations,
+            &self.request.record,
+            contexts,
+            self.lease.scope(),
+            budget,
+        )
     }
 
     fn contexts(
@@ -28,8 +52,16 @@ impl page::Page<'_, '_> {
     ) -> Result<Vec<DiscoveryContext>, SweepError> {
         child::contexts_at(
             self.plan,
-            chunk.items.iter().zip(chunk.ordinals.iter()).map(|(row, ordinal)| (*ordinal, row)),
-            &self.request.record, &self.response.record, self.ancestry, self.lease.scope(), budget,
+            chunk
+                .items
+                .iter()
+                .zip(chunk.ordinals.iter())
+                .map(|(row, ordinal)| (*ordinal, row)),
+            &self.request.record,
+            &self.response.record,
+            self.ancestry,
+            self.lease.scope(),
+            budget,
         )
     }
 
@@ -43,8 +75,15 @@ impl page::Page<'_, '_> {
         }
         rows::observations(
             self.context.catalog,
-            record::IdentityContext { account: self.context.account, region: &self.request.region },
-            self.plan, self.lease.scope().region(), items, &self.request.record, contexts,
+            record::IdentityContext {
+                account: self.context.account,
+                region: &self.request.region,
+            },
+            self.plan,
+            self.lease.scope().region(),
+            items,
+            &self.request.record,
+            contexts,
         )
     }
 
@@ -54,8 +93,13 @@ impl page::Page<'_, '_> {
         observations: &[Observation],
     ) -> Result<Vec<UnresolvedReference>, SweepError> {
         rows::references(
-            self.context.catalog, self.plan, &self.request.region, items, observations,
-            &self.request.record, self.lease.scope().parent(),
+            self.context.catalog,
+            self.plan,
+            &self.request.region,
+            items,
+            observations,
+            &self.request.record,
+            self.lease.scope().parent(),
         )
     }
 }

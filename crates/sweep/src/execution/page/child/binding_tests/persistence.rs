@@ -1,11 +1,11 @@
 use super::*;
 mod projection;
-pub(super) use projection::{Resource, Edge, key, assert_state, unbranched_source};
 use crate::execution::{
     draining,
     page::{PageRequest, assembly, cursor, preparation},
 };
 use inventory_engine::inventory::{BinaryStore, PageCommit, SchemaRegistry, WorkLease};
+pub(super) use projection::{Edge, Resource, assert_state, key, unbranched_source};
 use std::{collections::BTreeSet, path::Path};
 
 async fn seed(
@@ -279,4 +279,3 @@ async fn given_alternative_roots_when_empty_and_child_pages_restart_then_sqlite_
 -> TestResult {
     synthetic(2).await
 }
-

@@ -34,4 +34,3 @@ fn text(
         _ => Err(format!("required text absent: {field}").into()),
     }
 }
-

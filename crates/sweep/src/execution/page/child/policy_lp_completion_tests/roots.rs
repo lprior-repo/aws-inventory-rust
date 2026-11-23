@@ -198,4 +198,3 @@ async fn given_mediaconnect_owned_roots_when_unfiltered_pages_resume_then_endpoi
     }
     Ok(())
 }
-

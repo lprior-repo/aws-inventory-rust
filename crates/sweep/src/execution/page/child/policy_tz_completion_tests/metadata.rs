@@ -107,7 +107,6 @@ async fn given_custom_lenses_and_agent_profiles_when_native_pages_execute_then_o
     Ok(())
 }
 
-
 #[tokio::test]
 async fn given_agent_profile_arns_outside_actual_request_authority_when_native_rows_are_applied_then_no_resource_or_child_is_committed()
 -> TestResult {

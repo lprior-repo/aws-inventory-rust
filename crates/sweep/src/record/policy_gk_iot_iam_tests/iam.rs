@@ -1,7 +1,6 @@
 use super::*;
 mod global;
 
-
 struct PolicyCase {
     service: &'static str,
     parent: &'static str,

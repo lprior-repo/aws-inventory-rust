@@ -37,7 +37,9 @@ impl Source<'_> {
             Source::Map(map, _) => map.count()?,
         };
         if count > MAX_PAGE_ITEMS {
-            return Err(SweepError::Operation("page exceeds the atomic observation bound"));
+            return Err(SweepError::Operation(
+                "page exceeds the atomic observation bound",
+            ));
         }
         Ok(count)
     }
@@ -102,7 +104,10 @@ fn source<'a>(record: &'a Record, plan: &ItemPlan) -> Result<Source<'a>, SweepEr
     selected_source(kind, value)
 }
 
-fn selected_source(kind: Option<SelectionKind>, value: ValueRef<'_>) -> Result<Source<'_>, SweepError> {
+fn selected_source(
+    kind: Option<SelectionKind>,
+    value: ValueRef<'_>,
+) -> Result<Source<'_>, SweepError> {
     match (kind, value) {
         (None | Some(SelectionKind::Structure), value @ ValueRef::Map(_)) => {
             Ok(Source::Single(value))
@@ -125,8 +130,12 @@ fn selected_source(kind: Option<SelectionKind>, value: ValueRef<'_>) -> Result<S
 
 fn map_source(map: MapRef<'_>, kind: SelectionKind) -> Result<Source<'_>, SweepError> {
     match kind {
-        SelectionKind::MapKeys | SelectionKind::MapValues | SelectionKind::MapEntries => Ok(Source::Map(map, kind)),
-        _ => Err(SweepError::Operation("response value does not match its compiled item selector")),
+        SelectionKind::MapKeys | SelectionKind::MapValues | SelectionKind::MapEntries => {
+            Ok(Source::Map(map, kind))
+        }
+        _ => Err(SweepError::Operation(
+            "response value does not match its compiled item selector",
+        )),
     }
 }
 

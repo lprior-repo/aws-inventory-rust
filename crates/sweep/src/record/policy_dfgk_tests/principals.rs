@@ -1,3 +1,4 @@
+use super::trust_and_metadata::listed_role;
 use super::*;
 
 #[test]

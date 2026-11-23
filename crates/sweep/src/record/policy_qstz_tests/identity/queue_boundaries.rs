@@ -55,10 +55,8 @@ fn given_queue_arn_mismatches_when_attributes_identify_then_scope_or_queue_name_
         .next()
         .ok_or("queue URL row absent")?;
     let fields = child_fields(&catalog, list, detail, &row)?;
-    let request = crate::input::merge_input(
-        &Record::encode(&Value::Map(BTreeMap::new()))?,
-        &fields,
-    )?;
+    let request =
+        crate::input::merge_input(&Record::encode(&Value::Map(BTreeMap::new()))?, &fields)?;
     for arn in [
         "arn:aws:sqs:us-east-1:999999999999:work",
         "arn:aws:sqs:us-west-2:123456789012:work",

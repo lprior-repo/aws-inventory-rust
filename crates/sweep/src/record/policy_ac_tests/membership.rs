@@ -1,8 +1,8 @@
 mod cleanrooms;
 mod cognito;
 mod connect;
-mod domains;
 mod consumption;
+mod domains;
 use consumption::run;
 
 use super::{TestResult, compile, cursor::Cursor, decode, resource_key};
@@ -110,4 +110,3 @@ fn response(items: &str, row: Json, token: &str, later: bool) -> Json {
         json!({items:[row],token:"later"})
     }
 }
-

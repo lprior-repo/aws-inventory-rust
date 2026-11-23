@@ -1,4 +1,5 @@
 use super::*;
+#[path = "authority_tests/completion.rs"]
 mod completion;
 use inventory_core::{
     catalog::runtime::ContextProjectionPlan,
@@ -155,7 +156,6 @@ async fn ownership(directory: &tempfile::TempDir) -> TestResult<(i64, i64)> {
     Ok(result)
 }
 
-
 async fn parent_detail(
     store: &BinaryStore,
     catalog: &RuntimeCatalog<'_>,
@@ -180,7 +180,6 @@ async fn parent_detail(
         .collect();
     page(store, lease, observations, Vec::new(), at.saturating_add(1)).await
 }
-
 
 async fn first_seen(directory: &tempfile::TempDir) -> TestResult<i64> {
     let pool = sqlx::SqlitePool::connect(&format!(

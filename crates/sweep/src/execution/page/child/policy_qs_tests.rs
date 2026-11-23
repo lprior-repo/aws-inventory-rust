@@ -4,8 +4,8 @@ mod fixture;
 mod multi_emission;
 mod quicksight;
 mod regional;
-mod typed;
 mod scenario;
+mod typed;
 
 use super::super::{PageRequest, assembly, consumer_index::ConsumerIndex, cursor};
 use super::*;
@@ -30,7 +30,6 @@ struct Scenario<'a, 'c> {
     consumers: ConsumerIndex<'a, 'c>,
     executor: ApiExecutor,
 }
-
 
 fn text<'a>(value: &'a Json, field: &str) -> TestResult<&'a str> {
     value

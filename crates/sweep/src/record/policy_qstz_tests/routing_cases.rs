@@ -43,8 +43,7 @@ async fn given_two_outposts_when_bucket_pages_fan_out_then_wire_signing_headers_
             outpost,
             "op-01234567890123456" | "op-fedcba98765432100"
         ));
-        let endpoint =
-            crate::execution::routing::resolve(plan, &RegionId::parse("us-east-1")?)?;
+        let endpoint = crate::execution::routing::resolve(plan, &RegionId::parse("us-east-1")?)?;
         let scope = Scope {
             region: sign::Region::new(&endpoint.signing_region)?,
             name: SigningName::new(&endpoint.signing_name)?,
@@ -258,8 +257,7 @@ fn given_s3_global_and_directory_buckets_when_routes_resolve_then_request_destin
         "123456789012"
     );
     assert_eq!(
-        crate::execution::routing::resolve(directory, &RegionId::parse("us-east-1")?)?
-            .signing_name,
+        crate::execution::routing::resolve(directory, &RegionId::parse("us-east-1")?)?.signing_name,
         "s3express"
     );
     Ok(())

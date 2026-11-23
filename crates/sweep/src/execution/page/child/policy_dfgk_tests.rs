@@ -136,7 +136,6 @@ struct Scenario<'a, 'catalog> {
     consumers: ConsumerIndex<'a, 'catalog>,
 }
 
-
 fn text<'a>(value: &'a Json, name: &str) -> TestResult<&'a str> {
     value
         .get(name)

@@ -1,4 +1,5 @@
 use super::*;
+#[path = "legacy_child_tests/opaque.rs"]
 mod opaque;
 const OTHER_PORTAL: &str = "arn:aws:workspaces-web:us-east-1:123456789012:portal/p-legacy-other";
 
@@ -235,4 +236,3 @@ async fn given_one_old_scope_with_nonchronological_archives_and_distinct_binding
     db.close().await;
     Ok(())
 }
-

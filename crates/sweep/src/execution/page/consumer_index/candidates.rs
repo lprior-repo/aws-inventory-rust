@@ -21,8 +21,12 @@ impl<'a, 'catalog> Iterator for Candidates<'_, 'a, 'catalog> {
         .min_by_key(|consumer| consumer.ordinal)?;
         advance(&mut self.exact, consumer.ordinal);
         advance(&mut self.staged, consumer.ordinal);
-        if self.wildcards.as_slice().first()
-            .is_some_and(|entry| entry.ordinal == consumer.ordinal) {
+        if self
+            .wildcards
+            .as_slice()
+            .first()
+            .is_some_and(|entry| entry.ordinal == consumer.ordinal)
+        {
             self.wildcards.next();
         }
         Some(consumer.plan)
@@ -30,7 +34,11 @@ impl<'a, 'catalog> Iterator for Candidates<'_, 'a, 'catalog> {
 }
 
 fn advance(entries: &mut slice::Iter<'_, Entry<'_, '_>>, ordinal: usize) {
-    if entries.as_slice().first().is_some_and(|entry| entry.consumer.ordinal == ordinal) {
+    if entries
+        .as_slice()
+        .first()
+        .is_some_and(|entry| entry.consumer.ordinal == ordinal)
+    {
         entries.next();
     }
 }

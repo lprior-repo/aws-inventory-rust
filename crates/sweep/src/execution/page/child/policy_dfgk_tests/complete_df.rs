@@ -3,11 +3,11 @@ use super::*;
 mod catalog;
 mod deadline;
 mod descendants;
-mod wire;
 mod http_checks;
+mod wire;
+use http_checks::{assert_get, assert_post};
 pub use wire::json_to_cbor;
 use wire::{assert_rpc, build_rpc_expected, is_rpc, json_binding, json_target, page_size};
-use http_checks::{assert_get, assert_post};
 
 type StoredEdge = (String, String, String, String, String);
 type StoredResourceKey = (String, String, String, String);

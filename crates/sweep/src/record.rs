@@ -191,12 +191,16 @@ fn identity(
         IdentityPlan::Key(paths) => key_text(record, paths)?,
         IdentityPlan::Choice(_) | IdentityPlan::CorrelatedKey(_) | IdentityPlan::MapArn { .. } => {
             return identity_choice::resource_id(
-                record, plan, context, discovery, current_request, validation,
+                record,
+                plan,
+                context,
+                discovery,
+                current_request,
+                validation,
             );
         }
     };
-    ResourceId::parse(&text)
-        .map_err(|_| SweepError::Operation("modeled resource identity is invalid"))
+    identity_choice::parse_identity(&text)
 }
 
 fn validated_arn<'a>(
@@ -279,7 +283,6 @@ fn commercial_region(region: &str) -> bool {
             | "southwest"
     )
 }
-
 
 fn value_text(value: ValueRef<'_>) -> Result<Cow<'_, str>, SweepError> {
     match value {

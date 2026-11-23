@@ -65,11 +65,17 @@ fn project_map(
         .map(Value::Map)
 }
 
-fn project_child(value: ValueRef<'_>, path: &[FieldId], projection: &ResourceProjectionPlan) -> Result<Value, SweepError> {
+fn project_child(
+    value: ValueRef<'_>,
+    path: &[FieldId],
+    projection: &ResourceProjectionPlan,
+) -> Result<Value, SweepError> {
     match value {
         ValueRef::Map(child) => project_map(child, path, projection),
         ValueRef::Null => Ok(Value::Null),
-        _ => Err(SweepError::Operation("projection parent is not a structure")),
+        _ => Err(SweepError::Operation(
+            "projection parent is not a structure",
+        )),
     }
 }
 
@@ -85,48 +91,48 @@ fn project_leaf(
 }
 
 fn trust_summary(value: ValueRef<'_>) -> Result<Value, SweepError> {
-            let document = match value {
-                ValueRef::Text(document) => Some(document),
-                ValueRef::Null => None,
-                _ => return Err(SweepError::Operation("trust document is not text")),
-            };
-            let statements = inventory_core::iam_trust::summarize(document)
-                .map_err(|_| SweepError::Operation("invalid bounded IAM trust document"))?;
-            Ok(Value::Map(
-                [
-                    (
-                        Key::Name("trust_statements".into()),
-                        summary_value(&serde_json::Value::Array(statements), 0)?,
-                    ),
-                    (
-                        Key::Name("trust_policy_values_omitted".into()),
-                        Value::Bool(true),
-                    ),
-                ]
-                .into_iter()
-                .collect(),
-            ))
+    let document = match value {
+        ValueRef::Text(document) => Some(document),
+        ValueRef::Null => None,
+        _ => return Err(SweepError::Operation("trust document is not text")),
+    };
+    let statements = inventory_core::iam_trust::summarize(document)
+        .map_err(|_| SweepError::Operation("invalid bounded IAM trust document"))?;
+    Ok(Value::Map(
+        [
+            (
+                Key::Name("trust_statements".into()),
+                summary_value(&serde_json::Value::Array(statements), 0)?,
+            ),
+            (
+                Key::Name("trust_policy_values_omitted".into()),
+                Value::Bool(true),
+            ),
+        ]
+        .into_iter()
+        .collect(),
+    ))
 }
 
 fn sensitive_map(value: ValueRef<'_>, key: &str) -> Result<Value, SweepError> {
     match value {
-            ValueRef::Null => Ok(Value::Null),
-            ValueRef::Map(map) => map
-                .iter()?
-                .map(|entry| {
-                    let (name, value) = entry?;
-                    let value = if name == inventory_core::record::KeyRef::Name(key) {
-                        digest_value(value)?
-                    } else {
-                        value.to_value()?
-                    };
-                    Ok((name.to_key(), value))
-                })
-                .collect::<Result<_, SweepError>>()
-                .map(Value::Map),
-            _ => Err(SweepError::Operation(
-                "sensitive projection target is not a map",
-            )),
+        ValueRef::Null => Ok(Value::Null),
+        ValueRef::Map(map) => map
+            .iter()?
+            .map(|entry| {
+                let (name, value) = entry?;
+                let value = if name == inventory_core::record::KeyRef::Name(key) {
+                    digest_value(value)?
+                } else {
+                    value.to_value()?
+                };
+                Ok((name.to_key(), value))
+            })
+            .collect::<Result<_, SweepError>>()
+            .map(Value::Map),
+        _ => Err(SweepError::Operation(
+            "sensitive projection target is not a map",
+        )),
     }
 }
 
@@ -164,21 +170,26 @@ fn summary_value(value: &serde_json::Value, depth: usize) -> Result<Value, Sweep
             .collect::<Result<_, _>>()
             .map(Value::List),
         serde_json::Value::Object(values) => summary_object(values, depth),
-        _ => Err(SweepError::Operation("trust summary contains unsupported scalar")),
+        _ => Err(SweepError::Operation(
+            "trust summary contains unsupported scalar",
+        )),
     }
 }
 
-fn summary_object(values: &serde_json::Map<String, serde_json::Value>, depth: usize) -> Result<Value, SweepError> {
+fn summary_object(
+    values: &serde_json::Map<String, serde_json::Value>,
+    depth: usize,
+) -> Result<Value, SweepError> {
     values
-            .iter()
-            .map(|(key, value)| {
-                Ok((
-                    Key::Name(key.clone()),
-                    summary_value(value, depth.saturating_add(1))?,
-                ))
-            })
-            .collect::<Result<_, SweepError>>()
-            .map(Value::Map)
+        .iter()
+        .map(|(key, value)| {
+            Ok((
+                Key::Name(key.clone()),
+                summary_value(value, depth.saturating_add(1))?,
+            ))
+        })
+        .collect::<Result<_, SweepError>>()
+        .map(Value::Map)
 }
 
 pub(super) fn reference_owner(

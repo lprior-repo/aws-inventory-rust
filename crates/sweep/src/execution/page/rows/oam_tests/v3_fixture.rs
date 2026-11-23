@@ -2,6 +2,7 @@ use super::*;
 use catalog_tool::overlay;
 use inventory_core::{inventory::ScopeOutcome, record::Key};
 use sha2::{Digest, Sha256};
+#[path = "v3_fixture/history.rs"]
 mod history;
 pub(super) use history::{historical_evidence, old_image};
 
@@ -159,7 +160,6 @@ async fn source_page(
         observed_at_ms: at,
     })
 }
-
 
 pub(super) async fn pool(directory: &tempfile::TempDir) -> TestResult<sqlx::SqlitePool> {
     Ok(sqlx::SqlitePool::connect(&format!(

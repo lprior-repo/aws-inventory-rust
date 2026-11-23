@@ -56,7 +56,11 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
         Ok(())
     }
 
-    pub(super) fn request(&self, plan: &CallablePlan<'_>, lease: &WorkLease) -> TestResult<(Record, String)> {
+    pub(super) fn request(
+        &self,
+        plan: &CallablePlan<'_>,
+        lease: &WorkLease,
+    ) -> TestResult<(Record, String)> {
         let region = routing::request_region(
             plan,
             lease.scope().region(),

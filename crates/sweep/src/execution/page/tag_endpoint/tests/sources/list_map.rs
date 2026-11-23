@@ -118,8 +118,10 @@ async fn given_reviewed_list_and_map_sources_when_consumed_then_only_trusted_par
                 discovery: &[],
                 branch: None,
             };
-            let mut budget =
-                crate::execution::page::child::PageContextBudget::new(&DiscoveryContext::empty(), 0)?;
+            let mut budget = crate::execution::page::child::PageContextBudget::new(
+                &DiscoveryContext::empty(),
+                0,
+            )?;
             let work = child_work(&context, &row, &observation, &mut budget)?
                 .ok_or("reviewed source was not scheduled")?;
             if source.member.is_some() {

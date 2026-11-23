@@ -1,6 +1,6 @@
+mod composite;
 #[path = "../../../catalog-tool/tests/support/identity.rs"]
 mod fixture;
-mod composite;
 
 use super::*;
 use catalog_tool::overlay::{Identity, MemberPath};
@@ -294,4 +294,3 @@ fn given_enum_scalar_identity_when_compiled_then_self_extraction_preserves_exact
         Ok(())
     })
 }
-

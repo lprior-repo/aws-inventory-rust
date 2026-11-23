@@ -40,4 +40,3 @@ fn decode(plan: &CallablePlan<'_>, body: &Json) -> TestResult<call::DecodedRespo
         headers: http::HeaderMap::new(),
     })
 }
-

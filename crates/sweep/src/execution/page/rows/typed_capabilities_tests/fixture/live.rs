@@ -12,6 +12,7 @@ use inventory_engine::{
     inventory::{BinaryStore, PageCommit, SchemaRegistry, SweepId, WorkLease},
     limiter::{ApiExecutor, ExecutorConfig},
 };
+#[path = "live/scenario.rs"]
 mod scenario;
 
 pub(super) struct Scenario {
@@ -55,7 +56,6 @@ impl NativePage<'_, '_> {
             .map(str::to_owned))
     }
 }
-
 
 pub(super) fn keys(kind: &str, ids: &[String]) -> Vec<(String, String, String, String)> {
     let mut keys = ids

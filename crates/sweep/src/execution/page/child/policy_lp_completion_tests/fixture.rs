@@ -59,7 +59,6 @@ pub(super) struct Scenario<'a, 'catalog> {
     consumers: ConsumerIndex<'a, 'catalog>,
 }
 
-
 pub(super) fn page(mut response: Json, token: &str, second: bool) -> TestResult<Json> {
     if !second {
         response
@@ -119,4 +118,3 @@ pub(super) fn assert_parent(wire: &http::Request<bytes::Bytes>, parent: &str) ->
     );
     Ok(())
 }
-

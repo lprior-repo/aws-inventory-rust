@@ -45,18 +45,29 @@ fn emission_key(scope: &EmissionScope<'_>, row: &Record) -> Result<ResourceKey, 
         None => scope.emission.kind().clone(),
     };
     record::trusted_arn::validate_kind_arn(&kind, id.as_str())?;
-    Ok(ResourceKey { account, region: scope.region.clone(), kind, id })
+    Ok(ResourceKey {
+        account,
+        region: scope.region.clone(),
+        kind,
+        id,
+    })
 }
 
 fn emission_id(
     scope: &EmissionScope<'_>,
     row: &Record,
 ) -> Result<inventory_core::inventory::ResourceId, SweepError> {
-    let validation = record::IdentityTextValidation::Modeled(scope.plan.identity_text(scope.emission.key())?);
+    let validation =
+        record::IdentityTextValidation::Modeled(scope.plan.identity_text(scope.emission.key())?);
     record::resource_id_validated(
-        row, scope.emission.identity(),
-        Some(record::IdentityContext { ..scope.identity_context }),
-        scope.ancestry, scope.request, &validation,
+        row,
+        scope.emission.identity(),
+        Some(record::IdentityContext {
+            ..scope.identity_context
+        }),
+        scope.ancestry,
+        scope.request,
+        &validation,
     )
 }
 
@@ -66,10 +77,15 @@ pub(super) fn tag_observations(
     observations: &[Observation],
 ) -> Result<Vec<TagObservation>, SweepError> {
     if rows.len() != observations.len() {
-        return Err(SweepError::Operation("tag rows and observations have different lengths"));
+        return Err(SweepError::Operation(
+            "tag rows and observations have different lengths",
+        ));
     }
-    rows.iter().zip(observations)
-        .try_fold((Vec::new(), 0_usize), |state, (row, observation)| append_tags(state, row, observation, tags))
+    rows.iter()
+        .zip(observations)
+        .try_fold((Vec::new(), 0_usize), |state, (row, observation)| {
+            append_tags(state, row, observation, tags)
+        })
         .map(|(snapshots, _)| snapshots)
 }
 
@@ -80,9 +96,12 @@ fn append_tags(
     tags: &inventory_core::catalog::runtime::TagPlan,
 ) -> Result<(Vec<TagObservation>, usize), SweepError> {
     let snapshot = record::tag_observation(row, observation.key(), tags)?;
-    let count = count.checked_add(snapshot.tags().len())
+    let count = count
+        .checked_add(snapshot.tags().len())
         .filter(|count| *count <= 50_000)
-        .ok_or(SweepError::Operation("page exceeds the atomic tag pair bound"))?;
+        .ok_or(SweepError::Operation(
+            "page exceeds the atomic tag pair bound",
+        ))?;
     snapshots.try_reserve(1)?;
     snapshots.push(snapshot);
     Ok((snapshots, count))

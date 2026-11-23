@@ -79,7 +79,12 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
         self.assert_ids_at(kind, "us-east-1", expected).await
     }
 
-    pub(super) async fn assert_ids_at(&self, kind: &str, region: &str, expected: Vec<String>) -> TestResult {
+    pub(super) async fn assert_ids_at(
+        &self,
+        kind: &str,
+        region: &str,
+        expected: Vec<String>,
+    ) -> TestResult {
         let reader = self.reader().await?;
         let actual: Vec<(String, String, String, String)> =
             sqlx::query_as("SELECT account,region,kind,id FROM resources WHERE kind=? ORDER BY id")

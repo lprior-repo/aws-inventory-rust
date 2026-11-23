@@ -29,7 +29,13 @@ pub(super) async fn prepare(
         .to_owned();
     let base = bindings(lease.bindings())?;
     let fields = request_fields(cursor, plan)?;
-    Ok(Prepared { endpoint, url, base, fields, region })
+    Ok(Prepared {
+        endpoint,
+        url,
+        base,
+        fields,
+        region,
+    })
 }
 
 async fn endpoint(

@@ -205,7 +205,6 @@ fn signed_bytes(bytes: &[u8]) -> Result<http::Request<bytes::Bytes>, Box<dyn std
     Ok(request)
 }
 
-
 fn with_field(
     name: &str,
     value: overlay::FixedValue,
@@ -234,7 +233,6 @@ fn assert_invalid_value(error: &(dyn std::error::Error + 'static)) -> TestResult
     );
     Ok(())
 }
-
 
 fn map_mut(value: &mut Value) -> Result<&mut BTreeMap<Key, Value>, Box<dyn std::error::Error>> {
     match value {

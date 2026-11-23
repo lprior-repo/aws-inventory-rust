@@ -116,8 +116,6 @@ fn given_license_summary_when_detail_decodes_then_exact_arn_owns_populated_empty
     Ok(())
 }
 
-
-
 #[test]
 fn given_neptune_shared_cluster_api_when_runtime_request_is_encoded_then_engine_filter_reaches_query_wire()
 -> TestResult {

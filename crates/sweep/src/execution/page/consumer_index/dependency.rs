@@ -13,21 +13,38 @@ pub(super) fn dependency(source: &BindingSource) -> Result<Dependency<'_>, Consu
 
 fn staged_dependency(source: &BindingSource) -> Result<Dependency<'_>, ConsumerIndexError> {
     match source {
-        BindingSource::ContextFromBranch { service, operation, branch, .. } => {
-            Ok(Dependency::Producer(Producer { service, operation, branch: Some(branch) }))
-        }
+        BindingSource::ContextFromBranch {
+            service,
+            operation,
+            branch,
+            ..
+        } => Ok(Dependency::Producer(Producer {
+            service,
+            operation,
+            branch: Some(branch),
+        })),
         _ => ordinary_dependency(source),
     }
 }
 
 fn ordinary_dependency(source: &BindingSource) -> Result<Dependency<'_>, ConsumerIndexError> {
     match source {
-        BindingSource::Operation { service, operation, .. }
-        | BindingSource::OperationArn { service, operation, .. }
-        | BindingSource::OperationUrl { service, operation, .. }
-        | BindingSource::Context { service, operation, .. } => {
-            Ok(Dependency::Producer(Producer { service, operation, branch: None }))
+        BindingSource::Operation {
+            service, operation, ..
         }
+        | BindingSource::OperationArn {
+            service, operation, ..
+        }
+        | BindingSource::OperationUrl {
+            service, operation, ..
+        }
+        | BindingSource::Context {
+            service, operation, ..
+        } => Ok(Dependency::Producer(Producer {
+            service,
+            operation,
+            branch: None,
+        })),
         _ => other_dependency(source),
     }
 }

@@ -39,7 +39,11 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
         Ok(())
     }
 
-    pub(super) fn request(&self, plan: &CallablePlan<'_>, lease: &WorkLease) -> TestResult<(Record, Json)> {
+    pub(super) fn request(
+        &self,
+        plan: &CallablePlan<'_>,
+        lease: &WorkLease,
+    ) -> TestResult<(Record, Json)> {
         let (request, wire) = self.prepared_request(plan, lease)?;
         Ok((request, serde_json::from_slice(wire.body())?))
     }
@@ -105,8 +109,10 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
                 )
             }
             _ => {
-                let ancestry =
-                    crate::execution::page::preparation::ancestry(lease.context(), lease.scope().context())?;
+                let ancestry = crate::execution::page::preparation::ancestry(
+                    lease.context(),
+                    lease.scope().context(),
+                )?;
                 let context = Context::new(
                     plan,
                     &self.sweep,

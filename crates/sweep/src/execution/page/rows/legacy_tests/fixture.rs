@@ -1,8 +1,12 @@
 use super::*;
 use inventory_core::inventory::ScopeOutcome;
 use inventory_engine::inventory::WorkLease;
+#[path = "fixture/work.rs"]
 mod work;
-pub(super) use work::{staged_work, resume_first_page, finish_partial, complete_empty, child_work, child_run, restore_raw_child_scopes};
+pub(super) use work::{
+    child_run, complete_empty, finish_partial, restore_raw_child_scopes, resume_first_page,
+    staged_work,
+};
 
 pub(super) const SECONDARY: &str =
     "arn:aws:workspaces-web:us-east-1:123456789012:browserSettings/b-legacy-secondary";
@@ -193,4 +197,3 @@ pub(super) async fn work_image(directory: &tempfile::TempDir) -> TestResult<Vec<
     pool.close().await;
     Ok(image)
 }
-

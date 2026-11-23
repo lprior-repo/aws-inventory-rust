@@ -276,4 +276,3 @@ fn given_docdb_root_when_query_is_encoded_then_engine_filter_is_a_real_structure
     );
     Ok(())
 }
-

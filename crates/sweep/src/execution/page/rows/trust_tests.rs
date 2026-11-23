@@ -1,4 +1,5 @@
 use super::*;
+#[path = "trust_tests/direct.rs"]
 mod direct;
 use crate::record::policy_dfgk_tests::fixture;
 use inventory_core::{
@@ -247,4 +248,3 @@ async fn given_reviewed_iam_trust_tuple_when_public_caller_forges_source_or_wild
     }
     Ok(())
 }
-

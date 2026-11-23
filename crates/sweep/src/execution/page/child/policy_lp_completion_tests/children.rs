@@ -17,7 +17,6 @@ struct Case {
     paginated: bool,
 }
 
-
 #[tokio::test]
 async fn given_two_owned_parents_when_native_child_pages_resume_then_every_child_and_exact_parent_edge_persists()
 -> TestResult {
@@ -128,7 +127,6 @@ async fn given_two_owned_parents_when_native_child_pages_resume_then_every_child
     }
     Ok(())
 }
-
 
 #[tokio::test]
 async fn given_pca_templates_with_shared_group_sid_when_nested_acl_pages_resume_then_template_scoped_entries_do_not_collapse()

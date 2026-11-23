@@ -1,7 +1,9 @@
 #[path = "facet_tests/fixture.rs"]
 mod fixture;
 use super::*;
+#[path = "facet_tests/observations.rs"]
 mod observations;
+#[path = "facet_tests/retirement.rs"]
 mod retirement;
 use fixture::{TestResult, compiled};
 use inventory_core::{
@@ -205,7 +207,6 @@ async fn full(store: &BinaryStore, catalog: &RuntimeCatalog<'_>, reverse: bool) 
     Ok(())
 }
 
-
 #[path = "candidate_tests.rs"]
 mod candidates;
 
@@ -222,7 +223,6 @@ fn field(record: &Record, field: u32) -> TestResult<Option<Value>> {
         .map(|value| value.to_value())
         .transpose()?)
 }
-
 
 async fn edge_image(store: &BinaryStore) -> TestResult<Vec<(String, String, String)>> {
     let edges = store.projection_edges_for(&key()?, None, 100).await?.edges;

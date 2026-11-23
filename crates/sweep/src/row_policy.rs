@@ -99,7 +99,11 @@ fn ancestry_value<'a>(
 ) -> Result<Option<ValueRef<'a>>, SweepError> {
     let value = match scope.branch() {
         Some(branch) => ancestry.value_from_branch(
-            parent.service_name(), parent.operation_name(), branch, source, path,
+            parent.service_name(),
+            parent.operation_name(),
+            branch,
+            source,
+            path,
         ),
         None => ancestry.value(parent.service_name(), parent.operation_name(), source, path),
     };
@@ -154,7 +158,9 @@ fn selected_equals<'a>(
     typed(request, value_type)?;
     match read(ContextSource::SelectedItem, selected)? {
         None if missing == MissingSelected::AllowAbsent => Ok(true),
-        None => Err(SweepError::Operation("row policy returned parent is absent")),
+        None => Err(SweepError::Operation(
+            "row policy returned parent is absent",
+        )),
         Some(selected) => {
             typed(selected, value_type)?;
             equal(selected, request)

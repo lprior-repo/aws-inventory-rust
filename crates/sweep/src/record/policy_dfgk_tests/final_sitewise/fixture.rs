@@ -1,5 +1,4 @@
 mod compilation;
-use compilation::compile;
 use super::cursor::Cursor;
 use crate::{
     execution::{
@@ -11,6 +10,7 @@ use crate::{
     request,
 };
 use catalog_tool::{endpoints, kind_map, overlay, runtime_catalog, smithy};
+use compilation::compile;
 use inventory_core::{
     catalog::runtime::{CallablePlan, RuntimeCatalog},
     inventory::{
@@ -70,7 +70,6 @@ pub(super) fn catalog() -> TestResult<RuntimeCatalog<'static>> {
         Err(error) => Err(format!("pinned SiteWise consumer fixture failed: {error}").into()),
     }
 }
-
 
 pub(super) fn plan<'a, 'c>(
     catalog: &'a RuntimeCatalog<'c>,

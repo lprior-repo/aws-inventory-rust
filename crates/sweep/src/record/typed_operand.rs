@@ -41,9 +41,9 @@ pub(super) fn string_list<'a>(
     let mut text = String::new();
     write!(text, "list:{count}")
         .map_err(|_| SweepError::Operation("identity formatting failed"))?;
-    list.iter()?.take(65).try_for_each(|value| {
-        append_member(&mut text, value?, max_item_bytes, element)
-    })?;
+    list.iter()?
+        .take(65)
+        .try_for_each(|value| append_member(&mut text, value?, max_item_bytes, element))?;
     Ok(Cow::Owned(text))
 }
 
@@ -74,21 +74,21 @@ fn append_member(
     max_item_bytes: u32,
     element: &IdentityTextOperandValidation<'_, '_>,
 ) -> Result<(), SweepError> {
-        let ValueRef::Text(component) = value else {
-            return Err(SweepError::Operation(
-                "modeled identity list member must be text",
-            ));
-        };
-        if component.is_empty()
-            || component.chars().any(char::is_control)
-            || u32::try_from(component.len()).map_or(true, |length| length > max_item_bytes)
-        {
-            return Err(SweepError::Operation(
-                "modeled identity list member is empty, malformed, or too long",
-            ));
-        }
-        element.accepts(component)?;
-        append(text, component)
+    let ValueRef::Text(component) = value else {
+        return Err(SweepError::Operation(
+            "modeled identity list member must be text",
+        ));
+    };
+    if component.is_empty()
+        || component.chars().any(char::is_control)
+        || u32::try_from(component.len()).map_or(true, |length| length > max_item_bytes)
+    {
+        return Err(SweepError::Operation(
+            "modeled identity list member is empty, malformed, or too long",
+        ));
+    }
+    element.accepts(component)?;
+    append(text, component)
 }
 
 fn append(text: &mut String, component: &str) -> Result<(), SweepError> {

@@ -13,7 +13,6 @@ struct RootCase {
     ids: [String; 2],
 }
 
-
 #[tokio::test]
 async fn given_owned_safe_summaries_when_pages_resume_after_empty_and_nonempty_pages_then_every_kind_is_queryable_without_details()
 -> TestResult {

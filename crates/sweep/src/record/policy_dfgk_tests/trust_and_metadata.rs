@@ -103,7 +103,7 @@ async fn given_iam_list_and_detail_when_projected_and_stored_then_trust_values_n
     Ok(())
 }
 
-fn listed_role(document: &str) -> Vec<u8> {
+pub(super) fn listed_role(document: &str) -> Vec<u8> {
     let encoded = document
         .bytes()
         .map(|byte| format!("%{byte:02X}"))

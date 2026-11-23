@@ -187,4 +187,3 @@ fn response(
     };
     Ok(json!({items:[]}))
 }
-

@@ -31,7 +31,11 @@ pub(super) fn resource_id(
         }
         _ => map_identity(row, identity, trusted, request)?,
     };
-    ResourceId::parse(&value)
+    parse_identity(&value)
+}
+
+pub(super) fn parse_identity(text: &str) -> Result<ResourceId, SweepError> {
+    ResourceId::parse(text)
         .map_err(|_| SweepError::Operation("modeled resource identity is invalid"))
 }
 
@@ -117,9 +121,15 @@ fn fields_text<'a>(
     request: Option<&'a Record>,
     validation: &IdentityTextValidation<'_, '_>,
 ) -> Result<Cow<'a, str>, SweepError> {
-    fields::Fields { row, trusted, context, request, validation }.texts(fields)
+    fields::Fields {
+        row,
+        trusted,
+        context,
+        request,
+        validation,
+    }
+    .texts(fields)
 }
-
 
 fn identity_text<'a>(
     record: &'a Record,
@@ -155,29 +165,35 @@ fn matching_branch<'a>(
     branches: &'a [inventory_core::catalog::runtime::IdentityBranchPlan],
     request: Option<&Record>,
 ) -> Result<&'a inventory_core::catalog::runtime::IdentityBranchPlan, SweepError> {
-    branches.iter().try_fold(None, |found, branch| {
-        if found.is_some() { return Ok(found); }
-        Ok::<_, SweepError>(matches_predicate(row, &branch.predicate, request)?.then_some(branch))
-    })?.ok_or(SweepError::Operation("no reviewed identity branch matches the selected item"))
+    branches
+        .iter()
+        .try_fold(None, |found, branch| {
+            if found.is_some() {
+                return Ok(found);
+            }
+            Ok::<_, SweepError>(
+                matches_predicate(row, &branch.predicate, request)?.then_some(branch),
+            )
+        })?
+        .ok_or(SweepError::Operation(
+            "no reviewed identity branch matches the selected item",
+        ))
 }
 
-fn map_arn<'a>(
-    row: &'a Record,
-    path: &[inventory_core::record::FieldId],
-    key: &str,
+fn validate_map(
+    text: &str,
     resource_kind: &inventory_core::catalog::runtime::ArnResourceKind,
-    request_url: Option<&[inventory_core::record::FieldId]>,
     trusted: Option<&IdentityContext<'_>>,
-    request: Option<&Record>,
-) -> Result<Cow<'a, str>, SweepError> {
-    let text = map_text(row, path, key)?;
-    let request_url = request_url_text(request, request_url)?;
+    request_url: Option<&str>,
+) -> Result<(), SweepError> {
     validate_resource_arn(
-        &text, resource_kind,
-        trusted.ok_or(SweepError::Operation("map ARN identity requires trusted request scope"))?,
-        request_url.as_deref(),
-    )?;
-    Ok(text)
+        text,
+        resource_kind,
+        trusted.ok_or(SweepError::Operation(
+            "map ARN identity requires trusted request scope",
+        ))?,
+        request_url,
+    )
 }
 
 fn request_url_text<'a>(
@@ -185,10 +201,14 @@ fn request_url_text<'a>(
     path: Option<&[inventory_core::record::FieldId]>,
 ) -> Result<Option<Cow<'a, str>>, SweepError> {
     path.map(|path| {
-        required_text(request.ok_or(SweepError::Operation(
-            "queue ARN identity requires actual request URL",
-        ))?, path)
-    }).transpose()
+        required_text(
+            request.ok_or(SweepError::Operation(
+                "queue ARN identity requires actual request URL",
+            ))?,
+            path,
+        )
+    })
+    .transpose()
 }
 
 fn map_identity<'a>(
@@ -197,8 +217,19 @@ fn map_identity<'a>(
     trusted: Option<&IdentityContext<'_>>,
     request: Option<&Record>,
 ) -> Result<Cow<'a, str>, SweepError> {
-    let IdentityPlan::MapArn { path, key, resource_kind, request_url } = identity else {
-        return Err(SweepError::Operation("unexpected contextual identity recipe"));
+    let IdentityPlan::MapArn {
+        path,
+        key,
+        resource_kind,
+        request_url,
+    } = identity
+    else {
+        return Err(SweepError::Operation(
+            "unexpected contextual identity recipe",
+        ));
     };
-    map_arn(row, path, key, resource_kind, request_url.as_deref(), trusted, request)
+    let text = map_text(row, path, key)?;
+    let request_url = request_url_text(request, request_url.as_deref())?;
+    validate_map(&text, resource_kind, trusted, request_url.as_deref())?;
+    Ok(text)
 }

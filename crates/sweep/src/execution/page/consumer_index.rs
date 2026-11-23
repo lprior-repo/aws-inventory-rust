@@ -1,7 +1,7 @@
-#[cfg(test)]
-mod tests;
 mod candidates;
 mod dependency;
+#[cfg(test)]
+mod tests;
 use candidates::Candidates;
 use dependency::dependency;
 
@@ -209,7 +209,6 @@ fn bindings<'a>(
         .chain(branches.iter().flat_map(|branch| branch.bindings.iter()))
 }
 
-
 fn bounded_push<T>(
     values: &mut Vec<T>,
     value: T,
@@ -222,4 +221,3 @@ fn bounded_push<T>(
     values.push(value);
     Ok(())
 }
-

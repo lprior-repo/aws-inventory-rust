@@ -27,9 +27,14 @@ impl Context<'_> {
         output: &mut Vec<UnresolvedReference>,
         limit: usize,
     ) -> Result<(), SweepError> {
-        for relation in catalog.relationships().iter()
-            .filter(|relation| relation.source_kind == self.observation.key().kind) {
-            if !plan.supports_relationship(relation)? { continue; }
+        for relation in catalog
+            .relationships()
+            .iter()
+            .filter(|relation| relation.source_kind == self.observation.key().kind)
+        {
+            if !plan.supports_relationship(relation)? {
+                continue;
+            }
             self.append(relation, output, limit)?;
         }
         Ok(())
@@ -78,11 +83,15 @@ impl Context<'_> {
     }
 
     fn guard(&self, relation: &RelationshipPlan) -> Result<bool, SweepError> {
-        let Some(guard) = &relation.guard else { return Ok(true); };
+        let Some(guard) = &relation.guard else {
+            return Ok(true);
+        };
         match self.value(guard.source, &guard.path)? {
             None | Some(ValueRef::Null) => Ok(false),
             Some(ValueRef::Text(text)) => Ok(text == guard.equals),
-            Some(_) => Err(SweepError::Operation("relationship guard is not modeled text")),
+            Some(_) => Err(SweepError::Operation(
+                "relationship guard is not modeled text",
+            )),
         }
     }
 
@@ -92,8 +101,12 @@ impl Context<'_> {
         output: &mut Vec<UnresolvedReference>,
         limit: usize,
     ) -> Result<(), SweepError> {
-        let Some(parent) = self.parent else { return Ok(()); };
-        if !relation.target_kinds.contains(&parent.kind) { return Ok(()); }
+        let Some(parent) = self.parent else {
+            return Ok(());
+        };
+        if !relation.target_kinds.contains(&parent.kind) {
+            return Ok(());
+        }
         self.push(relation, parent.id.as_str(), output, limit)
     }
 
@@ -121,7 +134,9 @@ impl Context<'_> {
         output: &mut Vec<UnresolvedReference>,
         limit: usize,
     ) -> Result<(), SweepError> {
-        let Some(target) = self.target(relation, value)? else { return Ok(()); };
+        let Some(target) = self.target(relation, value)? else {
+            return Ok(());
+        };
         let reference = UnresolvedReference {
             from: self.observation.key().clone(),
             relation: relation.relation.clone(),
@@ -163,7 +178,9 @@ fn push_reference(
         return Ok(());
     }
     if output.len() >= limit {
-        return Err(SweepError::Operation("page exceeds the atomic reference bound"));
+        return Err(SweepError::Operation(
+            "page exceeds the atomic reference bound",
+        ));
     }
     output.try_reserve(1)?;
     output.push(reference);

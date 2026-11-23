@@ -58,10 +58,18 @@ pub(super) fn append(
     tag_pairs: &mut usize,
 ) -> Result<(), SweepError> {
     let pairs = tag_pairs_after(*tag_pairs, &next.tags)?;
-    check_length(parts.references.len(), next.references.len(), MAX_PAGE_REFERENCES,
-        "page exceeds the atomic reference bound")?;
-    check_length(parts.children.len(), next.children.len(), MAX_PAGE_CHILDREN,
-        "page exceeds the atomic child-work bound")?;
+    check_length(
+        parts.references.len(),
+        next.references.len(),
+        MAX_PAGE_REFERENCES,
+        "page exceeds the atomic reference bound",
+    )?;
+    check_length(
+        parts.children.len(),
+        next.children.len(),
+        MAX_PAGE_CHILDREN,
+        "page exceeds the atomic child-work bound",
+    )?;
     append_rows(parts, next)?;
     *tag_pairs = pairs;
     Ok(())
@@ -69,9 +77,12 @@ pub(super) fn append(
 
 fn tag_pairs_after(count: usize, tags: &[TagObservation]) -> Result<usize, SweepError> {
     tags.iter().try_fold(count, |count, tag| {
-        count.checked_add(tag.tags().len())
+        count
+            .checked_add(tag.tags().len())
             .filter(|count| *count <= MAX_PAGE_TAG_PAIRS)
-            .ok_or(SweepError::Operation("page exceeds the atomic tag pair bound"))
+            .ok_or(SweepError::Operation(
+                "page exceeds the atomic tag pair bound",
+            ))
     })
 }
 

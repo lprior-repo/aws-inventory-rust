@@ -251,4 +251,3 @@ fn given_malformed_subscription_arns_when_details_bind_then_errors_are_not_silen
     }
     Ok(())
 }
-

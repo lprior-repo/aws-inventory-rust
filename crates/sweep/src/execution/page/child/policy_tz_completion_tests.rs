@@ -3,11 +3,11 @@ mod lattice;
 mod mail;
 mod mail_collision;
 mod metadata;
+mod queries;
+mod scenario;
 mod waf;
 mod wire;
 mod workspaces;
-mod scenario;
-mod queries;
 
 use super::super::{PageRequest, assembly, consumer_index::ConsumerIndex, cursor, preparation};
 use super::*;
@@ -35,8 +35,6 @@ struct Scenario<'a, 'catalog> {
     home: RegionId,
     consumers: ConsumerIndex<'a, 'catalog>,
 }
-
-
 
 fn decode(plan: &CallablePlan<'_>, body: &[u8]) -> TestResult<Record> {
     use aws_wire::{

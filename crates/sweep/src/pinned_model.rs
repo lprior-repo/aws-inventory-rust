@@ -24,18 +24,16 @@ pub(crate) fn install(
     Ok(())
 }
 
-fn select_operations(model: &mut Value, service: &str, operations: &[&str]) -> Result<(), Box<dyn Error>> {
+fn select_operations(
+    model: &mut Value,
+    service: &str,
+    operations: &[&str],
+) -> Result<(), Box<dyn Error>> {
     let shapes = model
         .get_mut("shapes")
         .and_then(Value::as_object_mut)
         .ok_or("pinned model shapes absent")?;
-    shapes.retain(|name, shape| {
-        !is_type(shape, "operation")
-            || name
-                .rsplit('#')
-                .next()
-                .is_some_and(|local| operations.contains(&local))
-    });
+    shapes.retain(|name, shape| selected_operation(name, shape, operations));
     let retained = shapes
         .iter()
         .filter(|(_, shape)| is_type(shape, "operation"))
@@ -45,6 +43,14 @@ fn select_operations(model: &mut Value, service: &str, operations: &[&str]) -> R
         return Err(format!("pinned {service} model lacks a selected operation").into());
     }
     set_service_operations(shapes, retained)
+}
+
+fn selected_operation(name: &str, shape: &Value, operations: &[&str]) -> bool {
+    !is_type(shape, "operation")
+        || name
+            .rsplit('#')
+            .next()
+            .is_some_and(|local| operations.contains(&local))
 }
 
 fn set_service_operations(

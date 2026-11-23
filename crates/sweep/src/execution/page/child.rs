@@ -1,18 +1,18 @@
+mod binding;
 #[cfg(test)]
 mod binding_tests;
 mod context_budget;
-mod eligibility;
-mod binding;
 mod contexts;
+mod eligibility;
 mod enumeration;
 mod work;
 pub(crate) use binding::resolve_binding;
-pub(super) use contexts::*;
-pub(super) use work::work;
 #[cfg(test)]
 use binding::row_value;
+pub(super) use contexts::*;
 #[cfg(test)]
 use enumeration::{child_for_row, child_region, empty_record};
+pub(super) use work::work;
 #[cfg(test)]
 pub(crate) mod policy_dfgk_tests;
 #[cfg(test)]
@@ -67,8 +67,6 @@ pub(crate) struct RowContext<'a> {
     pub scope: &'a ScopeKey,
     pub ancestry: &'a DiscoveryContext,
 }
-
-
 
 #[cfg(test)]
 mod tests {

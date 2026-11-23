@@ -62,11 +62,11 @@ async fn process_lease(
         Err(error) => return finish_error(context.store, lease, error).await,
     };
     let plan = setup.plan;
-    let cursor = setup.cursor;
+    let cursor = &setup.cursor;
     if cursor.partial || cursor.pages >= context.bootstrap.config.max_pages {
         return finalize(context.store, lease, StoredOutcome::Partial).await;
     }
-    let prepared = match preparation::prepare(context, &lease, plan, &cursor).await {
+    let prepared = match preparation::prepare(context, &lease, plan, cursor).await {
         Ok(prepared) => prepared,
         Err(error) => return finish_error(context.store, lease, error).await,
     };
@@ -74,7 +74,7 @@ async fn process_lease(
         Ok(response) => response,
         Err(error) => return finish_error(context.store, lease, error).await,
     };
-    commit_response(context, lease, plan, cursor, response, request, &setup.ancestry).await
+    commit_response(context, lease, setup, response, request).await
 }
 
 struct PageSetup<'a, 'catalog> {
@@ -94,7 +94,11 @@ fn preflight<'a, 'catalog, S: InventoryStore>(
     } else {
         cursor::Cursor::decode(lease.token())
     }?;
-    Ok(PageSetup { plan, ancestry, cursor })
+    Ok(PageSetup {
+        plan,
+        ancestry,
+        cursor,
+    })
 }
 
 async fn execute_page(
@@ -104,7 +108,10 @@ async fn execute_page(
 ) -> Result<(call::DecodedResponse, PageRequest), SweepError> {
     let request = input::merge_input(&prepared.base, &prepared.fields)?;
     let response = prepared.send(context, plan).await?;
-    let request = PageRequest { record: request, region: prepared.region };
+    let request = PageRequest {
+        record: request,
+        region: prepared.region,
+    };
     Ok((response, request))
 }
 
@@ -150,15 +157,19 @@ struct PageRequest {
 async fn commit_response(
     context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     lease: WorkLease,
-    plan: &CallablePlan<'_>,
-    cursor: cursor::Cursor,
+    setup: PageSetup<'_, '_>,
     response: call::DecodedResponse,
     request: PageRequest,
-    ancestry: &inventory_core::inventory::DiscoveryContext,
 ) -> Result<SweepSummary, SweepError> {
     let assembly = assembly_context(context);
     let parts = match assembly::prepare(
-        &assembly, &lease, plan, cursor, response, &request, ancestry,
+        &assembly,
+        &lease,
+        setup.plan,
+        setup.cursor,
+        response,
+        &request,
+        &setup.ancestry,
     )
     .await
     {
@@ -196,7 +207,10 @@ async fn commit_parts(
 }
 
 fn page_commit(lease: WorkLease, parts: PageParts, done: bool) -> Result<PageCommit, SweepError> {
-    let continuation_digest = parts.next.as_ref().and_then(|advance| advance.continuation_digest);
+    let continuation_digest = parts
+        .next
+        .as_ref()
+        .and_then(|advance| advance.continuation_digest);
     Ok(PageCommit {
         lease,
         observations: parts.observations,

@@ -16,6 +16,7 @@ use std::{
 mod cbor;
 #[path = "constraint_dispatch_tests/flow.rs"]
 mod flow;
+#[path = "constraint_dispatch_tests/native.rs"]
 mod native;
 
 type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
@@ -200,4 +201,3 @@ fn given_one_production_constraint_operation_when_compiled_then_all_five_canonic
     }
     Ok(())
 }
-

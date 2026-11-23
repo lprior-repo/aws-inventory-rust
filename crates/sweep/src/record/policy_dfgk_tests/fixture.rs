@@ -1,6 +1,5 @@
 use super::*;
 mod persistence;
-pub(super) use persistence::persist;
 use aws_wire::response::{DecodeLimits, ResponseContext};
 use catalog_tool::{endpoints, kind_map, overlay, runtime_catalog, smithy};
 use inventory_core::{
@@ -8,6 +7,7 @@ use inventory_core::{
     inventory::{Observation, ResourceKey},
     record::Value,
 };
+pub(super) use persistence::persist;
 use std::{collections::BTreeMap, sync::LazyLock};
 
 // These tests intentionally require the pinned model checkout used by catalog compilation.
@@ -267,4 +267,3 @@ pub(crate) fn observations(
         })
         .collect()
 }
-

@@ -44,7 +44,6 @@ struct Scenario<'a, 'catalog> {
     consumers: ConsumerIndex<'a, 'catalog>,
 }
 
-
 async fn exercise(case: Case, parents: [Parent; 2]) -> TestResult {
     // Given: the embedded policy and canonical map compile against the real pinned service model.
     let operations = [case.root, case.operation]

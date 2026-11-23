@@ -1,6 +1,6 @@
-mod scenarios;
 mod checks;
 mod consumption;
+mod scenarios;
 use checks::verify_catalog;
 use consumption::consume;
 
@@ -216,7 +216,6 @@ fn assert_rows(
     }
     Ok(())
 }
-
 
 fn parent_reference(operation: &str) -> Option<(&'static str, &'static str, &'static str)> {
     Some(match operation {

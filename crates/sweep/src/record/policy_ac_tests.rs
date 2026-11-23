@@ -3,8 +3,8 @@ mod children_ab;
 use crate::consumer_fixture as fixture;
 mod gateway_audit_batch;
 mod membership;
-mod views;
 mod tags_and_policies;
+mod views;
 use crate::execution::page::cursor;
 use crate::execution::routing;
 
@@ -193,5 +193,3 @@ fn given_eight_real_paged_roots_when_resumed_then_wire_requests_and_terminal_pag
     }
     Ok(())
 }
-
-

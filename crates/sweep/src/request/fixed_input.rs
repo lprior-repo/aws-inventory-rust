@@ -35,7 +35,11 @@ pub(crate) fn value(literal: &BindingValue) -> Result<Value, SweepError> {
         .ok_or(SweepError::Operation("fixed input is absent"))
 }
 
-fn step<'a>(next: Work<'a>, work: &mut Vec<Work<'a>>, output: &mut Vec<Value>) -> Result<(), SweepError> {
+fn step<'a>(
+    next: Work<'a>,
+    work: &mut Vec<Work<'a>>,
+    output: &mut Vec<Value>,
+) -> Result<(), SweepError> {
     match next {
         Work::Read(value) => read(value, work, output),
         Work::List(length) => {
@@ -76,7 +80,9 @@ fn read<'a>(value: &'a BindingValue, work: &mut Vec<Work<'a>>, output: &mut Vec<
 }
 
 fn read_object<'a>(values: &'a [(Key, BindingValue)], work: &mut Vec<Work<'a>>) {
-    work.push(Work::Object(values.iter().map(|(key, _)| key.clone()).collect()));
+    work.push(Work::Object(
+        values.iter().map(|(key, _)| key.clone()).collect(),
+    ));
     work.extend(values.iter().rev().map(|(_, value)| Work::Read(value)));
 }
 fn split(values: &mut Vec<Value>, length: usize) -> Result<Vec<Value>, SweepError> {

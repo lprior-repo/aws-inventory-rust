@@ -252,4 +252,3 @@ async fn consume(
         .await?;
     Ok(true)
 }
-

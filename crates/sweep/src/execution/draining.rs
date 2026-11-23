@@ -1,3 +1,4 @@
+#[path = "draining/seeding.rs"]
 mod seeding;
 pub(super) use seeding::*;
 #[path = "draining/admission.rs"]
@@ -24,7 +25,6 @@ pub(super) fn narrow_regions(
         None => Ok(regions),
     }
 }
-
 
 pub(super) async fn drain_work(
     context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,

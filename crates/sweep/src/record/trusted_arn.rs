@@ -26,7 +26,13 @@ fn parse(value: &str) -> Result<Arn<'_>, SweepError> {
     ) else {
         return Err(invalid());
     };
-    let arn = Arn { partition, service, region, account, resource };
+    let arn = Arn {
+        partition,
+        service,
+        region,
+        account,
+        resource,
+    };
     validate_parts(value, &arn)?;
     Ok(arn)
 }
@@ -38,7 +44,8 @@ fn validate_parts(value: &str, arn: &Arn<'_>) -> Result<(), SweepError> {
         || arn.resource.is_empty()
         || ServiceId::parse(arn.service).is_err()
         || (!arn.account.is_empty() && AccountId::parse(arn.account).is_err())
-        || (!arn.region.is_empty() && RegionId::parse(arn.region).is_err()) {
+        || (!arn.region.is_empty() && RegionId::parse(arn.region).is_err())
+    {
         return Err(SweepError::Operation("modeled ARN is malformed"));
     }
     Ok(())
@@ -127,18 +134,31 @@ fn validate_name(value: &str, max: usize) -> Result<(), SweepError> {
 fn validate_subscription(resource: &str) -> Result<(), SweepError> {
     let invalid = || SweepError::Operation("reviewed resource ARN is malformed");
     let (topic, id) = resource.split_once(':').ok_or_else(invalid)?;
-    if !valid_name(topic, 256) || id.is_empty() || id.len() > 128
-        || !id.bytes().all(|byte| byte.is_ascii_alphanumeric() || byte == b'-') {
+    if !valid_name(topic, 256)
+        || id.is_empty()
+        || id.len() > 128
+        || !id
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
+    {
         return Err(invalid());
     }
     Ok(())
 }
 
-fn validate_queue(resource: &str, trusted: &IdentityContext<'_>, request_url: Option<&str>) -> Result<(), SweepError> {
+fn validate_queue(
+    resource: &str,
+    trusted: &IdentityContext<'_>,
+    request_url: Option<&str>,
+) -> Result<(), SweepError> {
     validate_name(resource, 80)?;
-    let url = request_url.ok_or(SweepError::Operation("reviewed queue ARN omitted its request URL"))?;
+    let url = request_url.ok_or(SweepError::Operation(
+        "reviewed queue ARN omitted its request URL",
+    ))?;
     if queue_url(url, trusted)? != resource {
-        return Err(SweepError::Operation("reviewed queue ARN does not match its request URL"));
+        return Err(SweepError::Operation(
+            "reviewed queue ARN does not match its request URL",
+        ));
     }
     Ok(())
 }
@@ -180,7 +200,8 @@ pub(crate) fn queue_url<'a>(
 fn queue_host(host: &str, region: &str) -> bool {
     regional_queue_host(host, region)
         || (region == "us-east-1" && host == "queue.amazonaws.com")
-        || (legacy_queue_region(region) && host.strip_prefix(region) == Some(".queue.amazonaws.com"))
+        || (legacy_queue_region(region)
+            && host.strip_prefix(region) == Some(".queue.amazonaws.com"))
 }
 
 fn regional_queue_host(host: &str, region: &str) -> bool {

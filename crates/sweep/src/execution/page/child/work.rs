@@ -24,7 +24,12 @@ pub(in crate::execution::page) fn work(
     budget: &mut PageContextBudget,
 ) -> Result<Vec<WorkSpec>, SweepError> {
     let mut children = Vec::new();
-    let batch = Batch { observations, request, contexts, scope };
+    let batch = Batch {
+        observations,
+        request,
+        contexts,
+        scope,
+    };
     for (ordinal, row) in rows.iter().enumerate() {
         append_row(context, row, ordinal, &batch, budget, &mut children)?;
     }
@@ -39,9 +44,12 @@ fn append_row(
     budget: &mut PageContextBudget,
     children: &mut Vec<WorkSpec>,
 ) -> Result<(), SweepError> {
-    let next = batch.contexts.get(ordinal)
+    let next = batch
+        .contexts
+        .get(ordinal)
         .ok_or(SweepError::Operation("discovery item context is absent"))?;
-    let discovery = next.encode()
+    let discovery = next
+        .encode()
         .map_err(|_| SweepError::Operation("discovery ancestry encoding failed"))?;
     let observation = batch.observations.get(ordinal);
     let row = BoundRow {
@@ -75,7 +83,12 @@ fn row_context<'a>(
     scope: &'a ScopeKey,
     ancestry: &'a DiscoveryContext,
 ) -> RowContext<'a> {
-    RowContext { row, parent: observation.map(Observation::key), scope, ancestry }
+    RowContext {
+        row,
+        parent: observation.map(Observation::key),
+        scope,
+        ancestry,
+    }
 }
 
 fn append_candidate(
@@ -99,11 +112,15 @@ fn append_enumeration(
     budget: &mut PageContextBudget,
     children: &mut Vec<WorkSpec>,
 ) -> Result<(), SweepError> {
-    for branch in child.branches().iter().map(Some)
-        .chain(std::iter::once(None).filter(|_| child.branches().is_empty())) {
-        if let Some(work) = enumeration::child_for_row(
-            context, child, &row.row, branch, row.discovery, budget,
-        )? {
+    for branch in child
+        .branches()
+        .iter()
+        .map(Some)
+        .chain(std::iter::once(None).filter(|_| child.branches().is_empty()))
+    {
+        if let Some(work) =
+            enumeration::child_for_row(context, child, &row.row, branch, row.discovery, budget)?
+        {
             push(children, work)?;
         }
     }
@@ -117,16 +134,29 @@ fn append_tags(
     budget: &mut PageContextBudget,
     children: &mut Vec<WorkSpec>,
 ) -> Result<(), SweepError> {
-    let Some(observation) = row.observation else { return Ok(()); };
-    let target_stage = row.row.scope.branch().filter(|source| {
-        child.branches().iter().any(|target| target.discriminator.as_str() == *source)
-    });
-    for branch in child.branches().iter()
+    let Some(observation) = row.observation else {
+        return Ok(());
+    };
+    let target_stage = target_stage(child, row.row.scope.branch());
+    for branch in child
+        .branches()
+        .iter()
         .filter(|branch| target_stage.is_none_or(|source| branch.discriminator.as_str() == source))
-        .map(Some).chain(child.branches().is_empty().then_some(None)) {
+        .map(Some)
+        .chain(child.branches().is_empty().then_some(None))
+    {
         append_tag_branch(context, child, row, observation, branch, budget, children)?;
     }
     Ok(())
+}
+
+fn target_stage<'a>(child: &CallablePlan<'_>, source: Option<&'a str>) -> Option<&'a str> {
+    source.filter(|source| {
+        child
+            .branches()
+            .iter()
+            .any(|target| target.discriminator.as_str() == *source)
+    })
 }
 
 fn append_tag_branch(
@@ -138,14 +168,32 @@ fn append_tag_branch(
     budget: &mut PageContextBudget,
     children: &mut Vec<WorkSpec>,
 ) -> Result<(), SweepError> {
-    if !crate::row_policy::child(
-        child, branch, context.parent_plan, row.row.row, row.row.ancestry, row.row.scope,
-    )? { return Ok(()); }
+    if !selected_tag_row(context, child, row, branch)? {
+        return Ok(());
+    }
     let tag_context = tag_context(context, child, row, branch);
-    if let Some(work) = super::super::tag_endpoint::child_work(
-        &tag_context, row.row.row, observation, budget,
-    )? { push(children, work)?; }
+    if let Some(work) =
+        super::super::tag_endpoint::child_work(&tag_context, row.row.row, observation, budget)?
+    {
+        push(children, work)?;
+    }
     Ok(())
+}
+
+fn selected_tag_row(
+    context: &Context<'_, '_>,
+    child: &CallablePlan<'_>,
+    row: &BoundRow<'_>,
+    branch: Option<&ExecutionBranch>,
+) -> Result<bool, SweepError> {
+    crate::row_policy::child(
+        child,
+        branch,
+        context.parent_plan,
+        row.row.row,
+        row.row.ancestry,
+        row.row.scope,
+    )
 }
 
 fn tag_context<'a, 'catalog>(
@@ -166,7 +214,9 @@ fn tag_context<'a, 'catalog>(
 
 fn push(children: &mut Vec<WorkSpec>, work: WorkSpec) -> Result<(), SweepError> {
     if children.len() >= MAX_PAGE_CHILDREN {
-        return Err(SweepError::Operation("page exceeds the atomic child-work bound"));
+        return Err(SweepError::Operation(
+            "page exceeds the atomic child-work bound",
+        ));
     }
     children.try_reserve(1)?;
     children.push(work);

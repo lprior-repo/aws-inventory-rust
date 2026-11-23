@@ -151,7 +151,6 @@ async fn sweep_id(
     Ok(pending)
 }
 
-
 fn endpoint_url(config: &SweepConfig, compiled: &str) -> Result<String, SweepError> {
     Ok(config.endpoint_override()?.unwrap_or(compiled).to_owned())
 }
@@ -172,7 +171,6 @@ fn unique_purpose<'borrow, 'catalog>(
     }
     Ok(plan)
 }
-
 
 fn parse_regions(
     rows: &[inventory_core::record::Record],

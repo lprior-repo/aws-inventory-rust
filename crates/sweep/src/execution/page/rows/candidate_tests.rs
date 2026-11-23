@@ -1,4 +1,5 @@
 use super::*;
+#[path = "candidate_tests/retirement.rs"]
 mod retirement;
 const USER: &str = "arn:aws:workspaces-web:us-east-1:123456789012:userSettings/u-1";
 
@@ -144,7 +145,6 @@ async fn given_observed_candidate_before_group_when_reference_arrives_then_only_
     );
     Ok(())
 }
-
 
 async fn reject_decoy(account: &str, region: &str) -> TestResult {
     let bytes = fixture::compiled_candidates()?;

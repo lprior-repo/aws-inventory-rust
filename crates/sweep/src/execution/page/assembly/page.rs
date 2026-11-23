@@ -23,36 +23,66 @@ impl<'a, 'catalog> Page<'a, 'catalog> {
     ) -> Result<Self, SweepError> {
         let branch = super::super::super::routing::execution_branch(plan, lease.scope().branch())?;
         let emission = plan.effective_emission(branch);
-        Ok(Self { context, lease, plan, request, response, ancestry, branch, emission })
+        Ok(Self {
+            context,
+            lease,
+            plan,
+            request,
+            response,
+            ancestry,
+            branch,
+            emission,
+        })
     }
 
     pub(super) async fn prepare(self, cursor: cursor::Cursor) -> Result<PageParts, SweepError> {
         if matches!(self.plan.purpose(), PlanPurpose::TagEndpoint(_)) {
             return tag_endpoint::prepare_page(
-                self.context.catalog, self.context.account, self.context.max_pages,
-                self.lease, self.plan, cursor, self.response,
+                self.context.catalog,
+                self.context.account,
+                self.context.max_pages,
+                self.lease,
+                self.plan,
+                cursor,
+                self.response,
             );
         }
         self.enumerate(cursor).await
     }
 
     async fn enumerate(&self, cursor: cursor::Cursor) -> Result<PageParts, SweepError> {
-        let (total_rows, mut selected) = record::item_selection(&self.response.record, self.plan.items())?;
+        let (total_rows, mut selected) =
+            record::item_selection(&self.response.record, self.plan.items())?;
         if total_rows > MAX_PAGE_ROWS {
-            return Err(SweepError::Operation("page exceeds the atomic observation bound"));
+            return Err(SweepError::Operation(
+                "page exceeds the atomic observation bound",
+            ));
         }
         let (mut parts, mut tag_pairs) = self.collect(&mut selected, total_rows).await?;
         checkpoint(self.context.executor).await?;
-        let additional = resource_emissions::additional(
-            self.context, self.lease, self.plan, &self.response.record, self.request, self.ancestry,
-        ).await?;
+        let additional = self.additional().await?;
         append(&mut parts, additional, &mut tag_pairs)?;
         parts.next = cursor.next(
-            self.plan.pagination(), &self.response.record, &self.response.headers, self.context.max_pages,
+            self.plan.pagination(),
+            &self.response.record,
+            &self.response.headers,
+            self.context.max_pages,
         )?;
         parts.rows = u64::try_from(parts.observations.len())
             .map_err(|_| SweepError::Operation("row count exceeds summary range"))?;
         Ok(parts)
+    }
+
+    async fn additional(&self) -> Result<PageParts, SweepError> {
+        resource_emissions::additional(
+            self.context,
+            self.lease,
+            self.plan,
+            &self.response.record,
+            self.request,
+            self.ancestry,
+        )
+        .await
     }
 
     async fn collect(
@@ -65,9 +95,13 @@ impl<'a, 'catalog> Page<'a, 'catalog> {
         loop {
             checkpoint(self.context.executor).await?;
             let chunk = selection::select(self, selected, collected.offset)?;
-            if chunk.raw_count == 0 { break; }
+            if chunk.raw_count == 0 {
+                break;
+            }
             collected.offset = selection::add_ordinal(collected.offset, chunk.raw_count)?;
-            if chunk.items.is_empty() { continue; }
+            if chunk.items.is_empty() {
+                continue;
+            }
             let next = self.parts(&child_context, &chunk, &mut collected.budget)?;
             append(&mut collected.parts, next, &mut collected.tag_pairs)?;
         }
@@ -75,8 +109,13 @@ impl<'a, 'catalog> Page<'a, 'catalog> {
     }
 
     fn child_context(&self) -> child::Context<'_, 'catalog> {
-        child::Context::new(self.plan, self.lease.sweep(), self.context.account,
-            self.context.home, self.context.consumers)
+        child::Context::new(
+            self.plan,
+            self.lease.sweep(),
+            self.context.account,
+            self.context.home,
+            self.context.consumers,
+        )
     }
 }
 
@@ -90,6 +129,11 @@ struct Collection {
 impl Collection {
     fn new(ancestry: &DiscoveryContext, total_rows: usize) -> Result<Self, SweepError> {
         let budget = child::PageContextBudget::new(ancestry, total_rows)?;
-        Ok(Self { parts: PageParts::default(), tag_pairs: 0, budget, offset: 0 })
+        Ok(Self {
+            parts: PageParts::default(),
+            tag_pairs: 0,
+            budget,
+            offset: 0,
+        })
     }
 }

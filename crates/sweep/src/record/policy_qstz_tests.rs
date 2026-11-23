@@ -241,8 +241,6 @@ fn observations_with_request(
         .collect()
 }
 
-
-
 fn child_fields<'catalog>(
     catalog: &RuntimeCatalog<'catalog>,
     parent: &CallablePlan<'catalog>,
@@ -293,4 +291,3 @@ fn child_fields_optional<'catalog>(
     }
     Ok(Some(fields))
 }
-

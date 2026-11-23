@@ -102,27 +102,42 @@ fn binding_value(
     }
 }
 
-fn account_value(account: Option<&inventory_core::inventory::AccountId>) -> Result<Option<Value>, SweepError> {
-    bootstrap_text(account.map(inventory_core::inventory::AccountId::as_str),
-        "account binding unavailable during bootstrap")
+fn account_value(
+    account: Option<&inventory_core::inventory::AccountId>,
+) -> Result<Option<Value>, SweepError> {
+    bootstrap_text(
+        account.map(inventory_core::inventory::AccountId::as_str),
+        "account binding unavailable during bootstrap",
+    )
 }
 
-fn region_value(region: Option<&inventory_core::inventory::Region>) -> Result<Option<Value>, SweepError> {
-    bootstrap_text(region.map(inventory_core::inventory::Region::as_str),
-        "region binding unavailable during bootstrap")
+fn region_value(
+    region: Option<&inventory_core::inventory::Region>,
+) -> Result<Option<Value>, SweepError> {
+    bootstrap_text(
+        region.map(inventory_core::inventory::Region::as_str),
+        "region binding unavailable during bootstrap",
+    )
 }
 
 fn bootstrap_text(value: Option<&str>, error: &'static str) -> Result<Option<Value>, SweepError> {
-    value.map(|value| Some(Value::Text(value.to_owned())))
+    value
+        .map(|value| Some(Value::Text(value.to_owned())))
         .ok_or(SweepError::Operation(error))
 }
 
-fn region_list(region: Option<&inventory_core::inventory::Region>) -> Result<Option<Value>, SweepError> {
+fn region_list(
+    region: Option<&inventory_core::inventory::Region>,
+) -> Result<Option<Value>, SweepError> {
     match region {
         Some(inventory_core::inventory::Region::Regional(region)) => {
-            Ok(Some(Value::List(vec![Value::Text(region.as_str().to_owned())])))
+            Ok(Some(Value::List(vec![Value::Text(
+                region.as_str().to_owned(),
+            )])))
         }
-        _ => Err(SweepError::Operation("region list binding requires the routed request region")),
+        _ => Err(SweepError::Operation(
+            "region list binding requires the routed request region",
+        )),
     }
 }
 
@@ -173,7 +188,10 @@ fn insert_path(
     }
     let parents = field.path.len().saturating_sub(1);
     let target = parent_map(root, field.path.iter().take(parents))?;
-    let leaf = field.path.last().copied()
+    let leaf = field
+        .path
+        .last()
+        .copied()
         .ok_or(SweepError::Operation("input binding path is empty"))?;
     let _ = target.insert(Key::Field(leaf), field.value.clone());
     Ok(())

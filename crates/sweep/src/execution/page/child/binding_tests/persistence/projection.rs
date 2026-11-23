@@ -1,7 +1,12 @@
 use super::*;
-pub(in crate::execution::page::child::binding_tests) type Resource = (String, String, String, String);
+pub(in crate::execution::page::child::binding_tests) type Resource =
+    (String, String, String, String);
 pub(in crate::execution::page::child::binding_tests) type Edge = (Resource, String, Resource);
-pub(in crate::execution::page::child::binding_tests) fn key(region: &str, kind: &str, id: &str) -> Resource {
+pub(in crate::execution::page::child::binding_tests) fn key(
+    region: &str,
+    kind: &str,
+    id: &str,
+) -> Resource {
     (
         "123456789012".to_owned(),
         region.to_owned(),
@@ -60,7 +65,9 @@ pub(in crate::execution::page::child::binding_tests) async fn assert_state(
     Ok(())
 }
 
-pub(in crate::execution::page::child::binding_tests) async fn unbranched_source(catalog: &RuntimeCatalog<'_>) -> TestResult {
+pub(in crate::execution::page::child::binding_tests) async fn unbranched_source(
+    catalog: &RuntimeCatalog<'_>,
+) -> TestResult {
     let directory = tempfile::tempdir()?;
     let path = directory.path().join("source-stage.db");
     let store = BinaryStore::create(

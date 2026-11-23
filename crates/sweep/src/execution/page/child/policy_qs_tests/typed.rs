@@ -129,7 +129,6 @@ async fn given_two_assistants_when_customer_prompt_versions_page_then_inherited_
     Ok(())
 }
 
-
 #[tokio::test]
 async fn given_two_region_lakes_when_singleton_region_queries_execute_then_each_arn_is_stored_only_under_its_actual_region()
 -> TestResult {

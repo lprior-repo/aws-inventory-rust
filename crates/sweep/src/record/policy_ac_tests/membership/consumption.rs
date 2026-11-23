@@ -196,7 +196,9 @@ pub(super) async fn run(
         cases: &cases,
         path: &path,
         sweep: &sweep,
-    }.consume(store, &expected).await?;
+    }
+    .consume(store, &expected)
+    .await?;
     store = returned;
     // Then every exact canonical/API-only row survives SQLite reopen, and no forbidden work remains.
     assert_eq!(seen, expected);

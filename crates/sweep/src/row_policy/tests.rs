@@ -231,4 +231,3 @@ fn given_whole_variant_absence_when_an_empty_opposite_variant_is_present_then_it
     }
     Ok(())
 }
-

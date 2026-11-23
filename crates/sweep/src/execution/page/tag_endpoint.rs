@@ -46,10 +46,7 @@ pub(super) fn prepare_page(
     finish(pending, next)
 }
 
-fn finish(
-    pending: Accumulation,
-    next: Option<cursor::Advance>,
-) -> Result<PageParts, SweepError> {
+fn finish(pending: Accumulation, next: Option<cursor::Advance>) -> Result<PageParts, SweepError> {
     let tags = vec![pending.observation(next.is_none())?];
     let next = next
         .map(|advance| {
@@ -74,13 +71,19 @@ fn endpoint<'a>(
 ) -> Result<&'a inventory_core::catalog::runtime::TagEndpointPlan, SweepError> {
     match plan.purpose() {
         PlanPurpose::TagEndpoint(endpoint) => Ok(endpoint),
-        _ => Err(SweepError::Operation("tag endpoint has no reviewed purpose")),
+        _ => Err(SweepError::Operation(
+            "tag endpoint has no reviewed purpose",
+        )),
     }
 }
 
 fn validate_completion(plan: &CallablePlan<'_>, response: &Record) -> Result<(), SweepError> {
     if let Some(path) = &plan.pagination().truncated_path
-        && !matches!(record::path_value(response.root(), path)?, Some(ValueRef::Bool(_))) {
+        && !matches!(
+            record::path_value(response.root(), path)?,
+            Some(ValueRef::Bool(_))
+        )
+    {
         return Err(SweepError::Operation(
             "tag response omitted explicit pagination completion evidence",
         ));
@@ -139,7 +142,6 @@ fn validate_owner_kind(
     }
     Ok(())
 }
-
 
 fn accepts_kind(plan: &CallablePlan<'_>, kind: &Kind) -> bool {
     plan.kind() == kind

@@ -268,7 +268,6 @@ async fn boundary_snapshot(scenario: &Scenario<'_, '_>) -> TestResult<Vec<Vec<St
     Ok(tables)
 }
 
-
 fn row(field: &str, value: &str) -> Json {
     if field == "vpcId" {
         json!({"vpcId":value,"subnetIds":["subnet-11111111"],"status":"AVAILABLE"})

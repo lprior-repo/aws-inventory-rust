@@ -1,5 +1,7 @@
 use super::*;
+#[path = "request_relation_tests/accelerator.rs"]
 mod accelerator;
+#[path = "request_relation_tests/typed.rs"]
 mod typed;
 use crate::execution::page::consumer_index::ConsumerIndex;
 use crate::{
@@ -21,7 +23,6 @@ use inventory_engine::inventory::{
 use serde_json::json;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
-
 
 fn actual_request(
     plan: &CallablePlan<'_>,
@@ -117,4 +118,3 @@ fn typed_record(
         )?;
     Ok(Record::encode(&Value::Map(fields))?)
 }
-

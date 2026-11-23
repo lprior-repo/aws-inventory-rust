@@ -5,7 +5,9 @@ use std::collections::BTreeSet;
 #[path = "fixture/live.rs"]
 mod live;
 use live::{NativePage, Scenario};
+#[path = "native/namespace_cases.rs"]
 mod namespace_cases;
+#[path = "native/security_lake.rs"]
 mod security_lake;
 
 const VLAN: &str = "AWS::ApiOnly::EVSVlan";
@@ -216,7 +218,6 @@ async fn given_qconnect_long_versions_when_decoded_then_exact_max_and_prompt_iso
     Ok(())
 }
 
-
 #[tokio::test]
 async fn given_malformed_native_vlans_when_a_discovered_child_runs_then_no_invalid_identity_commits()
 -> TestResult {
@@ -256,5 +257,3 @@ async fn given_malformed_native_versions_or_spoofed_arn_when_a_discovered_child_
     }
     Ok(())
 }
-
-

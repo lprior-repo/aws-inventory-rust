@@ -1,7 +1,7 @@
+mod consumption;
 mod native_fixture;
 mod owned_roots;
 mod rest_position;
-mod consumption;
 mod wire;
 use consumption::consume_family;
 use wire::assert_wire;
@@ -58,7 +58,6 @@ fn parent_id(family: &Family, suffix: &str) -> String {
         format!("api-{suffix}")
     }
 }
-
 
 #[tokio::test]
 async fn given_overlapping_rest_api_children_when_later_pages_resume_then_parent_qualified_resources_and_joins_survive()

@@ -93,17 +93,17 @@ pub(crate) fn elapsed_ms(started: Instant) -> u64 {
 }
 
 fn bounded(value: u128) -> u64 {
-    match u64::try_from(value) {
-        Ok(value) => value,
-        Err(_) => u64::MAX,
-    }
+    let Ok(value) = u64::try_from(value) else {
+        return u64::MAX;
+    };
+    value
 }
 
 fn count(value: usize) -> u64 {
-    match u64::try_from(value) {
-        Ok(value) => value,
-        Err(_) => u64::MAX,
-    }
+    let Ok(value) = u64::try_from(value) else {
+        return u64::MAX;
+    };
+    value
 }
 
 fn add(counter: &AtomicU64, amount: u64) {

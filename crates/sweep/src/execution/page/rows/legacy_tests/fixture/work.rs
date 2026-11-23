@@ -67,7 +67,11 @@ pub(in super::super) async fn finish_partial(store: &BinaryStore, sweep: &SweepI
     Ok(())
 }
 
-pub(in super::super) async fn complete_empty(store: &BinaryStore, operation: &str, at: i64) -> TestResult {
+pub(in super::super) async fn complete_empty(
+    store: &BinaryStore,
+    operation: &str,
+    at: i64,
+) -> TestResult {
     let sweep = SweepId::new(format!("empty-{at}"))?;
     store.seed_work(work(&sweep, operation, None)?).await?;
     let lease = store
@@ -91,7 +95,11 @@ pub(in super::super) async fn complete_empty(store: &BinaryStore, operation: &st
     Ok(())
 }
 
-pub(in super::super) fn child_work(sweep: &SweepId, id: &str, ordinal: Option<u32>) -> TestResult<WorkSpec> {
+pub(in super::super) fn child_work(
+    sweep: &SweepId,
+    id: &str,
+    ordinal: Option<u32>,
+) -> TestResult<WorkSpec> {
     use inventory_core::{
         catalog::runtime::ContextProjectionPlan,
         inventory::{DiscoveryContext, DiscoveryFrame},
@@ -163,7 +171,9 @@ pub(in super::super) async fn child_run(
     Ok(())
 }
 
-pub(in super::super) async fn restore_raw_child_scopes(directory: &tempfile::TempDir) -> TestResult {
+pub(in super::super) async fn restore_raw_child_scopes(
+    directory: &tempfile::TempDir,
+) -> TestResult {
     let pool = pool(directory).await?;
     let mut tx = pool.begin().await?;
     sqlx::query("UPDATE resource_parents AS parent SET scope_key=(SELECT archived.scope_key FROM resource_scopes owner JOIN work_queue archived ON archived.sweep_id=owner.observed_sweep WHERE owner.account=parent.child_account AND owner.region=parent.child_region AND owner.kind=parent.child_kind AND owner.id=parent.child_id AND owner.scope_key=parent.scope_key) WHERE EXISTS(SELECT 1 FROM resource_scopes owner WHERE owner.account=parent.child_account AND owner.region=parent.child_region AND owner.kind=parent.child_kind AND owner.id=parent.child_id AND owner.scope_key=parent.scope_key AND owner.observed_sweep IN('z-old','a-new'))")

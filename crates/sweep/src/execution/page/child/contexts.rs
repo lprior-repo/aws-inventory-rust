@@ -10,7 +10,18 @@ pub(in crate::execution::page) fn contexts(
     scope: &ScopeKey,
 ) -> Result<Vec<DiscoveryContext>, SweepError> {
     let mut budget = PageContextBudget::new(ancestry, rows.len())?;
-    contexts_from(plan, Rows { items: rows, offset: 0 }, request, response, ancestry, scope, &mut budget)
+    contexts_from(
+        plan,
+        Rows {
+            items: rows,
+            offset: 0,
+        },
+        request,
+        response,
+        ancestry,
+        scope,
+        &mut budget,
+    )
 }
 
 #[cfg(test)]
@@ -23,10 +34,21 @@ pub(in crate::execution::page) fn contexts_from(
     scope: &ScopeKey,
     budget: &mut PageContextBudget,
 ) -> Result<Vec<DiscoveryContext>, SweepError> {
-    let end = rows.offset.checked_add(rows.items.len()).ok_or(SweepError::Operation(
-        "discovery item ordinal exceeds bound",
-    ))?;
-    contexts_at(plan, (rows.offset..end).zip(rows.items.iter()), request, response, ancestry, scope, budget)
+    let end = rows
+        .offset
+        .checked_add(rows.items.len())
+        .ok_or(SweepError::Operation(
+            "discovery item ordinal exceeds bound",
+        ))?;
+    contexts_at(
+        plan,
+        (rows.offset..end).zip(rows.items.iter()),
+        request,
+        response,
+        ancestry,
+        scope,
+        budget,
+    )
 }
 
 pub(in crate::execution::page) fn contexts_at<'row>(
@@ -42,11 +64,15 @@ pub(in crate::execution::page) fn contexts_at<'row>(
     contexts.try_reserve(rows.len())?;
     for (ordinal, row) in rows {
         let frame = project_frame(plan, ordinal, row, request, response, scope)?;
-        let bytes = ancestry.pushed_encoded_len(&frame)
+        let bytes = ancestry
+            .pushed_encoded_len(&frame)
             .map_err(|_| SweepError::Operation("discovery ancestry exceeds bounds"))?;
         budget.charge(bytes)?;
-        contexts.push(ancestry.push(frame)
-            .map_err(|_| SweepError::Operation("discovery ancestry exceeds bounds"))?);
+        contexts.push(
+            ancestry
+                .push(frame)
+                .map_err(|_| SweepError::Operation("discovery ancestry exceeds bounds"))?,
+        );
     }
     Ok(contexts)
 }
@@ -62,8 +88,13 @@ fn project_frame(
     let ordinal = u32::try_from(ordinal)
         .map_err(|_| SweepError::Operation("discovery item ordinal exceeds bound"))?;
     DiscoveryFrame::project(
-        scope.service().clone(), scope.operation().clone(), ordinal,
-        plan.context_projection(), row, response, request,
+        scope.service().clone(),
+        scope.operation().clone(),
+        ordinal,
+        plan.context_projection(),
+        row,
+        response,
+        request,
     )
     .and_then(|frame| frame.with_branch(scope.branch()))
     .map_err(|_| SweepError::Operation("reviewed discovery projection failed"))

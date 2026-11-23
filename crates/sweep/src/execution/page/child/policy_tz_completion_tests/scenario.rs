@@ -165,5 +165,4 @@ impl<'a, 'catalog> Scenario<'a, 'catalog> {
             .await?;
         Ok(())
     }
-
 }

@@ -40,11 +40,15 @@ async fn collect_additional(
 ) -> Result<PageParts, SweepError> {
     stream::iter(plan.resource_emissions().iter().skip(1))
         .map(Ok::<_, SweepError>)
-        .try_fold((PageParts::default(), 0), |(mut parts, mut tags), emission| async move {
-            let next = descriptor(context, lease, plan, emission, response, request, ancestry).await?;
-            assembly::append(&mut parts, next, &mut tags)?;
-            Ok((parts, tags))
-        })
+        .try_fold(
+            (PageParts::default(), 0),
+            |(mut parts, mut tags), emission| async move {
+                let next =
+                    descriptor(context, lease, plan, emission, response, request, ancestry).await?;
+                assembly::append(&mut parts, next, &mut tags)?;
+                Ok((parts, tags))
+            },
+        )
         .await
         .map(|(parts, _)| parts)
 }
@@ -56,11 +60,18 @@ fn projected_ancestry(
     request: &PageRequest,
     ancestry: &DiscoveryContext,
 ) -> Result<Option<DiscoveryContext>, SweepError> {
-    if !plan.resource_emissions().iter().skip(1).any(|emission| needs_current(emission.identity(), plan)) {
+    if !plan
+        .resource_emissions()
+        .iter()
+        .skip(1)
+        .any(|emission| needs_current(emission.identity(), plan))
+    {
         return Ok(None);
     }
     let frame = emitter_frame(lease, plan, response, request)?;
-    ancestry.push(frame).map(Some)
+    ancestry
+        .push(frame)
+        .map(Some)
         .map_err(|_| SweepError::Operation("emitter ancestry exceeds bounds"))
 }
 
@@ -71,8 +82,13 @@ fn emitter_frame(
     request: &PageRequest,
 ) -> Result<DiscoveryFrame, SweepError> {
     DiscoveryFrame::project(
-        lease.scope().service().clone(), lease.scope().operation().clone(), 0,
-        plan.context_projection(), response, &request.record, &request.record,
+        lease.scope().service().clone(),
+        lease.scope().operation().clone(),
+        0,
+        plan.context_projection(),
+        response,
+        &request.record,
+        &request.record,
     )
     .map_err(|_| SweepError::Operation("reviewed emitter response projection failed"))
 }
@@ -86,9 +102,10 @@ async fn descriptor(
     request: &PageRequest,
     ancestry: &DiscoveryContext,
 ) -> Result<PageParts, SweepError> {
-    Descriptor::new(context, lease, plan, emission, request, ancestry).collect(response).await
+    Descriptor::new(context, lease, plan, emission, request, ancestry)
+        .collect(response)
+        .await
 }
-
 
 pub(crate) fn selected(
     emission: &ResourceEmissionPlan,

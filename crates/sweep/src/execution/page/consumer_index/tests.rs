@@ -223,4 +223,3 @@ fn given_each_supported_producer_source_when_resolved_then_exact_service_and_ope
         Ok(())
     })
 }
-

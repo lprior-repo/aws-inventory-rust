@@ -49,4 +49,3 @@ fn arns(service: &str, resource: &str) -> [String; 2] {
     ]
     .map(|id| format!("arn:aws:{service}:us-east-1:123456789012:{resource}/{id}"))
 }
-

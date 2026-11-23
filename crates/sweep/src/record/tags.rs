@@ -34,9 +34,13 @@ struct Tags {
 impl Tags {
     fn collect(&mut self, plan: &TagPlan, value: ValueRef<'_>) -> Result<(), SweepError> {
         match (plan, value) {
-            (TagPlan::List { key, value, .. }, ValueRef::List(list)) => self.list(list, *key, *value),
+            (TagPlan::List { key, value, .. }, ValueRef::List(list)) => {
+                self.list(list, *key, *value)
+            }
             (TagPlan::Map { .. }, ValueRef::Map(map)) => self.map(map),
-            _ => Err(SweepError::Operation("modeled tags do not match the compiled shape")),
+            _ => Err(SweepError::Operation(
+                "modeled tags do not match the compiled shape",
+            )),
         }
     }
 
@@ -45,9 +49,16 @@ impl Tags {
         self.exceeded
     }
 
-    fn list(&mut self, list: inventory_core::record::ListRef<'_>, key: FieldId, value: FieldId) -> Result<(), SweepError> {
+    fn list(
+        &mut self,
+        list: inventory_core::record::ListRef<'_>,
+        key: FieldId,
+        value: FieldId,
+    ) -> Result<(), SweepError> {
         for item in list.iter()? {
-            if self.full() { break; }
+            if self.full() {
+                break;
+            }
             self.accept(list_pair(item?, key, value), true);
         }
         Ok(())
@@ -55,7 +66,9 @@ impl Tags {
 
     fn map(&mut self, map: MapRef<'_>) -> Result<(), SweepError> {
         for item in map.iter()? {
-            if self.full() { break; }
+            if self.full() {
+                break;
+            }
             self.accept(map_pair(item?), false);
         }
         Ok(())
@@ -76,9 +89,11 @@ impl Tags {
     }
 
     fn deduplicate(&mut self) {
-        self.valid.sort_by(|left, right| left.key().cmp(right.key()));
+        self.valid
+            .sort_by(|left, right| left.key().cmp(right.key()));
         let before = self.valid.len();
-        self.valid.dedup_by(|later, earlier| later.key() == earlier.key());
+        self.valid
+            .dedup_by(|later, earlier| later.key() == earlier.key());
         if self.valid.len() < before {
             tracing::warn!("skipping duplicate tag keys");
             self.skipped = self.skipped.saturating_add(1);
@@ -88,10 +103,14 @@ impl Tags {
     fn observation(mut self, resource: &ResourceKey) -> Result<TagObservation, SweepError> {
         self.deduplicate();
         let truncated = self.valid.len() > MAX_RESOURCE_TAGS;
-        if truncated { self.valid.truncate(MAX_RESOURCE_TAGS); }
+        if truncated {
+            self.valid.truncate(MAX_RESOURCE_TAGS);
+        }
         let coverage = if self.skipped > 0 || truncated || self.exceeded {
             TagCoverage::Partial
-        } else { TagCoverage::Complete };
+        } else {
+            TagCoverage::Complete
+        };
         TagObservation::new(resource.clone(), coverage, self.valid).map_err(SweepError::from)
     }
 }

@@ -197,7 +197,6 @@ async fn apply_page(
     Ok(())
 }
 
-
 #[test]
 fn given_reviewed_local_stages_when_resuming_unknown_or_missing_stage_then_request_and_projection_fail_closed()
 -> TestResult {

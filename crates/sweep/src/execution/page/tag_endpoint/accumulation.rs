@@ -87,9 +87,16 @@ impl Accumulation {
     }
 
     fn pending_snapshot(&self) -> Result<Value, SweepError> {
-        let pairs = self.tags.iter().map(|tag| {
-            Value::List(vec![Value::Text(tag.key().to_owned()), Value::Text(tag.value().to_owned())])
-        }).collect();
+        let pairs = self
+            .tags
+            .iter()
+            .map(|tag| {
+                Value::List(vec![
+                    Value::Text(tag.key().to_owned()),
+                    Value::Text(tag.value().to_owned()),
+                ])
+            })
+            .collect();
         fields([
             (1, Value::Bytes(self.owner.digest().as_bytes().to_vec())),
             (2, Value::List(pairs)),
@@ -101,15 +108,22 @@ impl Accumulation {
 fn validate_owner(owner: &ResourceKey, pending: MapRef<'_>) -> Result<(), SweepError> {
     match pending.get_field(FieldId::new(1)?)? {
         Some(ValueRef::Bytes(digest)) if digest == owner.digest().as_bytes() => Ok(()),
-        _ => Err(SweepError::Operation("tag checkpoint owner differs from trusted parent")),
+        _ => Err(SweepError::Operation(
+            "tag checkpoint owner differs from trusted parent",
+        )),
     }
 }
 
 fn sorted_tags(pending: MapRef<'_>) -> Result<Vec<Tag>, SweepError> {
     let mut tags = pending_tags(pending)?;
     tags.sort_unstable_by(|left, right| left.key().cmp(right.key()));
-    if tags.windows(2).any(|pair| matches!(pair, [left, right] if left.key() == right.key())) {
-        return Err(SweepError::Operation("tag checkpoint contains duplicate keys"));
+    if tags
+        .windows(2)
+        .any(|pair| matches!(pair, [left, right] if left.key() == right.key()))
+    {
+        return Err(SweepError::Operation(
+            "tag checkpoint contains duplicate keys",
+        ));
     }
     Ok(tags)
 }
@@ -117,7 +131,11 @@ fn sorted_tags(pending: MapRef<'_>) -> Result<Vec<Tag>, SweepError> {
 fn merge_tag(mut tags: Vec<Tag>, pair: &Tag) -> Result<Vec<Tag>, SweepError> {
     match tags.binary_search_by(|known| known.key().cmp(pair.key())) {
         Ok(index) if tags.get(index) == Some(pair) => {}
-        Ok(_) => return Err(SweepError::Operation("tag snapshot contains conflicting values across pages")),
+        Ok(_) => {
+            return Err(SweepError::Operation(
+                "tag snapshot contains conflicting values across pages",
+            ));
+        }
         Err(index) => {
             if tags.len() >= MAX_RESOURCE_TAGS {
                 return Err(SweepError::Operation("tag snapshot exceeds resource bound"));
@@ -138,10 +156,7 @@ fn pending_tags(pending: MapRef<'_>) -> Result<Vec<Tag>, SweepError> {
             "tag checkpoint exceeds resource bound",
         ));
     }
-    pairs
-        .iter()?
-        .map(|pair| pending_tag(pair?))
-        .collect()
+    pairs.iter()?.map(|pair| pending_tag(pair?)).collect()
 }
 
 fn pending_tag(pair: ValueRef<'_>) -> Result<Tag, SweepError> {
@@ -149,7 +164,11 @@ fn pending_tag(pair: ValueRef<'_>) -> Result<Tag, SweepError> {
         return Err(SweepError::Operation("tag checkpoint pair is not a list"));
     };
     let mut values = pair.iter()?;
-    match (values.next().transpose()?, values.next().transpose()?, values.next()) {
+    match (
+        values.next().transpose()?,
+        values.next().transpose()?,
+        values.next(),
+    ) {
         (Some(ValueRef::Text(key)), Some(ValueRef::Text(value)), None) => {
             Tag::new(key, value).map_err(SweepError::from)
         }

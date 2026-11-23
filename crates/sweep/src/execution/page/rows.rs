@@ -52,10 +52,14 @@ pub(super) fn observations(
 
 fn check_rows(rows: &[Record], contexts: &[DiscoveryContext]) -> Result<(), SweepError> {
     if rows.len() > MAX_PAGE_ROWS {
-        return Err(SweepError::Operation("page exceeds the atomic observation bound"));
+        return Err(SweepError::Operation(
+            "page exceeds the atomic observation bound",
+        ));
     }
     if contexts.len() != rows.len() {
-        return Err(SweepError::Operation("row contexts and observations have different lengths"));
+        return Err(SweepError::Operation(
+            "row contexts and observations have different lengths",
+        ));
     }
     Ok(())
 }
@@ -100,7 +104,12 @@ fn primary_key(
     let id = primary_id(row, plan, identity, ancestry, request)?;
     let kind = resource_projection::classify(plan, row)?;
     record::trusted_arn::validate_kind_arn(&kind, id.as_str())?;
-    Ok(ResourceKey { account: account.clone(), region: region.clone(), kind, id })
+    Ok(ResourceKey {
+        account: account.clone(),
+        region: region.clone(),
+        kind,
+        id,
+    })
 }
 
 fn primary_id(
@@ -111,7 +120,14 @@ fn primary_id(
     request: &Record,
 ) -> Result<inventory_core::inventory::ResourceId, SweepError> {
     let validation = record::IdentityTextValidation::Modeled(plan.identity_text("primary")?);
-    record::resource_id_validated(row, plan.identity(), Some(identity), ancestry, request, &validation)
+    record::resource_id_validated(
+        row,
+        plan.identity(),
+        Some(identity),
+        ancestry,
+        request,
+        &validation,
+    )
 }
 
 fn resource_name(
@@ -147,8 +163,13 @@ pub(crate) fn references(
     let mut output = Vec::new();
     for (row, observation) in rows.iter().zip(observations) {
         relations::Context {
-            row, request: actual_request, observation, home, parent,
-        }.append_plan(catalog, plan, &mut output, MAX_PAGE_REFERENCES)?;
+            row,
+            request: actual_request,
+            observation,
+            home,
+            parent,
+        }
+        .append_plan(catalog, plan, &mut output, MAX_PAGE_REFERENCES)?;
         append_trust(&mut output, catalog, plan, observation)?;
     }
     Ok(output)
@@ -161,8 +182,14 @@ fn append_trust(
     observation: &Observation,
 ) -> Result<(), SweepError> {
     let trust = resource_projection::trust_references(catalog, plan, observation)?;
-    if output.len().checked_add(trust.len()).is_none_or(|count| count > MAX_PAGE_REFERENCES) {
-        return Err(SweepError::Operation("page exceeds the atomic reference bound"));
+    if output
+        .len()
+        .checked_add(trust.len())
+        .is_none_or(|count| count > MAX_PAGE_REFERENCES)
+    {
+        return Err(SweepError::Operation(
+            "page exceeds the atomic reference bound",
+        ));
     }
     output.try_reserve(trust.len())?;
     output.extend(trust);

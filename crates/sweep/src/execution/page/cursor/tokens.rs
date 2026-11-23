@@ -158,12 +158,16 @@ pub(super) fn header_token(
 
 fn parse_header(value: &str, token_type: TokenType) -> Result<Value, SweepError> {
     Ok(match token_type {
-            TokenType::String => Value::Text(value.to_owned()),
-            TokenType::Integer => Value::Int(value.parse().map_err(|_| {
+        TokenType::String => Value::Text(value.to_owned()),
+        TokenType::Integer => {
+            Value::Int(value.parse().map_err(|_| {
                 SweepError::Operation("pagination response header is not an integer")
-            })?),
-            TokenType::Boolean => Value::Bool(value.parse().map_err(|_| {
+            })?)
+        }
+        TokenType::Boolean => {
+            Value::Bool(value.parse().map_err(|_| {
                 SweepError::Operation("pagination response header is not a boolean")
-            })?),
+            })?)
+        }
     })
 }

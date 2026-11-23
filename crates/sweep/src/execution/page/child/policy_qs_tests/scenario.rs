@@ -1,6 +1,10 @@
 use super::*;
 impl<'a, 'c> Scenario<'a, 'c> {
-    pub(super) async fn new(catalog: &'a RuntimeCatalog<'c>, name: &str, home: &str) -> TestResult<Self> {
+    pub(super) async fn new(
+        catalog: &'a RuntimeCatalog<'c>,
+        name: &str,
+        home: &str,
+    ) -> TestResult<Self> {
         let directory = tempfile::tempdir()?;
         let registry = SchemaRegistry::new(catalog.raw_bytes(), catalog.schemas().to_vec())?;
         let store = BinaryStore::create(&directory.path().join("inventory.db"), registry).await?;
@@ -92,7 +96,11 @@ impl<'a, 'c> Scenario<'a, 'c> {
         Ok(())
     }
 
-    pub(super) fn request(&self, plan: &CallablePlan<'_>, lease: &WorkLease) -> TestResult<(Record, Wire)> {
+    pub(super) fn request(
+        &self,
+        plan: &CallablePlan<'_>,
+        lease: &WorkLease,
+    ) -> TestResult<(Record, Wire)> {
         let region = routing::request_region(
             plan,
             lease.scope().region(),
@@ -142,8 +150,10 @@ impl<'a, 'c> Scenario<'a, 'c> {
             record: fixture::decode(plan, &respond(plan, &lease, &wire)?)?,
             headers: http::HeaderMap::new(),
         };
-        let ancestry =
-            crate::execution::page::preparation::ancestry(lease.context(), lease.scope().context())?;
+        let ancestry = crate::execution::page::preparation::ancestry(
+            lease.context(),
+            lease.scope().context(),
+        )?;
         let request = PageRequest {
             record: request,
             region: routing::request_region(

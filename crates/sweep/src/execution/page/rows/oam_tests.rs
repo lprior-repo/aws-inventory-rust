@@ -1,8 +1,11 @@
 use super::*;
 use crate::record::policy_lp_tests::fixture as oam_fixture;
 use inventory_core::record::FieldId;
-mod contracts;
+#[path = "oam_tests/authority.rs"]
 mod authority;
+#[path = "oam_tests/contracts.rs"]
+mod contracts;
+#[path = "oam_tests/legacy_open.rs"]
 mod legacy_open;
 
 const LINK: &str = "arn:aws:oam:us-east-1:123456789012:link/00000000-0000-0000-0000-000000000002";
@@ -135,8 +138,6 @@ async fn persist_oam(
     Ok(())
 }
 
-
-
 async fn downgrade_oam(tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>, version: i64) -> TestResult {
     sqlx::query("DROP TABLE reviewed_reference_evidence")
         .execute(&mut **tx)
@@ -177,4 +178,3 @@ async fn downgrade_oam(tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>, version: i6
     }
     Ok(())
 }
-

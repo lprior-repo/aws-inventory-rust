@@ -119,4 +119,3 @@ async fn given_channels_when_empty_and_second_stream_key_pages_resume_then_metad
     }
     Ok(())
 }
-
