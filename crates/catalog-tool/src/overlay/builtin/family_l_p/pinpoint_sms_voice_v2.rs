@@ -243,7 +243,7 @@ const RESOURCES: &[Resource] = &[
         query: &["OptOutListArn", "OptOutListName"],
         tags: None,
         bindings: &[],
-        fixed: &[],
+        fixed: &[Input::String("Owner", "SELF")],
     },
     // Describes the specified origination phone number, or all the phone numbers in your account. If you specify phone number IDs, the output includes information for only the specified
     Resource {
@@ -265,7 +265,7 @@ const RESOURCES: &[Resource] = &[
         ],
         tags: None,
         bindings: &[],
-        fixed: &[],
+        fixed: &[Input::String("Owner", "SELF")],
     },
     // Retrieves the specified pools or all pools associated with your Amazon Web Services account. If you specify pool IDs, the output includes information for only the specified pools.
     Resource {
@@ -284,7 +284,7 @@ const RESOURCES: &[Resource] = &[
         ],
         tags: None,
         bindings: &[],
-        fixed: &[],
+        fixed: &[Input::String("Owner", "SELF")],
     },
     // Retrieves the protect configurations that match any of filters. If a filter isn’t provided then all protect configurations are returned.
     Resource {
@@ -313,7 +313,7 @@ const RESOURCES: &[Resource] = &[
         ],
         tags: None,
         bindings: &[],
-        fixed: &[],
+        fixed: &[Input::String("Owner", "SELF")],
     },
     // Retrieves the specified registrations.
     Resource {
@@ -342,7 +342,7 @@ const RESOURCES: &[Resource] = &[
         query: &["SenderIdArn", "SenderId", "RegistrationId"],
         tags: None,
         bindings: &[],
-        fixed: &[],
+        fixed: &[Input::String("Owner", "SELF")],
     },
     // Retrieves the specified verified destination numbers.
     Resource {
