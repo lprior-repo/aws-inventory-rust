@@ -5,15 +5,19 @@ set -euo pipefail
 # Span is measured from the `fn` line through the closing brace. Macro-heavy
 # bodies are counted conservatively; the check intentionally fails closed.
 # Reviewed data tables are exempt: their bodies are one literal row per
-# decision, with no control flow to split.
+# decision, with no control flow to split. Under overlay/builtin only the
+# table functions (`part_N`, `operations`, `overlay`, `overlays`) are exempt,
+# and only while their body has no `if`/`match`/`for`/`while`/`loop` outside
+# string literals; every other function there is held to the limit.
 MAX_LINES="${MAX_FUNCTION_LINES:-59}"
 status=0
 
 check_file() {
     local file="$1"
+    local table_fns=0
     case "$file" in
-        */tests.rs|*/tests/*|*_tests.rs|*_tests/*) return 0 ;;
-        *crates/catalog-tool/src/overlay/builtin/*) return 0 ;;
+        */tests.rs|*/tests/*|*/tests_*.rs|*_tests.rs|*_tests/*) return 0 ;;
+        *crates/catalog-tool/src/overlay/builtin/*) table_fns=1 ;;
         *crates/catalog-tool/src/kind_map/builtin_operation.rs) return 0 ;;
         *crates/catalog-tool/src/kind_map/builtin_api.rs) return 0 ;;
         *crates/catalog-tool/src/kind_map/builtin_relation.rs) return 0 ;;
@@ -22,12 +26,15 @@ check_file() {
     esac
     local violations
     violations="$(
-        awk -v max="$MAX_LINES" -v file="$file" '
+        awk -v max="$MAX_LINES" -v file="$file" -v table_fns="$table_fns" '
+            function report(last) {
+                if (last - start < max) return
+                if (table_fns && !flow && name ~ /fn (part_[0-9]+|operations|overlays?)\(/) return
+                printf "%s:%d: %d lines: %s\n", file, start, last - start + 1, name
+            }
             /^[[:space:]]*(pub(\([^)]*\))?[[:space:]]+)?(const[[:space:]]+)?(async[[:space:]]+)?fn[[:space:]]/ {
                 if (active) {
-                    if (NR - start >= max) {
-                        printf "%s:%d: %d lines: %s\n", file, start, NR - start + 1, name
-                    }
+                    report(NR)
                 }
                 active = 1
                 start = NR
@@ -36,17 +43,20 @@ check_file() {
                 sub(/[[:space:]]*\{.*/, "", name)
                 braces = 0
                 seen_open = 0
+                flow = 0
             }
             active {
                 line = $0
+                code = $0
+                gsub(/"([^"\\]|\\.)*"/, "\"\"", code)
+                sub(/\/\/.*$/, "", code)
+                if (code ~ /(^|[^A-Za-z0-9_])(if|match|for|while|loop)([[:space:]]|\{|$)/) flow = 1
                 opens = gsub(/\{/, "{", line)
                 closes = gsub(/\}/, "}", line)
                 braces += opens - closes
                 if (opens > 0) seen_open = 1
                 if (seen_open && braces <= 0) {
-                    if (NR - start >= max) {
-                        printf "%s:%d: %d lines: %s\n", file, start, NR - start + 1, name
-                    }
+                    report(NR)
                     active = 0
                 }
             }
