@@ -49,7 +49,7 @@ impl Config {
             ));
         }
         if !(1..=64 * 1024 * 1024).contains(&self.response_body_limit)
-            || !(1..=512).contains(&self.max_connections)
+            || !(1..=4_096).contains(&self.max_connections)
             || !(1..=self.max_connections).contains(&self.pool_idle_per_host)
         {
             return Err(TransportError::InvalidRequest(

@@ -1,4 +1,5 @@
 mod admission;
+mod bounds;
 mod lease_budget;
 mod shutdown;
 mod slice_pending;

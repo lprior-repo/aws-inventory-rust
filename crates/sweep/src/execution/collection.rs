@@ -18,7 +18,7 @@ impl Resources {
         credentials: &impl CredentialSource,
     ) -> Result<Self, SweepError> {
         config.validate()?;
-        let client = Client::new(transport_config(config)?)?;
+        let client = Client::new(transport_config(config, descriptors::soft_open_files())?)?;
         let settings = executor_config(config.concurrency)?;
         let lease_ms = lease_budget(settings)?;
         let executor = ApiExecutor::new(settings)?;

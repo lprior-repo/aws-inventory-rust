@@ -3,7 +3,7 @@ use std::net::{Ipv4Addr, Ipv6Addr};
 use super::{SweepConfig, SweepError};
 
 const MAX_PAGES: u32 = 1_000_000;
-const MAX_CONCURRENCY: usize = 128;
+const MAX_CONCURRENCY: usize = inventory_engine::limiter::MAX_CONCURRENCY;
 
 impl SweepConfig {
     pub(super) fn validate(&self) -> Result<(), SweepError> {
@@ -13,7 +13,7 @@ impl SweepConfig {
             ));
         }
         if !(1..=MAX_CONCURRENCY).contains(&self.concurrency) {
-            return Err(SweepError::InvalidConfig("concurrency must be in 1..=128"));
+            return Err(SweepError::InvalidConfig("concurrency must be in 1..=4096"));
         }
         override_uri(self.endpoint.as_deref(), self.ca_bundle.as_deref())?;
         Ok(())

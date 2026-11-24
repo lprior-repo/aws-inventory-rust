@@ -1,6 +1,7 @@
 pub(crate) mod bootstrap;
 use bootstrap::{bootstrap_account, discover_regions};
 mod collection;
+mod descriptors;
 #[path = "execution/draining.rs"]
 mod draining;
 use draining::*;
@@ -65,10 +66,22 @@ pub async fn run<S: InventoryStore>(
     Ok(progress.finish(summary))
 }
 
-fn transport_config(config: &SweepConfig) -> Result<TransportConfig, SweepError> {
+/// Bounds connections by the open-file limit; pages beyond the bound wait for a connection.
+fn transport_config(
+    config: &SweepConfig,
+    limit: Option<descriptors::SoftLimit>,
+) -> Result<TransportConfig, SweepError> {
+    let max_connections = descriptors::connection_bound(config.concurrency, limit);
+    if max_connections < config.concurrency {
+        tracing::warn!(
+            concurrency = config.concurrency,
+            max_connections,
+            "connection bound is below concurrency; check the open-file limit"
+        );
+    }
     Ok(TransportConfig {
-        max_connections: config.concurrency,
-        pool_idle_per_host: config.concurrency.clamp(1, 8),
+        max_connections,
+        pool_idle_per_host: max_connections.clamp(1, 8),
         extra_ca_bundle: config.ca_bundle.clone(),
         allow_plain_http: false,
         ..TransportConfig::default()
