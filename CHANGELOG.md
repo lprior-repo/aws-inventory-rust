@@ -2,6 +2,9 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- PostgreSQL test database creation and removal use a 60-second server deadline
+  and a 65-second transport deadline after connecting. Prune bounds the candidate
+  query separately from each drop.
 - Local PostgreSQL image upgraded from 16-bookworm to 18-trixie (18.7),
   pinned by digest. The volume name changed to `inventory-pgdata-18` and
   its mount path to `/var/lib/postgresql`; the old `inventory-pgdata`
