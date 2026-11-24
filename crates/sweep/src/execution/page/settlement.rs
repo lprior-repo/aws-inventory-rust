@@ -26,10 +26,12 @@ pub(super) async fn finish_error(
 }
 
 fn failed(lease: &WorkLease, error: &SweepError) -> StoredOutcome {
+    let detail = crate::error_detail::detail(error, None);
     tracing::warn!(
         service = lease.scope().service().as_str(),
         operation = lease.scope().operation().as_str(),
         region = lease.scope().region().as_str(),
+        detail = %detail,
         %error,
         "inventory scope failed"
     );

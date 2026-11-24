@@ -12,6 +12,7 @@ mod config;
 pub(crate) mod consumer_fixture;
 mod control;
 mod credentials;
+mod error_detail;
 mod execution;
 mod input;
 mod metrics;
