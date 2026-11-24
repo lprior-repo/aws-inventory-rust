@@ -18,6 +18,8 @@ How the rows were produced, and how far to trust them:
 - A first pass searched the tree for each step's planned files and symbols. A
   second, independent pass judged each "Done when" against behaviour and
   corrected the first. Neither pass ran the step's "Prove it" command.
+- Afterwards the rows were reconciled with the strict gate run on `99dad1c8`: a
+  row moved to "done" only where its "Done when" is met by that recorded run.
 - A row is therefore a reading of the source, not a test result. "not started"
   means the behaviour was searched for under the planned name and under
   likely other names and was not found.
@@ -32,6 +34,7 @@ All on emulator 1.0.348 with the PostgreSQL store unless stated.
 | Run | Commit | Result |
 | --- | --- | --- |
 | Strict gate (fmt, clippy, catalog checks, manifest, coverage, tests, size guards) | `b98be942` tree | 15 of 15 checks pass; 1,521 tests passed, 0 failed, 28 ignored |
+| Strict gate, same 15 checks | `99dad1c8` (this ledger added; docs only) | 15 of 15 checks pass; 1,521 tests passed, 0 failed, 28 ignored. Rows that cite "Strict gate on `99dad1c8`" rest on this run. |
 | `inventory-harness e2e run --service ec2` | `088f1c2a` | exit 0; rows 36 to 96; second sweep `resource_writes=0`; 142 scopes complete, 22 unsupported, 1 failed |
 | `inventory-harness e2e run` (all services), run 1 | `691704ac` | exit 1 at verify-counts on `Account::AccountInformation` (the identity exists before seeding) |
 | `inventory-harness e2e run` (all services), run 2 | `b98be942` tree | exit 1 at verify-counts after 593 s. Sweep: 988 rows, 1,377 scopes complete, 598 unsupported, 111 failed, no work remaining. 228 of 236 verified kinds match; 8 do not; 4 are listed as not verified (catalog-deferred). The second-sweep stage was not reached. |
@@ -96,25 +99,25 @@ Counted from the State column of the step tables below.
 
 | Section | Steps | done | partial | needs a run | not started |
 | --- | --- | --- | --- | --- | --- |
-| A | 32 | 1 | 7 | 16 | 8 |
+| A | 32 | 4 | 8 | 12 | 8 |
 | B | 29 | 0 | 4 | 1 | 24 |
 | C | 28 | 0 | 3 | 8 | 17 |
 | D | 34 | 0 | 3 | 4 | 27 |
 | E | 13 | 0 | 2 | 0 | 11 |
-| After | 46 | 0 | 12 | 2 | 32 |
-| All | 182 | 1 | 31 | 31 | 119 |
+| After | 46 | 1 | 12 | 1 | 32 |
+| All | 182 | 5 | 32 | 26 | 119 |
 
 ## Section A (`build/STEPS_A.md`)
 
 | Step | Title | State | Evidence | Missing or to run |
 | --- | --- | --- | --- | --- |
-| A0.1 | Give the relation failure a cause | needs a run | `crates/catalog-tool/src/runtime_catalog/model_path/validation/` (origin.rs, relations.rs, tests.rs) exists; tests at `validation/tests.rs:74,96,118,140` assert `KindContext` and `CapabilityContext`; `KindContext` at `runtime_catalog.rs:30` | Run `models compile --check` and the named unit tests (unchecked) |
+| A0.1 | Give the relation failure a cause | done | `crates/catalog-tool/src/runtime_catalog/model_path/validation/` (origin.rs, relations.rs, tests.rs) exists; tests at `validation/tests.rs:74,96,118,140` assert `KindContext` and `CapabilityContext`; `KindContext` at `runtime_catalog.rs:30`. Strict gate on `99dad1c8`: the four unit tests the step lists pass (`model_path::validation::tests`: missing kind, deferred operation, misspelled path, live relations). | Nothing. The step's own proof, a failing `models compile --check` that names its cause, can no longer be reproduced: the check now passes |
 | A0.2 | Carry relations as pending until both ends are callable | not started | no match for `RelationSplit` under `crates/catalog-tool/src`; no `runtime_catalog/relations.rs`; no `catalog/aws-relations.report` | Everything: `RelationSplit`, `split`, relations.rs, report, regenerated catalog |
 | A0.3 | Context at the remaining bare `Capability` sites | partial | `unknown_service`/`unknown_member` at `runtime_catalog.rs:45,53`; `selected.rs:20` disagrees message. Bare sites remain at `runtime_catalog/plans/member_exclusions.rs:12`, `plans/compile.rs:83`, `plans/fixed_input.rs:14,39`, `plans/page/tokens.rs:230`, `plan_validation.rs:169` | Those bare sites; the count is not recorded; `cargo test -p catalog-tool runtime_catalog` unchecked |
 | A0.4 | Make the size guards pass (checked by hand) | partial | Both size guards pass on `b98be942` (strict gate); `crates/cmdb-ui/src/app.rs` is 286 lines and `crates/core/src/catalog/runtime/decode/plans.rs` 295; `decode/plans/bindings.rs` exists | Five `///` lines the step says to remove remain at `crates/cmdb-ui/src/worker/queries.rs:4,5,28-30` |
-| A1.1 | Generated overlays as a second, lower-priority source | needs a run | `overlay/merge.rs` exists; `directory.rs` `load_generated_dir` at :33; `types.rs` `origin_of` at :94; `parse.rs:102` reviewer check; `check/service/flow/operation.rs:46` | Run `overlay --check`, `models compile --check`; tests (a)-(f) unchecked |
-| A1.2 | Derive one enumeration entry from the model | needs a run | `overlay/generate.rs`, `generate/derive.rs` (enumerate at :9), `identity.rs`, `items.rs`, `catalog/overlay/defer-inputs.txt` exist | `cargo test -p catalog-tool overlay::generate` unchecked |
-| A1.3 | Write generated files deterministically | needs a run | `overlay/generate/render.rs`, `generate/service.rs` exist; `GENERATED_RULES_DATE` at `generate.rs:16` | `cargo test -p catalog-tool overlay::generate::render` unchecked |
+| A1.1 | Generated overlays as a second, lower-priority source | needs a run | `overlay/merge.rs` exists; `directory.rs` `load_generated_dir` at :33; `types.rs` `origin_of` at :94; `parse.rs:102` reviewer check; `check/service/flow/operation.rs:46`. Strict gate on `99dad1c8`: `overlay --check` and `models compile --check` pass with `catalog/overlay/generated` present (436 files); 5 `overlay::merge` tests pass. | Both checks without a generated directory; the byte comparison with A0.2's reports, which do not exist (A0.2 is not started). unchecked: tests (c), (d) and (f) by name |
+| A1.2 | Derive one enumeration entry from the model | partial | `overlay/generate.rs`, `generate/derive.rs` (enumerate at :9), `identity.rs`, `items.rs`, `catalog/overlay/defer-inputs.txt` exist. Strict gate on `99dad1c8`: 56 `overlay::generate` tests pass, and each of the nine branches the step lists has a named test. | unchecked: that every branch has both a passing and a failing case, which is the step's "Done when" |
+| A1.3 | Write generated files deterministically | done | `overlay/generate/render.rs`, `generate/service.rs` exist; `GENERATED_RULES_DATE` at `generate.rs:16`. Strict gate on `99dad1c8`: 7 `overlay::generate::render` tests pass and cover the five listed cases (round trip and identical bytes, 4,097 operations, output over the size limit, quotes and backslashes). | Nothing |
 | A1.4 | The `overlays generate` command, its report and its gate | partial | `cli_overlay.rs:11` `overlays()`; `catalog/overlay/generated.services` exists; `generate/publish.rs` exists | No `overlay-generated` task in `moon.yml` (:67 collection-plans, :75 overlay-check, :83 binary-catalog). Run `overlays generate --check` |
 | A1.5 | Prove generation cannot open a denied operation | needs a run | `crates/catalog-tool/tests/overlay_generation_safety.rs` exists with 6 `#[ignore]` tests (prior check) | Run with `--ignored`; 436-service tests unchecked |
 | A1.6 | Generate the thin slice | needs a run | `catalog/overlay/generated/{iam,sns,sqs,dynamodb,kms,lambda,s3,cloudwatch}.toml` all present; `catalog/aws-overlay-generated.report` exists | Per-service counts vs plans report unchecked; gate run unchecked; `kms/DescribeKey` deny unchecked |
@@ -122,7 +125,7 @@ Counted from the State column of the step tables below.
 | A2.1 | Kind generator | partial | `crates/catalog-tool/src/kind_map/generate.rs` and `kind_map/generated.rs` exist; `kind_map/generate/` dir exists; `catalog/kinds.generated.tsv` exists | No `kinds-generated` task in `moon.yml`; `match_cfn.rs` and `kinds generate --check` unchecked; `cargo test kind_map` unchecked |
 | A2.2 | Kinds for the thin slice, and the first wider catalog | needs a run | `catalog/kinds.generated.tsv` exists | Run `models compile --write`; `cli_models_compile.rs` additions unchecked; gate and sweep_e2e unchecked |
 | A2.3 | Table names that fit PostgreSQL | done | `crates/core/src/inventory/sql_name.rs:3-4` (MAX 63, derived 128); `catalog-tool/src/names/render.rs`; `names/tests/postgres.rs` 63-byte tests; `catalog/aws-names.report` ends `names total=1959 long=15 distinct=1959` | `cargo test -p catalog-tool names` not run; 1,881 CFN-name distinctness test unchecked |
-| A3.1 | Bindings from modeled identifiers | needs a run | `overlay/generate/expand.rs:53` calls `bind_by_name::derive`; `expand.rs:100-102` `Expansion::Modeled` with `list_source: true`; `aws-overlay-generated.report:1566` `callable_expand=86` | `cargo test overlay::generate` unchecked; lambda modeled-expansion count unchecked |
+| A3.1 | Bindings from modeled identifiers | done | `overlay/generate/expand.rs:53` calls `bind_by_name::derive`; `expand.rs:100-102` `Expansion::Modeled` with `list_source: true`; `aws-overlay-generated.report:1566` `callable_expand=86`. Strict gate on `99dad1c8`: `overlay --check` passes and `catalog/aws-overlay.report:1` shows `callable_expand=668`; the `overlay::generate` child tests pass. | Nothing for "Done when". unchecked: that lambda has 7 modeled expansions; a test named for the binding-cycle case |
 | A3.2 | Bindings by name and shape | needs a run | `overlay/generate/expand.rs:53` imports `bind_by_name`; `bind_by_name.rs` present (prior check) | `bind_by_name.rs` contents unchecked; `compatible` visibility unchecked; sum-to-2940 unchecked (report shows 3772) |
 | A3.3 | Child work without scanning every plan | not started | `crates/core/src/catalog/runtime/` has no `index.rs`; no match for `children_of`, `by_operation`, `name_path_by_kind`, `relations_by_source_kind` under `crates/core/src` | Everything: index.rs, accessors, `child::work` rewiring, benchmark numbers |
 | A3.4 | Children against the emulator, and what a describe stores | not started | no match for `scope_members` under `crates/`; no `emit` field in `overlay/types.rs`, `core/.../types/plan.rs`, `core/.../decode/plans.rs`; `overlay/raw.rs` missing | Everything: `emit` key, plan field 14, version 2, `scope_members` table, e2e test |
@@ -190,7 +193,7 @@ Counted from the State column of the step tables below.
 | C6.7 | COPY for the cold path | not started | No match for `COPY\|copy_in_raw\|UNLOGGED\|copy_min_rows` under crates/engine/src; no postgres/copy.rs | Implement COPY writer, `copy_min_rows` threshold, and run its three-row measurement |
 | C6.8 | References, edges, completion and deletion | needs a run | postgres/references.rs + references/{authorization,matching,selection,write}.rs; postgres/completion.rs + completion/{deletion,unobserved,facets,authorities}.rs | Run conformance references/children/completion on PostgreSQL; record three default-follow rows (C6.7 side) |
 | C6.9 | The projection outbox and projection reads | needs a run | postgres/outbox.rs (advisory locks 14,1); projection_read.rs + projection_read/{edges,resources,tags}.rs; projection_state.rs; projection_api.rs:13 `impl ... for PgStore` | Run a PgStore-filled store projecting into FalkorDB (`unchecked: FalkorDB e2e result`) |
-| C6.10 | The sweep runs on PostgreSQL, baseline passes | needs a run | tests/sweep_e2e/stack.rs:121-126 `INVENTORY_E2E_STORE` (default postgres); tests/sweep_e2e/state/postgres.rs; sweep_command/enabled/backend.rs uses PgStore; scripts/e2e-baseline.sh | Run both commands named in "Done when" (sweep e2e on postgres and the baseline script) |
+| C6.10 | The sweep runs on PostgreSQL, baseline passes | needs a run | tests/sweep_e2e/stack.rs:121-126 `INVENTORY_E2E_STORE` (default postgres); tests/sweep_e2e/state/postgres.rs; sweep_command/enabled/backend.rs uses PgStore; scripts/e2e-baseline.sh. The `sweep_e2e` suite passed on PostgreSQL on `b98be942` (2 passed, 0 failed). | `scripts/e2e-baseline.sh`, the second command named in "Done when" |
 | C6.11 | `cmdb-view` and the UI read PostgreSQL | not started | `crates/cmdb-view/src/database.rs:15-16,156,244`, `database/queries.rs:4,10,28,40` and `database/tags.rs:9,38` name `sqlx::Sqlite`; `database/freshness.rs:98,111` and `database/snapshot.rs:77` use untyped `sqlx::query`; no postgres match in cmdb-view/src or tests | Port cmdb-view queries to PgPool and the UI worker; no `postgres` file exists |
 | C6.12 | Delete the old store code | not started | crates/engine/src/inventory.rs:110 `BinaryStore` still defined; sqlite code in engine/src/inventory/* (e.g. connection.rs, commit/references_tail.rs) present; cmdb-bench/src/pipeline.rs and src/serve_command/store.rs still use BinaryStore | Delete BinaryStore and SQLite store files; migrate every caller (cmdb-bench, src/, sweep) |
 | C1.1 | Column names and every scalar member, in the catalog | not started | No match for `ColumnName` in crates/core/src; no runtime_catalog/schemas/columns.rs or column_name.rs (only schemas.rs and schemas/selected.rs in catalog-tool); no postgres/schema/definition.rs | Create ColumnName, columns.rs, column_name.rs; catalog field 3; run catalog-tool tests |
@@ -293,7 +296,7 @@ Counted from the State column of the step tables below.
 | J3.1 | Head-to-head on the real account | not started | No published table; depends on J2.1, J1.1 | Both prerequisites and the real-account table |
 | K1.1 | Delete each typed adapter and its SDK crate | not started | Adapter files (`crates/aws/src/ec2.rs`, ecs, etc.) still present; `aws-sdk-*` still in `crates/aws/Cargo.toml:30-39` | Per-service differential tests, deletions, empty `adapters` feature |
 | K2.1 | Cloud Control behind verification; delete the old scan path | not started | Root `Cargo.toml:23` sqlite feature still present; `.cargo/config.toml` LIBSQLITE3_FLAGS present; `crates/engine/src/store.rs`, `jobs.rs`, `graph.rs`, `export.rs`, `src/scan.rs`, `src/plan.rs` all exist | Full deletion set; Cargo.lock regen; `cargo tree` checks |
-| K3.1 | Delete Python | needs a run | `scripts/` lists only `.sh` and `.rb` files; no `.py` visible. `catalog/upstream` and `requirements.txt` unchecked | `git ls-files '*.py' '*requirements.txt'` must print nothing; gate passes |
+| K3.1 | Delete Python | done | `scripts/` lists only `.sh` and `.rb` files. On `99dad1c8`: `git ls-files '*.py' '*requirements.txt'` prints nothing and the strict gate passes. | Nothing |
 | K4.1 | Manifest and documents in line with the tree | not started | `START_HERE.md`, `README.md` and `CHANGELOG.md` are at the root. `CONTRACT.md`, `NEXT_AGENT_PROMPT.txt`, `docs/VISION.md` and `docs/ARCHITECTURE.md` are absent | Regenerate manifest (contents unchecked); correct documents; path check |
 | S1.1 | An organization to test against | partial | `crates/cmdb-bench/src/main.rs:28` accounts field of `generate`. No stub endpoint matched | Stub endpoint; `--accounts` flag (whether the field is positional is unchecked); N=10 equivalence run |
 | S1.2 | Rate budgets that exist only while they are used | not started | No window or rlimit match in `crates/sweep/src` or `crates/engine/src/limiter`. `limiter/bucket.rs:14` is a per-bucket semaphore; `learned_rates` exists (`engine/src/inventory/schema.rs:293`) | Budget lifecycle; window; peak-memory run at 10k |
