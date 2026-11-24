@@ -235,6 +235,7 @@ fn relations() -> TestResult<Vec<Value>> {
                 (4, Value::List(vec![Value::Int(1)])),
                 (5, Value::Text((*relation).into())),
                 (6, Value::Int(0)),
+                (7, Value::Int(0)),
             ])
         })
         .chain(std::iter::once(wire([
@@ -244,6 +245,7 @@ fn relations() -> TestResult<Vec<Value>> {
             (4, Value::List(vec![Value::Int(1)])),
             (5, Value::Text("references".into())),
             (6, Value::Int(3)),
+            (7, Value::Int(1)),
         ])))
         .collect()
 }

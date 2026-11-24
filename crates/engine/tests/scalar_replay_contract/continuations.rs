@@ -77,7 +77,7 @@ fn assert_work(
             sweep.to_owned(),
             scope.to_vec(),
             token,
-            vec![1, 2],
+            vec![0xa0],
             status,
             generation,
             deadline,
@@ -96,7 +96,7 @@ async fn commit_shared_pages(
 ) -> TestResult {
     let leases = claim_pair(store, sweep, now).await?;
     for lease in leases {
-        assert_eq!(lease.bindings(), &[1, 2]);
+        assert_eq!(lease.bindings(), &[0xa0]);
         assert!(lease.context().is_empty());
         let observation = observation(lease.scope().region().as_str(), value, name)?;
         assert_eq!(
@@ -127,7 +127,7 @@ async fn finish_resumed_regions(
     for lease in [&east, &west] {
         assert_eq!(lease.generation(), 4);
         assert_eq!(lease.token(), Some(checkpoint()?.as_slice()));
-        assert_eq!(lease.bindings(), &[1, 2]);
+        assert_eq!(lease.bindings(), &[0xa0]);
     }
     assert_eq!(
         store

@@ -141,6 +141,7 @@ fn runtime(model: &Model) -> TestResult<Value> {
                 (4, Value::List(vec![Value::Int(1)])),
                 (5, text(relation)),
                 (6, Value::Int(0)),
+                (7, Value::Int(0)),
                 (10, Value::Int(1)),
             ])
         })
