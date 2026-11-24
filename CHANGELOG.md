@@ -2,6 +2,9 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- `cmdb-bench` measures cold and warm sweeps in owned stacks, compares benchmark
+  results, and times catalog opens. The proxy profile adds latency and request
+  pacing; reports retain run provenance and distinguish incomplete runs.
 - Catalog compilation retains modeled references and materializes resolvable
   `REFERENCES` edges with model provenance. Reviewed rules take precedence.
   Regenerate catalogs before use; relation provenance is now required.

@@ -125,6 +125,7 @@ mod tests {
         Ok(())
     }
     #[tokio::test]
+    #[ignore = "requires INVENTORY_POSTGRES_URL"]
     async fn fixture_catalog_creates_reopens_and_prepares_a_real_kind_table()
     -> Result<(), Box<dyn std::error::Error>> {
         let bytes = crate::pipeline_test_catalog::bytes().map_err(text)?;

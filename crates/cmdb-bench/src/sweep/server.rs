@@ -109,6 +109,7 @@ mod tests {
     use super::*;
     use inventory_harness::postgres::{TestDatabase, admin_url};
     #[tokio::test]
+    #[ignore = "requires INVENTORY_POSTGRES_URL"]
     async fn server_settings_and_logged_unlogged_deltas_follow_real_writes()
     -> Result<(), Box<dyn std::error::Error>> {
         let database = TestDatabase::create(&admin_url()?).await?;
@@ -174,6 +175,7 @@ mod tests {
         assert!(!publishable(&dirty));
     }
     #[tokio::test]
+    #[ignore = "requires INVENTORY_POSTGRES_URL"]
     async fn connected_writer_exhausts_the_virtual_five_second_settle_bound()
     -> Result<(), Box<dyn std::error::Error>> {
         let database = TestDatabase::create(&admin_url()?).await?;
