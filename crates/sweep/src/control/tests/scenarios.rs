@@ -55,6 +55,7 @@ impl Environment {
             ca_bundle: Some(self.peer.ca.clone()),
             slice_timeout_secs: None,
             max_rps: None,
+            max_page_size: None,
         }
     }
 }

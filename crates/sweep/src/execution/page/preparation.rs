@@ -29,7 +29,7 @@ pub(super) async fn prepare(
         .unwrap_or(&endpoint.url)
         .to_owned();
     let base = bindings(lease.bindings())?;
-    let fields = request_fields(cursor, plan)?;
+    let fields = request_fields(cursor, plan, context.bootstrap.config.max_page_size)?;
     Ok(Prepared {
         endpoint,
         url,
@@ -70,12 +70,13 @@ fn bindings(bytes: &[u8]) -> Result<Record, SweepError> {
 fn request_fields(
     cursor: &cursor::Cursor,
     plan: &CallablePlan<'_>,
+    max_page_size: Option<u32>,
 ) -> Result<Vec<input::InputField>, SweepError> {
     let mut fields = cursor.request_fields(plan.pagination())?;
     if let Some(size) = plan.pagination().page_size.as_ref() {
         fields.push(input::InputField {
             path: size.path.clone(),
-            value: size.value(),
+            value: size.capped(max_page_size),
         });
     }
     Ok(fields)

@@ -31,6 +31,11 @@ pub struct SweepArgs {
     /// accounts that share their quota with production traffic.
     #[arg(long, value_parser = clap::value_parser!(u32).range(1..=100_000))]
     pub max_rps: Option<u32>,
+    /// Largest page size to ask for. Without it every enumeration asks for
+    /// the most items its model allows. A value below a service's own
+    /// minimum is rejected by that service and fails the scope.
+    #[arg(long, value_parser = clap::value_parser!(u32).range(1..=1_000_000))]
+    pub max_page_size: Option<u32>,
     #[arg(long)]
     pub resume: bool,
     /// Wait for the projection outbox to drain before exiting. When graph delivery

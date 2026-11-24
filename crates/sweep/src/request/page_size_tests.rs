@@ -136,6 +136,36 @@ fn given_cloudfront_shaped_string_page_size_when_rest_xml_encoded_then_query_lim
 }
 
 #[test]
+fn given_a_page_size_cap_when_the_request_is_encoded_then_the_wire_carries_the_smaller_value()
+-> TestResult {
+    // Given a plan whose model allows 100 items per page.
+    let bytes = compiled("aws.protocols#restXml", "string", 100)?;
+    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+    let plan = catalog.lookup("page", "ListThings").ok_or("missing plan")?;
+    let size = plan.pagination().page_size.as_ref().ok_or("page size")?;
+    let base = root_bindings(plan, None, None)?;
+    // When the request is built with a cap below the maximum, above it, and with none.
+    for (cap, query) in [
+        (Some(5), "max-items=5"),
+        (Some(500), "max-items=100"),
+        (None, "max-items=100"),
+    ] {
+        let request = encode(
+            plan,
+            "https://page.test",
+            &base,
+            &[InputField {
+                path: size.path.clone(),
+                value: size.capped(cap),
+            }],
+        )?;
+        // Then the query carries the cap only when it is the smaller of the two.
+        assert_eq!(request.uri().query(), Some(query));
+    }
+    Ok(())
+}
+
+#[test]
 fn given_modeled_page_limit_bounds_when_compiling_then_zero_negative_and_above_model_max_are_rejected()
 -> TestResult {
     for kind in ["string", "long"] {

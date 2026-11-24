@@ -93,6 +93,7 @@ fn sweep_config(max_rps: Option<u32>) -> SweepConfig {
         ca_bundle: None,
         slice_timeout_secs: None,
         max_rps,
+        max_page_size: None,
     }
 }
 

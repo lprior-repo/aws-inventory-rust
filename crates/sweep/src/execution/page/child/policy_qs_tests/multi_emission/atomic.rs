@@ -28,6 +28,7 @@ impl Driver {
                 ca_bundle: None,
                 slice_timeout_secs: None,
                 max_rps: None,
+                max_page_size: None,
             },
         })
     }

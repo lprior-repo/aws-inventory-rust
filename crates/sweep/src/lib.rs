@@ -50,6 +50,10 @@ pub struct SweepConfig {
     /// Most requests per second any one limiter bucket may reach. `None`
     /// leaves the limiter's own maximum as the bound.
     pub max_rps: Option<u32>,
+    /// Largest page size to ask for. An enumeration asks for
+    /// `min(model maximum, max_page_size)`; `None` asks for the model's
+    /// maximum. Operations with no page-size member send nothing either way.
+    pub max_page_size: Option<u32>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]

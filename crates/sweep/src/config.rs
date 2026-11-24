@@ -3,6 +3,7 @@ use std::net::{Ipv4Addr, Ipv6Addr};
 use super::{SweepConfig, SweepError};
 
 const MAX_PAGES: u32 = 1_000_000;
+const MAX_PAGE_SIZE: u32 = 1_000_000;
 const MAX_CONCURRENCY: usize = inventory_engine::limiter::MAX_CONCURRENCY;
 const MAX_RPS: u32 = inventory_engine::limiter::MAX_REQUESTS_PER_SECOND;
 
@@ -21,6 +22,14 @@ impl SweepConfig {
             .is_some_and(|cap| !(1..=MAX_RPS).contains(&cap))
         {
             return Err(SweepError::InvalidConfig("max-rps must be in 1..=100000"));
+        }
+        if self
+            .max_page_size
+            .is_some_and(|size| !(1..=MAX_PAGE_SIZE).contains(&size))
+        {
+            return Err(SweepError::InvalidConfig(
+                "max-page-size must be in 1..=1000000",
+            ));
         }
         override_uri(self.endpoint.as_deref(), self.ca_bundle.as_deref())?;
         Ok(())

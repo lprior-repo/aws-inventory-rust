@@ -110,5 +110,6 @@ fn config(options: &SweepArgs) -> SweepConfig {
         ca_bundle: options.ca_bundle.clone(),
         slice_timeout_secs: (options.slice_timeout > 0).then_some(options.slice_timeout),
         max_rps: options.max_rps,
+        max_page_size: options.max_page_size,
     }
 }

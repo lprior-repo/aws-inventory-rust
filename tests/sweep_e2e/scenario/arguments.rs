@@ -64,6 +64,8 @@ pub(super) fn sweep_args_for(
     arguments.extend([
         "--max-pages".to_owned(),
         max_pages.to_string(),
+        "--max-page-size".to_owned(),
+        "5".to_string(),
         "--concurrency".to_owned(),
         "4".to_owned(),
     ]);
