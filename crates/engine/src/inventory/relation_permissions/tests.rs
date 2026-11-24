@@ -68,6 +68,7 @@ fn given_global_source_without_execution_home_when_home_region_is_claimed_then_n
     let rule = RelationshipPlan {
         source_kind: source.kind.clone(),
         source: RelationSource::Request,
+        edge_source: inventory_core::inventory::EdgeSource::ReviewedRule,
         source_path: vec![FieldId::new(1)?].into_boxed_slice(),
         target_kind: target_kind.clone(),
         target_kinds: vec![target_kind].into_boxed_slice(),
@@ -105,6 +106,7 @@ fn given_global_source_when_arn_region_rule_names_regional_arn_then_only_same_ac
     let rule = RelationshipPlan {
         source_kind: source.kind.clone(),
         source: RelationSource::Request,
+        edge_source: inventory_core::inventory::EdgeSource::ReviewedRule,
         source_path: vec![FieldId::new(1)?].into_boxed_slice(),
         target_kind: target_kind.clone(),
         target_kinds: vec![target_kind].into_boxed_slice(),
@@ -154,5 +156,57 @@ fn given_global_source_when_arn_region_rule_names_regional_arn_then_only_same_ac
         &us_east,
         "11111111-2222-3333-4444-555555555555"
     ));
+    Ok(())
+}
+
+pub(super) fn declared_rule() -> TestResult<RelationshipPlan> {
+    use inventory_core::catalog::runtime::{RelationPathMode, RelationTargetMode};
+    let target = Kind::parse("AWS::Oam::Sink")?;
+    Ok(RelationshipPlan {
+        source_kind: Kind::parse("AWS::Oam::Link")?,
+        source: RelationSource::SelectedOutput,
+        edge_source: inventory_core::inventory::EdgeSource::ReviewedRule,
+        source_path: vec![FieldId::new(1)?].into_boxed_slice(),
+        source_path_mode: RelationPathMode::Fields,
+        target_kind: target.clone(),
+        target_kinds: vec![target].into_boxed_slice(),
+        target_path: vec![FieldId::new(2)?].into_boxed_slice(),
+        relation: Relation::parse("REFERENCES")?,
+        target_mode: RelationTargetMode::SelectedFields,
+        guard: None,
+        components: Box::new([]),
+        scope: RelationScope::AccountRegion,
+        owner: ReferenceOwnerRule::ExecutionAccount,
+    })
+}
+
+#[test]
+fn given_identical_relation_shapes_when_provenance_differs_then_authority_does_not_match()
+-> TestResult {
+    use inventory_core::inventory::{EdgeSource, ReferenceTarget};
+    // Given identical source, label, kind, path and target value.
+    let mut rule = declared_rule()?;
+    let source = source(Region::parse("us-east-1")?)?;
+    let mut reference = UnresolvedReference {
+        from: source.clone(),
+        relation: rule.relation.clone(),
+        source: EdgeSource::ReviewedRule,
+        target: ReferenceTarget::typed(
+            source.account,
+            source.region,
+            rule.target_kind.clone(),
+            rule.target_path.to_vec(),
+            ResourceId::parse("sink")?,
+            rule.target_mode,
+        )?,
+    };
+    // When provenance changes, then only matching provenance admits the reference.
+    assert!(matches_reference(&rule, &reference));
+    rule.edge_source = EdgeSource::Model;
+    assert!(!matches_reference(&rule, &reference));
+    reference.source = EdgeSource::Model;
+    assert!(matches_reference(&rule, &reference));
+    rule.edge_source = EdgeSource::ReviewedRule;
+    assert!(!matches_reference(&rule, &reference));
     Ok(())
 }

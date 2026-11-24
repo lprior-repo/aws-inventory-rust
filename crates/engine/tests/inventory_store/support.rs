@@ -145,7 +145,7 @@ pub(super) fn unresolved(from: &str, target: &str) -> TestResult<UnresolvedRefer
     Ok(UnresolvedReference {
         from: resource(from)?,
         relation: Relation::parse("references")?,
-        source: EdgeSource::InferredExact,
+        source: EdgeSource::ReviewedRule,
         target: ReferenceTarget::new(
             AccountId::parse("123456789012")?,
             Region::parse("us-east-1")?,
@@ -293,6 +293,28 @@ pub(super) fn typed_relationship_catalog(relations: Vec<Value>, dual: bool) -> T
         return Err("runtime extension missing".into());
     };
     extension.insert(Key::Field(FieldId::new(4)?), Value::List(relations));
+    seal_catalog(&mut root)?;
+    Ok(Record::encode(&root)?.into_bytes())
+}
+
+pub(super) fn model_relation_catalog(bytes: Vec<u8>) -> TestResult<Vec<u8>> {
+    let record = Record::from_bytes(bytes)?;
+    let mut root = inventory_core::record::ValueRef::Map(record.root()).to_value()?;
+    let Value::Map(fields) = &mut root else {
+        return Err("catalog root is not a map".into());
+    };
+    let Some(Value::Map(extension)) = fields.get_mut(&Key::Field(FieldId::new(60_000)?)) else {
+        return Err("runtime extension missing".into());
+    };
+    let Some(Value::List(relations)) = extension.get_mut(&Key::Field(FieldId::new(4)?)) else {
+        return Err("relationships missing".into());
+    };
+    let mut relation = relations.first().ok_or("relationship missing")?.clone();
+    let Value::Map(fields) = &mut relation else {
+        return Err("relationship is not a map".into());
+    };
+    fields.insert(Key::Field(FieldId::new(7)?), Value::Int(0));
+    relations.push(relation);
     seal_catalog(&mut root)?;
     Ok(Record::encode(&root)?.into_bytes())
 }
@@ -507,6 +529,7 @@ fn runtime_metadata(scalar: Option<ScalarType>, dual: bool) -> TestResult<Value>
                     (4, Value::List(target_path)),
                     (5, Value::Text(relation.into())),
                     (6, Value::Int(0)),
+                    (7, Value::Int(1)),
                     (10, Value::Int(1)),
                 ])
             })

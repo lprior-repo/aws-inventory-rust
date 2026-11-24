@@ -6,6 +6,28 @@ use std::collections::BTreeMap;
 pub struct RelationsResult {
     pub rows: Vec<Value>,
     pub inactive: BTreeMap<String, String>,
+    pub reviewed: usize,
+    pub declared: usize,
+    pub declared_thin: usize,
+}
+
+impl RelationsResult {
+    /// Formats live relation counts and pending declarations for publication.
+    pub fn report(&self) -> Result<String, std::fmt::Error> {
+        use std::fmt::Write;
+        let mut text = format!(
+            "relations live={} pending={} declared={} reviewed={}\ndeclared thin={}\n",
+            self.reviewed.saturating_add(self.declared),
+            self.inactive.len(),
+            self.declared,
+            self.reviewed,
+            self.declared_thin,
+        );
+        self.inactive
+            .iter()
+            .try_for_each(|(id, reason)| writeln!(text, "{id}\t{reason}"))?;
+        Ok(text)
+    }
 }
 
 pub(super) fn extension(
@@ -77,10 +99,8 @@ pub(in crate::runtime_catalog) fn relations(
     services: &ServiceIndex<'_>,
     checked: &crate::overlay::CheckedOverlays,
 ) -> Result<RelationsResult, RuntimeCatalogCompileError> {
-    relations::compile(kinds, services, checked)
+    super::relations::compile(kinds, services, checked)
 }
-
-mod relations;
 
 pub(super) fn path(
     services: &ServiceIndex<'_>,

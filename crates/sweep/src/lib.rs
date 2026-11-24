@@ -13,6 +13,9 @@ mod config;
 pub(crate) mod consumer_fixture;
 mod control;
 mod credentials;
+#[cfg(test)]
+#[path = "../../catalog-tool/tests/support/declared.rs"]
+pub mod declared_fixture;
 mod error_detail;
 mod execution;
 mod input;

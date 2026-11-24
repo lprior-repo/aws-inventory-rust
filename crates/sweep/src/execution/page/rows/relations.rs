@@ -136,7 +136,7 @@ impl<T: AsRef<ResourceKey>> Context<'_, T> {
         let reference = UnresolvedReference {
             from: self.observation.as_ref().clone(),
             relation: relation.relation.clone(),
-            source: inventory_core::inventory::EdgeSource::ReviewedRule,
+            source: relation.edge_source,
             target,
         };
         push_reference(relation, reference, output, limit)

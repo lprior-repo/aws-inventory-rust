@@ -255,6 +255,7 @@ fn matches_reference(rule: &RelationshipPlan, reference: &UnresolvedReference) -
     let target = &reference.target;
     rule.source_kind == reference.from.kind
         && rule.relation == reference.relation
+        && rule.edge_source == reference.source
         && (if rule.source == RelationSource::Parent {
             rule.target_kinds.contains(target.kind())
         } else {

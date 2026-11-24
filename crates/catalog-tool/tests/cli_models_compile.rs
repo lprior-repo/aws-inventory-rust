@@ -68,9 +68,12 @@ fn write_twice_and_check_publish_identical_reader_visible_bytes() -> TestResult 
     let path = root.path().join("catalog/aws-api.catalog");
     let first = compile(source.path(), root.path(), &["--write"])?;
     let bytes = fs::read(&path)?;
+    let report_path = root.path().join("catalog/aws-relations.report");
+    let report = fs::read(&report_path)?;
     success(&first);
     success(&compile(source.path(), root.path(), &["--write"])?);
     assert_eq!(fs::read(&path)?, bytes);
+    assert_eq!(fs::read(&report_path)?, report);
     success(&compile(source.path(), root.path(), &["--check"])?);
     Ok(())
 }

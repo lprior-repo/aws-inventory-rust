@@ -4,6 +4,7 @@ mod model_path;
 mod plan_validation;
 mod plans;
 mod provenance;
+mod relations;
 mod schemas;
 mod selection;
 pub use provenance::CatalogSources;
@@ -32,6 +33,12 @@ pub enum RuntimeCatalogCompileError {
         path: String,
         reason: &'static str,
     },
+    #[error("model reference walk exceeds {limit} shape visits")]
+    ReferenceWalkLimit { limit: usize },
+    #[error("model reference declarations exceed {limit} entries")]
+    ReferenceDeclarationsLimit { limit: usize },
+    #[error("reference declaration on shape {shape} is invalid: {reason}")]
+    ReferenceShape { shape: String, reason: &'static str },
     #[error("path {path} failed")]
     Path { path: String },
     #[error("runtime capability metadata is invalid or unsupported")]
@@ -200,10 +207,11 @@ fn compile_extension(
     sources: &CatalogSources,
 ) -> Result<(Value, encode::RelationsResult), RuntimeCatalogCompileError> {
     let mut relations = encode::relations(kinds, services, checked)?;
+    let schemas = schemas::compile(kinds, services, Some(checked), &relations.rows)?;
     let rows = std::mem::take(&mut relations.rows);
     let extension = encode::extension(
         plans,
-        schemas::compile(kinds, services, Some(checked))?,
+        schemas,
         rows,
         encode::coverage(kinds)?,
         plans::decisions(checked, services)?,

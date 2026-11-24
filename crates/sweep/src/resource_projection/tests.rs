@@ -206,6 +206,7 @@ fn given_global_source_when_arn_region_relation_projects_owner_then_region_is_re
     let relation = RelationshipPlan {
         source_kind: kind.clone(),
         source: RelationSource::SelectedOutput,
+        edge_source: inventory_core::inventory::EdgeSource::ReviewedRule,
         source_path: vec![FieldId::new(1)?].into_boxed_slice(),
         target_kind: target.clone(),
         target_kinds: vec![target].into_boxed_slice(),

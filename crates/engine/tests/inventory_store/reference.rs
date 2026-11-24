@@ -93,7 +93,7 @@ fn dependency(path: u32) -> TestResult<UnresolvedReference> {
         )?,
         from,
         relation: Relation::parse("depends-on")?,
-        source: EdgeSource::Model,
+        source: EdgeSource::ReviewedRule,
     })
 }
 
@@ -102,7 +102,7 @@ fn pinned(target: &str) -> TestResult<Edge> {
         from: resource("source")?,
         to: resource(target)?,
         relation: Relation::parse("depends-on")?,
-        source: EdgeSource::Model,
+        source: EdgeSource::ReviewedRule,
     })
 }
 
@@ -142,7 +142,7 @@ async fn assert_dependency_edges(store: &BinaryStore, targets: &[&str]) -> TestR
                 from: resource("source")?,
                 to: resource(target)?,
                 relation: Relation::parse("depends-on")?,
-                source: "model".to_owned(),
+                source: "reviewed-rule".to_owned(),
             })
         })
         .collect::<TestResult<Vec<_>>>()?;

@@ -115,8 +115,12 @@ async fn given_both_proton_connection_roles_when_native_pages_overlap_then_indep
         .map(|id| {
             format!("arn:aws:proton:us-east-1:123456789012:environment-account-connection/{id}")
         })
+        .collect::<BTreeSet<_>>();
+    let edges = expected
+        .iter()
+        .map(|id| (id.clone(), id.clone(), "REFERENCES".to_owned()))
         .collect();
-    assert_eq!(scenario.stored(kind).await?, (expected, BTreeSet::new()));
+    assert_eq!(scenario.stored(kind).await?, (expected, edges));
     Ok(())
 }
 

@@ -130,6 +130,13 @@ pub fn compile(
         }
         _ => {}
     }
+    if mode != ReportMode::Print {
+        crate::report::publish(
+            &root.join("catalog/aws-relations.report"),
+            &relations.report()?,
+            mode,
+        )?;
+    }
     if mode == ReportMode::Print {
         write_stdout(&format!("catalog {} bytes\n", bytes.len()))?;
     }

@@ -1,6 +1,7 @@
 use super::*;
 mod definitions;
 use definitions::{cases, child_row};
+use inventory_core::catalog::runtime::CallablePlan;
 
 struct Case {
     service: &'static str,
@@ -43,87 +44,110 @@ async fn given_two_owned_parents_when_native_child_pages_resume_then_every_child
             .apply(&catalog, root, root_lease, &request, case.roots.clone())
             .await?;
         let child = plan(&catalog, case.service, case.child)?;
-        let mut expected = BTreeSet::new();
-        let mut expected_edges = BTreeSet::new();
-        let mut seen = BTreeSet::new();
-        for _ in 0..if case.paginated { 4 } else { 2 } {
-            let lease = scenario.claim().await?;
-            assert_eq!(lease.scope().operation().as_str(), case.child);
-            let second = lease.token().is_some();
-            let owner = lease
-                .scope()
-                .parent()
-                .ok_or("child lost discovered owner")?
-                .id
-                .as_str()
-                .to_owned();
-            let (request, wire) = scenario.request(child, &lease)?;
-            let parent = bound(child, &request)?;
-            assert!(case.parents.contains(&parent.as_str()));
-            assert_parent(&wire, &parent)?;
-            assert_cursor(&wire, second)?;
-            assert!(seen.insert((parent.clone(), second)));
-            let rows = if case.paginated {
-                vec![child_row(&case, &parent, second)?]
-            } else {
-                vec![
-                    child_row(&case, &parent, false)?,
-                    child_row(&case, &parent, true)?,
-                ]
-            };
-            for (row, ordinal) in rows.iter().zip(if case.paginated {
-                vec![second]
-            } else {
-                vec![false, true]
-            }) {
-                let value = row
-                    .get(case.identity)
-                    .and_then(Json::as_str)
-                    .ok_or("fixture native child identity absent")?;
-                let id = if matches!(
-                    case.child,
-                    "ListBotAliases"
-                        | "ListBotVersions"
-                        | "ListPrivateGraphEndpoints"
-                        | "ListServicePrincipalNames"
-                ) {
-                    format!("{}:{}|{}:{}", parent.len(), parent, value.len(), value)
-                } else {
-                    value.to_owned()
-                };
-                assert!(
-                    expected.insert(id.clone()),
-                    "different pages must retain distinct identities: {ordinal}"
-                );
-                expected_edges.insert((id, owner.clone(), case.relation.to_owned()));
-            }
-            let body = json!({(case.items):rows});
-            let token = if case.service == "pca-connector-ad" {
-                "NextToken"
-            } else {
-                "nextToken"
-            };
-            let body = if case.paginated {
-                page(body, token, second)?
-            } else {
-                body
-            };
-            scenario
-                .apply(&catalog, child, lease, &request, body)
-                .await?;
-        }
-        assert_eq!(
-            seen.len(),
-            if case.paginated { 4 } else { 2 },
-            "{}",
-            case.child
-        );
+        let expected = child_pages(&case, &scenario, &catalog, child).await?;
         assert_eq!(
             scenario.stored(case.kind).await?,
-            (expected, expected_edges),
+            expected,
             "{}",
             case.child
         );
+    }
+    Ok(())
+}
+
+type ExpectedGraph = (BTreeSet<String>, BTreeSet<super::fixture::Edge>);
+
+async fn child_pages(
+    case: &Case,
+    scenario: &Scenario<'_, '_>,
+    catalog: &RuntimeCatalog<'_>,
+    child: &CallablePlan<'_>,
+) -> TestResult<ExpectedGraph> {
+    let mut expected = ExpectedGraph::default();
+    let mut seen = BTreeSet::new();
+    for _ in 0..if case.paginated { 4 } else { 2 } {
+        let lease = scenario.claim().await?;
+        assert_eq!(lease.scope().operation().as_str(), case.child);
+        let second = lease.token().is_some();
+        let parent_key = lease
+            .scope()
+            .parent()
+            .ok_or("child lost discovered owner")?;
+        let owner = parent_key.id.as_str();
+        let (request, wire) = scenario.request(child, &lease)?;
+        let parent = bound(child, &request)?;
+        assert!(case.parents.contains(&parent.as_str()));
+        assert_parent(&wire, &parent)?;
+        assert_cursor(&wire, second)?;
+        assert!(seen.insert((parent.clone(), second)));
+        let rows = if case.paginated {
+            vec![child_row(case, &parent, second)?]
+        } else {
+            vec![
+                child_row(case, &parent, false)?,
+                child_row(case, &parent, true)?,
+            ]
+        };
+        expect_child_rows(case, &rows, &parent, owner, &mut expected)?;
+        let body = json!({(case.items):rows});
+        let token = if case.service == "pca-connector-ad" {
+            "NextToken"
+        } else {
+            "nextToken"
+        };
+        let body = if case.paginated {
+            page(body, token, second)?
+        } else {
+            body
+        };
+        scenario
+            .apply(catalog, child, lease, &request, body)
+            .await?;
+    }
+    assert_eq!(
+        seen.len(),
+        if case.paginated { 4 } else { 2 },
+        "{}",
+        case.child
+    );
+    Ok(expected)
+}
+
+fn expect_child_rows(
+    case: &Case,
+    rows: &[Json],
+    parent: &str,
+    owner: &str,
+    expected: &mut ExpectedGraph,
+) -> TestResult {
+    for row in rows {
+        let value = row
+            .get(case.identity)
+            .and_then(Json::as_str)
+            .ok_or("fixture native child identity absent")?;
+        let id = if matches!(
+            case.child,
+            "ListBotAliases"
+                | "ListBotVersions"
+                | "ListPrivateGraphEndpoints"
+                | "ListServicePrincipalNames"
+        ) {
+            format!("{}:{}|{}:{}", parent.len(), parent, value.len(), value)
+        } else {
+            value.to_owned()
+        };
+        assert!(
+            expected.0.insert(id.clone()),
+            "different pages must retain distinct identities: {id}"
+        );
+        if case.child == "ListEventRules" {
+            expected
+                .1
+                .insert((id.clone(), id.clone(), "REFERENCES".to_owned()));
+        }
+        expected
+            .1
+            .insert((id, owner.to_owned(), case.relation.to_owned()));
     }
     Ok(())
 }

@@ -98,32 +98,42 @@ async fn given_serverless_policy_type_domains_when_every_branch_resumes_then_sam
     Ok(())
 }
 
+type MediaConnectCase = (
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+    &'static str,
+);
+
+const MEDIACONNECT_CASES: [MediaConnectCase; 3] = [
+    (
+        "ListGatewayInstances",
+        "instances",
+        "gatewayInstanceArn",
+        "AWS::ApiOnly::MediaConnectGatewayInstance",
+        "gateway-instance",
+    ),
+    (
+        "ListSourceEndpoints",
+        "sourceEndpoints",
+        "arn",
+        "AWS::MediaConnect::SourceEndpoint",
+        "source-endpoint",
+    ),
+    (
+        "ListDestinationEndpoints",
+        "destinationEndpoints",
+        "arn",
+        "AWS::MediaConnect::DestinationEndpoint",
+        "destination-endpoint",
+    ),
+];
+
 #[tokio::test]
 async fn given_mediaconnect_owned_roots_when_unfiltered_pages_resume_then_endpoints_and_gateway_installations_persist()
 -> TestResult {
-    let cases = [
-        (
-            "ListGatewayInstances",
-            "instances",
-            "gatewayInstanceArn",
-            "AWS::ApiOnly::MediaConnectGatewayInstance",
-            "gateway-instance",
-        ),
-        (
-            "ListSourceEndpoints",
-            "sourceEndpoints",
-            "arn",
-            "AWS::MediaConnect::SourceEndpoint",
-            "source-endpoint",
-        ),
-        (
-            "ListDestinationEndpoints",
-            "destinationEndpoints",
-            "arn",
-            "AWS::MediaConnect::DestinationEndpoint",
-            "destination-endpoint",
-        ),
-    ];
+    let cases = &MEDIACONNECT_CASES;
     let names = [
         "ListGateways",
         "ListGatewayInstances",
@@ -144,11 +154,42 @@ async fn given_mediaconnect_owned_roots_when_unfiltered_pages_resume_then_endpoi
             .await?;
     }
     let gateway = "arn:aws:mediaconnect:us-east-1:123456789012:gateway:one";
+    let seen = mediaconnect_pages(&scenario, &catalog, cases, gateway).await?;
+    for &(operation, _, _, kind, resource) in cases {
+        let expected: BTreeSet<_> = ["one", "two"]
+            .into_iter()
+            .map(|suffix| {
+                format!("arn:aws:mediaconnect:us-east-1:123456789012:{resource}:{suffix}")
+            })
+            .collect();
+        let edges = if operation == "ListGatewayInstances" {
+            expected
+                .iter()
+                .map(|id| (id.clone(), gateway.to_owned(), "IN_GATEWAY".to_owned()))
+                .collect()
+        } else {
+            expected
+                .iter()
+                .map(|id| (id.clone(), id.clone(), "REFERENCES".to_owned()))
+                .collect()
+        };
+        assert_eq!(scenario.stored(kind).await?, (expected, edges));
+        assert!(seen.contains(&(operation.to_owned(), true)));
+    }
+    Ok(())
+}
+
+async fn mediaconnect_pages(
+    scenario: &Scenario<'_, '_>,
+    catalog: &RuntimeCatalog<'_>,
+    cases: &[MediaConnectCase],
+    gateway: &str,
+) -> TestResult<BTreeSet<(String, bool)>> {
     let mut seen = BTreeSet::new();
     for _ in 0..7 {
         let lease = scenario.claim().await?;
         let operation = lease.scope().operation().as_str().to_owned();
-        let callable = plan(&catalog, "mediaconnect", &operation)?;
+        let callable = plan(catalog, "mediaconnect", &operation)?;
         let second = lease.token().is_some();
         let (request, wire) = scenario.request(callable, &lease)?;
         assert_cursor(&wire, second)?;
@@ -175,26 +216,8 @@ async fn given_mediaconnect_owned_roots_when_unfiltered_pages_resume_then_endpoi
             page(json!({(case.1):[row]}), "nextToken", second)?
         };
         scenario
-            .apply(&catalog, callable, lease, &request, body)
+            .apply(catalog, callable, lease, &request, body)
             .await?;
     }
-    for (operation, _, _, kind, resource) in cases {
-        let expected: BTreeSet<_> = ["one", "two"]
-            .into_iter()
-            .map(|suffix| {
-                format!("arn:aws:mediaconnect:us-east-1:123456789012:{resource}:{suffix}")
-            })
-            .collect();
-        let edges = if operation == "ListGatewayInstances" {
-            expected
-                .iter()
-                .map(|id| (id.clone(), gateway.to_owned(), "IN_GATEWAY".to_owned()))
-                .collect()
-        } else {
-            BTreeSet::new()
-        };
-        assert_eq!(scenario.stored(kind).await?, (expected, edges));
-        assert!(seen.contains(&(operation.to_owned(), true)));
-    }
-    Ok(())
+    Ok(seen)
 }

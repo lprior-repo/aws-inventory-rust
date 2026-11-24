@@ -1,18 +1,21 @@
+mod declared;
 mod selected;
 use super::{RuntimeCatalogCompileError, ServiceIndex, encode};
 use crate::kind_map::{KindMap, KindTarget};
 use inventory_core::record::Value;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub(super) fn compile(
     kinds: &KindMap,
     services: &ServiceIndex<'_>,
     checked: Option<&crate::overlay::CheckedOverlays>,
+    relations: &[Value],
 ) -> Result<Vec<Value>, RuntimeCatalogCompileError> {
     let context = Context {
         kinds,
         services,
         checked,
+        declared: declared::paths(relations)?,
     };
     mapped_kinds(kinds)
         .chain(kinds.api_only().iter().map(|entry| {
@@ -44,6 +47,7 @@ struct Context<'a, 'b> {
     kinds: &'a KindMap,
     services: &'a ServiceIndex<'b>,
     checked: Option<&'a crate::overlay::CheckedOverlays>,
+    declared: BTreeMap<&'a str, Vec<&'a Value>>,
 }
 
 fn schema(
@@ -71,6 +75,18 @@ fn schema(
     if let Some(column) = selected::column(context, kind)? {
         columns.push(column);
     }
+    context
+        .declared
+        .get(kind)
+        .into_iter()
+        .flatten()
+        .try_for_each(|path| -> Result<(), RuntimeCatalogCompileError> {
+            let column = encode::map([(1, (*path).clone()), (2, Value::Int(3))])?;
+            if !columns.contains(&column) {
+                columns.push(column);
+            }
+            Ok(())
+        })?;
     let name_path_value = name_path
         .map(|path| encode::path(context.services, path))
         .transpose()?;

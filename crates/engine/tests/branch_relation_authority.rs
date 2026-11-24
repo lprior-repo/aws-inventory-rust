@@ -32,7 +32,7 @@ async fn branch_fixture(
     let database = directory.path().join("inventory.sqlite");
     // Decode the bounded, sealed synthetic catalog rather than injecting an
     // unchecked in-memory permission map or fabricating an upstream receipt.
-    let bytes = branch_catalog_bytes(base_discovery)?;
+    let bytes = model_relation_catalog(branch_catalog_bytes(base_discovery)?)?;
     let catalog = RuntimeCatalog::from_bytes(&bytes)?;
     let plan = catalog
         .plans()
@@ -214,7 +214,7 @@ async fn given_base_emits_but_exact_stage_is_discovery_when_metadata_is_submitte
 #[tokio::test]
 async fn given_base_is_discovery_but_exact_stage_emits_when_matching_evidence_is_committed_then_projection_survives_reopen()
 -> TestResult {
-    for (relationship, source) in [(1, "inferred-exact"), (2, "model")] {
+    for (relationship, source) in [(1, "reviewed-rule"), (2, "model")] {
         let (directory, store, pool) = branch_fixture(true).await?;
         let lease = stage_lease(&store, Some("EMIT"), Some("emitting-name")).await?;
         store

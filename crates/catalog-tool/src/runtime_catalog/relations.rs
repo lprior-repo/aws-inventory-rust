@@ -1,4 +1,6 @@
-use super::{RelationsResult, RuntimeCatalogCompileError, ServiceIndex, map, path};
+use super::encode::{RelationsResult, map, path};
+use super::{RuntimeCatalogCompileError, ServiceIndex};
+mod declared;
 use crate::kind_map::{
     KindMap, ReviewedRelation, ReviewedRelationSource, ReviewedRelationTarget, ReviewedValuePath,
 };
@@ -10,41 +12,53 @@ pub(super) fn compile(
     services: &ServiceIndex<'_>,
     checked: &crate::overlay::CheckedOverlays,
 ) -> Result<RelationsResult, RuntimeCatalogCompileError> {
-    let context = super::super::model_path::ValidationContext {
+    let context = super::model_path::ValidationContext {
         kinds,
         checked,
         services,
     };
     let active = |source: &str, targets: &crate::kind_map::ReviewedTargetKinds| {
-        super::super::model_path::active_kind(&context, source)
-            && targets
-                .iter()
-                .all(|kind| super::super::model_path::active_kind(&context, kind))
+        if !super::model_path::active_kind(&context, source) {
+            return Some(format!("source kind {source} is inactive"));
+        }
+        targets
+            .iter()
+            .find(|kind| !super::model_path::active_kind(&context, kind))
+            .map(|kind| format!("target kind {kind} is inactive"))
     };
     let mut rows = Vec::new();
     let mut inactive = BTreeMap::new();
     compile_relations(kinds, services, &active, &mut rows, &mut inactive)?;
     compile_parent_relations(kinds, &active, &mut rows, &mut inactive)?;
     compile_compound_relations(kinds, services, &active, &mut rows, &mut inactive)?;
-    Ok(RelationsResult { rows, inactive })
+    let reviewed = rows.len();
+    let mut result = RelationsResult {
+        rows,
+        inactive,
+        reviewed,
+        declared: 0,
+        declared_thin: 0,
+    };
+    declared::append(&context, &mut result)?;
+    Ok(result)
 }
 
 fn compile_relations(
     kinds: &KindMap,
     services: &ServiceIndex<'_>,
-    active: &dyn Fn(&str, &crate::kind_map::ReviewedTargetKinds) -> bool,
+    active: &dyn Fn(&str, &crate::kind_map::ReviewedTargetKinds) -> Option<String>,
     rows: &mut Vec<Value>,
     inactive: &mut BTreeMap<String, String>,
 ) -> Result<(), RuntimeCatalogCompileError> {
     for row in kinds.relations().iter() {
-        if !active(&row.source_kind, &row.target_kinds) {
+        if let Some(reason) = active(&row.source_kind, &row.target_kinds) {
             inactive.insert(
                 format!(
                     "{} -> {} (inactive source kind)",
                     row.source_kind,
                     row.target_kinds.primary()
                 ),
-                format!("source kind {} is inactive", row.source_kind),
+                reason,
             );
             continue;
         }
@@ -55,19 +69,19 @@ fn compile_relations(
 
 fn compile_parent_relations(
     kinds: &KindMap,
-    active: &dyn Fn(&str, &crate::kind_map::ReviewedTargetKinds) -> bool,
+    active: &dyn Fn(&str, &crate::kind_map::ReviewedTargetKinds) -> Option<String>,
     rows: &mut Vec<Value>,
     inactive: &mut BTreeMap<String, String>,
 ) -> Result<(), RuntimeCatalogCompileError> {
     for row in kinds.parent_relations().iter() {
-        if !active(&row.source_kind, &row.target_kinds) {
+        if let Some(reason) = active(&row.source_kind, &row.target_kinds) {
             inactive.insert(
                 format!(
                     "{} -> {} (inactive source kind, parent)",
                     row.source_kind,
                     row.target_kinds.primary()
                 ),
-                format!("source kind {} is inactive", row.source_kind),
+                reason,
             );
             continue;
         }
@@ -78,6 +92,7 @@ fn compile_parent_relations(
             (4, Value::List(Vec::new())),
             (5, Value::Text(row.relation.clone())),
             (6, Value::Int(scope(&row.source_kind, &row.scope)?)),
+            (7, Value::Int(1)),
             (
                 9,
                 Value::List(
@@ -98,19 +113,19 @@ fn compile_parent_relations(
 fn compile_compound_relations(
     kinds: &KindMap,
     services: &ServiceIndex<'_>,
-    active: &dyn Fn(&str, &crate::kind_map::ReviewedTargetKinds) -> bool,
+    active: &dyn Fn(&str, &crate::kind_map::ReviewedTargetKinds) -> Option<String>,
     rows: &mut Vec<Value>,
     inactive: &mut BTreeMap<String, String>,
 ) -> Result<(), RuntimeCatalogCompileError> {
     for row in kinds.compound_relations().iter() {
-        if !active(&row.source_kind, &row.target_kinds) {
+        if let Some(reason) = active(&row.source_kind, &row.target_kinds) {
             inactive.insert(
                 format!(
                     "{} -> {} (inactive source kind, compound)",
                     row.source_kind,
                     row.target_kinds.primary()
                 ),
-                format!("source kind {} is inactive", row.source_kind),
+                reason,
             );
             continue;
         }
@@ -181,6 +196,7 @@ fn encode(
         (4, optional_path(services, target_path)?),
         (5, Value::Text(row.relation.clone())),
         (6, Value::Int(scope(&row.source_kind, &row.scope)?)),
+        (7, Value::Int(1)),
         (
             9,
             Value::List(

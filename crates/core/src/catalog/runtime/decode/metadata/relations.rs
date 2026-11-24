@@ -26,6 +26,7 @@ fn relation(value: ValueRef<'_>) -> Result<RelationshipPlan, RuntimeCatalogError
         guard: relation_modes::guard(fields)?,
         components: relation_modes::components(fields)?,
         source: source(fields)?,
+        edge_source: edge_source(fields)?,
         target_kind,
         target_kinds: target_kinds.into_boxed_slice(),
         target_path: selected_path(list(fields, 4)?)?,
@@ -34,7 +35,7 @@ fn relation(value: ValueRef<'_>) -> Result<RelationshipPlan, RuntimeCatalogError
         owner: super::super::owners::read_owner(fields)?,
     };
     relation_modes::validate(&result)?;
-    only_fields(fields, &[1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14])?;
+    only_fields(fields, &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14])?;
     Ok(result)
 }
 
@@ -66,6 +67,15 @@ fn source(fields: MapRef<'_>) -> Result<RelationSource, RuntimeCatalogError> {
         Some(ValueRef::Int(1)) => Ok(RelationSource::Request),
         Some(ValueRef::Int(2)) => Ok(RelationSource::Parent),
         Some(_) => Err(RuntimeCatalogError::Capability),
+    }
+}
+
+fn edge_source(fields: MapRef<'_>) -> Result<crate::inventory::EdgeSource, RuntimeCatalogError> {
+    use crate::inventory::EdgeSource;
+    match fields.get_field(FieldId::new(7)?)? {
+        Some(ValueRef::Int(1)) => Ok(EdgeSource::ReviewedRule),
+        Some(ValueRef::Int(0)) => Ok(EdgeSource::Model),
+        None | Some(_) => Err(RuntimeCatalogError::Capability),
     }
 }
 

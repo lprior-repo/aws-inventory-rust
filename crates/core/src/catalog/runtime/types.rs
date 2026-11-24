@@ -103,6 +103,7 @@ pub struct RelationshipComponentPlan {
 pub struct RelationshipPlan {
     pub source_kind: Kind,
     pub source: RelationSource,
+    pub edge_source: crate::inventory::EdgeSource,
     pub source_path: Box<[FieldId]>,
     pub source_path_mode: RelationPathMode,
     pub target_kind: Kind,

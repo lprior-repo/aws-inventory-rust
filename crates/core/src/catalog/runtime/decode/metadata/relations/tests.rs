@@ -15,6 +15,7 @@ fn encoded_relation(source: Option<Value>) -> Result<Record, Box<dyn std::error:
         (4, Value::List(vec![Value::Int(2)])),
         (5, Value::Text("IN_VPC".to_owned())),
         (6, Value::Int(0)),
+        (7, Value::Int(1)),
     ];
     let mut fields = fields
         .into_iter()
@@ -162,5 +163,66 @@ fn typed_relation_rejects_mode_path_mismatches_and_parent_field_selection() -> T
             Err(RuntimeCatalogError::Capability)
         ));
     }
+    Ok(())
+}
+
+#[test]
+fn given_relation_provenance_when_decoded_then_model_and_reviewed_remain_distinct() -> TestResult {
+    use crate::inventory::EdgeSource;
+    // Given both defined explicit provenance codes in relation metadata.
+    [(0, EdgeSource::Model), (1, EdgeSource::ReviewedRule)]
+        .into_iter()
+        .try_for_each(|(code, expected)| -> TestResult {
+            let encoded = typed_relation([(7, Value::Int(code))])?;
+            assert_eq!(
+                relation(ValueRef::Map(encoded.root()))?.edge_source,
+                expected
+            );
+            Ok(())
+        })
+}
+
+#[test]
+fn given_unknown_or_wrongly_typed_provenance_when_decoded_then_reader_rejects_it() -> TestResult {
+    // Given invalid source codes and noninteger representations.
+    [
+        Value::Int(-1),
+        Value::Int(2),
+        Value::Int(i64::MAX),
+        Value::Text("model".into()),
+        Value::Null,
+    ]
+    .into_iter()
+    .try_for_each(|wire| -> TestResult {
+        let encoded = typed_relation([(7, wire)])?;
+        // When read, then no invalid code is relabelled reviewed.
+        let error = relation(ValueRef::Map(encoded.root()))
+            .err()
+            .ok_or("expected invalid relation provenance")?;
+        assert_eq!(
+            error.to_string(),
+            "runtime capability metadata is malformed or inconsistent"
+        );
+        Ok(())
+    })
+}
+
+#[test]
+fn given_missing_relation_provenance_when_decoded_then_reader_rejects_it() -> TestResult {
+    // Given an otherwise valid row whose mandatory provenance field was removed.
+    let encoded = encoded_relation(None)?;
+    let Value::Map(mut fields) = ValueRef::Map(encoded.root()).to_value()? else {
+        return Err("relation fixture is not a map".into());
+    };
+    fields.remove(&Key::Field(FieldId::new(7)?));
+    let encoded = Record::encode(&Value::Map(fields))?;
+    // Then omission is rejected with the same exact error as an unknown source code.
+    let error = relation(ValueRef::Map(encoded.root()))
+        .err()
+        .ok_or("expected missing relation provenance")?;
+    assert_eq!(
+        error.to_string(),
+        "runtime capability metadata is malformed or inconsistent"
+    );
     Ok(())
 }

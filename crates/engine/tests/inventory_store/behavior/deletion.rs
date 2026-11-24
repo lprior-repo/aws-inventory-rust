@@ -140,7 +140,7 @@ async fn given_a_resource_that_vanishes_when_two_complete_sweeps_miss_it_then_ro
         from: resource("gone")?,
         to: resource("keep")?,
         relation: Relation::parse("depends-on")?,
-        source: EdgeSource::Model,
+        source: EdgeSource::ReviewedRule,
     };
     sweep_once(
         &store,

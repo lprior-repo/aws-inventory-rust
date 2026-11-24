@@ -13,6 +13,7 @@ use inventory_core::{
 };
 use std::collections::BTreeMap;
 mod enum_values;
+mod references;
 
 pub(super) fn encode(
     id: &str,
@@ -29,6 +30,7 @@ pub(super) fn encode(
     fields.extend(targets(&shape.kind, indexes)?);
     fields.extend(metadata::shape_fields(&shape.traits)?);
     fields.extend(enum_values::field(shape)?);
+    fields.extend(references::fields(shape)?);
     map(fields)
 }
 
@@ -104,6 +106,7 @@ fn member_value(
         ),
     ];
     fields.extend(metadata::member_fields(member, target, all_shapes)?);
+    fields.extend(references::traits(&member.traits)?);
     map(fields)
 }
 
@@ -171,7 +174,7 @@ fn aggregate_kind(kind: &ShapeKind) -> Result<&'static str, CompileError> {
         ShapeKind::IntEnum { .. } => Ok("intEnum"),
         ShapeKind::Service => Ok("service"),
         ShapeKind::Operation { .. } => Ok("operation"),
-        ShapeKind::Resource => Ok("resource"),
+        ShapeKind::Resource { .. } => Ok("resource"),
         _ => Err(CompileError::Kind),
     }
 }

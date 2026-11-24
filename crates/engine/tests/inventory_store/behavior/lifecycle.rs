@@ -159,7 +159,7 @@ pub(super) async fn given_a_failed_edge_insert_when_page_commits_then_all_page_w
         from: source.clone(),
         to: target.clone(),
         relation: Relation::parse("depends-on")?,
-        source: EdgeSource::Model,
+        source: EdgeSource::ReviewedRule,
     };
     let mut failed = page(
         lease.clone(),
@@ -239,7 +239,7 @@ pub(super) async fn given_a_reviewed_direct_edge_when_the_target_value_changes_t
         from: source.clone(),
         to: target.clone(),
         relation: Relation::parse("depends-on")?,
-        source: "model".to_owned(),
+        source: "reviewed-rule".to_owned(),
     };
     store
         .seed_work(relationship_work(
@@ -268,7 +268,7 @@ pub(super) async fn given_a_reviewed_direct_edge_when_the_target_value_changes_t
         from: source.clone(),
         to: target.clone(),
         relation: Relation::parse("depends-on")?,
-        source: EdgeSource::Model,
+        source: EdgeSource::ReviewedRule,
     });
     assert_eq!(
         store.commit_page(initial).await?.stats.resources_inserted,
@@ -352,7 +352,7 @@ pub(super) async fn given_a_reviewed_direct_edge_when_the_target_value_changes_t
             "thing-1".to_owned(),
             "beta".to_owned(),
             "depends-on".to_owned(),
-            "model".to_owned()
+            "reviewed-rule".to_owned()
         )]
     );
     pool.close().await;
@@ -425,7 +425,7 @@ pub(super) async fn given_a_higher_priority_target_facet_when_a_direct_edge_uses
         from: source.clone(),
         to: target.clone(),
         relation: Relation::parse("depends-on")?,
-        source: EdgeSource::Model,
+        source: EdgeSource::ReviewedRule,
     });
     assert_eq!(store.commit_page(lower).await?.stats.resources_inserted, 2);
     let effective = store
@@ -482,7 +482,7 @@ pub(super) async fn given_a_higher_priority_target_facet_when_a_direct_edge_uses
         from: source.clone(),
         to: target.clone(),
         relation: Relation::parse("depends-on")?,
-        source: "model".to_owned(),
+        source: "reviewed-rule".to_owned(),
     };
     for (sweep, at, expected_value, expected_edges) in [
         ("higher-miss-one", 301, "gamma", Vec::new()),

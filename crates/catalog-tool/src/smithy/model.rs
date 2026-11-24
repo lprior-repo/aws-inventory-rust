@@ -41,7 +41,12 @@ pub(super) enum ShapeKind {
         #[serde(default, deserialize_with = "crate::model_source::unique_map")]
         members: BTreeMap<String, Member>,
     },
-    Resource,
+    Resource {
+        list: Option<Target>,
+        read: Option<Target>,
+        #[serde(default)]
+        identifiers: BTreeMap<String, Target>,
+    },
     List {
         member: Target,
     },

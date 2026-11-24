@@ -1,6 +1,8 @@
 use super::*;
 #[path = "request_relation_tests/accelerator.rs"]
 mod accelerator;
+#[path = "request_relation_tests/declared.rs"]
+mod declared;
 #[path = "request_relation_tests/typed.rs"]
 mod typed;
 use crate::execution::page::consumer_index::ConsumerIndex;
@@ -76,6 +78,7 @@ fn typed_rule()
     Ok(RelationshipPlan {
         source_kind: kind.clone(),
         source: RelationSource::SelectedOutput,
+        edge_source: inventory_core::inventory::EdgeSource::ReviewedRule,
         source_path: vec![FieldId::new(1)?].into_boxed_slice(),
         source_path_mode: RelationPathMode::Fields,
         target_kind: kind.clone(),
