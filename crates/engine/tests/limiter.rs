@@ -95,6 +95,8 @@ mod adaptive_recovery_stops_at_the_bucket_policy_ceiling;
 mod backoff_holds_no_global_permit;
 #[path = "limiter/bucket_keys_have_a_hard_byte_bound.rs"]
 mod bucket_keys_have_a_hard_byte_bound;
+#[path = "limiter/bucket_keys_pace_independently.rs"]
+mod bucket_keys_pace_independently;
 #[path = "limiter/bucket_policies_validate_limits_and_exact_key_bounds.rs"]
 mod bucket_policies_validate_limits_and_exact_key_bounds;
 #[path = "limiter/bucket_policy_json_rejects_unknown_fields.rs"]

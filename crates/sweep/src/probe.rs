@@ -65,7 +65,7 @@ impl<C: CredentialSource> Probe<'_, '_, C> {
         let endpoint = routing::resolve(self.plan, &region)?;
         let base =
             input::root_bindings_branch(self.plan, branch, self.scope.account, Some(&scope))?;
-        let response = self.request(&endpoint, &base).await?;
+        let response = self.request(&endpoint, &base, &scope).await?;
         let (count, _) = record::item_selection(&response.record, self.plan.items())?;
         Ok(ProbeAnswer {
             items: u64::try_from(count)
@@ -112,6 +112,7 @@ impl<C: CredentialSource> Probe<'_, '_, C> {
         &self,
         endpoint: &ResolvedEndpoint,
         base: &Record,
+        scope: &Region,
     ) -> Result<call::DecodedResponse, SweepError> {
         let fields = first_page_fields(self.plan);
         let metrics = metrics::Accumulators::default();
@@ -128,6 +129,11 @@ impl<C: CredentialSource> Probe<'_, '_, C> {
             base,
             fields: &fields,
             metrics: &metrics,
+            account: self
+                .scope
+                .account
+                .map_or(crate::bucket::BOOTSTRAP_ACCOUNT, AccountId::as_str),
+            scope,
         }
         .run()
         .await

@@ -5,6 +5,7 @@ use thiserror::Error;
 
 #[cfg(test)]
 use catalog_tool as fixture_catalog;
+mod bucket;
 mod call;
 mod config;
 #[cfg(test)]

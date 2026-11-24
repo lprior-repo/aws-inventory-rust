@@ -12,6 +12,7 @@ pub(super) struct Prepared {
     pub(super) base: Record,
     pub(super) fields: Vec<input::InputField>,
     pub(super) region: inventory_core::inventory::RegionId,
+    scope: inventory_core::inventory::Region,
 }
 
 pub(super) async fn prepare(
@@ -35,6 +36,7 @@ pub(super) async fn prepare(
         base,
         fields,
         region,
+        scope: lease.scope().region().clone(),
     })
 }
 
@@ -95,6 +97,8 @@ impl Prepared {
             base: &self.base,
             fields: &self.fields,
             metrics: context.bootstrap.metrics,
+            account: context.account.as_str(),
+            scope: &self.scope,
         }
         .run()
         .await

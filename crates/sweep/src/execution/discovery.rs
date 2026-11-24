@@ -132,6 +132,8 @@ async fn discovery_call(
         base: &base,
         fields: &[],
         metrics: bootstrap.metrics,
+        account: context.account.as_str(),
+        scope: &region,
     }
     .run()
     .await

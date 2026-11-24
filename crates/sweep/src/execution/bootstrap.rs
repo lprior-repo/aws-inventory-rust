@@ -87,6 +87,8 @@ async fn execute(
         base: &base,
         fields: &[],
         metrics: context.metrics,
+        account: account.map_or(crate::bucket::BOOTSTRAP_ACCOUNT, AccountId::as_str),
+        scope: &region,
     }
     .run()
     .await

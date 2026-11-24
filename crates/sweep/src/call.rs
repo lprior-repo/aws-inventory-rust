@@ -28,6 +28,10 @@ pub(super) struct Call<'a, 'catalog, C: CredentialSource> {
     pub base: &'a Record,
     pub fields: &'a [InputField],
     pub metrics: &'a crate::metrics::Accumulators,
+    /// Account whose limiter bucket paces this call.
+    pub account: &'a str,
+    /// Scope region whose limiter bucket paces this call.
+    pub scope: &'a inventory_core::inventory::Region,
 }
 
 pub(super) struct DecodedResponse {
@@ -38,10 +42,11 @@ pub(super) struct DecodedResponse {
 
 impl<C: CredentialSource> Call<'_, '_, C> {
     pub(super) async fn run(&self) -> Result<DecodedResponse, SweepError> {
-        let bucket = self.plan.service().name().map_err(SweepError::Model)?;
+        let group = self.plan.service().name().map_err(SweepError::Model)?;
+        let bucket = crate::bucket::key(self.account, self.scope, group);
         let response = self
             .executor
-            .execute(bucket, || async { self.send_attempt().await })
+            .execute(&bucket, || async { self.send_attempt().await })
             .await?;
         let started = std::time::Instant::now();
         let response = response.decode(self.plan);
