@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: docker.io/library/postgres:16-bookworm@sha256:ce3efec6bc404f6b15ebf5d9bed6b45a9d4655aea238d7dacc3467ccb05a1175
+    image: docker.io/library/postgres:18-trixie@sha256:c699303802144847d238196173655dbbecf7a96aeca1565f2b02eb671a1f0b6b
     environment:
       POSTGRES_DB: inventory
       POSTGRES_USER: inventory
@@ -8,7 +8,7 @@ services:
     ports:
       - "127.0.0.1:54329:5432"
     volumes:
-      - inventory-pgdata:/var/lib/postgresql/data
+      - inventory-pgdata-18:/var/lib/postgresql
     shm_size: 2gb
     command:
       - postgres
@@ -41,4 +41,4 @@ services:
       retries: 30
       start_period: 5s
 volumes:
-  inventory-pgdata:
+  inventory-pgdata-18:

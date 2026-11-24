@@ -2,6 +2,10 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Local PostgreSQL image upgraded from 16-bookworm to 18-trixie (18.7),
+  pinned by digest. The volume name changed to `inventory-pgdata-18` and
+  its mount path to `/var/lib/postgresql`; the old `inventory-pgdata`
+  volume is left in place and data is not migrated automatically.
 - Marketplace Agreement discovery now sends the pinned model's documented-required
   `AgreementType=PurchaseAgreement` filter on initial and subsequent search pages.
   Existing catalog/database pairs must be regenerated together for the new plan.

@@ -618,9 +618,8 @@ files are over the 300-line limit:
 ## PostgreSQL
 
 V51 and V53 arrived after the run above, which used the current store, not
-PostgreSQL. To see what running a server on this machine needs, PostgreSQL 16.15 was installed here
-(`apt-get install postgresql`), and a throwaway server was started on a
-private unix socket, queried with `psql` and stopped:
+PostgreSQL. A native PostgreSQL 18.6 server was verified with `psql`. The
+commands below show the throwaway Unix-socket setup used in earlier evidence:
 
 ```sh
 initdb -D <dir>/data --auth=trust -U inv
@@ -629,10 +628,9 @@ psql -h <dir> -U inv -d postgres -Atc 'select version()'
 pg_ctl -D <dir>/data -m fast -w stop
 ```
 
-`initdb` refuses to run as root. This machine runs as root, as most CI
-containers do, so the server ran as the `postgres` user through `runuser`. The
-binaries are under `/usr/lib/postgresql/16/bin` and are not on `PATH`. No
-project code talks to PostgreSQL yet.
+`initdb` refuses to run as root. In a root-run container, delegate the native
+server to an unprivileged user with `runuser`. The 18.6 binaries are in
+`/usr/bin` on the verification host.
 
 ## Memory
 

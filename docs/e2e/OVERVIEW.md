@@ -136,7 +136,7 @@ before release (step E3.4).
 ## Where it runs, and what it reaches
 
 - **On one person's laptop, macOS or Linux. This is version 1** (V54,
-  V58). The collector, PostgreSQL 19, the graph engine and the app, all
+  V58). The collector, PostgreSQL 18, the graph engine and the app, all
   local. PostgreSQL comes from a container (podman or docker) or a native
   install. The graph engine ships inside the product.
 - **It reaches a whole AWS organization, up to 10,000 accounts** (V64,

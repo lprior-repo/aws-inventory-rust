@@ -24,11 +24,40 @@ The compose path is resolved from the harness build's workspace, not the current
 directory. The command has a 120-second deadline; runtime probes have 10 seconds.
 A failed start may leave a container: use `down` to stop it.
 
-`compose.yaml` pins the official multi-platform `16-bookworm` image by digest,
-resolved from Docker Hub. C6.2 explicitly specifies version 16;
-the newer architecture target of 19 is not claimed as verified by this setup.
-The named volume is `inventory-local_inventory-pgdata`, never a bind mount.
-`down` keeps it; `down --volumes` irreversibly deletes it. The port is loopback
+`compose.yaml` pins the official multi-platform `18-trixie` image by digest
+(`sha256:c699303802144847d238196173655dbbecf7a96aeca1565f2b02eb671a1f0b6b`),
+which is PostgreSQL 18.7. The named volume is
+`inventory-local_inventory-pgdata-18`, mounted at `/var/lib/postgresql`,
+never a bind mount. The old `inventory-local_inventory-pgdata` volume holds a
+PostgreSQL 16 cluster and is left untouched. No data is migrated automatically.
+
+To migrate the default `inventory` database, stop the PostgreSQL 16 deployment
+before mounting its volume. Start a temporary 16 server without network access:
+
+```sh
+podman run -d --rm --name inventory-pg16-export --network none \
+  -v inventory-local_inventory-pgdata:/var/lib/postgresql/data \
+  docker.io/library/postgres:16-bookworm
+podman exec inventory-pg16-export pg_isready -U inventory -d inventory
+podman exec inventory-pg16-export pg_dump -U inventory -Fc inventory > inventory.pg16.dump
+podman stop inventory-pg16-export
+```
+
+Wait for readiness before dumping. Start PostgreSQL 18 and restore to its fresh
+`inventory` database (replace `podman` with `docker` if using Docker):
+
+```sh
+inventory-harness postgres up
+podman compose -p inventory-local -f deploy/local/compose.yaml exec -T postgres \
+  pg_restore --exit-on-error -U inventory -d inventory < inventory.pg16.dump
+```
+
+For a customized cluster with extra roles or databases, use `pg_dumpall` and
+restore those objects with an administrative role. After verifying the restore,
+you can remove the old volume manually with
+`podman volume rm inventory-local_inventory-pgdata` (or `docker volume rm`).
+`down` keeps named volumes; `down --volumes` irreversibly deletes the current
+deployment's volume. The port is loopback
 only, `127.0.0.1:54329`. The local-only default password is
 `inventory-local-only`; never reuse it. Set `INVENTORY_POSTGRES_PASSWORD` before
 initializing a new volume to override it. Changing that variable does not
@@ -90,9 +119,9 @@ timeout. URLs are bounded to 8,192 bytes. No implicit database retries exist.
 
 No CI configuration or `.moon/` task-definition file exists in this checkout;
 the coordinator excluded adding a Moon task and CI service in this change.
-A container runtime is not available on the implementation machine, so the
-container path still requires a real Podman/Docker validation run. Stub tests
-cover detection and compose arguments, not container availability.
+Podman validation of the pinned 18.7 image confirmed the data directory is
+`/var/lib/postgresql/18/docker` and passed all five PostgreSQL lifecycle tests.
+Docker was not run.
 
 ## Acceptance evidence
 
@@ -108,7 +137,7 @@ cargo test -p inventory-harness --locked -j2 postgres
 test result: ok. 8 passed; 0 failed; 5 ignored
 ```
 
-These are filtered harness checks, not a workspace or container validation.
+These are filtered native harness checks, separate from the Podman run above.
 The initial acceptance compilation found SQLx 0.9's owned SQL-string boundary;
 DDL now moves its validated identifier statement through `AssertSqlSafe`.
 

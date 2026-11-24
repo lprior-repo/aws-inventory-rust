@@ -12,7 +12,7 @@
 Version 1 in one line: `aws-inventory` runs on one laptop (macOS or Linux),
 reaches every account of an AWS organization (up to 10,000) through a
 read-only role,
-sweeps everything once a day into PostgreSQL 19, and draws it. All of it is
+sweeps everything once a day into PostgreSQL 18, and draws it. All of it is
 MIT. The core is one page: the first section of
 [ARCHITECTURE](ARCHITECTURE.md).
 

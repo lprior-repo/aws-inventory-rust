@@ -70,7 +70,7 @@ PostgreSQL is the only store, so a local run needs a PostgreSQL server. Step
 confirmed: under Podman, under Docker (both from `deploy/local/compose.yaml`,
 through `inventory-harness postgres up`), or as a native server. All three are
 reached through `INVENTORY_POSTGRES_URL`. This machine has no working Docker
-daemon; it uses the native PostgreSQL 16.15, run as an unprivileged user.
+daemon; it uses the native PostgreSQL 18.6, run as an unprivileged user.
 
 With a server up, the whole flow is one command, `inventory-harness e2e run
 --work "$(mktemp -d)"` (A7.1), and the numbers come from `cmdb-bench sweep`
@@ -99,7 +99,7 @@ With a server up, the whole flow is one command, `inventory-harness e2e run
 | V61 | I1.1 is dropped. |
 | V64 | Whole organizations: H2.1 and H2.2 are part of version 1, after the milestone. The bucket count in B1 and the sizes in O14 are per organization, not per account. |
 | V65 | Package F is a daily schedule, not a loop that must run all day. |
-| V66 | C6.2 runs PostgreSQL 19. |
+| V66 | C6.2 runs PostgreSQL 18, pinned 18.7. |
 | V67 | O12 is settled: A1 generates overlays without a review of each entry. |
 | V68 | Peak memory and CPU time get limits in section 3, not only rows. |
 | V69 | The target is up to 10,000 accounts. Waves 0 to 6 do not change: the milestone is still proven at the size it was planned for. Package S, after the milestone, climbs the ladder. B1.2's 74,000 budgets is rung one of four. |
@@ -808,7 +808,7 @@ The steps most likely to fail or grow, why, and the fallback.
 | A4.6 | Seeding everything takes far longer than planned | One file per service, trimmed by hand to what the emulator accepts | It runs in batches and is not on the path to T0, T1 or T2. X2 is "everything the emulator serves and a seed exists for"; the rest is listed under X3 |
 | A3.4 | List-then-describe storage needs more than one new key | The parent of a work-only scope is not a stored resource, and deletion follows scopes | Keep storing the list items as their own API-only kind for the slice and make `emit` a later step |
 | C6.1 | The pinned `sqlx` revision's `postgres` feature does not build | The pin is a git revision of a fork, not a release; not verified | Report to the coordinator. Options: move the pin, or use `tokio-postgres` behind the same trait (COPY and pipelining are first-class there). There is no other store, so this is checked in wave 0 |
-| C6.2 | No container runtime, or the container path is unproven | This machine has the `docker` client and no daemon; `initdb` refuses root; the image digest is not known to this plan | The URL contract: any server satisfies `INVENTORY_POSTGRES_URL`. Here a native PostgreSQL 16.15 run as an unprivileged user; in CI a service container; the compose path is proven on a machine that has Docker or Podman and reported as not run otherwise |
+| C6.2 | No container runtime, or the container path is unproven | This machine has the `docker` client and no daemon; `initdb` refuses root; the image digest is not known to this plan | The URL contract: any server satisfies `INVENTORY_POSTGRES_URL`. Here a native PostgreSQL 18.6 run as an unprivileged user; in CI a service container; the compose path is proven on a machine that has Docker or Podman and reported as not run otherwise |
 | C6.2 | Tests leak databases or collide | A database per test, on a shared server; killed runs skip `Drop` | Names carry time, pid and random bits; `postgres prune` removes old ones; `DROP DATABASE ... WITH (FORCE)` |
 | C6.3 | Schema creation fails or is slow with thousands of tables | Lock table size on a default server; catalog bloat | DDL batches (planned) and `max_locks_per_transaction=256` in the compose file; if P11 is bad, the VISION 5.4 fallback (shared tables) |
 | C6.6, C6.7 | The set-based commit is slower than hoped for small pages, or COPY is not available at the pin | Fixed cost per statement; `copy_in_raw` not verified | Keep `UNNEST` (already set-based). COPY is a measured choice, not a requirement of the milestone |
