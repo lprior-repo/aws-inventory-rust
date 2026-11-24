@@ -46,6 +46,15 @@ impl InventoryStore for PgStore {
     ) -> Result<Option<WorkLease>, StoreError> {
         PgStore::claim(self, sweep, now_ms, lease_ms).await
     }
+    async fn claim_batch(
+        &self,
+        sweep: &SweepId,
+        now_ms: i64,
+        lease_ms: i64,
+        limit: u16,
+    ) -> Result<Vec<WorkLease>, StoreError> {
+        PgStore::claim_batch(self, sweep, now_ms, lease_ms, limit).await
+    }
     async fn claim_with_depth(
         &self,
         sweep: &SweepId,

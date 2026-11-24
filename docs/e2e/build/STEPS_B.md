@@ -437,7 +437,7 @@ row.
   -> Vec<WorkLease>`, one statement: `UPDATE work_queue SET state=1,
   generation=generation+1, lease_until=$2 WHERE (sweep_id, scope_key) IN
   (SELECT sweep_id, scope_key FROM work_queue WHERE sweep_id=$1 AND (state=0
-  OR (state=1 AND lease_until<=$3)) ORDER BY scope_key LIMIT $4 FOR UPDATE
+  OR (state=1 AND lease_until<=$3)) ORDER BY last_complete, scope_key LIMIT $4 FOR UPDATE
   SKIP LOCKED) RETURNING scope_key, token, bindings, generation`. `claim`
   becomes `claim_batch(.., 1)`.
 - **Tests:** conformance: batch of N returns N distinct leases; an expired
@@ -450,9 +450,12 @@ row.
   inventory_store -- --ignored claim`.
 - **Done when:** tests pass.
 - **Size:** about 120 added. One change.
-- **Watch out:** `ORDER BY scope_key` is not "stalest first" (V10); that order
-  is F1.2's. Keep the order here so resume stays deterministic for the kill
-  matrix. `RETURNING` does not promise the subquery's order; sort the result.
+- **Watch out:** this step first said `ORDER BY scope_key`. The claim that
+  landed before it already orders by `last_complete, scope_key` in both stores,
+  and `tests/inventory_store/behavior/stalest_first.rs` holds that order, so
+  the batch keeps it. The order is still fixed by stored columns alone, which
+  is what the kill matrix needs. `RETURNING` does not promise the subquery's
+  order; sort the result.
 
 ### B3.2 Keep the configured number of leases in flight
 

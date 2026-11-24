@@ -40,6 +40,30 @@ pub trait InventoryStore: Send + Sync {
         now_ms: i64,
         lease_ms: i64,
     ) -> impl Future<Output = Result<Option<WorkLease>, StoreError>> + Send;
+    /// Claims up to `limit` leases, stalest first, returned sorted by scope.
+    /// This default issues one `claim` per lease; a store may do it in one statement.
+    fn claim_batch(
+        &self,
+        sweep: &SweepId,
+        now_ms: i64,
+        lease_ms: i64,
+        limit: u16,
+    ) -> impl Future<Output = Result<Vec<WorkLease>, StoreError>> + Send {
+        async move {
+            if limit == 0 {
+                return Err(StoreError::Invalid("claim batch limit is zero"));
+            }
+            let mut leases = Vec::new();
+            for _ in 0..limit {
+                match self.claim(sweep, now_ms, lease_ms).await? {
+                    Some(lease) => leases.push(lease),
+                    None => break,
+                }
+            }
+            leases.sort_unstable_by(|left, right| left.scope().cmp(right.scope()));
+            Ok(leases)
+        }
+    }
     fn claim_with_depth(
         &self,
         sweep: &SweepId,

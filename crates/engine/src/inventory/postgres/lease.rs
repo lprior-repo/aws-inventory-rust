@@ -3,7 +3,7 @@ use crate::inventory::work::transitions::{decode_scope, encode_scope};
 use crate::inventory::{StoreError, SweepId, WorkLease};
 use sqlx::{Postgres, Row, Transaction, postgres::PgRow};
 
-const CLAIM: &str = "WITH candidate AS (SELECT scope_key,generation FROM work_queue WHERE sweep_id=$1 AND (state=0 OR (state=1 AND lease_until<=$2)) ORDER BY last_complete,scope_key LIMIT 1 FOR UPDATE SKIP LOCKED) UPDATE work_queue w SET state=1,generation=w.generation+CASE WHEN w.generation=9223372036854775807 THEN 0 ELSE 1 END,authority_generation=w.generation+CASE WHEN w.generation=9223372036854775807 THEN 0 ELSE 1 END,lease_until=$3,authority_complete=CASE WHEN w.token IS NULL OR w.authority_complete=1 THEN 1 ELSE 0 END FROM candidate c WHERE w.sweep_id=$1 AND w.scope_key=c.scope_key RETURNING w.scope_key,w.generation,w.token,w.bindings,w.context,w.lease_until,c.generation AS previous_generation";
+const CLAIM: &str = "WITH candidate AS (SELECT scope_key,generation FROM work_queue WHERE sweep_id=$1 AND (state=0 OR (state=1 AND lease_until<=$2)) ORDER BY last_complete,scope_key LIMIT $4 FOR UPDATE SKIP LOCKED) UPDATE work_queue w SET state=1,generation=w.generation+CASE WHEN w.generation=9223372036854775807 THEN 0 ELSE 1 END,authority_generation=w.generation+CASE WHEN w.generation=9223372036854775807 THEN 0 ELSE 1 END,lease_until=$3,authority_complete=CASE WHEN w.token IS NULL OR w.authority_complete=1 THEN 1 ELSE 0 END FROM candidate c WHERE w.sweep_id=$1 AND w.scope_key=c.scope_key RETURNING w.scope_key,w.generation,w.token,w.bindings,w.context,w.lease_until,c.generation AS previous_generation";
 
 impl PgStore {
     pub async fn claim(
@@ -12,7 +12,27 @@ impl PgStore {
         now_ms: i64,
         lease_ms: i64,
     ) -> Result<Option<WorkLease>, StoreError> {
-        claim_inner(self, sweep, now_ms, lease_ms, false).await
+        let batch = self.claim_batch(sweep, now_ms, lease_ms, 1).await?;
+        Ok(batch.into_iter().next())
+    }
+
+    pub async fn claim_batch(
+        &self,
+        sweep: &SweepId,
+        now_ms: i64,
+        lease_ms: i64,
+        limit: u16,
+    ) -> Result<Vec<WorkLease>, StoreError> {
+        if limit == 0 {
+            return Err(StoreError::Invalid("claim batch limit is zero"));
+        }
+        let until = deadline(now_ms, lease_ms)?;
+        let mut tx = self.pool.begin().await?;
+        active(&mut tx, Some(sweep)).await?;
+        let mut leases = claim_rows(&mut tx, sweep, now_ms, until, i64::from(limit)).await?;
+        tx.commit().await?;
+        leases.sort_unstable_by(|left, right| left.scope().cmp(right.scope()));
+        Ok(leases)
     }
 
     pub async fn claim_with_depth(
@@ -21,38 +41,43 @@ impl PgStore {
         now_ms: i64,
         lease_ms: i64,
     ) -> Result<Option<WorkLease>, StoreError> {
-        claim_inner(self, sweep, now_ms, lease_ms, true).await
+        let until = deadline(now_ms, lease_ms)?;
+        let mut tx = self.pool.begin().await?;
+        active(&mut tx, Some(sweep)).await?;
+        let rows = claim_rows(&mut tx, sweep, now_ms, until, 1).await?;
+        let mut lease = rows.into_iter().next();
+        populate_depth(&mut tx, lease.as_mut()).await?;
+        tx.commit().await?;
+        Ok(lease)
     }
 }
 
-async fn claim_inner(
-    store: &PgStore,
+async fn claim_rows(
+    tx: &mut Transaction<'_, Postgres>,
     sweep: &SweepId,
     now: i64,
-    duration: i64,
-    depth: bool,
-) -> Result<Option<WorkLease>, StoreError> {
-    let until = deadline(now, duration)?;
-    let mut tx = store.pool.begin().await?;
-    active(&mut tx, Some(sweep)).await?;
-    let row = sqlx::query(CLAIM)
+    until: i64,
+    limit: i64,
+) -> Result<Vec<WorkLease>, StoreError> {
+    let rows = sqlx::query(CLAIM)
         .bind(sweep.as_str())
         .bind(now)
         .bind(until)
-        .fetch_optional(&mut *tx)
+        .bind(limit)
+        .fetch_all(&mut **tx)
         .await?;
-    let mut lease = row.map(|row| decode(row, sweep)).transpose()?;
-    populate_depth(&mut tx, lease.as_mut(), depth).await?;
-    tx.commit().await?;
-    Ok(lease)
+    let mut leases = Vec::with_capacity(rows.len());
+    for row in rows {
+        leases.push(decode(row, sweep)?);
+    }
+    Ok(leases)
 }
 
 async fn populate_depth(
     tx: &mut Transaction<'_, Postgres>,
     lease: Option<&mut WorkLease>,
-    depth: bool,
 ) -> Result<(), StoreError> {
-    let Some(lease) = lease.filter(|_| depth) else {
+    let Some(lease) = lease else {
         return Ok(());
     };
     let count: i64 =

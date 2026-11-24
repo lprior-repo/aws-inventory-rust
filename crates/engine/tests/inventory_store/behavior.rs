@@ -1,3 +1,5 @@
+#[path = "behavior/batch_claim.rs"]
+mod batch_claim;
 #[path = "behavior/deletion.rs"]
 mod deletion;
 #[path = "behavior/lifecycle.rs"]

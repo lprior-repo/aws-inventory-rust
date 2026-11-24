@@ -1,3 +1,5 @@
+#[path = "postgres/batch_claim.rs"]
+mod batch_claim;
 #[path = "postgres/completion.rs"]
 mod completion;
 #[path = "postgres/conformance.rs"]
