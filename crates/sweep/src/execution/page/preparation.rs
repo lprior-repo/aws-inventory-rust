@@ -1,14 +1,10 @@
 use super::{InventoryStore, RuntimeContext, cursor};
 use crate::{CredentialSource, SweepError, input};
-use inventory_core::{
-    catalog::runtime::{CallablePlan, ResolvedEndpoint},
-    record::Record,
-};
+use inventory_core::{catalog::runtime::CallablePlan, record::Record};
 use inventory_engine::inventory::WorkLease;
 
 pub(super) struct Prepared {
-    pub(super) endpoint: ResolvedEndpoint,
-    pub(super) url: String,
+    pub(super) endpoint: super::super::discovery::RequestEndpoint,
     pub(super) base: Record,
     pub(super) fields: Vec<input::InputField>,
     pub(super) region: inventory_core::inventory::RegionId,
@@ -22,17 +18,10 @@ pub(super) async fn prepare(
     cursor: &cursor::Cursor,
 ) -> Result<Prepared, SweepError> {
     let (endpoint, region) = endpoint(context, lease, plan).await?;
-    let url = context
-        .bootstrap
-        .config
-        .endpoint_override()?
-        .unwrap_or(&endpoint.url)
-        .to_owned();
     let base = bindings(lease.bindings())?;
     let fields = request_fields(cursor, plan, context.bootstrap.config.max_page_size)?;
     Ok(Prepared {
         endpoint,
-        url,
         base,
         fields,
         region,
@@ -44,14 +33,24 @@ async fn endpoint(
     context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     lease: &WorkLease,
     plan: &CallablePlan<'_>,
-) -> Result<(ResolvedEndpoint, inventory_core::inventory::RegionId), SweepError> {
+) -> Result<
+    (
+        super::super::discovery::RequestEndpoint,
+        inventory_core::inventory::RegionId,
+    ),
+    SweepError,
+> {
     let region = super::super::routing::request_region(
         plan,
         lease.scope().region(),
         context.bootstrap.home,
         lease.scope().branch(),
     )?;
-    let endpoint = super::super::routing::resolve(plan, &region)?;
+    let endpoint = context
+        .bootstrap
+        .resolved_endpoints
+        .resolve(context.bootstrap.catalog, plan, &region)
+        .await?;
     let endpoint = super::super::discovery::resolve(context, plan, endpoint).await?;
     Ok((endpoint, region))
 }
@@ -93,8 +92,8 @@ impl Prepared {
             executor: context.bootstrap.executor,
             credentials: context.bootstrap.credentials,
             plan,
-            endpoint: &self.endpoint,
-            url: &self.url,
+            endpoint: &self.endpoint.modeled,
+            url: super::super::endpoint_url(context.bootstrap.config, self.endpoint.url())?,
             base: &self.base,
             fields: &self.fields,
             metrics: context.bootstrap.metrics,
@@ -143,3 +142,7 @@ mod tests {
         Ok(())
     }
 }
+
+#[cfg(test)]
+#[path = "preparation/wire_tests.rs"]
+mod wire_tests;

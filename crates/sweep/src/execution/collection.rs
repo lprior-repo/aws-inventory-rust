@@ -10,6 +10,7 @@ pub(super) struct Resources {
     home: RegionId,
     lease_ms: i64,
     metrics: Accumulators,
+    resolved_endpoints: super::resolved_endpoints::ResolvedEndpoints,
 }
 
 impl Resources {
@@ -34,6 +35,7 @@ impl Resources {
             home,
             lease_ms,
             metrics: Accumulators::default(),
+            resolved_endpoints: Default::default(),
         })
     }
 
@@ -60,6 +62,7 @@ impl Resources {
             home: &self.home,
             config,
             metrics: &self.metrics,
+            resolved_endpoints: &self.resolved_endpoints,
         }
     }
 }

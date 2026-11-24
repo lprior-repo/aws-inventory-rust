@@ -8,6 +8,7 @@ use inventory_core::{
 pub(crate) use lease::lease;
 use std::{
     collections::BTreeMap,
+    sync::Arc,
     time::{Duration, Instant},
 };
 use tokio::sync::Mutex;
@@ -19,23 +20,23 @@ const MAX_TTL_MINUTES: i64 = 1440;
 #[derive(Default)]
 pub(crate) struct EndpointCache(Mutex<BTreeMap<(String, String, String), Lease>>);
 struct Lease {
-    endpoint: String,
+    endpoint: Arc<str>,
     expires: Instant,
 }
 
 impl EndpointCache {
-    async fn get(&self, key: &(String, String, String), now: Instant) -> Option<String> {
+    async fn get(&self, key: &(String, String, String), now: Instant) -> Option<Arc<str>> {
         self.0
             .lock()
             .await
             .get(key)
             .filter(|lease| lease.expires > now)
-            .map(|lease| lease.endpoint.clone())
+            .map(|lease| Arc::clone(&lease.endpoint))
     }
     async fn insert(
         &self,
         key: (String, String, String),
-        endpoint: String,
+        endpoint: Arc<str>,
         ttl: Duration,
         now: Instant,
     ) -> Result<(), SweepError> {
@@ -58,25 +59,47 @@ impl EndpointCache {
     }
 }
 
+pub(super) struct RequestEndpoint {
+    pub(super) modeled: Arc<ResolvedEndpoint>,
+    discovered_url: Option<Arc<str>>,
+}
+
+impl RequestEndpoint {
+    pub(super) fn url(&self) -> &str {
+        self.discovered_url.as_deref().unwrap_or(&self.modeled.url)
+    }
+}
+
 pub(super) async fn resolve(
     context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     plan: &CallablePlan<'_>,
-    mut endpoint: ResolvedEndpoint,
-) -> Result<ResolvedEndpoint, SweepError> {
+    endpoint: Arc<ResolvedEndpoint>,
+) -> Result<RequestEndpoint, SweepError> {
     let RequestRouting::Discovered { operation, .. } = plan.routing() else {
-        return Ok(endpoint);
+        return Ok(RequestEndpoint {
+            modeled: endpoint,
+            discovered_url: None,
+        });
     };
     let key = cache_key(context, plan, &endpoint);
     let now = Instant::now();
     if let Some(url) = context.endpoints.get(&key, now).await {
-        endpoint.url = url;
-        return Ok(endpoint);
+        return Ok(RequestEndpoint {
+            modeled: endpoint,
+            discovered_url: Some(url),
+        });
     }
     let response = discover(context, plan, operation, &endpoint).await?;
     let (url, ttl) = endpoint_lease(plan, &response.record, &endpoint.signing_region)?;
-    context.endpoints.insert(key, url.clone(), ttl, now).await?;
-    endpoint.url = url;
-    Ok(endpoint)
+    let url = Arc::<str>::from(url);
+    context
+        .endpoints
+        .insert(key, Arc::clone(&url), ttl, now)
+        .await?;
+    Ok(RequestEndpoint {
+        modeled: endpoint,
+        discovered_url: Some(url),
+    })
 }
 
 fn cache_key(
@@ -105,11 +128,23 @@ async fn discover(
             "reviewed endpoint discovery operation is missing",
         ))?;
     let region = inventory_core::inventory::RegionId::parse(&endpoint.signing_region)?;
-    let endpoint = discovery.endpoint(
+    let endpoint = resolve_endpoint(
+        context.bootstrap.catalog,
+        discovery,
         &region,
-        &inventory_core::inventory::Region::Regional(region.clone()),
-    )?;
+        context.bootstrap.resolved_endpoints,
+    )
+    .await?;
     discovery_call(context, discovery, &endpoint, region).await
+}
+
+pub(super) async fn resolve_endpoint(
+    catalog: &inventory_core::catalog::runtime::RuntimeCatalog<'_>,
+    plan: &CallablePlan<'_>,
+    region: &inventory_core::inventory::RegionId,
+    endpoints: &super::resolved_endpoints::ResolvedEndpoints,
+) -> Result<Arc<ResolvedEndpoint>, SweepError> {
+    endpoints.resolve(catalog, plan, region).await
 }
 
 async fn discovery_call(
@@ -128,7 +163,7 @@ async fn discovery_call(
         credentials: bootstrap.credentials,
         plan,
         endpoint,
-        url: &url,
+        url,
         base: &base,
         fields: &[],
         metrics: bootstrap.metrics,

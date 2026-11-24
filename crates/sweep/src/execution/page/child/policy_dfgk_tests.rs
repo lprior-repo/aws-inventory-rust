@@ -59,7 +59,7 @@ pub(crate) fn project_children(
                     },
                     plan,
                     scope.region(),
-                    row,
+                    row.clone(),
                     request,
                     ancestry,
                 )

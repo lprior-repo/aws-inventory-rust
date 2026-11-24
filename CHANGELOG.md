@@ -6,6 +6,12 @@
   pinned by digest. The volume name changed to `inventory-pgdata-18` and
   its mount path to `/var/lib/postgresql`; the old `inventory-pgdata`
   volume is left in place and data is not migrated automatically.
+- Sweep moves selected row buffers into observations after deriving references,
+  tags and child work, shares up to 65,536 modeled endpoints per run, and encodes
+  each page request once while still signing every retry. Observations share
+  immutable hash-exclusion paths instead of copying them per row; endpoint-cache
+  hits borrow region keys. Record bytes, exclusion values and content hashes
+  remain unchanged.
 - Marketplace Agreement discovery now sends the pinned model's documented-required
   `AgreementType=PurchaseAgreement` filter on initial and subsequent search pages.
   Existing catalog/database pairs must be regenerated together for the new plan.

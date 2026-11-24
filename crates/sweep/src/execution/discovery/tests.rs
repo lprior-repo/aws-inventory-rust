@@ -25,15 +25,23 @@ async fn leases_expire_and_are_service_account_region_isolated()
         "123456789012".to_owned(),
         "us-east-1".to_owned(),
     );
+    let expected = Arc::<str>::from("https://ingest-cell1.timestream.us-east-1.amazonaws.com");
     cache
         .insert(
             key.clone(),
-            "https://ingest-cell1.timestream.us-east-1.amazonaws.com".to_owned(),
+            Arc::clone(&expected),
             Duration::from_secs(60),
             now,
         )
         .await?;
-    assert!(cache.get(&key, now).await.is_some());
+    let first = cache.get(&key, now).await.ok_or("live lease absent")?;
+    let again = cache.get(&key, now).await.ok_or("cached lease absent")?;
+    assert_eq!(
+        first.as_ref(),
+        "https://ingest-cell1.timestream.us-east-1.amazonaws.com"
+    );
+    assert!(Arc::ptr_eq(&expected, &first));
+    assert!(Arc::ptr_eq(&first, &again));
     assert!(
         cache
             .get(

@@ -102,7 +102,7 @@ impl<'a, 'catalog> Page<'a, 'catalog> {
             if chunk.items.is_empty() {
                 continue;
             }
-            let next = self.parts(&child_context, &chunk, &mut collected.budget)?;
+            let next = self.parts(&child_context, chunk, &mut collected.budget)?;
             append(&mut collected.parts, next, &mut collected.tag_pairs)?;
         }
         collected.parts.skipped_child_requests = collected.budget.skipped_requests();

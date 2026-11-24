@@ -21,7 +21,12 @@ fn given_invalid_recognized_principal_arns_when_list_roles_produces_trust_refere
         let observation = observed.first().ok_or("projected role absent")?;
         assert!(
             matches!(
-                crate::resource_projection::trust_references(&catalog, plan, observation),
+                crate::resource_projection::trust_references(
+                    &catalog,
+                    plan,
+                    observation.key(),
+                    observation.record()
+                ),
                 Err(SweepError::Operation("invalid reviewed IAM principal ARN"))
             ),
             "accepted invalid principal {arn}"
@@ -48,7 +53,12 @@ fn given_punctuated_iam_paths_when_list_roles_produces_trust_references_then_con
         }]}))?;
         let observed = observations(plan, rows(plan, &listed_role(&document))?)?;
         let observation = observed.first().ok_or("projected role absent")?;
-        let references = crate::resource_projection::trust_references(&catalog, plan, observation)?;
+        let references = crate::resource_projection::trust_references(
+            &catalog,
+            plan,
+            observation.key(),
+            observation.record(),
+        )?;
         assert_eq!(references.len(), 1, "lost valid path principal {arn}");
         let reference = references
             .first()

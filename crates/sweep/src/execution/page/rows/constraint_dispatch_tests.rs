@@ -123,7 +123,7 @@ fn dispatched(
     rows: &[Record],
 ) -> Result<Vec<Observation>, SweepError> {
     let home = RegionId::parse("us-east-1")?;
-    observations(
+    let identities = identities(
         catalog,
         record::IdentityContext {
             account: &AccountId::parse("123456789012")?,
@@ -134,6 +134,12 @@ fn dispatched(
         rows,
         &request().map_err(|_| SweepError::Operation("test request failed"))?,
         &vec![DiscoveryContext::empty(); rows.len()],
+    )?;
+    observations(
+        rows.to_vec(),
+        identities,
+        plan.hash_exclusions(),
+        plan.facet_precedence(),
     )
 }
 

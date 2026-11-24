@@ -93,7 +93,7 @@ async fn persist_scoped(
                 },
                 plan,
                 &Region::Regional(home.clone()),
-                row,
+                row.clone(),
                 &request,
                 &DiscoveryContext::default(),
             )

@@ -9,14 +9,7 @@ pub(in crate::record::policy_dfgk_tests) async fn persist(
     let root = tempfile::tempdir()?;
     let path = root.path().join("inventory.db");
     let runtime = RuntimeCatalog::from_bytes(bytes)?;
-    let mut unresolved = Vec::new();
-    for observation in &observations {
-        unresolved.extend(crate::resource_projection::trust_references(
-            &runtime,
-            plan,
-            observation,
-        )?);
-    }
+    let unresolved = trust_references(&runtime, plan, &observations)?;
     let expected_references = i64::try_from(unresolved.len())?;
     let registry = SchemaRegistry::new(bytes, runtime.schemas().to_vec())?;
     let store = BinaryStore::create(&path, registry).await?;
@@ -60,11 +53,18 @@ pub(in crate::record::policy_dfgk_tests) async fn persist(
             observed_at_ms: 1001,
         })
         .await?;
+    saved_rows(&path, expected_references).await
+}
+
+async fn saved_rows(
+    path: &std::path::Path,
+    expected_references: i64,
+) -> TestResult<Vec<(String, String, Vec<u8>)>> {
     let reader = sqlx::sqlite::SqlitePoolOptions::new()
         .max_connections(1)
         .connect_with(
             sqlx::sqlite::SqliteConnectOptions::new()
-                .filename(&path)
+                .filename(path)
                 .read_only(true),
         )
         .await?;
@@ -77,4 +77,21 @@ pub(in crate::record::policy_dfgk_tests) async fn persist(
     assert_eq!(reference_count, expected_references);
     reader.close().await;
     Ok(saved)
+}
+
+fn trust_references(
+    runtime: &RuntimeCatalog<'_>,
+    plan: &CallablePlan<'_>,
+    observations: &[Observation],
+) -> TestResult<Vec<inventory_core::inventory::UnresolvedReference>> {
+    let mut unresolved = Vec::new();
+    for observation in observations {
+        unresolved.extend(crate::resource_projection::trust_references(
+            runtime,
+            plan,
+            observation.key(),
+            observation.record(),
+        )?);
+    }
+    Ok(unresolved)
 }

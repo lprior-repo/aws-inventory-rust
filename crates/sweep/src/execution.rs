@@ -10,8 +10,13 @@ use slice::SliceBudget;
 pub(crate) mod discovery;
 pub(crate) mod page;
 mod rate;
+mod resolved_endpoints;
 pub(crate) mod routing;
 mod scheduler;
+#[cfg(test)]
+mod test_catalog;
+#[cfg(test)]
+mod test_transport;
 #[cfg(test)]
 mod tests;
 
@@ -41,6 +46,7 @@ pub(super) struct BootstrapContext<'a, 'catalog, C: CredentialSource> {
     pub home: &'a RegionId,
     pub config: &'a SweepConfig,
     pub metrics: &'a crate::metrics::Accumulators,
+    pub resolved_endpoints: &'a resolved_endpoints::ResolvedEndpoints,
 }
 
 pub(super) struct RuntimeContext<'a, 'catalog, C: CredentialSource, S: InventoryStore> {
@@ -183,8 +189,11 @@ async fn sweep_id(
     Ok(pending)
 }
 
-fn endpoint_url(config: &SweepConfig, compiled: &str) -> Result<String, SweepError> {
-    Ok(config.endpoint_override()?.unwrap_or(compiled).to_owned())
+fn endpoint_url<'a>(config: &'a SweepConfig, compiled: &'a str) -> Result<&'a str, SweepError> {
+    Ok(match config.endpoint_override()? {
+        Some(endpoint) => endpoint,
+        None => compiled,
+    })
 }
 
 fn unique_purpose<'borrow, 'catalog>(

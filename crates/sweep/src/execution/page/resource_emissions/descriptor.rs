@@ -64,17 +64,23 @@ impl<'a, 'catalog> Descriptor<'a, 'catalog> {
 
     pub(super) fn chunk(&self, raw: Vec<Record>) -> Result<PageParts, SweepError> {
         let items = selected(self.emission, raw)?;
-        let observations = self.observations(&items)?;
+        let identities = self.identities(&items)?;
         let references = rows::references(
             self.context.catalog,
             self.plan,
             &self.request.region,
             &items,
-            &observations,
+            &identities,
             &self.request.record,
             self.lease.scope().parent(),
         )?;
-        let tags = rows::emission_tags(self.emission, &items, &observations)?;
+        let tags = rows::emission_tags(self.emission, &items, &identities)?;
+        let observations = rows::observations(
+            items,
+            identities,
+            self.emission.hash_exclusions(),
+            self.plan.facet_precedence(),
+        )?;
         Ok(PageParts {
             observations,
             references,
@@ -98,13 +104,10 @@ impl<'a, 'catalog> Descriptor<'a, 'catalog> {
         }
     }
 
-    fn observations(
-        &self,
-        items: &[Record],
-    ) -> Result<Vec<inventory_core::inventory::Observation>, SweepError> {
+    fn identities(&self, items: &[Record]) -> Result<Vec<rows::RowIdentity>, SweepError> {
         items
             .iter()
-            .map(|row| rows::emission_observation(self.scope(), row))
+            .map(|row| rows::emission_identity(self.scope(), row))
             .collect()
     }
 }

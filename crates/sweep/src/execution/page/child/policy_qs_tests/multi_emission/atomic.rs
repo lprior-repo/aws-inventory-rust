@@ -75,6 +75,7 @@ impl Driver {
                 home: &scenario.home,
                 config: &self.config,
                 metrics: &Default::default(),
+                resolved_endpoints: &Default::default(),
             },
             store: &scenario.store,
             account: scenario.account.clone(),

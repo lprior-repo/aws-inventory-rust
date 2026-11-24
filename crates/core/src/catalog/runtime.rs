@@ -120,6 +120,11 @@ impl<'a> RuntimeCatalog<'a> {
         self.index.lookup(&self.plans, service, operation)
     }
 
+    /// Returns the position of a reviewed operation in this catalog's plans.
+    pub fn plan_index(&self, service: &str, operation: &str) -> Option<usize> {
+        self.index.lookup_index(&self.plans, service, operation)
+    }
+
     pub fn schemas(&self) -> &[Arc<KindSchema>] {
         &self.schemas
     }

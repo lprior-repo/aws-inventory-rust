@@ -169,6 +169,81 @@ async fn given_two_emissions_when_only_key_metadata_changes_then_status_identity
     Ok(())
 }
 
+fn catalog_with_emission_exclusions() -> TestResult<Vec<u8>> {
+    use catalog_tool::overlay::MemberPath;
+    crate::execution::test_catalog::compile(
+        "route-53",
+        "2013-04-01",
+        &["ListHostedZones", "GetDNSSEC"],
+        None,
+        |operation, policy| {
+            if operation == "GetDNSSEC" {
+                policy.exclude_from_hash = vec![MemberPath::new("ServeSignature")?];
+                policy
+                    .additional_resources
+                    .first_mut()
+                    .ok_or("key emission absent")?
+                    .exclude_from_hash = vec![MemberPath::new("Status")?];
+            }
+            Ok(())
+        },
+    )
+}
+
+#[tokio::test]
+async fn given_emission_exclusions_when_rows_move_then_legacy_bytes_hash_and_precedence_survive()
+-> TestResult {
+    let bytes = catalog_with_emission_exclusions()?;
+    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+    let plan = fixture::plan(&catalog, "route-53", "GetDNSSEC")?;
+    let emission = plan
+        .resource_emissions()
+        .iter()
+        .nth(1)
+        .ok_or("key emission absent")?;
+    assert_ne!(emission.hash_exclusions(), plan.hash_exclusions());
+    assert_eq!(plan.facet_precedence(), 1);
+    let scenario = seeded(&catalog, "emission-owned-hash").await?;
+    let lease = scenario
+        .store
+        .claim(&scenario.sweep, 1001, 10_000)
+        .await?
+        .ok_or("DNSSEC child absent")?;
+    let before = prepare(&scenario, &catalog, &lease, STATUS, KEY).await?;
+    let after = prepare(
+        &scenario,
+        &catalog,
+        &lease,
+        STATUS,
+        &KEY.replace("ACTIVE", "INACTIVE"),
+    )
+    .await?;
+    let actual = observed(&before, "AWS::Route53::KeySigningKey")?;
+    let response = fixture::decode(
+        plan,
+        format!("<GetDNSSECResponse>{STATUS}{KEY}</GetDNSSECResponse>").as_bytes(),
+    )?;
+    let legacy_row = record::item_records(&response, emission.items())?
+        .into_iter()
+        .next()
+        .ok_or("legacy key row absent")?;
+    let legacy = Observation::new(
+        actual.key().clone(),
+        legacy_row,
+        emission.hash_exclusions(),
+        None,
+    )?
+    .with_facet_precedence(1);
+    assert_eq!(actual.record().as_bytes(), legacy.record().as_bytes());
+    assert_eq!(actual.content_hash(), legacy.content_hash());
+    assert_eq!(actual.hash_exclusions(), legacy.hash_exclusions());
+    assert_eq!(actual.facet_precedence(), legacy.facet_precedence());
+    let changed = observed(&after, "AWS::Route53::KeySigningKey")?;
+    assert_ne!(actual.record().as_bytes(), changed.record().as_bytes());
+    assert_eq!(actual.content_hash(), changed.content_hash());
+    Ok(())
+}
+
 #[tokio::test]
 async fn given_valid_status_and_key_when_later_key_identity_is_missing_then_atomic_page_has_no_partial_resource_or_cursor_commit()
 -> TestResult {

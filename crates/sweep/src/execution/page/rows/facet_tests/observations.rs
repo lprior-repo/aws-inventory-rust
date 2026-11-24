@@ -124,3 +124,74 @@ async fn given_previous_detail_fields_when_that_source_omits_them_then_only_owne
     assert_eq!(field(&state(&directory, &catalog).await?.0, 7)?, None);
     Ok(())
 }
+
+#[test]
+fn given_named_kind_when_owned_row_is_assembled_then_nonempty_name_matches_legacy() -> TestResult {
+    let bytes = compiled()?;
+    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+    let plan = catalog
+        .lookup("workspaces-web", "ListPortals")
+        .ok_or("portal plan absent")?;
+    let kind = plan.kind();
+    let name_path = catalog.name_path(kind).ok_or("portal name path absent")?;
+    assert_eq!(name_path.path.len(), 1);
+    let name_field = name_path.path.first().ok_or("name field absent")?;
+    assert_eq!(catalog.catalog().field_name(*name_field)?, "displayName");
+    let rows = named_portal_rows(plan)?;
+    assert_eq!(rows.len(), 1);
+    let row = rows.first().ok_or("portal row absent")?;
+    let account = AccountId::parse("123456789012")?;
+    let home = RegionId::parse("us-east-1")?;
+    let identity = || record::IdentityContext {
+        account: &account,
+        region: &home,
+    };
+    let region = Region::Regional(home.clone());
+    let request = Record::encode(&Value::Map(BTreeMap::new()))?;
+    let context = DiscoveryContext::empty();
+    let legacy = observation(
+        &catalog,
+        identity(),
+        plan,
+        &region,
+        row.clone(),
+        &request,
+        &context,
+    )?;
+    assert_eq!(legacy.name(), Some("owned portal"));
+    let prepared = identities(
+        &catalog,
+        identity(),
+        plan,
+        &region,
+        &rows,
+        &request,
+        &[context],
+    )?;
+    let moved = observations(
+        rows,
+        prepared,
+        plan.hash_exclusions(),
+        plan.facet_precedence(),
+    )?;
+    let actual = moved.first().ok_or("owned observation absent")?;
+    assert_eq!(actual.name(), Some("owned portal"));
+    assert_eq!(actual.name(), legacy.name());
+    Ok(())
+}
+
+fn named_portal_rows(plan: &CallablePlan<'_>) -> TestResult<Vec<Record>> {
+    let body = serde_json::to_vec(&json!({"portals":[{
+        "portalArn":PORTAL, "displayName":"owned portal"
+    }]}))?;
+    let response = aws_wire::response::decode(aws_wire::response::ResponseContext {
+        service: plan.service(),
+        operation: plan.operation(),
+        protocol: aws_wire::request::Protocol::RestJson1,
+        body: &body,
+        headers: &http::HeaderMap::new(),
+        status: http::StatusCode::OK,
+        limits: aws_wire::response::DecodeLimits::default(),
+    })?;
+    Ok(record::item_records(&response, plan.items())?)
+}

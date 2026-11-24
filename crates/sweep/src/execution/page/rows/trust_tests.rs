@@ -46,7 +46,7 @@ fn trust_rows(
                 },
                 plan,
                 &Region::Global,
-                row,
+                row.clone(),
                 &request,
                 &DiscoveryContext::default(),
             )

@@ -119,7 +119,12 @@ async fn given_allow_and_deny_trust_principals_when_projected_then_only_register
     let document = r#"{"Statement":[{"Effect":"Allow","Action":"sts:AssumeRole","Principal":{"AWS":["arn:aws:iam::210987654321:role/external","arn:aws:iam::210987654321:root","*"],"Service":"ec2.amazonaws.com"},"Condition":{"StringEquals":{"sts:ExternalId":"private-value"}}},{"Effect":"Deny","Action":"sts:AssumeRole","Principal":{"AWS":"arn:aws:iam::210987654321:role/denied"}}]}"#;
     let observed = observations(plan, rows(plan, &listed_role(document))?)?;
     let observation = observed.first().ok_or("projected role absent")?;
-    let references = crate::resource_projection::trust_references(&catalog, plan, observation)?;
+    let references = crate::resource_projection::trust_references(
+        &catalog,
+        plan,
+        observation.key(),
+        observation.record(),
+    )?;
     assert_eq!(references.len(), 1);
     let reference = references
         .first()

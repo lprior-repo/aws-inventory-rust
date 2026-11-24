@@ -23,21 +23,28 @@ pub(super) fn select(
 ) -> Result<Chunk, SweepError> {
     let mut chunk = Chunk::new();
     let mut retained = chunk.ordinals.iter_mut();
-    for (ordinal, row) in selected.by_ref().take(ROWS_PER_CHECKPOINT).enumerate() {
-        chunk.raw_count = add_ordinal(chunk.raw_count, 1)?;
-        let row = row?;
-        if !selected_row(page, &row)? {
-            continue;
-        }
-        let ordinal = add_ordinal(offset, ordinal)?;
-        *retained.next().ok_or(SweepError::Operation(
-            "discovery item ordinal exceeds bound",
-        ))? = ordinal;
-        chunk.items.try_reserve(1)?;
-        chunk
-            .items
-            .push(resource_projection::project(page.plan, &row)?);
-    }
+    selected
+        .by_ref()
+        .take(ROWS_PER_CHECKPOINT)
+        .enumerate()
+        .try_for_each(|(ordinal, row)| {
+            chunk.raw_count = add_ordinal(chunk.raw_count, 1)?;
+            let row = row?;
+            if !selected_row(page, &row)? {
+                return Ok::<_, SweepError>(());
+            }
+            let ordinal = add_ordinal(offset, ordinal)?;
+            *retained.next().ok_or(SweepError::Operation(
+                "discovery item ordinal exceeds bound",
+            ))? = ordinal;
+            let projected = match page.plan.projection() {
+                Some(projection) => resource_projection::project_with(projection, &row)?,
+                None => row,
+            };
+            chunk.items.try_reserve(1)?;
+            chunk.items.push(projected);
+            Ok(())
+        })?;
     Ok(chunk)
 }
 
@@ -59,3 +66,6 @@ pub(super) fn add_ordinal(offset: usize, count: usize) -> Result<usize, SweepErr
         "discovery item ordinal exceeds bound",
     ))
 }
+
+#[cfg(test)]
+mod tests;

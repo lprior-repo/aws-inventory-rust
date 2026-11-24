@@ -32,7 +32,7 @@ async fn given_legacy_matching_foreign_reference_when_catalog_is_attached_then_o
                     },
                     plan,
                     &Region::Regional(home.clone()),
-                    row,
+                    row.clone(),
                     &request,
                     &DiscoveryContext::default(),
                 )
@@ -153,7 +153,7 @@ async fn given_reviewed_oam_owner_when_source_partition_or_concrete_target_gramm
                         },
                         plan,
                         &Region::Regional(east.clone()),
-                        row,
+                        row.clone(),
                         &request,
                         &DiscoveryContext::default(),
                     )
@@ -203,7 +203,7 @@ async fn given_reviewed_oam_owner_when_source_partition_or_concrete_target_gramm
                         },
                         plan,
                         &Region::Regional(home.clone()),
-                        row,
+                        row.clone(),
                         &request,
                         &DiscoveryContext::default(),
                     )

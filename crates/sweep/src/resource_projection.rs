@@ -6,10 +6,13 @@ use inventory_core::{
     catalog::runtime::{
         CallablePlan, ReferenceOwnerRule, RelationScope, RelationshipPlan, ResourceProjectionPlan,
     },
-    inventory::{AccountId, Kind, Observation, Region, RegionId},
+    inventory::{AccountId, Kind, Region, RegionId},
     record::{FieldId, Key, MapRef, Record, Value, ValueRef},
 };
 use sha2::{Digest, Sha256};
+
+#[cfg(test)]
+use inventory_core::inventory::Observation;
 
 pub(super) fn classify(plan: &CallablePlan<'_>, row: &Record) -> Result<Kind, SweepError> {
     plan.classification().map_or_else(
@@ -23,6 +26,7 @@ pub(super) fn classify(plan: &CallablePlan<'_>, row: &Record) -> Result<Kind, Sw
     )
 }
 
+#[cfg(test)]
 pub(super) fn project(plan: &CallablePlan<'_>, row: &Record) -> Result<Record, SweepError> {
     let Some(projection) = plan.projection() else {
         return Ok(row.clone());
@@ -194,22 +198,22 @@ fn summary_object(
 
 pub(super) fn reference_owner(
     relation: &RelationshipPlan,
-    observation: &Observation,
+    observation: &impl AsRef<inventory_core::inventory::ResourceKey>,
     text: &str,
     home: &RegionId,
 ) -> Result<(AccountId, Region), SweepError> {
     match &relation.owner {
         ReferenceOwnerRule::Arn(rule) => rule
-            .owner(text, &observation.key().region)
+            .owner(text, &observation.as_ref().region)
             .map_err(SweepError::from),
         ReferenceOwnerRule::ExecutionAccount => {
             let region = match relation.scope {
-                RelationScope::AccountRegion => observation.key().region.clone(),
+                RelationScope::AccountRegion => observation.as_ref().region.clone(),
                 RelationScope::Account => Region::Global,
                 RelationScope::HomeRegion => Region::Regional(home.clone()),
                 RelationScope::ArnRegion => arn_region(text)?,
             };
-            Ok((observation.key().account.clone(), region))
+            Ok((observation.as_ref().account.clone(), region))
         }
     }
 }

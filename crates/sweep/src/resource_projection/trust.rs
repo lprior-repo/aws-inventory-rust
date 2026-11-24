@@ -9,14 +9,14 @@ use target::target;
 pub(crate) fn trust_references(
     catalog: &RuntimeCatalog<'_>,
     plan: &CallablePlan<'_>,
-    observation: &Observation,
+    observation: &inventory_core::inventory::ResourceKey,
+    row: &Record,
 ) -> Result<Vec<UnresolvedReference>, SweepError> {
     let Some(ResourceProjectionPlan::IamTrustSummary { path }) = plan.projection() else {
         return Ok(Vec::new());
     };
     let relation = Relation::parse("DECLARES_TRUST")?;
-    let Some(ValueRef::Map(summary)) = record::path_value(observation.record().root(), path)?
-    else {
+    let Some(ValueRef::Map(summary)) = record::path_value(row.root(), path)? else {
         return Ok(Vec::new());
     };
     Trust {
@@ -29,7 +29,7 @@ pub(crate) fn trust_references(
 
 struct Trust<'a, 'catalog> {
     catalog: &'a RuntimeCatalog<'catalog>,
-    observation: &'a Observation,
+    observation: &'a inventory_core::inventory::ResourceKey,
     relation: Relation,
 }
 
@@ -103,7 +103,7 @@ impl Trust<'_, '_> {
             }
             output.try_reserve(1)?;
             output.push(UnresolvedReference {
-                from: self.observation.key().clone(),
+                from: self.observation.clone(),
                 relation: self.relation.clone(),
                 source: EdgeSource::ReviewedRule,
                 target,

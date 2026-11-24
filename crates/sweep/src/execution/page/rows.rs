@@ -16,7 +16,7 @@ const MAX_PAGE_REFERENCES: usize = 10_000;
 mod emission;
 mod relations;
 
-pub(crate) use emission::{EmissionScope, emission_observation, emission_tags};
+pub(crate) use emission::{EmissionScope, emission_identity, emission_tags};
 
 #[cfg(test)]
 use inventory_core::{
@@ -24,7 +24,18 @@ use inventory_core::{
     inventory::{ReferenceTarget, ResourceId},
 };
 
-pub(super) fn observations(
+pub(crate) struct RowIdentity {
+    key: ResourceKey,
+    name: Option<Arc<str>>,
+}
+
+impl AsRef<ResourceKey> for RowIdentity {
+    fn as_ref(&self) -> &ResourceKey {
+        &self.key
+    }
+}
+
+pub(super) fn identities(
     catalog: &RuntimeCatalog<'_>,
     identity: record::IdentityContext<'_>,
     plan: &CallablePlan<'_>,
@@ -32,21 +43,48 @@ pub(super) fn observations(
     rows: &[Record],
     request: &Record,
     contexts: &[DiscoveryContext],
-) -> Result<Vec<Observation>, SweepError> {
+) -> Result<Vec<RowIdentity>, SweepError> {
     check_rows(rows, contexts)?;
-    let mut observations = Vec::new();
-    observations.try_reserve(rows.len())?;
-    for (row, ancestry) in rows.iter().zip(contexts) {
-        observations.push(observation(
-            catalog,
+    let mut identities = Vec::new();
+    identities.try_reserve(rows.len())?;
+    rows.iter().zip(contexts).try_for_each(|(row, ancestry)| {
+        let key = primary_key(
             record::IdentityContext { ..identity },
             plan,
             region,
             row,
             request,
             ancestry,
-        )?);
+        )?;
+        let name = resource_name(catalog, &key.kind, row)?;
+        identities.push(RowIdentity { key, name });
+        Ok::<_, SweepError>(())
+    })?;
+    Ok(identities)
+}
+
+pub(super) fn observations(
+    rows: Vec<Record>,
+    identities: Vec<RowIdentity>,
+    exclusions: &inventory_core::record::Exclusions,
+    precedence: u16,
+) -> Result<Vec<Observation>, SweepError> {
+    if rows.len() > MAX_PAGE_ROWS || rows.len() != identities.len() {
+        return Err(SweepError::Operation(
+            "rows and observation identities exceed bounds or have different lengths",
+        ));
     }
+    let mut observations = Vec::new();
+    observations.try_reserve(rows.len())?;
+    rows.into_iter()
+        .zip(identities)
+        .try_for_each(|(row, identity)| {
+            observations.push(
+                Observation::new(identity.key, row, exclusions, identity.name)?
+                    .with_facet_precedence(precedence),
+            );
+            Ok::<_, SweepError>(())
+        })?;
     Ok(observations)
 }
 
@@ -67,7 +105,7 @@ fn check_rows(rows: &[Record], contexts: &[DiscoveryContext]) -> Result<(), Swee
 pub(super) fn tags(
     plan: &CallablePlan<'_>,
     rows: &[Record],
-    observations: &[Observation],
+    observations: &[impl AsRef<ResourceKey>],
 ) -> Result<Vec<inventory_core::inventory::TagObservation>, SweepError> {
     let Some(tags) = plan.tags() else {
         return Ok(Vec::new());
@@ -75,21 +113,20 @@ pub(super) fn tags(
     emission::tag_observations(tags, rows, observations)
 }
 
+#[cfg(test)]
 pub(super) fn observation(
     catalog: &RuntimeCatalog<'_>,
     identity_context: record::IdentityContext<'_>,
     plan: &CallablePlan<'_>,
     region: &Region,
-    row: &Record,
+    row: Record,
     request: &Record,
     ancestry: &DiscoveryContext,
 ) -> Result<Observation, SweepError> {
-    let key = primary_key(identity_context, plan, region, row, request, ancestry)?;
-    let name = resource_name(catalog, &key.kind, row)?;
-    Ok(
-        Observation::new(key, row.clone(), plan.hash_exclusions(), name)?
-            .with_facet_precedence(plan.facet_precedence()),
-    )
+    let key = primary_key(identity_context, plan, region, &row, request, ancestry)?;
+    let name = resource_name(catalog, &key.kind, &row)?;
+    Ok(Observation::new(key, row, plan.hash_exclusions(), name)?
+        .with_facet_precedence(plan.facet_precedence()))
 }
 
 fn primary_key(
@@ -152,22 +189,24 @@ pub(crate) fn references(
     plan: &CallablePlan<'_>,
     home: &RegionId,
     rows: &[Record],
-    observations: &[Observation],
+    observations: &[impl AsRef<ResourceKey>],
     actual_request: &Record,
     parent: Option<&ResourceKey>,
 ) -> Result<Vec<UnresolvedReference>, SweepError> {
     let mut output = Vec::new();
-    for (row, observation) in rows.iter().zip(observations) {
-        relations::Context {
-            row,
-            request: actual_request,
-            observation,
-            home,
-            parent,
-        }
-        .append_plan(catalog, plan, &mut output, MAX_PAGE_REFERENCES)?;
-        append_trust(&mut output, catalog, plan, observation)?;
-    }
+    rows.iter()
+        .zip(observations)
+        .try_for_each(|(row, observation)| {
+            relations::Context {
+                row,
+                request: actual_request,
+                observation,
+                home,
+                parent,
+            }
+            .append_plan(catalog, plan, &mut output, MAX_PAGE_REFERENCES)?;
+            append_trust(&mut output, catalog, plan, observation.as_ref(), row)
+        })?;
     Ok(output)
 }
 
@@ -175,9 +214,10 @@ fn append_trust(
     output: &mut Vec<UnresolvedReference>,
     catalog: &RuntimeCatalog<'_>,
     plan: &CallablePlan<'_>,
-    observation: &Observation,
+    key: &ResourceKey,
+    row: &Record,
 ) -> Result<(), SweepError> {
-    let trust = resource_projection::trust_references(catalog, plan, observation)?;
+    let trust = resource_projection::trust_references(catalog, plan, key, row)?;
     if output
         .len()
         .checked_add(trust.len())
@@ -211,3 +251,7 @@ mod constraint_dispatch_tests;
 #[cfg(test)]
 #[path = "rows/typed_capabilities_tests.rs"]
 mod typed_capabilities_tests;
+
+#[cfg(test)]
+#[path = "rows/ownership_tests.rs"]
+mod ownership_tests;

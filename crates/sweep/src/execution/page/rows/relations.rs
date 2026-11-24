@@ -11,15 +11,15 @@ use inventory_core::{
 };
 use std::borrow::Cow;
 
-pub(super) struct Context<'a> {
+pub(super) struct Context<'a, T: AsRef<ResourceKey> = Observation> {
     pub row: &'a Record,
     pub request: &'a Record,
-    pub observation: &'a Observation,
+    pub observation: &'a T,
     pub home: &'a RegionId,
     pub parent: Option<&'a ResourceKey>,
 }
 
-impl Context<'_> {
+impl<T: AsRef<ResourceKey>> Context<'_, T> {
     pub(super) fn append_plan(
         &self,
         catalog: &inventory_core::catalog::runtime::RuntimeCatalog<'_>,
@@ -27,7 +27,7 @@ impl Context<'_> {
         output: &mut Vec<UnresolvedReference>,
         limit: usize,
     ) -> Result<(), SweepError> {
-        for relation in catalog.relationships_from(&self.observation.key().kind) {
+        for relation in catalog.relationships_from(&self.observation.as_ref().kind) {
             if !plan.supports_relationship(relation)? {
                 continue;
             }
@@ -134,7 +134,7 @@ impl Context<'_> {
             return Ok(());
         };
         let reference = UnresolvedReference {
-            from: self.observation.key().clone(),
+            from: self.observation.as_ref().clone(),
             relation: relation.relation.clone(),
             source: inventory_core::inventory::EdgeSource::ReviewedRule,
             target,
@@ -155,7 +155,7 @@ impl Context<'_> {
             record::trusted_arn::validate_arn(
                 text,
                 Some(&record::IdentityContext {
-                    account: &self.observation.key().account,
+                    account: &self.observation.as_ref().account,
                     region: self.home,
                 }),
             )?;

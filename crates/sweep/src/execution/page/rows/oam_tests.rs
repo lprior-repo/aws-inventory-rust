@@ -85,7 +85,7 @@ async fn oam_page_in_sweep(
                 },
                 plan,
                 &Region::Regional(home.clone()),
-                row,
+                row.clone(),
                 &request,
                 &DiscoveryContext::default(),
             )

@@ -1,6 +1,6 @@
 use super::{
-    CallablePlan, DiscoveryContext, Observation, Record, Region, ResourceKey, RuntimeCatalog,
-    SweepError, record, resource_name,
+    CallablePlan, DiscoveryContext, Record, Region, ResourceKey, RuntimeCatalog, SweepError,
+    record, resource_name,
 };
 use inventory_core::{catalog::runtime::ResourceEmissionPlan, inventory::TagObservation};
 
@@ -14,22 +14,19 @@ pub(crate) struct EmissionScope<'a> {
     pub ancestry: &'a DiscoveryContext,
 }
 
-pub(crate) fn emission_observation(
+pub(crate) fn emission_identity(
     scope: EmissionScope<'_>,
     row: &Record,
-) -> Result<Observation, SweepError> {
+) -> Result<super::RowIdentity, SweepError> {
     let key = emission_key(&scope, row)?;
     let name = resource_name(scope.catalog, &key.kind, row)?;
-    Ok(
-        Observation::new(key, row.clone(), scope.emission.hash_exclusions(), name)?
-            .with_facet_precedence(scope.plan.facet_precedence()),
-    )
+    Ok(super::RowIdentity { key, name })
 }
 
 pub(crate) fn emission_tags(
     emission: &ResourceEmissionPlan,
     rows: &[Record],
-    observations: &[Observation],
+    observations: &[impl AsRef<ResourceKey>],
 ) -> Result<Vec<TagObservation>, SweepError> {
     let Some(tags) = emission.tags() else {
         return Ok(Vec::new());
@@ -74,7 +71,7 @@ fn emission_id(
 pub(super) fn tag_observations(
     tags: &inventory_core::catalog::runtime::TagPlan,
     rows: &[Record],
-    observations: &[Observation],
+    observations: &[impl AsRef<ResourceKey>],
 ) -> Result<Vec<TagObservation>, SweepError> {
     if rows.len() != observations.len() {
         return Err(SweepError::Operation(
@@ -92,10 +89,10 @@ pub(super) fn tag_observations(
 fn append_tags(
     (mut snapshots, count): (Vec<TagObservation>, usize),
     row: &Record,
-    observation: &Observation,
+    observation: &impl AsRef<ResourceKey>,
     tags: &inventory_core::catalog::runtime::TagPlan,
 ) -> Result<(Vec<TagObservation>, usize), SweepError> {
-    let snapshot = record::tag_observation(row, observation.key(), tags)?;
+    let snapshot = record::tag_observation(row, observation.as_ref(), tags)?;
     let count = count
         .checked_add(snapshot.tags().len())
         .filter(|count| *count <= 50_000)

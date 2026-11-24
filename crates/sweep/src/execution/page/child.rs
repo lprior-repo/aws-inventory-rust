@@ -26,12 +26,15 @@ use crate::{SweepError, input, record};
 use inventory_core::{
     catalog::runtime::{BindingSource, CallablePlan, ExecutionBranch, PlanPurpose, PlanScope},
     inventory::{
-        AccountId, DiscoveryContext, DiscoveryFrame, Observation, OperationId, Region, RegionId,
-        ResourceKey, ScopeKey, ServiceId,
+        AccountId, DiscoveryContext, DiscoveryFrame, OperationId, Region, RegionId, ResourceKey,
+        ScopeKey, ServiceId,
     },
     record::{FieldId, Record, Value, ValueRef},
 };
 use inventory_engine::inventory::{SweepId, WorkSpec};
+
+#[cfg(test)]
+use inventory_core::inventory::Observation;
 
 const MAX_PAGE_CHILDREN: usize = 10_000;
 

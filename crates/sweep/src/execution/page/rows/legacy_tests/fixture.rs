@@ -85,7 +85,7 @@ pub(super) fn native_page(
                 },
                 plan,
                 &Region::Regional(home.clone()),
-                row,
+                row.clone(),
                 &request,
                 &DiscoveryContext::default(),
             )

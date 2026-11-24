@@ -37,10 +37,20 @@ impl Index {
         service: &str,
         operation: &str,
     ) -> Option<&'p CallablePlan<'a>> {
+        plans.get(self.lookup_index(plans, service, operation)?)
+    }
+
+    pub(super) fn lookup_index(
+        &self,
+        plans: &[CallablePlan<'_>],
+        service: &str,
+        operation: &str,
+    ) -> Option<usize> {
         let target = (service, operation);
         let start = first_at_least(&self.plans, plans, plan_key, &target);
-        let plan = plans.get(*self.plans.get(start)?)?;
-        (plan_key(plan) == target).then_some(plan)
+        let position = *self.plans.get(start)?;
+        let plan = plans.get(position)?;
+        (plan_key(plan) == target).then_some(position)
     }
 
     pub(super) fn name_path<'p>(

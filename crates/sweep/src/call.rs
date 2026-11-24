@@ -42,11 +42,26 @@ pub(super) struct DecodedResponse {
 
 impl<C: CredentialSource> Call<'_, '_, C> {
     pub(super) async fn run(&self) -> Result<DecodedResponse, SweepError> {
+        self.run_with_clock(SystemTime::now, || {
+            request::encode(self.plan, self.url, self.base, self.fields)
+        })
+        .await
+    }
+
+    async fn run_with_clock(
+        &self,
+        now: impl Fn() -> SystemTime,
+        encode: impl Fn() -> Result<http::Request<bytes::Bytes>, SweepError>,
+    ) -> Result<DecodedResponse, SweepError> {
         let group = self.plan.service().name().map_err(SweepError::Model)?;
         let bucket = crate::bucket::key(self.account, self.scope, group);
+        let request = encode();
         let response = self
             .executor
-            .execute(&bucket, || async { self.send_attempt().await })
+            .execute(&bucket, || async {
+                let request = request.as_ref().map_err(permanent)?.clone();
+                self.send_attempt(request, &now).await
+            })
             .await?;
         let started = std::time::Instant::now();
         let response = response.decode(self.plan);
@@ -54,16 +69,18 @@ impl<C: CredentialSource> Call<'_, '_, C> {
         response
     }
 
-    async fn send_attempt(&self) -> Result<ValidatedResponse, ApiError> {
-        let request =
-            request::encode(self.plan, self.url, self.base, self.fields).map_err(permanent)?;
+    async fn send_attempt(
+        &self,
+        request: http::Request<bytes::Bytes>,
+        now: &impl Fn() -> SystemTime,
+    ) -> Result<ValidatedResponse, ApiError> {
         let credentials = self.credentials.resolve().await.map_err(credential_error)?;
         let scope = Scope {
             region: Region::new(&self.endpoint.signing_region).map_err(permanent)?,
             name: SigningName::new(&self.endpoint.signing_name).map_err(permanent)?,
         };
         let started = std::time::Instant::now();
-        let response = sign_and_send(self, request, &credentials, &scope).await;
+        let response = sign_and_send(self, request, &credentials, &scope, now()).await;
         let status = response
             .as_ref()
             .ok()
@@ -86,9 +103,10 @@ async fn sign_and_send(
     request: http::Request<bytes::Bytes>,
     credentials: &aws_wire::sign::Credentials,
     scope: &Scope<'_>,
+    now: SystemTime,
 ) -> Result<Response, ApiError> {
     let (mut parts, body) = request.into_parts();
-    let signature = signature(call, &parts, &body, credentials, scope)?;
+    let signature = signature(call, &parts, &body, credentials, scope, now)?;
     parts.headers.extend(signature);
     call.client
         .send(http::Request::from_parts(parts, body))
@@ -102,11 +120,12 @@ fn signature(
     body: &[u8],
     credentials: &aws_wire::sign::Credentials,
     scope: &Scope<'_>,
+    now: SystemTime,
 ) -> Result<http::HeaderMap, ApiError> {
     aws_wire::sign::sign(
         credentials,
         scope,
-        SystemTime::now(),
+        now,
         Request {
             method: &parts.method,
             uri: &parts.uri.to_string(),
@@ -286,3 +305,6 @@ fn path_mode(mode: inventory_core::catalog::runtime::EndpointPathMode) -> PathMo
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod retry_tests;

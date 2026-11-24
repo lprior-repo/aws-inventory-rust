@@ -118,3 +118,9 @@ mod tests;
 
 #[cfg(test)]
 mod stage_tests;
+
+#[cfg(test)]
+mod row_assertion_tests;
+
+#[cfg(test)]
+mod region_tests;

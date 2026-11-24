@@ -1,22 +1,32 @@
 use super::*;
-use inventory_core::inventory::{Observation, UnresolvedReference};
+use inventory_core::inventory::{ResourceKey, UnresolvedReference};
 
 impl page::Page<'_, '_> {
     pub(super) fn parts(
         &self,
         child_context: &child::Context<'_, '_>,
-        chunk: &selection::Chunk,
+        chunk: selection::Chunk,
         budget: &mut child::PageContextBudget,
     ) -> Result<PageParts, SweepError> {
-        let contexts = self.contexts(chunk, budget)?;
-        let observations = self.observations(&chunk.items, &contexts)?;
-        let references = self.references(&chunk.items, &observations)?;
+        let contexts = self.contexts(&chunk, budget)?;
+        let identities = self.identities(&chunk.items, &contexts)?;
+        let references = self.references(&chunk.items, &identities)?;
         let tags = if self.emission == Emission::DiscoveryOnly {
             Vec::new()
         } else {
-            rows::tags(self.plan, &chunk.items, &observations)?
+            rows::tags(self.plan, &chunk.items, &identities)?
         };
-        let children = self.work(child_context, chunk, &observations, &contexts, budget)?;
+        let children = self.work(child_context, &chunk, &identities, &contexts, budget)?;
+        let observations = if self.emission == Emission::DiscoveryOnly {
+            Vec::new()
+        } else {
+            rows::observations(
+                chunk.items,
+                identities,
+                self.plan.hash_exclusions(),
+                self.plan.facet_precedence(),
+            )?
+        };
         Ok(PageParts {
             observations,
             references,
@@ -30,7 +40,7 @@ impl page::Page<'_, '_> {
         &self,
         child_context: &child::Context<'_, '_>,
         chunk: &selection::Chunk,
-        observations: &[Observation],
+        observations: &[impl AsRef<ResourceKey>],
         contexts: &[DiscoveryContext],
         budget: &mut child::PageContextBudget,
     ) -> Result<Vec<inventory_engine::inventory::WorkSpec>, SweepError> {
@@ -65,15 +75,15 @@ impl page::Page<'_, '_> {
         )
     }
 
-    fn observations(
+    fn identities(
         &self,
         items: &[inventory_core::record::Record],
         contexts: &[DiscoveryContext],
-    ) -> Result<Vec<Observation>, SweepError> {
+    ) -> Result<Vec<rows::RowIdentity>, SweepError> {
         if self.emission == Emission::DiscoveryOnly {
             return Ok(Vec::new());
         }
-        rows::observations(
+        rows::identities(
             self.context.catalog,
             record::IdentityContext {
                 account: self.context.account,
@@ -90,7 +100,7 @@ impl page::Page<'_, '_> {
     fn references(
         &self,
         items: &[inventory_core::record::Record],
-        observations: &[Observation],
+        observations: &[impl AsRef<ResourceKey>],
     ) -> Result<Vec<UnresolvedReference>, SweepError> {
         rows::references(
             self.context.catalog,

@@ -74,7 +74,13 @@ async fn execute(
     account: Option<&AccountId>,
 ) -> Result<call::DecodedResponse, SweepError> {
     let region = Region::Regional(context.home.clone());
-    let endpoint = plan.endpoint(context.home, &region)?;
+    let endpoint = resolve_endpoint(
+        context.catalog,
+        plan,
+        context.home,
+        context.resolved_endpoints,
+    )
+    .await?;
     let url = endpoint_url(context.config, &endpoint.url)?;
     let base = input::root_bindings(plan, account, Some(&region))?;
     call::Call {
@@ -83,7 +89,7 @@ async fn execute(
         credentials: context.credentials,
         plan,
         endpoint: &endpoint,
-        url: &url,
+        url,
         base: &base,
         fields: &[],
         metrics: context.metrics,
@@ -93,3 +99,16 @@ async fn execute(
     .run()
     .await
 }
+
+pub(super) async fn resolve_endpoint(
+    catalog: &RuntimeCatalog<'_>,
+    plan: &CallablePlan<'_>,
+    region: &RegionId,
+    endpoints: &resolved_endpoints::ResolvedEndpoints,
+) -> Result<std::sync::Arc<inventory_core::catalog::runtime::ResolvedEndpoint>, SweepError> {
+    endpoints.resolve(catalog, plan, region).await
+}
+
+#[cfg(test)]
+#[path = "bootstrap/wire_tests.rs"]
+mod wire_tests;

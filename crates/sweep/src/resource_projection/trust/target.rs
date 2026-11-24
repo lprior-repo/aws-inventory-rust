@@ -3,7 +3,7 @@ use inventory_core::record::FieldId;
 
 pub(super) fn target(
     catalog: &RuntimeCatalog<'_>,
-    observation: &Observation,
+    observation: &inventory_core::inventory::ResourceKey,
     arn: &str,
 ) -> Result<Option<ReferenceTarget>, SweepError> {
     let Some((account, kind)) = parsed_target(observation, arn)? else {
@@ -22,7 +22,7 @@ pub(super) fn target(
 }
 
 fn parsed_target(
-    observation: &Observation,
+    observation: &inventory_core::inventory::ResourceKey,
     arn: &str,
 ) -> Result<Option<(AccountId, Kind)>, SweepError> {
     if !arn.starts_with("arn:") {
@@ -38,9 +38,11 @@ fn parsed_target(
     Ok(Some((account, Kind::parse(kind)?)))
 }
 
-fn source_partition<'a>(observation: &'a Observation, arn: &str) -> Result<&'a str, SweepError> {
+fn source_partition<'a>(
+    observation: &'a inventory_core::inventory::ResourceKey,
+    arn: &str,
+) -> Result<&'a str, SweepError> {
     let source_partition = observation
-        .key()
         .id
         .as_str()
         .split(':')

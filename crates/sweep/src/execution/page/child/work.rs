@@ -1,7 +1,7 @@
 use super::*;
 
-struct Batch<'a> {
-    observations: &'a [Observation],
+struct Batch<'a, T: AsRef<ResourceKey>> {
+    observations: &'a [T],
     request: &'a Record,
     contexts: &'a [DiscoveryContext],
     scope: &'a ScopeKey,
@@ -9,7 +9,7 @@ struct Batch<'a> {
 
 struct BoundRow<'a> {
     row: RowContext<'a>,
-    observation: Option<&'a Observation>,
+    observation: Option<&'a ResourceKey>,
     request: &'a Record,
     discovery: &'a [u8],
 }
@@ -17,7 +17,7 @@ struct BoundRow<'a> {
 pub(in crate::execution::page) fn work(
     context: &Context<'_, '_>,
     rows: &[Record],
-    observations: &[Observation],
+    observations: &[impl AsRef<ResourceKey>],
     request: &Record,
     contexts: &[DiscoveryContext],
     scope: &ScopeKey,
@@ -40,7 +40,7 @@ fn append_row(
     context: &Context<'_, '_>,
     row: &Record,
     ordinal: usize,
-    batch: &Batch<'_>,
+    batch: &Batch<'_, impl AsRef<ResourceKey>>,
     budget: &mut PageContextBudget,
     children: &mut Vec<WorkSpec>,
 ) -> Result<(), SweepError> {
@@ -51,7 +51,7 @@ fn append_row(
     let discovery = next
         .encode()
         .map_err(|_| SweepError::Operation("discovery ancestry encoding failed"))?;
-    let observation = batch.observations.get(ordinal);
+    let observation = batch.observations.get(ordinal).map(AsRef::as_ref);
     let row = BoundRow {
         row: row_context(row, observation, batch.scope, next),
         observation,
@@ -79,13 +79,13 @@ fn append_candidates(
 
 fn row_context<'a>(
     row: &'a Record,
-    observation: Option<&'a Observation>,
+    observation: Option<&'a ResourceKey>,
     scope: &'a ScopeKey,
     ancestry: &'a DiscoveryContext,
 ) -> RowContext<'a> {
     RowContext {
         row,
-        parent: observation.map(Observation::key),
+        parent: observation,
         scope,
         ancestry,
     }
@@ -163,7 +163,7 @@ fn append_tag_branch(
     context: &Context<'_, '_>,
     child: &CallablePlan<'_>,
     row: &BoundRow<'_>,
-    observation: &Observation,
+    observation: &ResourceKey,
     branch: Option<&ExecutionBranch>,
     budget: &mut PageContextBudget,
     children: &mut Vec<WorkSpec>,

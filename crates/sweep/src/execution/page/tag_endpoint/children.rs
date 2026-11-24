@@ -13,12 +13,13 @@ pub(in crate::execution::page) struct ChildContext<'a, 'catalog> {
 pub(in crate::execution::page) fn child_work(
     context: &ChildContext<'_, '_>,
     row: &Record,
-    observation: &Observation,
+    observation: &impl AsRef<ResourceKey>,
     budget: &mut super::super::child::PageContextBudget,
 ) -> Result<Option<WorkSpec>, SweepError> {
     let Some(source) = child_source(context) else {
         return Ok(None);
     };
+    let observation = observation.as_ref();
     validate_kind(context.parent_plan, row, observation)?;
     let fields = source
         .request
@@ -37,7 +38,7 @@ pub(in crate::execution::page) fn child_work(
 fn request_field(
     context: &ChildContext<'_, '_>,
     row: &Record,
-    observation: &Observation,
+    observation: &ResourceKey,
     request: &TagEndpointRequestPlan,
 ) -> Result<Option<input::InputField>, SweepError> {
     request_value(context, row, observation, request).map(|value| {
@@ -66,13 +67,13 @@ fn child_source<'a>(context: &'a ChildContext<'_, '_>) -> Option<&'a TagEndpoint
 fn validate_kind(
     plan: &CallablePlan<'_>,
     row: &Record,
-    observation: &Observation,
+    observation: &ResourceKey,
 ) -> Result<(), SweepError> {
     let kind = plan.classification().map_or_else(
         || Ok(plan.kind()),
         |classification| classification.classify(row),
     )?;
-    if kind != &observation.key().kind {
+    if kind != &observation.kind {
         return Err(SweepError::Operation(
             "tag endpoint parent kind differs from observation",
         ));
@@ -83,13 +84,13 @@ fn validate_kind(
 fn request_value<'a>(
     context: &'a ChildContext<'_, '_>,
     row: &'a Record,
-    observation: &'a Observation,
+    observation: &'a ResourceKey,
     request: &TagEndpointRequestPlan,
 ) -> Result<Option<&'a str>, SweepError> {
     let value = match request.source {
         TagEndpointSource::Response => record::path_value(row.root(), &request.parent)?,
         TagEndpointSource::Request => record::path_value(context.request.root(), &request.parent)?,
-        TagEndpointSource::OwnerIdentity => return Ok(Some(observation.key().id.as_str())),
+        TagEndpointSource::OwnerIdentity => return Ok(Some(observation.id.as_str())),
     };
     match value {
         Some(ValueRef::Text("")) => Ok(None),
@@ -101,10 +102,10 @@ fn request_value<'a>(
 
 fn make_child(
     context: &ChildContext<'_, '_>,
-    observation: &Observation,
+    observation: &ResourceKey,
     fields: Vec<input::InputField>,
 ) -> Result<WorkSpec, SweepError> {
-    let parent = observation.key();
+    let parent = observation;
     let base = input::root_bindings_branch(
         context.plan,
         context.branch,

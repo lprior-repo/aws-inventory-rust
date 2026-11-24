@@ -11,13 +11,13 @@ use inventory_core::{
     catalog::runtime::{
         CallablePlan, ExecutionBranch, PlanPurpose, RuntimeCatalog, TagEndpointSource,
     },
-    inventory::{
-        AccountId, DiscoveryContext, Kind, Observation, OperationId, ResourceKey, ScopeKey,
-        ServiceId,
-    },
+    inventory::{AccountId, DiscoveryContext, Kind, OperationId, ResourceKey, ScopeKey, ServiceId},
     record::{Record, Value, ValueRef},
 };
 use inventory_engine::inventory::{SweepId, WorkLease, WorkSpec};
+
+#[cfg(test)]
+use inventory_core::inventory::Observation;
 
 pub(super) fn decode_cursor(token: Option<&[u8]>) -> Result<cursor::Cursor, SweepError> {
     cursor::Cursor::decode(token)

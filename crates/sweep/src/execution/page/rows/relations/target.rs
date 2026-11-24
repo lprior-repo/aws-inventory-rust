@@ -1,7 +1,7 @@
 use super::*;
 use inventory_core::inventory::{AccountId, Kind, Region};
 
-impl Context<'_> {
+impl<T: AsRef<ResourceKey>> Context<'_, T> {
     pub(super) fn target(
         &self,
         relation: &RelationshipPlan,
