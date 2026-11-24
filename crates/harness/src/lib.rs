@@ -15,6 +15,7 @@ pub mod provenance;
 pub mod proxy;
 pub mod seed;
 pub mod snapshot;
+pub mod verify;
 pub mod verify_delivery;
 
 #[derive(Debug, thiserror::Error)]
@@ -30,6 +31,9 @@ pub enum HarnessError {
 
     #[error("{0}")]
     Sqlx(#[from] sqlx::Error),
+
+    #[error(transparent)]
+    CloudControl(#[from] verify::cloud_control::CloudControlError),
 }
 
 impl HarnessError {

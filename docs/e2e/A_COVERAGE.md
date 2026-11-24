@@ -40,6 +40,46 @@ generated, and a generated entry can never override it.
 | A6 | Cloud Control cross-check (V39). `inventory-harness verify cloud-control --database DB`: for every kind that maps to a CloudFormation type Cloud Control can list, compare the identities from `ListResources` with the identities stored by the sweep. It reads from Cloud Control and writes nothing to the inventory. | A7 | Report per type: matched, missing from the sweep, extra in the sweep; zero unexplained differences for seeded kinds; each explained difference has its reason recorded |
 | A7 | Full sweep proof. `aws-inventory sweep` against the seeded emulator. | A5 | Exit test lines X2, X3 and X4 of [README](README.md) |
 
+### Cloud Control checker inputs
+
+`inventory-harness verify cloud-control` reads the command's region and stored
+`global` rows. Global inventory keys serialize `Region::Global` as `global`;
+the older SQLite store preserves the resource's region verbatim, including the
+request region used by Cloud Control observations. If a kind exists in multiple
+inventory accounts within the selected region or global scope, the checker names
+the accounts and requires `--account`. An explicit account also filters global
+rows. The database connection remains read-only.
+
+The default catalog, universal capabilities, explanation rules and seed recipes
+are the tracked files below the workspace root (`--root` selects another root).
+There is no separate `--catalog` override.
+
+| Optional input | User and purpose |
+| --- | --- |
+| `--universal <file>` | Harness fixture maintainers exercise listable and unsupported types with an isolated capability report. Defaults to `catalog/cloudcontrol-universal.json`. |
+| `--differences <file>` | Explanation-rule authors check reviewed rule candidates without replacing the tracked rules. Defaults to `catalog/cloudcontrol-differences.tsv`; the checker never writes it. |
+| `--seeds <dir>` | Custom seed-suite authors use the same recipe directory as `seed run` or `e2e run` when checking declared seeded kinds. Defaults to `crates/harness/seeds`. |
+| `--oracle <file>` | Thin-slice operators select the kinds actually created by a retained `seed run`/`e2e run` oracle instead of all declared recipes. |
+
+Mapped CloudFormation types absent from the universal capabilities are input
+errors, not silently skipped types. ARN identifiers match the full resource part
+first. The portion after its first `:` or `/` can match only a delimiter-free
+listed identifier. Two stored candidates are an ambiguity error naming both;
+nested role paths are not reduced to basenames.
+
+Each response body is limited to 1,048,576 bytes before SDK JSON deserialization;
+one listed identifier is limited to 4,096 UTF-8 bytes. The typed bound errors name
+the CloudFormation type, one-based page and byte limit. A failed page, including
+throttling, does not compare a partial list or replace an existing report.
+
+Explanation rules express only direction-specific identifier-prefix classes and
+reasons, not per-type identifier transformations. A path-bearing IAM role ARN
+such as `role/service-role/worker` and a listed `worker` remain an unexplained
+pair. This affects one default-seeded IAM kind (`AWS::IAM::Role`); the separate
+bench suite adds `AWS::IAM::InstanceProfile`, for two IAM kinds across both
+recipe directories. `AWS::IAM::ManagedPolicy` uses its full ARN as its
+CloudFormation primary identifier, so its path does not need normalization.
+
 ## Notes for the worker
 
 - The generator's inputs already exist as reports: `catalog/aws-plans.report`

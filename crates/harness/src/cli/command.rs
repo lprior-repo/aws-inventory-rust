@@ -11,6 +11,9 @@ inventory-harness seed run --seeds <dir> --catalog <file> --endpoint <https-loop
 --ca-bundle <file> --region <name> [--service <name>]... [--concurrency <1..64>] --oracle <file> --matrix <file>\n  \
 inventory-harness seed s3 --bucket <name>\n  \
 inventory-harness seed cloud-control --prefix <inventory-page-...> --count <n>\n  \
+inventory-harness verify cloud-control --database <URL> --endpoint <https-loopback> \
+--ca-bundle <file> --region <name> --report <file> [--account <id>] [--oracle <file>] [--root <dir>] \
+[--universal <file>] [--differences <file>] [--seeds <dir>]\n  \
 inventory-harness assert cloud-control --db <file> --scan-id <id> [--seed-results <file>] \
 [--root <dir>]\n  \
 inventory-harness assert-global --db <file> --scan-id <id> [--seed-results <file>] \

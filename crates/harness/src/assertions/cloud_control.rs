@@ -1,4 +1,5 @@
 mod checks;
+pub(crate) mod identities;
 
 use std::collections::BTreeSet;
 use std::path::Path;

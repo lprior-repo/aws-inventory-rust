@@ -50,6 +50,12 @@ async fn main() -> ExitCode {
 }
 
 async fn routed_command(arguments: &[String]) -> Option<ExitCode> {
+    if let [verify, command, rest @ ..] = arguments
+        && verify == "verify"
+        && command == "cloud-control"
+    {
+        return Some(run_cloud_control(rest).await);
+    }
     if let [command, rest @ ..] = arguments
         && command == "e2e"
     {
@@ -67,6 +73,27 @@ async fn routed_command(arguments: &[String]) -> Option<ExitCode> {
         return Some(inventory_harness::inventory_seed::command::dispatch(run, rest).await);
     }
     None
+}
+
+async fn run_cloud_control(arguments: &[String]) -> ExitCode {
+    let result = match cli::parse_verify_cloud_control(arguments) {
+        Ok(args) => inventory_harness::verify::cloud_control::run(&args).await,
+        Err(error) => Err(error),
+    };
+    match result {
+        Ok(report) => {
+            print!("{}", report.text);
+            if report.passed() {
+                ExitCode::SUCCESS
+            } else {
+                ExitCode::FAILURE
+            }
+        }
+        Err(error) => {
+            eprintln!("{error}");
+            ExitCode::FAILURE
+        }
+    }
 }
 
 fn print_receipt(receipt: &serde_json::Value) -> ExitCode {

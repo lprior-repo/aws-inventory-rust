@@ -308,6 +308,52 @@ fn parse_verify_delivery(arguments: &[String]) -> Result<Command, HarnessError> 
     })
 }
 
+const VERIFY_CLOUD_CONTROL_FLAGS: &[&str] = &[
+    "--database",
+    "--endpoint",
+    "--ca-bundle",
+    "--region",
+    "--account",
+    "--report",
+    "--root",
+    "--universal",
+    "--differences",
+    "--seeds",
+    "--oracle",
+];
+
+pub(super) fn parse_verify_cloud_control(
+    arguments: &[String],
+) -> Result<inventory_harness::verify::cloud_control::Args, HarnessError> {
+    let options = options(arguments, VERIFY_CLOUD_CONTROL_FLAGS, &[])?;
+    let root = options.get("--root").unwrap_or_else(workspace_root);
+    let required = |name| {
+        options
+            .text(name)
+            .filter(|value| !value.is_empty())
+            .ok_or_else(|| HarnessError::invalid(format!("verify cloud-control requires {name}")))
+    };
+    Ok(inventory_harness::verify::cloud_control::Args {
+        database: required("--database")?,
+        endpoint: required("--endpoint")?,
+        ca_bundle: options.value("--ca-bundle")?,
+        region: required("--region")?,
+        account: options.text("--account"),
+        report: options.value("--report")?,
+        catalog: root.join("catalog/aws-api.catalog"),
+        universal: options
+            .get("--universal")
+            .unwrap_or_else(|| root.join("catalog/cloudcontrol-universal.json")),
+        differences: options
+            .get("--differences")
+            .unwrap_or_else(|| root.join("catalog/cloudcontrol-differences.tsv")),
+        seeds: options
+            .get("--seeds")
+            .unwrap_or_else(|| root.join("crates/harness/seeds")),
+        oracle: options.get("--oracle"),
+    })
+}
+
 struct Options {
     pairs: Vec<(String, String)>,
 }
@@ -354,4 +400,27 @@ fn options(
         }
     }
     Ok(Options { pairs })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::BTreeSet;
+
+    #[test]
+    fn given_verify_parser_flags_when_usage_is_read_then_all_flags_are_documented()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let line = USAGE
+            .lines()
+            .find(|line| line.contains("inventory-harness verify cloud-control "))
+            .ok_or("missing Cloud Control usage")?;
+        let documented: BTreeSet<_> = line
+            .split_whitespace()
+            .map(|word| word.trim_matches(['[', ']']))
+            .filter(|word| word.starts_with("--"))
+            .collect();
+        let accepted: BTreeSet<_> = VERIFY_CLOUD_CONTROL_FLAGS.iter().copied().collect();
+        assert_eq!(documented, accepted);
+        Ok(())
+    }
 }
