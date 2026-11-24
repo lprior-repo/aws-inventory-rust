@@ -43,8 +43,10 @@ fn given_available_process_metrics_when_printed_then_values_and_availability_are
 
 #[test]
 fn given_failed_without_partial_when_summary_printed_then_failure_remains_visible() -> TestResult {
-    let mut summary = SweepSummary::default();
-    summary.scopes = 1;
+    let mut summary = SweepSummary {
+        scopes: 1,
+        ..SweepSummary::default()
+    };
     summary.outcomes.failed = 1;
     let mut output = Vec::new();
     write_summary(&mut output, summary, 0)?;

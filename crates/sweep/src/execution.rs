@@ -66,6 +66,23 @@ pub async fn run<S: InventoryStore>(
     Ok(progress.finish(summary))
 }
 
+/// The binary boxes the sweep as a `Send` future. When a sweep holds a value
+/// that is not `Sync` across an await, this fails to compile in this crate
+/// instead of only in the binary.
+fn _run_is_send<'a, S, C>(
+    catalog: &'a RuntimeCatalog<'a>,
+    store: &'a S,
+    config: SweepConfig,
+    credentials: &'a C,
+    control: crate::SweepControl,
+) -> impl Future<Output = Result<SweepSummary, SweepError>> + Send + 'a
+where
+    S: InventoryStore + Sync,
+    C: CredentialSource + Sync,
+{
+    run(catalog, store, config, credentials, control)
+}
+
 /// Bounds connections by the open-file limit; pages beyond the bound wait for a connection.
 fn transport_config(
     config: &SweepConfig,

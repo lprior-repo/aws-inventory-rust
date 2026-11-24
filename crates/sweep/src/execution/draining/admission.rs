@@ -1,7 +1,8 @@
 use super::*;
 use inventory_engine::inventory::WorkLease;
-use std::cell::{Cell, RefCell};
 use std::collections::BTreeMap;
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::{Mutex, MutexGuard, PoisonError};
 
 /// Claims up to `limit` leases; `limit` is at least one.
 ///
@@ -57,20 +58,29 @@ pub(in crate::execution) fn queue_report(
 /// Leases this drain claimed whose page has not yet returned success.
 ///
 /// A cancelled drain releases exactly these, so the set stays bounded by the
-/// pages in flight plus the pages that failed.
+/// pages in flight plus the pages that failed. The scheduler's futures share
+/// this state by reference, so it must be `Sync` for the sweep's future to be
+/// `Send`.
 #[derive(Default)]
 pub(in crate::execution) struct Owned {
-    leases: RefCell<BTreeMap<u64, WorkLease>>,
-    next: Cell<u64>,
-    in_flight: Cell<usize>,
+    leases: Mutex<BTreeMap<u64, WorkLease>>,
+    next: AtomicU64,
+    in_flight: AtomicUsize,
 }
 
 impl Owned {
+    /// The lock is never held across an await and the map stays valid if a
+    /// holder panics, so a poisoned lock is still usable.
+    fn leases(&self) -> MutexGuard<'_, BTreeMap<u64, WorkLease>> {
+        self.leases.lock().unwrap_or_else(PoisonError::into_inner)
+    }
+
     pub(in crate::execution) fn admit(&self, lease: &WorkLease) -> u64 {
-        let id = self.next.get();
-        self.next.set(id.wrapping_add(1));
-        self.leases.borrow_mut().insert(id, lease.clone());
-        self.in_flight.set(self.in_flight.get().saturating_add(1));
+        let id = self.next.fetch_add(1, Ordering::Relaxed);
+        self.leases().insert(id, lease.clone());
+        let in_flight = self.in_flight.load(Ordering::Relaxed);
+        self.in_flight
+            .store(in_flight.saturating_add(1), Ordering::Relaxed);
         id
     }
 
@@ -82,22 +92,20 @@ impl Owned {
     ) -> Result<SweepSummary, SweepError> {
         let result = page.await;
         if result.is_ok() {
-            self.leases.borrow_mut().remove(&id);
+            self.leases().remove(&id);
         }
         result
     }
 
     pub(in crate::execution) fn set_in_flight(&self, in_flight: usize) {
-        self.in_flight.set(in_flight);
+        self.in_flight.store(in_flight, Ordering::Relaxed);
     }
 
     pub(in crate::execution) fn in_flight(&self) -> usize {
-        self.in_flight.get()
+        self.in_flight.load(Ordering::Relaxed)
     }
 
     pub(in crate::execution) fn take(&self) -> Vec<WorkLease> {
-        std::mem::take(&mut *self.leases.borrow_mut())
-            .into_values()
-            .collect()
+        std::mem::take(&mut *self.leases()).into_values().collect()
     }
 }

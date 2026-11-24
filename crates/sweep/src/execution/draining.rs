@@ -33,7 +33,7 @@ pub(super) async fn drain_work(
 ) -> Result<SweepSummary, SweepError> {
     let executor = context.bootstrap.executor;
     let owned = admission::Owned::default();
-    let slice_exhausted = std::cell::Cell::new(false);
+    let slice_exhausted = std::sync::atomic::AtomicBool::new(false);
     let work = scheduler::run(
         context.bootstrap.config.concurrency,
         || may_claim(executor, budget, &slice_exhausted),
@@ -48,7 +48,8 @@ pub(super) async fn drain_work(
     if context.bootstrap.executor.is_cancelled() {
         return Err(inventory_engine::limiter::ApiError::Cancelled.into());
     }
-    apply_persisted_summary(context.store, sweep, &mut summary, slice_exhausted.get()).await?;
+    let slice_exhausted = slice_exhausted.load(std::sync::atomic::Ordering::Relaxed);
+    apply_persisted_summary(context.store, sweep, &mut summary, slice_exhausted).await?;
     summary.graph_pending = context.store.projection_state().await?.pending;
     Ok(summary)
 }
@@ -58,15 +59,17 @@ pub(super) async fn drain_work(
 fn may_claim(
     executor: &ApiExecutor,
     budget: SliceBudget,
-    slice_exhausted: &std::cell::Cell<bool>,
+    slice_exhausted: &std::sync::atomic::AtomicBool,
 ) -> bool {
-    if slice_exhausted.get() || executor.is_cancelled() {
+    use std::sync::atomic::Ordering::Relaxed;
+    if slice_exhausted.load(Relaxed) || executor.is_cancelled() {
         return false;
     }
     // A clock failure is left for the claim itself to report.
     let Ok(now) = now_ms() else { return true };
-    slice_exhausted.set(budget.exhausted(now));
-    !slice_exhausted.get()
+    let exhausted = budget.exhausted(now);
+    slice_exhausted.store(exhausted, Relaxed);
+    !exhausted
 }
 
 async fn claim(
