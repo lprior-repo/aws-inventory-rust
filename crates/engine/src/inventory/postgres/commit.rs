@@ -32,14 +32,14 @@ impl PgStore {
         page: PageCommit,
         lease_ms: i64,
     ) -> Result<(CommitResult, Option<WorkLease>), StoreError> {
-        let until = crate::inventory::work::kept_until(&page, lease_ms)?;
-        self.commit(page, Some(until)).await
+        let lease_ms = crate::inventory::work::keep_interval(lease_ms)?;
+        self.commit(page, Some(lease_ms)).await
     }
 
     async fn commit(
         &self,
         page: PageCommit,
-        keep_until: Option<i64>,
+        keep_ms: Option<i64>,
     ) -> Result<(CommitResult, Option<WorkLease>), StoreError> {
         validation::page(&self.registry, &page)?;
         let mut tx = self.pool.begin().await?;
@@ -51,7 +51,19 @@ impl PgStore {
         .await?;
         let mut stats = persist(self, &mut tx, &page).await?;
         queue::children(&mut tx, &page).await?;
-        let repeated_token = queue::advance(&mut tx, &page, keep_until).await?;
+        // The statement decides whether the token repeated, so an
+        // unrepresentable deadline is raised after it and before the commit.
+        let deadline = keep_ms
+            .filter(|_| !page.done)
+            .map(|lease_ms| crate::inventory::work::kept_until(&page, lease_ms));
+        let bound = deadline
+            .as_ref()
+            .and_then(|until| until.as_ref().ok().copied());
+        let repeated_token = queue::advance(&mut tx, &page, bound).await?;
+        let keep_until = match deadline {
+            Some(until) if !repeated_token => Some(until?),
+            _ => None,
+        };
         if page.done || repeated_token {
             let completed =
                 completion::drain(self, &mut tx, page.lease.sweep(), page.observed_at_ms).await?;
@@ -63,9 +75,7 @@ impl PgStore {
             next_generation: (!page.done && !repeated_token).then_some(page.lease.generation()),
             repeated_token,
         };
-        let kept = keep_until
-            .filter(|_| !page.done && !repeated_token)
-            .map(|until| page.lease.continued(page.next_token, until));
+        let kept = keep_until.map(|until| page.lease.continued(page.next_token, until));
         Ok((result, kept))
     }
 }

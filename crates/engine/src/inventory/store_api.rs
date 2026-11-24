@@ -79,7 +79,10 @@ pub trait InventoryStore: Send + Sync {
     /// after the page's `observed_at_ms`, or one millisecond past the
     /// committed lease's deadline when that is later, so the committed lease
     /// is stale afterwards. `None` when the scope finished or its token
-    /// repeated.
+    /// repeated; such a page keeps nothing, so it commits even when that
+    /// deadline cannot be represented. A page that continues its scope is
+    /// rejected whole in that case. `lease_ms` below one is rejected for
+    /// every page.
     fn commit_page_keeping(
         &self,
         page: PageCommit,

@@ -18,7 +18,13 @@ where
     let (_guard, store, _) = make().await?;
     given_zero_interval_when_kept_then_nothing_is_committed(&store).await?;
     let (_guard, store, _) = make().await?;
-    given_kept_deadline_equal_to_the_old_one_when_kept_then_the_old_copy_is_stale(&store).await
+    given_kept_deadline_equal_to_the_old_one_when_kept_then_the_old_copy_is_stale(&store).await?;
+    let (_guard, store, _) = make().await?;
+    given_unrepresentable_deadline_when_the_page_is_final_then_the_scope_completes(&store).await?;
+    let (_guard, store, _) = make().await?;
+    given_unrepresentable_deadline_when_the_token_repeats_then_the_scope_is_partial(&store).await?;
+    let (_guard, store, _) = make().await?;
+    given_unrepresentable_deadline_when_the_page_continues_then_nothing_is_committed(&store).await
 }
 
 /// Claims at 100 (deadline 120), then keeps one page at 110 for 50 (deadline 160).
@@ -157,5 +163,75 @@ async fn given_kept_deadline_equal_to_the_old_one_when_kept_then_the_old_copy_is
         .commit_page(page(kept, Vec::new(), true, None, 120))
         .await?;
     assert_eq!(summary(store, "kept-equal").await?.complete_scopes, 1);
+    Ok(())
+}
+
+/// A page committed at 110 with an interval of `i64::MAX` has no
+/// representable deadline. A final page keeps no lease, so it does not need one.
+async fn given_unrepresentable_deadline_when_the_page_is_final_then_the_scope_completes<
+    S: InventoryStore,
+>(
+    store: &S,
+) -> TestResult {
+    let lease = seed_claim(store, "kept-final", 100).await?;
+    let last = page(
+        lease,
+        vec![observation("kept-final", "one")?],
+        true,
+        None,
+        110,
+    );
+    let (result, none) = store.commit_page_keeping(last, i64::MAX).await?;
+    assert!(!result.repeated_token);
+    assert!(none.is_none());
+    assert!(has(store, "kept-final").await?);
+    let summary = summary(store, "kept-final").await?;
+    assert_eq!(summary.complete_scopes, 1);
+    assert_eq!(summary.work_pending, 0);
+    Ok(())
+}
+
+async fn given_unrepresentable_deadline_when_the_token_repeats_then_the_scope_is_partial<
+    S: InventoryStore,
+>(
+    store: &S,
+) -> TestResult {
+    let (_, kept) = keep_one(store, "kept-wide-cycle", 13).await?;
+    let again = page(kept, Vec::new(), false, Some(vec![13]), 120);
+    let (result, none) = store.commit_page_keeping(again, i64::MAX).await?;
+    assert!(result.repeated_token);
+    assert!(none.is_none());
+    let summary = summary(store, "kept-wide-cycle").await?;
+    assert_eq!(summary.partial_scopes, 1);
+    assert_eq!(summary.work_pending, 0);
+    Ok(())
+}
+
+/// A page that continues its scope needs the deadline, so the commit is
+/// rejected whole and the lease it came with still commits.
+async fn given_unrepresentable_deadline_when_the_page_continues_then_nothing_is_committed<
+    S: InventoryStore,
+>(
+    store: &S,
+) -> TestResult {
+    let lease = seed_claim(store, "kept-wide", 100).await?;
+    let unused = lease.clone();
+    let commit = page(
+        lease,
+        vec![observation("kept-wide", "one")?],
+        false,
+        Some(vec![15]),
+        110,
+    );
+    let rejected = store.commit_page_keeping(commit, i64::MAX).await;
+    assert!(matches!(rejected, Err(StoreError::Invalid(_))));
+    assert!(!has(store, "kept-wide").await?);
+    let retry = page(unused, Vec::new(), false, Some(vec![15]), 111);
+    let (result, kept) = store.commit_page_keeping(retry, 50).await?;
+    assert!(!result.repeated_token);
+    assert_eq!(
+        kept.ok_or("the lease was not kept")?.token(),
+        Some([15].as_slice())
+    );
     Ok(())
 }
