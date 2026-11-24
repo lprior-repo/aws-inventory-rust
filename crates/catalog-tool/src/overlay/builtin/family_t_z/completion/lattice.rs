@@ -2,12 +2,12 @@ use super::*;
 use crate::overlay::{IdentityBranch, IdentityChoice, IdentityLeaf, IdentityPredicate};
 
 pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
-    let mut rules = inventory(
-        "items",
-        Identity::Arn(path("arn")?),
-        token("nextToken", "nextToken")?,
-        Scope::Region,
-    )?;
+    logs_plan(service)?;
+    rules_plan(service)?;
+    targets_plan(service)
+}
+
+fn logs_plan(service: &mut ServiceOverlay) -> Result<(), NameError> {
     let mut logs = inventory(
         "items",
         Identity::Arn(path("arn")?),
@@ -31,7 +31,16 @@ pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
         ),
     );
     logs.queryable = paths(&["arn", "id", "resourceArn", "resourceId", "destinationArn"])?;
-    insert(service, "ListAccessLogSubscriptions", logs)?;
+    insert(service, "ListAccessLogSubscriptions", logs)
+}
+
+fn rules_plan(service: &mut ServiceOverlay) -> Result<(), NameError> {
+    let mut rules = inventory(
+        "items",
+        Identity::Arn(path("arn")?),
+        token("nextToken", "nextToken")?,
+        Scope::Region,
+    )?;
     bind(&mut rules, "listenerIdentifier", "ListListeners", "id")?;
     request_context(
         &mut rules,
@@ -40,8 +49,10 @@ pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
         "serviceIdentifier",
     )?;
     rules.queryable = paths(&["arn", "id", "name", "priority", "isDefault"])?;
-    insert(service, "ListRules", rules)?;
+    insert(service, "ListRules", rules)
+}
 
+fn targets_plan(service: &mut ServiceOverlay) -> Result<(), NameError> {
     // Lambda targets have no port. The ordered fallback still requires a real target ID.
     let with_port = vec![
         IdentityField::Request(path("targetGroupIdentifier")?),

@@ -145,6 +145,11 @@ pub(super) fn branches(bind_scope: bool) -> Result<Vec<ExecutionBranch>, NameErr
 }
 
 fn waf(service: &mut ServiceOverlay) -> Result<(), NameError> {
+    waf_resource_operations(service)?;
+    waf_logging_operations(service)
+}
+
+fn waf_resource_operations(service: &mut ServiceOverlay) -> Result<(), NameError> {
     for (list, items, get, selected) in [
         ("ListWebACLs", "WebACLs", "GetWebACL", "WebACL"),
         ("ListIPSets", "IPSets", "GetIPSet", "IPSet"),
@@ -180,6 +185,10 @@ fn waf(service: &mut ServiceOverlay) -> Result<(), NameError> {
         detail.branches = detail_branches(list, &[("Name", "Name"), ("Id", "Id")], true)?;
         service.operations.insert(name(get)?, detail);
     }
+    Ok(())
+}
+
+fn waf_logging_operations(service: &mut ServiceOverlay) -> Result<(), NameError> {
     let mut logging = inventory(
         "LoggingConfigurations",
         Identity::Arn(path("ResourceArn")?),

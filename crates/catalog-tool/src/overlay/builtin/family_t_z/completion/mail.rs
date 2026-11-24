@@ -4,6 +4,12 @@ pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
     // Pinned availability output is RedactedEwsAvailabilityProvider, never EwsPassword.
     // PersonalAccessTokenSummary contains only IDs, audit times and scopes, not tokens.
     aliases_and_permissions(service)?;
+    organization_children(service)?;
+    rule_children(service)?;
+    member_children(service)
+}
+
+fn organization_children(service: &mut ServiceOverlay) -> Result<(), NameError> {
     [
         ("ListGroups", "Groups", &["Id"][..]),
         ("ListUsers", "Users", &["Id"][..]),
@@ -41,7 +47,10 @@ pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
             true,
         )?;
         insert(service, operation, plan)
-    })?;
+    })
+}
+
+fn rule_children(service: &mut ServiceOverlay) -> Result<(), NameError> {
     [
         ("ListAccessControlRules", "Name"),
         ("ListMobileDeviceAccessRules", "MobileDeviceAccessRuleId"),
@@ -57,7 +66,10 @@ pub(super) fn apply(service: &mut ServiceOverlay) -> Result<(), NameError> {
             false,
         )?;
         insert(service, operation, plan)
-    })?;
+    })
+}
+
+fn member_children(service: &mut ServiceOverlay) -> Result<(), NameError> {
     [
         ("ListGroupMembers", "Members", "ListGroups", "GroupId", "Id"),
         (
