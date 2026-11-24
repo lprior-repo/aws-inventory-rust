@@ -235,6 +235,36 @@ async fn given_empty_next_token_when_command_runs_then_pagination_finishes() -> 
 }
 
 #[tokio::test]
+async fn given_empty_successful_list_when_seeded_type_is_checked_then_report_is_not_comparable()
+-> TestResult {
+    let fixture = Fixture::new(&["topic"], "list", SEEDED).await?;
+    let (output, requests) =
+        execute(&fixture, &[(200, r#"{"ResourceDescriptions":[]}"#)], None).await?;
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        topic_report(&output.stdout)?,
+        "AWS::SNS::Topic\tnot comparable\tlisting returned no identities\tstored\t1\n"
+    );
+    assert_eq!(requests.len(), 1);
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_empty_successful_list_when_unseeded_type_has_stored_identity_then_report_is_not_comparable()
+-> TestResult {
+    let fixture = Fixture::new(&["topic"], "list", "").await?;
+    let (output, requests) =
+        execute(&fixture, &[(200, r#"{"ResourceDescriptions":[]}"#)], None).await?;
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(
+        topic_report(&output.stdout)?,
+        "AWS::SNS::Topic\tnot comparable\tlisting returned no identities\tstored\t1\n"
+    );
+    assert_eq!(requests.len(), 1);
+    Ok(())
+}
+
+#[tokio::test]
 async fn given_full_page_when_command_runs_then_all_descriptions_are_accepted() -> TestResult {
     let fixture = Fixture::new(&["topic"], "list", SEEDED).await?;
     let descriptions = vec![serde_json::json!({"Identifier":"topic"}); 100];

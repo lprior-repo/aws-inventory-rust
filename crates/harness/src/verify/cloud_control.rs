@@ -37,11 +37,12 @@ pub struct Args {
 pub struct Report {
     pub text: String,
     pub unexplained_seeded: usize,
+    pub not_comparable_seeded: usize,
 }
 
 impl Report {
     pub fn passed(&self) -> bool {
-        self.unexplained_seeded == 0
+        self.unexplained_seeded == 0 && self.not_comparable_seeded == 0
     }
 }
 
@@ -92,15 +93,20 @@ async fn check(
                 Report {
                     text: unmapped(&inputs.no_cfn)?,
                     unexplained_seeded: 0,
+                    not_comparable_seeded: 0,
                 },
             ),
             |(reader, mut report), target| async move {
-                let row = check_type(client, reader, target, rules, args).await?;
-                if inputs.seeded.contains(&target.kind) || inputs.seeded.contains(&target.type_name)
-                {
+                let seeded = inputs.seeded.contains(&target.kind)
+                    || inputs.seeded.contains(&target.type_name);
+                let row = check_type(client, reader, target, rules, args, seeded).await?;
+                if seeded {
                     report.unexplained_seeded = report
                         .unexplained_seeded
                         .saturating_add(row.unexplained_seeded);
+                    report.not_comparable_seeded = report
+                        .not_comparable_seeded
+                        .saturating_add(row.not_comparable_seeded);
                 }
                 report.text.push_str(&row.text);
                 Ok((reader, report))
@@ -129,18 +135,23 @@ async fn check_type(
     target: &Target,
     rules: &[Rule<'_>],
     args: &Args,
+    seeded: bool,
 ) -> Result<Report, HarnessError> {
     let listed = if target.listable {
         client::list(client, &target.type_name).await?
     } else {
         Listed::NotListable
     };
-    let Listed::Identities(listed) = listed else {
-        return Ok(not_listable(&target.type_name));
+    let listed = match listed {
+        Listed::Identities(identities) => identities,
+        Listed::NotListable => return Ok(not_listable(&target.type_name)),
     };
     let stored = reader
         .identities(&target.kind, &args.region, args.account.as_deref())
         .await?;
+    if listed.is_empty() && !stored.is_empty() {
+        return Ok(not_comparable(&target.type_name, stored.len(), seeded));
+    }
     let comparison = identities::compare(&listed, &stored).map_err(|source| {
         CloudControlError::AmbiguousIdentity {
             type_name: target.type_name.clone(),
@@ -154,6 +165,17 @@ fn not_listable(type_name: &str) -> Report {
     Report {
         text: format!("{type_name}\tnot listable\n"),
         unexplained_seeded: 0,
+        not_comparable_seeded: 0,
+    }
+}
+
+fn not_comparable(type_name: &str, stored: usize, seeded: bool) -> Report {
+    Report {
+        text: format!(
+            "{type_name}\tnot comparable\tlisting returned no identities\tstored\t{stored}\n"
+        ),
+        unexplained_seeded: 0,
+        not_comparable_seeded: usize::from(seeded),
     }
 }
 
@@ -193,6 +215,7 @@ fn render(
     Ok(Report {
         text,
         unexplained_seeded,
+        not_comparable_seeded: 0,
     })
 }
 

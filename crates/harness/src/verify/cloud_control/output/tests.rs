@@ -28,6 +28,7 @@ fn report() -> Report {
     Report {
         text: "report\n".into(),
         unexplained_seeded: 0,
+        not_comparable_seeded: 0,
     }
 }
 

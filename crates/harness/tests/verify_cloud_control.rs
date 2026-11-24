@@ -20,7 +20,6 @@ use server::TestResult;
 
 const SEEDED: &str = "resource\tAWS::SNS::Topic\t123456789012\tus-east-1\ttopic\n";
 const TOPIC: &str = r#"{"ResourceDescriptions":[{"Identifier":"topic"}]}"#;
-const EMPTY: &str = r#"{"ResourceDescriptions":[]}"#;
 
 #[tokio::test]
 async fn given_exactly_256_pages_when_command_runs_then_complete_comparison_succeeds() -> TestResult
@@ -91,12 +90,13 @@ async fn given_missing_identity_when_command_runs_then_difference_report_survive
 
 #[tokio::test]
 async fn given_extra_identity_when_command_runs_then_extra_direction_is_reported() -> TestResult {
-    let fixture = Fixture::new(&["topic"], "list", SEEDED).await?;
-    let (output, _) = execute(&fixture, &[(200, EMPTY)], None).await?;
+    let fixture = Fixture::new(&["topic", "matching"], "list", SEEDED).await?;
+    let listed = r#"{"ResourceDescriptions":[{"Identifier":"matching"}]}"#;
+    let (output, _) = execute(&fixture, &[(200, listed)], None).await?;
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         topic_report(&output.stdout)?,
-        "AWS::SNS::Topic\tmatched\t0\tmissing_from_sweep\t0\textra_in_sweep\t1\nAWS::SNS::Topic\textra_in_sweep\ttopic\tunexplained\t\n"
+        "AWS::SNS::Topic\tmatched\t1\tmissing_from_sweep\t0\textra_in_sweep\t1\nAWS::SNS::Topic\textra_in_sweep\ttopic\tunexplained\t\n"
     );
     Ok(())
 }
@@ -134,28 +134,30 @@ async fn given_explanation_rule_when_command_runs_then_reason_is_preserved_and_s
 
 #[tokio::test]
 async fn given_extra_in_sweep_rule_when_command_runs_then_explained_and_success() -> TestResult {
-    let fixture = Fixture::new(&["topic"], "list", SEEDED).await?;
+    let fixture = Fixture::new(&["topic", "matching"], "list", SEEDED).await?;
     let rules = "AWS::SNS::Topic\textra_in_sweep:topic*\temulator leftover topics\n";
     std::fs::write(&fixture.differences, rules)?;
-    let (output, _) = execute(&fixture, &[(200, EMPTY)], None).await?;
+    let listed = r#"{"ResourceDescriptions":[{"Identifier":"matching"}]}"#;
+    let (output, _) = execute(&fixture, &[(200, listed)], None).await?;
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(
         topic_report(&output.stdout)?,
-        "AWS::SNS::Topic\tmatched\t0\tmissing_from_sweep\t0\textra_in_sweep\t1\nAWS::SNS::Topic\textra_in_sweep\ttopic\texplained\temulator leftover topics\n"
+        "AWS::SNS::Topic\tmatched\t1\tmissing_from_sweep\t0\textra_in_sweep\t1\nAWS::SNS::Topic\textra_in_sweep\ttopic\texplained\temulator leftover topics\n"
     );
     Ok(())
 }
 
 #[tokio::test]
 async fn given_wrong_direction_rule_when_command_runs_then_unexplained_and_fails() -> TestResult {
-    let fixture = Fixture::new(&["topic"], "list", SEEDED).await?;
+    let fixture = Fixture::new(&["topic", "matching"], "list", SEEDED).await?;
     let rules = "AWS::SNS::Topic\tmissing_from_sweep:topic*\temulator leftover topics\n";
     std::fs::write(&fixture.differences, rules)?;
-    let (output, _) = execute(&fixture, &[(200, EMPTY)], None).await?;
+    let listed = r#"{"ResourceDescriptions":[{"Identifier":"matching"}]}"#;
+    let (output, _) = execute(&fixture, &[(200, listed)], None).await?;
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         topic_report(&output.stdout)?,
-        "AWS::SNS::Topic\tmatched\t0\tmissing_from_sweep\t0\textra_in_sweep\t1\nAWS::SNS::Topic\textra_in_sweep\ttopic\tunexplained\t\n"
+        "AWS::SNS::Topic\tmatched\t1\tmissing_from_sweep\t0\textra_in_sweep\t1\nAWS::SNS::Topic\textra_in_sweep\ttopic\tunexplained\t\n"
     );
     Ok(())
 }

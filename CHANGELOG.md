@@ -16,6 +16,9 @@
   Cloud Control listings without writing to the inventory. The command reports
   missing, extra, explained and non-listable identities; ambiguous normalized
   identities fail instead of choosing a resource.
+- Cloud Control listings with no identities are reported as not comparable when
+  stored resources exist. Seeded kinds fail the gate; an empty listing with no
+  stored identities remains a match.
 - PostgreSQL test database creation and removal use a 60-second server deadline
   and a 65-second transport deadline after connecting. Prune bounds the candidate
   query separately from each drop.

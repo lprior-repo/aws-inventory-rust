@@ -10,6 +10,7 @@ fn given_unlistable_type_when_reported_then_no_difference_is_counted() -> TestRe
         Report {
             text: "AWS::Example::Thing\tnot listable\n".into(),
             unexplained_seeded: 0,
+            not_comparable_seeded: 0,
         }
     );
     assert!(not_listable("AWS::Example::Thing").passed());
