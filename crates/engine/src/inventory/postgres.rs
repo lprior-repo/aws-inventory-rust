@@ -20,9 +20,11 @@ pub use projection_delivery::PgDelivery;
 pub use projection_read::PgProjectionSnapshot;
 pub use url::DatabaseUrl;
 
-use crate::inventory::{MAX_CATALOG_BYTES, SchemaRegistry, StoreError};
+use crate::inventory::{
+    MAX_CATALOG_BYTES, SchemaRegistry, StoreError, SweepId, UnobservedScope, decode_scope_key,
+};
 use sha2::{Digest, Sha256};
-use sqlx::PgPool;
+use sqlx::{PgPool, Row};
 
 pub struct PgStore {
     pub(crate) pool: PgPool,
@@ -93,6 +95,27 @@ impl PgStore {
             return Err(StoreError::CatalogMismatch);
         }
         Ok(())
+    }
+    pub async fn unobserved_scopes(
+        &self,
+        sweep: &SweepId,
+        now_ms: i64,
+    ) -> Result<Vec<UnobservedScope>, StoreError> {
+        let rows = sqlx::query("SELECT scope_key,observed_at FROM inventory.scope_outcomes WHERE sweep_id=$1 AND outcome='unobserved' ORDER BY scope_key")
+            .bind(sweep.as_str())
+            .fetch_all(&self.pool)
+            .await?;
+        rows.into_iter()
+            .map(|row| {
+                let bytes: Vec<u8> = row.try_get("scope_key")?;
+                let last_observed_ms: i64 = row.try_get("observed_at")?;
+                Ok(UnobservedScope {
+                    scope: decode_scope_key(&bytes)?,
+                    last_observed_ms,
+                    age_ms: now_ms.saturating_sub(last_observed_ms).max(0),
+                })
+            })
+            .collect()
     }
 
     pub async fn close(self) {

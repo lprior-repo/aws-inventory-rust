@@ -6,7 +6,74 @@ where
     F: AsyncFn() -> TestResult<(G, S, Vec<u8>)>,
 {
     let (_guard, store, _) = make().await?;
-    given_late_unique_target_when_ambiguous_then_edges_are_retracted(&store).await
+    given_late_unique_target_when_ambiguous_then_edges_are_retracted(&store).await?;
+    let (_guard, store, _) = make().await?;
+    given_reviewed_edge_when_target_changes_then_obsolete_edge_is_retracted(&store).await
+}
+
+async fn given_reviewed_edge_when_target_changes_then_obsolete_edge_is_retracted<
+    S: InventoryStore,
+>(
+    store: &S,
+) -> TestResult {
+    let source = resource("direct-source")?;
+    let target = resource("direct-target")?;
+    let first_work = relationship_work("direct-before", "us-east-1", None, Some("beta"))?;
+    store.seed_works(&[first_work]).await?;
+    let lease = claim(store, "direct-before", 100).await?;
+    let mut commit = page(
+        lease,
+        vec![
+            observation("direct-target", "beta")?,
+            observation("direct-source", "alpha")?,
+        ],
+        true,
+        None,
+        101,
+    );
+    commit.edges.push(inventory_core::inventory::Edge {
+        from: source.clone(),
+        to: target.clone(),
+        relation: inventory_core::inventory::Relation::parse("depends-on")?,
+        source: inventory_core::inventory::EdgeSource::ReviewedRule,
+    });
+    store.commit_page(commit).await?;
+    let initial = store.projection_edges_for(&source, None, 10).await?;
+    let [edge] = initial.edges.as_slice() else {
+        return Err("expected reviewed edge before target change".into());
+    };
+    assert_eq!(edge.to, target);
+    let next_work = relationship_work("direct-after", "us-east-1", None, Some("beta"))?;
+    store.seed_works(&[next_work]).await?;
+    let lease = claim(store, "direct-after", 200).await?;
+    let result = store
+        .commit_page(page(
+            lease,
+            vec![observation("direct-target", "gamma")?],
+            true,
+            None,
+            201,
+        ))
+        .await?;
+    assert_eq!(result.stats.resources_changed, 1);
+    assert!(
+        store
+            .projection_edges_for(&source, None, 10)
+            .await?
+            .edges
+            .is_empty()
+    );
+    let updated = store
+        .projection_resource(&target)
+        .await?
+        .ok_or("updated target disappeared")?;
+    assert_eq!(
+        updated.content_hash.as_slice(),
+        observation("direct-target", "gamma")?
+            .content_hash()
+            .as_bytes()
+    );
+    Ok(())
 }
 
 pub(super) async fn seed_source<S: InventoryStore>(store: &S) -> TestResult {

@@ -1,9 +1,14 @@
 use super::*;
+use inventory_core::inventory::{
+    AccountId, Observation, OperationId, Region, ResourceKey, ScopeKey, ScopeOutcome, ServiceId,
+};
+use inventory_core::record::{Exclusions, Record, Value};
 use inventory_engine::inventory::WorkSpec;
+use std::collections::BTreeMap;
 
 pub(super) async fn run<S, F, G>(make: &F) -> TestResult
 where
-    S: InventoryStore,
+    S: InventoryStore + UnobservedScopesCapability,
     F: AsyncFn() -> TestResult<(G, S, Vec<u8>)>,
 {
     let (_guard, store, catalog) = make().await?;
@@ -19,6 +24,247 @@ where
         &store,
     )
     .await?;
+    let (_guard, store, _) = make().await?;
+    given_failed_scope_when_absent_then_age_uses_last_complete_observation(&store).await?;
+    let (_guard, store, _) = make().await?;
+    given_partial_scope_when_current_then_not_reported_unobserved(&store).await?;
+    let (_guard, store, _) = make().await?;
+    given_narrowed_regions_when_complete_then_skipped_scope_is_reported(&store).await?;
+    let (_guard, store, _) = make().await?;
+    given_removed_account_when_sweep_runs_for_other_account_then_its_scopes_are_unobserved(&store)
+        .await
+}
+
+async fn observe_account_scope<S: InventoryStore>(
+    store: &S,
+    sweep: &str,
+    account: &str,
+    region: &str,
+    id: &str,
+    value: &str,
+    at: i64,
+) -> TestResult {
+    let sweep_id = SweepId::new(sweep.to_owned())?;
+    let account_id = AccountId::parse(account)?;
+    let scope_key = ScopeKey::new(
+        account_id.clone(),
+        Region::parse(region)?,
+        ServiceId::parse("example")?,
+        OperationId::parse("ListThings")?,
+        None,
+    )?;
+    let bindings = Record::encode(&Value::Map(BTreeMap::new()))?.into_bytes();
+    let work = WorkSpec::new(sweep_id.clone(), scope_key, None, bindings)?;
+    store.seed_works(&[work]).await?;
+    store.create_sweep_manifest(&sweep_id, &account_id).await?;
+    let lease = claim(store, sweep, at).await?;
+    let key = ResourceKey {
+        account: account_id,
+        region: Region::parse(region)?,
+        ..resource(id)?
+    };
+    let observed = Observation::new(
+        key,
+        observation(id, value)?.record().clone(),
+        &Exclusions::none(),
+        None,
+    )?;
+    store
+        .commit_page(page(
+            lease,
+            vec![observed],
+            true,
+            None,
+            at.saturating_add(1),
+        ))
+        .await?;
+    Ok(())
+}
+
+async fn given_removed_account_when_sweep_runs_for_other_account_then_its_scopes_are_unobserved<
+    S: InventoryStore + UnobservedScopesCapability,
+>(
+    store: &S,
+) -> TestResult {
+    observe_account_scope(
+        store,
+        "account-a-1",
+        "111111111111",
+        "us-east-1",
+        "a",
+        "va",
+        100,
+    )
+    .await?;
+    observe_account_scope(
+        store,
+        "account-b",
+        "222222222222",
+        "us-west-2",
+        "b",
+        "vb",
+        200,
+    )
+    .await?;
+    observe_account_scope(
+        store,
+        "account-a-2",
+        "111111111111",
+        "us-east-1",
+        "a2",
+        "va2",
+        300,
+    )
+    .await?;
+    let sweep = SweepId::new("account-a-2".to_owned())?;
+    let unobserved = store.unobserved_scopes(&sweep, 1_000).await?;
+    let account_b = unobserved
+        .iter()
+        .find(|item| item.scope.account().as_str() == "222222222222")
+        .ok_or("account B scope should be unobserved")?;
+    assert_eq!(account_b.last_observed_ms, 201);
+    Ok(())
+}
+
+async fn complete_region<S: InventoryStore>(
+    store: &S,
+    sweep: &str,
+    region: &str,
+    id: &str,
+    at: i64,
+) -> TestResult<u64> {
+    store.seed_works(&[work(sweep, region)?]).await?;
+    let lease = claim(store, sweep, at).await?;
+    let observed = vec![observation_for_region(id, "value", region)?];
+    let commit = page(lease, observed, true, None, at.saturating_add(1));
+    Ok(store.commit_page(commit).await?.stats.resources_deleted)
+}
+
+fn observation_for_region(id: &str, value: &str, region: &str) -> TestResult<Observation> {
+    let key = ResourceKey {
+        region: Region::parse(region)?,
+        ..resource(id)?
+    };
+    Ok(Observation::new(
+        key,
+        observation(id, value)?.record().clone(),
+        &Exclusions::none(),
+        None,
+    )?)
+}
+
+async fn given_partial_scope_when_current_then_not_reported_unobserved<
+    S: InventoryStore + UnobservedScopesCapability,
+>(
+    store: &S,
+) -> TestResult {
+    complete_one(store, "observed-east", "us-east-1", "x", "v1", 100).await?;
+    store
+        .seed_works(&[work("partial-east", "us-east-1")?])
+        .await?;
+    let partial = claim(store, "partial-east", 200).await?;
+    store
+        .finish_scope(partial, ScopeOutcome::Partial, 201, None)
+        .await?;
+    let absent = store
+        .unobserved_scopes(&SweepId::new("partial-east".to_owned())?, 1_000)
+        .await?;
+    assert!(
+        absent.is_empty(),
+        "partial scope must not be reported as unobserved"
+    );
+    Ok(())
+}
+async fn given_narrowed_regions_when_complete_then_skipped_scope_is_reported<
+    S: InventoryStore + UnobservedScopesCapability,
+>(
+    store: &S,
+) -> TestResult {
+    complete_region(store, "wide-1", "us-east-1", "east", 100).await?;
+    complete_region(store, "wide-1", "us-west-2", "west", 101).await?;
+    assert_eq!(
+        complete_region(store, "narrow-1", "us-east-1", "east", 1_000).await?,
+        0
+    );
+    assert_eq!(
+        complete_region(store, "narrow-2", "us-east-1", "east", 1_100).await?,
+        0
+    );
+    assert_eq!(
+        complete_region(store, "narrow-3", "us-east-1", "east", 1_200).await?,
+        0
+    );
+    let west = ResourceKey {
+        region: Region::parse("us-west-2")?,
+        ..resource("west")?
+    };
+    assert!(store.projection_resource(&west).await?.is_some());
+    let sweep = SweepId::new("narrow-3".to_owned())?;
+    assert_eq!(summary(store, "narrow-3").await?.unobserved_scopes, 1);
+    let unobserved = store.unobserved_scopes(&sweep, 5_000).await?;
+    let [only] = unobserved.as_slice() else {
+        return Err("expected one unobserved western scope".into());
+    };
+    assert_eq!(only.scope, scope("us-west-2")?);
+    assert_eq!(only.last_observed_ms, 102);
+    assert_eq!(only.age_ms, 4_898);
+    complete_region(store, "wide-2", "us-east-1", "east", 6_000).await?;
+    complete_region(store, "wide-2", "us-west-2", "west", 6_001).await?;
+    assert!(
+        store
+            .unobserved_scopes(&SweepId::new("wide-2".to_owned())?, 7_000)
+            .await?
+            .is_empty()
+    );
+    Ok(())
+}
+
+async fn complete_one<S: InventoryStore>(
+    store: &S,
+    sweep: &str,
+    region: &str,
+    id: &str,
+    value: &str,
+    at: i64,
+) -> TestResult {
+    store.seed_works(&[work(sweep, region)?]).await?;
+    let lease = claim(store, sweep, at).await?;
+    let observed = observation_for_region(id, value, region)?;
+    let result = store
+        .commit_page(page(
+            lease,
+            vec![observed],
+            true,
+            None,
+            at.saturating_add(1),
+        ))
+        .await?;
+    assert_eq!(result.stats.resources_deleted, 0);
+    Ok(())
+}
+
+async fn given_failed_scope_when_absent_then_age_uses_last_complete_observation<
+    S: InventoryStore + UnobservedScopesCapability,
+>(
+    store: &S,
+) -> TestResult {
+    complete_one(store, "observed-east", "us-east-1", "x", "v1", 100).await?;
+    store
+        .seed_works(&[work("failed-east", "us-east-1")?])
+        .await?;
+    let failed = claim(store, "failed-east", 200).await?;
+    store
+        .finish_scope(failed, ScopeOutcome::Failed, 201, None)
+        .await?;
+    complete_one(store, "observed-west", "us-west-2", "y", "v2", 300).await?;
+    let sweep = SweepId::new("observed-west".to_owned())?;
+    let unobserved = store.unobserved_scopes(&sweep, 1_000).await?;
+    let [only] = unobserved.as_slice() else {
+        return Err("expected the previously observed east scope to be unobserved".into());
+    };
+    assert_eq!(only.scope, scope("us-east-1")?);
+    assert_eq!(only.last_observed_ms, 101);
+    assert_eq!(only.age_ms, 899);
     Ok(())
 }
 

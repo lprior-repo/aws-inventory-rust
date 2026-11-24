@@ -6,8 +6,6 @@ mod completion;
 mod conformance;
 #[path = "postgres/live.rs"]
 mod live;
-#[path = "postgres/outcome_detail.rs"]
-mod outcome_detail;
 #[path = "postgres/overflow.rs"]
 mod overflow;
 #[path = "postgres/projection.rs"]

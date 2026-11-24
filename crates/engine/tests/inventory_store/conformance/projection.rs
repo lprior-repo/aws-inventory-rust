@@ -8,7 +8,10 @@ where
     let (_guard, store, _) = make().await?;
     given_unchanged_record_when_reobserved_then_no_projection_write(&store).await?;
     let (_guard, store, _) = make().await?;
-    given_old_ack_when_new_revision_exists_then_new_revision_remains(&store).await
+    given_old_ack_when_new_revision_exists_then_new_revision_remains(&store).await?;
+    let (_guard, store, _) = make().await?;
+    given_pending_projection_work_when_rebuild_requested_then_one_full_rebuild_replaces_it(&store)
+        .await
 }
 
 async fn first_pending<S: InventoryStore>(
@@ -61,5 +64,28 @@ async fn given_old_ack_when_new_revision_exists_then_new_revision_remains<S: Inv
     assert!(current.revision > old.revision);
     assert!(!current.deleted);
     assert_eq!(current.key, old.key);
+    Ok(())
+}
+
+async fn given_pending_projection_work_when_rebuild_requested_then_one_full_rebuild_replaces_it<
+    S: InventoryStore,
+>(
+    store: &S,
+) -> TestResult {
+    observe(store, "rebuild-request", "thing-1", "alpha").await?;
+    assert!(!store.projection_state().await?.rebuild_required);
+    store.request_graph_rebuild().await?;
+    let state = store.projection_state().await?;
+    assert_eq!(state.pending, 1);
+    assert!(state.rebuild_required);
+    let entries = store.drain_projection(10).await?;
+    assert_eq!(entries.len(), 1);
+    let marker = entries.first().ok_or("missing rebuild marker")?;
+    assert!(marker.full_rebuild);
+    let ack = ProjectionAck::full_rebuild(marker.revision)?;
+    store.ack_projection(ack).await?;
+    let after = store.projection_state().await?;
+    assert_eq!(after.pending, 0);
+    assert!(!after.rebuild_required);
     Ok(())
 }

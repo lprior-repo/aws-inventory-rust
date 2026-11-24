@@ -10,6 +10,8 @@ mod data;
 mod kept;
 #[path = "conformance/leases.rs"]
 mod leases;
+#[path = "conformance/outcome_detail.rs"]
+mod outcome_detail;
 #[path = "conformance/projection.rs"]
 mod projection;
 #[path = "conformance/references.rs"]
@@ -30,8 +32,9 @@ use inventory_engine::inventory::{
 
 pub async fn run<S, F, G>(make: F) -> TestResult
 where
-    S: InventoryStore,
+    S: InventoryStore + UnobservedScopesCapability,
     F: AsyncFn() -> TestResult<(G, S, Vec<u8>)>,
+    G: OutcomeDetailStorageCapability,
 {
     batch_claim::run(&make).await?;
     stalest_first::run(&make).await?;
@@ -43,6 +46,7 @@ where
     data::run(&make).await?;
     references::run(&make).await?;
     projection::run(&make).await?;
+    outcome_detail::run(&make).await?;
     snapshot::run(&make).await
 }
 

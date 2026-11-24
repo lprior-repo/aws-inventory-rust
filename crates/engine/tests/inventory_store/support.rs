@@ -8,12 +8,72 @@ use inventory_core::inventory::{
     UnresolvedReference,
 };
 use inventory_core::record::{Exclusions, FieldId, Key, ListRef, Record, Value, encode_list};
-use inventory_engine::inventory::{BinaryStore, PageCommit, SchemaRegistry, SweepId, WorkSpec};
+use inventory_engine::inventory::{
+    BinaryStore, PageCommit, SchemaRegistry, StoreError, SweepId, WorkSpec,
+};
 use sha2::Digest;
 use std::collections::BTreeMap;
 use std::sync::Arc;
 
 pub(super) type TestResult<T = ()> = Result<T, Box<dyn std::error::Error>>;
+pub(super) trait OutcomeDetailStorageCapability {
+    async fn stored_outcomes(&self, sweep: &str) -> TestResult<Vec<(String, Option<String>)>>;
+
+    async fn seed_prior_outcome_detail(&self, sweep: &str) -> TestResult;
+}
+pub(super) trait UnobservedScopesCapability {
+    async fn unobserved_scopes(
+        &self,
+        sweep: &SweepId,
+        now_ms: i64,
+    ) -> Result<Vec<inventory_engine::inventory::UnobservedScope>, StoreError>;
+}
+
+impl UnobservedScopesCapability for BinaryStore {
+    async fn unobserved_scopes(
+        &self,
+        sweep: &SweepId,
+        now_ms: i64,
+    ) -> Result<Vec<inventory_engine::inventory::UnobservedScope>, StoreError> {
+        BinaryStore::unobserved_scopes(self, sweep, now_ms).await
+    }
+}
+
+impl OutcomeDetailStorageCapability for tempfile::TempDir {
+    async fn stored_outcomes(&self, sweep: &str) -> TestResult<Vec<(String, Option<String>)>> {
+        let pool = sqlx::sqlite::SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect_with(
+                sqlx::sqlite::SqliteConnectOptions::new()
+                    .filename(self.path().join("inventory.sqlite")),
+            )
+            .await?;
+        let rows = sqlx::query_as(
+            "SELECT outcome,detail FROM scope_outcomes WHERE sweep_id=?1 ORDER BY scope_key",
+        )
+        .bind(sweep)
+        .fetch_all(&pool)
+        .await?;
+        pool.close().await;
+        Ok(rows)
+    }
+
+    async fn seed_prior_outcome_detail(&self, sweep: &str) -> TestResult {
+        let pool = sqlx::sqlite::SqlitePoolOptions::new()
+            .max_connections(1)
+            .connect_with(
+                sqlx::sqlite::SqliteConnectOptions::new()
+                    .filename(self.path().join("inventory.sqlite")),
+            )
+            .await?;
+        sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at,detail) SELECT sweep_id,scope_key,'failed',90,'transport: earlier' FROM work_queue WHERE sweep_id=?1")
+            .bind(sweep)
+            .execute(&pool)
+            .await?;
+        pool.close().await;
+        Ok(())
+    }
+}
 
 pub(super) async fn fixture() -> TestResult<(tempfile::TempDir, BinaryStore, Vec<u8>)> {
     let directory = tempfile::tempdir()?;
