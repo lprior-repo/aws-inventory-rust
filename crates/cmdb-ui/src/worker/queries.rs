@@ -1,8 +1,6 @@
 use super::projection::row_from_row;
 use super::*;
 
-/// Enriches graph node details from a short-lived snapshot. Each call opens
-/// its own snapshot; the caller is responsible for closing it.
 async fn enrich_graph(
     mut snapshot: cmdb_view::DatabaseSnapshot,
     graph: &mut Graph,
@@ -25,9 +23,6 @@ async fn enrich_graph(
     snapshot.finish().await.map_err(|error| error.to_string())
 }
 
-/// Reads a fresh page in its own short-lived snapshot. Each call opens and
-/// closes its own read transaction, so the result is consistent within the
-/// page but consecutive reads may reflect different committed state.
 pub(super) async fn refresh_page(database: &Database, filter: Filter) -> WorkerEvent {
     let resource_filter = ResourceFilter {
         account: filter.account,

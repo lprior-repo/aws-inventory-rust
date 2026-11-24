@@ -130,4 +130,5 @@ Makepad is a git dependency pinned in the workspace Cargo.toml; the first build 
 - Account, region, and resource-kind chips are derived from loaded database rows. Search and filters query the read-only database in the worker.
 - Selecting a resource asks FalkorDB for its bounded neighborhood and shows actual stored relationships. Selecting a graph resource updates the detail panel and expands that resource.
 - Empty databases, database failures, graph-offline states, and no-neighbor results are displayed separately.
+- Each page refresh and each graph-detail enrichment reads in its own short-lived read transaction, opened and closed by the worker. One page is consistent within itself; two consecutive reads may reflect different committed states.
 - The viewer does not connect to AWS or modify the database.
