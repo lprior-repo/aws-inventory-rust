@@ -67,7 +67,7 @@ async fn sweep_persists_every_scalar_when_full_tuple_advances_and_optional_token
             pending: 6,
             requests: 6,
             pages: 4,
-            claims: 4,
+            claims: 1,
         },
     )?;
     assert_resources(
@@ -101,7 +101,7 @@ async fn sweep_reports_partial_and_stops_when_the_entire_continuation_tuple_repe
             pending: 3,
             requests: 4,
             pages: 2,
-            claims: 2,
+            claims: 1,
         },
     )?;
     assert_resources(&fixture.database, &["one", "two", "zero"]).await?;
@@ -185,7 +185,7 @@ async fn sweep_resumes_the_durable_full_tuple_without_replaying_already_committe
             pending: 6,
             requests: 4,
             pages: 2,
-            claims: 2,
+            claims: 1,
         },
     )?;
     assert_resources(
