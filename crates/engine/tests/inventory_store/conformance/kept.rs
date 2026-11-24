@@ -1,6 +1,7 @@
 //! A page committed with `commit_page_keeping` keeps its lease for the next page.
 
 use super::*;
+use inventory_engine::inventory::{InventoryStore, MAX_OUTCOME_DETAIL_BYTES, WorkLease};
 
 pub(super) async fn run<S, F, G>(make: &F) -> TestResult
 where
@@ -24,7 +25,11 @@ where
     let (_guard, store, _) = make().await?;
     given_unrepresentable_deadline_when_the_token_repeats_then_the_scope_is_partial(&store).await?;
     let (_guard, store, _) = make().await?;
-    given_unrepresentable_deadline_when_the_page_continues_then_nothing_is_committed(&store).await
+    given_unrepresentable_deadline_when_the_page_continues_then_nothing_is_committed(&store)
+        .await?;
+    let (_guard, store, _) = make().await?;
+    given_a_reason_over_the_bound_when_finished_then_it_is_refused_and_the_bound_is_accepted(&store)
+        .await
 }
 
 /// Claims at 100 (deadline 120), then keeps one page at 110 for 50 (deadline 160).
@@ -233,5 +238,30 @@ async fn given_unrepresentable_deadline_when_the_page_continues_then_nothing_is_
         kept.ok_or("the lease was not kept")?.token(),
         Some([15].as_slice())
     );
+    Ok(())
+}
+
+async fn given_a_reason_over_the_bound_when_finished_then_it_is_refused_and_the_bound_is_accepted<
+    S: InventoryStore,
+>(
+    store: &S,
+) -> TestResult {
+    let lease = seed_claim(store, "bound", 100).await?;
+    let longest = "r".repeat(MAX_OUTCOME_DETAIL_BYTES);
+    let over = format!("{longest}r");
+
+    let refused = store
+        .finish_scope(lease.clone(), ScopeOutcome::Failed, 101, Some(&over))
+        .await;
+    assert!(matches!(refused, Err(StoreError::Invalid(_))));
+
+    // The refused call should not have stored the outcome.
+    let s = summary(store, "bound").await?;
+    assert_eq!(s.complete_scopes, 0);
+    assert_eq!(s.failed_scopes, 0);
+
+    store
+        .finish_scope(lease, ScopeOutcome::Failed, 102, Some(&longest))
+        .await?;
     Ok(())
 }

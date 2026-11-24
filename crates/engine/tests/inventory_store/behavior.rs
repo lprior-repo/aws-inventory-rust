@@ -1,5 +1,3 @@
-#[path = "behavior/batch_claim.rs"]
-mod batch_claim;
 #[path = "behavior/deletion.rs"]
 mod deletion;
 #[path = "behavior/lifecycle.rs"]
@@ -10,8 +8,6 @@ mod manifest;
 mod outcome_detail;
 #[path = "behavior/projection.rs"]
 mod projection;
-#[path = "behavior/stalest_first.rs"]
-mod stalest_first;
 use inventory_core::inventory::{
     AccountId, Edge, EdgeSource, OperationId, Region, Relation, ResourceKey, ScopeKey,
     ScopeOutcome, ServiceId,

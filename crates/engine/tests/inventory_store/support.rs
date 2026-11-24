@@ -59,11 +59,12 @@ pub(super) fn scope(region: &str) -> TestResult<ScopeKey> {
 }
 
 pub(super) fn work(sweep: &str, region: &str) -> TestResult<WorkSpec> {
+    let bindings = Record::encode(&Value::Map(BTreeMap::new()))?.into_bytes();
     WorkSpec::new(
         SweepId::new(sweep.to_owned())?,
         scope(region)?,
         None,
-        vec![1, 2],
+        bindings,
     )
     .map_err(Into::into)
 }

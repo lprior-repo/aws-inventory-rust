@@ -8,8 +8,7 @@ where
     let (_guard, store, _) = make().await?;
     given_unchanged_record_when_reobserved_then_no_projection_write(&store).await?;
     let (_guard, store, _) = make().await?;
-    given_old_ack_when_new_revision_exists_then_new_revision_remains(&store).await?;
-    Ok(())
+    given_old_ack_when_new_revision_exists_then_new_revision_remains(&store).await
 }
 
 async fn first_pending<S: InventoryStore>(

@@ -29,3 +29,23 @@ async fn given_duplicate_manifest_when_created_then_original_is_kept() -> TestRe
     assert_eq!(manifest, Some("111111111111".to_owned()));
     Ok(())
 }
+
+#[tokio::test]
+async fn given_manifest_when_recreated_then_original_account_is_preserved() -> TestResult {
+    let (_directory, store, _) = fixture().await?;
+    assert_eq!(store.discover_active_sweep().await?, None);
+    let sweep = SweepId::new("manifest-control".to_owned())?;
+    store.create_sweep_manifest(&sweep, "123456789012").await?;
+    store.create_sweep_manifest(&sweep, "111111111111").await?;
+    store
+        .seed_works(&[work(sweep.as_str(), "us-east-1")?])
+        .await?;
+    assert_eq!(store.discover_active_sweep().await?, Some(sweep.clone()));
+    let other = AccountId::parse("111111111111")?;
+    let account = AccountId::parse("123456789012")?;
+    assert!(matches!(store.resume_sweep(&sweep, &other).await,
+        Err(StoreError::AccountMismatch(expected, Some(found)))
+            if expected == other && found == account));
+    store.resume_sweep(&sweep, &account).await?;
+    Ok(())
+}

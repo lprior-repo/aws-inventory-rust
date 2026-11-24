@@ -1,3 +1,5 @@
+#[path = "conformance/batch_claim.rs"]
+mod batch_claim;
 #[path = "conformance/children.rs"]
 mod children;
 #[path = "conformance/control.rs"]
@@ -16,6 +18,8 @@ mod references;
 mod resume;
 #[path = "conformance/snapshot.rs"]
 mod snapshot;
+#[path = "conformance/stalest_first.rs"]
+mod stalest_first;
 
 use super::support::*;
 use inventory_core::inventory::{AccountId, ScopeOutcome};
@@ -29,6 +33,8 @@ where
     S: InventoryStore,
     F: AsyncFn() -> TestResult<(G, S, Vec<u8>)>,
 {
+    batch_claim::run(&make).await?;
+    stalest_first::run(&make).await?;
     leases::run(&make).await?;
     kept::run(&make).await?;
     resume::run(&make).await?;

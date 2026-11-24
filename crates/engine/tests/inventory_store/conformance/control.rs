@@ -6,8 +6,6 @@ where
     F: AsyncFn() -> TestResult<(G, S, Vec<u8>)>,
 {
     let (_guard, store, _) = make().await?;
-    given_manifest_when_recreated_then_original_account_is_preserved(&store).await?;
-    let (_guard, store, _) = make().await?;
     given_owned_continuation_when_released_then_resume_preserves_data_and_token(&store).await?;
     let (_guard, store, _) = make().await?;
     given_stale_owner_when_released_then_replacement_stays_leased(&store).await?;
@@ -15,26 +13,6 @@ where
     given_listener_claim_when_returning_then_depth_is_transactional(&store).await?;
     let (_guard, store, _) = make().await?;
     given_completed_scope_when_released_then_it_stays_complete(&store).await
-}
-
-async fn given_manifest_when_recreated_then_original_account_is_preserved<S: InventoryStore>(
-    store: &S,
-) -> TestResult {
-    assert_eq!(store.discover_active_sweep().await?, None);
-    let sweep = SweepId::new("manifest-control".to_owned())?;
-    let account = AccountId::parse("123456789012")?;
-    let other = AccountId::parse("111111111111")?;
-    store.create_sweep_manifest(&sweep, &account).await?;
-    store.create_sweep_manifest(&sweep, &other).await?;
-    store
-        .seed_works(&[work(sweep.as_str(), "us-east-1")?])
-        .await?;
-    assert_eq!(store.discover_active_sweep().await?, Some(sweep.clone()));
-    assert!(matches!(store.resume_sweep(&sweep, &other).await,
-        Err(StoreError::AccountMismatch(expected, Some(found)))
-            if expected == other && found == account));
-    store.resume_sweep(&sweep, &account).await?;
-    Ok(())
 }
 
 async fn continuation<S: InventoryStore>(store: &S) -> TestResult<(SweepId, WorkLease, i64)> {
