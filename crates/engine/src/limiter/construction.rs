@@ -50,7 +50,7 @@ impl ApiExecutor {
             config,
             global: Semaphore::new(config.global_concurrency),
             pending: Semaphore::new(MAX_PENDING_OPERATIONS),
-            buckets: Mutex::new(HashMap::new()),
+            registry: Mutex::new(Registry::default()),
             policies,
             cancellation: CancellationToken::new(),
             counters: Counters::default(),

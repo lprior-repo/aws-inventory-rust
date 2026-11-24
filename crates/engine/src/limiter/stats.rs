@@ -25,6 +25,10 @@ pub struct ExecutorStats {
     pub peak_in_flight: u64,
 
     pub active_buckets: u64,
+
+    pub evicted_buckets: u64,
+
+    pub learned_rates: u64,
 }
 
 #[derive(Debug, Default)]
@@ -41,6 +45,8 @@ pub(super) struct Counters {
     pub(super) in_flight: AtomicU64,
     pub(super) peak_in_flight: AtomicU64,
     pub(super) active_buckets: AtomicU64,
+    pub(super) evicted_buckets: AtomicU64,
+    pub(super) learned_rates: AtomicU64,
 }
 
 impl Counters {
@@ -58,8 +64,29 @@ impl Counters {
             in_flight: self.in_flight.load(Ordering::Relaxed),
             peak_in_flight: self.peak_in_flight.load(Ordering::Relaxed),
             active_buckets: self.active_buckets.load(Ordering::Relaxed),
+            evicted_buckets: self.evicted_buckets.load(Ordering::Relaxed),
+            learned_rates: self.learned_rates.load(Ordering::Relaxed),
         }
     }
+
+    /// Publishes the registry's sizes; called with the registry lock held.
+    pub(super) fn record_registry(&self, registry: &Registry) {
+        self.active_buckets
+            .store(gauge(registry.active()), Ordering::Relaxed);
+        self.learned_rates
+            .store(gauge(registry.learned()), Ordering::Relaxed);
+    }
+
+    pub(super) fn record_evicted(&self, buckets: usize) {
+        self.evicted_buckets
+            .update(Ordering::Relaxed, Ordering::Relaxed, |value| {
+                value.saturating_add(gauge(buckets))
+            });
+    }
+}
+
+fn gauge(count: usize) -> u64 {
+    u64::try_from(count).unwrap_or(u64::MAX)
 }
 
 pub(super) fn increment(counter: &AtomicU64) -> u64 {

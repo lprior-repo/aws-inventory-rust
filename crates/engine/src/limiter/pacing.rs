@@ -53,6 +53,16 @@ impl AdaptiveRate {
             }
         }
     }
+
+    /// Whether throttling has left the rate below its policy ceiling.
+    pub(super) fn is_reduced(self) -> bool {
+        match self {
+            Self::PerSecond { current, maximum } => current < maximum,
+            Self::PerPeriod { minimum_ns, .. } => self
+                .interval_ns()
+                .map_or(true, |interval_ns| interval_ns > minimum_ns),
+        }
+    }
 }
 
 pub(super) fn period_interval(

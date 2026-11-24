@@ -22,6 +22,10 @@ pub const MAX_RATE_PERIOD_MS: u64 = 300_000;
 pub const MAX_RETRY_AFTER_MS: u64 = 300_000;
 
 pub const MAX_BUCKETS: usize = 65_536;
+
+/// Reduced rates remembered for evicted buckets; past this an evicted bucket
+/// restarts at its policy rate.
+pub const MAX_LEARNED_RATES: usize = 262_144;
 pub(crate) const MAX_PENDING_OPERATIONS: usize = 65_536;
 pub(crate) const MAX_BUCKET_KEY_BYTES: usize = 512;
 const MAX_ADMISSION_ROUNDS: usize = MAX_CONCURRENCY.saturating_add(1);
@@ -98,7 +102,7 @@ pub struct ApiExecutor {
     config: ExecutorConfig,
     global: Semaphore,
     pending: Semaphore,
-    buckets: Mutex<HashMap<String, Arc<Bucket>>>,
+    registry: Mutex<Registry>,
     policies: BTreeMap<String, ValidatedLimits>,
     cancellation: CancellationToken,
     counters: Counters,
@@ -171,5 +175,6 @@ mod admission;
 mod construction;
 mod execution;
 mod registry;
+use registry::Registry;
 mod retry;
 use retry::*;

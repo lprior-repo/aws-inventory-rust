@@ -113,6 +113,8 @@ mod cancelling_a_server_cooldown_wakes_all_bucket_waiters;
 mod dropping_a_call_releases_capacity_and_records_cancellation;
 #[path = "limiter/every_concurrent_start_obeys_bucket_rate.rs"]
 mod every_concurrent_start_obeys_bucket_rate;
+#[path = "limiter/eviction.rs"]
+mod eviction;
 #[path = "limiter/final_attempt_retry_hint_delays_queued_peers.rs"]
 mod final_attempt_retry_hint_delays_queued_peers;
 #[path = "limiter/fractional_and_sub_one_rps_policies_pace_every_concurrent_start.rs"]

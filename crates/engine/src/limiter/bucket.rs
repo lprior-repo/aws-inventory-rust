@@ -8,6 +8,12 @@ pub(super) struct Bucket {
     pub(super) rejected: CancellationToken,
 }
 
+/// A bucket that can be dropped without losing pacing.
+#[derive(Clone, Copy, Debug)]
+pub(super) struct Idle {
+    pub(super) last_used: Option<Instant>,
+}
+
 impl Bucket {
     pub(super) fn new(limits: ValidatedLimits) -> Self {
         Self {
@@ -25,6 +31,25 @@ impl Bucket {
 
     pub(super) fn due_at(&self) -> Result<Option<Instant>, ApiError> {
         self.state.lock().map_err(|_| poisoned_pacing())?.due_at()
+    }
+
+    /// When this bucket last started a call, if its pacing has nothing left
+    /// to enforce: no rejection, no cooldown and no interval still running.
+    pub(super) fn idle(&self, now: Instant) -> Option<Idle> {
+        let state = self.state.lock().ok()?;
+        match state.due_at() {
+            Ok(due) if due.is_none_or(|due| due <= now) => Some(Idle {
+                last_used: state.last_start,
+            }),
+            Ok(_) | Err(_) => None,
+        }
+    }
+
+    /// The rate to resume with after eviction, when throttling has left it
+    /// below the policy ceiling.
+    pub(super) fn reduced_rate(&self) -> Option<AdaptiveRate> {
+        let rate = self.state.lock().ok()?.rate;
+        rate.is_reduced().then_some(rate)
     }
 
     pub(super) fn try_start(&self, now: Instant) -> Result<bool, ApiError> {
