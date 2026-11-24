@@ -1,0 +1,317 @@
+# Build plan ledger
+
+State of every step in `docs/e2e/build/STEPS_A.md` to `STEPS_E.md` and
+`STEPS_AFTER.md`, of the exit test X1 to X10 (`README.md`) and of the release
+gate R1 to R11 (`RELEASE_GATE.md`), on commit `b98be942`.
+
+## How to read it
+
+| State | Meaning |
+| --- | --- |
+| done | The code and tests the step asks for exist, and its "Done when" does not depend on a run that is not recorded. |
+| partial | Some of the required behaviour exists. |
+| not started | None of the required behaviour exists. |
+| needs a run | The code exists; only a recorded command run is missing. |
+
+How the rows were produced, and how far to trust them:
+
+- A first pass searched the tree for each step's planned files and symbols. A
+  second, independent pass judged each "Done when" against behaviour and
+  corrected the first. Neither pass ran the step's "Prove it" command.
+- A row is therefore a reading of the source, not a test result. "not started"
+  means the behaviour was searched for under the planned name and under
+  likely other names and was not found.
+- Rows marked "(checked by hand)" were opened and judged individually after
+  the two passes disagreed or a reviewer questioned them.
+- "unchecked" inside a row marks a claim nobody opened.
+
+## Runs behind the evidence
+
+All on emulator 1.0.348 with the PostgreSQL store unless stated.
+
+| Run | Commit | Result |
+| --- | --- | --- |
+| Strict gate (fmt, clippy, catalog checks, manifest, coverage, tests, size guards) | `b98be942` tree | 15 of 15 checks pass; 1,521 tests passed, 0 failed, 28 ignored |
+| `inventory-harness e2e run --service ec2` | `088f1c2a` | exit 0; rows 36 to 96; second sweep `resource_writes=0`; 142 scopes complete, 22 unsupported, 1 failed |
+| `inventory-harness e2e run` (all services), run 1 | `691704ac` | exit 1 at verify-counts on `Account::AccountInformation` (the identity exists before seeding) |
+| `inventory-harness e2e run` (all services), run 2 | `b98be942` tree | exit 1 at verify-counts after 593 s. Sweep: 988 rows, 1,377 scopes complete, 598 unsupported, 111 failed, no work remaining. 228 of 236 verified kinds match; 8 do not; 4 are listed as not verified (catalog-deferred). The second-sweep stage was not reached. |
+| `tests/sweep_e2e` ignored suite, file store (`INVENTORY_E2E_STORE=file`) | `b98be942` | exit 0; 2 passed, 0 failed; 125.55 s. The suite sweeps only `ec2:DescribeVpcs` and `ec2:DescribeSubnets` (`tests/sweep_e2e/scenario/arguments.rs:91-94`). |
+| `tests/sweep_e2e` ignored suite, PostgreSQL store | `b98be942` | exit 0; 2 passed, 0 failed; 113.63 s. Same two operations. |
+
+The 8 kinds that do not match in run 2:
+
+| Kind | Expected | Found | Cause |
+| --- | --- | --- | --- |
+| `Connect::ContactFlow` | 1 | 19 | Creating a Connect instance creates 18 default flows; the recipe declares only its own. |
+| `KMS::Key` | 3 | 4 | The emulator creates a key for the codeartifact recipe. |
+| `KMS::Alias` | 2 | 3 | `alias/aws/codeartifact`, same cause. |
+| `RDS::GlobalCluster` | 1 | 3 | One API lists RDS, DocumentDB and Neptune global clusters; each of the three kinds reports all three. Already `scope-mismatch-unresolved` in `build/seed-oracle-classification.tsv`. |
+| `DocDB::GlobalCluster` | 1 | 3 | Same. |
+| `Neptune::GlobalCluster` | 1 | 3 | Same. |
+| `Timestream::Database` | 1 | 0 | Emulator endpoint discovery fails (`AmbiguousService`). |
+| `Timestream::ScheduledQuery` | 1 | 0 | Same. |
+
+The 111 failed operations are classified in `build/failed-scope-triage.md`.
+`tests/sweep_e2e` asserts no failed scopes, and STEPS_A.md A2.2 says an
+operation the emulator does not serve is deferred with the probe's reason
+rather than the assertion relaxed. That deferral has not been done: it removes
+the operations from production collection too and is an open owner decision.
+
+## Exit test X1 to X10
+
+| # | State | Evidence | Missing |
+| --- | --- | --- | --- |
+| X1 | partial | `inventory-harness e2e run` seeds, sweeps, projects and verifies in one command. It exits 0 for `--service ec2` and exits 1 for all services (run 2). | A zero exit for all services. The UI action: unchecked. |
+| X2 | partial | Run 2: 228 of 236 verified kinds have per-kind counts equal to the seed. | The 8 kinds above. Three need recipes to declare service-created identities, three need a decision on global-cluster attribution, two need the emulator gap handled. |
+| X3 | partial | verify-counts names the 4 catalog-deferred kinds as not verified. | Kinds whose operations fail on the emulator are reported as mismatches or failed scopes, not as implemented and not verified. |
+| X4 | partial | `--service ec2`: the second sweep wrote 0 resource rows. | The all-services run has not reached the second sweep. Writes to kind tables, edges, memberships, parent links and scope evidence are not yet zero (B4.5 not started). |
+| X5 | partial | `crates/harness/src/verify_delivery.rs:464` `verify_graph` compares graph nodes, edges and tags with a SQL-derived model for the scan-delivery fixture, bounded by a fixture row limit. | The product comparer and the harness `verify-graph` stage (E5.1). |
+| X6 | not started | A6.1 and A6.2 are not started: no `verify cloud-control` command, no `catalog/cloudcontrol-differences.tsv`. | Both steps. |
+| X7 | not started | C3.2, C4.1 and C4.2 are not started: no `aws-inventory sql`, no reader role, no `docs/SQL.md`. | Those steps, then the three-client query. |
+| X8 | needs a run | The frame harness exists (D7.1 partial). `docs/performance-evidence/frames.md` records the release runs as not run; the display here reports 59.96 Hz and no 120 Hz mode. | Release runs at the stated sizes on a 120 Hz display. |
+| X9 | not started | B5.2 to B5.5 are not started: no `cmdb-bench sweep`, no `docs/performance-evidence/sweep-benchmark.md`. | The benchmark commands and the table. |
+| X10 | partial | Runs 1 and 2 and the `--service ec2` run stored into PostgreSQL. | The all-services run exits 1, so "the run above" has not passed on PostgreSQL. |
+
+## Release gate R1 to R11
+
+Each gate takes the state of its backing step in `STEPS_AFTER.md`.
+
+| Gate | Backing step | State | Missing |
+| --- | --- | --- | --- |
+| R1 | L1.1 | not started | `docs/INSTALL.md`; the install, upgrade, roll back and remove scenario; recorded runs on macOS and Linux |
+| R2 | L2.1 | partial | A gate task for `iam-policy --check`; the attempted-set subset test; the real-account proof (L6.1) |
+| R3 | L2.2 | not started | The three database roles, their grants and the role tests |
+| R4 | L3.1 | partial | Refusal of non-local hosts without verified TLS; the five refusal tests; a TLS run |
+| R5 | L3.2 | partial | The canary scenario; redacted types; a search over all outputs |
+| R6 | L4.1 | not started | `docs/BACKUP.md`; the dump, restore and rebuild scenario |
+| R7 | L4.2 | not started | The six outage scenarios, in the CLI and the app |
+| R8 | L5.1 | not started | Release scripts, signed manifest, audit and licence gate tasks. Whether FalkorDB (SSPLv1) may ship in an all-MIT product is a question for a lawyer |
+| R9 | L5.2 | not started | The `doctor` subcommand |
+| R10 | L6.1 | not started | An owner-authorized run against a real account, with its evidence file |
+| R11 | L6.2 | not started | `docs/LIMITS.md` and its generator |
+
+## Totals
+
+Counted from the State column of the step tables below.
+
+| Section | Steps | done | partial | needs a run | not started |
+| --- | --- | --- | --- | --- | --- |
+| A | 32 | 1 | 7 | 16 | 8 |
+| B | 29 | 0 | 4 | 1 | 24 |
+| C | 28 | 0 | 3 | 8 | 17 |
+| D | 34 | 0 | 3 | 4 | 27 |
+| E | 13 | 0 | 2 | 0 | 11 |
+| After | 46 | 0 | 12 | 2 | 32 |
+| All | 182 | 1 | 31 | 31 | 119 |
+
+## Section A (`build/STEPS_A.md`)
+
+| Step | Title | State | Evidence | Missing or to run |
+| --- | --- | --- | --- | --- |
+| A0.1 | Give the relation failure a cause | needs a run | `crates/catalog-tool/src/runtime_catalog/model_path/validation/` (origin.rs, relations.rs, tests.rs) exists; tests at `validation/tests.rs:74,96,118,140` assert `KindContext` and `CapabilityContext`; `KindContext` at `runtime_catalog.rs:30` | Run `models compile --check` and the named unit tests (unchecked) |
+| A0.2 | Carry relations as pending until both ends are callable | not started | no match for `RelationSplit` under `crates/catalog-tool/src`; no `runtime_catalog/relations.rs`; no `catalog/aws-relations.report` | Everything: `RelationSplit`, `split`, relations.rs, report, regenerated catalog |
+| A0.3 | Context at the remaining bare `Capability` sites | partial | `unknown_service`/`unknown_member` at `runtime_catalog.rs:45,53`; `selected.rs:20` disagrees message. Bare sites remain at `runtime_catalog/plans/member_exclusions.rs:12`, `plans/compile.rs:83`, `plans/fixed_input.rs:14,39`, `plans/page/tokens.rs:230`, `plan_validation.rs:169` | Those bare sites; the count is not recorded; `cargo test -p catalog-tool runtime_catalog` unchecked |
+| A0.4 | Make the size guards pass (checked by hand) | partial | Both size guards pass on `b98be942` (strict gate); `crates/cmdb-ui/src/app.rs` is 286 lines and `crates/core/src/catalog/runtime/decode/plans.rs` 295; `decode/plans/bindings.rs` exists | Five `///` lines the step says to remove remain at `crates/cmdb-ui/src/worker/queries.rs:4,5,28-30` |
+| A1.1 | Generated overlays as a second, lower-priority source | needs a run | `overlay/merge.rs` exists; `directory.rs` `load_generated_dir` at :33; `types.rs` `origin_of` at :94; `parse.rs:102` reviewer check; `check/service/flow/operation.rs:46` | Run `overlay --check`, `models compile --check`; tests (a)-(f) unchecked |
+| A1.2 | Derive one enumeration entry from the model | needs a run | `overlay/generate.rs`, `generate/derive.rs` (enumerate at :9), `identity.rs`, `items.rs`, `catalog/overlay/defer-inputs.txt` exist | `cargo test -p catalog-tool overlay::generate` unchecked |
+| A1.3 | Write generated files deterministically | needs a run | `overlay/generate/render.rs`, `generate/service.rs` exist; `GENERATED_RULES_DATE` at `generate.rs:16` | `cargo test -p catalog-tool overlay::generate::render` unchecked |
+| A1.4 | The `overlays generate` command, its report and its gate | partial | `cli_overlay.rs:11` `overlays()`; `catalog/overlay/generated.services` exists; `generate/publish.rs` exists | No `overlay-generated` task in `moon.yml` (:67 collection-plans, :75 overlay-check, :83 binary-catalog). Run `overlays generate --check` |
+| A1.5 | Prove generation cannot open a denied operation | needs a run | `crates/catalog-tool/tests/overlay_generation_safety.rs` exists with 6 `#[ignore]` tests (prior check) | Run with `--ignored`; 436-service tests unchecked |
+| A1.6 | Generate the thin slice | needs a run | `catalog/overlay/generated/{iam,sns,sqs,dynamodb,kms,lambda,s3,cloudwatch}.toml` all present; `catalog/aws-overlay-generated.report` exists | Per-service counts vs plans report unchecked; gate run unchecked; `kms/DescribeKey` deny unchecked |
+| A1.7 | Generate for all services | needs a run | `generated.services` present; many `generated/*.toml`; `kinds.generated.tsv` present. `aws-overlay-generated.report:1565` totals enumerate=2024, `:1566` expand=3772 | Step expects 2197 enumerate and 2940 expand; report disagrees. Run gates; record catalog size under 16,777,216 bytes (unchecked) |
+| A2.1 | Kind generator | partial | `crates/catalog-tool/src/kind_map/generate.rs` and `kind_map/generated.rs` exist; `kind_map/generate/` dir exists; `catalog/kinds.generated.tsv` exists | No `kinds-generated` task in `moon.yml`; `match_cfn.rs` and `kinds generate --check` unchecked; `cargo test kind_map` unchecked |
+| A2.2 | Kinds for the thin slice, and the first wider catalog | needs a run | `catalog/kinds.generated.tsv` exists | Run `models compile --write`; `cli_models_compile.rs` additions unchecked; gate and sweep_e2e unchecked |
+| A2.3 | Table names that fit PostgreSQL | done | `crates/core/src/inventory/sql_name.rs:3-4` (MAX 63, derived 128); `catalog-tool/src/names/render.rs`; `names/tests/postgres.rs` 63-byte tests; `catalog/aws-names.report` ends `names total=1959 long=15 distinct=1959` | `cargo test -p catalog-tool names` not run; 1,881 CFN-name distinctness test unchecked |
+| A3.1 | Bindings from modeled identifiers | needs a run | `overlay/generate/expand.rs:53` calls `bind_by_name::derive`; `expand.rs:100-102` `Expansion::Modeled` with `list_source: true`; `aws-overlay-generated.report:1566` `callable_expand=86` | `cargo test overlay::generate` unchecked; lambda modeled-expansion count unchecked |
+| A3.2 | Bindings by name and shape | needs a run | `overlay/generate/expand.rs:53` imports `bind_by_name`; `bind_by_name.rs` present (prior check) | `bind_by_name.rs` contents unchecked; `compatible` visibility unchecked; sum-to-2940 unchecked (report shows 3772) |
+| A3.3 | Child work without scanning every plan | not started | `crates/core/src/catalog/runtime/` has no `index.rs`; no match for `children_of`, `by_operation`, `name_path_by_kind`, `relations_by_source_kind` under `crates/core/src` | Everything: index.rs, accessors, `child::work` rewiring, benchmark numbers |
+| A3.4 | Children against the emulator, and what a describe stores | not started | no match for `scope_members` under `crates/`; no `emit` field in `overlay/types.rs`, `core/.../types/plan.rs`, `core/.../decode/plans.rs`; `overlay/raw.rs` missing | Everything: `emit` key, plan field 14, version 2, `scope_members` table, e2e test |
+| A4.1 | Seed scenarios as data | partial | `crates/harness/src/inventory_seed/file.rs` exists; `inventory_seed/` has model.rs, file/, literal/, scenario/; `List` and `Structure` input variants at `inventory_seed/scenario.rs:70-71`; `seeds/ec2.toml` | `default_scenario` replacement unchecked |
+| A4.2 | `seed run` and the oracle file | needs a run | `crates/harness/src/main.rs:63-67` dispatches `seed run` to `inventory_seed::command::dispatch`; `inventory_seed/command.rs` and `runner/` exist | `report.rs` and oracle/matrix output unchecked; run against emulator unchecked |
+| A4.3 | Thin-slice seed files | needs a run | `harness/seeds/` holds service files; `catalog/emulator-seed.report` exists (prior check) | Matrix content unchecked; validation test unchecked; per-service accepted steps unchecked |
+| A4.4 | Draft seed files from the model | not started | `crates/harness/src/inventory_seed/` listing has no `draft.rs`; `inventory_seed/draft/values.rs` absent | Everything: `draft.rs`, `values.rs`, `seed draft` subcommand |
+| A4.5 | Bulk seeding for the benchmark, and the write-capability proof | partial | `harness/seeds/bench/{dynamodb,ec2,iam,sns,sqs}.toml` exist; `tests/product_is_read_only.rs` exists; `Semaphore` at `inventory_seed/runner/reporting.rs:4,58`; `--concurrency` parsed at `inventory_seed/command/args.rs:72,103` | 10,000-resource bulk run and timing unchecked |
+| A4.6 | Seed files for everything the emulator serves | partial | `harness/seeds/` has many service files; `catalog/emulator-probe.report` lists "answered" rows (e.g. `ec2 DescribeVpcs ec2Query items 5`) | Coverage of every answered service not checked; `catalog/emulator-seed.report` matrix coverage unchecked |
+| A5.1 | Keep the reason when a scope fails | not started | `crates/sweep/src/error_detail.rs` missing; `store_api.rs:53` `finish_scope` has no detail parameter; no `detail` in `inventory/postgres/schema/shared.rs` | Everything: detail column, `finish_scope` signature, `error_detail.rs`, tests |
+| A5.2 | The probe command and the thin-slice probe | needs a run | `crates/sweep/src/probe.rs:12,25` `pub async fn call_once` and `ProbeAnswer`, re-exported at `crates/sweep/src/lib.rs:33`; `crates/harness/src/probe.rs:66,120` calls it with `buffer_unordered(8)`; `main.rs:59` dispatches `probe`; `catalog/emulator-probe.report` committed (2,146 lines) | Thin-slice coverage of the report and the local-test-server tests unchecked; a follow-up for every `failed decode` row |
+| A5.3 | Full probe | needs a run | `catalog/emulator-probe.report` exists with outcome rows | Every callable enumeration row present (test) unchecked; no `failed decode` without cause unchecked; run probe twice unchecked |
+| A6.1 | `verify cloud-control` | not started | `crates/harness/src/verify.rs` and `verify/cloud_control.rs` missing (only `verify_delivery.rs` exists); `assertions/cloud_control.rs` exists (pre-existing, schema 13) | Everything new: verify.rs, verify/cloud_control.rs, CLI subcommand, differences tsv |
+| A6.2 | Zero unexplained differences for seeded kinds (X6) | not started | `catalog/cloudcontrol-differences.tsv` missing | Everything: differences file, cross-check run, X6 proof |
+| A7.1 | One command for the whole run | needs a run | `crates/harness/src/e2e.rs` exists (`verify::zero` on `resource_writes` at :132); `main.rs:54-56` dispatches `e2e`; `e2e/outcome.rs`, `e2e/verify.rs`, `e2e/tests.rs`, `e2e/collector/` exist | `e2e/stack.rs` and `e2e/graph.rs` unchecked this pass (prior check says present); `scripts/e2e-baseline.sh` unchecked; end-to-end run with a server unchecked |
+| A7.2 | Per-kind counts and the not-verified list (X2, X3) | not started | `crates/harness/src/coverage_status.rs` missing; `catalog/coverage-status.report` missing | Everything: coverage_status.rs, report, count-mismatch naming, `e2e run` gate |
+| A7.3 | Zero writes on the second sweep, at full scale (X4) | needs a run | `e2e/verify.rs:43-59` parses `resource_writes_scope=invocation` summary; `e2e.rs:132` zero check | `exclude_from_hash` overlay corrections unchecked; full-scale warm resweep run unchecked |
+
+## Section B (`build/STEPS_B.md`)
+
+| Step | Title | State | Evidence | Missing or to run |
+| --- | --- | --- | --- | --- |
+| B0.2 | Release baseline on PostgreSQL through the benchmark | not started | no match for `sweep-benchmark.md` under `docs/performance-evidence`; crates/cmdb-bench/Cargo.toml has no sweep bin; no `src/sweep` dir | Create benchmark doc, sweep/open subcommands, PostgreSQL baseline run |
+| B5.1 | The sweep reports what it did | needs a run | `crates/sweep/src/metrics.rs:23-95` `SweepMetrics`; `src/sweep_command/enabled/summary.rs:64-85` prints the `metrics` line; `/proc` parser test at `crates/sweep/src/metrics/tests.rs:44`; summary test at `summary/tests.rs:20-39`; `http2_requests` at `crates/aws-wire/src/transport/counters.rs:16` | The recorded P1 and P6 rows on the `thin` profile |
+| B5.2 | `cmdb-bench sweep` and `cmdb-bench open` | not started | `crates/cmdb-bench/src` holds main.rs, tests.rs and the pipeline files; no sweep.rs or open.rs | Implement both subcommands |
+| B5.3 | The recorded table and the regression rule | not started | no match for `compare` under crates/cmdb-bench; no docs/performance-evidence/sweep-benchmark.md | Implement table recording and regression compare; produce table |
+| B5.4 | The proxy profile: latency and a rate limit | not started | no match for `proxy` profile under crates/cmdb-bench or crates/sweep | Implement proxy profile and run it |
+| B5.5 | Scale run and the final table (X9) | not started | no scale-run artifacts; no docs/performance-evidence/sweep-benchmark.md | Run scale benchmark and write final table |
+| B1.1 | The bucket key | partial | `quota_group` at `crates/catalog-tool/src/overlay/types.rs:189`; `src/plan/selection.rs:120` `quota_group` format; `src/plan/assemble.rs:82,91` | The sweep still keys its bucket by service name (`crates/sweep/src/call.rs:41`); no bucket.rs; no `quota_group` in the core runtime plan decode |
+| B1.2 | Seventy-four thousand buckets | not started | no match for `last_used` or `evicted_buckets` under crates/engine or crates/sweep | Implement bucket eviction and 74k bucket test |
+| B2.1 | A rate that can rise | not started | no match for `AdaptiveLimits`, `Seeking`, `with_default_policy`; only old `AdaptiveRate` in crates/engine/src/limiter/pacing.rs:4 and policy.rs:123,158 | Implement adaptive limiter |
+| B2.2 | Learned rates in the store | not started | no rates.rs under engine/src; the `learned_rates` table exists at `crates/engine/src/inventory/postgres/schema/shared.rs:25` and `inventory/schema.rs:293` with no write path | Persistence of learned rates |
+| B2.3 | The cap flag and the quota proof | not started | no match for `max_rps` under crates/sweep or src | Add cap flag and quota proof run |
+| B3.1 | Claim several leases in one statement (checked by hand) | not started | `crates/sweep/src/execution/draining/admission.rs:4` `claim_batch` exists but loops single `claim` calls (`:16-20`, `:46-58`); no store trait method claims several leases in one statement | The one-statement `claim_batch` store method and its conformance tests |
+| B3.2 | Keep the configured number of leases in flight | not started | no scheduler.rs; the claim loop is `draining/admission.rs:4-21`, called from `draining.rs:57,74-79`; no `FuturesUnordered` match in crates/sweep/src | Implement scheduler keeping N leases in flight |
+| B3.3 | Lift the bounds, and stay on a scope across pages | partial | crates/sweep/src/config.rs:6 `MAX_CONCURRENCY = 128` unchanged; execution.rs:69 `max_connections: config.concurrency`; engine work.rs:268 and postgres/commit.rs:45 `next_generation` present | Bound not lifted (config.rs:6,15); no /proc/self/limits match; page scope stickiness unchecked |
+| B4.1 | Group pages into one transaction | not started | no `group_pages` under crates/engine or crates/sweep; unchecked: absence of a grouped writer under another name in crates/engine/src | Implement grouped page writer |
+| B4.3 | The kill matrix | not started | no kill_matrix files found under crates/ or docs/e2e | Create kill matrix tests and run |
+| B4.4 | Write settings chosen from measurements | partial | crates/engine/src/inventory/postgres/config.rs:4 `PgWriteConfig` has only `max_connections` (default 8, range 1..=64) | Other write settings and measurement-based choice missing |
+| B4.5 | An unchanged resource writes nothing (checked by hand) | not started | no `scope_seen` table, `seen.rs` or `pg_postmaster_start_time`; the only `scope_seen` is a local variable in `crates/engine/tests/export.rs:199` | Implement seen-set skip and tests |
+| B4.6 | Kill the database, not the collector | not started | no match for `db_crash` under crates/ | Add DB-kill test and run |
+| B6.1 | The largest page size | not started | `page_size: Some(5)` still at `crates/catalog-tool/src/overlay/builtin/ec2/part_0.rs:14,23`; no `SweepConfig.max_page_size` or `--max-page-size` in crates/sweep or src | Remove the two page sizes, add the flag, record the rows |
+| B6.2 | Skip a describe when the list already returns everything | not started | no skip.rs and no `skips()` under crates/sweep | Implement describe skip |
+| B6.3 | Batch reads | not started | no batch.rs under crates/sweep | Implement batched reads |
+| B6.4 | Remember inaccessible and unsupported scopes | not started | no match for `scope_memory` under crates/sweep or crates/engine | Implement scope memory |
+| B7.1 | See what the transport does (checked by hand) | not started | no match for `handshake_ns` or `hosts` in crates/aws-wire; the opened, reused and HTTP/2 counters at `crates/aws-wire/src/transport/counters.rs:5-16` are B5.1's, as the step says | Add handshake timing and host metrics |
+| B7.2 | Keep connections alive across a paced bucket | not started | `crates/sweep/src/execution.rs:67-71` sets `pool_idle_per_host` and no `idle_timeout`; `crates/aws-wire/src/transport/config.rs:31` default 1s pre-existing | Wire idle-timeout for paced bucket; run keep-alive test |
+| B8.1 | Stop copying rows | partial | crates/sweep/src/execution/page/rows.rs `observation()` still calls `row.clone()`; no `ResolvedEndpoint` cache of 65_536 in sweep | Remove row clone, add endpoint cache, item_records unchanged |
+| B8.2 | Decode share, and the binary protocol | not started | no match for `--prefer-json` under src or crates/sweep | Add flag and binary protocol path |
+| B9.1 | A harness that runs the other tools | not started | no match for `head_to_head` under crates/ or docs/ | Create harness |
+| B9.2 | The first comparison | not started | no docs/performance-evidence/head-to-head directory | Run first comparison and record it |
+
+## Section C (`build/STEPS_C.md`)
+
+| Step | Title | State | Evidence | Missing or to run |
+| --- | --- | --- | --- | --- |
+| C5.1 | One trait, and a conformance suite | partial | store_api.rs:12 `pub trait InventoryStore`; tests/inventory_store/conformance.rs:25 `pub async fn run<S,F,G>`; inventory_store.rs:24 calls `conformance::run`; behavior.rs:20 and :96 still `#[tokio::test]` bodies importing `BinaryStore` (line 15) | Move remaining behavior.rs bodies into conformance; `unchecked: behavior/ subdir (deletion, lifecycle, manifest, projection, stalest_first) store usage` |
+| C5.3 | The sweep and the projection use the trait | partial | Generic `impl InventoryStore` in sweep (`execution.rs`, `draining.rs`, `page.rs`); `BinaryStore` is still named in 84 files under crates/sweep/src (for example `control/tests/scenarios.rs:4`) | Remove all `BinaryStore` names in crates/sweep/src; run `grep -rn BinaryStore crates/sweep/src` (must be empty) and sweep_e2e |
+| C6.1 | The `postgres` feature of `sqlx` | needs a run | Cargo.toml:23 sqlx features include postgres; Cargo.lock:4664 sqlx-postgres; crates/engine/tests/postgres_dependency.rs exists | Run `cargo check --workspace --all-targets --all-features --locked -j1`; record the four before/after numbers (none found in repo) |
+| C6.2 | Run PostgreSQL locally: Podman, Docker or a native server | partial | deploy/local/compose.yaml, deploy/local/README.md; crates/harness/src/postgres.rs + postgres/{command,database,names,prune,runtime,runtime_tests,tests}.rs; harness main.rs:36-38 dispatch | Missing: `.github/workflows/ci.yml` (path absent); moon.yml has no `live-postgres-component` (only `live-falkordb-component` at :154). Run native-server test |
+| C6.3 | The PostgreSQL schema generator | needs a run | engine/src/inventory/postgres/schema.rs, schema/{shared,kinds,candidates,provenance}.rs; tests/inventory_schema14_postgres.rs (201-kind test, `P11` println, round_trip_scalars with NaN/1MiB blob) | `unchecked: inventory/schema.rs pub(super) visibility of encode/decode`; run `cargo test -p inventory-engine --locked --test inventory_schema14_postgres -- --ignored` |
+| C6.4 | `PgStore`: connect, create, open | needs a run | engine/src/inventory/postgres.rs (PgStore create/open); postgres/url.rs, connection.rs, config.rs; tests/inventory_store/postgres.rs:28-34 uses `PgStore::create` in TestDatabase | Run postgres ignored tests (create/reopen) |
+| C6.5 | The work queue with leases | needs a run | postgres/work.rs, postgres/work/{manifest,resume,seed}.rs, postgres/lease.rs (lease.rs:93 advisory lock); conformance/leases.rs exists | Run work-queue conformance on PostgreSQL |
+| C6.6 | Page commit, set-based | needs a run | postgres/commit.rs; commit/{arrays,kind_rows,queue,resources,validation,...}.rs | Run conformance cases (`conformance/data.rs`, `postgres/conformance.rs`) on PostgreSQL |
+| C6.7 | COPY for the cold path | not started | No match for `COPY\|copy_in_raw\|UNLOGGED\|copy_min_rows` under crates/engine/src; no postgres/copy.rs | Implement COPY writer, `copy_min_rows` threshold, and run its three-row measurement |
+| C6.8 | References, edges, completion and deletion | needs a run | postgres/references.rs + references/{authorization,matching,selection,write}.rs; postgres/completion.rs + completion/{deletion,unobserved,facets,authorities}.rs | Run conformance references/children/completion on PostgreSQL; record three default-follow rows (C6.7 side) |
+| C6.9 | The projection outbox and projection reads | needs a run | postgres/outbox.rs (advisory locks 14,1); projection_read.rs + projection_read/{edges,resources,tags}.rs; projection_state.rs; projection_api.rs:13 `impl ... for PgStore` | Run a PgStore-filled store projecting into FalkorDB (`unchecked: FalkorDB e2e result`) |
+| C6.10 | The sweep runs on PostgreSQL, baseline passes | needs a run | tests/sweep_e2e/stack.rs:121-126 `INVENTORY_E2E_STORE` (default postgres); tests/sweep_e2e/state/postgres.rs; sweep_command/enabled/backend.rs uses PgStore; scripts/e2e-baseline.sh | Run both commands named in "Done when" (sweep e2e on postgres and the baseline script) |
+| C6.11 | `cmdb-view` and the UI read PostgreSQL | not started | `crates/cmdb-view/src/database.rs:15-16,156,244`, `database/queries.rs:4,10,28,40` and `database/tags.rs:9,38` name `sqlx::Sqlite`; `database/freshness.rs:98,111` and `database/snapshot.rs:77` use untyped `sqlx::query`; no postgres match in cmdb-view/src or tests | Port cmdb-view queries to PgPool and the UI worker; no `postgres` file exists |
+| C6.12 | Delete the old store code | not started | crates/engine/src/inventory.rs:110 `BinaryStore` still defined; sqlite code in engine/src/inventory/* (e.g. connection.rs, commit/references_tail.rs) present; cmdb-bench/src/pipeline.rs and src/serve_command/store.rs still use BinaryStore | Delete BinaryStore and SQLite store files; migrate every caller (cmdb-bench, src/, sweep) |
+| C1.1 | Column names and every scalar member, in the catalog | not started | No match for `ColumnName` in crates/core/src; no runtime_catalog/schemas/columns.rs or column_name.rs (only schemas.rs and schemas/selected.rs in catalog-tool); no postgres/schema/definition.rs | Create ColumnName, columns.rs, column_name.rs; catalog field 3; run catalog-tool tests |
+| C1.2 | The column budget fits PostgreSQL | not started | core/src/inventory/schema.rs:19 `physical_columns`, :109 `validate_column_budget` still counts physical columns; no `MAX_KIND_COLUMNS`; no budget.rs or report | Add MAX_KIND_COLUMNS=1_592, budget.rs, report, and create-test |
+| C1.3 | Name collisions after flattening | not started | No collisions.rs (catalog-tool/src/runtime_catalog/schemas/ has only selected.rs) | Create collisions.rs and rename report |
+| C1.4 | The writer fills the columns; filter test per kind | not started | No engine postgres/extract.rs; no tests/inventory_typed_columns.rs (glob) | Create extract.rs, the generator test, and run it with `--ignored` |
+| C1.5 | Indexes on reference targets, open-time measurement | not started | postgres/schema/kinds.rs has no `_ref` index DDL (grep `_ref\|CREATE INDEX` empty); no crates/cmdb-bench/src/open.rs | Add `<table>_<column>_ref` indexes; create cmdb-bench open.rs; run `cmdb-bench open` and record numbers |
+| C1.6 | A catalog update adds columns in place | not started | No postgres/upgrade.rs; no `upgrade_catalog` match in crates | Create upgrade.rs, `--upgrade-catalog` flag, backfill, and tests |
+| C1.7 | Migration journal, lock, atomic activation | not started | No postgres/migrate.rs or migrate/journal.rs; no `catalog_migrations` match; no tests/inventory_migrate.rs | Create journal table, advisory lock, and kill-point tests |
+| C2.1 | Measure the cost of a JSONB column for nested fields | not started | No core/src/record/json_text.rs (core/src/record glob); no `NestedMode` match in crates or src | Create json_text.rs, NestedMode, writer nested column; record P1/P6/P8/P9 rows |
+| C2.2 | Decide and finish nested fields | not started | No `NestedMode` or nested-JSON code path (grep empty); depends on C2.1 | Apply decision rule after C2.1 rows; set default; add ip_permissions query test |
+| C3.1 | The statement policy | not started | crates/engine/src/store/sql_policy.rs exists (pre-existing, schema 13); no engine/src/sql.rs or sql/{policy,bounds}.rs | Create sql module, move lexer, add `validate`, `Bounds`; run query_lexical_contract |
+| C3.2 | `aws-inventory sql` | not started | No src/sql_command.rs, sql_command/table.rs, engine sql/{run,value}.rs; no ReaderUrl match | Create CLI subcommand, value decoding, reader connection; run e2e query |
+| C3.3 | Explicit exports and the old command | not started | No src/sql_command/export.rs; no `--format` csv/json code | Create export.rs and format flag; run CSV/JSON tests |
+| C4.1 | `aws-inventory schema`, and a reader role | not started | No src/schema_command.rs; no engine postgres/roles.rs; no `inventory_reader` / `CREATE ROLE` match | Create schema command, roles.rs (reader and collector), and role tests |
+| C4.2 | `psql` and a desktop client, documented and proven | not started | No docs/SQL.md; no tests/sweep_e2e/external_clients.rs (deploy/local exists only) | Write docs/SQL.md, external_clients.rs test, run with psql |
+
+## Section D (`build/STEPS_D.md`)
+
+| Step | Title | State | Evidence | Missing or to run |
+| --- | --- | --- | --- | --- |
+| D1.1 | Split the `aws` feature so the sweep builds without the SDK crates | needs a run | crates/aws/Cargo.toml [features] default/adapters/sweep-credentials; root Cargo.toml:53-62; crates/aws/src/lib.rs cfg(feature="adapters"); tests/sweep_dependencies.rs | Run no-SDK build and dependency-tree check; build numbers in step unverified |
+| D1.2 | Move the sweep runtime into `crates/sweep` | partial | crates/sweep/src/{lib.rs, credentials.rs, execution.rs:53 run, metrics}; lib.rs:108 SweepError::Credentials; crates/sweep/Cargo.toml is package `inventory-sweep` with no `aws-config` or `aws-sdk-*` dependency; no src/sweep_runtime in src/ | Collection logic still in `src/`: src/sweep_command/enabled/backend.rs:11 opens the store, maps `SweepConfig` and reads the catalog |
+| D1.3 | Cancellation and progress events | partial | crates/sweep/src/control.rs (SweepControl, ProgressEvent, try_send); control/tests/scenarios.rs:140 cancel-resume test; execution.rs:63 control.cancel.cancelled(); lib.rs:29 re-export | src/sweep_command/enabled.rs:13-110 still has finish/project/exit_code logic (Done-when "CLI thin" unmet); cargo test control and e2e not run |
+| D1.4 | Gate the new crate, and state the numbers | needs a run | scripts/check-function-size.sh paths include crates/sweep/src; the function-size and source-size guards pass on `b98be942` (strict gate) | The D1 report line counts; unchecked: splits in execution.rs, draining.rs and page.rs |
+| D2.1 | Worker commands for start, cancel and resume | not started | no match for StartSweep/CancelSweep/SweepStatus under crates/cmdb-ui; no worker/sweep.rs | Create worker command module, cmdb-ui inventory-sweep dep (unchecked Cargo.toml) |
+| D2.2 | The progress panel, and the UI half of X1 | not started | no sweep_panel.rs in crates/cmdb-ui/src; ui.rs still hand-written chips | Create sweep_panel.rs and wire progress events |
+| D3.1 | cmdb-view runs one bounded read-only statement | not started | no cmdb-view/src/sql.rs; no match for run_sql or ReaderUrl in crates/cmdb-view or engine | All artifacts missing |
+| D3.2 | The console widget | not started | no console.rs in cmdb-ui; no Command::Sql match | All artifacts missing |
+| D4.1 | cmdb-bench generate through the real store, with edges | not started | no generate_pg.rs; crates/cmdb-bench/src/main.rs:26,71,326 old Generate command; PgStore::create engine/src/inventory/postgres.rs:45 | Create generate_pg.rs with per-resource edges; route through PgStore |
+| D4.2 | Stream the whole account into compact arrays | not started | no account.rs in crates/cmdb-view; no AccountGraph match | All artifacts missing |
+| D4.3 | The worker loads the account | not started | no account_task.rs; no LoadAccount match | All artifacts missing |
+| D5.1 | A hierarchical layout into flat arrays | not started | no dag/hierarchy.rs; crates/cmdb-ui/src/dag has builder, graph, layout, widget, view | Create hierarchy.rs |
+| D5.2 | Incremental layout on the worker | not started | no layout_task.rs in cmdb-ui | All artifacts missing |
+| D6.0 | Spike: retained instances at the pinned Makepad revision | needs a run | crates/cmdb-ui/examples/retained_spike.rs (add_retained_instances L136, set_draw_item_uniform L233); docs/performance-evidence/retained-spike.md records release runs | Re-run retained_spike on GPU to reproduce; doc's numbers not verified from source; doc states not a presented-frame pass |
+| D6.1 | Nodes as instances, pan and zoom as a transform | not started | no instances.rs, NODE_SLOTS or DrawNodes; MAX_NODES=2000 dag/graph.rs:3; MAX_LABELS=200 dag/widget/paint.rs:13 still present | All artifacts missing; caps still in place |
+| D6.2 | Edges as instances, with aggregation at far zoom | not started | no edges.rs or aggregate.rs in cmdb-ui/src/dag | All artifacts missing |
+| D6.3 | Labels, level of detail, and a memory bound in place of the caps | not started | no lod.rs; caps still at dag/graph.rs:3 and dag/widget/paint.rs:13 | All artifacts missing; caps not removed |
+| D6.4 | Picking through a spatial grid | not started | no hierarchy/grid.rs match | All artifacts missing |
+| D7.1 | The harness, on the current painter | partial | crates/cmdb-ui/src/frame_harness.rs; frame_harness/{path,report,output,tests}.rs; cli.rs:10,110-111 --frame-harness 1..600; docs/performance-evidence/frames.md | frames.md states release/GPU baseline runs not run; measured-baseline gate unsatisfied |
+| D7.2 | Frame times at the stated size (X8) | needs a run | docs/performance-evidence/frames.md baseline ledger rows 500/2000/2001 marked Not run; xrandr reports 59.96 Hz, no 120 Hz mode | Run release harness at 500, 2000, 2001 with stated metadata; no 120 Hz result available |
+| D7.3 | An unpaced throughput check for CI | not started | no match for MAKEPAD_HIDE_WINDOWS, MAKEPAD_PAINT_INTERVAL or unpaced under cmdb-ui/src/frame_harness; no frame-harness task in moon.yml | Add unpaced mode, opt-in moon task, and frames.md row |
+| D8.1 | Every CLI command has a UI action or a written reason | not started | docs/e2e/PARITY.md missing (docs/e2e glob); tests/cli_properties.rs has no parity test (grep for parity no match) | Create PARITY.md with 22 subcommand rows and parity test |
+| D9.1 | The scope rail is built from the data | not started | no facets.rs or scope_rail.rs; ui.rs:72,77 hand prod/staging chips; ui.rs:104 ec2_count; ui.rs:110 s3_count | All artifacts missing |
+| D9.2 | Search and fly-to | not started | no search.rs; ui.rs search_input is pre-existing, no Command::Search match | All artifacts missing |
+| D9.3 | Filters dim the graph and narrow the table | not started | no account_view.rs; no filter in instances | All artifacts missing |
+| D10.1 | Paging by key in both directions | not started | no table/model.rs; cmdb-ui worker.rs:27 PAGE_LIMIT=500 still present | All artifacts missing |
+| D10.2 | Typed columns for the selected kind, and sorting | not started | no kind_page.rs or table/columns.rs | All artifacts missing |
+| D11.1 | The detail panel shows the whole record | not started | no detail.rs or detail/tree.rs in cmdb-ui; cmdb-view/src/database.rs:235 detail is pre-existing | All artifacts missing |
+| D11.2 | Neighbours, path and blast radius on the account view | not started | no traversal.rs or highlight.rs; crates/cmdb-view/src/graph.rs:83 `neighbors` and :97 `blast_radius` pre-existing | New artifacts missing |
+| D12.1 | The coverage tab | not started | no coverage.rs in cmdb-view or cmdb-ui; only cmdb-view/src/database/freshness.rs | All artifacts missing |
+| D13.1 | Two database URLs, checked, failing closed | not started | no connections.rs; no INVENTORY_READER_URL or COLLECTOR_URL match in cmdb-ui | All artifacts missing |
+| D13.2 | Header, status line, and a screen for every state | not started | no app/state.rs or status_line.rs in cmdb-ui | All artifacts missing |
+| D14.1 | The platform matrix | not started | no docs/performance-evidence/platforms.md in glob of docs/performance-evidence | Create platforms.md and run matrix |
+| D14.2 | Packaging, after the milestone | not started | unchecked: the step names no paths ("to be named by the worker") and no packaging search was run | Everything |
+
+## Section E (`build/STEPS_E.md`)
+
+| Step | Title | State | Evidence | Missing or to run |
+| --- | --- | --- | --- | --- |
+| E1.1 | Model-declared references (checked by hand) | not started | `crates/catalog-tool/src/smithy/model/traits/retained.rs:1-28` RETAIN_PAYLOADS has no `smithy.api#references` or `aws.api#arnReference`. `RelationshipPlan` (`crates/core/src/catalog/runtime/types.rs:103`) has no `EdgeSource` field. The `EdgeSource` enum has `Model` (`crates/core/src/inventory/observation.rs:65`) and the store decodes it (`crates/engine/src/inventory/commit/references_tail.rs:20-22`, `facets/relations.rs:210-215`), but outside tests only `ReviewedRule` is ever produced | Retained reference payloads; a declared-reference compiler; `RelationshipPlan.source`; relation field 7 in `encode/relations.rs`; the `REFERENCES` label; the declared count in the report |
+| E1.2 | Inferred edges by exact match (checked by hand) | not started | No match for `infer_edges`, `inferable`, or a `CREATE TABLE ... identities` under `crates/`. `EdgeSource::InferredExact` exists and is decoded (same lines as E1.1) but no pass produces it | `identities` table; `inferable` column flag; the `infer_edges` pass; per-sweep `ambiguous_inferred` counter; retraction; all fixture tests |
+| E1.3 | Counts by source, and the fixture evidence (checked by hand) | not started | `sweep_summary` exists at `crates/engine/src/inventory/projection_outbox.rs:69` and `postgres/summary.rs:10` but counts scope outcomes, resources and pending work only; `SweepSummary` (`crates/sweep/src/lib.rs:61`, `crates/engine/src/inventory/work.rs:167`) has no `edges_model`, `edges_rule`, `edges_inferred`, `ambiguous` or `unresolved`. `conformance/references.rs:45-63` covers late-target appear and retract, which predates this step | Five new summary fields; metrics line; per-source counts in `sweep_summary`; new conformance cases per source |
+| E2.1 | The remap tool and its report | not started | No `crates/catalog-tool/src/relations.rs`, `relations/` dir, `catalog/relations.generated.tsv`, or `catalog/aws-relations-remap.report`. No match for `remap` under `crates/`, `src/`, `scripts/`, or `catalog/`. | Entire step: remap command, pointer parser, generated TSV, report, tests. |
+| E2.2 | References inside lists, and the seeded proof | not started | `crates/sweep/src/record.rs:59` has only single-value `path_value`; no match for `fn path_values`. No `crates/sweep/src/record/multi.rs`. `MAX_PAGE_REFERENCES = 10_000` at `execution/page/rows.rs:14`, not the 1,024 per-record bound. | `path_values` fan-out; `multi.rs`; list-crossing validation; seeded e2e assertion. unchecked: `catalog-tool/src/runtime_catalog/model_path/validation.rs` (not opened). |
+| E3.1 | A graph crate with one trait and one Cypher module | partial | `crates/graph-store/Cargo.toml:2` name `inventory-graph`, `:3` description "Backend-neutral", deps at `:10-13`. `src/lib.rs:46` `pub trait GraphBackend` with the nine methods. `src/cypher.rs`, `src/falkor.rs:77` impl; `tests/falkor_live.rs:10` `#[ignore]`; `tests/cypher.rs`; `docs/GRAPH_SUBSET.md` exists; root `Cargo.toml:2` lists the member. No other crate depends on it | cmdb-view Cypher not moved: `crates/cmdb-view/src/graph/query.rs:119,127` still hold UNWIND/MATCH text. Engine copies remain (`engine/.../projection/cypher.rs`, `client.rs`; deletion belongs to E3.2). unchecked: `GRAPH_SUBSET.md` content; builder test parity |
+| E3.2 | Projection through the trait | not started | `crates/engine/src/inventory/projection/runner.rs:54-58` `run_projection<S: InventoryStore>(store, endpoint, graph, batch_limit)`, no `G: GraphBackend`. `projection/client.rs` and `cypher.rs` still present (glob). No `GraphBackend` reference under `crates/engine`. | Generic `G` parameter; FalkorDB backend built in CLI; fake-backend tests; deletion of `client.rs`/`cypher.rs`. |
+| E3.3 | Traversal through the trait, and the single-module check | not started | No `scripts/check-cypher-module.sh` (glob of `scripts/`). No `GraphBackend` match in `crates/cmdb-view`. `crates/cmdb-view/src/graph.rs:54-56` `GraphConnection` wraps `redis::Client` directly. Cypher still in `cmdb-view/src/graph/query.rs:119,127`. | `GraphConnection` wrapping/delegation; the script; `moon.yml` entry; existing graph tests unchanged. |
+| E3.4 | Choose the graph engine by measurement | not started | No `docs/performance-evidence/graph-engines.md` (dir holds `frames.md`, `retained-spike.md`). No `crates/cmdb-bench/src/traverse.rs`. No match for `Grafeo`, `grafeo`, `LadybugDB`, or `ladybug` under `crates/`, `src/`, `scripts/`, or `catalog/`. `crates/graph-store/src/` holds cypher, encoding, falkor, lib, response, traversal and types; FalkorDB is the only engine | All candidate implementations, benches, the evidence file, and the owner decision in `docs/e2e/DECISIONS.md` |
+| E4.1 | Measure the drain and a full rebuild | not started | No `crates/cmdb-bench/src/projection.rs` (glob lists `main.rs` and pipeline files only). No match for `"projection"` in `cmdb-bench/src/main.rs`. No `docs/performance-evidence/sweep-benchmark.md`. | Entire step: `projection` subcommand, `--rebuild`, metrics, evidence doc; the command has to be run against the harness graph server to fill rows. |
+| E4.2 | Batch the projection if the row says so, and prove rebuild equals incremental | not started | No match for `upsert_nodes` or `replace_edges_many` under `crates/`. `graph-store/src/cypher.rs:26-142` has single-key MERGE/MATCH only; no `UNWIND` in graph-store. `runner.rs` unchanged. | Batch trait methods; `UNWIND $rows` builders; batch ack logic; batch-size tests; equality test (needs E5.1). |
+| E4.3 | The graph after the store lost commits | not started | No `crates/engine/src/inventory/postgres/projection.rs` (glob). No `reconcile.rs` in `crates/engine/src/graph/` or `crates/cmdb-view/src/graph/`. No `crates/engine/tests/inventory_db_crash.rs`. | Entire step: sequence/identity recording in graph; reconcile path; crash test cases; repair-time measurement. |
+| E5.1 | The comparer (X5) (checked by hand) | partial | `crates/harness/src/verify_delivery.rs:464` `verify_graph` compares graph nodes, edges and tags with a SQL-derived model for the scan-delivery fixture, bounded by a fixture row limit, and treats an inconclusive comparison as a failure. `graph-store/src/lib.rs` has `node_keys` and `edge_keys` on the trait. No `src/graph_verify.rs`; no `GraphVerify` or `verify-graph` under `src/` | Subcommand in `src/cli.rs`; comparer module over the PostgreSQL store; harness `verify-graph` stage; tests; exit-code contract (0/3) |
+
+## After the exit test (`build/STEPS_AFTER.md`)
+
+| Step | Title | State | Evidence | Missing or to run |
+| --- | --- | --- | --- | --- |
+| F1.1 | Several profiles in one database | not started | `src/cli/sweep.rs` SweepArgs.profile is `Option<String>` (single). `crates/engine/src/inventory/postgres/work.rs:58,61` only write `sweep_id`; no match for `advisory\|pg_try` in work.rs | Per-account active-sweep check, multi-profile flag, `crates/sweep/src/lib.rs` change; two-account e2e |
+| F1.2 | `serve`: sweep on an interval, stalest first, never two at once | partial | `src/cli/serve.rs`, `src/serve_command.rs`, `src/serve_command/enabled.rs` exist. The claim already orders by `last_complete, scope_key` (`crates/engine/src/inventory/postgres/lease.rs:6`; seeded at `seed.rs:34`; index at `schema/shared.rs:26`). `crates/sweep/src/schedule.rs` missing | schedule.rs; single-instance lock; loop tests |
+| F2.1 | Deletion in continuous mode, and unobserved scopes | needs a run | `crates/engine/src/inventory/unobserved.rs:34,75,89`; `postgres/completion/unobserved.rs:45`; `crates/sweep/src/execution/draining.rs:130,160` | Three-sweep e2e: deletion gone after two complete sweeps; narrowed regions delete nothing |
+| F3.1 | Freshness and coverage as a view and a panel | partial | `crates/engine/sql/inventory_scope_freshness.sql` (SQLite syntax); `inventory/schema.rs:256`. No `scope_freshness` under `engine/inventory/postgres/`. `crates/cmdb-view/src/database/freshness.rs:40-75`. `crates/cmdb-ui/src/freshness_panel.rs` missing | Postgres view; `cmdb-ui/src/freshness_panel.rs`; panel filters; agreement test |
+| F4.1 | Slice mode | partial | `src/cli/sweep.rs:30` resume and `:36-41` `slice_timeout`; exit code 4 at `src/sweep_command/enabled.rs:56`; `SliceBudget` at `crates/sweep/src/execution/slice.rs:7` | The step's `--max-seconds` name; `execution/scheduler.rs`; slice-equals-uninterrupted test unchecked |
+| F5.1 | The remaining failure rows of VISION section 7 | partial | `crates/sweep/src/call.rs:212-215` still maps ExpiredToken/ExpiredSignature to Transient. `execution/page.rs`, `engine/src/limiter/retry.rs` exist. No per-row fault test names matched | Distinct class handling; one named fault test per row; proxy e2e pass (unchecked) |
+| G1.1 | Tags in bulk | partial | `inventory.tags` table at `crates/engine/src/inventory/postgres/schema/shared.rs:15`, written by `postgres/commit/tags.rs`, filled at `postgres/page/assembly.rs:104-108`. `crates/catalog-tool/src/runtime_catalog/plans/tags.rs` exists. Overlay is `catalog/overlay/generated/resource-groups-tagging-api.toml:15` (`GetResources`), not the step's path | `sweep/execution/page/tags.rs`; ARN join to `identities` unchecked; e2e with tagged seeds |
+| G1.2 | The service's own tag call where the bulk API has none | partial | `plans/compile/encoding.rs:25` calls `tags::compile`; `plans/tag_endpoint.rs`; `sweep/.../page/tag_endpoint/tests/empty_source.rs` exist | Report of every kind's tag source (unchecked); `overlay/generate/expand.rs` rule; e2e on one kind |
+| G2.1 | Owner, team and application from a mapping file (checked by hand) | partial | File store only: `crates/engine/src/inventory/tag_mapping.rs:9-14` creates the `tag_mapping` table and the `resource_roles` view (`crates/engine/sql/inventory_resource_roles.sql`); `:24` `replace_tag_mapping` changes the mapping with no AWS call | The `derive` subcommand; the `derived` table with `mapping_digest`; the PostgreSQL store; the no-API-call test unchecked |
+| G3.1 | Derived values in the graph and the UI | not started | `crates/graph-store/src/cypher.rs` has no owner/team/application properties. `cmdb-ui/src` matches are tag-filter tests only, no application view | Node properties; application view; unassigned list; worker test |
+| H1.1 | A managed PostgreSQL in AWS | not started | `docs/performance-evidence/` holds only `frames.md`, `retained-spike.md`; `sweep-benchmark.md` missing | Managed-instance run and recorded rows (needs AWS instance) |
+| H2.1 | Accounts from Organizations and assumed roles | not started | `crates/aws/src/assumed_role.rs` missing; `src/cli/sweep.rs` has no `--role-name` or `--accounts-from-organizations`. Reusable: `crates/aws/src/discovery/roles.rs:17` | assumed_role.rs; two flags; refresh before expiry; e2e or recorded limit |
+| H2.2 | The read-only role as a template | partial | `deploy/read-only-role.yaml` exists (hand-embedded action list). `crates/catalog-tool/src/main.rs:36,42-57` wires `iam-policy`. `moon.yml:30-84` has no iam-policy check task | Gate task `iam-policy --check`; template generated and byte-compared; unchecked mismatch table |
+| H3.1 | Container image and a scheduled Fargate task | not started | `deploy/Dockerfile`, `deploy/fargate-task.json`, `deploy/README.md` missing; `deploy/local/` exists | All three files; container e2e run |
+| H4.1 | The desktop app against remote stores | not started | `Cargo.toml:23` sqlx features are sqlite,postgres,runtime-tokio (no TLS). `crates/cmdb-view/src/database/postgres.rs` missing | TLS feature; postgres.rs; test-cert container run |
+| H5.1 | Neptune behind the graph trait | not started | `crates/graph-store/src/neptune.rs` missing; no neptune match in graph-store | neptune.rs; Neptune instance run |
+| H6.1 | Lambda fan-out | not started | `deploy/lambda/` missing | Orchestrator, pooler, comparison run (depends on F4.1, H3.1) |
+| I1.1 | SSO | not started | Step says not planned (V61); no artifacts | Nothing to build per step text |
+| I2.1 | Split into an open and a commercial workspace | not started | Step is a dropped decision (V63); no artifacts | Nothing to build per step text |
+| J1.1 | The full head-to-head on the emulator | not started | `docs/performance-evidence/head-to-head/` missing | Cartography definition; full-seed three-run table |
+| J2.1 | The first real-account run | not started | No real-account evidence file found; depends on owner authorization | Owner-named account run; report |
+| J3.1 | Head-to-head on the real account | not started | No published table; depends on J2.1, J1.1 | Both prerequisites and the real-account table |
+| K1.1 | Delete each typed adapter and its SDK crate | not started | Adapter files (`crates/aws/src/ec2.rs`, ecs, etc.) still present; `aws-sdk-*` still in `crates/aws/Cargo.toml:30-39` | Per-service differential tests, deletions, empty `adapters` feature |
+| K2.1 | Cloud Control behind verification; delete the old scan path | not started | Root `Cargo.toml:23` sqlite feature still present; `.cargo/config.toml` LIBSQLITE3_FLAGS present; `crates/engine/src/store.rs`, `jobs.rs`, `graph.rs`, `export.rs`, `src/scan.rs`, `src/plan.rs` all exist | Full deletion set; Cargo.lock regen; `cargo tree` checks |
+| K3.1 | Delete Python | needs a run | `scripts/` lists only `.sh` and `.rb` files; no `.py` visible. `catalog/upstream` and `requirements.txt` unchecked | `git ls-files '*.py' '*requirements.txt'` must print nothing; gate passes |
+| K4.1 | Manifest and documents in line with the tree | not started | `START_HERE.md`, `README.md` and `CHANGELOG.md` are at the root. `CONTRACT.md`, `NEXT_AGENT_PROMPT.txt`, `docs/VISION.md` and `docs/ARCHITECTURE.md` are absent | Regenerate manifest (contents unchecked); correct documents; path check |
+| S1.1 | An organization to test against | partial | `crates/cmdb-bench/src/main.rs:28` accounts field of `generate`. No stub endpoint matched | Stub endpoint; `--accounts` flag (whether the field is positional is unchecked); N=10 equivalence run |
+| S1.2 | Rate budgets that exist only while they are used | not started | No window or rlimit match in `crates/sweep/src` or `crates/engine/src/limiter`. `limiter/bucket.rs:14` is a per-bucket semaphore; `learned_rates` exists (`engine/src/inventory/schema.rs:293`) | Budget lifecycle; window; peak-memory run at 10k |
+| S1.3 | Plan a window at a time, store exceptions | not started | No `window` admission match in `crates/sweep/src` | Window seeding; empty-listing counters; kill-matrix run |
+| S1.4 | Connections shared across accounts, limits at start | not started | No `RLIMIT\|rlimit\|nofile` match in `src`, `crates/sweep/src`, `crates/engine/src/limiter` | Endpoint-keyed pool; rlimit read and raise; connection-count run |
+| S1.5 | Credentials for 10,000 accounts | not started | `assumed_role.rs` absent (see H2.1). Role cache and pacing unchecked | Window-bound credential cache; per-account pacing; stub run |
+| S1.6 | The organization in the app: aggregates and resources in view | not started | No organization aggregate found in `cmdb-ui/src` (unchecked: full grep) | Summary store, level above account, frame run at 10k |
+| S1.7 | A slower cadence for empty scopes, off by default | not started | No cadence or weekly-listing code found (unchecked: targeted grep) | Cadence switch, tests, request counts |
+| S1.8 | Partition the large tables by account | not started | No `PARTITION BY` match under `crates/engine/src`, `cmdb-view`, `cmdb-ui`, `cmdb-bench`, `crates/harness` | Partitioned layout; bench comparison |
+| S2.1 | The ladder: 10, 100, 1,000, 10,000 | not started | `docs/performance-evidence/scale.md` missing | scale.md; every rung's measured table |
+| L1.1 | Install, upgrade, roll back, remove (R1) | not started | `docs/INSTALL.md` missing; no `release_upgrade` match under `crates/harness` | INSTALL.md; scenario; recorded runs on macOS and Linux |
+| L2.1 | Read-only AWS policy, generated and proven minimal (R2) | partial | `crates/catalog-tool/src/iam_policy.rs` exists; `main.rs:36,42-57` wires `iam-policy`; `catalog/iam-read-only-policy.json` is generator output. Not in `moon.yml`. Harness test unchecked | Gate task for `--check`; attempted-set subset test; real-account proof (L6.1) |
+| L2.2 | Three database roles with tested limits (R3) | not started | No `inventory_collector` or `inventory_reader` in any code; matches only in `docs/e2e/DATA_MODEL.md:176-177`, `MAKEPAD_UI.md:140-141`, STEPS_C.md | Role setup, grants, role tests in harness |
+| L3.1 | Auth to both stores; verified TLS off-laptop (R4) | partial | Loopback default URL at `crates/harness/src/postgres/command.rs:7`. No `is_loopback\|sslmode\|tls` refusal logic in engine inventory, cli, or graph-store | Connection refusal for non-local hosts; five refusal tests; TLS run |
+| L3.2 | No secret in any output (R5) | partial | `src/cli/sweep.rs:49-55` is a manual `Debug` for `SweepArgs` that prints the database as `<redacted>`. No `secret_canary` or `canary` match in `crates/harness` | Canary scenario; redacted types; search over all outputs |
+| L4.1 | Backup and restore (R6) | not started | `docs/BACKUP.md` missing; no `pg_dump` match in `crates/harness`, `crates/engine`, `cmdb-view`, `src` | BACKUP.md; dump/restore/rebuild scenario |
+| L4.2 | Outages, during a sweep and at rest (R7) | not started | No `outage` match in `crates/harness`, `crates/engine/src`, `cmdb-view/src`, `src` | Six outage scenarios, CLI and app |
+| L5.1 | Provenance, dependencies and licences (R8) (checked by hand) | not started | Inputs exist: `rust-toolchain.toml:2` pins 1.100.0, `Cargo.lock` is committed and the gate passes `--locked` (`moon.yml:30`). `MANIFEST.sha256` lists source files, not release artifacts. No `deny.toml`, no audit or licence task in `moon.yml`, no signing configuration | Release build scripts; checksums and a signed manifest for artifacts; audit configuration; licence report; gate tasks; the reproducibility test |
+| L5.2 | One diagnostics command (R9) | not started | `src/cli.rs:16` `pub enum Command` has no `doctor` variant; no `doctor` match in `src` | `doctor` subcommand; bounded checks; canary search |
+| L6.1 | The authorized real-account run (R10) | not started | No dated evidence file in `docs/`; depends on J2.1 and owner naming the account | Owner-authorized run; evidence file; second sweep |
+| L6.2 | Published limits (R11) | not started | `docs/LIMITS.md` missing | Generator; check mode; evidence-backed lists |

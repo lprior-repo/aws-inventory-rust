@@ -1081,6 +1081,25 @@ suite, real AWS run or catalog regeneration was performed. T0's requested
 two-backend ignored-suite gate is **MET**; the hard-crash expiry risk above
 remains open rather than being hidden by a passing cancellation test.
 
+### T0 two-backend suite on `b98be942` (2026-11-23)
+
+The same two commands were run again on commit `b98be942` with a clean tree,
+emulator 1.0.348 and the pinned graph overrides. Both exited 0:
+
+| Backend | Command | Result | Test time | Wall time |
+| --- | --- | --- | --- | --- |
+| File | `INVENTORY_E2E_STORE=file cargo test --locked --features sweep --test sweep_e2e -j1 -- --ignored --test-threads 1` | **2 passed, 0 failed** | 125.55 s | 130 s |
+| PostgreSQL | `INVENTORY_E2E_STORE=postgres cargo test --locked --features sweep --test sweep_e2e -j1 -- --ignored --test-threads 1` | **2 passed, 0 failed** | 113.63 s | 114 s |
+
+PostgreSQL used an owned native instance at
+`postgres://inv@127.0.0.1:55493/postgres`.
+
+Scope of this result: the suite sweeps only `ec2:DescribeVpcs` and
+`ec2:DescribeSubnets` (`tests/sweep_e2e/scenario/arguments.rs:91-94`). It says
+nothing about an all-services sweep. The all-services `inventory-harness e2e
+run` on the same tree exits 1 at verify-counts; `LEDGER.md` records that run
+and the eight kinds that do not match.
+
 ## Wave 4 policy/failure integration (2026-11-23)
 
 Merge `c275aa3b` combines the reviewed policy lane with the failure lane.
