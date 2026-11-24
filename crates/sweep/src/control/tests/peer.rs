@@ -19,14 +19,21 @@ pub(super) struct Peer {
     tasks: JoinSet<TestResult>,
 }
 
+#[derive(Default)]
+pub(super) struct Rejections {
+    pub retry_requests: std::sync::atomic::AtomicUsize,
+    pub requested: tokio::sync::Notify,
+    pub release: tokio::sync::Notify,
+}
+
 impl Peer {
-    pub async fn start(root: &Path) -> TestResult<Self> {
+    pub async fn start(root: &Path, failures: Option<Arc<Rejections>>) -> TestResult<Self> {
         let (acceptor, ca) = certificates(root)?;
         let listener = TcpListener::bind("127.0.0.1:0").await?;
         let endpoint = format!("https://localhost:{}", listener.local_addr()?.port());
         let stop = CancellationToken::new();
         let mut tasks = JoinSet::new();
-        tasks.spawn(serve(listener, acceptor, stop.clone()));
+        tasks.spawn(serve(listener, acceptor, stop.clone(), failures));
         Ok(Self {
             endpoint,
             ca,
@@ -69,6 +76,7 @@ async fn serve(
     listener: TcpListener,
     acceptor: TlsAcceptor,
     stop: CancellationToken,
+    failures: Option<Arc<Rejections>>,
 ) -> TestResult {
     for _ in 0..32 {
         let (socket, _) = tokio::select! {
@@ -77,17 +85,21 @@ async fn serve(
         };
         tokio::select! {
             () = stop.cancelled() => return Ok(()),
-            result = tokio::time::timeout(Duration::from_secs(10), handle(socket, &acceptor)) => result??,
+            result = tokio::time::timeout(Duration::from_secs(10), handle(socket, &acceptor, failures.as_deref())) => result??,
         }
     }
     Err("control peer exhausted its fixed request budget".into())
 }
 
-async fn handle(socket: tokio::net::TcpStream, acceptor: &TlsAcceptor) -> TestResult {
+async fn handle(
+    socket: tokio::net::TcpStream,
+    acceptor: &TlsAcceptor,
+    failures: Option<&Rejections>,
+) -> TestResult {
     let mut socket = acceptor.accept(socket).await?;
     let request = request(&mut socket).await?;
-    let body = response(&request)?;
-    write(&mut socket, body).await
+    let (status, body) = response(&request, failures).await?;
+    write(&mut socket, status, body).await
 }
 
 async fn request(socket: &mut (impl AsyncReadExt + Unpin)) -> TestResult<Vec<u8>> {
@@ -106,7 +118,10 @@ async fn request(socket: &mut (impl AsyncReadExt + Unpin)) -> TestResult<Vec<u8>
     Err("control peer request exceeds fixed header budget".into())
 }
 
-fn response(bytes: &[u8]) -> TestResult<&'static str> {
+async fn response(
+    bytes: &[u8],
+    failures: Option<&Rejections>,
+) -> TestResult<(&'static str, &'static str)> {
     let request = std::str::from_utf8(bytes)?;
     let line = request.lines().next().ok_or("request line absent")?;
     if !line.starts_with("GET ") || !line.ends_with(" HTTP/1.1") {
@@ -123,18 +138,46 @@ fn response(bytes: &[u8]) -> TestResult<&'static str> {
         .nth(1)
         .ok_or("target absent")?
         .parse()?;
+    if let Some(failures) = failures {
+        match target.path() {
+            "/regions"
+                if failures
+                    .retry_requests
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+                    == 0 =>
+            {
+                return Ok((
+                    "500 Internal Server Error",
+                    r#"{"__type":"InternalFailure","message":"retry this request"}"#,
+                ));
+            }
+            "/items" => {
+                failures.requested.notify_one();
+                failures.release.notified().await;
+                return Ok((
+                    "403 Forbidden",
+                    r#"{"__type":"AccessDenied","message":"not authorized"}"#,
+                ));
+            }
+            _ => {}
+        }
+    }
     match (target.path(), target.query()) {
         ("/identity", None) => Ok(r#"{"Account":"123456789012"}"#),
         ("/regions", None) => Ok(r#"{"Regions":[{"RegionName":"us-east-1"}]}"#),
-        ("/items", None) => Ok(r#"{"Items":[{"Arn":"item/one"}],"NextToken":"next"}"#),
-        ("/items", Some("marker=next")) => Ok(r#"{"Items":[{"Arn":"item/two"}]}"#),
+        ("/items", None) => Ok(
+            r#"{"Items":[{"Arn":"item/one","SubscriptionArn":"PendingConfirmation"}],"NextToken":"next"}"#,
+        ),
+        ("/items", Some("marker=next")) => {
+            Ok(r#"{"Items":[{"Arn":"item/two","SubscriptionArn":"Deleted"}]}"#)
+        }
         _ => Err(format!("unexpected control request: {target}").into()),
-    }
+    }.map(|body| ("200 OK", body))
 }
 
-async fn write(socket: &mut (impl AsyncWriteExt + Unpin), body: &str) -> TestResult {
+async fn write(socket: &mut (impl AsyncWriteExt + Unpin), status: &str, body: &str) -> TestResult {
     let header = format!(
-        "HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+        "HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
         body.len()
     );
     socket.write_all(header.as_bytes()).await?;

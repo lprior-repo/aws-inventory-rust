@@ -13,8 +13,8 @@ struct Environment {
 impl Environment {
     async fn new() -> TestResult<Self> {
         let root = tempfile::tempdir()?;
-        let catalog = fixture::catalog(root.path())?;
-        let peer = peer::Peer::start(root.path()).await?;
+        let catalog = fixture::catalog(root.path(), false)?;
+        let peer = peer::Peer::start(root.path(), None).await?;
         Ok(Self {
             root,
             catalog,
@@ -253,4 +253,173 @@ async fn metrics_report_real_decode_claim_commit_executor_and_transport_activity
         assert!(metrics.peak_rss_kb > 0);
     }
     environment.peer.stop().await
+}
+
+#[tokio::test]
+async fn given_sweep_when_requests_are_sent_then_attempted_actions_are_in_generated_policy()
+-> TestResult {
+    let mut environment = Environment::new().await?;
+    environment.catalog = fixture::catalog(environment.root.path(), true)?;
+    let catalog = RuntimeCatalog::from_bytes(&environment.catalog)?;
+    assert_eq!(catalog.plans().len(), 4);
+    // The fourth plan expands confirmed SNS subscriptions; these two are pending/deleted.
+    let attempts = std::sync::Arc::new(crate::AttemptedOperations::new(&catalog));
+    assert_eq!(attempts.iter().count(), 0);
+    let reference = "# Source: fixture\n# Retrieved: 2026-11-24\ncontrolinventory\tGetCallerIdentity\tread\ncontrolinventory\tListResources\tread\ncontrolinventory\tListUnused\tread\n";
+    let mappings =
+        "[operation]\n\"controlinventory/ListItems\" = \"controlinventory:ListResources\"\n";
+    let gaps = "controlinventory\tDescribeRegions\tcontrolinventory\tunconfirmed: absent from the service authorization reference at 2026-11-24\n";
+    let policy = catalog_tool::iam_policy::render(
+        &catalog_tool::iam_policy::operations(&catalog)?,
+        mappings,
+        reference,
+        gaps,
+    )?;
+    let store = environment.store("attempts.sqlite").await?;
+    let summary = environment
+        .run(
+            &store,
+            false,
+            SweepControl {
+                attempts: Some(attempts.clone()),
+                ..SweepControl::default()
+            },
+        )
+        .await?;
+    assert_eq!(summary.rows, 2);
+    assert_eq!(summary.metrics.api_attempts, 4);
+    assert_eq!(
+        attempts.iter().collect::<Vec<_>>(),
+        vec![
+            ("controlinventory", "DescribeRegions"),
+            ("controlinventory", "GetCallerIdentity"),
+            ("controlinventory", "ListItems"),
+        ]
+    );
+    assert!(
+        !attempts
+            .iter()
+            .any(|(_, operation)| operation == "ListUnused")
+    );
+    assert_attempt_coverage(&attempts, &policy)?;
+    environment.peer.stop().await
+}
+
+fn assert_attempt_coverage(
+    attempts: &crate::AttemptedOperations,
+    policy: &catalog_tool::iam_policy::Rendered,
+) -> TestResult {
+    let required = attempts
+        .iter()
+        .map(|(service, operation)| {
+            policy
+                .operation_actions
+                .get(&format!("{service}/{operation}"))
+                .cloned()
+                .ok_or("attempted action absent")
+        })
+        .collect::<Result<std::collections::BTreeSet<_>, _>>()?;
+    assert_eq!(
+        required,
+        std::collections::BTreeSet::from([
+            "controlinventory:DescribeRegions".to_owned(),
+            "controlinventory:GetCallerIdentity".to_owned(),
+            "controlinventory:ListResources".to_owned(),
+        ])
+    );
+    assert!(required.is_subset(&policy.actions));
+    assert_eq!(
+        policy.unconfirmed,
+        std::collections::BTreeSet::from(["controlinventory/DescribeRegions".to_owned()])
+    );
+    Ok(())
+}
+
+#[tokio::test]
+async fn given_wrong_attempt_table_when_sweep_signs_then_unknown_operation_is_an_error()
+-> TestResult {
+    let environment = Environment::new().await?;
+    let unrelated =
+        crate::record::policy_dfgk_tests::fixture::catalog().map_err(|error| error.to_string())?;
+    let attempts = std::sync::Arc::new(crate::AttemptedOperations::new(&unrelated));
+    let store = environment.store("wrong-attempt-table.sqlite").await?;
+    let error = environment
+        .run(
+            &store,
+            false,
+            SweepControl {
+                attempts: Some(attempts.clone()),
+                ..SweepControl::default()
+            },
+        )
+        .await
+        .err()
+        .ok_or("unknown attempt silently discarded")?;
+    assert!(
+        error
+            .to_string()
+            .contains("attempted operation absent from receipt table")
+    );
+    assert_eq!(attempts.iter().count(), 0);
+    environment.peer.stop().await
+}
+
+#[tokio::test]
+async fn given_rejected_and_retried_calls_when_responses_are_blocked_then_attempts_are_already_recorded()
+-> TestResult {
+    let root = tempfile::tempdir()?;
+    let failures = std::sync::Arc::new(peer::Rejections::default());
+    let environment = Environment {
+        catalog: fixture::catalog(root.path(), false)?,
+        peer: peer::Peer::start(root.path(), Some(failures.clone())).await?,
+        root,
+    };
+    let catalog = RuntimeCatalog::from_bytes(&environment.catalog)?;
+    let attempts = std::sync::Arc::new(crate::AttemptedOperations::new(&catalog));
+    let policy = catalog_tool::iam_policy::render(
+        &catalog_tool::iam_policy::operations(&catalog)?,
+        "[operation]\n\"controlinventory/ListItems\" = \"controlinventory:ListResources\"\n",
+        "# Retrieved: 2026-11-24\ncontrolinventory\tGetCallerIdentity\tread\ncontrolinventory\tListResources\tread\n",
+        "controlinventory\tDescribeRegions\tcontrolinventory\tunconfirmed: absent from the service authorization reference at 2026-11-24\n",
+    )?;
+    let receipt = attempts.clone();
+    let worker = tokio::spawn(async move {
+        let store = environment.store("rejected-attempts.sqlite").await?;
+        let summary = environment
+            .run(
+                &store,
+                false,
+                SweepControl {
+                    attempts: Some(receipt),
+                    ..SweepControl::default()
+                },
+            )
+            .await?;
+        environment.peer.stop().await?;
+        Ok::<_, Box<dyn std::error::Error + Send + Sync>>(summary)
+    });
+    tokio::time::timeout(
+        std::time::Duration::from_secs(10),
+        failures.requested.notified(),
+    )
+    .await?;
+    let recorded_before_response = attempts.iter().collect::<Vec<_>>();
+    failures.release.notify_one();
+    let summary = worker.await??;
+    assert_eq!(summary.rows, 0);
+    assert_eq!(summary.outcomes.inaccessible, 1);
+    assert_eq!(summary.metrics.api_attempts, 4);
+    let retried = failures
+        .retry_requests
+        .load(std::sync::atomic::Ordering::Relaxed);
+    assert_eq!(retried, 2);
+    let expected = vec![
+        ("controlinventory", "DescribeRegions"),
+        ("controlinventory", "GetCallerIdentity"),
+        ("controlinventory", "ListItems"),
+    ];
+    assert_eq!(recorded_before_response, expected);
+    assert_eq!(attempts.iter().collect::<Vec<_>>(), expected);
+    assert_attempt_coverage(&attempts, &policy)?;
+    Ok(())
 }

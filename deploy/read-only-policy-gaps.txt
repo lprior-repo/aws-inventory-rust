@@ -1,0 +1,155 @@
+The policy grants default-name actions for these 14 operations as unconfirmed; the pinned reference does not publish them.
+applicationcostprofiler/GetReportDefinition
+applicationcostprofiler/ListReportDefinitions
+cloudhsm/DescribeHapg
+cloudhsm/DescribeHsm
+cloudhsm/ListHapgs
+cloudhsm/ListHsms
+cloudhsm/ListLunaClients
+ec2/DescribeMetricCategories
+ec2/DescribeNetworkingFlexCostAllocationPolicies
+ec2/DescribeNetworkingFlexCostAllocationPolicyAssociations
+ec2/GetNetworkingFlexCostAllocationPolicyVersions
+iotthingsgraph/SearchFlowTemplates
+iotthingsgraph/SearchSystemInstances
+iotthingsgraph/SearchSystemTemplates
+
+shared
+Actions use explicit operation overrides or model signing-name:operation; non-callable operations whose IAM action is not derivable by that lookup are not listed.
+count: 23 non-callable operations
+DENIED (must-deny): 1
+rds/DescribeDBClusters rds:DescribeDBClusters callable-by docdb/DescribeDBClusters
+rds/DescribeDBClusters rds:DescribeDBClusters callable-by neptune/DescribeDBClusters
+deferred: 22
+chime/ListPhoneNumbers chime:ListPhoneNumbers callable-by chime-sdk-voice/ListPhoneNumbers
+cloudwatch-events/DescribeEventSource events:DescribeEventSource callable-by eventbridge/DescribeEventSource
+cloudwatch-events/DescribeEventSource events:DescribeEventSource callable-by eventbridgev2/DescribeEventSource
+cloudwatch-events/DescribeRule events:DescribeRule callable-by eventbridge/DescribeRule
+docdb/DescribePendingMaintenanceActions rds:DescribePendingMaintenanceActions callable-by rds/DescribePendingMaintenanceActions
+elastic-load-balancing/DescribeAccountLimits elasticloadbalancing:DescribeAccountLimits callable-by elastic-load-balancing-v2/DescribeAccountLimits
+eventbridge/DescribeApiDestination events:DescribeApiDestination callable-by cloudwatch-events/DescribeApiDestination
+eventbridge/DescribeArchive events:DescribeArchive callable-by cloudwatch-events/DescribeArchive
+greengrass/ListDeployments greengrass:ListDeployments callable-by greengrassv2/ListDeployments
+kinesis-analytics/ListApplications kinesisanalytics:ListApplications callable-by kinesis-analytics-v2/ListApplications
+mailmanager/ListTagsForResource ses:ListTagsForResource callable-by sesv2/ListTagsForResource
+neptune/DescribePendingMaintenanceActions rds:DescribePendingMaintenanceActions callable-by rds/DescribePendingMaintenanceActions
+opensearch/DescribePackages es:DescribePackages callable-by elasticsearch-service/DescribePackages
+pinpoint-email/GetDedicatedIps ses:GetDedicatedIps callable-by sesv2/GetDedicatedIps
+pinpoint-email/ListDeliverabilityTestReports ses:ListDeliverabilityTestReports callable-by sesv2/ListDeliverabilityTestReports
+pinpoint-email/ListTagsForResource ses:ListTagsForResource callable-by sesv2/ListTagsForResource
+qconnect/GetAssistant wisdom:GetAssistant callable-by wisdom/GetAssistant
+qconnect/GetAssistantAssociation wisdom:GetAssistantAssociation callable-by wisdom/GetAssistantAssociation
+qconnect/GetKnowledgeBase wisdom:GetKnowledgeBase callable-by wisdom/GetKnowledgeBase
+qconnect/ListContents wisdom:ListContents callable-by wisdom/ListContents
+qconnect/ListImportJobs wisdom:ListImportJobs callable-by wisdom/ListImportJobs
+qconnect/ListQuickResponses wisdom:ListQuickResponses callable-by wisdom/ListQuickResponses
+sesv2/GetConfigurationSet ses:GetConfigurationSet callable-by pinpoint-email/GetConfigurationSet
+unclassified: 0
+
+broad
+Existing aliases or callable mappings associate these granted actions with multiple operation IDs, so they can permit other requests.
+count: 36 actions
+apigateway:GET callable-by api-gateway/GetAccount
+apigateway:GET callable-by api-gateway/GetApiKeys
+apigateway:GET callable-by api-gateway/GetAuthorizers
+apigateway:GET callable-by api-gateway/GetClientCertificates
+apigateway:GET callable-by api-gateway/GetDomainName
+apigateway:GET callable-by api-gateway/GetDomainNameAccessAssociations
+apigateway:GET callable-by api-gateway/GetDomainNames
+apigateway:GET callable-by api-gateway/GetRequestValidators
+apigateway:GET callable-by api-gateway/GetResources
+apigateway:GET callable-by api-gateway/GetRestApi
+apigateway:GET callable-by api-gateway/GetRestApis
+apigateway:GET callable-by api-gateway/GetUsagePlan
+apigateway:GET callable-by api-gateway/GetUsagePlans
+apigateway:GET callable-by api-gateway/GetVpcLink
+apigateway:GET callable-by api-gateway/GetVpcLinks
+apigateway:GET callable-by apigatewayv2/GetApi
+apigateway:GET callable-by apigatewayv2/GetApis
+apigateway:GET callable-by apigatewayv2/GetAuthorizers
+apigateway:GET callable-by apigatewayv2/GetDomainName
+apigateway:GET callable-by apigatewayv2/GetDomainNames
+apigateway:GET callable-by apigatewayv2/GetRoutes
+apigateway:GET callable-by apigatewayv2/GetVpcLink
+apigateway:GET callable-by apigatewayv2/GetVpcLinks
+cassandra:Select callable-by keyspaces/GetTable
+cassandra:Select callable-by keyspaces/ListKeyspaces
+cassandra:Select callable-by keyspaces/ListTables
+cassandra:Select callable-by keyspaces/ListTypes
+connect-campaigns:DescribeCampaign callable-by connectcampaigns/DescribeCampaign
+connect-campaigns:DescribeCampaign callable-by connectcampaignsv2/DescribeCampaign
+connect-campaigns:ListCampaigns callable-by connectcampaigns/ListCampaigns
+connect-campaigns:ListCampaigns callable-by connectcampaignsv2/ListCampaigns
+elasticloadbalancing:DescribeLoadBalancers callable-by elastic-load-balancing-v2/DescribeLoadBalancers
+elasticloadbalancing:DescribeLoadBalancers callable-by elastic-load-balancing/DescribeLoadBalancers
+es:ListDomainNames callable-by elasticsearch-service/ListDomainNames
+es:ListDomainNames callable-by opensearch/ListDomainNames
+es:ListVpcEndpoints callable-by elasticsearch-service/ListVpcEndpoints
+es:ListVpcEndpoints callable-by opensearch/ListVpcEndpoints
+events:DescribeEventBus callable-by cloudwatch-events/DescribeEventBus
+events:DescribeEventBus callable-by eventbridge/DescribeEventBus
+events:DescribeEventBus callable-by eventbridgev2/DescribeEventBus
+events:DescribeEventSource callable-by eventbridge/DescribeEventSource
+events:DescribeEventSource callable-by eventbridgev2/DescribeEventSource
+events:ListApiDestinations callable-by cloudwatch-events/ListApiDestinations
+events:ListApiDestinations callable-by eventbridge/ListApiDestinations
+events:ListArchives callable-by cloudwatch-events/ListArchives
+events:ListArchives callable-by eventbridge/ListArchives
+events:ListConnections callable-by cloudwatch-events/ListConnections
+events:ListConnections callable-by eventbridge/ListConnections
+events:ListEventBuses callable-by cloudwatch-events/ListEventBuses
+events:ListEventBuses callable-by eventbridge/ListEventBuses
+events:ListEventBuses callable-by eventbridgev2/ListEventBuses
+events:ListEventSources callable-by cloudwatch-events/ListEventSources
+events:ListEventSources callable-by eventbridge/ListEventSources
+events:ListEventSources callable-by eventbridgev2/ListEventSources
+events:ListReplays callable-by cloudwatch-events/ListReplays
+events:ListReplays callable-by eventbridge/ListReplays
+events:ListRules callable-by cloudwatch-events/ListRules
+events:ListRules callable-by eventbridge/ListRules
+quicksight:ListTopics callable-by quicksight/ListTopics
+quicksight:ListTopics callable-by quicksight/ListTopicsV2
+rds:DescribeDBClusterEndpoints callable-by neptune/DescribeDBClusterEndpoints
+rds:DescribeDBClusterEndpoints callable-by rds/DescribeDBClusterEndpoints
+rds:DescribeDBClusterParameterGroups callable-by docdb/DescribeDBClusterParameterGroups
+rds:DescribeDBClusterParameterGroups callable-by neptune/DescribeDBClusterParameterGroups
+rds:DescribeDBClusterParameterGroups callable-by rds/DescribeDBClusterParameterGroups
+rds:DescribeDBClusterSnapshots callable-by docdb/DescribeDBClusterSnapshots
+rds:DescribeDBClusterSnapshots callable-by neptune/DescribeDBClusterSnapshots
+rds:DescribeDBClusterSnapshots callable-by rds/DescribeDBClusterSnapshots
+rds:DescribeDBClusters callable-by docdb/DescribeDBClusters
+rds:DescribeDBClusters callable-by neptune/DescribeDBClusters
+rds:DescribeDBParameterGroups callable-by neptune/DescribeDBParameterGroups
+rds:DescribeDBParameterGroups callable-by rds/DescribeDBParameterGroups
+rds:DescribeDBSubnetGroups callable-by docdb/DescribeDBSubnetGroups
+rds:DescribeDBSubnetGroups callable-by neptune/DescribeDBSubnetGroups
+rds:DescribeDBSubnetGroups callable-by rds/DescribeDBSubnetGroups
+rds:DescribeEventSubscriptions callable-by docdb/DescribeEventSubscriptions
+rds:DescribeEventSubscriptions callable-by neptune/DescribeEventSubscriptions
+rds:DescribeEventSubscriptions callable-by rds/DescribeEventSubscriptions
+rds:DescribeGlobalClusters callable-by docdb/DescribeGlobalClusters
+rds:DescribeGlobalClusters callable-by neptune/DescribeGlobalClusters
+rds:DescribeGlobalClusters callable-by rds/DescribeGlobalClusters
+resiliencehub:ListTagsForResource callable-by resiliencehub/ListTagsForResource
+resiliencehub:ListTagsForResource callable-by resiliencehubv2/ListTagsForResource
+ses:ListConfigurationSets callable-by pinpoint-email/ListConfigurationSets
+ses:ListConfigurationSets callable-by ses/ListConfigurationSets
+ses:ListConfigurationSets callable-by sesv2/ListConfigurationSets
+ses:ListCustomVerificationEmailTemplates callable-by ses/ListCustomVerificationEmailTemplates
+ses:ListCustomVerificationEmailTemplates callable-by sesv2/ListCustomVerificationEmailTemplates
+ses:ListDedicatedIpPools callable-by pinpoint-email/ListDedicatedIpPools
+ses:ListDedicatedIpPools callable-by sesv2/ListDedicatedIpPools
+ses:ListEmailIdentities callable-by pinpoint-email/ListEmailIdentities
+ses:ListEmailIdentities callable-by sesv2/ListEmailIdentities
+timestream:DescribeEndpoints callable-by timestream-query/DescribeEndpoints
+timestream:DescribeEndpoints callable-by timestream-write/DescribeEndpoints
+timestream:ListTagsForResource callable-by timestream-query/ListTagsForResource
+timestream:ListTagsForResource callable-by timestream-write/ListTagsForResource
+wisdom:ListAssistantAssociations callable-by qconnect/ListAssistantAssociations
+wisdom:ListAssistantAssociations callable-by wisdom/ListAssistantAssociations
+wisdom:ListAssistants callable-by qconnect/ListAssistants
+wisdom:ListAssistants callable-by wisdom/ListAssistants
+wisdom:ListKnowledgeBases callable-by qconnect/ListKnowledgeBases
+wisdom:ListKnowledgeBases callable-by wisdom/ListKnowledgeBases
+wisdom:ListTagsForResource callable-by qconnect/ListTagsForResource
+wisdom:ListTagsForResource callable-by wisdom/ListTagsForResource

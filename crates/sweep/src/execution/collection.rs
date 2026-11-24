@@ -39,6 +39,13 @@ impl Resources {
         })
     }
 
+    pub(super) fn set_attempts(
+        &mut self,
+        attempts: Option<std::sync::Arc<crate::AttemptedOperations>>,
+    ) {
+        self.metrics.attempts = attempts;
+    }
+
     fn complete(&self, metrics: &mut crate::SweepMetrics) {
         complete(
             metrics,

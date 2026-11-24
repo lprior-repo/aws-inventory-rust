@@ -14,7 +14,8 @@ const MODEL: &str = r#"{"smithy":"2.0","shapes":{
 "n#ItemsInput":{"type":"structure","members":{"Marker":{"target":"smithy.api#String","traits":{"smithy.api#httpQuery":"marker"}}}},
 "n#ItemsOutput":{"type":"structure","members":{"Items":{"target":"n#Items"},"NextToken":{"target":"smithy.api#String"}}},
 "n#Items":{"type":"list","member":{"target":"n#Item"}},
-"n#Item":{"type":"structure","members":{"Arn":{"target":"smithy.api#String"}}}
+"n#UnusedInput":{"type":"structure","members":{"Arn":{"target":"smithy.api#String","traits":{"smithy.api#required":{},"smithy.api#httpQuery":"arn"}}}},
+"n#Item":{"type":"structure","members":{"Arn":{"target":"smithy.api#String"},"SubscriptionArn":{"target":"smithy.api#String"}}}
 }}"#;
 
 const KINDS: kind_map::MappingSource<'static> = kind_map::MappingSource {
@@ -91,7 +92,7 @@ fn operation(
     Ok(operation)
 }
 
-fn policy() -> TestResult<overlay::ServiceOverlay> {
+fn policy(unused: bool) -> TestResult<overlay::ServiceOverlay> {
     let mut items = operation(overlay::Scope::Region, "Items", "Arn")?;
     items.paginator = Some(overlay::Paginator::Tokens {
         pairs: vec![overlay::TokenPair::new(
@@ -100,36 +101,82 @@ fn policy() -> TestResult<overlay::ServiceOverlay> {
         )],
         truncated: None,
     });
+    let mut operations = vec![
+        (
+            "GetCallerIdentity",
+            operation(overlay::Scope::Account, "$", "Account")?,
+        ),
+        (
+            "DescribeRegions",
+            operation(overlay::Scope::Region, "Regions", "RegionName")?,
+        ),
+        ("ListItems", items),
+    ];
+    if unused {
+        let mut expansion = operation(overlay::Scope::Region, "Items", "Arn")?;
+        expansion.class = Some(overlay::OverlayClass::Expand);
+        expansion.bind.insert(
+            overlay::MemberPath::new("Arn")?,
+            overlay::Binding::FromArn {
+                operation: overlay::OperationName::new("ListItems")?,
+                path: overlay::MemberPath::new("SubscriptionArn")?,
+                arn_service: "sns".to_owned(),
+                resource_kind: overlay::ArnResourceKind::SnsSubscription,
+            },
+        );
+        operations.push(("ListUnused", expansion));
+    }
     Ok(overlay::ServiceOverlay::new(
         "controlinventory",
-        vec![
-            (
-                "GetCallerIdentity",
-                operation(overlay::Scope::Account, "$", "Account")?,
-            ),
-            (
-                "DescribeRegions",
-                operation(overlay::Scope::Region, "Regions", "RegionName")?,
-            ),
-            ("ListItems", items),
-        ],
+        operations,
     )?)
 }
 
-pub(super) fn catalog(root: &Path) -> TestResult<Vec<u8>> {
+pub(super) fn catalog(root: &Path, unused: bool) -> TestResult<Vec<u8>> {
     let source = root.join("source");
     let models = source.join("models/controlinventory/service/2026-01-01");
     std::fs::create_dir_all(&models)?;
-    std::fs::write(models.join("model.json"), MODEL)?;
+    let mut model: serde_json::Value = serde_json::from_str(MODEL)?;
+    if unused {
+        model
+            .pointer_mut("/shapes/n#Service/operations")
+            .and_then(serde_json::Value::as_array_mut)
+            .ok_or("fixture service operations absent")?
+            .push(serde_json::json!({"target":"n#ListUnused"}));
+        model
+            .pointer_mut("/shapes")
+            .and_then(serde_json::Value::as_object_mut)
+            .ok_or("fixture shapes absent")?
+            .insert(
+                "n#ListUnused".into(),
+                serde_json::json!({"type":"operation","input":{"target":"n#UnusedInput"},
+                    "output":{"target":"n#ItemsOutput"},
+                    "traits":{"smithy.api#http":{"method":"GET","uri":"/unused"}}}),
+            );
+    }
+    std::fs::write(models.join("model.json"), serde_json::to_vec(&model)?)?;
     let checked = overlay::check_policies(
         &source,
-        &[policy()?],
+        &[policy(unused)?],
         &catalog_tool::classes::DenyList::builtin(),
     )?;
-    let registry =
-        smithy::Registry::parse("Account\nArn\nItems\nMarker\nNextToken\nRegionName\nRegions\n")?;
+    let registry = smithy::Registry::parse(
+        "Account\nArn\nItems\nMarker\nNextToken\nRegionName\nRegions\nSubscriptionArn\n",
+    )?;
     let base = smithy::build_catalog(&source, &registry, "control-contract")?;
-    let kinds = KINDS.compile(&names::Exceptions::none())?;
+    let mut operation_kinds = KINDS.operations.to_vec();
+    if unused {
+        operation_kinds.push(kind_map::OperationMapping {
+            service: "controlinventory",
+            operation: "ListUnused",
+            kind: "AWS::ApiOnly::ControlItem",
+        });
+    }
+    let kinds = kind_map::MappingSource {
+        operations: &operation_kinds,
+        ..KINDS
+    }
+    .compile(&names::Exceptions::none())?;
     let endpoints = BTreeMap::from([("controlinventory".to_owned(), endpoint()?)]);
     Ok(runtime_catalog::augment(
         &base, &checked, &kinds, &endpoints,

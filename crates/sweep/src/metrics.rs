@@ -43,6 +43,7 @@ pub(crate) struct Accumulators {
     store_commits: AtomicU64,
     claims: AtomicU64,
     child_requests_skipped: AtomicU64,
+    pub(crate) attempts: Option<std::sync::Arc<crate::AttemptedOperations>>,
 }
 
 impl Accumulators {

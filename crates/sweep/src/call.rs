@@ -79,6 +79,11 @@ impl<C: CredentialSource> Call<'_, '_, C> {
             region: Region::new(&self.endpoint.signing_region).map_err(permanent)?,
             name: SigningName::new(&self.endpoint.signing_name).map_err(permanent)?,
         };
+        if let Some(attempts) = &self.metrics.attempts {
+            attempts
+                .record(self.plan.service_name(), self.plan.operation_name())
+                .map_err(permanent)?;
+        }
         let started = std::time::Instant::now();
         let response = sign_and_send(self, request, &credentials, &scope, now()).await;
         let status = response

@@ -66,7 +66,8 @@ pub async fn run<S: InventoryStore>(
     credentials: &impl CredentialSource,
     control: crate::SweepControl,
 ) -> Result<SweepSummary, SweepError> {
-    let runtime = collection::Resources::new(&config, credentials)?;
+    let mut runtime = collection::Resources::new(&config, credentials)?;
+    runtime.set_attempts(control.attempts);
     let progress = crate::control::Progress::new(control.progress);
     let collection = collection::collect(catalog, store, &config, credentials, &runtime, &progress);
     let summary = supervise(&runtime.executor, collection, control.cancel.cancelled()).await?;
