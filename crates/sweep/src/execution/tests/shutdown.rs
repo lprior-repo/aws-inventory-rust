@@ -42,7 +42,7 @@ async fn given_admitted_sql_page_when_cancellation_arrives_then_supervisor_waits
         committed.store(true, Ordering::SeqCst);
         Ok(SweepSummary::default())
     };
-    let collection = draining::settle_batch(&fixture.store, &executor, owned, work);
+    let collection = draining::settle_batch(&fixture.store, &executor, || owned, work);
     let signal = async {
         assert!(admitted_rx.await.is_ok());
         assert!(release_tx.send(()).is_ok());
@@ -78,7 +78,7 @@ async fn given_stalled_admitted_page_when_cancel_drain_deadline_expires_then_own
             .map_err(|_| SweepError::Operation("admission observer lost"))?;
         std::future::pending::<Result<SweepSummary, SweepError>>().await
     };
-    let collection = draining::settle_batch(&fixture.store, &executor, owned, work);
+    let collection = draining::settle_batch(&fixture.store, &executor, || owned, work);
     let signal = async {
         assert!(admitted_rx.await.is_ok());
     };

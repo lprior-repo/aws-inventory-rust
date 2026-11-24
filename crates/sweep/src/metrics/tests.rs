@@ -59,7 +59,7 @@ fn accumulate(counters: &Accumulators) {
         add(&counters.decode_ns, 7);
         add(&counters.store_commit_ns, 11);
         add(&counters.store_commits, 1);
-        counters.claimed(true);
+        counters.claimed(1);
     }
 }
 
@@ -67,7 +67,7 @@ fn accumulate(counters: &Accumulators) {
 fn given_failed_commit_or_empty_claim_when_recorded_then_success_counters_stay_zero() {
     let counters = Accumulators::default();
     counters.committed(Instant::now(), false);
-    counters.claimed(false);
+    counters.claimed(0);
     let mut metrics = SweepMetrics::default();
     counters.snapshot(&mut metrics);
     assert_eq!(

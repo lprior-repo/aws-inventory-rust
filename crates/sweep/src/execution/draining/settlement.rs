@@ -4,14 +4,14 @@ use inventory_engine::inventory::{StoreError, WorkLease};
 pub(in crate::execution) async fn settle_batch(
     store: &impl InventoryStore,
     executor: &ApiExecutor,
-    owned: Vec<WorkLease>,
+    owned: impl FnOnce() -> Vec<WorkLease>,
     work: impl Future<Output = Result<SweepSummary, SweepError>>,
 ) -> Result<SweepSummary, SweepError> {
     let result = drain(executor, work).await;
     if !executor.is_cancelled() {
         return result;
     }
-    settle_owned(store, owned.into_iter()).await?;
+    settle_owned(store, owned().into_iter()).await?;
     match result {
         Ok(_) | Err(SweepError::Api(inventory_engine::limiter::ApiError::Cancelled)) => {
             Err(inventory_engine::limiter::ApiError::Cancelled.into())

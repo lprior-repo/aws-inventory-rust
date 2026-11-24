@@ -31,75 +31,66 @@ pub(super) async fn drain_work(
     sweep: &SweepId,
     budget: SliceBudget,
 ) -> Result<SweepSummary, SweepError> {
-    let mut summary = SweepSummary::default();
-    let mut leases = Vec::new();
-    let mut slice_exhausted;
-    loop {
-        slice_exhausted = budget.exhausted(now_ms()?);
-        if slice_exhausted || !drain_batch(context, sweep, &mut leases, &mut summary).await? {
-            break;
-        }
-    }
+    let executor = context.bootstrap.executor;
+    let owned = admission::Owned::default();
+    let slice_exhausted = std::cell::Cell::new(false);
+    let work = scheduler::run(
+        context.bootstrap.config.concurrency,
+        || may_claim(executor, budget, &slice_exhausted),
+        |limit| claim(context, sweep, &owned, limit),
+        |lease| {
+            let id = owned.admit(&lease);
+            owned.settle(id, page::process(context, lease))
+        },
+        |in_flight| owned.set_in_flight(in_flight),
+    );
+    let mut summary = settle_batch(context.store, executor, || owned.take(), work).await?;
     if context.bootstrap.executor.is_cancelled() {
         return Err(inventory_engine::limiter::ApiError::Cancelled.into());
     }
-    apply_persisted_summary(context.store, sweep, &mut summary, slice_exhausted).await?;
+    apply_persisted_summary(context.store, sweep, &mut summary, slice_exhausted.get()).await?;
     summary.graph_pending = context.store.projection_state().await?.pending;
     Ok(summary)
 }
 
-async fn drain_batch(
+/// Whether the drain may ask the store for more work. Once the slice budget
+/// is spent it stays spent, even if the wall clock steps back.
+fn may_claim(
+    executor: &ApiExecutor,
+    budget: SliceBudget,
+    slice_exhausted: &std::cell::Cell<bool>,
+) -> bool {
+    if slice_exhausted.get() || executor.is_cancelled() {
+        return false;
+    }
+    // A clock failure is left for the claim itself to report.
+    let Ok(now) = now_ms() else { return true };
+    slice_exhausted.set(budget.exhausted(now));
+    !slice_exhausted.get()
+}
+
+async fn claim(
     context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     sweep: &SweepId,
-    leases: &mut Vec<inventory_engine::inventory::WorkLease>,
-    summary: &mut SweepSummary,
-) -> Result<bool, SweepError> {
-    claim_batch(context, sweep, leases).await?;
-    if leases.is_empty() {
-        return Ok(false);
-    }
-    let owned = leases.clone();
-    let work = stream::iter(leases.drain(..).map(|lease| page::process(context, lease)))
-        .buffer_unordered(context.bootstrap.config.concurrency);
-    *summary = settle_batch(
+    owned: &admission::Owned,
+    limit: u16,
+) -> Result<Vec<inventory_engine::inventory::WorkLease>, SweepError> {
+    let leases = admission::claim_some(
         context.store,
-        context.bootstrap.executor,
-        owned,
-        summarize_batch(work, *summary),
+        sweep,
+        context.lease_ms,
+        limit,
+        context.progress.enabled(),
     )
     .await?;
-    Ok(true)
-}
-
-async fn claim_batch(
-    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
-    sweep: &SweepId,
-    leases: &mut Vec<inventory_engine::inventory::WorkLease>,
-) -> Result<(), SweepError> {
-    admission::claim_batch(
-        context.store,
-        context.bootstrap.executor,
-        context.bootstrap.config.concurrency,
-        leases,
-        context.progress,
-        || admission::claim_next(context, sweep),
-    )
-    .await
-}
-
-async fn summarize_batch(
-    results: impl futures_util::Stream<Item = Result<SweepSummary, SweepError>>,
-    summary: SweepSummary,
-) -> Result<SweepSummary, SweepError> {
-    // Unlike try_fold, fold keeps polling every admitted page after an error.
-    // Preserve the first completion-order error without retaining all summaries.
-    results
-        .fold(Ok(summary), |summary, result| async move {
-            let mut summary = summary?;
-            add_writes(&mut summary, result?)?;
-            Ok(summary)
-        })
-        .await
+    context.bootstrap.metrics.claimed(leases.len());
+    let (depth, in_flight) = admission::queue_report(
+        leases.first().and_then(|lease| lease.pending_work()),
+        owned.in_flight(),
+        leases.len(),
+    );
+    context.progress.queue(depth, in_flight);
+    Ok(leases)
 }
 
 pub(super) fn add_writes(
@@ -174,7 +165,3 @@ pub(super) fn now_ms() -> Result<i64, SweepError> {
     i64::try_from(duration.as_millis())
         .map_err(|_| SweepError::Operation("system time exceeds timestamp bound"))
 }
-
-#[cfg(test)]
-#[path = "draining/tests.rs"]
-mod tests;

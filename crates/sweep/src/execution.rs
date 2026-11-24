@@ -9,6 +9,7 @@ use slice::SliceBudget;
 pub(crate) mod discovery;
 pub(crate) mod page;
 pub(crate) mod routing;
+mod scheduler;
 #[cfg(test)]
 mod tests;
 

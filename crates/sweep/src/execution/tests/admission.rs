@@ -1,7 +1,6 @@
 use super::support::{Fixture, TestResult};
 use super::*;
 use inventory_core::inventory::ScopeOutcome;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
 async fn seed_pair(fixture: &Fixture) -> TestResult {
     for ordinal in 0..2 {
@@ -37,47 +36,36 @@ async fn reject_second_claim(fixture: &Fixture) -> TestResult<sqlx::SqlitePool> 
     Ok(pool)
 }
 
-async fn failed_admission(cancel: bool) -> TestResult {
-    // Given two real durable work items and a database fault only on the second claim.
-    let fixture = Fixture::new(if cancel {
-        "cancel-second-claim"
-    } else {
-        "fail-second-claim"
-    })
-    .await?;
+async fn recover_complete(fixture: &Fixture) -> TestResult<i64> {
+    let lease = fixture
+        .store
+        .claim(&fixture.sweep, now_ms()?, fixture.lease_ms)
+        .await?
+        .ok_or("released work is not immediately recoverable")?;
+    let generation = lease.generation();
+    fixture
+        .store
+        .finish_scope(lease, ScopeOutcome::Complete, now_ms()?, None)
+        .await?;
+    Ok(generation)
+}
+
+#[tokio::test]
+async fn given_first_claim_committed_when_the_batch_claim_fails_then_the_first_lease_is_released_before_the_error_returns()
+-> TestResult {
+    // Given two durable work items and a database fault on any claim made while one is leased.
+    let fixture = Fixture::new("fail-batch-claim").await?;
     seed_pair(&fixture).await?;
     let pool = reject_second_claim(&fixture).await?;
-    let executor = ApiExecutor::new(executor_config(4)?)?;
-    let calls = AtomicUsize::new(0);
-    let mut leases = Vec::new();
-    let progress = crate::control::Progress::new(None);
-    // When the second real SQL claim fails, including cancellation during that admission.
-    let error = draining::admission::claim_batch(
-        &fixture.store,
-        &executor,
-        4,
-        &mut leases,
-        &progress,
-        || async {
-            let ordinal = calls.fetch_add(1, Ordering::SeqCst);
-            if ordinal == 1 && cancel {
-                executor.cancel();
-            }
-            fixture
-                .store
-                .claim(&fixture.sweep, fixture.now, fixture.lease_ms)
-                .await
-                .map_err(SweepError::from)
-        },
-    )
-    .await
-    .err()
-    .ok_or("second claim unexpectedly succeeded")?;
+    // When the depth claim commits and the batch claim for the rest fails.
+    let error =
+        draining::admission::claim_some(&fixture.store, &fixture.sweep, fixture.lease_ms, 4, true)
+            .await
+            .err()
+            .ok_or("batch claim unexpectedly succeeded")?;
+    // Then the store fault is returned and no lease is left stranded.
     assert!(matches!(&error, SweepError::Store(_)));
     assert!(format!("{error:?}").contains("second-claim fault"));
-    assert_eq!(calls.load(Ordering::SeqCst), 2);
-    assert_eq!(executor.is_cancelled(), cancel);
-    assert!(leases.is_empty());
     let before = fixture.store.sweep_summary(&fixture.sweep).await?;
     assert_eq!(before.partial_scopes, 0);
     assert_eq!(before.work_pending, 2);
@@ -86,10 +74,8 @@ async fn failed_admission(cancel: bool) -> TestResult {
         .await?;
     assert_eq!(
         active, 0,
-        "successful earlier claim was stranded after admission failed"
+        "successful earlier claim was stranded after the batch claim failed"
     );
-    tokio::task::yield_now().await;
-    assert_eq!(fixture.store.sweep_summary(&fixture.sweep).await?, before);
     let generations = [
         recover_complete(&fixture).await?,
         recover_complete(&fixture).await?,
@@ -108,69 +94,62 @@ async fn failed_admission(cancel: bool) -> TestResult {
     Ok(())
 }
 
-async fn recover_complete(fixture: &Fixture) -> TestResult<i64> {
-    let lease = fixture
-        .store
-        .claim(&fixture.sweep, now_ms()?, fixture.lease_ms)
-        .await?
-        .ok_or("released work is not immediately recoverable")?;
-    let generation = lease.generation();
-    fixture
-        .store
-        .finish_scope(lease, ScopeOutcome::Complete, now_ms()?, None)
-        .await?;
-    Ok(generation)
-}
-
 #[tokio::test]
-async fn given_first_claim_committed_when_second_claim_fails_then_prior_lease_is_released_before_error_returns()
+async fn given_two_pending_scopes_when_claimed_with_and_without_depth_then_the_limit_holds_and_depth_is_reported()
 -> TestResult {
-    failed_admission(false).await
-}
-
-#[tokio::test]
-async fn given_first_claim_committed_when_second_claim_fails_during_cancellation_then_prior_lease_is_released_before_error_returns()
--> TestResult {
-    failed_admission(true).await
-}
-
-#[tokio::test]
-async fn given_impossible_batch_capacity_when_admission_starts_then_reservation_fails_before_any_durable_claim()
--> TestResult {
-    let fixture = Fixture::new("reserve-before-claim").await?;
+    // Given two durable work items.
+    let fixture = Fixture::new("claim-some-limits").await?;
     seed_pair(&fixture).await?;
-    let executor = ApiExecutor::new(executor_config(4)?)?;
-    let calls = AtomicUsize::new(0);
-    let mut leases = Vec::new();
-    let progress = crate::control::Progress::new(None);
-    let result = draining::admission::claim_batch(
-        &fixture.store,
-        &executor,
-        usize::MAX,
-        &mut leases,
-        &progress,
-        || async {
-            let _ = calls.fetch_add(1, Ordering::SeqCst);
-            fixture
-                .store
-                .claim(&fixture.sweep, fixture.now, fixture.lease_ms)
-                .await
-                .map_err(SweepError::from)
-        },
-    )
-    .await;
-    assert!(result.is_err());
-    assert_eq!(calls.load(Ordering::SeqCst), 0);
-    assert!(leases.is_empty());
-    let first = fixture
-        .store
-        .claim(&fixture.sweep, now_ms()?, fixture.lease_ms)
-        .await?
-        .ok_or("capacity failure consumed unclaimed work")?;
-    assert_eq!(first.generation(), 1);
-    fixture
-        .store
-        .finish_scope(first, ScopeOutcome::Partial, now_ms()?, None)
-        .await?;
+    // When one lease is claimed with depth, then the rest without, then again with depth.
+    let first =
+        draining::admission::claim_some(&fixture.store, &fixture.sweep, fixture.lease_ms, 1, true)
+            .await?;
+    let rest =
+        draining::admission::claim_some(&fixture.store, &fixture.sweep, fixture.lease_ms, 4, false)
+            .await?;
+    let empty =
+        draining::admission::claim_some(&fixture.store, &fixture.sweep, fixture.lease_ms, 4, true)
+            .await?;
+    // Then the limit of one is honoured, the depth counts both scopes, and nothing is left.
+    assert_eq!(first.len(), 1);
+    assert_eq!(
+        first.first().and_then(|lease| lease.pending_work()),
+        Some(2)
+    );
+    assert_eq!(rest.len(), 1);
+    assert_ne!(
+        first.first().map(|lease| lease.scope()),
+        rest.first().map(|lease| lease.scope())
+    );
+    assert!(empty.is_empty());
+    Ok(())
+}
+
+#[test]
+fn given_pages_in_flight_when_a_claim_returns_nothing_then_progress_reports_an_empty_queue()
+-> TestResult {
+    // Given a progress channel and three pages still in flight.
+    let (sender, mut receiver) = tokio::sync::mpsc::channel(4);
+    let progress = crate::control::Progress::new(Some(sender));
+    // When one claim returns nothing, then the next returns five leases at a depth of forty.
+    let (depth, in_flight) = draining::admission::queue_report(None, 3, 0);
+    progress.queue(depth, in_flight);
+    let (depth, in_flight) = draining::admission::queue_report(Some(40), 3, 5);
+    progress.queue(depth, in_flight);
+    // Then the first event shows nothing waiting and the second counts all eight as in flight.
+    assert_eq!(
+        receiver.try_recv()?,
+        crate::control::ProgressEvent::Queue {
+            pending: 0,
+            in_flight: 3
+        }
+    );
+    assert_eq!(
+        receiver.try_recv()?,
+        crate::control::ProgressEvent::Queue {
+            pending: 32,
+            in_flight: 8
+        }
+    );
     Ok(())
 }

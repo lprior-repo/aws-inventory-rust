@@ -53,10 +53,8 @@ impl Accumulators {
         }
     }
 
-    pub(crate) fn claimed(&self, present: bool) {
-        if present {
-            add(&self.claims, 1);
-        }
+    pub(crate) fn claimed(&self, leases: usize) {
+        add(&self.claims, u64::try_from(leases).unwrap_or(u64::MAX));
     }
 
     pub(crate) fn skipped_children(&self, count: u64) {
