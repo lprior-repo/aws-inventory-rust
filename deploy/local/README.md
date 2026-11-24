@@ -31,30 +31,64 @@ which is PostgreSQL 18.7. The named volume is
 never a bind mount. The old `inventory-local_inventory-pgdata` volume holds a
 PostgreSQL 16 cluster and is left untouched. No data is migrated automatically.
 
-To migrate the default `inventory` database, stop the PostgreSQL 16 deployment
-before mounting its volume. Start a temporary 16 server without network access:
+Stop the PostgreSQL 16 deployment before mounting its volume. Run the migration
+below in a POSIX shell with Podman (replace `podman` with `docker` for Docker).
+It requires an existing PostgreSQL 16 volume and a **new**
+`inventory-local_inventory-pgdata-18` volume. Do not run `postgres up` until
+the migration finishes. Bootstrap with a login name not present in the old
+cluster, so the dump can create the original `inventory` role and database.
+The dump includes role password hashes; keep it private.
 
 ```sh
-podman run -d --rm --name inventory-pg16-export --network none \
-  -v inventory-local_inventory-pgdata:/var/lib/postgresql/data \
-  docker.io/library/postgres:16-bookworm
-podman exec inventory-pg16-export pg_isready -U inventory -d inventory
-podman exec inventory-pg16-export pg_dump -U inventory -Fc inventory > inventory.pg16.dump
-podman stop inventory-pg16-export
+(
+  set -eu
+  wait_ready() {
+    attempts=0
+    until podman exec "$1" pg_isready -q -h 127.0.0.1 -U "$2" -d "$3"; do
+      attempts=$((attempts + 1))
+      if [ "$attempts" -ge 60 ]; then
+        printf '%s did not become ready\n' "$1" >&2
+        exit 1
+      fi
+      sleep 1
+    done
+  }
+  old=inventory-local_inventory-pgdata
+  new=inventory-local_inventory-pgdata-18
+  podman volume inspect "$old" >/dev/null
+  existing=$(podman volume ls --quiet --filter "name=^$new$")
+  if [ -n "$existing" ]; then
+    printf 'Refusing to import: volume %s already exists\n' "$new" >&2
+    exit 1
+  fi
+  podman run -d --rm --name inventory-pg16-export --network none \
+    -v "$old:/var/lib/postgresql/data" docker.io/library/postgres:16-bookworm
+  wait_ready inventory-pg16-export inventory inventory
+  (umask 077; set -C; podman exec inventory-pg16-export \
+    pg_dumpall -U inventory > inventory.pg16.sql)
+  podman stop inventory-pg16-export
+
+  podman volume create "$new"
+  password=$(openssl rand -hex 32)
+  podman run -d --rm --name inventory-pg18-import --network none \
+    -e POSTGRES_USER=inventory_pg18_restore -e POSTGRES_DB=postgres \
+    -e POSTGRES_PASSWORD="$password" -v "$new:/var/lib/postgresql" \
+    docker.io/library/postgres:18-trixie@sha256:c699303802144847d238196173655dbbecf7a96aeca1565f2b02eb671a1f0b6b
+  wait_ready inventory-pg18-import inventory_pg18_restore postgres
+  podman exec -i inventory-pg18-import \
+    psql -X -v ON_ERROR_STOP=1 -U inventory_pg18_restore -d postgres < inventory.pg16.sql
+  podman exec inventory-pg18-import psql -X -v ON_ERROR_STOP=1 -U inventory -d inventory \
+    -c 'ALTER ROLE inventory_pg18_restore NOLOGIN PASSWORD NULL'
+  podman stop inventory-pg18-import
+)
 ```
 
-Wait for readiness before dumping. Start PostgreSQL 18 and restore to its fresh
-`inventory` database (replace `podman` with `docker` if using Docker):
-
-```sh
-inventory-harness postgres up
-podman compose -p inventory-local -f deploy/local/compose.yaml exec -T postgres \
-  pg_restore --exit-on-error -U inventory -d inventory < inventory.pg16.dump
-```
-
-For a customized cluster with extra roles or databases, use `pg_dumpall` and
-restore those objects with an administrative role. After verifying the restore,
-you can remove the old volume manually with
+The import image must match the pin in `compose.yaml`. On error, stop any
+temporary container that remains before investigating. Do not start a partially
+restored cluster. On success, run `inventory-harness postgres up`; the new
+cluster keeps the restored role passwords. Verify the databases and roles
+before removing the protected dump. Only after verifying the migration
+can you remove the old volume manually with
 `podman volume rm inventory-local_inventory-pgdata` (or `docker volume rm`).
 `down` keeps named volumes; `down --volumes` irreversibly deletes the current
 deployment's volume. The port is loopback
