@@ -13,7 +13,7 @@ pub use views::{
     Paginator, Service, Shape, Target, TimestampFormat, ValueConstraints, WireTraits, XmlNamespace,
 };
 
-pub const CATALOG_VERSION: i64 = 3;
+pub const CATALOG_VERSION: i64 = 4;
 
 /// Bound on the whole embedded catalog. The catalog is a trusted build
 /// artifact that nests one independently record-bounded blob per service, so

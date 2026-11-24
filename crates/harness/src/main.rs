@@ -66,6 +66,12 @@ async fn routed_command(arguments: &[String]) -> Option<ExitCode> {
     {
         return Some(inventory_harness::probe::command(rest).await);
     }
+    if let [seed, draft, rest @ ..] = arguments
+        && seed == "seed"
+        && draft == "draft"
+    {
+        return Some(seed_draft(rest));
+    }
     if let [seed, run, rest @ ..] = arguments
         && seed == "seed"
         && matches!(run.as_str(), "run" | "validate")
@@ -89,6 +95,20 @@ async fn run_cloud_control(arguments: &[String]) -> ExitCode {
                 ExitCode::FAILURE
             }
         }
+        Err(error) => {
+            eprintln!("{error}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn seed_draft(arguments: &[String]) -> ExitCode {
+    let result = cli::parse_seed_draft(arguments).and_then(|(service, catalog, output)| {
+        inventory_harness::inventory_seed::draft::run(&service, &catalog, output.as_deref())
+            .map_err(|error| HarnessError::invalid(error.to_string()))
+    });
+    match result {
+        Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("{error}");
             ExitCode::FAILURE

@@ -222,4 +222,18 @@ mod text_bounds {
         assert!(crate::inventory_seed::literal::validate(&Value::Text(text)).is_err());
         Ok(())
     }
+
+    #[test]
+    fn given_five_digit_repeat_when_text_is_expanded_then_the_reserved_length_is_exact()
+    -> Result<(), SeedError> {
+        assert_eq!(
+            text_value("inv-topic-{n}", 9999)?,
+            SeedInputValue::Text(String::from("inv-topic-10000"))
+        );
+        assert_eq!(
+            text_value("inv-topic-{n}", 65534)?,
+            SeedInputValue::Text(String::from("inv-topic-65535"))
+        );
+        Ok(())
+    }
 }

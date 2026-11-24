@@ -27,8 +27,8 @@ pub(super) fn encode(
     if !members.is_empty() {
         fields.push((CatalogKey::Members, Value::List(members)));
     }
-    fields.extend(targets(&shape.kind, indexes)?);
-    fields.extend(metadata::shape_fields(&shape.traits)?);
+    fields.extend(targets(&shape.kind, indexes, all_shapes)?);
+    fields.extend(metadata::shape_fields(shape)?);
     fields.extend(enum_values::field(shape)?);
     fields.extend(references::fields(shape)?);
     map(fields)
@@ -113,17 +113,19 @@ fn member_value(
 fn targets(
     kind: &ShapeKind,
     indexes: &BTreeMap<&str, usize>,
+    all_shapes: &BTreeMap<String, Shape>,
 ) -> Result<Vec<(CatalogKey, Value)>, CompileError> {
     match kind {
         ShapeKind::List { member } => {
             let mut fields = vec![(CatalogKey::Element, reference(&member.target, indexes)?)];
             fields.push(metadata::pseudo_field(
-                &member.traits,
+                member,
                 CatalogKey::ElementWire,
+                all_shapes,
             )?);
             Ok(fields)
         }
-        ShapeKind::Map { key, value } => map_targets(key, value, indexes),
+        ShapeKind::Map { key, value } => map_targets(key, value, indexes, all_shapes),
         _ => Ok(Vec::new()),
     }
 }
@@ -132,15 +134,21 @@ fn map_targets(
     key: &crate::smithy::model::Target,
     value: &crate::smithy::model::Target,
     indexes: &BTreeMap<&str, usize>,
+    all_shapes: &BTreeMap<String, Shape>,
 ) -> Result<Vec<(CatalogKey, Value)>, CompileError> {
     let mut fields = vec![
         (CatalogKey::MapKey, reference(&key.target, indexes)?),
         (CatalogKey::MapValue, reference(&value.target, indexes)?),
     ];
-    fields.push(metadata::pseudo_field(&key.traits, CatalogKey::MapKeyWire)?);
     fields.push(metadata::pseudo_field(
-        &value.traits,
+        key,
+        CatalogKey::MapKeyWire,
+        all_shapes,
+    )?);
+    fields.push(metadata::pseudo_field(
+        value,
         CatalogKey::MapValueWire,
+        all_shapes,
     )?);
     Ok(fields)
 }

@@ -27,6 +27,15 @@
   immutable hash-exclusion paths instead of copying them per row; endpoint-cache
   hits borrow region keys. Record bytes, exclusion values and content hashes
   remain unchanged.
+- `inventory-harness seed draft --service <name> [--catalog <file>] [--output <file>]`
+  drafts a seed file from the create operations in the compiled catalog. A step
+  that cannot be drafted (sensitive required input, unresolved or ambiguous
+  reference, unsupported pattern, unrepresentable integer range, home-region
+  scope, traversal limit) is written commented out under `# Disabled: <reason>`
+  and does not stop the other steps. Output cannot target
+  `crates/harness/seeds`, including through a symlink.
+- Catalog version 4 retains modeled integer bounds for seed drafting.
+  Regenerate catalogs before use; version 3 catalogs are rejected.
 - Marketplace Agreement discovery now sends the pinned model's documented-required
   `AgreementType=PurchaseAgreement` filter on initial and subsequent search pages.
   Existing catalog/database pairs must be regenerated together for the new plan.

@@ -7,9 +7,13 @@ use std::collections::BTreeMap;
 
 const LENGTH: &str = "smithy.api#length";
 const PATTERN: &str = "smithy.api#pattern";
+const RANGE: &str = "smithy.api#range";
 const MAX_PATTERN_BYTES: usize = 16_384;
 
-pub(super) fn field(traits: &BTreeMap<String, Json>) -> Result<(CatalogKey, Value), CompileError> {
+pub(super) fn field(
+    traits: &BTreeMap<String, Json>,
+    integer: bool,
+) -> Result<(CatalogKey, Value), CompileError> {
     let mut fields = BTreeMap::new();
     if let Some(length) = traits.get(LENGTH) {
         let object = length.as_object().ok_or_else(|| invalid(LENGTH))?;
@@ -47,6 +51,9 @@ pub(super) fn field(traits: &BTreeMap<String, Json>) -> Result<(CatalogKey, Valu
             Value::Text(pattern.to_owned()),
         );
     }
+    if integer {
+        integer_range(traits.get(RANGE), &mut fields)?;
+    }
     Ok((
         CatalogKey::ValueConstraints,
         if fields.is_empty() {
@@ -55,6 +62,29 @@ pub(super) fn field(traits: &BTreeMap<String, Json>) -> Result<(CatalogKey, Valu
             Value::Map(fields)
         },
     ))
+}
+
+fn integer_range(
+    range: Option<&Json>,
+    fields: &mut BTreeMap<Key, Value>,
+) -> Result<(), CompileError> {
+    let Some(range) = range else {
+        return Ok(());
+    };
+    let range = range.as_object().ok_or_else(|| invalid(RANGE))?;
+    for (name, id) in [("min", 4), ("max", 5)] {
+        let Some(bound) = range.get(name) else {
+            continue;
+        };
+        if let Some(value) = bound.as_i64() {
+            fields.insert(Key::Field(FieldId::new(id)?), Value::Int(value));
+        } else if bound.is_number() {
+            fields.insert(Key::Field(FieldId::new(6)?), Value::Bool(true));
+        } else {
+            return Err(invalid(RANGE));
+        }
+    }
+    Ok(())
 }
 
 fn bound(length: &Json, key: &str) -> Result<Option<i64>, CompileError> {
@@ -88,7 +118,7 @@ mod tests {
                 serde_json::json!("^arn:aws:wisdom:[a-z0-9-]+:.*$"),
             ),
         ]);
-        let (key, encoded) = field(&traits)?;
+        let (key, encoded) = field(&traits, false)?;
         assert_eq!(key, CatalogKey::ValueConstraints);
         assert_eq!(
             encoded,
@@ -102,7 +132,7 @@ mod tests {
             ]))
         );
         assert_eq!(
-            field(&BTreeMap::new())?,
+            field(&BTreeMap::new(), false)?,
             (CatalogKey::ValueConstraints, Value::Null)
         );
         Ok(())
@@ -120,15 +150,17 @@ mod tests {
             serde_json::json!({"max":4,"unit":1}),
             serde_json::json!({"min":5,"max":4,"unit":"bytes"}),
         ] {
-            assert!(matches!(field(&BTreeMap::from([(LENGTH.into(), length)])),
-                Err(CompileError::Trait(name)) if name == LENGTH));
+            assert!(
+                matches!(field(&BTreeMap::from([(LENGTH.into(), length)]), false),
+                Err(CompileError::Trait(name)) if name == LENGTH)
+            );
         }
         for pattern in [
             serde_json::json!(false),
             serde_json::json!("x".repeat(MAX_PATTERN_BYTES + 1)),
         ] {
             assert!(
-                matches!(field(&BTreeMap::from([(PATTERN.into(), pattern)])),
+                matches!(field(&BTreeMap::from([(PATTERN.into(), pattern)]), false),
                 Err(CompileError::Trait(name)) if name == PATTERN)
             );
         }
@@ -142,7 +174,10 @@ mod tests {
             serde_json::json!({"max":8192,"unit":"bytes"}),
         )]);
         // When/Then: the size bound is not misreported as an entry count.
-        assert_eq!(field(&traits)?, (CatalogKey::ValueConstraints, Value::Null));
+        assert_eq!(
+            field(&traits, false)?,
+            (CatalogKey::ValueConstraints, Value::Null)
+        );
         Ok(())
     }
 
@@ -154,7 +189,7 @@ mod tests {
             (serde_json::json!({"max":255}), 2, 255),
         ] {
             assert_eq!(
-                field(&BTreeMap::from([(LENGTH.into(), source)]))?,
+                field(&BTreeMap::from([(LENGTH.into(), source)]), false)?,
                 (
                     CatalogKey::ValueConstraints,
                     Value::Map(BTreeMap::from([(
@@ -165,7 +200,10 @@ mod tests {
             );
         }
         assert_eq!(
-            field(&BTreeMap::from([(LENGTH.into(), serde_json::json!({}))]))?,
+            field(
+                &BTreeMap::from([(LENGTH.into(), serde_json::json!({}))]),
+                false
+            )?,
             (CatalogKey::ValueConstraints, Value::Null)
         );
         Ok(())
@@ -176,10 +214,10 @@ mod tests {
     -> TestResult {
         for pattern in [String::new(), "é".repeat(MAX_PATTERN_BYTES / 2)] {
             assert_eq!(
-                field(&BTreeMap::from([(
-                    PATTERN.into(),
-                    serde_json::json!(&pattern)
-                )]))?,
+                field(
+                    &BTreeMap::from([(PATTERN.into(), serde_json::json!(&pattern))]),
+                    false
+                )?,
                 (
                     CatalogKey::ValueConstraints,
                     Value::Map(BTreeMap::from([(
@@ -239,7 +277,7 @@ mod tests {
             }
             // Then: every explicit bound and pattern survives without invented bounds.
             assert_eq!(
-                field(&shape.traits)?,
+                field(&shape.traits, false)?,
                 (CatalogKey::ValueConstraints, Value::Map(expected))
             );
         }
@@ -255,7 +293,7 @@ mod tests {
             "traits":{"smithy.api#length":{"max":100}}
         }))?;
         // When: deserialized member traits pass through the metadata compiler.
-        let encoded = field(&member.traits)?;
+        let encoded = field(&member.traits, false)?;
         // Then: the explicit maximum survives and no minimum is invented.
         assert_eq!(
             encoded,
@@ -293,7 +331,64 @@ mod tests {
             // Then: the payload is retained faithfully and fails with the exact trait name.
             assert_eq!(shape.traits.get(name), Some(&payload));
             assert!(
-                matches!(field(&shape.traits), Err(CompileError::Trait(trait_name)) if trait_name == name)
+                matches!(field(&shape.traits, false), Err(CompileError::Trait(trait_name)) if trait_name == name)
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn given_integer_range_when_compiled_then_explicit_minima_and_maxima_are_retained() -> TestResult
+    {
+        for minimum in [i64::MIN, -7, 0, 10, i64::MAX] {
+            let traits = BTreeMap::from([(RANGE.into(), serde_json::json!({"min":minimum}))]);
+            assert_eq!(
+                field(&traits, true)?,
+                (
+                    CatalogKey::ValueConstraints,
+                    Value::Map(BTreeMap::from([(
+                        Key::Field(FieldId::new(4)?),
+                        Value::Int(minimum)
+                    )]))
+                )
+            );
+            assert_eq!(
+                field(&traits, false)?,
+                (CatalogKey::ValueConstraints, Value::Null)
+            );
+        }
+        let traits = BTreeMap::from([(RANGE.into(), serde_json::json!({"max":20}))]);
+        assert_eq!(
+            field(&traits, true)?,
+            (
+                CatalogKey::ValueConstraints,
+                Value::Map(BTreeMap::from([(
+                    Key::Field(FieldId::new(5)?),
+                    Value::Int(20)
+                )]))
+            )
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn given_unrepresentable_integer_range_when_compiled_then_marker_preserves_the_other_bound()
+    -> TestResult {
+        for minimum in [
+            serde_json::json!(9223372036854775808_u64),
+            serde_json::json!(1.5),
+        ] {
+            let traits =
+                BTreeMap::from([(RANGE.into(), serde_json::json!({"min":minimum,"max":20}))]);
+            assert_eq!(
+                field(&traits, true)?,
+                (
+                    CatalogKey::ValueConstraints,
+                    Value::Map(BTreeMap::from([
+                        (Key::Field(FieldId::new(5)?), Value::Int(20)),
+                        (Key::Field(FieldId::new(6)?), Value::Bool(true)),
+                    ]))
+                )
             );
         }
         Ok(())

@@ -78,7 +78,14 @@ impl<'a> Shape<'a> {
     pub fn accepts_enum_value(self, value: ValueRef<'_>) -> Result<bool, CatalogError> {
         enum_values::accepts(self.map, self.kind()?, value)
     }
-    /// Borrows the retained Smithy length and pattern constraints.
+    /// Borrows the first retained enum wire value, if this shape declares any.
+    ///
+    /// # Errors
+    /// Returns an error when the retained enum metadata is malformed.
+    pub fn first_enum_value(self) -> Result<Option<ValueRef<'a>>, CatalogError> {
+        enum_values::first(self.map, self.kind()?)
+    }
+    /// Borrows retained Smithy length, pattern and integer range constraints.
     ///
     /// Missing metadata fails closed; explicit null means unconstrained.
     pub fn value_constraints(self) -> Result<ValueConstraints<'a>, CatalogError> {

@@ -4,6 +4,20 @@ use inventory_harness::{HarnessError, install};
 
 use super::{Command, USAGE, workspace_root};
 
+pub(super) type SeedDraftOptions = (String, PathBuf, Option<PathBuf>);
+
+pub(super) fn parse_seed_draft(arguments: &[String]) -> Result<SeedDraftOptions, HarnessError> {
+    let options = options(arguments, &["--service", "--catalog", "--output"], &[])?;
+    let service = options
+        .text("--service")
+        .filter(|value| !value.is_empty())
+        .ok_or_else(|| HarnessError::invalid("seed draft requires --service <name>"))?;
+    let catalog = options
+        .get("--catalog")
+        .unwrap_or_else(|| workspace_root().join("catalog/aws-api.catalog"));
+    Ok((service, catalog, options.get("--output")))
+}
+
 pub(super) fn parse(arguments: &[String]) -> Result<Command, HarnessError> {
     match arguments.first().map(String::as_str) {
         Some("snapshot") if arguments.get(1).map(String::as_str) == Some("freeze") => {
@@ -421,6 +435,50 @@ mod tests {
             .collect();
         let accepted: BTreeSet<_> = VERIFY_CLOUD_CONTROL_FLAGS.iter().copied().collect();
         assert_eq!(documented, accepted);
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod seed_draft_tests {
+    use super::*;
+
+    #[test]
+    fn given_draft_options_when_parsed_then_service_catalog_and_output_are_preserved()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let arguments = [
+            "--service",
+            "sns",
+            "--catalog",
+            "/tmp/model.catalog",
+            "--output",
+            "/tmp/sns.toml",
+        ]
+        .map(String::from);
+        let (service, catalog, output) = parse_seed_draft(&arguments)?;
+        assert_eq!(service, "sns");
+        assert_eq!(catalog, PathBuf::from("/tmp/model.catalog"));
+        assert_eq!(output, Some(PathBuf::from("/tmp/sns.toml")));
+        let (service, catalog, output) = parse_seed_draft(&["--service".into(), "ec2".into()])?;
+        assert_eq!(service, "ec2");
+        assert_eq!(catalog, workspace_root().join("catalog/aws-api.catalog"));
+        assert_eq!(output, None);
+        let error = parse_seed_draft(&[]).err().ok_or("expected an error")?;
+        assert_eq!(error.to_string(), "seed draft requires --service <name>");
+        Ok(())
+    }
+
+    #[test]
+    fn given_empty_service_or_unknown_flag_when_parsed_then_exact_errors_are_returned()
+    -> Result<(), Box<dyn std::error::Error>> {
+        let error = parse_seed_draft(&["--service".into(), String::new()])
+            .err()
+            .ok_or("expected an error")?;
+        assert_eq!(error.to_string(), "seed draft requires --service <name>");
+        let error = parse_seed_draft(&["--unknown".into(), "value".into()])
+            .err()
+            .ok_or("expected an error")?;
+        assert_eq!(error.to_string(), format!("unexpected --unknown; {USAGE}"));
         Ok(())
     }
 }

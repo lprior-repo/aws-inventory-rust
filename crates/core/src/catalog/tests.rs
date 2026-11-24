@@ -125,6 +125,14 @@ fn unsupported_root_version_is_reported() -> TestResult {
     Ok(())
 }
 #[test]
+fn given_version_three_catalog_when_borrowed_then_exact_version_error_is_returned() -> TestResult {
+    let bytes = root(service()?, 3)?;
+    let error = Catalog::borrow(&bytes).err().ok_or("expected an error")?;
+    assert_eq!(error.to_string(), "unsupported catalog version 3");
+    assert!(matches!(error, CatalogError::Version(3)));
+    Ok(())
+}
+#[test]
 fn malformed_service_is_deferred_until_first_access() -> TestResult {
     let mut fields = match service()? {
         Value::Map(fields) => fields,

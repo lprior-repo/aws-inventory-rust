@@ -1,17 +1,16 @@
 use super::{CompileError, encode::map};
-use crate::smithy::model::{Member, Shape};
+use crate::smithy::model::{Member, Shape, ShapeKind, Target};
 use inventory_core::{catalog::CatalogKey, record::Value};
 use serde_json::Value as Json;
 use std::collections::BTreeMap;
 mod value_constraints;
 
-pub(super) fn shape_fields(
-    traits: &BTreeMap<String, Json>,
-) -> Result<Vec<(CatalogKey, Value)>, CompileError> {
+pub(super) fn shape_fields(shape: &Shape) -> Result<Vec<(CatalogKey, Value)>, CompileError> {
+    let traits = &shape.traits;
     let mut fields = wire_fields(traits, false)?;
     shape_names(traits, &mut fields)?;
     shape_error_metadata(traits, &mut fields)?;
-    fields.push(value_constraints::field(traits)?);
+    fields.push(value_constraints::field(traits, integer_kind(&shape.kind))?);
     Ok(fields)
 }
 
@@ -80,17 +79,52 @@ pub(super) fn member_fields(
 ) -> Result<Vec<(CatalogKey, Value)>, CompileError> {
     let mut fields = wire_fields(&member.traits, true)?;
     fields.extend(super::defaults::fields(&member.traits, target, shapes)?);
-    fields.push(value_constraints::field(&member.traits)?);
+    fields.push(value_constraints::field(
+        &member.traits,
+        integer_target(target, shapes),
+    )?);
     Ok(fields)
 }
 
 pub(super) fn pseudo_field(
-    traits: &BTreeMap<String, Json>,
+    target: &Target,
     key: CatalogKey,
+    shapes: &BTreeMap<String, Shape>,
 ) -> Result<(CatalogKey, Value), CompileError> {
+    let traits = &target.traits;
     let mut fields = wire_fields(traits, true)?;
-    fields.push(value_constraints::field(traits)?);
+    fields.push(value_constraints::field(
+        traits,
+        integer_target(&target.target, shapes),
+    )?);
     Ok((key, map(fields)?))
+}
+
+fn integer_kind(kind: &ShapeKind) -> bool {
+    matches!(
+        kind,
+        ShapeKind::Byte
+            | ShapeKind::Short
+            | ShapeKind::Integer
+            | ShapeKind::Long
+            | ShapeKind::BigInteger
+    )
+}
+
+fn integer_target(target: &str, shapes: &BTreeMap<String, Shape>) -> bool {
+    shapes.get(target).map_or_else(
+        || {
+            matches!(
+                target,
+                "smithy.api#Byte"
+                    | "smithy.api#Short"
+                    | "smithy.api#Integer"
+                    | "smithy.api#Long"
+                    | "smithy.api#BigInteger"
+            )
+        },
+        |shape| integer_kind(&shape.kind),
+    )
 }
 
 fn wire_fields(

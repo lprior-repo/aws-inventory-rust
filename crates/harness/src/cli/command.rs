@@ -7,6 +7,7 @@ inventory-harness catalog universal --root <dir> [--check]\n  \
 inventory-harness probe --catalog <file> --endpoint <https-loopback> \
 --ca-bundle <file> --region <name> --report <file> [--service <name>]...\n  \
 inventory-harness seed validate --seeds <dir> --catalog <file> [--service <name>]...\n  \
+inventory-harness seed draft --service <name> [--catalog <file>] [--output <file>]\n  \
 inventory-harness seed run --seeds <dir> --catalog <file> --endpoint <https-loopback> \
 --ca-bundle <file> --region <name> [--service <name>]... [--concurrency <1..64>] --oracle <file> --matrix <file>\n  \
 inventory-harness seed s3 --bucket <name>\n  \
