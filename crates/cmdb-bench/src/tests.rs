@@ -84,3 +84,16 @@ fn generator_refuses_nonempty_existing_database() -> TestResult {
     assert!(ensure_fresh(&path).is_err());
     Ok(())
 }
+
+#[test]
+fn layout_command_parses_target_nodes() -> TestResult {
+    let command = parse_command(["layout", "1000"].map(str::to_owned).into_iter())?;
+    assert!(matches!(command, Command::Layout(_)));
+    Ok(())
+}
+
+#[test]
+fn layout_command_rejects_zero_and_extra_arguments() {
+    assert!(parse_command(["layout", "0"].map(str::to_owned).into_iter()).is_err());
+    assert!(parse_command(["layout", "10", "extra"].map(str::to_owned).into_iter()).is_err());
+}

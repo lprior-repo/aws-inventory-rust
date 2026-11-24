@@ -9,6 +9,7 @@ use std::path::PathBuf;
 
 mod compare;
 mod generate;
+mod layout;
 mod measure;
 mod open;
 mod sweep;
@@ -20,7 +21,7 @@ mod pipeline_oracle;
 #[cfg(test)]
 mod tests;
 
-const USAGE: &str = "usage: cmdb-bench generate <synthetic-reader-db> <accounts> <resources-per-account> | measure <database> | pipeline <fresh-db> <compiled-catalog> <pages-per-scope> <rows-per-page:0..1000> <concurrency:1..64> [<loopback-redis-url> <fresh-cmdb_bench_graph>] | sweep --collector <path> --profile thin|full|proxy [--runs <1..100>] [--proxy latency_ms=<n>,rps=<n>] [--out <file>] [--catalog <file>] [--work <empty-dir>] [--service <recipe>]... [--server container|native|managed] [--volume named|bind|native-disk] [--build release|debug] | open --catalog <file> | compare <before> <after> [--band <percent>] [--allow-different-server]; compare exits 0: no regression, 1: regressed, 2: refused";
+const USAGE: &str = "usage: cmdb-bench generate <synthetic-reader-db> <accounts> <resources-per-account> | measure <database> | pipeline <fresh-db> <compiled-catalog> <pages-per-scope> <rows-per-page:0..1000> <concurrency:1..64> [<loopback-redis-url> <fresh-cmdb_bench_graph>] | sweep --collector <path> --profile thin|full|proxy [--runs <1..100>] [--proxy latency_ms=<n>,rps=<n>] [--out <file>] [--catalog <file>] [--work <empty-dir>] [--service <recipe>]... [--server container|native|managed] [--volume named|bind|native-disk] [--build release|debug] | layout <target-nodes:1..4000000> | open --catalog <file> | compare <before> <after> [--band <percent>] [--allow-different-server]; compare exits 0: no regression, 1: regressed, 2: refused";
 const MAX_RESOURCES: usize = 10_000_000;
 
 #[derive(Debug)]
@@ -37,6 +38,7 @@ enum Command {
     Measure {
         path: PathBuf,
     },
+    Layout(layout::LayoutArgs),
 }
 
 fn required(args: &mut impl Iterator<Item = String>) -> Result<String, Box<dyn Error>> {
@@ -57,6 +59,7 @@ fn parse_command(mut args: impl Iterator<Item = String>) -> Result<Command, Box<
         "measure" => parse_measure(&mut args),
         "pipeline" => parse_pipeline(&mut args),
         "sweep" => Ok(Command::Sweep(sweep::args::parse(&mut args)?)),
+        "layout" => Ok(Command::Layout(layout::parse(&mut args)?)),
         "open" => Ok(Command::Open(open::parse(&mut args)?)),
         "compare" => Ok(Command::Compare(compare::parse_args(&mut args)?)),
         _ => Err(USAGE.into()),
@@ -156,6 +159,7 @@ async fn main() -> Result<std::process::ExitCode, Box<dyn Error>> {
             per_account,
         } => generate(path, accounts, per_account).await,
         Command::Measure { path } => measure(path).await,
+        Command::Layout(args) => layout::run(&args).map_err(Into::into),
     };
     result.map(|()| std::process::ExitCode::SUCCESS)
 }

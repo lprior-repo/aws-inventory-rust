@@ -1440,6 +1440,7 @@ version = "0.6.0"
 dependencies = [
  "aws-wire",
  "base16ct",
+ "cmdb-ui",
  "cmdb-view",
  "futures-util",
  "http",

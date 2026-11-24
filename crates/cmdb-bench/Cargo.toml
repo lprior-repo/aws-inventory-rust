@@ -6,6 +6,7 @@ license.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+cmdb-ui = { path = "../cmdb-ui" }
 cmdb-view = { path = "../cmdb-view" }
 inventory-core.workspace = true
 inventory-engine = { workspace = true, default-features = false }
