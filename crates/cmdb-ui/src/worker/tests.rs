@@ -391,8 +391,6 @@ async fn given_unconfigured_graph_when_user_refreshes_then_sqlite_counts_stay_us
     Ok(())
 }
 
-// A local RESP peer exercises the real Redis transport and native graph reader.
-// The first connection rejects a query; the second returns a real neighborhood.
 fn graph_reply(with_edge: bool) -> String {
     if !with_edge {
         return "*3\r\n*0\r\n*0\r\n*0\r\n".to_owned();
@@ -501,7 +499,6 @@ fn serve_graph_connection(
 #[tokio::test]
 async fn given_graph_query_failure_when_refreshing_then_recovered_neighborhood_is_not_discarded()
 -> TestResult {
-    // Given: a native transport peer that fails once, then recovers.
     let listener = std::net::TcpListener::bind("127.0.0.1:0")?;
     let endpoint = format!("redis://{}", listener.local_addr()?);
     let server = thread::spawn(move || {
@@ -520,9 +517,7 @@ async fn given_graph_query_failure_when_refreshing_then_recovered_neighborhood_i
     assert!(
         matches!(first, WorkerEvent::Graph { error: Some(error), .. } if error.contains("temporarily unavailable"))
     );
-    // When: refresh retries the previous selection independently of SQLite.
     let refreshed = access.refresh().await;
-    // Then: the actual recovered graph, not an empty status event, reaches UI.
     let WorkerEvent::Graph { graph, error } = refreshed else {
         return Err("expected graph event".into());
     };
