@@ -2,7 +2,9 @@
 
 State of every step in `docs/e2e/build/STEPS_A.md` to `STEPS_E.md` and
 `STEPS_AFTER.md`, of the exit test X1 to X10 (`README.md`) and of the release
-gate R1 to R11 (`RELEASE_GATE.md`), on commit `b98be942`.
+gate R1 to R11 (`RELEASE_GATE.md`). The rows were read on commit `b98be942`;
+the rows of A5.1, B1.1, B1.2, B2.1, B2.3, B3.2 and B3.3 were read again on
+`a8a37fa5`.
 
 ## How to read it
 
@@ -40,6 +42,12 @@ All on emulator 1.0.348 with the PostgreSQL store unless stated.
 | `inventory-harness e2e run` (all services), run 2 | `b98be942` tree | exit 1 at verify-counts after 593 s. Sweep: 988 rows, 1,377 scopes complete, 598 unsupported, 111 failed, no work remaining. 228 of 236 verified kinds match; 8 do not; 4 are listed as not verified (catalog-deferred). The second-sweep stage was not reached. |
 | `tests/sweep_e2e` ignored suite, file store (`INVENTORY_E2E_STORE=file`) | `b98be942` | exit 0; 2 passed, 0 failed; 125.55 s. The suite sweeps only `ec2:DescribeVpcs` and `ec2:DescribeSubnets` (`tests/sweep_e2e/scenario/arguments.rs:91-94`). |
 | `tests/sweep_e2e` ignored suite, PostgreSQL store | `b98be942` | exit 0; 2 passed, 0 failed; 113.63 s. Same two operations. |
+| Land gate: the strict gate, then `inventory-sweep` lib, `inventory-engine` `inventory_store` and `limiter`, and `inventory-core` | `13f8000d` | Strict 15 of 15; 1,523 passed, 0 failed, 28 ignored. Sweep lib 525 passed. Store 47 passed, 29 ignored (the PostgreSQL tests were not run). Limiter 48 passed, 1 ignored. Core exit 0. This gate did not build the `aws-inventory` binary with the `sweep` feature, and the binary did not compile on this commit (next row but two). |
+| Land gate, same commands | `e6d9e9e9` | Strict 15 of 15; 1,523 passed, 0 failed, 28 ignored. Sweep lib 525 passed. Store 47 passed, 29 ignored. Limiter 56 passed, 1 ignored. Core exit 0. Same gap: the binary was not built. |
+| Land gate, same commands | `313cdf56` | Strict 15 of 15; 1,523 passed, 0 failed, 28 ignored. Sweep lib 531 passed. Store 47 passed, 29 ignored. Limiter 61 passed, 1 ignored. Core exit 0. Same gap: the binary was not built. |
+| `cargo build --locked --features sweep` | `ac5eef2e` and `fff21d6f` | `ac5eef2e` exits 0. `fff21d6f` exits 101 with four E0277 errors: the scheduler shared `Cell` and `RefCell` state, so the sweep future was not `Send`. Every commit from `fff21d6f` to `313cdf56` has the fault; `ef3e94f8` fixes it and adds a compile-time check in the sweep crate (`crates/sweep/src/execution.rs` `_run_is_send`). |
+| Land gate, extended with the binary (clippy, build and unit tests with the `sweep` feature) and the store tests on PostgreSQL | `a8a37fa5` | One step failed. Strict 15 of 15; 1,523 passed, 0 failed, 28 ignored. Binary clippy and build exit 0; binary unit tests 78 passed, 1 ignored. **Sweep lib exit 101: 356 passed, 186 failed**, every failure a SQLite I/O error from the test's own store file under `/tmp` (code 778, 185 times; code 4874, once); passing and failing tests were interleaved. Store 47 passed, 29 ignored. Store on PostgreSQL 27 passed. Limiter 61 passed, 1 ignored. Core exit 0. |
+| Sweep lib alone, rerun on the same commit while sampling `/tmp` and memory every 2 s | `a8a37fa5` | exit 0; 542 passed, 0 failed; no I/O error; 256.04 s. During the rerun `/tmp` had 14.6 to 15.2 GB free and 54% of its inodes used, and 54 to 56 GB of memory was available. The cause of the failure in the row above is not established: nothing was sampled during the gate, seven finished worktrees were removed from `/tmp` between the two runs, and the kernel log for the gate's eight minutes has no memory or filesystem message. The same tests passed and failed on one commit, so this row does not show the failure is gone. |
 
 The 8 kinds that do not match in run 2:
 
@@ -100,12 +108,12 @@ Counted from the State column of the step tables below.
 | Section | Steps | done | partial | needs a run | not started |
 | --- | --- | --- | --- | --- | --- |
 | A | 32 | 7 | 10 | 12 | 3 |
-| B | 29 | 1 | 4 | 1 | 23 |
+| B | 29 | 1 | 8 | 1 | 19 |
 | C | 28 | 0 | 4 | 8 | 16 |
 | D | 34 | 0 | 4 | 4 | 26 |
 | E | 13 | 0 | 2 | 0 | 11 |
 | After | 46 | 1 | 12 | 1 | 32 |
-| All | 182 | 9 | 36 | 26 | 111 |
+| All | 182 | 9 | 40 | 26 | 107 |
 
 ## Section A (`build/STEPS_A.md`)
 
@@ -135,7 +143,7 @@ Counted from the State column of the step tables below.
 | A4.4 | Draft seed files from the model | not started | `crates/harness/src/inventory_seed/` listing has no `draft.rs`; `inventory_seed/draft/values.rs` absent | Everything: `draft.rs`, `values.rs`, `seed draft` subcommand |
 | A4.5 | Bulk seeding for the benchmark, and the write-capability proof | partial | `harness/seeds/bench/{dynamodb,ec2,iam,sns,sqs}.toml` exist; `tests/product_is_read_only.rs` exists; `Semaphore` at `inventory_seed/runner/reporting.rs:4,58`; `--concurrency` parsed at `inventory_seed/command/args.rs:72,103` | 10,000-resource bulk run and timing unchecked |
 | A4.6 | Seed files for everything the emulator serves | partial | `harness/seeds/` has many service files; `catalog/emulator-probe.report` lists "answered" rows (e.g. `ec2 DescribeVpcs ec2Query items 5`) | Coverage of every answered service not checked; `catalog/emulator-seed.report` matrix coverage unchecked |
-| A5.1 | Keep the reason when a scope fails (checked by hand) | partial | `crates/sweep/src/error_detail.rs` classes the error and caps it at 1,024 bytes on a character boundary; `execution/page/settlement.rs` `failed` logs it. The reason is not stored: `finish_scope` has no detail parameter and `scope_outcomes` has no `detail` column in either schema | The `detail` column in both schemas, the `finish_scope` parameter, the output shape ID for decode errors, the SQL read-back test |
+| A5.1 | Keep the reason when a scope fails (checked by hand) | partial | `crates/sweep/src/error_detail.rs` classes the error and caps it at 1,024 bytes on a character boundary. The reason is stored: `scope_outcomes.detail` exists in both schemas (SQLite adds it to an existing file at `crates/engine/src/inventory/schema.rs:266`), `finish_scope` takes it (`inventory/store_api.rs:84`), and `tests/inventory_store/postgres/outcome_detail.rs` reads it back by SQL | The output shape ID for decode errors; a decode failure driven through the fault proxy; the P8 check; an existing PostgreSQL database gets no `detail` column in place (only C1.6 upgrades one) |
 | A5.2 | The probe command and the thin-slice probe | needs a run | `crates/sweep/src/probe.rs:12,25` `pub async fn call_once` and `ProbeAnswer`, re-exported at `crates/sweep/src/lib.rs:33`; `crates/harness/src/probe.rs:66,120` calls it with `buffer_unordered(8)`; `main.rs:59` dispatches `probe`; `catalog/emulator-probe.report` committed (2,146 lines) | Thin-slice coverage of the report and the local-test-server tests unchecked; a follow-up for every `failed decode` row |
 | A5.3 | Full probe | needs a run | `catalog/emulator-probe.report` exists with outcome rows | Every callable enumeration row present (test) unchecked; no `failed decode` without cause unchecked; run probe twice unchecked |
 | A6.1 | `verify cloud-control` | not started | `crates/harness/src/verify.rs` and `verify/cloud_control.rs` missing (only `verify_delivery.rs` exists); `assertions/cloud_control.rs` exists (pre-existing, schema 13) | Everything new: verify.rs, verify/cloud_control.rs, CLI subcommand, differences tsv |
@@ -154,14 +162,14 @@ Counted from the State column of the step tables below.
 | B5.3 | The recorded table and the regression rule | not started | no match for `compare` under crates/cmdb-bench; no docs/performance-evidence/sweep-benchmark.md | Implement table recording and regression compare; produce table |
 | B5.4 | The proxy profile: latency and a rate limit | not started | no match for `proxy` profile under crates/cmdb-bench or crates/sweep | Implement proxy profile and run it |
 | B5.5 | Scale run and the final table (X9) | not started | no scale-run artifacts; no docs/performance-evidence/sweep-benchmark.md | Run scale benchmark and write final table |
-| B1.1 | The bucket key | partial | `quota_group` at `crates/catalog-tool/src/overlay/types.rs:189`; `src/plan/selection.rs:120` `quota_group` format; `src/plan/assemble.rs:82,91` | The sweep still keys its bucket by service name (`crates/sweep/src/call.rs:41`); no bucket.rs; no `quota_group` in the core runtime plan decode |
-| B1.2 | Seventy-four thousand buckets | not started | no match for `last_used` or `evicted_buckets` under crates/engine or crates/sweep | Implement bucket eviction and 74k bucket test |
-| B2.1 | A rate that can rise | not started | no match for `AdaptiveLimits`, `Seeking`, `with_default_policy`; only old `AdaptiveRate` in crates/engine/src/limiter/pacing.rs:4 and policy.rs:123,158 | Implement adaptive limiter |
+| B1.1 | The bucket key | partial | `crates/sweep/src/bucket.rs` builds `<account>/<region>/<group>`; `Call::run` uses it (`crates/sweep/src/call.rs:45-46`). `quota_group` at `crates/catalog-tool/src/overlay/types.rs:189`; `src/plan/selection.rs:120`; `src/plan/assemble.rs:82,91` | The group is still the service name: the core runtime plan does not decode `quota_group` (plan field 15). No test drives `Call::run` and reads the key. The two-region rows through the proxy. Region and endpoint discovery use the real account once it is known, where the step says the literal `bootstrap` |
+| B1.2 | Seventy-four thousand buckets | partial | `crates/engine/src/limiter/registry.rs` `evict` removes idle buckets when the registry is full; `limiter/stats.rs:29` `evicted_buckets`; `tests/limiter/eviction.rs` | Sharding; the 74,000-bucket measurement (measured: 445 bytes per bucket at 65,536, debug build). A bucket counts as idle only once its pacing interval has passed. The scan runs under the registry lock |
+| B2.1 | A rate that can rise | partial | `crates/engine/src/limiter/adaptive.rs` `Seeking`; `limiter/policy.rs:100` `AdaptiveLimits`; `limiter/construction.rs:50` `with_default_policy`; `limiter/registry.rs:67` `bucket_rates`; `tests/limiter/adaptive_policy.rs`. The sweep uses it: `crates/sweep/src/execution/rate.rs`, `execution/collection.rs` | The rows through the fault proxy. Not measured against AWS |
 | B2.2 | Learned rates in the store | not started | no rates.rs under engine/src; the `learned_rates` table exists at `crates/engine/src/inventory/postgres/schema/shared.rs:25` and `inventory/schema.rs:293` with no write path | Persistence of learned rates |
-| B2.3 | The cap flag and the quota proof | not started | no match for `max_rps` under crates/sweep or src | Add cap flag and quota proof run |
+| B2.3 | The cap flag and the quota proof | partial | `--max-rps` on `sweep` and `serve` (`src/cli/sweep.rs`, `src/cli/serve.rs`); `SweepConfig.max_rps`, refused outside 1 to 100,000 (`crates/sweep/src/config.rs`); `crates/sweep/src/execution/tests/rate_cap.rs` paces under a cap and reads the rate of the executor the sweep builds | The quota run through the fault proxy (needs B5.4); learned rates (B2.2) |
 | B3.1 | Claim several leases in one statement (checked by hand) | done | `InventoryStore::claim_batch` (`crates/engine/src/inventory/store_api.rs`); PostgreSQL claims in one statement (`postgres/lease.rs` `CLAIM`, `LIMIT $4`, `SKIP LOCKED`), decoding before commit. `tests/inventory_store/postgres/batch_claim.rs`: 7 passed against PostgreSQL; `behavior/batch_claim.rs`: 2 passed on the file store. The sweep does not call it yet; that is B3.2 | Nothing |
-| B3.2 | Keep the configured number of leases in flight | not started | no scheduler.rs; the claim loop is `draining/admission.rs:4-21`, called from `draining.rs:57,74-79`; no `FuturesUnordered` match in crates/sweep/src | Implement scheduler keeping N leases in flight |
-| B3.3 | Lift the bounds, and stay on a scope across pages | partial | crates/sweep/src/config.rs:6 `MAX_CONCURRENCY = 128` unchanged; execution.rs:69 `max_connections: config.concurrency`; engine work.rs:268 and postgres/commit.rs:45 `next_generation` present | Bound not lifted (config.rs:6,15); no /proc/self/limits match; page scope stickiness unchecked |
+| B3.2 | Keep the configured number of leases in flight | partial | `crates/sweep/src/execution/scheduler.rs` keeps up to `concurrency` pages in flight and claims as pages finish; `execution/scheduler/tests.rs` | The stall rows; a rerun of `tests/sweep_e2e` against the emulator after this change |
+| B3.3 | Lift the bounds, and stay on a scope across pages | partial | Bound lifted to 4,096: `crates/engine/src/limiter.rs:14`, `crates/sweep/src/config.rs:6`. `crates/sweep/src/execution/descriptors.rs` reads the soft open-file limit from `/proc/self/limits` and bounds connections by it | The page loop (stay on a scope for up to 64 pages); the concurrency table and the default chosen from it |
 | B4.1 | Group pages into one transaction | not started | no `group_pages` under crates/engine or crates/sweep; unchecked: absence of a grouped writer under another name in crates/engine/src | Implement grouped page writer |
 | B4.3 | The kill matrix | not started | no kill_matrix files found under crates/ or docs/e2e | Create kill matrix tests and run |
 | B4.4 | Write settings chosen from measurements | partial | crates/engine/src/inventory/postgres/config.rs:4 `PgWriteConfig` has only `max_connections` (default 8, range 1..=64) | Other write settings and measurement-based choice missing |
