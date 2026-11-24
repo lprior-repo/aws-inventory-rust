@@ -103,6 +103,7 @@ pub struct ApiExecutor {
     global: Semaphore,
     pending: Semaphore,
     registry: Mutex<Registry>,
+    default_limits: ValidatedLimits,
     policies: BTreeMap<String, ValidatedLimits>,
     cancellation: CancellationToken,
     counters: Counters,
@@ -114,7 +115,7 @@ impl ApiExecutor {}
 
 #[cfg(test)]
 mod tests {
-    use super::{AdaptiveRate, ApiError, MAX_REQUESTS_PER_SECOND};
+    use super::{AdaptiveRate, ApiError, Instant, MAX_REQUESTS_PER_SECOND};
 
     #[test]
     fn fractional_policy_recovery_keeps_sub_nanosecond_rate_credits() -> Result<(), ApiError> {
@@ -123,18 +124,19 @@ mod tests {
             minimum_ns: 10_000,
             recovery_rps: 0,
         };
-        rate.throttle()?;
+        let now = Instant::now();
+        rate.throttle(now)?;
         assert_eq!(rate.interval_ns()?, 20_000);
         for _ in 0..3 {
-            rate.recover();
+            rate.recover(now);
         }
         assert_eq!(rate.interval_ns()?, 19_999);
         for _ in 0..MAX_REQUESTS_PER_SECOND {
-            rate.recover();
+            rate.recover(now);
             assert!(rate.interval_ns()? >= 10_000);
         }
         assert_eq!(rate.interval_ns()?, 10_000);
-        rate.throttle()?;
+        rate.throttle(now)?;
         assert_eq!(rate.interval_ns()?, 20_000);
         Ok(())
     }
@@ -146,18 +148,19 @@ mod tests {
                 current: ceiling,
                 maximum: ceiling,
             };
-            rate.throttle()?;
+            let now = Instant::now();
+            rate.throttle(now)?;
             let recoveries = ceiling - ceiling / 2;
             let mut previous = rate.interval_ns()?;
             for _ in 0..recoveries {
-                rate.recover();
+                rate.recover(now);
                 let next = rate.interval_ns()?;
                 assert!(next < previous, "ceiling {ceiling}: {previous} -> {next}");
                 previous = next;
             }
             let ceiling_interval = 1_000_000_000_u64.div_ceil(u64::from(ceiling));
             assert_eq!(previous, ceiling_interval);
-            rate.recover();
+            rate.recover(now);
             assert_eq!(rate.interval_ns()?, ceiling_interval);
         }
         Ok(())
@@ -171,6 +174,8 @@ mod pacing;
 use pacing::*;
 mod bucket;
 use bucket::*;
+mod adaptive;
+use adaptive::*;
 mod admission;
 mod construction;
 mod execution;

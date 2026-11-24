@@ -93,12 +93,51 @@ pub struct PeriodLimits {
     pub concurrency: usize,
 }
 
+/// A rate that starts at `start_rps`, rises with successes up to
+/// `ceiling_rps` and is cut by a throttle, never below `floor_rps`.
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[serde(deny_unknown_fields)]
+pub struct AdaptiveLimits {
+    pub start_rps: u32,
+
+    pub floor_rps: u32,
+
+    pub ceiling_rps: u32,
+
+    pub concurrency: usize,
+}
+
+impl AdaptiveLimits {
+    pub(super) fn validate(self, global_concurrency: usize) -> Result<ValidatedLimits, ApiError> {
+        if self.floor_rps < 1
+            || self.floor_rps > self.start_rps
+            || self.start_rps > self.ceiling_rps
+            || self.ceiling_rps > MAX_REQUESTS_PER_SECOND
+            || !(1..=global_concurrency).contains(&self.concurrency)
+        {
+            return Err(ApiError::InvalidConfig(
+                "adaptive policy requires 1 <= floor_rps <= start_rps <= ceiling_rps <= 100000 and concurrency in 1..=global_concurrency".into(),
+            ));
+        }
+        Ok(ValidatedLimits {
+            concurrency: self.concurrency,
+            rate: AdaptiveRate::Seeking(Seeking::new(
+                self.start_rps,
+                self.floor_rps,
+                self.ceiling_rps,
+            )),
+        })
+    }
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
 #[serde(untagged)]
 pub enum BucketPolicy {
     PerSecond(BucketLimits),
 
     PerPeriod(PeriodLimits),
+
+    Adaptive(AdaptiveLimits),
 }
 
 impl From<BucketLimits> for BucketPolicy {
@@ -127,6 +166,7 @@ impl BucketPolicy {
                 })
             }
             Self::PerPeriod(limits) => limits.validate(global_concurrency),
+            Self::Adaptive(limits) => limits.validate(global_concurrency),
         }
     }
 }

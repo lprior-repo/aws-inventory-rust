@@ -45,11 +45,11 @@ impl Bucket {
         }
     }
 
-    /// The rate to resume with after eviction, when throttling has left it
-    /// below the policy ceiling.
-    pub(super) fn reduced_rate(&self) -> Option<AdaptiveRate> {
+    /// The rate to resume with after eviction, when results have moved it
+    /// from where its policy starts it.
+    pub(super) fn learned_rate(&self) -> Option<AdaptiveRate> {
         let rate = self.state.lock().ok()?.rate;
-        rate.is_reduced().then_some(rate)
+        rate.is_learned().then_some(rate)
     }
 
     pub(super) fn try_start(&self, now: Instant) -> Result<bool, ApiError> {

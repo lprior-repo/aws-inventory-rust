@@ -7,7 +7,7 @@ use std::time::Duration;
 
 use futures_util::{StreamExt, TryStreamExt, stream};
 use inventory_engine::limiter::{
-    ApiError, ApiExecutor, BucketLimits, BucketPolicy, ExecutorConfig, MAX_BUCKETS,
+    AdaptiveLimits, ApiError, ApiExecutor, BucketLimits, BucketPolicy, ExecutorConfig, MAX_BUCKETS,
     MAX_RATE_PERIOD_MS, MAX_RETRY_AFTER_MS, PeriodLimits, RetryAfter, RetryKind,
 };
 use tokio::sync::Barrier;
@@ -87,6 +87,8 @@ fn directed(kind: RetryKind, retry_after: RetryAfter) -> ApiError {
 
 #[path = "limiter/accepted_hint_boundary_and_retry_exhaustion_remain_bounded.rs"]
 mod accepted_hint_boundary_and_retry_exhaustion_remain_bounded;
+#[path = "limiter/adaptive_policy.rs"]
+mod adaptive_policy;
 #[path = "limiter/adaptive_recovery_stops_at_the_bucket_policy_ceiling.rs"]
 mod adaptive_recovery_stops_at_the_bucket_policy_ceiling;
 #[path = "limiter/backoff_holds_no_global_permit.rs"]

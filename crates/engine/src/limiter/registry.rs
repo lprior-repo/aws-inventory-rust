@@ -33,11 +33,11 @@ impl ApiExecutor {
         if registry.buckets.len() == MAX_BUCKETS {
             self.make_room(&mut registry)?;
         }
-        let limits = match self.policies.get(key) {
-            Some(limits) => *limits,
-            None => BucketPolicy::from(BucketLimits::defaults(self.config))
-                .validate(self.config.global_concurrency)?,
-        };
+        let limits = self
+            .policies
+            .get(key)
+            .copied()
+            .unwrap_or(self.default_limits);
         let bucket = registry.create(key, limits)?;
         self.counters.record_registry(&registry);
         Ok(bucket)
@@ -127,7 +127,7 @@ impl Registry {
             return evicted;
         };
         let buckets = evicted.buckets.saturating_add(1);
-        let Some(rate) = bucket.reduced_rate() else {
+        let Some(rate) = bucket.learned_rate() else {
             return Evicted { buckets, ..evicted };
         };
         if self.learned.len() < MAX_LEARNED_RATES && self.learned.try_reserve(1).is_ok() {

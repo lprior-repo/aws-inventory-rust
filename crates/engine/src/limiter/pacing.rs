@@ -11,6 +11,7 @@ pub(super) enum AdaptiveRate {
         minimum_ns: u64,
         recovery_rps: u32,
     },
+    Seeking(Seeking),
 }
 
 impl AdaptiveRate {
@@ -22,12 +23,14 @@ impl AdaptiveRate {
                 minimum_ns,
                 recovery_rps,
             } => period_interval(interval_ns, minimum_ns, recovery_rps),
+            Self::Seeking(rate) => rate.interval_ns(),
         }
     }
 
-    pub(super) fn throttle(&mut self) -> Result<(), ApiError> {
+    pub(super) fn throttle(&mut self, now: Instant) -> Result<(), ApiError> {
         let previous_interval = self.interval_ns()?;
         match self {
+            Self::Seeking(rate) => rate.throttle(now),
             Self::PerSecond { current, .. } => *current = current.saturating_div(2).max(1),
             Self::PerPeriod {
                 interval_ns,
@@ -43,8 +46,9 @@ impl AdaptiveRate {
         Ok(())
     }
 
-    pub(super) fn recover(&mut self) {
+    pub(super) fn recover(&mut self, now: Instant) {
         match self {
+            Self::Seeking(rate) => rate.recover(now),
             Self::PerSecond { current, maximum } => {
                 *current = current.saturating_add(1).min(*maximum)
             }
@@ -54,9 +58,11 @@ impl AdaptiveRate {
         }
     }
 
-    /// Whether throttling has left the rate below its policy ceiling.
-    pub(super) fn is_reduced(self) -> bool {
+    /// Whether the rate has moved from where its policy starts it, so that
+    /// eviction must remember it. A seeking rate moves on every result.
+    pub(super) fn is_learned(self) -> bool {
         match self {
+            Self::Seeking(_) => true,
             Self::PerSecond { current, maximum } => current < maximum,
             Self::PerPeriod { minimum_ns, .. } => self
                 .interval_ns()
@@ -152,9 +158,9 @@ impl PacingState {
         now: Instant,
     ) -> Result<(), ApiError> {
         if result.is_ok() {
-            self.rate.recover();
+            self.rate.recover(now);
         } else if result.as_ref().err().and_then(retry_kind) == Some(RetryKind::Throttled) {
-            self.rate.throttle()?;
+            self.rate.throttle(now)?;
         }
         if let Err(ApiError::RetryAfter {
             kind,
