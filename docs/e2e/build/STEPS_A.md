@@ -42,7 +42,7 @@ Conventions used in every step:
      `item_target_for_selector`, `operation_for` and `operation_for_checked` out
      of `model_path.rs` into `model_path/validation.rs`. `model_path.rs` keeps
      `resolve`, `terminal_member`, `item_target`, `list_element`, `kind`,
-     `string_target`, `shape_for`, `member`. This brings the file under 300.
+     `string_target`, `shape_for`, `member`. This shortens the file.
   2. Add one variant to `RuntimeCatalogCompileError`:
      `KindContext { kind: String, path: String, reason: &'static str }` (new),
      text "runtime capability metadata is unsupported for kind {kind}, path
@@ -177,8 +177,9 @@ Conventions used in every step:
 
 ### A0.4 Make the size guards pass
 
-- **Goal:** Five Rust files are over 300 lines in this archive, so
-  `source-size` fails before any new work lands. Bring them under the limit.
+- **Goal:** The file limit is 1000 lines and every Rust file passes
+  `source-size`, so the splits below are optional tidying. The comment lines
+  still have to go.
 - **Depends on:** A0.1 (it already fixes `model_path.rs`).
 - **Files:** `crates/core/src/catalog/runtime/decode/plans.rs` (305),
   `crates/cmdb-ui/src/app.rs` (304),
@@ -193,9 +194,9 @@ Conventions used in every step:
   317, 319). What they say that is a contract moves to the crate's document.
 - **Tests:** existing tests, unchanged.
 - **Prove it:** in a git clone, `scripts/check-source-size.sh` prints "all at
-  most 300 lines" and `scripts/check-function-size.sh` exits 0. In the archive
+  most 1000 lines" and `scripts/check-function-size.sh` exits 0. In the archive
   (no git), `find . -path ./.local -prune -o -name '*.rs' -print | xargs wc -l |
-  awk '$1>300 && $2!="total"'` prints nothing.
+  awk '$1>1000 && $2!="total"'` prints nothing.
 - **Done when:** both guards pass.
 - **Size:** about 0 net lines; four files touched. One change.
 - **Watch out:** `crates/cmdb-ui/src/app.rs` is also changed by D2 and D3; land

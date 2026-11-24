@@ -853,7 +853,7 @@ and what needs a machine with a GPU (frame times).
 
 - **Goal:** Every row is reachable; the 500-row limit goes.
 - **Depends on:** C6.11.
-- **Files:** `crates/cmdb-ui/src/table.rs` (300 lines, at the limit),
+- **Files:** `crates/cmdb-ui/src/table.rs` (296 lines),
   `table/model.rs` (new), `worker/protocol.rs`, `worker/queries.rs`,
   `crates/cmdb-view/src/database/postgres.rs` (C6.11's `page`).
 - **Change:** the table model holds a window of pages around the visible

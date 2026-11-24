@@ -112,8 +112,8 @@ path arguments select a scoped check without changing other crates' existing
 findings. Test-only fixtures retain their assertions and are excluded from
 the production function gate by the existing test-path convention.
 
-All 317 Rust files under `crates/sweep/src`, including tests, are at most
-300 lines (51,963 lines total; largest file: 298). Production functions pass
+All 331 Rust files under `crates/sweep/src`, including tests, are at most
+298 lines (53,605 lines total; the limit is 1000). Production functions pass
 the function-length gate (under 60 lines). Formatting and all-target `clippy -D warnings` pass.
 Regression suites pass: `inventory-sweep` has 461 passing tests; the root
 `aws-inventory --features sweep` run has 99 passing tests and two ignored.

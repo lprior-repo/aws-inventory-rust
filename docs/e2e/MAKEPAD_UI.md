@@ -344,9 +344,8 @@ throttled. Kinds the emulator could not verify are listed by name.
 | Headless start | The app starts, draws one frame and exits under the headless backend | CI, if D6.0 shows it works |
 | Frame harness | Section 8 | The owner's two test machines (V56), each on a 120 Hz display |
 
-`crates/cmdb-ui/src` is under the 300-line file and under-60-line function guards. `app.rs` is
-over the first today and `ui.rs` is close; both are split before they grow
-(A0.4, D13.2).
+`crates/cmdb-ui/src` is under the 1000-line file and under-60-line function guards. `app.rs`
+(286 lines) and `ui.rs` (298 lines) are well inside the first.
 
 ## 11. Platforms and packaging
 

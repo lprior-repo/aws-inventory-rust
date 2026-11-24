@@ -932,7 +932,9 @@ The ignored `sweep_e2e` suite defaults to `INVENTORY_E2E_STORE=postgres`.
 Set `INVENTORY_POSTGRES_URL` to the native throwaway server's administrator URL;
 the harness creates and removes isolated databases beside its owned emulator
 and graph processes. `INVENTORY_E2E_STORE=file` selects the compatibility mode.
-`scripts/e2e-baseline.sh` runs both modes. `INVENTORY_EMULATOR_BINARY` can name an
+`scripts/e2e-baseline.sh` runs only the harness's PostgreSQL flow for
+`--service ec2`; it does not run this suite or the file mode.
+`INVENTORY_EMULATOR_BINARY` can name an
 already-installed pinned binary without changing the installation directory.
 
 The narrow native lifecycle scenario is:
