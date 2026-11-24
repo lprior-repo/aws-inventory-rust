@@ -234,3 +234,40 @@ async fn measure_the_resident_memory_of_a_full_registry() -> TestResult {
     assert_eq!(executor.stats().active_buckets, REGISTRY);
     Ok(())
 }
+
+#[tokio::test(start_paused = true)]
+async fn given_an_evicted_rising_bucket_when_rates_are_listed_then_its_rate_and_count_remain()
+-> TestResult {
+    // Given a rising default policy and one key with three results.
+    let executor = ApiExecutor::with_default_policy(
+        hundred_per_second(),
+        BucketPolicy::Adaptive(AdaptiveLimits {
+            start_rps: 100,
+            floor_rps: 1,
+            ceiling_rps: 100_000,
+            concurrency: 4,
+        }),
+        BTreeMap::new(),
+    )?;
+    for _ in 0..3 {
+        executor.execute("first", || async { Ok(()) }).await?;
+    }
+    // When 65,536 other keys call, which evicts the oldest 1,024 buckets.
+    call_fresh_keys(&executor, "key", REGISTRY, succeed).await?;
+    // Then every rate is listed and the evicted key kept its rate and count.
+    let stats = executor.stats();
+    assert_eq!(stats.evicted_buckets, BATCH);
+    assert_eq!(stats.learned_rates, BATCH);
+    let rates = executor.bucket_rates();
+    assert_eq!(u64::try_from(rates.len())?, REGISTRY + 1);
+    assert!(rates.contains(&("first".to_owned(), 100, 3)));
+    // When the evicted key calls again.
+    executor.execute("first", || async { Ok(()) }).await?;
+    // Then it resumed where it stopped: four results.
+    assert!(
+        executor
+            .bucket_rates()
+            .contains(&("first".to_owned(), 100, 4))
+    );
+    Ok(())
+}

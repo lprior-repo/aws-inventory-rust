@@ -69,6 +69,15 @@ impl AdaptiveRate {
                 .map_or(true, |interval_ns| interval_ns > minimum_ns),
         }
     }
+
+    /// Whole requests per second and results seen, for a rate that rises
+    /// until throttled. Fixed policies learn nothing and give `None`.
+    pub(super) fn seeking(self) -> Option<(u32, u64)> {
+        match self {
+            Self::Seeking(rate) => Some((rate.whole_rps(), rate.samples)),
+            Self::PerSecond { .. } | Self::PerPeriod { .. } => None,
+        }
+    }
 }
 
 pub(super) fn period_interval(

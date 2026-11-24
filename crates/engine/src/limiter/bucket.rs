@@ -45,11 +45,15 @@ impl Bucket {
         }
     }
 
+    /// The current rate, unless the pacing state is poisoned.
+    pub(super) fn rate(&self) -> Option<AdaptiveRate> {
+        Some(self.state.lock().ok()?.rate)
+    }
+
     /// The rate to resume with after eviction, when results have moved it
     /// from where its policy starts it.
     pub(super) fn learned_rate(&self) -> Option<AdaptiveRate> {
-        let rate = self.state.lock().ok()?.rate;
-        rate.is_learned().then_some(rate)
+        self.rate().filter(|rate| rate.is_learned())
     }
 
     pub(super) fn try_start(&self, now: Instant) -> Result<bool, ApiError> {

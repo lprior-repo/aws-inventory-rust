@@ -11,6 +11,8 @@ pub(super) struct Seeking {
     pub(super) floor_mrps: u64,
     pub(super) ceiling_mrps: u64,
     pub(super) hold: Option<Hold>,
+    /// Results this rate has learned from: successes and throttles.
+    pub(super) samples: u64,
 }
 
 /// The rate a throttle arrived at, and when.
@@ -29,7 +31,15 @@ impl Seeking {
             floor_mrps: u64::from(floor_rps).saturating_mul(1_000),
             ceiling_mrps: u64::from(ceiling_rps).saturating_mul(1_000),
             hold: None,
+            samples: 0,
         }
+    }
+
+    /// Whole requests per second at the current rate, at least 1.
+    pub(super) fn whole_rps(self) -> u32 {
+        u32::try_from(self.current_mrps.saturating_div(1_000))
+            .unwrap_or(u32::MAX)
+            .max(1)
     }
 
     /// Nanoseconds per request at the current rate.
@@ -47,11 +57,13 @@ impl Seeking {
         });
         let cut = before.saturating_mul(7).saturating_div(10);
         self.current_mrps = cut.max(self.floor_mrps);
+        self.samples = self.samples.saturating_add(1);
     }
 
     /// Raise the rate by one step, never above the ceiling nor, while the
     /// hold lasts, above 90% of the rate the last throttle arrived at.
     pub(super) fn recover(&mut self, now: Instant) {
+        self.samples = self.samples.saturating_add(1);
         if let Some(hold) = self.hold
             && now.saturating_duration_since(hold.since) >= HOLD
         {

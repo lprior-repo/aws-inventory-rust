@@ -250,3 +250,45 @@ pub(super) async fn given_a_fixed_default_when_a_key_has_a_rising_policy_then_on
     paced(&gaps(&fixed)?, &[100_000_000; 2]);
     Ok(())
 }
+
+#[tokio::test(start_paused = true)]
+pub(super) async fn given_rising_and_fixed_buckets_when_rates_are_listed_then_only_rising_ones_appear()
+-> TestResult {
+    // Given: a rising default, a fixed policy for one key, and no call yet.
+    let executor = ApiExecutor::with_default_policy(
+        config(),
+        adaptive(1, 1, 100, 2),
+        BTreeMap::from([(
+            KEY.into(),
+            BucketPolicy::PerSecond(BucketLimits {
+                requests_per_second: 20,
+                concurrency: 2,
+            }),
+        )]),
+    )?;
+    let starts = Mutex::new(Vec::new());
+    assert!(executor.bucket_rates().is_empty());
+
+    // When: the fixed key succeeds three times and the rising key four times.
+    succeed(&executor, KEY, &starts, 3).await?;
+    succeed(&executor, OTHER, &starts, 4).await?;
+
+    // Then: only the rising key is listed, at 3.244 requests per second after four results.
+    assert_eq!(executor.bucket_rates(), vec![(OTHER.to_owned(), 3, 4)]);
+    Ok(())
+}
+
+#[tokio::test(start_paused = true)]
+pub(super) async fn given_a_throttle_when_rates_are_listed_then_the_cut_rate_counts_both_results()
+-> TestResult {
+    // Given: 10 requests per second to start with.
+    let executor = rising(10, 1, 100)?;
+    let starts = Mutex::new(Vec::new());
+
+    // When: one attempt is throttled and the retry succeeds.
+    throttled_then_succeed(&executor, KEY, &starts).await?;
+
+    // Then: the rate is 7.142 requests per second after two results.
+    assert_eq!(executor.bucket_rates(), vec![(KEY.to_owned(), 7, 2)]);
+    Ok(())
+}

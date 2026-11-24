@@ -59,6 +59,16 @@ impl ApiExecutor {
         }
         Ok(())
     }
+
+    /// Key, whole requests per second and results seen, for every bucket
+    /// whose rate rises until throttled, in no particular order. Evicted
+    /// buckets whose rate is remembered are included; buckets on a fixed
+    /// policy are not. Empty when the registry lock is poisoned.
+    pub fn bucket_rates(&self) -> Vec<(String, u32, u64)> {
+        self.registry
+            .lock()
+            .map_or_else(|_| Vec::new(), |registry| registry.rates())
+    }
 }
 
 impl Registry {
@@ -68,6 +78,20 @@ impl Registry {
 
     pub(super) fn learned(&self) -> usize {
         self.learned.len()
+    }
+
+    fn rates(&self) -> Vec<(String, u32, u64)> {
+        let live = self
+            .buckets
+            .iter()
+            .filter_map(|(key, bucket)| Some((key, bucket.rate()?)));
+        let evicted = self.learned.iter().map(|(key, rate)| (key, *rate));
+        live.chain(evicted)
+            .filter_map(|(key, rate)| {
+                let (rps, samples) = rate.seeking()?;
+                Some((key.clone(), rps, samples))
+            })
+            .collect()
     }
 
     /// Adds a bucket for `key`, resuming the rate it was evicted with.
