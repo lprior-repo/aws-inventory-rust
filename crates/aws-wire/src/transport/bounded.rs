@@ -1,10 +1,11 @@
-use super::{TransportError, error::Source};
+use super::{Counters, TransportError, error::Source};
 use http::Uri;
 use std::{
     future::Future,
     pin::Pin,
+    sync::Arc,
     task::{Context, Poll},
-    time::Duration,
+    time::{Duration, Instant},
 };
 use tower_service::Service;
 
@@ -14,11 +15,16 @@ type Connecting<T> = Pin<Box<dyn Future<Output = Result<T, Source>> + Send>>;
 pub(super) struct Bounded<S> {
     inner: S,
     timeout: Duration,
+    counters: Arc<Counters>,
 }
 
 impl<S> Bounded<S> {
-    pub(super) fn new(inner: S, timeout: Duration) -> Self {
-        Self { inner, timeout }
+    pub(super) fn new(inner: S, timeout: Duration, counters: Arc<Counters>) -> Self {
+        Self {
+            inner,
+            timeout,
+            counters,
+        }
     }
 }
 
@@ -38,12 +44,23 @@ where
     }
 
     fn call(&mut self, uri: Uri) -> Self::Future {
+        let authority: Box<str> = uri
+            .authority()
+            .map(http::uri::Authority::as_str)
+            .unwrap_or_default()
+            .into();
+        let counters = Arc::clone(&self.counters);
+        let started = Instant::now();
         let connecting = tokio::time::timeout(self.timeout, self.inner.call(uri));
         Box::pin(async move {
-            connecting
-                .await
+            counters.attempt(&authority);
+            let outcome = connecting.await;
+            counters.handshake(started.elapsed());
+            let connection = outcome
                 .map_err(|_| Source::from(TransportError::Timeout))?
-                .map_err(Into::into)
+                .map_err(Into::into)?;
+            counters.connected(&authority);
+            Ok(connection)
         })
     }
 }

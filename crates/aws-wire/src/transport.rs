@@ -24,7 +24,7 @@ use std::sync::Arc;
 pub use config::Config;
 use connector::Connector;
 use counters::Counters;
-pub use counters::Statistics;
+pub use counters::{HostConnections, Statistics};
 pub use error::TransportError;
 
 type HttpPool = Pool<Bounded<hyper_rustls::HttpsConnector<Connector>>, Full<Bytes>>;
@@ -79,6 +79,13 @@ impl Client {
     #[must_use]
     pub fn statistics(&self) -> Statistics {
         self.counters.snapshot()
+    }
+
+    /// Each authority a connection was attempted to, sorted by authority,
+    /// with the number of connections to it that finished connecting.
+    #[must_use]
+    pub fn hosts(&self) -> Vec<HostConnections> {
+        self.counters.host_connections()
     }
 
     fn validate(&self, request: &Request<Bytes>) -> Result<(), TransportError> {
@@ -139,7 +146,7 @@ impl Client {
 }
 
 fn build_pool(config: &Config, counters: Arc<Counters>) -> Result<HttpPool, TransportError> {
-    let connector = Connector::new(config.max_connections, counters)
+    let connector = Connector::new(config.max_connections, Arc::clone(&counters))
         .map_err(|error| TransportError::Io(Box::new(error)))?;
     let https = hyper_rustls::HttpsConnectorBuilder::new()
         .with_tls_config(trust::load(config)?)
@@ -153,7 +160,7 @@ fn build_pool(config: &Config, counters: Arc<Counters>) -> Result<HttpPool, Tran
         .pool_max_idle_per_host(config.pool_idle_per_host)
         .http1_max_buf_size(8192)
         .retry_canceled_requests(false)
-        .build(Bounded::new(https, config.connect_timeout)))
+        .build(Bounded::new(https, config.connect_timeout, counters)))
 }
 
 struct InFlight(Option<CaptureConnection>);

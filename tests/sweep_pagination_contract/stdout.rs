@@ -72,7 +72,7 @@ fn write_status<'a>(golden: &mut String, fields: &mut impl Iterator<Item = &'a s
     Ok(())
 }
 
-fn expectations(expected: &Summary) -> [Field; 21] {
+fn expectations(expected: &Summary) -> [Field; 23] {
     [
         ("bootstrap_ms", None),
         ("seed_ms", None),
@@ -85,6 +85,8 @@ fn expectations(expected: &Summary) -> [Field; 21] {
         ("requests_reused", Some(0)),
         ("http2_requests", Some(0)),
         ("bytes_read", None),
+        ("handshake_ns", None),
+        ("hosts", Some(u64::from(expected.requests > 0))),
         ("pages", Some(expected.pages)),
         ("decode_ns", None),
         ("store_commit_ns", None),

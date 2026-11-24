@@ -14,6 +14,8 @@ fn given_retry_and_http2_statistics_when_snapshotted_then_original_counts_are_re
         requests_reused: 7,
         http2_requests: 8,
         bytes_read: 123,
+        handshake_ns: 456,
+        hosts: 5,
         ..Default::default()
     };
     let mut metrics = SweepMetrics::default();
@@ -43,4 +45,5 @@ fn assert_transport(metrics: &SweepMetrics) {
         (9, 7, 8)
     );
     assert_eq!((metrics.connections_opened, metrics.bytes_read), (2, 123));
+    assert_eq!((metrics.handshake_ns, metrics.hosts), (456, 5));
 }

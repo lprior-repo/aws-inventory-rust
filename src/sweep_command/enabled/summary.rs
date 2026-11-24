@@ -45,7 +45,7 @@ fn write_metrics(output: &mut impl Write, metrics: &SweepMetrics) -> Result<()> 
 fn write_network(output: &mut impl Write, metrics: &SweepMetrics) -> Result<()> {
     write!(
         output,
-        " api_attempts={} api_retries={} api_throttles={} connections_opened={} requests_sent={} requests_reused={} http2_requests={} bytes_read={}",
+        " api_attempts={} api_retries={} api_throttles={} connections_opened={} requests_sent={} requests_reused={} http2_requests={} bytes_read={} handshake_ns={} hosts={}",
         metrics.api_attempts,
         metrics.api_retries,
         metrics.api_throttles,
@@ -53,7 +53,9 @@ fn write_network(output: &mut impl Write, metrics: &SweepMetrics) -> Result<()> 
         metrics.requests_sent,
         metrics.requests_reused,
         metrics.http2_requests,
-        metrics.bytes_read
+        metrics.bytes_read,
+        metrics.handshake_ns,
+        metrics.hosts
     )?;
     Ok(())
 }

@@ -18,6 +18,10 @@ pub struct SweepMetrics {
     pub requests_reused: u64,
     pub http2_requests: u64,
     pub bytes_read: u64,
+    /// Wall-clock nanoseconds spent connecting, summed over every attempt.
+    pub handshake_ns: u64,
+    /// Distinct authorities a connection was attempted to.
+    pub hosts: u64,
     pub pages: u64,
     pub decode_ns: u64,
     pub store_commit_ns: u64,
@@ -86,6 +90,8 @@ pub(crate) fn complete(
     metrics.requests_reused = count(transport.requests_reused);
     metrics.http2_requests = count(transport.http2_requests);
     metrics.bytes_read = count(transport.bytes_read);
+    metrics.handshake_ns = transport.handshake_ns;
+    metrics.hosts = count(transport.hosts);
     if let Some((user, system, rss)) = process::snapshot() {
         metrics.cpu_user_ms = user;
         metrics.cpu_system_ms = system;
