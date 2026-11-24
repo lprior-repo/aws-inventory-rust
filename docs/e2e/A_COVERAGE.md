@@ -80,6 +80,14 @@ bench suite adds `AWS::IAM::InstanceProfile`, for two IAM kinds across both
 recipe directories. `AWS::IAM::ManagedPolicy` uses its full ARN as its
 CloudFormation primary identifier, so its path does not need normalization.
 
+An owned emulator run scoped to `ec2:DescribeVpcs` created six VPCs.
+The PostgreSQL sweep and resweep passed, and the checker wrote its report.
+For `AWS::EC2::VPC`, Cloud Control returned no identities: 0 matched,
+0 missing from the sweep, and 7 extra in the sweep (the six seeded VPCs
+and one baseline VPC). The checker exited 1. No explanation rule has been
+approved for this discrepancy; this run does not satisfy the zero-difference
+gate.
+
 ## Notes for the worker
 
 - The generator's inputs already exist as reports: `catalog/aws-plans.report`
