@@ -99,13 +99,13 @@ Counted from the State column of the step tables below.
 
 | Section | Steps | done | partial | needs a run | not started |
 | --- | --- | --- | --- | --- | --- |
-| A | 32 | 4 | 8 | 12 | 8 |
+| A | 32 | 5 | 7 | 12 | 8 |
 | B | 29 | 0 | 4 | 1 | 24 |
 | C | 28 | 0 | 3 | 8 | 17 |
 | D | 34 | 0 | 3 | 4 | 27 |
 | E | 13 | 0 | 2 | 0 | 11 |
 | After | 46 | 1 | 12 | 1 | 32 |
-| All | 182 | 5 | 32 | 26 | 119 |
+| All | 182 | 6 | 31 | 26 | 119 |
 
 ## Section A (`build/STEPS_A.md`)
 
@@ -114,7 +114,7 @@ Counted from the State column of the step tables below.
 | A0.1 | Give the relation failure a cause | done | `crates/catalog-tool/src/runtime_catalog/model_path/validation/` (origin.rs, relations.rs, tests.rs) exists; tests at `validation/tests.rs:74,96,118,140` assert `KindContext` and `CapabilityContext`; `KindContext` at `runtime_catalog.rs:30`. Strict gate on `99dad1c8`: the four unit tests the step lists pass (`model_path::validation::tests`: missing kind, deferred operation, misspelled path, live relations). | Nothing. The step's own proof, a failing `models compile --check` that names its cause, can no longer be reproduced: the check now passes |
 | A0.2 | Carry relations as pending until both ends are callable | not started | no match for `RelationSplit` under `crates/catalog-tool/src`; no `runtime_catalog/relations.rs`; no `catalog/aws-relations.report` | Everything: `RelationSplit`, `split`, relations.rs, report, regenerated catalog |
 | A0.3 | Context at the remaining bare `Capability` sites | partial | `unknown_service`/`unknown_member` at `runtime_catalog.rs:45,53`; `selected.rs:20` disagrees message. Bare sites remain at `runtime_catalog/plans/member_exclusions.rs:12`, `plans/compile.rs:83`, `plans/fixed_input.rs:14,39`, `plans/page/tokens.rs:230`, `plan_validation.rs:169` | Those bare sites; the count is not recorded; `cargo test -p catalog-tool runtime_catalog` unchecked |
-| A0.4 | Make the size guards pass (checked by hand) | partial | Both size guards pass on `b98be942` (strict gate); `crates/cmdb-ui/src/app.rs` is 286 lines and `crates/core/src/catalog/runtime/decode/plans.rs` 295; `decode/plans/bindings.rs` exists | Five `///` lines the step says to remove remain at `crates/cmdb-ui/src/worker/queries.rs:4,5,28-30` |
+| A0.4 | Make the size guards pass (checked by hand) | done | `crates/cmdb-ui/src/app.rs` is 286 lines and `crates/core/src/catalog/runtime/decode/plans.rs` 295; `decode/plans/bindings.rs` exists. The last five `///` lines the step names are removed from `crates/cmdb-ui/src/worker/queries.rs` and their contract is in `crates/cmdb-ui/README.md` under "Viewer behavior". Both size guards pass in the strict gate run on the commit that removed them | Nothing |
 | A1.1 | Generated overlays as a second, lower-priority source | needs a run | `overlay/merge.rs` exists; `directory.rs` `load_generated_dir` at :33; `types.rs` `origin_of` at :94; `parse.rs:102` reviewer check; `check/service/flow/operation.rs:46`. Strict gate on `99dad1c8`: `overlay --check` and `models compile --check` pass with `catalog/overlay/generated` present (436 files); 5 `overlay::merge` tests pass. | Both checks without a generated directory; the byte comparison with A0.2's reports, which do not exist (A0.2 is not started). unchecked: tests (c), (d) and (f) by name |
 | A1.2 | Derive one enumeration entry from the model | partial | `overlay/generate.rs`, `generate/derive.rs` (enumerate at :9), `identity.rs`, `items.rs`, `catalog/overlay/defer-inputs.txt` exist. Strict gate on `99dad1c8`: 56 `overlay::generate` tests pass, and each of the nine branches the step lists has a named test. | unchecked: that every branch has both a passing and a failing case, which is the step's "Done when" |
 | A1.3 | Write generated files deterministically | done | `overlay/generate/render.rs`, `generate/service.rs` exist; `GENERATED_RULES_DATE` at `generate.rs:16`. Strict gate on `99dad1c8`: 7 `overlay::generate::render` tests pass and cover the five listed cases (round trip and identical bytes, 4,097 operations, output over the size limit, quotes and backslashes). | Nothing |
