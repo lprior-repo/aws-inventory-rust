@@ -1,3 +1,4 @@
+auditmanager	CreateAssessment	-	not-run	prerequisites	Assessment framework, role and scope inputs not prepared
 cloudwatch	PutMetricAlarm	alarm[1]	accepted
 cloudwatch	PutMetricAlarm	alarm[2]	accepted
 dynamodb	CreateTable	table[1]	accepted
@@ -26,8 +27,18 @@ kms	CreateKey	key[1]	accepted
 kms	CreateKey	key[2]	accepted
 lambda	CreateCodeSigningConfig	config[1]	accepted
 lambda	CreateCodeSigningConfig	config[2]	accepted
+license-manager-linux-subscriptions	RegisterSubscriptionProvider	provider	rejected	ValidationException	The subscription provider token is invalid or expired
+license-manager-user-subscriptions	CreateLicenseServerEndpoint	-	not-run	prerequisites	Registered identity provider and license server settings not prepared
+migrationhubstrategy	-	-	not-run	no-create-path	No direct create operation identified for enumerated collectors or servers
+mpa	CreateIdentitySource	-	not-run	prerequisites	Identity source parameters not prepared
+notifications	CreateNotificationConfiguration	notification_config[1]	sweep-failed	decode	Create accepted; ListNotificationConfigurations failed with invalid timestamp
+notifications	CreateNotificationConfiguration	notification_config[2]	sweep-failed	decode	Create accepted; ListNotificationConfigurations failed with invalid timestamp
+organizations	CreateOrganization	org	rejected	AlreadyInOrganizationException	Emulator account is already a member of an organization
+route53-recovery-readiness	CreateCell	cell[1]	rejected	AccessDeniedException	This operation is currently unavailable for new accounts.
+route53-recovery-readiness	CreateCell	cell[2]	rejected	AccessDeniedException	This operation is currently unavailable for new accounts.
 s3	CreateBucket	bucket[1]	accepted
 s3	CreateBucket	bucket[2]	accepted
+s3outposts	CreateEndpoint	-	not-run	prerequisites	Outpost ID, subnet and security group not prepared
 signer	PutSigningProfile	profile[1]	accepted
 signer	PutSigningProfile	profile[2]	accepted
 sns	CreateTopic	topic[1]	accepted
@@ -42,3 +53,4 @@ sqs	CreateQueue	queue[2]	accepted
 sqs	GetQueueAttributes	endpoint_identity	accepted
 sqs	GetQueueAttributes	queue_identity[1]	accepted
 sqs	GetQueueAttributes	queue_identity[2]	accepted
+ssm-sap	RegisterApplication	-	not-run	prerequisites	EC2 instance and SAP application inputs not prepared
