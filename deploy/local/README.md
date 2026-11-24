@@ -56,8 +56,8 @@ The dump includes role password hashes; keep it private.
   old=inventory-local_inventory-pgdata
   new=inventory-local_inventory-pgdata-18
   podman volume inspect "$old" >/dev/null
-  existing=$(podman volume ls --quiet --filter "name=^$new$")
-  if [ -n "$existing" ]; then
+  volumes=$(podman volume ls --quiet)
+  if printf '%s\n' "$volumes" | grep -Fxq -- "$new"; then
     printf 'Refusing to import: volume %s already exists\n' "$new" >&2
     exit 1
   fi
