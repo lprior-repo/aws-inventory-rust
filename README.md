@@ -581,6 +581,50 @@ cargo run --locked -- catalog
 
 The plan for what replaces the baseline is in [docs/e2e/](docs/e2e/README.md).
 
+### Sweep benchmark
+
+`cmdb-bench sweep --collector <binary> --profile thin|full|proxy --runs 3`
+starts the harness's private emulator and graph server, seeds once, and creates a
+fresh PostgreSQL database for each cold/warm pair. Set `INVENTORY_POSTGRES_URL`
+to a harness administrative connection. Installed emulator/graph paths can be
+set through `INVENTORY_EMULATOR_BINARY`, `INVENTORY_REDIS_SERVER`, and
+`INVENTORY_FALKOR_MODULE`, as with the harness.
+
+Use `--out <file>` for raw TSV, `--work <empty-dir>` to retain collector logs,
+`--catalog <file>` to select the compiled catalog, and repeated
+`--service <recipe>` to restrict an explicitly labelled smoke workload.
+Record `--server container|native|managed`, `--volume named|bind|native-disk`,
+and `--build release|debug`; unstated values are printed, not inferred.
+The table includes actual PostgreSQL settings, measured HTTP protocol and Git
+state. Failed collectors, dirty/unavailable commits, fsync-off servers and
+non-Linux hosts are not publishable, with the reason recorded. A failed
+collector's table is printed but never written to `--out`. WAL is server-wide:
+unrelated writes can contribute. Resource and writer rates are per second,
+rounded down; CPU is milliseconds and decode share is parts per million.
+Zero-denominator rows are `unavailable`, not zero; comparison refuses them.
+
+`--profile proxy` selects thin seeds with 50 ms latency and 20 requests per second
+per account/region/service. `--proxy latency_ms=50,rps=20` also works with thin/full
+and overrides those defaults. Every cold and warm collection gets fresh buckets
+and the same fixed fault seed. Raw 100-ms counter recordings accompany collector
+logs. Proxy extra rows measure the cold phase; warm extras are discarded.
+Steady throughput and ramp-up count admitted responses, excluding throttles.
+Ramp-up compares aggregate admitted responses against one scope's quota, not
+proof that all scopes saturated. Short runs may not reach the 30-second
+throttle-share window or the quota threshold.
+
+Collector logs and seed reports are read with a 16 MiB bound; each seed recipe
+has a 1 MiB bound. SIGINT/SIGTERM cancel the collector and drain owned resources.
+
+`cmdb-bench open --catalog <file>` measures catalog decode, fresh schema creation,
+reopening, and insert preparation (P11). `cmdb-bench compare <before> <after>`
+checks every median against the larger of 5% and twice the baseline spread.
+`--band <whole-percent>` overrides this band; `--allow-different-server` allows
+different profile/server, operating-system, build and protocol headers with an
+explicit non-comparability warning. Compare exits 0 for no regression, 1 for a
+regression and 2 for a refused comparison. Collector failures exit nonzero.
+
+
 ## CMDB product direction
 
 The current tool is a local inventory CLI with SQLite, a process-local scheduler,

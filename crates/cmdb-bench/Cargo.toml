@@ -16,8 +16,13 @@ futures-util.workspace = true
 redis = { version = "1.8.1", features = ["tokio-rustls-comp"] }
 sqlx.workspace = true
 tokio.workspace = true
+inventory-harness = { path = "../harness" }
+tokio-util.workspace = true
+base16ct = { workspace = true, features = ["alloc"] }
+tokio-rustls = "0.26.6"
+rustls-pki-types = { version = "1.16.0", features = ["std"] }
+rcgen = { version = "0.14.10", default-features = false, features = ["aws_lc_rs", "pem"] }
 
-[dev-dependencies]
 tempfile = "3.27.0"
 
 [lints]

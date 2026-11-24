@@ -1439,16 +1439,22 @@ name = "cmdb-bench"
 version = "0.6.0"
 dependencies = [
  "aws-wire",
+ "base16ct",
  "cmdb-view",
  "futures-util",
  "http",
  "inventory-core",
  "inventory-engine",
+ "inventory-harness",
+ "rcgen",
  "redis",
+ "rustls-pki-types",
  "sha2",
  "sqlx",
  "tempfile",
  "tokio",
+ "tokio-rustls",
+ "tokio-util",
 ]
 
 [[package]]
