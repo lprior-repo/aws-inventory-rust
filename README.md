@@ -491,6 +491,52 @@ connection with statement, result, and native execution bounds. SQLite syntax
 and JSON functions apply; PostgreSQL-specific Steampipe SQL is not automatically
 compatible. Absent columns are not silently fabricated.
 
+For schema 14 PostgreSQL inventories, use the separate `sql` command:
+
+```bash
+aws-inventory sql --database "$INVENTORY_READER_URL" --limit 100 \
+  "SELECT kind, count(*) FROM resources GROUP BY kind ORDER BY kind"
+```
+
+Use a dedicated reader login with `USAGE` on `inventory` and `SELECT` on
+its tables. The command refuses database owners, administrators, roles with
+inventory write privileges, broad built-in read roles, and logins that can
+assume such roles; it does not downgrade a writer URL. Reader provisioning
+is an administrative operation, not something this command performs.
+
+Statements run on a dedicated connection in a read-only transaction with a
+five-second timeout and the `inventory` search path. Success is followed by
+bounded rollback and connection shutdown. Ordinary query failures disconnect
+without draining pending rows. If the transport watchdog expires, a separate
+authenticated reader connection terminates the timed-out backend and waits for
+its exit; termination failures are reported rather than claiming cancellation.
+Exact quoted and unquoted advisory-lock, backend-control, `set_config`,
+notification and logical-message function names are refused. SQL-text execution
+through `query_to_xml*`, `ts_stat`, `ts_rewrite`, and the documented
+`tablefunc`/`dblink` entry points is also refused. Harmless columns such as
+`pg_advisory_note` remain queryable.
+Unicode-escaped quoted identifiers (`U&"..."`) are also refused; ordinary quoted
+identifiers and Unicode string literals remain supported.
+Connections require `standard_conforming_strings = on`.
+Defaults cap results at 10,000 rows, 256 columns, 100,000 cells and 8 MiB of
+column names and binary cell payloads; escaped table output is also capped at 8 MiB,
+with every rendered cell charged before allocating its heap text.
+The byte bound is checked after a cell is received; it is not a memory bound
+for one very large cell.
+`--limit` can only lower the row cap. Tables preserve SQL nulls, show bytes as
+hex (up to 32 bytes), and format timestamps in UTC. Unsupported types must be
+cast to `text`; this includes PostgreSQL `numeric`, arrays and UUIDs.
+Only columns actually materialized by the catalog are available; use
+`information_schema.columns` to inspect them rather than assuming a full
+Steampipe schema, including `aws_ec2_vpc.cidr_block`.
+The lexer is a guard, not a sandbox for arbitrary administrator-defined
+functions or untrusted extensions. Reader privileges and the read-only
+transaction remain necessary. The SQL-text entry points are documented in
+PostgreSQL 18's [XML mapping functions](https://www.postgresql.org/docs/18/functions-xml.html#FUNCTIONS-XML-MAPPING),
+[text search functions](https://www.postgresql.org/docs/18/textsearch-features.html),
+[tablefunc](https://www.postgresql.org/docs/18/tablefunc.html) and
+[dblink](https://www.postgresql.org/docs/18/dblink.html).
+
 ### Architecture report
 
 ```bash

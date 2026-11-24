@@ -9,7 +9,9 @@
   `REFERENCES` edges with model provenance. Reviewed rules take precedence.
   Regenerate catalogs before use; relation provenance is now required.
 - The SQLite and PostgreSQL store conformance suites now share batch claim
-  ordering, repeated observation, deletion and projection outbox scenarios.
+  ordering, repeated observation, deletion and projection outbox scenarios,
+  plus manifest handling, scope reporting, reference retraction and outcome
+  detail. PostgreSQL lists unobserved scopes.
 - `inventory-harness verify cloud-control` compares stored identities with
   Cloud Control listings without writing to the inventory. The command reports
   missing, extra, explained and non-listable identities; ambiguous normalized
@@ -36,6 +38,25 @@
   `crates/harness/seeds`, including through a symlink.
 - Catalog version 4 retains modeled integer bounds for seed drafting.
   Regenerate catalogs before use; version 3 catalogs are rejected.
+- SQL refuses SQL-string executor entry points, timeout overrides, notifications
+  and logical messages. Its transport watchdog terminates the timed-out reader
+  backend, and scalar table cells are charged before heap formatting.
+  Sweep integration checks repeated reads against a real uncommitted page
+  through a latency-injecting proxy.
+- SQL rendering charges escaped text before allocating it; harmless
+  advisory-prefixed columns remain queryable, and reader fixtures clean up
+  after assertion failures.
+- `aws-inventory sql --database <reader-URL> "<statement>"` runs bounded,
+  typed PostgreSQL queries in a dedicated read-only transaction. Reader
+  privileges and standard-conforming strings are verified on connection.
+  Exact quoted and unquoted advisory/backend-control function names and
+  Unicode-escaped quoted identifiers are refused. Cleanup is time-bounded,
+  failed queries retain their original errors, and results use aligned tables.
+  `--limit` lowers the row budget. The SQLite `query` command is unchanged and
+  shares the statement lexer.
+- The whole-account hierarchy layout accepts borrowed interned arrays and emits
+  deterministic resource positions and contiguous account/region/service/kind
+  child ranges, independently of Makepad and database I/O.
 - Marketplace Agreement discovery now sends the pinned model's documented-required
   `AgreementType=PurchaseAgreement` filter on initial and subsequent search pages.
   Existing catalog/database pairs must be regenerated together for the new plan.

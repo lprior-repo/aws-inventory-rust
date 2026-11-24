@@ -34,7 +34,12 @@ async fn cancelled_resume_matches_full(
     let directory = tempfile::tempdir()?;
     let database =
         Database::create(environment, directory.path().join("interrupted.sqlite")).await?;
-    let mut proxy = BarrierProxy::start(&environment.endpoint, &environment.ca_bundle).await?;
+    let mut proxy = BarrierProxy::start(
+        &environment.endpoint,
+        &environment.ca_bundle,
+        std::time::Duration::ZERO,
+    )
+    .await?;
     let checkpoint = interrupt(&mut proxy, environment, &database, Stop::Cancel).await?;
     let resumed = run_cli(environment, &sweep_args(environment, &database, 100, true)?).await?;
     verify_resumed(&resumed, expected)?;
@@ -55,7 +60,12 @@ async fn cancelled_resume_matches_full(
 async fn crash_preserves_checkpoint(environment: &Environment) -> Result<()> {
     let directory = tempfile::tempdir()?;
     let database = Database::create(environment, directory.path().join("crashed.sqlite")).await?;
-    let mut proxy = BarrierProxy::start(&environment.endpoint, &environment.ca_bundle).await?;
+    let mut proxy = BarrierProxy::start(
+        &environment.endpoint,
+        &environment.ca_bundle,
+        std::time::Duration::ZERO,
+    )
+    .await?;
     let checkpoint = interrupt(&mut proxy, environment, &database, Stop::Crash).await?;
     let before = state::checkpoint_snapshot(&database).await?;
     run_cli_lease_blocked(environment, &sweep_args(environment, &database, 100, true)?).await?;
@@ -133,5 +143,8 @@ async fn observe_checkpoint(
         active.resources_observed > 0 && active.work_pending > 0,
         "first native page was not committed before interruption"
     );
+    if matches!(database, Database::Postgres(_)) {
+        super::sql_reader::verify_committed_checkpoint(database).await?;
+    }
     Ok(active)
 }

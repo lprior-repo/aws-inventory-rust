@@ -32,6 +32,7 @@ pub(super) struct BarrierProxy {
     _directory: TempDir,
     checkpoint: Option<oneshot::Receiver<ContinuationCheckpoint>>,
     shutdown: Option<oneshot::Sender<()>>,
+    resume: Option<oneshot::Sender<()>>,
     task: Option<JoinHandle<Result<()>>>,
 }
 
@@ -40,11 +41,17 @@ struct ProxyContext {
     client: Client,
     upstream: String,
     shutdown: oneshot::Receiver<()>,
+    resume: oneshot::Receiver<()>,
+    latency: Duration,
     checkpoint: Option<oneshot::Sender<ContinuationCheckpoint>>,
 }
 
 impl BarrierProxy {
-    pub(super) async fn start(upstream: &str, upstream_ca: &Path) -> Result<Self> {
+    pub(super) async fn start(
+        upstream: &str,
+        upstream_ca: &Path,
+        latency: Duration,
+    ) -> Result<Self> {
         validate_upstream(upstream)?;
         let directory = tempfile::tempdir()?;
         let (acceptor, ca_bundle) = tls_acceptor(directory.path())?;
@@ -53,11 +60,14 @@ impl BarrierProxy {
         let address = listener.local_addr()?;
         let (shutdown, shutdown_rx) = oneshot::channel();
         let (checkpoint_tx, checkpoint_rx) = oneshot::channel();
+        let (resume, resume_rx) = oneshot::channel();
         let context = ProxyContext {
             acceptor,
             client,
             upstream: upstream.to_owned(),
             shutdown: shutdown_rx,
+            resume: resume_rx,
+            latency,
             checkpoint: Some(checkpoint_tx),
         };
         let task = tokio::spawn(serve(listener, context));
@@ -67,6 +77,7 @@ impl BarrierProxy {
             _directory: directory,
             checkpoint: Some(checkpoint_rx),
             shutdown: Some(shutdown),
+            resume: Some(resume),
             task: Some(task),
         })
     }
@@ -88,6 +99,15 @@ impl BarrierProxy {
             .await
             .context("emulator continuation request was not observed")?
             .context("checkpoint proxy stopped before a continuation request")
+    }
+
+    pub(super) fn release(&mut self) -> Result<()> {
+        if let Some(sender) = self.resume.take() {
+            sender
+                .send(())
+                .map_err(|()| anyhow::anyhow!("checkpoint proxy stopped before release"))?;
+        }
+        Ok(())
     }
 
     pub(super) async fn shutdown(&mut self) -> Result<()> {
@@ -181,10 +201,12 @@ async fn serve_connection(stream: TcpStream, context: &mut ProxyContext) -> Resu
         read_request(&mut tls, &context.upstream),
     )
     .await??;
-    if let Some(checkpoint) = checkpoint {
-        hold_checkpoint(context, checkpoint).await?;
+    if let Some(checkpoint) = checkpoint.filter(|_| context.checkpoint.is_some())
+        && !hold_checkpoint(context, checkpoint).await?
+    {
         return Ok(true);
     }
+    tokio::time::sleep(context.latency).await;
     let response =
         tokio::time::timeout(Duration::from_secs(30), context.client.send(request)).await??;
     write_response(&mut tls, &response).await?;
@@ -194,7 +216,7 @@ async fn serve_connection(stream: TcpStream, context: &mut ProxyContext) -> Resu
 async fn hold_checkpoint(
     context: &mut ProxyContext,
     checkpoint: ContinuationCheckpoint,
-) -> Result<()> {
+) -> Result<bool> {
     let sender = context
         .checkpoint
         .take()
@@ -202,7 +224,14 @@ async fn hold_checkpoint(
     sender
         .send(checkpoint)
         .map_err(|_| anyhow::anyhow!("checkpoint observer stopped"))?;
-    tokio::select! { _ = &mut context.shutdown => Ok(()), _ = tokio::time::sleep(Duration::from_secs(60)) => anyhow::bail!("checkpoint barrier exceeded its deadline") }
+    tokio::select! {
+        _ = &mut context.shutdown => Ok(false),
+        resumed = &mut context.resume => {
+            resumed.context("checkpoint release sender stopped")?;
+            Ok(true)
+        },
+        _ = tokio::time::sleep(Duration::from_secs(60)) => anyhow::bail!("checkpoint barrier exceeded its deadline"),
+    }
 }
 
 async fn read_request(

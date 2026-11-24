@@ -4,6 +4,10 @@ mod arguments;
 mod interruption;
 #[path = "scenario/projection.rs"]
 mod projection;
+#[path = "scenario/sql_reader.rs"]
+mod sql_reader;
+#[path = "scenario/sql_writing.rs"]
+mod sql_writing;
 use super::denial_peer::AccessDeniedPeer;
 use super::guard::Environment;
 use super::process::{cancel_cli, run_cli, run_cli_degraded, run_cli_graph_pending, spawn_cli};
@@ -76,6 +80,9 @@ async fn run_pipeline(environment: &Environment, oracle: &TypedSeedOracle) -> Re
     .await?;
     unchanged_rerun(&graph_environment, &database, oracle, &initial).await?;
     partial_preserves_seed(&graph_environment, &database, oracle, &initial).await?;
+    if matches!(database, Database::Postgres(_)) {
+        sql_writing::run(&graph_environment, oracle, &initial).await?;
+    }
     interruption::run(&graph_environment, oracle, &initial).await
 }
 
