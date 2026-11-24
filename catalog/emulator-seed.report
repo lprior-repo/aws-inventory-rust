@@ -1,4 +1,5 @@
-auditmanager	CreateAssessment	-	not-run	prerequisites	Assessment framework, role and scope inputs not prepared
+auditmanager	CreateControl	control[1]	rejected	NotImplemented	operation CreateControl is scaffolded but not implemented in this emulator
+auditmanager	CreateControl	control[2]	rejected	NotImplemented	operation CreateControl is scaffolded but not implemented in this emulator
 cloudwatch	PutMetricAlarm	alarm[1]	accepted
 cloudwatch	PutMetricAlarm	alarm[2]	accepted
 dynamodb	CreateTable	table[1]	accepted
