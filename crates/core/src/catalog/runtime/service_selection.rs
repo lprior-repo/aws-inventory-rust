@@ -20,6 +20,7 @@ impl RuntimeCatalog<'_> {
             .filter(|(index, plan)| selected.contains(index) || bootstrap(plan))
             .map(|(_, plan)| plan)
             .collect();
+        self.index = self.index.with_plans(&self.plans)?;
         Ok(self)
     }
 }

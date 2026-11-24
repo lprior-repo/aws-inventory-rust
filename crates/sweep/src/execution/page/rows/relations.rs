@@ -27,11 +27,7 @@ impl Context<'_> {
         output: &mut Vec<UnresolvedReference>,
         limit: usize,
     ) -> Result<(), SweepError> {
-        for relation in catalog
-            .relationships()
-            .iter()
-            .filter(|relation| relation.source_kind == self.observation.key().kind)
-        {
+        for relation in catalog.relationships_from(&self.observation.key().kind) {
             if !plan.supports_relationship(relation)? {
                 continue;
             }

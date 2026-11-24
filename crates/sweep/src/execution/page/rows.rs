@@ -135,11 +135,7 @@ fn resource_name(
     kind: &inventory_core::inventory::Kind,
     row: &Record,
 ) -> Result<Option<Arc<str>>, SweepError> {
-    let Some(path) = catalog
-        .name_paths()
-        .iter()
-        .find(|entry| &entry.kind == kind)
-    else {
+    let Some(path) = catalog.name_path(kind) else {
         return Ok(None);
     };
     match record::path_value(row.root(), &path.path)? {
