@@ -151,7 +151,7 @@ fn observation(
         },
         plan,
         &Region::Regional(home.clone()),
-        &row,
+        row,
         &typed_record([])?,
         &inventory_core::inventory::DiscoveryContext::empty(),
     )?)

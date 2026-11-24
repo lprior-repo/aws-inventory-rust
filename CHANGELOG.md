@@ -2,6 +2,9 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- Catalog compilation retains modeled references and materializes resolvable
+  `REFERENCES` edges with model provenance. Reviewed rules take precedence.
+  Regenerate catalogs before use; relation provenance is now required.
 - The SQLite and PostgreSQL store conformance suites now share batch claim
   ordering, repeated observation, deletion and projection outbox scenarios.
 - `inventory-harness verify cloud-control` compares stored identities with
