@@ -2,6 +2,12 @@
 
 ## Unreleased — Direction: endpoint wire engine
 
+- The SQLite and PostgreSQL store conformance suites now share batch claim
+  ordering, repeated observation, deletion and projection outbox scenarios.
+- `inventory-harness verify cloud-control` compares stored identities with
+  Cloud Control listings without writing to the inventory. The command reports
+  missing, extra, explained and non-listable identities; ambiguous normalized
+  identities fail instead of choosing a resource.
 - PostgreSQL test database creation and removal use a 60-second server deadline
   and a 65-second transport deadline after connecting. Prune bounds the candidate
   query separately from each drop.
