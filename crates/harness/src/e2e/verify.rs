@@ -143,34 +143,45 @@ fn oracle_row(mut keys: Keys, line: &str) -> Result<Keys, HarnessError> {
     Ok(keys)
 }
 
-fn identity_mismatch(
-    kind: &str,
-    expected: &BTreeSet<(String, String, String)>,
-    actual: Option<&BTreeSet<(String, String, String)>>,
-) -> HarnessError {
-    let empty = BTreeSet::new();
-    let actual = actual.map_or(&empty, |identities| identities);
-    let differences = expected
-        .symmetric_difference(actual)
+type Identities = BTreeSet<(String, String, String)>;
+
+fn listed<'a>(identities: impl Iterator<Item = &'a (String, String, String)>) -> String {
+    identities
         .take(5)
         .map(|(account, region, id)| format!("{account}/{region}/{id}"))
         .collect::<Vec<_>>()
-        .join(", ");
-    HarnessError::invalid(format!(
-        "seeded identities/counts differ for {kind}: {differences}"
-    ))
+        .join(", ")
+}
+
+fn identity_mismatch(kind: &str, expected: &Identities, actual: Option<&Identities>) -> String {
+    let empty = BTreeSet::new();
+    let actual = actual.map_or(&empty, |identities| identities);
+    format!(
+        "{kind} missing=[{}] unexpected=[{}]",
+        listed(expected.difference(actual)),
+        listed(actual.difference(expected))
+    )
 }
 
 fn compare(expected: &Keys, actual: &Keys) -> Result<(), HarnessError> {
-    expected.iter().try_for_each(|(kind, keys)| {
-        let found = actual.get(kind);
-        let count = found.map_or(0, BTreeSet::len);
-        println!("count {kind} expected={} actual={count}", keys.len());
-        if found != Some(keys) {
-            return Err(identity_mismatch(kind, keys, found));
-        }
-        Ok(())
-    })
+    let mismatches: Vec<String> = expected
+        .iter()
+        .filter_map(|(kind, keys)| {
+            let found = actual.get(kind);
+            let count = found.map_or(0, BTreeSet::len);
+            println!("count {kind} expected={} actual={count}", keys.len());
+            (found != Some(keys)).then(|| identity_mismatch(kind, keys, found))
+        })
+        .collect();
+    if mismatches.is_empty() {
+        return Ok(());
+    }
+    Err(HarnessError::invalid(format!(
+        "seeded identities/counts differ for {} of {} kinds: {}",
+        mismatches.len(),
+        expected.len(),
+        mismatches.join("; ")
+    )))
 }
 
 #[cfg(test)]

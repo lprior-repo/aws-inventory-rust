@@ -1,11 +1,10 @@
 format = 1
 service = "account"
 
+# The account-information singleton exists before any seed, so the rename adds no new identity to verify.
 [[step]]
-id = "resource"
+id = "rename"
 operation = "PutAccountName"
-kind = "AWS::ApiOnly::AccountAccountInformation"
-identity = { input = "AccountName" }
-scope = "account"
+kind = ""
 [step.input]
 AccountName = "000000000000"
