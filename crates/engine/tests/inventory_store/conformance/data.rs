@@ -68,7 +68,7 @@ async fn given_partial_when_followed_by_two_misses_then_only_second_deletes<S: I
     observe(store, "seen", "thing-1", "alpha").await?;
     let partial = seed_claim(store, "partial", 200).await?;
     store
-        .finish_scope(partial, ScopeOutcome::Inaccessible, 201)
+        .finish_scope(partial, ScopeOutcome::Inaccessible, 201, None)
         .await?;
     assert!(has(store, "thing-1").await?);
     assert_eq!(summary(store, "partial").await?.inaccessible_scopes, 1);

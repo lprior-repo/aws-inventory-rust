@@ -33,7 +33,9 @@ async fn given_pre_v3_active_lease_when_migration_keeps_its_generation_then_comm
         Err(inventory_engine::inventory::StoreError::StaleLease)
     ));
     assert!(matches!(
-        store.finish_scope(lease, ScopeOutcome::Complete, 4).await,
+        store
+            .finish_scope(lease, ScopeOutcome::Complete, 4, None)
+            .await,
         Err(inventory_engine::inventory::StoreError::StaleLease)
     ));
     let sql = pool(&directory).await?;
@@ -62,7 +64,9 @@ async fn given_pre_v3_active_lease_when_migration_keeps_its_generation_then_comm
         .claim(&sweep, 10_010, 10_000)
         .await?
         .ok_or("new claim absent")?;
-    store.finish_scope(lease, ScopeOutcome::Complete, 6).await?;
+    store
+        .finish_scope(lease, ScopeOutcome::Complete, 6, None)
+        .await?;
     Ok(())
 }
 

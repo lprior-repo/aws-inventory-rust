@@ -1,5 +1,7 @@
 use super::work::SweepId;
-use super::{BinaryStore, MAX_TOKEN_BYTES, PageCommit, StoreError, WorkSpec};
+use super::{
+    BinaryStore, MAX_OUTCOME_DETAIL_BYTES, MAX_TOKEN_BYTES, PageCommit, StoreError, WorkSpec,
+};
 use sqlx::{Row, Sqlite, Transaction};
 
 pub(super) async fn validate_active_sweep(
@@ -29,6 +31,16 @@ pub(super) async fn validate_active_sweep(
         }
     }
     Ok(())
+}
+
+/// A stored outcome reason is bounded so one failing scope cannot grow the table.
+pub(super) fn validate_detail(detail: Option<&str>) -> Result<(), StoreError> {
+    match detail {
+        Some(text) if text.len() > MAX_OUTCOME_DETAIL_BYTES => {
+            Err(StoreError::Invalid("scope outcome detail exceeds bounds"))
+        }
+        _ => Ok(()),
+    }
 }
 
 pub(super) fn validate_work(store: &BinaryStore, work: &WorkSpec) -> Result<(), StoreError> {

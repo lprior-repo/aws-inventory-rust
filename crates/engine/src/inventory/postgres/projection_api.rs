@@ -71,8 +71,9 @@ impl InventoryStore for PgStore {
         lease: WorkLease,
         outcome: ScopeOutcome,
         observed_at_ms: i64,
+        detail: Option<&str>,
     ) -> Result<ChangeStats, StoreError> {
-        PgStore::finish_scope(self, lease, outcome, observed_at_ms).await
+        PgStore::finish_scope(self, lease, outcome, observed_at_ms, detail).await
     }
     async fn release_lease(&self, lease: WorkLease) -> Result<(), StoreError> {
         PgStore::release_lease(self, lease).await

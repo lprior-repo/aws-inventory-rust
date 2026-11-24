@@ -412,7 +412,7 @@ async fn delete_after_two_misses(store: &BinaryStore, target: &ResourceKey) -> T
             .await?
             .ok_or("missing deletion lease")?;
         store
-            .finish_scope(lease, ScopeOutcome::Complete, 11)
+            .finish_scope(lease, ScopeOutcome::Complete, 11, None)
             .await?;
         assert_eq!(
             store.projection_resource(target).await?.is_some(),

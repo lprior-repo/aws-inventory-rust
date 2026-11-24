@@ -63,11 +63,13 @@ async fn identity(store: &PgStore, _: &PgPool, _: &DatabaseUrl) -> TestResult {
     assert!(store.claim(first.sweep(), 119, 20).await?.is_none());
     let reclaimed = claim(store, "s", 120).await?;
     assert!(matches!(
-        store.finish_scope(first, ScopeOutcome::Partial, 121).await,
+        store
+            .finish_scope(first, ScopeOutcome::Partial, 121, None)
+            .await,
         Err(StoreError::StaleLease)
     ));
     store
-        .finish_scope(reclaimed, ScopeOutcome::Partial, 121)
+        .finish_scope(reclaimed, ScopeOutcome::Partial, 121, None)
         .await?;
     Ok(())
 }
@@ -129,7 +131,7 @@ async fn resume(store: &PgStore, _: &PgPool, _: &DatabaseUrl) -> TestResult {
     ));
     let at = now.checked_add(1).ok_or("overflow")?;
     store
-        .finish_scope(lease, ScopeOutcome::Complete, at)
+        .finish_scope(lease, ScopeOutcome::Complete, at, None)
         .await?;
     Ok(())
 }
@@ -152,7 +154,9 @@ async fn check_expired(store: &PgStore, sweep: &SweepId, account: &AccountId) ->
     let old = claim(store, "s", 100).await?;
     store.resume_sweep(sweep, account).await?;
     assert!(matches!(
-        store.finish_scope(old, ScopeOutcome::Partial, 101).await,
+        store
+            .finish_scope(old, ScopeOutcome::Partial, 101, None)
+            .await,
         Err(StoreError::StaleLease)
     ));
     Ok(())
@@ -203,7 +207,7 @@ async fn batches(store: &PgStore, pool: &PgPool, _: &DatabaseUrl) -> TestResult 
     for _ in 0..100 {
         let lease = claim(store, "s", 100).await?;
         store
-            .finish_scope(lease, ScopeOutcome::Complete, 101)
+            .finish_scope(lease, ScopeOutcome::Complete, 101, None)
             .await?;
     }
     eprintln!(

@@ -58,6 +58,7 @@ async fn given_absent_feature_when_settled_then_durable_scope_completes_without_
         &store,
         lease,
         SweepError::Absent("AWSOrganizationsNotInUseException".into()),
+        None,
     )
     .await?;
     assert_eq!(result.outcomes.complete, 1);
@@ -71,7 +72,7 @@ async fn given_absent_feature_when_settled_then_durable_scope_completes_without_
 
 #[tokio::test]
 async fn given_access_denied_when_settled_then_scope_is_not_reported_as_empty() -> TestResult {
-    let (_directory, store, sweep, lease) = fixture_for(
+    let (directory, store, sweep, lease) = fixture_for(
         "iam",
         "2010-05-08",
         &["ListUsers", "GetLoginProfile"],
@@ -81,30 +82,71 @@ async fn given_access_denied_when_settled_then_scope_is_not_reported_as_empty() 
     let error = SweepError::Api(inventory_engine::limiter::ApiError::Denied(
         "AccessDeniedException".into(),
     ));
-    let result = finish_error(&store, lease, error).await?;
+    let result = finish_error(&store, lease, error, None).await?;
     assert_eq!(result.outcomes.inaccessible, 1);
     assert_eq!(result.outcomes.complete, 0);
     let stored = store.sweep_summary(&sweep).await?;
     assert_eq!(stored.complete_scopes, 0);
     assert_eq!(stored.work_pending, 0);
+    assert_eq!(
+        stored_reasons(&directory).await?,
+        [Some(
+            "denied: API executor error: access denied: AccessDeniedException".to_owned()
+        )]
+    );
     Ok(())
 }
 
 #[tokio::test]
 async fn given_missing_login_profile_when_settled_then_only_its_scope_completes() -> TestResult {
-    let (_directory, store, sweep, lease) = fixture_for(
+    let (directory, store, sweep, lease) = fixture_for(
         "iam",
         "2010-05-08",
         &["ListUsers", "GetLoginProfile"],
         "GetLoginProfile",
     )
     .await?;
-    let result = finish_error(&store, lease, SweepError::Absent("NoSuchEntity".into())).await?;
+    let result = finish_error(
+        &store,
+        lease,
+        SweepError::Absent("NoSuchEntity".into()),
+        None,
+    )
+    .await?;
     assert_eq!(result.outcomes.complete, 1);
     assert_eq!(result.outcomes.failed, 0);
     assert_eq!(result.rows, 0);
     let stored = store.sweep_summary(&sweep).await?;
     assert_eq!(stored.complete_scopes, 1);
     assert_eq!(stored.work_pending, 0);
+    assert_eq!(stored_reasons(&directory).await?, [None]);
     Ok(())
+}
+
+#[tokio::test]
+async fn given_an_undecodable_page_when_settled_then_the_reason_names_the_response_shape()
+-> TestResult {
+    let (directory, store, _sweep, lease) = fixture().await?;
+    let error = SweepError::Decode(aws_wire::response::DecodeError::Invalid("bad member"));
+    let expected = format!("decode: ListAccountsResponse: {error}");
+
+    let result = finish_error(&store, lease, error, Some("ListAccountsResponse")).await?;
+
+    assert_eq!(result.outcomes.failed, 1);
+    assert_eq!(stored_reasons(&directory).await?, [Some(expected)]);
+    Ok(())
+}
+
+/// The reason column of every stored scope outcome, read through SQL.
+async fn stored_reasons(directory: &tempfile::TempDir) -> TestResult<Vec<Option<String>>> {
+    let pool = sqlx::SqlitePool::connect(&format!(
+        "sqlite://{}",
+        directory.path().join("absence.sqlite").display()
+    ))
+    .await?;
+    let reasons = sqlx::query_scalar("SELECT detail FROM scope_outcomes")
+        .fetch_all(&pool)
+        .await?;
+    pool.close().await;
+    Ok(reasons)
 }

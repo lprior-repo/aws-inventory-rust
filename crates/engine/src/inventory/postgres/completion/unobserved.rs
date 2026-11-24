@@ -42,7 +42,7 @@ async fn insert(
         }
     }
     if !scopes.is_empty() {
-        sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) SELECT $1,s,'unobserved',t FROM UNNEST($2::bytea[],$3::bigint[]) u(s,t) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome='unobserved',observed_at=EXCLUDED.observed_at")
+        sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) SELECT $1,s,'unobserved',t FROM UNNEST($2::bytea[],$3::bigint[]) u(s,t) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome='unobserved',observed_at=EXCLUDED.observed_at,detail=NULL")
             .bind(sweep.as_str()).bind(scopes).bind(times).execute(&mut **tx).await?;
     }
     Ok(())

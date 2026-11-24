@@ -53,8 +53,9 @@ impl InventoryStore for BinaryStore {
         lease: WorkLease,
         outcome: ScopeOutcome,
         observed_at_ms: i64,
+        detail: Option<&str>,
     ) -> Result<ChangeStats, StoreError> {
-        BinaryStore::finish_scope(self, lease, outcome, observed_at_ms).await
+        BinaryStore::finish_scope(self, lease, outcome, observed_at_ms, detail).await
     }
     async fn release_lease(&self, lease: WorkLease) -> Result<(), StoreError> {
         BinaryStore::release_lease(self, lease).await

@@ -140,7 +140,9 @@ async fn assert_rejected_completion(
     lease: WorkLease,
 ) -> TestResult {
     let before = snapshot::read_durable_state(pool).await?;
-    let result = store.finish_scope(lease, ScopeOutcome::Complete, 101).await;
+    let result = store
+        .finish_scope(lease, ScopeOutcome::Complete, 101, None)
+        .await;
     assert!(
         matches!(
             &result,
@@ -335,7 +337,7 @@ async fn given_an_exact_discovery_only_stage_when_finished_complete_then_its_ter
     let (directory, store, pool) = branch_fixture(false).await?;
     let lease = stage_lease(&store, Some("DISCOVER"), Some("discovery-name")).await?;
     let stats = store
-        .finish_scope(lease, ScopeOutcome::Complete, 101)
+        .finish_scope(lease, ScopeOutcome::Complete, 101, None)
         .await?;
     assert_eq!(
         (
@@ -368,7 +370,7 @@ async fn assert_non_authoritative_completion(
     lease: WorkLease,
     outcome: ScopeOutcome,
 ) -> TestResult {
-    let stats = store.finish_scope(lease, outcome, 101).await?;
+    let stats = store.finish_scope(lease, outcome, 101, None).await?;
     assert_eq!(
         (
             stats.resources_inserted,

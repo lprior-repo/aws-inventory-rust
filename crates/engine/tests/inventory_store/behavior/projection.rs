@@ -25,7 +25,7 @@ pub(super) async fn given_a_partial_scope_and_two_complete_misses_then_only_the_
         .await?
         .ok_or("missing partial lease")?;
     store
-        .finish_scope(partial, ScopeOutcome::Inaccessible, 201)
+        .finish_scope(partial, ScopeOutcome::Inaccessible, 201, None)
         .await?;
     assert!(
         store

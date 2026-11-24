@@ -66,7 +66,7 @@ async fn given_equivalent_partial_and_complete_executions_when_sweep_drains_then
     let (complete, partial) = pair(&store, "partial-and-complete", 2, 5).await?;
     page(&store, complete, Vec::new(), Vec::new(), 6).await?;
     store
-        .finish_scope(partial, ScopeOutcome::Partial, 7)
+        .finish_scope(partial, ScopeOutcome::Partial, 7, None)
         .await?;
     assert!(store.projection_resource(&key()?).await?.is_some());
     assert_eq!(ownership(&directory).await?, (1, 1));

@@ -18,6 +18,7 @@ async fn two_misses(store: &PgStore, pool: &PgPool, _: &DatabaseUrl) -> TestResu
             claim(store, "partial", 100).await?,
             ScopeOutcome::Partial,
             101,
+            None,
         )
         .await?;
     assert_eq!(misses(pool).await?, 0);
@@ -153,7 +154,12 @@ async fn failed(store: &PgStore, pool: &PgPool, _: &DatabaseUrl) -> TestResult {
     for sweep in ["failure-one", "failure-two"] {
         store.seed_works(&[work(sweep, None)?]).await?;
         let stats = store
-            .finish_scope(claim(store, sweep, 100).await?, ScopeOutcome::Failed, 101)
+            .finish_scope(
+                claim(store, sweep, 100).await?,
+                ScopeOutcome::Failed,
+                101,
+                None,
+            )
             .await?;
         assert_eq!(stats.resources_deleted, 0);
     }

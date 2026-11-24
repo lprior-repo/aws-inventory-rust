@@ -1,7 +1,7 @@
 use crate::SweepError;
 use inventory_engine::limiter::ApiError;
 
-pub(crate) const MAX_DETAIL_BYTES: usize = 1_024;
+pub(crate) const MAX_DETAIL_BYTES: usize = inventory_engine::inventory::MAX_OUTCOME_DETAIL_BYTES;
 
 pub(crate) fn detail(error: &SweepError, output_shape: Option<&str>) -> String {
     let class = class(error);

@@ -120,7 +120,7 @@ async fn given_a_pending_v2_baseline_when_invalid_stage_finishes_failed_or_parti
                 vec!["baseline-a".to_owned(), "baseline-b".to_owned()]
             );
             let lease = stage_lease(&store, branch, binding).await?;
-            store.finish_scope(lease, outcome, 101).await?;
+            store.finish_scope(lease, outcome, 101, None).await?;
             assert_eq!(baseline(&pool).await?, before);
             let terminal: (i64, i64, String, i64) = sqlx::query_as(
                 "SELECT work.state,work.lease_until,outcomes.outcome,(SELECT COUNT(*) FROM work_queue WHERE state<>2) FROM work_queue work JOIN scope_outcomes outcomes USING(sweep_id,scope_key) WHERE work.sweep_id='stage-authority'",
@@ -160,7 +160,7 @@ async fn given_a_pre_v3_generation_valid_lease_when_failed_or_partial_is_reporte
     assert_eq!(snapshot::read_durable_state(&pool).await?, before);
     for outcome in [ScopeOutcome::Failed, ScopeOutcome::Partial] {
         assert!(matches!(
-            store.finish_scope(old.clone(), outcome, 101).await,
+            store.finish_scope(old.clone(), outcome, 101, None).await,
             Err(StoreError::StaleLease)
         ));
         assert_eq!(snapshot::read_durable_state(&pool).await?, before);
@@ -177,7 +177,7 @@ async fn given_a_pre_v3_generation_valid_lease_when_failed_or_partial_is_reporte
         .ok_or("fresh authority claim absent")?;
     assert!(current.generation() > old.generation());
     store
-        .finish_scope(current, ScopeOutcome::Partial, 103)
+        .finish_scope(current, ScopeOutcome::Partial, 103, None)
         .await?;
     assert_eq!(store.sweep_summary(&sweep).await?.work_pending, 0);
     assert_eq!(store.unattributed_authority_count().await?, 2);

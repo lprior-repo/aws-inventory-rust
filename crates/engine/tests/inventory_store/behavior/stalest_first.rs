@@ -23,7 +23,7 @@ async fn completed_first_sweep(store: &BinaryStore) -> TestResult {
             .map(|(_, at)| *at)
             .ok_or("unexpected region")?;
         store
-            .finish_scope(lease, ScopeOutcome::Complete, observed)
+            .finish_scope(lease, ScopeOutcome::Complete, observed, None)
             .await?;
     }
     assert!(store.claim(&sweep, 20, 1_000).await?.is_none());
@@ -93,7 +93,7 @@ async fn given_only_an_incomplete_outcome_when_claiming_then_the_scope_is_still_
         .await?
         .ok_or("missing lease")?;
     store
-        .finish_scope(lease, ScopeOutcome::Inaccessible, 900)
+        .finish_scope(lease, ScopeOutcome::Inaccessible, 900, None)
         .await?;
 
     for region in ["us-east-1", "us-east-2", "eu-west-1"] {
@@ -143,7 +143,9 @@ async fn given_scope_completed_at_time_zero_when_claiming_then_it_sorts_after_ne
         .claim(&sweep, 0, 1_000)
         .await?
         .ok_or("missing lease")?;
-    store.finish_scope(lease, ScopeOutcome::Complete, 0).await?;
+    store
+        .finish_scope(lease, ScopeOutcome::Complete, 0, None)
+        .await?;
 
     // New sweep: us-east-1 completed at 0, ap-south-1 never completed.
     store.seed_work(work("second", "us-east-1")?).await?;
@@ -171,7 +173,7 @@ async fn given_migrated_database_when_claiming_then_stalest_first_ordering_is_pr
             .await?
             .ok_or("missing lease")?;
         store
-            .finish_scope(lease, ScopeOutcome::Complete, 100)
+            .finish_scope(lease, ScopeOutcome::Complete, 100, None)
             .await?;
     }
     {
@@ -180,7 +182,7 @@ async fn given_migrated_database_when_claiming_then_stalest_first_ordering_is_pr
             .await?
             .ok_or("missing lease")?;
         store
-            .finish_scope(lease, ScopeOutcome::Complete, 200)
+            .finish_scope(lease, ScopeOutcome::Complete, 200, None)
             .await?;
     }
 

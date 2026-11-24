@@ -6,6 +6,8 @@ mod deletion;
 mod lifecycle;
 #[path = "behavior/manifest.rs"]
 mod manifest;
+#[path = "behavior/outcome_detail.rs"]
+mod outcome_detail;
 #[path = "behavior/projection.rs"]
 mod projection;
 #[path = "behavior/stalest_first.rs"]

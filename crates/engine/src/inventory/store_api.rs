@@ -74,11 +74,14 @@ pub trait InventoryStore: Send + Sync {
         &self,
         page: PageCommit,
     ) -> impl Future<Output = Result<CommitResult, StoreError>> + Send;
+    /// `detail` is the reason for the outcome, at most
+    /// `MAX_OUTCOME_DETAIL_BYTES` long; a later outcome without one clears it.
     fn finish_scope(
         &self,
         lease: WorkLease,
         outcome: ScopeOutcome,
         observed_at_ms: i64,
+        detail: Option<&str>,
     ) -> impl Future<Output = Result<ChangeStats, StoreError>> + Send;
     fn release_lease(
         &self,

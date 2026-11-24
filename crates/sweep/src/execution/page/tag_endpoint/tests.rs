@@ -125,7 +125,7 @@ async fn given_partial_tag_pages_when_denied_repeated_or_capped_then_known_pairs
         let lease = claim(&store, &sweep, 4).await?;
         if failure == "denied" {
             store
-                .finish_scope(lease, ScopeOutcome::Inaccessible, 5)
+                .finish_scope(lease, ScopeOutcome::Inaccessible, 5, None)
                 .await?;
         } else {
             let cap = if failure == "page-cap" { 2 } else { 10 };
@@ -146,7 +146,9 @@ async fn given_partial_tag_pages_when_denied_repeated_or_capped_then_known_pairs
                 commit(&store, lease, parts, 5).await?;
                 let lease = claim(&store, &sweep, 6).await?;
                 assert!(decode_cursor(lease.token())?.partial);
-                store.finish_scope(lease, ScopeOutcome::Partial, 7).await?;
+                store
+                    .finish_scope(lease, ScopeOutcome::Partial, 7, None)
+                    .await?;
             } else {
                 // Repetition is rejected by durable token-digest admission, not a fabricated completion.
                 let result = commit(&store, lease, parts, 5).await?;

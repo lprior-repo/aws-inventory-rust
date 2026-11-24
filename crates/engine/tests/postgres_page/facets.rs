@@ -62,7 +62,9 @@ async fn parents(store: &PgStore) -> TestResult {
         .commit_page(pages::page(lease, observations, 1, 2))
         .await?;
     let lease = pages::claim(store, "parents", 3).await?;
-    store.finish_scope(lease, ScopeOutcome::Partial, 4).await?;
+    store
+        .finish_scope(lease, ScopeOutcome::Partial, 4, None)
+        .await?;
     Ok(())
 }
 

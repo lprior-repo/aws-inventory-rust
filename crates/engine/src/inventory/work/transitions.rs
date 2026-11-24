@@ -71,7 +71,7 @@ pub(super) async fn persist_page_state(
 ) -> Result<ChangeStats, StoreError> {
     let scope = encode_scope(&page.lease.scope)?;
     if repeated {
-        sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES(?1,?2,'partial',?3) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome='partial',observed_at=excluded.observed_at")
+        sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES(?1,?2,'partial',?3) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome='partial',observed_at=excluded.observed_at,detail=NULL")
             .bind(page.lease.sweep.as_str()).bind(&scope).bind(page.observed_at_ms).execute(&mut **tx).await?;
         sqlx::query("UPDATE work_queue SET state=2,token=NULL,lease_until=0 WHERE sweep_id=?1 AND scope_key=?2 AND generation=?3")
             .bind(page.lease.sweep.as_str()).bind(&scope).bind(page.lease.generation).execute(&mut **tx).await?;
@@ -97,7 +97,7 @@ pub(super) async fn finalize_page(
     page: &PageCommit,
     scope: &[u8],
 ) -> Result<ChangeStats, StoreError> {
-    sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES(?1,?2,'complete',?3) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome='complete',observed_at=excluded.observed_at")
+    sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES(?1,?2,'complete',?3) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome='complete',observed_at=excluded.observed_at,detail=NULL")
         .bind(page.lease.sweep.as_str()).bind(scope).bind(page.observed_at_ms).execute(&mut **tx).await?;
     sqlx::query("UPDATE work_queue SET state=2,token=NULL,lease_until=0 WHERE sweep_id=?1 AND scope_key=?2 AND generation=?3")
         .bind(page.lease.sweep.as_str()).bind(scope).bind(page.lease.generation).execute(&mut **tx).await?;

@@ -18,7 +18,12 @@ async fn given_fresh_work_without_checkpoint_when_scope_or_kind_changes_then_the
         .ok_or("tag plan missing")?;
     let (directory, store, owner, sweep) = seeded(&compiled, "scope-guards").await?;
     store
-        .finish_scope(claim(&store, &sweep, 2).await?, ScopeOutcome::Failed, 3)
+        .finish_scope(
+            claim(&store, &sweep, 2).await?,
+            ScopeOutcome::Failed,
+            3,
+            None,
+        )
         .await?;
     let account_owner = {
         let mut key = owner.clone();
@@ -91,7 +96,9 @@ async fn given_fresh_work_without_checkpoint_when_scope_or_kind_changes_then_the
             ),
             expected,
         );
-        store.finish_scope(lease, ScopeOutcome::Failed, 5).await?;
+        store
+            .finish_scope(lease, ScopeOutcome::Failed, 5, None)
+            .await?;
         assert_eq!(
             tags(&store, &owner).await?,
             vec![("known".into(), "old".into())]
@@ -127,7 +134,9 @@ async fn given_fresh_work_without_checkpoint_when_scope_or_kind_changes_then_the
     )?;
     assert_eq!(pair(&accepted.tags)?.resource(), &alternate);
     assert_eq!(pair(&accepted.tags)?.coverage(), TagCoverage::Complete);
-    store.finish_scope(lease, ScopeOutcome::Complete, 7).await?;
+    store
+        .finish_scope(lease, ScopeOutcome::Complete, 7, None)
+        .await?;
     drop(store);
     directory.close()?;
     Ok(())
@@ -155,7 +164,9 @@ async fn given_tampered_pending_bytes_when_reseeded_and_reopened_then_each_resto
         .ok_or("checkpoint missing")?
         .cursor
         .clone();
-    store.finish_scope(lease, ScopeOutcome::Failed, 3).await?;
+    store
+        .finish_scope(lease, ScopeOutcome::Failed, 3, None)
+        .await?;
     let mutations = [
         ("digest", "tag checkpoint owner differs from trusted parent"),
         ("coverage", "tag checkpoint has invalid coverage"),
@@ -224,7 +235,9 @@ async fn given_tampered_pending_bytes_when_reseeded_and_reopened_then_each_resto
             ),
             expected,
         );
-        store.finish_scope(lease, ScopeOutcome::Failed, 5).await?;
+        store
+            .finish_scope(lease, ScopeOutcome::Failed, 5, None)
+            .await?;
         assert_eq!(
             tags(&store, &owner).await?,
             vec![("known".into(), "old".into())]

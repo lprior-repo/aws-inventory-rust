@@ -64,7 +64,12 @@ async fn given_legacy_store_without_catalog_when_plain_open_commits_unrelated_ob
                 "schema {version}, direct {direct}"
             );
             reopened
-                .finish_scope(lease, inventory_core::inventory::ScopeOutcome::Failed, 10)
+                .finish_scope(
+                    lease,
+                    inventory_core::inventory::ScopeOutcome::Failed,
+                    10,
+                    None,
+                )
                 .await?;
             assert_eq!(reopened.projection_resources(None, 100).await?.len(), 2);
             assert!(reopened.projection_edges(None, 100).await?.edges.is_empty());

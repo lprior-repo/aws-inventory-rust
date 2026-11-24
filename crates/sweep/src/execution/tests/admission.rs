@@ -117,7 +117,7 @@ async fn recover_complete(fixture: &Fixture) -> TestResult<i64> {
     let generation = lease.generation();
     fixture
         .store
-        .finish_scope(lease, ScopeOutcome::Complete, now_ms()?)
+        .finish_scope(lease, ScopeOutcome::Complete, now_ms()?, None)
         .await?;
     Ok(generation)
 }
@@ -170,7 +170,7 @@ async fn given_impossible_batch_capacity_when_admission_starts_then_reservation_
     assert_eq!(first.generation(), 1);
     fixture
         .store
-        .finish_scope(first, ScopeOutcome::Partial, now_ms()?)
+        .finish_scope(first, ScopeOutcome::Partial, now_ms()?, None)
         .await?;
     Ok(())
 }

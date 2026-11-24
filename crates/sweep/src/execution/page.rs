@@ -9,7 +9,10 @@ mod tag_endpoint;
 
 mod settlement;
 use inventory_core::{
-    catalog::runtime::{CallablePlan, PlanPurpose},
+    catalog::{
+        Target,
+        runtime::{CallablePlan, PlanPurpose},
+    },
     inventory::{DiscoveryContext, ScopeOutcome as StoredOutcome},
     record::Record,
 };
@@ -39,6 +42,7 @@ async fn process_owned(
             context.store,
             lease,
             inventory_engine::limiter::ApiError::Cancelled.into(),
+            None,
         )
         .await;
     }
@@ -47,6 +51,7 @@ async fn process_owned(
             context.store,
             lease,
             SweepError::Operation("resume account does not match stored scope"),
+            None,
         )
         .await;
     }
@@ -59,22 +64,35 @@ async fn process_lease(
 ) -> Result<SweepSummary, SweepError> {
     let setup = match preflight(context, &lease) {
         Ok(setup) => setup,
-        Err(error) => return finish_error(context.store, lease, error).await,
+        Err(error) => return finish_error(context.store, lease, error, None).await,
     };
     let plan = setup.plan;
     let cursor = &setup.cursor;
     if cursor.partial || cursor.pages >= context.bootstrap.config.max_pages {
-        return finalize(context.store, lease, StoredOutcome::Partial).await;
+        return finalize(context.store, lease, StoredOutcome::Partial, None).await;
     }
     let prepared = match preparation::prepare(context, &lease, plan, cursor).await {
         Ok(prepared) => prepared,
-        Err(error) => return finish_error(context.store, lease, error).await,
+        Err(error) => return finish_error(context.store, lease, error, output_shape(plan)).await,
     };
     let (response, request) = match execute_page(context, plan, prepared).await {
         Ok(response) => response,
-        Err(error) => return finish_error(context.store, lease, error).await,
+        Err(error) => return finish_error(context.store, lease, error, output_shape(plan)).await,
     };
     commit_response(context, lease, setup, response, request).await
+}
+
+/// The name of the operation's response shape, when the catalog models one.
+fn output_shape<'catalog>(plan: &CallablePlan<'catalog>) -> Option<&'catalog str> {
+    match plan.operation().output() {
+        Ok(Target::Shape(index)) => plan
+            .service()
+            .shape(index)
+            .ok()
+            .flatten()
+            .and_then(|shape| shape.name().ok()),
+        _ => None,
+    }
 }
 
 struct PageSetup<'a, 'catalog> {
@@ -163,6 +181,7 @@ async fn commit_response(
     request: PageRequest,
 ) -> Result<SweepSummary, SweepError> {
     let assembly = assembly_context(context);
+    let plan = setup.plan;
     let parts = match assembly::prepare(
         &assembly,
         &lease,
@@ -175,7 +194,7 @@ async fn commit_response(
     .await
     {
         Ok(parts) => parts,
-        Err(error) => return finish_error(context.store, lease, error).await,
+        Err(error) => return finish_error(context.store, lease, error, output_shape(plan)).await,
     };
     commit_parts(context, lease, parts).await
 }
@@ -199,7 +218,7 @@ async fn commit_parts(
     parts: PageParts,
 ) -> Result<SweepSummary, SweepError> {
     if let Err(error) = assembly::checkpoint(context.bootstrap.executor).await {
-        return finish_error(context.store, lease, error).await;
+        return finish_error(context.store, lease, error, None).await;
     }
     let done = parts.next.is_none();
     let rows = parts.rows;
@@ -249,7 +268,15 @@ async fn commit_page(
             Ok(summary)
         }
         Err(StoreError::StaleLease) => Ok(SweepSummary::default()),
-        Err(error) => finish_error(context.store, fallback_lease, SweepError::Store(error)).await,
+        Err(error) => {
+            finish_error(
+                context.store,
+                fallback_lease,
+                SweepError::Store(error),
+                None,
+            )
+            .await
+        }
     }
 }
 

@@ -29,7 +29,9 @@ impl PgStore {
         lease: WorkLease,
         outcome: ScopeOutcome,
         observed_at_ms: i64,
+        detail: Option<&str>,
     ) -> Result<ChangeStats, StoreError> {
+        crate::inventory::validation::validate_detail(detail)?;
         if observed_at_ms < 0 {
             return Err(StoreError::Invalid("negative observation timestamp"));
         }
@@ -41,7 +43,7 @@ impl PgStore {
         lease::lock(&mut tx).await?;
         lease::validate(&mut tx, &lease, observed_at_ms).await?;
         completion::lock(&mut tx).await?;
-        finish(&mut tx, &lease, outcome, observed_at_ms).await?;
+        finish(&mut tx, &lease, outcome, observed_at_ms, detail).await?;
         let stats = completion::drain(self, &mut tx, lease.sweep(), observed_at_ms).await?;
         tx.commit().await?;
         Ok(stats)
@@ -53,10 +55,11 @@ pub(super) async fn finish(
     lease: &WorkLease,
     outcome: ScopeOutcome,
     at: i64,
+    detail: Option<&str>,
 ) -> Result<(), StoreError> {
     let scope = encode_scope(lease.scope())?;
-    sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES($1,$2,$3,$4) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome=EXCLUDED.outcome,observed_at=EXCLUDED.observed_at")
-        .bind(lease.sweep().as_str()).bind(&scope).bind(outcome.as_str()).bind(at)
+    sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at,detail) VALUES($1,$2,$3,$4,$5) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome=EXCLUDED.outcome,observed_at=EXCLUDED.observed_at,detail=EXCLUDED.detail")
+        .bind(lease.sweep().as_str()).bind(&scope).bind(outcome.as_str()).bind(at).bind(detail)
         .execute(&mut **tx).await?;
     sqlx::query("UPDATE work_queue SET state=2,lease_until=0,last_complete=CASE WHEN $3 THEN $4 ELSE last_complete END WHERE sweep_id=$1 AND scope_key=$2")
         .bind(lease.sweep().as_str()).bind(&scope).bind(outcome == ScopeOutcome::Complete).bind(at)

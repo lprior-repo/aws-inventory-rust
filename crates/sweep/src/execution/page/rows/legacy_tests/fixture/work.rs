@@ -55,14 +55,14 @@ pub(in super::super) async fn finish_partial(store: &BinaryStore, sweep: &SweepI
         .await?
         .ok_or("partial continuation absent")?;
     store
-        .finish_scope(lease, ScopeOutcome::Partial, 20_003)
+        .finish_scope(lease, ScopeOutcome::Partial, 20_003, None)
         .await?;
     let lease = store
         .claim(sweep, 20_004, 100)
         .await?
         .ok_or("queued metadata absent")?;
     store
-        .finish_scope(lease, ScopeOutcome::Inaccessible, 20_005)
+        .finish_scope(lease, ScopeOutcome::Inaccessible, 20_005, None)
         .await?;
     Ok(())
 }

@@ -72,7 +72,7 @@ async fn record_unobserved(
     scope_key: &[u8],
     last_observed: i64,
 ) -> Result<(), StoreError> {
-    sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES(?1,?2,'unobserved',?3) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome='unobserved',observed_at=excluded.observed_at")
+    sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES(?1,?2,'unobserved',?3) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome='unobserved',observed_at=excluded.observed_at,detail=NULL")
         .bind(sweep.as_str())
         .bind(scope_key)
         .bind(last_observed)

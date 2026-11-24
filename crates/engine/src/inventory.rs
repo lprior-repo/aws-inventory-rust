@@ -59,6 +59,8 @@ const MAX_CATALOG_BYTES: usize = inventory_core::catalog::MAX_CATALOG_BYTES;
 const MAX_TOKEN_BYTES: usize = 65_536;
 const MAX_BINDING_BYTES: usize = 1_048_576;
 const MAX_PROJECTION_ROWS: i64 = 100_000;
+/// Longest reason, in bytes, stored beside a scope outcome.
+pub const MAX_OUTCOME_DETAIL_BYTES: usize = 1_024;
 
 #[derive(Debug, Error)]
 pub enum StoreError {
@@ -169,13 +171,15 @@ impl BinaryStore {
         work::commit_page(self, page).await
     }
 
+    /// `detail` is the reason for the outcome; a later outcome without one clears it.
     pub async fn finish_scope(
         &self,
         lease: WorkLease,
         outcome: ScopeOutcome,
         observed_at_ms: i64,
+        detail: Option<&str>,
     ) -> Result<ChangeStats, StoreError> {
-        work::finish_scope(self, lease, outcome, observed_at_ms).await
+        work::finish_scope(self, lease, outcome, observed_at_ms, detail).await
     }
 
     pub async fn drain_projection(&self, limit: u16) -> Result<Vec<PendingProjection>, StoreError> {

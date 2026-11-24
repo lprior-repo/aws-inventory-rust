@@ -191,6 +191,7 @@ async fn given_an_orphan_legacy_baseline_when_only_partial_or_unrelated_complete
             lease,
             inventory_core::inventory::ScopeOutcome::Partial,
             20_003,
+            None,
         )
         .await?;
     persist(

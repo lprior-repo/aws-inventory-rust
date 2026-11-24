@@ -275,15 +275,17 @@ pub(super) async fn finish_scope(
     lease: WorkLease,
     outcome: ScopeOutcome,
     observed_at_ms: i64,
+    detail: Option<&str>,
 ) -> Result<ChangeStats, StoreError> {
+    super::validation::validate_detail(detail)?;
     if matches!(outcome, ScopeOutcome::Complete) {
         store.registry.permissions.validate_completion(&lease)?;
     }
     let mut tx = store.writer.begin().await?;
     validate_lease(&mut tx, &lease, observed_at_ms).await?;
     let scope = encode_scope(&lease.scope)?;
-    sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at) VALUES(?1,?2,?3,?4) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome=excluded.outcome,observed_at=excluded.observed_at")
-        .bind(lease.sweep.as_str()).bind(&scope).bind(outcome.as_str()).bind(observed_at_ms)
+    sqlx::query("INSERT INTO scope_outcomes(sweep_id,scope_key,outcome,observed_at,detail) VALUES(?1,?2,?3,?4,?5) ON CONFLICT(sweep_id,scope_key) DO UPDATE SET outcome=excluded.outcome,observed_at=excluded.observed_at,detail=excluded.detail")
+        .bind(lease.sweep.as_str()).bind(&scope).bind(outcome.as_str()).bind(observed_at_ms).bind(detail)
         .execute(&mut *tx).await?;
     if matches!(outcome, ScopeOutcome::Complete) {
         // Update last_complete for future claim ordering.

@@ -106,7 +106,9 @@ async fn given_missing_required_tag_scalars_or_completion_flag_when_decoded_then
             matches!(result, Ok(PageParts { .. })),
             "malformed tag pair should be skipped, not fail: {name}"
         );
-        store.finish_scope(lease, ScopeOutcome::Failed, 3).await?;
+        store
+            .finish_scope(lease, ScopeOutcome::Failed, 3, None)
+            .await?;
         assert_eq!(
             tags(&store, &owner).await?,
             vec![("known".into(), "old".into())],
@@ -133,7 +135,9 @@ async fn given_missing_required_tag_scalars_or_completion_flag_when_decoded_then
     assert!(
         matches!(consume(&catalog, &lease, response, 10), Err(error) if matches!(error.downcast_ref::<SweepError>(), Some(SweepError::Operation(message)) if *message == "tag response omitted explicit pagination completion evidence"))
     );
-    store.finish_scope(lease, ScopeOutcome::Failed, 3).await?;
+    store
+        .finish_scope(lease, ScopeOutcome::Failed, 3, None)
+        .await?;
     assert_eq!(
         tags(&store, &owner).await?,
         vec![("known".into(), "old".into())]

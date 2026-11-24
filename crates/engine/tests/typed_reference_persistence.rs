@@ -158,6 +158,7 @@ async fn commit_partial_observation(
             continuation,
             ScopeOutcome::Partial,
             at.checked_add(3).ok_or("time overflow")?,
+            None,
         )
         .await?;
     assert_eq!(store.sweep_summary(&sweep_id).await?.partial_scopes, 1);

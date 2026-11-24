@@ -91,7 +91,9 @@ async fn given_honest_v2_discovery_facet_when_same_catalog_targets_and_partial_s
         let forged = page(&store, &catalog, "discover", "forged-discover", 10, true).await?;
         let lease = forged.lease.clone();
         assert!(store.commit_page(forged).await.is_err());
-        store.finish_scope(lease, ScopeOutcome::Partial, 11).await?;
+        store
+            .finish_scope(lease, ScopeOutcome::Partial, 11, None)
+            .await?;
         // A different genuine Metadata operation cannot certify a Link baseline
         // merely because the supplied Link observation is itself schema-valid.
         let link = page(
@@ -105,7 +107,7 @@ async fn given_honest_v2_discovery_facet_when_same_catalog_targets_and_partial_s
         .await?;
         let observations = link.observations;
         store
-            .finish_scope(link.lease, ScopeOutcome::Partial, 13)
+            .finish_scope(link.lease, ScopeOutcome::Partial, 13, None)
             .await?;
         let own_sink = SINK.replace("210987654321", "123456789012");
         let mut wrong_operation = oam_page_in_scope(
@@ -121,7 +123,9 @@ async fn given_honest_v2_discovery_facet_when_same_catalog_targets_and_partial_s
         wrong_operation.unresolved.clear();
         let lease = wrong_operation.lease.clone();
         assert!(store.commit_page(wrong_operation).await.is_err());
-        store.finish_scope(lease, ScopeOutcome::Partial, 15).await?;
+        store
+            .finish_scope(lease, ScopeOutcome::Partial, 15, None)
+            .await?;
         partial(&store, &catalog, 20).await?;
         let sql = pool(&directory).await?;
         assert_eq!(frozen(&sql, &catalog).await?, before);

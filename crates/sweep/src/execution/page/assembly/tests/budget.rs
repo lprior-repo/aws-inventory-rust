@@ -12,7 +12,7 @@ async fn given_large_valid_ancestry_and_many_small_rows_when_prepared_then_aggre
     let root_scope = root.scope().clone();
     scenario
         .store
-        .finish_scope(root, ScopeOutcome::Partial, now_ms()?)
+        .finish_scope(root, ScopeOutcome::Partial, now_ms()?, None)
         .await?;
     let field = FieldId::new(1)?;
     let large = Record::encode(&Value::Map(BTreeMap::from([(

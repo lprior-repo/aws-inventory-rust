@@ -205,7 +205,7 @@ pub(super) async fn partial(
         .await?
         .ok_or("partial continuation absent")?;
     store
-        .finish_scope(lease, ScopeOutcome::Partial, at.saturating_add(2))
+        .finish_scope(lease, ScopeOutcome::Partial, at.saturating_add(2), None)
         .await?;
     Ok(())
 }

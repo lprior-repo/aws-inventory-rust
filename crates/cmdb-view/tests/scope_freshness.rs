@@ -53,7 +53,7 @@ async fn seed_modeled(store: &BinaryStore, attempt: &Attempt) -> TestResult {
         .await?
         .ok_or("scope was not claimable")?;
     store
-        .finish_scope(lease, attempt.outcome, attempt.at)
+        .finish_scope(lease, attempt.outcome, attempt.at, None)
         .await?;
     Ok(())
 }
