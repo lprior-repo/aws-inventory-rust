@@ -60,10 +60,13 @@ pub(super) async fn live_falkordb_ambiguous_write_replay_preserves_nodes_edges_a
         )
         .await?;
         for (query, expected) in [
-            ("MATCH (r:Resource) RETURN count(r)", 2),
-            ("MATCH ()-[r:RELATES_TO]->() RETURN count(r)", 1),
+            (inventory_graph::cypher::diagnostics::RESOURCE_COUNT, 2),
+            (
+                inventory_graph::cypher::diagnostics::LEGACY_RELATION_COUNT,
+                1,
+            ),
         ] {
-            let value: redis::Value = redis::cmd("GRAPH.QUERY")
+            let value: redis::Value = redis::cmd(inventory_graph::cypher::COMMAND)
                 .arg(&name)
                 .arg(query)
                 .query_async(&mut connection)

@@ -71,14 +71,20 @@ async fn given_silent_unix_peer_when_connect_or_query_stalls_then_graph_operatio
         );
         if finish_setup {
             assert!(transcript.iter().any(|command| command == "GRAPH.RO_QUERY"));
-            assert!(transcript.iter().any(|command| command == "GRAPH.QUERY"));
+            assert!(
+                transcript
+                    .iter()
+                    .any(|command| command == inventory_graph::cypher::COMMAND)
+            );
         }
     }
     Ok(())
 }
 
 async fn graph_deadlines(graph: &mut NativeGraph) -> TestResult {
-    let rows = graph.rows("MATCH (n) RETURN n.id").await;
+    let rows = graph
+        .rows(inventory_graph::cypher::diagnostics::NODE_IDS)
+        .await;
     assert!(
         matches!(&rows, Err(error) if error.downcast_ref::<tokio::time::error::Elapsed>().is_some()),
         "complete read operation must expire at its client deadline"

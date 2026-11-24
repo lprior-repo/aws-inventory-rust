@@ -46,17 +46,23 @@ async fn tag_replacement(
     )
     .await?;
     let old = store.drain_projection(1000).await?;
-    let mut proxy = proxy::Proxy::start(native.endpoint(), "MERGE (t:Tag")
-        .await
-        .map_err(|error| error.to_string())?;
+    let mut proxy = proxy::Proxy::start(
+        native.endpoint(),
+        inventory_graph::cypher::diagnostics::TAG_MERGE,
+    )
+    .await
+    .map_err(|error| error.to_string())?;
     let endpoint = proxy.endpoint.clone();
-    let mut first = Box::pin(run_projection(&store, &endpoint, "native_fence_tags", 1000));
+    let backend = inventory_graph::falkor::FalkorDb::connect(&endpoint, "native_fence_tags")?;
+    let mut first = Box::pin(run_projection(&store, &backend, 1000));
     tokio::select! { result = &mut first => return Err(format!("P1 finished before barrier: {result:?}").into()), paused = proxy.paused() => paused.map_err(|error| error.to_string())? }
     // The same handle's single reader is held by P1's snapshot. Admission must
     // check the independent cached sidecar path, not wait for that reader.
+    let second_backend =
+        inventory_graph::falkor::FalkorDb::connect(native.endpoint(), "native_fence_tags")?;
     let same_handle = tokio::time::timeout(
         Duration::from_secs(2),
-        run_projection(&store, native.endpoint(), "native_fence_tags", 1000),
+        run_projection(&store, &second_backend, 1000),
     )
     .await?;
     assert!(matches!(same_handle, Err(ProjectionError::DeliveryBusy)));
@@ -73,7 +79,7 @@ async fn tag_replacement(
     assert_eq!(latest.len(), 1);
     assert!(latest[0].revision > old[0].revision);
     assert!(matches!(
-        run_projection(&second, native.endpoint(), "native_fence_tags", 1000).await,
+        run_projection(&second, &second_backend, 1000).await,
         Err(ProjectionError::DeliveryBusy)
     ));
     let (_, running) = proxy.resume().await.map_err(|error| error.to_string())?;
@@ -109,12 +115,9 @@ async fn cancelled_claim(
         .await
         .map_err(|error| error.to_string())?;
     let old_endpoint = old_proxy.endpoint.clone();
-    let mut old = Box::pin(run_projection(
-        &store,
-        &old_endpoint,
-        "native_fence_claim",
-        1000,
-    ));
+    let old_backend =
+        inventory_graph::falkor::FalkorDb::connect(&old_endpoint, "native_fence_claim")?;
+    let mut old = Box::pin(run_projection(&store, &old_backend, 1000));
     tokio::select! { result = &mut old => return Err(format!("A finished before claim barrier: {result:?}").into()), paused = old_proxy.paused() => paused.map_err(|error| error.to_string())? }
     drop(old);
     wait_for_release(&path).await?;
@@ -128,16 +131,16 @@ async fn cancelled_claim(
         4_000_000_000_001,
     )
     .await?;
-    let mut successor_proxy = proxy::Proxy::start(native.endpoint(), "MERGE (t:Tag")
-        .await
-        .map_err(|error| error.to_string())?;
+    let mut successor_proxy = proxy::Proxy::start(
+        native.endpoint(),
+        inventory_graph::cypher::diagnostics::TAG_MERGE,
+    )
+    .await
+    .map_err(|error| error.to_string())?;
     let successor_endpoint = successor_proxy.endpoint.clone();
-    let mut successor = Box::pin(run_projection(
-        &second,
-        &successor_endpoint,
-        "native_fence_claim",
-        1000,
-    ));
+    let successor_backend =
+        inventory_graph::falkor::FalkorDb::connect(&successor_endpoint, "native_fence_claim")?;
+    let mut successor = Box::pin(run_projection(&second, &successor_backend, 1000));
     tokio::select! { result = &mut successor => return Err(format!("B finished before tag barrier: {result:?}").into()), paused = successor_proxy.paused() => paused.map_err(|error| error.to_string())? }
     let (response, old_running) = old_proxy
         .resume()
@@ -180,16 +183,16 @@ async fn cancelled_tag_replacement(
     )
     .await?;
     let old = store.drain_projection(1000).await?;
-    let mut proxy = proxy::Proxy::start(native.endpoint(), "MERGE (t:Tag")
-        .await
-        .map_err(|error| error.to_string())?;
+    let mut proxy = proxy::Proxy::start(
+        native.endpoint(),
+        inventory_graph::cypher::diagnostics::TAG_MERGE,
+    )
+    .await
+    .map_err(|error| error.to_string())?;
     let endpoint = proxy.endpoint.clone();
-    let mut first = Box::pin(run_projection(
-        &store,
-        &endpoint,
-        "native_fence_cancel_tags",
-        1000,
-    ));
+    let backend =
+        inventory_graph::falkor::FalkorDb::connect(&endpoint, "native_fence_cancel_tags")?;
+    let mut first = Box::pin(run_projection(&store, &backend, 1000));
     tokio::select! { result = &mut first => return Err(format!("P1 finished before tag barrier: {result:?}").into()), paused = proxy.paused() => paused.map_err(|error| error.to_string())? }
     // When: cancelling P1 releases local ownership; P2 delivers bob first.
     drop(first);
@@ -238,16 +241,15 @@ async fn cancelled_resurrection(
         4_000_000_000_000,
     )
     .await?;
-    let mut proxy = proxy::Proxy::start(native.endpoint(), "MERGE (n:Resource")
-        .await
-        .map_err(|error| error.to_string())?;
+    let mut proxy = proxy::Proxy::start(
+        native.endpoint(),
+        inventory_graph::cypher::diagnostics::NODE_MERGE,
+    )
+    .await
+    .map_err(|error| error.to_string())?;
     let endpoint = proxy.endpoint.clone();
-    let mut first = Box::pin(run_projection(
-        &store,
-        &endpoint,
-        "native_fence_delete",
-        1000,
-    ));
+    let backend = inventory_graph::falkor::FalkorDb::connect(&endpoint, "native_fence_delete")?;
+    let mut first = Box::pin(run_projection(&store, &backend, 1000));
     tokio::select! { result = &mut first => return Err(format!("P1 finished before barrier: {result:?}").into()), paused = proxy.paused() => paused.map_err(|error| error.to_string())? }
     // When: public complete sweeps delete while the old native request is in flight.
     delete_after_two_misses(&store, target).await?;
@@ -279,24 +281,25 @@ async fn stale_rebuild(database: &Path, native: &NativeGraph) -> TestResult {
     // Given: rebuild and incremental delivery use the same durable owner.
     let (_directory, path, store) = isolated(database, native, "native_fence_rebuild").await?;
     recovery::request_rebuild(&path).await?;
-    let mut proxy = proxy::Proxy::start(native.endpoint(), "MERGE (n:Resource")
-        .await
-        .map_err(|error| error.to_string())?;
+    let mut proxy = proxy::Proxy::start(
+        native.endpoint(),
+        inventory_graph::cypher::diagnostics::NODE_MERGE,
+    )
+    .await
+    .map_err(|error| error.to_string())?;
     let endpoint = proxy.endpoint.clone();
-    let mut first = Box::pin(run_projection(
-        &store,
-        &endpoint,
-        "native_fence_rebuild",
-        1000,
-    ));
+    let backend = inventory_graph::falkor::FalkorDb::connect(&endpoint, "native_fence_rebuild")?;
+    let mut first = Box::pin(run_projection(&store, &backend, 1000));
     tokio::select! { result = &mut first => return Err(format!("rebuild finished before barrier: {result:?}").into()), paused = proxy.paused() => paused.map_err(|error| error.to_string())? }
     // When: only the persisted rebuild control revision advances mid-snapshot.
     // No public request-rebuild API exists; this is transparent control injection.
     advance_marker(&path).await?;
     let second = BinaryStore::open(&path).await?;
     let latest = second.drain_projection(1000).await?;
+    let second_backend =
+        inventory_graph::falkor::FalkorDb::connect(native.endpoint(), "native_fence_rebuild")?;
     assert!(matches!(
-        run_projection(&second, native.endpoint(), "native_fence_rebuild", 1000).await,
+        run_projection(&second, &second_backend, 1000).await,
         Err(ProjectionError::DeliveryBusy)
     ));
     let (_, running) = proxy.resume().await.map_err(|error| error.to_string())?;
@@ -334,7 +337,7 @@ async fn isolated(
     assert_eq!(delivered.pending, 0);
     assert_eq!(
         delivered.acknowledged, 1,
-        "real native GRAPH.QUERY in MULTI must execute before acknowledgement"
+        "real native query in MULTI must execute before acknowledgement"
     );
     Ok((directory, path, store))
 }
@@ -344,7 +347,8 @@ async fn project(
     native: &NativeGraph,
     name: &str,
 ) -> TestResult<ProjectionReport> {
-    let report = run_projection(store, native.endpoint(), name, 1000).await?;
+    let backend = inventory_graph::falkor::FalkorDb::connect(native.endpoint(), name)?;
+    let report = run_projection(store, &backend, 1000).await?;
     assert!(
         !report.offline && !report.rebuild_incomplete,
         "native fence delivery incomplete: {report:?}"
@@ -458,7 +462,7 @@ async fn assert_sets(
     let actual = rows(
         native,
         name,
-        "MATCH (r:Resource) RETURN r.account,r.region,r.kind,r.id",
+        inventory_graph::cypher::diagnostics::RESOURCE_IDENTITIES,
     )
     .await?;
     assert_eq!(
@@ -496,15 +500,15 @@ async fn assert_sets(
             ]
         })
         .collect();
-    let actual = rows(native, name, "MATCH (r:Resource)-[a:HAS_TAG]->(t:Tag) RETURN r.account,r.region,r.kind,r.id,t.tag_key,t.tag_value,a.provenance").await?;
-    assert_eq!(actual.len(), expected.len());
-    assert_eq!(actual.into_iter().collect::<BTreeSet<_>>(), expected);
     let actual = rows(
         native,
         name,
-        "MATCH (t:Tag) RETURN t.account,t.region,t.tag_key,t.tag_value",
+        inventory_graph::cypher::diagnostics::AFFILIATIONS,
     )
     .await?;
+    assert_eq!(actual.len(), expected.len());
+    assert_eq!(actual.into_iter().collect::<BTreeSet<_>>(), expected);
+    let actual = rows(native, name, inventory_graph::cypher::diagnostics::TAG_ROWS).await?;
     assert_eq!(
         actual.len(),
         vertices.len(),
@@ -528,17 +532,32 @@ async fn assert_sets(
         })
         .collect();
     assert_eq!(expected_edges.len(), dependencies.edges.len());
-    let actual = rows(native, name, "MATCH (s:Resource)-[r]->(t:Resource) RETURN s.account,s.region,s.kind,s.id,t.account,t.region,t.kind,t.id,r.relation,r.provenance").await?;
+    let actual = rows(
+        native,
+        name,
+        inventory_graph::cypher::diagnostics::SOURCE_TARGET_EDGES,
+    )
+    .await?;
     assert_eq!(actual.len(), expected_edges.len());
     assert_eq!(actual.into_iter().collect::<BTreeSet<_>>(), expected_edges);
-    let nodes = rows(native, name, "MATCH (n) RETURN labels(n)[0]").await?;
+    let nodes = rows(
+        native,
+        name,
+        inventory_graph::cypher::diagnostics::NODE_LABELS,
+    )
+    .await?;
     assert_eq!(nodes.len(), resources.len() + vertices.len());
     assert!(
         nodes
             .iter()
             .all(|row| matches!(row.as_slice(), [label] if label == "Resource" || label == "Tag"))
     );
-    let relationships = rows(native, name, "MATCH ()-[r]->() RETURN type(r)").await?;
+    let relationships = rows(
+        native,
+        name,
+        inventory_graph::cypher::diagnostics::RELATION_TYPES,
+    )
+    .await?;
     assert_eq!(
         relationships.len(),
         expected.len() + dependencies.edges.len()

@@ -10,7 +10,7 @@ async fn generated_binary_database_round_trips_through_reader() -> TestResult {
     let directory = tempdir()?;
     let path = directory.path().join("benchmark.sqlite");
     generate(path.clone(), 2, 3).await?;
-    let database = Database::open(&path).await?;
+    let database = Database::open(path.to_str().ok_or("non-UTF-8 database path")?).await?;
     let counts = database.counts().await?;
     assert_eq!(counts.accounts, 2);
     assert_eq!(counts.regions, 3);

@@ -50,8 +50,10 @@ impl Revisions {
             return true;
         };
         let latest = match &output.event {
-            WorkerEvent::Snapshot { .. } | WorkerEvent::GraphStatus { .. } => &self.page,
-            WorkerEvent::Graph { .. } | WorkerEvent::HarnessGraph { .. } => &self.graph,
+            WorkerEvent::Snapshot { .. } => &self.page,
+            WorkerEvent::GraphStatus { .. }
+            | WorkerEvent::Graph { .. }
+            | WorkerEvent::HarnessGraph { .. } => &self.graph,
         };
         latest.load(Ordering::Acquire) == revision
     }

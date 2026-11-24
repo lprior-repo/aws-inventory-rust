@@ -40,7 +40,8 @@ async fn given_exact_rebuild_page_budget_when_native_projection_runs_then_eof_co
     insert_resources(&store, "boundary_initial", 0, 10_000).await?;
     native::project(&store, &graph).await?;
     recovery::request_rebuild(&database).await?;
-    let exact = run_projection(&store, graph.endpoint(), native::GRAPH, 1).await?;
+    let backend = inventory_graph::falkor::FalkorDb::connect(graph.endpoint(), native::GRAPH)?;
+    let exact = run_projection(&store, &backend, 1).await?;
     assert!(!exact.offline);
     assert!(
         !exact.rebuild_incomplete,
@@ -51,7 +52,7 @@ async fn given_exact_rebuild_page_budget_when_native_projection_runs_then_eof_co
     assert!(!store.projection_state().await?.rebuild_required);
     assert_eq!(
         graph
-            .rows("MATCH (r:Resource) RETURN r.id ORDER BY r.id")
+            .rows(inventory_graph::cypher::diagnostics::SORTED_RESOURCE_IDS)
             .await?,
         expected
     );
@@ -59,7 +60,7 @@ async fn given_exact_rebuild_page_budget_when_native_projection_runs_then_eof_co
     insert_resources(&store, "boundary_extra", 10_000, 1).await?;
     native::project(&store, &graph).await?;
     recovery::request_rebuild(&database).await?;
-    let exceeded = run_projection(&store, graph.endpoint(), native::GRAPH, 1).await?;
+    let exceeded = run_projection(&store, &backend, 1).await?;
     assert!(!exceeded.offline);
     assert!(
         exceeded.rebuild_incomplete,
@@ -70,7 +71,7 @@ async fn given_exact_rebuild_page_budget_when_native_projection_runs_then_eof_co
     assert!(store.projection_state().await?.rebuild_required);
     assert_eq!(
         graph
-            .rows("MATCH (r:Resource) RETURN r.id ORDER BY r.id")
+            .rows(inventory_graph::cypher::diagnostics::SORTED_RESOURCE_IDS)
             .await?,
         expected
     );

@@ -1,3 +1,5 @@
+#[path = "inventory_projection_live/degree.rs"]
+mod degree;
 use inventory_engine::inventory::{
     BinaryStore, DatabaseUrl, InventoryStore, PgStore, PgWriteConfig, run_projection,
 };
@@ -39,7 +41,8 @@ async fn connected<S: InventoryStore>(
     if before.pending == 0 {
         return Err("live projection test requires pending outbox work".into());
     }
-    let result = run_projection(store, endpoint, graph, 32).await?;
+    let backend = inventory_graph::falkor::FalkorDb::connect(endpoint, graph)?;
+    let result = run_projection(store, &backend, 32).await?;
     if result.offline || result.acknowledged == 0 || result.pending >= before.pending {
         return Err("live Falkor delivery did not acknowledge the sent outbox revisions".into());
     }
@@ -68,7 +71,9 @@ async fn offline<S: InventoryStore>(store: &S) -> Result<(), Box<dyn std::error:
     if before.pending == 0 || revisions.is_empty() {
         return Err("offline projection test requires pending outbox work".into());
     }
-    let result = run_projection(store, "redis://127.0.0.1:1", "offline_contract", 32).await?;
+    let backend =
+        inventory_graph::falkor::FalkorDb::connect("redis://127.0.0.1:1", "offline_contract")?;
+    let result = run_projection(store, &backend, 32).await?;
     let after = store.drain_projection(32).await?;
     if !result.offline
         || result.acknowledged != 0

@@ -57,6 +57,32 @@
 - The whole-account hierarchy layout accepts borrowed interned arrays and emits
   deterministic resource positions and contiguous account/region/service/kind
   child ranges, independently of Makepad and database I/O.
+- `catalog-tool iam-policy` derives one read-only IAM action per callable
+  runtime plan and writes the policy, the cross-account role template and a
+  gap report. Must-deny findings and broad aliases are reported; write-named
+  exceptions that are not confirmed are refused. Sweep keeps a receipt for
+  every attempt, including rejected and retried calls.
+- Graph traversal retains breadth-first paths under edge budgets and
+  distinguishes a depth cutoff from a budget-truncated path.
+- FalkorDB projection rejects foreign edges before emission and writes at
+  most 1,000 rows per constant-depth `UNWIND` statement, preserving relation
+  labels. Connection loss uses the graph adapter deadline instead of Redis's
+  500 ms response timeout. Cypher ownership is checked by a standalone script.
+- PostgreSQL pages batch payload reads by kind and cache table names per snapshot;
+  tag pairs retain their key ordering, malformed freshness rows are typed errors,
+  and URL-free diagnostics distinguish authentication, database and schema failures.
+- Graph expansion reports terminal failures and revision-scoped transport status.
+  Offline diagnostics survive following SQL snapshots and clear after a successful
+  graph query; resource-query failures remain scoped to their selected resource.
+- `cmdb-view` and `cmdb-ui --database` now read PostgreSQL inventory URLs as
+  well as SQLite paths. PostgreSQL reads use four read-only connections,
+  pinned repeatable-read snapshots, full-identity cursors, escaped literal
+  searches with ASCII-only case folding and bounded table-row projections.
+  Configuration diagnostics redact PostgreSQL URLs; `Database::open` now accepts `&str`.
+- PostgreSQL URL dispatch and diagnostic redaction share case-insensitive scheme
+  handling, including URLs embedded in malformed CLI arguments. Both readers
+  retain byte-budget continuations and reject oversized first rows or missing
+  stored records consistently; SQLite record lengths use complete resource identities.
 - Marketplace Agreement discovery now sends the pinned model's documented-required
   `AgreementType=PurchaseAgreement` filter on initial and subsequent search pages.
   Existing catalog/database pairs must be regenerated together for the new plan.

@@ -10,6 +10,7 @@ cmdb-ui = { path = "../cmdb-ui" }
 cmdb-view = { path = "../cmdb-view" }
 inventory-core.workspace = true
 inventory-engine = { workspace = true, default-features = false }
+inventory-graph.workspace = true
 aws-wire = { path = "../aws-wire" }
 http = "1.5.0"
 sha2.workspace = true
@@ -25,6 +26,9 @@ rustls-pki-types = { version = "1.16.0", features = ["std"] }
 rcgen = { version = "0.14.10", default-features = false, features = ["aws_lc_rs", "pem"] }
 
 tempfile = "3.27.0"
+
+[dev-dependencies]
+inventory-graph = { workspace = true, features = ["test-fixtures"] }
 
 [lints]
 workspace = true

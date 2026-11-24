@@ -12,7 +12,10 @@ pub(super) async fn snapshot(path: &Path) -> Result<InventorySnapshot> {
 }
 
 async fn resources(path: &Path) -> Result<Vec<(inventory_core::inventory::ResourceKey, [u8; 32])>> {
-    let database = FileDatabase::open(path).await?;
+    let target = path.to_str().ok_or_else(|| {
+        std::io::Error::new(std::io::ErrorKind::InvalidInput, "non-UTF-8 database path")
+    })?;
+    let database = FileDatabase::open(target).await?;
     let counts = database.counts().await?;
     let (total, rows) = resource_page(&database).await?;
     verify_counts(

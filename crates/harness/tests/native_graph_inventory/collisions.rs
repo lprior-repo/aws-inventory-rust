@@ -48,10 +48,16 @@ pub(super) async fn assert_scoped_fixture(graph: &mut NativeGraph, directory: &P
     initialize_tags(&database, &store, &keys, &pairs).await?;
     native::project(&store, graph).await?;
     assert_fixture(&database, &store, graph, &expected, &pairs).await?;
-    assert_eq!(graph.rows("MATCH (t:Tag) RETURN t.tag_key").await?.len(), 5);
     assert_eq!(
         graph
-            .rows("MATCH ()-[r:HAS_TAG]->() RETURN r.provenance")
+            .rows(inventory_graph::cypher::diagnostics::TAG_KEYS)
+            .await?
+            .len(),
+        5
+    );
+    assert_eq!(
+        graph
+            .rows(inventory_graph::cypher::diagnostics::TAG_PROVENANCE)
             .await?
             .len(),
         6
@@ -71,12 +77,24 @@ pub(super) async fn assert_scoped_fixture(graph: &mut NativeGraph, directory: &P
     );
     native::project(&store, graph).await?;
     assert_fixture(&database, &store, graph, &expected, &pairs).await?;
-    assert_eq!(graph.rows("MATCH (t:Tag) RETURN t.tag_key").await?.len(), 5);
+    assert_eq!(
+        graph
+            .rows(inventory_graph::cypher::diagnostics::TAG_KEYS)
+            .await?
+            .len(),
+        5
+    );
     tags::tag_commit::replace(&store, first, Vec::new(), "collision-empty", 300).await?;
     pairs.remove(first);
     native::project(&store, graph).await?;
     assert_fixture(&database, &store, graph, &expected, &pairs).await?;
-    assert_eq!(graph.rows("MATCH (t:Tag) RETURN t.tag_key").await?.len(), 4);
+    assert_eq!(
+        graph
+            .rows(inventory_graph::cypher::diagnostics::TAG_KEYS)
+            .await?
+            .len(),
+        4
+    );
     // Equal values with distinct keys must not merge; the newline value must
     // round-trip through actual Cypher escaping and both public readers.
     tags::tag_commit::replace(
@@ -278,7 +296,7 @@ async fn assert_fixture(
     pairs: &TagSets,
 ) -> TestResult {
     tags::assert_sets(database, graph, expected, pairs).await?;
-    let view = Database::open(database).await?;
+    let view = Database::open(database.to_str().ok_or("non-UTF-8 database path")?).await?;
     let record = Record::encode(&Value::Map(BTreeMap::new()))?;
     let hash = record.content_hash(&Exclusions::none())?;
     let metadata: BTreeSet<Vec<String>> = expected
@@ -295,7 +313,7 @@ async fn assert_fixture(
         })
         .collect();
     let rows = graph
-        .rows("MATCH (r:Resource) RETURN r.account,r.region,r.kind,r.id,r.name,r.content_hash")
+        .rows(inventory_graph::cypher::diagnostics::RESOURCE_ROWS)
         .await?;
     assert_eq!(rows.len(), 5);
     assert_eq!(rows.into_iter().collect::<BTreeSet<_>>(), metadata);

@@ -138,7 +138,13 @@ impl App {
                 .borrow_mut::<ResourceTable>()
                 .is_some_and(|mut table| table.clear_selection(cx));
             if changed {
-                self.request_expansion(cx);
+                let result = self
+                    .worker
+                    .as_ref()
+                    .map_or(Ok(()), crate::worker::DataWorker::invalidate_graph);
+                if let Err(error) = result {
+                    self.apply_graph_event(cx, crate::data::Graph::default(), Some(error));
+                }
                 self.refresh(cx);
             }
         }

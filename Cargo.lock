@@ -260,6 +260,7 @@ dependencies = [
  "inventory-aws",
  "inventory-core",
  "inventory-engine",
+ "inventory-graph",
  "inventory-harness",
  "inventory-sweep",
  "minicbor",
@@ -1446,6 +1447,7 @@ dependencies = [
  "http",
  "inventory-core",
  "inventory-engine",
+ "inventory-graph",
  "inventory-harness",
  "rcgen",
  "redis",
@@ -1466,6 +1468,8 @@ dependencies = [
  "criterion",
  "inventory-core",
  "inventory-engine",
+ "inventory-graph",
+ "inventory-harness",
  "makepad-widgets",
  "proptest",
  "redis",
@@ -1480,8 +1484,11 @@ dependencies = [
 name = "cmdb-view"
 version = "0.6.0"
 dependencies = [
+ "futures-util",
  "inventory-core",
  "inventory-engine",
+ "inventory-graph",
+ "inventory-harness",
  "redis",
  "sha2",
  "sqlx",
@@ -2619,6 +2626,7 @@ dependencies = [
  "base16ct",
  "futures-util",
  "inventory-core",
+ "inventory-graph",
  "inventory-harness",
  "proptest",
  "redis",
@@ -2638,6 +2646,7 @@ dependencies = [
 name = "inventory-graph"
 version = "0.6.0"
 dependencies = [
+ "futures-util",
  "inventory-core",
  "redis",
  "thiserror",
@@ -2666,6 +2675,7 @@ dependencies = [
  "httparse",
  "inventory-core",
  "inventory-engine",
+ "inventory-graph",
  "inventory-sweep",
  "libc",
  "minicbor",

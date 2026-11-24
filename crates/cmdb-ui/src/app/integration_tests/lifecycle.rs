@@ -30,7 +30,7 @@ fn given_successful_empty_database_when_startup_page_commits_then_graph_access_d
             app.start_worker_with_config(
                 &mut cx,
                 WorkerConfig {
-                    database: Some(fixture.path.clone()),
+                    database: Some(fixture.path.to_string_lossy().into_owned()),
                     graph_url: url.map(str::to_owned),
                     graph_name: name.map(str::to_owned),
                     graph_limits: DEFAULT_GRAPH_LIMITS,
@@ -77,7 +77,7 @@ fn given_failed_real_database_when_repaired_and_filter_action_retries_then_close
         app.start_worker_with_config(
             &mut cx,
             WorkerConfig {
-                database: Some(fixture.path.clone()),
+                database: Some(fixture.path.to_string_lossy().into_owned()),
                 graph_limits: DEFAULT_GRAPH_LIMITS,
                 ..WorkerConfig::default()
             },
@@ -106,8 +106,8 @@ fn given_failed_real_database_when_repaired_and_filter_action_retries_then_close
         assert_eq!(
             app.worker_config
                 .as_ref()
-                .and_then(|config| config.database.as_ref()),
-            Some(&fixture.path)
+                .and_then(|config| config.database.as_deref()),
+            Some(fixture.path.to_string_lossy().as_ref())
         );
         assert!(!graph_status(&app, &mut cx).contains("database unavailable"));
         shutdown(&mut app, &mut cx);
@@ -140,7 +140,7 @@ fn given_failed_resource_query_when_filter_removes_selection_then_new_empty_page
         app.start_worker_with_config(
             &mut cx,
             WorkerConfig {
-                database: Some(fixture.path.clone()),
+                database: Some(fixture.path.to_string_lossy().into_owned()),
                 graph_url: Some(native.endpoint.clone()),
                 graph_name: Some(native.name.clone()),
                 graph_limits: DEFAULT_GRAPH_LIMITS,
@@ -150,7 +150,7 @@ fn given_failed_resource_query_when_filter_removes_selection_then_new_empty_page
         wait_for(&mut app, &mut cx, |app, cx| graph(app, cx).nodes.len() == 2)?;
         assert_eq!(app.graph_access_error, None);
         // Corrupt real native identity metadata, not a synthetic WorkerEvent.
-        runtime.block_on(native.query("MATCH (n:Resource) SET n.account='invalid'"))?;
+        runtime.block_on(native.query(inventory_graph::cypher::diagnostics::CORRUPT_ACCOUNT))?;
         let root = fixtures::digest(&fixtures::root())?;
         graph_action(&mut app, &mut cx, &root);
         wait_for(&mut app, &mut cx, |app, cx| {
@@ -198,7 +198,7 @@ fn given_cached_access_failure_and_current_selection_when_stale_success_arrives_
         app.start_worker_with_config(
             &mut cx,
             WorkerConfig {
-                database: Some(fixture.path.clone()),
+                database: Some(fixture.path.to_string_lossy().into_owned()),
                 graph_limits: DEFAULT_GRAPH_LIMITS,
                 ..WorkerConfig::default()
             },
@@ -243,6 +243,173 @@ fn given_cached_access_failure_and_current_selection_when_stale_success_arrives_
         assert_eq!(app.graph_access_error.as_deref(), Some(access));
         assert_eq!(graph_status(&app, &mut cx), offline);
         shutdown(&mut app, &mut cx);
+        Ok(())
+    })
+}
+
+fn online_app(fixture: &Fixture, native: &NativeGraph, endpoint: &str) -> TestResult<(Cx, App)> {
+    let (mut cx, mut app) = app()?;
+    app.start_worker_with_config(
+        &mut cx,
+        WorkerConfig {
+            database: Some(fixture.path.to_string_lossy().into_owned()),
+            graph_url: Some(endpoint.to_owned()),
+            graph_name: Some(native.name.clone()),
+            graph_limits: DEFAULT_GRAPH_LIMITS,
+            ..WorkerConfig::default()
+        },
+    );
+    wait_for(&mut app, &mut cx, |app, cx| graph(app, cx).nodes.len() == 2)?;
+    assert_eq!(app.graph_access_error, None);
+    Ok((cx, app))
+}
+
+#[test]
+fn given_lost_graph_endpoint_when_snapshot_follows_failure_then_offline_survives_until_restored_refresh()
+-> TestResult {
+    supervised(|| {
+        use crate::worker::tests::support::transport::{FaultableEndpoint, refresh_batch};
+        let runtime = runtime()?;
+        if !runtime.block_on(falkor_available())? {
+            return Ok(());
+        }
+        let fixture = runtime.block_on(Fixture::new())?;
+        runtime.block_on(fixture.commit("seed", ACCOUNT, REGION, &[("shared", "root")], &[], 1))?;
+        let neighbor = fixtures::node(ACCOUNT, REGION, KIND, "native-neighbor");
+        let link = fixtures::edge(&fixtures::root(), &neighbor, "references", "model");
+        let native = runtime.block_on(NativeGraph::new(std::slice::from_ref(&link)))?;
+        let endpoint = FaultableEndpoint::start(&native.endpoint)?;
+        let (mut cx, mut app) = online_app(&fixture, &native, &endpoint.endpoint)?;
+        let online = graph_status(&app, &mut cx);
+        endpoint.set_online(false);
+        graph_action(&mut app, &mut cx, &fixtures::digest(&fixtures::root())?);
+        wait_for(&mut app, &mut cx, |app, cx| {
+            graph_status(app, cx).starts_with("Graph offline · connection/query unavailable · ")
+        })?;
+        let offline = graph_status(&app, &mut cx);
+        let worker = app.worker.as_ref().ok_or("missing graph worker")?;
+        worker.refresh(crate::data::Filter {
+            query: "absent".to_owned(),
+            ..crate::data::Filter::default()
+        })?;
+        let batch = refresh_batch(worker)?;
+        let terminal = batch
+            .iter()
+            .filter(|event| !matches!(event, WorkerEvent::GraphStatus { .. }));
+        assert_eq!(
+            terminal
+                .map(|event| matches!(event, WorkerEvent::Snapshot { .. }))
+                .collect::<Vec<_>>(),
+            vec![false, true]
+        );
+        for event in batch {
+            app.apply_worker_event(&mut cx, event);
+        }
+        assert_eq!(selected(&app, &mut cx), None);
+        assert_eq!(graph_status(&app, &mut cx), offline);
+        endpoint.set_online(true);
+        app.worker
+            .as_ref()
+            .ok_or("missing graph worker")?
+            .refresh(crate::data::Filter::default())?;
+        wait_for(&mut app, &mut cx, |app, cx| {
+            app.graph_access_error.is_none() && graph_status(app, cx) == online
+        })?;
+        assert_eq!(graph_status(&app, &mut cx), online);
+        assert_eq!(app.graph_access_error, None);
+        shutdown(&mut app, &mut cx);
+        endpoint.finish()?;
+        runtime.block_on(native.delete())?;
+        Ok(())
+    })
+}
+
+#[test]
+fn given_restored_graph_when_refresh_snapshot_removes_selection_then_success_is_not_fenced()
+-> TestResult {
+    supervised(|| {
+        use crate::worker::tests::support::transport::{
+            FaultableEndpoint, first_refresh_snapshot, refresh_graph,
+        };
+        let runtime = runtime()?;
+        if !runtime.block_on(falkor_available())? {
+            return Ok(());
+        }
+        let fixture = runtime.block_on(Fixture::new())?;
+        runtime.block_on(fixture.commit("seed", ACCOUNT, REGION, &[("shared", "root")], &[], 1))?;
+        let neighbor = fixtures::node(ACCOUNT, REGION, KIND, "native-neighbor");
+        let link = fixtures::edge(&fixtures::root(), &neighbor, "references", "model");
+        let native = runtime.block_on(NativeGraph::new(std::slice::from_ref(&link)))?;
+        let endpoint = FaultableEndpoint::start(&native.endpoint)?;
+        let (mut cx, mut app) = online_app(&fixture, &native, &endpoint.endpoint)?;
+        endpoint.set_online(false);
+        graph_action(&mut app, &mut cx, &fixtures::digest(&fixtures::root())?);
+        wait_for(&mut app, &mut cx, |app, cx| {
+            graph_status(app, cx).starts_with("Graph offline · connection/query unavailable · ")
+        })?;
+        endpoint.set_online(true);
+        let worker = app.worker.as_ref().ok_or("missing graph worker")?;
+        worker.refresh(crate::data::Filter {
+            query: "absent".to_owned(),
+            ..crate::data::Filter::default()
+        })?;
+        let snapshot = first_refresh_snapshot(worker)?;
+        for event in snapshot {
+            app.apply_worker_event(&mut cx, event);
+        }
+        assert_eq!(selected(&app, &mut cx), None);
+        let worker = app.worker.as_ref().ok_or("missing graph worker")?;
+        for event in refresh_graph(worker, None)? {
+            app.apply_worker_event(&mut cx, event);
+        }
+        assert_eq!(app.graph_access_error, None);
+        assert_eq!(
+            graph_status(&app, &mut cx),
+            "Select a resource to expand its graph neighbors"
+        );
+        shutdown(&mut app, &mut cx);
+        endpoint.finish()?;
+        runtime.block_on(native.delete())?;
+        Ok(())
+    })
+}
+
+#[test]
+fn given_invalid_native_resource_when_refresh_removes_selection_then_query_failure_stays_scoped()
+-> TestResult {
+    supervised(|| {
+        use crate::worker::tests::support::transport::{first_refresh_snapshot, refresh_graph};
+        let runtime = runtime()?;
+        if !runtime.block_on(falkor_available())? {
+            return Ok(());
+        }
+        let fixture = runtime.block_on(Fixture::new())?;
+        runtime.block_on(fixture.commit("seed", ACCOUNT, REGION, &[("shared", "root")], &[], 1))?;
+        let neighbor = fixtures::node(ACCOUNT, REGION, KIND, "native-neighbor");
+        let link = fixtures::edge(&fixtures::root(), &neighbor, "references", "model");
+        let native = runtime.block_on(NativeGraph::new(std::slice::from_ref(&link)))?;
+        let (mut cx, mut app) = online_app(&fixture, &native, &native.endpoint)?;
+        runtime.block_on(native.query("MATCH (n:Resource) SET n.account='invalid'"))?;
+        let worker = app.worker.as_ref().ok_or("missing graph worker")?;
+        worker.refresh(crate::data::Filter {
+            query: "absent".to_owned(),
+            ..crate::data::Filter::default()
+        })?;
+        for event in first_refresh_snapshot(worker)? {
+            app.apply_worker_event(&mut cx, event);
+        }
+        assert_eq!(selected(&app, &mut cx), None);
+        let worker = app.worker.as_ref().ok_or("missing graph worker")?;
+        for event in refresh_graph(worker, Some("invalid graph response"))? {
+            app.apply_worker_event(&mut cx, event);
+        }
+        assert_eq!(app.graph_access_error, None);
+        assert_eq!(
+            graph_status(&app, &mut cx),
+            "Select a resource to expand its graph neighbors"
+        );
+        shutdown(&mut app, &mut cx);
+        runtime.block_on(native.delete())?;
         Ok(())
     })
 }

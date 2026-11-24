@@ -92,3 +92,24 @@ fn truncated_search_does_not_claim_absence() -> TestResult {
     ));
     Ok(())
 }
+
+#[test]
+fn given_exhausted_layer_budget_when_later_rows_arrive_then_they_are_not_processed() -> TestResult {
+    // Given: the second row exhausts the layer's one-edge budget.
+    let root = key("root")?;
+    let child = key("child")?;
+    let accepted = edge(&root, &child)?;
+    let mut state = Traversal::new(&root, GraphLimits::new(2, 4, 1)?)?;
+    // When: a later unrelated row would be invalid if processed.
+    state.add_layer(vec![
+        accepted.clone(),
+        edge(&root, &key("refused")?)?,
+        edge(&key("foreign-from")?, &key("foreign-to")?)?,
+    ])?;
+    // Then: the accepted prefix and frontier remain exact, without a response error.
+    assert_eq!(state.edges, vec![accepted]);
+    assert_eq!(state.visited, vec![root, child.clone()]);
+    assert_eq!(state.frontier, vec![child]);
+    assert_eq!(state.truncation, Truncation::Budget);
+    Ok(())
+}

@@ -9,10 +9,7 @@ fn given_database_and_duration_when_parsing_then_harness_configuration_reaches_w
         return Err("expected run configuration".to_owned());
     };
     assert_eq!(config.frame_harness, Some(FrameConfig::parse("20")?));
-    assert_eq!(
-        config.database,
-        Some(std::path::PathBuf::from("inventory.sqlite"))
-    );
+    assert_eq!(config.database, Some("inventory.sqlite".to_owned()));
     Ok(())
 }
 

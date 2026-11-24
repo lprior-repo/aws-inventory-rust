@@ -470,27 +470,16 @@ async fn verify_graph(
     let model_scan = get_field(model, "scan")?;
     let counts = get_field(model, "counts")?;
 
-    let node_query = format!(
-        "MATCH (r:Resource) RETURN r.id,r.scan_id,CASE WHEN r.unresolved=true THEN 'unresolved' WHEN r.unresolved=false THEN 'observed' ELSE 'invalid' END,r.key,r.kind,r.account_id,r.region,r.name,r.properties_json,r.tags_json,r.source,r.observed_at,size(keys(r)),size(labels(r)) ORDER BY r.id LIMIT {}",
-        MAX_FIXTURE_ROWS + 1
-    );
+    let node_query =
+        inventory_graph::cypher::diagnostics::legacy_nodes(MAX_FIXTURE_ROWS.saturating_add(1));
+    let edge_query =
+        inventory_graph::cypher::diagnostics::legacy_edges(MAX_FIXTURE_ROWS.saturating_add(1));
+    let tag_query =
+        inventory_graph::cypher::diagnostics::legacy_tags(MAX_FIXTURE_ROWS.saturating_add(1));
+    let marker_query =
+        inventory_graph::cypher::diagnostics::legacy_marker(MAX_FIXTURE_ROWS.saturating_add(1));
 
-    let edge_query = format!(
-        "MATCH (a)-[e]->(b) WHERE type(e) <> 'HAS_TAG' RETURN a.id,b.id,type(e),e.kind,e.source,a.scan_id,b.scan_id,e.observed_at,e.properties_json,size(keys(e)),a.key,b.key ORDER BY a.id,b.id,e.kind,e.source LIMIT {}",
-        MAX_FIXTURE_ROWS + 1
-    );
-
-    let tag_query = format!(
-        "MATCH (r:Resource)-[e:HAS_TAG]->(t:Tag) RETURN r.id,r.key,t.account,t.region,t.tag_key,t.tag_value,e.provenance ORDER BY r.key,t.tag_key,t.tag_value,e.provenance LIMIT {}",
-        MAX_FIXTURE_ROWS + 1
-    );
-
-    let marker_query = format!(
-        "MATCH (s:InventoryScan) RETURN s.id,s.state,s.resources,s.edges,size(keys(s)),size(labels(s)) LIMIT {}",
-        MAX_FIXTURE_ROWS + 1
-    );
-
-    let total_query = "MATCH (n) RETURN count(n)";
+    let total_query = inventory_graph::cypher::diagnostics::NODE_COUNT;
 
     let node_rows = graph_rows(redis_cli, port, graph, &node_query, 14)?;
     let edge_rows = graph_rows(redis_cli, port, graph, &edge_query, 12)?;

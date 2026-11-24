@@ -7,13 +7,13 @@ mod tags;
 #[cfg(test)]
 #[path = "runner/tests.rs"]
 mod tests;
-use super::client::{GraphClient, GraphError};
-use super::cypher::QueryError;
 use crate::inventory::{
-    InventoryStore, PendingProjection, ProjectionAck, ProjectionDelivery, ProjectionEdgeCursor,
-    ProjectionIdentity, ProjectionSnapshotRead, StoreError,
+    InventoryStore, PendingProjection, ProjectionAck, ProjectionDelivery, ProjectionIdentity,
+    ProjectionSnapshotRead, StoreError,
 };
+use futures_util::{StreamExt, TryStreamExt, stream};
 use inventory_core::inventory::ResourceKey;
+use inventory_graph::{EdgeRow, GraphBackend, GraphError, NodeRow, Provenance};
 use rebuild::*;
 use tags::project_tags;
 use thiserror::Error;
@@ -45,73 +45,74 @@ pub enum ProjectionError {
     OwnershipIo(#[from] std::io::Error),
 }
 
-impl From<QueryError> for ProjectionError {
-    fn from(_: QueryError) -> Self {
-        Self::Query
+impl From<GraphError> for ProjectionError {
+    fn from(error: GraphError) -> Self {
+        match error {
+            GraphError::OwnershipLost => Self::OwnershipLost,
+            _ => Self::Query,
+        }
     }
 }
 
-pub async fn run_projection<S: InventoryStore>(
+pub fn run_projection<S: InventoryStore, G: GraphBackend>(
     store: &S,
-    endpoint: &str,
-    graph: &str,
+    graph: &G,
     batch_limit: u16,
-) -> Result<ProjectionReport, ProjectionError> {
-    validate(graph, endpoint, batch_limit)?;
-    let ownership = store
-        .acquire_projection_delivery()
-        .await
-        .map_err(delivery_error)?;
-    let result =
-        run_owned_projection(store, endpoint, graph, batch_limit, ownership.generation()).await;
-    ownership.release().await.map_err(delivery_error)?;
-    result
+) -> impl Future<Output = Result<ProjectionReport, ProjectionError>> + Send {
+    let configuration = match graph.target_identity() {
+        Some((endpoint, name)) => validate(name, endpoint, batch_limit),
+        None => validate("inventory", "", batch_limit),
+    };
+    async move {
+        configuration?;
+        let ownership = store
+            .acquire_projection_delivery()
+            .await
+            .map_err(delivery_error)?;
+        let result = run_owned_projection(store, graph, batch_limit, ownership.generation()).await;
+        ownership.release().await.map_err(delivery_error)?;
+        result
+    }
 }
 
-async fn run_owned_projection<S: InventoryStore>(
+async fn run_owned_projection<S: InventoryStore, G: GraphBackend>(
     store: &S,
-    endpoint: &str,
-    graph: &str,
+    graph: &G,
     batch_limit: u16,
     generation: i64,
 ) -> Result<ProjectionReport, ProjectionError> {
     let state = store.projection_state().await?;
     if state.pending == 0 {
-        return target_identity_check(store, endpoint, graph, state.pending).await;
+        return target_identity_check(store, graph, state.pending).await;
     }
-    let mut client = match GraphClient::connect(endpoint, graph, generation).await {
-        Ok(client) => client,
-        Err(error) => return failed_delivery(store, error, 0).await,
-    };
-    if let Err(error) = client.ensure_index().await {
+    if let Err(error) = graph.claim_projection(generation).await {
         return failed_delivery(store, error, 0).await;
     }
-    let report = deliver_batch(store, &mut client, batch_limit).await?;
+    let report = deliver_batch(store, graph, batch_limit).await?;
     if report.acknowledged > 0 {
-        persist_identity(store, endpoint, graph).await?;
+        persist_identity(store, graph).await?;
     }
     Ok(report)
 }
 
-async fn target_identity_check<S: InventoryStore>(
+async fn target_identity_check<S: InventoryStore, G: GraphBackend>(
     store: &S,
-    endpoint: &str,
-    graph: &str,
+    backend: &G,
     pending: u64,
 ) -> Result<ProjectionReport, ProjectionError> {
     let stored = store.read_projection_identity().await?;
-    match stored {
-        Some(identity) if identity.differs(endpoint, graph) => {
-            store.mark_projection_rebuild_required().await?;
-            Ok(report(pending, 0, false, true))
-        }
-        _ => Ok(report(pending, 0, false, false)),
+    let changed = stored
+        .zip(backend.target_identity())
+        .is_some_and(|(identity, (endpoint, graph))| identity.differs(endpoint, graph));
+    if changed {
+        store.mark_projection_rebuild_required().await?;
     }
+    Ok(report(pending, 0, false, changed))
 }
 
-async fn deliver_batch<S: InventoryStore>(
+async fn deliver_batch<S: InventoryStore, G: GraphBackend>(
     store: &S,
-    client: &mut GraphClient,
+    client: &G,
     batch_limit: u16,
 ) -> Result<ProjectionReport, ProjectionError> {
     let pending = store.drain_projection(batch_limit).await?;
@@ -123,7 +124,9 @@ async fn deliver_batch<S: InventoryStore>(
         match rebuild_graph(store, client, entry, batch_limit).await {
             Ok(Some(acknowledged)) => acknowledged,
             Ok(None) => return pending_report(store, 0, false, true).await,
-            Err(error) => return failed_delivery(store, error, 0).await,
+            Err(EntryError::Offline) => return pending_report(store, 0, true, false).await,
+            Err(EntryError::Projection(error)) => return Err(error),
+            Err(EntryError::Store(error)) => return Err(ProjectionError::Store(error)),
         }
     } else {
         0
@@ -131,34 +134,37 @@ async fn deliver_batch<S: InventoryStore>(
     deliver_entries(store, client, pending, batch_limit, acknowledged).await
 }
 
-async fn deliver_entries<S: InventoryStore>(
+async fn deliver_entries<S: InventoryStore, G: GraphBackend>(
     store: &S,
-    client: &mut GraphClient,
+    client: &G,
     pending: Vec<PendingProjection>,
     batch_limit: u16,
-    mut acknowledged: u64,
+    acknowledged: u64,
 ) -> Result<ProjectionReport, ProjectionError> {
-    let mut offline = false;
-    for entry in pending {
-        if entry.full_rebuild {
-            continue;
-        }
-        match deliver_entry(store, client, &entry, batch_limit).await {
-            Ok(applied) => acknowledged = acknowledged.saturating_add(applied),
-            Err(EntryError::Offline) => {
-                offline = true;
-                break;
-            }
-            Err(EntryError::Projection(error)) => return Err(error),
-            Err(EntryError::Store(error)) => return Err(ProjectionError::Store(error)),
-        }
-    }
+    let (acknowledged, offline) = stream::iter(pending)
+        .filter(|entry| std::future::ready(!entry.full_rebuild))
+        .map(Ok::<_, ProjectionError>)
+        .try_fold(
+            (acknowledged, false),
+            |(acknowledged, offline), entry| async move {
+                if offline {
+                    return Ok((acknowledged, offline));
+                }
+                match deliver_entry(store, client, &entry, batch_limit).await {
+                    Ok(applied) => Ok((acknowledged.saturating_add(applied), false)),
+                    Err(EntryError::Offline) => Ok((acknowledged, true)),
+                    Err(EntryError::Projection(error)) => Err(error),
+                    Err(EntryError::Store(error)) => Err(ProjectionError::Store(error)),
+                }
+            },
+        )
+        .await?;
     pending_report(store, acknowledged, offline, false).await
 }
 
-async fn deliver_entry<S: InventoryStore>(
+async fn deliver_entry<S: InventoryStore, G: GraphBackend>(
     store: &S,
-    client: &mut GraphClient,
+    client: &G,
     entry: &PendingProjection,
     batch_limit: u16,
 ) -> Result<u64, EntryError> {
@@ -166,7 +172,7 @@ async fn deliver_entry<S: InventoryStore>(
         ProjectionError::InvalidConfiguration,
     ))?;
     if entry.deleted {
-        client.delete(key).await.map_err(entry_graph_error)?;
+        client.delete_node(key).await.map_err(entry_graph_error)?;
     } else {
         deliver_resource(store, client, key, batch_limit).await?;
     }
@@ -176,60 +182,87 @@ async fn deliver_entry<S: InventoryStore>(
         .map_err(EntryError::Store)
 }
 
-async fn deliver_resource<S: InventoryStore>(
+async fn deliver_resource<S: InventoryStore, G: GraphBackend>(
     store: &S,
-    client: &mut GraphClient,
+    client: &G,
     key: &ResourceKey,
     batch_limit: u16,
 ) -> Result<(), EntryError> {
     let mut snapshot = store.begin_projection_snapshot().await?;
-    match snapshot.resource(key).await? {
-        Some(resource) => client.upsert(&resource).await.map_err(entry_graph_error)?,
-        None => return client.delete(key).await.map_err(entry_graph_error),
-    }
-    client.clear_tags(key).await.map_err(entry_graph_error)?;
-    project_tags(&mut snapshot, client, key, batch_limit)
+    let resource = snapshot.resource(key).await?;
+    let Some(resource) = resource else {
+        snapshot.finish().await?;
+        return client.delete_node(key).await.map_err(entry_graph_error);
+    };
+    client
+        .upsert_node(&node_row(resource))
         .await
         .map_err(entry_graph_error)?;
-    client.clear_edges(key).await.map_err(entry_graph_error)?;
+    client.clear_tags(key).await.map_err(entry_graph_error)?;
+    project_tags(&mut snapshot, client, key, batch_limit).await?;
     deliver_incident_edges(&mut snapshot, client, key, batch_limit).await?;
     snapshot.finish().await?;
     Ok(())
 }
 
-async fn deliver_incident_edges(
+async fn deliver_incident_edges<G: GraphBackend>(
     snapshot: &mut impl ProjectionSnapshotRead,
-    client: &mut GraphClient,
+    client: &G,
     key: &ResourceKey,
     batch_limit: u16,
 ) -> Result<(), EntryError> {
-    let mut cursor: Option<ProjectionEdgeCursor> = None;
-    for _ in 0..MAX_REBUILD_PAGES {
-        let page = snapshot.edges_for(key, cursor.take(), batch_limit).await?;
-        for edge in page.edges {
-            client.edge(&edge).await.map_err(entry_graph_error)?;
-        }
-        cursor = page.next;
-        if cursor.is_none() {
-            return Ok(());
-        }
-    }
-    Err(EntryError::Projection(
-        ProjectionError::InvalidConfiguration,
-    ))
+    let pages = stream::try_unfold(
+        (snapshot, None, MAX_REBUILD_PAGES, false),
+        |(snapshot, cursor, remaining, done)| async move {
+            if done {
+                return Ok(None);
+            }
+            let remaining = remaining.checked_sub(1).ok_or(ProjectionError::Query)?;
+            let page = snapshot.edges_for(key, cursor, batch_limit).await?;
+            let done = page.next.is_none();
+            Ok::<_, EntryError>(Some((page.edges, (snapshot, page.next, remaining, done))))
+        },
+    )
+    .map_ok(|page| {
+        stream::iter(page.into_iter().map(move |edge| {
+            if &edge.from != key && &edge.to != key {
+                return Err(GraphError::UnrelatedEdge.into());
+            }
+            Ok::<_, EntryError>(EdgeRow {
+                from: edge.from,
+                to: edge.to,
+                relation: edge.relation,
+                provenance: Provenance::parse(&edge.source)?,
+            })
+        }))
+    })
+    .try_flatten()
+    .try_chunks(inventory_graph::MAX_EDGES)
+    .map_err(|error| error.1);
+    client.replace_edges_paged(key, pages).await
 }
 
-async fn persist_identity<S: InventoryStore>(
+async fn persist_identity<S: InventoryStore, G: GraphBackend>(
     store: &S,
-    endpoint: &str,
-    graph: &str,
+    backend: &G,
 ) -> Result<(), StoreError> {
-    store
-        .write_projection_identity(&ProjectionIdentity {
-            endpoint: endpoint.to_owned(),
-            graph: graph.to_owned(),
-        })
-        .await
+    if let Some((endpoint, graph)) = backend.target_identity() {
+        store
+            .write_projection_identity(&ProjectionIdentity {
+                endpoint: endpoint.to_owned(),
+                graph: graph.to_owned(),
+            })
+            .await?;
+    }
+    Ok(())
+}
+
+fn node_row(resource: crate::inventory::ProjectionResource) -> NodeRow {
+    NodeRow {
+        key: resource.key,
+        name: resource.name,
+        content_hash: resource.content_hash,
+    }
 }
 
 fn delivery_error(error: StoreError) -> ProjectionError {

@@ -10,6 +10,8 @@ mod postgres;
 mod projection_fixture;
 #[path = "inventory_store/projection_port.rs"]
 mod projection_port;
+#[path = "inventory_store/projection_trait.rs"]
+mod projection_trait;
 #[path = "inventory_store/reference.rs"]
 mod reference;
 #[path = "inventory_store/scalar.rs"]

@@ -170,7 +170,7 @@ async fn ui_read_query_agrees_with_the_sql_view_and_stored_outcomes() -> TestRes
     let (rows, _, _) = view_rows(&path).await?;
     let expected = expected();
     let now = 1_000_000;
-    let database = Database::open(&path).await?;
+    let database = Database::open(path.to_str().ok_or("non-UTF-8 database path")?).await?;
     let report = database.scope_freshness(now, 1000).await?;
 
     assert_eq!(report.now_ms, now);
@@ -194,7 +194,7 @@ async fn read_query_bounds_rows_but_not_totals_and_rejects_bad_limits() -> TestR
     let path = directory.path().join("inventory.sqlite");
     let _store = seed(&path).await?;
     let expected = expected();
-    let database = Database::open(&path).await?;
+    let database = Database::open(path.to_str().ok_or("non-UTF-8 database path")?).await?;
     let report = database.scope_freshness(10_000, 2).await?;
     let listed: Vec<(&str, &str, i64)> = report
         .scopes
@@ -240,7 +240,7 @@ async fn reopening_the_writer_restores_a_dropped_view_for_existing_databases() -
         .execute(&pool)
         .await?;
     pool.close().await;
-    let database = Database::open(&path).await?;
+    let database = Database::open(path.to_str().ok_or("non-UTF-8 database path")?).await?;
     assert!(matches!(
         database.scope_freshness(1, 1).await,
         Err(ViewError::Sql(_))

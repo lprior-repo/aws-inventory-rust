@@ -41,9 +41,10 @@ async fn project<S: InventoryStore>(
 }
 
 async fn drain<S: InventoryStore>(store: &S, environment: &Environment, graph: &str) -> Result<()> {
+    let backend = inventory_graph::falkor::FalkorDb::connect(&environment.graph_url, graph)?;
     let mut acknowledged = 0_u64;
     for _ in 0..100 {
-        let report = run_projection(store, &environment.graph_url, graph, 100).await?;
+        let report = run_projection(store, &backend, 100).await?;
         acknowledged = advance(acknowledged, &report)?;
         if report.pending == 0 && !report.rebuild_incomplete {
             return verify_drained(store, acknowledged).await;

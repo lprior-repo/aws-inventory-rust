@@ -11,6 +11,7 @@ rust-version = "1.100"
 [workspace.dependencies]
 inventory-core = { path = "crates/core" }
 inventory-engine = { path = "crates/engine" }
+inventory-graph = { path = "crates/graph-store" }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = { version = "1.0.154", features = ["preserve_order"] }
 thiserror = "2.0.21"
@@ -58,6 +59,7 @@ aws = ["sweep", "inventory-aws/adapters"]
 [dependencies]
 inventory-core.workspace = true
 inventory-engine.workspace = true
+inventory-graph.workspace = true
 inventory-aws = { path = "crates/aws", optional = true, default-features = false }
 inventory-sweep = { path = "crates/sweep", optional = true }
 aws-wire = { path = "crates/aws-wire" }

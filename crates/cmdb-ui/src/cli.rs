@@ -1,12 +1,11 @@
 use crate::worker::{WorkerConfig, parse_lod_config};
-use std::path::PathBuf;
 use std::sync::OnceLock;
 
 pub const USAGE: &str = "\
-usage: cmdb-ui --database PATH [--frame-harness SECONDS] [--graph-url URL --graph-name NAME] [--linux-backend=BACKEND]
+usage: cmdb-ui --database TARGET [--frame-harness SECONDS] [--graph-url URL --graph-name NAME] [--linux-backend=BACKEND]
 
 Options:
-  --database PATH          SQLite inventory database to view (required)
+  --database TARGET        SQLite path or PostgreSQL inventory URL (required)
   --frame-harness SECONDS  Scripted frame capture (1..600 seconds); reports and exits
   --graph-url URL          FalkorDB endpoint; use with --graph-name
   --graph-name NAME        FalkorDB graph name; use with --graph-url
@@ -81,7 +80,7 @@ fn parse_arguments(arguments: &[String], config: &mut WorkerConfig) -> Result<()
             continue;
         }
         if !is_value_flag(flag) {
-            return Err(format!("unknown argument {flag}"));
+            return Err(unknown_argument(flag));
         }
         let value = arguments
             .next()
@@ -104,15 +103,31 @@ fn is_value_flag(flag: &str) -> bool {
 
 fn set_argument(config: &mut WorkerConfig, flag: &str, value: &str) -> Result<(), String> {
     match flag {
-        "--database" => config.database = Some(PathBuf::from(value)),
+        "--database" => config.database = Some(value.to_owned()),
         "--graph-url" => config.graph_url = Some(value.to_owned()),
         "--graph-name" => config.graph_name = Some(value.to_owned()),
         "--frame-harness" => {
             config.frame_harness = Some(crate::frame_harness::FrameConfig::parse(value)?)
         }
-        _ => return Err(format!("unknown argument {flag}")),
+        _ => return Err(unknown_argument(flag)),
     }
     Ok(())
+}
+
+fn unknown_argument(flag: &str) -> String {
+    let contains_postgres_url = flag.match_indices("://").any(|(scheme_end, _)| {
+        [8, 10].into_iter().any(|scheme_len| {
+            scheme_end
+                .checked_sub(scheme_len)
+                .and_then(|start| flag.get(start..))
+                .is_some_and(cmdb_view::is_postgres_url)
+        })
+    });
+    if contains_postgres_url {
+        "unknown argument [PostgreSQL URL redacted]".to_owned()
+    } else {
+        format!("unknown argument {flag}")
+    }
 }
 
 #[cfg(test)]
@@ -153,7 +168,7 @@ mod tests {
         assert_eq!(
             command,
             Ok(Command::Run(WorkerConfig {
-                database: Some(PathBuf::from("inventory.db")),
+                database: Some("inventory.db".to_owned()),
                 graph_url: Some("redis://127.0.0.1:6379".to_owned()),
                 graph_name: Some("cmdb".to_owned()),
                 ..WorkerConfig::default()
@@ -166,7 +181,7 @@ mod tests {
         assert_eq!(
             parse(&args(&["--linux-backend=x11", "--database", "a.db"])),
             Ok(Command::Run(WorkerConfig {
-                database: Some(PathBuf::from("a.db")),
+                database: Some("a.db".to_owned()),
                 ..WorkerConfig::default()
             }))
         );
@@ -253,3 +268,39 @@ mod lod_tests {
 
 #[cfg(test)]
 mod frame_harness_tests;
+
+#[cfg(test)]
+mod postgres_tests {
+    use super::*;
+
+    #[test]
+    fn postgres_given_url_when_parsing_database_then_target_is_retained_and_debug_is_redacted()
+    -> Result<(), String> {
+        let target = "postgres://reader:secret-password@localhost/inventory";
+        let Command::Run(config) = parse(&["--database".to_owned(), target.to_owned()])? else {
+            return Err("expected run command".into());
+        };
+        assert_eq!(config.database.as_deref(), Some(target));
+        assert!(!format!("{config:?}").contains("secret-password"));
+        Ok(())
+    }
+
+    #[test]
+    fn postgres_given_url_in_unknown_argument_when_parsing_then_password_is_not_echoed()
+    -> Result<(), String> {
+        for flag in [
+            "postgres://reader:secret-password@localhost/inventory",
+            "--database=postgresql://reader:secret-password@localhost/inventory",
+            "POSTGRES://reader:secret-password@localhost/inventory",
+            "--database=PoStGrEsQl://reader:secret-password@localhost/inventory",
+            "-postgres://reader:secret-password@localhost/inventory",
+            "--dbpostgres://reader:secret-password@localhost/inventory",
+        ] {
+            let error = parse(&[flag.to_owned()])
+                .err()
+                .ok_or("expected unknown argument")?;
+            assert_eq!(error, "unknown argument [PostgreSQL URL redacted]");
+        }
+        Ok(())
+    }
+}

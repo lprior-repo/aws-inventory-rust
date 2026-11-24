@@ -34,6 +34,7 @@ path = "src/main.rs"
 catalog-tool = { path = "../catalog-tool" }
 inventory-core = { path = "../core", default-features = false, features = ["legacy"] }
 inventory-engine = { workspace = true, default-features = false }
+inventory-graph.workspace = true
 inventory-sweep = { path = "../sweep" }
 aws-wire = { path = "../aws-wire" }
 http = "1.5.0"

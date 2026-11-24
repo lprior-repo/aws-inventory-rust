@@ -6,6 +6,8 @@ mod protocol;
 mod queries;
 mod runner;
 #[cfg(test)]
+mod test_events;
+#[cfg(test)]
 pub(crate) mod tests;
 
 use crate::data::{Counts, Filter, Graph, Row};
@@ -16,7 +18,6 @@ use makepad_widgets::makepad_platform::thread::SignalToUI;
 use projection::{graph_from_edges, row_from_resource};
 use protocol::{COMMAND_CAPACITY, Command, EVENT_CAPACITY, Output, Revisions, current_events};
 use queries::{query_graph, refresh_page};
-use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::mpsc::{self, Receiver, SyncSender};
 use std::thread::{self, JoinHandle};
@@ -55,13 +56,33 @@ pub fn parse_lod_config(config: &str) -> Result<GraphLimits, String> {
     })
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct WorkerConfig {
-    pub database: Option<PathBuf>,
+    pub database: Option<String>,
     pub graph_url: Option<String>,
     pub graph_name: Option<String>,
     pub graph_limits: GraphLimits,
     pub frame_harness: Option<crate::frame_harness::FrameConfig>,
+}
+
+impl std::fmt::Debug for WorkerConfig {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let database = self.database.as_deref().map(|target| {
+            if cmdb_view::is_postgres_url(target) {
+                "[PostgreSQL URL redacted]"
+            } else {
+                target
+            }
+        });
+        formatter
+            .debug_struct("WorkerConfig")
+            .field("database", &database)
+            .field("graph_url", &self.graph_url)
+            .field("graph_name", &self.graph_name)
+            .field("graph_limits", &self.graph_limits)
+            .field("frame_harness", &self.frame_harness)
+            .finish()
+    }
 }
 
 impl Default for WorkerConfig {
@@ -105,6 +126,8 @@ pub struct DataWorker {
     revisions: Arc<Revisions>,
     shutdown: Shutdown,
     thread: Option<JoinHandle<()>>,
+    #[cfg(test)]
+    pending_test_events: std::cell::RefCell<test_events::WaitState>,
 }
 
 impl DataWorker {
@@ -130,25 +153,42 @@ impl DataWorker {
             revisions,
             shutdown,
             thread: Some(thread),
+            #[cfg(test)]
+            pending_test_events: std::cell::RefCell::default(),
         }
     }
 
     pub fn refresh(&self, filter: Filter) -> Result<(), String> {
         let permit = self.commands.try_reserve().map_err(command_error)?;
+        #[cfg(test)]
+        self.check_test_command()?;
         let revision = self.revisions.refresh()?;
+        #[cfg(test)]
+        self.pending_test_events
+            .borrow_mut()
+            .begin(revision, true)?;
         permit.send(Command::Refresh { revision, filter });
         Ok(())
     }
 
     pub fn expand(&self, node: GraphNode) -> Result<(), String> {
         let permit = self.commands.try_reserve().map_err(command_error)?;
+        #[cfg(test)]
+        self.check_test_command()?;
         let revision = self.revisions.expand()?;
+        #[cfg(test)]
+        self.pending_test_events
+            .borrow_mut()
+            .begin(revision, false)?;
         permit.send(Command::Expand { revision, node });
         Ok(())
     }
 
     pub fn invalidate_graph(&self) -> Result<(), String> {
-        self.revisions.expand().map(|_| ())
+        self.revisions.expand()?;
+        #[cfg(test)]
+        self.pending_test_events.borrow_mut().cancel_graph();
+        Ok(())
     }
 
     pub fn is_closed(&self) -> bool {
@@ -157,7 +197,14 @@ impl DataWorker {
 
     pub fn drain(&self) -> Vec<WorkerEvent> {
         self.events.as_ref().map_or_else(Vec::new, |events| {
-            current_events(events.try_iter(), &self.revisions)
+            #[cfg(test)]
+            {
+                self.drain_test_events(events.try_iter())
+            }
+            #[cfg(not(test))]
+            {
+                current_events(events.try_iter(), &self.revisions)
+            }
         })
     }
 }
@@ -200,7 +247,7 @@ async fn startup(mut config: WorkerConfig) -> Result<(WorkerState, WorkerEvent),
         .map_err(|_| "database startup timed out after 10 seconds".to_owned())?
 }
 
-async fn setup(path: PathBuf, config: WorkerConfig) -> Result<(WorkerState, WorkerEvent), String> {
+async fn setup(path: String, config: WorkerConfig) -> Result<(WorkerState, WorkerEvent), String> {
     let database = Database::open(&path)
         .await
         .map_err(|error| error.to_string())?;

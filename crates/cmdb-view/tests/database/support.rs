@@ -61,3 +61,7 @@ pub(super) async fn sqlite_edges_page_by_full_identity_and_lod_summary_is_exact(
     assert_eq!(summary.isolated_resources, 1);
     Ok(())
 }
+
+pub(super) async fn postgres_fixture() -> TestResult<super::postgres_support::Fixture> {
+    super::postgres_support::Fixture::new().await
+}

@@ -3,7 +3,8 @@ use std::error::Error;
 use std::path::PathBuf;
 use std::time::Instant;
 pub(crate) async fn measure(path: PathBuf) -> Result<(), Box<dyn Error>> {
-    let database = Database::open(&path).await?;
+    let target = path.to_str().ok_or("non-UTF-8 database target")?;
+    let database = Database::open(target).await?;
     let started = Instant::now();
     let counts = database.counts().await?;
     let counts_time = started.elapsed();

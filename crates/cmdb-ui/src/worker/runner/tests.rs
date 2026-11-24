@@ -28,13 +28,14 @@ fn context(capacity: usize) -> (DataWorker, WorkerContext) {
         revisions,
         shutdown,
         thread: None,
+        pending_test_events: std::cell::RefCell::default(),
     };
     (worker, context)
 }
 
 fn config(fixture: &Fixture, native: &NativeGraph) -> WorkerConfig {
     WorkerConfig {
-        database: Some(fixture.path.clone()),
+        database: Some(fixture.path.to_string_lossy().into_owned()),
         graph_url: Some(native.endpoint.clone()),
         graph_name: Some(native.name.clone()),
         graph_limits: DEFAULT_GRAPH_LIMITS,
@@ -49,6 +50,20 @@ fn outputs(worker: &DataWorker) -> TestResult<Vec<Output>> {
         .ok_or("worker receiver missing")?
         .try_iter()
         .collect())
+}
+
+fn protocol_refresh(worker: &DataWorker, filter: Filter) -> Result<Command, String> {
+    Ok(Command::Refresh {
+        revision: worker.revisions.refresh()?,
+        filter,
+    })
+}
+
+fn protocol_expansion(worker: &DataWorker, node: GraphNode) -> Result<Command, String> {
+    Ok(Command::Expand {
+        revision: worker.revisions.expand()?,
+        node,
+    })
 }
 
 #[test]
@@ -76,8 +91,10 @@ fn given_superseded_refresh_after_admission_when_runner_completes_then_next_expa
         ))?;
         let native = runtime.block_on(NativeGraph::new(std::slice::from_ref(&link)))?;
         let result: TestResult = (|| {
-            let (mut state, _) =
-                runtime.block_on(setup(fixture.path.clone(), config(&fixture, &native)))?;
+            let (mut state, _) = runtime.block_on(setup(
+                fixture.path.to_string_lossy().into_owned(),
+                config(&fixture, &native),
+            ))?;
             let after = runtime.block_on(fixture.commit(
                 "after",
                 ACCOUNT,
@@ -91,12 +108,15 @@ fn given_superseded_refresh_after_admission_when_runner_completes_then_next_expa
                 2,
             ))?;
             let (worker, mut runner) = context(1);
-            worker.refresh(Filter::default())?;
-            let command = runner.commands.try_recv()?;
-            worker.refresh(Filter {
-                query: "newer-accepted".into(),
-                ..Filter::default()
-            })?;
+            let command = protocol_refresh(&worker, Filter::default())?;
+            let current = protocol_refresh(
+                &worker,
+                Filter {
+                    query: "newer-accepted".into(),
+                    ..Filter::default()
+                },
+            )?;
+            worker.commands.try_send(current)?;
             assert!(matches!(command, Command::Refresh { .. }));
             assert!(runner.process(command, &runtime, &mut state));
             assert_eq!(
@@ -178,8 +198,10 @@ fn given_obsolete_selection_queued_before_latest_refresh_when_real_runner_drains
         let obsolete = edge(&b, &b_leaf, "obsolete", "reviewed-rule");
         let native = runtime.block_on(NativeGraph::new(&[selected.clone(), obsolete]))?;
         let result: TestResult = (|| {
-            let (mut state, _) =
-                runtime.block_on(setup(fixture.path.clone(), config(&fixture, &native)))?;
+            let (mut state, _) = runtime.block_on(setup(
+                fixture.path.to_string_lossy().into_owned(),
+                config(&fixture, &native),
+            ))?;
             let established = runtime.block_on(query_graph(&mut state, Some(a)));
             let WorkerEvent::Graph { graph, error } = established else {
                 return Err("expected established graph".into());
@@ -187,15 +209,29 @@ fn given_obsolete_selection_queued_before_latest_refresh_when_real_runner_drains
             assert_eq!(error, None);
             assert_edges(&graph, std::slice::from_ref(&selected))?;
             let (worker, mut runner) = context(2);
-            worker.expand(b)?;
-            worker.refresh(Filter::default())?;
+            worker.commands.try_send(protocol_expansion(&worker, b)?)?;
+            worker
+                .commands
+                .try_send(protocol_refresh(&worker, Filter::default())?)?;
             let stop = worker.commands.clone();
             let stopper =
                 thread::spawn(move || stop.blocking_send(Command::Stop).map_err(Box::new));
             runner.run_commands(&runtime, state);
             stopper.join().map_err(|_| "stop sender panicked")??;
             let events = worker.drain();
-            assert_eq!(events.len(), 2);
+            assert_eq!(events.len(), 3);
+            assert!(matches!(
+                events.first(),
+                Some(WorkerEvent::GraphStatus { error: None })
+            ));
+            assert!(matches!(
+                events.last(),
+                Some(WorkerEvent::Snapshot {
+                    total: 4,
+                    error: None,
+                    ..
+                })
+            ));
             let graph = events
                 .into_iter()
                 .find_map(|event| match event {
@@ -246,12 +282,13 @@ fn given_selection_superseded_after_admission_when_native_query_completes_then_p
         let link = edge(&a, &b, "references", "model");
         let native = runtime.block_on(NativeGraph::new(&[link]))?;
         let result: TestResult = (|| {
-            let (mut state, _) =
-                runtime.block_on(setup(fixture.path.clone(), config(&fixture, &native)))?;
+            let (mut state, _) = runtime.block_on(setup(
+                fixture.path.to_string_lossy().into_owned(),
+                config(&fixture, &native),
+            ))?;
             let (worker, mut runner) = context(1);
-            worker.expand(a)?;
-            let command = runner.commands.try_recv()?;
-            worker.expand(b)?;
+            let command = protocol_expansion(&worker, a)?;
+            worker.commands.try_send(protocol_expansion(&worker, b)?)?;
             assert!(runner.process(command, &runtime, &mut state));
             assert_eq!(
                 outputs(&worker)?.len(),
@@ -284,11 +321,12 @@ fn given_full_queue_when_refresh_is_rejected_then_real_runner_commits_accepted_s
             1,
         ))?;
         let config = WorkerConfig {
-            database: Some(fixture.path.clone()),
+            database: Some(fixture.path.to_string_lossy().into_owned()),
             graph_limits: DEFAULT_GRAPH_LIMITS,
             ..WorkerConfig::default()
         };
-        let (mut state, _) = runtime.block_on(setup(fixture.path.clone(), config))?;
+        let (mut state, _) =
+            runtime.block_on(setup(fixture.path.to_string_lossy().into_owned(), config))?;
         let expected = runtime.block_on(fixture.commit(
             "after",
             ACCOUNT,
@@ -352,8 +390,10 @@ fn given_full_queue_when_expansion_is_rejected_then_real_graph_is_delivered_unti
         let link = edge(&a, &b, "references", "model");
         let native = runtime.block_on(NativeGraph::new(std::slice::from_ref(&link)))?;
         let result: TestResult = (|| {
-            let (mut state, _) =
-                runtime.block_on(setup(fixture.path.clone(), config(&fixture, &native)))?;
+            let (mut state, _) = runtime.block_on(setup(
+                fixture.path.to_string_lossy().into_owned(),
+                config(&fixture, &native),
+            ))?;
             let (worker, mut runner) = context(1);
             // Given an accepted expansion, rejection must not revoke its revision.
             worker.expand(a.clone())?;

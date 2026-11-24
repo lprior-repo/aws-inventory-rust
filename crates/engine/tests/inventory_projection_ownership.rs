@@ -29,8 +29,9 @@ async fn given_another_delivery_owner_when_any_handle_projects_then_it_fails_bus
     .await?;
     sqlx::query("BEGIN IMMEDIATE").execute(&mut lock).await?;
     // When: an independent handle attempts projection, no network is needed.
+    let backend = inventory_graph::falkor::FalkorDb::connect("redis://127.0.0.1:1", "ownership")?;
     assert!(matches!(
-        run_projection(&reopened, "redis://127.0.0.1:1", "ownership", 1).await,
+        run_projection(&reopened, &backend, 1).await,
         Err(ProjectionError::DeliveryBusy)
     ));
     // Then: ordinary resource commits still progress while delivery is owned.
@@ -52,7 +53,7 @@ async fn given_another_delivery_owner_when_any_handle_projects_then_it_fails_bus
         .await?;
     assert!(store.projection_state().await?.pending > 0);
     lock.close().await?;
-    let report = run_projection(&reopened, "redis://127.0.0.1:1", "ownership", 1).await?;
+    let report = run_projection(&reopened, &backend, 1).await?;
     assert!(report.offline);
     assert_eq!(report.acknowledged, 0);
     Ok(())
@@ -163,8 +164,10 @@ async fn given_delivery_ownership_in_another_process_when_projecting_then_it_is_
     if let Some(path) = std::env::var_os(CHILD_DATABASE) {
         // Child process opens its own pools, never inheriting an in-memory lock.
         let store = BinaryStore::open(std::path::Path::new(&path)).await?;
+        let backend =
+            inventory_graph::falkor::FalkorDb::connect("redis://127.0.0.1:1", "ownership")?;
         assert!(matches!(
-            run_projection(&store, "redis://127.0.0.1:1", "ownership", 1).await,
+            run_projection(&store, &backend, 1).await,
             Err(ProjectionError::DeliveryBusy)
         ));
         return Ok(());
@@ -223,8 +226,10 @@ async fn given_relative_inventory_path_when_cwd_changes_then_delivery_uses_its_o
         sqlx::query("BEGIN IMMEDIATE").execute(&mut lock).await?;
         let elsewhere = tempfile::tempdir()?;
         std::env::set_current_dir(elsewhere.path())?;
+        let backend =
+            inventory_graph::falkor::FalkorDb::connect("redis://127.0.0.1:1", "ownership")?;
         assert!(matches!(
-            run_projection(&store, "redis://127.0.0.1:1", "ownership", 1).await,
+            run_projection(&store, &backend, 1).await,
             Err(ProjectionError::DeliveryBusy)
         ));
         lock.close().await?;

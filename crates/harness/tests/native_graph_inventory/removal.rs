@@ -25,7 +25,7 @@ pub(super) async fn retire(
     target: &ResourceKey,
 ) -> TestResult {
     // Given a genuinely tagged removable subnet; this is not DeleteTags.
-    let before = Database::open(database)
+    let before = Database::open(database.to_str().ok_or("non-UTF-8 database path")?)
         .await?
         .detail(&compare::node(target))
         .await?
@@ -96,7 +96,7 @@ async fn denied_miss(
     target: &ResourceKey,
     expected_misses: &[(Vec<u8>, i64)],
 ) -> TestResult {
-    let observation = Database::open(database)
+    let observation = Database::open(database.to_str().ok_or("non-UTF-8 database path")?)
         .await?
         .detail(&compare::node(target))
         .await?
@@ -143,7 +143,7 @@ async fn denied_miss(
         "denied scope cannot advance a complete-miss counter"
     );
     assert_eq!(
-        Database::open(database)
+        Database::open(database.to_str().ok_or("non-UTF-8 database path")?)
             .await?
             .detail(&compare::node(target))
             .await?
@@ -177,7 +177,7 @@ pub(super) async fn assert_absent(
 ) -> TestResult {
     let node = compare::node(target);
     assert!(
-        Database::open(database)
+        Database::open(database.to_str().ok_or("non-UTF-8 database path")?)
             .await?
             .detail(&node)
             .await?

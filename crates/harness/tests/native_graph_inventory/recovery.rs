@@ -56,7 +56,8 @@ pub(super) async fn deliver_without_ack(
     // writer observes the injected fault; removed before the retry.
     sqlx::query("CREATE TRIGGER native_ack_failure BEFORE DELETE ON projection_outbox BEGIN SELECT RAISE(ABORT,'owned-native-ack-failure'); END")
         .execute(&pool).await?;
-    let delivered = run_projection(store, graph.endpoint(), graph.name(), 1000).await;
+    let backend = inventory_graph::falkor::FalkorDb::connect(graph.endpoint(), graph.name())?;
+    let delivered = run_projection(store, &backend, 1000).await;
     let cleanup = sqlx::query("DROP TRIGGER native_ack_failure")
         .execute(&pool)
         .await;
@@ -134,7 +135,8 @@ pub(super) async fn offline(
         "outage route must not touch a running/shared service"
     );
     let endpoint = format!("redis+unix://{}", route.display());
-    let report = run_projection(store, &endpoint, graph.name(), 1000).await?;
+    let backend = inventory_graph::falkor::FalkorDb::connect(&endpoint, graph.name())?;
+    let report = run_projection(store, &backend, 1000).await?;
     assert!(report.offline);
     assert_eq!(report.acknowledged, 0);
     assert_eq!(report.pending, u64::try_from(before.len())?);

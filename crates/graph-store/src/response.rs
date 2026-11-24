@@ -42,7 +42,7 @@ pub(crate) fn edges(value: &Value, limit: usize) -> Result<Vec<EdgeRow>, GraphEr
         .collect()
 }
 
-fn fields(value: &Value, count: usize) -> Result<&[Value], GraphError> {
+pub(crate) fn fields(value: &Value, count: usize) -> Result<&[Value], GraphError> {
     match value {
         Value::Array(fields) if fields.len() == count => Ok(fields),
         _ => Err(GraphError::Response),
@@ -58,7 +58,7 @@ fn node(fields: &[Value]) -> Result<NodeKey, GraphError> {
     })
 }
 
-fn text(value: Option<&Value>) -> Result<&str, GraphError> {
+pub(crate) fn text(value: Option<&Value>) -> Result<&str, GraphError> {
     let text = match value {
         Some(Value::BulkString(bytes)) => {
             std::str::from_utf8(bytes).map_err(|_| GraphError::Response)?
@@ -70,6 +70,16 @@ fn text(value: Option<&Value>) -> Result<&str, GraphError> {
         return Err(GraphError::Response);
     }
     Ok(text)
+}
+
+pub(crate) fn replacement_owner(value: &Value, owner: &NodeKey) -> Result<(), GraphError> {
+    let rows = rows(value, 1)?;
+    let row = rows.first().ok_or(GraphError::MissingOwner)?;
+    let fields = fields(row, 1)?;
+    if text(fields.first())? != crate::encoding::digest(owner)? {
+        return Err(GraphError::Response);
+    }
+    Ok(())
 }
 
 #[cfg(test)]

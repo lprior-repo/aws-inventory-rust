@@ -144,7 +144,7 @@ impl NativeGraph {
         self.name = name;
         let _: redis::Value = request(
             &self.endpoint,
-            redis::cmd("GRAPH.QUERY")
+            redis::cmd(inventory_graph::cypher::COMMAND)
                 .arg(self.name)
                 .arg("RETURN 1")
                 .arg("TIMEOUT")
@@ -153,7 +153,9 @@ impl NativeGraph {
         )
         .await?;
         assert!(
-            self.rows("MATCH (n) RETURN labels(n)[0]").await?.is_empty(),
+            self.rows(inventory_graph::cypher::diagnostics::NODE_LABELS)
+                .await?
+                .is_empty(),
             "rebuild must begin in a verified empty second owned graph"
         );
         Ok(())
@@ -285,8 +287,9 @@ pub(super) async fn collect_at(
 }
 
 pub(super) async fn project(store: &BinaryStore, graph: &NativeGraph) -> TestResult {
+    let backend = inventory_graph::falkor::FalkorDb::connect(graph.endpoint(), graph.name())?;
     for _ in 0..100 {
-        let report = run_projection(store, graph.endpoint(), graph.name(), 1000).await?;
+        let report = run_projection(store, &backend, 1000).await?;
         assert!(!report.offline, "native projection was offline: {report:?}");
         assert!(
             !report.rebuild_incomplete,

@@ -35,7 +35,7 @@ fn given_divergent_stores_and_concurrent_sweep_when_expanding_then_native_topolo
         let c = node(ACCOUNT, REGION, "AWS::Other::Thing", "shared");
         let d = node(ACCOUNT, REGION, KIND, "sql-only");
         let e = node("222222222222", REGION, KIND, "shared");
-        let common = edge(&a, &b, "references", "inferred-exact");
+        let common = edge(&a, &b, "references", "reviewed-rule");
         let sql_only = edge(&a, &d, "sql-only", "model");
         let native_edges = vec![
             common.clone(),
@@ -92,7 +92,8 @@ fn given_divergent_stores_and_concurrent_sweep_when_expanding_then_native_topolo
             );
             assert_eq!(total, 4);
             assert_eq!(initial, expected);
-            let database = Database::open(&fixture.path).await?;
+            let database =
+                Database::open(fixture.path.to_str().ok_or("non-UTF-8 database path")?).await?;
             let sql = database
                 .edges_page(
                     &a,
@@ -214,6 +215,15 @@ fn given_divergent_stores_and_concurrent_sweep_when_expanding_then_native_topolo
             assert_eq!(counts.resources, 5);
             assert_eq!(total, 5);
             assert_eq!(refreshed, after);
+            let refreshed_graph = graph(&worker).await?;
+            assert_edges(&refreshed_graph, &native_edges)?;
+            for identity in [&a, &b, &e] {
+                let key = digest(identity)?;
+                assert_eq!(
+                    refreshed_graph.nodes.iter().find(|row| row.key == key),
+                    refreshed.iter().find(|row| row.key == key)
+                );
+            }
             worker.expand(a.clone())?;
             let updated = graph(&worker).await?;
             assert_edges(&updated, &native_edges)?;
@@ -415,7 +425,8 @@ fn given_hostile_text_and_scope_filters_when_actual_worker_refreshes_then_rows_a
         let (counts, _, total) = snapshot(&worker).await?;
         assert_eq!(counts.resources, 3);
         assert_eq!(total, 3);
-        let database = Database::open(&fixture.path).await?;
+        let database =
+            Database::open(fixture.path.to_str().ok_or("non-UTF-8 database path")?).await?;
         for (query, expected_id) in [("' OR 1=1 --", "shared"), ("%_tail", "wildcard")] {
             // When: passing actual public filter values through the real runner.
             worker.refresh(Filter {

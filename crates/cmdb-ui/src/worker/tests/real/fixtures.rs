@@ -232,7 +232,7 @@ impl Fixture {
                 Ok(UnresolvedReference {
                     from: key(&edge.from)?,
                     relation: Relation::parse(&edge.relation)?,
-                    source: EdgeSource::InferredExact,
+                    source: EdgeSource::ReviewedRule,
                     target: ReferenceTarget::typed(
                         AccountId::parse(&edge.to.account)?,
                         Region::parse(&edge.to.region)?,
@@ -264,7 +264,7 @@ impl Fixture {
     pub fn worker(&self, graph: Option<&NativeGraph>) -> DataWorker {
         DataWorker::start(
             WorkerConfig {
-                database: Some(self.path.clone()),
+                database: Some(self.path.to_string_lossy().into_owned()),
                 graph_url: graph.map(|value| value.endpoint.clone()),
                 graph_name: graph.map(|value| value.name.clone()),
                 graph_limits: DEFAULT_GRAPH_LIMITS,
@@ -377,7 +377,7 @@ impl NativeGraph {
     pub async fn query(&self, query: &str) -> TestResult<redis::Value> {
         tokio::time::timeout(Duration::from_secs(3), async {
             let mut connection = self.client.get_multiplexed_async_connection().await?;
-            Ok(redis::cmd("GRAPH.QUERY")
+            Ok(redis::cmd(inventory_graph::cypher::COMMAND)
                 .arg(&self.name)
                 .arg(query)
                 .query_async::<redis::Value>(&mut connection)
@@ -419,19 +419,25 @@ impl Drop for NativeGraph {
 // Real public drain, bounded by both a deadline and a poll count; no sleep or
 // injected events. Yielding only awaits the worker's actual output handshake.
 pub(crate) async fn await_event(worker: &DataWorker, snapshot: bool) -> TestResult<WorkerEvent> {
-    tokio::time::timeout(Duration::from_secs(20), async {
+    // GraphStatus is never terminal; retain its last value for deadline failures.
+    let waited = tokio::time::timeout(Duration::from_secs(20), async {
         for _ in 0..20_000_000 {
-            for event in worker.drain() {
-                if matches!(event, WorkerEvent::Snapshot { .. }) == snapshot {
-                    return Ok(event);
-                }
+            if let Some(event) = worker.test_event(snapshot)? {
+                return Ok(event);
             }
             tokio::task::yield_now().await;
         }
         Err("worker event poll budget exhausted".into())
     })
-    .await
-    .map_err(|_| "real worker event deadline exceeded")?
+    .await;
+    match waited {
+        Ok(result) => result,
+        Err(_) => Err(format!(
+            "real worker event deadline exceeded; last graph status: {}",
+            worker.last_test_graph_status()
+        )
+        .into()),
+    }
 }
 
 pub(crate) async fn snapshot(worker: &DataWorker) -> TestResult<(Counts, Vec<Row>, u64)> {

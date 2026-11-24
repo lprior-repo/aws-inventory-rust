@@ -1,5 +1,7 @@
+mod graph_failures;
 pub(crate) mod isolation;
 pub(crate) mod no_socket;
+mod postgres;
 pub(crate) mod real;
 mod shutdown;
 pub(crate) mod support;
@@ -26,6 +28,7 @@ fn harness(
         revisions: Arc::new(Revisions::default()),
         shutdown,
         thread: None,
+        pending_test_events: std::cell::RefCell::default(),
     };
     (worker, receiver, events, cancellation)
 }
@@ -70,17 +73,9 @@ fn revision(command: Command) -> Result<u64, String> {
 
 #[test]
 fn given_new_filter_when_old_page_finishes_last_then_only_latest_page_is_delivered() -> TestResult {
-    let (worker, mut commands, events, _cancellation) = harness(2);
-    worker.refresh(Filter {
-        query: "old".to_owned(),
-        ..Filter::default()
-    })?;
-    let old = revision(commands.try_recv()?)?;
-    worker.refresh(Filter {
-        query: "new".to_owned(),
-        ..Filter::default()
-    })?;
-    let new = revision(commands.try_recv()?)?;
+    let (worker, _commands, events, _cancellation) = harness(2);
+    let old = worker.revisions.refresh()?;
+    let new = worker.revisions.refresh()?;
     events.send(page(new, 7))?;
     events.send(page(old, 99))?;
     let drained = worker.drain();
@@ -120,11 +115,9 @@ fn given_full_queue_when_new_filter_is_rejected_then_accepted_page_is_preserved(
 #[test]
 fn given_new_selection_when_old_expansion_finishes_then_only_new_graph_is_delivered() -> TestResult
 {
-    let (worker, mut commands, events, _cancellation) = harness(2);
-    worker.expand(node("vpc-old"))?;
-    let old = revision(commands.try_recv()?)?;
-    worker.expand(node("vpc-new"))?;
-    let new = revision(commands.try_recv()?)?;
+    let (worker, _commands, events, _cancellation) = harness(2);
+    let old = worker.revisions.expand()?;
+    let new = worker.revisions.expand()?;
     events.send(graph(new, "new selection"))?;
     events.send(graph(old, "old selection"))?;
     let drained = worker.drain();
@@ -137,11 +130,9 @@ fn given_new_selection_when_old_expansion_finishes_then_only_new_graph_is_delive
 
 #[test]
 fn given_filter_change_when_prior_expansion_finishes_then_graph_is_not_applied() -> TestResult {
-    let (worker, mut commands, events, _cancellation) = harness(2);
-    worker.expand(node("vpc-old"))?;
-    let old = revision(commands.try_recv()?)?;
-    worker.refresh(Filter::default())?;
-    let new = revision(commands.try_recv()?)?;
+    let (worker, _commands, events, _cancellation) = harness(2);
+    let old = worker.revisions.expand()?;
+    let new = worker.revisions.refresh()?;
     events.send(graph(old, "old selection"))?;
     events.send(page(new, 4))?;
     let drained = worker.drain();
@@ -155,10 +146,9 @@ fn given_filter_change_when_prior_expansion_finishes_then_graph_is_not_applied()
 
 #[test]
 fn given_pending_page_when_selection_changes_then_page_still_finishes_loading() -> TestResult {
-    let (worker, mut commands, events, _cancellation) = harness(2);
-    worker.refresh(Filter::default())?;
-    let request = revision(commands.try_recv()?)?;
-    worker.expand(node("vpc-new"))?;
+    let (worker, _commands, events, _cancellation) = harness(2);
+    let request = worker.revisions.refresh()?;
+    worker.revisions.expand()?;
     events.send(page(request, 5))?;
     assert!(matches!(
         worker.drain().first(),
@@ -479,7 +469,7 @@ fn serve_graph_connection(
             Some("GRAPH.RO_QUERY") if fail => "-ERR temporarily unavailable\r\n".to_owned(),
             Some("GRAPH.RO_QUERY") => {
                 queries = queries.saturating_add(1);
-                graph_reply(neighborhood && queries == 1)
+                graph_reply(neighborhood && matches!(queries, 1 | 3))
             }
             other => return Err(format!("unexpected command {other:?}")),
         };
@@ -488,7 +478,7 @@ fn serve_graph_connection(
             .write_all(response.as_bytes())
             .map_err(|error| error.to_string())?;
         if (fail && command.first().is_some_and(|name| name == "GRAPH.RO_QUERY"))
-            || queries == if neighborhood { 2 } else { 1 }
+            || queries == if neighborhood { 3 } else { 1 }
         {
             return Ok(());
         }
@@ -588,4 +578,136 @@ fn given_default_config_then_default_lod_limits_are_used() {
 fn given_lod_with_wrong_field_count_when_parsing_then_error_is_returned() {
     assert!(parse_lod_config("1:2").is_err());
     assert!(parse_lod_config("1:2:3:4").is_err());
+}
+
+#[test]
+fn postgres_given_database_password_when_debugging_config_then_url_is_never_printed() -> TestResult
+{
+    for scheme in ["postgres", "postgresql", "POSTGRES", "PoStGrEsQl"] {
+        let target = format!("{scheme}://reader:secret-password@localhost/inventory");
+        let config = WorkerConfig {
+            database: Some(target.clone()),
+            ..WorkerConfig::default()
+        };
+        assert_eq!(config.database.as_deref(), Some(target.as_str()));
+        let debug = format!("{config:?}");
+        assert_eq!(
+            debug
+                .split("database: ")
+                .nth(1)
+                .and_then(|value| value.split(", graph_url").next()),
+            Some("Some(\"[PostgreSQL URL redacted]\")")
+        );
+        assert!(!debug.contains("secret-password"));
+    }
+    let config = WorkerConfig {
+        database: Some("inventory.sqlite".into()),
+        ..WorkerConfig::default()
+    };
+    assert!(format!("{config:?}").contains("database: Some(\"inventory.sqlite\")"));
+    Ok(())
+}
+
+#[test]
+fn given_unread_refresh_when_expanding_without_waiting_then_the_command_is_rejected() -> TestResult
+{
+    let (worker, mut commands, _events, _cancellation) = harness(2);
+    worker.refresh(Filter::default())?;
+    let error = worker
+        .expand(node("vpc-new"))
+        .err()
+        .ok_or("expected unread Snapshot rejection")?;
+    assert_eq!(
+        error,
+        "real worker command would abandon unconsumed Snapshot"
+    );
+    assert_eq!(revision(commands.try_recv()?)?, 1);
+    assert_eq!(
+        commands.try_recv().err(),
+        Some(tokio::sync::mpsc::error::TryRecvError::Empty)
+    );
+    Ok(())
+}
+
+#[test]
+fn given_unread_expansion_when_expanding_without_waiting_then_the_command_is_rejected() -> TestResult
+{
+    let (worker, mut commands, _events, _cancellation) = harness(2);
+    worker.expand(node("vpc-old"))?;
+    let error = worker
+        .expand(node("vpc-new"))
+        .err()
+        .ok_or("expected unread Graph rejection")?;
+    assert_eq!(error, "real worker command would abandon unconsumed Graph");
+    assert_eq!(revision(commands.try_recv()?)?, 1);
+    assert_eq!(
+        commands.try_recv().err(),
+        Some(tokio::sync::mpsc::error::TryRecvError::Empty)
+    );
+    Ok(())
+}
+
+#[test]
+fn given_drained_snapshot_when_refreshing_again_then_the_terminal_is_accounted_for() -> TestResult {
+    let (worker, mut commands, events, _cancellation) = harness(2);
+    worker.refresh(Filter::default())?;
+    let first = revision(commands.try_recv()?)?;
+    events.send(page(first, 7))?;
+    let drained = worker.drain();
+    assert_eq!(drained.len(), 1);
+    assert!(matches!(
+        drained.first(),
+        Some(WorkerEvent::Snapshot { total: 7, .. })
+    ));
+    worker.refresh(Filter::default())?;
+    assert_eq!(revision(commands.try_recv()?)?, 2);
+    Ok(())
+}
+
+#[test]
+fn given_only_drained_graph_status_when_enqueuing_again_then_unread_graph_is_rejected() -> TestResult
+{
+    let (worker, mut commands, events, _cancellation) = harness(2);
+    worker.expand(node("vpc-old"))?;
+    let current = revision(commands.try_recv()?)?;
+    events.send(Output {
+        revision: Some(current),
+        event: WorkerEvent::GraphStatus {
+            error: Some("offline".to_owned()),
+        },
+    })?;
+    let drained = worker.drain();
+    assert_eq!(drained.len(), 1);
+    assert!(
+        matches!(drained.first(), Some(WorkerEvent::GraphStatus { error: Some(error) }) if error == "offline")
+    );
+    assert_eq!(
+        worker.refresh(Filter::default()),
+        Err("real worker command would abandon unconsumed Graph".to_owned())
+    );
+    Ok(())
+}
+
+#[test]
+fn given_stale_graph_status_when_recording_deadline_context_then_its_revision_is_explicit()
+-> TestResult {
+    let (worker, mut commands, events, _cancellation) = harness(2);
+    worker.expand(node("vpc-old"))?;
+    assert_eq!(revision(commands.try_recv()?)?, 1);
+    events.send(Output {
+        revision: Some(0),
+        event: WorkerEvent::GraphStatus {
+            error: Some("old offline status".to_owned()),
+        },
+    })?;
+    assert!(worker.test_event(false)?.is_none());
+    assert_eq!(
+        worker.last_test_graph_status(),
+        "revision Some(0): old offline status"
+    );
+    assert_eq!(
+        worker.expand(node("vpc-new")),
+        Err("real worker command would abandon unconsumed Graph".to_owned())
+    );
+    Ok(())
 }

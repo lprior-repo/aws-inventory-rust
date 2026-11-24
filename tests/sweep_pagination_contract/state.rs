@@ -25,7 +25,10 @@ pub(super) fn assert_summary(output: &Output, expected: Summary) -> Result<()> {
 }
 
 pub(super) async fn assert_resources(path: &Path, ids: &[&str]) -> Result<()> {
-    let database = Database::open(path).await?;
+    let target = path.to_str().ok_or_else(|| {
+        std::io::Error::new(std::io::ErrorKind::InvalidInput, "non-UTF-8 database path")
+    })?;
+    let database = Database::open(target).await?;
     let page = database
         .page(
             &ResourceFilter::default(),

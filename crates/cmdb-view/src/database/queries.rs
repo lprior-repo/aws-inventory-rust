@@ -18,9 +18,9 @@ pub(super) async fn read_detail(
         .push_bind(id);
     query
         .build()
-        .fetch_one(&mut **tx)
-        .await
-        .map_err(ViewError::Sql)
+        .fetch_optional(&mut **tx)
+        .await?
+        .ok_or(ViewError::StoredRow)
 }
 
 /// Batched lookup of table names for multiple kinds in one query.

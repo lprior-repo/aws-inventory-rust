@@ -198,17 +198,17 @@ async fn rejection_assertions(
                 "a rejected batch was acknowledged or prior acknowledgements were lost".into(),
             );
         }
-        let marker: redis::Value = redis::cmd("GRAPH.QUERY")
+        let marker: redis::Value = redis::cmd(inventory_graph::cypher::COMMAND)
             .arg(graph_name)
-            .arg("MATCH (s:InventoryScan) RETURN s.state")
+            .arg(inventory_graph::cypher::diagnostics::SCAN_STATE)
             .query_async(connection)
             .await?;
         if first_cell(&marker)? != &redis::Value::BulkString(b"loading".to_vec()) {
             return Err("a rejected plan was marked complete".into());
         }
-        let count: redis::Value = redis::cmd("GRAPH.QUERY")
+        let count: redis::Value = redis::cmd(inventory_graph::cypher::COMMAND)
             .arg(graph_name)
-            .arg("MATCH (r:Resource) RETURN count(r)")
+            .arg(inventory_graph::cypher::diagnostics::RESOURCE_COUNT)
             .query_async(connection)
             .await?;
         if first_cell(&count)? != &redis::Value::Int(0) {

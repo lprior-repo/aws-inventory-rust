@@ -93,8 +93,8 @@ pub(super) async fn query_graph(state: &mut WorkerState, node: Option<GraphNode>
         tokio::time::timeout(Duration::from_secs(2), enrich_graph(snapshot, &mut graph)).await;
     let error = match result {
         Ok(Ok(())) => None,
-        Ok(Err(error)) => Some(format!("SQLite snapshot detail query failed · {error}")),
-        Err(_) => Some("SQLite snapshot detail query timed out after 2 seconds".to_owned()),
+        Ok(Err(error)) => Some(format!("Database snapshot detail query failed · {error}")),
+        Err(_) => Some("Database snapshot detail query timed out after 2 seconds".to_owned()),
     };
     WorkerEvent::Graph { graph, error }
 }

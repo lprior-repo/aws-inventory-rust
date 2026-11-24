@@ -26,11 +26,12 @@ fn given_inventory_database_when_harness_starts_then_real_rows_and_edges_reach_d
     supervised_async(|| async {
         let fixture = fixture().await?;
         let config = WorkerConfig {
-            database: Some(fixture.path.clone()),
+            database: Some(fixture.path.to_string_lossy().into_owned()),
             frame_harness: Some(crate::frame_harness::FrameConfig::parse("20")?),
             ..WorkerConfig::default()
         };
-        let (_, event) = super::super::setup(fixture.path.clone(), config).await?;
+        let (_, event) =
+            super::super::setup(fixture.path.to_string_lossy().into_owned(), config).await?;
         assert_graph(event)
     })
 }

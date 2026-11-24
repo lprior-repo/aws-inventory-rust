@@ -88,8 +88,9 @@ fn exit_code(
 }
 
 async fn project<S: InventoryStore>(store: &S, endpoint: &str, graph: &str) -> Result<()> {
+    let backend = inventory_graph::falkor::FalkorDb::connect(endpoint, graph)?;
     for _ in 0..100_000 {
-        let report = run_projection(store, endpoint, graph, 1000).await?;
+        let report = run_projection(store, &backend, 1000).await?;
         if report.offline
             || report.rebuild_incomplete
             || report.pending == 0

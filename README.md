@@ -282,6 +282,73 @@ not need regional discovery. Explicit source names/ARNs take precedence over
 automatic source discovery. All infrastructure and cross-account roles must
 already exist.
 
+`catalog-tool iam-policy --write` generates the callable-plan action bundle
+(`catalog/iam-read-only-policy.json`, an array of managed-policy documents),
+`deploy/read-only-role.yaml`, and `deploy/read-only-policy-gaps.txt`; `--check`
+compares all three byte for byte without writing. Each document has at most
+6,144 non-whitespace characters. Generation caps attachments at the default
+quota of 20 per role; AWS's adjustable maximum is 25 (verified 2026-11-24).
+The generated template states its actual attachment count. With no mode flag,
+stdout is only the JSON policy bundle. Writes stage all artifacts before
+publishing, and attempt every rollback on a later I/O error, reporting all
+restoration failures. Abrupt process/machine failure during replacements is not
+a multi-file transaction.
+
+The gap report's `shared` section uses explicit operation overrides or model
+signing-name/operation defaults; non-callable operations whose IAM action is not
+derivable by that lookup are not listed. DENIED (must-deny) overlaps appear first
+as findings, separately from deferred operations. IAM grants actions rather than
+operation IDs, so an action needed by a callable operation can also permit an
+excluded operation. The derived `broad` section lists granted actions associated
+with multiple operation IDs by existing aliases or callable mappings, with their
+callable owners; for example, `apigateway:GET` can permit other GET requests.
+These sections describe the current catalog lookup, not verified real-account
+authorization coverage.
+
+Deploy the template through S3, not `--template-body`: CloudFormation permits
+only 51,200 bytes inline but 1 MB with an S3 `--template-url`
+([AWS quotas](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/cloudformation-limits.html),
+[CreateStack API](https://docs.aws.amazon.com/AWSCloudFormation/latest/APIReference/API_CreateStack.html),
+verified 2026-11-24). Tests bound the generated template to a conservative
+1,000,000 bytes, including the maximum 20-policy attachment set.
+Set `AWS_REGION` and `TEMPLATE_BUCKET` for an existing private bucket in the
+stack's Region. Create a mode-0600 `role-parameters.json` containing
+CloudFormation `ParameterKey`/`ParameterValue` entries for your actual
+`TrustedPrincipalArn` and `ExternalId` (and optionally `RoleName`).
+The uploading/deploying identity must have access to the S3 object:
+
+```bash
+aws s3 cp deploy/read-only-role.yaml \
+  "s3://${TEMPLATE_BUCKET}/aws-inventory/read-only-role.yaml" --region "$AWS_REGION"
+aws cloudformation create-stack --stack-name aws-inventory-read-only \
+  --region "$AWS_REGION" \
+  --template-url "https://${TEMPLATE_BUCKET}.s3.${AWS_REGION}.amazonaws.com/aws-inventory/read-only-role.yaml" \
+  --capabilities CAPABILITY_NAMED_IAM --parameters file://role-parameters.json
+```
+
+`catalog-tool iam-reference --date YYYY-MM-DD` downloads AWS's machine-readable
+Service Authorization Reference into sorted `catalog/iam-actions.tsv`, for
+services used by callable plans. This requires `curl` and network access;
+normal policy generation and checks are offline. Exceptions to the model's
+signing-name/operation-name convention are reviewed explicitly in
+`catalog/overlay/iam-actions.toml`, one scalar action per callable operation.
+Non-read-only reference actions fail closed, naming the operation.
+Reviewed reference omissions are pinned as `unconfirmed` in
+`catalog/overlay/iam-reference-exceptions.tsv`, with the signing name and
+reference date. These operations receive their `<signing name>:<Operation>`
+grant only if the operation also has a catalog read-verb prefix; write-named
+omissions are refused. The generated gap document lists the unconfirmed count
+and names. Generation refuses stale, newly published, or no-longer-callable exceptions.
+Attempted actions, including unconfirmed names and aliases, must all be in
+the policy. Neither reference membership nor emulator tests prove real-account
+IAM minimality or dependent resource-provider permissions.
+
+Sweep callers may set `SweepControl.attempts` to an `Arc<AttemptedOperations>`
+created from the invocation's runtime catalog. After the sweep, `iter()` exposes
+the distinct service/operation pairs recorded immediately before signing,
+including retries and failures. Recording allocates only at table construction;
+an unknown operation fails the sweep rather than disappearing from the receipt.
+
 `--allow-partial` includes finalized partial snapshots while preserving their
 actual collection status and failures. Without it, requested delivery skips
 partial snapshots. Delivery is independently retryable from local SQLite:
@@ -673,20 +740,30 @@ regression and 2 for a refused comparison. Collector failures exit nonzero.
 
 ## CMDB product direction
 
-The current tool is a local inventory CLI with SQLite, a process-local scheduler,
-persistent jobs and a replayable FalkorDB projection. The development tree now
-also contains the first continuous-CMDB slice: freshness views and an
-account/region/collector coverage registry, a deterministic workload generator
-with an independent oracle (`cmdb-bench`), a bounded read model (`cmdb-view`)
-over one JSON export, and a Makepad viewer (`cmdb-ui`) with a filterable table
-and an account→region→kind→resource DAG over a synthetic fixture.
+The inventory CLI stores swept resources in SQLite or PostgreSQL and projects
+their topology into FalkorDB. The bounded `cmdb-view` read model supplies
+tables, details, counts, tags, freshness and edge pages directly from either
+inventory database. PostgreSQL reads use pinned repeatable-read, read-only
+snapshots, so pagination and details stay consistent while a sweep writes.
+Resource pages keep a continuation when the 10 MiB byte budget truncates a page.
+A single row larger than that budget, or a resource missing its kind mapping or
+record, returns an explicit error in both backends. Search treats wildcard
+characters literally and folds ASCII case only in both backends. PostgreSQL
+uses the `C` collation for this search, independently of the server locale.
 
-That slice was built against an earlier draft that the plan in
-[docs/e2e/](docs/e2e/README.md) supersedes. The obsolete HTTP read API (`cmdb-api`) has been removed
-under V32 (ROADMAP M6.5). In-process SQLite and FalkorDB reads for the UI are
-planned in M6.2/M6.3, not implemented by the export read model or synthetic
-viewer. The first version also has no history, tombstones or retention, no
-event ingestion, no PostgreSQL and no multi-machine quota coordination.
+The Makepad viewer accepts either a SQLite path or a PostgreSQL URL:
+
+```bash
+cmdb-ui --database "$INVENTORY_DATABASE_URL"
+```
+
+Add `--graph-url redis://127.0.0.1:6379/ --graph-name inventory` to read native
+FalkorDB topology and enrich it from the inventory database. PostgreSQL URLs
+are redacted in configuration diagnostics. `cmdb-bench` supplies a deterministic
+workload generator and an independent oracle.
+
+The implementation plan is in [docs/e2e/](docs/e2e/README.md). The obsolete
+HTTP read API (`cmdb-api`) has been removed; the viewer uses in-process readers.
 
 Upstream projects informed the design; this is an independent implementation.
 No upstream documentation prose,

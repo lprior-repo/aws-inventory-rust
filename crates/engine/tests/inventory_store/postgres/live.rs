@@ -41,7 +41,8 @@ async fn measure(
         .collect::<TestResult<Vec<_>>>()?;
     collect(store, "live-first", observations, Vec::new()).await?;
     let began = Instant::now();
-    let report = run_projection(store, endpoint, graph, 1000).await?;
+    let backend = inventory_graph::falkor::FalkorDb::connect(endpoint, graph)?;
+    let report = run_projection(store, &backend, 1000).await?;
     let elapsed = began.elapsed();
     assert_eq!(report.acknowledged, 64);
     assert_eq!(report.pending, 0);
@@ -59,7 +60,8 @@ async fn rebuild(
     connection: &mut MultiplexedConnection,
 ) -> TestResult {
     let began = Instant::now();
-    let report = run_projection(store, endpoint, graph, 1000).await?;
+    let backend = inventory_graph::falkor::FalkorDb::connect(endpoint, graph)?;
+    let report = run_projection(store, &backend, 1000).await?;
     let elapsed = began.elapsed();
     assert_eq!(report.acknowledged, 1);
     assert_eq!(report.pending, 0);
@@ -75,9 +77,9 @@ async fn rebuild(
 }
 
 async fn graph_count(connection: &mut MultiplexedConnection, graph: &str) -> TestResult<i64> {
-    let value = redis::cmd("GRAPH.QUERY")
+    let value = redis::cmd(inventory_graph::cypher::COMMAND)
         .arg(graph)
-        .arg("MATCH (n:Resource) RETURN count(n)")
+        .arg(inventory_graph::cypher::diagnostics::RESOURCE_NODE_COUNT)
         .query_async::<Value>(connection)
         .await?;
     let Value::Array(parts) = value else {

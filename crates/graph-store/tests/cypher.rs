@@ -7,28 +7,23 @@ use inventory_graph::{GraphError, GraphLimits, MAX_EDGES, Provenance, cypher};
 fn node_uses_full_scoped_digest_and_escaped_parameters() -> TestResult {
     let source = key("123456789012", "vpc-'\\-1")?;
     let query = cypher::node(&row(&source))?;
+    let digest = source
+        .digest()
+        .as_bytes()
+        .iter()
+        .try_fold(String::new(), |mut text, byte| {
+            use std::fmt::Write;
+            write!(&mut text, "{byte:02x}")?;
+            Ok::<_, std::fmt::Error>(text)
+        })?;
+    assert!(query.starts_with(&format!("CYPHER key='{digest}'")));
     assert!(query.contains("name='O\\'Brien\\\\Cloud\\n'"));
-    assert!(query.contains("MERGE (n:Resource {key:$key})"));
+    assert!(query.contains(cypher::diagnostics::NODE_UPSERT_PATTERN));
     let other = key("000000000000", "vpc-'\\-1")?;
     assert_ne!(cypher::node(&row(&source))?, cypher::node(&row(&other))?);
     assert!(query.contains(
         "content_hash='0707070707070707070707070707070707070707070707070707070707070707'"
     ));
-    Ok(())
-}
-
-#[test]
-fn replacement_preserves_label_provenance_and_both_edge_directions() -> TestResult {
-    let source = key("123456789012", "vpc-a")?;
-    let target = key("123456789012", "vpc-b")?;
-    let edge = edge(&target, &source, "reviewed-rule")?;
-    let query = cypher::replace_edges(&source, &[edge])?;
-    assert!(query.contains("(owner)-[old]-(other:Resource) DELETE old"));
-    assert!(query.contains("[:`CONTAINS` {relation:$relation0,provenance:$provenance0}]"));
-    assert!(query.contains("relation0='CONTAINS'"));
-    assert!(query.contains("provenance0='reviewed-rule'"));
-    assert!(cypher::delete(&source)?.contains("DETACH DELETE n"));
-    assert!(cypher::replace_edges(&source, &[])?.ends_with("RETURN owner.key"));
     Ok(())
 }
 

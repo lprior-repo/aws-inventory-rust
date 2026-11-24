@@ -1,22 +1,26 @@
 mod path;
 
 use crate::cypher::Direction;
-use crate::falkor::FalkorDb;
+use crate::falkor::{FalkorDb, ReadSession};
 use crate::{
     EdgeRow, GraphError, GraphLimits, GraphNeighborhood, NodeKey, PathResult, Truncation, cypher,
     response,
 };
 
-pub(crate) async fn read(
+pub(crate) async fn read<const COMPLETE: bool>(
     graph: &FalkorDb,
     root: &NodeKey,
     limits: GraphLimits,
     direction: Direction,
 ) -> Result<GraphNeighborhood, GraphError> {
     let mut state = Traversal::new(root, limits)?;
-    expand(graph, &mut state, direction, 0).await?;
-    expand(graph, &mut state, direction, 1).await?;
-    finish(graph, &mut state, direction).await?;
+    let mut session = graph.read_session().await?;
+    expand(&mut session, &mut state, direction, 0).await?;
+    expand(&mut session, &mut state, direction, 1).await?;
+    finish(&mut session, &mut state, direction).await?;
+    if COMPLETE {
+        complete(&mut session, &mut state).await?;
+    }
     Ok(GraphNeighborhood {
         edges: state.edges,
         truncation: state.truncation,
@@ -24,7 +28,7 @@ pub(crate) async fn read(
 }
 
 async fn finish(
-    graph: &FalkorDb,
+    graph: &mut ReadSession<'_>,
     state: &mut Traversal,
     direction: Direction,
 ) -> Result<(), GraphError> {
@@ -33,7 +37,7 @@ async fn finish(
 }
 
 async fn expand(
-    graph: &FalkorDb,
+    graph: &mut ReadSession<'_>,
     state: &mut Traversal,
     direction: Direction,
     depth: u8,
@@ -46,7 +50,10 @@ async fn expand(
     }
     let rows = load_layer(graph, state, direction, depth).await?;
     if depth == state.limits.depth() {
-        if !rows.is_empty() {
+        if rows
+            .iter()
+            .any(|edge| !state.visited.contains(&edge.from) || !state.visited.contains(&edge.to))
+        {
             state.truncation = Truncation::Depth;
         }
         return Ok(());
@@ -55,7 +62,7 @@ async fn expand(
 }
 
 async fn load_layer(
-    graph: &FalkorDb,
+    graph: &mut ReadSession<'_>,
     state: &Traversal,
     direction: Direction,
     depth: u8,
@@ -70,9 +77,38 @@ async fn load_layer(
     } else {
         remaining.saturating_add(1)
     };
-    let query = cypher::layer(&state.frontier, &state.expanded, fetch, direction)?;
+    let excluded = if depth == state.limits.depth() {
+        &state.visited
+    } else {
+        &state.expanded
+    };
+    let query = cypher::layer(&state.frontier, excluded, fetch, direction)?;
     let value = graph.request(&query).await?;
     response::edges(&value, fetch)
+}
+
+async fn complete(graph: &mut ReadSession<'_>, state: &mut Traversal) -> Result<(), GraphError> {
+    let fetch = state.limits.edges().saturating_add(1);
+    let query = cypher::induced(&state.visited, fetch)?;
+    let value = graph.request(&query).await?;
+    let edges = response::edges(&value, fetch)?;
+    if edges
+        .iter()
+        .any(|edge| !state.visited.contains(&edge.from) || !state.visited.contains(&edge.to))
+    {
+        return Err(GraphError::Response);
+    }
+    for edge in edges {
+        if state.edges.contains(&edge) {
+            continue;
+        }
+        if state.edges.len() == state.limits.edges() {
+            state.truncation = Truncation::Budget;
+            break;
+        }
+        state.edges.push(edge);
+    }
+    Ok(())
 }
 
 pub(crate) fn shortest(
@@ -164,3 +200,6 @@ pub(crate) fn buffer<T>(capacity: usize) -> Result<Vec<T>, GraphError> {
 
 #[cfg(test)]
 mod tests;
+
+#[cfg(test)]
+mod view_tests;

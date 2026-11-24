@@ -4,7 +4,7 @@ use inventory_core::inventory::{AccountId, Kind, Region, ResourceId, ResourceKey
 use std::fmt::Write;
 
 const ACCOUNT: &str = "111111111111";
-const HOSTILE: &str = "'\\%_`) MATCH (n) DETACH DELETE n //";
+const HOSTILE: &str = inventory_graph::cypher::diagnostics::HOSTILE_TAG_VALUE;
 
 fn node(region: &str, kind: &str, id: &str) -> GraphNode {
     GraphNode {
@@ -176,7 +176,7 @@ async fn given_real_native_tags_when_reading_then_affiliations_are_scoped_bounde
         .await?;
     let graph = GraphConnection::connect(&endpoint, &name)?;
     let result = async {
-        redis::cmd("GRAPH.QUERY").arg(&name).arg(seed_query()?).query_async::<redis::Value>(&mut connection).await?;
+        redis::cmd(inventory_graph::cypher::COMMAND).arg(&name).arg(seed_query()?).query_async::<redis::Value>(&mut connection).await?;
         let dir = tempdir()?;
         let path = dir.path().join("inventory.sqlite");
         let db = populated(&path).await?;
