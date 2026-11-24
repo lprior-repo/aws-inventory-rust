@@ -103,6 +103,7 @@ fn sweep_config(options: &ServeArgs) -> SweepConfig {
         endpoint: options.endpoint.clone(),
         ca_bundle: options.ca_bundle.clone(),
         slice_timeout_secs: None,
+        max_rps: options.max_rps,
     }
 }
 

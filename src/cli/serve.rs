@@ -28,6 +28,9 @@ pub struct ServeArgs {
     /// Concurrency for each sweep
     #[arg(long, default_value_t = 16)]
     pub concurrency: usize,
+    /// Most requests per second for any one account, region and service
+    #[arg(long, value_parser = clap::value_parser!(u32).range(1..=100_000))]
+    pub max_rps: Option<u32>,
     /// Custom endpoint URL
     #[arg(long, requires = "ca_bundle")]
     pub endpoint: Option<String>,

@@ -54,6 +54,7 @@ impl Environment {
             endpoint: Some(self.peer.endpoint.clone()),
             ca_bundle: Some(self.peer.ca.clone()),
             slice_timeout_secs: None,
+            max_rps: None,
         }
     }
 }

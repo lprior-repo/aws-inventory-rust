@@ -4,6 +4,7 @@ use super::{SweepConfig, SweepError};
 
 const MAX_PAGES: u32 = 1_000_000;
 const MAX_CONCURRENCY: usize = inventory_engine::limiter::MAX_CONCURRENCY;
+const MAX_RPS: u32 = inventory_engine::limiter::MAX_REQUESTS_PER_SECOND;
 
 impl SweepConfig {
     pub(super) fn validate(&self) -> Result<(), SweepError> {
@@ -14,6 +15,12 @@ impl SweepConfig {
         }
         if !(1..=MAX_CONCURRENCY).contains(&self.concurrency) {
             return Err(SweepError::InvalidConfig("concurrency must be in 1..=4096"));
+        }
+        if self
+            .max_rps
+            .is_some_and(|cap| !(1..=MAX_RPS).contains(&cap))
+        {
+            return Err(SweepError::InvalidConfig("max-rps must be in 1..=100000"));
         }
         override_uri(self.endpoint.as_deref(), self.ca_bundle.as_deref())?;
         Ok(())

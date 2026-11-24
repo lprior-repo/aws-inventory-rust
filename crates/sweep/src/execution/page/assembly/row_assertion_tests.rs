@@ -109,6 +109,7 @@ async fn given_an_owned_prefix_then_hostile_filtered_row_after_chunk_boundary_wh
         endpoint: None,
         ca_bundle: None,
         slice_timeout_secs: None,
+        max_rps: None,
     };
     let progress = crate::control::Progress::new(None);
     let context = crate::execution::RuntimeContext {

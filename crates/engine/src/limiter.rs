@@ -14,7 +14,7 @@ use tokio_util::sync::CancellationToken;
 pub const MAX_CONCURRENCY: usize = 4_096;
 
 pub const MAX_ATTEMPTS: u32 = 10;
-pub(crate) const MAX_REQUESTS_PER_SECOND: u32 = 100_000;
+pub const MAX_REQUESTS_PER_SECOND: u32 = 100_000;
 pub(crate) const MAX_DURATION_MS: u64 = 300_000;
 
 pub const MAX_RATE_PERIOD_MS: u64 = 300_000;

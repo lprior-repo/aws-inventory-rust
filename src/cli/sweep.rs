@@ -26,6 +26,11 @@ pub struct SweepArgs {
     pub max_pages: u32,
     #[arg(long, default_value_t = 16)]
     pub concurrency: usize,
+    /// Most requests per second for any one account, region and service.
+    /// Without it the rate rises until the service throttles. Set it for
+    /// accounts that share their quota with production traffic.
+    #[arg(long, value_parser = clap::value_parser!(u32).range(1..=100_000))]
+    pub max_rps: Option<u32>,
     #[arg(long)]
     pub resume: bool,
     /// Wait for the projection outbox to drain before exiting. When graph delivery

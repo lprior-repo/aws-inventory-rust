@@ -47,6 +47,9 @@ pub struct SweepConfig {
     /// queue for the next slice. A later invocation with resume=true continues
     /// where this slice stopped.
     pub slice_timeout_secs: Option<u64>,
+    /// Most requests per second any one limiter bucket may reach. `None`
+    /// leaves the limiter's own maximum as the bound.
+    pub max_rps: Option<u32>,
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]

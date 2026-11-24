@@ -12,6 +12,7 @@ fn config(concurrency: usize) -> SweepConfig {
         endpoint: None,
         ca_bundle: None,
         slice_timeout_secs: None,
+        max_rps: None,
     }
 }
 
@@ -27,6 +28,38 @@ fn given_concurrency_outside_the_limiter_range_when_validated_then_it_is_rejecte
             Err(SweepError::InvalidConfig("concurrency must be in 1..=4096"))
         ));
     }
+}
+
+#[test]
+fn given_a_rate_cap_outside_the_limiter_range_when_validated_then_it_is_rejected() {
+    // Given a cap of zero and one past the limiter's maximum.
+    for cap in [0, 100_001] {
+        let config = SweepConfig {
+            max_rps: Some(cap),
+            ..config(1)
+        };
+        // When the configuration is validated.
+        let result = config.validate();
+        // Then it is rejected with the accepted range.
+        assert!(matches!(
+            result,
+            Err(SweepError::InvalidConfig("max-rps must be in 1..=100000"))
+        ));
+    }
+}
+
+#[test]
+fn given_a_rate_cap_at_either_bound_when_validated_then_it_is_accepted() -> TestResult {
+    // Given the smallest and the largest accepted cap.
+    for cap in [1, 100_000] {
+        let config = SweepConfig {
+            max_rps: Some(cap),
+            ..config(1)
+        };
+        // When the configuration is validated. Then it is accepted.
+        config.validate()?;
+    }
+    Ok(())
 }
 
 #[tokio::test]
