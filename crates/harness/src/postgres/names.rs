@@ -4,6 +4,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::HarnessError;
 
+#[cfg_attr(test, derive(Clone))]
 pub(super) struct DatabaseName(String);
 
 impl DatabaseName {
