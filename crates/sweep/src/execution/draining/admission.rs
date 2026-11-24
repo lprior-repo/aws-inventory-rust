@@ -55,6 +55,10 @@ pub(in crate::execution) fn queue_report(
     (depth, in_flight.saturating_add(claimed))
 }
 
+/// Pages one claim may fetch before its lease returns to the queue, so a long
+/// scope cannot hold a worker while other scopes wait.
+pub(in crate::execution) const MAX_PAGES_PER_CLAIM: u16 = 64;
+
 /// Leases this drain claimed whose page has not yet returned success.
 ///
 /// A cancelled drain releases exactly these, so the set stays bounded by the
@@ -84,17 +88,42 @@ impl Owned {
         id
     }
 
-    /// Runs one admitted page and forgets its lease once the page succeeds.
-    pub(in crate::execution) async fn settle(
+    /// Runs an admitted scope page by page while each page keeps the lease.
+    ///
+    /// `page(lease, keep)` processes one page; `keep` is false for the last
+    /// page this claim may fetch and whenever `may_keep` refuses. The lease a
+    /// page kept replaces the owned one, and a failed page leaves its lease
+    /// owned, so a cancelled drain releases the lease that is still valid.
+    pub(in crate::execution) async fn settle<F>(
         &self,
         id: u64,
-        page: impl Future<Output = Result<SweepSummary, SweepError>>,
-    ) -> Result<SweepSummary, SweepError> {
-        let result = page.await;
-        if result.is_ok() {
-            self.leases().remove(&id);
+        lease: WorkLease,
+        may_keep: impl Fn() -> bool,
+        mut page: impl FnMut(WorkLease, bool) -> F,
+    ) -> Result<SweepSummary, SweepError>
+    where
+        F: Future<Output = Result<crate::execution::page::Paged, SweepError>>,
+    {
+        let mut total = SweepSummary::default();
+        let mut lease = lease;
+        for fetched in 1..=MAX_PAGES_PER_CLAIM {
+            let keep = fetched < MAX_PAGES_PER_CLAIM && may_keep();
+            let paged = page(lease, keep).await?;
+            self.track(id, paged.next.as_ref());
+            add_writes(&mut total, paged.summary)?;
+            let Some(next) = paged.next else { break };
+            lease = next;
         }
-        result
+        Ok(total)
+    }
+
+    /// Owns the lease a page kept, or forgets the scope when it kept none.
+    fn track(&self, id: u64, kept: Option<&WorkLease>) {
+        let mut leases = self.leases();
+        match kept {
+            Some(lease) => leases.insert(id, lease.clone()),
+            None => leases.remove(&id),
+        };
     }
 
     pub(in crate::execution) fn set_in_flight(&self, in_flight: usize) {

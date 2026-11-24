@@ -171,6 +171,15 @@ impl BinaryStore {
         work::commit_page(self, page).await
     }
 
+    /// Commits a page and keeps the lease for `lease_ms` more when the scope has another page.
+    pub async fn commit_page_keeping(
+        &self,
+        page: PageCommit,
+        lease_ms: i64,
+    ) -> Result<(CommitResult, Option<WorkLease>), StoreError> {
+        work::commit_page_keeping(self, page, lease_ms).await
+    }
+
     /// `detail` is the reason for the outcome; a later outcome without one clears it.
     pub async fn finish_scope(
         &self,

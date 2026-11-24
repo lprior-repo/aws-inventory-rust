@@ -40,7 +40,12 @@ pub(super) async fn drain_work(
         |limit| claim(context, sweep, &owned, limit),
         |lease| {
             let id = owned.admit(&lease);
-            owned.settle(id, page::process(context, lease))
+            owned.settle(
+                id,
+                lease,
+                || may_claim(executor, budget, &slice_exhausted),
+                |lease, keep| page::process(context, lease, keep),
+            )
         },
         |in_flight| owned.set_in_flight(in_flight),
     );

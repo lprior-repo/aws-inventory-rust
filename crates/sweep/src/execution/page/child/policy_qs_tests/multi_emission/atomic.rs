@@ -87,7 +87,8 @@ impl Driver {
             ancestry,
             cursor,
         };
-        Ok(page::commit_response(&context, lease, setup, response, request).await?)
+        let paged = page::commit_response(&context, lease, false, setup, response, request).await?;
+        Ok(paged.summary)
     }
 }
 

@@ -4,6 +4,8 @@ mod children;
 mod control;
 #[path = "conformance/data.rs"]
 mod data;
+#[path = "conformance/kept.rs"]
+mod kept;
 #[path = "conformance/leases.rs"]
 mod leases;
 #[path = "conformance/projection.rs"]
@@ -28,6 +30,7 @@ where
     F: AsyncFn() -> TestResult<(G, S, Vec<u8>)>,
 {
     leases::run(&make).await?;
+    kept::run(&make).await?;
     resume::run(&make).await?;
     control::run(&make).await?;
     children::run(&make).await?;

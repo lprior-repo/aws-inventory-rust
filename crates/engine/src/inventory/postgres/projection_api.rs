@@ -66,6 +66,13 @@ impl InventoryStore for PgStore {
     async fn commit_page(&self, page: PageCommit) -> Result<CommitResult, StoreError> {
         PgStore::commit_page(self, page).await
     }
+    async fn commit_page_keeping(
+        &self,
+        page: PageCommit,
+        lease_ms: i64,
+    ) -> Result<(CommitResult, Option<WorkLease>), StoreError> {
+        PgStore::commit_page_keeping(self, page, lease_ms).await
+    }
     async fn finish_scope(
         &self,
         lease: WorkLease,

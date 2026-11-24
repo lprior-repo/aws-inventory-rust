@@ -22,13 +22,33 @@ use settlement::{finalize, finish_error, summary};
 use super::{RuntimeContext, now_ms};
 use crate::{CredentialSource, ScopeOutcomes, SweepError, SweepSummary, call, input};
 
+/// One processed page: its summary and, when the scope has another page and
+/// the lease was kept, the lease for that page.
+pub(super) struct Paged {
+    pub(super) summary: SweepSummary,
+    pub(super) next: Option<WorkLease>,
+}
+
+impl Paged {
+    /// A page after which the lease is no longer held.
+    fn last(summary: SweepSummary) -> Self {
+        Self {
+            summary,
+            next: None,
+        }
+    }
+}
+
+/// Processes one page. With `keep`, a page that has a successor keeps the
+/// lease so the caller can fetch the next page without claiming again.
 pub(super) async fn process(
     context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     lease: WorkLease,
-) -> Result<SweepSummary, SweepError> {
-    let result = process_owned(context, lease).await;
-    if let Ok(summary) = &result {
-        context.progress.scope(summary);
+    keep: bool,
+) -> Result<Paged, SweepError> {
+    let result = process_owned(context, lease, keep).await;
+    if let Ok(paged) = &result {
+        context.progress.scope(&paged.summary);
     }
     result
 }
@@ -36,50 +56,52 @@ pub(super) async fn process(
 async fn process_owned(
     context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     lease: WorkLease,
-) -> Result<SweepSummary, SweepError> {
+    keep: bool,
+) -> Result<Paged, SweepError> {
     if context.bootstrap.executor.is_cancelled() {
-        return finish_error(
-            context.store,
-            lease,
-            inventory_engine::limiter::ApiError::Cancelled.into(),
-            None,
-        )
-        .await;
+        let error = inventory_engine::limiter::ApiError::Cancelled.into();
+        return settled(finish_error(context.store, lease, error, None).await);
     }
     if lease.scope().account() != &context.account {
-        return finish_error(
-            context.store,
-            lease,
-            SweepError::Operation("resume account does not match stored scope"),
-            None,
-        )
-        .await;
+        let error = SweepError::Operation("resume account does not match stored scope");
+        return settled(finish_error(context.store, lease, error, None).await);
     }
-    process_lease(context, lease).await
+    process_lease(context, lease, keep).await
+}
+
+/// The result of a lease that was finished or released rather than paged on.
+fn settled(result: Result<SweepSummary, SweepError>) -> Result<Paged, SweepError> {
+    result.map(Paged::last)
 }
 
 async fn process_lease(
     context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     lease: WorkLease,
-) -> Result<SweepSummary, SweepError> {
+    keep: bool,
+) -> Result<Paged, SweepError> {
+    let store = context.store;
     let setup = match preflight(context, &lease) {
         Ok(setup) => setup,
-        Err(error) => return finish_error(context.store, lease, error, None).await,
+        Err(error) => return settled(finish_error(store, lease, error, None).await),
     };
     let plan = setup.plan;
     let cursor = &setup.cursor;
     if cursor.partial || cursor.pages >= context.bootstrap.config.max_pages {
-        return finalize(context.store, lease, StoredOutcome::Partial, None).await;
+        return settled(finalize(store, lease, StoredOutcome::Partial, None).await);
     }
     let prepared = match preparation::prepare(context, &lease, plan, cursor).await {
         Ok(prepared) => prepared,
-        Err(error) => return finish_error(context.store, lease, error, output_shape(plan)).await,
+        Err(error) => {
+            return settled(finish_error(store, lease, error, output_shape(plan)).await);
+        }
     };
     let (response, request) = match execute_page(context, plan, prepared).await {
         Ok(response) => response,
-        Err(error) => return finish_error(context.store, lease, error, output_shape(plan)).await,
+        Err(error) => {
+            return settled(finish_error(store, lease, error, output_shape(plan)).await);
+        }
     };
-    commit_response(context, lease, setup, response, request).await
+    commit_response(context, lease, keep, setup, response, request).await
 }
 
 /// The name of the operation's response shape, when the catalog models one.
@@ -176,10 +198,11 @@ struct PageRequest {
 async fn commit_response(
     context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     lease: WorkLease,
+    keep: bool,
     setup: PageSetup<'_, '_>,
     response: call::DecodedResponse,
     request: PageRequest,
-) -> Result<SweepSummary, SweepError> {
+) -> Result<Paged, SweepError> {
     let assembly = assembly_context(context);
     let plan = setup.plan;
     let parts = match assembly::prepare(
@@ -194,9 +217,11 @@ async fn commit_response(
     .await
     {
         Ok(parts) => parts,
-        Err(error) => return finish_error(context.store, lease, error, output_shape(plan)).await,
+        Err(error) => {
+            return settled(finish_error(context.store, lease, error, output_shape(plan)).await);
+        }
     };
-    commit_parts(context, lease, parts).await
+    commit_parts(context, lease, keep, parts).await
 }
 
 fn assembly_context<'a, 'catalog>(
@@ -215,16 +240,17 @@ fn assembly_context<'a, 'catalog>(
 async fn commit_parts(
     context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     lease: WorkLease,
+    keep: bool,
     parts: PageParts,
-) -> Result<SweepSummary, SweepError> {
+) -> Result<Paged, SweepError> {
     if let Err(error) = assembly::checkpoint(context.bootstrap.executor).await {
-        return finish_error(context.store, lease, error, None).await;
+        return settled(finish_error(context.store, lease, error, None).await);
     }
     let done = parts.next.is_none();
     let rows = parts.rows;
     let skipped = parts.skipped_child_requests;
     let commit = page_commit(lease, parts, done)?;
-    commit_page(context, commit, done, rows, skipped).await
+    commit_page(context, commit, keep, rows, skipped).await
 }
 
 fn page_commit(lease: WorkLease, parts: PageParts, done: bool) -> Result<PageCommit, SweepError> {
@@ -249,35 +275,46 @@ fn page_commit(lease: WorkLease, parts: PageParts, done: bool) -> Result<PageCom
 async fn commit_page(
     context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
     commit: PageCommit,
-    done: bool,
+    keep: bool,
     rows: u64,
     skipped: u64,
-) -> Result<SweepSummary, SweepError> {
+) -> Result<Paged, SweepError> {
     let fallback_lease = commit.lease.clone();
+    let done = commit.done;
     let started = std::time::Instant::now();
-    let result = context.store.commit_page(commit).await;
+    let result = store_commit(context, commit, keep).await;
     context.bootstrap.metrics.committed(started, result.is_ok());
     match result {
-        Ok(result) => {
+        Ok((result, next)) => {
             context.bootstrap.metrics.skipped_children(skipped);
             let summary = report_commit(result, done, rows)?;
             context.progress.emit(|| crate::ProgressEvent::Page {
                 rows: summary.rows,
                 resource_writes: summary.resource_writes,
             });
-            Ok(summary)
+            Ok(Paged { summary, next })
         }
-        Err(StoreError::StaleLease) => Ok(SweepSummary::default()),
+        Err(StoreError::StaleLease) => Ok(Paged::last(SweepSummary::default())),
         Err(error) => {
-            finish_error(
-                context.store,
-                fallback_lease,
-                SweepError::Store(error),
-                None,
-            )
-            .await
+            let error = SweepError::Store(error);
+            settled(finish_error(context.store, fallback_lease, error, None).await)
         }
     }
+}
+
+/// Commits the page, keeping the lease for a successor page when `keep` is set.
+async fn store_commit(
+    context: &RuntimeContext<'_, '_, impl CredentialSource, impl InventoryStore>,
+    commit: PageCommit,
+    keep: bool,
+) -> Result<(inventory_engine::inventory::CommitResult, Option<WorkLease>), StoreError> {
+    if keep {
+        return context
+            .store
+            .commit_page_keeping(commit, context.lease_ms)
+            .await;
+    }
+    Ok((context.store.commit_page(commit).await?, None))
 }
 
 fn report_commit(

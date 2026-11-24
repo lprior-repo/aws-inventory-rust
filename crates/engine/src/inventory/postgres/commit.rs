@@ -13,7 +13,7 @@ mod validation;
 
 use super::{PgStore, completion, outbox, references as reconciliation};
 use crate::inventory::relation_permissions::{SourceAuthority, page_authority};
-use crate::inventory::{ChangeStats, CommitResult, PageCommit, StoreError};
+use crate::inventory::{ChangeStats, CommitResult, PageCommit, StoreError, WorkLease};
 use facets::Context;
 use grants::Grant;
 use inventory_core::inventory::{Observation, ResourceKey};
@@ -23,6 +23,24 @@ use std::collections::{BTreeMap, BTreeSet};
 
 impl PgStore {
     pub async fn commit_page(&self, page: PageCommit) -> Result<CommitResult, StoreError> {
+        Ok(self.commit(page, None).await?.0)
+    }
+
+    /// Commits a page and keeps the lease for `lease_ms` more when the scope has another page.
+    pub async fn commit_page_keeping(
+        &self,
+        page: PageCommit,
+        lease_ms: i64,
+    ) -> Result<(CommitResult, Option<WorkLease>), StoreError> {
+        let until = crate::inventory::work::kept_until(&page, lease_ms)?;
+        self.commit(page, Some(until)).await
+    }
+
+    async fn commit(
+        &self,
+        page: PageCommit,
+        keep_until: Option<i64>,
+    ) -> Result<(CommitResult, Option<WorkLease>), StoreError> {
         validation::page(&self.registry, &page)?;
         let mut tx = self.pool.begin().await?;
         validation::lease(
@@ -33,18 +51,22 @@ impl PgStore {
         .await?;
         let mut stats = persist(self, &mut tx, &page).await?;
         queue::children(&mut tx, &page).await?;
-        let repeated_token = queue::advance(&mut tx, &page).await?;
+        let repeated_token = queue::advance(&mut tx, &page, keep_until).await?;
         if page.done || repeated_token {
             let completed =
                 completion::drain(self, &mut tx, page.lease.sweep(), page.observed_at_ms).await?;
             completion::add(&mut stats, completed)?;
         }
         tx.commit().await?;
-        Ok(CommitResult {
+        let result = CommitResult {
             stats,
             next_generation: (!page.done && !repeated_token).then_some(page.lease.generation()),
             repeated_token,
-        })
+        };
+        let kept = keep_until
+            .filter(|_| !page.done && !repeated_token)
+            .map(|until| page.lease.continued(page.next_token, until));
+        Ok((result, kept))
     }
 }
 

@@ -154,6 +154,15 @@ impl WorkLease {
     pub fn pending_work(&self) -> Option<u64> {
         self.pending_work
     }
+    /// The same lease after a kept page: it carries the next token and its new deadline.
+    pub(crate) fn continued(self, token: Option<Vec<u8>>, lease_until_ms: i64) -> Self {
+        Self {
+            token,
+            lease_until_ms,
+            pending_work: None,
+            ..self
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
@@ -239,17 +248,54 @@ pub(super) async fn seed_works(store: &BinaryStore, works: &[WorkSpec]) -> Resul
     Ok(())
 }
 
+/// When a lease kept past a page committed at `observed_at_ms` expires.
+///
+/// The deadline always moves past the committed lease's own, so a copy of
+/// that lease taken before the commit no longer matches the queue.
+pub(crate) fn kept_until(page: &PageCommit, lease_ms: i64) -> Result<i64, StoreError> {
+    if lease_ms < 1 {
+        return Err(StoreError::Invalid("invalid lease interval"));
+    }
+    let overflow = StoreError::Invalid("lease interval overflow");
+    let Some(fresh) = page.observed_at_ms.checked_add(lease_ms) else {
+        return Err(overflow);
+    };
+    let Some(past_old) = page.lease.lease_until_ms.checked_add(1) else {
+        return Err(overflow);
+    };
+    Ok(fresh.max(past_old))
+}
+
 pub(super) async fn commit_page(
     store: &BinaryStore,
     page: PageCommit,
 ) -> Result<CommitResult, StoreError> {
+    Ok(commit(store, page, None).await?.0)
+}
+
+pub(super) async fn commit_page_keeping(
+    store: &BinaryStore,
+    page: PageCommit,
+    lease_ms: i64,
+) -> Result<(CommitResult, Option<WorkLease>), StoreError> {
+    let until = kept_until(&page, lease_ms)?;
+    commit(store, page, Some(until)).await
+}
+
+/// Commits one page. With `keep_until`, a scope that has another page stays
+/// leased until then and its continued lease is returned.
+async fn commit(
+    store: &BinaryStore,
+    page: PageCommit,
+    keep_until: Option<i64>,
+) -> Result<(CommitResult, Option<WorkLease>), StoreError> {
     validate_page(store, &page)?;
     let mut tx = store.writer.begin().await?;
     validate_lease(&mut tx, &page.lease, page.observed_at_ms).await?;
     let mut stats = super::commit::persist_page(store, &mut tx, &page).await?;
     persist_children(store, &mut tx, &page).await?;
     let repeated_token = record_continuation(&mut tx, &page).await?;
-    let completed = persist_page_state(store, &mut tx, &page, repeated_token).await?;
+    let completed = persist_page_state(store, &mut tx, &page, repeated_token, keep_until).await?;
     stats.resources_deleted = stats
         .resources_deleted
         .checked_add(completed.resources_deleted)
@@ -263,11 +309,15 @@ pub(super) async fn commit_page(
         .checked_add(completed.edges_changed)
         .ok_or(StoreError::Invalid("edge count overflow"))?;
     tx.commit().await?;
-    Ok(CommitResult {
+    let result = CommitResult {
         stats,
         next_generation: (!repeated_token).then_some(page.lease.generation),
         repeated_token,
-    })
+    };
+    let kept = keep_until
+        .filter(|_| !page.done && !repeated_token)
+        .map(|until| page.lease.continued(page.next_token, until));
+    Ok((result, kept))
 }
 
 pub(super) async fn finish_scope(

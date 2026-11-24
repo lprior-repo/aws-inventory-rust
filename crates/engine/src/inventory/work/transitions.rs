@@ -63,11 +63,13 @@ pub(super) async fn persist_children(
     Ok(())
 }
 
+/// With `keep_until`, a scope that has another page stays leased until then.
 pub(super) async fn persist_page_state(
     store: &BinaryStore,
     tx: &mut Transaction<'_, Sqlite>,
     page: &PageCommit,
     repeated: bool,
+    keep_until: Option<i64>,
 ) -> Result<ChangeStats, StoreError> {
     let scope = encode_scope(&page.lease.scope)?;
     if repeated {
@@ -86,8 +88,9 @@ pub(super) async fn persist_page_state(
     if page.done {
         return finalize_page(store, tx, page, &scope).await;
     }
-    sqlx::query("UPDATE work_queue SET state=0,token=?4,lease_until=0 WHERE sweep_id=?1 AND scope_key=?2 AND generation=?3")
-        .bind(page.lease.sweep.as_str()).bind(&scope).bind(page.lease.generation).bind(&page.next_token).execute(&mut **tx).await?;
+    let (state, until) = keep_until.map_or((0_i64, 0_i64), |until| (1, until));
+    sqlx::query("UPDATE work_queue SET state=?5,token=?4,lease_until=?6 WHERE sweep_id=?1 AND scope_key=?2 AND generation=?3")
+        .bind(page.lease.sweep.as_str()).bind(&scope).bind(page.lease.generation).bind(&page.next_token).bind(state).bind(until).execute(&mut **tx).await?;
     Ok(ChangeStats::default())
 }
 

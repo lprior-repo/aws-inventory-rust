@@ -82,13 +82,14 @@ fn started(event: &ProgressEvent) {
     } if account == "123456789012"));
 }
 
+/// Both pages of the scope are fetched under one claim, so the queue is
+/// reported once.
 fn ordered_tail(events: &[ProgressEvent], summary: SweepSummary) {
     assert_eq!(
         events,
         &[
             queue(),
             page(),
-            queue(),
             page(),
             ProgressEvent::Scope {
                 outcome: ScopeOutcome::Complete
@@ -132,7 +133,7 @@ async fn control_unread_capacity_one_never_blocks_collection() -> TestResult {
     )
     .await??;
     assert_eq!(summary.rows, 2);
-    assert_eq!(summary.metrics.progress_dropped, 6);
+    assert_eq!(summary.metrics.progress_dropped, 5);
     started(&receiver.try_recv()?);
     environment.peer.stop().await
 }
@@ -240,7 +241,7 @@ async fn metrics_report_real_decode_claim_commit_executor_and_transport_activity
     assert_eq!((metrics.api_attempts, metrics.requests_sent), (4, 4));
     assert_eq!(
         (metrics.pages, metrics.store_commits, metrics.claims),
-        (2, 2, 2)
+        (2, 2, 1)
     );
     assert_eq!((metrics.api_retries, metrics.api_throttles), (0, 0));
     assert_eq!((metrics.http2_requests, metrics.requests_reused), (0, 0));

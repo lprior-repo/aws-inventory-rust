@@ -74,6 +74,17 @@ pub trait InventoryStore: Send + Sync {
         &self,
         page: PageCommit,
     ) -> impl Future<Output = Result<CommitResult, StoreError>> + Send;
+    /// Commits a page and, when the scope has another page, keeps the lease:
+    /// the returned lease carries the next token and is valid for `lease_ms`
+    /// after the page's `observed_at_ms`, or one millisecond past the
+    /// committed lease's deadline when that is later, so the committed lease
+    /// is stale afterwards. `None` when the scope finished or its token
+    /// repeated.
+    fn commit_page_keeping(
+        &self,
+        page: PageCommit,
+        lease_ms: i64,
+    ) -> impl Future<Output = Result<(CommitResult, Option<WorkLease>), StoreError>> + Send;
     /// `detail` is the reason for the outcome, at most
     /// `MAX_OUTCOME_DETAIL_BYTES` long; a later outcome without one clears it.
     fn finish_scope(
