@@ -23,7 +23,7 @@ pub(super) struct NativeRuntime {
     work: tempfile::TempDir,
     emulator: Emulator,
     catalog: Vec<u8>,
-    credentials: Credentials,
+    pub(super) credentials: Credentials,
 }
 
 impl NativeRuntime {

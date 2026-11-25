@@ -37,13 +37,12 @@ fn state(observed: &str) -> Result<SeedState, SeedError> {
         AccountId::parse("123456789012")?,
         Region::parse("us-east-1")?,
         String::from("aws"),
+        3,
     );
-    state
-        .outputs
-        .push(output(&state, 0, "target-id", "target-id")?);
-    state
-        .outputs
-        .push(output(&state, 1, "source-id", observed)?);
+    let target = output(&state, 0, "target-id", "target-id")?;
+    record_output(&mut state, target.step, target.resource, target.record)?;
+    let source = output(&state, 1, "source-id", observed)?;
+    record_output(&mut state, source.step, source.resource, source.record)?;
     Ok(state)
 }
 
@@ -86,7 +85,7 @@ fn given_mismatched_or_partial_observed_identity_when_oracle_built_then_edge_is_
 fn given_single_resource_without_relations_when_oracle_built_then_resources_are_retained()
 -> TestResult {
     let mut state = state("target-id")?;
-    state.outputs.truncate(1);
+    *state.outputs.get_mut(1).ok_or("missing source slot")? = None;
     let oracle = state.generic_oracle(&[])?;
     assert_eq!(oracle.resources.len(), 1);
     assert!(oracle.edges.is_empty());
@@ -126,5 +125,29 @@ fn given_earlier_output_reference_when_materialized_then_observed_value_is_used(
         },
     };
     assert!(materialize_input(&state, &missing).is_err());
+    Ok(())
+}
+
+#[test]
+fn given_unavailable_step_between_outputs_when_bound_then_error_names_the_missing_step()
+-> TestResult {
+    let mut state = state("target-id")?;
+    *state.outputs.get_mut(1).ok_or("missing source slot")? = None;
+    let later = output(&state, 2, "later-id", "later-id")?;
+    record_output(&mut state, later.step, later.resource, later.record)?;
+    let input = PreparedInput {
+        path: vec![FieldId::new(2)?],
+        value: PreparedInputValue::PreviousOutput {
+            step: StepId::new(1),
+            path: vec![Selector::Field(FieldId::new(1)?)],
+        },
+    };
+    let error = materialize_input(&state, &input)
+        .err()
+        .ok_or("missing step resolved to a different output")?;
+    assert_eq!(
+        error.to_string(),
+        "emulator seed error: seed binding output from step 1 is not available"
+    );
     Ok(())
 }

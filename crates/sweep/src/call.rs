@@ -124,7 +124,9 @@ impl<C: CredentialSource> Call<'_, '_, C> {
             .as_ref()
             .ok()
             .map(|response| response.status.as_u16());
-        let result = response.and_then(|response| validate_status(self.plan, response));
+        let result = response.and_then(|response| {
+            validate_status(self.plan, response, self.account, self.scope.as_str())
+        });
         tracing::debug!(
             service = self.plan.service_name(),
             operation = self.plan.operation_name(),
@@ -240,6 +242,8 @@ fn confirm_truncation_presence(
 fn validate_status(
     plan: &CallablePlan<'_>,
     response: Response,
+    account: &str,
+    region: &str,
 ) -> Result<ValidatedResponse, ApiError> {
     if response.status.is_success() {
         return Ok(ValidatedResponse::Page(response));
@@ -254,28 +258,41 @@ fn validate_status(
         limits: aws_wire::response::DecodeLimits::default(),
     };
     match aws_wire::response::errors::decode(context) {
-        Ok(error) => absence::classify(plan, error),
-        Err(_) => Err(status_fallback(response.status)),
+        Ok(error) => absence::classify(plan, error, context, account, region),
+        Err(error) => Err(status_fallback(response.status, &error)),
     }
 }
 
-fn classify_service(error: aws_wire::response::errors::ServiceError) -> ApiError {
-    let message = error.to_string();
-    let class = error.class;
+fn classify_service(
+    error: aws_wire::response::errors::ServiceError,
+    status: http::StatusCode,
+) -> ApiError {
+    use aws_wire::response::errors::ErrorClass;
+
+    let message = if error.code.is_some() {
+        error.to_string()
+    } else {
+        format!("HTTP {status}")
+    };
+    let class = match status {
+        http::StatusCode::TOO_MANY_REQUESTS => ErrorClass::Throttle,
+        http::StatusCode::SERVICE_UNAVAILABLE => ErrorClass::Retryable,
+        _ => error.class,
+    };
     match class {
-        aws_wire::response::errors::ErrorClass::Throttle => match error.retry_after {
+        ErrorClass::Throttle => match error.retry_after {
             Some(duration) => retry_after(message, duration, RetryKind::Throttled),
             None => ApiError::Throttled(message),
         },
-        aws_wire::response::errors::ErrorClass::Retryable
-        | aws_wire::response::errors::ErrorClass::ExpiredToken
-        | aws_wire::response::errors::ErrorClass::ExpiredSignature => match error.retry_after {
-            Some(duration) => retry_after(message, duration, RetryKind::Transient),
-            None => ApiError::Transient(message),
-        },
-        aws_wire::response::errors::ErrorClass::AccessDenied => ApiError::Denied(message),
-        aws_wire::response::errors::ErrorClass::NotSupported => ApiError::UnsupportedType(message),
-        aws_wire::response::errors::ErrorClass::Fatal => ApiError::Permanent(message),
+        ErrorClass::Retryable | ErrorClass::ExpiredToken | ErrorClass::ExpiredSignature => {
+            match error.retry_after {
+                Some(duration) => retry_after(message, duration, RetryKind::Transient),
+                None => ApiError::Transient(message),
+            }
+        }
+        ErrorClass::AccessDenied => ApiError::Denied(message),
+        ErrorClass::NotSupported => ApiError::UnsupportedType(message),
+        ErrorClass::Fatal => ApiError::Permanent(message),
     }
 }
 
@@ -287,12 +304,13 @@ fn retry_after(message: String, duration: std::time::Duration, kind: RetryKind) 
     }
 }
 
-fn status_fallback(status: http::StatusCode) -> ApiError {
+fn status_fallback(status: http::StatusCode, error: &aws_wire::response::DecodeError) -> ApiError {
+    let message = format!("HTTP {status}: {error}");
     match status.as_u16() {
-        429 => ApiError::Throttled(format!("HTTP {status}")),
-        401 | 403 => ApiError::Denied(format!("HTTP {status}")),
-        500..=599 => ApiError::Transient(format!("HTTP {status}")),
-        _ => ApiError::Permanent(format!("HTTP {status}")),
+        429 => ApiError::Throttled(message),
+        401 | 403 => ApiError::Denied(message),
+        500..=599 => ApiError::Transient(message),
+        _ => ApiError::Permanent(message),
     }
 }
 

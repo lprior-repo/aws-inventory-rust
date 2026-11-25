@@ -21,6 +21,7 @@ pub enum TargetState {
     DistinctBindings,
     InactiveReview,
     SelfReference,
+    IdentityAndSeparateReference,
     Branching,
     ArnKey,
     ArnString,
@@ -212,7 +213,10 @@ fn arn_plan(items: &str) -> TestResult<overlay::OperationOverlay> {
 }
 
 fn source_plan(target: &TargetState) -> TestResult<overlay::OperationOverlay> {
-    if matches!(target, TargetState::SelfReference) {
+    if matches!(
+        target,
+        TargetState::SelfReference | TargetState::IdentityAndSeparateReference
+    ) {
         arn_plan("SourceItems")
     } else {
         plan("SourceItems")
@@ -288,11 +292,17 @@ fn fixture_model(target: &TargetState) -> TestResult<String> {
     };
     let mut document: serde_json::Value = serde_json::from_str(&base)?;
     match target {
-        TargetState::SelfReference => {
+        TargetState::SelfReference | TargetState::IdentityAndSeparateReference => {
             object(&mut document, "/shapes/n#Resource")?.extend([
                 ("list".into(), json!({"target":"n#ListSources"})),
                 ("read".into(), json!({"target":"n#ListSources"})),
             ]);
+            if matches!(target, TargetState::IdentityAndSeparateReference) {
+                object(&mut document, "/shapes/n#Source/members/Id")?.insert(
+                    "traits".into(),
+                    json!({"aws.api#arnReference":{"resource":"n#Resource"}}),
+                );
+            }
         }
         TargetState::Collections => {
             object(&mut document, "/shapes/n#Source/members")?

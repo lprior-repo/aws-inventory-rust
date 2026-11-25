@@ -1,7 +1,10 @@
-use inventory_core::record::{Key, Value};
+use inventory_core::{
+    inventory::{EdgeSource, ResourceKey},
+    record::{Key, Value},
+};
 use inventory_harness::inventory_seed::{
     FieldPath, ScenarioSeedOracle, SeedError, SeedIdentityEvidence, SeedInput, SeedInputValue,
-    SeedOutputCheck, SeedScenario, SeedScope, SeedStep, StepId,
+    SeedOutputCheck, SeedRelationship, SeedScenario, SeedScope, SeedStep, StepId,
 };
 use std::{collections::BTreeMap, error::Error};
 
@@ -19,15 +22,23 @@ pub(super) fn sqs_scenario() -> Result<SeedScenario, SeedError> {
 }
 
 pub(super) fn sns_scenario() -> Result<SeedScenario, SeedError> {
-    SeedScenario::new(vec![
-        topic(0, "inventory-seed-sns-standard-a", false)?,
-        topic(1, "inventory-seed-sns-standard-b", false)?,
-        topic(2, "inventory-seed-sns-fifo.fifo", true)?,
-        queue_create(3, "inventory-seed-sns-endpoint", false)?,
-        queue_read(4, 3)?,
-        subscribe()?,
-        subscription()?,
-    ])
+    SeedScenario::with_relationships(
+        vec![
+            topic(0, "inventory-seed-sns-standard-a", false)?,
+            topic(1, "inventory-seed-sns-standard-b", false)?,
+            topic(2, "inventory-seed-sns-fifo.fifo", true)?,
+            queue_create(3, "inventory-seed-sns-endpoint", false)?,
+            queue_read(4, 3)?,
+            subscribe()?,
+            subscription()?,
+        ],
+        vec![SeedRelationship::new(
+            StepId::new(6),
+            StepId::new(0),
+            "USES_TOPIC".into(),
+            FieldPath::new(&["Attributes", "TopicArn"])?,
+        )],
+    )
 }
 
 pub(super) fn sfn_scenario() -> Result<SeedScenario, SeedError> {
@@ -231,6 +242,7 @@ pub(super) fn assert_sqs_oracle(
             ),
         ],
     );
+    assert!(oracle.edges.is_empty());
     Ok(())
 }
 
@@ -289,6 +301,26 @@ pub(super) fn assert_sns_oracle(
             ),
         ],
     );
+    assert_subscription_edge(oracle, &subscription.key)
+}
+
+fn assert_subscription_edge(oracle: &ScenarioSeedOracle, subscription: &ResourceKey) -> TestResult {
+    let [edge] = oracle.edges.as_slice() else {
+        return Err(format!(
+            "expected the one SNS subscription edge, got {:?}",
+            oracle.edges
+        )
+        .into());
+    };
+    let topic = oracle
+        .resources
+        .iter()
+        .find(|resource| resource.step == StepId::new(0))
+        .ok_or("missing SNS topic resource")?;
+    assert_eq!(&edge.from, subscription);
+    assert_eq!(edge.to, topic.key);
+    assert_eq!(edge.relation.as_str(), "USES_TOPIC");
+    assert_eq!(edge.source, EdgeSource::ReviewedRule);
     Ok(())
 }
 
@@ -338,6 +370,7 @@ pub(super) fn assert_sfn_oracle(
             ),
         ],
     );
+    assert!(oracle.edges.is_empty());
     Ok(())
 }
 
@@ -350,7 +383,6 @@ fn assert_resources(
     assert_eq!(oracle.account_id.as_str(), account);
     assert_eq!(oracle.region.as_str(), region);
     assert_eq!(oracle.resources.len(), expected.len());
-    assert_eq!(oracle.edges.len(), 0);
     oracle
         .resources
         .iter()

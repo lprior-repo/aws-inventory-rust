@@ -666,7 +666,7 @@ fn callable_plan(scalar: bool) -> TestResult<Value> {
     ])
 }
 
-fn wire_map(fields: impl IntoIterator<Item = (u32, Value)>) -> TestResult<Value> {
+pub(super) fn wire_map(fields: impl IntoIterator<Item = (u32, Value)>) -> TestResult<Value> {
     let pairs = fields
         .into_iter()
         .map(|(id, value)| Ok((Key::Field(FieldId::new(id)?), value)))

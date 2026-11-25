@@ -22,8 +22,7 @@ fn given_login_profile_when_missing_or_denied_then_only_no_such_entity_is_empty(
     let plan = catalog
         .lookup("iam", "GetLoginProfile")
         .ok_or("profile plan missing")?;
-    let validate =
-        |code, status| super::super::super::validate_status(plan, xml_response(code, status));
+    let validate = |code, status| validate_status(plan, xml_response(code, status));
     let absence = validate("NoSuchEntity", http::StatusCode::NOT_FOUND)?.decode(plan);
     assert!(matches!(absence, Err(SweepError::Absent(reason)) if reason.contains("NoSuchEntity")));
     assert!(matches!(

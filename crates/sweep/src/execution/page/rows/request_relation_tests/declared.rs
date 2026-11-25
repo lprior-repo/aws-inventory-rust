@@ -127,6 +127,54 @@ async fn given_declared_self_reference_when_two_sweeps_commit_then_exactly_one_s
     Ok(())
 }
 
+#[tokio::test]
+async fn given_identity_and_separate_reference_fields_when_swept_then_only_the_separate_reference_is_an_edge()
+-> ResultOf {
+    let (bytes, _) = declared_fixture::compile(TargetState::IdentityAndSeparateReference, &[])?;
+    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+    let plan = catalog
+        .lookup("refs", "ListSources")
+        .ok_or("source plan missing")?;
+    let directory = tempfile::tempdir()?;
+    let registry = SchemaRegistry::new(&bytes, catalog.schemas().to_vec())?;
+    let store = BinaryStore::create(&directory.path().join("identity.sqlite"), registry).await?;
+    let request = typed_record([])?;
+    let region = RegionId::parse("us-east-1")?;
+    for (at, separate_reference) in [(1000, false), (1002, true)] {
+        let row = typed_record(
+            [(3, Value::Text(SOURCE_ARN.into()))]
+                .into_iter()
+                .chain(separate_reference.then(|| (4, Value::Text(SOURCE_ARN.into())))),
+        )?;
+        let source = observation(&catalog, "ListSources", row.clone())?;
+        let key = source.key().clone();
+        let references = super::super::references(
+            &catalog,
+            plan,
+            &region,
+            &[row],
+            std::slice::from_ref(&source),
+            &request,
+            None,
+        )?;
+        assert_eq!(references.len(), usize::from(separate_reference));
+        commit(&store, "ListSources", vec![source], references, at).await?;
+        let actual = store.projection_edges_for(&key, None, 10).await?;
+        if separate_reference {
+            let [edge] = actual.edges.as_slice() else {
+                return Err("expected exactly one separate-reference edge".into());
+            };
+            assert_eq!(edge.from, key);
+            assert_eq!(edge.to, key);
+            assert_eq!(edge.source, "model");
+            assert_eq!(edge.relation.as_str(), "REFERENCES");
+        } else {
+            assert!(actual.edges.is_empty());
+        }
+    }
+    Ok(())
+}
+
 fn observation(
     catalog: &RuntimeCatalog<'_>,
     operation: &str,

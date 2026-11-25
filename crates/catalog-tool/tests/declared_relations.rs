@@ -416,6 +416,25 @@ fn given_same_kind_declaration_when_compiled_then_its_identity_selector_remains_
 }
 
 #[test]
+fn given_identity_and_separate_reference_members_when_compiled_then_both_paths_are_retained()
+-> TestResult {
+    let (bytes, _) = compile(TargetState::IdentityAndSeparateReference, &[])?;
+    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+    let identity = [FieldId::new(3)?];
+    let separate = [FieldId::new(4)?];
+    for source in [identity.as_slice(), separate.as_slice()] {
+        assert!(catalog.relationships().iter().any(|rule| {
+            rule.source_kind.as_str() == SOURCE
+                && rule.target_kind.as_str() == SOURCE
+                && rule.target_path.as_ref() == identity
+                && rule.source_path.as_ref() == source
+                && rule.edge_source == EdgeSource::Model
+        }));
+    }
+    Ok(())
+}
+
+#[test]
 fn given_seventeen_shared_shapes_without_references_when_compiled_then_existing_edges_are_unchanged()
 -> TestResult {
     let (bytes, report) = compile(TargetState::Branching, &[])?;

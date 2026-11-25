@@ -10,20 +10,21 @@ fn coverage() -> Result<Coverage, HarnessError> {
     Coverage::load(
         &workspace_root().join("catalog/aws-api.catalog"),
         &workspace_root().join("crates/harness/seeds"),
-        &["cloudwatch".into(), "ec2".into()],
+        &["cloudwatch".into(), "ec2".into(), "ecs".into()],
     )
 }
 
 #[test]
-fn given_catalog_deferred_alarm_when_classified_then_reviewed_safety_reason_remains_visible()
+fn given_catalog_deferred_ecs_task_definition_when_classified_then_reviewed_safety_reason_remains_visible()
 -> TestResult {
     let coverage = coverage()?;
     let reason = coverage
-        .reason("AWS::CloudWatch::Alarm")?
+        .reason("AWS::ECS::TaskDefinition")?
         .ok_or("missing deferral")?;
-    assert!(reason.contains("cloudwatch:DescribeAlarms:"));
-    assert!(reason.contains("StateReasonData"));
-    assert!(reason.contains("exclude_from_hash does not remove content"));
+    assert!(reason.contains("ecs:ListTaskDefinitions:"));
+    assert!(reason.contains("complete enumeration needs ACTIVE/INACTIVE/DELETE_IN_PROGRESS"));
+    assert!(reason.contains("DescribeTaskDefinition remains content-denied"));
+    assert!(reason.contains("plaintext environment and container command content"));
     assert!(coverage.reason("AWS::EC2::VPC")?.is_none());
     assert!(coverage.reason("AWS::Unknown::Resource").is_err());
     Ok(())
@@ -33,7 +34,7 @@ fn given_catalog_deferred_alarm_when_classified_then_reviewed_safety_reason_rema
 fn given_deferred_and_callable_oracle_kinds_when_verified_then_only_deferred_kind_is_not_compared()
 -> TestResult {
     let expected = oracle_keys(
-        "resource\tAWS::CloudWatch::Alarm\ta\tr\talarm\nresource\tAWS::EC2::VPC\ta\tr\tseeded\n",
+        "resource\tAWS::ECS::TaskDefinition\ta\tr\ttask\nresource\tAWS::EC2::VPC\ta\tr\tseeded\n",
     )?;
     let verified = verified_keys(expected, &coverage()?)?;
     assert_eq!(verified.len(), 1);
@@ -44,6 +45,24 @@ fn given_deferred_and_callable_oracle_kinds_when_verified_then_only_deferred_kin
         &verified,
         &super::super::snapshot::added(actual, &Baseline(Keys::new())),
     )?;
+    Ok(())
+}
+
+#[test]
+fn given_seeded_cloudwatch_alarm_when_verified_then_its_identity_is_compared() -> TestResult {
+    let coverage = coverage()?;
+    let alarm = "resource\tAWS::CloudWatch::Alarm\ta\tr\talarm\n";
+    let verified = verified_keys(oracle_keys(alarm)?, &coverage)?;
+
+    assert_eq!(coverage.reason("AWS::CloudWatch::Alarm")?, None);
+    let error = compare(&verified, &Keys::new())
+        .err()
+        .ok_or("missing alarm passed comparison")?;
+    assert_eq!(
+        error.to_string(),
+        "seeded identities/counts differ for 1 of 1 kinds: AWS::CloudWatch::Alarm missing=[a/r/alarm] unexpected=[]"
+    );
+    compare(&verified, &oracle_keys(alarm)?)?;
     Ok(())
 }
 

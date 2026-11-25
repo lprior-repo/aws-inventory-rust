@@ -43,7 +43,57 @@ const TREE_2: &[(&str, Shape)] = &[
     ("RoleId", Shape::Text),
     ("Arn", Shape::Text),
     ("CreateDate", Shape::Timestamp),
-    ("AssumeRolePolicyDocument", Shape::Text),
+    ("AssumeRolePolicyDocument", Shape::Map),
+    (
+        "AssumeRolePolicyDocument.trust_policy_values_omitted",
+        Shape::Bool,
+    ),
+    ("AssumeRolePolicyDocument.trust_statements", Shape::List),
+    ("AssumeRolePolicyDocument.trust_statements.*", Shape::Map),
+    (
+        "AssumeRolePolicyDocument.trust_statements.*.effect",
+        Shape::Text,
+    ),
+    (
+        "AssumeRolePolicyDocument.trust_statements.*.actions",
+        Shape::List,
+    ),
+    (
+        "AssumeRolePolicyDocument.trust_statements.*.actions.*",
+        Shape::Text,
+    ),
+    (
+        "AssumeRolePolicyDocument.trust_statements.*.principals",
+        Shape::Map,
+    ),
+    (
+        "AssumeRolePolicyDocument.trust_statements.*.principals.Service",
+        Shape::List,
+    ),
+    (
+        "AssumeRolePolicyDocument.trust_statements.*.principals.Service.*",
+        Shape::Text,
+    ),
+    (
+        "AssumeRolePolicyDocument.trust_statements.*.has_not_principal",
+        Shape::Bool,
+    ),
+    (
+        "AssumeRolePolicyDocument.trust_statements.*.has_not_action",
+        Shape::Bool,
+    ),
+    (
+        "AssumeRolePolicyDocument.trust_statements.*.condition_operators",
+        Shape::List,
+    ),
+    (
+        "AssumeRolePolicyDocument.trust_statements.*.condition_operators.*",
+        Shape::Text,
+    ),
+    (
+        "AssumeRolePolicyDocument.trust_statements.*.condition_values_omitted",
+        Shape::Bool,
+    ),
     ("Description", Shape::Text),
     ("MaxSessionDuration", Shape::Integer),
     ("PermissionsBoundary", Shape::Map),
@@ -75,6 +125,8 @@ const TREE_4: &[(&str, Shape)] = &[
     ("activityArn", Shape::Text),
     ("name", Shape::Text),
     ("creationDate", Shape::Timestamp),
+    ("encryptionConfiguration", Shape::Map),
+    ("encryptionConfiguration.type", Shape::Text),
 ];
 
 const TREE_5: &[(&str, Shape)] = &[

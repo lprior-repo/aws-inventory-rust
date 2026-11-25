@@ -121,6 +121,19 @@ fn given_replaced_source_when_compiling_then_only_retained_tree_is_built() -> Te
 }
 
 #[test]
+fn given_parallel_jobs_when_compiling_then_targets_never_share_the_source_tree() -> TestResult {
+    let (_directory, layout) = fixture()?;
+    fs::write(
+        layout.source.join("Makefile"),
+        "redis-server redis-cli:\n\tmkdir busy && sleep 0.2 && rmdir busy && printf x >> built\n",
+    )?;
+    let source = OwnedDirectory::capture(&layout.source)?;
+    build::compile(&source, 4)?;
+    assert_eq!(fs::read(layout.source.join("built"))?, b"xx");
+    Ok(())
+}
+
+#[test]
 fn given_flooding_version_when_querying_then_output_memory_and_time_are_bounded() -> TestResult {
     let (_directory, layout) = fixture()?;
     executable(

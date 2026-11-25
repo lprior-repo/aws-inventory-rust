@@ -1,16 +1,21 @@
 use super::super::{DecodeError, DecodeLimits};
+use super::{Field, MAX_FIELD_BYTES};
 use quick_xml::{
     Reader,
     events::{BytesRef, BytesStart, Event},
 };
 
-pub(super) fn code(body: &[u8], limits: DecodeLimits) -> Result<Option<String>, DecodeError> {
+pub(super) fn scan(
+    body: &[u8],
+    limits: DecodeLimits,
+    field: Field,
+) -> Result<Option<String>, DecodeError> {
     if body.is_empty() {
         return Ok(None);
     }
     let source = std::str::from_utf8(body).map_err(syntax)?;
     let mut reader = Reader::from_str(source);
-    let mut state = State::new(limits);
+    let mut state = State::new(limits, field);
     loop {
         let event = reader.read_event().map_err(syntax)?;
         if matches!(event, Event::Eof) {
@@ -26,23 +31,27 @@ struct State {
     nodes: usize,
     root_seen: bool,
     root_closed: bool,
+    errors_wrapper: bool,
     error_depth: Option<usize>,
-    code_depth: Option<usize>,
-    code_text: String,
+    field: Field,
+    field_depth: Option<usize>,
+    field_text: String,
     found: Option<String>,
 }
 
 impl State {
-    fn new(limits: DecodeLimits) -> Self {
+    fn new(limits: DecodeLimits, field: Field) -> Self {
         Self {
             limits,
             depth: 0,
             nodes: 0,
             root_seen: false,
             root_closed: false,
+            errors_wrapper: false,
             error_depth: None,
-            code_depth: None,
-            code_text: String::new(),
+            field,
+            field_depth: None,
+            field_text: String::new(),
             found: None,
         }
     }
@@ -68,7 +77,7 @@ impl State {
         let next = next_depth(self.depth)?;
         depth_check(next, self.limits)?;
         let local = element.name().local_name();
-        self.detect_code(local.as_ref(), next, empty)?;
+        self.detect_field(local.as_ref(), next, empty)?;
         self.update_root(next, empty, local.as_ref());
         Ok(())
     }
@@ -79,10 +88,16 @@ impl State {
             self.root_closed = empty;
         }
         if !empty {
-            self.depth = next;
-            if local == "Error" || local == "error" {
+            if self.depth == 1 && matches!(local, "Errors" | "errors") {
+                self.errors_wrapper = true;
+            }
+            if self.error_depth.is_none()
+                && (self.depth <= 1 || (self.depth == 2 && self.errors_wrapper))
+                && matches!(local, "Error" | "error")
+            {
                 self.error_depth = Some(next);
             }
+            self.depth = next;
         }
     }
 
@@ -90,8 +105,8 @@ impl State {
         if self.root_closed {
             return Err(DecodeError::Invalid("multiple service error XML roots"));
         }
-        if self.code_depth.is_some() {
-            return Err(DecodeError::Invalid("nested service error code"));
+        if self.field_depth.is_some() {
+            return Err(self.field.invalid());
         }
         nodes_add(&mut self.nodes, self.limits)?;
         for attribute in element.attributes() {
@@ -102,17 +117,18 @@ impl State {
         Ok(())
     }
 
-    fn detect_code(&mut self, local: &str, next: usize, empty: bool) -> Result<(), DecodeError> {
-        if !matches!(local, "Code" | "code") || self.error_depth != Some(self.depth) {
+    fn detect_field(&mut self, local: &str, next: usize, empty: bool) -> Result<(), DecodeError> {
+        let is_field = match self.field {
+            Field::Code => matches!(local, "Code" | "code"),
+            Field::Message => self.field.matches(local),
+        };
+        if !is_field || self.error_depth != Some(self.depth) {
             return Ok(());
         }
         if empty || self.found.is_some() {
-            return Err(DecodeError::Invalid(
-                "empty or duplicate service error code",
-            ));
+            return Err(self.field.invalid());
         }
-        self.code_depth = Some(next);
-        self.code_text.clear();
+        self.field_depth = Some(next);
         Ok(())
     }
 
@@ -126,10 +142,7 @@ impl State {
         {
             return Err(DecodeError::Invalid("text outside service error XML root"));
         }
-        if self.code_depth == Some(self.depth) {
-            append_code(&mut self.code_text, value)?;
-        }
-        Ok(())
+        self.append_if_field(value)
     }
 
     fn reference(&mut self, reference: BytesRef<'_>) -> Result<(), DecodeError> {
@@ -137,19 +150,22 @@ impl State {
         check_reference_depth(self.depth)?;
         let mut bytes = [0; 4];
         let value = resolve_reference(reference, &mut bytes)?;
-        self.append_if_code(value)
+        self.append_if_field(value)
     }
 
-    fn append_if_code(&mut self, value: &str) -> Result<(), DecodeError> {
-        if self.code_depth == Some(self.depth) {
-            append_code(&mut self.code_text, value)?;
+    fn append_if_field(&mut self, value: &str) -> Result<(), DecodeError> {
+        if self.field_depth == Some(self.depth) {
+            append_field(&mut self.field_text, value, self.field)?;
         }
         Ok(())
     }
     fn end(&mut self) -> Result<(), DecodeError> {
         nodes_add(&mut self.nodes, self.limits)?;
-        self.close_code()?;
+        self.close_field()?;
         self.close_error();
+        if self.depth == 2 {
+            self.errors_wrapper = false;
+        }
         self.depth = self
             .depth
             .checked_sub(1)
@@ -158,11 +174,13 @@ impl State {
         Ok(())
     }
 
-    fn close_code(&mut self) -> Result<(), DecodeError> {
-        if self.code_depth == Some(self.depth) {
-            self.found = Some(super::normalize_code(&self.code_text)?);
-            self.code_depth = None;
-            self.code_text.clear();
+    fn close_field(&mut self) -> Result<(), DecodeError> {
+        if self.field_depth == Some(self.depth) {
+            self.found = Some(match self.field {
+                Field::Code => super::normalize_code(&self.field_text)?,
+                Field::Message => std::mem::take(&mut self.field_text),
+            });
+            self.field_depth = None;
         }
         Ok(())
     }
@@ -174,7 +192,7 @@ impl State {
     }
 
     fn finish(self) -> Result<Option<String>, DecodeError> {
-        if !self.root_seen || !self.root_closed || self.depth != 0 || self.code_depth.is_some() {
+        if !self.root_seen || !self.root_closed || self.depth != 0 || self.field_depth.is_some() {
             return Err(DecodeError::Invalid("incomplete service error XML"));
         }
         Ok(self.found)
@@ -207,13 +225,13 @@ fn resolve_reference<'a>(
     quick_xml::escape::resolve_xml_entity(reference.as_ref())
         .ok_or(DecodeError::Invalid("unknown service error XML entity"))
 }
-fn append_code(target: &mut String, value: &str) -> Result<(), DecodeError> {
+fn append_field(target: &mut String, value: &str, field: Field) -> Result<(), DecodeError> {
     let length = target
         .len()
         .checked_add(value.len())
-        .ok_or(DecodeError::Limit("service error code"))?;
-    if length > 256 {
-        return Err(DecodeError::Invalid("invalid service error code"));
+        .ok_or_else(|| field.invalid())?;
+    if length > MAX_FIELD_BYTES {
+        return Err(field.invalid());
     }
     target.try_reserve(value.len())?;
     target.push_str(value);

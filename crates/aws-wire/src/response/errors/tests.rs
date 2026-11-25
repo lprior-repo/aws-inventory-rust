@@ -1,5 +1,5 @@
 use super::decode;
-use super::{ErrorClass, ServiceError};
+use super::{ErrorClass, Field, ServiceError};
 use crate::request::Protocol;
 use crate::response::{DecodeError, DecodeLimits, ResponseContext};
 use catalog_tool::smithy::{Registry, build_catalog};
@@ -15,9 +15,10 @@ use support::*;
 
 #[test]
 fn json_error_code_is_normalized_without_retaining_message() {
-    let parsed = super::json::code(
+    let parsed = super::json::scan(
         br#"{"__type":"example#ThrottlingException:httpStatusCode=429","message":"private"}"#,
         DecodeLimits::default(),
+        Field::Code,
     );
     assert_eq!(
         parsed.ok().flatten().as_deref(),
@@ -27,22 +28,53 @@ fn json_error_code_is_normalized_without_retaining_message() {
 
 #[test]
 fn xml_error_code_is_extracted_from_query_envelope() {
-    let parsed = super::xml::code(
+    let parsed = super::xml::scan(
         b"<ErrorResponse><Error><Code>AccessDenied</Code><Message>private</Message></Error></ErrorResponse>",
         DecodeLimits::default(),
+        Field::Code,
     );
     assert_eq!(parsed.ok().flatten().as_deref(), Some("AccessDenied"));
 }
 
 #[test]
+fn given_nested_query_error_when_scanned_then_outer_code_cannot_borrow_nested_message() -> TestResult
+{
+    let body = b"<ErrorResponse><Error><Code>AccessDeniedException</Code><Detail><Error><Message>Macie is not enabled.</Message></Error></Detail></Error></ErrorResponse>";
+    let limits = DecodeLimits::default();
+    assert_eq!(
+        super::xml::scan(body, limits, Field::Code)?.as_deref(),
+        Some("AccessDeniedException")
+    );
+    assert_eq!(super::xml::scan(body, limits, Field::Message)?, None);
+    Ok(())
+}
+
+#[test]
+fn given_ec2_error_list_when_scanned_then_reviewed_envelope_preserves_code_and_message()
+-> TestResult {
+    let body = b"<Response><Errors><Error><Code>OperationNotPermitted</Code><Message>User 000000000000 is not permitted to perform this operation</Message></Error></Errors></Response>";
+    let limits = DecodeLimits::default();
+    assert_eq!(
+        super::xml::scan(body, limits, Field::Code)?.as_deref(),
+        Some("OperationNotPermitted")
+    );
+    assert_eq!(
+        super::xml::scan(body, limits, Field::Message)?.as_deref(),
+        Some("User 000000000000 is not permitted to perform this operation")
+    );
+    Ok(())
+}
+
+#[test]
 fn cbor_error_code_is_extracted_from_rpc_envelope() {
-    let parsed = super::cbor::code(
+    let parsed = super::cbor::scan(
         &[
             0xa2, 0x66, b'_', b'_', b't', b'y', b'p', b'e', 0x6c, b'A', b'c', b'c', b'e', b's',
             b's', b'D', b'e', b'n', b'i', b'e', b'd', 0x67, b'm', b'e', b's', b's', b'a', b'g',
             b'e', 0x66, b's', b'e', b'c', b'r', b'e', b't',
         ],
         DecodeLimits::default(),
+        Field::Code,
     );
     assert_eq!(parsed.ok().flatten().as_deref(), Some("AccessDenied"));
 }
@@ -50,9 +82,16 @@ fn cbor_error_code_is_extracted_from_rpc_envelope() {
 #[test]
 fn malformed_envelopes_are_not_hidden_by_status_fallback() {
     let limits = DecodeLimits::default();
-    assert!(super::json::code(b"{not-json", limits).is_err());
-    assert!(super::xml::code(b"<Error><Code>oops</Error>", limits).is_err());
-    assert!(super::cbor::code(&[0xa1, 0x66, b'_', b'_', b't', b'y', b'p', b'e'], limits).is_err());
+    assert!(super::json::scan(b"{not-json", limits, Field::Code).is_err());
+    assert!(super::xml::scan(b"<Error><Code>oops</Error>", limits, Field::Code).is_err());
+    assert!(
+        super::cbor::scan(
+            &[0xa1, 0x66, b'_', b'_', b't', b'y', b'p', b'e'],
+            limits,
+            Field::Code,
+        )
+        .is_err()
+    );
 }
 
 #[test]
