@@ -153,7 +153,13 @@ fn config(options: &SweepArgs) -> SweepConfig {
             .map(std::time::Duration::from_millis),
         pool_idle_per_host: options.pool_idle_per_host,
         slice_timeout_secs: (options.slice_timeout > 0).then_some(options.slice_timeout),
-        max_rps: options.max_rps,
+        max_rps: options
+            .max_rps_milli
+            .filter(|rate| rate.is_multiple_of(1_000))
+            .map(|rate| rate / 1_000),
+        max_rps_milli: options
+            .max_rps_milli
+            .filter(|rate| !rate.is_multiple_of(1_000)),
         max_page_size: options.max_page_size,
     }
 }

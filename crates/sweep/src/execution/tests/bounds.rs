@@ -15,6 +15,7 @@ fn config(concurrency: usize) -> SweepConfig {
         pool_idle_per_host: None,
         slice_timeout_secs: None,
         max_rps: None,
+        max_rps_milli: None,
         max_page_size: None,
     }
 }
@@ -53,6 +54,26 @@ fn given_a_rate_cap_at_either_bound_when_validated_then_it_is_accepted() -> Test
             ..config(1)
         };
         config.validate()?;
+    }
+    Ok(())
+}
+
+#[test]
+fn given_fractional_rate_caps_when_validated_then_supported_values_are_accepted() -> TestResult {
+    let accepted = SweepConfig {
+        max_rps_milli: Some(500),
+        ..config(1)
+    };
+    accepted.validate()?;
+    for cap in [0, 3, 1_000] {
+        let rejected = SweepConfig {
+            max_rps_milli: Some(cap),
+            ..config(1)
+        };
+        assert!(matches!(
+            rejected.validate(),
+            Err(SweepError::InvalidConfig(_))
+        ));
     }
     Ok(())
 }
@@ -136,7 +157,7 @@ fn given_transport_overrides_when_configured_then_the_pool_uses_them() -> TestRe
 
 #[test]
 fn given_invalid_idle_timeout_when_configured_then_the_error_names_the_option_value_and_range() {
-    for milliseconds in [0, 10_001] {
+    for milliseconds in [0, 90_001] {
         let config = SweepConfig {
             idle_timeout: Some(Duration::from_millis(milliseconds)),
             ..config(64)
@@ -146,7 +167,7 @@ fn given_invalid_idle_timeout_when_configured_then_the_error_names_the_option_va
             result.err().map(|error| error.to_string()),
             Some(format!(
                 "invalid sweep configuration: --idle-timeout-ms (INVENTORY_SWEEP_IDLE_TIMEOUT_MS) \
-                 was {milliseconds}; allowed range is 1..=10000 ms"
+                 was {milliseconds}; allowed range is 1..=90000 ms"
             ))
         );
     }

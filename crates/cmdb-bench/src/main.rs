@@ -21,7 +21,7 @@ mod pipeline_oracle;
 #[cfg(test)]
 mod tests;
 
-const USAGE: &str = "usage: cmdb-bench generate <synthetic-reader-db> <accounts> <resources-per-account> | measure <database> | pipeline <fresh-db> <compiled-catalog> <pages-per-scope> <rows-per-page:0..1000> <concurrency:1..64> [<loopback-redis-url> <fresh-cmdb_bench_graph>] | sweep --collector <path> --profile thin|full|proxy [--runs <1..100>] [--proxy latency_ms=<n>,rps=<n>] [--out <file>] [--catalog <file>] [--work <empty-dir>] [--service <recipe>]... [--server container|native|managed] [--volume named|bind|native-disk] [--build release|debug] | layout <target-nodes:1..4000000> | open --catalog <file> | compare <before> <after> [--band <percent>] [--allow-different-server]; compare exits 0: no regression, 1: regressed, 2: refused";
+const USAGE: &str = "usage: cmdb-bench generate <synthetic-reader-db> <accounts> <resources-per-account> | measure <database> | pipeline <fresh-db> <compiled-catalog> <pages-per-scope> <rows-per-page:0..1000> <concurrency:1..64> [<loopback-redis-url> <fresh-cmdb_bench_graph>] | sweep --collector <path> --profile thin|full|proxy [--runs <1..100>] [--proxy latency_ms=<n>,rps=<n>] [--concurrency <n>] [--idle-timeout-ms <1..90000>] [--pool-idle-per-host <n>] [--max-rps <n|decimal>] [--out <file>] [--catalog <file>] [--work <empty-dir>] [--service <recipe>]... [--server container|native|managed] [--volume named|bind|native-disk] [--build release|debug] | layout <target-nodes:1..4000000> | open --catalog <file> | compare <before> <after>";
 const MAX_RESOURCES: usize = 10_000_000;
 
 #[derive(Debug)]

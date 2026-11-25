@@ -42,6 +42,7 @@ async fn run(case: Case) -> TestResult<(inventory_sweep::SweepSummary, Vec<Strin
         ca_bundle: Some(server.ca.clone()),
         slice_timeout_secs: None,
         max_rps: None,
+        max_rps_milli: None,
         idle_timeout: None,
         pool_idle_per_host: None,
         max_page_size: None,

@@ -210,6 +210,10 @@ fn settings(table: &Table) -> BTreeSet<(&str, &str)> {
                         | "os"
                         | "build"
                         | "protocol"
+                        | "concurrency"
+                        | "idle_timeout_ms"
+                        | "pool_idle_per_host"
+                        | "max_rps"
                 )
         })
         .map(|(key, value)| (key.as_str(), value.as_str()))
@@ -316,6 +320,13 @@ mod tests {
             parse_table("# profile\tthin\nmeasurement\tmin\tmedian\tmax\nP1.x\t1\t1\t1\n")?;
         let after = parse_table("# profile\tfull\nmeasurement\tmin\tmedian\tmax\nP2.x\t1\t1\t1\n")?;
         assert!(compare(&before, &after, &Options::default()).is_err());
+        let paced = |rate: &str| {
+            parse_table(&format!(
+                "# profile\tthin\n# max_rps\t{rate}\nmeasurement\tmin\tmedian\tmax\nP1.x\t1\t1\t1\n"
+            ))
+        };
+        assert!(compare(&paced("0.500")?, &paced("50")?, &Options::default()).is_err());
+        assert!(compare(&paced("50")?, &paced("50")?, &Options::default()).is_ok());
         assert!(
             compare(
                 &before,

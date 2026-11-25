@@ -5,7 +5,7 @@ use crate::transport_support::{
     watchdog::watch,
     wire::{self, Endpoint, Io, SendResult},
 };
-use aws_wire::transport::{Client, Config, TransportError};
+use aws_wire::transport::{Client, Config};
 use std::{pin::Pin, time::Duration};
 
 const GOOD: &[u8] = b"HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\nok";
@@ -100,49 +100,16 @@ async fn finish(mut active: Active<'_>) -> TestResult {
     Ok(())
 }
 
-#[tokio::test]
-async fn given_idle_can_exceed_connect_timeout_when_configured_then_rejected() -> TestResult {
-    let first = Endpoint::bind(false, b"").await?;
-    let second = Endpoint::bind(false, b"").await?;
-    let connect_timeout = Duration::from_secs(10);
-    let client = match Client::new(Config {
-        connect_timeout,
+#[test]
+fn idle_timeout_can_exceed_connect_timeout_without_extending_request_deadline() -> TestResult {
+    let config = Config {
+        connect_timeout: Duration::from_secs(10),
         request_deadline: Duration::from_secs(30),
         idle_timeout: Duration::from_secs(12),
-        ..first.config(2)
-    }) {
-        Err(TransportError::InvalidRequest(reason)) => {
-            assert_eq!(reason, "pool idle timeout is out of range");
-            return Ok(());
-        }
-        result => result?,
+        ..Config::default()
     };
-
-    let clock = Clock::pause();
-    let Active {
-        send: one,
-        stream: mut first_socket,
-    } = active(&first, &client).await?;
-    let Active {
-        send: two,
-        stream: mut second_socket,
-    } = active(&first, &client).await?;
-    tokio::try_join!(
-        wire::write(&mut first_socket, GOOD),
-        wire::write(&mut second_socket, GOOD)
-    )?;
-    assert_eq!(watch(one).await??.body.as_ref(), b"ok");
-    assert_eq!(watch(two).await??.body.as_ref(), b"ok");
-
-    let mut next = Box::pin(client.send(request(&second.url)?));
-    crate::deadlines::poll_pending(&mut next).await?;
-    assert!(matches!(
-        clock.expire(next, connect_timeout).await?,
-        Err(TransportError::Timeout)
-    ));
-    wire::no_accept(&second.listener).await?;
-    assert_eq!(client.statistics().connections_open, 2);
-    Err("client accepted a pool timeout that starved a second endpoint".into())
+    assert_eq!(Client::new(config)?.statistics(), Default::default());
+    Ok(())
 }
 
 #[tokio::test]

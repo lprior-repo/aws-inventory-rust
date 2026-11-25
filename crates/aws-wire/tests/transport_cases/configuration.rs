@@ -40,7 +40,7 @@ fn invalid_deadlines_are_rejected_before_pool_construction() {
 
 #[test]
 fn invalid_idle_timeouts_are_rejected_before_pool_construction() {
-    for idle_timeout in [Duration::ZERO, Duration::from_secs(2)] {
+    for idle_timeout in [Duration::ZERO, Duration::from_millis(90_001)] {
         invalid(Config {
             idle_timeout,
             ..config()
@@ -49,23 +49,15 @@ fn invalid_idle_timeouts_are_rejected_before_pool_construction() {
 }
 
 #[test]
-fn idle_timeout_at_half_the_request_deadline_is_accepted() -> TestResult {
-    let config = Config {
-        connect_timeout: Duration::from_secs(15),
-        idle_timeout: Duration::from_secs(15),
-        ..Config::default()
-    };
-    assert_eq!(Client::new(config)?.statistics(), Default::default());
+fn idle_timeouts_at_fifteen_and_ninety_seconds_are_accepted() -> TestResult {
+    for idle_timeout in [Duration::from_secs(15), Duration::from_secs(90)] {
+        let config = Config {
+            idle_timeout,
+            ..Config::default()
+        };
+        assert_eq!(Client::new(config)?.statistics(), Default::default());
+    }
     Ok(())
-}
-
-#[test]
-fn idle_timeout_just_above_half_the_request_deadline_is_rejected() {
-    invalid(Config {
-        connect_timeout: Duration::from_secs(20),
-        idle_timeout: Duration::from_millis(15_001),
-        ..Config::default()
-    });
 }
 
 fn invalid(config: Config) {
@@ -158,7 +150,7 @@ async fn largest_configured_bounds_construct_an_empty_pool() -> TestResult {
     let config = Config {
         request_deadline: Duration::from_secs(300),
         connect_timeout: Duration::from_secs(150),
-        idle_timeout: Duration::from_secs(150),
+        idle_timeout: Duration::from_secs(90),
         response_body_limit: 67_108_864,
         max_connections: 4_096,
         pool_idle_per_host: 4_096,

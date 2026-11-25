@@ -30,6 +30,7 @@ impl Driver {
                 pool_idle_per_host: None,
                 slice_timeout_secs: None,
                 max_rps: None,
+                max_rps_milli: None,
                 max_page_size: None,
             },
         })

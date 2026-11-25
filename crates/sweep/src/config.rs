@@ -6,6 +6,7 @@ const MAX_PAGES: u32 = 1_000_000;
 const MAX_PAGE_SIZE: u32 = 1_000_000;
 const MAX_CONCURRENCY: usize = inventory_engine::limiter::MAX_CONCURRENCY;
 const MAX_RPS: u32 = inventory_engine::limiter::MAX_REQUESTS_PER_SECOND;
+const MIN_RPS_MILLI: u32 = 4;
 
 impl SweepConfig {
     pub(super) fn validate(&self) -> Result<(), SweepError> {
@@ -22,6 +23,15 @@ impl SweepConfig {
             .is_some_and(|cap| !(1..=MAX_RPS).contains(&cap))
         {
             return Err(SweepError::InvalidConfig("max-rps must be in 1..=100000"));
+        }
+        if self
+            .max_rps_milli
+            .is_some_and(|cap| !(MIN_RPS_MILLI..=999).contains(&cap))
+            || (self.max_rps.is_some() && self.max_rps_milli.is_some())
+        {
+            return Err(SweepError::InvalidConfig(
+                "fractional max-rps must be in 0.004..=0.999",
+            ));
         }
         if self
             .max_page_size

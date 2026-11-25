@@ -23,7 +23,7 @@ pub struct SweepArgs {
     #[arg(
         long,
         env = "INVENTORY_SWEEP_IDLE_TIMEOUT_MS",
-        help = "Idle lifetime for pooled connections in milliseconds (default: 1000)"
+        help = "Idle lifetime for pooled connections in milliseconds (1 to 90000; default: 1000)"
     )]
     pub idle_timeout_ms: Option<u64>,
     #[arg(
@@ -41,11 +41,11 @@ pub struct SweepArgs {
     #[arg(long, default_value_t = 16)]
     pub concurrency: usize,
     #[arg(
-        long,
-        value_parser = clap::value_parser!(u32).range(1..=100_000),
-        help = "Most requests per second for any one account, region and service. Without it the rate rises until the service throttles. Set it for accounts that share their quota with production traffic"
+        long = "max-rps",
+        value_parser = super::parse_milli_rps,
+        help = "Most requests per second for any one account, region and service; up to three decimal places, and a fractional rate must be below 1. Without it the rate rises until the service throttles. Set it for accounts that share their quota with production traffic"
     )]
-    pub max_rps: Option<u32>,
+    pub max_rps_milli: Option<u32>,
     #[arg(
         long,
         value_parser = clap::value_parser!(u32).range(1..=1_000_000),

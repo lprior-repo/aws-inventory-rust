@@ -39,11 +39,7 @@ impl Default for Config {
 impl Config {
     #[must_use]
     pub fn idle_timeout_range(&self) -> RangeInclusive<Duration> {
-        let upper = self
-            .request_deadline
-            .checked_div(2)
-            .map_or(Duration::ZERO, |half| self.connect_timeout.min(half));
-        Duration::from_millis(1)..=upper
+        Duration::from_millis(1)..=Duration::from_secs(90)
     }
 
     pub(super) fn validate(&self) -> Result<(), TransportError> {

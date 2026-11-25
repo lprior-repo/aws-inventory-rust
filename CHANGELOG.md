@@ -62,9 +62,12 @@
   could fail intermittently.
 - `sweep` and `serve` accept `--idle-timeout-ms` and `--pool-idle-per-host`
   (or `INVENTORY_SWEEP_IDLE_TIMEOUT_MS` and `INVENTORY_SWEEP_POOL_IDLE_PER_HOST`).
-  Idle timeout must be 1–10,000 ms; the per-endpoint cap must be between 1 and
-  the effective connection limit (bounded by concurrency and open files).
-  Pool defaults remain one second and up to eight idle sockets per endpoint.
+  Idle timeout must be 1–90,000 ms and no longer depends on the connect
+  timeout; the per-endpoint cap must be between 1 and the effective connection
+  limit (bounded by concurrency and open files). Pool defaults remain one
+  second and up to eight idle sockets per endpoint. A long idle timeout keeps
+  socket permits held by idle connections for longer, so a request to another
+  endpoint can wait for a permit until its own deadline.
   Benchmark output includes distinct hosts and summed connect-attempt time
   (including permit waits and failed attempts) relative to cold sweep wall time.
 - Catalog overlay operations can skip describe calls whose output the carrying
@@ -79,6 +82,14 @@
 - CodeBuild projects and Glue blueprints use full ARNs instead of names as
   inventory keys. Old name-keyed rows can coexist with new ARN-keyed rows
   until two complete sweeps retire them; use a fresh database to avoid overlap.
+- `--max-rps` accepts decimal rates such as `0.5`, parsed as milli-requests
+  per second; integer rates keep their adaptive behavior. `cmdb-bench sweep`
+  forwards concurrency, idle timeout, per-host idle pool and pacing options to
+  the collector when they are given, records them in result headers, and
+  `cmdb-bench compare` refuses results whose settings differ. No B7.2 measurements are
+  recorded. The HTTP/2 rows cannot be produced because the harness proxy
+  serves HTTP/1.1 only; the total idle-socket cap remains blocked by
+  hyper-util 0.1.21, whose pool admission is private.
 - PostgreSQL sweeps can opt into binary COPY through temporary staging tables
   with `INVENTORY_POSTGRES_COPY_MIN_ROWS`. The default still uses `UNNEST`.
 - When the mutation harness cannot launch its child program, it writes a final
