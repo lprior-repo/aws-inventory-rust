@@ -38,6 +38,7 @@ pub(super) fn tree(kind: &str) -> Option<&'static [(&'static str, Shape)]> {
         "AWS::SNS::Topic" => &[
             ("", Shape::Map),
             ("TopicArn", Shape::Text),
+            ("DataProtectionPolicy", Shape::Text),
             ("Attributes", Shape::Map),
             ("Attributes.TopicArn", Shape::Text),
             ("Attributes.Owner", Shape::Text),
@@ -67,6 +68,7 @@ pub(super) fn tree(kind: &str) -> Option<&'static [(&'static str, Shape)]> {
             ("Attributes", Shape::Map),
             ("Attributes.SubscriptionArn", Shape::Text),
             ("Attributes.TopicArn", Shape::Text),
+            ("Attributes.SubscriptionPrincipal", Shape::Text),
             ("Attributes.Owner", Shape::Text),
             ("Attributes.Protocol", Shape::Text),
             ("Attributes.Endpoint", Shape::Text),

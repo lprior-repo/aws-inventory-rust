@@ -98,19 +98,24 @@ const FIXTURES: [Fixture; 17] = [
     },
 ];
 
+pub(super) fn scenarios() -> Result<Vec<SeedScenario>, SeedError> {
+    FIXTURES.iter().map(|fixture| (fixture.build)()).collect()
+}
+
 pub(super) async fn seed_all(
     native: &NativeRuntime,
+    scenarios: &[SeedScenario],
 ) -> TestResult<(Vec<ScenarioSeedOracle>, super::safe_fields::Expectations)> {
     let mut oracles = Vec::with_capacity(FIXTURES.len());
     let mut safe_records = super::safe_fields::Expectations::new();
-    for fixture in FIXTURES {
-        let scenario = (fixture.build)()?;
+    assert_eq!(scenarios.len(), FIXTURES.len());
+    for (fixture, scenario) in FIXTURES.iter().zip(scenarios) {
         let oracle = native
             .seed(scenario.clone())
             .await
             .map_err(|error| format!("{} native seeding failed: {error}", fixture.name))?;
         (fixture.check)(&oracle, ACCOUNT, REGION)?;
-        for (key, fields) in super::safe_fields::from_fixture(&scenario, &oracle)? {
+        for (key, fields) in super::safe_fields::from_fixture(scenario, &oracle)? {
             assert!(
                 safe_records.insert(key, fields).is_none(),
                 "duplicate safe-record fixture key"
@@ -118,5 +123,6 @@ pub(super) async fn seed_all(
         }
         oracles.push(oracle);
     }
+    super::listed_resources::add_topic_policies(native, &mut safe_records).await?;
     Ok((oracles, safe_records))
 }
