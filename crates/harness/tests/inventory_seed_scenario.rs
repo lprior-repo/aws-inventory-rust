@@ -6,7 +6,7 @@ use inventory_harness::inventory_seed::{
 fn default_scenario_describes_vpc_subnet_mutations_and_observed_relationships()
 -> Result<(), Box<dyn std::error::Error>> {
     let scenario = default_scenario()?;
-    assert_eq!(scenario.steps().len(), 12);
+    assert_eq!(scenario.steps().len(), 15);
     assert_eq!(scenario.relationships().len(), 6);
     let first = scenario.steps().first().ok_or("missing VPC step")?;
     let second = scenario.steps().get(1).ok_or("missing subnet step")?;
@@ -35,7 +35,7 @@ fn default_scenario_describes_vpc_subnet_mutations_and_observed_relationships()
         scenario.steps().to_vec(),
         scenario.relationships().to_vec(),
     )?;
-    assert_eq!(checked.steps().len(), 12);
+    assert_eq!(checked.steps().len(), 15);
     Ok(())
 }
 
