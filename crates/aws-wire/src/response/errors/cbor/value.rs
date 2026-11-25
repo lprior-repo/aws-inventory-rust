@@ -16,7 +16,7 @@ impl Scanner {
                 .ok_or(DecodeError::Limit("response depth"))?;
         }
         if candidate {
-            return self.extract_code(decoder);
+            return self.extract_text(decoder);
         }
         self.consume_plain(decoder)
     }
@@ -34,22 +34,12 @@ impl Scanner {
         }
     }
 
-    fn extract_code(&mut self, decoder: &mut Decoder<'_>) -> Result<(), DecodeError> {
+    fn extract_text(&mut self, decoder: &mut Decoder<'_>) -> Result<(), DecodeError> {
         if decoder.datatype().map_err(syntax)? != Type::String {
-            return Err(DecodeError::Invalid("invalid service error code"));
+            return Err(self.field.invalid());
         }
-        let code = super::super::normalize_code(decoder.str().map_err(syntax)?)?;
-        if self
-            .found
-            .as_ref()
-            .is_some_and(|previous| previous != &code)
-        {
-            return Err(DecodeError::Invalid("conflicting service error codes"));
-        }
-        if self.found.is_none() {
-            self.found = Some(code);
-        }
-        Ok(())
+        self.field
+            .record(&mut self.found, decoder.str().map_err(syntax)?)
     }
 
     fn open(&mut self, frame: Frame) -> Result<(), DecodeError> {

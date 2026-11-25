@@ -1,7 +1,7 @@
 #[path = "projection_fence/proxy.rs"]
 mod proxy;
 
-use super::{TestResult, compare, native::NativeGraph, recovery, tags::tag_commit};
+use super::{InPhase, TestResult, compare, native::NativeGraph, recovery, tags::tag_commit};
 use cmdb_view::GraphConnection;
 use inventory_core::inventory::{OperationId, ResourceKey, ScopeKey, ScopeOutcome, ServiceId};
 use inventory_engine::inventory::{
@@ -9,6 +9,7 @@ use inventory_engine::inventory::{
 };
 use sqlx::{Connection, Row, SqliteConnection, sqlite::SqliteConnectOptions};
 use std::{collections::BTreeSet, path::Path, time::Duration};
+use tokio::time::{Instant, timeout_at};
 
 const OWNER: &str = "projection-fence-owner";
 
@@ -17,14 +18,50 @@ pub(super) async fn assert_overlapping_delivery(
     native: &NativeGraph,
     target: &ResourceKey,
 ) -> TestResult {
-    tokio::time::timeout(Duration::from_secs(120), async {
-        tag_replacement(database, native, target).await?;
-        cancelled_tag_replacement(database, native, target).await?;
-        cancelled_claim(database, native, target).await?;
-        cancelled_resurrection(database, native, target).await?;
-        stale_rebuild(database, native).await
-    })
-    .await?
+    let deadline = Instant::now()
+        .checked_add(Duration::from_secs(120))
+        .ok_or("projection fence deadline overflow")?;
+    fence_case(
+        deadline,
+        "replace tags",
+        tag_replacement(database, native, target),
+    )
+    .await?;
+    fence_case(
+        deadline,
+        "cancel tag replacement",
+        cancelled_tag_replacement(database, native, target),
+    )
+    .await?;
+    fence_case(
+        deadline,
+        "cancel claim",
+        cancelled_claim(database, native, target),
+    )
+    .await?;
+    fence_case(
+        deadline,
+        "cancel resurrection",
+        cancelled_resurrection(database, native, target),
+    )
+    .await?;
+    fence_case(
+        deadline,
+        "reject stale rebuild",
+        stale_rebuild(database, native),
+    )
+    .await
+}
+
+async fn fence_case(
+    deadline: Instant,
+    phase: &'static str,
+    case: impl Future<Output = TestResult>,
+) -> TestResult {
+    timeout_at(deadline, case)
+        .await
+        .in_phase(phase)?
+        .in_phase(phase)
 }
 
 async fn tag_replacement(

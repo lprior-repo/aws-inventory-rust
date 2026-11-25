@@ -62,6 +62,18 @@ fn given_more_than_eight_exclusions_when_checking_then_policy_is_bounded() -> Te
 }
 
 #[test]
+fn given_over_limit_list_with_unknown_path_when_checking_then_both_violations_are_reported()
+-> TestResult {
+    let mut paths = vec!["Items.Secret"; 8];
+    paths.push("Items.Absent");
+    let error = checked(&paths).err().ok_or("oversized policy accepted")?;
+    let message = error.to_string();
+    assert!(message.contains("more than 8 paths"), "{message}");
+    assert!(message.contains("Items.Absent"), "{message}");
+    Ok(())
+}
+
+#[test]
 fn given_reused_output_shape_when_excluding_its_member_then_all_sites_are_detected() -> TestResult {
     let mut model = support::model()?;
     let members = model
@@ -69,13 +81,23 @@ fn given_reused_output_shape_when_excluding_its_member_then_all_sites_are_detect
         .and_then(serde_json::Value::as_object_mut)
         .ok_or("missing output")?;
     members.insert("Other".into(), serde_json::json!({"target":"n#Thing"}));
-    let error = support::checked_model(&["Items.Secret"], &model)
-        .err()
-        .ok_or("ambiguous exclusion accepted")?;
-    assert!(
-        error.to_string().contains("multiple output sites"),
-        "{error}"
-    );
+    for paths in [&["Items.Secret"][..], &["Items.Secret", "Items.Secret"]] {
+        let error = support::checked_model(paths, &model)
+            .err()
+            .ok_or("unreviewed response site accepted")?;
+        assert!(
+            error.to_string().contains("multiple output sites"),
+            "{error}"
+        );
+    }
+    let checked = support::checked_model(&["Items.Secret", "Other.Secret"], &model)?;
+    let [service] = checked.services() else {
+        return Err("expected one reviewed service".into());
+    };
+    let [plan] = service.callable() else {
+        return Err("expected one callable plan".into());
+    };
+    assert_eq!(plan.operation(), "ListThings");
     Ok(())
 }
 
@@ -247,6 +269,34 @@ const CASES: &[(&str, &str, &[&str])] = &[
         "sns",
         "ListPlatformApplications",
         &["PlatformApplications.Attributes"],
+    ),
+    (
+        "organizations",
+        "DescribeOrganization",
+        &["Organization.MasterAccountEmail"],
+    ),
+    ("organizations", "DescribeAccount", &["Account.Email"]),
+    ("organizations", "ListAccounts", &["Accounts.Email"]),
+    (
+        "organizations",
+        "ListDelegatedAdministrators",
+        &["DelegatedAdministrators.Email"],
+    ),
+    (
+        "organizations",
+        "ListInboundResponsibilityTransfers",
+        &[
+            "ResponsibilityTransfers.Source.ManagementAccountEmail",
+            "ResponsibilityTransfers.Target.ManagementAccountEmail",
+        ],
+    ),
+    (
+        "organizations",
+        "ListOutboundResponsibilityTransfers",
+        &[
+            "ResponsibilityTransfers.Source.ManagementAccountEmail",
+            "ResponsibilityTransfers.Target.ManagementAccountEmail",
+        ],
     ),
 ];
 

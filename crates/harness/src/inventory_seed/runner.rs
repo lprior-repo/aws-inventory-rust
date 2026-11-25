@@ -87,7 +87,12 @@ async fn execute_scenario(
         mutation_permit: config.mutation_permit(),
     };
     let (account, partition) = caller_account(&context).await?;
-    let state = SeedState::new(account, config.region.clone(), partition);
+    let state = SeedState::new(
+        account,
+        config.region.clone(),
+        partition,
+        models.steps.len(),
+    );
     let steps = models.steps.iter().map(Ok::<_, SeedError>);
     futures_util::stream::iter(steps)
         .try_fold(state, |mut state, step| async {
@@ -115,17 +120,21 @@ struct SeedState {
     account: AccountId,
     region: Region,
     partition: String,
-    outputs: Vec<SeedOutput>,
+    outputs: Vec<Option<SeedOutput>>,
 }
 
 impl SeedState {
-    fn new(account: AccountId, region: Region, partition: String) -> Self {
+    fn new(account: AccountId, region: Region, partition: String, step_count: usize) -> Self {
         Self {
             account,
             region,
             partition,
-            outputs: Vec::with_capacity(12),
+            outputs: std::iter::repeat_with(|| None).take(step_count).collect(),
         }
+    }
+
+    fn accepted_output(&self, step: super::StepId) -> Option<&SeedOutput> {
+        self.outputs.get(usize::from(step.0))?.as_ref()
     }
 }
 
@@ -208,10 +217,17 @@ fn record_output(
     resource: Option<SeedResourceIdentity>,
     record: Record,
 ) -> Result<(), SeedError> {
+    let (slot, prior_outputs) = state
+        .outputs
+        .get_mut(..=usize::from(step.0))
+        .and_then(|outputs| outputs.split_last_mut())
+        .ok_or(SeedError::Invalid(
+            "seed output step exceeds scenario bounds",
+        ))?;
     if resource.as_ref().is_some_and(|resource| {
-        state
-            .outputs
+        prior_outputs
             .iter()
+            .flatten()
             .filter_map(|output| output.resource.as_ref())
             .any(|prior| prior.key == resource.key)
     }) {
@@ -219,7 +235,7 @@ fn record_output(
             "seed operation returned a duplicate resource identity",
         ));
     }
-    state.outputs.push(SeedOutput {
+    *slot = Some(SeedOutput {
         step,
         resource,
         record,

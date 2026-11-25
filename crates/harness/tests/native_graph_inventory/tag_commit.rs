@@ -1,7 +1,8 @@
-use super::super::TestResult;
+use super::super::{TestResult, runtime};
 use inventory_core::{
+    catalog::runtime::{BindingSource, BindingValue, RuntimeCatalog},
     inventory::{OperationId, ResourceKey, ScopeKey, ServiceId, Tag, TagCoverage, TagObservation},
-    record::{Record, Value},
+    record::{Key, Record, Value},
 };
 use inventory_engine::inventory::{BinaryStore, PageCommit, SweepId, WorkSpec};
 use std::collections::BTreeMap;
@@ -32,19 +33,8 @@ pub(crate) async fn observe(
     sweep: &str,
     at: i64,
 ) -> TestResult {
-    let (service, operation) = match resource.kind.as_str() {
-        "AWS::S3::Bucket" => ("s3", "ListBuckets"),
-        _ => ("ec2", "DescribeVpcs"),
-    };
-    let scope = ScopeKey::new(
-        resource.account.clone(),
-        resource.region.clone(),
-        ServiceId::parse(service)?,
-        OperationId::parse(operation)?,
-        Some(resource.clone()),
-    )?;
+    let (scope, bindings) = fixture_work(resource, Some(resource.clone()))?;
     let sweep = SweepId::new(sweep.into())?;
-    let bindings = Record::encode(&Value::Map(BTreeMap::new()))?;
     store
         .seed_work(WorkSpec::new(
             sweep.clone(),
@@ -81,4 +71,46 @@ pub(crate) async fn observe(
         })
         .await?;
     Ok(())
+}
+
+pub(crate) fn fixture_work(
+    resource: &ResourceKey,
+    parent: Option<ResourceKey>,
+) -> TestResult<(ScopeKey, Record)> {
+    let (service, operation, fields) = match resource.kind.as_str() {
+        "AWS::S3::Bucket" => ("s3", "ListBuckets", list_buckets_binding()?),
+        "AWS::EC2::VPC" => ("ec2", "DescribeVpcs", BTreeMap::new()),
+        "AWS::EC2::Subnet" => ("ec2", "DescribeSubnets", BTreeMap::new()),
+        kind => return Err(format!("no catalog work fixture for {kind}").into()),
+    };
+    Ok((
+        ScopeKey::new(
+            resource.account.clone(),
+            resource.region.clone(),
+            ServiceId::parse(service)?,
+            OperationId::parse(operation)?,
+            parent,
+        )?,
+        Record::encode(&Value::Map(fields))?,
+    ))
+}
+
+fn list_buckets_binding() -> TestResult<BTreeMap<Key, Value>> {
+    let bytes = std::fs::read(runtime::catalog_path())?;
+    let catalog = RuntimeCatalog::from_bytes(&bytes)?;
+    let plan = catalog
+        .lookup("s3", "ListBuckets")
+        .ok_or("ListBuckets missing from the checked catalog")?;
+    let [binding] = plan.bindings() else {
+        return Err("expected one fixed ListBuckets request binding (MaxBuckets)".into());
+    };
+    let ([field], BindingSource::Fixed(BindingValue::Integer(value))) =
+        (binding.path.as_ref(), &binding.source)
+    else {
+        return Err("expected a top-level fixed integer ListBuckets request binding".into());
+    };
+    if catalog.catalog().field_name(*field)? != "MaxBuckets" {
+        return Err("expected ListBuckets fixed integer to bind MaxBuckets".into());
+    }
+    Ok(BTreeMap::from([(Key::Field(*field), Value::Int(*value))]))
 }

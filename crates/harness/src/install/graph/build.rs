@@ -11,18 +11,23 @@ use super::{OwnedDirectory, complete};
 use crate::HarnessError;
 
 const BUILD_TIMEOUT: Duration = Duration::from_secs(1_800);
+const TARGETS: [&str; 2] = ["redis-server", "redis-cli"];
 
 pub(super) fn compile(source: &OwnedDirectory, jobs: usize) -> Result<(), HarnessError> {
-    run_compile(compile_command(source, jobs), BUILD_TIMEOUT)
+    let started = Instant::now();
+    TARGETS.into_iter().try_for_each(|target| {
+        let remaining = BUILD_TIMEOUT.saturating_sub(started.elapsed());
+        run_compile(compile_command(source, jobs, target), remaining)
+    })
 }
 
-fn compile_command(source: &OwnedDirectory, jobs: usize) -> Command {
+fn compile_command(source: &OwnedDirectory, jobs: usize, target: &str) -> Command {
     let mut command = Command::new("make");
     command
         .arg("-C")
         .arg(source.anchor())
         .arg(format!("-j{jobs}"))
-        .args(["MALLOC=libc", "OPT=-O2", "redis-server", "redis-cli"]);
+        .args(["MALLOC=libc", "OPT=-O2", target]);
     command
 }
 

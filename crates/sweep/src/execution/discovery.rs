@@ -2,7 +2,7 @@ mod lease;
 use super::{InventoryStore, RuntimeContext};
 use crate::{CredentialSource, SweepError, call, input, record};
 use inventory_core::{
-    catalog::runtime::{CallablePlan, RequestRouting, ResolvedEndpoint},
+    catalog::runtime::{CallablePlan, RequestRouting, ResolvedEndpoint, RuntimeCatalog},
     record::{Record, ValueRef},
 };
 pub(crate) use lease::lease;
@@ -120,13 +120,7 @@ async fn discover(
     operation: &str,
     endpoint: &ResolvedEndpoint,
 ) -> Result<call::DecodedResponse, SweepError> {
-    let discovery = context
-        .bootstrap
-        .catalog
-        .lookup(plan.service_name(), operation)
-        .ok_or(SweepError::Operation(
-            "reviewed endpoint discovery operation is missing",
-        ))?;
+    let discovery = lookup(context.bootstrap.catalog, plan, operation)?;
     let region = inventory_core::inventory::RegionId::parse(&endpoint.signing_region)?;
     let endpoint = resolve_endpoint(
         context.bootstrap.catalog,
@@ -136,6 +130,18 @@ async fn discover(
     )
     .await?;
     discovery_call(context, discovery, &endpoint, region).await
+}
+
+pub(crate) fn lookup<'a, 'catalog>(
+    catalog: &'a RuntimeCatalog<'catalog>,
+    plan: &CallablePlan<'_>,
+    operation: &str,
+) -> Result<&'a CallablePlan<'catalog>, SweepError> {
+    catalog
+        .lookup(plan.service_name(), operation)
+        .ok_or(SweepError::Operation(
+            "reviewed endpoint discovery operation is missing",
+        ))
 }
 
 pub(super) async fn resolve_endpoint(
@@ -174,7 +180,7 @@ async fn discovery_call(
     .await
 }
 
-fn endpoint_lease(
+pub(crate) fn endpoint_lease(
     plan: &CallablePlan<'_>,
     response: &Record,
     region: &str,

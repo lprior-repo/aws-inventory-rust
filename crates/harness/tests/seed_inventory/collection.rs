@@ -18,6 +18,11 @@ use std::{
 };
 use tokio::process::Command;
 
+#[path = "outcomes.rs"]
+mod outcomes;
+#[path = "../support/sweep_exit.rs"]
+mod sweep_exit;
+
 pub(super) async fn compare(native: &NativeRuntime, oracles: &[ScenarioSeedOracle]) -> TestResult {
     oracle_evidence(oracles)?;
     let database = native.work().join("inventory.sqlite");
@@ -32,11 +37,18 @@ pub(super) async fn compare(native: &NativeRuntime, oracles: &[ScenarioSeedOracl
         )
         .await?;
     let missing = missing(&pool, oracles).await?;
+    let outcomes = outcomes::violations(&pool).await?;
     pool.close().await;
     database_evidence(&database)?;
-    if !output.status.success() || !missing.is_empty() {
-        return Err(format!("native sweep exited {}; missing seeded identities/edges: {missing:?}; stdout: {}; stderr: {}",
-            output.status, String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr)).into());
+    let violation = sweep_exit::exit_violation(output.status.code(), &output.stdout)?;
+    if violation.is_some() || !missing.is_empty() || !outcomes.is_empty() {
+        return Err(format!(
+            "native sweep exited {}; exit contract: {violation:?}; missing seeded identities/edges: {missing:?}; scope outcomes contradicting the probe report: {outcomes:?}; stdout: {}; stderr: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        )
+        .into());
     }
     Ok(())
 }

@@ -2,11 +2,12 @@ use super::{
     REGION, TestResult,
     runtime::{self, NativeRuntime},
 };
+use inventory_core::inventory::ResourceKey;
 use inventory_engine::inventory::{BinaryStore, run_projection};
-use inventory_harness::install::graph;
+use inventory_harness::{install::graph, inventory_seed::SeedScenario};
 use std::{
     path::{Path, PathBuf},
-    process::Stdio,
+    process::{Output, Stdio},
     time::Duration,
 };
 use tokio::process::{Child, Command};
@@ -15,6 +16,10 @@ use tokio::process::{Child, Command};
 mod collector_process;
 #[path = "native_deadlines.rs"]
 mod deadlines;
+#[path = "fixture_scopes.rs"]
+mod fixture_scopes;
+#[path = "../support/sweep_exit.rs"]
+mod sweep_exit;
 
 pub(super) const GRAPH: &str = "native_inventory_evidence";
 const MAX_ROWS: usize = 10_000;
@@ -230,54 +235,95 @@ fn path_field(receipt: &serde_json::Value, field: &str) -> TestResult<PathBuf> {
     ))
 }
 
-pub(super) async fn collect(native: &NativeRuntime, database: &Path, stage: &str) -> TestResult {
-    let output = collect_at(
-        native,
-        database,
-        stage,
-        native.emulator().endpoint(),
-        native.emulator().ca_bundle(),
-    )
-    .await?;
-    if !output.status.success() {
-        return Err(format!(
-            "actual collector {stage} failed ({}): {}",
-            output.status,
-            String::from_utf8_lossy(&output.stderr)
-        )
-        .into());
-    }
-    Ok(())
+pub(super) struct FixtureCollector<'a> {
+    pub(super) native: &'a NativeRuntime,
+    pub(super) database: &'a Path,
+    scopes: fixture_scopes::FixtureScopes,
 }
 
-pub(super) async fn collect_at(
-    native: &NativeRuntime,
-    database: &Path,
-    stage: &str,
-    endpoint: &str,
-    ca: &Path,
-) -> TestResult<std::process::Output> {
-    let binary = std::env::var_os("INVENTORY_COLLECTOR_BINARY")
-        .map(PathBuf::from)
-        .ok_or("native graph evidence requires INVENTORY_COLLECTOR_BINARY built with aws")?;
-    let stdout = native.work().join(format!("collector-{stage}.stdout"));
-    let stderr = native.work().join(format!("collector-{stage}.stderr"));
-    let mut command = Command::new(binary);
-    command
-        .env_clear()
-        .envs(native.emulator().environment())
-        .arg("sweep")
-        .arg("--database")
-        .arg(database)
-        .arg("--catalog")
-        .arg(runtime::catalog_path())
-        .args(["--region", REGION])
-        .arg("--endpoint")
-        .arg(endpoint)
-        .arg("--ca-bundle")
-        .arg(ca)
-        .args(["--max-pages", "10000", "--concurrency", "4"]);
-    collector_process::run(&mut command, &stdout, &stderr, Duration::from_secs(600)).await
+impl<'a> FixtureCollector<'a> {
+    pub(super) fn new(
+        native: &'a NativeRuntime,
+        database: &'a Path,
+        scenarios: &[SeedScenario],
+        tagged: &[ResourceKey],
+    ) -> TestResult<Self> {
+        Ok(Self {
+            native,
+            database,
+            scopes: fixture_scopes::FixtureScopes::from_scenarios(scenarios, tagged)?,
+        })
+    }
+
+    pub(super) async fn collect(&self, stage: &str) -> TestResult {
+        let output = self
+            .collect_at(
+                stage,
+                self.native.emulator().endpoint(),
+                self.native.emulator().ca_bundle(),
+            )
+            .await?;
+        assert_sweep_exit(stage, &output)?;
+        self.assert_complete(stage, None).await
+    }
+
+    pub(super) async fn assert_complete(
+        &self,
+        stage: &str,
+        denied: Option<(&str, &str)>,
+    ) -> TestResult {
+        self.scopes
+            .assert_complete(self.database, stage, denied)
+            .await
+    }
+
+    pub(super) async fn collect_at(
+        &self,
+        stage: &str,
+        endpoint: &str,
+        ca: &Path,
+    ) -> TestResult<Output> {
+        let binary = std::env::var_os("INVENTORY_COLLECTOR_BINARY")
+            .map(PathBuf::from)
+            .ok_or("native graph evidence requires INVENTORY_COLLECTOR_BINARY built with aws")?;
+        let stdout = self.native.work().join(format!("collector-{stage}.stdout"));
+        let stderr = self.native.work().join(format!("collector-{stage}.stderr"));
+        let mut command = Command::new(binary);
+        command
+            .env_clear()
+            .envs(self.native.emulator().environment())
+            .arg("sweep")
+            .arg("--database")
+            .arg(self.database)
+            .arg("--catalog")
+            .arg(runtime::catalog_path())
+            .args(["--region", REGION])
+            .arg("--endpoint")
+            .arg(endpoint)
+            .arg("--ca-bundle")
+            .arg(ca)
+            .args(["--max-pages", "10000", "--concurrency", "4"])
+            .args(
+                self.scopes
+                    .selectors()
+                    .iter()
+                    .flat_map(|selector| ["--service", selector.as_str()]),
+            );
+        collector_process::run(&mut command, &stdout, &stderr, Duration::from_secs(600)).await
+    }
+}
+
+pub(super) fn assert_sweep_exit(stage: &str, output: &Output) -> TestResult {
+    match sweep_exit::exit_violation(output.status.code(), &output.stdout) {
+        Ok(None) => Ok(()),
+        violation => Err(format!(
+            "actual collector {stage} exited {}; exit contract: {violation:?}; stdout: {}; stderr: {}",
+            output.status,
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr),
+        )
+        .into()),
+    }
 }
 
 pub(super) async fn project(store: &BinaryStore, graph: &NativeGraph) -> TestResult {

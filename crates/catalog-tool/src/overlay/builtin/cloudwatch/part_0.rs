@@ -2,7 +2,7 @@ use super::super::{empty, name, path};
 use crate::classes::DenyReason;
 use crate::overlay::{
     Binding, FixedValue, Identity, ItemSelector, NameError, OperationOverlay, OverlayClass,
-    Paginator, Scope, TokenPair,
+    Paginator, ResourceEmission, Scope, TokenPair,
 };
 
 pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, NameError> {
@@ -118,13 +118,27 @@ pub(super) fn operations() -> Result<Vec<(&'static str, OperationOverlay)>, Name
         ..empty()
     }),
 ("DescribeAlarms", OperationOverlay {
-        class: Some(OverlayClass::Defer),
-        defer_reason: Some("The response contains MetricAlarms, CompositeAlarms and LogAlarms; one items selector cannot emit all three, and complete requests must explicitly include all three AlarmTypes. StateReason and StateReasonData also need an evaluated-value safety decision or safe projection; exclude_from_hash does not remove content.".to_owned()),
+        class: Some(OverlayClass::Enumerate),
+        scope: Some(Scope::Region),
+        items: Some(ItemSelector::parse("MetricAlarms")?),
+        identity: Some(Identity::Arn(path("AlarmArn")?)),
+        paginator: Some(Paginator::Token(TokenPair { input: path("NextToken")?, output: path("NextToken")?, optional: false })),
+        fixed: [(path("AlarmTypes")?, FixedValue::Strings(vec!["MetricAlarm".to_owned(), "CompositeAlarm".to_owned(), "LogAlarm".to_owned()]))].into(),
+        additional_resources: vec![
+            ResourceEmission::new("composite_alarms", ItemSelector::parse("CompositeAlarms")?, Identity::Arn(path("AlarmArn")?)),
+            ResourceEmission::new("log_alarms", ItemSelector::parse("LogAlarms")?, Identity::Arn(path("AlarmArn")?)),
+        ],
+        exclude_response_members: vec![
+            path("MetricAlarms.StateReason")?, path("MetricAlarms.StateReasonData")?,
+            path("CompositeAlarms.StateReason")?, path("CompositeAlarms.StateReasonData")?,
+            path("LogAlarms.StateReason")?, path("LogAlarms.StateReasonData")?,
+            path("LogAlarms.ScheduledQueryConfiguration")?,
+        ],
         ..empty()
     }),
 ("DescribeAlarmsForMetric", OperationOverlay {
         class: Some(OverlayClass::Defer),
-        defer_reason: Some("Requires MetricName and Namespace with the complete Dimensions identity from ListMetrics, whose collection-valued identity is not expressible. Returns only standard single-metric alarms, not metric-math or composite alarms, and MetricAlarms.StateReason/StateReasonData require the same evaluated-value safety decision as DescribeAlarms.".to_owned()),
+        defer_reason: Some("Requires MetricName and Namespace with the complete Dimensions identity from ListMetrics, whose collection-valued identity is not expressible. Returns only standard single-metric alarms, not metric-math or composite alarms; use DescribeAlarms for complete alarm discovery.".to_owned()),
         ..empty()
     }),
 ("GetAlarmMuteRule", OperationOverlay {

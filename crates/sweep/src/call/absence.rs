@@ -1,4 +1,7 @@
 use super::{CallablePlan, DecodedResponse, Response, SweepError};
+use aws_wire::response::{ResponseContext, errors};
+
+mod messages;
 
 pub(super) enum ValidatedResponse {
     Page(Response),
@@ -16,44 +19,56 @@ impl ValidatedResponse {
 
 pub(super) fn classify(
     plan: &CallablePlan<'_>,
-    error: aws_wire::response::errors::ServiceError,
+    error: errors::ServiceError,
+    context: ResponseContext<'_>,
+    account: &str,
+    region: &str,
 ) -> Result<ValidatedResponse, inventory_engine::limiter::ApiError> {
-    if known(
-        plan.service_name(),
-        plan.operation_name(),
-        error.code.as_deref(),
-    ) {
+    let service = plan.service_name();
+    let operation = plan.operation_name();
+    let absent = context.status.is_client_error()
+        && context.status != http::StatusCode::TOO_MANY_REQUESTS
+        && error.code.as_deref().is_some_and(|code| {
+            if known(service, operation, code) {
+                !errors::header_body_codes_disagree(context)
+            } else {
+                messages::confirms(service, operation, code, context, account, region)
+            }
+        });
+    if absent {
         Ok(ValidatedResponse::Absent(error.to_string()))
     } else {
-        Err(super::classify_service(error))
+        Err(super::classify_service(error, context.status))
     }
 }
 
-pub(super) fn known(service: &str, operation: &str, code: Option<&str>) -> bool {
+fn known(service: &str, operation: &str, code: &str) -> bool {
     match service {
-        "iam" => operation == "GetLoginProfile" && code == Some("NoSuchEntity"),
+        "iam" => operation == "GetLoginProfile" && code == "NoSuchEntity",
         "organizations" => organization(operation, code),
-        "drs" | "mgn" => code == Some("UninitializedAccountException"),
-        "compute-optimizer" | "compute-optimizer-automation" => {
-            code == Some("OptInRequiredException")
-        }
+        "drs" | "mgn" => code == "UninitializedAccountException",
+        "compute-optimizer" | "compute-optimizer-automation" => code == "OptInRequiredException",
         "ec2" => {
             operation == "DescribeSpotDatafeedSubscription"
-                && code == Some("InvalidSpotDatafeed.NotFound")
+                && code == "InvalidSpotDatafeed.NotFound"
         }
-        "resource-explorer-2" => {
-            operation == "GetIndex" && code == Some("ResourceNotFoundException")
+        "resource-explorer-2" => operation == "GetIndex" && code == "ResourceNotFoundException",
+        "s3-control" => {
+            matches!(
+                operation,
+                "GetAccessGrantsInstance" | "ListAccessGrants" | "ListAccessGrantsLocations"
+            ) && code == "AccessGrantsInstanceNotExistsError"
         }
         _ => false,
     }
 }
 
-fn organization(operation: &str, code: Option<&str>) -> bool {
+fn organization(operation: &str, code: &str) -> bool {
     match code {
-        Some("AWSOrganizationsNotInUseException") => true,
-        Some("ResourcePolicyNotFoundException") => operation == "DescribeResourcePolicy",
-        Some("AccountNotRegisteredException") => operation == "ListDelegatedServicesForAccount",
-        Some("EffectivePolicyNotFoundException") => operation == "DescribeEffectivePolicy",
+        "AWSOrganizationsNotInUseException" => true,
+        "ResourcePolicyNotFoundException" => operation == "DescribeResourcePolicy",
+        "AccountNotRegisteredException" => operation == "ListDelegatedServicesForAccount",
+        "EffectivePolicyNotFoundException" => operation == "DescribeEffectivePolicy",
         _ => false,
     }
 }

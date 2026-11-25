@@ -5,6 +5,34 @@
 - The emulator probe now calls parent-bound operations using the sweep's binding
   and wire code, sampling one parent item by default (`--child-samples 1..64`)
   and reporting why unbound children are skipped.
+- Sweeps no longer store a resource's own identifier as a reference to itself.
+  The next sweep removes those edges; deliberate self-relationships, such as an
+  IAM role that trusts itself, are unchanged.
+- CloudWatch sweeps collect metric, composite, and log alarms by ARN. They omit
+  evaluated state explanations and log alarm scheduled query configuration from
+  stored records.
+- Organizations sweeps no longer store account email addresses: the management
+  account email on `DescribeOrganization`, each account email from
+  `DescribeAccount`, `ListAccounts` and `ListDelegatedAdministrators`, and both
+  participant emails on responsibility transfers are omitted. Databases written
+  by earlier versions keep the addresses in their stored records until the
+  resource is swept again, which replaces the record without them. Records for
+  resources that are no longer swept are not rewritten.
+- VPC and subnet records carry the tags returned by `DescribeVpcs` and
+  `DescribeSubnets`.
+- Seed bindings resolve outputs by step ID after rejected or skipped steps. A
+  binding to an unavailable step names that step, and the dependent request is
+  not sent.
+- Sweeps treat confirmed missing singletons, inactive features, and ineligible
+  account scopes as empty without hiding IAM denials. Absence requires an HTTP
+  client error other than 429, and any account or Region named by a message must
+  match the request. Conflicting values in the selected error header are rejected.
+  A conflicting readable body code also prevents a scope from counting as empty.
+  The emulator probe now runs modeled endpoint discovery before dependent calls.
+  `AmbiguousService`, observed only from the emulator, fails immediately.
+- The harness graph installer builds `redis-server` and `redis-cli` one after
+  the other under one shared deadline. Building both in one parallel `make`
+  could fail intermittently.
 - `sweep` and `serve` accept `--idle-timeout-ms` and `--pool-idle-per-host`
   (or `INVENTORY_SWEEP_IDLE_TIMEOUT_MS` and `INVENTORY_SWEEP_POOL_IDLE_PER_HOST`).
   Idle timeout must be 1–10,000 ms; the per-endpoint cap must be between 1 and

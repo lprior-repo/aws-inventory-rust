@@ -167,10 +167,7 @@ async fn given_mediaconnect_owned_roots_when_unfiltered_pages_resume_then_endpoi
                 .map(|id| (id.clone(), gateway.to_owned(), "IN_GATEWAY".to_owned()))
                 .collect()
         } else {
-            expected
-                .iter()
-                .map(|id| (id.clone(), id.clone(), "REFERENCES".to_owned()))
-                .collect()
+            BTreeSet::new()
         };
         assert_eq!(scenario.stored(kind).await?, (expected, edges));
         assert!(seen.contains(&(operation.to_owned(), true)));

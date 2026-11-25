@@ -22,6 +22,20 @@ enum Barrier {
     Claim,
 }
 
+impl Barrier {
+    fn matches(&self, frame: &[u8], armed: &mut bool) -> bool {
+        match self {
+            Self::Transaction(needle) => {
+                *armed |= frame
+                    .windows(needle.len())
+                    .any(|window| window == needle.as_bytes());
+                *armed && frame == b"*1\r\n$4\r\nEXEC\r\n"
+            }
+            Self::Claim => frame.starts_with(b"*5\r\n$4\r\nEVAL\r\n"),
+        }
+    }
+}
+
 impl Proxy {
     pub(super) async fn start(native: &str, needle: &'static str) -> ProxyResult<Self> {
         Self::create(native, Barrier::Transaction(needle)).await
@@ -127,6 +141,7 @@ async fn relay(
     executed: oneshot::Sender<Vec<u8>>,
 ) -> ProxyResult {
     let (client, _) = listener.accept().await?;
+    client.set_nodelay(true)?;
     let (read, mut write) = client.into_split();
     let mut client = BufReader::new(read);
     let mut native = BufReader::new(UnixStream::connect(socket).await?);
@@ -138,19 +153,7 @@ async fn relay(
             Err(error) if error.kind() == io::ErrorKind::UnexpectedEof => return Ok(()),
             Err(error) => return Err(error.into()),
         };
-        let paused = match &kind {
-            Barrier::Transaction(needle) => {
-                if frame
-                    .windows(needle.len())
-                    .any(|window| window == needle.as_bytes())
-                {
-                    armed = true;
-                }
-                armed && frame == b"*1\r\n$4\r\nEXEC\r\n"
-            }
-            Barrier::Claim => frame.starts_with(b"*5\r\n$4\r\nEVAL\r\n"),
-        };
-        let acknowledgement = if paused {
+        let acknowledgement = if kind.matches(&frame, &mut armed) {
             match barrier.take() {
                 Some((arrived, release, executed)) => {
                     arrived

@@ -53,7 +53,7 @@ fn background_writer_case(
     let source = OwnedDirectory::capture(directory.path())?;
     let (mut handshake, output) = UnixStream::pair()?;
     handshake.set_read_timeout(Some(Duration::from_secs(2)))?;
-    let mut command = super::compile_command(&source, 1);
+    let mut command = super::compile_command(&source, 1, "redis-server");
     command
         .stdout(Stdio::null())
         .stderr(Stdio::from(OwnedFd::from(output)));
