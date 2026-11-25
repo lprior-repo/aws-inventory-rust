@@ -39,7 +39,7 @@ MIT. The core is one page: the first section of
 | [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md) | Everything not decided or not verified, and what each answer would change |
 | [BUILD_PLAN.md](BUILD_PLAN.md) | The order of work: performance budgets, the thin slice, seven waves, every step, the risk register |
 | [build/](build/) | 182 steps, one file per track, each with its goal, files, change, tests, budget and proof |
-| [LEDGER.md](LEDGER.md) | The state of each of the 182 steps, of X1 to X10 and of R1 to R11 on commit `b98be942`, read from the source and not from test runs |
+| [LEDGER.md](LEDGER.md) | The state of each of the 182 steps, of X1 to X10 and of R1 to R11, read from the source and not from test runs |
 | [A_COVERAGE.md](A_COVERAGE.md) to [E_GRAPH.md](E_GRAPH.md) | A one-page summary of each track. The step files are the detail and win where they differ |
 | [AFTER.md](AFTER.md) | What comes after the milestone: whole organizations, the daily schedule, tags, proof, removal, the release gate, and running in AWS after version 1 |
 | [RELEASE_GATE.md](RELEASE_GATE.md) | The eleven things that must hold before anyone outside is handed the product |
