@@ -693,7 +693,6 @@ kms	CreateKey	dnssec_key	accepted
 kms	CreateKey	grant_key	accepted
 kms	CreateKey	key	accepted
 kms	CreateKey	key	accepted
-kms	CreateKey	key	accepted
 kms	CreateKey	key[1]	accepted
 kms	CreateKey	key[2]	accepted
 kms	CreateKey	publishing_key	accepted

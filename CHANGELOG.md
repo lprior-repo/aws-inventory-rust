@@ -107,7 +107,9 @@
   still follows each operation's continuation token.
 - Seed recipes for 271 services create more resources before the emulator
   probe. The regenerated reports record 1181 accepted seed steps with 5
-  rejected and 655 list operations returning items, out of 2,238 probed.
+  rejected. With parent-bound child operations probed, 893 of 2,226 operations
+  return items, 323 read empty, 95 fail, 310 child operations are skipped and
+  605 are not implemented by the emulator.
   `securityagent ListSecurityRequirementPacks` now reads empty, and seeded ECS
   task definitions join the kinds with no Cloud Control target.
 - Seed identities are checked against the catalog. Four steps declare composite
