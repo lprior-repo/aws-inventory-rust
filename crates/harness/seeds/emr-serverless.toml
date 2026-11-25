@@ -11,3 +11,47 @@ name = "inventory-thin-emr-serverless"
 releaseLabel = "emr-7.0.0"
 type = "SPARK"
 clientToken = "12345678-1234-4234-8234-123456789abc"
+
+[[step]]
+id = "execution_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-emr-serverless"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"emr-serverless.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "enable_sessions"
+operation = "UpdateApplication"
+kind = ""
+[step.input]
+applicationId = { from = "application", path = "applicationId" }
+clientToken = "inventory-seed-enable-emr-sessions"
+interactiveConfiguration = { sessionEnabled = true }
+releaseLabel = "emr-7.13.0"
+
+[[step]]
+id = "job_run"
+operation = "StartJobRun"
+kind = "AWS::ApiOnly::EMRServerlessJobRun"
+identity = "arn"
+[step.input]
+applicationId = { from = "application", path = "applicationId" }
+clientToken = "inventory-seed-emr-job"
+executionRoleArn = { from = "execution_role", path = "Role.Arn" }
+name = "inventory-seed-spark-pi"
+jobDriver = { sparkSubmit = { entryPoint = "local:///usr/lib/spark/examples/jars/spark-examples.jar", sparkSubmitParameters = "--class org.apache.spark.examples.SparkPi" } }
+
+[[step]]
+id = "session"
+operation = "StartSession"
+kind = "AWS::ApiOnly::EMRServerlessSession"
+identity = "arn"
+[step.input]
+applicationId = { from = "application", path = "applicationId" }
+clientToken = "inventory-seed-emr-session"
+executionRoleArn = { from = "execution_role", path = "Role.Arn" }
+name = "inventory-seed-session"

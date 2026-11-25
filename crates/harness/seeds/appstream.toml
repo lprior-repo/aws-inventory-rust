@@ -16,3 +16,76 @@ identity = "S3BucketName"
 scope = "region"
 
 [step.input]
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = ""
+[step.input]
+CidrBlock = "10.95.0.0/16"
+
+[[step]]
+id = "subnet"
+service = "ec2"
+operation = "CreateSubnet"
+kind = ""
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.95.0.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "app_block_builder"
+operation = "CreateAppBlockBuilder"
+kind = "AWS::AppStream::AppBlockBuilder"
+identity = "AppBlockBuilder.Arn"
+[step.input]
+Name = "inventory-seed-builder"
+Platform = "WINDOWS_SERVER_2019"
+InstanceType = "stream.standard.small"
+VpcConfig = { SubnetIds = [{ from = "subnet", path = "Subnet.SubnetId" }] }
+
+[[step]]
+id = "fleet"
+operation = "CreateFleet"
+kind = "AWS::AppStream::Fleet"
+identity = "Fleet.Arn"
+[step.input]
+Name = "inventory-seed-fleet"
+InstanceType = "stream.standard.small"
+FleetType = "ELASTIC"
+Platform = "WINDOWS_SERVER_2019"
+ComputeCapacity = { DesiredSessions = 1 }
+VpcConfig = { SubnetIds = [{ from = "subnet", path = "Subnet.SubnetId" }] }
+
+[[step]]
+id = "assets_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-appstream-assets"
+
+[[step]]
+id = "app_block"
+operation = "CreateAppBlock"
+kind = "AWS::AppStream::AppBlock"
+identity = "AppBlock.Arn"
+[step.input]
+Name = "inventory-seed-app-block"
+SourceS3Location = { S3Bucket = "inventory-seed-appstream-assets" }
+PackagingType = "APPSTREAM2"
+
+[[step]]
+id = "application"
+operation = "CreateApplication"
+kind = "AWS::AppStream::Application"
+identity = "Application.Arn"
+[step.input]
+Name = "inventory-seed-app"
+IconS3Location = { S3Bucket = "inventory-seed-appstream-assets", S3Key = "icon.png" }
+LaunchPath = 'C:\Windows\System32\notepad.exe'
+Platforms = ["WINDOWS_SERVER_2019"]
+InstanceFamilies = ["stream.standard"]
+AppBlockArn = { from = "app_block", path = "AppBlock.Arn" }

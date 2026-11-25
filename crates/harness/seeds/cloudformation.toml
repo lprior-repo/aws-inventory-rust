@@ -30,3 +30,47 @@ scope = "region"
 [step.input]
 StackSetName = "inv-createstackset-{n}"
 TemplateBody = "{}"
+
+[[step]]
+id = "resource_scan"
+operation = "StartResourceScan"
+kind = "AWS::ApiOnly::CloudFormationResourceScan"
+identity = "ResourceScanId"
+
+[[step]]
+id = "registry_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-seed-cloudformation-registry"
+
+[[step]]
+id = "registry_package"
+service = "s3"
+operation = "PutObject"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-cloudformation-registry"
+Key = "schema.zip"
+Body = "UEsDBBQAAAAAAAAAIQBwziLT8wAAAPMAAAALAAAAc2NoZW1hLmpzb257InR5cGVOYW1lIjoiSW52ZW50b3J5U2VlZDo6RW11bGF0b3I6OkZpeHR1cmUiLCJkZXNjcmlwdGlvbiI6IkludmVudG9yeSBlbXVsYXRvciBmaXh0dXJlIHNjaGVtYSIsInByb3BlcnRpZXMiOnsiSWQiOnsidHlwZSI6InN0cmluZyJ9fSwicHJpbWFyeUlkZW50aWZpZXIiOlsiL3Byb3BlcnRpZXMvSWQiXSwicmVhZE9ubHlQcm9wZXJ0aWVzIjpbIi9wcm9wZXJ0aWVzL0lkIl0sImFkZGl0aW9uYWxQcm9wZXJ0aWVzIjpmYWxzZX1QSwECFAAUAAAAAAAAACEAcM4i0/MAAADzAAAACwAAAAAAAAAAAAAAAAAAAAAAc2NoZW1hLmpzb25QSwUGAAAAAAEAAQA5AAAAHAEAAAAA"
+
+[[step]]
+id = "register_type"
+operation = "RegisterType"
+kind = ""
+[step.input]
+Type = "RESOURCE"
+TypeName = "InventorySeed::Emulator::Fixture"
+SchemaHandlerPackage = "s3://inventory-seed-cloudformation-registry/schema.zip"
+
+[[step]]
+id = "registry_type"
+operation = "DescribeType"
+kind = "AWS::ApiOnly::CloudFormationRegistryType"
+identity = "Arn"
+[step.input]
+Type = "RESOURCE"
+TypeName = "InventorySeed::Emulator::Fixture"

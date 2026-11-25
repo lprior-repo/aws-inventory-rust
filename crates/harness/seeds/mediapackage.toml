@@ -1,0 +1,20 @@
+format = 1
+service = "mediapackage"
+
+[[step]]
+id = "channel"
+operation = "CreateChannel"
+kind = "AWS::MediaPackage::Channel"
+identity = "Arn"
+[step.input]
+Id = "inventory-thin-mediapackage"
+
+[[step]]
+id = "origin_endpoint"
+operation = "CreateOriginEndpoint"
+kind = "AWS::MediaPackage::OriginEndpoint"
+identity = "Arn"
+[step.input]
+ChannelId = { from = "channel", path = "Id" }
+Id = "inventory-origin"
+HlsPackage = { SegmentDurationSeconds = 6, PlaylistWindowSeconds = 60 }

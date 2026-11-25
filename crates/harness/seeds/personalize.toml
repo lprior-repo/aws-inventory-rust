@@ -8,3 +8,22 @@ kind = "AWS::Personalize::DatasetGroup"
 identity = "datasetGroupArn"
 [step.input]
 "name" = "inventory-thin-personalize"
+
+[[step]]
+id = "schema"
+operation = "CreateSchema"
+kind = "AWS::Personalize::Schema"
+identity = "schemaArn"
+[step.input]
+name = "inventory-thin-interactions"
+schema = '{"type":"record","name":"Interactions","namespace":"com.amazonaws.personalize.schema","fields":[{"name":"USER_ID","type":"string"},{"name":"ITEM_ID","type":"string"},{"name":"TIMESTAMP","type":"long"},{"name":"EVENT_TYPE","type":"string"}],"version":"1.0"}'
+
+[[step]]
+id = "filter"
+operation = "CreateFilter"
+kind = "AWS::Personalize::Filter"
+identity = "filterArn"
+[step.input]
+name = "inventory-thin-filter"
+datasetGroupArn = { from = "resource", path = "datasetGroupArn" }
+filterExpression = 'EXCLUDE ItemID WHERE Items.GENRE IN ("inventory")'

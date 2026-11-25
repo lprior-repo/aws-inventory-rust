@@ -30,3 +30,15 @@ kind = "AWS::AutoScaling::AutoScalingGroup"
 identity = "AutoScalingGroups.0.AutoScalingGroupARN"
 [step.input]
 AutoScalingGroupNames = ["inventory-thin-auto-scaling"]
+
+[[step]]
+id = "scaling_policy"
+operation = "PutScalingPolicy"
+kind = "AWS::AutoScaling::ScalingPolicy"
+identity = "PolicyARN"
+[step.input]
+AutoScalingGroupName = "inventory-thin-auto-scaling"
+PolicyName = "inventory-seed-scale-out"
+PolicyType = "SimpleScaling"
+AdjustmentType = "ChangeInCapacity"
+ScalingAdjustment = 1

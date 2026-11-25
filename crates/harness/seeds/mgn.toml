@@ -1,0 +1,32 @@
+format = 1
+service = "mgn"
+
+[[step]]
+id = "initialize"
+operation = "InitializeService"
+kind = ""
+
+[[step]]
+id = "application"
+operation = "CreateApplication"
+kind = "AWS::MGN::Application"
+identity = "arn"
+[step.input]
+name = "inventory-thin-mgn-application"
+
+[[step]]
+id = "wave"
+operation = "CreateWave"
+kind = "AWS::MGN::Wave"
+identity = "arn"
+[step.input]
+name = "inventory-thin-mgn-wave"
+
+[[step]]
+id = "connector"
+operation = "CreateConnector"
+kind = "AWS::MGN::Connector"
+identity = "arn"
+[step.input]
+name = "inventory-thin-mgn-connector"
+ssmInstanceID = "mi-0123456789abcdef0"

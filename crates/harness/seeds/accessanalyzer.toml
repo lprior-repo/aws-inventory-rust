@@ -9,3 +9,12 @@ identity = "arn"
 [step.input]
 "analyzerName" = "inventory-thin-accessanalyzer"
 "type" = "ACCOUNT"
+
+[[step]]
+id = "archive_rule"
+operation = "CreateArchiveRule"
+kind = ""
+[step.input]
+analyzerName = "inventory-thin-accessanalyzer"
+ruleName = "inventory-seed-archive"
+filter = { isPublic = { eq = ["false"] } }

@@ -9,3 +9,15 @@ identity = "DatasetGroupArn"
 [step.input]
 DatasetGroupName = "inventory_seed_forecast"
 Domain = "CUSTOM"
+
+[[step]]
+id = "dataset"
+operation = "CreateDataset"
+kind = "AWS::Forecast::Dataset"
+identity = "DatasetArn"
+[step.input]
+DatasetName = "inventory_seed_forecast_history"
+Domain = "CUSTOM"
+DatasetType = "TARGET_TIME_SERIES"
+DataFrequency = "D"
+Schema = { Attributes = [{ AttributeName = "item_id", AttributeType = "string" }, { AttributeName = "timestamp", AttributeType = "timestamp" }, { AttributeName = "target_value", AttributeType = "float" }] }

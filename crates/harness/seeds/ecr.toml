@@ -8,3 +8,59 @@ kind = "AWS::ECR::Repository"
 identity = "repository.repositoryArn"
 [step.input]
 "repositoryName" = "inventory-thin-ecr"
+
+[[step]]
+id = "pull_through_cache_rule"
+operation = "CreatePullThroughCacheRule"
+kind = "AWS::ECR::PullThroughCacheRule"
+identity = { input = "ecrRepositoryPrefix", template = "12:{account}|20:{value}" }
+[step.input]
+ecrRepositoryPrefix = "inventory-seed-cache"
+upstreamRegistryUrl = "public.ecr.aws"
+
+[[step]]
+id = "repository_creation_template"
+operation = "CreateRepositoryCreationTemplate"
+kind = "AWS::ECR::RepositoryCreationTemplate"
+identity = "repositoryCreationTemplate.prefix"
+[step.input]
+prefix = { from = "pull_through_cache_rule", path = "ecrRepositoryPrefix" }
+appliedFor = ["PULL_THROUGH_CACHE"]
+
+[[step]]
+id = "image_upload"
+operation = "InitiateLayerUpload"
+kind = ""
+[step.input]
+repositoryName = { from = "resource", path = "repository.repositoryName" }
+
+[[step]]
+id = "image_config"
+operation = "UploadLayerPart"
+kind = ""
+[step.input]
+repositoryName = { from = "resource", path = "repository.repositoryName" }
+uploadId = { from = "image_upload", path = "uploadId" }
+partFirstByte = 0
+partLastByte = 89
+layerPartBlob = "eyJhcmNoaXRlY3R1cmUiOiJhbWQ2NCIsIm9zIjoibGludXgiLCJjb25maWciOnt9LCJyb290ZnMiOnsidHlwZSI6ImxheWVycyIsImRpZmZfaWRzIjpbXX19"
+
+[[step]]
+id = "image_config_complete"
+operation = "CompleteLayerUpload"
+kind = ""
+[step.input]
+repositoryName = { from = "resource", path = "repository.repositoryName" }
+uploadId = { from = "image_upload", path = "uploadId" }
+layerDigests = ["sha256:dc570f145a7f2862c9ef3c30b8d6ae2feaceb0d364e4b2e08e67ae18815427d9"]
+
+[[step]]
+id = "image"
+operation = "PutImage"
+kind = "AWS::ApiOnly::ECRImage"
+identity = { input = "repositoryName", template = "12:{account}|18:{value}|71:sha256:2ab8b7be5951d0351c88b1148174d21d2ed101585df7ecb8b5e0ee0bce1c1fd0" }
+[step.input]
+repositoryName = { from = "resource", path = "repository.repositoryName" }
+imageTag = "seed"
+imageManifestMediaType = "application/vnd.oci.image.manifest.v1+json"
+imageManifest = '{"schemaVersion":2,"mediaType":"application/vnd.oci.image.manifest.v1+json","config":{"mediaType":"application/vnd.oci.image.config.v1+json","size":90,"digest":"sha256:dc570f145a7f2862c9ef3c30b8d6ae2feaceb0d364e4b2e08e67ae18815427d9"},"layers":[]}'

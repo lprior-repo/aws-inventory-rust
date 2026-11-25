@@ -19,3 +19,30 @@ scope = "region"
 [step.input]
 authenticationType = "API_KEY"
 name = "inventory-seed-graphql-api"
+
+[[step]]
+id = "domain_certificate"
+service = "acm"
+operation = "RequestCertificate"
+kind = ""
+[step.input]
+DomainName = "inventory-appsync.example.com"
+ValidationMethod = "DNS"
+
+[[step]]
+id = "domain"
+operation = "CreateDomainName"
+kind = "AWS::AppSync::DomainName"
+identity = "domainNameConfig.domainName"
+[step.input]
+domainName = "inventory-appsync.example.com"
+certificateArn = { from = "domain_certificate", path = "CertificateArn" }
+
+[[step]]
+id = "channel_namespace"
+operation = "CreateChannelNamespace"
+kind = "AWS::AppSync::ChannelNamespace"
+identity = "channelNamespace.channelNamespaceArn"
+[step.input]
+apiId = { from = "resource", path = "api.apiId" }
+name = "inventory"

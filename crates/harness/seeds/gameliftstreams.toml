@@ -9,3 +9,35 @@ identity = "Arn"
 [step.input]
 "Description" = "Inventory emulator seed"
 "StreamClass" = "gen4n_high"
+
+[[step]]
+id = "app_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-seed-streams"
+
+[[step]]
+id = "app_executable"
+service = "s3"
+operation = "PutObject"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-streams"
+Key = "app/start.sh"
+Body = "IyEvYmluL3NoCnByaW50ZiAiJXNcbiIgIkludmVudG9yeSBmaXh0dXJlIgo="
+
+[[step]]
+id = "application"
+operation = "CreateApplication"
+kind = "AWS::ApiOnly::GameLiftStreamsApplication"
+identity = "Arn"
+[step.input]
+Description = "Inventory seed streams application"
+RuntimeEnvironment = { Type = "UBUNTU", Version = "22_04_LTS" }
+ExecutablePath = "start.sh"
+ApplicationSourceUri = "s3://inventory-seed-streams/app/"
+

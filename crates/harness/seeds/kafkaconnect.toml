@@ -9,3 +9,34 @@ identity = "workerConfigurationArn"
 [step.input]
 name = "inventory-thin-kafkaconnect"
 propertiesFileContent = "a2V5LmNvbnZlcnRlcj1vcmcuYXBhY2hlLmthZmthLmNvbm5lY3Quc3RvcmFnZS5TdHJpbmdDb252ZXJ0ZXIKdmFsdWUuY29udmVydGVyPW9yZy5hcGFjaGUua2Fma2EuY29ubmVjdC5zdG9yYWdlLlN0cmluZ0NvbnZlcnRlcgo="
+
+[[step]]
+id = "plugin_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-thin-kafka-connect-plugins"
+
+[[step]]
+id = "plugin_object"
+service = "s3"
+operation = "PutObject"
+kind = ""
+[step.input]
+Bucket = "inventory-thin-kafka-connect-plugins"
+Key = "inventory-plugin.zip"
+ContentType = "application/zip"
+Body = "UEsDBBQAAAAAAAAAIQA2tVvIRwAAAEcAAAAUAAAATUVUQS1JTkYvTUFOSUZFU1QuTUZNYW5pZmVzdC1WZXJzaW9uOiAxLjANCkltcGxlbWVudGF0aW9uLVRpdGxlOiBJbnZlbnRvcnkgc2VlZCBmaXh0dXJlDQoNClBLAQIUABQAAAAAAAAAIQA2tVvIRwAAAEcAAAAUAAAAAAAAAAAAAAAAAAAAAABNRVRBLUlORi9NQU5JRkVTVC5NRlBLBQYAAAAAAQABAEIAAAB5AAAAAAA="
+
+[[step]]
+id = "plugin"
+operation = "CreateCustomPlugin"
+kind = "AWS::KafkaConnect::CustomPlugin"
+identity = "customPluginArn"
+[step.input]
+name = "inventory-thin-plugin"
+contentType = "ZIP"
+location = { s3Location = { bucketArn = "arn:aws:s3:::inventory-thin-kafka-connect-plugins", fileKey = "inventory-plugin.zip" } }

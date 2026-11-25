@@ -1,0 +1,43 @@
+format = 1
+service = "codedeploy"
+
+[[step]]
+id = "deployment_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-codedeploy"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"codedeploy.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "application"
+operation = "CreateApplication"
+kind = "AWS::CodeDeploy::Application"
+identity = "applicationId"
+[step.input]
+applicationName = "inventory-seed-application"
+computePlatform = "Server"
+
+[[step]]
+id = "deployment_config"
+operation = "CreateDeploymentConfig"
+kind = "AWS::CodeDeploy::DeploymentConfig"
+identity = "deploymentConfigId"
+[step.input]
+deploymentConfigName = "inventory-seed-deployment-config"
+minimumHealthyHosts = { type = "HOST_COUNT", value = 1 }
+computePlatform = "Server"
+
+[[step]]
+id = "deployment_group"
+operation = "CreateDeploymentGroup"
+kind = "AWS::CodeDeploy::DeploymentGroup"
+identity = { input = "deploymentGroupName", template = "26:inventory-seed-application|31:{value}" }
+[step.input]
+applicationName = "inventory-seed-application"
+deploymentGroupName = "inventory-seed-deployment-group"
+deploymentConfigName = "inventory-seed-deployment-config"
+serviceRoleArn = { from = "deployment_role", path = "Role.Arn" }

@@ -8,3 +8,118 @@ kind = "AWS::NetworkManager::GlobalNetwork"
 identity = "GlobalNetwork.GlobalNetworkArn"
 scope = "account"
 [step.input]
+
+[[step]]
+id = "core_network"
+operation = "CreateCoreNetwork"
+kind = ""
+[step.input]
+GlobalNetworkId = { from = "resource", path = "GlobalNetwork.GlobalNetworkId" }
+PolicyDocument = '{"version":"2021.12","core-network-configuration":{"asn-ranges":["64512-64520"],"edge-locations":[{"location":"us-east-1"}]},"segments":[{"name":"inventory","require-attachment-acceptance":false}],"attachment-policies":[{"rule-number":100,"condition-logic":"or","conditions":[{"type":"any"}],"action":{"association-method":"constant","segment":"inventory"}}]}'
+
+[[step]]
+id = "vpc_attachment"
+operation = "CreateVpcAttachment"
+kind = "AWS::ApiOnly::NetworkManagerAttachment"
+identity = "VpcAttachment.Attachment.AttachmentId"
+scope = "account"
+[step.input]
+CoreNetworkId = { from = "core_network", path = "CoreNetwork.CoreNetworkId" }
+VpcArn = "arn:aws:ec2:us-east-1:000000000000:vpc/vpc-0123456789abcdef0"
+SubnetArns = ["arn:aws:ec2:us-east-1:000000000000:subnet/subnet-0123456789abcdef0"]
+
+[[step]]
+id = "connect_attachment"
+operation = "CreateConnectAttachment"
+kind = "AWS::ApiOnly::NetworkManagerAttachment"
+identity = "ConnectAttachment.Attachment.AttachmentId"
+scope = "account"
+[step.input]
+CoreNetworkId = { from = "core_network", path = "CoreNetwork.CoreNetworkId" }
+EdgeLocation = "us-east-1"
+TransportAttachmentId = { from = "vpc_attachment", path = "VpcAttachment.Attachment.AttachmentId" }
+Options = { Protocol = "GRE" }
+
+[[step]]
+id = "connect_peer"
+operation = "CreateConnectPeer"
+kind = "AWS::NetworkManager::ConnectPeer"
+identity = "ConnectPeer.ConnectPeerId"
+scope = "account"
+[step.input]
+ConnectAttachmentId = { from = "connect_attachment", path = "ConnectAttachment.Attachment.AttachmentId" }
+PeerAddress = "10.78.0.10"
+BgpOptions = { PeerAsn = 65001 }
+InsideCidrBlocks = ["169.254.100.0/29"]
+
+[[step]]
+id = "transit_gateway"
+service = "ec2"
+operation = "CreateTransitGateway"
+kind = ""
+[step.input]
+Description = "Inventory seed transit gateway"
+
+[[step]]
+id = "peering"
+operation = "CreateTransitGatewayPeering"
+kind = "AWS::ApiOnly::NetworkManagerPeering"
+identity = "TransitGatewayPeering.Peering.PeeringId"
+scope = "account"
+[step.input]
+CoreNetworkId = { from = "core_network", path = "CoreNetwork.CoreNetworkId" }
+TransitGatewayArn = { from = "transit_gateway", path = "TransitGateway.TransitGatewayArn" }
+
+[[step]]
+id = "site"
+operation = "CreateSite"
+kind = "AWS::NetworkManager::Site"
+identity = "Site.SiteArn"
+scope = "account"
+[step.input]
+GlobalNetworkId = { from = "resource", path = "GlobalNetwork.GlobalNetworkId" }
+Description = "Inventory seed site"
+
+[[step]]
+id = "device"
+operation = "CreateDevice"
+kind = "AWS::NetworkManager::Device"
+identity = "Device.DeviceArn"
+scope = "account"
+[step.input]
+GlobalNetworkId = { from = "resource", path = "GlobalNetwork.GlobalNetworkId" }
+SiteId = { from = "site", path = "Site.SiteId" }
+Description = "Inventory seed device"
+
+[[step]]
+id = "link"
+operation = "CreateLink"
+kind = "AWS::NetworkManager::Link"
+identity = "Link.LinkArn"
+scope = "account"
+[step.input]
+GlobalNetworkId = { from = "resource", path = "GlobalNetwork.GlobalNetworkId" }
+SiteId = { from = "site", path = "Site.SiteId" }
+Bandwidth = { UploadSpeed = 100, DownloadSpeed = 100 }
+
+[[step]]
+id = "connected_device"
+operation = "CreateDevice"
+kind = "AWS::NetworkManager::Device"
+identity = "Device.DeviceArn"
+scope = "account"
+[step.input]
+GlobalNetworkId = { from = "resource", path = "GlobalNetwork.GlobalNetworkId" }
+SiteId = { from = "site", path = "Site.SiteId" }
+Description = "Inventory seed connected device"
+
+[[step]]
+id = "connection"
+operation = "CreateConnection"
+kind = "AWS::ApiOnly::NetworkManagerConnection"
+identity = "Connection.ConnectionArn"
+scope = "account"
+[step.input]
+GlobalNetworkId = { from = "resource", path = "GlobalNetwork.GlobalNetworkId" }
+DeviceId = { from = "device", path = "Device.DeviceId" }
+ConnectedDeviceId = { from = "connected_device", path = "Device.DeviceId" }

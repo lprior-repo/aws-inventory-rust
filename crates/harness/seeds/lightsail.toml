@@ -29,3 +29,162 @@ scope = "region"
 [step.input]
 certificateName = "inv-createcertificate-{n}"
 domainName = "inv-createcertificate-{n}.example.com"
+
+[[step]]
+id = "bucket"
+operation = "CreateBucket"
+kind = "AWS::Lightsail::Bucket"
+identity = "bucket.arn"
+[step.input]
+bucketName = "inventory-thin-lightsail-bucket"
+bundleId = "small_1_0"
+
+[[step]]
+id = "create_disk"
+operation = "CreateDisk"
+kind = ""
+[step.input]
+diskName = "inventory-thin-lightsail-disk"
+availabilityZone = "us-east-1a"
+sizeInGb = 8
+
+[[step]]
+id = "disk"
+operation = "GetDisk"
+kind = "AWS::Lightsail::Disk"
+identity = "disk.arn"
+[step.input]
+diskName = "inventory-thin-lightsail-disk"
+
+[[step]]
+id = "create_disk_snapshot"
+operation = "CreateDiskSnapshot"
+kind = ""
+[step.input]
+diskName = "inventory-thin-lightsail-disk"
+diskSnapshotName = "inventory-thin-lightsail-disk-snapshot"
+
+[[step]]
+id = "disk_snapshot"
+operation = "GetDiskSnapshot"
+kind = "AWS::Lightsail::DiskSnapshot"
+identity = "diskSnapshot.arn"
+[step.input]
+diskSnapshotName = "inventory-thin-lightsail-disk-snapshot"
+
+[[step]]
+id = "create_instance"
+operation = "CreateInstances"
+kind = ""
+[step.input]
+instanceNames = ["inventory-thin-lightsail-instance"]
+availabilityZone = "us-east-1a"
+blueprintId = "amazon_linux_2"
+bundleId = "nano_3_0"
+
+[[step]]
+id = "instance"
+operation = "GetInstance"
+kind = "AWS::Lightsail::Instance"
+identity = "instance.arn"
+[step.input]
+instanceName = "inventory-thin-lightsail-instance"
+
+[[step]]
+id = "create_instance_snapshot"
+operation = "CreateInstanceSnapshot"
+kind = ""
+[step.input]
+instanceName = "inventory-thin-lightsail-instance"
+instanceSnapshotName = "inventory-thin-lightsail-instance-snapshot"
+
+[[step]]
+id = "instance_snapshot"
+operation = "GetInstanceSnapshot"
+kind = "AWS::Lightsail::InstanceSnapshot"
+identity = "instanceSnapshot.arn"
+[step.input]
+instanceSnapshotName = "inventory-thin-lightsail-instance-snapshot"
+
+[[step]]
+id = "alarm"
+operation = "PutAlarm"
+kind = "AWS::Lightsail::Alarm"
+identity = { input = "alarmName" }
+[step.input]
+alarmName = "inventory-thin-lightsail-alarm"
+metricName = "CPUUtilization"
+monitoredResourceName = "inventory-thin-lightsail-instance"
+comparisonOperator = "GreaterThanThreshold"
+threshold = 80.0
+evaluationPeriods = 1
+notificationEnabled = false
+
+[[step]]
+id = "distribution"
+operation = "CreateDistribution"
+kind = "AWS::Lightsail::Distribution"
+identity = "distribution.arn"
+[step.input]
+distributionName = "inventory-thin-lightsail-distribution"
+bundleId = "small_1_0"
+origin = { name = "inventory-thin-lightsail-instance", regionName = "us-east-1", protocolPolicy = "http-only" }
+defaultCacheBehavior = { behavior = "cache" }
+
+[[step]]
+id = "create_load_balancer"
+operation = "CreateLoadBalancer"
+kind = ""
+[step.input]
+loadBalancerName = "inventory-thin-lightsail-balancer"
+instancePort = 80
+
+[[step]]
+id = "load_balancer"
+operation = "GetLoadBalancer"
+kind = "AWS::Lightsail::LoadBalancer"
+identity = "loadBalancer.arn"
+[step.input]
+loadBalancerName = "inventory-thin-lightsail-balancer"
+
+[[step]]
+id = "create_database"
+operation = "CreateRelationalDatabase"
+kind = ""
+[step.input]
+relationalDatabaseName = "inventory-thin-lightsail-database"
+relationalDatabaseBlueprintId = "mysql_8_4"
+relationalDatabaseBundleId = "micro_2_0"
+masterDatabaseName = "inventory"
+masterUsername = "inventory"
+
+[[step]]
+id = "create_database_snapshot"
+operation = "CreateRelationalDatabaseSnapshot"
+kind = ""
+[step.input]
+relationalDatabaseName = "inventory-thin-lightsail-database"
+relationalDatabaseSnapshotName = "inventory-thin-lightsail-database-snapshot"
+
+[[step]]
+id = "database_snapshot"
+operation = "GetRelationalDatabaseSnapshot"
+kind = "AWS::Lightsail::DatabaseSnapshot"
+identity = "relationalDatabaseSnapshot.arn"
+[step.input]
+relationalDatabaseSnapshotName = "inventory-thin-lightsail-database-snapshot"
+
+[[step]]
+id = "allocate_ip"
+operation = "AllocateStaticIp"
+kind = ""
+[step.input]
+staticIpName = "inventory-thin-lightsail-ip"
+
+[[step]]
+id = "static_ip"
+operation = "GetStaticIp"
+kind = "AWS::Lightsail::StaticIp"
+identity = "staticIp.arn"
+[step.input]
+staticIpName = "inventory-thin-lightsail-ip"

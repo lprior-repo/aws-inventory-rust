@@ -1,0 +1,19 @@
+format = 1
+service = "pca-connector-scep"
+
+[[step]]
+id = "ca"
+service = "acm-pca"
+operation = "CreateCertificateAuthority"
+kind = ""
+[step.input]
+CertificateAuthorityType = "ROOT"
+CertificateAuthorityConfiguration = { KeyAlgorithm = "RSA_2048", SigningAlgorithm = "SHA256WITHRSA", Subject = { CommonName = "Inventory seed SCEP CA" } }
+
+[[step]]
+id = "connector"
+operation = "CreateConnector"
+kind = "AWS::PCAConnectorSCEP::Connector"
+identity = "ConnectorArn"
+[step.input]
+CertificateAuthorityArn = { from = "ca", path = "CertificateAuthorityArn" }

@@ -94,11 +94,22 @@
 - Inventory requests use compatible page limits for EC2 Image Builder lists,
   MediaPackage origin endpoints, and Chime SDK Voice phone numbers. Pagination
   still follows each operation's continuation token.
-- Seed recipes for 23 services create more resources before the emulator
-  probe. The regenerated reports record 390 accepted seed steps with none
-  rejected and 335 list operations returning items, out of 2,237 probed.
+- Seed recipes for 271 services create more resources before the emulator
+  probe. The regenerated reports record 1181 accepted seed steps with 5
+  rejected and 655 list operations returning items, out of 2,238 probed.
   `securityagent ListSecurityRequirementPacks` now reads empty, and seeded ECS
   task definitions join the kinds with no Cloud Control target.
+- Seed identities are checked against the catalog. Four steps declare composite
+  identity templates (Logs metric filter, CodeDeploy deployment group, ECR image,
+  ECR Public image). Seventeen steps whose composite identity contains a runtime
+  id are prerequisite-only (`kind = ""`). Six S3 bucket steps use the
+  account-scoped ARN identity. Fifty-three step kinds invented by the authoring
+  lanes now use the kind the catalog assigns to the list or get operation.
+- The `inventory_seed::file::identity_arity` test reads the embedded catalog and
+  fails when a seed step for a composite-only kind lacks a composite template of
+  the right arity.
+- The Cloud Control "no mapped target" pin lists eight more kinds, each excluded
+  or not callable in the capability catalog.
 - `cmdb-bench` measures cold and warm sweeps in owned stacks, compares benchmark
   results, and times catalog opens. The proxy profile adds latency and request
   pacing; reports retain run provenance and distinguish incomplete runs.

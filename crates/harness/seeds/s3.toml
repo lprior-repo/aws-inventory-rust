@@ -10,3 +10,12 @@ scope = "account"
 repeat = 2
 [step.input]
 Bucket = "inventory-thin-bucket-{n}"
+
+[[step]]
+id = "directory_bucket"
+operation = "CreateBucket"
+kind = "AWS::S3Express::DirectoryBucket"
+identity = "BucketArn"
+[step.input]
+Bucket = "inventory-seed-directory--use1-az1--x-s3"
+CreateBucketConfiguration = { Location = { Type = "AvailabilityZone", Name = "use1-az1" }, Bucket = { DataRedundancy = "SingleAvailabilityZone", Type = "Directory" } }

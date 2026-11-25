@@ -8,3 +8,27 @@ kind = "AWS::VpcLattice::Service"
 identity = "arn"
 [step.input]
 "name" = "inventory-thin-vpc-lattice"
+
+[[step]]
+id = "listener"
+operation = "CreateListener"
+kind = "AWS::VpcLattice::Listener"
+identity = "arn"
+[step.input]
+serviceIdentifier = { from = "resource", path = "id" }
+name = "inventory-seed-listener"
+protocol = "HTTP"
+defaultAction = { fixedResponse = { statusCode = 404 } }
+
+[[step]]
+id = "rule"
+operation = "CreateRule"
+kind = "AWS::VpcLattice::Rule"
+identity = "arn"
+[step.input]
+serviceIdentifier = { from = "resource", path = "id" }
+listenerIdentifier = { from = "listener", path = "id" }
+name = "inventory-seed-rule"
+priority = 10
+match = { httpMatch = { pathMatch = { match = { exact = "/maintenance" } } } }
+action = { fixedResponse = { statusCode = 500 } }

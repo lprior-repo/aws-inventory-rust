@@ -1,0 +1,31 @@
+format = 1
+service = "launch-wizard"
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = "AWS::EC2::VPC"
+identity = "Vpc.VpcId"
+[step.input]
+CidrBlock = "10.59.0.0/16"
+
+[[step]]
+id = "key_pair"
+service = "ec2"
+operation = "CreateKeyPair"
+kind = "AWS::EC2::KeyPair"
+identity = "KeyPairId"
+[step.input]
+KeyName = "inventory-thin-launch-wizard"
+
+[[step]]
+id = "deployment"
+operation = "CreateDeployment"
+kind = "AWS::LaunchWizard::Deployment"
+identity = "deploymentId"
+[step.input]
+workloadName = "SAP"
+deploymentPatternName = "SapHanaSingle"
+name = "InventoryThinSap"
+specifications = { VpcId = { from = "vpc", path = "Vpc.VpcId" }, KeyPairName = "inventory-thin-launch-wizard" }

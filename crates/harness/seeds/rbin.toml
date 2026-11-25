@@ -1,0 +1,12 @@
+format = 1
+service = "rbin"
+
+[[step]]
+id = "retention_rule"
+operation = "CreateRule"
+kind = "AWS::Rbin::Rule"
+identity = "RuleArn"
+[step.input]
+ResourceType = "EBS_VOLUME"
+RetentionPeriod = { RetentionPeriodValue = 7, RetentionPeriodUnit = "DAYS" }
+Description = "Inventory seed retention rule"

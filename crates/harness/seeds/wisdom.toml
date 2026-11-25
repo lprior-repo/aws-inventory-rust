@@ -9,3 +9,60 @@ identity = "assistant.assistantArn"
 [step.input]
 "name" = "inventory-thin-wisdom"
 "type" = "AGENT"
+
+[[step]]
+id = "knowledge_base"
+operation = "CreateKnowledgeBase"
+kind = "AWS::Wisdom::KnowledgeBase"
+identity = "knowledgeBase.knowledgeBaseArn"
+[step.input]
+name = "inventory-seed-knowledge-base"
+knowledgeBaseType = "CUSTOM"
+
+[[step]]
+id = "assistant_association"
+operation = "CreateAssistantAssociation"
+kind = "AWS::Wisdom::AssistantAssociation"
+identity = "assistantAssociation.assistantAssociationArn"
+[step.input]
+assistantId = { from = "resource", path = "assistant.assistantId" }
+associationType = "KNOWLEDGE_BASE"
+association = { knowledgeBaseId = { from = "knowledge_base", path = "knowledgeBase.knowledgeBaseId" } }
+
+[[step]]
+id = "quick_response_base"
+operation = "CreateKnowledgeBase"
+kind = "AWS::Wisdom::KnowledgeBase"
+identity = "knowledgeBase.knowledgeBaseArn"
+[step.input]
+name = "inventory-seed-quick-response-base"
+knowledgeBaseType = "QUICK_RESPONSES"
+
+[[step]]
+id = "quick_response"
+operation = "CreateQuickResponse"
+kind = "AWS::Wisdom::QuickResponse"
+identity = "quickResponse.quickResponseArn"
+[step.input]
+knowledgeBaseId = { from = "quick_response_base", path = "knowledgeBase.knowledgeBaseId" }
+name = "inventory-seed-quick-response"
+contentType = "application/x.quickresponse;format=plain"
+content = { content = "Inventory emulator fixture" }
+
+[[step]]
+id = "content_upload"
+operation = "StartContentUpload"
+kind = ""
+[step.input]
+knowledgeBaseId = { from = "knowledge_base", path = "knowledgeBase.knowledgeBaseId" }
+contentType = "text/plain"
+
+[[step]]
+id = "content"
+operation = "CreateContent"
+kind = "AWS::Wisdom::Content"
+identity = "content.contentArn"
+[step.input]
+knowledgeBaseId = { from = "knowledge_base", path = "knowledgeBase.knowledgeBaseId" }
+name = "inventory-seed-content"
+uploadId = { from = "content_upload", path = "uploadId" }

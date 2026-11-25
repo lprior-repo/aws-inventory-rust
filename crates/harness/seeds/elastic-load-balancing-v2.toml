@@ -21,3 +21,66 @@ Protocol = "HTTP"
 Port = 80
 TargetType = "ip"
 VpcId = { from = "vpc", path = "Vpc.VpcId" }
+
+[[step]]
+id = "subnet_a"
+service = "ec2"
+operation = "CreateSubnet"
+kind = "AWS::EC2::Subnet"
+identity = "Subnet.SubnetId"
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.42.1.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "subnet_b"
+service = "ec2"
+operation = "CreateSubnet"
+kind = "AWS::EC2::Subnet"
+identity = "Subnet.SubnetId"
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.42.2.0/24"
+AvailabilityZone = "us-east-1b"
+
+[[step]]
+id = "load_balancer"
+operation = "CreateLoadBalancer"
+kind = "AWS::ElasticLoadBalancingV2::LoadBalancer"
+identity = "LoadBalancers.0.LoadBalancerArn"
+[step.input]
+Name = "inventory-seed-alb"
+Type = "application"
+Scheme = "internal"
+Subnets = [{ from = "subnet_a", path = "Subnet.SubnetId" }, { from = "subnet_b", path = "Subnet.SubnetId" }]
+
+[[step]]
+id = "trust_store_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-seed-elbv2-trust"
+
+[[step]]
+id = "trust_store_bundle"
+service = "s3"
+operation = "PutObject"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-elbv2-trust"
+Key = "ca.pem"
+Body = "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUIxVENDQVZxZ0F3SUJBZ0lVVmxCSUZBd2MzU1RpUEUxTVZyOXZSTXlTSVJRd0NnWUlLb1pJemowRUF3SXcKSVRFZk1CMEdBMVVFQXd3V2FXNTJaVzUwYjNKNUxYTmxaV1F1WlhoaGJYQnNaVEFlRncweU5qRXhNalV3TkRBMQpNelphRncwME5qRXhNakF3TkRBMU16WmFNQ0V4SHpBZEJnTlZCQU1NRm1sdWRtVnVkRzl5ZVMxelpXVmtMbVY0CllXMXdiR1V3ZGpBUUJnY3Foa2pPUFFJQkJnVXJnUVFBSWdOaUFBUTBGRFlqOGIwS2RVcWdHeURIZG5BUDg5Z0oKZkF2dkRRcXBmQi9GYStmRGZNNTF5c2kzNlZQR3BSVUdJR2lpQXMwVlZ2RlRTdCtDalZLZjhrRUduYy8vdi9IMgp5Q25XYmpnaEpIcWpSQmJHdU1UOFBWWDFMUUpwcHltMFRMQjk2aVNqVXpCUk1CMEdBMVVkRGdRV0JCUldVUVRuCi9tR0pLMDZUdnkrZlNJeHpDSEVQRURBZkJnTlZIU01FR0RBV2dCUldVUVRuL21HSkswNlR2eStmU0l4ekNIRVAKRURBUEJnTlZIUk1CQWY4RUJUQURBUUgvTUFvR0NDcUdTTTQ5QkFNQ0Eya0FNR1lDTVFDQjFiUFlhdmR6L0xaQwp6UVp1QVliNEZCMXQxOVZYbHhpb0hYS2VnRUhQYkVicURrUVRvVWNiWWtzMGdtRGszTUVDTVFENUpLTDN3V2pzCm8zaFQzM0NtUGY4bzJCREh0QndNVW5SNmJPWUVHNXduZXFoUEM3ZDljZmpDanQybVhXcEdCUFk9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K"
+
+[[step]]
+id = "trust_store"
+operation = "CreateTrustStore"
+kind = "AWS::ElasticLoadBalancingV2::TrustStore"
+identity = "TrustStores.0.TrustStoreArn"
+[step.input]
+Name = "inventory-seed-trust"
+CaCertificatesBundleS3Bucket = "inventory-seed-elbv2-trust"
+CaCertificatesBundleS3Key = "ca.pem"

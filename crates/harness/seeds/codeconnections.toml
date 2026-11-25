@@ -9,3 +9,23 @@ identity = "ConnectionArn"
 [step.input]
 ConnectionName = "inventory-thin-codeconnections"
 ProviderType = "GitHub"
+
+[[step]]
+id = "repository_link"
+operation = "CreateRepositoryLink"
+kind = "AWS::CodeStarConnections::RepositoryLink"
+identity = "RepositoryLinkInfo.RepositoryLinkArn"
+[step.input]
+ConnectionArn = { from = "connection", path = "ConnectionArn" }
+OwnerId = "inventory-seed"
+RepositoryName = "fixture"
+
+[[step]]
+id = "host"
+operation = "CreateHost"
+kind = "AWS::ApiOnly::CodeStarConnectionsHost"
+identity = "HostArn"
+[step.input]
+Name = "inventory-seed-codeconnections"
+ProviderType = "GitHubEnterpriseServer"
+ProviderEndpoint = "https://github.inventory.example"

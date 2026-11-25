@@ -9,3 +9,190 @@ identity = "Name"
 [step.input]
 Name = "inventory-thin-emr"
 SecurityConfiguration = "{\"EncryptionConfiguration\":{\"EnableInTransitEncryption\":false,\"EnableAtRestEncryption\":false}}"
+
+[[step]]
+id = "role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-emr"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":["elasticmapreduce.amazonaws.com","ec2.amazonaws.com"]},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "profile"
+service = "iam"
+operation = "CreateInstanceProfile"
+kind = "AWS::IAM::InstanceProfile"
+identity = "InstanceProfile.Arn"
+scope = "account"
+[step.input]
+InstanceProfileName = "inventory-seed-emr"
+
+[[step]]
+id = "profile_role"
+service = "iam"
+operation = "AddRoleToInstanceProfile"
+kind = ""
+scope = "account"
+[step.input]
+InstanceProfileName = { from = "profile", path = "InstanceProfile.InstanceProfileName" }
+RoleName = { from = "role", path = "Role.RoleName" }
+
+[[step]]
+id = "cluster"
+operation = "RunJobFlow"
+kind = "AWS::EMR::Cluster"
+identity = "ClusterArn"
+[step.input]
+Name = "inventory-seed-emr-cluster"
+ReleaseLabel = "emr-7.0.0"
+Instances = { MasterInstanceType = "m5.xlarge", InstanceCount = 1, KeepJobFlowAliveWhenNoSteps = true }
+ServiceRole = { from = "role", path = "Role.RoleName" }
+JobFlowRole = { from = "profile", path = "InstanceProfile.InstanceProfileName" }
+
+[[step]]
+id = "bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-seed-emr-studio"
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = "AWS::EC2::VPC"
+identity = "Vpc.VpcId"
+[step.input]
+CidrBlock = "10.44.0.0/16"
+
+[[step]]
+id = "subnet"
+service = "ec2"
+operation = "CreateSubnet"
+kind = "AWS::EC2::Subnet"
+identity = "Subnet.SubnetId"
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.44.1.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "security_group"
+service = "ec2"
+operation = "CreateSecurityGroup"
+kind = "AWS::EC2::SecurityGroup"
+identity = "GroupId"
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+GroupName = "inventory-seed-emr-workspace"
+Description = "Inventory seed EMR workspace"
+
+[[step]]
+id = "engine_security_group"
+service = "ec2"
+operation = "CreateSecurityGroup"
+kind = "AWS::EC2::SecurityGroup"
+identity = "GroupId"
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+GroupName = "inventory-seed-emr-engine"
+Description = "Inventory seed EMR engine"
+
+[[step]]
+id = "studio"
+operation = "CreateStudio"
+kind = "AWS::EMR::Studio"
+identity = "StudioId"
+[step.input]
+Name = "inventory-seed-emr-studio"
+AuthMode = "IAM"
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+SubnetIds = [{ from = "subnet", path = "Subnet.SubnetId" }]
+WorkspaceSecurityGroupId = { from = "security_group", path = "GroupId" }
+EngineSecurityGroupId = { from = "engine_security_group", path = "GroupId" }
+ServiceRole = { from = "role", path = "Role.Arn" }
+DefaultS3Location = "s3://inventory-seed-emr-studio/studio"
+
+[[step]]
+id = "notebook"
+operation = "StartNotebookExecution"
+kind = "AWS::ApiOnly::EMRNotebookExecution"
+identity = "NotebookExecutionId"
+[step.input]
+NotebookExecutionName = "inventory-seed-notebook"
+ExecutionEngine = { Id = { from = "cluster", path = "JobFlowId" }, Type = "EMR" }
+ServiceRole = { from = "role", path = "Role.Arn" }
+NotebookS3Location = { Bucket = "inventory-seed-emr-studio", Key = "notebooks/inventory.ipynb" }
+OutputNotebookS3Location = { Bucket = "inventory-seed-emr-studio", Key = "notebooks/output" }
+
+[[step]]
+id = "sso_instances"
+service = "sso-admin"
+operation = "ListInstances"
+kind = ""
+
+[[step]]
+id = "studio_group"
+service = "identitystore"
+operation = "CreateGroup"
+kind = "AWS::IdentityStore::Group"
+identity = "GroupArn"
+[step.input]
+IdentityStoreId = { from = "sso_instances", path = "Instances.0.IdentityStoreId" }
+DisplayName = "inventory-seed-emr-studio"
+
+[[step]]
+id = "studio_user_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-emr-studio-user"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"elasticmapreduce.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "studio_session_policy"
+service = "iam"
+operation = "CreatePolicy"
+kind = "AWS::IAM::ManagedPolicy"
+identity = "Policy.Arn"
+scope = "account"
+[step.input]
+PolicyName = "inventory-seed-emr-studio-session"
+PolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"elasticmapreduce:ListStudios","Resource":"*"}]}'
+
+[[step]]
+id = "sso_studio"
+operation = "CreateStudio"
+kind = "AWS::EMR::Studio"
+identity = "StudioId"
+[step.input]
+Name = "inventory-seed-emr-sso-studio"
+AuthMode = "SSO"
+IdcInstanceArn = { from = "sso_instances", path = "Instances.0.InstanceArn" }
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+SubnetIds = [{ from = "subnet", path = "Subnet.SubnetId" }]
+WorkspaceSecurityGroupId = { from = "security_group", path = "GroupId" }
+EngineSecurityGroupId = { from = "engine_security_group", path = "GroupId" }
+ServiceRole = { from = "role", path = "Role.Arn" }
+UserRole = { from = "studio_user_role", path = "Role.Arn" }
+DefaultS3Location = "s3://inventory-seed-emr-studio/sso-studio"
+
+[[step]]
+id = "studio_session_mapping"
+operation = "CreateStudioSessionMapping"
+kind = ""
+[step.input]
+StudioId = { from = "sso_studio", path = "StudioId" }
+IdentityId = { from = "studio_group", path = "GroupId" }
+IdentityType = "GROUP"
+SessionPolicyArn = { from = "studio_session_policy", path = "Policy.Arn" }

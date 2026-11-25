@@ -16,3 +16,33 @@ kind = "AWS::ManagedBlockchain::Accessor"
 identity = "Accessor.Arn"
 [step.input]
 AccessorId = { from = "resource", path = "AccessorId" }
+
+[[step]]
+id = "create_network"
+operation = "CreateNetwork"
+kind = ""
+[step.input]
+ClientRequestToken = "1d11614b-d6e8-46dc-bb18-61ff095e81be"
+Name = "inventory-thin-fabric"
+Framework = "HYPERLEDGER_FABRIC"
+FrameworkVersion = "2.2"
+FrameworkConfiguration = { Fabric = { Edition = "STARTER" } }
+VotingPolicy = { ApprovalThresholdPolicy = { ThresholdPercentage = 50, ProposalDurationInHours = 24, ThresholdComparator = "GREATER_THAN_OR_EQUAL_TO" } }
+MemberConfiguration = { Name = "inventory-member", FrameworkConfiguration = { Fabric = { AdminUsername = "inventory", AdminPassword = "Inventory-only-Seed-49!" } } }
+
+[[step]]
+id = "network"
+operation = "GetNetwork"
+kind = "AWS::ApiOnly::ManagedBlockchainNetwork"
+identity = "Network.Arn"
+[step.input]
+NetworkId = { from = "create_network", path = "NetworkId" }
+
+[[step]]
+id = "member"
+operation = "GetMember"
+kind = "AWS::ManagedBlockchain::Member"
+identity = "Member.Arn"
+[step.input]
+NetworkId = { from = "create_network", path = "NetworkId" }
+MemberId = { from = "create_network", path = "MemberId" }

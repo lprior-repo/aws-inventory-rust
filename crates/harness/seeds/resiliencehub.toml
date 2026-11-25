@@ -8,3 +8,66 @@ kind = "AWS::ResilienceHub::App"
 identity = "app.appArn"
 [step.input]
 "name" = "inventory-thin-resiliencehub"
+
+[[step]]
+id = "policy"
+operation = "CreateResiliencyPolicy"
+kind = ""
+[step.input]
+policyName = "inventory-thin-assessment"
+tier = "NonCritical"
+policy = { Software = { rtoInSecs = 3600, rpoInSecs = 3600 }, Hardware = { rtoInSecs = 3600, rpoInSecs = 3600 }, AZ = { rtoInSecs = 3600, rpoInSecs = 3600 }, Region = { rtoInSecs = 3600, rpoInSecs = 3600 } }
+
+[[step]]
+id = "app_policy"
+operation = "UpdateApp"
+kind = ""
+[step.input]
+appArn = { from = "resource", path = "app.appArn" }
+policyArn = { from = "policy", path = "policy.policyArn" }
+
+[[step]]
+id = "assessment_queue"
+service = "sqs"
+operation = "CreateQueue"
+kind = ""
+[step.input]
+QueueName = "inventory-thin-resiliencehub"
+
+[[step]]
+id = "assessment_queue_metadata"
+service = "sqs"
+operation = "GetQueueAttributes"
+kind = ""
+[step.input]
+QueueUrl = { from = "assessment_queue", path = "QueueUrl" }
+AttributeNames = ["QueueArn"]
+
+[[step]]
+id = "app_resource"
+operation = "CreateAppVersionResource"
+kind = ""
+[step.input]
+appArn = { from = "resource", path = "app.appArn" }
+resourceName = "AssessmentQueue"
+logicalResourceId = { identifier = "AssessmentQueue" }
+physicalResourceId = { from = "assessment_queue_metadata", path = "Attributes.QueueArn" }
+resourceType = "AWS::SQS::Queue"
+appComponents = ["InventoryQueue"]
+
+[[step]]
+id = "version"
+operation = "PublishAppVersion"
+kind = ""
+[step.input]
+appArn = { from = "resource", path = "app.appArn" }
+
+[[step]]
+id = "assessment"
+operation = "StartAppAssessment"
+kind = "AWS::ApiOnly::ResilienceHubAppAssessment"
+identity = "assessment.assessmentArn"
+[step.input]
+appArn = { from = "resource", path = "app.appArn" }
+appVersion = { from = "version", path = "appVersion" }
+assessmentName = "inventory-thin-assessment"

@@ -30,3 +30,20 @@ scope = "region"
 name = "inventory-seed-state-machine"
 definition = "{\"StartAt\":\"Pass\",\"States\":{\"Pass\":{\"Type\":\"Pass\",\"End\":true}}}"
 roleArn = { from = "role", path = "Role.Arn" }
+
+[[step]]
+id = "state_machine_version"
+operation = "PublishStateMachineVersion"
+kind = "AWS::StepFunctions::StateMachineVersion"
+identity = "stateMachineVersionArn"
+[step.input]
+stateMachineArn = { from = "state_machine", path = "stateMachineArn" }
+
+[[step]]
+id = "state_machine_alias"
+operation = "CreateStateMachineAlias"
+kind = "AWS::StepFunctions::StateMachineAlias"
+identity = "stateMachineAliasArn"
+[step.input]
+name = "inventory-seed-alias"
+routingConfiguration = [{ stateMachineVersionArn = { from = "state_machine_version", path = "stateMachineVersionArn" }, weight = 100 }]

@@ -1,0 +1,45 @@
+format = 1
+service = "auditmanager"
+
+[[step]]
+id = "frameworks"
+operation = "ListAssessmentFrameworks"
+kind = ""
+[step.input]
+frameworkType = "Standard"
+
+[[step]]
+id = "reports_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-auditmanager"
+
+[[step]]
+id = "owner"
+service = "iam"
+operation = "CreateRole"
+kind = ""
+[step.input]
+RoleName = "inventory-seed-auditmanager"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"auditmanager.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "account"
+service = "sts"
+operation = "GetCallerIdentity"
+kind = ""
+[step.input]
+
+[[step]]
+id = "assessment"
+operation = "CreateAssessment"
+kind = "AWS::AuditManager::Assessment"
+identity = "assessment.metadata.id"
+[step.input]
+name = "Inventory seed assessment"
+assessmentReportsDestination = { destinationType = "S3", destination = "s3://inventory-seed-auditmanager" }
+scope = { awsAccounts = [{ id = { from = "account", path = "Account" } }] }
+roles = [{ roleType = "PROCESS_OWNER", roleArn = { from = "owner", path = "Role.Arn" } }]
+frameworkId = { from = "frameworks", path = "frameworkMetadataList.0.id" }

@@ -9,3 +9,24 @@ identity = "arn"
 repeat = 2
 [step.input]
 name = "inventory-thin-s3tables-name-{n}"
+
+[[step]]
+id = "namespace"
+operation = "CreateNamespace"
+kind = ""
+repeat = 2
+[step.input]
+tableBucketARN = { from = "resource", path = "arn" }
+namespace = ["inventory_seed"]
+
+[[step]]
+id = "table"
+operation = "CreateTable"
+kind = "AWS::S3Tables::Table"
+identity = "tableARN"
+repeat = 2
+[step.input]
+tableBucketARN = { from = "resource", path = "arn" }
+namespace = "inventory_seed"
+name = "inventory_seed_table"
+format = "ICEBERG"

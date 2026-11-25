@@ -8,3 +8,21 @@ kind = "AWS::HealthLake::FHIRDatastore"
 identity = "DatastoreArn"
 [step.input]
 DatastoreTypeVersion = "R4"
+
+[[step]]
+id = "transformation_profile"
+operation = "CreateDataTransformationProfile"
+kind = ""
+[step.input]
+ProfileName = "inventory-seed-healthlake"
+SourceFormat = "CCDA"
+Source = { ProfileMapping = { ProfileMapping = { "Patient.id" = "ClinicalDocument.recordTarget.patientRole.id" } } }
+
+[[step]]
+id = "published_version"
+operation = "PublishDataTransformationProfile"
+kind = ""
+[step.input]
+ProfileId = { from = "transformation_profile", path = "ProfileId" }
+SourceFormat = "CCDA"
+ChangeDescription = "Inventory seed profile version"

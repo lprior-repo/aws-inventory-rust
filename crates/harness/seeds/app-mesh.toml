@@ -8,3 +8,13 @@ kind = "AWS::AppMesh::Mesh"
 identity = "mesh.metadata.arn"
 [step.input]
 "meshName" = "inventory-thin-app-mesh"
+
+[[step]]
+id = "node"
+operation = "CreateVirtualNode"
+kind = "AWS::AppMesh::VirtualNode"
+identity = "virtualNode.metadata.arn"
+[step.input]
+meshName = { from = "resource", path = "mesh.meshName" }
+virtualNodeName = "inventory-seed-node"
+spec = { serviceDiscovery = { dns = { hostname = "inventory.example.invalid" } }, listeners = [{ portMapping = { port = 8080, protocol = "http" } }] }

@@ -40,3 +40,22 @@ identity = "trainingDatasetArn"
 name = "inventory-thin-cleanroomsml"
 roleArn = { "from" = "role", "path" = "Role.Arn" }
 trainingData = [{ "type" = "INTERACTIONS", "inputConfig" = { "schema" = [{ "columnName" = "user_id", "columnTypes" = ["USER_ID"] }, { "columnName" = "item_id", "columnTypes" = ["ITEM_ID"] }, { "columnName" = "timestamp", "columnTypes" = ["TIMESTAMP"] }], "dataSource" = { "glueDataSource" = { "databaseName" = "inventory_thin_cleanroomsml", "tableName" = "interactions" } } } }]
+
+[[step]]
+id = "audience_model"
+operation = "CreateAudienceModel"
+kind = "AWS::ApiOnly::CleanRoomsMLAudienceModel"
+identity = "audienceModelArn"
+[step.input]
+name = "inventory-seed-audience"
+trainingDatasetArn = { from = "training", path = "trainingDatasetArn" }
+
+[[step]]
+id = "model_algorithm"
+operation = "CreateConfiguredModelAlgorithm"
+kind = "AWS::ApiOnly::CleanRoomsMLConfiguredModelAlgorithm"
+identity = "configuredModelAlgorithmArn"
+[step.input]
+name = "inventory-seed-model-algorithm"
+roleArn = { from = "role", path = "Role.Arn" }
+trainingContainerConfig = { imageUri = "683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-xgboost:1.7-1" }

@@ -8,3 +8,21 @@ kind = "AWS::RAM::ResourceShare"
 identity = "resourceShare.resourceShareArn"
 [step.input]
 "name" = "inventory-thin-ram"
+
+[[step]]
+id = "external_share"
+operation = "CreateResourceShare"
+kind = "AWS::RAM::ResourceShare"
+identity = "resourceShare.resourceShareArn"
+[step.input]
+name = "inventory-thin-external-share"
+principals = ["000000000001"]
+allowExternalPrincipals = true
+
+[[step]]
+id = "invitation"
+operation = "GetResourceShareInvitations"
+kind = "AWS::ApiOnly::RAMResourceShareInvitation"
+identity = "resourceShareInvitations.0.resourceShareInvitationArn"
+[step.input]
+resourceShareArns = [{ from = "external_share", path = "resourceShare.resourceShareArn" }]

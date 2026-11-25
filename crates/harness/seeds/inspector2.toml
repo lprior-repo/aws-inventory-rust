@@ -10,3 +10,14 @@ identity = "arn"
 action = "NONE"
 filterCriteria = {}
 name = "inventory-thin-inspector2"
+
+[[step]]
+id = "cis_scan_configuration"
+operation = "CreateCisScanConfiguration"
+kind = "AWS::InspectorV2::CisScanConfiguration"
+identity = "scanConfigurationArn"
+[step.input]
+scanName = "inventory-seed-scan"
+securityLevel = "LEVEL_1"
+schedule = { oneTime = {} }
+targets = { accountIds = ["SELF"], targetResourceTags = { "inventory-cis-fixture" = ["seed"] } }

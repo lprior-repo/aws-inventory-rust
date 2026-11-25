@@ -11,3 +11,42 @@ name = "inventory-thin-b2bi"
 phone = "+12025550123"
 businessName = "Inventory Seed"
 logging = "DISABLED"
+
+[[step]]
+id = "edi_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-b2bi"
+
+[[step]]
+id = "transformer"
+operation = "CreateTransformer"
+kind = ""
+[step.input]
+name = "inventory-seed-transformer"
+fileFormat = "JSON"
+mappingTemplate = "$"
+ediType = { x12Details = { transactionSet = "X12_850", version = "VERSION_4010" } }
+
+[[step]]
+id = "capability"
+operation = "CreateCapability"
+kind = "AWS::B2BI::Capability"
+identity = "capabilityId"
+[step.input]
+name = "inventory-seed-capability"
+type = "edi"
+configuration = { edi = { capabilityDirection = "INBOUND", type = { x12Details = { transactionSet = "X12_850", version = "VERSION_4010" } }, inputLocation = { bucketName = "inventory-seed-b2bi", key = "input/" }, outputLocation = { bucketName = "inventory-seed-b2bi", key = "output/" }, transformerId = { from = "transformer", path = "transformerId" } } }
+
+[[step]]
+id = "partnership"
+operation = "CreatePartnership"
+kind = "AWS::B2BI::Partnership"
+identity = "partnershipId"
+[step.input]
+profileId = { from = "profile", path = "profileId" }
+name = "Inventory seed trading partner"
+email = "inventory@example.com"
+capabilities = [{ from = "capability", path = "capabilityId" }]

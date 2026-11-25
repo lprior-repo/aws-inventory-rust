@@ -18,3 +18,31 @@ identity = "Arn"
 Name = "inventory-thin-appintegrations"
 KmsKey = { "from" = "key", "path" = "KeyMetadata.Arn" }
 SourceURI = "s3://inventory-thin-appintegrations"
+
+[[step]]
+id = "event_bus"
+service = "eventbridge"
+operation = "CreateEventBus"
+kind = ""
+[step.input]
+Name = "inventory-seed-appintegrations"
+
+[[step]]
+id = "event_integration"
+operation = "CreateEventIntegration"
+kind = "AWS::AppIntegrations::EventIntegration"
+identity = "EventIntegrationArn"
+[step.input]
+Name = "inventory-seed-event-integration"
+EventFilter = { Source = "app-integrations.webhooks/inventory-fixture" }
+EventBridgeBus = "inventory-seed-appintegrations"
+ClientToken = "inventory-seed-event-integration"
+
+[[step]]
+id = "data_association"
+operation = "CreateDataIntegrationAssociation"
+kind = ""
+[step.input]
+DataIntegrationIdentifier = { from = "integration", path = "Arn" }
+ClientId = "inventory-seed-client"
+ClientToken = "inventory-seed-data-association"

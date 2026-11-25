@@ -1,0 +1,65 @@
+format = 1
+service = "comprehend"
+
+[[step]]
+id = "role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-comprehend"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"comprehend.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-seed-comprehend"
+
+[[step]]
+id = "fixture_data"
+service = "s3"
+operation = "PutObject"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-comprehend"
+Key = "training.csv"
+Body = "cG9zaXRpdmUsVGhlIHNlcnZpY2Ugd29ya3Mgd2VsbC4KbmVnYXRpdmUsVGhlIHNlcnZpY2UgZGlkIG5vdCB3b3JrLgo="
+
+[[step]]
+id = "role_policy"
+service = "iam"
+operation = "PutRolePolicy"
+kind = ""
+[step.input]
+RoleName = "inventory-seed-comprehend"
+PolicyName = "inventory-seed-comprehend-bucket"
+PolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:GetBucketLocation","s3:ListBucket"],"Resource":"arn:aws:s3:::inventory-seed-comprehend"},{"Effect":"Allow","Action":["s3:GetObject","s3:PutObject"],"Resource":"arn:aws:s3:::inventory-seed-comprehend/*"}]}'
+
+[[step]]
+id = "classifier"
+operation = "CreateDocumentClassifier"
+kind = "AWS::Comprehend::DocumentClassifier"
+identity = "DocumentClassifierArn"
+[step.input]
+DocumentClassifierName = "inventory-seed-classifier"
+DataAccessRoleArn = { from = "role", path = "Role.Arn" }
+InputDataConfig = { DataFormat = "COMPREHEND_CSV", S3Uri = "s3://inventory-seed-comprehend/training.csv" }
+LanguageCode = "en"
+Mode = "MULTI_CLASS"
+
+[[step]]
+id = "endpoint"
+operation = "CreateEndpoint"
+kind = "AWS::ApiOnly::ComprehendEndpoint"
+identity = "EndpointArn"
+[step.input]
+EndpointName = "inventory-seed-endpoint"
+DesiredInferenceUnits = 1
+ModelArn = { from = "classifier", path = "DocumentClassifierArn" }

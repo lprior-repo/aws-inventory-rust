@@ -9,3 +9,38 @@ identity = "assistant.assistantArn"
 [step.input]
 "name" = "inventory-thin-qconnect"
 "type" = "AGENT"
+
+[[step]]
+id = "knowledge_base"
+operation = "CreateKnowledgeBase"
+kind = "AWS::Wisdom::KnowledgeBase"
+identity = "knowledgeBase.knowledgeBaseArn"
+[step.input]
+name = "inventory-thin-qconnect"
+knowledgeBaseType = "CUSTOM"
+
+[[step]]
+id = "assistant_association"
+operation = "CreateAssistantAssociation"
+kind = "AWS::Wisdom::AssistantAssociation"
+identity = "assistantAssociation.assistantAssociationArn"
+[step.input]
+assistantId = { from = "resource", path = "assistant.assistantId" }
+associationType = "KNOWLEDGE_BASE"
+association = { knowledgeBaseId = { from = "knowledge_base", path = "knowledgeBase.knowledgeBaseId" } }
+
+[[step]]
+id = "ai_prompt"
+operation = "CreateAIPrompt"
+kind = "AWS::Wisdom::AIPrompt"
+identity = "aiPrompt.aiPromptArn"
+[step.input]
+assistantId = { from = "resource", path = "assistant.assistantId" }
+name = "inventory-thin-prompt"
+type = "ANSWER_GENERATION"
+visibilityStatus = "SAVED"
+templateType = "TEXT"
+modelId = "anthropic.claude-3-haiku-20240307-v1:0"
+apiFormat = "ANTHROPIC_CLAUDE_MESSAGES"
+templateConfiguration = { textFullAIPromptEditTemplateConfiguration = { text = '{"anthropic_version":"bedrock-2023-05-31","max_tokens":64,"messages":[{"role":"user","content":"Summarize the provided inventory."}]}' } }
+

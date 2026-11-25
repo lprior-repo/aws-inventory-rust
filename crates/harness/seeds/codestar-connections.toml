@@ -10,3 +10,22 @@ identity = "HostArn"
 Name = "inventory-thin-codestar-connections"
 ProviderType = "GitHubEnterpriseServer"
 ProviderEndpoint = "https://github.inventory.example"
+
+[[step]]
+id = "connection"
+operation = "CreateConnection"
+kind = "AWS::CodeStarConnections::Connection"
+identity = "ConnectionArn"
+[step.input]
+ConnectionName = "inventory-seed-codestar"
+ProviderType = "GitHub"
+
+[[step]]
+id = "repository_link"
+operation = "CreateRepositoryLink"
+kind = "AWS::CodeStarConnections::RepositoryLink"
+identity = "RepositoryLinkInfo.RepositoryLinkArn"
+[step.input]
+ConnectionArn = { from = "connection", path = "ConnectionArn" }
+OwnerId = "inventory-seed"
+RepositoryName = "legacy-fixture"

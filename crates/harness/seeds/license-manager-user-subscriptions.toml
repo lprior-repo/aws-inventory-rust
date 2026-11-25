@@ -1,0 +1,74 @@
+format = 1
+service = "license-manager-user-subscriptions"
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = "AWS::EC2::VPC"
+identity = "Vpc.VpcId"
+[step.input]
+CidrBlock = "10.57.0.0/16"
+
+[[step]]
+id = "subnet_a"
+service = "ec2"
+operation = "CreateSubnet"
+kind = "AWS::EC2::Subnet"
+identity = "Subnet.SubnetId"
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.57.1.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "subnet_b"
+service = "ec2"
+operation = "CreateSubnet"
+kind = "AWS::EC2::Subnet"
+identity = "Subnet.SubnetId"
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.57.2.0/24"
+AvailabilityZone = "us-east-1b"
+
+[[step]]
+id = "security_group"
+service = "ec2"
+operation = "CreateSecurityGroup"
+kind = "AWS::EC2::SecurityGroup"
+identity = "GroupId"
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+GroupName = "inventory-thin-license-users"
+Description = "Seed license subscription security group"
+
+[[step]]
+id = "endpoint_secret"
+service = "secrets-manager"
+operation = "CreateSecret"
+kind = "AWS::SecretsManager::Secret"
+identity = "ARN"
+[step.input]
+Name = "inventory-thin-license-directory"
+ClientRequestToken = "3701730d-cd10-4aee-87dd-71efff2b6cfd"
+SecretString = '{"username":"Admin","password":"Inventory-only-Seed-49!"}'
+
+[[step]]
+id = "identity_provider"
+operation = "RegisterIdentityProvider"
+kind = "AWS::ApiOnly::UserSubscriptionIdentityProvider"
+identity = "IdentityProviderSummary.IdentityProviderArn"
+[step.input]
+IdentityProvider = { ActiveDirectoryIdentityProvider = { ActiveDirectoryType = "SELF_MANAGED", ActiveDirectorySettings = { DomainName = "inventory.example.com", DomainIpv4List = ["10.57.1.10", "10.57.2.10"], DomainCredentialsProvider = { SecretsManagerCredentialsProvider = { SecretId = { from = "endpoint_secret", path = "ARN" } } }, DomainNetworkSettings = { Subnets = [{ from = "subnet_a", path = "Subnet.SubnetId" }, { from = "subnet_b", path = "Subnet.SubnetId" }] } } } }
+Product = "REMOTE_DESKTOP_SERVICES"
+Settings = { Subnets = [{ from = "subnet_a", path = "Subnet.SubnetId" }, { from = "subnet_b", path = "Subnet.SubnetId" }], SecurityGroupId = { from = "security_group", path = "GroupId" } }
+
+[[step]]
+id = "endpoint"
+operation = "CreateLicenseServerEndpoint"
+kind = "AWS::ApiOnly::UserSubscriptionLicenseServerEndpoint"
+identity = "LicenseServerEndpointArn"
+[step.input]
+IdentityProviderArn = { from = "identity_provider", path = "IdentityProviderSummary.IdentityProviderArn" }
+LicenseServerSettings = { ServerType = "RDS_SAL", ServerSettings = { RdsSalSettings = { RdsSalCredentialsProvider = { SecretsManagerCredentialsProvider = { SecretId = { from = "endpoint_secret", path = "ARN" } } } } } }

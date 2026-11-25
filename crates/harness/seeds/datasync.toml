@@ -1,0 +1,51 @@
+format = 1
+service = "datasync"
+
+[[step]]
+id = "bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-seed-datasync"
+
+[[step]]
+id = "bucket_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-datasync"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"datasync.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "bucket_role_policy"
+service = "iam"
+operation = "PutRolePolicy"
+kind = ""
+[step.input]
+RoleName = "inventory-seed-datasync"
+PolicyName = "inventory-seed-datasync-s3"
+PolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:GetBucketLocation","s3:ListBucket"],"Resource":"arn:aws:s3:::inventory-seed-datasync"},{"Effect":"Allow","Action":["s3:GetObject","s3:PutObject","s3:AbortMultipartUpload"],"Resource":"arn:aws:s3:::inventory-seed-datasync/*"}]}'
+
+[[step]]
+id = "s3_location"
+operation = "CreateLocationS3"
+kind = "AWS::DataSync::LocationS3"
+identity = "LocationArn"
+[step.input]
+S3BucketArn = "arn:aws:s3:::inventory-seed-datasync"
+S3Config = { BucketAccessRoleArn = { from = "bucket_role", path = "Role.Arn" } }
+
+[[step]]
+id = "azure_location"
+operation = "CreateLocationAzureBlob"
+kind = "AWS::DataSync::LocationAzureBlob"
+identity = "LocationArn"
+[step.input]
+ContainerUrl = "https://inventoryseedfixture.blob.core.windows.net/fixture"
+AuthenticationType = "NONE"

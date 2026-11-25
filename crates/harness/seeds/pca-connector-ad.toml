@@ -8,3 +8,50 @@ kind = "AWS::PCAConnectorAD::DirectoryRegistration"
 identity = "DirectoryRegistrationArn"
 [step.input]
 "DirectoryId" = "d-0123456789"
+
+[[step]]
+id = "ca"
+service = "acm-pca"
+operation = "CreateCertificateAuthority"
+kind = ""
+[step.input]
+CertificateAuthorityType = "ROOT"
+CertificateAuthorityConfiguration = { KeyAlgorithm = "RSA_2048", SigningAlgorithm = "SHA256WITHRSA", Subject = { CommonName = "Inventory seed AD connector CA" } }
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = ""
+[step.input]
+CidrBlock = "10.82.0.0/16"
+
+[[step]]
+id = "security_group"
+service = "ec2"
+operation = "CreateSecurityGroup"
+kind = ""
+[step.input]
+GroupName = "inventory-thin-ad-connector"
+Description = "Inventory seed AD connector"
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+
+[[step]]
+id = "connector"
+operation = "CreateConnector"
+kind = "AWS::PCAConnectorAD::Connector"
+identity = "ConnectorArn"
+[step.input]
+DirectoryId = "d-0123456789"
+CertificateAuthorityArn = { from = "ca", path = "CertificateAuthorityArn" }
+VpcInformation = { SecurityGroupIds = [{ from = "security_group", path = "GroupId" }] }
+
+[[step]]
+id = "template"
+operation = "CreateTemplate"
+kind = "AWS::PCAConnectorAD::Template"
+identity = "TemplateArn"
+[step.input]
+ConnectorArn = { from = "connector", path = "ConnectorArn" }
+Name = "InventorySeed"
+Definition = { TemplateV2 = { CertificateValidity = { ValidityPeriod = { PeriodType = "YEARS", Period = 1 }, RenewalPeriod = { PeriodType = "DAYS", Period = 30 } }, PrivateKeyAttributes = { MinimalKeyLength = 2048, KeySpec = "SIGNATURE" }, PrivateKeyFlags = { ClientVersion = "WINDOWS_SERVER_2008" }, EnrollmentFlags = {}, SubjectNameFlags = { RequireCommonName = true }, GeneralFlags = {}, Extensions = { KeyUsage = { UsageFlags = { DigitalSignature = true } } } } }

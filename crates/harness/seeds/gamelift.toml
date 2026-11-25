@@ -9,3 +9,31 @@ identity = "Alias.AliasArn"
 [step.input]
 Name = "inventory-thin-gamelift"
 RoutingStrategy = { Type = "TERMINAL", Message = "Inventory seed terminal alias" }
+
+[[step]]
+id = "location"
+operation = "CreateLocation"
+kind = "AWS::GameLift::Location"
+identity = "Location.LocationArn"
+[step.input]
+LocationName = "custom-inventory-seed"
+
+[[step]]
+id = "fleet"
+operation = "CreateFleet"
+kind = "AWS::GameLift::Fleet"
+identity = "FleetAttributes.FleetArn"
+[step.input]
+Name = "inventory-seed-anywhere"
+ComputeType = "ANYWHERE"
+AnywhereConfiguration = { Cost = "0.01" }
+Locations = [{ Location = { from = "location", path = "Location.LocationName" } }]
+
+[[step]]
+id = "rule_set"
+operation = "CreateMatchmakingRuleSet"
+kind = "AWS::GameLift::MatchmakingRuleSet"
+identity = "RuleSet.RuleSetArn"
+[step.input]
+Name = "inventory-seed-rules"
+RuleSetBody = '{"name":"inventory-seed-rules","ruleLanguageVersion":"1.0","teams":[{"name":"players","minPlayers":1,"maxPlayers":2}],"rules":[]}'

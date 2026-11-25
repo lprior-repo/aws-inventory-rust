@@ -17,3 +17,123 @@ scope = "region"
 
 [step.input]
 Name = "inv-event-template-group"
+
+[[step]]
+id = "event_rule_template"
+operation = "CreateEventBridgeRuleTemplate"
+kind = "AWS::MediaLive::EventBridgeRuleTemplate"
+identity = "Arn"
+[step.input]
+Name = "inventory-thin-channel-alert"
+GroupIdentifier = { from = "createeventbridgeruletemplategroup", path = "Id" }
+EventType = "MEDIALIVE_CHANNEL_ALERT"
+
+[[step]]
+id = "input_security_group"
+operation = "CreateInputSecurityGroup"
+kind = "AWS::MediaLive::InputSecurityGroup"
+identity = "SecurityGroup.Arn"
+[step.input]
+WhitelistRules = [{ Cidr = "192.0.2.0/24" }]
+
+[[step]]
+id = "input"
+operation = "CreateInput"
+kind = "AWS::MediaLive::Input"
+identity = "Input.Arn"
+[step.input]
+Name = "inventory-thin-input"
+Type = "RTP_PUSH"
+InputSecurityGroups = [{ from = "input_security_group", path = "SecurityGroup.Id" }]
+
+[[step]]
+id = "channel_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-thin-medialive"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"medialive.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "channel"
+operation = "CreateChannel"
+kind = "AWS::MediaLive::Channel"
+identity = "Channel.Arn"
+[step.input]
+Name = "inventory-thin-channel"
+ChannelClass = "SINGLE_PIPELINE"
+InputAttachments = [{ InputId = { from = "input", path = "Input.Id" }, InputAttachmentName = "inventory-input" }]
+RoleArn = { from = "channel_role", path = "Role.Arn" }
+InputSpecification = { Codec = "AVC", MaximumBitrate = "MAX_10_MBPS", Resolution = "HD" }
+Destinations = [{ Id = "inventory-output", Settings = [{ Url = "udp://192.0.2.1:5000" }] }]
+"EncoderSettings.AudioDescriptions" = []
+"EncoderSettings.VideoDescriptions" = [{ Name = "inventory-video", Width = 1280, Height = 720, CodecSettings = { H264Settings = { Bitrate = 1500000, FramerateControl = "INITIALIZE_FROM_SOURCE", RateControlMode = "CBR" } } }]
+"EncoderSettings.TimecodeConfig" = { Source = "SYSTEMCLOCK" }
+"EncoderSettings.OutputGroups" = [{ Name = "inventory-udp", OutputGroupSettings = { UdpGroupSettings = { InputLossAction = "DROP_PROGRAM" } }, Outputs = [{ VideoDescriptionName = "inventory-video", OutputSettings = { UdpOutputSettings = { Destination = { DestinationRefId = "inventory-output" }, ContainerSettings = { M2tsSettings = { RateMode = "CBR" } } } } }] }]
+
+[[step]]
+id = "multiplex"
+operation = "CreateMultiplex"
+kind = "AWS::MediaLive::Multiplex"
+identity = "Multiplex.Arn"
+[step.input]
+Name = "inventory-thin-multiplex"
+RequestId = "729ae4a0-db6c-4b92-a69e-f18771964d40"
+AvailabilityZones = ["us-east-1a", "us-east-1b"]
+MultiplexSettings = { TransportStreamBitrate = 2000000, TransportStreamId = 1 }
+
+[[step]]
+id = "network"
+operation = "CreateNetwork"
+kind = "AWS::MediaLive::Network"
+identity = "Arn"
+[step.input]
+Name = "inventory-thin-network"
+IpPools = [{ Cidr = "192.0.2.0/24" }]
+
+[[step]]
+id = "sdi_source"
+operation = "CreateSdiSource"
+kind = "AWS::MediaLive::SdiSource"
+identity = "SdiSource.Arn"
+[step.input]
+Name = "inventory-thin-sdi-source"
+Type = "SINGLE"
+
+[[step]]
+id = "signal_map"
+operation = "CreateSignalMap"
+kind = "AWS::MediaLive::SignalMap"
+identity = "Arn"
+[step.input]
+Name = "inventory-thin-signal-map"
+DiscoveryEntryPointArn = { from = "channel", path = "Channel.Arn" }
+
+[[step]]
+id = "claim_input_device"
+operation = "ClaimDevice"
+kind = "AWS::ApiOnly::MediaLiveInputDevice"
+identity = { input = "Id", template = "arn:{partition}:medialive:{region}:{account}:inputDevice:{value}" }
+[step.input]
+Id = "hd-0000000000000000"
+
+[[step]]
+id = "placement_group"
+operation = "CreateChannelPlacementGroup"
+kind = "AWS::MediaLive::ChannelPlacementGroup"
+identity = "Arn"
+[step.input]
+ClusterId = { from = "resource", path = "Id" }
+Name = "inventory-thin-placement-group"
+
+[[step]]
+id = "node"
+operation = "CreateNode"
+kind = "AWS::MediaLive::Node"
+identity = "Arn"
+[step.input]
+ClusterId = { from = "resource", path = "Id" }
+Name = "inventory-thin-node"

@@ -9,3 +9,40 @@ identity = "Profile.Arn"
 [step.input]
 "Name" = "inventory-thin-route53profiles"
 "ClientToken" = "12345678-1234-4234-8234-123456789abc"
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = ""
+[step.input]
+CidrBlock = "10.84.0.0/16"
+
+[[step]]
+id = "profile_association"
+operation = "AssociateProfile"
+kind = "AWS::Route53Profiles::ProfileAssociation"
+identity = "ProfileAssociation.Id"
+[step.input]
+ProfileId = { from = "resource", path = "Profile.Id" }
+ResourceId = { from = "vpc", path = "Vpc.VpcId" }
+Name = "inventory-thin-vpc"
+
+[[step]]
+id = "firewall_group"
+service = "route53resolver"
+operation = "CreateFirewallRuleGroup"
+kind = ""
+[step.input]
+CreatorRequestId = "inventory-thin-profile-firewall"
+Name = "inventory-thin-profile-firewall"
+
+[[step]]
+id = "profile_resource"
+operation = "AssociateResourceToProfile"
+kind = "AWS::Route53Profiles::ProfileResourceAssociation"
+identity = "ProfileResourceAssociation.Id"
+[step.input]
+ProfileId = { from = "resource", path = "Profile.Id" }
+ResourceArn = { from = "firewall_group", path = "FirewallRuleGroup.Arn" }
+Name = "inventory-thin-firewall"

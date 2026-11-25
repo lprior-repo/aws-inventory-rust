@@ -9,3 +9,43 @@ identity = "GlobalCluster.GlobalClusterArn"
 scope = "account"
 [step.input]
 "GlobalClusterIdentifier" = "inventory-thin-docdb"
+
+[[step]]
+id = "parameter_group"
+operation = "CreateDBClusterParameterGroup"
+kind = "AWS::DocDB::DBClusterParameterGroup"
+identity = "DBClusterParameterGroup.DBClusterParameterGroupArn"
+[step.input]
+DBClusterParameterGroupName = "inventory-seed-docdb"
+DBParameterGroupFamily = "docdb5.0"
+Description = "Inventory emulator parameter group"
+
+[[step]]
+id = "cluster"
+operation = "CreateDBCluster"
+kind = "AWS::DocDB::DBCluster"
+identity = "DBCluster.DBClusterArn"
+[step.input]
+DBClusterIdentifier = "inventory-seed-docdb"
+DBClusterParameterGroupName = "inventory-seed-docdb"
+Engine = "docdb"
+MasterUsername = "inventoryseed"
+MasterUserPassword = "InventoryFixture-Only-2026"
+
+[[step]]
+id = "subscription_topic"
+service = "sns"
+operation = "CreateTopic"
+kind = "AWS::SNS::Topic"
+identity = "TopicArn"
+[step.input]
+Name = "inventory-seed-docdb-events"
+
+[[step]]
+id = "event_subscription"
+operation = "CreateEventSubscription"
+kind = "AWS::DocDB::EventSubscription"
+identity = "EventSubscription.EventSubscriptionArn"
+[step.input]
+SubscriptionName = "inventory-seed-docdb-events"
+SnsTopicArn = { from = "subscription_topic", path = "TopicArn" }

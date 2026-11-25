@@ -8,3 +8,12 @@ kind = "AWS::IoT::Command"
 identity = "commandArn"
 [step.input]
 commandId = "inventory-thin-iot"
+
+[[step]]
+id = "topic_rule"
+operation = "CreateTopicRule"
+kind = "AWS::IoT::TopicRule"
+identity = { input = "ruleName", template = "arn:{partition}:iot:{region}:{account}:rule/{value}" }
+[step.input]
+ruleName = "inventory_seed_rule"
+topicRulePayload = { sql = "SELECT * FROM 'inventory/seed'", actions = [], ruleDisabled = true, awsIotSqlVersion = "2016-03-23" }

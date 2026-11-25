@@ -9,3 +9,11 @@ identity = { input = "EmailIdentity" }
 repeat = 2
 [step.input]
 EmailIdentity = "inventory-thin-pes-identity-{n}@example.com"
+
+[[step]]
+id = "configuration_set"
+operation = "CreateConfigurationSet"
+kind = "AWS::PinpointEmail::ConfigurationSet"
+identity = { input = "ConfigurationSetName" }
+[step.input]
+ConfigurationSetName = "inventory-thin-email"

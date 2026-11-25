@@ -40,3 +40,192 @@ identity = "InstanceProfile.Arn"
 scope = "account"
 [step.input]
 InstanceProfileName = "inventory-seed-profile"
+
+[[step]]
+id = "account_alias"
+operation = "CreateAccountAlias"
+kind = "AWS::ApiOnly::IAMAccountAlias"
+identity = { input = "AccountAlias" }
+scope = "account"
+[step.input]
+AccountAlias = "inventory-seed-account"
+
+[[step]]
+id = "group"
+operation = "CreateGroup"
+kind = "AWS::IAM::Group"
+identity = "Group.Arn"
+scope = "account"
+[step.input]
+GroupName = "inventory-seed-group"
+
+[[step]]
+id = "oidc_provider"
+operation = "CreateOpenIDConnectProvider"
+kind = "AWS::IAM::OIDCProvider"
+identity = "OpenIDConnectProviderArn"
+scope = "account"
+[step.input]
+Url = "https://inventory-seed.example"
+ClientIDList = ["inventory-seed-client"]
+
+[[step]]
+id = "saml_provider"
+operation = "CreateSAMLProvider"
+kind = "AWS::IAM::SAMLProvider"
+identity = "SAMLProviderArn"
+scope = "account"
+[step.input]
+Name = "inventory-seed-saml"
+SAMLMetadataDocument = '''
+<EntityDescriptor xmlns="urn:oasis:names:tc:SAML:2.0:metadata" entityID="https://inventory-seed.example/saml">
+  <IDPSSODescriptor protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol">
+    <KeyDescriptor use="signing"><KeyInfo xmlns="http://www.w3.org/2000/09/xmldsig#"><X509Data><X509Certificate>
+MIIB1TCCAVqgAwIBAgIUVlBIFAwc3STiPE1MVr9vRMySIRQwCgYIKoZIzj0EAwIw
+ITEfMB0GA1UEAwwWaW52ZW50b3J5LXNlZWQuZXhhbXBsZTAeFw0yNjExMjUwNDA1
+MzZaFw00NjExMjAwNDA1MzZaMCExHzAdBgNVBAMMFmludmVudG9yeS1zZWVkLmV4
+YW1wbGUwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAQ0FDYj8b0KdUqgGyDHdnAP89gJ
+fAvvDQqpfB/Fa+fDfM51ysi36VPGpRUGIGiiAs0VVvFTSt+CjVKf8kEGnc//v/H2
+yCnWbjghJHqjRBbGuMT8PVX1LQJppym0TLB96iSjUzBRMB0GA1UdDgQWBBRWUQTn
+/mGJK06Tvy+fSIxzCHEPEDAfBgNVHSMEGDAWgBRWUQTn/mGJK06Tvy+fSIxzCHEP
+EDAPBgNVHRMBAf8EBTADAQH/MAoGCCqGSM49BAMCA2kAMGYCMQCB1bPYavdz/LZC
+zQZuAYb4FB1t19VXlxioHXKegEHPbEbqDkQToUcbYks0gmDk3MECMQD5JKL3wWjs
+o3hT33CmPf8o2BDHtBwMUnR6bOYEG5wneqhPC7d9cfjCjt2mXWpGBPY=
+    </X509Certificate></X509Data></KeyInfo></KeyDescriptor>
+    <SingleSignOnService Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-Redirect" Location="https://inventory-seed.example/sso"/>
+  </IDPSSODescriptor>
+</EntityDescriptor>
+'''
+
+[[step]]
+id = "server_certificate"
+operation = "UploadServerCertificate"
+kind = "AWS::IAM::ServerCertificate"
+identity = "ServerCertificateMetadata.Arn"
+scope = "account"
+[step.input]
+ServerCertificateName = "inventory-seed-certificate"
+CertificateBody = '''
+-----BEGIN CERTIFICATE-----
+MIIB1TCCAVqgAwIBAgIUVlBIFAwc3STiPE1MVr9vRMySIRQwCgYIKoZIzj0EAwIw
+ITEfMB0GA1UEAwwWaW52ZW50b3J5LXNlZWQuZXhhbXBsZTAeFw0yNjExMjUwNDA1
+MzZaFw00NjExMjAwNDA1MzZaMCExHzAdBgNVBAMMFmludmVudG9yeS1zZWVkLmV4
+YW1wbGUwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAAQ0FDYj8b0KdUqgGyDHdnAP89gJ
+fAvvDQqpfB/Fa+fDfM51ysi36VPGpRUGIGiiAs0VVvFTSt+CjVKf8kEGnc//v/H2
+yCnWbjghJHqjRBbGuMT8PVX1LQJppym0TLB96iSjUzBRMB0GA1UdDgQWBBRWUQTn
+/mGJK06Tvy+fSIxzCHEPEDAfBgNVHSMEGDAWgBRWUQTn/mGJK06Tvy+fSIxzCHEP
+EDAPBgNVHRMBAf8EBTADAQH/MAoGCCqGSM49BAMCA2kAMGYCMQCB1bPYavdz/LZC
+zQZuAYb4FB1t19VXlxioHXKegEHPbEbqDkQToUcbYks0gmDk3MECMQD5JKL3wWjs
+o3hT33CmPf8o2BDHtBwMUnR6bOYEG5wneqhPC7d9cfjCjt2mXWpGBPY=
+-----END CERTIFICATE-----
+'''
+PrivateKey = '''
+-----BEGIN PRIVATE KEY-----
+MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDA3+YFqBUgbjnf1TB2s
+/sXAidvPc2ScfV/YwLiMQkn8EToN9TqoQj0QMNLcAP+8cmuhZANiAAQ0FDYj8b0K
+dUqgGyDHdnAP89gJfAvvDQqpfB/Fa+fDfM51ysi36VPGpRUGIGiiAs0VVvFTSt+C
+jVKf8kEGnc//v/H2yCnWbjghJHqjRBbGuMT8PVX1LQJppym0TLB96iQ=
+-----END PRIVATE KEY-----
+'''
+
+[[step]]
+id = "user"
+operation = "CreateUser"
+kind = "AWS::IAM::User"
+identity = "User.Arn"
+scope = "account"
+[step.input]
+UserName = "inventory-seed-user"
+
+[[step]]
+id = "service_specific_credential"
+operation = "CreateServiceSpecificCredential"
+kind = ""
+scope = "account"
+[step.input]
+UserName = { from = "user", path = "User.UserName" }
+ServiceName = "codecommit.amazonaws.com"
+
+[[step]]
+id = "login_profile"
+operation = "CreateLoginProfile"
+kind = ""
+scope = "account"
+[step.input]
+UserName = { from = "user", path = "User.UserName" }
+Password = "Inventory-Emulator-Only-2026!"
+PasswordResetRequired = true
+
+[[step]]
+id = "access_key"
+operation = "CreateAccessKey"
+kind = ""
+scope = "account"
+[step.input]
+UserName = { from = "user", path = "User.UserName" }
+
+[[step]]
+id = "group_policy"
+operation = "PutGroupPolicy"
+kind = ""
+scope = "account"
+[step.input]
+GroupName = { from = "group", path = "Group.GroupName" }
+PolicyName = "inventory-seed-inline"
+PolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"sts:GetCallerIdentity","Resource":"*"}]}'
+
+[[step]]
+id = "profile_membership"
+operation = "AddRoleToInstanceProfile"
+kind = ""
+scope = "account"
+[step.input]
+InstanceProfileName = { from = "instance_profile", path = "InstanceProfile.InstanceProfileName" }
+RoleName = { from = "role", path = "Role.RoleName" }
+
+[[step]]
+id = "policy_version"
+operation = "CreatePolicyVersion"
+kind = ""
+scope = "account"
+[step.input]
+PolicyArn = { from = "policy", path = "Policy.Arn" }
+PolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Deny","Action":"sts:GetCallerIdentity","Resource":"*"}]}'
+
+[[step]]
+id = "role_policy"
+operation = "PutRolePolicy"
+kind = ""
+scope = "account"
+[step.input]
+RoleName = { from = "role", path = "Role.RoleName" }
+PolicyName = "inventory-seed-inline"
+PolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"sts:GetCallerIdentity","Resource":"*"}]}'
+
+[[step]]
+id = "role_tag"
+operation = "TagRole"
+kind = ""
+scope = "account"
+[step.input]
+RoleName = { from = "role", path = "Role.RoleName" }
+Tags = [{ Key = "inventory-fixture", Value = "iam" }]
+
+[[step]]
+id = "ssh_public_key"
+operation = "UploadSSHPublicKey"
+kind = ""
+scope = "account"
+[step.input]
+UserName = { from = "user", path = "User.UserName" }
+SSHPublicKeyBody = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCvRjdyPZmFPkVVJ3zp4TjONoXSptyYonhZkRpAFhJsI19/1E/8gppzEcSxkLLeMEb7LNRg/Lj9TqAnWQ0jyxMLOZNxuEsB2TH9GpXj8rsFFEVrmKNvqbaPeozylTofGsgKLdUmp5cmb1cHvodDCuQjfC3NxeGDa/CTOuI6zJvPq4Ng86oE6E3HA4tWNu7DCBz6bFDcEj5osPuiOZWQB8aYH4z041Shf3Ockim7ZBB0Di8e2+up8OzC5hG7KwfwRRYLlvpC9zJbxOr5nrifyAce2Jq+mpQbIjkd9vn1eAwIi56cx+z5sVuILHP70RSO9qwt/QTXS2ykHC7Ub5a/I1Kj"
+
+[[step]]
+id = "user_policy"
+operation = "PutUserPolicy"
+kind = ""
+scope = "account"
+[step.input]
+UserName = { from = "user", path = "User.UserName" }
+PolicyName = "inventory-seed-inline"
+PolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":"sts:GetCallerIdentity","Resource":"*"}]}'

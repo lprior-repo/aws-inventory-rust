@@ -8,3 +8,59 @@ kind = "AWS::OpenSearchService::Application"
 identity = "arn"
 [step.input]
 "name" = "inventory-thin-opensearch"
+
+[[step]]
+id = "domain_vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = ""
+[step.input]
+CidrBlock = "10.79.0.0/16"
+
+[[step]]
+id = "domain_subnet"
+service = "ec2"
+operation = "CreateSubnet"
+kind = ""
+[step.input]
+VpcId = { from = "domain_vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.79.0.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "domain"
+operation = "CreateDomain"
+kind = "AWS::OpenSearchService::Domain"
+identity = "DomainStatus.DomainName"
+[step.input]
+DomainName = "inventory-thin-domain"
+EngineVersion = "OpenSearch_2.19"
+VPCOptions = { SubnetIds = [{ from = "domain_subnet", path = "Subnet.SubnetId" }] }
+
+[[step]]
+id = "vpc_endpoint"
+operation = "CreateVpcEndpoint"
+kind = "AWS::ApiOnly::OpenSearchDomainVpcEndpoint"
+identity = "VpcEndpoint.VpcEndpointId"
+[step.input]
+DomainArn = { from = "domain", path = "DomainStatus.ARN" }
+VpcOptions = { SubnetIds = [{ from = "domain_subnet", path = "Subnet.SubnetId" }] }
+
+[[step]]
+id = "direct_query_role"
+service = "iam"
+operation = "CreateRole"
+kind = ""
+[step.input]
+RoleName = "inventory-thin-opensearch-query"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"opensearchservice.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "direct_query_source"
+operation = "AddDirectQueryDataSource"
+kind = "AWS::ApiOnly::OpenSearchDirectQueryDataSource"
+identity = "DataSourceArn"
+[step.input]
+DataSourceName = "inventory_thin_query"
+OpenSearchArns = [{ from = "domain", path = "DomainStatus.ARN" }]
+DataSourceType = { CloudWatchLog = { RoleArn = { from = "direct_query_role", path = "Role.Arn" } } }

@@ -8,3 +8,45 @@ kind = "AWS::IoTWireless::ServiceProfile"
 identity = "Arn"
 [step.input]
 Name = "inventory-thin-iot-wireless"
+
+[[step]]
+id = "destination_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-wireless-destination"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"iotwireless.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "destination"
+operation = "CreateDestination"
+kind = "AWS::IoTWireless::Destination"
+identity = "Arn"
+[step.input]
+Name = "inventory-seed-wireless"
+ExpressionType = "MqttTopic"
+Expression = "inventory/seed/wireless"
+RoleArn = { from = "destination_role", path = "Role.Arn" }
+
+[[step]]
+id = "device_profile"
+operation = "CreateDeviceProfile"
+kind = "AWS::IoTWireless::DeviceProfile"
+identity = "Arn"
+[step.input]
+Name = "inventory-seed-lorawan"
+LoRaWAN = { SupportsJoin = true, SupportsClassB = false, SupportsClassC = false, MacVersion = "1.0.3", RegParamsRevision = "RP002-1.0.1", RfRegion = "US915" }
+
+[[step]]
+id = "wireless_device"
+operation = "CreateWirelessDevice"
+kind = "AWS::IoTWireless::WirelessDevice"
+identity = "Arn"
+[step.input]
+Name = "inventory-seed-lorawan"
+Type = "LoRaWAN"
+DestinationName = { from = "destination", path = "Name" }
+LoRaWAN = { DevEui = "0000000000000042", DeviceProfileId = { from = "device_profile", path = "Id" }, ServiceProfileId = { from = "resource", path = "Id" }, OtaaV1_0_x = { AppEui = "0000000000000043", AppKey = "00000000000000000000000000000044" } }

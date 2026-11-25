@@ -2,10 +2,38 @@ format = 1
 service = "snowball"
 
 [[step]]
-id = "resource"
+id = "address"
+operation = "CreateAddress"
+kind = ""
+[step.input.Address]
+Name = "Inventory Fixture"
+Company = "Example Company"
+Street1 = "100 Example Street"
+City = "Seattle"
+StateOrProvince = "WA"
+Country = "US"
+PostalCode = "98101"
+PhoneNumber = "2065550100"
+
+[[step]]
+id = "cluster"
+operation = "CreateCluster"
+kind = "AWS::ApiOnly::SnowballCluster"
+identity = "ClusterId"
+[step.input]
+JobType = "LOCAL_USE"
+AddressId = { from = "address", path = "AddressId" }
+SnowballType = "EDGE"
+ShippingOption = "STANDARD"
+InitialClusterSize = 3
+ForceCreateJobs = false
+
+[[step]]
+id = "pricing"
 operation = "CreateLongTermPricing"
 kind = "AWS::ApiOnly::SnowballLongTermRental"
 identity = "LongTermPricingId"
 [step.input]
-"LongTermPricingType" = "OneYear"
-"SnowballType" = "STANDARD"
+LongTermPricingType = "OneMonth"
+IsLongTermPricingAutoRenew = false
+SnowballType = "EDGE"

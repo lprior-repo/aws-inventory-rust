@@ -8,3 +8,66 @@ kind = "AWS::MediaPackage::PackagingGroup"
 identity = "Arn"
 [step.input]
 "Id" = "inventory-thin-mediapackage-vod"
+
+[[step]]
+id = "packaging_configuration"
+operation = "CreatePackagingConfiguration"
+kind = "AWS::MediaPackage::PackagingConfiguration"
+identity = "Arn"
+[step.input]
+Id = "inventory-thin-hls"
+PackagingGroupId = { from = "resource", path = "Id" }
+HlsPackage = { HlsManifests = [{ ManifestName = "index" }], SegmentDurationSeconds = 6 }
+
+[[step]]
+id = "asset_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-thin-mediapackage-assets"
+
+[[step]]
+id = "manifest"
+service = "s3"
+operation = "PutObject"
+kind = ""
+[step.input]
+Bucket = "inventory-thin-mediapackage-assets"
+Key = "index.m3u8"
+ContentType = "application/vnd.apple.mpegurl"
+Body = "I0VYVE0zVQojRVhULVgtVkVSU0lPTjozCiNFWFQtWC1TVFJFQU0tSU5GOkJBTkRXSURUSD0xMDAwMDAwCnZpZGVvLm0zdTgK"
+
+[[step]]
+id = "source_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-thin-mediapackage-source"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"mediapackage.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "source_permissions"
+service = "iam"
+operation = "PutRolePolicy"
+kind = ""
+[step.input]
+RoleName = { from = "source_role", path = "Role.RoleName" }
+PolicyName = "inventory-thin-mediapackage"
+PolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Action":["s3:GetObject","s3:GetObjectVersion"],"Resource":"arn:aws:s3:::inventory-thin-mediapackage-assets/*"}]}'
+
+[[step]]
+id = "asset"
+operation = "CreateAsset"
+kind = "AWS::MediaPackage::Asset"
+identity = "Arn"
+[step.input]
+Id = "inventory-thin-asset"
+PackagingGroupId = { from = "resource", path = "Id" }
+SourceArn = "arn:aws:s3:::inventory-thin-mediapackage-assets/index.m3u8"
+SourceRoleArn = { from = "source_role", path = "Role.Arn" }

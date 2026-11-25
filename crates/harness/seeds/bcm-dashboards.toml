@@ -10,3 +10,22 @@ scope = "account"
 [step.input]
 name = "inventory-thin-dashboard"
 widgets = []
+
+[[step]]
+id = "report_role"
+service = "iam"
+operation = "CreateRole"
+kind = ""
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-bcm-dashboards"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"bcm-dashboards.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "scheduled_report"
+operation = "CreateScheduledReport"
+kind = "AWS::ApiOnly::BCMDashboardsScheduledReport"
+identity = "arn"
+scope = "account"
+[step.input]
+scheduledReport = { name = "inventory-seed-report", dashboardArn = { from = "dashboard", path = "arn" }, scheduledReportExecutionRoleArn = { from = "report_role", path = "Role.Arn" }, scheduleConfig = { scheduleExpression = "cron(0 12 ? * MON *)", scheduleExpressionTimeZone = "UTC", state = "DISABLED" } }

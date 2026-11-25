@@ -19,3 +19,32 @@ repeat = 2
 [step.input]
 AliasName = "alias/inventory-thin-key-{n}"
 TargetKeyId = { from = "key", path = "KeyMetadata.Arn" }
+
+[[step]]
+id = "grant_key"
+operation = "CreateKey"
+kind = "AWS::KMS::Key"
+identity = "KeyMetadata.Arn"
+[step.input]
+Description = "Inventory fixture supporting KMS grants"
+
+[[step]]
+id = "grantee"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-thin-kms-grantee"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "grant"
+operation = "CreateGrant"
+kind = ""
+[step.input]
+KeyId = { from = "grant_key", path = "KeyMetadata.Arn" }
+GranteePrincipal = { from = "grantee", path = "Role.Arn" }
+Name = "inventory-thin-grant"
+Operations = ["Encrypt"]

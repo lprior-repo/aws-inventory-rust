@@ -8,3 +8,56 @@ kind = "AWS::Events::EventBus"
 identity = "EventBusArn"
 [step.input]
 "Name" = "inventory-thin-cloudwatch-events"
+
+[[step]]
+id = "rule"
+operation = "PutRule"
+kind = "AWS::Events::Rule"
+identity = "RuleArn"
+[step.input]
+Name = "inventory-seed-event-rule"
+EventBusName = "inventory-thin-cloudwatch-events"
+EventPattern = '{"source":["inventory.seed"]}'
+
+[[step]]
+id = "archive"
+operation = "CreateArchive"
+kind = "AWS::Events::Archive"
+identity = "ArchiveArn"
+[step.input]
+ArchiveName = "inventory-seed-archive"
+EventSourceArn = { from = "resource", path = "EventBusArn" }
+EventPattern = '{"source":["inventory.seed"]}'
+
+[[step]]
+id = "connection"
+operation = "CreateConnection"
+kind = "AWS::Events::Connection"
+identity = "ConnectionArn"
+[step.input]
+Name = "inventory-seed-connection"
+AuthorizationType = "API_KEY"
+AuthParameters = { ApiKeyAuthParameters = { ApiKeyName = "X-Inventory-Seed", ApiKeyValue = "emulator-fixture" } }
+
+[[step]]
+id = "api_destination"
+operation = "CreateApiDestination"
+kind = "AWS::Events::ApiDestination"
+identity = "ApiDestinationArn"
+[step.input]
+Name = "inventory-seed-api-destination"
+ConnectionArn = { from = "connection", path = "ConnectionArn" }
+InvocationEndpoint = "https://inventory.example/fixture"
+HttpMethod = "POST"
+
+[[step]]
+id = "replay"
+operation = "StartReplay"
+kind = "AWS::ApiOnly::EventsReplay"
+identity = "ReplayArn"
+[step.input]
+ReplayName = "inventory-seed-replay"
+EventSourceArn = { from = "archive", path = "ArchiveArn" }
+EventStartTime = { from = "archive", path = "CreationTime" }
+EventEndTime = { from = "connection", path = "CreationTime" }
+Destination = { Arn = { from = "resource", path = "EventBusArn" } }

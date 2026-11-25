@@ -8,3 +8,44 @@ kind = "AWS::ApiOnly::TimestreamInfluxDBParameterGroup"
 identity = "id"
 [step.input]
 "name" = "inventory-thin-timestream-influxdb"
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = ""
+[step.input]
+CidrBlock = "10.92.0.0/16"
+
+[[step]]
+id = "subnet"
+service = "ec2"
+operation = "CreateSubnet"
+kind = ""
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.92.1.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "security_group"
+service = "ec2"
+operation = "CreateSecurityGroup"
+kind = ""
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+GroupName = "inventory-seed-influxdb"
+Description = "Private InfluxDB emulator fixture"
+
+[[step]]
+id = "instance"
+operation = "CreateDbInstance"
+kind = "AWS::Timestream::InfluxDBInstance"
+identity = "arn"
+[step.input]
+name = "inventory-seed-instance"
+password = "InventoryFixtureOnly1"
+dbInstanceType = "db.influx.medium"
+allocatedStorage = 20
+vpcSubnetIds = [{ from = "subnet", path = "Subnet.SubnetId" }]
+vpcSecurityGroupIds = [{ from = "security_group", path = "GroupId" }]

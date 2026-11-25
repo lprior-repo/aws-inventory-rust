@@ -14,3 +14,58 @@ identity = "WorkloadArn"
 "ClientRequestToken" = "12345678-1234-4234-8234-123456789abc"
 "ReviewOwner" = "Inventory"
 "AwsRegions" = ["us-east-1"]
+
+[[step]]
+id = "lens"
+operation = "ImportLens"
+kind = "AWS::WellArchitected::Lens"
+identity = "LensArn"
+[step.input]
+ClientRequestToken = "inventory-seed-lens"
+JSONString = '''
+{
+  "schemaVersion": "2021-11-01",
+  "name": "Inventory seed lens",
+  "description": "Emulator inventory fixture",
+  "pillars": [{
+    "id": "operationalExcellence",
+    "name": "Operational excellence",
+    "questions": [{
+      "id": "inventory_tracking",
+      "title": "How do you track the resources in your workload?",
+      "description": "Keep an inventory of the resources in use.",
+      "choices": [{
+        "id": "inventory_review",
+        "title": "Review the inventory regularly",
+        "improvementPlan": { "displayText": "Schedule regular reviews." }
+      }],
+      "riskRules": [
+        { "condition": "inventory_review", "risk": "NO_RISK" },
+        { "condition": "default", "risk": "HIGH_RISK" }
+      ]
+    }]
+  }]
+}
+'''
+
+[[step]]
+id = "profile"
+operation = "CreateProfile"
+kind = "AWS::WellArchitected::Profile"
+identity = "ProfileArn"
+[step.input]
+ProfileName = "inventory-seed-profile"
+ProfileDescription = "Inventory emulator seed"
+ProfileQuestions = []
+ClientRequestToken = "inventory-seed-profile"
+
+[[step]]
+id = "review_template"
+operation = "CreateReviewTemplate"
+kind = "AWS::WellArchitected::ReviewTemplate"
+identity = "TemplateArn"
+[step.input]
+TemplateName = "inventory-seed-review-template"
+Description = "Inventory emulator seed"
+Lenses = ["wellarchitected"]
+ClientRequestToken = "inventory-seed-review-template"

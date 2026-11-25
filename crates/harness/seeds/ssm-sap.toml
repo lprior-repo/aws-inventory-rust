@@ -1,0 +1,33 @@
+format = 1
+service = "ssm-sap"
+
+[[step]]
+id = "hana_credentials"
+service = "secrets-manager"
+operation = "CreateSecret"
+kind = ""
+[step.input]
+Name = "inventory-seed-hana-credentials"
+SecretString = '{"username":"SYSTEM","password":"InventoryFixtureOnly1"}'
+ClientRequestToken = "f264ccea-7e95-4c51-a47f-138392a16f99"
+
+[[step]]
+id = "application"
+operation = "RegisterApplication"
+kind = "AWS::SystemsManagerSAP::Application"
+identity = "Application.Arn"
+[step.input]
+ApplicationId = "inventory-seed-hana"
+ApplicationType = "HANA"
+Instances = ["i-0123456789abcdef0"]
+SapInstanceNumber = "00"
+Credentials = [{ DatabaseName = "SYSTEMDB", CredentialType = "ADMIN", SecretId = { from = "hana_credentials", path = "ARN" } }]
+Sid = "INV"
+
+[[step]]
+id = "hana_database"
+operation = "ListDatabases"
+kind = "AWS::ApiOnly::SAPDatabase"
+identity = "Databases.0.Arn"
+[step.input]
+ApplicationId = "inventory-seed-hana"

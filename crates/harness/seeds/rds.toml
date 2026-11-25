@@ -9,3 +9,140 @@ identity = "GlobalCluster.GlobalClusterArn"
 scope = "account"
 [step.input]
 "GlobalClusterIdentifier" = "inventory-thin-rds"
+
+[[step]]
+id = "cluster_parameter_group"
+operation = "CreateDBClusterParameterGroup"
+kind = "AWS::RDS::DBClusterParameterGroup"
+identity = "DBClusterParameterGroup.DBClusterParameterGroupArn"
+[step.input]
+DBClusterParameterGroupName = "inventory-thin-rds-cluster"
+DBParameterGroupFamily = "aurora-mysql8.0"
+Description = "Inventory seed cluster parameter group"
+
+[[step]]
+id = "integration_source"
+operation = "CreateDBCluster"
+kind = ""
+[step.input]
+DBClusterIdentifier = "inventory-thin-rds-integration"
+Engine = "aurora-mysql"
+MasterUsername = "inventoryadmin"
+MasterUserPassword = "InventorySeedFixture123"
+BackupRetentionPeriod = 1
+
+[[step]]
+id = "security_group"
+operation = "CreateDBSecurityGroup"
+kind = "AWS::RDS::DBSecurityGroup"
+identity = "DBSecurityGroup.DBSecurityGroupArn"
+[step.input]
+DBSecurityGroupName = "inventory-thin-rds"
+DBSecurityGroupDescription = "Inventory seed database security group"
+
+[[step]]
+id = "limitless_cluster"
+operation = "CreateDBCluster"
+kind = ""
+[step.input]
+DBClusterIdentifier = "inventory-thin-rds-limitless"
+Engine = "aurora-postgresql"
+ClusterScalabilityType = "limitless"
+MasterUsername = "inventoryadmin"
+MasterUserPassword = "InventorySeedFixture123"
+
+[[step]]
+id = "event_topic"
+service = "sns"
+operation = "CreateTopic"
+kind = ""
+[step.input]
+Name = "inventory-thin-rds-events"
+
+[[step]]
+id = "event_subscription"
+operation = "CreateEventSubscription"
+kind = "AWS::RDS::EventSubscription"
+identity = "EventSubscription.EventSubscriptionArn"
+[step.input]
+SubscriptionName = "inventory-thin-rds"
+SnsTopicArn = { from = "event_topic", path = "TopicArn" }
+
+[[step]]
+id = "proxy_role"
+service = "iam"
+operation = "CreateRole"
+kind = ""
+[step.input]
+RoleName = "inventory-thin-rds-proxy"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"rds.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "proxy_vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = ""
+[step.input]
+CidrBlock = "10.76.0.0/16"
+
+[[step]]
+id = "proxy_subnet_a"
+service = "ec2"
+operation = "CreateSubnet"
+kind = ""
+[step.input]
+VpcId = { from = "proxy_vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.76.0.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "proxy_subnet_b"
+service = "ec2"
+operation = "CreateSubnet"
+kind = ""
+[step.input]
+VpcId = { from = "proxy_vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.76.1.0/24"
+AvailabilityZone = "us-east-1b"
+
+[[step]]
+id = "proxy"
+operation = "CreateDBProxy"
+kind = "AWS::RDS::DBProxy"
+identity = "DBProxy.DBProxyArn"
+[step.input]
+DBProxyName = "inventory-thin-rds"
+EngineFamily = "MYSQL"
+DefaultAuthScheme = "IAM_AUTH"
+RoleArn = { from = "proxy_role", path = "Role.Arn" }
+VpcSubnetIds = [{ from = "proxy_subnet_a", path = "Subnet.SubnetId" }, { from = "proxy_subnet_b", path = "Subnet.SubnetId" }]
+
+[[step]]
+id = "integration_namespace"
+service = "redshift-serverless"
+operation = "CreateNamespace"
+kind = ""
+[step.input]
+namespaceName = "inventory-thin-rds"
+
+[[step]]
+id = "integration"
+operation = "CreateIntegration"
+kind = "AWS::RDS::Integration"
+identity = "IntegrationArn"
+[step.input]
+IntegrationName = "inventory-thin-rds"
+SourceArn = { from = "integration_source", path = "DBCluster.DBClusterArn" }
+TargetArn = { from = "integration_namespace", path = "namespace.namespaceArn" }
+DataFilter = "include: *.*"
+
+[[step]]
+id = "shard_group"
+operation = "CreateDBShardGroup"
+kind = "AWS::RDS::DBShardGroup"
+identity = "DBShardGroupArn"
+[step.input]
+DBClusterIdentifier = { from = "limitless_cluster", path = "DBCluster.DBClusterIdentifier" }
+DBShardGroupIdentifier = "inventory-thin-rds-shards"
+MaxACU = 16.0
+

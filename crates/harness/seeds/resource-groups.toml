@@ -8,3 +8,31 @@ kind = "AWS::ResourceGroups::Group"
 identity = "Group.GroupArn"
 [step.input]
 "Name" = "inventory-thin-resource-groups"
+
+[[step]]
+id = "application"
+operation = "CreateGroup"
+kind = ""
+[step.input]
+Name = "inventory-thin-application"
+Configuration = [{ Type = "AWS::ResourceGroups::Application" }]
+
+[[step]]
+id = "tag_sync_role"
+service = "iam"
+operation = "CreateRole"
+kind = ""
+[step.input]
+RoleName = "inventory-seed-tag-sync-role"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"resource-groups.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "tag_sync"
+operation = "StartTagSyncTask"
+kind = "AWS::ApiOnly::ResourceGroupTagSyncTask"
+identity = "TaskArn"
+[step.input]
+Group = { from = "application", path = "Group.GroupArn" }
+RoleArn = { from = "tag_sync_role", path = "Role.Arn" }
+TagKey = "InventorySeedApplication"
+TagValue = "inventory-thin-application"

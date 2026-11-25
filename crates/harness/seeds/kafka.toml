@@ -10,3 +10,145 @@ identity = "Arn"
 Name = "inventory-thin-kafka"
 KafkaVersions = ["3.6.0"]
 ServerProperties = "YXV0by5jcmVhdGUudG9waWNzLmVuYWJsZT10cnVlCg=="
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = "AWS::EC2::VPC"
+identity = "Vpc.VpcId"
+[step.input]
+CidrBlock = "10.53.0.0/16"
+
+[[step]]
+id = "subnet_a"
+service = "ec2"
+operation = "CreateSubnet"
+kind = "AWS::EC2::Subnet"
+identity = "Subnet.SubnetId"
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.53.1.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "subnet_b"
+service = "ec2"
+operation = "CreateSubnet"
+kind = "AWS::EC2::Subnet"
+identity = "Subnet.SubnetId"
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.53.2.0/24"
+AvailabilityZone = "us-east-1b"
+
+[[step]]
+id = "subnet_c"
+service = "ec2"
+operation = "CreateSubnet"
+kind = "AWS::EC2::Subnet"
+identity = "Subnet.SubnetId"
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.53.3.0/24"
+AvailabilityZone = "us-east-1c"
+
+[[step]]
+id = "security_group"
+service = "ec2"
+operation = "CreateSecurityGroup"
+kind = "AWS::EC2::SecurityGroup"
+identity = "GroupId"
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+GroupName = "inventory-thin-msk"
+Description = "Seed MSK security group"
+
+[[step]]
+id = "cluster"
+operation = "CreateClusterV2"
+kind = "AWS::MSK::Cluster"
+identity = "ClusterArn"
+[step.input]
+ClusterName = "inventory-thin-msk"
+"Provisioned.KafkaVersion" = "3.6.0"
+"Provisioned.NumberOfBrokerNodes" = 3
+"Provisioned.ClientAuthentication" = { Sasl = { Iam = { Enabled = true } } }
+"Provisioned.BrokerNodeGroupInfo" = { InstanceType = "kafka.m5.large", ClientSubnets = [{ from = "subnet_a", path = "Subnet.SubnetId" }, { from = "subnet_b", path = "Subnet.SubnetId" }, { from = "subnet_c", path = "Subnet.SubnetId" }], SecurityGroups = [{ from = "security_group", path = "GroupId" }], ConnectivityInfo = { VpcConnectivity = { ClientAuthentication = { Sasl = { Iam = { Enabled = true } } } } } }
+
+[[step]]
+id = "target_cluster"
+operation = "CreateClusterV2"
+kind = "AWS::MSK::Cluster"
+identity = "ClusterArn"
+[step.input]
+ClusterName = "inventory-thin-msk-target"
+"Provisioned.KafkaVersion" = "3.6.0"
+"Provisioned.NumberOfBrokerNodes" = 3
+"Provisioned.ClientAuthentication" = { Sasl = { Iam = { Enabled = true } } }
+"Provisioned.BrokerNodeGroupInfo" = { InstanceType = "kafka.m5.large", ClientSubnets = [{ from = "subnet_a", path = "Subnet.SubnetId" }, { from = "subnet_b", path = "Subnet.SubnetId" }, { from = "subnet_c", path = "Subnet.SubnetId" }], SecurityGroups = [{ from = "security_group", path = "GroupId" }] }
+
+[[step]]
+id = "replicator_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-thin-msk-replicator"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"kafka.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "replicator"
+operation = "CreateReplicator"
+kind = "AWS::MSK::Replicator"
+identity = "ReplicatorArn"
+[step.input]
+ReplicatorName = "inventory-thin-msk-replicator"
+ServiceExecutionRoleArn = { from = "replicator_role", path = "Role.Arn" }
+KafkaClusters = [
+  { AmazonMskCluster = { MskClusterArn = { from = "cluster", path = "ClusterArn" } }, VpcConfig = { SubnetIds = [{ from = "subnet_a", path = "Subnet.SubnetId" }, { from = "subnet_b", path = "Subnet.SubnetId" }, { from = "subnet_c", path = "Subnet.SubnetId" }], SecurityGroupIds = [{ from = "security_group", path = "GroupId" }] } },
+  { AmazonMskCluster = { MskClusterArn = { from = "target_cluster", path = "ClusterArn" } }, VpcConfig = { SubnetIds = [{ from = "subnet_a", path = "Subnet.SubnetId" }, { from = "subnet_b", path = "Subnet.SubnetId" }, { from = "subnet_c", path = "Subnet.SubnetId" }], SecurityGroupIds = [{ from = "security_group", path = "GroupId" }] } },
+]
+ReplicationInfoList = [{ SourceKafkaClusterArn = { from = "cluster", path = "ClusterArn" }, TargetKafkaClusterArn = { from = "target_cluster", path = "ClusterArn" }, TargetCompressionType = "NONE", ConsumerGroupReplication = { ConsumerGroupsToReplicate = [".*"] }, TopicReplication = { TopicsToReplicate = [".*"] } }]
+
+[[step]]
+id = "configuration_revision"
+operation = "UpdateConfiguration"
+kind = ""
+[step.input]
+Arn = { from = "configuration", path = "Arn" }
+ServerProperties = "YXV0by5jcmVhdGUudG9waWNzLmVuYWJsZT1mYWxzZQo="
+
+[[step]]
+id = "topic"
+operation = "CreateTopic"
+kind = "AWS::MSK::Topic"
+identity = "TopicArn"
+[step.input]
+ClusterArn = { from = "cluster", path = "ClusterArn" }
+TopicName = "inventory-thin-topic"
+PartitionCount = 3
+ReplicationFactor = 3
+
+[[step]]
+id = "channel_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-thin-msk-channel"
+
+[[step]]
+id = "channel"
+operation = "CreateChannel"
+kind = "AWS::MSK::Channel"
+identity = "ChannelArn"
+[step.input]
+ChannelName = "inventory-thin-channel"
+ClusterArn = { from = "cluster", path = "ClusterArn" }
+TopicConfigurationList = [{ TopicArn = { from = "topic", path = "TopicArn" }, RecordConverter = { ValueConverter = "STRING" } }]
+S3DestinationConfiguration = { ServiceExecutionRoleArn = { from = "replicator_role", path = "Role.Arn" }, DeadLetterQueueS3 = { BucketArn = "arn:aws:s3:::inventory-thin-msk-channel", ErrorOutputPrefix = "errors/" }, Storage = { BucketArn = "arn:aws:s3:::inventory-thin-msk-channel", CompressionType = "NONE", StorageClass = "STANDARD" } }

@@ -8,3 +8,11 @@ kind = "AWS::Location::GeofenceCollection"
 identity = "CollectionName"
 [step.input]
 "CollectionName" = "inventory-thin-location"
+
+[[step]]
+id = "tracker"
+operation = "CreateTracker"
+kind = "AWS::Location::Tracker"
+identity = "TrackerArn"
+[step.input]
+TrackerName = "inventory-thin-tracker"

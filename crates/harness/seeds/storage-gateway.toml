@@ -1,0 +1,42 @@
+format = 1
+service = "storage-gateway"
+
+[[step]]
+id = "gateway"
+operation = "ActivateGateway"
+kind = "AWS::ApiOnly::StorageGateway"
+identity = "GatewayARN"
+[step.input]
+ActivationKey = "inventory-seed-storage-gateway"
+GatewayName = "inventory-seed-gateway"
+GatewayRegion = "us-east-1"
+GatewayTimezone = "GMT+0:00"
+GatewayType = "FILE_S3"
+
+[[step]]
+id = "share_role"
+service = "iam"
+operation = "CreateRole"
+kind = ""
+[step.input]
+RoleName = "inventory-seed-storage-gateway"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"storagegateway.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "share_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-storage-gateway"
+
+[[step]]
+id = "share"
+operation = "CreateNFSFileShare"
+kind = "AWS::ApiOnly::StorageGatewayFileShare"
+identity = "FileShareARN"
+[step.input]
+ClientToken = "inventory-seed-gateway-nfs"
+GatewayARN = { from = "gateway", path = "GatewayARN" }
+Role = { from = "share_role", path = "Role.Arn" }
+LocationARN = "arn:aws:s3:::inventory-seed-storage-gateway"

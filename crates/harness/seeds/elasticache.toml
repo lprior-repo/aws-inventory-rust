@@ -12,3 +12,66 @@ ReplicationGroupDescription = "Inventory seed Redis cache"
 CacheNodeType = "cache.t3.micro"
 Engine = "redis"
 NumCacheClusters = 1
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = "AWS::EC2::VPC"
+identity = "Vpc.VpcId"
+[step.input]
+CidrBlock = "10.43.0.0/16"
+
+[[step]]
+id = "subnet"
+service = "ec2"
+operation = "CreateSubnet"
+kind = "AWS::EC2::Subnet"
+identity = "Subnet.SubnetId"
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.43.1.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "cache_subnet_group"
+operation = "CreateCacheSubnetGroup"
+kind = "AWS::ElastiCache::SubnetGroup"
+identity = "CacheSubnetGroup.ARN"
+[step.input]
+CacheSubnetGroupName = "inventory-seed-cache-subnets"
+CacheSubnetGroupDescription = "Inventory seed cache subnet group"
+SubnetIds = [{ from = "subnet", path = "Subnet.SubnetId" }]
+
+[[step]]
+id = "serverless_cache"
+operation = "CreateServerlessCache"
+kind = "AWS::ElastiCache::ServerlessCache"
+identity = "ServerlessCache.ARN"
+[step.input]
+ServerlessCacheName = "inventory-seed-serverless"
+Engine = "redis"
+
+[[step]]
+id = "user_group"
+operation = "CreateUserGroup"
+kind = "AWS::ElastiCache::UserGroup"
+identity = "ARN"
+[step.input]
+UserGroupId = "inventory-seed-cache-users"
+Engine = "redis"
+UserIds = ["default"]
+
+[[step]]
+id = "reserved_offering"
+operation = "DescribeReservedCacheNodesOfferings"
+kind = ""
+
+[[step]]
+id = "reserved_cache_node"
+operation = "PurchaseReservedCacheNodesOffering"
+kind = "AWS::ApiOnly::ElastiCacheReservedCacheNode"
+identity = "ReservedCacheNode.ReservedCacheNodeId"
+[step.input]
+ReservedCacheNodesOfferingId = { from = "reserved_offering", path = "ReservedCacheNodesOfferings.0.ReservedCacheNodesOfferingId" }
+ReservedCacheNodeId = "inventory-seed-reserved"

@@ -9,3 +9,33 @@ identity = { input = "name" }
 [step.input]
 name = "view.inventory_seed"
 definition = "SELECT 1 AS inventory_seed"
+
+[[step]]
+id = "space_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-cloudwatch-space"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"observabilityadmin.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "domain"
+operation = "CreateDomain"
+kind = "AWS::ApiOnly::CloudWatchOmniDomain"
+identity = "domain.domainArn"
+[step.input]
+name = "inventory-seed-domain"
+identityProviders = ["IAM"]
+
+[[step]]
+id = "space"
+operation = "CreateSpace"
+kind = "AWS::ApiOnly::CloudWatchOmniSpace"
+identity = "space.spaceArn"
+[step.input]
+name = "inventory-seed-space"
+domainId = { from = "domain", path = "domain.domainId" }
+dataAccessRoleArn = { from = "space_role", path = "Role.Arn" }

@@ -8,3 +8,70 @@ kind = "AWS::AppConfig::Application"
 identity = "Id"
 [step.input]
 "Name" = "inventory-thin-appconfig"
+
+[[step]]
+id = "environment"
+operation = "CreateEnvironment"
+kind = ""
+[step.input]
+ApplicationId = { from = "resource", path = "Id" }
+Name = "inventory-seed-environment"
+
+[[step]]
+id = "profile"
+operation = "CreateConfigurationProfile"
+kind = ""
+[step.input]
+ApplicationId = { from = "resource", path = "Id" }
+Name = "inventory-seed-profile"
+LocationUri = "hosted"
+Type = "AWS.AppConfig.FeatureFlags"
+
+[[step]]
+id = "experiment"
+operation = "CreateExperimentDefinition"
+kind = "AWS::ApiOnly::AppConfigExperiment"
+identity = "Id"
+[step.input]
+ApplicationIdentifier = { from = "resource", path = "Id" }
+Name = "inventory-seed-experiment"
+ConfigurationProfileIdentifier = { from = "profile", path = "Id" }
+EnvironmentIdentifier = { from = "environment", path = "Id" }
+FlagKey = "inventory_fixture"
+Treatments = [{ Weight = 50.0, FlagValue = { Enabled = true } }]
+Control = { Weight = 50.0, FlagValue = { Enabled = false } }
+AudienceRule = '(eq $inventory "seed")'
+
+[[step]]
+id = "extension_topic"
+service = "sns"
+operation = "CreateTopic"
+kind = ""
+[step.input]
+Name = "inventory-seed-appconfig"
+
+[[step]]
+id = "extension_role"
+service = "iam"
+operation = "CreateRole"
+kind = ""
+[step.input]
+RoleName = "inventory-seed-appconfig"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"appconfig.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "extension"
+operation = "CreateExtension"
+kind = ""
+[step.input]
+Name = "inventory-seed-extension"
+Actions = { ON_DEPLOYMENT_COMPLETE = [{ Name = "inventory-notification", Uri = { from = "extension_topic", path = "TopicArn" }, RoleArn = { from = "extension_role", path = "Role.Arn" } }] }
+
+[[step]]
+id = "extension_association"
+operation = "CreateExtensionAssociation"
+kind = "AWS::AppConfig::ExtensionAssociation"
+identity = "Id"
+[step.input]
+ExtensionIdentifier = { from = "extension", path = "Arn" }
+ResourceIdentifier = { from = "resource", path = "Id" }

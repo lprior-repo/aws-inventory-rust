@@ -18,7 +18,7 @@ fn args(services: &[&str]) -> Result<RunArgs, HarnessError> {
 fn given_lambda_recipe_with_signer_resources_when_selecting_collectors_then_profiles_are_collected()
 -> TestResult {
     let services = collector_services(&args(&["lambda"])?)?;
-    assert_eq!(services, ["lambda", "signer"]);
+    assert_eq!(services, ["lambda", "ec2", "iam", "signer", "sqs"]);
     Ok(())
 }
 
@@ -31,7 +31,9 @@ fn given_qualified_recipe_selectors_when_selecting_collectors_then_user_scope_is
         [
             "lambda:ListCodeSigningConfigs",
             "ec2:DescribeVpcs",
-            "signer"
+            "iam",
+            "signer",
+            "sqs"
         ]
     );
     Ok(())

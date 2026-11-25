@@ -15,3 +15,49 @@ identity = "IPSet.IPSetId"
 [step.input]
 "Name" = "inventory-thin-waf-regional"
 "ChangeToken" = { "from" = "token", "path" = "ChangeToken" }
+
+[[step]]
+id = "rate_rule_token"
+operation = "GetChangeToken"
+kind = ""
+
+[[step]]
+id = "rate_rule"
+operation = "CreateRateBasedRule"
+kind = "AWS::WAFRegional::RateBasedRule"
+identity = "Rule.RuleId"
+[step.input]
+Name = "inventory-seed-rate-rule"
+MetricName = "InventorySeedRateRule"
+RateKey = "IP"
+RateLimit = 100
+ChangeToken = { from = "rate_rule_token", path = "ChangeToken" }
+
+[[step]]
+id = "rule_token"
+operation = "GetChangeToken"
+kind = ""
+
+[[step]]
+id = "rule"
+operation = "CreateRule"
+kind = "AWS::WAFRegional::Rule"
+identity = "Rule.RuleId"
+[step.input]
+Name = "inventory-seed-rule"
+MetricName = "InventorySeedRule"
+ChangeToken = { from = "rule_token", path = "ChangeToken" }
+
+[[step]]
+id = "xss_match_set_token"
+operation = "GetChangeToken"
+kind = ""
+
+[[step]]
+id = "xss_match_set"
+operation = "CreateXssMatchSet"
+kind = "AWS::WAFRegional::XssMatchSet"
+identity = "XssMatchSet.XssMatchSetId"
+[step.input]
+Name = "inventory-seed-xss-match-set"
+ChangeToken = { from = "xss_match_set_token", path = "ChangeToken" }

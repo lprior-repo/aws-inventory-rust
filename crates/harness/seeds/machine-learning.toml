@@ -1,0 +1,45 @@
+format = 1
+service = "machine-learning"
+
+[[step]]
+id = "training_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-thin-ml-training"
+
+[[step]]
+id = "training_csv"
+service = "s3"
+operation = "PutObject"
+kind = ""
+[step.input]
+Bucket = "inventory-thin-ml-training"
+Key = "training.csv"
+ContentType = "text/csv"
+Body = "ZmVhdHVyZSxsYWJlbAoxLDAKMiwwCjMsMQo0LDEK"
+
+[[step]]
+id = "training_data"
+operation = "CreateDataSourceFromS3"
+kind = ""
+[step.input]
+DataSourceId = "ds-inventory-thin"
+DataSourceName = "Inventory training data"
+[step.input.DataSpec]
+DataLocationS3 = "s3://inventory-thin-ml-training/training.csv"
+DataSchema = '{"version":"1.0","targetAttributeName":"label","dataFormat":"CSV","dataFileContainsHeader":true,"attributes":[{"attributeName":"feature","attributeType":"NUMERIC"},{"attributeName":"label","attributeType":"BINARY"}]}'
+
+[[step]]
+id = "model"
+operation = "CreateMLModel"
+kind = "AWS::ApiOnly::MachineLearningModel"
+identity = "MLModelId"
+[step.input]
+MLModelId = "ml-inventory-thin"
+MLModelName = "Inventory binary model"
+MLModelType = "BINARY"
+TrainingDataSourceId = { from = "training_data", path = "DataSourceId" }

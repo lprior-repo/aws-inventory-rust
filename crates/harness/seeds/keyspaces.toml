@@ -8,3 +8,24 @@ kind = "AWS::Cassandra::Keyspace"
 identity = "resourceArn"
 [step.input]
 "keyspaceName" = "inventory_thin_keyspaces"
+
+[[step]]
+id = "table"
+operation = "CreateTable"
+kind = "AWS::Cassandra::Table"
+identity = "resourceArn"
+[step.input]
+keyspaceName = "inventory_thin_keyspaces"
+tableName = "inventory_events"
+schemaDefinition = { allColumns = [{ name = "id", type = "text" }], partitionKeys = [{ name = "id" }] }
+cdcSpecification = { status = "ENABLED", viewType = "NEW_AND_OLD_IMAGES" }
+
+[[step]]
+id = "type"
+operation = "CreateType"
+kind = "AWS::Cassandra::Type"
+identity = { input = "typeName", template = "24:inventory_thin_keyspaces|18:{value}" }
+[step.input]
+keyspaceName = "inventory_thin_keyspaces"
+typeName = "inventory_resource"
+fieldDefinitions = [{ name = "id", type = "text" }]

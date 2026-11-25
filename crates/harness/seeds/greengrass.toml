@@ -8,3 +8,11 @@ kind = "AWS::Greengrass::Group"
 identity = "Arn"
 [step.input]
 "Name" = "inventory-thin-greengrass"
+
+[[step]]
+id = "group_version"
+operation = "CreateGroupVersion"
+kind = "AWS::Greengrass::GroupVersion"
+identity = "Arn"
+[step.input]
+GroupId = { from = "resource", path = "Id" }

@@ -7,3 +7,23 @@ operation = "CreateInstance"
 kind = "AWS::ApiOnly::SupplyChainInstance"
 identity = "instance.instanceId"
 [step.input]
+
+[[step]]
+id = "namespace"
+operation = "CreateDataLakeNamespace"
+kind = "AWS::ApiOnly::SupplyChainDataLakeNamespace"
+identity = "namespace.arn"
+[step.input]
+instanceId = { from = "resource", path = "instance.instanceId" }
+name = "inventory_seed"
+
+[[step]]
+id = "dataset"
+operation = "CreateDataLakeDataset"
+kind = "AWS::ApiOnly::SupplyChainDataLakeDataset"
+identity = "dataset.arn"
+[step.input]
+instanceId = { from = "resource", path = "instance.instanceId" }
+namespace = { from = "namespace", path = "namespace.name" }
+name = "inventory_seed_dataset"
+schema = { name = "InventorySeedDataset", fields = [{ name = "record_id", type = "STRING", isRequired = true }] }

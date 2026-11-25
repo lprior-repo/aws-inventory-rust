@@ -1,0 +1,79 @@
+format = 1
+service = "imagebuilder"
+
+[[step]]
+id = "component"
+operation = "CreateComponent"
+kind = "AWS::ImageBuilder::Component"
+identity = "componentBuildVersionArn"
+[step.input]
+name = "inventory-seed-component"
+semanticVersion = "1.0.0"
+platform = "Linux"
+clientToken = "inventory-seed-imagebuilder-component"
+data = '''
+name: InventorySeed
+schemaVersion: 1.0
+phases:
+  - name: build
+    steps:
+      - name: DescribeFixture
+        action: ExecuteBash
+        inputs:
+          commands:
+            - echo inventory-seed
+'''
+
+[[step]]
+id = "image_recipe"
+operation = "CreateImageRecipe"
+kind = "AWS::ImageBuilder::ImageRecipe"
+identity = "imageRecipeArn"
+[step.input]
+name = "inventory-seed-recipe"
+semanticVersion = "1.0.0"
+parentImage = "ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+components = [{ componentArn = { from = "component", path = "componentBuildVersionArn" } }]
+clientToken = "inventory-seed-imagebuilder-recipe"
+
+[[step]]
+id = "instance_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-seed-imagebuilder"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"ec2.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "instance_profile"
+service = "iam"
+operation = "CreateInstanceProfile"
+kind = "AWS::IAM::InstanceProfile"
+identity = "InstanceProfile.Arn"
+scope = "account"
+[step.input]
+InstanceProfileName = "inventory-seed-imagebuilder"
+
+[[step]]
+id = "profile_role"
+service = "iam"
+operation = "AddRoleToInstanceProfile"
+kind = ""
+scope = "account"
+[step.input]
+InstanceProfileName = { from = "instance_profile", path = "InstanceProfile.InstanceProfileName" }
+RoleName = { from = "instance_role", path = "Role.RoleName" }
+
+[[step]]
+id = "infrastructure"
+operation = "CreateInfrastructureConfiguration"
+kind = "AWS::ImageBuilder::InfrastructureConfiguration"
+identity = "infrastructureConfigurationArn"
+[step.input]
+name = "inventory-seed-infrastructure"
+instanceProfileName = { from = "instance_profile", path = "InstanceProfile.InstanceProfileName" }
+instanceTypes = ["t3.micro"]
+clientToken = "inventory-seed-imagebuilder-infrastructure"

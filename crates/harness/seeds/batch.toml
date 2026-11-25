@@ -17,3 +17,124 @@ scope = "region"
 
 [step.input]
 name = "inv-createschedulingpolicy-{n}"
+
+[[step]]
+id = "compute_environment"
+operation = "CreateComputeEnvironment"
+kind = "AWS::Batch::ComputeEnvironment"
+identity = "computeEnvironmentArn"
+[step.input]
+computeEnvironmentName = "inventory-seed-compute"
+type = "UNMANAGED"
+
+[[step]]
+id = "job_queue"
+operation = "CreateJobQueue"
+kind = "AWS::Batch::JobQueue"
+identity = "jobQueueArn"
+[step.input]
+jobQueueName = "inventory-seed-queue"
+priority = 1
+computeEnvironmentOrder = [{ order = 1, computeEnvironment = { from = "compute_environment", path = "computeEnvironmentArn" } }]
+
+[[step]]
+id = "service_environment"
+operation = "CreateServiceEnvironment"
+kind = "AWS::Batch::ServiceEnvironment"
+identity = "serviceEnvironmentArn"
+[step.input]
+serviceEnvironmentName = "inventory-seed-service"
+serviceEnvironmentType = "SAGEMAKER_TRAINING"
+capacityLimits = [{ maxCapacity = 1, capacityUnit = "ml.m5.large" }]
+
+[[step]]
+id = "job_definition"
+operation = "RegisterJobDefinition"
+kind = ""
+[step.input]
+jobDefinitionName = "inventory-seed-job"
+type = "container"
+containerProperties = { image = "inventory.example.invalid/fixture:1", command = ["true"], resourceRequirements = [{ type = "VCPU", value = "1" }, { type = "MEMORY", value = "256" }] }
+
+[[step]]
+id = "job"
+operation = "SubmitJob"
+kind = "AWS::ApiOnly::BatchJob"
+identity = "jobId"
+[step.input]
+jobName = "inventory-seed-job"
+jobQueue = { from = "job_queue", path = "jobQueueArn" }
+jobDefinition = { from = "job_definition", path = "jobDefinitionArn" }
+
+[[step]]
+id = "quota_policy"
+operation = "CreateSchedulingPolicy"
+kind = ""
+[step.input]
+name = "inventory-seed-quota-policy"
+quotaSharePolicy = { idleResourceAssignmentStrategy = "FIFO" }
+
+[[step]]
+id = "service_job_queue"
+operation = "CreateJobQueue"
+kind = "AWS::Batch::JobQueue"
+identity = "jobQueueArn"
+[step.input]
+jobQueueName = "inventory-seed-service-queue"
+priority = 1
+jobQueueType = "SAGEMAKER_TRAINING"
+serviceEnvironmentOrder = [{ order = 1, serviceEnvironment = { from = "service_environment", path = "serviceEnvironmentArn" } }]
+schedulingPolicyArn = { from = "quota_policy", path = "arn" }
+
+[[step]]
+id = "quota_share"
+operation = "CreateQuotaShare"
+kind = "AWS::Batch::QuotaShare"
+identity = "quotaShareArn"
+[step.input]
+quotaShareName = "inventory-seed-quota"
+jobQueue = { from = "service_job_queue", path = "jobQueueArn" }
+capacityLimits = [{ maxCapacity = 1, capacityUnit = "ml.m5.large" }]
+resourceSharingConfiguration = { strategy = "RESERVE" }
+preemptionConfiguration = { inSharePreemption = "DISABLED" }
+
+[[step]]
+id = "service_job_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = ""
+[step.input]
+Bucket = "inventory-seed-batch"
+
+[[step]]
+id = "service_job_role"
+service = "iam"
+operation = "CreateRole"
+kind = ""
+[step.input]
+RoleName = "inventory-seed-batch"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":"sagemaker.amazonaws.com"},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "service_job"
+operation = "SubmitServiceJob"
+kind = "AWS::ApiOnly::BatchServiceJob"
+identity = "jobArn"
+[step.input]
+jobName = "inventory-seed-training"
+jobQueue = { from = "service_job_queue", path = "jobQueueArn" }
+quotaShareName = { from = "quota_share", path = "quotaShareName" }
+serviceJobType = "SAGEMAKER_TRAINING"
+serviceRequestPayload = '''
+{
+  "TrainingJobName": "inventory-seed-training",
+  "AlgorithmSpecification": {
+    "TrainingImage": "000000000000.dkr.ecr.us-east-1.amazonaws.com/inventory-seed:fixture",
+    "TrainingInputMode": "File"
+  },
+  "RoleArn": "arn:aws:iam::000000000000:role/inventory-seed-batch",
+  "OutputDataConfig": {"S3OutputPath": "s3://inventory-seed-batch/training/"},
+  "ResourceConfig": {"InstanceType": "ml.m5.large", "InstanceCount": 1, "VolumeSizeInGB": 1},
+  "StoppingCondition": {"MaxRuntimeInSeconds": 60}
+}
+'''

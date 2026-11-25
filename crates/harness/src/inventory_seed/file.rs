@@ -2,6 +2,8 @@ mod bounds;
 mod descriptor;
 mod expand;
 #[cfg(test)]
+mod identity_arity;
+#[cfg(test)]
 mod seed_files;
 mod step;
 mod value;

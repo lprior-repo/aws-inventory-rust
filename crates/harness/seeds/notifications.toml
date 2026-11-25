@@ -1,0 +1,22 @@
+format = 1
+service = "notifications"
+
+[[step]]
+id = "configuration"
+operation = "CreateNotificationConfiguration"
+kind = ""
+[step.input]
+name = "inventory-thin-notifications"
+description = "Inventory seed notification configuration"
+aggregationDuration = "NONE"
+
+[[step]]
+id = "event_rule"
+operation = "CreateEventRule"
+kind = "AWS::Notifications::EventRule"
+identity = "arn"
+[step.input]
+notificationConfigurationArn = { from = "configuration", path = "arn" }
+source = "aws.ec2"
+eventType = "EC2 Instance State-change Notification"
+regions = ["us-east-1"]

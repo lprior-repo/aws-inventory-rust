@@ -36,11 +36,77 @@ PoolName = "inv-creatededicatedippool-{n}"
 [[step]]
 id = "createemailidentity"
 operation = "CreateEmailIdentity"
-kind = "AWS::SES::EmailIdentityCertificate"
+kind = ""
 scope = "region"
-
-[step.identity]
-input = "EmailIdentity"
 
 [step.input]
 EmailIdentity = "inv-createemailidentity-{n}"
+
+[[step]]
+id = "template"
+operation = "CreateEmailTemplate"
+kind = "AWS::SES::Template"
+identity = { input = "TemplateName", template = "arn:{partition}:ses:{region}:{account}:template/{value}" }
+[step.input]
+TemplateName = "inventory-seed-sesv2-template"
+TemplateContent = { Subject = "Inventory fixture", Text = "Local emulator inventory fixture." }
+
+[[step]]
+id = "tenant"
+operation = "CreateTenant"
+kind = "AWS::SES::Tenant"
+identity = "TenantArn"
+[step.input]
+TenantName = "inventory-seed-tenant"
+
+[[step]]
+id = "multi_region_endpoint"
+operation = "CreateMultiRegionEndpoint"
+kind = "AWS::SES::MultiRegionEndpoint"
+identity = "EndpointId"
+[step.input]
+EndpointName = "inventory-seed-endpoint"
+Details = { RoutesDetails = [{ Region = "us-west-2" }] }
+
+[[step]]
+id = "export_job"
+operation = "CreateExportJob"
+kind = "AWS::ApiOnly::SESExportJob"
+identity = "JobId"
+[step.input]
+ExportDataSource = { MessageInsightsDataSource = { StartDate = 1795478400, EndDate = 1795482000, MaxResults = 1 } }
+ExportDestination = { DataFormat = "JSON" }
+
+[[step]]
+id = "reputation"
+operation = "UpdateReputationEntityCustomerManagedStatus"
+kind = ""
+[step.input]
+ReputationEntityType = "RESOURCE"
+ReputationEntityReference = { from = "tenant", path = "TenantArn" }
+SendingStatus = "DISABLED"
+
+[[step]]
+id = "certificate_identity"
+operation = "CreateEmailIdentity"
+kind = ""
+[step.input]
+EmailIdentity = "inventory-seed.example.com"
+
+[[step]]
+id = "certificate"
+service = "acm"
+operation = "RequestCertificate"
+kind = ""
+[step.input]
+DomainName = "inventory-seed.example.com"
+ValidationMethod = "DNS"
+
+[[step]]
+id = "identity_certificate"
+operation = "AssociateEmailIdentityCertificate"
+kind = ""
+[step.input]
+EmailIdentity = "inventory-seed.example.com"
+FromAddress = "inventory@inventory-seed.example.com"
+CertificateArn = { from = "certificate", path = "CertificateArn" }

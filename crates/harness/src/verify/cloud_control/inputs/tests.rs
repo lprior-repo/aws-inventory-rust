@@ -2,6 +2,20 @@ use super::*;
 
 type TestResult = Result<(), Box<dyn std::error::Error>>;
 
+const UNMAPPED_GAPS: [&str; 11] = [
+    "AWS::ControlTower::LandingZone",
+    "AWS::DataSync::LocationAzureBlob",
+    "AWS::DataSync::LocationS3",
+    "AWS::ECS::CapacityProvider",
+    "AWS::ECS::TaskDefinition",
+    "AWS::Glue::Table",
+    "AWS::IoT::Thing",
+    "AWS::MediaPackage::Asset",
+    "AWS::MediaPackage::Channel",
+    "AWS::MediaTailor::PlaybackConfiguration",
+    "AWS::Organizations::OrganizationalUnit",
+];
+
 fn args(work: &Path) -> Args {
     let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("../..");
     Args {
@@ -58,16 +72,12 @@ fn given_real_seeds_when_known_input_gaps_are_removed_then_remaining_kinds_are_a
         .ok_or("expected unmapped CFN kind error")?;
     assert_eq!(
         error.to_string(),
-        "Cloud Control seeded kinds have no mapped target: [\"AWS::ControlTower::LandingZone\", \"AWS::ECS::TaskDefinition\", \"AWS::Glue::Table\"]"
+        "Cloud Control seeded kinds have no mapped target: [\"AWS::ControlTower::LandingZone\", \"AWS::DataSync::LocationAzureBlob\", \"AWS::DataSync::LocationS3\", \"AWS::ECS::CapacityProvider\", \"AWS::ECS::TaskDefinition\", \"AWS::Glue::Table\", \"AWS::IoT::Thing\", \"AWS::MediaPackage::Asset\", \"AWS::MediaPackage::Channel\", \"AWS::MediaTailor::PlaybackConfiguration\", \"AWS::Organizations::OrganizationalUnit\"]"
     );
     let HarnessError::CloudControl(CloudControlError::UnmappedKinds { kinds }) = error else {
         return Err("expected typed unmapped CFN kind error".into());
     };
-    let gaps = [
-        "AWS::ControlTower::LandingZone",
-        "AWS::ECS::TaskDefinition",
-        "AWS::Glue::Table",
-    ];
+    let gaps = UNMAPPED_GAPS;
     assert_eq!(kinds, gaps);
     for kind in gaps {
         assert!(selection.remove(kind));

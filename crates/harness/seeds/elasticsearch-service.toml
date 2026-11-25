@@ -8,3 +8,22 @@ kind = "AWS::Elasticsearch::Domain"
 identity = { input = "DomainName" }
 [step.input]
 "DomainName" = "inventory-thin-elasticsearch"
+
+[[step]]
+id = "destination_domain"
+operation = "CreateElasticsearchDomain"
+kind = "AWS::Elasticsearch::Domain"
+identity = { input = "DomainName" }
+[step.input]
+DomainName = "inventory-seed-es-target"
+
+[[step]]
+id = "cross_cluster_connection"
+operation = "CreateOutboundCrossClusterSearchConnection"
+kind = "AWS::ApiOnly::ElasticsearchOutboundCrossClusterConnection"
+identity = "CrossClusterSearchConnectionId"
+[step.input]
+SourceDomainInfo = { DomainName = { from = "resource", path = "DomainStatus.DomainName" }, Region = "us-east-1" }
+DestinationDomainInfo = { DomainName = { from = "destination_domain", path = "DomainStatus.DomainName" }, Region = "us-east-1" }
+ConnectionAlias = "inventory-seed-es"
+

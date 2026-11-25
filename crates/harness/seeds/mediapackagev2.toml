@@ -8,3 +8,24 @@ kind = "AWS::MediaPackageV2::ChannelGroup"
 identity = "Arn"
 [step.input]
 "ChannelGroupName" = "inventory-thin-mediapackagev2"
+
+[[step]]
+id = "channel"
+operation = "CreateChannel"
+kind = "AWS::MediaPackageV2::Channel"
+identity = "Arn"
+[step.input]
+ChannelGroupName = { from = "resource", path = "ChannelGroupName" }
+ChannelName = "inventory-thin-channel"
+
+[[step]]
+id = "origin_endpoint"
+operation = "CreateOriginEndpoint"
+kind = "AWS::MediaPackageV2::OriginEndpoint"
+identity = "Arn"
+[step.input]
+ChannelGroupName = { from = "resource", path = "ChannelGroupName" }
+ChannelName = { from = "channel", path = "ChannelName" }
+OriginEndpointName = "inventory-thin-endpoint"
+ContainerType = "TS"
+HlsManifests = [{ ManifestName = "inventory" }]

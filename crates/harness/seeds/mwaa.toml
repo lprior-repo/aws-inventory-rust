@@ -1,0 +1,107 @@
+format = 1
+service = "mwaa"
+
+[[step]]
+id = "dag_bucket"
+service = "s3"
+operation = "CreateBucket"
+kind = "AWS::S3::Bucket"
+identity = { input = "Bucket", template = "arn:{partition}:s3:::{value}" }
+scope = "account"
+[step.input]
+Bucket = "inventory-thin-mwaa-dags"
+
+[[step]]
+id = "bucket_versioning"
+service = "s3"
+operation = "PutBucketVersioning"
+kind = ""
+[step.input]
+Bucket = "inventory-thin-mwaa-dags"
+VersioningConfiguration = { Status = "Enabled" }
+
+[[step]]
+id = "bucket_public_access_block"
+service = "s3"
+operation = "PutPublicAccessBlock"
+kind = ""
+[step.input]
+Bucket = "inventory-thin-mwaa-dags"
+PublicAccessBlockConfiguration = { BlockPublicAcls = true, IgnorePublicAcls = true, BlockPublicPolicy = true, RestrictPublicBuckets = true }
+
+[[step]]
+id = "dag_prefix"
+service = "s3"
+operation = "PutObject"
+kind = ""
+[step.input]
+Bucket = "inventory-thin-mwaa-dags"
+Key = "dags/"
+
+[[step]]
+id = "execution_role"
+service = "iam"
+operation = "CreateRole"
+kind = "AWS::IAM::Role"
+identity = "Role.Arn"
+scope = "account"
+[step.input]
+RoleName = "inventory-thin-mwaa"
+AssumeRolePolicyDocument = '{"Version":"2012-10-17","Statement":[{"Effect":"Allow","Principal":{"Service":["airflow.amazonaws.com","airflow-env.amazonaws.com"]},"Action":"sts:AssumeRole"}]}'
+
+[[step]]
+id = "vpc"
+service = "ec2"
+operation = "CreateVpc"
+kind = "AWS::EC2::VPC"
+identity = "Vpc.VpcId"
+[step.input]
+CidrBlock = "10.61.0.0/16"
+
+[[step]]
+id = "subnet_a"
+service = "ec2"
+operation = "CreateSubnet"
+kind = "AWS::EC2::Subnet"
+identity = "Subnet.SubnetId"
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.61.1.0/24"
+AvailabilityZone = "us-east-1a"
+
+[[step]]
+id = "subnet_b"
+service = "ec2"
+operation = "CreateSubnet"
+kind = "AWS::EC2::Subnet"
+identity = "Subnet.SubnetId"
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+CidrBlock = "10.61.2.0/24"
+AvailabilityZone = "us-east-1b"
+
+[[step]]
+id = "security_group"
+service = "ec2"
+operation = "CreateSecurityGroup"
+kind = "AWS::EC2::SecurityGroup"
+identity = "GroupId"
+[step.input]
+VpcId = { from = "vpc", path = "Vpc.VpcId" }
+GroupName = "inventory-thin-mwaa"
+Description = "Seed MWAA network security group"
+
+[[step]]
+id = "environment"
+operation = "CreateEnvironment"
+kind = "AWS::MWAA::Environment"
+identity = "Arn"
+[step.input]
+Name = "inventory-thin-mwaa"
+ExecutionRoleArn = { from = "execution_role", path = "Role.Arn" }
+SourceBucketArn = "arn:aws:s3:::inventory-thin-mwaa-dags"
+DagS3Path = "dags"
+EnvironmentClass = "mw1.small"
+AirflowVersion = "2.10.3"
+WebserverAccessMode = "PRIVATE_ONLY"
+NetworkConfiguration = { SubnetIds = [{ from = "subnet_a", path = "Subnet.SubnetId" }, { from = "subnet_b", path = "Subnet.SubnetId" }], SecurityGroupIds = [{ from = "security_group", path = "GroupId" }] }
