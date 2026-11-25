@@ -24,6 +24,7 @@
 "apigatewayv2/GetVpcLink" = "apigateway:GET"
 "apigatewayv2/GetVpcLinks" = "apigateway:GET"
 "budgets/DescribeBudgets" = "budgets:ViewBudget"
+"cloudwatch/DescribeAlarms" = "cloudwatch:DescribeAlarms"
 "cloudwatch/DescribeAnomalyDetectors" = "cloudwatch:DescribeAnomalyDetectors"
 "cloudwatch/DescribeInsightRules" = "cloudwatch:DescribeInsightRules"
 "cloudwatch/GetDashboard" = "cloudwatch:GetDashboard"

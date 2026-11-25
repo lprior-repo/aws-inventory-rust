@@ -4,11 +4,11 @@ reviewer = "generated"
 
 [operation.DescribeAlarms]
 class = "defer"
-defer_reason = "The response contains MetricAlarms, CompositeAlarms and LogAlarms; one items selector cannot emit all three, and complete requests must explicitly include all three AlarmTypes. StateReason and StateReasonData also need an evaluated-value safety decision or safe projection; exclude_from_hash does not remove content."
+defer_reason = "items: no single list member"
 
 [operation.DescribeAlarmsForMetric]
 class = "defer"
-defer_reason = "Requires MetricName and Namespace with the complete Dimensions identity from ListMetrics, whose collection-valued identity is not expressible. Returns only standard single-metric alarms, not metric-math or composite alarms, and MetricAlarms.StateReason/StateReasonData require the same evaluated-value safety decision as DescribeAlarms."
+defer_reason = "Requires MetricName and Namespace with the complete Dimensions identity from ListMetrics, whose collection-valued identity is not expressible. Returns only standard single-metric alarms, not metric-math or composite alarms; use DescribeAlarms for complete alarm discovery."
 
 [operation.DescribeAnomalyDetectors]
 class = "defer"
